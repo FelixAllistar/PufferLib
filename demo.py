@@ -458,7 +458,7 @@ def test_neocarbs(args, env_name, make_env, policy_cls, rnn_cls):
     carbs = NeoCarbs(
         args['sweep'],
         resample_frequency=5,
-        num_random_samples=10, # Should be number of params
+        num_random_samples=50, # Should be number of params
         max_suggestion_cost=args['base']['max_suggestion_cost'],
     )
     scores = []
@@ -470,7 +470,7 @@ def test_neocarbs(args, env_name, make_env, policy_cls, rnn_cls):
         torch.manual_seed(seed)
  
         hypers = carbs.suggest()
-        score, cost = synthetic_percentile_task(hypers)
+        score, cost = synthetic_linear_task(hypers)
         carbs.observe(score=score, cost=cost)
         print('Score:', score, 'Cost:', cost)
 
