@@ -17,7 +17,7 @@ def make(name, **kwargs):
 
 class PHCPufferEnv(pufferlib.PufferEnv):
     def __init__(self, motion_file, has_self_collision, num_envs=32, device_type="cuda",
-            device_id=0, headless=True, log_interval=128):
+            device_id=0, headless=True, log_interval=32):
         cfg = {
             'env': {
                 'num_envs': num_envs,
@@ -59,6 +59,7 @@ class PHCPufferEnv(pufferlib.PufferEnv):
         self.env.reset()
         self.demo = self.env.demo
         self.state = self.env.state
+        self.tick = 0
         return self.observations, []
 
     def step(self, actions_np):
@@ -69,12 +70,9 @@ class PHCPufferEnv(pufferlib.PufferEnv):
         self.demo = self.env.demo
         self.state = self.env.state
 
-        # NOTE: rl-games reset done envs in the training script. Keeping this here for now.
-        # TODO: Move this into the env
         done_indices = torch.nonzero(self.terminals).squeeze(-1)
         if len(done_indices) > 0:
             self.observations[done_indices] = self.env.reset(done_indices)[done_indices]
-
             self._infos["episode_return"] += self.episode_returns[done_indices].tolist()
             self._infos["episode_length"] += self.episode_lengths[done_indices].tolist()
             self.episode_returns[done_indices] = 0
@@ -84,7 +82,10 @@ class PHCPufferEnv(pufferlib.PufferEnv):
         self.episode_lengths += 1
 
         # TODO: self.env.extras has infos. Extract useful info?
-        info = self.mean_and_log()
+        info = []
+        self.tick += 1
+        if self.tick % self.log_interval == 0:
+            info = self.mean_and_log()
 
         return self.observations, self.rewards, self.terminals, self.truncations, info
 

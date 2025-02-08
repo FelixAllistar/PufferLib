@@ -284,6 +284,7 @@ def train(data):
                 losses.old_approx_kl += old_approx_kl.item() / total_minibatches
                 losses.approx_kl += approx_kl.item() / total_minibatches
                 losses.clipfrac += clipfrac.item() / total_minibatches
+                losses.discriminator += disc_loss.item() / total_minibatches
 
         if config.target_kl is not None:
             if approx_kl > config.target_kl:
@@ -423,6 +424,7 @@ def make_losses():
         approx_kl=0,
         clipfrac=0,
         explained_variance=0,
+        discriminator=0,
     )
 
 class Experience:
