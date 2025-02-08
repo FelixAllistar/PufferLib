@@ -5,7 +5,6 @@ import os
 import random
 import psutil
 import time
-
 from threading import Thread
 from collections import defaultdict, deque
 
@@ -178,7 +177,10 @@ def train(data):
         experience.num_minibatches, config.minibatch_size).to(config.device)
     with torch.no_grad():
         for mb in range(experience.num_minibatches):
-            adversarial_reward[mb] = -torch.log(1 - data.policy.policy.discriminate(state[mb]).squeeze())
+            disc_logits = data.policy.policy.discriminate(state[mb]).squeeze()
+            prob = 1 / (1 + torch.exp(-disc_logits))
+            adversarial_reward[mb] = -torch.log(torch.maximum(
+                1 - prob, torch.tensor(0.0001, device=config.device)))
 
     # TODO: Nans in adversarial reward and gae
     adversarial_reward_np = adversarial_reward.cpu().numpy().ravel()
@@ -436,7 +438,7 @@ class Experience:
         obs_device = device if not pin else 'cpu'
         self.obs=torch.zeros(batch_size, *obs_shape, dtype=obs_dtype,
             pin_memory=pin, device=device if not pin else 'cpu')
-        self.demo=torch.zeros(batch_size, 576, dtype=obs_dtype,
+        self.demo=torch.zeros(batch_size, 358, dtype=obs_dtype,
             pin_memory=pin, device=device if not pin else 'cpu')
         self.state=torch.zeros(batch_size, 358, dtype=obs_dtype,
             pin_memory=pin, device=device if not pin else 'cpu')

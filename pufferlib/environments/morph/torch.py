@@ -34,6 +34,9 @@ class Policy(nn.Module):
             requires_grad=False,
         )
         nn.init.constant_(self.sigma, -2.9)
+        #self.mu = pufferlib.pytorch.layer_init(
+        #    nn.Linear(hidden, action_dim), std=0.01)
+        #self.sigma = nn.Parameter(torch.zeros(1, action_dim))
 
         ### Separate Critic
         self.critic_mlp = nn.Sequential(
@@ -71,7 +74,7 @@ class Policy(nn.Module):
 
     def decode_actions(self, hidden, lookup=None):
         mu = self.mu(hidden)
-        std = torch.exp(self.sigma)
+        std = torch.exp(self.sigma).expand_as(mu)
         probs = torch.distributions.Normal(mu, std)
         value = self.value(hidden)
         return probs, value

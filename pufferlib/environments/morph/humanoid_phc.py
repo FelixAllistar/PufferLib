@@ -1202,9 +1202,19 @@ class HumanoidPHC:
         if env_ids is None:
             env_ids = self.all_env_ids
 
-        self.state = self._compute_humanoid_obs(env_ids)
-        self.demo = self._compute_task_obs(env_ids)
-        obs = torch.cat([self.state, self.demo], dim=-1)
+        # This is the normalized state of the humanoid
+        state = self._compute_humanoid_obs(env_ids)
+
+        # This is the difference of state with the demo, but it is
+        # called "state" in the paper.
+        imitation = self._compute_task_obs(env_ids)
+
+        # Possible the original paper only uses imitation
+        obs = torch.cat([state, imitation], dim=-1)
+
+        # This is the normalized vector with position, rotation, velocity, and
+        # angular velocity for the simulated humanoid and the demo data
+        self.state, self.demo = self._compute_state_obs(env_ids)
 
         if self.add_obs_noise and not self.flag_test:
             obs = obs + torch.randn_like(obs) * 0.1
@@ -1244,6 +1254,60 @@ class HumanoidPHC:
                 self._has_shape_obs,  # Constant: False
                 self._has_limb_weight_obs,  # Constant: False
             )
+
+    def _compute_state_obs(self, env_ids=None):
+        if env_ids is None:
+            env_ids = slice(None)
+
+        body_pos = self._rigid_body_pos[env_ids]#[..., self._track_bodies_id]
+        body_rot = self._rigid_body_rot[env_ids]#[..., self._track_bodies_id]
+        body_vel = self._rigid_body_vel[env_ids]#[..., self._track_bodies_id]
+        body_ang_vel = self._rigid_body_ang_vel[env_ids]#[..., self._track_bodies_id]
+
+        sim_obs = compute_humanoid_observations_smpl_max(
+            body_pos,
+            body_rot,
+            body_vel,
+            body_ang_vel,
+            None,
+            None,
+            self._local_root_obs,  # Constant: True
+            self._root_height_obs,  # Constant: True
+            self._has_upright_start,  # Constant: True
+            self._has_shape_obs,  # Constant: False
+            self._has_limb_weight_obs,  # Constant: False
+        )
+
+        motion_times = (
+            (self.progress_buf[env_ids] + 1) * self.dt
+            + self._motion_start_times[env_ids]
+            + self._motion_start_times_offset[env_ids]
+        )  # Next frame, so +1
+
+        motion_res = self._get_state_from_motionlib_cache(
+            self._sampled_motion_ids[env_ids], motion_times, self._global_offset[env_ids]
+        )  # pass in the env_ids such that the motion is in synced.
+
+        demo_pos = motion_res["rg_pos"]#[..., self._track_bodies_id]
+        demo_rot = motion_res["rb_rot"]#[..., self._track_bodies_id]
+        demo_vel = motion_res["body_vel"]#[..., self._track_bodies_id]
+        demo_ang_vel = motion_res["body_ang_vel"]#[..., self._track_bodies_id]
+
+        demo_obs = compute_humanoid_observations_smpl_max(
+            demo_pos,
+            demo_rot,
+            demo_vel,
+            demo_ang_vel,
+            None,
+            None,
+            True,  # Constant: True
+            self._root_height_obs,  # Constant: True
+            self._has_upright_start,  # Constant: True
+            self._has_shape_obs,  # Constant: False
+            self._has_limb_weight_obs,  # Constant: False
+        )
+
+        return sim_obs, demo_obs
 
     def _compute_task_obs(self, env_ids=None, save_buffer=True):
         if env_ids is None:
@@ -1698,7 +1762,7 @@ def remove_base_rot(quat):
     return quat_mul(quat, base_rot.repeat(shape, 1))
 
 
-@torch.jit.script
+#@torch.jit.script
 def compute_humanoid_observations_smpl_max(
     body_pos,
     body_rot,
