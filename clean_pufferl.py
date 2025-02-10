@@ -163,7 +163,6 @@ def train(data):
         rewards_np = experience.rewards_np[idxs]
         experience.flatten_batch()
 
-
     # Optimizing the policy and value network
     total_minibatches = experience.num_minibatches * config.update_epochs
     mean_pg_loss, mean_v_loss, mean_entropy_loss = 0, 0, 0
@@ -175,12 +174,14 @@ def train(data):
         config.minibatch_size, experience.state.shape[-1])
     adversarial_reward = torch.zeros(
         experience.num_minibatches, config.minibatch_size).to(config.device)
+    '''
     with torch.no_grad():
         for mb in range(experience.num_minibatches):
             disc_logits = data.policy.policy.discriminate(state[mb]).squeeze()
             prob = 1 / (1 + torch.exp(-disc_logits))
             adversarial_reward[mb] = -torch.log(torch.maximum(
                 1 - prob, torch.tensor(0.0001, device=config.device)))
+    '''
 
     # TODO: Nans in adversarial reward and gae
     adversarial_reward_np = adversarial_reward.cpu().numpy().ravel()
@@ -222,10 +223,10 @@ def train(data):
                 # Discriminator loss
                 # BUG: Data shape is wrong for morph. State should have same shape as demo
                 disc_state = data.policy.policy.discriminate(state)
-                disc_demo = data.policy.policy.discriminate(demo)
-                disc_loss_agent = torch.nn.BCEWithLogitsLoss()(disc_state, torch.zeros_like(disc_state))
-                disc_loss_demo = torch.nn.BCEWithLogitsLoss()(disc_demo, torch.ones_like(disc_demo))
-                disc_loss = 0.5 * (disc_loss_agent + disc_loss_demo)
+                #disc_demo = data.policy.policy.discriminate(demo)
+                #disc_loss_agent = torch.nn.BCEWithLogitsLoss()(disc_state, torch.zeros_like(disc_state))
+                #disc_loss_demo = torch.nn.BCEWithLogitsLoss()(disc_demo, torch.ones_like(disc_demo))
+                #disc_loss = 0.5 * (disc_loss_agent + disc_loss_demo)
 
                 if config.device == 'cuda':
                     torch.cuda.synchronize()
@@ -267,7 +268,7 @@ def train(data):
                     v_loss = 0.5 * ((newvalue - ret) ** 2).mean()
 
                 entropy_loss = entropy.mean()
-                loss = pg_loss - config.ent_coef*entropy_loss + config.vf_coef*v_loss + config.disc_coef*disc_loss
+                loss = pg_loss - config.ent_coef*entropy_loss + config.vf_coef*v_loss# + config.disc_coef*disc_loss
 
             with profile.learn:
                 data.optimizer.zero_grad()
@@ -284,7 +285,7 @@ def train(data):
                 losses.old_approx_kl += old_approx_kl.item() / total_minibatches
                 losses.approx_kl += approx_kl.item() / total_minibatches
                 losses.clipfrac += clipfrac.item() / total_minibatches
-                losses.discriminator += disc_loss.item() / total_minibatches
+                #losses.discriminator += disc_loss.item() / total_minibatches
 
         if config.target_kl is not None:
             if approx_kl > config.target_kl:

@@ -3,6 +3,7 @@ import argparse
 import functools
 
 from pufferlib.environments.morph.humanoid_phc import HumanoidPHC
+from pufferlib.environments.morph.render_env import HumanoidRenderEnv
 
 import torch
 import numpy as np
@@ -13,11 +14,12 @@ def env_creator(name='morph'):
     return functools.partial(make, name)
  
 def make(name, **kwargs):
-    return PHCPufferEnv(**kwargs)
+    return PHCPufferEnv(name, **kwargs)
 
 class PHCPufferEnv(pufferlib.PufferEnv):
-    def __init__(self, motion_file, has_self_collision, num_envs=32, device_type="cuda",
-            device_id=0, headless=True, log_interval=32):
+    def __init__(self, name, motion_file, has_self_collision, num_envs=32, device_type="cuda",
+            exp_name='morph', clip_actions=True, device_id=0, headless=True, log_interval=32):
+        self.render_mode = 'native'
         cfg = {
             'env': {
                 'num_envs': num_envs,
@@ -26,18 +28,26 @@ class PHCPufferEnv(pufferlib.PufferEnv):
             'robot': {
                 'has_self_collision': has_self_collision,
             },
+            'exp_name': exp_name,
         }
-        self.env = HumanoidPHC(cfg, device_type=device_type, device_id=device_id, headless=headless)
+        if name == 'morph':
+            self.env = HumanoidPHC(cfg, device_type=device_type, device_id=device_id, headless=headless)
+        elif name == 'morph-render':
+            self.env = HumanoidRenderEnv(cfg, device_type=device_type, device_id=device_id, headless=headless)
+        else:
+            raise ValueError(f'Unknown environment {name}')
+
         self.single_observation_space = self.env.single_observation_space
         self.single_action_space = self.env.single_action_space
         self.num_agents = self.num_envs = self.env.num_envs
+        self.clip_actions = clip_actions
         self.device = self.env.device
 
         # Check the buffer data types, match them to puffer
         buffers = pufferlib.namespace(
             observations=self.env.obs_buf,
             rewards=self.env.rew_buf,
-            terminals=self.env.reset_buf,
+            terminals=torch.zeros(self.num_agents, dtype=torch.bool, device=self.device),
             truncations=torch.zeros_like(self.env.reset_buf),
             masks=torch.ones_like(self.env.reset_buf),
             actions=torch.zeros(
@@ -63,6 +73,9 @@ class PHCPufferEnv(pufferlib.PufferEnv):
         return self.observations, []
 
     def step(self, actions_np):
+        if self.clip_actions:
+            actions_np = np.clip(actions_np, -1, 1)
+
         self.actions[:] = torch.from_numpy(actions_np)
 
         # obs, reward, done are put into the buffers
@@ -70,6 +83,7 @@ class PHCPufferEnv(pufferlib.PufferEnv):
         self.demo = self.env.demo
         self.state = self.env.state
 
+        self.terminals[:] = self.env.reset_buf
         done_indices = torch.nonzero(self.terminals).squeeze(-1)
         if len(done_indices) > 0:
             self.observations[done_indices] = self.env.reset(done_indices)[done_indices]
@@ -88,6 +102,9 @@ class PHCPufferEnv(pufferlib.PufferEnv):
             info = self.mean_and_log()
 
         return self.observations, self.rewards, self.terminals, self.truncations, info
+
+    def render(self):
+        return self.env.render()
 
     def close(self):
         self.env.close()
