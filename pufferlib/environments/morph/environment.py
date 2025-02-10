@@ -1,7 +1,6 @@
 import time
 import argparse
 import functools
-
 from pufferlib.environments.morph.humanoid_phc import HumanoidPHC
 from pufferlib.environments.morph.render_env import HumanoidRenderEnv
 
@@ -76,8 +75,6 @@ class PHCPufferEnv(pufferlib.PufferEnv):
         if self.clip_actions:
             actions_np = np.clip(actions_np, -1, 1)
 
-        self.actions[:] = torch.from_numpy(actions_np)
-
         # obs, reward, done are put into the buffers
         self.env.step(self.actions)
         self.demo = self.env.demo
@@ -86,7 +83,7 @@ class PHCPufferEnv(pufferlib.PufferEnv):
         self.terminals[:] = self.env.reset_buf
         done_indices = torch.nonzero(self.terminals).squeeze(-1)
         if len(done_indices) > 0:
-            self.observations[done_indices] = self.env.reset(done_indices)[done_indices]
+            self.env.reset(done_indices)
             self._infos["episode_return"] += self.episode_returns[done_indices].tolist()
             self._infos["episode_length"] += self.episode_lengths[done_indices].tolist()
             self.episode_returns[done_indices] = 0

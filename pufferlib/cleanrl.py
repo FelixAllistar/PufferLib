@@ -30,7 +30,7 @@ def sample_logits(logits: Union[torch.Tensor, List[torch.Tensor]],
         if action is None:
             action = logits.sample().view(batch, -1)
 
-        log_probs = logits.log_prob(action.view(batch, -1)).sum(1)
+        log_probs = logits.log_prob(action.view(batch, -1)).mean(1)
         logits_entropy = logits.entropy().view(batch, -1).sum(1)
         return action, log_probs, logits_entropy
     elif is_discrete:

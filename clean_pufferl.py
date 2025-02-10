@@ -194,6 +194,9 @@ def train(data):
     experience.returns_np = advantages_np + experience.values_np
     experience.b_returns = experience.b_advantages + experience.b_values
 
+    # Clamp action to [-1, 1]
+    experience.b_actions = torch.clamp(experience.b_actions, -1, 1)
+
     for epoch in range(config.update_epochs):
         lstm_state = None
         for mb in range(experience.num_minibatches):
