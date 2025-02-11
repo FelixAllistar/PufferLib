@@ -29,12 +29,10 @@ class PHCPufferEnv(pufferlib.PufferEnv):
             },
             'exp_name': exp_name,
         }
-        if name == 'morph':
+        if headless:
             self.env = HumanoidPHC(cfg, device_type=device_type, device_id=device_id, headless=headless)
-        elif name == 'morph-render':
-            self.env = HumanoidRenderEnv(cfg, device_type=device_type, device_id=device_id, headless=headless)
         else:
-            raise ValueError(f'Unknown environment {name}')
+            self.env = HumanoidRenderEnv(cfg, device_type=device_type, device_id=device_id, headless=headless)
 
         self.single_observation_space = self.env.single_observation_space
         self.single_action_space = self.env.single_action_space
@@ -66,8 +64,8 @@ class PHCPufferEnv(pufferlib.PufferEnv):
 
     def reset(self, seed=None):
         self.env.reset()
-        # self.demo = self.env.demo
-        # self.state = self.env.state
+        self.demo = self.env.demo
+        self.state = self.env.state
         self.tick = 0
         return self.observations, []
 
@@ -78,8 +76,8 @@ class PHCPufferEnv(pufferlib.PufferEnv):
 
         # obs, reward, done are put into the buffers
         self.env.step(self.actions)
-        # self.demo = self.env.demo
-        # self.state = self.env.state
+        self.demo = self.env.demo
+        self.state = self.env.state
 
         self.terminals[:] = self.env.reset_buf
         done_indices = torch.nonzero(self.terminals).squeeze(-1)
