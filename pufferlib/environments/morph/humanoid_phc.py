@@ -257,6 +257,11 @@ class HumanoidPHC:
         self.progress_buf += 1
 
         self._refresh_sim_tensors()
+
+        #body_pos = self._rigid_body_pos
+        #self.rew_buf[:] = body_pos[:, 0, 2]
+        #self.reset_buf[:] = body_pos[:, 0, 2] < 0.25
+
         self._compute_reward()
 
         # NOTE: Which envs must be reset is computed here, but the envs get reset outside the env
@@ -559,6 +564,8 @@ class HumanoidPHC:
         dof_prop["driveMode"] = gymapi.DOF_MODE_POS
         dof_prop["stiffness"] *= self._kp_scale
         dof_prop["damping"] *= self._kd_scale
+        dof_prop["stiffness"] = 1000
+        dof_prop["damping"] = 200
 
         # NOTE: (from Joseph) You get a small perf boost (~4%) by putting all the actors in the same env
         for i in range(self.num_envs):
@@ -908,7 +915,7 @@ class HumanoidPHC:
             # TODO: find a way to evaluate full motion, probably not during training
             max_length=self.max_episode_length,
             im_eval=self.flag_im_eval,
-            multi_thread=False,  # CHECK ME: need to config?
+            multi_thread=False,
             smpl_type=self.humanoid_type,
             randomrize_heading=True,
             step_dt=self.dt,
@@ -1217,7 +1224,7 @@ class HumanoidPHC:
 
         # This is the normalized vector with position, rotation, velocity, and
         # angular velocity for the simulated humanoid and the demo data
-        # self.state, self.demo = self._compute_state_obs(env_ids)
+        self.state, self.demo = self._compute_state_obs(env_ids)
 
         if self.add_obs_noise and not self.flag_test:
             obs = obs + torch.randn_like(obs) * 0.1
@@ -1498,7 +1505,7 @@ class HumanoidPHC:
         body_rot = self._rigid_body_rot
         body_vel = self._rigid_body_vel
         body_ang_vel = self._rigid_body_ang_vel
-
+        
         motion_times = (
             self.progress_buf * self.dt + self._motion_start_times + self._motion_start_times_offset
         )  # reward is computed after physics step, and progress_buf is already updated for next time step.
@@ -1766,7 +1773,7 @@ def remove_base_rot(quat):
     return quat_mul(quat, base_rot.repeat(shape, 1))
 
 
-@torch.jit.script
+#@torch.jit.script
 def compute_humanoid_observations_smpl_max(
     body_pos,
     body_rot,

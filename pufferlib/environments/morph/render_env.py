@@ -76,7 +76,7 @@ class HumanoidRenderEnv(HumanoidPHC):
             sys.exit()
 
         if self.viewer or self.flag_server_mode:
-            self._update_camera()
+            #self._update_camera()
             self._update_marker()
 
         # check for keyboard events
@@ -233,10 +233,9 @@ class HumanoidRenderEnv(HumanoidPHC):
 
     def _init_camera(self):
         self.gym.refresh_actor_root_state_tensor(self.sim)
-        self._cam_prev_char_pos = self._humanoid_root_states[0, 0:3].cpu().numpy()
+        cam_pos = gymapi.Vec3(20.0, 25.0, 3.0)
+        cam_target = gymapi.Vec3(10.0, 15.0, 0.0)
 
-        cam_pos = gymapi.Vec3(self._cam_prev_char_pos[0], self._cam_prev_char_pos[1] - 3.0, 1.0)
-        cam_target = gymapi.Vec3(self._cam_prev_char_pos[0], self._cam_prev_char_pos[1], 1.0)
         if self.viewer:
             self.gym.viewer_camera_look_at(self.viewer, None, cam_pos, cam_target)
 

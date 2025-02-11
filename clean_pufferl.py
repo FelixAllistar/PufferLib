@@ -119,7 +119,10 @@ def evaluate(data):
             actions = actions.cpu().numpy()
             mask = torch.as_tensor(mask)# * policy.mask)
             o = o if config.cpu_offload else o_device
-            experience.store(o, value, actions, logprob, r, d, env_id, mask)
+
+            state = data.vecenv.state
+            demo = data.vecenv.demo
+            experience.store(o, state, demo, value, actions, logprob, r, d, env_id, mask)
 
             for i in info:
                 for k, v in pufferlib.utils.unroll_nested_dict(i):
@@ -161,10 +164,37 @@ def train(data):
         dones_np = experience.dones_np[idxs]
         values_np = experience.values_np[idxs]
         rewards_np = experience.rewards_np[idxs]
-        # TODO: bootstrap between segment bounds
-        advantages_np = compute_gae(dones_np, values_np,
-            rewards_np, config.gamma, config.gae_lambda)
-        experience.flatten_batch(advantages_np)
+        experience.flatten_batch()
+
+    # Compute adversarial reward. Note: discriminator doesn't get
+    # updated as often this way, but GAE is more accurate
+    state = experience.state.view(experience.num_minibatches,
+        config.minibatch_size, experience.state.shape[-1])
+    adversarial_reward = torch.zeros(
+        experience.num_minibatches, config.minibatch_size).to(config.device)
+
+    '''
+    with torch.no_grad():
+        for mb in range(experience.num_minibatches):
+            disc_logits = data.policy.policy.discriminate(state[mb]).squeeze()
+            prob = 1 / (1 + torch.exp(-disc_logits))
+            adversarial_reward[mb] = -torch.log(torch.maximum(
+                1 - prob, torch.tensor(0.0001, device=config.device)))
+    '''
+
+    # TODO: Nans in adversarial reward and gae
+    adversarial_reward_np = adversarial_reward.cpu().numpy().ravel()
+    advantages_np = compute_gae(dones_np, values_np,
+        rewards_np + adversarial_reward_np, config.gamma, config.gae_lambda)
+    advantages = torch.as_tensor(advantages_np).to(config.device)
+    experience.b_advantages = advantages.reshape(experience.minibatch_rows,
+        experience.num_minibatches, experience.bptt_horizon).transpose(0, 1).reshape(
+        experience.num_minibatches, experience.minibatch_size)
+    experience.returns_np = advantages_np + experience.values_np
+    experience.b_returns = experience.b_advantages + experience.b_values
+
+    # DO NOT CLAMP ACTIONS HERE. Crashes learning.
+    #experience.b_actions = torch.clamp(experience.b_actions, -1, 1)
 
     # Optimizing the policy and value network
     total_minibatches = experience.num_minibatches * config.update_epochs
@@ -174,8 +204,9 @@ def train(data):
         lstm_state = None
         for mb in range(experience.num_minibatches):
             with profile.train_misc:
-                obs = experience.b_obs[mb]
-                obs = obs.to(config.device)
+                obs = experience.b_obs[mb].to(config.device)
+                state = experience.b_state[mb].to(config.device)
+                demo = experience.b_demo[mb].to(config.device)
                 atn = experience.b_actions[mb]
                 log_probs = experience.b_logprobs[mb]
                 val = experience.b_values[mb]
@@ -235,8 +266,15 @@ def train(data):
                 else:
                     v_loss = 0.5 * ((newvalue - ret) ** 2).mean()
 
+                # Discriminator loss
+                #disc_state = data.policy.policy.discriminate(state)
+                #disc_demo = data.policy.policy.discriminate(demo)
+                #disc_loss_agent = torch.nn.BCEWithLogitsLoss()(disc_state, torch.zeros_like(disc_state))
+                #disc_loss_demo = torch.nn.BCEWithLogitsLoss()(disc_demo, torch.ones_like(disc_demo))
+                #disc_loss = 0.5 * (disc_loss_agent + disc_loss_demo)
+
                 entropy_loss = entropy.mean()
-                loss = pg_loss - config.ent_coef * entropy_loss + v_loss * config.vf_coef
+                loss = pg_loss - config.ent_coef * entropy_loss + v_loss * config.vf_coef #+ disc_loss * config.disc_coef
 
             with profile.learn:
                 data.optimizer.zero_grad()
@@ -249,6 +287,7 @@ def train(data):
             with profile.train_misc:
                 losses.policy_loss += pg_loss.item() / total_minibatches
                 losses.value_loss += v_loss.item() / total_minibatches
+                #losses.discriminator += disc_loss.item() / total_minibatches
                 losses.entropy += entropy_loss.item() / total_minibatches
                 losses.old_approx_kl += old_approx_kl.item() / total_minibatches
                 losses.approx_kl += approx_kl.item() / total_minibatches
@@ -387,6 +426,7 @@ def make_losses():
     return pufferlib.namespace(
         policy_loss=0,
         value_loss=0,
+        discriminator_loss=0,
         entropy=0,
         old_approx_kl=0,
         approx_kl=0,
@@ -406,6 +446,10 @@ class Experience:
         pin = device == 'cuda' and cpu_offload
         obs_device = device if not pin else 'cpu'
         self.obs=torch.zeros(batch_size, *obs_shape, dtype=obs_dtype,
+            pin_memory=pin, device=device if not pin else 'cpu')
+        self.demo=torch.zeros(batch_size, 358, dtype=obs_dtype,
+            pin_memory=pin, device=device if not pin else 'cpu')
+        self.state=torch.zeros(batch_size, 358, dtype=obs_dtype,
             pin_memory=pin, device=device if not pin else 'cpu')
         self.actions=torch.zeros(batch_size, *atn_shape, dtype=atn_dtype, pin_memory=pin)
         self.logprobs=torch.zeros(batch_size, pin_memory=pin)
@@ -451,13 +495,15 @@ class Experience:
     def full(self):
         return self.ptr >= self.batch_size
 
-    def store(self, obs, value, action, logprob, reward, done, env_id, mask):
+    def store(self, obs, state, demo, value, action, logprob, reward, done, env_id, mask):
         # Mask learner and Ensure indices do not exceed batch size
         ptr = self.ptr
         indices = torch.where(mask)[0].numpy()[:self.batch_size - ptr]
         end = ptr + len(indices)
  
         self.obs[ptr:end] = obs.to(self.obs.device)[indices]
+        self.state[ptr:end] = state.to(self.state.device)[indices]
+        self.demo[ptr:end] = demo.to(self.demo.device)[indices]
         self.values_np[ptr:end] = value.cpu().numpy()[indices]
         self.actions_np[ptr:end] = action[indices]
         self.logprobs_np[ptr:end] = logprob.cpu().numpy()[indices]
@@ -473,29 +519,31 @@ class Experience:
         self.b_idxs_obs = torch.as_tensor(idxs.reshape(
                 self.minibatch_rows, self.num_minibatches, self.bptt_horizon
             ).transpose(1,0,-1)).to(self.obs.device).long()
+        self.b_idxs_state = torch.as_tensor(idxs.reshape(
+                self.minibatch_rows, self.num_minibatches, self.bptt_horizon
+            ).transpose(1,0,-1)).to(self.state.device).long()
+        self.b_idxs_demo = torch.as_tensor(idxs.reshape(
+                self.minibatch_rows, self.num_minibatches, self.bptt_horizon
+            ).transpose(1,0,-1)).to(self.demo.device).long()
         self.b_idxs = self.b_idxs_obs.to(self.device)
         self.b_idxs_flat = self.b_idxs.reshape(
             self.num_minibatches, self.minibatch_size)
         self.sort_keys = []
         return idxs
 
-    def flatten_batch(self, advantages_np):
-        advantages = torch.as_tensor(advantages_np).to(self.device)
+    def flatten_batch(self):
         b_idxs, b_flat = self.b_idxs, self.b_idxs_flat
         self.b_actions = self.actions.to(self.device, non_blocking=True)
         self.b_logprobs = self.logprobs.to(self.device, non_blocking=True)
         self.b_dones = self.dones.to(self.device, non_blocking=True)
         self.b_values = self.values.to(self.device, non_blocking=True)
-        self.b_advantages = advantages.reshape(self.minibatch_rows,
-            self.num_minibatches, self.bptt_horizon).transpose(0, 1).reshape(
-            self.num_minibatches, self.minibatch_size)
-        self.returns_np = advantages_np + self.values_np
         self.b_obs = self.obs[self.b_idxs_obs]
+        self.b_state = self.state[self.b_idxs_state]
+        self.b_demo = self.demo[self.b_idxs_demo]
         self.b_actions = self.b_actions[b_idxs].contiguous()
         self.b_logprobs = self.b_logprobs[b_idxs]
         self.b_dones = self.b_dones[b_idxs]
         self.b_values = self.b_values[b_flat]
-        self.b_returns = self.b_advantages + self.b_values
 
 class Utilization(Thread):
     def __init__(self, delay=1, maxlen=20):
@@ -591,7 +639,7 @@ def rollout(env_creator, env_kwargs, policy_cls, rnn_cls, agent_creator, agent_k
 
     frames = []
     tick = 0
-    while tick <= 2000:
+    while tick <= 200000:
         if tick % 1 == 0:
             render = driver.render()
             if driver.render_mode == 'ansi':
