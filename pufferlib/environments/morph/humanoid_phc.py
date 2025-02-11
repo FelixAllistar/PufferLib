@@ -4,7 +4,10 @@ from enum import Enum
 from types import SimpleNamespace
 
 from isaacgym import gymapi
-import gymtorch
+try:
+    import gymtorch
+except ImportError:
+    from isaacgym import gymtorch
 
 from gym import spaces
 import torch
