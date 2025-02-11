@@ -1200,6 +1200,7 @@ class HumanoidPHC:
     #####################################################################
     ### compute observations
     #####################################################################
+
     def _compute_observations(self, env_ids=None):
         if env_ids is None:
             env_ids = self.all_env_ids
@@ -1216,7 +1217,7 @@ class HumanoidPHC:
 
         # This is the normalized vector with position, rotation, velocity, and
         # angular velocity for the simulated humanoid and the demo data
-        self.state, self.demo = self._compute_state_obs(env_ids)
+        # self.state, self.demo = self._compute_state_obs(env_ids)
 
         if self.add_obs_noise and not self.flag_test:
             obs = obs + torch.randn_like(obs) * 0.1
@@ -1257,6 +1258,7 @@ class HumanoidPHC:
                 self._has_limb_weight_obs,  # Constant: False
             )
 
+    # NOTE: This produces "simplified" amp obs, which goes into the discriminator
     def _compute_state_obs(self, env_ids=None):
         if env_ids is None:
             env_ids = slice(None)
@@ -1764,7 +1766,7 @@ def remove_base_rot(quat):
     return quat_mul(quat, base_rot.repeat(shape, 1))
 
 
-#@torch.jit.script
+@torch.jit.script
 def compute_humanoid_observations_smpl_max(
     body_pos,
     body_rot,

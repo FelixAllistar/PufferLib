@@ -66,19 +66,20 @@ class PHCPufferEnv(pufferlib.PufferEnv):
 
     def reset(self, seed=None):
         self.env.reset()
-        self.demo = self.env.demo
-        self.state = self.env.state
+        # self.demo = self.env.demo
+        # self.state = self.env.state
         self.tick = 0
         return self.observations, []
 
     def step(self, actions_np):
         if self.clip_actions:
             actions_np = np.clip(actions_np, -1, 1)
+        self.actions[:] = torch.from_numpy(actions_np)
 
         # obs, reward, done are put into the buffers
         self.env.step(self.actions)
-        self.demo = self.env.demo
-        self.state = self.env.state
+        # self.demo = self.env.demo
+        # self.state = self.env.state
 
         self.terminals[:] = self.env.reset_buf
         done_indices = torch.nonzero(self.terminals).squeeze(-1)
@@ -123,7 +124,7 @@ class PHCPufferEnv(pufferlib.PufferEnv):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-n", "--num_envs", type=int, default=32)
-    parser.add_argument("-m", "--motion_file", type=str, default="sample_data/amass_train_take6_upright.pkl")
+    parser.add_argument("-m", "--motion_file", type=str, default="resources/morph/totalcapture_acting_poses.pkl")
     parser.add_argument("--disable_self_collision", action="store_true")
     args = parser.parse_args()
 
@@ -142,13 +143,10 @@ if __name__ == "__main__":
         sps = int(steps / (end - start))
         print(f"Steps: {steps}, SPS: {sps}")
 
-    cfg = {
-        "env": {
-            "num_envs": args.num_envs,
-            "motion_file": args.motion_file,
-        },
-        "robot": {"has_self_collision": not args.disable_self_collision},
-    }
-
-    env = PHCPufferEnv(cfg)
+    env = PHCPufferEnv(
+        name = "morph",
+        motion_file = args.motion_file,
+        has_self_collision = not args.disable_self_collision,
+        num_envs = args.num_envs,
+    )
     test_perf(env)
