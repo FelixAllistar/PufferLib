@@ -16,6 +16,8 @@ class Policy(nn.Module):
         self.actor_mlp = nn.Sequential(
             layer_init(nn.Linear(input_dim, hidden)),
             nn.ReLU(),
+            layer_init(nn.Linear(hidden, hidden)),
+            nn.ReLU(),
         )
  
         '''
@@ -50,6 +52,9 @@ class Policy(nn.Module):
         self.critic_mlp = nn.Sequential(
             layer_init(nn.Linear(input_dim, hidden)),
             nn.ReLU(),
+            layer_init(nn.Linear(hidden, hidden)),
+            nn.ReLU(),
+            layer_init(nn.Linear(hidden, 1)),
         )
 
         '''
@@ -68,14 +73,14 @@ class Policy(nn.Module):
             nn.SiLU(),
         )
         '''
-        self.value = nn.Linear(hidden, 1)
+        # self.value = nn.Linear(hidden, 1)
 
         ### Discriminator
         self._disc_mlp = nn.Sequential(
-            layer_init(nn.Linear(demo_dim, 1024)),
+            layer_init(nn.Linear(demo_dim, hidden)),
             nn.ReLU(),
-            layer_init(nn.Linear(1024, hidden)),
-            nn.ReLU(),
+            # layer_init(nn.Linear(1024, hidden)),
+            # nn.ReLU(),
         )
         self._disc_logits = layer_init(torch.nn.Linear(hidden, 1))
         self.obs_mean = None
@@ -90,7 +95,8 @@ class Policy(nn.Module):
                 -10.0, 10.0
         )
         hidden, lookup = self.encode_observations(observations)
-        actions, value = self.decode_actions(hidden, lookup)
+        actions, _ = self.decode_actions(hidden, lookup)
+        value = self.critic_mlp(observations)
         return actions, value
 
     def encode_observations(self, obs):
@@ -100,8 +106,10 @@ class Policy(nn.Module):
         mu = self.mu(hidden)
         std = torch.exp(self.sigma).expand_as(mu)
         probs = torch.distributions.Normal(mu, std)
-        value = self.value(hidden)
-        return probs, value
+        
+        # NOTE: Separate critic network takes input directly
+        # value = self.critic_mlp(hidden)
+        return probs, 0
 
     def discriminate(self, amp_obs):
         disc_mlp_out = self._disc_mlp(amp_obs)

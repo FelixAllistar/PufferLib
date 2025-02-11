@@ -31,7 +31,8 @@ def make_policy(env, policy_cls, rnn_cls, args):
         policy = rnn_cls(env, policy, **args['rnn'])
         policy = pufferlib.cleanrl.RecurrentPolicy(policy)
     else:
-        policy = pufferlib.cleanrl.Policy(policy)
+        if not isinstance(policy, pufferlib.cleanrl.Policy):
+            policy = pufferlib.cleanrl.Policy(policy)
 
     return policy.to(args['train']['device'])
 
@@ -361,7 +362,7 @@ if __name__ == '__main__':
         ' demo options. Shows valid args for your env and policy',
         formatter_class=RichHelpFormatter, add_help=False)
     parser.add_argument('--env', '--environment', type=str,
-        default='puffer_squared', help='Name of specific environment to run')
+        default='morph', help='Name of specific environment to run')
     parser.add_argument('--mode', type=str, default='train',
         choices='train eval evaluate sweep sweep-carbs autotune profile'.split())
     parser.add_argument('--vec-overwork', action='store_true',
