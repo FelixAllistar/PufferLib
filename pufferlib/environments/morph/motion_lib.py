@@ -153,7 +153,7 @@ class DeviceCache:
 class MotionLibBase:
     def __init__(self, motion_lib_cfg):
         self.m_cfg = motion_lib_cfg
-        self._sim_fps = 1 / self.m_cfg.get("step_dt", 1 / 30)  # CHECK ME: hardcoded
+        self._sim_fps = 1 / getattr(self.m_cfg, "step_dt", 1 / 30)  # CHECK ME: hardcoded
         print("SIM FPS (from MotionLibBase):", self._sim_fps)
         self._device = self.m_cfg.device
 
@@ -647,6 +647,8 @@ class MotionLibSMPL(MotionLibBase):
         data_dir = 'resources/morph'
         if osp.exists(data_dir):
             if motion_lib_cfg.smpl_type == "smpl":
+                # NOTE: SMPL model files must be present in the data_dir.
+                # Download from https://smpl.is.tue.mpg.de/
                 smpl_parser_n = SMPL_Parser(model_path=data_dir, gender="neutral")
                 smpl_parser_m = SMPL_Parser(model_path=data_dir, gender="male")
                 smpl_parser_f = SMPL_Parser(model_path=data_dir, gender="female")
