@@ -54,7 +54,7 @@ class PHCPufferEnv(pufferlib.PufferEnv):
 
         super().__init__(buffers)
 
-        self.value_norm_rms = RunningMeanStd((1,), self.device)
+        self.rew_rms_norm = RunningMeanStd((1,), self.device)
 
         self.log_interval = log_interval
         self.episode_returns = torch.zeros(self.num_envs, dtype=torch.float32, device=self.device)
@@ -100,7 +100,7 @@ class PHCPufferEnv(pufferlib.PufferEnv):
             info = self.mean_and_log()
 
         # Normalize the value, after updating the episode return
-        rew = self.value_norm_rms(self.rewards)
+        rew = self.rew_rms_norm(self.rewards)
 
         return self.observations, rew, self.terminals, self.truncations, info
 
