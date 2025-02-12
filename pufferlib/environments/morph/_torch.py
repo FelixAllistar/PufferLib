@@ -13,27 +13,27 @@ class Policy(nn.Module):
         super().__init__()
         self.is_continuous = True
 
-        # self.actor_mlp = nn.Sequential(
-        #     layer_init(nn.Linear(input_dim, hidden)),
-        #     nn.ReLU(),
-        #     layer_init(nn.Linear(hidden, hidden)),
-        #     nn.ReLU(),
-        # )
- 
         self.actor_mlp = nn.Sequential(
-            layer_init(nn.Linear(input_dim, 2048)),
-            nn.SiLU(),
-            layer_init(nn.Linear(2048, 1536)),
-            nn.SiLU(),
-            layer_init(nn.Linear(1536, 1024)),
-            nn.SiLU(),
-            layer_init(nn.Linear(1024, 1024)),
-            nn.SiLU(),
-            layer_init(nn.Linear(1024, 512)),
-            nn.SiLU(),
-            layer_init(nn.Linear(512, hidden)),
-            nn.SiLU(),
+            layer_init(nn.Linear(input_dim, hidden)),
+            nn.ReLU(),
+            layer_init(nn.Linear(hidden, hidden)),
+            nn.ReLU(),
         )
+ 
+        # self.actor_mlp = nn.Sequential(
+        #     layer_init(nn.Linear(input_dim, 2048)),
+        #     nn.SiLU(),
+        #     layer_init(nn.Linear(2048, 1536)),
+        #     nn.SiLU(),
+        #     layer_init(nn.Linear(1536, 1024)),
+        #     nn.SiLU(),
+        #     layer_init(nn.Linear(1024, 1024)),
+        #     nn.SiLU(),
+        #     layer_init(nn.Linear(1024, 512)),
+        #     nn.SiLU(),
+        #     layer_init(nn.Linear(512, hidden)),
+        #     nn.SiLU(),
+        # )
 
         self.mu = layer_init(nn.Linear(hidden, action_dim), std=0.01)
         self.sigma = nn.Parameter(
@@ -46,7 +46,8 @@ class Policy(nn.Module):
         self.mu = pufferlib.pytorch.layer_init(
             nn.Linear(hidden, action_dim), std=0.01)
         self.sigma = nn.Parameter(torch.zeros(1, action_dim))
-
+        '''
+        
         ### Separate Critic
         self.critic_mlp = nn.Sequential(
             layer_init(nn.Linear(input_dim, hidden)),
@@ -55,23 +56,22 @@ class Policy(nn.Module):
             nn.ReLU(),
             layer_init(nn.Linear(hidden, 1)),
         )
-        '''
 
-        self.critic_mlp = nn.Sequential(
-            layer_init(nn.Linear(input_dim, 2048)),
-            nn.SiLU(),
-            layer_init(nn.Linear(2048, 1536)),
-            nn.SiLU(),
-            layer_init(nn.Linear(1536, 1024)),
-            nn.SiLU(),
-            layer_init(nn.Linear(1024, 1024)),
-            nn.SiLU(),
-            layer_init(nn.Linear(1024, 512)),
-            nn.SiLU(),
-            layer_init(nn.Linear(512, hidden)),
-            nn.SiLU(),
-            layer_init(nn.Linear(hidden, 1)),
-        )
+        # self.critic_mlp = nn.Sequential(
+        #     layer_init(nn.Linear(input_dim, 2048)),
+        #     nn.SiLU(),
+        #     layer_init(nn.Linear(2048, 1536)),
+        #     nn.SiLU(),
+        #     layer_init(nn.Linear(1536, 1024)),
+        #     nn.SiLU(),
+        #     layer_init(nn.Linear(1024, 1024)),
+        #     nn.SiLU(),
+        #     layer_init(nn.Linear(1024, 512)),
+        #     nn.SiLU(),
+        #     layer_init(nn.Linear(512, hidden)),
+        #     nn.SiLU(),
+        #     layer_init(nn.Linear(hidden, 1)),
+        # )
         # self.value = nn.Linear(hidden, 1)
 
         ### Discriminator
@@ -83,6 +83,8 @@ class Policy(nn.Module):
         )
         self._disc_logits = layer_init(torch.nn.Linear(hidden, 1))
         self.obs_mean = None
+
+        self.obs_pointer = None
 
     def forward(self, observations):
         if self.obs_mean is None:
@@ -99,6 +101,7 @@ class Policy(nn.Module):
         return actions, value
 
     def encode_observations(self, obs):
+        self.obs_pointer = obs
         return self.actor_mlp(obs), None
 
     def decode_actions(self, hidden, lookup=None):
@@ -107,8 +110,8 @@ class Policy(nn.Module):
         probs = torch.distributions.Normal(mu, std)
         
         # NOTE: Separate critic network takes input directly
-        # value = self.critic_mlp(hidden)
-        return probs, 0
+        value = self.critic_mlp(self.obs_pointer)
+        return probs, value
 
     def discriminate(self, amp_obs):
         disc_mlp_out = self._disc_mlp(amp_obs)

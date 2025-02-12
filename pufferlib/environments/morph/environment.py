@@ -99,8 +99,8 @@ class PHCPufferEnv(pufferlib.PufferEnv):
         if self.tick % self.log_interval == 0:
             info = self.mean_and_log()
 
-        # Normalize the value, after updating the episode return
-        rew = self.rew_rms_norm(self.rewards)
+        # Simple reward scaling
+        rew = self.rewards.clone() * 0.01
 
         return self.observations, rew, self.terminals, self.truncations, info
 
