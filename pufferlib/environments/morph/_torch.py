@@ -15,9 +15,9 @@ class Policy(nn.Module):
 
         self.actor_mlp = nn.Sequential(
             layer_init(nn.Linear(input_dim, hidden)),
-            nn.ReLU(),
+            nn.Tanh(),
             layer_init(nn.Linear(hidden, hidden)),
-            nn.ReLU(),
+            nn.Tanh(),
         )
  
         # self.actor_mlp = nn.Sequential(
@@ -35,7 +35,10 @@ class Policy(nn.Module):
         #     nn.SiLU(),
         # )
 
-        self.mu = layer_init(nn.Linear(hidden, action_dim), std=0.01)
+        self.mu = nn.Sequential(
+            nn.Tanh(),
+            layer_init(nn.Linear(hidden, action_dim), std=0.01),
+        )
         self.sigma = nn.Parameter(
             torch.zeros(action_dim, requires_grad=False, dtype=torch.float32),
             requires_grad=False,
@@ -51,9 +54,11 @@ class Policy(nn.Module):
         ### Separate Critic
         self.critic_mlp = nn.Sequential(
             layer_init(nn.Linear(input_dim, hidden)),
-            nn.ReLU(),
+            nn.LayerNorm(hidden),
+            nn.Tanh(),
             layer_init(nn.Linear(hidden, hidden)),
-            nn.ReLU(),
+            nn.LayerNorm(hidden),
+            nn.Tanh(),
             layer_init(nn.Linear(hidden, 1)),
         )
 
