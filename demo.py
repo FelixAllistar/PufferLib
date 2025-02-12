@@ -329,7 +329,8 @@ def train(args, make_env, policy_cls, rnn_cls, wandb,
 
     uptime = data.profile.uptime
     steps_evaluated = 0
-    steps_to_eval = int(args['train']['total_timesteps'] * eval_frac)
+    # steps_to_eval = int(args['train']['total_timesteps'] * eval_frac)
+    steps_to_eval = int(args['train']['eval_timesteps'])
     batch_size = args['train']['batch_size']
     while steps_evaluated < steps_to_eval:
         stats, _ = clean_pufferl.evaluate(data)
