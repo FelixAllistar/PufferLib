@@ -31,8 +31,7 @@ def make_policy(env, policy_cls, rnn_cls, args):
         policy = rnn_cls(env, policy, **args['rnn'])
         policy = pufferlib.cleanrl.RecurrentPolicy(policy)
     else:
-        if not isinstance(policy, pufferlib.cleanrl.Policy):
-            policy = pufferlib.cleanrl.Policy(policy)
+        policy = pufferlib.cleanrl.Policy(policy)
 
     return policy.to(args['train']['device'])
 

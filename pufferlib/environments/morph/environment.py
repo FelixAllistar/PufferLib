@@ -9,25 +9,39 @@ import numpy as np
 
 import pufferlib
 
-def env_creator(name='morph'):
+
+def env_creator(name="morph"):
     return functools.partial(make, name)
- 
+
+
 def make(name, **kwargs):
     return PHCPufferEnv(name, **kwargs)
 
+
 class PHCPufferEnv(pufferlib.PufferEnv):
-    def __init__(self, name, motion_file, has_self_collision, num_envs=32, device_type="cuda",
-            exp_name='morph', clip_actions=True, device_id=0, headless=True, log_interval=32):
-        self.render_mode = 'native'
+    def __init__(
+        self,
+        name,
+        motion_file,
+        has_self_collision,
+        num_envs=32,
+        device_type="cuda",
+        exp_name="morph",
+        clip_actions=True,
+        device_id=0,
+        headless=True,
+        log_interval=32,
+    ):
+        self.render_mode = "native"
         cfg = {
-            'env': {
-                'num_envs': num_envs,
-                'motion_file': motion_file,
+            "env": {
+                "num_envs": num_envs,
+                "motion_file": motion_file,
             },
-            'robot': {
-                'has_self_collision': has_self_collision,
+            "robot": {
+                "has_self_collision": has_self_collision,
             },
-            'exp_name': exp_name,
+            "exp_name": exp_name,
         }
         if headless:
             self.env = HumanoidPHC(cfg, device_type=device_type, device_id=device_id, headless=headless)
@@ -53,8 +67,6 @@ class PHCPufferEnv(pufferlib.PufferEnv):
         )
 
         super().__init__(buffers)
-
-        self.rew_rms_norm = RunningMeanStd((1,), self.device)
 
         self.log_interval = log_interval
         self.episode_returns = torch.zeros(self.num_envs, dtype=torch.float32, device=self.device)
@@ -99,7 +111,7 @@ class PHCPufferEnv(pufferlib.PufferEnv):
         if self.tick % self.log_interval == 0:
             info = self.mean_and_log()
 
-        # Simple reward scaling
+        # NOTE: Simple reward scaling
         rew = self.rewards.clone() * 0.01
 
         return self.observations, rew, self.terminals, self.truncations, info
@@ -122,58 +134,6 @@ class PHCPufferEnv(pufferlib.PufferEnv):
         self._infos["episode_length"].clear()
 
         return [info]
-
-
-class RunningMeanStd:
-    def __init__(self, insize, device, epsilon=1e-05, clip=5.0, scale=0.01):
-        self.insize = insize
-        self.epsilon = epsilon
-        self.axis = [0]
-        self.mean_size = insize[0]
-        self.clip = clip
-        self.scale = scale
-        
-        # Instead of register_buffer, just use regular tensors
-        self.running_mean = torch.zeros(insize, dtype=torch.float32).to(device)
-        self.running_var = torch.ones(insize, dtype=torch.float32).to(device)
-        self.count = torch.ones((), dtype=torch.float32).to(device)
-        self._frozen = False
-
-    def freeze(self):
-        self._frozen = True
-
-    def unfreeze(self):
-        self._frozen = False
-
-    def __call__(self, input):
-        y = (input - self.running_mean) / torch.sqrt(self.running_var + self.epsilon)
-        y = torch.clamp(y, min=-self.clip, max=self.clip) * self.scale
-
-        if not self._frozen:
-            mean = input.mean(self.axis)
-            var = input.var(self.axis)
-            new_mean, new_var, new_count = update_mean_var_count_from_moments(
-                self.running_mean, self.running_var, self.count, mean, var, input.size()[0]
-            )
-            self.running_mean, self.running_var, self.count = new_mean, new_var, new_count
-            
-        return y
-
-
-@torch.jit.script
-def update_mean_var_count_from_moments(mean, var, count, batch_mean, batch_var, batch_count):
-    # type: (Tensor, Tensor, Tensor, Tensor, Tensor, int) -> Tuple[Tensor, Tensor, Tensor]
-    delta = batch_mean - mean
-    tot_count = count + batch_count
-    new_mean = mean + delta * batch_count / tot_count
-    m_a = var * count
-    m_b = batch_var * batch_count
-    M2 = m_a + m_b + delta**2 * count * batch_count / tot_count
-    new_var = M2 / tot_count
-    new_count = tot_count
-    return new_mean, new_var, new_count
-
-
 
 
 if __name__ == "__main__":
@@ -199,9 +159,9 @@ if __name__ == "__main__":
         print(f"Steps: {steps}, SPS: {sps}")
 
     env = PHCPufferEnv(
-        name = "morph",
-        motion_file = args.motion_file,
-        has_self_collision = not args.disable_self_collision,
-        num_envs = args.num_envs,
+        name="morph",
+        motion_file=args.motion_file,
+        has_self_collision=not args.disable_self_collision,
+        num_envs=args.num_envs,
     )
     test_perf(env)
