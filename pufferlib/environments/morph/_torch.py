@@ -13,14 +13,13 @@ class Policy(nn.Module):
         super().__init__()
         self.is_continuous = True
 
-        self.actor_mlp = nn.Sequential(
-            layer_init(nn.Linear(input_dim, hidden)),
-            nn.ReLU(),
-            layer_init(nn.Linear(hidden, hidden)),
-            nn.ReLU(),
-        )
+        # self.actor_mlp = nn.Sequential(
+        #     layer_init(nn.Linear(input_dim, hidden)),
+        #     nn.ReLU(),
+        #     layer_init(nn.Linear(hidden, hidden)),
+        #     nn.ReLU(),
+        # )
  
-        '''
         self.actor_mlp = nn.Sequential(
             layer_init(nn.Linear(input_dim, 2048)),
             nn.SiLU(),
@@ -35,14 +34,14 @@ class Policy(nn.Module):
             layer_init(nn.Linear(512, hidden)),
             nn.SiLU(),
         )
-        '''
-        '''
-        self.mu = nn.Linear(hidden, action_dim)
+
+        self.mu = layer_init(nn.Linear(hidden, action_dim), std=0.01)
         self.sigma = nn.Parameter(
             torch.zeros(action_dim, requires_grad=False, dtype=torch.float32),
             requires_grad=False,
         )
         nn.init.constant_(self.sigma, -2.9)
+
         '''
         self.mu = pufferlib.pytorch.layer_init(
             nn.Linear(hidden, action_dim), std=0.01)
@@ -56,8 +55,8 @@ class Policy(nn.Module):
             nn.ReLU(),
             layer_init(nn.Linear(hidden, 1)),
         )
-
         '''
+
         self.critic_mlp = nn.Sequential(
             layer_init(nn.Linear(input_dim, 2048)),
             nn.SiLU(),
@@ -69,10 +68,10 @@ class Policy(nn.Module):
             nn.SiLU(),
             layer_init(nn.Linear(1024, 512)),
             nn.SiLU(),
-            layer_init(nn.Linear(512, action_dim)),
+            layer_init(nn.Linear(512, hidden)),
             nn.SiLU(),
+            layer_init(nn.Linear(hidden, 1)),
         )
-        '''
         # self.value = nn.Linear(hidden, 1)
 
         ### Discriminator
