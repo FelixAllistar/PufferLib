@@ -36,7 +36,7 @@ class Policy(nn.Module):
         # )
 
         self.mu = nn.Sequential(
-            nn.Tanh(),
+            # nn.Tanh(),
             layer_init(nn.Linear(hidden, action_dim), std=0.01),
         )
         self.sigma = nn.Parameter(
