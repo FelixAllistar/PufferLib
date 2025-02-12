@@ -54,6 +54,8 @@ class PHCPufferEnv(pufferlib.PufferEnv):
 
         super().__init__(buffers)
 
+        self.value_norm_rms = RunningMeanStd((1,), self.device)
+
         self.log_interval = log_interval
         self.episode_returns = torch.zeros(self.num_envs, dtype=torch.float32, device=self.device)
         self.episode_lengths = torch.zeros(self.num_envs, dtype=torch.int32, device=self.device)
@@ -97,7 +99,10 @@ class PHCPufferEnv(pufferlib.PufferEnv):
         if self.tick % self.log_interval == 0:
             info = self.mean_and_log()
 
-        return self.observations, self.rewards, self.terminals, self.truncations, info
+        # Normalize the value, after updating the episode return
+        rew = self.value_norm_rms(self.rewards)
+
+        return self.observations, rew, self.terminals, self.truncations, info
 
     def render(self):
         return self.env.render()
@@ -117,6 +122,58 @@ class PHCPufferEnv(pufferlib.PufferEnv):
         self._infos["episode_length"].clear()
 
         return [info]
+
+
+class RunningMeanStd:
+    def __init__(self, insize, device, epsilon=1e-05, clip=5.0, scale=0.01):
+        self.insize = insize
+        self.epsilon = epsilon
+        self.axis = [0]
+        self.mean_size = insize[0]
+        self.clip = clip
+        self.scale = scale
+        
+        # Instead of register_buffer, just use regular tensors
+        self.running_mean = torch.zeros(insize, dtype=torch.float32).to(device)
+        self.running_var = torch.ones(insize, dtype=torch.float32).to(device)
+        self.count = torch.ones((), dtype=torch.float32).to(device)
+        self._frozen = False
+
+    def freeze(self):
+        self._frozen = True
+
+    def unfreeze(self):
+        self._frozen = False
+
+    def __call__(self, input):
+        y = (input - self.running_mean) / torch.sqrt(self.running_var + self.epsilon)
+        y = torch.clamp(y, min=-self.clip, max=self.clip) * self.scale
+
+        if not self._frozen:
+            mean = input.mean(self.axis)
+            var = input.var(self.axis)
+            new_mean, new_var, new_count = update_mean_var_count_from_moments(
+                self.running_mean, self.running_var, self.count, mean, var, input.size()[0]
+            )
+            self.running_mean, self.running_var, self.count = new_mean, new_var, new_count
+            
+        return y
+
+
+@torch.jit.script
+def update_mean_var_count_from_moments(mean, var, count, batch_mean, batch_var, batch_count):
+    # type: (Tensor, Tensor, Tensor, Tensor, Tensor, int) -> Tuple[Tensor, Tensor, Tensor]
+    delta = batch_mean - mean
+    tot_count = count + batch_count
+    new_mean = mean + delta * batch_count / tot_count
+    m_a = var * count
+    m_b = batch_var * batch_count
+    M2 = m_a + m_b + delta**2 * count * batch_count / tot_count
+    new_var = M2 / tot_count
+    new_count = tot_count
+    return new_mean, new_var, new_count
+
+
 
 
 if __name__ == "__main__":
