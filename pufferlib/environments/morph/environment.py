@@ -9,25 +9,39 @@ import numpy as np
 
 import pufferlib
 
-def env_creator(name='morph'):
+
+def env_creator(name="morph"):
     return functools.partial(make, name)
- 
+
+
 def make(name, **kwargs):
     return PHCPufferEnv(name, **kwargs)
 
+
 class PHCPufferEnv(pufferlib.PufferEnv):
-    def __init__(self, name, motion_file, has_self_collision, num_envs=32, device_type="cuda",
-            exp_name='morph', clip_actions=True, device_id=0, headless=True, log_interval=32):
-        self.render_mode = 'native'
+    def __init__(
+        self,
+        name,
+        motion_file,
+        has_self_collision,
+        num_envs=32,
+        device_type="cuda",
+        exp_name="morph",
+        clip_actions=True,
+        device_id=0,
+        headless=True,
+        log_interval=32,
+    ):
+        self.render_mode = "native"
         cfg = {
-            'env': {
-                'num_envs': num_envs,
-                'motion_file': motion_file,
+            "env": {
+                "num_envs": num_envs,
+                "motion_file": motion_file,
             },
-            'robot': {
-                'has_self_collision': has_self_collision,
+            "robot": {
+                "has_self_collision": has_self_collision,
             },
-            'exp_name': exp_name,
+            "exp_name": exp_name,
         }
         if headless:
             self.env = HumanoidPHC(cfg, device_type=device_type, device_id=device_id, headless=headless)
@@ -88,8 +102,8 @@ class PHCPufferEnv(pufferlib.PufferEnv):
             self.episode_returns[done_indices] = 0
             self.episode_lengths[done_indices] = 0
 
-        self.episode_returns += self.rewards
-        self.episode_lengths += 1
+        self.episode_returns[~self.terminals] += self.rewards[~self.terminals]
+        self.episode_lengths[~self.terminals] += 1
 
         # TODO: self.env.extras has infos. Extract useful info?
         info = []
@@ -97,7 +111,10 @@ class PHCPufferEnv(pufferlib.PufferEnv):
         if self.tick % self.log_interval == 0:
             info = self.mean_and_log()
 
-        return self.observations, self.rewards, self.terminals, self.truncations, info
+        # NOTE: Simple reward scaling
+        rew = self.rewards.clone() * 0.01
+
+        return self.observations, rew, self.terminals, self.truncations, info
 
     def render(self):
         return self.env.render()
@@ -142,9 +159,9 @@ if __name__ == "__main__":
         print(f"Steps: {steps}, SPS: {sps}")
 
     env = PHCPufferEnv(
-        name = "morph",
-        motion_file = args.motion_file,
-        has_self_collision = not args.disable_self_collision,
-        num_envs = args.num_envs,
+        name="morph",
+        motion_file=args.motion_file,
+        has_self_collision=not args.disable_self_collision,
+        num_envs=args.num_envs,
     )
     test_perf(env)

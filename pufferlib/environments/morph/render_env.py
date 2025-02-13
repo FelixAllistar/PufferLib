@@ -31,14 +31,14 @@ def agt_color(aidx):
 
 class HumanoidRenderEnv(HumanoidPHC):
     def __init__(
-            self,
-            cfg,
-            sim_params=None,
-            physics_engine=gymapi.SIM_PHYSX,
-            device_type="cuda",
-            device_id=0,  # Allow multi-gpu setting
-            headless=True):
- 
+        self,
+        cfg,
+        sim_params=None,
+        physics_engine=gymapi.SIM_PHYSX,
+        device_type="cuda",
+        device_id=0,  # Allow multi-gpu setting
+        headless=True,
+    ):
         ### Flags like
         self.flag_server_mode = False
         self.flag_show_traj = True
@@ -76,7 +76,7 @@ class HumanoidRenderEnv(HumanoidPHC):
             sys.exit()
 
         if self.viewer or self.flag_server_mode:
-            #self._update_camera()
+            self._update_camera()
             self._update_marker()
 
         # check for keyboard events
@@ -103,8 +103,16 @@ class HumanoidRenderEnv(HumanoidPHC):
             elif evt.action == "show_progress" and evt.value > 0:
                 print("Progress ", self.progress_buf)
             elif evt.action == "apply_force" and evt.value > 0:
-                forces = torch.zeros((1, self._rigid_body_state.shape[0], 3), device=self.device, dtype=torch.float)
-                torques = torch.zeros((1, self._rigid_body_state.shape[0], 3), device=self.device, dtype=torch.float)
+                forces = torch.zeros(
+                    (1, self._rigid_body_state.shape[0], 3),
+                    device=self.device,
+                    dtype=torch.float,
+                )
+                torques = torch.zeros(
+                    (1, self._rigid_body_state.shape[0], 3),
+                    device=self.device,
+                    dtype=torch.float,
+                )
                 # forces[:, 8, :] = -800
                 for i in range(self._rigid_body_state.shape[0] // self.num_bodies):
                     forces[:, i * self.num_bodies + 3, :] = -3500
@@ -117,12 +125,10 @@ class HumanoidRenderEnv(HumanoidPHC):
                     gymapi.ENV_SPACE,
                 )
             elif evt.action == "prev_env" and evt.value > 0:
-                self.viewing_env_idx = (self.viewing_env_idx - 1) % self.num_envs
-                # self.recorder_camera_handle = self.recorder_camera_handles[self.viewing_env_idx]
+                self.viewing_env_idx = (self.viewing_env_idx - 1) % min(self.num_envs, 10)
                 print("\nShowing env: ", self.viewing_env_idx)
             elif evt.action == "next_env" and evt.value > 0:
-                self.viewing_env_idx = (self.viewing_env_idx + 1) % self.num_envs
-                # self.recorder_camera_handle = self.recorder_camera_handles[self.viewing_env_idx]
+                self.viewing_env_idx = (self.viewing_env_idx + 1) % min(self.num_envs, 10)
                 print("\nShowing env: ", self.viewing_env_idx)
             elif evt.action == "resample_motion" and evt.value > 0:
                 self.resample_motions()
@@ -158,7 +164,9 @@ class HumanoidRenderEnv(HumanoidPHC):
                     self.curr_video_file_name = self._video_path % curr_date_time
                     self.curr_states_file_name = self._states_path % curr_date_time
                     self.writer = imageio.get_writer(
-                        self.curr_video_file_name, fps=int(1 / self.dt), macro_block_size=None
+                        self.curr_video_file_name,
+                        fps=int(1 / self.dt),
+                        macro_block_size=None,
                     )
                 self.writer.append_data(self.color_image)
 
@@ -196,8 +204,6 @@ class HumanoidRenderEnv(HumanoidPHC):
             self.gym.subscribe_viewer_keyboard_event(self.viewer, gymapi.KEY_P, "show_progress")
             self.gym.subscribe_viewer_keyboard_event(self.viewer, gymapi.KEY_O, "change_color")
 
-            self.gym.subscribe_viewer_keyboard_event(self.viewer, gymapi.KEY_SPACE, "PAUSE")
-
             # set the camera position based on up axis
             sim_params = self.gym.get_sim_params(self.sim)
             if sim_params.up_axis == gymapi.UP_AXIS_Z:
@@ -226,18 +232,18 @@ class HumanoidRenderEnv(HumanoidPHC):
         states_out = osp.join("output", "states")
         os.makedirs(rendering_out, exist_ok=True)
         os.makedirs(states_out, exist_ok=True)
-        self.cfg_name = self.cfg['exp_name']
+        self.cfg_name = self.cfg["exp_name"]
         self._video_path = osp.join(rendering_out, f"{self.cfg_name}-%s.mp4")
         self._states_path = osp.join(states_out, f"{self.cfg_name}-%s.pkl")
         # self.gym.draw_env_rigid_contacts(self.viewer, self.envs[1], gymapi.Vec3(0.9, 0.3, 0.3), 1.0, True)
 
     def _init_camera(self):
         self.gym.refresh_actor_root_state_tensor(self.sim)
-        cam_pos = gymapi.Vec3(20.0, 25.0, 3.0)
-        cam_target = gymapi.Vec3(10.0, 15.0, 0.0)
+        self._init_cam_pos = gymapi.Vec3(20.0, 25.0, 3.0)
+        self._init_cam_target = gymapi.Vec3(10.0, 15.0, 0.0)
 
         if self.viewer:
-            self.gym.viewer_camera_look_at(self.viewer, None, cam_pos, cam_target)
+            self.gym.viewer_camera_look_at(self.viewer, None, self._init_cam_pos, self._init_cam_target)
 
     def _create_envs(self):
         if self.viewer or self.flag_server_mode:
@@ -251,7 +257,7 @@ class HumanoidRenderEnv(HumanoidPHC):
         super()._create_envs()
 
     def _load_marker_asset(self):
-        asset_root = str("resources/morph/urdf/")
+        asset_root = str("resources/morph")
 
         asset_options = gymapi.AssetOptions()
         asset_options.angular_damping = 0.0
@@ -265,7 +271,7 @@ class HumanoidRenderEnv(HumanoidPHC):
         self._marker_asset_small = self.gym.load_asset(self.sim, asset_root, "traj_marker_small.urdf", asset_options)
 
     def _load_proj_asset(self):
-        asset_root = str("resources/morph/urdf/")
+        asset_root = str("resources/morph")
 
         small_asset_file = "block_projectile.urdf"
         # small_asset_file = "ball_medium.urdf"
@@ -301,13 +307,31 @@ class HumanoidRenderEnv(HumanoidPHC):
         default_pose = gymapi.Transform()
         for i in range(self.num_bodies):
             marker_handle = self.gym.create_actor(
-                env_ptr, self._marker_asset, default_pose, "marker", self.num_envs + 10, 1, 0
+                env_ptr,
+                self._marker_asset,
+                default_pose,
+                "marker",
+                self.num_envs + 10,
+                1,
+                0,
             )
 
             if i in self._track_bodies_id:
-                self.gym.set_rigid_body_color(env_ptr, marker_handle, 0, gymapi.MESH_VISUAL, gymapi.Vec3(0.8, 0.0, 0.0))
+                self.gym.set_rigid_body_color(
+                    env_ptr,
+                    marker_handle,
+                    0,
+                    gymapi.MESH_VISUAL,
+                    gymapi.Vec3(0.8, 0.0, 0.0),
+                )
             else:
-                self.gym.set_rigid_body_color(env_ptr, marker_handle, 0, gymapi.MESH_VISUAL, gymapi.Vec3(1.0, 1.0, 1.0))
+                self.gym.set_rigid_body_color(
+                    env_ptr,
+                    marker_handle,
+                    0,
+                    gymapi.MESH_VISUAL,
+                    gymapi.Vec3(1.0, 1.0, 1.0),
+                )
             self._marker_handles[env_id].append(marker_handle)
 
     def _build_proj(self, env_id, env_ptr):
@@ -373,23 +397,19 @@ class HumanoidRenderEnv(HumanoidPHC):
         self.gym.refresh_actor_root_state_tensor(self.sim)
         env_idx = self.viewing_env_idx
 
-        char_root_pos = np.array(self.env_origins[env_idx])
-        char_root_pos += self._humanoid_root_states[env_idx, 0:3].cpu().numpy()
+        if env_idx == 0:
+            new_cam_pos = self._init_cam_pos
+            new_cam_target = self._init_cam_target
 
-        cam_trans = self.gym.get_viewer_camera_transform(self.viewer, None)
-
-        cam_pos = np.array([cam_trans.p.x, cam_trans.p.y, cam_trans.p.z])
-        cam_delta = cam_pos - self._cam_prev_char_pos
-
-        new_cam_target = gymapi.Vec3(char_root_pos[0], char_root_pos[1], 1.0)
-        new_cam_pos = gymapi.Vec3(char_root_pos[0] + cam_delta[0], char_root_pos[1] + cam_delta[1], cam_pos[2])
+        else:
+            char_root_pos = np.array(self.env_origins[env_idx])
+            new_cam_target = gymapi.Vec3(char_root_pos[0], char_root_pos[1], 1.0)
+            new_cam_pos = gymapi.Vec3(char_root_pos[0], char_root_pos[1] - 4.0, 2.0)
 
         self.gym.set_camera_location(self.recorder_camera_handle, self.envs[env_idx], new_cam_pos, new_cam_target)
 
         if self.viewer:
             self.gym.viewer_camera_look_at(self.viewer, None, new_cam_pos, new_cam_target)
-
-        self._cam_prev_char_pos[:] = char_root_pos
 
     def _update_marker(self):
         self._marker_pos[:] = 1000
@@ -433,7 +453,13 @@ class HumanoidRenderEnv(HumanoidPHC):
         grid_x, grid_y = torch.meshgrid(x, y)
 
         self.num_root_points = grid_x.numel()
-        points = torch.zeros(self.num_envs, self.num_root_points, 3, device=self.device, requires_grad=False)
+        points = torch.zeros(
+            self.num_envs,
+            self.num_root_points,
+            3,
+            device=self.device,
+            requires_grad=False,
+        )
         points[:, :, 0] = grid_x.flatten()
         points[:, :, 1] = grid_y.flatten()
         return points
@@ -484,7 +510,10 @@ class HumanoidRenderEnv(HumanoidPHC):
             root_states_seg = data_to_dump["root_states"][start:end, humanoid_index]
 
             body_quat = torch.cat(
-                [root_states_seg[:, None, 3:7], exp_map_to_quat(dof_pos_seg.reshape(B, -1, 3))],
+                [
+                    root_states_seg[:, None, 3:7],
+                    exp_map_to_quat(dof_pos_seg.reshape(B, -1, 3)),
+                ],
                 dim=1,
             )
             motion_dump = {

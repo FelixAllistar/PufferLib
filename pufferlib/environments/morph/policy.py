@@ -1,134 +1,141 @@
-import numpy as np
-
 import torch
-import torch.nn as nn
-
-import pufferlib
-import pufferlib.cleanrl
-
+from torch import nn
 from pufferlib.pytorch import layer_init
 
+import pufferlib.models
 
-# This replaces gymnasium's NormalizeObservation wrapper
-# NOTE: Tried BatchNorm1d with momentum=None, but the policy did not learn. Check again later.
-# CHECK ME: To normalize obs, dividing by a constant is good, but each mujoco/brax env has a different scale...
-class RunningNorm(nn.Module):
-    def __init__(self, shape: int, epsilon=1e-5, clip=10.0):
+
+class Recurrent(pufferlib.models.LSTMWrapper):
+    def __init__(self, env, policy, input_size=512, hidden_size=512, num_layers=1):
+        super().__init__(env, policy, input_size, hidden_size, num_layers)
+
+
+class Policy(nn.Module):
+    def __init__(self, env, demo_size=358, hidden_size=512):
         super().__init__()
-        self.register_buffer("running_mean", torch.zeros((1, shape), dtype=torch.float32))
-        self.register_buffer("running_var", torch.ones((1, shape), dtype=torch.float32))
-        self.register_buffer("count", torch.ones(1, dtype=torch.float32))
-        self.epsilon = epsilon
-        self.clip = clip
-
-    def forward(self, x):
-        return torch.clamp(
-            (x - self.running_mean.expand_as(x)) / torch.sqrt(self.running_var.expand_as(x) + self.epsilon),
-            -self.clip,
-            self.clip,
-        )
-
-    @torch.jit.ignore
-    def update(self, x):
-        # NOTE: Separated update from forward to compile the policy
-        # update() must be called to update the running mean and var
-        if self.training:
-            with torch.no_grad():
-                x = x.float()
-                assert x.dim() == 2, "x must be 2D"
-                mean = x.mean(0, keepdim=True)
-                var = x.var(0, unbiased=False, keepdim=True)
-                weight = 1 / self.count
-                self.running_mean = self.running_mean * (1 - weight) + mean * weight
-                self.running_var = self.running_var * (1 - weight) + var * weight
-                self.count += 1
-
-    # NOTE: below are needed to torch.save() the model
-    @torch.jit.ignore
-    def __getstate__(self):
-        return {
-            "running_mean": self.running_mean,
-            "running_var": self.running_var,
-            "count": self.count,
-            "epsilon": self.epsilon,
-            "clip": self.clip,
-        }
-
-    @torch.jit.ignore
-    def __setstate__(self, state):
-        self.running_mean = state["running_mean"]
-        self.running_var = state["running_var"]
-        self.count = state["count"]
-        self.epsilon = state["epsilon"]
-        self.clip = state["clip"]
-
-
-class Policy(pufferlib.cleanrl.Policy):
-    def __init__(self, envs, hidden_size=512):
-        super().__init__(policy=None)  # Just to get the right init
         self.is_continuous = True
 
-        self.obs_size = np.array(envs.single_observation_space.shape).prod()
-        action_size = np.prod(envs.single_action_space.shape)
+        input_size = env.single_observation_space.shape[0]
+        action_size = env.single_action_space.shape[0]
 
-        self.obs_norm = torch.jit.script(RunningNorm(self.obs_size))
-
-        # Learn to walk in 20 min: https://arxiv.org/abs/2208.07860
-        # Used LayerNorm to regularize the critic
-        self.critic = nn.Sequential(
-            layer_init(nn.Linear(self.obs_size, hidden_size)),
-            nn.LayerNorm(hidden_size),
-            nn.Tanh(),
-            layer_init(nn.Linear(hidden_size, hidden_size)),
-            nn.LayerNorm(hidden_size),
-            nn.Tanh(),
-            layer_init(nn.Linear(hidden_size, 1), std=1.0),
-        )
-
-        self.actor_encoder = nn.Sequential(
-            layer_init(nn.Linear(self.obs_size, hidden_size)),
+        self.actor_mlp = nn.Sequential(
+            layer_init(nn.Linear(input_size, hidden_size)),
             nn.Tanh(),
             layer_init(nn.Linear(hidden_size, hidden_size)),
             nn.Tanh(),
         )
-        self.actor_decoder_mean = layer_init(nn.Linear(hidden_size, action_size), std=0.01)
-        self.actor_decoder_logstd = nn.Parameter(torch.zeros(1, action_size))
 
-    def get_value(self, x):
-        x = x.float()
-        x = self.obs_norm(x)
-        return self.critic(x)
+        # NOTE: Original PHC network
+        # self.actor_mlp = nn.Sequential(
+        #     layer_init(nn.Linear(input_dim, 2048)),
+        #     nn.SiLU(),
+        #     layer_init(nn.Linear(2048, 1536)),
+        #     nn.SiLU(),
+        #     layer_init(nn.Linear(1536, 1024)),
+        #     nn.SiLU(),
+        #     layer_init(nn.Linear(1024, 1024)),
+        #     nn.SiLU(),
+        #     layer_init(nn.Linear(1024, 512)),
+        #     nn.SiLU(),
+        #     layer_init(nn.Linear(512, hidden)),
+        #     nn.SiLU(),
+        # )
 
-    def get_action_and_value(self, x, action=None):
-        x = x.float()
-        x = self.obs_norm(x)
-        batch = x.shape[0]
+        self.mu = nn.Sequential(
+            # nn.Tanh(),
+            layer_init(nn.Linear(hidden_size, action_size), std=0.01),
+        )
 
-        encoding = self.actor_encoder(x)
-        action_mean = self.actor_decoder_mean(encoding)
-        action_logstd = self.actor_decoder_logstd.expand_as(action_mean)
-        action_std = torch.exp(action_logstd)
+        # NOTE: Original PHC uses a constant std. Something to experiment?
+        self.sigma = nn.Parameter(
+            torch.zeros(action_size, requires_grad=False, dtype=torch.float32),
+            requires_grad=False,
+        )
+        nn.init.constant_(self.sigma, -2.9)
 
-        # Tried LeanRL, but got error.
-        # NOTE: Work around for CUDA graph capture. This produces nans, so disabling for now
-        # if torch.cuda.is_current_stream_capturing():
-        #     if action is None:
-        #         action = action_mean + action_std * torch.randn_like(action_mean)
+        ### Separate Critic
+        self.critic_mlp = nn.Sequential(
+            layer_init(nn.Linear(input_size, hidden_size)),
+            nn.Tanh(),
+            layer_init(nn.Linear(hidden_size, hidden_size)),
+            nn.Tanh(),
+            layer_init(nn.Linear(hidden_size, hidden_size)),
+            nn.Tanh(),
+            layer_init(nn.Linear(hidden_size, 1)),
+        )
 
-        #     # Avoid using the torch.distributions.Normal
-        #     log_probs = (-0.5 * (((action - action_mean) / action_std) ** 2 + 2 * action_std.log() + torch.log(torch.tensor(2 * torch.pi)))).sum(1)
-        #     logits_entropy = (action_std.log() + 0.5 * torch.log(torch.tensor(2 * torch.pi * torch.e))).sum(1)
+        # NOTE: Original PHC network
+        # self.critic_mlp = nn.Sequential(
+        #     layer_init(nn.Linear(input_dim, 2048)),
+        #     nn.SiLU(),
+        #     layer_init(nn.Linear(2048, 1536)),
+        #     nn.SiLU(),
+        #     layer_init(nn.Linear(1536, 1024)),
+        #     nn.SiLU(),
+        #     layer_init(nn.Linear(1024, 1024)),
+        #     nn.SiLU(),
+        #     layer_init(nn.Linear(1024, 512)),
+        #     nn.SiLU(),
+        #     layer_init(nn.Linear(512, hidden)),
+        #     nn.SiLU(),
+        #     layer_init(nn.Linear(hidden, 1)),
+        # )
+        # self.value = nn.Linear(hidden, 1)
 
-        # else:
+        ### Discriminator
+        # NOTE: Check the demo_size from the env
+        self._disc_mlp = nn.Sequential(
+            layer_init(nn.Linear(demo_size, hidden_size)),
+            nn.ReLU(),
+            # layer_init(nn.Linear(1024, hidden)),
+            # nn.ReLU(),
+        )
+        self._disc_logits = layer_init(torch.nn.Linear(hidden_size, 1))
 
-        logits = torch.distributions.Normal(action_mean, action_std)
-        if action is None:
-            action = logits.sample()
-        log_probs = logits.log_prob(action.view(batch, -1)).sum(1)
-        logits_entropy = logits.entropy().sum(1)
+        # NOTE: A hack to normalize the obs
+        self.obs_mean = None
 
-        # NOTE: entropy can go negative, when std is small (e.g. 0.1)
-        return action, log_probs, logits_entropy, self.critic(x)
+        self.obs_pointer = None
 
-    def update_obs_stats(self, x):
-        self.obs_norm.update(x)
+    def forward(self, observations):
+        if self.obs_mean is None:
+            self.obs_mean = torch.mean(observations, dim=0)
+            self.obs_std = torch.std(observations, dim=0)
+
+        observations = torch.clamp((observations - self.obs_mean) / self.obs_std, -10.0, 10.0)
+
+        hidden, lookup = self.encode_observations(observations)
+        actions, _ = self.decode_actions(hidden, lookup)
+        value = self.critic_mlp(observations)
+        return actions, value
+
+    def encode_observations(self, obs):
+        # Remember the obs to use in the critic
+        self.obs_pointer = obs
+        return self.actor_mlp(obs), None
+
+    def decode_actions(self, hidden, lookup=None):
+        mu = self.mu(hidden)
+        std = torch.exp(self.sigma).expand_as(mu)
+        probs = torch.distributions.Normal(mu, std)
+
+        # NOTE: Separate critic network takes input directly
+        value = self.critic_mlp(self.obs_pointer)
+        return probs, value
+
+    def discriminate(self, amp_obs):
+        disc_mlp_out = self._disc_mlp(amp_obs)
+        disc_logits = self._disc_logits(disc_mlp_out)
+        return disc_logits
+
+    def disc_logit_weights(self):
+        return torch.flatten(self._disc_logits.weight)
+
+    def disc_weights(self):
+        weights = []
+        for m in self._disc_mlp.modules():
+            if isinstance(m, nn.Linear):
+                weights.append(torch.flatten(m.weight))
+
+        weights.append(torch.flatten(self._disc_logits.weight))
+        return weights

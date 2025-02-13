@@ -356,7 +356,8 @@ def close(data):
         artifact = data.wandb.Artifact(artifact_name, type="model")
         model_path = save_checkpoint(data)
         artifact.add_file(model_path)
-        data.wandb.run.log_artifact(artifact)
+        # NOTE: PHC model is large to save for all sweep runs
+        # data.wandb.run.log_artifact(artifact)
         data.wandb.finish()
 
 class Profile:
