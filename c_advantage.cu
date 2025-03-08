@@ -61,13 +61,12 @@ __global__ void advantage_kernel(
         return;
     }
 
-    float adv = 0.0f;
+    float ret = 0.0f;
     for (int j = 0; j < k; j++) {
         int idx = i * horizon + j;
-        adv += (buf[idx] / adv_sum) * (reward_block[idx] - values_mean[idx]);
-        buf[idx] /= adv_sum;
+        ret += buf[idx]*reward_block[idx];
     }
-    advantages[i] = adv;
+    advantages[i] = ret - values_mean[i];
 }
 
 // Pybind11 module definition

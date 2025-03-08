@@ -328,6 +328,7 @@ def train(data):
 
             advantages = advantages.cpu().numpy()
             torch.cuda.synchronize()
+            breakpoint()
                 
             experience.flatten_batch(advantages, reward_block, mask_block)
             torch.cuda.synchronize()
@@ -359,6 +360,7 @@ def train(data):
                     val_std = experience.b_values_std[mb]
                     rew_block = experience.b_reward_block[mb]
                     mask_block = experience.b_mask_block[mb]
+                    ret = experience.b_returns[mb]
                 else:
                     val = experience.b_values[mb]
                     ret = experience.b_returns[mb]
@@ -418,7 +420,11 @@ def train(data):
                     newvalue_var = torch.square(newvalue_std)
                     criterion = torch.nn.GaussianNLLLoss(reduction='none')
                     #v_loss = criterion(newvalue_mean[:, :32], rew_block[:, :32], newvalue_var[:, :32])
-                    v_loss = criterion(newvalue_mean, rew_block, newvalue_var)
+                    val_diff = newvalue_mean[:, :-1] - newvalue_mean[:, 1:]
+                    ret = ret[:, :-1]
+                    var = newvalue_var[:, :-1]
+                    v_loss = criterion(val_diff, ret, var)
+                    #v_loss = criterion(newvalue_mean, rew_block, newvalue_var)
                     #TODO: Count mask and sum
                     # There is going to have to be some sort of norm here.
                     # Right now, learning works at different horizons, but you need
@@ -428,7 +434,9 @@ def train(data):
                     # Faster than masking
                     #v_loss = (v_loss*mask_block[:, :32]).sum() / mask_block[:, :32].sum()
                     #v_loss = (v_loss*mask_block).sum() / mask_block.sum()
-                    v_loss = v_loss[mask_block.bool()].mean()
+                    mask = mask_block[:, :-1].bool()
+                    v_loss = v_loss[mask].mean()
+                    #v_loss = v_loss[mask_block.bool()].mean()
                 elif config.clip_vloss:
                     v_loss_unclipped = (newvalue - ret) ** 2
                     v_clipped = val + torch.clamp(
@@ -837,6 +845,9 @@ class Experience:
 
             self.b_values_mean = self.values_mean.to(self.device, non_blocking=True)[b_flat]
             self.b_values_std = self.values_std.to(self.device, non_blocking=True)[b_flat]
+            self.b_returns = self.buf.to(self.device, non_blocking=True).reshape(
+                self.minibatch_rows, self.num_minibatches, self.bptt_horizon, self.p3o_horizon
+                ).transpose(0, 1).reshape(self.num_minibatches, self.minibatch_size, self.p3o_horizon)
         else:
             self.b_values = self.values.to(self.device, non_blocking=True)[b_flat]
             self.returns = advantages + self.values # Check sorting of values here
