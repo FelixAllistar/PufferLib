@@ -8,6 +8,19 @@ import pufferlib.emulation
 import pufferlib.pytorch
 import pufferlib.spaces
 
+class DiaynDiscriminator(nn.Module):
+    def __init__(self, hidden_size, num_skills):
+        super().__init__()
+        self.fc1 = pufferlib.pytorch.layer_init(
+            nn.Linear(hidden_size, hidden_size))
+        self.fc2 = pufferlib.pytorch.layer_init(
+            nn.Linear(hidden_size, num_skills))
+
+    def forward(self, x):
+        s = self.fc1(x)
+        s = torch.relu(s)
+        q = self.fc2(s)
+        return q
 
 class Default(nn.Module):
     '''Default PyTorch policy. Flattens obs and applies a linear layer.
@@ -21,7 +34,7 @@ class Default(nn.Module):
     the recurrent cell into encode_observations and put everything after
     into decode_actions.
     '''
-    def __init__(self, env, hidden_size=128, use_p3o=False, p3o_horizon=32):
+    def __init__(self, env, hidden_size=128, use_p3o=False, p3o_horizon=32, use_diayn=False, diayn_skills=128):
         super().__init__()
         self.hidden_size = hidden_size
         self.is_multidiscrete = isinstance(env.single_action_space,
@@ -37,6 +50,8 @@ class Default(nn.Module):
             self.dtype = pufferlib.pytorch.nativize_dtype(env.emulated)
             input_size = int(sum(np.prod(v.shape) for v in env.env.observation_space.values()))
             self.encoder = nn.Linear(input_size, self.hidden_size)
+        elif use_diayn:
+            self.encoder = nn.Linear(hidden_size + np.prod(env.single_observation_space.shape), hidden_size)
         else:
             self.encoder = nn.Linear(np.prod(env.single_observation_space.shape), hidden_size)
 
@@ -52,6 +67,14 @@ class Default(nn.Module):
                 nn.Linear(hidden_size, env.single_action_space.shape[0]), std=0.01)
             self.decoder_logstd = nn.Parameter(torch.zeros(
                 1, env.single_action_space.shape[0]))
+
+        if use_diayn:
+            #self.diayn_discriminator = DiaynDiscriminator(hidden_size, diayn_skills)
+            self.diayn_discriminator = nn.Sequential(
+                pufferlib.pytorch.layer_init(nn.Linear(hidden_size, hidden_size)),
+                nn.ReLU(),
+                pufferlib.pytorch.layer_init(nn.Linear(hidden_size, diayn_skills)),
+            )
 
         self.use_p3o = use_p3o
         self.p3o_horizon = p3o_horizon
@@ -73,9 +96,9 @@ class Default(nn.Module):
         return self.decode_actions(hidden, lookup), hidden
 
     def forward_train(self, observations):
-        return self.forward(observations)[0]
+        return self.forward(observations)
 
-    def encode_observations(self, observations):
+    def encode_observations(self, observations, diayn_z=None):
         '''Encodes a batch of observations into hidden states. Assumes
         no time dimension (handled by LSTM wrappers).'''
         batch_size = observations.shape[0]
@@ -84,7 +107,13 @@ class Default(nn.Module):
             observations = torch.cat([v.view(batch_size, -1) for v in observations.values()], dim=1)
         else: 
             observations = observations.view(batch_size, -1)
-        return torch.relu(self.encoder(observations.float())), None
+
+        observations = observations.float()
+        if diayn_z is not None:
+            observations = torch.cat([diayn_z, observations], dim=-1)
+
+        obs = torch.relu(self.encoder(observations))
+        return torch.relu(obs), None
 
     def decode_actions(self, hidden, lookup, concat=True, e3b=None):
         '''Decodes a batch of hidden states into (multi)discrete actions.
@@ -134,14 +163,18 @@ class LSTMWrapper(nn.Module):
             elif "weight" in name:
                 nn.init.orthogonal_(param, 1.0)
 
-    def forward(self, x, state):
+    @property
+    def diayn_discriminator(self):
+        return self.policy.diayn_discriminator
+
+    def forward(self, x, state, diayn_z=None):
         '''Forward function for inference. 3x faster than using LSTM directly'''
-        hidden, _ = self.policy.encode_observations(x)
+        hidden, _ = self.policy.encode_observations(x, diayn_z=diayn_z)
         h, c = state
         hidden, c = self.recurrent_cell(hidden, (h, c))
         return self.policy.decode_actions(hidden, None), hidden, (hidden, c)
 
-    def forward_train(self, x, state):
+    def forward_train(self, x, state, diayn_z=None):
         '''Forward function for training. Uses LSTM for fast time-batching'''
         x_shape, space_shape = x.shape, self.obs_shape
         x_n, space_n = len(x_shape), len(space_shape)
@@ -159,7 +192,7 @@ class LSTMWrapper(nn.Module):
             assert state[0].shape[1] == state[1].shape[1] == B
 
         x = x.reshape(B*TT, *space_shape)
-        hidden, lookup = self.policy.encode_observations(x)
+        hidden, lookup = self.policy.encode_observations(x, diayn_z=diayn_z)
         assert hidden.shape == (B*TT, self.input_size)
 
         hidden = hidden.reshape(B, TT, self.input_size)
@@ -169,7 +202,7 @@ class LSTMWrapper(nn.Module):
         hidden = hidden.transpose(0, 1)
 
         hidden = hidden.reshape(B*TT, self.hidden_size)
-        return self.policy.decode_actions(hidden, lookup), state
+        return self.policy.decode_actions(hidden, lookup), state, hidden
 
 
 class Convolutional(nn.Module):

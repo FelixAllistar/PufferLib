@@ -106,6 +106,7 @@ def create(config, vecenv, policy, optimizer=None, wandb=None, neptune=None):
         config.minibatch_size, policy.hidden_size, obs_shape, obs_dtype,
         atn_shape, atn_dtype, config.cpu_offload, config.device, lstm, total_agents,
         use_e3b=config.use_e3b, e3b_coef=config.e3b_coef,
+        use_diayn=config.use_diayn, diayn_archive=config.diayn_archive, diayn_coef=config.diayn_coef,
         use_p3o=config.use_p3o, p3o_horizon=config.p3o_horizon
     )
 
@@ -138,6 +139,9 @@ def create(config, vecenv, policy, optimizer=None, wandb=None, neptune=None):
         use_e3b=config.use_e3b,
         e3b_coef=config.e3b_coef,
         e3b_norm=config.e3b_norm,
+        use_diayn=config.use_diayn,
+        diayn_archive=config.diayn_archive,
+        diayn_coef=config.diayn_coef,
     )
 
 @pufferlib.utils.profile
@@ -166,6 +170,12 @@ def evaluate(data):
             done_mask = d + t
             data.global_step += mask.sum()
 
+            if data.use_diayn:
+                idxs = env_id[done_mask]
+                if len(idxs) > 0:
+                    z_idxs = torch.randint(0, experience.diayn_archive.shape[0], (done_mask.sum(),)).to(config.device)
+                    experience.diayn_skills[idxs] = z_idxs
+
         with profile.eval_copy:
             if data.use_e3b and done_mask.any():
                 done_idxs = env_id[done_mask]
@@ -184,7 +194,19 @@ def evaluate(data):
                 torch.cuda.synchronize()
 
         with profile.eval_forward, torch.no_grad():
-            if data.use_p3o:
+            if data.use_diayn:
+                z_idxs = experience.diayn_skills[env_id]
+                z = experience.diayn_archive[z_idxs]
+
+                if lstm_h is not None:
+                    (logits, value), hidden, (h, c) = policy(o_device, (h, c), diayn_z=z)
+                else:
+                    (logits, value), hidden = policy(o_device, diayn_z=z)
+                value = value.flatten()
+                q = policy.diayn_discriminator(hidden).squeeze()
+                r_diayn = torch.log_softmax(q, dim=-1).gather(-1, z_idxs.unsqueeze(-1)).squeeze()
+                r += config.diayn_coef*r_diayn.cpu()# - np.log(1/data.diayn_archive)
+            elif data.use_p3o:
                 if lstm_h is not None:
                     (logits, value_mean, value_std), hidden, (h, c) = policy(o_device, (h, c))
                 else:
@@ -219,6 +241,15 @@ def evaluate(data):
                 e3b_reward = torch.clamp(config.e3b_coef*e3b_reward, -1, 1)
                 r += config.e3b_coef*e3b_reward.cpu()
 
+            '''
+            if data.use_diayn:
+                z_idxs = experience.diayn_skills[env_id]
+                #z = experience.diayn_archive[z_idxs]
+                q = policy.diayn_discriminator(hidden).squeeze()
+                r_diayn = torch.log_softmax(q, dim=-1).gather(-1, z_idxs.unsqueeze(-1)).squeeze()
+                r += config.diayn_coef*r_diayn.cpu() + np.log(1/data.diayn_archive)
+            '''
+
             # Clip rewards
             r = torch.clamp(r, -1, 1)
 
@@ -238,6 +269,8 @@ def evaluate(data):
 
             if data.use_p3o:
                 actions = experience.store(o, value_mean, value_std.detach(), actions, logprob, r, d, cpu_env_id, mask)
+            elif data.use_diayn:
+                actions = experience.store(o, value, None, actions, logprob, r, d, cpu_env_id, mask, diayn_z=z_idxs)
             else:
                 actions = experience.store(o, value, None, actions, logprob, r, d, cpu_env_id, mask)
 
@@ -323,6 +356,8 @@ def train(data):
             rewards_np, config.gamma, config.gae_lambda)
             experience.flatten_batch(advantages_np)
 
+    cross_entropy = torch.nn.CrossEntropyLoss()
+
     # Optimizing the policy and value network
     total_minibatches = experience.num_minibatches * config.update_epochs
     mean_pg_loss, mean_v_loss, mean_entropy_loss = 0, 0, 0
@@ -350,20 +385,30 @@ def train(data):
                     torch.cuda.synchronize()
 
             with profile.train_forward:
-                if data.use_p3o:
+                if config.use_diayn:
+                    z_idxs = experience.b_diayn_z_idxs[mb]
+                    z = experience.b_diayn_z[mb]
                     if experience.lstm_h is not None:
-                        (logits, newvalue_mean, newvalue_std), lstm_state = data.policy.forward_train(obs, lstm_state)
+                        (logits, newvalue), lstm_state, hidden = data.policy.forward_train(obs, lstm_state, diayn_z=z)
                         lstm_state = (lstm_state[0].detach(), lstm_state[1].detach())
                     else:
                         flat_obs = obs.reshape(-1, *data.vecenv.single_observation_space.shape)
-                        logits, newvalue_mean, newvalue_std = data.policy.forward_train(flat_obs, lstm_state)
+                        (logits, newvalue), hidden = data.policy.forward_train(flat_obs, lstm_state, diayn_z=z)
+                    newvalue = newvalue.flatten()
+                elif data.use_p3o:
+                    if experience.lstm_h is not None:
+                        (logits, newvalue_mean, newvalue_std), lstm_state, hidden = data.policy.forward_train(obs, lstm_state)
+                        lstm_state = (lstm_state[0].detach(), lstm_state[1].detach())
+                    else:
+                        flat_obs = obs.reshape(-1, *data.vecenv.single_observation_space.shape)
+                        (logits, newvalue_mean, newvalue_std), hidden = data.policy.forward_train(flat_obs, lstm_state)
                 else:
                     if experience.lstm_h is not None:
-                        (logits, newvalue), lstm_state = data.policy.forward_train(obs, lstm_state)
+                        (logits, newvalue), lstm_state, hidden = data.policy.forward_train(obs, lstm_state)
                         lstm_state = (lstm_state[0].detach(), lstm_state[1].detach())
                     else:
                         flat_obs = obs.reshape(-1, *data.vecenv.single_observation_space.shape)
-                        logits, newvalue = data.policy.forward_train(flat_obs)
+                        (logits, newvalue), hidden = data.policy.forward_train(flat_obs)
                     newvalue = newvalue.flatten()
 
                 actions, newlogprob, entropy = pufferlib.pytorch.sample_logits(logits,
@@ -425,6 +470,13 @@ def train(data):
                 entropy_loss = entropy.mean()
                 loss = pg_loss - config.ent_coef * entropy_loss + v_loss * config.vf_coef
 
+                with profile.custom:
+                    if config.use_diayn:
+                        q = data.policy.diayn_discriminator(hidden).squeeze()
+                        diayn_loss = cross_entropy(q, z_idxs)
+                        loss += config.diayn_loss_coef*diayn_loss
+                        torch.cuda.synchronize()
+
             with profile.learn:
                 data.optimizer.zero_grad()
                 loss.backward()
@@ -440,6 +492,9 @@ def train(data):
                 losses.old_approx_kl += old_approx_kl.item() / total_minibatches
                 losses.approx_kl += approx_kl.item() / total_minibatches
                 losses.clipfrac += clipfrac.item() / total_minibatches
+
+                if data.use_diayn:
+                    losses.diayn_loss += diayn_loss.item() / total_minibatches
 
         if config.target_kl is not None:
             if approx_kl > config.target_kl:
@@ -660,6 +715,7 @@ def make_losses():
         approx_kl=0,
         clipfrac=0,
         explained_variance=0,
+        diayn_loss=0,
     )
 
 class Experience:
@@ -667,7 +723,9 @@ class Experience:
     def __init__(self, batch_size, bptt_horizon, minibatch_size, hidden_size,
                  obs_shape, obs_dtype, atn_shape, atn_dtype, cpu_offload=False,
                  device='cuda', lstm=None, lstm_total_agents=0,
-                 use_e3b=False, e3b_coef=0.1, use_p3o=False, p3o_horizon=32):
+                 use_e3b=False, e3b_coef=0.1,
+                 use_diayn=False, diayn_archive=128, diayn_coef=0.1,
+                 use_p3o=False, p3o_horizon=32):
         if minibatch_size is None:
             minibatch_size = batch_size
 
@@ -689,6 +747,13 @@ class Experience:
             self.e3b_orig = self.e3b_inv.clone()
             self.e3b_mean = None
             self.e3b_std = None
+
+        self.use_diayn = use_diayn
+        if use_diayn:
+            #self.diayn_archive = torch.randn(diayn_archive, hidden_size, dtype=torch.float32, device=device)
+            self.diayn_archive = torch.nn.functional.one_hot(torch.arange(diayn_archive), hidden_size).to(device).float()
+            self.diayn_skills = torch.randint(0, diayn_archive, (lstm_total_agents,), dtype=torch.long, device=device)
+            self.diayn_batch = torch.zeros(batch_size, dtype=torch.long, device=device)
 
         self.use_p3o = use_p3o
         self.p3o_horizon = p3o_horizon
@@ -735,7 +800,7 @@ class Experience:
     def full(self):
         return self.ptr >= self.batch_size
 
-    def store(self, obs, value_mean, value_std, action, logprob, reward, done, env_id, mask):
+    def store(self, obs, value_mean, value_std, action, logprob, reward, done, env_id, mask, diayn_z=None):
         # Mask learner and Ensure indices do not exceed batch size
         ptr = self.ptr
         indices = np.where(mask)[0]
@@ -757,6 +822,9 @@ class Experience:
             self.obs[dst] = obs[gpu_inds]
         else:
             self.obs[dst] = obs[cpu_inds]
+
+        if self.use_diayn:
+            self.diayn_batch[dst] = diayn_z[gpu_inds]
 
         if self.use_p3o:
             self.values_mean[dst] = value_mean[gpu_inds]
@@ -821,6 +889,10 @@ class Experience:
             self.returns = advantages + self.values # Check sorting of values here
             self.b_returns = self.b_advantages + self.b_values # Check sorting of values here
 
+        if self.use_diayn:
+            self.b_diayn_z_idxs = self.diayn_batch.to(self.device, non_blocking=True)[b_flat]
+            self.b_diayn_z = self.diayn_archive[self.b_diayn_z_idxs]
+ 
 class Utilization(Thread):
     def __init__(self, delay=1, maxlen=20):
         super().__init__()
