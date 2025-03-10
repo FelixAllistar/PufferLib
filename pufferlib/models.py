@@ -58,7 +58,7 @@ class Default(nn.Module):
         if use_p3o:
             self.value_mean = pufferlib.pytorch.layer_init(
                 nn.Linear(hidden_size, p3o_horizon), std=1)
-            self.value_logstd = nn.Parameter(torch.zeros(1, p3o_horizon))
+            self.value_logstd = nn.Parameter(torch.zeros(1, p3o_horizon) - 2)
             #param = np.log10(np.arange(1, N+1))
             #param = 1 - np.exp(-np.sqrt(np.arange(N)))
             #self.value_logstd = nn.Parameter(torch.tensor(param).view(1, N))

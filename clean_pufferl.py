@@ -35,24 +35,22 @@ cuda_module = load(
     verbose=True
 )
 
-def compute_advantages(
-    reward_block: torch.Tensor,  # [num_steps, horizon]
-    reward_mask: torch.Tensor,   # [num_steps, horizon]
-    values_mean: torch.Tensor,   # [num_steps, horizon]
-    values_std: torch.Tensor,    # [num_steps, horizon]
-    buf: torch.Tensor,          # [num_steps, horizon]
-    dones: torch.Tensor,        # [num_steps]
+def compute_returns(
+    reward_block: torch.Tensor, # [num_steps, horizon]
+    reward_mask: torch.Tensor,  # [num_steps, horizon]
+    values_mean: torch.Tensor,  # [num_steps, horizon]
+    values_std: torch.Tensor,   # [num_steps, horizon]
+    returns: torch.Tensor,      # [num_steps, horizon]
     rewards: torch.Tensor,      # [num_steps]
-    advantages: torch.Tensor,   # [num_steps]
-    bounds: torch.Tensor,       # [num_steps]
+    dones: torch.Tensor,        # [num_steps]
+    horizon: int,
     vstd_max: float,
-    horizon: int
 ):
     assert all(t.is_cuda for t in [reward_block, reward_mask, values_mean, values_std, 
-                                  buf, dones, rewards, advantages, bounds]), "All tensors must be on GPU"
+                                  returns, dones, rewards]), "All tensors must be on GPU"
     
     # Ensure contiguous memory
-    tensors = [reward_block, reward_mask, values_mean, values_std, buf, dones, rewards, advantages]
+    tensors = [reward_block, reward_mask, values_mean, values_std, returns, dones, rewards]
     for t in tensors:
         t.contiguous()
 
@@ -71,18 +69,16 @@ def compute_advantages(
         reward_mask,
         values_mean,
         values_std,
-        buf,
-        dones,
+        returns,
         rewards,
-        advantages,
-        bounds,
+        dones,
         num_steps,
-        vstd_max,
         horizon,
+        vstd_max
     )
     
     torch.cuda.synchronize()
-    return advantages
+    return returns
 
 def create(config, vecenv, policy, optimizer=None, wandb=None, neptune=None):
     seed_everything(config.seed, config.torch_deterministic)
@@ -293,43 +289,30 @@ def train(data):
         if config.use_p3o:
             reward_block = experience.reward_block
             mask_block = experience.mask_block
+            returns = experience.returns
             values_mean = experience.values_mean[idxs]
             values_std = experience.values_std[idxs]
-            advantages = experience.advantages
 
             # Note: This function gets messed up by computing across
             # episode bounds. Because we store experience in a flat buffer,
             # bounds can be crossed even after handling dones. This prevent
             # our method from scaling to longer horizons. TODO: Redo the way
             # we store experience to avoid this issue
-            vstd_min = values_std.min().item()
-            vstd_max = values_std.max().item()
             torch.cuda.synchronize()
 
             mask_block.zero_()
-            experience.buf.zero_()
+            returns.zero_()
             r_std = rewards.std().item()
 
-            '''
-            if data.epoch == 0:
-                values_std[:] = r_std
-                with torch.no_grad():
-                    data.policy.policy.value_logstd[:] = np.log(r_std)
-            '''
+            returns = compute_returns(reward_block, mask_block, values_mean, values_std,
+                    returns, rewards, dones, config.p3o_horizon, r_std)
 
-            # TODO: Rename vstd to r_std
-            advantages = compute_advantages(reward_block, mask_block, values_mean, values_std,
-                    experience.buf, dones, rewards, advantages, experience.bounds,
-                    r_std, config.p3o_horizon)
+            if np.random.rand() < 0.01:
+                print(rewards.mean(), rewards.std())
+                breakpoint()
 
-            #if np.random.rand() < 0.01:
-            #    print(experience.buf[0])
-            #    print(rewards.mean(), rewards.std())
-
-            advantages = advantages.cpu().numpy()
             torch.cuda.synchronize()
-            breakpoint()
-                
+            advantages = returns[:, 0] - values_mean[:, 0]
             experience.flatten_batch(advantages, reward_block, mask_block)
             torch.cuda.synchronize()
         else:
@@ -725,9 +708,7 @@ class Experience:
             self.values_std=torch.zeros(batch_size, p3o_horizon, device=device)
             self.reward_block = torch.zeros(batch_size, p3o_horizon, dtype=torch.float32, device=device)
             self.mask_block = torch.ones(batch_size, p3o_horizon, dtype=torch.float32, device=device)
-            self.buf = torch.zeros(batch_size, p3o_horizon, dtype=torch.float32, device=device)
-            self.advantages = torch.zeros(batch_size, dtype=torch.float32, device=device)
-            self.bounds = torch.zeros(batch_size, dtype=torch.int32, device=device)
+            self.returns = torch.zeros(batch_size, p3o_horizon, dtype=torch.float32, device=device)
             self.vstd_max = 1.0
         else:
             self.values = torch.zeros(batch_size, device=device)
@@ -845,7 +826,7 @@ class Experience:
 
             self.b_values_mean = self.values_mean.to(self.device, non_blocking=True)[b_flat]
             self.b_values_std = self.values_std.to(self.device, non_blocking=True)[b_flat]
-            self.b_returns = self.buf.to(self.device, non_blocking=True).reshape(
+            self.b_returns = self.returns.to(self.device, non_blocking=True).reshape(
                 self.minibatch_rows, self.num_minibatches, self.bptt_horizon, self.p3o_horizon
                 ).transpose(0, 1).reshape(self.num_minibatches, self.minibatch_size, self.p3o_horizon)
         else:
