@@ -84,9 +84,14 @@ class NMMO3(nn.Module):
         return action, value
 
 class Snake(nn.Module):
-    def __init__(self, env, cnn_channels=32, hidden_size=128, use_p3o=False, p3o_horizon=32, **kwargs):
+    def __init__(self, env, cnn_channels=32, hidden_size=128, use_p3o=False, p3o_horizon=32, use_diayn=False, diayn_skills=128, **kwargs):
         super().__init__()
         self.is_continuous = False
+        self.num_actions = env.single_action_space.n
+
+        out_channels = cnn_channels
+        if use_diayn:
+            out_channels += diayn_skills
 
         self.network= nn.Sequential(
             pufferlib.pytorch.layer_init(
@@ -96,11 +101,13 @@ class Snake(nn.Module):
                 nn.Conv2d(cnn_channels, cnn_channels, 3, stride=1)),
             nn.ReLU(),
             nn.Flatten(),
-            pufferlib.pytorch.layer_init(nn.Linear(cnn_channels, hidden_size)),
+        )
+        self.encoder_out = nn.Sequential(
+            pufferlib.pytorch.layer_init(nn.Linear(out_channels, hidden_size)),
             nn.ReLU(),
         )
         self.actor = pufferlib.pytorch.layer_init(
-            nn.Linear(hidden_size, env.single_action_space.n), std=0.01)
+            nn.Linear(hidden_size, self.num_actions), std=0.01)
 
         self.use_p3o = use_p3o
         self.p3o_horizon = p3o_horizon
@@ -112,17 +119,30 @@ class Snake(nn.Module):
             self.value = pufferlib.pytorch.layer_init(
                 nn.Linear(hidden_size, 1), std=1)
 
-    def forward(self, observations):
-        hidden, lookup = self.encode_observations(observations)
+        if use_diayn:
+            #self.diayn_discriminator = DiaynDiscriminator(hidden_size, diayn_skills)
+            self.diayn_discriminator = nn.Sequential(
+                pufferlib.pytorch.layer_init(nn.Linear(self.num_actions, hidden_size)),
+                nn.ReLU(),
+                pufferlib.pytorch.layer_init(nn.Linear(hidden_size, diayn_skills)),
+            )
+
+    def forward(self, observations, diayn_z=None):
+        hidden, lookup = self.encode_observations(observations, diayn_z)
         actions, value = self.decode_actions(hidden, lookup)
-        return (actions, value), hidden
+        return (actions, value), actions
 
-    def forward_train(self, observations):
-        return self.forward(observations)[0]
+    def forward_train(self, observations, diayn_z=None):
+        return self.forward(observations, diayn_z)[0]
 
-    def encode_observations(self, observations):
+    def encode_observations(self, observations, diayn_z=None):
         observations = F.one_hot(observations.long(), 8).permute(0, 3, 1, 2).float()
-        return self.network(observations), None
+        hidden = self.network(observations)
+        if diayn_z is not None:
+            hidden = torch.cat([hidden, diayn_z], dim=-1)
+
+        hidden = self.encoder_out(hidden)
+        return hidden, None
 
     def decode_actions(self, hidden, lookup, concat=None):
         action = self.actor(hidden)

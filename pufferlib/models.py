@@ -172,7 +172,8 @@ class LSTMWrapper(nn.Module):
         hidden, _ = self.policy.encode_observations(x, diayn_z=diayn_z)
         h, c = state
         hidden, c = self.recurrent_cell(hidden, (h, c))
-        return self.policy.decode_actions(hidden, None), hidden, (hidden, c)
+        action, value = self.policy.decode_actions(hidden, None)
+        return (action, value), action, (hidden, c)
 
     def forward_train(self, x, state, diayn_z=None):
         '''Forward function for training. Uses LSTM for fast time-batching'''
@@ -202,7 +203,8 @@ class LSTMWrapper(nn.Module):
         hidden = hidden.transpose(0, 1)
 
         hidden = hidden.reshape(B*TT, self.hidden_size)
-        return self.policy.decode_actions(hidden, lookup), state, hidden
+        action, value = self.policy.decode_actions(hidden, lookup)
+        return (action, value), state, action
 
 
 class Convolutional(nn.Module):

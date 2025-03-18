@@ -751,7 +751,7 @@ class Experience:
         self.use_diayn = use_diayn
         if use_diayn:
             #self.diayn_archive = torch.randn(diayn_archive, hidden_size, dtype=torch.float32, device=device)
-            self.diayn_archive = torch.nn.functional.one_hot(torch.arange(diayn_archive), hidden_size).to(device).float()
+            self.diayn_archive = torch.nn.functional.one_hot(torch.arange(diayn_archive), diayn_archive).to(device).float()
             self.diayn_skills = torch.randint(0, diayn_archive, (lstm_total_agents,), dtype=torch.long, device=device)
             self.diayn_batch = torch.zeros(batch_size, dtype=torch.long, device=device)
 
@@ -978,7 +978,7 @@ def rollout(env_creator, env_kwargs, policy_cls, rnn_cls, agent_creator, agent_k
     if model_path is None:
         agent = agent_creator(env, policy_cls, rnn_cls, agent_kwargs).to(device)
     else:
-        agent = torch.load(model_path, map_location=device)
+        agent = torch.load(model_path, map_location=device, weights_only=False)
 
     #e3b_inv = 10*torch.eye(agent.hidden_size).repeat(env_kwargs['num_envs'], 1, 1).to(device)
     e3b_inv = None
@@ -986,7 +986,17 @@ def rollout(env_creator, env_kwargs, policy_cls, rnn_cls, agent_creator, agent_k
     ob, info = env.reset()
     driver = env.driver_env
     os.system('clear')
-    state = None
+
+    state = (None, None)
+    num_agents = env.observation_space.shape[0]
+    if hasattr(agent, 'recurrent'):
+        shape = (num_agents, agent.hidden_size)
+        state = (torch.zeros(shape).to(device), torch.zeros(shape).to(device))
+
+    diayn_archive = 8
+    diayn_z = torch.nn.functional.one_hot(
+            torch.randint(0, diayn_archive, (num_agents,), dtype=torch.long, device=device),
+            diayn_archive).to(device).float()
 
     frames = []
     tick = 0
@@ -1013,12 +1023,12 @@ def rollout(env_creator, env_kwargs, policy_cls, rnn_cls, agent_creator, agent_k
 
         with torch.no_grad():
             ob = torch.as_tensor(ob).to(device)
-            if hasattr(agent, 'lstm'):
-                #action, _, value, _, state, e3b, intrinsic = agent(ob, state, e3b=e3b_inv)
-                action, _, value, _, state = agent(ob, state, e3b=e3b_inv)
+            if hasattr(agent, 'recurrent'):
+                (logits, value), hidden, (h, c) = agent(ob, state, diayn_z=diayn_z)
             else:
-                action, _, value, _, e3b, intrinsic = agent(ob, e3b=e3b_inv)
+                action, _, value, _, e3b, intrinsic = agent(ob)
 
+            action, logprob, _ = pufferlib.pytorch.sample_logits(logits, is_continuous=agent.is_continuous)
             action = action.cpu().numpy().reshape(env.action_space.shape)
 
         ob, reward = env.step(action)[:2]
