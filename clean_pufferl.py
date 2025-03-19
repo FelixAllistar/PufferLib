@@ -993,7 +993,7 @@ def rollout(env_creator, env_kwargs, policy_cls, rnn_cls, agent_creator, agent_k
         shape = (num_agents, agent.hidden_size)
         state = (torch.zeros(shape).to(device), torch.zeros(shape).to(device))
 
-    diayn_archive = 8
+    diayn_archive = 2
     diayn_z = torch.nn.functional.one_hot(
             torch.randint(0, diayn_archive, (num_agents,), dtype=torch.long, device=device),
             diayn_archive).to(device).float()
