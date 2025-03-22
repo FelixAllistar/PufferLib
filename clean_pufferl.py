@@ -194,7 +194,7 @@ def evaluate(data):
 
         with profile.eval_misc:
             done_mask = d + t
-            data.global_step += mask.sum()
+            data.global_step += mask.sum().item()
 
         with profile.eval_copy:
             if data.use_e3b and done_mask.any():
@@ -711,7 +711,7 @@ class Profile:
         self.prev_steps = global_step
         self.uptime = uptime
 
-        self.remaining = (data.config.total_timesteps - global_step) / self.SPS
+        self.remaining = (data.config.total_timesteps - global_step) / (self.SPS + 1e-6)
         self.eval_time = data._timers['evaluate'].elapsed
         self.eval_forward_time = self.eval_forward.elapsed
         self.env_time = self.env.elapsed
@@ -853,7 +853,7 @@ class Experience:
         self.ptr = end
         self.step += 1
 
-        return action.cpu().numpy()
+        return action#.cpu().numpy()
 
     def sort_training_data(self):
         idxs = np.lexsort((self.sort_keys[:, 2], self.sort_keys[:, 1]))

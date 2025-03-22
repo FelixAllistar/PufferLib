@@ -452,6 +452,319 @@ class Multiprocessing:
         for p in self.processes:
             p.terminate()
 
+def _worker_thread(observations, actions, rewards, terminals, truncations, infos, masks, semaphore, condition,
+        env_creators, env_args, env_kwargs, obs_shape, obs_dtype, atn_shape, atn_dtype,
+        num_envs, num_agents, num_workers, worker_idx, is_native):
+
+    # Environments read and write directly to shared memory
+    buf = namespace(
+        observations=observations,
+        actions=actions,
+        rewards=rewards,
+        terminals=terminals,
+        truncations=truncations,
+        masks=masks,
+    )
+
+    if is_native and num_envs == 1:
+        envs = env_creators[0](*env_args[0], **env_kwargs[0], buf=buf)
+    else:
+        envs = Serial(env_creators, env_args, env_kwargs, num_envs, buf=buf)
+
+    start = time.time()
+    while True:
+        with condition:
+            condition.wait()
+            sem = semaphore[0]
+            if sem >= MAIN:
+                continue
+
+            start = time.time()
+            if sem == RESET:
+                # TODO: Add seeding
+                _, i = envs.reset()
+            elif sem == STEP:
+                _, _, _, _, i = envs.step(actions)
+            elif sem == CLOSE:
+                envs.close()
+                break
+
+            if i:
+                semaphore[0] = INFO
+                infos.clear()
+                infos.extend(i)
+            else:
+                semaphore[0] = MAIN
+
+
+class Multithreading:
+    '''Runs environments in parallel using multiprocessing
+
+    Use this vectorization module for most applications
+    '''
+    reset = reset
+    step = step
+
+    @property
+    def num_envs(self):
+        return self.agents_per_batch
+ 
+    def __init__(self, env_creators, env_args, env_kwargs,
+            num_envs, num_workers=None, batch_size=None,
+            zero_copy=True, overwork=False, use_torch=True, **kwargs):
+        if batch_size is None:
+            batch_size = num_envs
+        if num_workers is None:
+            num_workers = num_envs
+
+        import psutil
+        cpu_cores = psutil.cpu_count(logical=False)
+        if num_workers > cpu_cores and not overwork:
+            raise APIUsageError(' '.join([
+                f'num_workers ({num_workers}) > hardware cores ({cpu_cores}) is disallowed by default.',
+                'PufferLib multiprocessing is heavily optimized for 1 process per hardware core.',
+                'If you really want to do this, set overwork=True (--vec-overwork in our demo.py).',
+            ]))
+
+        num_batches = num_envs / batch_size
+        if zero_copy and num_batches != int(num_batches):
+            # This is so you can have n equal buffers
+            raise APIUsageError(
+                'zero_copy: num_envs must be divisible by batch_size')
+
+        self.num_environments = num_envs
+        envs_per_worker = num_envs // num_workers
+        self.envs_per_worker = envs_per_worker
+        self.workers_per_batch = batch_size // envs_per_worker
+        self.num_workers = num_workers
+
+        # I really didn't want to need a driver process... with mp.shared_memory
+        # we can fetch this data from the worker processes and ever perform
+        # additional space checks. Unfortunately, SharedMemory has a janky integration
+        # with the resource tracker that spams warnings and does not work with
+        # forked processes. So for now, RawArray is much more reliable.
+        # You can't send a RawArray through a pipe.
+        self.driver_env = driver_env = env_creators[0](*env_args[0], **env_kwargs[0])
+        is_native = isinstance(driver_env, PufferEnv)
+        self.emulated = False if is_native else driver_env.emulated
+        self.num_agents = num_agents = driver_env.num_agents * num_envs
+        self.agents_per_batch = driver_env.num_agents * batch_size
+        agents_per_worker = driver_env.num_agents * envs_per_worker
+        obs_space = driver_env.single_observation_space
+        obs_shape = obs_space.shape
+        obs_dtype = obs_space.dtype
+        atn_space = driver_env.single_action_space
+        atn_shape = atn_space.shape
+        atn_dtype = atn_space.dtype
+        if isinstance(atn_space, (pufferlib.spaces.Discrete, pufferlib.spaces.MultiDiscrete)):
+            atn_dtype = np.dtype(np.int32)
+
+        self.single_observation_space = driver_env.single_observation_space
+        self.single_action_space = driver_env.single_action_space
+        self.action_space = pufferlib.spaces.joint_space(self.single_action_space, self.agents_per_batch)
+        self.observation_space = pufferlib.spaces.joint_space(self.single_observation_space, self.agents_per_batch)
+        self.agent_ids = np.arange(num_agents).reshape(num_workers, agents_per_worker)
+
+
+        if use_torch:
+            import torch
+            from pufferlib.pytorch import numpy_to_torch_dtype_dict
+            # TODO: numpy to torch dtype    
+            self.observations=torch.empty((num_workers, agents_per_worker, *obs_shape),
+                dtype=numpy_to_torch_dtype_dict[obs_dtype])
+            self.actions = torch.empty((num_workers, agents_per_worker, *atn_shape),
+                dtype=numpy_to_torch_dtype_dict[atn_dtype])
+            self.rewards=torch.zeros((num_workers, agents_per_worker))
+            self.terminals=torch.zeros((num_workers, agents_per_worker))
+            self.truncations=torch.zeros((num_workers, agents_per_worker))
+            self.masks=torch.ones((num_workers, agents_per_worker))
+        else:
+            self.observations=np.ndarray((num_workers, agents_per_worker, *obs_shape), dtype=obs_dtype)
+            self.actions = np.ndarray((num_workers, agents_per_worker, *atn_shape), dtype=atn_dtype)
+            self.rewards=np.ndarray((num_workers, agents_per_worker), dtype=np.float32)
+            self.terminals=np.ndarray((num_workers, agents_per_worker), dtype=bool)
+            self.truncations=np.ndarray((num_workers, agents_per_worker), dtype=bool)
+            self.masks=np.ones((num_workers, agents_per_worker), dtype=bool)
+
+        self.infos = [[] for _ in range(num_workers)]
+        self.semaphores=np.zeros((num_workers,), dtype=np.uint8) + MAIN
+
+        import threading
+        self.conditions = [threading.Condition() for _ in range(num_workers)]
+
+        self.obs_batch_shape = (self.agents_per_batch, *obs_shape)
+        self.atn_batch_shape = (self.workers_per_batch, agents_per_worker, *atn_shape)
+
+        self.threads = []
+        from threading import Thread
+        for i in range(num_workers):
+            start = i * envs_per_worker
+            end = start + envs_per_worker
+            t = Thread(
+                target=_worker_thread,
+                args=(self.observations[i], self.actions[i], self.rewards[i],
+                    self.terminals[i], self.truncations[i], self.infos[i],
+                    self.masks[i], self.semaphores[i:i+1], self.conditions[i],
+                    env_creators[start:end], env_args[start:end],
+                    env_kwargs[start:end], obs_shape, obs_dtype,
+                    atn_shape, atn_dtype, envs_per_worker, driver_env.num_agents,
+                    num_workers, i,
+                    is_native)
+            )
+            t.start()
+            self.threads.append(t)
+
+        self.flag = RESET
+        self.initialized = False
+        self.zero_copy = zero_copy
+
+    def recv(self):
+        recv_precheck(self)
+        infos = []
+        while True:
+            worker = self.waiting_workers.pop(0)
+            sem = self.semaphores[worker]
+            if sem >= MAIN:
+                self.ready_workers.append(worker)
+            else:
+                self.waiting_workers.append(worker)
+
+            if sem == INFO:
+                infos.extend(self.infos[worker])
+
+            if not self.ready_workers:
+                continue
+
+            if self.workers_per_batch == 1:
+                # Fastest path. Zero-copy optimized for batch size 1
+                w_slice = self.ready_workers[0]
+                s_range = [w_slice]
+                self.waiting_workers.append(w_slice)
+                self.ready_workers.pop(0)
+                break
+            elif self.workers_per_batch == self.num_workers:
+                # Slowest path. Zero-copy synchornized for all workers
+                if len(self.ready_workers) < self.num_workers:
+                    continue
+
+                w_slice = slice(0, self.num_workers)
+                s_range = range(0, self.num_workers)
+                self.waiting_workers.extend(s_range)
+                self.ready_workers = []
+                break
+            elif self.zero_copy:
+                # Zero-copy for batch size > 1. Has to wait for
+                # a contiguous block of workers and adds a few
+                # microseconds of extra index processing time
+                completed = np.zeros(self.num_workers, dtype=bool)
+                completed[self.ready_workers] = True
+                buffers = completed.reshape(
+                    -1, self.workers_per_batch).all(axis=1)
+                start = buffers.argmax()
+                if not buffers[start]:
+                    continue
+
+                start *= self.workers_per_batch
+                end = start + self.workers_per_batch
+                w_slice = slice(start, end)
+                s_range = range(start, end)
+                self.waiting_workers.extend(s_range)
+                self.ready_workers = [e for e in self.ready_workers
+                    if e not in s_range]
+                break
+            elif len(self.ready_workers) >= self.workers_per_batch:
+                # Full async path for batch size > 1. Alawys copies
+                # data because of non-contiguous worker indices
+                # Can be faster for envs with small observations
+                w_slice = self.ready_workers[:self.workers_per_batch]
+                s_range = w_slice
+                self.waiting_workers.extend(s_range)
+                self.ready_workers = self.ready_workers[self.workers_per_batch:]
+                break
+
+        self.w_slice = w_slice
+
+        o = self.observations[w_slice].reshape(self.obs_batch_shape)
+        r = self.rewards[w_slice].ravel()
+        d = self.terminals[w_slice].ravel()
+        t = self.truncations[w_slice].ravel()
+
+        agent_ids = self.agent_ids[w_slice].ravel()
+        m = self.masks[w_slice].ravel()
+        self.batch_mask = m
+
+        return o, r, d, t, infos, agent_ids, m
+
+    def send(self, actions):
+        self.flag = RECV
+        actions = actions.reshape(self.atn_batch_shape)
+        #actions = send_precheck(self, actions).reshape(self.atn_batch_shape)
+        # TODO: What shape?
+        
+        idxs = self.w_slice
+        self.actions[idxs] = actions
+        self.semaphores[idxs] = STEP
+
+        # TODO: Handle multiple
+        cond = self.conditions[idxs]
+        with cond:
+            cond.notify()
+
+    def async_reset(self, seed=42):
+        self.flag = RECV
+        seed = make_seeds(seed, self.num_environments)
+        self.prev_env_id = []
+        self.flag = RECV
+
+        self.ready_workers = []
+        self.waiting_workers = list(range(self.num_workers))
+
+        for e in self.infos:
+            e.clear()
+
+        self.semaphores[:] = RESET
+        for cond in self.conditions:
+            with cond:
+                cond.notify()
+
+        '''
+        for i in range(self.num_workers):
+            start = i*self.envs_per_worker
+            end = (i+1)*self.envs_per_worker
+            self.send_pipes[i].send(seed[start:end])
+        '''
+
+    def close(self):
+        '''
+        while self.waiting_workers:
+            worker = self.waiting_workers.pop(0)
+            sem = self.buf.semaphores[worker]
+            if sem >= MAIN:
+                self.ready_workers.append(worker)
+                if sem == INFO:
+                    self.recv_pipes[worker].recv()
+            else:
+                self.waiting_workers.append(worker)
+
+        self.buf.semaphores[:] = CLOSE
+        self.waiting_workers = list(range(self.num_workers))
+
+        while self.waiting_workers:
+            worker = self.waiting_workers.pop(0)
+            sem = self.buf.semaphores[worker]
+            if sem >= MAIN:
+                self.ready_workers.append(worker)
+                if sem == INFO:
+                    self.recv_pipes[worker].recv()
+ 
+            else:
+                self.waiting_workers.append(worker)
+        '''
+
+        for p in self.processes:
+            p.terminate()
+
+
 class Ray():
     '''Runs environments in parallel on multiple processes using Ray
 

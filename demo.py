@@ -157,6 +157,8 @@ def train(args, make_env, policy_cls, rnn_cls, target_metric, min_eval_points=10
         vec = pufferlib.vector.Serial
     elif args['vec'] == 'multiprocessing':
         vec = pufferlib.vector.Multiprocessing
+    elif args['vec'] == 'multithreading':
+        vec = pufferlib.vector.Multithreading
     elif args['vec'] == 'ray':
         vec = pufferlib.vector.Ray
     elif args['vec'] == 'native':

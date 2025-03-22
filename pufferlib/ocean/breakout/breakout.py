@@ -44,6 +44,7 @@ class Breakout(pufferlib.PufferEnv):
     def reset(self, seed=None):
         self.c_envs.reset()
         self.tick = 0
+        self.copy_data()
         return self.observations, []
 
     def step(self, actions):
@@ -60,6 +61,7 @@ class Breakout(pufferlib.PufferEnv):
                 info.append(log)
 
         self.tick += 1
+        self.copy_data()
         return (self.observations, self.rewards,
             self.terminals, self.truncations, info)
 
