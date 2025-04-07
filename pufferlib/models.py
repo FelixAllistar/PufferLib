@@ -208,9 +208,9 @@ class LSTMWrapper(nn.Module):
 
         hidden = hidden.reshape(B*TT, self.hidden_size)
         logits, values = self.policy.decode_actions(hidden)
-        state.hidden = hidden
-        state.lstm_h = lstm_h
-        state.lstm_c = lstm_c
+        state.hidden_out = hidden
+        state.lstm_h_out = lstm_h
+        state.lstm_c_out = lstm_c
         return logits, values
 
 class Convolutional(nn.Module):

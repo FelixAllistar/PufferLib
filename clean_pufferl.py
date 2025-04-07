@@ -52,7 +52,7 @@ def compute_advantages(
     horizon: int
 ):
     assert all(t.is_cuda for t in [reward_block, reward_mask, values_mean, values_std, 
-                                  buf, dones, rewards, advantages, bounds]), "All tensors must be on GPU"
+        buf, dones, rewards, advantages, bounds]), "All tensors must be on GPU"
     
     # Ensure contiguous memory
     tensors = [reward_block, reward_mask, values_mean, values_std, buf, dones, rewards, advantages, bounds]
@@ -97,9 +97,9 @@ def create(config, vecenv, policy, optimizer=None, wandb=None, neptune=None):
     msg = f'Model Size: {abbreviate(count_params(policy))} parameters'
 
     vecenv.async_reset(config.seed)
-    obs_shape = vecenv.single_observation_space.shape
+    obs_shape = vecenv.observation_space.shape
     obs_dtype = vecenv.single_observation_space.dtype
-    atn_shape = vecenv.single_action_space.shape
+    atn_shape = vecenv.action_space.shape
     atn_dtype = vecenv.single_action_space.dtype
     total_agents = vecenv.num_agents
 
@@ -112,9 +112,28 @@ def create(config, vecenv, policy, optimizer=None, wandb=None, neptune=None):
         use_p3o=config.use_p3o, p3o_horizon=config.p3o_horizon
     )
 
+    # Cudagraphs
     uncompiled_policy = policy
     if config.compile:
         policy = torch.compile(policy, mode=config.compile_mode, fullgraph=config.compile_fullgraph)
+    if config.cudagraphs:
+        obs_dtype = pufferlib.pytorch.numpy_to_torch_dtype_dict[obs_dtype]
+        atn_dtype = pufferlib.pytorch.numpy_to_torch_dtype_dict[atn_dtype]
+        o = torch.zeros(*obs_shape, dtype=obs_dtype, device=config.device)
+        forward_graph = torch.cuda.CUDAGraph()
+        batch_agents = obs_shape[0]
+        state = pufferlib.namespace(
+            lstm_h=torch.zeros(batch_agents, policy.hidden_size, dtype=torch.float32, device=config.device),
+            lstm_c=torch.zeros(batch_agents, policy.hidden_size, dtype=torch.float32, device=config.device),
+            reward=torch.zeros(batch_agents, 1, dtype=torch.float32, device=config.device),
+            done=torch.zeros(batch_agents, 1, dtype=torch.float32, device=config.device),
+            env_id=torch.zeros(batch_agents, 1, dtype=torch.long, device=config.device),
+            mask=torch.zeros(batch_agents, 1, dtype=torch.float32, device=config.device),
+        )
+        breakpoint()
+
+        with torch.cuda.graph(forward_graph):
+            l, v = policy.forward(o, state)
 
     assert config.optimizer in ('adam', 'muon', 'kron')
     if config.optimizer == 'adam':
@@ -188,6 +207,10 @@ def create(config, vecenv, policy, optimizer=None, wandb=None, neptune=None):
         use_diayn=config.use_diayn,
         diayn_archive=config.diayn_archive,
         diayn_coef=config.diayn_coef,
+        l=l,
+        v=v,
+        o=o,
+        state=state
     )
 
 @pufferlib.utils.profile
@@ -201,6 +224,7 @@ def evaluate(data):
         lstm_h = experience.lstm_h
         lstm_c = experience.lstm_c
 
+    state = experience.state
     with data.amp_context:
         while not experience.full:
             with profile.env:
@@ -228,38 +252,39 @@ def evaluate(data):
                     done_idxs = env_id[done_mask]
                     experience.e3b_inv[done_idxs] = experience.e3b_orig[done_idxs]
 
-
                 o = torch.as_tensor(o)
                 o_device = o.to(config.device, non_blocking=True)
                 r = torch.as_tensor(r).to(config.device, non_blocking=True)
                 d = torch.as_tensor(d).to(config.device, non_blocking=True)
 
-                h = None
-                c = None
+                lstm_h = None
+                lstm_c = None
                 if lstm_h is not None:
-                    h = lstm_h[0, gpu_env_id]
-                    c = lstm_c[0, gpu_env_id]
+                    lstm_h = lstm_h[0, gpu_env_id]
+                    lstm_c = lstm_c[0, gpu_env_id]
 
                 if config.device == 'cuda':
                     torch.cuda.synchronize()
 
             with profile.eval_forward, torch.no_grad():
-                state = pufferlib.namespace(
-                    reward=r,
-                    done=d,
-                    env_id=gpu_env_id,
-                    mask=mask,
-                    lstm_h=h,
-                    lstm_c=c,
-                )
-
                 if data.use_diayn:
                     z_idxs = experience.diayn_skills[env_id]
                     z = experience.diayn_archive[z_idxs]
-                    state.diayn_z_idxs = z_idxs
-                    state.diayn_z = z
+                    state.diayn_z_idxs[:] = z_idxs
+                    state.diayn_z[:] = z
 
-                logits, value = policy(o_device, state)
+                if config.cudagraphs:
+                    data.o[:] = o_device
+                    data.state.lstm_h[:] = lstm_h
+                    data.state.lstm_c[:] = lstm_c
+                    data.forward_graph.replay()
+                    logits = data.l.clone()
+                    value = data.v.clone()
+                    lstm_h_out = data.state.lstm_h_out
+                    lstm_c_out = data.state.lstm_c_out
+                else:
+                    logits, value = policy(o_device, state)
+
                 action, logprob, _ = pufferlib.pytorch.sample_logits(logits, is_continuous=policy.is_continuous)
 
                 if data.use_diayn:
@@ -267,8 +292,8 @@ def evaluate(data):
                     q = diayn_policy.diayn_discriminator(state.hidden).squeeze()
                     r_diayn = torch.log_softmax(q, dim=-1).gather(-1, z_idxs.unsqueeze(-1)).squeeze()
                     r += config.diayn_coef*r_diayn# - np.log(1/data.diayn_archive)
-                    state.diayn_z = z
-                    state.diayn_z_idxs = z_idxs
+                    state.diayn_z[:] = z
+                    state.diayn_z_idxs[:] = z_idxs
 
                 if data.use_e3b:
                     e3b = experience.e3b_inv[env_id]
@@ -300,8 +325,8 @@ def evaluate(data):
 
             with profile.eval_copy, torch.no_grad():
                 if lstm_h is not None:
-                    lstm_h[:, gpu_env_id] = state.lstm_h
-                    lstm_c[:, gpu_env_id] = state.lstm_c
+                    lstm_h[:, gpu_env_id] = lstm_h_out
+                    lstm_c[:, gpu_env_id] = lstm_c_out
 
                     if config.device == 'cuda':
                         torch.cuda.synchronize()
@@ -812,7 +837,6 @@ class Experience:
                  use_p3o=False, p3o_horizon=32):
         if minibatch_size is None:
             minibatch_size = batch_size
-
         obs_dtype = pufferlib.pytorch.numpy_to_torch_dtype_dict[obs_dtype]
         atn_dtype = pufferlib.pytorch.numpy_to_torch_dtype_dict[atn_dtype]
         pin = device == 'cuda' and cpu_offload
