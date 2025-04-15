@@ -215,6 +215,185 @@ class LSTMWrapper(nn.LSTM):
         state.lstm_c = lstm_c.detach()
         return logits, values
 
+class TTTWrapper(nn.Module):
+    def __init__(self, env, policy, input_size=128, hidden_size=128):
+        super().__init__()
+        self.policy = policy
+        self.input_size = input_size
+        self.hidden_size = hidden_size
+        self.is_continuous = self.policy.is_continuous
+
+        self.obs_shape = env.single_observation_space.shape
+
+        from ttt import TTTConfig, TTTLinear
+        config = TTTConfig(hidden_size=hidden_size, intermediate_size=4*hidden_size,
+            num_hidden_layers=1, num_attention_heads=1)
+        self.ttt = TTTLinear(config, layer_idx=0)
+        self.GELU = nn.GELU()
+
+    def forward(self, observations, state):
+        hidden = self.policy.encode_observations(observations, state=state)
+
+        hidden = hidden.unsqueeze(1)
+        output = self.ttt(hidden)
+        output = output.squeeze(1)
+
+        output = self.GELU(output)
+        logits, values = self.policy.decode_actions(output)
+        return logits, values
+
+
+    def forward_train(self, observations, state):
+        x = observations
+
+        x_shape, space_shape = x.shape, self.obs_shape
+        x_n, space_n = len(x_shape), len(space_shape)
+        if x_shape[-space_n:] != space_shape:
+            raise ValueError('Invalid input tensor shape', x.shape)
+
+        if x_n == space_n + 1:
+            B, TT = x_shape[0], 1
+        elif x_n == space_n + 2:
+            B, TT = x_shape[:2]
+        else:
+            raise ValueError('Invalid input tensor shape', x.shape)
+
+        x = x.reshape(B*TT, *space_shape)
+        hidden = self.policy.encode_observations(x, state)
+        assert hidden.shape == (B*TT, self.input_size)
+        hidden = hidden.reshape(B, TT, self.input_size)
+        #hidden = hidden.transpose(0, 1)
+
+        hidden = self.ttt(hidden)
+        hidden = self.GELU(hidden)
+
+        #hidden = hidden.transpose(0, 1)
+        flat_hidden = hidden.reshape(B*TT, self.hidden_size)
+        logits, values = self.policy.decode_actions(flat_hidden)
+        values = values.reshape(B, TT)
+        state.batch_logits = logits.reshape(B, TT, -1)
+        state.hidden = hidden
+        return logits, values
+
+
+class MyTTTWrapper(nn.Module):
+    def __init__(self, env, policy, input_size=128, hidden_size=128):
+        super().__init__()
+        self.policy = policy
+        self.input_size = input_size
+        self.hidden_size = hidden_size
+        self.is_continuous = self.policy.is_continuous
+
+        self.obs_shape = env.single_observation_space.shape
+
+        self.K = nn.Parameter(torch.zeros(input_size, hidden_size//4))
+        torch.nn.init.orthogonal_(self.K)
+
+        self.Q = nn.Parameter(torch.zeros(input_size, hidden_size//4))
+        torch.nn.init.orthogonal_(self.Q)
+
+        self.V = nn.Parameter(torch.zeros(input_size, hidden_size))
+        torch.nn.init.orthogonal_(self.V)
+
+        self.GELU = nn.GELU()
+
+        self.W0 = nn.Parameter(torch.normal(0, 0.02, size=(self.input_size, self.hidden_size))).to(self.K.device)
+        self.b0 = nn.Parameter(torch.zeros(self.hidden_size, 1)).to(self.K.device)
+
+    def initial_state(self, batch_size, mode='eval'):
+        W = self.W0.expand(batch_size, self.input_size, self.hidden_size).clone().detach()
+        W.requires_grad = True
+        b = self.b0.expand(batch_size, self.hidden_size, 1).clone().detach()
+        b.requires_grad = True
+        optim = torch.optim.SGD([W, b], lr=1.0)
+
+        return pufferlib.namespace(
+            ttt_W=W,
+            ttt_b=b,
+            optim=optim,
+        )
+
+    def forward(self, observations, state):
+        hidden = self.policy.encode_observations(observations, state=state)
+
+        state = state.ttt_state
+        W = state.ttt_W
+        b = state.ttt_b
+        optim = state.optim
+
+        train_view = hidden @ self.K
+        label_view = hidden @ self.V
+        test_view = hidden @ self.Q
+        hidden = hidden.unsqueeze(2)
+        with torch.enable_grad():
+            ttt_output = torch.bmm(W, hidden) + b
+            loss = torch.nn.functional.mse_loss(ttt_output.squeeze(2), label_view)
+            state.optim.zero_grad()
+            loss.backward()
+            state.optim.step()
+
+        output = self.GELU(torch.bmm(W, hidden) + b).squeeze(2)
+        logits, values = self.policy.decode_actions(output)
+        return logits, values
+
+
+    def forward_train(self, observations, state):
+        x = observations
+        state = state.ttt_state
+
+        x_shape, space_shape = x.shape, self.obs_shape
+        x_n, space_n = len(x_shape), len(space_shape)
+        if x_shape[-space_n:] != space_shape:
+            raise ValueError('Invalid input tensor shape', x.shape)
+
+        if x_n == space_n + 1:
+            B, TT = x_shape[0], 1
+        elif x_n == space_n + 2:
+            B, TT = x_shape[:2]
+        else:
+            raise ValueError('Invalid input tensor shape', x.shape)
+
+        x = x.reshape(B*TT, *space_shape)
+        hidden = self.policy.encode_observations(x, state)
+        assert hidden.shape == (B*TT, self.input_size)
+        hidden = hidden.reshape(B, TT, self.input_size)
+        hidden = hidden.transpose(0, 1)
+
+        train_view = hidden @ self.K
+        label_view = hidden @ self.V
+        test_view = hidden @ self.Q
+        detached_train = train_view.detach()
+        detached_label = label_view.detach()
+        detached_hidden = hidden.detach()
+
+        W = state.ttt_W
+        b = state.ttt_b
+        optim = state.optim
+        new_hidden = []
+        for t in range(TT):
+            ttt_output = torch.bmm(W, detached_hidden[t].unsqueeze(2)) + b
+            loss = torch.nn.functional.mse_loss(ttt_output.squeeze(2), detached_label[t])
+            state.optim.zero_grad()
+            loss.backward()
+            state.optim.step()
+            if t == 0:
+                WW = self.W0.expand(B, self.input_size, self.hidden_size)
+                bb = self.b0.expand(B, self.hidden_size, 1)
+                h = torch.bmm(WW, hidden[t].unsqueeze(2)) + bb
+            else:
+                h = torch.bmm(W.clone().detach(), hidden[t].unsqueeze(2)) + b.clone().detach()
+            new_hidden.append(self.GELU(h).squeeze(2))
+
+        hidden = torch.stack(new_hidden, dim=0)
+        hidden = hidden.transpose(0, 1)
+        flat_hidden = hidden.reshape(B*TT, self.hidden_size)
+        logits, values = self.policy.decode_actions(flat_hidden)
+        values = values.reshape(B, TT)
+        state.batch_logits = logits.reshape(B, TT, -1)
+        state.hidden = hidden
+        return logits, values
+
+
 class Convolutional(nn.Module):
     def __init__(self, env, *args, framestack, flat_size,
             input_size=512, hidden_size=512, output_size=512,

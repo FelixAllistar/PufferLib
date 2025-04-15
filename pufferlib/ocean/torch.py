@@ -8,8 +8,9 @@ import pufferlib.models
 from pufferlib.models import Default as Policy
 from pufferlib.models import Convolutional as Conv
 Recurrent = pufferlib.models.LSTMWrapper
+TTT = pufferlib.models.TTTWrapper
 import numpy as np
-
+ 
 class NMMO3LSTM(pufferlib.models.LSTMWrapper):
     def __init__(self, env, policy, input_size=512, hidden_size=512):
         super().__init__(env, policy, input_size, hidden_size)
@@ -311,12 +312,12 @@ class MOBA(nn.Module):
         self.value_fn = pufferlib.pytorch.layer_init(
             nn.Linear(hidden_size, 1), std=1)
 
-    def forward(self, observations):
+    def forward(self, observations, state=None):
         hidden, lookup = self.encode_observations(observations)
         actions, value = self.decode_actions(hidden, lookup)
         return actions, value
 
-    def encode_observations(self, observations):
+    def encode_observations(self, observations, state=None):
         cnn_features = observations[:, :-26].view(-1, 11, 11, 4).long()
         if cnn_features[:, :, :, 0].max() > 15:
             print('Invalid map value:', cnn_features[:, :, :, 0].max())

@@ -221,6 +221,9 @@ def evaluate(data):
         infos = defaultdict(list)
         lstm_h = data.lstm_h
         lstm_c = data.lstm_c
+        #ttt_state = policy.initial_state(data.total_agents)
+        from ttt import TTTCache
+        ttt_cache = TTTCache(policy.ttt, data.total_agents)
 
     while data.free_idx < data.on_policy_rows:
         with profile.env:
@@ -257,12 +260,14 @@ def evaluate(data):
                 mask=mask,
                 lstm_h=h,
                 lstm_c=c,
+                ttt_cache=ttt_cache,
             )
 
             if data.use_diayn:
                 state.diayn_z = data.diayn_skills[env_id]
 
             logits, value = policy(o_device, state)
+            ttt_cache = state.ttt_cache
             action, logprob, _ = pufferlib.pytorch.sample_logits(logits, is_continuous=policy.is_continuous)
 
             '''
@@ -407,17 +412,20 @@ def train(data):
 
 
         with profile.train_misc:
+            from ttt import TTTCache
+            ttt_cache = TTTCache(data.policy.ttt, n_samples)
             state = pufferlib.namespace(
                 action=batch.actions,
                 lstm_h=None,
                 lstm_c=None,
+                ttt_cache=ttt_cache,
             )
 
             if config.use_diayn:
                 state.diayn_z = batch.diayn_z.reshape(-1)
 
         with profile.train_forward:
-            if not isinstance(data.policy, torch.nn.LSTM):
+            if not isinstance(data.policy, (torch.nn.LSTM, pufferlib.models.TTTWrapper)):
                 batch.obs = batch.obs.reshape(-1, *data.vecenv.single_observation_space.shape)
 
             # TODO: Currently only returning traj shaped value as a hack
@@ -450,10 +458,11 @@ def train(data):
                 # Might need returns at next step
                 lgt = logits.reshape(-1, logits.shape[-1])
                 atns = batch.actions.reshape(-1)
-                adv = (batch.prio*adv).reshape(-1)
 
                 #if config.norm_adv:
                 #    adv = (adv - adv.mean()) / (adv.std() + 1e-8)
+
+                adv = (batch.prio*adv).reshape(-1)
 
                 pg_loss = torch.mean(adv * torch.nn.functional.nll_loss(
                     torch.nn.functional.log_softmax(lgt, dim=-1), target=atns, reduction='none'))
@@ -518,7 +527,7 @@ def train(data):
 
             # TODO: Delete?
             with torch.no_grad():
-                grads = torch.cat([p.grad.flatten() for p in data.policy.parameters()])
+                grads = torch.cat([p.grad.flatten() for p in data.policy.parameters() if p.grad is not None])
                 grad_var = grads.var(0).mean() * config.minibatch_size
                 data.msg = f'Gradient variance: {grad_var.item():.3f}'
 
