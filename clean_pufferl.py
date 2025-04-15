@@ -377,14 +377,12 @@ def train(data):
                 torch.cuda.synchronize()
             elif config.use_vtrace:
                 importance = advantages = torch.zeros(experience.values.shape, device=config.device).to(config.device)
-                vs = torch.zeros(experience.values.shape, device=config.device)
                 data.compute_vtrace(batch.values, batch.rewards, batch.dones,
-                    experience.ratio, vs, advantages, config.gamma, config.vtrace_rho_clip, config.vtrace_c_clip)
+                    experience.ratio, advantages, config.gamma, config.vtrace_rho_clip, config.vtrace_c_clip)
             elif config.use_puff_advantage:
                 importance = advantages = torch.zeros(experience.values.shape, device=config.device).to(config.device)
-                vs = torch.zeros(experience.values.shape, device=config.device)
                 data.compute_puff_advantage(experience.values, experience.rewards, experience.dones,
-                    experience.ratio, vs, advantages, config.gamma, config.gae_lambda, config.vtrace_rho_clip, config.vtrace_c_clip)
+                    experience.ratio, advantages, config.gamma, config.gae_lambda, config.vtrace_rho_clip, config.vtrace_c_clip)
             else:
                 importance = advantages = data.compute_gae(experience.values, experience.rewards,
                     experience.dones, config.gamma, config.gae_lambda)
@@ -452,13 +450,12 @@ def train(data):
             if config.use_vtrace or config.use_puff_advantage:
                 with torch.no_grad():
                     adv = advantages[batch.idx]
-                    vs = vs[batch.idx]
                     if config.use_vtrace:
                         data.compute_vtrace(batch.values, batch.rewards, batch.dones,
-                            ratio, vs, adv, config.gamma, config.vtrace_rho_clip, config.vtrace_c_clip)
+                            ratio, adv, config.gamma, config.vtrace_rho_clip, config.vtrace_c_clip)
                     elif config.use_puff_advantage:
                         data.compute_puff_advantage(batch.values, batch.rewards, batch.dones,
-                            ratio, vs, adv, config.gamma, config.gae_lambda, config.vtrace_rho_clip, config.vtrace_c_clip)
+                            ratio, adv, config.gamma, config.gae_lambda, config.vtrace_rho_clip, config.vtrace_c_clip)
 
                     #advantages[batch.idx] = adv
                     #importance[batch.idx] = adv
