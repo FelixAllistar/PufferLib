@@ -340,10 +340,13 @@ def train(data):
             experience.rewards[:, -1] += 1.0*diayn_r
             print('DIAYN acc: ', diayn_r.mean())
 
-    total_minibatches = int(config.update_epochs*config.batch_size/data.minibatch_size)
+    epoch_minibatches = config.batch_size // data.minibatch_size
+    total_minibatches = int(config.update_epochs*epoch_minibatches)
     accumulate_minibatches = max(1, config.minibatch_size // config.max_minibatch_size)
     n_samples = data.minibatch_size // config.bptt_horizon
+    experience.ppg_logprobs = experience.logprobs.clone()
     for mb in range(total_minibatches):
+        epoch = mb // epoch_minibatches
         with profile.train_misc:
             if config.use_p3o:
                 # Note: This function gets messed up by computing across
@@ -444,6 +447,9 @@ def train(data):
             ratio = logratio.exp()
             experience.ratio[batch.idx] = ratio
 
+            if epoch == 0:
+                experience.ppg_logprobs[batch.idx] = newlogprob.detach()
+
             # TODO: Only do this if we are KL clipping? Saves 1-2% compute
             with torch.no_grad():
                 # calculate approx_kl http://joschu.net/blog/kl-approx.html
@@ -472,11 +478,14 @@ def train(data):
             adv = adv * batch.prio
 
             # Policy loss
-            pg_loss1 = -adv * ratio
-            pg_loss2 = -adv * torch.clamp(
-                ratio, 1 - config.clip_coef, 1 + config.clip_coef
-            )
-            pg_loss = torch.max(pg_loss1, pg_loss2).mean()
+            if epoch == 0:
+                pg_loss1 = -adv * ratio
+                pg_loss2 = -adv * torch.clamp(
+                    ratio, 1 - config.clip_coef, 1 + config.clip_coef
+                )
+                pg_loss = torch.max(pg_loss1, pg_loss2).mean()
+            else:
+                pg_loss = 0.0*torch.nn.functional.kl_div(newlogprob, batch.ppg_logprobs, reduction='mean')
 
             # Value loss
             if config.use_p3o:
@@ -556,6 +565,174 @@ def train(data):
         if config.target_kl is not None:
             if approx_kl > config.target_kl:
                 break
+
+
+    if data.epoch % 16 == 0:
+        all_logits = torch.zeros(data.experience_rows, config.bptt_horizon, logits.shape[-1], device=config.device)
+        for i in range(0, data.experience_rows, n_samples):
+            start = i
+            end = min(i+n_samples, data.experience_rows)
+            idx = slice(start, end)
+
+            batch = sample(data, advantages, n_samples, method='fixed', idx=idx)
+            state = pufferlib.namespace(
+                action=batch.actions,
+                lstm_h=None,
+                lstm_c=None,
+            )
+
+            with profile.train_forward:
+                if not isinstance(data.policy, torch.nn.LSTM):
+                    batch.obs = batch.obs.reshape(-1, *data.vecenv.single_observation_space.shape)
+
+                # TODO: Currently only returning traj shaped value as a hack
+                logits, newvalue = data.policy.forward_train(batch.obs, state)
+
+                all_logits[idx] = logits.view(n_samples, config.bptt_horizon, -1).detach()
+                experience.values[batch.idx] = newvalue.detach()
+
+                actions, newlogprob, entropy = pufferlib.pytorch.sample_logits(logits,
+                    action=batch.actions, is_continuous=data.policy.is_continuous)
+
+
+        epoch_minibatches = config.batch_size // data.minibatch_size
+        total_minibatches = int(config.ppg_epochs*epoch_minibatches)
+        accumulate_minibatches = max(1, config.minibatch_size // config.max_minibatch_size)
+        n_samples = data.minibatch_size // config.bptt_horizon
+        experience.ppg_logprobs = experience.logprobs.clone()
+        for mb in range(total_minibatches):
+            epoch = mb // epoch_minibatches
+            with profile.train_misc:
+                if config.use_vtrace:
+                    importance = advantages = torch.zeros(experience.values.shape, device=config.device).to(config.device)
+                    vs = torch.zeros(experience.values.shape, device=config.device)
+                    data.compute_vtrace(experience.values, experience.rewards, experience.dones,
+                        experience.ratio, vs, advantages, config.gamma, config.vtrace_rho_clip, config.vtrace_c_clip)
+                elif config.use_puff_advantage:
+                    importance = advantages = torch.zeros(experience.values.shape, device=config.device).to(config.device)
+                    vs = torch.zeros(experience.values.shape, device=config.device)
+                    data.compute_puff_advantage(experience.values, experience.rewards, experience.dones,
+                        experience.ratio, vs, advantages, config.gamma, config.gae_lambda, config.vtrace_rho_clip, config.vtrace_c_clip)
+                else:
+                    importance = advantages = data.compute_gae(experience.values, experience.rewards,
+                        experience.dones, config.gamma, config.gae_lambda)
+
+            with profile.train_copy:
+                batch = sample(data, importance, n_samples)
+
+            loss = 0
+            with profile.train_misc:
+                state = pufferlib.namespace(
+                    action=batch.actions,
+                    lstm_h=None,
+                    lstm_c=None,
+                )
+
+                if config.use_diayn:
+                    state.diayn_z = batch.diayn_z.reshape(-1)
+
+            with profile.train_forward:
+                if not isinstance(data.policy, torch.nn.LSTM):
+                    batch.obs = batch.obs.reshape(-1, *data.vecenv.single_observation_space.shape)
+
+                # TODO: Currently only returning traj shaped value as a hack
+                logits, newvalue = data.policy.forward_train(batch.obs, state)
+
+                actions, newlogprob, entropy = pufferlib.pytorch.sample_logits(logits,
+                    action=batch.actions, is_continuous=data.policy.is_continuous)
+
+            with profile.train_misc:
+                newlogprob = newlogprob.reshape(batch.logprobs.shape)
+                logratio = newlogprob - batch.logprobs
+                ratio = logratio.exp()
+                experience.ratio[batch.idx] = ratio
+
+                # TODO: Only do this if we are KL clipping? Saves 1-2% compute
+                with torch.no_grad():
+                    # calculate approx_kl http://joschu.net/blog/kl-approx.html
+                    old_approx_kl = (-logratio).mean()
+                    approx_kl = ((ratio - 1) - logratio).mean()
+                    clipfrac = ((ratio - 1.0).abs() > config.clip_coef).float().mean()
+
+                if config.use_vtrace or config.use_puff_advantage:
+                    with torch.no_grad():
+                        adv = advantages[batch.idx]
+                        vs = vs[batch.idx]
+                        if config.use_vtrace:
+                            data.compute_vtrace(batch.values, batch.rewards, batch.dones,
+                                ratio, vs, adv, config.gamma, config.vtrace_rho_clip, config.vtrace_c_clip)
+                        elif config.use_puff_advantage:
+                            data.compute_puff_advantage(batch.values, batch.rewards, batch.dones,
+                                ratio, vs, adv, config.gamma, config.gae_lambda, config.vtrace_rho_clip, config.vtrace_c_clip)
+
+                        #advantages[batch.idx] = adv
+                        #importance[batch.idx] = adv
+
+                adv = batch.advantages
+                if config.norm_adv:
+                    adv = (adv - adv.mean()) / (adv.std() + 1e-8)
+
+                adv = adv * batch.prio
+
+                # Policy loss
+                ppg_logits = torch.log_softmax(all_logits[batch.idx], dim=-1).detach()
+                log_logits = torch.log_softmax(logits.view(ppg_logits.shape), dim=-1)
+                pg_loss = torch.nn.functional.kl_div(log_logits, ppg_logits, log_target=True, reduction='mean')
+
+                # Value loss
+                if config.clip_vloss:
+                    newvalue = newvalue#.flatten()
+                    ret = batch.returns#.flatten()
+                    v_loss_unclipped = (newvalue - ret) ** 2
+                    val = batch.values#.flatten()
+                    v_clipped = val + torch.clamp(
+                        newvalue - val,
+                        -config.vf_clip_coef,
+                        config.vf_clip_coef,
+                    )
+                    v_loss_clipped = (v_clipped - ret) ** 2
+                    v_loss_max = torch.max(v_loss_unclipped, v_loss_clipped)
+                    v_loss = 0.5 * v_loss_max.mean()
+                else:
+                    newvalue = newvalue.flatten()
+                    v_loss = 0.5 * ((newvalue - ret) ** 2).mean()
+
+                entropy_loss = entropy.mean()
+                loss += pg_loss - config.ent_coef*entropy_loss + v_loss*config.vf_coef
+                #loss += 0*pg_loss - 0*entropy_loss + 0*v_loss
+
+            with profile.learn:
+                if data.scaler is not None:
+                    loss = data.scaler.scale(loss)
+
+                loss.backward()
+
+                if data.scaler is not None:
+                    data.scaler.unscale_(data.optimizer)
+
+                # TODO: Delete?
+                with torch.no_grad():
+                    grads = torch.cat([p.grad.flatten() for p in data.policy.parameters()])
+                    grad_var = grads.var(0).mean() * config.minibatch_size
+                    data.msg = f'Gradient variance: {grad_var.item():.3f}'
+
+                if (mb + 1) % accumulate_minibatches == 0:
+                    torch.nn.utils.clip_grad_norm_(data.policy.parameters(), config.max_grad_norm)
+
+                    # TODO: Can remove scaler if only using bf16
+                    if data.scaler is None:
+                        data.optimizer.step()
+                    else:
+                        data.scaler.step(data.optimizer)
+                        data.scaler.update()
+
+                    data.optimizer.zero_grad()
+
+
+            if config.target_kl is not None:
+                if approx_kl > config.target_kl:
+                    break
+
 
     # Reprioritize experience
     data.max_uses = data.ep_uses.max().item()
@@ -652,7 +829,7 @@ def store(data, state, obs, value, action, logprob, reward, done, env_id, mask):
     data.step += 1
     return action.cpu().numpy()
 
-def sample(data, advantages, n, reward_block=None, mask_block=None, method='prio'):
+def sample(data, advantages, n, reward_block=None, mask_block=None, method='prio', idx=None):
     exp = data.experience
     if method == 'topk':
         _, idx = torch.topk(advantages.abs().sum(axis=1), n)
@@ -665,6 +842,8 @@ def sample(data, advantages, n, reward_block=None, mask_block=None, method='prio
         idx = torch.multinomial(advantages.abs().sum(axis=1) + 1e-6, n)
     elif method == 'random':
         idx = torch.randint(0, advantages.shape[0], (n,), device=data.device)
+    elif method == 'fixed':
+        assert idx is not None
     else:
         raise ValueError(f'Unknown sampling method: {method}')
 

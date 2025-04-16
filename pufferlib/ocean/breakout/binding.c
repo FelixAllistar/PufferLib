@@ -3,6 +3,9 @@
 #define Env Breakout
 #include "../env_binding.h"
 
+static PyObject* my_shared(PyObject* self, PyObject* args, PyObject* kwargs) {
+}
+
 static int my_init(Env* env, PyObject* args, PyObject* kwargs) {
     env->frameskip = unpack(kwargs, "frameskip");
     env->width = unpack(kwargs, "width");

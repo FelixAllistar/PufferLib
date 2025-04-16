@@ -133,7 +133,7 @@ static PyObject* env_reset(PyObject* self, PyObject* args) {
     if (!env){
         return NULL;
     }
-    reset(env);
+    c_reset(env);
     Py_RETURN_NONE;
 }
 
@@ -154,7 +154,7 @@ static PyObject* env_render(PyObject* self, PyObject* args) {
     if (!env){
         return NULL;
     }
-    render(env);
+    c_render(env);
     Py_RETURN_NONE;
 }
 
@@ -372,7 +372,7 @@ static PyObject* vec_reset(PyObject* self, PyObject* args) {
     for (int i = 0; i < vec->num_envs; i++) {
         // Assumes each process has the same number of environments
         srand(i + seed*vec->num_envs);
-        reset(vec->envs[i]);
+        c_reset(vec->envs[i]);
     }
     Py_RETURN_NONE;
 }
@@ -409,7 +409,7 @@ static PyObject* vec_render(PyObject* self, PyObject* args) {
     }
     int env_id = PyLong_AsLong(env_id_arg);
  
-    render(vec->envs[env_id]);
+    c_render(vec->envs[env_id]);
     Py_RETURN_NONE;
 }
 

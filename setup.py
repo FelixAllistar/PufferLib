@@ -266,7 +266,7 @@ extension_paths = [
     #'pufferlib/ocean/squared/cy_squared',
     'pufferlib/ocean/snake/cy_snake',
     #'pufferlib/ocean/pong/cy_pong',
-    # 'pufferlib/ocean/breakout/cy_breakout',
+    #'pufferlib/ocean/breakout/cy_breakout',
     'pufferlib/ocean/enduro/cy_enduro',
     'pufferlib/ocean/blastar/cy_blastar',
     'pufferlib/ocean/connect4/cy_connect4',
