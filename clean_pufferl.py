@@ -391,8 +391,12 @@ def train(data):
         batch = sample(data, importance, n_samples)
 
         profile('train_misc', epoch)
+        action_inp = torch.cat([
+            torch.zeros(batch.actions.shape[0], 1, dtype=torch.long, device=config.device),
+            batch.actions[:, :-1],
+        ], dim=1)
         state = pufferlib.namespace(
-            action=batch.actions,
+            action=action_inp,
             lstm_h=None,
             lstm_c=None,
         )
