@@ -50,6 +50,7 @@ def create(config, vecenv, policy, optimizer=None, wandb=None, neptune=None):
         diayn_loss=0,
         grad_var=0,
         importance=0,
+        world_loss=0,
     )
 
     utilization = Utilization()
@@ -494,8 +495,12 @@ def train(data):
             newvalue = newvalue.flatten()
             v_loss = 0.5 * ((newvalue - ret) ** 2).mean()
 
+        next_state_preds = data.policy.policy.world_model(state.hidden)[:-1]
+        next_state_targs = state.obs_embed[1:]
+        world_loss = torch.nn.functional.mse_loss(next_state_preds, next_state_targs)
+
         entropy_loss = entropy.mean()
-        loss += pg_loss - config.ent_coef*entropy_loss + v_loss*config.vf_coef
+        loss += pg_loss - config.ent_coef*entropy_loss + v_loss*config.vf_coef + world_loss*config.world_coef
 
         # This breaks vloss clipping?
         with torch.no_grad():
@@ -537,6 +542,7 @@ def train(data):
         losses.clipfrac += clipfrac.item() / total_minibatches
         losses.grad_var += grad_var.item() / total_minibatches
         losses.importance += ratio.mean().item() / total_minibatches
+        losses.world_loss += world_loss.item() / total_minibatches
 
         if data.use_diayn:
             losses.diayn_loss += diayn_loss.item() / total_minibatches

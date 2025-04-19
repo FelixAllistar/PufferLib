@@ -83,6 +83,12 @@ class Default(nn.Module):
             self.value = pufferlib.pytorch.layer_init(
                 nn.Linear(hidden_size, 1), std=1)
 
+        self.world_model = nn.Sequential(
+            nn.Linear(hidden_size, hidden_size),
+            nn.ReLU(),
+            nn.Linear(hidden_size, hidden_size),
+        )
+
     def forward(self, observations, state=None):
         hidden = self.encode_observations(observations, state=state)
         state.hidden = hidden
@@ -216,7 +222,9 @@ class LSTMWrapper(nn.LSTM):
 
         hidden = hidden.transpose(0, 1)
         #hidden = self.pre_layernorm(hidden)
+        state.obs_embed = hidden
         hidden, (lstm_h, lstm_c) = super().forward(hidden, lstm_state)
+        state.hidden = hidden
         #hidden = self.post_layernorm(hidden)
         hidden = hidden.transpose(0, 1)
 
@@ -224,9 +232,8 @@ class LSTMWrapper(nn.LSTM):
         logits, values = self.policy.decode_actions(flat_hidden)
         values = values.reshape(B, TT)
         #state.batch_logits = logits.reshape(B, TT, -1)
-        state.hidden = hidden
-        state.lstm_h = lstm_h.detach()
-        state.lstm_c = lstm_c.detach()
+        state.lstm_h = lstm_h
+        state.lstm_c = lstm_c
         return logits, values
 
 class Convolutional(nn.Module):
