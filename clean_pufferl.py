@@ -235,6 +235,7 @@ def evaluate(data):
     infos = defaultdict(list)
     lstm_h = data.lstm_h
     lstm_c = data.lstm_c
+    atn_buffer = torch.zeros(data.vecenv.num_agents, dtype=torch.long, device=config.device)
 
     while data.free_idx < data.on_policy_rows:
         profile('env', epoch)
@@ -272,6 +273,7 @@ def evaluate(data):
                 mask=mask,
                 lstm_h=h,
                 lstm_c=c,
+                action=atn_buffer[gpu_env_id],
             )
 
             if data.use_diayn:
@@ -280,6 +282,7 @@ def evaluate(data):
             logits, value = policy(o_device, state)
             action, logprob, _ = pufferlib.pytorch.sample_logits(logits, is_continuous=policy.is_continuous)
             r = torch.clamp(r, -1, 1)
+            atn_buffer[gpu_env_id] = action
 
         profile('eval_copy', epoch)
         with torch.no_grad():

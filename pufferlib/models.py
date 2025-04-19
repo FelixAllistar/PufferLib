@@ -39,8 +39,10 @@ class Default(nn.Module):
             self.encoder = nn.Linear(input_size, self.hidden_size)
         else:
             #self.encoder = nn.Linear(np.prod(env.single_observation_space.shape), hidden_size)
+            self.num_actions = env.single_action_space.n
+            input_size = np.prod(env.single_observation_space.shape) + self.num_actions
             self.encoder = torch.nn.Sequential(
-                nn.Linear(np.prod(env.single_observation_space.shape), hidden_size),
+                nn.Linear(input_size, hidden_size),
                 nn.GELU(),
             )
 
@@ -99,6 +101,9 @@ class Default(nn.Module):
             observations = torch.cat([v.view(batch_size, -1) for v in observations.values()], dim=1)
         else: 
             observations = observations.view(batch_size, -1)
+
+        one_hot_atns = torch.nn.functional.one_hot(state.action, self.num_actions).float()
+        observations = torch.cat([observations, one_hot_atns], dim=1)
         return self.encoder(observations.float())
 
     def decode_actions(self, hidden):
@@ -203,6 +208,7 @@ class LSTMWrapper(nn.LSTM):
             lstm_state = None
 
         x = x.reshape(B*TT, *space_shape)
+        state.action = state.action.reshape(B*TT)
         hidden = self.policy.encode_observations(x, state)
         assert hidden.shape == (B*TT, self.input_size)
 
