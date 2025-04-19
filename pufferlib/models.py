@@ -39,10 +39,8 @@ class Default(nn.Module):
             self.encoder = nn.Linear(input_size, self.hidden_size)
         else:
             #self.encoder = nn.Linear(np.prod(env.single_observation_space.shape), hidden_size)
-            self.num_actions = env.single_action_space.n
-            input_size = np.prod(env.single_observation_space.shape) + self.num_actions
             self.encoder = torch.nn.Sequential(
-                nn.Linear(input_size, hidden_size),
+                nn.Linear(np.prod(env.single_observation_space.shape), hidden_size),
                 nn.GELU(),
             )
 
@@ -83,15 +81,29 @@ class Default(nn.Module):
             self.value = pufferlib.pytorch.layer_init(
                 nn.Linear(hidden_size, 1), std=1)
 
-        self.world_model = nn.Sequential(
-            nn.Linear(hidden_size, hidden_size),
+        self.num_actions = env.single_action_space.n
+
+        self.world_model_shared = nn.Sequential(
+            nn.Linear(hidden_size + self.num_actions, 4*hidden_size),
             nn.ReLU(),
-            nn.Linear(hidden_size, hidden_size),
         )
+        self.world_model = nn.Sequential(
+            nn.Linear(4*hidden_size, hidden_size),
+        )
+        self.reward_model = nn.Sequential(
+            nn.Linear(4*hidden_size, 1),
+        )
+
+    def world_model_forward(self, hidden, actions):
+        one_hot_atns = torch.nn.functional.one_hot(actions, self.num_actions).float()
+        world_model_input = torch.cat([hidden, one_hot_atns], dim=-1)
+        hidden = self.world_model_shared(world_model_input)
+        world_model_obs = self.world_model(hidden)
+        reward_preds = self.reward_model(hidden)
+        return world_model_obs, reward_preds
 
     def forward(self, observations, state=None):
         hidden = self.encode_observations(observations, state=state)
-        state.hidden = hidden
         logits, values = self.decode_actions(hidden)
         return logits, values
 
@@ -108,8 +120,6 @@ class Default(nn.Module):
         else: 
             observations = observations.view(batch_size, -1)
 
-        one_hot_atns = torch.nn.functional.one_hot(state.action, self.num_actions).float()
-        observations = torch.cat([observations, one_hot_atns], dim=1)
         return self.encoder(observations.float())
 
     def decode_actions(self, hidden):
@@ -167,6 +177,7 @@ class LSTMWrapper(nn.LSTM):
         #self.pre_layernorm = nn.LayerNorm(hidden_size)
         #self.post_layernorm = nn.LayerNorm(hidden_size)
 
+        #self.reward_model = nn.Linear(hidden_size, 1)
     def forward(self, observations, state):
         '''Forward function for inference. 3x faster than using LSTM directly'''
         hidden = self.policy.encode_observations(observations, state=state)
@@ -182,11 +193,45 @@ class LSTMWrapper(nn.LSTM):
 
         #hidden = self.pre_layernorm(hidden)
         hidden, c = self.cell(hidden, lstm_state)
-        #hidden = self.post_layernorm(hidden)
-        state.hidden = hidden
+        logits, values = self.policy.decode_actions(hidden)
+        actions, logprob, _ = pufferlib.pytorch.sample_logits(logits, is_continuous=False)
         state.lstm_h = hidden
         state.lstm_c = c
-        logits, values = self.policy.decode_actions(hidden)
+        state.action = actions
+        state.logprob = logprob
+
+        N = 32
+        n_agents = hidden.shape[0]
+        muzero_hidden = hidden.repeat(N, 1)
+        muzero_lstm_state = (
+            hidden.repeat(N, 1),
+            c.repeat(N, 1),
+        )
+        muzero_logits = logits.repeat(N, 1)
+        muzero_rewards = torch.zeros(hidden.shape[0]*N, device=hidden.device)
+        all_muzero_actions = []
+        all_muzero_logprobs = []
+        for t in range(5):
+            muzero_actions, logprob, _ = pufferlib.pytorch.sample_logits(muzero_logits, is_continuous=False)
+            all_muzero_actions.append(muzero_actions)
+            all_muzero_logprobs.append(logprob)
+
+            world_model_obs, rewards = self.policy.world_model_forward(muzero_hidden, muzero_actions)
+            muzero_rewards += rewards.view(-1)
+            muzero_hidden, c = self.cell(world_model_obs, muzero_lstm_state)
+            muzero_lstm_state = (muzero_hidden, c)
+            muzero_logits, muzero_values = self.policy.decode_actions(muzero_hidden)
+
+        returns = (muzero_rewards + muzero_values.squeeze()).view(N, n_agents)
+        idxs = returns.argmax(dim=0)
+
+        muzero_actions = all_muzero_actions[0].view(N, n_agents)
+        muzero_actions = torch.take_along_dim(muzero_actions, idxs.unsqueeze(0), dim=0).squeeze(0)
+        state.action = muzero_actions
+
+        muzero_logprobs = all_muzero_logprobs[0].view(N, n_agents)
+        muzero_logprobs = torch.take_along_dim(muzero_logprobs, idxs.unsqueeze(0), dim=0).squeeze(0)
+        state.logprob = muzero_logprobs
         return logits, values
 
     def forward_train(self, observations, state):
@@ -217,14 +262,12 @@ class LSTMWrapper(nn.LSTM):
         state.action = state.action.reshape(B*TT)
         hidden = self.policy.encode_observations(x, state)
         assert hidden.shape == (B*TT, self.input_size)
-
         hidden = hidden.reshape(B, TT, self.input_size)
+        state.obs_embed = hidden
 
         hidden = hidden.transpose(0, 1)
         #hidden = self.pre_layernorm(hidden)
-        state.obs_embed = hidden
         hidden, (lstm_h, lstm_c) = super().forward(hidden, lstm_state)
-        state.hidden = hidden
         #hidden = self.post_layernorm(hidden)
         hidden = hidden.transpose(0, 1)
 
@@ -232,6 +275,7 @@ class LSTMWrapper(nn.LSTM):
         logits, values = self.policy.decode_actions(flat_hidden)
         values = values.reshape(B, TT)
         #state.batch_logits = logits.reshape(B, TT, -1)
+        state.hidden = hidden
         state.lstm_h = lstm_h
         state.lstm_c = lstm_c
         return logits, values

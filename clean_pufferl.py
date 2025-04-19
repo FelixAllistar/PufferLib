@@ -51,6 +51,7 @@ def create(config, vecenv, policy, optimizer=None, wandb=None, neptune=None):
         grad_var=0,
         importance=0,
         world_loss=0,
+        reward_loss=0,
     )
 
     utilization = Utilization()
@@ -281,7 +282,9 @@ def evaluate(data):
                 state.diayn_z = data.diayn_skills[env_id]
 
             logits, value = policy(o_device, state)
-            action, logprob, _ = pufferlib.pytorch.sample_logits(logits, is_continuous=policy.is_continuous)
+            #_, logprob, _ = pufferlib.pytorch.sample_logits(logits, is_continuous=policy.is_continuous)
+            action = state.action
+            logprob = state.logprob
             r = torch.clamp(r, -1, 1)
             atn_buffer[gpu_env_id] = action
 
@@ -495,12 +498,17 @@ def train(data):
             newvalue = newvalue.flatten()
             v_loss = 0.5 * ((newvalue - ret) ** 2).mean()
 
-        next_state_preds = data.policy.policy.world_model(state.hidden)[:-1]
-        next_state_targs = state.obs_embed[1:]
+        next_state_preds, next_reward_preds = data.policy.policy.world_model_forward(state.hidden, batch.actions)
+        next_state_preds = next_state_preds[:, :-1]
+        next_state_targs = state.obs_embed[:, 1:]
         world_loss = torch.nn.functional.mse_loss(next_state_preds, next_state_targs)
 
+        next_reward_preds = next_reward_preds[:, :-1].squeeze(-1)
+        next_reward_targs = batch.rewards[:, 1:]
+        reward_loss = torch.nn.functional.mse_loss(next_reward_preds, next_reward_targs)
+
         entropy_loss = entropy.mean()
-        loss += pg_loss - config.ent_coef*entropy_loss + v_loss*config.vf_coef + world_loss*config.world_coef
+        loss += pg_loss - config.ent_coef*entropy_loss + v_loss*config.vf_coef + world_loss*config.world_coef + reward_loss*config.reward_coef
 
         # This breaks vloss clipping?
         with torch.no_grad():
@@ -517,7 +525,7 @@ def train(data):
 
         # TODO: Delete?
         with torch.no_grad():
-            grads = torch.cat([p.grad.flatten() for p in data.policy.parameters()])
+            grads = torch.cat([p.grad.flatten() for p in data.policy.parameters() if p.grad is not None])
             grad_var = grads.var(0).mean() * config.minibatch_size
             data.msg = f'Gradient variance: {grad_var.item():.3f}'
 
@@ -543,6 +551,7 @@ def train(data):
         losses.grad_var += grad_var.item() / total_minibatches
         losses.importance += ratio.mean().item() / total_minibatches
         losses.world_loss += world_loss.item() / total_minibatches
+        losses.reward_loss += reward_loss.item() / total_minibatches
 
         if data.use_diayn:
             losses.diayn_loss += diayn_loss.item() / total_minibatches
