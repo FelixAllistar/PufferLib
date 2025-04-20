@@ -50,8 +50,10 @@ def create(config, vecenv, policy, optimizer=None, wandb=None, neptune=None):
         diayn_loss=0,
         grad_var=0,
         importance=0,
-        world_loss=0,
-        reward_loss=0,
+        wm_loss=0,
+        wm_reward_loss=0,
+        wm_value_loss=0,
+        wm_policy_loss=0,
     )
 
     utilization = Utilization()
@@ -498,17 +500,30 @@ def train(data):
             newvalue = newvalue.flatten()
             v_loss = 0.5 * ((newvalue - ret) ** 2).mean()
 
-        next_state_preds, next_reward_preds = data.policy.policy.world_model_forward(state.hidden, batch.actions)
-        next_state_preds = next_state_preds[:, :-1]
-        next_state_targs = state.obs_embed[:, 1:]
-        world_loss = torch.nn.functional.mse_loss(next_state_preds, next_state_targs)
+        #wm_state = (
+        #    state.obs_embed[0:1].contiguous(),
+        #    torch.zeros_like(state.obs_embed[0:1]).to(config.device),
+        #)
+        wm_h = state.obs_embed.reshape(-1, state.obs_embed.shape[-1])
+        wm_c = torch.zeros_like(wm_h)
+        wm_actions = batch.actions.reshape(-1)
+        wm_state = (wm_h, wm_c)
+        wm_logits, wm_reward, wm_value, wm_state = data.policy.world_model.forward_train(wm_actions, wm_state)
+        #wm_logits, wm_reward, wm_value, wm_state = data.policy.world_model.forward_train(batch.actions, wm_state)
+        wm_reward = wm_reward.reshape(batch.rewards.shape)
+        wm_value = wm_value.reshape(batch.values.shape)
+        wm_reward_loss = torch.nn.functional.mse_loss(wm_reward[:, :-1].squeeze(-1), batch.rewards[:, 1:])
+        wm_value_loss = torch.nn.functional.mse_loss(wm_value[:, :-1].squeeze(-1), ret[:, 1:])
+        wm_policy_loss = torch.nn.functional.cross_entropy(
+            wm_logits.view(-1, wm_logits.shape[-1]),
+            batch.actions.view(-1)
+        )
 
-        next_reward_preds = next_reward_preds[:, :-1].squeeze(-1)
-        next_reward_targs = batch.rewards[:, 1:]
-        reward_loss = torch.nn.functional.mse_loss(next_reward_preds, next_reward_targs)
+        wm_loss = wm_reward_loss + wm_value_loss + wm_policy_loss
+
 
         entropy_loss = entropy.mean()
-        loss += pg_loss - config.ent_coef*entropy_loss + v_loss*config.vf_coef + world_loss*config.world_coef + reward_loss*config.reward_coef
+        loss += pg_loss - config.ent_coef*entropy_loss + v_loss*config.vf_coef + wm_loss*config.world_coef
 
         # This breaks vloss clipping?
         with torch.no_grad():
@@ -550,8 +565,9 @@ def train(data):
         losses.clipfrac += clipfrac.item() / total_minibatches
         losses.grad_var += grad_var.item() / total_minibatches
         losses.importance += ratio.mean().item() / total_minibatches
-        losses.world_loss += world_loss.item() / total_minibatches
-        losses.reward_loss += reward_loss.item() / total_minibatches
+        losses.wm_reward_loss += wm_reward_loss.item() / total_minibatches
+        losses.wm_value_loss += wm_value_loss.item() / total_minibatches
+        losses.wm_policy_loss += wm_policy_loss.item() / total_minibatches
 
         if data.use_diayn:
             losses.diayn_loss += diayn_loss.item() / total_minibatches

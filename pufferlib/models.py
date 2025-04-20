@@ -8,6 +8,63 @@ import pufferlib.emulation
 import pufferlib.pytorch
 import pufferlib.spaces
 
+class WorldModel(nn.LSTM):
+    def __init__(self, env, input_size=128, hidden_size=128):
+        super().__init__(input_size, hidden_size)
+        self.obs_shape = env.single_observation_space.shape
+        self.input_size = input_size
+        self.hidden_size = hidden_size
+
+        for name, param in self.named_parameters():
+            if 'layer_norm' in name:
+                continue
+            if "bias" in name:
+                nn.init.constant_(param, 0)
+            elif "weight" in name:
+                nn.init.orthogonal_(param, 1.0)
+
+        self.cell = torch.nn.LSTMCell(input_size, hidden_size)
+        self.cell.weight_ih = self.weight_ih_l0
+        self.cell.weight_hh = self.weight_hh_l0
+        self.cell.bias_ih = self.bias_ih_l0
+        self.cell.bias_hh = self.bias_hh_l0
+
+        self.action_emb = nn.Embedding(env.single_action_space.n, input_size)
+        self.action_head = nn.Linear(hidden_size, env.single_action_space.n)
+        self.reward_head = nn.Linear(hidden_size, 1)
+        self.value_head = nn.Linear(hidden_size, 1)
+
+    def forward(self, actions, state):
+        atn_emb = self.action_emb(actions)
+
+        h, c = self.cell(atn_emb, state)
+        state = (h, c)
+
+
+        #You are predicting logits from the action? Makes no bloody sense. Fix this another day
+        logits = self.action_head(h)
+        reward = self.reward_head(h)
+        value = self.value_head(h)
+        return logits, reward, value, state
+
+    def forward_train(self, actions, state):
+        '''Forward function for training. Uses LSTM for fast time-batching'''
+        lstm_h, lstm_c = state
+
+        hidden = self.action_emb(actions)
+        #hidden = hidden.transpose(0, 1)
+        #hidden, (lstm_h, lstm_c) = super().forward(hidden, state)
+        (lstm_h, lstm_c) = self.cell(hidden, state)
+        hidden = lstm_h
+        #hidden = hidden.transpose(0, 1)
+
+        logits = self.action_head(hidden)
+        reward = self.reward_head(hidden)
+        value = self.value_head(hidden)
+
+        state = (lstm_h, lstm_c)
+        return logits, reward, value, state
+
 
 class Default(nn.Module):
     '''Default PyTorch policy. Flattens obs and applies a linear layer.
@@ -81,27 +138,6 @@ class Default(nn.Module):
             self.value = pufferlib.pytorch.layer_init(
                 nn.Linear(hidden_size, 1), std=1)
 
-        self.num_actions = env.single_action_space.n
-
-        self.world_model_shared = nn.Sequential(
-            nn.Linear(hidden_size + self.num_actions, 4*hidden_size),
-            nn.ReLU(),
-        )
-        self.world_model = nn.Sequential(
-            nn.Linear(4*hidden_size, hidden_size),
-        )
-        self.reward_model = nn.Sequential(
-            nn.Linear(4*hidden_size, 1),
-        )
-
-    def world_model_forward(self, hidden, actions):
-        one_hot_atns = torch.nn.functional.one_hot(actions, self.num_actions).float()
-        world_model_input = torch.cat([hidden, one_hot_atns], dim=-1)
-        hidden = self.world_model_shared(world_model_input)
-        world_model_obs = self.world_model(hidden)
-        reward_preds = self.reward_model(hidden)
-        return world_model_obs, reward_preds
-
     def forward(self, observations, state=None):
         hidden = self.encode_observations(observations, state=state)
         logits, values = self.decode_actions(hidden)
@@ -120,7 +156,9 @@ class Default(nn.Module):
         else: 
             observations = observations.view(batch_size, -1)
 
-        return self.encoder(observations.float())
+        obs_embed = self.encoder(observations.float())
+        state.obs_embed = obs_embed
+        return obs_embed
 
     def decode_actions(self, hidden):
         '''Decodes a batch of hidden states into (multi)discrete actions.
@@ -174,6 +212,8 @@ class LSTMWrapper(nn.LSTM):
         self.cell.bias_ih = self.bias_ih_l0
         self.cell.bias_hh = self.bias_hh_l0
 
+        self.world_model = WorldModel(env, input_size, hidden_size)
+
         #self.pre_layernorm = nn.LayerNorm(hidden_size)
         #self.post_layernorm = nn.LayerNorm(hidden_size)
 
@@ -202,27 +242,22 @@ class LSTMWrapper(nn.LSTM):
 
         N = 32
         n_agents = hidden.shape[0]
-        muzero_hidden = hidden.repeat(N, 1)
-        muzero_lstm_state = (
-            hidden.repeat(N, 1),
-            c.repeat(N, 1),
-        )
+        muzero_h = state.obs_embed.repeat(N, 1)
+        muzero_c = 0*state.lstm_c.repeat(N, 1)
+        wm_state = (muzero_h, muzero_c)
         muzero_logits = logits.repeat(N, 1)
         muzero_rewards = torch.zeros(hidden.shape[0]*N, device=hidden.device)
         all_muzero_actions = []
         all_muzero_logprobs = []
-        for t in range(5):
+        for t in range(1):
             muzero_actions, logprob, _ = pufferlib.pytorch.sample_logits(muzero_logits, is_continuous=False)
             all_muzero_actions.append(muzero_actions)
             all_muzero_logprobs.append(logprob)
 
-            world_model_obs, rewards = self.policy.world_model_forward(muzero_hidden, muzero_actions)
-            muzero_rewards += rewards.view(-1)
-            muzero_hidden, c = self.cell(world_model_obs, muzero_lstm_state)
-            muzero_lstm_state = (muzero_hidden, c)
-            muzero_logits, muzero_values = self.policy.decode_actions(muzero_hidden)
+            wm_logits, wm_reward, wm_value, wm_state = self.world_model.forward(muzero_actions, wm_state)
+            muzero_rewards += wm_reward.view(-1)
 
-        returns = (muzero_rewards + muzero_values.squeeze()).view(N, n_agents)
+        returns = (muzero_rewards + wm_value.squeeze()).view(N, n_agents)
         idxs = returns.argmax(dim=0)
 
         muzero_actions = all_muzero_actions[0].view(N, n_agents)
@@ -263,9 +298,9 @@ class LSTMWrapper(nn.LSTM):
         hidden = self.policy.encode_observations(x, state)
         assert hidden.shape == (B*TT, self.input_size)
         hidden = hidden.reshape(B, TT, self.input_size)
-        state.obs_embed = hidden
 
         hidden = hidden.transpose(0, 1)
+        state.obs_embed = hidden
         #hidden = self.pre_layernorm(hidden)
         hidden, (lstm_h, lstm_c) = super().forward(hidden, lstm_state)
         #hidden = self.post_layernorm(hidden)
