@@ -178,8 +178,8 @@ class CleanPuffeRL:
         self.wandb = wandb
         if neptune:
             self.neptune = init_neptune(args, env_name, id=config.run_id, tag=config.run_tag)
-            for k, v in pufferlib.utils.unroll_nested_dict(args):
-                self.neptune[k].append(v)
+            flat_args = {k: v for k, v in pufferlib.utils.unroll_nested_dict(args)}
+            self.neptune.log_configs(flat_args)
         elif wandb:
             self.wandb = init_wandb(args, env_name, id=config.run_id, tag=config.run_tag)
 
@@ -533,8 +533,7 @@ class CleanPuffeRL:
         if self.wandb:
             self.wandb.log(logs)
         elif self.neptune:
-            for k, v in logs.items():
-                self.neptune[k].append(v, step=agent_steps)
+            self.neptune.log_metrics(logs, step=agent_steps)
 
         return logs
 
@@ -551,7 +550,7 @@ class CleanPuffeRL:
             self.wandb.finish()
         elif self.neptune:
             # TODO: Add artifact
-            self.neptune.stop()
+            self.neptune.close()
 
     def save_checkpoint(self):
         config = self.config
@@ -908,21 +907,19 @@ def init_wandb(args, name, id=None, resume=True, tag=None):
     return wandb
 
 def init_neptune(args, name, id=None, resume=True, tag=None, mode="async"):
-    import neptune
-    import neptune.exceptions
+    import neptune_scale
+    import neptune_scale.exceptions
     try:
         neptune_name = args['neptune_name']
         neptune_project = args['neptune_project']
-        run = neptune.init_run(
+        run = neptune_scale.Run(
             project=f"{neptune_name}/{neptune_project}",
-            capture_hardware_metrics=False,
-            capture_stdout=False,
-            capture_stderr=False,
-            capture_traceback=False,
-            tags=[tag] if tag is not None else [],
+            enable_console_log_capture=False,
             mode=mode,
         )
-    except neptune.exceptions.NeptuneConnectionLostException:
+        if tag is not None:
+            run.add_tags([tag])
+    except neptune_scale.exceptions.NeptuneConnectionLostError:
         print("couldn't connect to neptune, logging in offline mode")
         return init_neptune(args, name, id, resume, tag, mode="offline")
     return run
