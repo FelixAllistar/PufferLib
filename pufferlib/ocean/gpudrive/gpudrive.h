@@ -201,7 +201,6 @@ struct GPUDrive {
     float* observations;
     int* actions;
     float* rewards;
-    unsigned char* masks;
     unsigned char* dones;
     LogBuffer* log_buffer;
     Log* logs;
@@ -233,7 +232,7 @@ struct GPUDrive {
     float reward_vehicle_collision;
     float reward_offroad_collision;
     char* map_name;
-    char* reached_goal_this_turn;
+    char* reached_goal_this_episode;
     float world_mean_x;
     float world_mean_y;
 };
@@ -629,7 +628,7 @@ void init(GPUDrive* env){
     // printf("Active agents: %d\n", env->active_agent_count);
     env->logs = (Log*)calloc(env->active_agent_count, sizeof(Log));
     env->goal_reached = (char*)calloc(env->active_agent_count, sizeof(char));
-    env->reached_goal_this_turn = (char*)calloc(env->active_agent_count, sizeof(char));
+    env->reached_goal_this_episode = (char*)calloc(env->active_agent_count, sizeof(char));
     init_grid_map(env);
     env->vision_range = 21;
     init_neighbor_offsets(env);
@@ -646,7 +645,7 @@ void free_initialized(GPUDrive* env){
     free(env->logs);
     free(env->fake_data);
     free(env->goal_reached);
-    free(env->reached_goal_this_turn);
+    free(env->reached_goal_this_episode);
     free(env->map_corners);
     free(env->grid_cells);
     free(env->neighbor_offsets);
@@ -667,7 +666,6 @@ void allocate(GPUDrive* env){
     env->observations = (float*)calloc(env->active_agent_count*max_obs, sizeof(float));
     env->actions = (int*)calloc(env->active_agent_count*2, sizeof(int));
     env->rewards = (float*)calloc(env->active_agent_count, sizeof(float));
-    env->masks = (unsigned char*)calloc(env->active_agent_count, sizeof(unsigned char));
     env->dones = (unsigned char*)calloc(env->active_agent_count, sizeof(unsigned char));
     env->log_buffer = allocate_logbuffer(LOG_BUFFER_SIZE);
     // printf("allocated\n");
@@ -677,7 +675,6 @@ void free_allocated(GPUDrive* env){
     free(env->observations);
     free(env->actions);
     free(env->rewards);
-    free(env->masks);
     free(env->dones);
     free_logbuffer(env->log_buffer);
     free_initialized(env);
@@ -921,9 +918,6 @@ void compute_observations(GPUDrive* env) {
     memset(env->observations, 0, max_obs*env->active_agent_count*sizeof(float));
     float (*observations)[max_obs] = (float(*)[max_obs])env->observations; 
     for(int i = 0; i < env->active_agent_count; i++) {
-        if(env->goal_reached[i] && !env->reached_goal_this_turn[i]){
-            continue;
-        }
         float* obs = &observations[i][0];
         Entity* ego_entity = &env->entities[env->active_agent_indices[i]];
         if(ego_entity->type > 3) break;
@@ -1041,23 +1035,27 @@ void c_reset(GPUDrive* env){
         collision_check(env, agent_idx);
     }
     memset(env->goal_reached, 0, env->active_agent_count*sizeof(char));
-    memset(env->masks, 1, env->active_agent_count*sizeof(char));  
-    memset(env->dones, 0, env->active_agent_count*sizeof(char));
+    memset(env->reached_goal_this_episode, 0, env->active_agent_count*sizeof(char));
     compute_observations(env);
+}
+
+void respawn_agent(GPUDrive* env, int agent_idx){
+    env->entities[agent_idx].x = env->entities[agent_idx].traj_x[0];
+    env->entities[agent_idx].y = env->entities[agent_idx].traj_y[0];
+    env->entities[agent_idx].heading = env->entities[agent_idx].traj_heading[0];
+    env->entities[agent_idx].vx = env->entities[agent_idx].traj_vx[0];
+    env->entities[agent_idx].vy = env->entities[agent_idx].traj_vy[0];
 }
 
 void c_step(GPUDrive* env){
     memset(env->rewards, 0, env->active_agent_count * sizeof(float));
-    memset(env->reached_goal_this_turn, 0, env->active_agent_count * sizeof(char));
     env->timestep++;
     if(env->timestep == 91){
 	    for(int i = 0; i < env->active_agent_count; i++){
-            if(env->goal_reached[i] == 0){
+            if(!env->reached_goal_this_episode[i]) {
                 env->logs[i].score = 0.0f;
-            } 
-	        else {
-                env->logs[i].score = 1.0f;
-		        env->logs[i].dnf_rate = 0.0f;
+                env->rewards[i] += -1.0f;
+                env->logs[i].episode_return += -1.0f;
             }
             int offroad = env->logs[i].offroad_rate;
             int collided = env->logs[i].collision_rate;
@@ -1065,7 +1063,6 @@ void c_step(GPUDrive* env){
             if(!offroad && !collided && !goal_reached){
                 env->logs[i].dnf_rate = 1.0f;
             }
-
             add_log(env->log_buffer, &env->logs[i]);
 	    }
 	    c_reset(env);
@@ -1081,13 +1078,11 @@ void c_step(GPUDrive* env){
         env->logs[i].score = 0.0f;
 	    env->logs[i].episode_length += 1;
         int agent_idx = env->active_agent_indices[i];
+        if(env->goal_reached[i] || env->entities[agent_idx].collision_state > 0){
+            respawn_agent(env, agent_idx);
+            env->goal_reached[i] = 0;
+        }
         env->entities[agent_idx].collision_state = 0;
-        if(env->goal_reached[i]){
-            env->masks[i] = 0;
-            env->entities[agent_idx].x = -10000;
-            env->entities[agent_idx].y = -10000;
-            continue;
-	    }
         move_dynamics(env, i, agent_idx);
         // move_expert(env, env->actions, agent_idx);
         collision_check(env, agent_idx);
@@ -1102,6 +1097,8 @@ void c_step(GPUDrive* env){
                 env->logs[i].offroad_rate = 1.0f;
                 env->logs[i].episode_return += env->reward_offroad_collision;
             }
+            env->logs[i].score = 0.0f;
+            add_log(env->log_buffer, &env->logs[i]);
         }
 
         float distance_to_goal = relative_distance_2d(
@@ -1110,13 +1107,13 @@ void c_step(GPUDrive* env){
                 env->entities[agent_idx].goal_position_x,
                 env->entities[agent_idx].goal_position_y);
         int reached_goal = distance_to_goal < 2.0f;
-        if(reached_goal && env->goal_reached[i] == 0){            
+        if(reached_goal){            
             env->rewards[i] += 1.0f;
 	        env->goal_reached[i] = 1;
-		    env->reached_goal_this_turn[i] = 1;
 	        env->logs[i].episode_return += 1.0f;
-            env->dones[i] = 1;
-            continue;
+            env->reached_goal_this_episode[i] = 1;
+            env->logs[i].score = 1.0f;
+            add_log(env->log_buffer, &env->logs[i]);
 	    }
     }
     compute_observations(env);

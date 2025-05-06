@@ -176,7 +176,7 @@ cdef class CyGPUDrive:
         free(agent_offsets)
         return total_count, py_offsets  
     def __init__(self, float[:, :] observations, int[:,:] actions,
-            float[:] rewards, unsigned char[:] masks, unsigned char[:] terminals, int num_envs,
+            float[:] rewards, unsigned char[:] terminals, int num_envs,
             int human_agent_idx, reward_vehicle_collision, 
             reward_offroad_collision, offsets):
 
@@ -214,7 +214,6 @@ cdef class CyGPUDrive:
                 observations=&observations[clone_agent_offset, 0],
                 actions=&actions[clone_agent_offset,0],
                 rewards=&rewards[clone_agent_offset],
-                masks=&masks[clone_agent_offset],
                 dones=&terminals[clone_agent_offset],
                 log_buffer=self.logs,
                 human_agent_idx=human_agent_idx,
@@ -237,7 +236,7 @@ cdef class CyGPUDrive:
             c_step(&self.envs[i])
 
     def render(self):
-        cdef GPUDrive* env = &self.envs[11]
+        cdef GPUDrive* env = &self.envs[2]
         if self.client == NULL:
             import os
             cwd = os.getcwd()
