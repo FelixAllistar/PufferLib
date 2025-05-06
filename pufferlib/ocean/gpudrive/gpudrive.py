@@ -29,7 +29,7 @@ class GPUDrive(pufferlib.PufferEnv):
         total_agents, agent_offsets =CyGPUDrive.get_total_agent_count(
             num_envs, human_agent_idx, reward_vehicle_collision, reward_offroad_collision)
         
-        self.num_agents = total_agents * 8
+        self.num_agents = total_agents
         print("Num agents: ", self.num_agents)
         super().__init__(buf=buf)
         self.c_envs = CyGPUDrive(self.observations, self.actions, self.rewards, self.masks,

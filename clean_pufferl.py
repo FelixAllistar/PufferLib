@@ -382,8 +382,9 @@ def train(data):
         elif config.use_puff_advantage:
             importance = advantages = torch.zeros(experience.values.shape, device=config.device).to(config.device)
             vs = torch.zeros(experience.values.shape, device=config.device)
-            data.compute_puff_advantage(experience.values, experience.rewards, experience.dones,
-                experience.ratio, vs, advantages, config.gamma, config.gae_lambda, config.vtrace_rho_clip, config.vtrace_c_clip)
+            n = (experience.values.shape[0]//256)*256
+            data.compute_puff_advantage(experience.values[:n], experience.rewards[:n], experience.dones[:n],
+                experience.ratio[:n], vs[:n], advantages[:n], config.gamma, config.gae_lambda, config.vtrace_rho_clip, config.vtrace_c_clip)
         else:
             importance = advantages = data.compute_gae(experience.values, experience.rewards,
                 experience.dones, config.gamma, config.gae_lambda)

@@ -183,7 +183,7 @@ cdef class CyGPUDrive:
         self.client = NULL
         self.num_envs = num_envs
         cdef int num_clones
-        num_clones = 8
+        num_clones = 1
         self.envs = <GPUDrive*> calloc(num_envs*num_clones, sizeof(GPUDrive))
         self.agent_offsets = <int*> calloc(num_envs + 1, sizeof(int))
         self.logs = allocate_logbuffer(LOG_BUFFER_SIZE)
@@ -228,12 +228,12 @@ cdef class CyGPUDrive:
 
     def reset(self):
         cdef int i
-        for i in range(self.num_envs*8):
+        for i in range(self.num_envs):
             c_reset(&self.envs[i])
 
     def step(self):
         cdef int i
-        for i in range(self.num_envs*8):
+        for i in range(self.num_envs):
             c_step(&self.envs[i])
 
     def render(self):
