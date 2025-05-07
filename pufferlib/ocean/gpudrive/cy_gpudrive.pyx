@@ -236,7 +236,7 @@ cdef class CyGPUDrive:
             c_step(&self.envs[i])
 
     def render(self):
-        cdef GPUDrive* env = &self.envs[2]
+        cdef GPUDrive* env = &self.envs[24]
         if self.client == NULL:
             import os
             cwd = os.getcwd()

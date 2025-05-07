@@ -1054,13 +1054,12 @@ void c_step(GPUDrive* env){
 	    for(int i = 0; i < env->active_agent_count; i++){
             if(!env->reached_goal_this_episode[i]) {
                 env->logs[i].score = 0.0f;
-                env->rewards[i] += -1.0f;
-                env->logs[i].episode_return += -1.0f;
+            } else {
+                env->logs[i].score = 1.0f;
             }
             int offroad = env->logs[i].offroad_rate;
             int collided = env->logs[i].collision_rate;
-            int goal_reached = env->goal_reached[i];
-            if(!offroad && !collided && !goal_reached){
+            if(!offroad && !collided && !env->reached_goal_this_episode[i]){
                 env->logs[i].dnf_rate = 1.0f;
             }
             add_log(env->log_buffer, &env->logs[i]);
@@ -1097,8 +1096,6 @@ void c_step(GPUDrive* env){
                 env->logs[i].offroad_rate = 1.0f;
                 env->logs[i].episode_return += env->reward_offroad_collision;
             }
-            env->logs[i].score = 0.0f;
-            add_log(env->log_buffer, &env->logs[i]);
         }
 
         float distance_to_goal = relative_distance_2d(
@@ -1112,8 +1109,6 @@ void c_step(GPUDrive* env){
 	        env->goal_reached[i] = 1;
 	        env->logs[i].episode_return += 1.0f;
             env->reached_goal_this_episode[i] = 1;
-            env->logs[i].score = 1.0f;
-            add_log(env->log_buffer, &env->logs[i]);
 	    }
     }
     compute_observations(env);
