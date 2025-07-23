@@ -245,6 +245,7 @@ environments = {
     'metta': [
         f'gym=={GYM_VERSION}',
         f'gymnasium=={GYMNASIUM_VERSION}',
+        'git @ git+https://github.com/metta-ai/metta.git@richard-alt-versions',
         'omegaconf',
         'hydra-core',
         'duckdb',
