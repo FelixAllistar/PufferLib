@@ -16,8 +16,9 @@ STEP = 1
 SEND = 2
 RECV = 3
 CLOSE = 4
-MAIN = 5
-INFO = 6
+PUT = 5
+MAIN = 6
+INFO = 7
 
 def recv_precheck(vecenv):
     if vecenv.flag != RECV:
@@ -57,7 +58,7 @@ class Serial:
     def num_envs(self):
         return self.agents_per_batch
  
-    def __init__(self, env_creators, env_args, env_kwargs, num_envs, buf=None, seed=0, **kwargs):
+    def __init__(self, env_creators, env_args, env_kwargs, num_envs, buf=None, seed=0, extra_dim=1, **kwargs):
         self.driver_env = env_creators[0](*env_args[0], **env_kwargs[0])
         self.agents_per_batch = self.driver_env.num_agents * num_envs
         self.num_agents = self.agents_per_batch
@@ -68,7 +69,7 @@ class Serial:
         self.observation_space = pufferlib.spaces.joint_space(self.single_observation_space, self.agents_per_batch)
 
 
-        set_buffers(self, buf)
+        set_buffers(self, buf, extra_dim=extra_dim)
 
         self.envs = []
         ptr = 0
@@ -80,7 +81,8 @@ class Serial:
                 terminals=self.terminals[ptr:end],
                 truncations=self.truncations[ptr:end],
                 masks=self.masks[ptr:end],
-                actions=self.actions[ptr:end]
+                actions=self.actions[ptr:end],
+                extra=self.extra[ptr:end]
             )
             ptr = end
             seed_i = seed + i if seed is not None else None
@@ -165,12 +167,25 @@ class Serial:
         return (self.observations, self.rewards, self.terminals, self.truncations,
             self.infos, self.agent_ids, self.masks)
 
+    def put(self, data=None):
+        # Prevents duplicate setting
+        if data is not None:
+            assert len(data.shape) == 2
+            assert data.shape[0] == self.num_agents
+            self.extra[:] = data
+
+        for e in self.envs:
+            e.put()
+
+    def get(self):
+        return self.extra
+
     def close(self):
         for env in self.envs:
             env.close()
 
 def _worker_process(env_creators, env_args, env_kwargs, obs_shape, obs_dtype, atn_shape, atn_dtype,
-        num_envs, num_agents, num_workers, worker_idx, send_pipe, recv_pipe, shm, is_native, seed):
+        num_envs, num_agents, num_workers, worker_idx, send_pipe, recv_pipe, shm, is_native, seed, extra_dim):
 
     # Environments read and write directly to shared memory
     shape = (num_workers, num_envs*num_agents)
@@ -183,6 +198,7 @@ def _worker_process(env_creators, env_args, env_kwargs, obs_shape, obs_dtype, at
         terminals=np.ndarray(shape, dtype=bool, buffer=shm['terminals'])[worker_idx],
         truncations=np.ndarray(shape, dtype=bool, buffer=shm['truncateds'])[worker_idx],
         masks=np.ndarray(shape, dtype=bool, buffer=shm['masks'])[worker_idx],
+        extra=np.ndarray((*shape, extra_dim), dtype=np.uint8, buffer=shm['extra'])[worker_idx],
         actions=atn_arr,
     )
     buf['masks'][:] = True
@@ -216,6 +232,9 @@ def _worker_process(env_creators, env_args, env_kwargs, obs_shape, obs_dtype, at
             envs.close()
             send_pipe.send(None)
             break
+        elif sem == PUT:
+            envs.put()
+            infos = None
 
         if infos:
             semaphores[worker_idx] = INFO
@@ -237,7 +256,8 @@ class Multiprocessing:
  
     def __init__(self, env_creators, env_args, env_kwargs,
             num_envs, num_workers=None, batch_size=None,
-            zero_copy=True, sync_traj=True, overwork=False, seed=0, **kwargs):
+            zero_copy=True, sync_traj=True, overwork=False,
+            seed=0, extra_dim=1, **kwargs):
         if batch_size is None:
             batch_size = num_envs
         if num_workers is None:
@@ -306,6 +326,7 @@ class Multiprocessing:
             masks=RawArray('b', num_agents),
             semaphores=RawArray('c', num_workers),
             notify=RawArray('b', num_workers),
+            extra=RawArray('c', num_agents*extra_dim),
         )
         shape = (num_workers, agents_per_worker)
         self.obs_batch_shape = (self.agents_per_batch, *obs_shape)
@@ -318,6 +339,7 @@ class Multiprocessing:
             rewards=np.ndarray(shape, dtype=np.float32, buffer=self.shm['rewards']),
             terminals=np.ndarray(shape, dtype=bool, buffer=self.shm['terminals']),
             truncations=np.ndarray(shape, dtype=bool, buffer=self.shm['truncateds']),
+            extra=np.ndarray((*shape, extra_dim), dtype=np.uint8, buffer=self.shm['extra']),
             masks=np.ndarray(shape, dtype=bool, buffer=self.shm['masks']),
             semaphores=np.ndarray(num_workers, dtype=np.uint8, buffer=self.shm['semaphores']),
             notify=np.ndarray(num_workers, dtype=bool, buffer=self.shm['notify']),
@@ -340,7 +362,7 @@ class Multiprocessing:
                     env_kwargs[start:end], obs_shape, obs_dtype,
                     atn_shape, atn_dtype, envs_per_worker, driver_env.num_agents,
                     num_workers, i, w_send_pipes[i], w_recv_pipes[i],
-                    self.shm, is_native, seed_i)
+                    self.shm, is_native, seed_i, extra_dim)
             )
             p.start()
             self.processes.append(p)
@@ -451,6 +473,32 @@ class Multiprocessing:
         idxs = self.w_slice
         self.actions[idxs] = actions
         self.buf['semaphores'][idxs] = STEP
+
+    def sync(self):
+        '''Block until semaphores are ready. Experimental for put/get'''
+        while True:
+            done = True
+            if len(self.waiting_workers) == 0:
+                return
+
+            for w in self.waiting_workers:
+                if self.buf['semaphores'][w] < MAIN:
+                    done = False
+                    break
+
+            if done:
+                return
+
+    def put(self, data):
+        assert len(data.shape) == 2
+        assert data.shape[0] == self.num_agents
+        self.sync()
+        self.buf['extra'][:] = data.reshape(self.buf['extra'].shape)
+        self.buf['semaphores'][:] = PUT
+        self.sync()
+
+    def get(self):
+        return self.buf['extra']
 
     def async_reset(self, seed=0):
         # Flush any waiting workers

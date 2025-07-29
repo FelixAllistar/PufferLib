@@ -19,7 +19,7 @@ calling super() before you have assigned the attribute.
 '''
 
 
-def set_buffers(env, buf=None):
+def set_buffers(env, buf=None, extra_dim=1):
     if buf is None:
         obs_space = env.single_observation_space
         env.observations = np.zeros((env.num_agents, *obs_space.shape), dtype=obs_space.dtype)
@@ -27,6 +27,7 @@ def set_buffers(env, buf=None):
         env.terminals = np.zeros(env.num_agents, dtype=bool)
         env.truncations = np.zeros(env.num_agents, dtype=bool)
         env.masks = np.ones(env.num_agents, dtype=bool)
+        env.extra = np.zeros((env.num_agents, extra_dim), dtype=np.uint8)
 
         # TODO: Major kerfuffle on inferring action space dtype. This needs some asserts?
         atn_space = pufferlib.spaces.joint_space(env.single_action_space, env.num_agents)
@@ -41,6 +42,7 @@ def set_buffers(env, buf=None):
         env.truncations = buf['truncations']
         env.masks = buf['masks']
         env.actions = buf['actions']
+        env.extra = buf['extra']
 
 class PufferEnv:
     def __init__(self, buf=None):
