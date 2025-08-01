@@ -1,3 +1,4 @@
+            breakpoint(0
 # puffer [train | eval | sweep] [env_name] [optional args] -- See https://puffer.ai for full details
 # This is the same as python -m pufferlib.pufferl [train | eval | sweep] [env_name] [optional args]
 # Distributed example: torchrun --standalone --nnodes=1 --nproc-per-node=6 -m pufferlib.pufferl train puffer_nmmo3
@@ -215,7 +216,7 @@ class PuffeRL:
         config = self.config
         device = config['device']
 
-        if config['use_rnn']:
+        if config['use_rnn'] and config['zero_lstm']:
             for k in self.lstm_h:
                 self.lstm_h[k].zero_()
                 self.lstm_c[k].zero_()
@@ -324,6 +325,12 @@ class PuffeRL:
         anneal_beta = b0 + (1 - b0)*a*self.epoch/self.total_epochs
         self.ratio[:] = 1
 
+        lstm_h = None
+        lstm_c = None
+        if config['use_rnn'] and not config['zero_lstm']:
+            lstm_h = torch.concatenate([v for v in self.lstm_h.values()])
+            lstm_c = torch.concatenate([v for v in self.lstm_c.values()])
+
         for mb in range(self.total_minibatches):
             profile('train_misc', epoch, nest=True)
             self.amp_context.__enter__()
@@ -355,10 +362,16 @@ class PuffeRL:
             if not config['use_rnn']:
                 mb_obs = mb_obs.reshape(-1, *self.vecenv.single_observation_space.shape)
 
+            hh = None
+            cc = None
+            if config['use_rnn'] and not config['zero_lstm']:
+                hh = lstm_h[idx].unsqueeze(0)
+                cc = lstm_c[idx].unsqueeze(0)
+
             state = dict(
                 action=mb_actions,
-                lstm_h=None,
-                lstm_c=None,
+                lstm_h=hh,
+                lstm_c=cc,
             )
 
             logits, newvalue = self.policy(mb_obs, state)
