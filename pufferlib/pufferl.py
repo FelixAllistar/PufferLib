@@ -1,4 +1,3 @@
-            breakpoint(0
 # puffer [train | eval | sweep] [env_name] [optional args] -- See https://puffer.ai for full details
 # This is the same as python -m pufferlib.pufferl [train | eval | sweep] [env_name] [optional args]
 # Distributed example: torchrun --standalone --nnodes=1 --nproc-per-node=6 -m pufferlib.pufferl train puffer_nmmo3
