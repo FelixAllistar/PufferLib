@@ -52,6 +52,65 @@ class Boids(nn.Module):
         action = self.actor(flat_hidden).split(self.action_vec, dim=1)
         return action, value
 
+class HL_Gauss(nn.Module):
+    def __init__(self, env, hidden_size=128, num_bins=20, **kwargs):
+        super().__init__()
+        self.hidden_size = hidden_size
+        self.num_bins = num_bins
+        self.is_multidiscrete = isinstance(env.single_action_space,
+                  pufferlib.spaces.MultiDiscrete)
+        self.is_continuous = isinstance(env.single_action_space, pufferlib.spaces.Box)
+        num_obs = np.prod(env.single_observation_space.shape)
+        self.network = nn.Sequential(
+            pufferlib.pytorch.layer_init(nn.Linear(num_obs, hidden_size)),
+            nn.GELU()
+        )
+
+        if self.is_multidiscrete:
+              self.action_nvec = tuple(env.single_action_space.nvec)
+              num_atns = sum(self.action_nvec)
+              self.decoder = pufferlib.pytorch.layer_init(
+                      nn.Linear(hidden_size, num_atns), std=0.01)
+        elif not self.is_continuous:
+              num_atns = env.single_action_space.n
+              self.decoder = pufferlib.pytorch.layer_init(
+                  nn.Linear(hidden_size, num_atns), std=0.01)
+        else:
+              self.decoder_mean = pufferlib.pytorch.layer_init(
+                  nn.Linear(hidden_size, env.single_action_space.shape[0]), std=0.01)
+              self.decoder_logstd = nn.Parameter(torch.zeros(
+                  1, env.single_action_space.shape[0]))
+
+        self.value = pufferlib.pytorch.layer_init(
+                nn.Linear(hidden_size, num_bins), std=0.01)
+    
+    def forward_eval(self, observations, state=None):
+        hidden = self.encode_observations(observations, state=state)
+        logits, values = self.decode_actions(hidden)
+        return logits, values
+    
+    def forward(self, observations, state=None):
+        return self.forward_eval(observations,state)
+
+    def encode_observations(self, observations, state=None):
+        batch_size = observations.shape[0]
+        observations = observations.view(batch_size, -1)
+        return self.network(observations.float())
+
+    def decode_actions(self, hidden):
+        if self.is_multidiscrete:
+              logits = self.decoder(hidden).split(self.action_nvec, dim=1)
+        elif self.is_continuous:
+              mean = self.decoder_mean(hidden)
+              logstd = self.decoder_logstd.expand_as(mean)
+              std = torch.exp(logstd)
+              logits = torch.distributions.Normal(mean, std)
+        else:
+              logits = self.decoder(hidden)
+
+        values = self.value(hidden)
+        return logits, values 
+
 class NMMO3LSTM(pufferlib.models.LSTMWrapper):
     def __init__(self, env, policy, input_size=512, hidden_size=512):
         super().__init__(env, policy, input_size, hidden_size)
