@@ -52,11 +52,129 @@ class Boids(nn.Module):
         action = self.actor(flat_hidden).split(self.action_vec, dim=1)
         return action, value
 
+def hl_gauss(inp, vmin, vmax, num_bins):
+        x = torch.clip(inp, vmin, max=vmax)
+        bin_width = (vmax - vmin) / (num_bins - 1)
+        sigma_to_final_sigma_ratio = 0.75
+        support = torch.linspace(
+            vmin - bin_width / 2,
+            vmax + bin_width / 2,
+            num_bins + 1,
+            device = inp.device,
+        )
+        sigma = bin_width * sigma_to_final_sigma_ratio
+        cdf_evals = torch.erf(support.unsqueeze(0) - x).squeeze() / (torch.sqrt(torch.tensor(2.0)) * sigma + 1e-6)
+        z = cdf_evals[..., -1] - cdf_evals[..., 0]
+        target_probs = cdf_evals[...,1:] - cdf_evals[...,:-1]
+        target_probs = (target_probs / (z.unsqueeze(-1) + 1e-6)).reshape(
+            *inp.shape[:-1], num_bins
+        )
+        return target_probs
+
+class HL_Gauss_LSTM(pufferlib.models.LSTMWrapper):
+    def __init__(self, env, policy, input_size=128, hidden_size=128, vmin=-10, vmax=10, num_bins=20):
+        super().__init__(env, policy, input_size, hidden_size)
+        self.hidden_size = hidden_size
+        self.num_bins = num_bins
+        self.vmin = vmin
+        self.vmax = vmax
+        self.is_multidiscrete = isinstance(env.single_action_space,
+                  pufferlib.spaces.MultiDiscrete)
+        self.is_continuous = isinstance(env.single_action_space, pufferlib.spaces.Box)
+    
+        self.values = torch.linspace(
+                self.vmin, self.vmax, self.num_bins, device = 'cuda',dtype=torch.float32)
+        zeros = hl_gauss(
+            torch.zeros(1,device='cuda'), self.vmin, self.vmax, self.num_bins
+        )
+        self.zero_dist = nn.Parameter(
+            hl_gauss(
+                torch.zeros(1,device='cuda'), self.vmin, self.vmax, self.num_bins
+            )
+        )
+
+    def forward_eval(self, observations, state):
+        hidden = self.policy.encode_observations(observations, state=state)
+        h = state['lstm_h']
+        c = state['lstm_c']
+
+        # TODO: Don't break compile
+        if h is not None:
+            assert h.shape[0] == c.shape[0] == observations.shape[0], 'LSTM state must be (h, c)'
+            lstm_state = (h, c)
+        else:
+            lstm_state = None
+
+        #hidden = self.pre_layernorm(hidden)
+        hidden, c = self.cell(hidden, lstm_state)
+        #hidden = self.post_layernorm(hidden)
+        state['hidden'] = hidden
+        state['lstm_h'] = hidden
+        state['lstm_c'] = c
+        logits, values = self.policy.decode_actions(hidden)
+        values = values + 40.9*self.zero_dist
+        value_cats = torch.softmax(values, dim=-1)
+        value = value_cats @ self.values
+        return logits, value, values
+
+    def forward(self, observations, state):
+          '''Forward function for training. Uses LSTM for fast time-batching'''
+          x = observations
+          lstm_h = state['lstm_h']
+          lstm_c = state['lstm_c']
+
+          x_shape, space_shape = x.shape, self.obs_shape
+          x_n, space_n = len(x_shape), len(space_shape)
+          if x_shape[-space_n:] != space_shape:
+              raise ValueError('Invalid input tensor shape', x.shape)
+
+          if x_n == space_n + 1:
+              B, TT = x_shape[0], 1
+          elif x_n == space_n + 2:
+              B, TT = x_shape[:2]
+          else:
+              raise ValueError('Invalid input tensor shape', x.shape)
+
+          if lstm_h is not None:
+              assert lstm_h.shape[1] == lstm_c.shape[1] == B, 'LSTM state must be (h, c)'
+              lstm_state = (lstm_h, lstm_c)
+          else:
+              lstm_state = None
+
+          x = x.reshape(B*TT, *space_shape)
+          hidden = self.policy.encode_observations(x, state)
+          assert hidden.shape == (B*TT, self.input_size)
+
+          hidden = hidden.reshape(B, TT, self.input_size)
+
+          hidden = hidden.transpose(0, 1)
+          #hidden = self.pre_layernorm(hidden)
+          hidden, (lstm_h, lstm_c) = self.lstm.forward(hidden, lstm_state)
+          hidden = hidden.float()
+
+          #hidden = self.post_layernorm(hidden)
+          hidden = hidden.transpose(0, 1)
+
+          flat_hidden = hidden.reshape(B*TT, self.hidden_size)
+          logits, values = self.policy.decode_actions(flat_hidden)
+          values = values + 40.9*self.zero_dist
+          value_cats = torch.softmax(values, dim=-1)
+          value = value_cats @ self.values
+          value = value.reshape(B, TT)
+
+          #state.batch_logits = logits.reshape(B, TT, -1)
+          state['hidden'] = hidden
+          state['lstm_h'] = lstm_h.detach()
+          state['lstm_c'] = lstm_c.detach()
+          return logits, value,  values
+
 class HL_Gauss(nn.Module):
-    def __init__(self, env, hidden_size=128, num_bins=20, **kwargs):
+    def __init__(self, env, hidden_size=128, vmin=-10, vmax=10, num_bins=20, **kwargs):
         super().__init__()
         self.hidden_size = hidden_size
         self.num_bins = num_bins
+        self.vmin = vmin
+        self.vmax = vmax
         self.is_multidiscrete = isinstance(env.single_action_space,
                   pufferlib.spaces.MultiDiscrete)
         self.is_continuous = isinstance(env.single_action_space, pufferlib.spaces.Box)
@@ -83,15 +201,29 @@ class HL_Gauss(nn.Module):
 
         self.value = pufferlib.pytorch.layer_init(
                 nn.Linear(hidden_size, num_bins), std=0.01)
+        self.values = torch.linspace(
+                self.vmin, self.vmax, self.num_bins, device = 'cuda',dtype=torch.float32)
+        zeros = hl_gauss(
+            torch.zeros(1,device='cuda'), self.vmin, self.vmax, self.num_bins
+        )
+        self.zero_dist = nn.Parameter(
+            hl_gauss(
+                torch.zeros(1,device='cuda'), self.vmin, self.vmax, self.num_bins
+            )
+        )
     
     def forward_eval(self, observations, state=None):
         hidden = self.encode_observations(observations, state=state)
         logits, values = self.decode_actions(hidden)
-        return logits, values
+        values = values + 40.9*self.zero_dist
+        value_cats = torch.softmax(values, dim=-1)
+        value = value_cats @ self.values
+        return logits, value, values
     
     def forward(self, observations, state=None):
         return self.forward_eval(observations,state)
 
+    
     def encode_observations(self, observations, state=None):
         batch_size = observations.shape[0]
         observations = observations.view(batch_size, -1)

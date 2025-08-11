@@ -88,10 +88,12 @@ class PuffeRL:
         device = config['device']
         if config['hl_gauss']:
             self.num_bins = config['num_bins']
-            self.v_min = config['value_min']
-            self.v_max = config['value_max']
+            self.v_min = config['vmin']
+            self.v_max = config['vmax']
             self.sigma = config['value_sigma']
-            self.support = torch.linspace(self.v_min, self.v_max, self.num_bins + 1, device=device)
+            bin_width = (self.v_max - self.v_min) / self.num_bins
+            self.support = torch.linspace(self.v_min - bin_width / 2, self.v_max + bin_width / 2, self.num_bins + 1, device=device)
+            self.sigma = self.sigma * bin_width
             self.bin_centers = (self.support[:-1] + self.support[1:]) / 2
             self.sqrt2 = torch.sqrt(torch.tensor(2.0, device=device))
         self.observations = torch.zeros(segments, horizon, *obs_space.shape,
@@ -100,10 +102,10 @@ class PuffeRL:
             device='cpu' if config['cpu_offload'] else device)
         self.actions = torch.zeros(segments, horizon, *atn_space.shape, device=device,
             dtype=pufferlib.pytorch.numpy_to_torch_dtype_dict[atn_space.dtype])
-        if config['hl_gauss']:
-            self.values = torch.zeros(segments, horizon, self.num_bins, device=device)
-        else: 
-            self.values = torch.zeros(segments, horizon, device=device)
+        #if config['hl_gauss']:
+        #    self.values = torch.zeros(segments, horizon, self.num_bins, device=device)
+        #else: 
+        self.values = torch.zeros(segments, horizon, device=device)
         self.logprobs = torch.zeros(segments, horizon, device=device)
         self.rewards = torch.zeros(segments, horizon, device=device)
         self.terminals = torch.zeros(segments, horizon, device=device)
@@ -264,8 +266,10 @@ class PuffeRL:
                 if config['use_rnn']:
                     state['lstm_h'] = self.lstm_h[env_id.start]
                     state['lstm_c'] = self.lstm_c[env_id.start]
-
-                logits, value = self.policy.forward_eval(o_device, state)
+                if config['hl_gauss']:
+                    logits, value, new_value_log_probs = self.policy.forward_eval(o_device, state)
+                else:
+                    logits, value = self.policy.forward_eval(o_device,state)
                 action, logprob, _ = pufferlib.pytorch.sample_logits(logits)
                 r = torch.clamp(r, -1, 1)
 
@@ -288,10 +292,10 @@ class PuffeRL:
                 self.logprobs[batch_rows, l] = logprob
                 self.rewards[batch_rows, l] = r
                 self.terminals[batch_rows, l] = d.float()
-                if config['hl_gauss']:
-                    self.values[batch_rows,l] = value
-                else:
-                    self.values[batch_rows, l] = value.flatten()
+                #if config['hl_gauss']:
+                #    self.values[batch_rows,l] = value
+                #else:
+                self.values[batch_rows, l] = value.flatten()
 
                 # Note: We are not yet handling masks in this version
                 self.ep_lengths[env_id] += 1
@@ -347,9 +351,7 @@ class PuffeRL:
 
             shape = self.rewards.shape
             advantages = torch.zeros(shape, device=device)
-            probs = torch.softmax(self.values, dim=-1)
-            expected_values = torch.sum(probs * self.bin_centers, dim=-1)
-            advantages = compute_puff_advantage(expected_values, self.rewards,
+            advantages = compute_puff_advantage(self.values, self.rewards,
                 self.terminals, self.ratio, advantages, config['gamma'],
                 config['gae_lambda'], config['vtrace_rho_clip'], config['vtrace_c_clip'])
 
@@ -367,7 +369,7 @@ class PuffeRL:
             mb_truncations = self.truncations[idx]
             mb_ratio = self.ratio[idx]
             mb_values = self.values[idx]
-            mb_returns = advantages[idx] + expected_values[idx]
+            mb_returns = advantages[idx] + self.values[idx]
             mb_advantages = advantages[idx]
 
             profile('train_forward', epoch)
@@ -379,8 +381,10 @@ class PuffeRL:
                 lstm_h=None,
                 lstm_c=None,
             )
-            logits, newvalue = self.policy(mb_obs, state)
-
+            if config['hl_gauss']:
+                logits, newvalue, newvalue_logits = self.policy(mb_obs, state)
+            else:
+                logits, newvalue = self.policy(mb_obs,state)
             actions, newlogprob, entropy = pufferlib.pytorch.sample_logits(logits, action=mb_actions)
 
             profile('train_misc', epoch)
@@ -396,7 +400,7 @@ class PuffeRL:
 
             adv = advantages[idx]
 
-            adv = compute_puff_advantage(expected_values[idx], mb_rewards, mb_terminals,
+            adv = compute_puff_advantage(mb_values, mb_rewards, mb_terminals,
                 ratio, adv, config['gamma'], config['gae_lambda'],
                 config['vtrace_rho_clip'], config['vtrace_c_clip'])
             adv = mb_advantages
@@ -409,13 +413,17 @@ class PuffeRL:
             # HL Gaussian Loss
             
             if config['hl_gauss']:
-                breakpoint()
-                cdf_evals = torch.special.erf((self.support - mb_returns.unsqueeze(-1)) / (self.sqrt2 * self.sigma))
+                #breakpoint()
+                clipped_returns = torch.clip(mb_returns, self.v_min, self.v_max)
+                cdf_evals = torch.erf((self.support - clipped_returns.unsqueeze(-1)) / (self.sqrt2 * self.sigma))
                 z = cdf_evals[..., -1] - cdf_evals[..., 0]
                 bin_probs = cdf_evals[...,1:] - cdf_evals[...,:-1]
-                target_probs = bin_probs / z.unsqueeze(-1)
-                newvalue = newvalue.view(target_probs.shape)
-                hl_gaussian_loss = F.cross_entropy(newvalue, target_probs)
+                target_probs = (bin_probs / (z.unsqueeze(-1) + 1e-6))
+                target_probs = target_probs.view(-1, self.num_bins)
+                new_value_log_probs = F.log_softmax(newvalue_logits, dim=-1)
+                elementwise_kl = torch.sum(target_probs * new_value_log_probs, dim=-1)
+                hl_gaussian_loss = -elementwise_kl.mean()
+                newvalue = newvalue.view(mb_returns.shape)
             else: 
                 newvalue = newvalue.view(mb_returns.shape)
                 v_clipped = mb_values + torch.clamp(newvalue - mb_values, -vf_clip, vf_clip)
@@ -429,14 +437,17 @@ class PuffeRL:
             else:
                 loss = pg_loss + config['vf_coef']*v_loss - config['ent_coef']*entropy_loss
             self.amp_context.__enter__() # TODO: AMP needs some debugging
-
+            #breakpoint()
             # This breaks vloss clipping?
             self.values[idx] = newvalue.detach().float()
 
             # Logging
             profile('train_misc', epoch)
             losses['policy_loss'] += pg_loss.item() / self.total_minibatches
-            losses['hl_loss'] += hl_gaussian_loss.item() / self.total_minibatches
+            if config['hl_gauss']:
+                losses['hl_loss'] += hl_gaussian_loss.item() / self.total_minibatches
+            else:
+                losses['value_loss'] += v_loss.item() / self.total_minibatches
             losses['entropy'] += entropy_loss.item() / self.total_minibatches
             losses['old_approx_kl'] += old_approx_kl.item() / self.total_minibatches
             losses['approx_kl'] += approx_kl.item() / self.total_minibatches
@@ -456,8 +467,8 @@ class PuffeRL:
         if config['anneal_lr']:
             self.scheduler.step()
 
-        y_pred = expected_values.flatten()
-        y_true = advantages.flatten() + expected_values.flatten()
+        y_pred = self.values.flatten()
+        y_true = advantages.flatten() + self.values.flatten()
         var_y = y_true.var()
         explained_var = torch.nan if var_y == 0 else 1 - (y_true - y_pred).var() / var_y
         losses['explained_variance'] = explained_var.item()
