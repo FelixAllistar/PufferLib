@@ -31,7 +31,6 @@ import pufferlib
 import pufferlib.sweep
 import pufferlib.vector
 import pufferlib.pytorch
-from hl_gauss_pytorch import HLGaussLoss
 try:
     from pufferlib import _C
 except ImportError:
@@ -89,8 +88,8 @@ class PuffeRL:
         device = config['device']
         if config['hl_gauss']:
             self.num_bins = config['num_bins']
-            self.v_min = config['value_min']
-            self.v_max = config['value_max']
+            self.v_min = config['vmin']
+            self.v_max = config['vmax']
             self.sigma = config['value_sigma']
             bin_width = (self.v_max - self.v_min) / self.num_bins
             self.support = torch.linspace(self.v_min - bin_width / 2, self.v_max + bin_width / 2, self.num_bins + 1, device=device)
