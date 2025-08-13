@@ -266,11 +266,14 @@ class PuffeRL:
                 if config['use_rnn']:
                     state['lstm_h'] = self.lstm_h[env_id.start]
                     state['lstm_c'] = self.lstm_c[env_id.start]
-                if config['hl_gauss']:
-                    logits, value, new_value_log_probs = self.policy.forward_eval(o_device, state)
-                else:
-                    logits, value = self.policy.forward_eval(o_device,state)
-                action, logprob, _ = pufferlib.pytorch.sample_logits(logits)
+
+                q, target = self.policy.forward_eval(o_device,state)
+
+                # off-policy sample
+                eps = 1.0 - min(0.95, 2*self.global_step / config['total_timesteps'])
+                eps_prob = torch.rand(q.shape[0], 1, device=q.device).view(-1) < eps
+                eps_choice = torch.randint(0, q.shape[-1], (q.shape[0],), device=q.device)
+                action = (eps_prob)*eps_choice + ~eps_prob*q.argmax(dim=-1)
                 r = torch.clamp(r, -1, 1)
 
             profile('eval_copy', epoch)
@@ -289,13 +292,13 @@ class PuffeRL:
                     self.observations[batch_rows, l] = o_device
 
                 self.actions[batch_rows, l] = action
-                self.logprobs[batch_rows, l] = logprob
+                #self.logprobs[batch_rows, l] = logprob
                 self.rewards[batch_rows, l] = r
                 self.terminals[batch_rows, l] = d.float()
                 #if config['hl_gauss']:
                 #    self.values[batch_rows,l] = value
                 #else:
-                self.values[batch_rows, l] = value.flatten()
+                #self.values[batch_rows, l] = value.flatten()
 
                 # Note: We are not yet handling masks in this version
                 self.ep_lengths[env_id] += 1
@@ -307,8 +310,8 @@ class PuffeRL:
                     self.full_rows += num_full
 
                 action = action.cpu().numpy()
-                if isinstance(logits, torch.distributions.Normal):
-                    action = np.clip(action, self.vecenv.action_space.low, self.vecenv.action_space.high)
+                #if isinstance(logits, torch.distributions.Normal):
+                #    action = np.clip(action, self.vecenv.action_space.low, self.vecenv.action_space.high)
 
             profile('eval_misc', epoch)
             for i in info:
@@ -381,37 +384,45 @@ class PuffeRL:
                 lstm_h=None,
                 lstm_c=None,
             )
-            if config['hl_gauss']:
-                logits, newvalue, newvalue_logits = self.policy(mb_obs, state)
-            else:
-                logits, newvalue = self.policy(mb_obs,state)
-            actions, newlogprob, entropy = pufferlib.pytorch.sample_logits(logits, action=mb_actions)
+
+            q, target = self.policy(mb_obs, state)
+
+            q_a = q[torch.arange(32768), mb_actions.view(-1)].view(512, 64)
+            #q_a = torch.take(q, mb_actions.view(-1)).view(512, 64)
+
+            target = mb_rewards + config['gamma']*target.max(dim=-1)[0].view(512, 64)*(1-mb_terminals)
+            target = target.detach()
+
+            qloss = torch.nn.functional.mse_loss(q_a[:, :-1], target[:, 1:])
+
+            #actions, newlogprob, entropy = pufferlib.pytorch.sample_logits(logits, action=mb_actions)
 
             profile('train_misc', epoch)
-            newlogprob = newlogprob.reshape(mb_logprobs.shape)
-            logratio = newlogprob - mb_logprobs
-            ratio = logratio.exp()
-            self.ratio[idx] = ratio.detach()
+            #newlogprob = newlogprob.reshape(mb_logprobs.shape)
+            #logratio = newlogprob - mb_logprobs
+            #ratio = logratio.exp()
+            #self.ratio[idx] = ratio.detach()
 
-            with torch.no_grad():
-                old_approx_kl = (-logratio).mean()
-                approx_kl = ((ratio - 1) - logratio).mean()
-                clipfrac = ((ratio - 1.0).abs() > config['clip_coef']).float().mean()
+            #with torch.no_grad():
+            #    old_approx_kl = (-logratio).mean()
+            #    approx_kl = ((ratio - 1) - logratio).mean()
+            #    clipfrac = ((ratio - 1.0).abs() > config['clip_coef']).float().mean()
 
-            adv = advantages[idx]
+            #adv = advantages[idx]
 
-            adv = compute_puff_advantage(mb_values, mb_rewards, mb_terminals,
-                ratio, adv, config['gamma'], config['gae_lambda'],
-                config['vtrace_rho_clip'], config['vtrace_c_clip'])
-            adv = mb_advantages
-            adv = mb_prio * (adv - adv.mean()) / (adv.std() + 1e-8)
+            #adv = compute_puff_advantage(mb_values, mb_rewards, mb_terminals,
+            #    ratio, adv, config['gamma'], config['gae_lambda'],
+            #    config['vtrace_rho_clip'], config['vtrace_c_clip'])
+            #adv = mb_advantages
+            #adv = mb_prio * (adv - adv.mean()) / (adv.std() + 1e-8)
 
             # Losses
-            pg_loss1 = -adv * ratio
-            pg_loss2 = -adv * torch.clamp(ratio, 1 - clip_coef, 1 + clip_coef)
-            pg_loss = torch.max(pg_loss1, pg_loss2).mean()
+            #pg_loss1 = -adv * ratio
+            #pg_loss2 = -adv * torch.clamp(ratio, 1 - clip_coef, 1 + clip_coef)
+            #pg_loss = torch.max(pg_loss1, pg_loss2).mean()
             # HL Gaussian Loss
             
+            '''
             if config['hl_gauss']:
                 #breakpoint()
                 clipped_returns = torch.clip(mb_returns, self.v_min, self.v_max)
@@ -430,29 +441,33 @@ class PuffeRL:
                 v_loss_unclipped = (newvalue - mb_returns) ** 2
                 v_loss_clipped = (v_clipped - mb_returns) ** 2
                 v_loss = 0.5*torch.max(v_loss_unclipped, v_loss_clipped).mean()
+            '''
 
-            entropy_loss = entropy.mean()
-            if config['hl_gauss']:
-                loss = pg_loss + config['hl_coef']*hl_gaussian_loss - config['ent_coef']*entropy_loss
-            else:
-                loss = pg_loss + config['vf_coef']*v_loss - config['ent_coef']*entropy_loss
+            #entropy_loss = entropy.mean()
+            #if config['hl_gauss']:
+            #    loss = pg_loss + config['hl_coef']*hl_gaussian_loss - config['ent_coef']*entropy_loss
+            #else:
+            #    loss = pg_loss + config['vf_coef']*v_loss - config['ent_coef']*entropy_loss
+
+            loss = qloss
+
             self.amp_context.__enter__() # TODO: AMP needs some debugging
             #breakpoint()
             # This breaks vloss clipping?
-            self.values[idx] = newvalue.detach().float()
+            #self.values[idx] = newvalue.detach().float()
 
             # Logging
             profile('train_misc', epoch)
-            losses['policy_loss'] += pg_loss.item() / self.total_minibatches
-            if config['hl_gauss']:
-                losses['hl_loss'] += hl_gaussian_loss.item() / self.total_minibatches
-            else:
-                losses['value_loss'] += v_loss.item() / self.total_minibatches
-            losses['entropy'] += entropy_loss.item() / self.total_minibatches
-            losses['old_approx_kl'] += old_approx_kl.item() / self.total_minibatches
-            losses['approx_kl'] += approx_kl.item() / self.total_minibatches
-            losses['clipfrac'] += clipfrac.item() / self.total_minibatches
-            losses['importance'] += ratio.mean().item() / self.total_minibatches
+            #losses['policy_loss'] += pg_loss.item() / self.total_minibatches
+            #if config['hl_gauss']:
+            #    losses['hl_loss'] += hl_gaussian_loss.item() / self.total_minibatches
+            #else:
+            #    losses['value_loss'] += v_loss.item() / self.total_minibatches
+            #losses['entropy'] += entropy_loss.item() / self.total_minibatches
+            #losses['old_approx_kl'] += old_approx_kl.item() / self.total_minibatches
+            #losses['approx_kl'] += approx_kl.item() / self.total_minibatches
+            #losses['clipfrac'] += clipfrac.item() / self.total_minibatches
+            #losses['importance'] += ratio.mean().item() / self.total_minibatches
 
             # Learn on accumulated minibatches
             profile('learn', epoch)
@@ -462,6 +477,10 @@ class PuffeRL:
                 self.optimizer.step()
                 self.optimizer.zero_grad()
 
+            if np.random.rand() < 0.01:
+                for t_param, q_param in zip(self.policy.target.parameters(), self.policy.q.parameters()):
+                    t_param.data.copy_(q_param.data)
+ 
         # Reprioritize experience
         profile('train_misc', epoch)
         if config['anneal_lr']:
@@ -470,8 +489,11 @@ class PuffeRL:
         y_pred = self.values.flatten()
         y_true = advantages.flatten() + self.values.flatten()
         var_y = y_true.var()
-        explained_var = torch.nan if var_y == 0 else 1 - (y_true - y_pred).var() / var_y
-        losses['explained_variance'] = explained_var.item()
+        #explained_var = torch.nan if var_y == 0 else 1 - (y_true - y_pred).var() / var_y
+        #losses['explained_variance'] = explained_var.item()
+        losses['q_loss'] = qloss.item()
+        losses['q_a'] = q_a.mean().item()
+        losses['target'] = target.mean().item()
 
         profile.end()
         logs = None
