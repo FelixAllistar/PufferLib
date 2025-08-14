@@ -212,6 +212,9 @@ class PuffeRL:
         self.model_size = sum(p.numel() for p in policy.parameters() if p.requires_grad)
         self.print_dashboard(clear=True)
 
+        self.atoms = torch.linspace(-100, 100, steps=101).to(device)
+        self.count = 0
+
     @property
     def uptime(self):
         return time.time() - self.start_time
@@ -268,12 +271,17 @@ class PuffeRL:
                     state['lstm_c'] = self.lstm_c[env_id.start]
 
                 q, target = self.policy.forward_eval(o_device,state)
+                pmfs = torch.softmax(q.view(-1, 2, 101), dim=2)
+                q_values = (pmfs * self.atoms).sum(2)
 
+                natn = self.vecenv.single_action_space.n
+                batch = q_values.shape[0]
                 # off-policy sample
                 eps = 1.0 - min(0.95, 2*self.global_step / config['total_timesteps'])
-                eps_prob = torch.rand(q.shape[0], 1, device=q.device).view(-1) < eps
-                eps_choice = torch.randint(0, q.shape[-1], (q.shape[0],), device=q.device)
-                action = (eps_prob)*eps_choice + ~eps_prob*q.argmax(dim=-1)
+                eps_prob = torch.rand(batch, 1, device=q.device).view(-1) < eps
+                eps_choice = torch.randint(0, natn, (batch,), device=q.device)
+                action = (eps_prob)*eps_choice + ~eps_prob*q_values.argmax(dim=-1)
+                #action = torch.randint(0, target.shape[-1], (target.shape[0],), device=q.device)
                 r = torch.clamp(r, -1, 1)
 
             profile('eval_copy', epoch)
@@ -298,7 +306,7 @@ class PuffeRL:
                 #if config['hl_gauss']:
                 #    self.values[batch_rows,l] = value
                 #else:
-                #self.values[batch_rows, l] = value.flatten()
+                self.values[batch_rows, l] = target.argmax(dim=-1).float()
 
                 # Note: We are not yet handling masks in this version
                 self.ep_lengths[env_id] += 1
@@ -363,6 +371,8 @@ class PuffeRL:
             prio_weights = torch.nan_to_num(adv**a, 0, 0, 0)
             prio_probs = (prio_weights + 1e-6)/(prio_weights.sum() + 1e-6)
             idx = torch.multinomial(prio_probs, self.minibatch_segments)
+
+            #idx = torch.randint(0, self.minibatch_segments, (512,))
             mb_prio = (self.segments*prio_probs[idx, None])**-anneal_beta
             mb_obs = self.observations[idx]
             mb_actions = self.actions[idx]
@@ -386,14 +396,62 @@ class PuffeRL:
             )
 
             q, target = self.policy(mb_obs, state)
+            q = q.reshape(q.shape[0], 2, 101)
+            q_a = q[torch.arange(32768), mb_actions.view(-1)]
 
-            q_a = q[torch.arange(32768), mb_actions.view(-1)].view(512, 64)
+            #mb_values = target.max(dim=-1)[0].view(512, 64)
+            #ratio = torch.ones((512, 64), device=mb_values.device)
+            #adv = torch.zeros((512, 64), device=mb_values.device)
+            #adv = compute_puff_advantage(q_a, mb_rewards, mb_terminals,
+            #    ratio, adv, config['gamma'], config['gae_lambda'],
+            #    config['vtrace_rho_clip'], config['vtrace_c_clip'])
+            #adv = (adv - adv.mean()) / (adv.std() + 1e-8)
+            #target = adv + mb_values
+
             #q_a = torch.take(q, mb_actions.view(-1)).view(512, 64)
 
-            target = mb_rewards + config['gamma']*target.max(dim=-1)[0].view(512, 64)*(1-mb_terminals)
-            target = target.detach()
+            
+            qa_pmfs = torch.softmax(q_a, dim=1)
+            q = (qa_pmfs * self.atoms.unsqueeze(0)).sum(1)
+            q = q.view(512, 64)
 
-            qloss = torch.nn.functional.mse_loss(q_a[:, :-1], target[:, 1:])
+            target_pmfs = torch.softmax(target.view(-1, 2, 101), dim=2)
+            target_q = (target_pmfs * self.atoms).sum(2)
+            target_q, target_idx = target_q.max(1)
+            target_max_pmf = target_pmfs[torch.arange(32768), target_idx]
+            target_q = target_q.view(512, 64)
+
+            #qa_vals = (qa_pmfs * self.atoms).sum(2)
+
+            #target_val, target_idx = qa_vals.max(1)
+            #qa_val = (torch.softmax(q_a, dim=2) * self.atoms).sum(2)
+            #target = target.view(-1, 2, 101)
+            #target_val = (torch.softmax(target, dim=2) * self.atoms).sum(2).max(1)[0].view(512, 64)
+
+            #target_pmfs = torch.softmax(target.view(-1, 2, 101), dim=2)
+            #target_probs = (target_pmfs * self.atoms).sum(2)
+
+            #q_probs = torch.softmax(q_a.view(-1, 2, 101), dim=2)
+            target = mb_rewards + config['gamma']*target_q*(1-mb_terminals)
+            #target = mb_rewards + config['gamma']*target_val.max(dim=-1)[0].view(512, 64)*(1-mb_terminals)
+            #target = (target - target.mean()) / (target.std() + 1e-8)
+
+            #qloss = torch.nn.functional.mse_loss(q_a[:, :-1], target[:, 1:].detach())
+
+            #qloss = torch.nn.functional.mse_loss(q[:, :-1], target[:, 1:].detach())
+
+            qa_pmfs = qa_pmfs.view(512, 64, 101)[:, :-1]
+
+            target = target.view(-1)
+            target = hl_gauss(target, vmin=-100, vmax=100, num_bins=101)
+            target = target.view(512, 64, 101)[:, 1:]
+
+            #q_a = q_a[:, :-1].reshape(-1, 101)
+            #target = target[:, 1:].reshape(-1)
+            #qa_quant = hl_gauss(q_a, vmin=-10, vmax=10, num_bins=151)
+            #target_quant = hl_gauss(target, vmin=-100, vmax=100, num_bins=101)
+            #qloss = torch.nn.functional.kl_div(q_a, target_quant.detach())
+            qloss = - (target * torch.log(qa_pmfs + 1e-8)).sum(dim=-1).mean()
 
             #actions, newlogprob, entropy = pufferlib.pytorch.sample_logits(logits, action=mb_actions)
 
@@ -477,7 +535,8 @@ class PuffeRL:
                 self.optimizer.step()
                 self.optimizer.zero_grad()
 
-            if np.random.rand() < 0.01:
+            self.count += 1
+            if self.count >= 100:
                 for t_param, q_param in zip(self.policy.target.parameters(), self.policy.q.parameters()):
                     t_param.data.copy_(q_param.data)
  
@@ -1251,6 +1310,26 @@ def load_config(env_name):
 
     args['train']['use_rnn'] = args['rnn_name'] is not None
     return args
+
+def hl_gauss(inp, vmin, vmax, num_bins):
+        x = torch.clip(inp, vmin, max=vmax)
+        bin_width = (vmax - vmin) / (num_bins - 1)
+        sigma_to_final_sigma_ratio = 0.75
+        support = torch.linspace(
+            vmin - bin_width / 2,
+            vmax + bin_width / 2,
+            num_bins + 1,
+            device = inp.device,
+        )
+        sigma = bin_width * sigma_to_final_sigma_ratio
+        cdf_evals = torch.erf(support.unsqueeze(0) - x.unsqueeze(-1)).squeeze() / (torch.sqrt(torch.tensor(2.0)) * sigma + 1e-6)
+        z = cdf_evals[..., -1] - cdf_evals[..., 0]
+        target_probs = cdf_evals[...,1:] - cdf_evals[...,:-1]
+        target_probs = (target_probs / (z.unsqueeze(-1) + 1e-6)).reshape(
+            *inp.shape, num_bins
+        )
+        return target_probs
+
 
 def main():
     err = 'Usage: puffer [train, eval, sweep, autotune, profile, export] [env_name] [optional args]. --help for more info'

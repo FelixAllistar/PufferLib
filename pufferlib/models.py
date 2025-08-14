@@ -40,8 +40,8 @@ class Default(nn.Module):
         else:
             num_obs = np.prod(env.single_observation_space.shape)
             self.encoder = torch.nn.Sequential(
-                pufferlib.pytorch.layer_init(nn.Linear(num_obs, hidden_size)),
-                nn.GELU(),
+                #pufferlib.pytorch.layer_init(nn.Linear(num_obs, hidden_size)),
+                #nn.GELU(),
             )
             
         if self.is_multidiscrete:
@@ -52,20 +52,28 @@ class Default(nn.Module):
         elif not self.is_continuous:
             num_atns = env.single_action_space.n
             #self.q = pufferlib.pytorch.layer_init(
-            #    nn.Linear(hidden_size, num_atns), std=0.01)
+            #    nn.Linear(hidden_size, num_atns*101), std=0.01)
+            #self.target = self.q
             #self.target = pufferlib.pytorch.layer_init(
             #    nn.Linear(hidden_size, num_atns), std=0.01)
             num_obs = np.prod(env.single_observation_space.shape)
             self.q = nn.Sequential(
                 nn.Linear(num_obs, hidden_size),
                 nn.GELU(),
-                nn.Linear(hidden_size, num_atns),
+                nn.Linear(hidden_size, num_atns*101),
             )
             self.target = nn.Sequential(
                 nn.Linear(num_obs, hidden_size),
                 nn.GELU(),
-                nn.Linear(hidden_size, num_atns),
+                nn.Linear(hidden_size, num_atns*101),
             )
+ 
+            #self.target = self.q
+            #self.target = nn.Sequential(
+            #    nn.Linear(num_obs, hidden_size),
+            #    nn.GELU(),
+            #    nn.Linear(hidden_size, num_atns),
+            #)
             for t_param, q_param in zip(self.target.parameters(), self.q.parameters()):
                 t_param.data.copy_(q_param.data)
         else:
@@ -79,7 +87,9 @@ class Default(nn.Module):
 
 
     def forward_eval(self, observations, state=None):
-        return self.q(observations), self.target(observations)
+        hidden = self.encode_observations(observations, state=state)
+        return self.q(hidden), self.target(hidden)
+        #return self.q(observations), self.target(observations)
 
     def forward(self, observations, state=None):
         return self.forward_eval(observations, state)
@@ -87,7 +97,8 @@ class Default(nn.Module):
     def encode_observations(self, observations, state=None):
         '''Encodes a batch of observations into hidden states. Assumes
         no time dimension (handled by LSTM wrappers).'''
-        return observations.float()
+        return self.encoder(observations.float())
+        #return observations.float()
 
     def decode_actions(self, hidden):
         '''Decodes a batch of hidden states into (multi)discrete actions.
