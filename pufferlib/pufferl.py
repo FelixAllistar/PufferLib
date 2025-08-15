@@ -352,7 +352,6 @@ class PuffeRL:
 
         b0 = config['prio_beta0']
         a = config['prio_alpha']
-        clip_coef = config['clip_coef']
         vf_clip = config['vf_clip_coef']
         anneal_beta = b0 + (1 - b0)*a*self.epoch/self.total_epochs
         self.ratio[:] = 1
@@ -364,6 +363,15 @@ class PuffeRL:
         all_logprobs = torch.concatenate((self.logprobs, self.gold_logprobs), dim=0)
         all_terminals = torch.concatenate((self.terminals, self.gold_terminals), dim=0)
         all_truncations = torch.concatenate((self.truncations, self.gold_truncations), dim=0)
+        '''
+        all_rewards = self.rewards
+        all_observations = self.observations
+        all_actions = self.actions
+        all_values = self.values
+        all_logprobs = self.logprobs
+        all_terminals = self.terminals
+        all_truncations = self.truncations
+        '''
 
         segments, horizon = all_observations.shape[:2]
         minibatch_segments = int(self.minibatch_size / horizon)
@@ -400,7 +408,7 @@ class PuffeRL:
                 config['gae_lambda'], config['vtrace_rho_clip'], config['vtrace_c_clip'])
 
             profile('train_copy', epoch)
-            adv = advantages.abs().sum(axis=1)
+            adv = advantages.sum(axis=1)
             prio_weights = torch.nan_to_num(adv**a, 0, 0, 0)
             prio_probs = (prio_weights + 1e-6)/(prio_weights.sum() + 1e-6)
             idx = torch.multinomial(prio_probs, self.minibatch_segments)
