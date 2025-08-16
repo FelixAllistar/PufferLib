@@ -98,7 +98,6 @@ class PuffeRL:
         self.rewards = torch.zeros(segments, horizon, device=device)
         self.terminals = torch.zeros(segments, horizon, device=device)
         self.truncations = torch.zeros(segments, horizon, device=device)
-        self.ratio = torch.ones(segments, horizon, device=device)
         self.importance = torch.ones(segments, horizon, device=device)
         self.ep_lengths = torch.zeros(total_agents, device=device, dtype=torch.int32)
         self.ep_indices = torch.arange(total_agents, device=device, dtype=torch.int32)
@@ -126,6 +125,8 @@ class PuffeRL:
         self.gold_logprobs = torch.zeros(0, il_horizon, device=device)
         self.gold_terminals = torch.zeros(0, il_horizon, device=device)
         self.gold_truncations = torch.zeros(0, il_horizon, device=device)
+        self.gold_ratio = torch.ones(0, il_horizon, device=device)
+        self.gold_epoch = torch.zeros(0, device=device, dtype=torch.int32)
         self.il_batch_size = config['il_batch_size']
         self.il_minibatch_size = config['il_minibatch_size']
         self.il_bptt_horizon = il_horizon
@@ -354,47 +355,27 @@ class PuffeRL:
         a = config['prio_alpha']
         vf_clip = config['vf_clip_coef']
         anneal_beta = b0 + (1 - b0)*a*self.epoch/self.total_epochs
-        self.ratio[:] = 1
 
-        all_rewards = torch.concatenate((self.rewards, self.gold_rewards), dim=0)
-        all_observations = torch.concatenate((self.observations, self.gold_observations), dim=0)
-        all_actions = torch.concatenate((self.actions, self.gold_actions), dim=0)
-        all_values = torch.concatenate((self.values, self.gold_values), dim=0)
-        all_logprobs = torch.concatenate((self.logprobs, self.gold_logprobs), dim=0)
-        all_terminals = torch.concatenate((self.terminals, self.gold_terminals), dim=0)
-        all_truncations = torch.concatenate((self.truncations, self.gold_truncations), dim=0)
+        self.gold_rewards = torch.concatenate((self.rewards, self.gold_rewards), dim=0)
+        self.gold_observations = torch.concatenate((self.observations, self.gold_observations), dim=0)
+        self.gold_actions = torch.concatenate((self.actions, self.gold_actions), dim=0)
+        self.gold_values = torch.concatenate((self.values, self.gold_values), dim=0)
+        self.gold_logprobs = torch.concatenate((self.logprobs, self.gold_logprobs), dim=0)
+        self.gold_terminals = torch.concatenate((self.terminals, self.gold_terminals), dim=0)
+        self.gold_truncations = torch.concatenate((self.truncations, self.gold_truncations), dim=0)
+        self.gold_ratio = torch.concatenate((torch.ones(self.rewards.shape, device=device), self.gold_ratio), dim=0)
+        self.gold_epoch = torch.concatenate((torch.ones(self.rewards.shape, device=device)*self.epoch, self.gold_epoch), dim=0)
+
         '''
-        all_rewards = self.rewards
-        all_observations = self.observations
-        all_actions = self.actions
-        all_values = self.values
-        all_logprobs = self.logprobs
-        all_terminals = self.terminals
-        all_truncations = self.truncations
+        self.gold_rewards = self.rewards
+        self.gold_observations = self.observations
+        self.gold_actions = self.actions
+        self.gold_values = self.values
+        self.gold_logprobs = self.logprobs
+        self.gold_terminals = self.terminals
+        self.gold_truncations = self.truncations
+        self.gold_ratio = torch.ones(self.rewards.shape, device=device)
         '''
-
-        segments, horizon = all_observations.shape[:2]
-        minibatch_segments = int(self.minibatch_size / horizon)
-        for i in range(0, segments, self.minibatch_size):
-            s = slice(i, i+minibatch_segments)
-            state = dict(
-                lstm_h=None,
-                lstm_c=None,
-            )
-            with torch.no_grad():
-                logits, newvalue = self.policy(all_observations[s], state)
-                all_values[s] = newvalue
-
-        criterion = all_rewards.sum(1) + all_values[:, -1]
-        best_idxs = torch.argsort(criterion, descending=True)[:self.il_segments]
-
-        self.gold_rewards = all_rewards[best_idxs]
-        self.gold_observations = all_observations[best_idxs]
-        self.gold_actions = all_actions[best_idxs]
-        self.gold_values = all_values[best_idxs]
-        self.gold_logprobs = all_logprobs[best_idxs]
-        self.gold_terminals = all_terminals[best_idxs]
-        self.gold_truncations = all_truncations[best_idxs]
 
         for mb in range(self.total_minibatches):
             profile('train_misc', epoch, nest=True)
@@ -402,13 +383,12 @@ class PuffeRL:
 
             shape = self.gold_values.shape
             advantages = torch.zeros(shape, device=device)
-            ratio = torch.ones(shape, device=device)
             advantages = compute_puff_advantage(self.gold_values, self.gold_rewards,
-                self.gold_terminals, ratio, advantages, config['gamma'],
+                self.gold_terminals, self.gold_ratio, advantages, config['gamma'],
                 config['gae_lambda'], config['vtrace_rho_clip'], config['vtrace_c_clip'])
 
             profile('train_copy', epoch)
-            adv = advantages.sum(axis=1)
+            adv = advantages.abs().sum(axis=1)
             prio_weights = torch.nan_to_num(adv**a, 0, 0, 0)
             prio_probs = (prio_weights + 1e-6)/(prio_weights.sum() + 1e-6)
             idx = torch.multinomial(prio_probs, self.minibatch_segments)
@@ -419,10 +399,11 @@ class PuffeRL:
             mb_rewards = self.gold_rewards[idx]
             mb_terminals = self.gold_terminals[idx]
             mb_truncations = self.gold_truncations[idx]
-            mb_ratio = ratio[idx]
+            mb_ratio = self.gold_ratio[idx]
             mb_values = self.gold_values[idx]
             mb_returns = advantages[idx] + mb_values
             mb_advantages = advantages[idx]
+            mb_epoch = self.gold_epoch[idx]
 
             profile('train_forward', epoch)
             if not config['use_rnn']:
@@ -439,19 +420,24 @@ class PuffeRL:
 
             profile('train_misc', epoch)
             newlogprob = newlogprob.reshape(mb_logprobs.shape)
+            logratio = newlogprob - mb_logprobs
+            ratio = logratio.exp()
+            self.gold_ratio[idx] = ratio.detach()
 
             adv = advantages[idx]
-            ratio = torch.ones(mb_returns.shape, device=device)
             adv = compute_puff_advantage(mb_values, mb_rewards, mb_terminals,
                 ratio, adv, config['gamma'], config['gae_lambda'],
                 config['vtrace_rho_clip'], config['vtrace_c_clip'])
-            adv = mb_advantages
-            #adv = mb_prio * (adv - adv.mean()) / (adv.std() + 1e-8)
-            #adv = (adv - adv.mean()) / (adv.std() + 1e-8)
 
             # Losses
-            il = torch.nn.functional.cross_entropy(logits, mb_actions.view(-1))
-            pg_loss = (mb_prio * adv * il).mean()
+            #il = torch.nn.functional.cross_entropy(logits, mb_actions.view(-1))
+            #il_loss = (mb_prio * adv * il).mean()
+
+            # Losses
+            adv = mb_prio * (adv - adv.mean()) / (adv.std() + 1e-8)
+            pg_loss1 = -adv * ratio
+            pg_loss2 = -adv * torch.clamp(ratio, 1 - config['clip_coef'], 1 + config['clip_coef'])
+            pg_loss = torch.max(pg_loss1, pg_loss2).mean()
 
             newvalue = newvalue.view(mb_returns.shape)
             v_clipped = mb_values + torch.clamp(newvalue - mb_values, -vf_clip, vf_clip)
@@ -465,13 +451,14 @@ class PuffeRL:
             self.amp_context.__enter__() # TODO: AMP needs some debugging
 
             # This breaks vloss clipping?
-            self.gold_values[idx] = newvalue.detach().float()
+            #self.gold_values[idx] = newvalue.detach().float()
 
             # Logging
             profile('train_misc', epoch)
             losses['policy_loss'] += pg_loss.item() / self.total_minibatches
             losses['value_loss'] += v_loss.item() / self.total_minibatches
             losses['entropy'] += entropy_loss.item() / self.total_minibatches
+            losses['staleness'] += (self.epoch - mb_epoch).float().mean() / self.total_minibatches
 
             # Learn on accumulated minibatches
             profile('learn', epoch)
@@ -485,6 +472,36 @@ class PuffeRL:
         profile('train_misc', epoch)
         if config['anneal_lr']:
             self.scheduler.step()
+
+        segments, horizon = self.gold_observations.shape[:2]
+        minibatch_segments = int(self.minibatch_size / horizon)
+        for i in range(0, segments, self.minibatch_size):
+            s = slice(i, i+minibatch_segments)
+            state = dict(
+                lstm_h=None,
+                lstm_c=None,
+            )
+            with torch.no_grad():
+                logits, newvalue = self.policy(self.gold_observations[s], state)
+                self.gold_values[s] = newvalue
+                _, newlogprob, _ = pufferlib.pytorch.sample_logits(logits, action=mb_actions)
+                newlogprob = newlogprob.reshape(mb_logprobs.shape)
+                logratio = newlogprob - self.gold_logprobs[s]
+                self.gold_ratio[s] = logratio.exp()
+
+ 
+        criterion = self.gold_rewards.sum(1) + self.gold_values[:, -1]
+        best_idxs = torch.argsort(criterion, descending=True)[:self.il_segments]
+
+        self.gold_rewards = self.gold_rewards[best_idxs]
+        self.gold_observations = self.gold_observations[best_idxs]
+        self.gold_actions = self.gold_actions[best_idxs]
+        self.gold_values = self.gold_values[best_idxs]
+        self.gold_logprobs = self.gold_logprobs[best_idxs]
+        self.gold_terminals = self.gold_terminals[best_idxs]
+        self.gold_truncations = self.gold_truncations[best_idxs]
+        self.gold_ratio = self.gold_ratio[best_idxs]
+        self.gold_epoch = self.gold_epoch[best_idxs]
 
         #y_pred = self.values.flatten()
         #y_true = advantages.flatten() + self.values.flatten()
