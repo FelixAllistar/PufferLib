@@ -219,10 +219,10 @@ def sample_logits(logits, action=None):
         action = action.view(batch, -1).T
 
     assert len(logits) == len(action)
-    logprob = log_prob(normalized_logits, action)
+    logprob = torch.log(probs)
     logits_entropy = entropy(normalized_logits).sum(0)
 
     if is_discrete:
-        return action.squeeze(0), logprob.squeeze(0), logits_entropy.squeeze(0)
+        return action.squeeze(0), probs.squeeze(0), logprob.squeeze(0), logits_entropy.squeeze(0)
 
-    return action.T, logprob.sum(0), logits_entropy
+    return action.T, probs, logprob, logits_entropy
