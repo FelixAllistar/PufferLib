@@ -8,6 +8,23 @@ import pufferlib.emulation
 import pufferlib.pytorch
 import pufferlib.spaces
 
+class Dynamics(nn.Module):
+    def __init__(self, num_atns, hidden_size):
+        super().__init__()
+        self.action_embed = nn.Embedding(num_atns, hidden_size)
+        self.net = nn.Sequential(
+            nn.Linear(2*hidden_size, hidden_size),
+            nn.GELU(),
+        )
+        self.state_decoder = nn.Linear(hidden_size, hidden_size)
+        self.reward_decoder = nn.Linear(hidden_size, 1)
+
+    def forward(self, state, action):
+        action_embed = self.action_embed(action)
+        state = self.net(torch.cat([state, action_embed], dim=-1))
+        state = self.state_decoder(state)
+        reward = self.reward_decoder(state)
+        return state, reward.squeeze(-1)
 
 class Default(nn.Module):
     '''Default PyTorch policy. Flattens obs and applies a linear layer.
@@ -61,6 +78,8 @@ class Default(nn.Module):
 
         self.value = pufferlib.pytorch.layer_init(
             nn.Linear(hidden_size, 1), std=1)
+
+        self.G = Dynamics(num_atns, hidden_size)
 
     def forward_eval(self, observations, state=None):
         hidden = self.encode_observations(observations, state=state)
@@ -130,8 +149,7 @@ class LSTMWrapper(nn.Module):
         #self.pre_layernorm = nn.LayerNorm(hidden_size)
         #self.post_layernorm = nn.LayerNorm(hidden_size)
 
-    def forward_eval(self, observations, state):
-        '''Forward function for inference. 3x faster than using LSTM directly'''
+    def encode_eval(self, observations, state=None):
         hidden = self.policy.encode_observations(observations, state=state)
         h = state['lstm_h']
         c = state['lstm_c']
@@ -149,11 +167,21 @@ class LSTMWrapper(nn.Module):
         state['hidden'] = hidden
         state['lstm_h'] = hidden
         state['lstm_c'] = c
+        return hidden
+
+    def decode_eval(self, hidden):
+        '''Decodes a batch of hidden states into (multi)discrete actions.
+        Assumes no time dimension (handled by LSTM wrappers).'''
+        logits, values = self.policy.decode_actions(hidden)
+        return logits, values
+ 
+    def forward_eval(self, observations, state):
+        '''Forward function for inference. 3x faster than using LSTM directly'''
+        hidden = self.encode_eval(observations, state=state)
         logits, values = self.policy.decode_actions(hidden)
         return logits, values
 
-    def forward(self, observations, state):
-        '''Forward function for training. Uses LSTM for fast time-batching'''
+    def encode_train(self, observations, state=None):
         x = observations
         lstm_h = state['lstm_h']
         lstm_c = state['lstm_c']
@@ -186,17 +214,28 @@ class LSTMWrapper(nn.Module):
         #hidden = self.pre_layernorm(hidden)
         hidden, (lstm_h, lstm_c) = self.lstm.forward(hidden, lstm_state)
         hidden = hidden.float()
- 
+
         #hidden = self.post_layernorm(hidden)
         hidden = hidden.transpose(0, 1)
 
+        state['hidden'] = hidden
+        state['lstm_h'] = lstm_h.detach()
+        state['lstm_c'] = lstm_c.detach()
+
+        return hidden
+
+    def decode_train(self, hidden):
+        B, TT = hidden.shape[:2]
         flat_hidden = hidden.reshape(B*TT, self.hidden_size)
         logits, values = self.policy.decode_actions(flat_hidden)
         values = values.reshape(B, TT)
         #state.batch_logits = logits.reshape(B, TT, -1)
-        state['hidden'] = hidden
-        state['lstm_h'] = lstm_h.detach()
-        state['lstm_c'] = lstm_c.detach()
+        return logits, values
+
+    def forward(self, observations, state):
+        '''Forward function for training. Uses LSTM for fast time-batching'''
+        hidden = self.encode_train(observations, state=state)
+        logits, values = self.decode_train(hidden)
         return logits, values
 
 class Convolutional(nn.Module):

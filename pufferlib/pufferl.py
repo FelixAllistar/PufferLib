@@ -366,7 +366,9 @@ class PuffeRL:
                 lstm_c=None,
             )
 
-            logits, newvalue = self.policy(mb_obs, state)
+            embed = self.policy.encode_train(mb_obs, state)
+            logits, newvalue = self.policy.decode_train(embed)
+
             actions, newlogprob, entropy = pufferlib.pytorch.sample_logits(logits, action=mb_actions)
 
             profile('train_misc', epoch)
@@ -387,6 +389,16 @@ class PuffeRL:
             adv = mb_advantages
             adv = mb_prio * (adv - adv.mean()) / (adv.std() + 1e-8)
 
+            # Dynamics
+            pred_embed, pred_rewards = self.policy.policy.G(embed, mb_actions)
+            state_loss = torch.nn.functional.mse_loss(
+                pred_embed[:, :-1], pred_embed[:, 1:])
+            reward_loss = torch.nn.functional.mse_loss(
+                pred_rewards[:, :-1], mb_rewards[:, 1:])
+
+            #hidden = self.policy.encode_eval(mb_obs[:, -1], state)
+            #for t in range(8):
+
             # Losses
             pg_loss1 = -adv * ratio
             pg_loss2 = -adv * torch.clamp(ratio, 1 - clip_coef, 1 + clip_coef)
@@ -400,7 +412,7 @@ class PuffeRL:
 
             entropy_loss = entropy.mean()
 
-            loss = pg_loss + config['vf_coef']*v_loss - config['ent_coef']*entropy_loss
+            loss = pg_loss + config['vf_coef']*v_loss - config['ent_coef']*entropy_loss + state_loss + reward_loss
             self.amp_context.__enter__() # TODO: AMP needs some debugging
 
             # This breaks vloss clipping?
@@ -415,6 +427,8 @@ class PuffeRL:
             losses['approx_kl'] += approx_kl.item() / self.total_minibatches
             losses['clipfrac'] += clipfrac.item() / self.total_minibatches
             losses['importance'] += ratio.mean().item() / self.total_minibatches
+            losses['state_loss'] += state_loss.item() / self.total_minibatches
+            losses['reward_loss'] += reward_loss.item() / self.total_minibatches
 
             # Learn on accumulated minibatches
             profile('learn', epoch)
