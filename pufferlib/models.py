@@ -142,132 +142,80 @@ class RSSM(nn.Module):
         num_obs = np.prod(env.single_observation_space.shape)
         num_atns = env.single_action_space.n
  
-        self.enc = torch.nn.Sequential(
+        self.encoder = torch.nn.Sequential(
             pufferlib.pytorch.layer_init(nn.Linear(num_obs + hidden_size, hidden_size)),
             nn.GELU(),
-            pufferlib.pytorch.layer_init(nn.Linear(hidden_size, hidden_size)),
+            #pufferlib.pytorch.layer_init(nn.Linear(hidden_size, hidden_size)),
         )
         self.dynamics = torch.nn.Sequential(
+            #pufferlib.pytorch.layer_init(nn.Linear(hidden_size, hidden_size)),
+            #nn.GELU(),
             pufferlib.pytorch.layer_init(nn.Linear(hidden_size, hidden_size)),
-            nn.GELU(),
-            pufferlib.pytorch.layer_init(nn.Linear(hidden_size, hidden_size)),
         )
-        self.rew = torch.nn.Sequential(
-            pufferlib.pytorch.layer_init(nn.Linear(2*hidden_size, hidden_size)),
-            nn.GELU(),
+        self.reward = torch.nn.Sequential(
+            #pufferlib.pytorch.layer_init(nn.Linear(hidden_size, hidden_size)),
+            #nn.GELU(),
             pufferlib.pytorch.layer_init(nn.Linear(hidden_size, 1)),
         )
-        self.term = torch.nn.Sequential(
-            pufferlib.pytorch.layer_init(nn.Linear(2*hidden_size, hidden_size)),
-            nn.GELU(),
+        self.terminal = torch.nn.Sequential(
+            #pufferlib.pytorch.layer_init(nn.Linear(hidden_size, hidden_size)),
+            #nn.GELU(),
             pufferlib.pytorch.layer_init(nn.Linear(hidden_size, 1)),
         )
-        self.dec = torch.nn.Sequential(
-            pufferlib.pytorch.layer_init(nn.Linear(2*hidden_size, hidden_size)),
-            nn.GELU(),
-            pufferlib.pytorch.layer_init(nn.Linear(hidden_size, 1)),
-        )
-        self.act = torch.nn.Sequential(
-            pufferlib.pytorch.layer_init(nn.Linear(2*hidden_size, hidden_size)),
-            nn.GELU(),
+        self.actor = torch.nn.Sequential(
+            #pufferlib.pytorch.layer_init(nn.Linear(hidden_size, hidden_size)),
+            #nn.GELU(),
             pufferlib.pytorch.layer_init(nn.Linear(hidden_size, num_atns)),
         )
-        self.val = torch.nn.Sequential(
-            pufferlib.pytorch.layer_init(nn.Linear(2*hidden_size, hidden_size)),
-            nn.GELU(),
+        self.value = torch.nn.Sequential(
+            #pufferlib.pytorch.layer_init(nn.Linear(hidden_size, hidden_size)),
+            #nn.GELU(),
             pufferlib.pytorch.layer_init(nn.Linear(hidden_size, 1)),
         )
 
     def forward(self, observations, state=None):
         h = state['lstm_h']
         c = state['lstm_c']
-        z = state['rssm_z']
         a = state['action']
 
-        atn = self.atn_embed(a)
-        z_atn = torch.cat([z, atn], dim=-1)
-        hidden = self.cell_proj(z_atn)
+        z = self.encode(observations, a)
         hidden, c = self.cell(z, (h, c))
 
         state['hidden'] = hidden
         state['lstm_h'] = hidden
         state['lstm_c'] = c
  
-        z = self.dynamics(hidden)
-        logits = self.actor(hidden, z)
-        value = self.value(hidden, z)
+        logits = self.actor(hidden)
+        value = self.value(hidden)
         return logits, value
 
-    def imagine(self, observations, state, horizon):
+    def imagine(self, z, state):
         h = state['lstm_h']
         c = state['lstm_c']
-        z = state['rssm_z']
         a = state['action']
 
-        reward = []
-        action = []
-        logprob = []
-        value = []
-
-        atn = self.atn_embed(a)
-        z_atn = torch.cat([z, atn], dim=-1)
-        hidden = self.cell_proj(z_atn)
         hidden, c = self.cell(z, (h, c))
 
-        for t in range(horizon):
-            z = self.dynamics(hidden)
-            logits = self.actor(hidden, z)
-            v = self.value(hidden, z)
-            r = self.reward(hidden, z)
-            atn, lg, _ = pufferlib.pytorch.sample_logits(logits)
-            hidden, c = self.cell(z, (h, c))
-
-            action.append(atn)
-            reward.append(r)
-            logprob.append(lg)
-            value.append(v)
-
-        action = torch.cat(action, dim=-1)
-        reward = torch.cat(reward, dim=-1)
-        logprob = torch.cat(logprob, dim=-1)
-        value = torch.cat(value, dim=-1)
-
-        return action, reward, logprob, value
-
-
-    def seq(self, z, a, state=None):
-        h = state['lstm_h']
-        c = state['lstm_c']
-
-        if h is not None:
-            assert h.shape[0] == c.shape[0] == z.shape[0], 'LSTM state must be (h, c)'
-            lstm_state = (h, c)
-        else:
-            lstm_state = None
-
-        hidden, c = self.cell(hidden, lstm_state)
         state['hidden'] = hidden
         state['lstm_h'] = hidden
         state['lstm_c'] = c
-        return hidden
+ 
+        logits = self.actor(hidden)
+        action, logprob, entropy = pufferlib.pytorch.sample_logits(logits)
+        #state['action'] = action
 
-    def encode(self, hidden, obs):
-        return self.encoder(torch.cat([obs, hidden], dim=-1))
+        value = self.value(hidden)
+        reward = self.reward(hidden)
+        terminal = self.terminal(hidden)
 
-    def reward(self, hidden, enc):
-        return self.rew(torch.cat([enc, hidden], dim=-1))
+        return action, logprob, entropy, value, reward, terminal
 
-    def terminal(self, hidden, enc):
-        return self.cont(torch.cat([enc, hidden], dim=-1))
-
-    def decode(self, hidden, enc):
-        return self.decoder(torch.cat([enc, hidden], dim=-1))
-
-    def actor(self, hidden, enc):
-        return self.act(torch.cat([enc, hidden], dim=-1))
-
-    def value(self, hidden, enc):
-        return self.val(torch.cat([enc, hidden], dim=-1))
+    def encode(self, obs, atn):
+        atn = atn * 0
+        atn = self.atn_embed(atn)
+        obs_atn = torch.cat([obs, atn], dim=-1)
+        z = self.encoder(obs_atn)
+        return z
 
 class Convolutional(nn.Module):
     def __init__(self, env, *args, framestack, flat_size,

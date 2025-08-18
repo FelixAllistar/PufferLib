@@ -255,7 +255,6 @@ class PuffeRL:
 
                 state['lstm_h'] = self.lstm_h[env_id.start]
                 state['lstm_c'] = self.lstm_c[env_id.start]
-                state['rssm_z'] = self.rssm_z[env_id.start]
                 state['action'] = self.prev_action[env_id.start]
 
                 logits, value = self.policy(o_device, state)
@@ -266,7 +265,6 @@ class PuffeRL:
             with torch.no_grad():
                 self.lstm_h[env_id.start] = state['lstm_h']
                 self.lstm_c[env_id.start] = state['lstm_c']
-                self.rssm_z[env_id.start] = state['rssm_z']
                 self.prev_action[env_id.start] = action
 
                 # Fast path for fully vectorized envs
@@ -371,6 +369,7 @@ class PuffeRL:
             )
 
             # Dynamics
+            '''
             zs = []
             z_preds = []
             reward = []
@@ -393,10 +392,45 @@ class PuffeRL:
 
             state_loss = torch.nn.functional.mse_loss(z_pred[:, :-1], z[:, 1:])
             reward_loss = torch.nn.functional.mse_loss(reward, mb_rewards)
+            '''
 
-            ob = mb_obs[:, 0]
-            action, reward, logprob, value = self.policy.imagine(
-                ob, state, config['bptt_horizon'])
+            # RL
+            state = dict(
+                lstm_h=torch.zeros(b, h, device=device),
+                lstm_c=torch.zeros(b, h, device=device),
+                action=torch.zeros(b, device=device),
+            )
+
+            action = []
+            logprob = []
+            entropy = []
+            value = []
+            reward = []
+            terminal = []
+            for t in range(config['bptt_horizon']):
+                z = self.policy.encode(mb_obs[:, t], mb_actions[:, t])
+                atn, lgp, ent, val, rew, ter = self.policy.imagine(z, state)
+                state['action'] = mb_actions[:, t]
+
+                action.append(atn.squeeze())
+                logprob.append(lgp.squeeze())
+                entropy.append(ent.squeeze())
+                value.append(val.squeeze())
+                reward.append(rew.squeeze())
+                terminal.append(ter.squeeze())
+
+            action = torch.stack(action, dim=1).squeeze()
+            reward = torch.stack(reward, dim=1).squeeze()
+            logprob = torch.stack(logprob, dim=1).squeeze()
+            value = torch.stack(value, dim=1).squeeze()
+            entropy = torch.stack(entropy, dim=1).squeeze()
+
+            action = mb_actions
+            reward = mb_rewards
+
+            #ob = mb_obs[:, 0]
+            #action, reward, logprob, value = self.policy.imagine(
+            #    ob, state, config['bptt_horizon'])
 
 
             #actions, newlogprob, entropy = pufferlib.pytorch.sample_logits(logits, action=mb_actions)
@@ -434,9 +468,10 @@ class PuffeRL:
             v_loss_clipped = (v_clipped - mb_returns) ** 2
             v_loss = 0.5*torch.max(v_loss_unclipped, v_loss_clipped).mean()
 
-            #entropy_loss = entropy.mean()
+            entropy_loss = entropy.mean()
 
-            loss = pg_loss + config['vf_coef']*v_loss + state_loss + reward_loss
+            loss = pg_loss + config['vf_coef']*v_loss - config['ent_coef']*entropy_loss
+            #loss = pg_loss + config['vf_coef']*v_loss + state_loss + reward_loss
             self.amp_context.__enter__() # TODO: AMP needs some debugging
 
             # This breaks vloss clipping?
@@ -451,8 +486,8 @@ class PuffeRL:
             losses['approx_kl'] += approx_kl.item() / self.total_minibatches
             losses['clipfrac'] += clipfrac.item() / self.total_minibatches
             losses['importance'] += ratio.mean().item() / self.total_minibatches
-            losses['state_loss'] += state_loss.item() / self.total_minibatches
-            losses['reward_loss'] += reward_loss.item() / self.total_minibatches
+            #losses['state_loss'] += state_loss.item() / self.total_minibatches
+            #losses['reward_loss'] += reward_loss.item() / self.total_minibatches
 
             # Learn on accumulated minibatches
             profile('learn', epoch)
