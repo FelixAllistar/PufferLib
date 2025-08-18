@@ -13,8 +13,8 @@ import pufferlib
 import pufferlib.models
 
 from pufferlib.models import Default as Policy
+from pufferlib.models import RSSM
 from pufferlib.models import Convolutional as Conv
-Recurrent = pufferlib.models.LSTMWrapper
 from pufferlib.pytorch import layer_init, _nativize_dtype, nativize_tensor
 import numpy as np
 
@@ -52,7 +52,7 @@ class Boids(nn.Module):
         action = self.actor(flat_hidden).split(self.action_vec, dim=1)
         return action, value
 
-class NMMO3LSTM(pufferlib.models.LSTMWrapper):
+class NMMO3LSTM:
     def __init__(self, env, policy, input_size=512, hidden_size=512):
         super().__init__(env, policy, input_size, hidden_size)
 
@@ -525,7 +525,7 @@ class TrashPickup(nn.Module):
         value = self.value_fn(flat_hidden)
         return action, value
 
-class TowerClimbLSTM(pufferlib.models.LSTMWrapper):
+class TowerClimbLSTM:
     def __init__(self, env, policy, input_size = 256, hidden_size = 256):
         super().__init__(env, policy, input_size, hidden_size)
 
@@ -581,7 +581,7 @@ class TowerClimb(nn.Module):
         return action, value
 
 
-class ImpulseWarsLSTM(Recurrent):
+class ImpulseWarsLSTM:
     def __init__(self, env: pufferlib.PufferEnv, policy: nn.Module, input_size: int = 512, hidden_size: int = 512):
         super().__init__(env, policy, input_size, hidden_size)
 

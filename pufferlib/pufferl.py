@@ -105,11 +105,12 @@ class PuffeRL:
         self.free_idx = total_agents
 
         # LSTM
-        if config['use_rnn']:
-            n = vecenv.agents_per_batch
-            h = policy.hidden_size
-            self.lstm_h = {i*n: torch.zeros(n, h, device=device) for i in range(total_agents//n)}
-            self.lstm_c = {i*n: torch.zeros(n, h, device=device) for i in range(total_agents//n)}
+        n = vecenv.agents_per_batch
+        h = policy.hidden_size
+        self.lstm_h = {i*n: torch.zeros(n, h, device=device) for i in range(total_agents//n)}
+        self.lstm_c = {i*n: torch.zeros(n, h, device=device) for i in range(total_agents//n)}
+        self.rssm_z = {i*n: torch.zeros(n, policy.hidden_size, device=device) for i in range(total_agents//n)}
+        self.prev_action = {i*n: torch.zeros(n, dtype=torch.int32, device=device) for i in range(total_agents//n)}
 
         # Minibatching & gradient accumulation
         minibatch_size = config['minibatch_size']
@@ -220,10 +221,11 @@ class PuffeRL:
         config = self.config
         device = config['device']
 
-        if config['use_rnn']:
-            for k in self.lstm_h:
-                self.lstm_h[k] = torch.zeros(self.lstm_h[k].shape, device=device)
-                self.lstm_c[k] = torch.zeros(self.lstm_c[k].shape, device=device)
+        for k in self.lstm_h:
+            self.lstm_h[k][:] = 0
+            self.lstm_c[k][:] = 0
+            self.rssm_z[k][:] = 0
+            self.prev_action[k][:] = 0
 
         self.full_rows = 0
         while self.full_rows < self.segments:
@@ -251,19 +253,21 @@ class PuffeRL:
                     mask=mask,
                 )
 
-                if config['use_rnn']:
-                    state['lstm_h'] = self.lstm_h[env_id.start]
-                    state['lstm_c'] = self.lstm_c[env_id.start]
+                state['lstm_h'] = self.lstm_h[env_id.start]
+                state['lstm_c'] = self.lstm_c[env_id.start]
+                state['rssm_z'] = self.rssm_z[env_id.start]
+                state['action'] = self.prev_action[env_id.start]
 
-                logits, value = self.policy.forward_eval(o_device, state)
+                logits, value = self.policy(o_device, state)
                 action, logprob, _ = pufferlib.pytorch.sample_logits(logits)
                 r = torch.clamp(r, -1, 1)
 
             profile('eval_copy', epoch)
             with torch.no_grad():
-                if config['use_rnn']:
-                    self.lstm_h[env_id.start] = state['lstm_h']
-                    self.lstm_c[env_id.start] = state['lstm_c']
+                self.lstm_h[env_id.start] = state['lstm_h']
+                self.lstm_c[env_id.start] = state['lstm_c']
+                self.rssm_z[env_id.start] = state['rssm_z']
+                self.prev_action[env_id.start] = action
 
                 # Fast path for fully vectorized envs
                 l = self.ep_lengths[env_id.start].item()
@@ -357,19 +361,49 @@ class PuffeRL:
             mb_advantages = advantages[idx]
 
             profile('train_forward', epoch)
-            if not config['use_rnn']:
-                mb_obs = mb_obs.reshape(-1, *self.vecenv.single_observation_space.shape)
 
+            b = mb_actions.shape[0]
+            h = self.policy.hidden_size
             state = dict(
-                action=mb_actions,
-                lstm_h=None,
-                lstm_c=None,
+                lstm_h=torch.zeros(b, h, device=device),
+                lstm_c=torch.zeros(b, h, device=device),
+                rssm_z=torch.zeros(b, self.policy.hidden_size, device=device),
             )
 
-            embed = self.policy.encode_train(mb_obs, state)
-            logits, newvalue = self.policy.decode_train(embed)
+            # Dynamics
+            zs = []
+            z_preds = []
+            reward = []
+            for t in range(config['bptt_horizon']):
+                state['action'] = mb_actions[:, t]
+                logits, v = self.policy(mb_obs[:, t], state)
+                hidden = state['hidden']
+                z = state['rssm_z'].clone()
+                z_pred = self.policy.dynamics(hidden)
+                r = self.policy.reward(hidden, z_pred)
 
-            actions, newlogprob, entropy = pufferlib.pytorch.sample_logits(logits, action=mb_actions)
+                zs.append(z)
+                z_preds.append(z_pred)
+                reward.append(r)
+
+
+            z = torch.stack(zs, dim=1)
+            z_pred = torch.stack(z_preds, dim=1)
+            reward = torch.cat(reward, dim=1)
+
+            state_loss = torch.nn.functional.mse_loss(z_pred[:, :-1], z[:, 1:])
+            reward_loss = torch.nn.functional.mse_loss(reward, mb_rewards)
+
+            ob = mb_obs[:, 0]
+            action, reward, logprob, value = self.policy.imagine(
+                ob, state, config['bptt_horizon'])
+
+
+            #actions, newlogprob, entropy = pufferlib.pytorch.sample_logits(logits, action=mb_actions)
+
+            newlogprob = logprob
+            mb_rewards = reward
+            newvalue = value
 
             profile('train_misc', epoch)
             newlogprob = newlogprob.reshape(mb_logprobs.shape)
@@ -389,16 +423,6 @@ class PuffeRL:
             adv = mb_advantages
             adv = mb_prio * (adv - adv.mean()) / (adv.std() + 1e-8)
 
-            # Dynamics
-            pred_embed, pred_rewards = self.policy.policy.G(embed, mb_actions)
-            state_loss = torch.nn.functional.mse_loss(
-                pred_embed[:, :-1], pred_embed[:, 1:])
-            reward_loss = torch.nn.functional.mse_loss(
-                pred_rewards[:, :-1], mb_rewards[:, 1:])
-
-            #hidden = self.policy.encode_eval(mb_obs[:, -1], state)
-            #for t in range(8):
-
             # Losses
             pg_loss1 = -adv * ratio
             pg_loss2 = -adv * torch.clamp(ratio, 1 - clip_coef, 1 + clip_coef)
@@ -410,9 +434,9 @@ class PuffeRL:
             v_loss_clipped = (v_clipped - mb_returns) ** 2
             v_loss = 0.5*torch.max(v_loss_unclipped, v_loss_clipped).mean()
 
-            entropy_loss = entropy.mean()
+            #entropy_loss = entropy.mean()
 
-            loss = pg_loss + config['vf_coef']*v_loss - config['ent_coef']*entropy_loss + state_loss + reward_loss
+            loss = pg_loss + config['vf_coef']*v_loss + state_loss + reward_loss
             self.amp_context.__enter__() # TODO: AMP needs some debugging
 
             # This breaks vloss clipping?
@@ -422,7 +446,7 @@ class PuffeRL:
             profile('train_misc', epoch)
             losses['policy_loss'] += pg_loss.item() / self.total_minibatches
             losses['value_loss'] += v_loss.item() / self.total_minibatches
-            losses['entropy'] += entropy_loss.item() / self.total_minibatches
+            #losses['entropy'] += entropy_loss.item() / self.total_minibatches
             losses['old_approx_kl'] += old_approx_kl.item() / self.total_minibatches
             losses['approx_kl'] += approx_kl.item() / self.total_minibatches
             losses['clipfrac'] += clipfrac.item() / self.total_minibatches
@@ -446,8 +470,8 @@ class PuffeRL:
         y_pred = self.values.flatten()
         y_true = advantages.flatten() + self.values.flatten()
         var_y = y_true.var()
-        explained_var = torch.nan if var_y == 0 else 1 - (y_true - y_pred).var() / var_y
-        losses['explained_variance'] = explained_var.item()
+        #explained_var = torch.nan if var_y == 0 else 1 - (y_true - y_pred).var() / var_y
+        #losses['explained_variance'] = explained_var.item()
 
         profile.end()
         logs = None
@@ -968,11 +992,10 @@ def eval(env_name, args=None, vecenv=None, policy=None):
     device = args['train']['device']
 
     state = {}
-    if args['train']['use_rnn']:
-        state = dict(
-            lstm_h=torch.zeros(num_agents, policy.hidden_size, device=device),
-            lstm_c=torch.zeros(num_agents, policy.hidden_size, device=device),
-        )
+    state = dict(
+        lstm_h=torch.zeros(num_agents, policy.hidden_size, device=device),
+        lstm_c=torch.zeros(num_agents, policy.hidden_size, device=device),
+    )
 
     frames = []
     while True:
@@ -1203,7 +1226,6 @@ def load_config(env_name):
 
         prev[subkey] = value
 
-    args['train']['use_rnn'] = args['rnn_name'] is not None
     return args
 
 def main():
