@@ -1,4 +1,4 @@
-## puffer [train | eval | sweep] [env_name] [optional args] -- See https://puffer.ai for full detail0
+# puffer [train | eval | sweep] [env_name] [optional args] -- See https://puffer.ai for full detail0
 # This is the same as python -m pufferlib.pufferl [train | eval | sweep] [env_name] [optional args]
 # Distributed example: torchrun --standalone --nnodes=1 --nproc-per-node=6 -m pufferlib.pufferl train puffer_nmmo3
 
@@ -361,7 +361,6 @@ class PuffeRL:
             )
 
             for t in range(config['bptt_horizon']):
-                #state['action'] = mb_actions[:, t]
                 z = self.policy.policy.encoder(mb_obs[:, t])
                 _, _ = self.policy.forward_eval(z, state, encode=False)
 
@@ -406,12 +405,8 @@ class PuffeRL:
 
             z = self.policy.policy.encoder(mb_obs[:, 0])
             for t in range(config['bptt_horizon']):
-                z = self.policy.policy.encoder(mb_obs[:, t])
                 logits, newvalue = self.policy.forward_eval(z, state, encode=False)
-                if t < 8:
-                    actions, newlogprob, entropy = pufferlib.pytorch.sample_logits(logits, action=mb_actions[:, t])
-                else:
-                    actions, newlogprob, entropy = pufferlib.pytorch.sample_logits(logits)
+                actions, newlogprob, entropy = pufferlib.pytorch.sample_logits(logits)
 
                 hidden = state['hidden']
                 z = self.policy.policy.dynamics(hidden, actions)
@@ -456,15 +451,10 @@ class PuffeRL:
             mb_returns = adv + mb_values
 
             # Losses
-            pg_loss1 = -adv * ratio
-            pg_loss2 = -adv * torch.clamp(ratio, 1 - clip_coef, 1 + clip_coef)
-            pg_loss = torch.max(pg_loss1, pg_loss2).mean()
+            pg_loss = (-adv * ratio).mean()
 
             newvalue = newvalue.view(mb_returns.shape)
-            v_clipped = mb_values + torch.clamp(newvalue - mb_values, -vf_clip, vf_clip)
-            v_loss_unclipped = (newvalue - mb_returns) ** 2
-            v_loss_clipped = (v_clipped - mb_returns) ** 2
-            v_loss = 0.5*torch.max(v_loss_unclipped, v_loss_clipped).mean()
+            v_loss = torch.nn.functional.mse_loss(newvalue, mb_returns)
 
             entropy_loss = entropy.mean()
 
