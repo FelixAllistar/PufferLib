@@ -39,8 +39,8 @@ class Default(nn.Module):
             self.encoder = nn.Linear(input_size, self.hidden_size)
         else:
             num_obs = np.prod(env.single_observation_space.shape)
-            self.encoder = torch.nn.Sequential(
-                pufferlib.pytorch.layer_init(nn.Linear(num_obs, hidden_size)),
+            self.enc = torch.nn.Sequential(
+                pufferlib.pytorch.layer_init(nn.Linear(num_obs + hidden_size, hidden_size)),
                 nn.GELU(),
             )
             
@@ -61,21 +61,48 @@ class Default(nn.Module):
 
         self.value = pufferlib.pytorch.layer_init(
             nn.Linear(hidden_size, 1), std=1)
-        self.action_embed = nn.Embedding(env.single_action_space.n, hidden_size)
-        self.dyn = torch.nn.Sequential(
+        self.dynamics = torch.nn.Sequential(
+            pufferlib.pytorch.layer_init(nn.Linear(hidden_size, hidden_size)),
+            nn.GELU(),
+            pufferlib.pytorch.layer_init(nn.Linear(hidden_size, hidden_size))
+        )
+        self.rew = torch.nn.Sequential(
             pufferlib.pytorch.layer_init(nn.Linear(2*hidden_size, hidden_size)),
             nn.GELU(),
-            pufferlib.pytorch.layer_init(nn.Linear(hidden_size, hidden_size)))
-        self.reward = pufferlib.pytorch.layer_init(
-            nn.Linear(hidden_size, 1), std=1)
-        self.terminal = pufferlib.pytorch.layer_init(
-            nn.Linear(hidden_size, 2), std=0.01)
-        self.value = pufferlib.pytorch.layer_init(
-            nn.Linear(hidden_size, 1), std=1)
+            pufferlib.pytorch.layer_init(nn.Linear(hidden_size, 1))
+        )
+        self.term = torch.nn.Sequential(
+            pufferlib.pytorch.layer_init(nn.Linear(2*hidden_size, hidden_size)),
+            nn.GELU(),
+            pufferlib.pytorch.layer_init(nn.Linear(hidden_size, 2))
+        )
+        self.recon = torch.nn.Sequential(
+            pufferlib.pytorch.layer_init(nn.Linear(2*hidden_size, hidden_size)),
+            nn.GELU(),
+            pufferlib.pytorch.layer_init(nn.Linear(hidden_size, num_obs))
+        )
+        self.val = pufferlib.pytorch.layer_init(
+            nn.Linear(2*hidden_size, 1), std=1)
+        self.act = pufferlib.pytorch.layer_init(
+            nn.Linear(2*hidden_size, num_atns), std=0.01)
 
-    def dynamics(self, hidden, action):
-        action = self.action_embed(action)
-        return self.dyn(torch.cat([hidden, action], dim=-1))
+    def reward(self, z, hidden):
+        return self.rew(torch.cat([hidden, z], dim=-1))
+    
+    def terminal(self, z, hidden):
+        return self.term(torch.cat([hidden, z], dim=-1))
+
+    def reconstruct(self, z, hidden):
+        return self.recon(torch.cat([hidden, z], dim=-1))
+
+    def actor(self, z, hidden):
+        return self.act(torch.cat([hidden, z], dim=-1))
+
+    def value(self, z, hidden):
+        return self.val(torch.cat([hidden, z], dim=-1))
+ 
+    def encode(self, observations, state):
+        return self.enc(torch.cat([observations, state['lstm_h']], dim=-1))
 
     def forward_eval(self, observations, state=None):
         hidden = self.encode_observations(observations, state=state)
@@ -142,22 +169,22 @@ class LSTMWrapper(nn.Module):
         self.cell.bias_ih = self.lstm.bias_ih_l0
         self.cell.bias_hh = self.lstm.bias_hh_l0
 
+        self.action_embed = nn.Embedding(env.single_action_space.n, hidden_size)
+        self.action_proj = nn.Linear(2*hidden_size, hidden_size)
         #self.pre_layernorm = nn.LayerNorm(hidden_size)
         #self.post_layernorm = nn.LayerNorm(hidden_size)
 
-    def forward_eval(self, observations, state, encode=True):
+    def forward_eval(self, z, state):
         '''Forward function for inference. 3x faster than using LSTM directly'''
-        if encode:
-            hidden = self.policy.encode_observations(observations, state=state)
-        else:
-            hidden = observations
+        action = self.action_embed(state['prev_action'])
+        hidden = self.action_proj(torch.cat([z, action], dim=-1))
 
         h = state['lstm_h']
         c = state['lstm_c']
 
         # TODO: Don't break compile
         if h is not None:
-            assert h.shape[0] == c.shape[0] == observations.shape[0], 'LSTM state must be (h, c)'
+            assert h.shape[0] == c.shape[0] == hidden.shape[0], 'LSTM state must be (h, c)'
             lstm_state = (h, c)
         else:
             lstm_state = None
@@ -168,8 +195,7 @@ class LSTMWrapper(nn.Module):
         state['hidden'] = hidden
         state['lstm_h'] = hidden
         state['lstm_c'] = c
-        logits, values = self.policy.decode_actions(hidden)
-        return logits, values
+        return hidden
 
     def forward(self, observations, state):
         '''Forward function for training. Uses LSTM for fast time-batching'''
