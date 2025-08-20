@@ -21,8 +21,9 @@ class Default(nn.Module):
     the recurrent cell into encode_observations and put everything after
     into decode_actions.
     '''
-    def __init__(self, env, hidden_size=128):
+    def __init__(self, env, hidden_size=128, z_dim=16, z_samples=16):
         super().__init__()
+        self.z_flat = z_dim * z_samples
         self.hidden_size = hidden_size
         self.is_multidiscrete = isinstance(env.single_action_space,
                 pufferlib.spaces.MultiDiscrete)
@@ -42,6 +43,7 @@ class Default(nn.Module):
             self.enc = torch.nn.Sequential(
                 pufferlib.pytorch.layer_init(nn.Linear(num_obs + hidden_size, hidden_size)),
                 nn.GELU(),
+                pufferlib.pytorch.layer_init(nn.Linear(hidden_size, z_dim))
             )
             
         if self.is_multidiscrete:
@@ -61,48 +63,61 @@ class Default(nn.Module):
 
         self.value = pufferlib.pytorch.layer_init(
             nn.Linear(hidden_size, 1), std=1)
-        self.dynamics = torch.nn.Sequential(
+        self.dyn = torch.nn.Sequential(
             pufferlib.pytorch.layer_init(nn.Linear(hidden_size, hidden_size)),
             nn.GELU(),
-            pufferlib.pytorch.layer_init(nn.Linear(hidden_size, hidden_size))
+            pufferlib.pytorch.layer_init(nn.Linear(hidden_size, z_dim))
         )
         self.rew = torch.nn.Sequential(
-            pufferlib.pytorch.layer_init(nn.Linear(2*hidden_size, hidden_size)),
+            pufferlib.pytorch.layer_init(nn.Linear(hidden_size + self.z_flat, hidden_size)),
             nn.GELU(),
             pufferlib.pytorch.layer_init(nn.Linear(hidden_size, 1))
         )
         self.term = torch.nn.Sequential(
-            pufferlib.pytorch.layer_init(nn.Linear(2*hidden_size, hidden_size)),
+            pufferlib.pytorch.layer_init(nn.Linear(hidden_size + self.z_flat, hidden_size)),
             nn.GELU(),
             pufferlib.pytorch.layer_init(nn.Linear(hidden_size, 2))
         )
         self.recon = torch.nn.Sequential(
-            pufferlib.pytorch.layer_init(nn.Linear(2*hidden_size, hidden_size)),
+            pufferlib.pytorch.layer_init(nn.Linear(hidden_size + self.z_flat, hidden_size)),
             nn.GELU(),
             pufferlib.pytorch.layer_init(nn.Linear(hidden_size, num_obs))
         )
         self.val = pufferlib.pytorch.layer_init(
-            nn.Linear(2*hidden_size, 1), std=1)
+            nn.Linear(hidden_size+self.z_flat, 1), std=1)
         self.act = pufferlib.pytorch.layer_init(
-            nn.Linear(2*hidden_size, num_atns), std=0.01)
+            nn.Linear(hidden_size+self.z_flat, num_atns), std=0.01)
 
-    def reward(self, z, hidden):
-        return self.rew(torch.cat([hidden, z], dim=-1))
+    def sample(self, logits, n=16):
+        probs = torch.nn.functional.softmax(logits, dim=-1)
+        categorical = torch.multinomial(probs, n, replacement=True)
+        one_hot = torch.nn.functional.one_hot(categorical, num_classes=probs.shape[-1])
+
+        probs = probs.unsqueeze(-2)
+        return one_hot + probs - probs.detach()
+
+    def reward(self, h, z):
+        return self.rew(torch.cat([h, z.view(z.shape[0], -1)], dim=-1))
     
-    def terminal(self, z, hidden):
-        return self.term(torch.cat([hidden, z], dim=-1))
+    def terminal(self, h, z):
+        return self.term(torch.cat([h, z.view(z.shape[0], -1)], dim=-1))
 
-    def reconstruct(self, z, hidden):
-        return self.recon(torch.cat([hidden, z], dim=-1))
+    def reconstruct(self, h, z):
+        return self.recon(torch.cat([h, z.view(z.shape[0], -1)], dim=-1))
 
-    def actor(self, z, hidden):
-        return self.act(torch.cat([hidden, z], dim=-1))
+    def actor(self, h, z):
+        return self.act(torch.cat([h, z.view(z.shape[0], -1)], dim=-1))
 
-    def value(self, z, hidden):
-        return self.val(torch.cat([hidden, z], dim=-1))
+    def value(self, h, z):
+        return self.val(torch.cat([h, z.view(z.shape[0], -1)], dim=-1))
  
-    def encode(self, observations, state):
-        return self.enc(torch.cat([observations, state['lstm_h']], dim=-1))
+    def encode(self, h, x):
+        z = self.enc(torch.cat([h, x], dim=-1))
+        return self.sample(z)
+
+    def dynamics(self, h):
+        z = self.dyn(h)
+        return self.sample(z)
 
     def forward_eval(self, observations, state=None):
         hidden = self.encode_observations(observations, state=state)
@@ -170,14 +185,16 @@ class LSTMWrapper(nn.Module):
         self.cell.bias_hh = self.lstm.bias_hh_l0
 
         self.action_embed = nn.Embedding(env.single_action_space.n, hidden_size)
-        self.action_proj = nn.Linear(2*hidden_size, hidden_size)
+
+        z_flat = self.policy.z_flat
+        self.action_proj = nn.Linear(hidden_size+z_flat, hidden_size)
         #self.pre_layernorm = nn.LayerNorm(hidden_size)
         #self.post_layernorm = nn.LayerNorm(hidden_size)
 
-    def forward_eval(self, z, state):
+    def forward_eval(self, z, state, action):
         '''Forward function for inference. 3x faster than using LSTM directly'''
-        action = self.action_embed(state['prev_action'])
-        hidden = self.action_proj(torch.cat([z, action], dim=-1))
+        action = self.action_embed(action)
+        hidden = self.action_proj(torch.cat([z.view(z.shape[0], -1), action], dim=-1))
 
         h = state['lstm_h']
         c = state['lstm_c']

@@ -111,7 +111,7 @@ class PuffeRL:
             h = policy.hidden_size
             self.lstm_h = {i*n: torch.zeros(n, h, device=device) for i in range(total_agents//n)}
             self.lstm_c = {i*n: torch.zeros(n, h, device=device) for i in range(total_agents//n)}
-            self.prev_z = {i*n: torch.zeros(n, h, device=device) for i in range(total_agents//n)}
+            self.prev_z = {i*n: torch.zeros(n, policy.policy.z_flat, device=device) for i in range(total_agents//n)}
             self.prev_action = {i*n: torch.zeros(n, dtype=torch.int32, device=device) for i in range(total_agents//n)}
 
         # Minibatching & gradient accumulation
@@ -258,13 +258,16 @@ class PuffeRL:
                 if config['use_rnn']:
                     state['lstm_h'] = self.lstm_h[env_id.start]
                     state['lstm_c'] = self.lstm_c[env_id.start]
-                    state['prev_action'] = self.prev_action[env_id.start]
 
-                z = self.prev_z[env_id.start]
-                h = self.policy.forward_eval(z, state)
-                z = self.policy.policy.dynamics(h)
-                logits = self.policy.policy.actor(z, h)
-                value = self.policy.policy.value(z, h)
+
+                x = o_device
+                a_prev = self.prev_action[env_id.start]
+                z_prev = self.prev_z[env_id.start]
+
+                h = self.policy.forward_eval(z_prev, state, a_prev)
+                z = self.policy.policy.encode(h, x)
+                logits = self.policy.policy.actor(h, z)
+                value = self.policy.policy.value(h, z)
                 action, logprob, _ = pufferlib.pytorch.sample_logits(logits)
                 r = torch.clamp(r, -1, 1)
 
@@ -356,32 +359,43 @@ class PuffeRL:
             # World model training
             all_reward = []
             all_terminal = []
-            all_nxt_obs = []
+            all_obs = []
+            all_z = []
+            all_z_hat = []
 
             n = self.minibatch_segments
             h = self.policy.hidden_size
             state = dict(
                 lstm_h = torch.zeros(n, h, device=device),
                 lstm_c = torch.zeros(n, h, device=device),
-                prev_action = torch.zeros(n, dtype=torch.int32, device=device)
             )
 
-            z = torch.zeros(n, h, device=device)
+            a_prev = torch.zeros(n, dtype=torch.int32, device=device)
+            z = torch.zeros(n, self.policy.policy.z_flat, device=device)
             for t in range(config['bptt_horizon']):
-                h = self.policy.forward_eval(z, state)
-                state['prev_action'] = mb_actions[:, t]
-                z = self.policy.policy.dynamics(h)
-                reward = self.policy.policy.reward(z, h)
-                terminal = self.policy.policy.terminal(z, h)
-                nxt_obs = self.policy.policy.reconstruct(z, h)
+                x = mb_obs[:, t]
+
+                h = self.policy.forward_eval(z, state, a_prev)
+                a_prev = mb_actions[:, t]
+
+                z = self.policy.policy.encode(h, x)
+                z_hat = self.policy.policy.dynamics(h)
+
+                reward = self.policy.policy.reward(h, z)
+                terminal = self.policy.policy.terminal(h, z)
+                x = self.policy.policy.reconstruct(h, z)
 
                 all_reward.append(reward)
                 all_terminal.append(terminal)
-                all_nxt_obs.append(nxt_obs)
+                all_obs.append(x)
+                all_z.append(z)
+                all_z_hat.append(z_hat)
 
             reward = torch.stack(all_reward, dim=1).squeeze(-1)
             terminal = torch.stack(all_terminal, dim=1)
-            all_nxt_obs = torch.stack(all_nxt_obs, dim=1)
+            all_obs = torch.stack(all_obs, dim=1)
+            all_z = torch.stack(all_z, dim=1)
+            all_z_hat = torch.stack(all_z_hat, dim=1)
  
             reward_loss = torch.nn.functional.mse_loss(
                 reward[:, :-1], mb_rewards[:, 1:])
@@ -389,7 +403,10 @@ class PuffeRL:
             y_term = mb_terminals[:, 1:].long().view(-1)
             term = terminal[:, :-1].reshape(-1, 2)
             terminal_loss = torch.nn.functional.cross_entropy(term, y_term)
-            recon_loss = torch.nn.functional.mse_loss(all_nxt_obs[:, :-1], mb_obs[:, 1:])
+            recon_loss = torch.nn.functional.mse_loss(all_obs, mb_obs)
+
+            dyn_loss = torch.nn.functional.kl_div(all_z_hat, all_z.detach())
+            rep_loss = torch.nn.functional.kl_div(all_z, all_z_hat.detach())
 
             # Hallucinate trajectories
             all_logits = []
@@ -405,21 +422,33 @@ class PuffeRL:
             state = dict(
                 lstm_h = torch.zeros(n, h, device=device),
                 lstm_c = torch.zeros(n, h, device=device),
-                prev_action = torch.zeros(n, dtype=torch.int32, device=device)
             )
 
+            a_prev = torch.zeros(n, dtype=torch.int32, device=device)
+            z = torch.zeros(n, self.policy.policy.z_flat, device=device)
+
             for t in range(config['bptt_horizon']):
-                h = self.policy.forward_eval(z, state)
-                z = self.policy.policy.dynamics(h)
-                reward = self.policy.policy.reward(z, h)
-                terminal = self.policy.policy.terminal(z, h)
-                nxt_obs = self.policy.policy.reconstruct(z, h)
-                logits = self.policy.policy.actor(z, h)
-                value = self.policy.policy.value(z, h)
+                h = self.policy.forward_eval(z, state, a_prev)
+                if t == 0:
+                    z = self.policy.policy.encode(h, x)
+                else:
+                    z = self.policy.policy.dynamics(h)
+
+                #z = self.policy.policy.encode(h, mb_obs[:, t])
+
+                reward = self.policy.policy.reward(h, z)
+                terminal = self.policy.policy.terminal(h, z)
+                logits = self.policy.policy.actor(h, z)
+                value = self.policy.policy.value(h, z)
+                #actions = mb_actions[:, t]
+                #actions, newlogprob, entropy = pufferlib.pytorch.sample_logits(
+                #    logits, action=actions)
+ 
                 actions, newlogprob, entropy = pufferlib.pytorch.sample_logits(
                     logits)
 
-                state['prev_action'] = actions
+                a_prev = actions
+
                 all_logits.append(logits)
                 all_newvalue.append(value)
                 all_newlogprob.append(newlogprob)
@@ -459,7 +488,7 @@ class PuffeRL:
             entropy_loss = entropy.mean()
 
             rl_loss = pg_loss + config['vf_coef']*v_loss - config['ent_coef']*entropy_loss
-            wm_loss = reward_loss + terminal_loss + recon_loss
+            wm_loss = reward_loss + terminal_loss + recon_loss + dyn_loss + rep_loss
             loss = rl_loss + wm_loss
 
             self.amp_context.__enter__() # TODO: AMP needs some debugging
