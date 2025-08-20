@@ -356,19 +356,94 @@ class PuffeRL:
             if not config['use_rnn']:
                 mb_obs = mb_obs.reshape(-1, *self.vecenv.single_observation_space.shape)
 
+            # World model training
+            all_z = []
+            all_z_pred = []
+            all_reward = []
+            all_terminal = []
+
             state = dict(
-                action=mb_actions,
+                    #action=mb_actions,
                 lstm_h=None,
                 lstm_c=None,
             )
 
-            logits, newvalue = self.policy(mb_obs, state)
-            actions, newlogprob, entropy = pufferlib.pytorch.sample_logits(logits, action=mb_actions)
+            for t in range(config['bptt_horizon']):
+                z = self.policy.policy.encoder(mb_obs[:, t])
+                _, _ = self.policy.forward_eval(z, state, encode=False)
+
+                hidden = state['hidden']
+                z_pred = self.policy.policy.dynamics(hidden, mb_actions[:, t])
+                reward = self.policy.policy.reward(z_pred)
+                terminal = self.policy.policy.terminal(z_pred)
+
+                all_z.append(z)
+                all_z_pred.append(z_pred)
+                all_reward.append(reward)
+                all_terminal.append(terminal)
+
+            all_z = torch.stack(all_z, dim=1)
+            all_z_pred = torch.stack(all_z_pred, dim=1)
+            reward = torch.stack(all_reward, dim=1).squeeze(-1)
+            terminal = torch.stack(all_terminal, dim=1)
+ 
+            reward_loss = torch.nn.functional.mse_loss(
+                reward[:, :-1], mb_rewards[:, 1:])
+
+            y_term = mb_terminals[:, 1:].long().view(-1)
+            term = terminal[:, :-1].reshape(-1, 2)
+            terminal_loss = torch.nn.functional.cross_entropy(term, y_term)
+
+            z_loss = torch.nn.functional.mse_loss(all_z_pred[:, :-1], all_z[:, 1:])
+
+            # Hallucinate trajectories
+            all_logits = []
+            all_newvalue = []
+            all_newlogprob = []
+            all_entropy = []
+            all_reward = []
+            all_terminal = []
+            all_actions = []
+
+            state = dict(
+                lstm_h=None,
+                lstm_c=None,
+            )
+
+            z = self.policy.policy.encoder(mb_obs[:, 0])
+            for t in range(config['bptt_horizon']):
+                #z = self.policy.policy.encoder(mb_obs[:, t])
+                logits, newvalue = self.policy.forward_eval(z, state, encode=False)
+                actions, newlogprob, entropy = pufferlib.pytorch.sample_logits(
+                    logits)#, action=mb_actions[:, t])
+
+                hidden = state['hidden']
+                z = self.policy.policy.dynamics(hidden, actions)
+                reward = self.policy.policy.reward(z_pred)
+                terminal = self.policy.policy.terminal(z_pred)
+
+                all_logits.append(logits)
+                all_newvalue.append(newvalue)
+                all_newlogprob.append(newlogprob)
+                all_entropy.append(entropy)
+                all_reward.append(reward)
+                all_terminal.append(terminal)
+                all_actions.append(actions)
+
+            logits = torch.stack(all_logits, dim=1)
+            newvalue = torch.stack(all_newvalue, dim=1)
+            newlogprob = torch.stack(all_newlogprob, dim=1)
+            entropy = torch.stack(all_entropy, dim=1)
+            mb_rewards = torch.stack(all_reward, dim=1).squeeze(-1)
+            mb_terminals = torch.stack(all_terminal, dim=1)
+            mb_terminals = pufferlib.pytorch.sample_logits(mb_terminals)[0].float()
+            mb_actions = torch.stack(all_actions, dim=1)
+            mb_values = newvalue.squeeze(-1)
 
             profile('train_misc', epoch)
             newlogprob = newlogprob.reshape(mb_logprobs.shape)
 
-            adv = advantages[idx]
+            adv = torch.zeros(mb_values.shape, device=device)
             ratio = torch.ones(mb_values.shape, device=device)
             adv = compute_puff_advantage(mb_values, mb_rewards, mb_terminals,
                 ratio, adv, config['gamma'], config['gae_lambda'],
@@ -383,7 +458,10 @@ class PuffeRL:
 
             entropy_loss = entropy.mean()
 
-            loss = pg_loss + config['vf_coef']*v_loss - config['ent_coef']*entropy_loss
+            loss = (pg_loss + config['vf_coef']*v_loss
+                - config['ent_coef']*entropy_loss
+                + reward_loss + terminal_loss + z_loss)
+
             self.amp_context.__enter__() # TODO: AMP needs some debugging
 
             # This breaks vloss clipping?

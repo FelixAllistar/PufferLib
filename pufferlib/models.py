@@ -61,6 +61,21 @@ class Default(nn.Module):
 
         self.value = pufferlib.pytorch.layer_init(
             nn.Linear(hidden_size, 1), std=1)
+        self.action_embed = nn.Embedding(env.single_action_space.n, hidden_size)
+        self.dyn = torch.nn.Sequential(
+            pufferlib.pytorch.layer_init(nn.Linear(2*hidden_size, hidden_size)),
+            nn.GELU(),
+            pufferlib.pytorch.layer_init(nn.Linear(hidden_size, hidden_size)))
+        self.reward = pufferlib.pytorch.layer_init(
+            nn.Linear(hidden_size, 1), std=1)
+        self.terminal = pufferlib.pytorch.layer_init(
+            nn.Linear(hidden_size, 2), std=0.01)
+        self.value = pufferlib.pytorch.layer_init(
+            nn.Linear(hidden_size, 1), std=1)
+
+    def dynamics(self, hidden, action):
+        action = self.action_embed(action)
+        return self.dyn(torch.cat([hidden, action], dim=-1))
 
     def forward_eval(self, observations, state=None):
         hidden = self.encode_observations(observations, state=state)
@@ -130,9 +145,13 @@ class LSTMWrapper(nn.Module):
         #self.pre_layernorm = nn.LayerNorm(hidden_size)
         #self.post_layernorm = nn.LayerNorm(hidden_size)
 
-    def forward_eval(self, observations, state):
+    def forward_eval(self, observations, state, encode=True):
         '''Forward function for inference. 3x faster than using LSTM directly'''
-        hidden = self.policy.encode_observations(observations, state=state)
+        if encode:
+            hidden = self.policy.encode_observations(observations, state=state)
+        else:
+            hidden = observations
+
         h = state['lstm_h']
         c = state['lstm_c']
 
