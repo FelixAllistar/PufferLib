@@ -322,22 +322,9 @@ class PuffeRL:
         config = self.config
         device = config['device']
 
-        b0 = config['prio_beta0']
-        a = config['prio_alpha']
-        clip_coef = config['clip_coef']
-        vf_clip = config['vf_clip_coef']
-        anneal_beta = b0 + (1 - b0)*a*self.epoch/self.total_epochs
-        self.ratio[:] = 1
-
         for mb in range(self.total_minibatches):
             profile('train_misc', epoch, nest=True)
             self.amp_context.__enter__()
-
-            shape = self.values.shape
-            advantages = torch.zeros(shape, device=device)
-            advantages = compute_puff_advantage(self.values, self.rewards,
-                self.terminals, self.ratio, advantages, config['gamma'],
-                config['gae_lambda'], config['vtrace_rho_clip'], config['vtrace_c_clip'])
 
             profile('train_copy', epoch)
             idx = torch.randint(0, self.segments, size=(self.minibatch_segments,), device=device)
@@ -349,8 +336,6 @@ class PuffeRL:
             mb_truncations = self.truncations[idx]
             mb_ratio = self.ratio[idx]
             mb_values = self.values[idx]
-            mb_returns = advantages[idx] + mb_values
-            mb_advantages = advantages[idx]
 
             profile('train_forward', epoch)
             if not config['use_rnn']:
@@ -448,6 +433,8 @@ class PuffeRL:
             adv = compute_puff_advantage(mb_values, mb_rewards, mb_terminals,
                 ratio, adv, config['gamma'], config['gae_lambda'],
                 config['vtrace_rho_clip'], config['vtrace_c_clip'])
+            mb_advantages = adv
+            mb_returns = adv + mb_values
 
             # Losses
             pg_loss = (-adv * newlogprob).mean()
@@ -463,9 +450,6 @@ class PuffeRL:
                 + reward_loss + terminal_loss + z_loss)
 
             self.amp_context.__enter__() # TODO: AMP needs some debugging
-
-            # This breaks vloss clipping?
-            self.values[idx] = newvalue.detach().float()
 
             # Logging
             profile('train_misc', epoch)
@@ -487,10 +471,10 @@ class PuffeRL:
             self.scheduler.step()
 
         y_pred = self.values.flatten()
-        y_true = advantages.flatten() + self.values.flatten()
-        var_y = y_true.var()
-        explained_var = torch.nan if var_y == 0 else 1 - (y_true - y_pred).var() / var_y
-        losses['explained_variance'] = explained_var.item()
+        #y_true = advantages.flatten() + self.values.flatten()
+        #var_y = y_true.var()
+        #explained_var = torch.nan if var_y == 0 else 1 - (y_true - y_pred).var() / var_y
+        #losses['explained_variance'] = explained_var.item()
 
         profile.end()
         logs = None
