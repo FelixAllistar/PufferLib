@@ -1,3 +1,4 @@
+
 ## puffer [train | eval | sweep] [env_name] [optional args] -- See https://puffer.ai for full detail0
 # This is the same as python -m pufferlib.pufferl [train | eval | sweep] [env_name] [optional args]
 # Distributed example: torchrun --standalone --nnodes=1 --nproc-per-node=6 -m pufferlib.pufferl train puffer_nmmo3
@@ -348,7 +349,6 @@ class PuffeRL:
             all_terminal = []
 
             state = dict(
-                    #action=mb_actions,
                 lstm_h=None,
                 lstm_c=None,
             )
@@ -445,9 +445,9 @@ class PuffeRL:
 
             entropy_loss = entropy.mean()
 
-            loss = (pg_loss + config['vf_coef']*v_loss
-                - config['ent_coef']*entropy_loss
-                + reward_loss + terminal_loss + z_loss)
+            rl_loss = pg_loss + config['vf_coef']*v_loss - config['ent_coef']*entropy_loss
+            wm_loss = reward_loss + terminal_loss + z_loss
+            loss = rl_loss + wm_loss
 
             self.amp_context.__enter__() # TODO: AMP needs some debugging
 
