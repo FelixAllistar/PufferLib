@@ -265,7 +265,8 @@ class PuffeRL:
                 z_prev = self.prev_z[env_id.start]
 
                 h = self.policy.forward_eval(z_prev, state, a_prev)
-                z = self.policy.policy.encode(h, x)
+                z_logits = self.policy.policy.encode(h, x)
+                z = self.policy.policy.sample(z_logits)
                 logits = self.policy.policy.actor(h, z)
                 value = self.policy.policy.value(h, z)
                 action, logprob, _ = pufferlib.pytorch.sample_logits(logits)
@@ -378,9 +379,10 @@ class PuffeRL:
                 h = self.policy.forward_eval(z, state, a_prev)
                 a_prev = mb_actions[:, t]
 
-                z = self.policy.policy.encode(h, x)
-                z_hat = self.policy.policy.dynamics(h)
+                z_logits = self.policy.policy.encode(h, x)
+                z_hat_logits = self.policy.policy.dynamics(h)
 
+                z = self.policy.policy.sample(z_logits)
                 reward = self.policy.policy.reward(h, z)
                 terminal = self.policy.policy.terminal(h, z)
                 x = self.policy.policy.reconstruct(h, z)
@@ -388,8 +390,8 @@ class PuffeRL:
                 all_reward.append(reward)
                 all_terminal.append(terminal)
                 all_obs.append(x)
-                all_z.append(z)
-                all_z_hat.append(z_hat)
+                all_z.append(z_logits)
+                all_z_hat.append(z_hat_logits)
 
             reward = torch.stack(all_reward, dim=1).squeeze(-1)
             terminal = torch.stack(all_terminal, dim=1)
@@ -405,8 +407,19 @@ class PuffeRL:
             terminal_loss = torch.nn.functional.cross_entropy(term, y_term)
             recon_loss = torch.nn.functional.mse_loss(all_obs, mb_obs)
 
-            dyn_loss = torch.nn.functional.kl_div(all_z_hat, all_z.detach())
-            rep_loss = torch.nn.functional.kl_div(all_z, all_z_hat.detach())
+            all_z = torch.nn.functional.log_softmax(all_z, dim=-1)
+            all_z_hat = torch.nn.functional.log_softmax(all_z_hat, dim=-1)
+
+            all_z = all_z.view(self.minibatch_size, 16)
+            all_z_hat = all_z_hat.view(self.minibatch_size, 16)
+
+            dyn_loss = torch.nn.functional.kl_div(
+                all_z_hat, all_z.detach(), reduction='batchmean', log_target=True)
+            #dyn_loss = torch.maximum(dyn_loss, torch.ones_like(dyn_loss, device=device))
+
+            rep_loss = torch.nn.functional.kl_div(
+                all_z, all_z_hat.detach(), reduction='batchmean', log_target=True)
+            #rep_loss = torch.maximum(rep_loss, torch.ones_like(rep_loss, device=device))
 
             # Hallucinate trajectories
             all_logits = []
@@ -426,15 +439,15 @@ class PuffeRL:
 
             a_prev = torch.zeros(n, dtype=torch.int32, device=device)
             z = torch.zeros(n, self.policy.policy.z_flat, device=device)
+            terminal = torch.ones(n, dtype=torch.bool, device=device)
 
             for t in range(config['bptt_horizon']):
                 h = self.policy.forward_eval(z, state, a_prev)
-                if t == 0:
-                    z = self.policy.policy.encode(h, x)
-                else:
-                    z = self.policy.policy.dynamics(h)
+                z_logits = self.policy.policy.dynamics(h)
+                z_logits[terminal] = self.policy.policy.encode(h[terminal], x[terminal])
 
-                #z = self.policy.policy.encode(h, mb_obs[:, t])
+                #z_logits = self.policy.policy.encode(h, mb_obs[:, t])
+                z = self.policy.policy.sample(z_logits)
 
                 reward = self.policy.policy.reward(h, z)
                 terminal = self.policy.policy.terminal(h, z)
@@ -449,6 +462,9 @@ class PuffeRL:
 
                 a_prev = actions
 
+
+                terminal = pufferlib.pytorch.sample_logits(terminal)[0].bool()
+
                 all_logits.append(logits)
                 all_newvalue.append(value)
                 all_newlogprob.append(newlogprob)
@@ -462,8 +478,7 @@ class PuffeRL:
             newlogprob = torch.stack(all_newlogprob, dim=1)
             entropy = torch.stack(all_entropy, dim=1)
             mb_rewards = torch.stack(all_reward, dim=1).squeeze(-1)
-            mb_terminals = torch.stack(all_terminal, dim=1)
-            mb_terminals = pufferlib.pytorch.sample_logits(mb_terminals)[0].float()
+            mb_terminals = torch.stack(all_terminal, dim=1).float()
             mb_actions = torch.stack(all_actions, dim=1)
             mb_values = newvalue.squeeze(-1)
 
@@ -475,6 +490,7 @@ class PuffeRL:
             adv = compute_puff_advantage(mb_values, mb_rewards, mb_terminals,
                 ratio, adv, config['gamma'], config['gae_lambda'],
                 config['vtrace_rho_clip'], config['vtrace_c_clip'])
+            adv = (adv - adv.mean()) / (adv.std() + 1e-8)
             mb_advantages = adv
             mb_returns = adv + mb_values
 
@@ -488,7 +504,7 @@ class PuffeRL:
             entropy_loss = entropy.mean()
 
             rl_loss = pg_loss + config['vf_coef']*v_loss - config['ent_coef']*entropy_loss
-            wm_loss = reward_loss + terminal_loss + recon_loss + dyn_loss + rep_loss
+            wm_loss = reward_loss + terminal_loss + recon_loss + dyn_loss + 0.1*rep_loss
             loss = rl_loss + wm_loss
 
             self.amp_context.__enter__() # TODO: AMP needs some debugging
@@ -498,6 +514,11 @@ class PuffeRL:
             losses['policy_loss'] += pg_loss.item() / self.total_minibatches
             losses['value_loss'] += v_loss.item() / self.total_minibatches
             losses['entropy'] += entropy_loss.item() / self.total_minibatches
+            losses['reward_loss'] += reward_loss.item() / self.total_minibatches
+            losses['terminal_loss'] += terminal_loss.item() / self.total_minibatches
+            losses['recon_loss'] += recon_loss.item() / self.total_minibatches
+            losses['dyn_loss'] += dyn_loss.item() / self.total_minibatches
+            losses['rep_loss'] += rep_loss.item() / self.total_minibatches
 
             # Learn on accumulated minibatches
             profile('learn', epoch)

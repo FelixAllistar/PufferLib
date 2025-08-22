@@ -112,12 +112,10 @@ class Default(nn.Module):
         return self.val(torch.cat([h, z.view(z.shape[0], -1)], dim=-1))
  
     def encode(self, h, x):
-        z = self.enc(torch.cat([h, x], dim=-1))
-        return self.sample(z)
+        return self.enc(torch.cat([h, x], dim=-1))
 
     def dynamics(self, h):
-        z = self.dyn(h)
-        return self.sample(z)
+        return self.dyn(h)
 
     def forward_eval(self, observations, state=None):
         hidden = self.encode_observations(observations, state=state)
