@@ -88,8 +88,9 @@ class Default(nn.Module):
         self.act = pufferlib.pytorch.layer_init(
             nn.Linear(hidden_size+self.z_flat, num_atns), std=0.01)
 
-    def sample(self, logits, n=16):
+    def sample(self, logits, n=16, mix=0.01):
         probs = torch.nn.functional.softmax(logits, dim=-1)
+        probs = (1.0 - mix)*probs + mix*torch.ones_like(probs)/probs.shape[-1]
         categorical = torch.multinomial(probs, n, replacement=True)
         one_hot = torch.nn.functional.one_hot(categorical, num_classes=probs.shape[-1])
 

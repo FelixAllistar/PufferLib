@@ -82,25 +82,28 @@ class PuffeRL:
         horizon = config['bptt_horizon']
         segments = batch_size // horizon
         self.segments = segments
+        self.full_segments = 0
+        replay_segments = config['replay_segments']
+        self.replay_segments = replay_segments
         if total_agents > segments:
             raise pufferlib.APIUsageError(
                 f'Total agents {total_agents} <= segments {segments}'
             )
 
         device = config['device']
-        self.observations = torch.zeros(segments, horizon, *obs_space.shape,
+        self.observations = torch.zeros(replay_segments, horizon, *obs_space.shape,
             dtype=pufferlib.pytorch.numpy_to_torch_dtype_dict[obs_space.dtype],
             pin_memory=device == 'cuda' and config['cpu_offload'],
             device='cpu' if config['cpu_offload'] else device)
-        self.actions = torch.zeros(segments, horizon, *atn_space.shape, device=device,
+        self.actions = torch.zeros(replay_segments, horizon, *atn_space.shape, device=device,
             dtype=pufferlib.pytorch.numpy_to_torch_dtype_dict[atn_space.dtype])
-        self.values = torch.zeros(segments, horizon, device=device)
-        self.logprobs = torch.zeros(segments, horizon, device=device)
-        self.rewards = torch.zeros(segments, horizon, device=device)
-        self.terminals = torch.zeros(segments, horizon, device=device)
-        self.truncations = torch.zeros(segments, horizon, device=device)
-        self.ratio = torch.ones(segments, horizon, device=device)
-        self.importance = torch.ones(segments, horizon, device=device)
+        self.values = torch.zeros(replay_segments, horizon, device=device)
+        self.logprobs = torch.zeros(replay_segments, horizon, device=device)
+        self.rewards = torch.zeros(replay_segments, horizon, device=device)
+        self.terminals = torch.zeros(replay_segments, horizon, device=device)
+        self.truncations = torch.zeros(replay_segments, horizon, device=device)
+        self.ratio = torch.ones(replay_segments, horizon, device=device)
+        self.importance = torch.ones(replay_segments, horizon, device=device)
         self.ep_lengths = torch.zeros(total_agents, device=device, dtype=torch.int32)
         self.ep_indices = torch.arange(total_agents, device=device, dtype=torch.int32)
         self.free_idx = total_agents
@@ -122,10 +125,12 @@ class PuffeRL:
             raise pufferlib.APIUsageError(
                 f'minibatch_size {minibatch_size} > max_minibatch_size {max_minibatch_size} must divide evenly')
 
+        '''
         if batch_size < minibatch_size:
             raise pufferlib.APIUsageError(
                 f'batch_size {batch_size} must be >= minibatch_size {minibatch_size}'
             )
+        '''
 
         self.accumulate_minibatches = max(1, minibatch_size // max_minibatch_size)
         self.total_minibatches = int(config['update_epochs'] * batch_size / self.minibatch_size)
@@ -326,6 +331,7 @@ class PuffeRL:
         self.free_idx = self.total_agents
         self.ep_indices = torch.arange(self.total_agents, device=device, dtype=torch.int32)
         self.ep_lengths.zero_()
+        self.full_segments = min(self.replay_segments, self.full_segments + self.segments)
         profile.end()
         return self.stats
 
@@ -338,12 +344,12 @@ class PuffeRL:
         config = self.config
         device = config['device']
 
-        for mb in range(self.total_minibatches):
+        for mb in range(config['update_epochs']):
             profile('train_misc', epoch, nest=True)
             self.amp_context.__enter__()
 
             profile('train_copy', epoch)
-            idx = torch.randint(0, self.segments, size=(self.minibatch_segments,), device=device)
+            idx = torch.randint(0, self.full_segments, size=(self.minibatch_segments,), device=device)
             mb_obs = self.observations[idx]
             mb_actions = self.actions[idx]
             mb_logprobs = self.logprobs[idx]
@@ -407,19 +413,21 @@ class PuffeRL:
             terminal_loss = torch.nn.functional.cross_entropy(term, y_term)
             recon_loss = torch.nn.functional.mse_loss(all_obs, mb_obs)
 
-            all_z = torch.nn.functional.log_softmax(all_z, dim=-1)
-            all_z_hat = torch.nn.functional.log_softmax(all_z_hat, dim=-1)
-
             all_z = all_z.view(self.minibatch_size, 16)
             all_z_hat = all_z_hat.view(self.minibatch_size, 16)
 
+            all_z = torch.nn.functional.log_softmax(all_z, dim=-1)
+            all_z_hat = torch.nn.functional.log_softmax(all_z_hat, dim=-1)
+
             dyn_loss = torch.nn.functional.kl_div(
-                all_z_hat, all_z.detach(), reduction='batchmean', log_target=True)
-            #dyn_loss = torch.maximum(dyn_loss, torch.ones_like(dyn_loss, device=device))
+                all_z_hat, all_z.detach(), reduction='none', log_target=True).sum(-1)
+            dyn_loss = torch.clamp(dyn_loss, min=1.0)
+            dyn_loss = dyn_loss.mean()
 
             rep_loss = torch.nn.functional.kl_div(
-                all_z, all_z_hat.detach(), reduction='batchmean', log_target=True)
-            #rep_loss = torch.maximum(rep_loss, torch.ones_like(rep_loss, device=device))
+                all_z, all_z_hat.detach(), reduction='none', log_target=True).sum(-1)
+            rep_loss = torch.clamp(rep_loss, min=1.0)
+            rep_loss = rep_loss.mean()
 
             # Hallucinate trajectories
             all_logits = []
@@ -443,8 +451,12 @@ class PuffeRL:
 
             for t in range(config['bptt_horizon']):
                 h = self.policy.forward_eval(z, state, a_prev)
-                z_logits = self.policy.policy.dynamics(h)
-                z_logits[terminal] = self.policy.policy.encode(h[terminal], x[terminal])
+                if t == 0:
+                    z_logits = self.policy.policy.encode(h, mb_obs[:, t])
+                else:
+                    z_logits = self.policy.policy.dynamics(h)
+
+                #z_logits[terminal] = self.policy.policy.encode(h[terminal], x[terminal])
 
                 #z_logits = self.policy.policy.encode(h, mb_obs[:, t])
                 z = self.policy.policy.sample(z_logits)
@@ -477,8 +489,8 @@ class PuffeRL:
             newvalue = torch.stack(all_newvalue, dim=1)
             newlogprob = torch.stack(all_newlogprob, dim=1)
             entropy = torch.stack(all_entropy, dim=1)
-            mb_rewards = torch.stack(all_reward, dim=1).squeeze(-1)
-            mb_terminals = torch.stack(all_terminal, dim=1).float()
+            mb_rewards = torch.stack(all_reward, dim=1).squeeze(-1).detach()
+            mb_terminals = torch.stack(all_terminal, dim=1).float().detach()
             mb_actions = torch.stack(all_actions, dim=1)
             mb_values = newvalue.squeeze(-1)
 
@@ -490,16 +502,18 @@ class PuffeRL:
             adv = compute_puff_advantage(mb_values, mb_rewards, mb_terminals,
                 ratio, adv, config['gamma'], config['gae_lambda'],
                 config['vtrace_rho_clip'], config['vtrace_c_clip'])
+            mb_returns = adv + mb_values
+            mb_returns = (mb_returns - mb_returns.mean()) / (mb_returns.std() + 1e-8)
             adv = (adv - adv.mean()) / (adv.std() + 1e-8)
             mb_advantages = adv
-            mb_returns = adv + mb_values
 
             # Losses
-            pg_loss = (-adv * newlogprob).mean()
+            pg_loss = (-adv.detach() * newlogprob).mean()
 
             newvalue = newvalue.view(mb_returns.shape)
-            v_loss_unclipped = (newvalue - mb_returns) ** 2
-            v_loss = 0.5*v_loss_unclipped.mean()
+            v_loss_unclipped = (newvalue - mb_returns.detach()) ** 2
+            #v_loss = 0.5*torch.clamp(v_loss_unclipped, max=5.0).mean()
+            v_loss = 0.5*torch.clamp(v_loss_unclipped, max=5.0).mean()
 
             entropy_loss = entropy.mean()
 
@@ -511,14 +525,15 @@ class PuffeRL:
 
             # Logging
             profile('train_misc', epoch)
-            losses['policy_loss'] += pg_loss.item() / self.total_minibatches
-            losses['value_loss'] += v_loss.item() / self.total_minibatches
-            losses['entropy'] += entropy_loss.item() / self.total_minibatches
-            losses['reward_loss'] += reward_loss.item() / self.total_minibatches
-            losses['terminal_loss'] += terminal_loss.item() / self.total_minibatches
-            losses['recon_loss'] += recon_loss.item() / self.total_minibatches
-            losses['dyn_loss'] += dyn_loss.item() / self.total_minibatches
-            losses['rep_loss'] += rep_loss.item() / self.total_minibatches
+            update_epochs = config['update_epochs']
+            losses['policy_loss'] += pg_loss.item() / update_epochs
+            losses['value_loss'] += v_loss.item() / update_epochs
+            losses['entropy'] += entropy_loss.item() / update_epochs
+            losses['reward_loss'] += reward_loss.item() / update_epochs
+            losses['terminal_loss'] += terminal_loss.item() / update_epochs
+            losses['recon_loss'] += recon_loss.item() / update_epochs
+            losses['dyn_loss'] += dyn_loss.item() / update_epochs
+            losses['rep_loss'] += rep_loss.item() / update_epochs
 
             # Learn on accumulated minibatches
             profile('learn', epoch)
@@ -532,6 +547,22 @@ class PuffeRL:
         profile('train_misc', epoch)
         if config['anneal_lr']:
             self.scheduler.step()
+
+
+        # Shift replay segments
+        mmax = self.replay_segments - self.segments
+        n = min(self.full_segments, mmax)
+
+        # TODO: Is there a safe way to do this without .clone()?
+        with torch.no_grad():
+            self.observations[self.segments:self.segments+n] = self.observations[:n].clone()
+            self.actions[self.segments:self.segments+n] = self.actions[:n].clone()
+            self.logprobs[self.segments:self.segments+n] = self.logprobs[:n].clone()
+            self.rewards[self.segments:self.segments+n] = self.rewards[:n].clone()
+            self.terminals[self.segments:self.segments+n] = self.terminals[:n].clone()
+            self.truncations[self.segments:self.segments+n] = self.truncations[:n].clone()
+            self.ratio[self.segments:self.segments+n] = self.ratio[:n].clone()
+            self.values[self.segments:self.segments+n] = self.values[:n].clone()
 
         y_pred = self.values.flatten()
         #y_true = advantages.flatten() + self.values.flatten()
