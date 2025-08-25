@@ -21,7 +21,7 @@ class Default(nn.Module):
     the recurrent cell into encode_observations and put everything after
     into decode_actions.
     '''
-    def __init__(self, env, hidden_size=128, z_dim=16, z_samples=16):
+    def __init__(self, env, hidden_size=128, z_dim=32, z_samples=32):
         super().__init__()
         self.z_flat = z_dim * z_samples
         self.hidden_size = hidden_size
@@ -41,9 +41,16 @@ class Default(nn.Module):
         else:
             num_obs = np.prod(env.single_observation_space.shape)
             self.enc = torch.nn.Sequential(
-                pufferlib.pytorch.layer_init(nn.Linear(num_obs + hidden_size, hidden_size)),
+                pufferlib.pytorch.layer_init(nn.Linear(1024 + num_obs, 2*hidden_size)),
+                nn.RMSNorm(2*hidden_size),
                 nn.GELU(),
-                pufferlib.pytorch.layer_init(nn.Linear(hidden_size, z_dim))
+                pufferlib.pytorch.layer_init(nn.Linear(2*hidden_size, 3*hidden_size)),
+                nn.RMSNorm(3*hidden_size),
+                nn.GELU(),
+                pufferlib.pytorch.layer_init(nn.Linear(3*hidden_size, 4*hidden_size)),
+                nn.RMSNorm(4*hidden_size),
+                nn.GELU(),
+                pufferlib.pytorch.layer_init(nn.Linear(4*hidden_size, z_dim))
             )
             
         if self.is_multidiscrete:
@@ -61,34 +68,83 @@ class Default(nn.Module):
             self.decoder_logstd = nn.Parameter(torch.zeros(
                 1, env.single_action_space.shape[0]))
 
-        self.value = pufferlib.pytorch.layer_init(
-            nn.Linear(hidden_size, 1), std=1)
         self.dyn = torch.nn.Sequential(
-            pufferlib.pytorch.layer_init(nn.Linear(hidden_size, hidden_size)),
+            pufferlib.pytorch.layer_init(nn.Linear(1024, 2*hidden_size)),
+            nn.RMSNorm(2*hidden_size),
             nn.GELU(),
-            pufferlib.pytorch.layer_init(nn.Linear(hidden_size, z_dim))
+            pufferlib.pytorch.layer_init(nn.Linear(2*hidden_size, 3*hidden_size)),
+            nn.RMSNorm(3*hidden_size),
+            nn.GELU(),
+            pufferlib.pytorch.layer_init(nn.Linear(3*hidden_size, 4*hidden_size)),
+            nn.RMSNorm(4*hidden_size),
+            nn.GELU(),
+            pufferlib.pytorch.layer_init(nn.Linear(4*hidden_size, z_dim))
         )
         self.rew = torch.nn.Sequential(
-            pufferlib.pytorch.layer_init(nn.Linear(hidden_size + self.z_flat, hidden_size)),
+            pufferlib.pytorch.layer_init(nn.Linear(1024 + self.z_flat, 2*hidden_size)),
+            nn.RMSNorm(2*hidden_size),
             nn.GELU(),
-            pufferlib.pytorch.layer_init(nn.Linear(hidden_size, 1))
+            pufferlib.pytorch.layer_init(nn.Linear(2*hidden_size, 1))
         )
         self.term = torch.nn.Sequential(
-            pufferlib.pytorch.layer_init(nn.Linear(hidden_size + self.z_flat, hidden_size)),
+            pufferlib.pytorch.layer_init(nn.Linear(1024 + self.z_flat, 2*hidden_size)),
+            nn.RMSNorm(2*hidden_size),
             nn.GELU(),
-            pufferlib.pytorch.layer_init(nn.Linear(hidden_size, 2))
+            pufferlib.pytorch.layer_init(nn.Linear(2*hidden_size, 2))
         )
         self.recon = torch.nn.Sequential(
-            pufferlib.pytorch.layer_init(nn.Linear(hidden_size + self.z_flat, hidden_size)),
+            pufferlib.pytorch.layer_init(nn.Linear(1024 + self.z_flat, 2*hidden_size)),
+            nn.RMSNorm(2*hidden_size),
             nn.GELU(),
-            pufferlib.pytorch.layer_init(nn.Linear(hidden_size, num_obs))
+            pufferlib.pytorch.layer_init(nn.Linear(2*hidden_size, 3*hidden_size)),
+            nn.RMSNorm(3*hidden_size),
+            nn.GELU(),
+            pufferlib.pytorch.layer_init(nn.Linear(3*hidden_size, 4*hidden_size)),
+            nn.RMSNorm(4*hidden_size),
+            nn.GELU(),
+            pufferlib.pytorch.layer_init(nn.Linear(4*hidden_size, num_obs))
         )
-        self.val = pufferlib.pytorch.layer_init(
-            nn.Linear(hidden_size+self.z_flat, 1), std=1)
-        self.act = pufferlib.pytorch.layer_init(
-            nn.Linear(hidden_size+self.z_flat, num_atns), std=0.01)
+        self.val = torch.nn.Sequential(
+            pufferlib.pytorch.layer_init(nn.Linear(1024 + self.z_flat, 2*hidden_size)),
+            nn.RMSNorm(2*hidden_size),
+            nn.GELU(),
+            pufferlib.pytorch.layer_init(nn.Linear(2*hidden_size, 3*hidden_size)),
+            nn.RMSNorm(3*hidden_size),
+            nn.GELU(),
+            pufferlib.pytorch.layer_init(nn.Linear(3*hidden_size, 4*hidden_size)),
+            nn.RMSNorm(4*hidden_size),
+            nn.GELU(),
+            pufferlib.pytorch.layer_init(nn.Linear(4*hidden_size, 1), std=1)
+        )
+        self.vtarg = torch.nn.Sequential(
+            pufferlib.pytorch.layer_init(nn.Linear(1024 + self.z_flat, 2*hidden_size)),
+            nn.RMSNorm(2*hidden_size),
+            nn.GELU(),
+            pufferlib.pytorch.layer_init(nn.Linear(2*hidden_size, 3*hidden_size)),
+            nn.RMSNorm(3*hidden_size),
+            nn.GELU(),
+            pufferlib.pytorch.layer_init(nn.Linear(3*hidden_size, 4*hidden_size)),
+            nn.RMSNorm(4*hidden_size),
+            nn.GELU(),
+            pufferlib.pytorch.layer_init(nn.Linear(4*hidden_size, 1), std=1)
+        )
+        for (p1, p2) in zip(self.val.parameters(), self.vtarg.parameters()):
+            p1.data.copy_(p2.data)
 
-    def sample(self, logits, n=16, mix=0.01):
+        self.act = torch.nn.Sequential(
+            pufferlib.pytorch.layer_init(nn.Linear(1024 + self.z_flat, 2*hidden_size)),
+            nn.RMSNorm(2*hidden_size),
+            nn.GELU(),
+            pufferlib.pytorch.layer_init(nn.Linear(2*hidden_size, 3*hidden_size)),
+            nn.RMSNorm(3*hidden_size),
+            nn.GELU(),
+            pufferlib.pytorch.layer_init(nn.Linear(3*hidden_size, 4*hidden_size)),
+            nn.RMSNorm(4*hidden_size),
+            nn.GELU(),
+            pufferlib.pytorch.layer_init(nn.Linear(4*hidden_size, num_atns), std=0.01)
+        )
+
+    def sample(self, logits, n=32, mix=0.01):
         probs = torch.nn.functional.softmax(logits, dim=-1)
         probs = (1.0 - mix)*probs + mix*torch.ones_like(probs)/probs.shape[-1]
         categorical = torch.multinomial(probs, n, replacement=True)
@@ -111,6 +167,9 @@ class Default(nn.Module):
 
     def value(self, h, z):
         return self.val(torch.cat([h, z.view(z.shape[0], -1)], dim=-1))
+
+    def val_targ(self, h, z):
+        return self.vtarg(torch.cat([h, z.view(z.shape[0], -1)], dim=-1))
  
     def encode(self, h, x):
         return self.enc(torch.cat([h, x], dim=-1))

@@ -1,4 +1,3 @@
-
 ## puffer [train | eval | sweep] [env_name] [optional args] -- See https://puffer.ai for full detail0
 # This is the same as python -m pufferlib.pufferl [train | eval | sweep] [env_name] [optional args]
 # Distributed example: torchrun --standalone --nnodes=1 --nproc-per-node=6 -m pufferlib.pufferl train puffer_nmmo3
@@ -208,6 +207,9 @@ class PuffeRL:
         self.model_size = sum(p.numel() for p in policy.parameters() if p.requires_grad)
         self.print_dashboard(clear=True)
 
+        self.adv_mean = 0.0
+        self.ret_mean = 0.0
+
     @property
     def uptime(self):
         return time.time() - self.start_time
@@ -230,9 +232,10 @@ class PuffeRL:
 
         if config['use_rnn']:
             for k in self.lstm_h:
-                self.lstm_h[k] = torch.zeros(self.lstm_h[k].shape, device=device)
-                self.lstm_c[k] = torch.zeros(self.lstm_c[k].shape, device=device)
-                self.prev_z[k] = torch.zeros(self.prev_z[k].shape, device=device)
+                self.lstm_h[k][:] = 0
+                self.lstm_c[k][:] = 0
+                self.prev_z[k][:] = 0
+                self.prev_action[k][:] = 0
 
         self.full_rows = 0
         while self.full_rows < self.segments:
@@ -264,12 +267,13 @@ class PuffeRL:
                     state['lstm_h'] = self.lstm_h[env_id.start]
                     state['lstm_c'] = self.lstm_c[env_id.start]
 
-
-                x = o_device
                 a_prev = self.prev_action[env_id.start]
                 z_prev = self.prev_z[env_id.start]
-
                 h = self.policy.forward_eval(z_prev, state, a_prev)
+
+                x = o_device
+                x = torch.sign(x) * torch.log(torch.abs(x) + 1.0)
+
                 z_logits = self.policy.policy.encode(h, x)
                 z = self.policy.policy.sample(z_logits)
                 logits = self.policy.policy.actor(h, z)
@@ -344,6 +348,10 @@ class PuffeRL:
         config = self.config
         device = config['device']
 
+        low = torch.linspace(-3, 0, 128, device=device)
+        low = torch.sign(low) * (torch.exp(torch.abs(low)) - 1)
+        bins = torch.concatenate([low, torch.flip(-low[:-1], (0,))])
+
         for mb in range(config['update_epochs']):
             profile('train_misc', epoch, nest=True)
             self.amp_context.__enter__()
@@ -363,12 +371,27 @@ class PuffeRL:
             if not config['use_rnn']:
                 mb_obs = mb_obs.reshape(-1, *self.vecenv.single_observation_space.shape)
 
+            # On-policy value training
+            adv = torch.zeros(mb_values.shape, device=device)
+            ratio = torch.ones(mb_values.shape, device=device)
+            adv = compute_puff_advantage(mb_values, mb_rewards, mb_terminals,
+                ratio, adv, config['gamma'], config['gae_lambda'],
+                config['vtrace_rho_clip'], config['vtrace_c_clip'])
+
+            mb_returns = adv + mb_values
+            ret_stat = mb_returns.view(-1)
+            lower = torch.quantile(ret_stat, 0.05)
+            upper = torch.quantile(ret_stat, 0.95)
+            delta = upper - lower
+            self.ret_mean = 0.99*self.ret_mean + 0.01*delta.item()
+
             # World model training
             all_reward = []
             all_terminal = []
             all_obs = []
             all_z = []
             all_z_hat = []
+            all_value = []
 
             n = self.minibatch_segments
             h = self.policy.hidden_size
@@ -392,18 +415,27 @@ class PuffeRL:
                 reward = self.policy.policy.reward(h, z)
                 terminal = self.policy.policy.terminal(h, z)
                 x = self.policy.policy.reconstruct(h, z)
+                value = self.policy.policy.value(h, z)
 
                 all_reward.append(reward)
                 all_terminal.append(terminal)
                 all_obs.append(x)
                 all_z.append(z_logits)
                 all_z_hat.append(z_hat_logits)
+                all_value.append(value)
 
             reward = torch.stack(all_reward, dim=1).squeeze(-1)
             terminal = torch.stack(all_terminal, dim=1)
             all_obs = torch.stack(all_obs, dim=1)
             all_z = torch.stack(all_z, dim=1)
             all_z_hat = torch.stack(all_z_hat, dim=1)
+            all_value = torch.stack(all_value, dim=1).squeeze(-1)
+
+            # Value
+            dv = (torch.abs(all_value - mb_returns.detach()) / self.ret_mean)
+            polv_loss = (dv < 1.0).float() * dv**2 + (dv > 1.0).float() * dv
+            #v_loss = ((newvalue - mb_returns.detach()) / self.ret_mean) ** 2
+            polv_loss = polv_loss.mean()
  
             reward_loss = torch.nn.functional.mse_loss(
                 reward[:, :-1], mb_rewards[:, 1:])
@@ -413,25 +445,26 @@ class PuffeRL:
             terminal_loss = torch.nn.functional.cross_entropy(term, y_term)
             recon_loss = torch.nn.functional.mse_loss(all_obs, mb_obs)
 
-            all_z = all_z.view(self.minibatch_size, 16)
-            all_z_hat = all_z_hat.view(self.minibatch_size, 16)
+            all_z = all_z.view(self.minibatch_size, 32)
+            all_z_hat = all_z_hat.view(self.minibatch_size, 32)
 
             all_z = torch.nn.functional.log_softmax(all_z, dim=-1)
             all_z_hat = torch.nn.functional.log_softmax(all_z_hat, dim=-1)
 
             dyn_loss = torch.nn.functional.kl_div(
                 all_z_hat, all_z.detach(), reduction='none', log_target=True).sum(-1)
-            dyn_loss = torch.clamp(dyn_loss, min=1.0)
+            #dyn_loss = torch.clamp(dyn_loss, min=0.2)
             dyn_loss = dyn_loss.mean()
 
             rep_loss = torch.nn.functional.kl_div(
                 all_z, all_z_hat.detach(), reduction='none', log_target=True).sum(-1)
-            rep_loss = torch.clamp(rep_loss, min=1.0)
+            #rep_loss = torch.clamp(rep_loss, min=0.2)
             rep_loss = rep_loss.mean()
 
             # Hallucinate trajectories
             all_logits = []
             all_newvalue = []
+            all_valtargs = []
             all_newlogprob = []
             all_entropy = []
             all_reward = []
@@ -450,28 +483,33 @@ class PuffeRL:
             terminal = torch.ones(n, dtype=torch.bool, device=device)
 
             for t in range(config['bptt_horizon']):
+                state['lstm_h'][terminal] = 0
+                state['lstm_c'][terminal] = 0
+                z[terminal] = 0
+                a_prev[terminal] = 0
                 h = self.policy.forward_eval(z, state, a_prev)
-                if t == 0:
-                    z_logits = self.policy.policy.encode(h, mb_obs[:, t])
-                else:
-                    z_logits = self.policy.policy.dynamics(h)
 
-                #z_logits[terminal] = self.policy.policy.encode(h[terminal], x[terminal])
+                x = mb_obs[:, t]
+                z_logits[~terminal] = self.policy.policy.dynamics(h[~terminal])
+                z_logits[terminal] = self.policy.policy.encode(h[terminal], x[terminal]).detach()
 
                 #z_logits = self.policy.policy.encode(h, mb_obs[:, t])
                 z = self.policy.policy.sample(z_logits)
+
+                h = h.detach()
+                z = z.detach()
 
                 reward = self.policy.policy.reward(h, z)
                 terminal = self.policy.policy.terminal(h, z)
                 logits = self.policy.policy.actor(h, z)
                 value = self.policy.policy.value(h, z)
+                valtarg = self.policy.policy.val_targ(h, z)
                 #actions = mb_actions[:, t]
                 #actions, newlogprob, entropy = pufferlib.pytorch.sample_logits(
                 #    logits, action=actions)
  
                 actions, newlogprob, entropy = pufferlib.pytorch.sample_logits(
                     logits)
-
                 a_prev = actions
 
 
@@ -479,6 +517,7 @@ class PuffeRL:
 
                 all_logits.append(logits)
                 all_newvalue.append(value)
+                all_valtargs.append(valtarg)
                 all_newlogprob.append(newlogprob)
                 all_entropy.append(entropy)
                 all_reward.append(reward)
@@ -487,39 +526,59 @@ class PuffeRL:
 
             logits = torch.stack(all_logits, dim=1)
             newvalue = torch.stack(all_newvalue, dim=1)
+            valtarg = torch.stack(all_valtargs, dim=1)
             newlogprob = torch.stack(all_newlogprob, dim=1)
             entropy = torch.stack(all_entropy, dim=1)
             mb_rewards = torch.stack(all_reward, dim=1).squeeze(-1).detach()
             mb_terminals = torch.stack(all_terminal, dim=1).float().detach()
             mb_actions = torch.stack(all_actions, dim=1)
+
             mb_values = newvalue.squeeze(-1)
+            #mb_values = (torch.nn.functional.softmax(newvalue, dim=-1)*bins).sum(-1)
 
             profile('train_misc', epoch)
-            newlogprob = newlogprob.reshape(mb_logprobs.shape)
+            newlogprob = newlogprob.reshape(mb_rewards.shape)
 
             adv = torch.zeros(mb_values.shape, device=device)
             ratio = torch.ones(mb_values.shape, device=device)
             adv = compute_puff_advantage(mb_values, mb_rewards, mb_terminals,
                 ratio, adv, config['gamma'], config['gae_lambda'],
                 config['vtrace_rho_clip'], config['vtrace_c_clip'])
+
+            adv_stat = adv.view(-1)
+            lower = torch.quantile(adv, 0.05)
+            upper = torch.quantile(adv, 0.95)
+            delta = upper - lower
+            self.adv_mean = 0.99*self.adv_mean + 0.01*delta.item()
+
             mb_returns = adv + mb_values
-            mb_returns = (mb_returns - mb_returns.mean()) / (mb_returns.std() + 1e-8)
-            adv = (adv - adv.mean()) / (adv.std() + 1e-8)
-            mb_advantages = adv
+            ret_stat = mb_returns.view(-1)
+            lower = torch.quantile(ret_stat, 0.05)
+            upper = torch.quantile(ret_stat, 0.95)
+            delta = upper - lower
+            self.ret_mean = 0.99*self.ret_mean + 0.01*delta.item()
 
             # Losses
+            adv = adv / self.adv_mean
             pg_loss = (-adv.detach() * newlogprob).mean()
 
             newvalue = newvalue.view(mb_returns.shape)
-            v_loss_unclipped = (newvalue - mb_returns.detach()) ** 2
-            #v_loss = 0.5*torch.clamp(v_loss_unclipped, max=5.0).mean()
-            v_loss = 0.5*torch.clamp(v_loss_unclipped, max=5.0).mean()
+            #mask = (mb_returns.unsqueeze(-1) > bins).float()
+            #mb_returns_idx = torch.argmin(mask, dim=-1)
+            #mb_returns = torch.nn.functional.one_hot(mb_returns_idx, bins.shape[-1]).float()
+            #newvalue = newvalue.view(np.prod(mb_returns_idx.shape), 255)
+            #mb_returns_idx = mb_returns_idx.view(-1)
+            #v_loss = torch.nn.functional.cross_entropy(newvalue, mb_returns_idx)
+            dv = (torch.abs(newvalue - mb_returns.detach()) / self.ret_mean)
+            v_loss = (dv < 1.0).float() * dv**2 + (dv > 1.0).float() * dv
+            #v_loss = ((newvalue - mb_returns.detach()) / self.ret_mean) ** 2
+            v_loss = v_loss.mean()
 
             entropy_loss = entropy.mean()
 
             rl_loss = pg_loss + config['vf_coef']*v_loss - config['ent_coef']*entropy_loss
             wm_loss = reward_loss + terminal_loss + recon_loss + dyn_loss + 0.1*rep_loss
-            loss = rl_loss + wm_loss
+            loss = rl_loss + wm_loss + 0.3*polv_loss
 
             self.amp_context.__enter__() # TODO: AMP needs some debugging
 
@@ -542,6 +601,13 @@ class PuffeRL:
                 torch.nn.utils.clip_grad_norm_(self.policy.parameters(), config['max_grad_norm'])
                 self.optimizer.step()
                 self.optimizer.zero_grad()
+
+        '''
+        if self.epoch % 1 == 0:
+            for (p1, p2) in zip(self.policy.policy.vtarg.parameters(), self.policy.policy.val.parameters()):
+                p1.data.copy_(p2.data)
+
+        '''
 
         # Reprioritize experience
         profile('train_misc', epoch)
