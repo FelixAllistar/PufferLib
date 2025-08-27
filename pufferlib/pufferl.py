@@ -28,6 +28,7 @@ from torch.distributed.elastic.multiprocessing.errors import record
 import torch.utils.cpp_extension
 
 import pufferlib
+import pufferlib.models
 import pufferlib.sweep
 import pufferlib.vector
 import pufferlib.pytorch
@@ -142,34 +143,36 @@ class PuffeRL:
         # Torch compile
         self.uncompiled_policy = policy
         self.policy = policy
+
+        self.world_model = pufferlib.models.RSSM(
+            policy.policy.num_obs, policy.policy.num_atns,
+            policy.hidden_size).cuda()
+
         if config['compile']:
             self.policy = torch.compile(policy, mode=config['compile_mode'])
             self.policy.forward_eval = torch.compile(policy, mode=config['compile_mode'])
             pufferlib.pytorch.sample_logits = torch.compile(pufferlib.pytorch.sample_logits, mode=config['compile_mode'])
 
         # Optimizer
-        if config['optimizer'] == 'adam':
-            optimizer = torch.optim.Adam(
-                self.policy.parameters(),
-                lr=config['learning_rate'],
-                betas=(config['adam_beta1'], config['adam_beta2']),
-                eps=config['adam_eps'],
-            )
-        elif config['optimizer'] == 'muon':
-            from heavyball import ForeachMuon
-            warnings.filterwarnings(action='ignore', category=UserWarning, module=r'heavyball.*')
-            import heavyball.utils
-            heavyball.utils.compile_mode = config['compile_mode'] if config['compile'] else None
-            optimizer = ForeachMuon(
-                self.policy.parameters(),
-                lr=config['learning_rate'],
-                betas=(config['adam_beta1'], config['adam_beta2']),
-                eps=config['adam_eps'],
-            )
-        else:
-            raise ValueError(f'Unknown optimizer: {config["optimizer"]}')
-
+        from heavyball import ForeachMuon
+        warnings.filterwarnings(action='ignore', category=UserWarning, module=r'heavyball.*')
+        import heavyball.utils
+        heavyball.utils.compile_mode = config['compile_mode'] if config['compile'] else None
+        optimizer = ForeachMuon(
+            self.policy.parameters(),
+            lr=config['learning_rate'],
+            betas=(config['adam_beta1'], config['adam_beta2']),
+            eps=config['adam_eps'],
+        )
         self.optimizer = optimizer
+
+        wm_optimizer = ForeachMuon(
+            self.world_model.parameters(),
+            lr=config['learning_rate'],
+            betas=(config['adam_beta1'], config['adam_beta2']),
+            eps=config['adam_eps'],
+        )
+        self.wm_optimizer = wm_optimizer
 
         # Logging
         self.logger = logger
@@ -234,8 +237,6 @@ class PuffeRL:
             for k in self.lstm_h:
                 self.lstm_h[k][:] = 0
                 self.lstm_c[k][:] = 0
-                self.prev_z[k][:] = 0
-                self.prev_action[k][:] = 0
 
         self.full_rows = 0
         while self.full_rows < self.segments:
@@ -267,17 +268,7 @@ class PuffeRL:
                     state['lstm_h'] = self.lstm_h[env_id.start]
                     state['lstm_c'] = self.lstm_c[env_id.start]
 
-                a_prev = self.prev_action[env_id.start]
-                z_prev = self.prev_z[env_id.start]
-                h = self.policy.forward_eval(z_prev, state, a_prev)
-
-                x = o_device
-                x = torch.sign(x) * torch.log(torch.abs(x) + 1.0)
-
-                z_logits = self.policy.policy.encode(h, x)
-                z = self.policy.policy.sample(z_logits)
-                logits = self.policy.policy.actor(h, z)
-                value = self.policy.policy.value(h, z)
+                logits, value = self.policy.forward_eval(o_device, state)
                 action, logprob, _ = pufferlib.pytorch.sample_logits(logits)
                 r = torch.clamp(r, -1, 1)
 
@@ -286,9 +277,6 @@ class PuffeRL:
                 if config['use_rnn']:
                     self.lstm_h[env_id.start] = state['lstm_h']
                     self.lstm_c[env_id.start] = state['lstm_c']
-                    self.prev_action[env_id.start] = action
-
-                self.prev_z[env_id.start] = z
 
                 # Fast path for fully vectorized envs
                 l = self.ep_lengths[env_id.start].item()
@@ -348,16 +336,29 @@ class PuffeRL:
         config = self.config
         device = config['device']
 
-        low = torch.linspace(-3, 0, 128, device=device)
-        low = torch.sign(low) * (torch.exp(torch.abs(low)) - 1)
-        bins = torch.concatenate([low, torch.flip(-low[:-1], (0,))])
+        b0 = config['prio_beta0']
+        a = config['prio_alpha']
+        clip_coef = config['clip_coef']
+        vf_clip = config['vf_clip_coef']
+        anneal_beta = b0 + (1 - b0)*a*self.epoch/self.total_epochs
+        self.ratio[:] = 1
 
-        for mb in range(config['update_epochs']):
+        for mb in range(self.total_minibatches):
             profile('train_misc', epoch, nest=True)
             self.amp_context.__enter__()
 
+            shape = self.values.shape
+            advantages = torch.zeros(shape, device=device)
+            advantages = compute_puff_advantage(self.values, self.rewards,
+                self.terminals, self.ratio, advantages, config['gamma'],
+                config['gae_lambda'], config['vtrace_rho_clip'], config['vtrace_c_clip'])
+
             profile('train_copy', epoch)
-            idx = torch.randint(0, self.full_segments, size=(self.minibatch_segments,), device=device)
+            adv = advantages.abs().sum(axis=1)
+            prio_weights = torch.nan_to_num(adv**a, 0, 0, 0)
+            prio_probs = (prio_weights + 1e-6)/(prio_weights.sum() + 1e-6)
+            idx = torch.multinomial(prio_probs, self.minibatch_segments)
+            mb_prio = (self.segments*prio_probs[idx, None])**-anneal_beta
             mb_obs = self.observations[idx]
             mb_actions = self.actions[idx]
             mb_logprobs = self.logprobs[idx]
@@ -366,233 +367,68 @@ class PuffeRL:
             mb_truncations = self.truncations[idx]
             mb_ratio = self.ratio[idx]
             mb_values = self.values[idx]
+            mb_returns = advantages[idx] + mb_values
+            mb_advantages = advantages[idx]
 
             profile('train_forward', epoch)
             if not config['use_rnn']:
                 mb_obs = mb_obs.reshape(-1, *self.vecenv.single_observation_space.shape)
 
-            # On-policy value training
-            adv = torch.zeros(mb_values.shape, device=device)
-            ratio = torch.ones(mb_values.shape, device=device)
-            adv = compute_puff_advantage(mb_values, mb_rewards, mb_terminals,
-                ratio, adv, config['gamma'], config['gae_lambda'],
-                config['vtrace_rho_clip'], config['vtrace_c_clip'])
-
-            mb_returns = adv + mb_values
-            ret_stat = mb_returns.view(-1)
-            lower = torch.quantile(ret_stat, 0.05)
-            upper = torch.quantile(ret_stat, 0.95)
-            delta = upper - lower
-            self.ret_mean = 0.99*self.ret_mean + 0.01*delta.item()
-
-            # World model training
-            all_reward = []
-            all_terminal = []
-            all_obs = []
-            all_z = []
-            all_z_hat = []
-            all_value = []
-
-            n = self.minibatch_segments
-            h = self.policy.hidden_size
             state = dict(
-                lstm_h = torch.zeros(n, h, device=device),
-                lstm_c = torch.zeros(n, h, device=device),
+                action=mb_actions,
+                lstm_h=None,
+                lstm_c=None,
             )
 
-            a_prev = torch.zeros(n, dtype=torch.int32, device=device)
-            z = torch.zeros(n, self.policy.policy.z_flat, device=device)
-            for t in range(config['bptt_horizon']):
-                x = mb_obs[:, t]
-
-                h = self.policy.forward_eval(z, state, a_prev)
-                a_prev = mb_actions[:, t]
-
-                z_logits = self.policy.policy.encode(h, x)
-                z_hat_logits = self.policy.policy.dynamics(h)
-
-                z = self.policy.policy.sample(z_logits)
-                reward = self.policy.policy.reward(h, z)
-                terminal = self.policy.policy.terminal(h, z)
-                x = self.policy.policy.reconstruct(h, z)
-                value = self.policy.policy.value(h, z)
-
-                all_reward.append(reward)
-                all_terminal.append(terminal)
-                all_obs.append(x)
-                all_z.append(z_logits)
-                all_z_hat.append(z_hat_logits)
-                all_value.append(value)
-
-            reward = torch.stack(all_reward, dim=1).squeeze(-1)
-            terminal = torch.stack(all_terminal, dim=1)
-            all_obs = torch.stack(all_obs, dim=1)
-            all_z = torch.stack(all_z, dim=1)
-            all_z_hat = torch.stack(all_z_hat, dim=1)
-            all_value = torch.stack(all_value, dim=1).squeeze(-1)
-
-            # Value
-            dv = (torch.abs(all_value - mb_returns.detach()) / self.ret_mean)
-            polv_loss = (dv < 1.0).float() * dv**2 + (dv > 1.0).float() * dv
-            #v_loss = ((newvalue - mb_returns.detach()) / self.ret_mean) ** 2
-            polv_loss = polv_loss.mean()
- 
-            reward_loss = torch.nn.functional.mse_loss(
-                reward[:, :-1], mb_rewards[:, 1:])
-
-            y_term = mb_terminals[:, 1:].long().view(-1)
-            term = terminal[:, :-1].reshape(-1, 2)
-            terminal_loss = torch.nn.functional.cross_entropy(term, y_term)
-            recon_loss = torch.nn.functional.mse_loss(all_obs, mb_obs)
-
-            all_z = all_z.view(self.minibatch_size, 32)
-            all_z_hat = all_z_hat.view(self.minibatch_size, 32)
-
-            all_z = torch.nn.functional.log_softmax(all_z, dim=-1)
-            all_z_hat = torch.nn.functional.log_softmax(all_z_hat, dim=-1)
-
-            dyn_loss = torch.nn.functional.kl_div(
-                all_z_hat, all_z.detach(), reduction='none', log_target=True).sum(-1)
-            #dyn_loss = torch.clamp(dyn_loss, min=0.2)
-            dyn_loss = dyn_loss.mean()
-
-            rep_loss = torch.nn.functional.kl_div(
-                all_z, all_z_hat.detach(), reduction='none', log_target=True).sum(-1)
-            #rep_loss = torch.clamp(rep_loss, min=0.2)
-            rep_loss = rep_loss.mean()
-
-            # Hallucinate trajectories
-            all_logits = []
-            all_newvalue = []
-            all_valtargs = []
-            all_newlogprob = []
-            all_entropy = []
-            all_reward = []
-            all_terminal = []
-            all_actions = []
-
-            n = self.minibatch_segments
-            h = self.policy.hidden_size
-            state = dict(
-                lstm_h = torch.zeros(n, h, device=device),
-                lstm_c = torch.zeros(n, h, device=device),
-            )
-
-            a_prev = torch.zeros(n, dtype=torch.int32, device=device)
-            z = torch.zeros(n, self.policy.policy.z_flat, device=device)
-            terminal = torch.ones(n, dtype=torch.bool, device=device)
-
-            for t in range(config['bptt_horizon']):
-                state['lstm_h'][terminal] = 0
-                state['lstm_c'][terminal] = 0
-                z[terminal] = 0
-                a_prev[terminal] = 0
-                h = self.policy.forward_eval(z, state, a_prev)
-
-                x = mb_obs[:, t]
-                z_logits[~terminal] = self.policy.policy.dynamics(h[~terminal])
-                z_logits[terminal] = self.policy.policy.encode(h[terminal], x[terminal]).detach()
-
-                #z_logits = self.policy.policy.encode(h, mb_obs[:, t])
-                z = self.policy.policy.sample(z_logits)
-
-                h = h.detach()
-                z = z.detach()
-
-                reward = self.policy.policy.reward(h, z)
-                terminal = self.policy.policy.terminal(h, z)
-                logits = self.policy.policy.actor(h, z)
-                value = self.policy.policy.value(h, z)
-                valtarg = self.policy.policy.val_targ(h, z)
-                #actions = mb_actions[:, t]
-                #actions, newlogprob, entropy = pufferlib.pytorch.sample_logits(
-                #    logits, action=actions)
- 
-                actions, newlogprob, entropy = pufferlib.pytorch.sample_logits(
-                    logits)
-                a_prev = actions
-
-
-                terminal = pufferlib.pytorch.sample_logits(terminal)[0].bool()
-
-                all_logits.append(logits)
-                all_newvalue.append(value)
-                all_valtargs.append(valtarg)
-                all_newlogprob.append(newlogprob)
-                all_entropy.append(entropy)
-                all_reward.append(reward)
-                all_terminal.append(terminal)
-                all_actions.append(actions)
-
-            logits = torch.stack(all_logits, dim=1)
-            newvalue = torch.stack(all_newvalue, dim=1)
-            valtarg = torch.stack(all_valtargs, dim=1)
-            newlogprob = torch.stack(all_newlogprob, dim=1)
-            entropy = torch.stack(all_entropy, dim=1)
-            mb_rewards = torch.stack(all_reward, dim=1).squeeze(-1).detach()
-            mb_terminals = torch.stack(all_terminal, dim=1).float().detach()
-            mb_actions = torch.stack(all_actions, dim=1)
-
-            mb_values = newvalue.squeeze(-1)
-            #mb_values = (torch.nn.functional.softmax(newvalue, dim=-1)*bins).sum(-1)
+            logits, newvalue = self.policy(mb_obs, state)
+            actions, newlogprob, entropy = pufferlib.pytorch.sample_logits(logits, action=mb_actions)
 
             profile('train_misc', epoch)
-            newlogprob = newlogprob.reshape(mb_rewards.shape)
+            newlogprob = newlogprob.reshape(mb_logprobs.shape)
+            logratio = newlogprob - mb_logprobs
+            ratio = logratio.exp()
+            self.ratio[idx] = ratio.detach()
 
-            adv = torch.zeros(mb_values.shape, device=device)
-            ratio = torch.ones(mb_values.shape, device=device)
+            with torch.no_grad():
+                old_approx_kl = (-logratio).mean()
+                approx_kl = ((ratio - 1) - logratio).mean()
+                clipfrac = ((ratio - 1.0).abs() > config['clip_coef']).float().mean()
+
+            adv = advantages[idx]
             adv = compute_puff_advantage(mb_values, mb_rewards, mb_terminals,
                 ratio, adv, config['gamma'], config['gae_lambda'],
                 config['vtrace_rho_clip'], config['vtrace_c_clip'])
-
-            adv_stat = adv.view(-1)
-            lower = torch.quantile(adv, 0.05)
-            upper = torch.quantile(adv, 0.95)
-            delta = upper - lower
-            self.adv_mean = 0.99*self.adv_mean + 0.01*delta.item()
-
-            mb_returns = adv + mb_values
-            ret_stat = mb_returns.view(-1)
-            lower = torch.quantile(ret_stat, 0.05)
-            upper = torch.quantile(ret_stat, 0.95)
-            delta = upper - lower
-            self.ret_mean = 0.99*self.ret_mean + 0.01*delta.item()
+            adv = mb_advantages
+            adv = mb_prio * (adv - adv.mean()) / (adv.std() + 1e-8)
 
             # Losses
-            adv = adv / self.adv_mean
-            pg_loss = (-adv.detach() * newlogprob).mean()
+            pg_loss1 = -adv * ratio
+            pg_loss2 = -adv * torch.clamp(ratio, 1 - clip_coef, 1 + clip_coef)
+            pg_loss = torch.max(pg_loss1, pg_loss2).mean()
 
             newvalue = newvalue.view(mb_returns.shape)
-            #mask = (mb_returns.unsqueeze(-1) > bins).float()
-            #mb_returns_idx = torch.argmin(mask, dim=-1)
-            #mb_returns = torch.nn.functional.one_hot(mb_returns_idx, bins.shape[-1]).float()
-            #newvalue = newvalue.view(np.prod(mb_returns_idx.shape), 255)
-            #mb_returns_idx = mb_returns_idx.view(-1)
-            #v_loss = torch.nn.functional.cross_entropy(newvalue, mb_returns_idx)
-            dv = (torch.abs(newvalue - mb_returns.detach()) / self.ret_mean)
-            v_loss = (dv < 1.0).float() * dv**2 + (dv > 1.0).float() * dv
-            #v_loss = ((newvalue - mb_returns.detach()) / self.ret_mean) ** 2
-            v_loss = v_loss.mean()
+            v_clipped = mb_values + torch.clamp(newvalue - mb_values, -vf_clip, vf_clip)
+            v_loss_unclipped = (newvalue - mb_returns) ** 2
+            v_loss_clipped = (v_clipped - mb_returns) ** 2
+            v_loss = 0.5*torch.max(v_loss_unclipped, v_loss_clipped).mean()
 
             entropy_loss = entropy.mean()
 
-            rl_loss = pg_loss + config['vf_coef']*v_loss - config['ent_coef']*entropy_loss
-            wm_loss = reward_loss + terminal_loss + recon_loss + dyn_loss + 0.1*rep_loss
-            loss = rl_loss + wm_loss + 0.3*polv_loss
-
+            loss = pg_loss + config['vf_coef']*v_loss - config['ent_coef']*entropy_loss
             self.amp_context.__enter__() # TODO: AMP needs some debugging
+
+            # This breaks vloss clipping?
+            self.values[idx] = newvalue.detach().float()
 
             # Logging
             profile('train_misc', epoch)
-            update_epochs = config['update_epochs']
-            losses['policy_loss'] += pg_loss.item() / update_epochs
-            losses['value_loss'] += v_loss.item() / update_epochs
-            losses['entropy'] += entropy_loss.item() / update_epochs
-            losses['reward_loss'] += reward_loss.item() / update_epochs
-            losses['terminal_loss'] += terminal_loss.item() / update_epochs
-            losses['recon_loss'] += recon_loss.item() / update_epochs
-            losses['dyn_loss'] += dyn_loss.item() / update_epochs
-            losses['rep_loss'] += rep_loss.item() / update_epochs
+            losses['policy_loss'] += pg_loss.item() / self.total_minibatches
+            losses['value_loss'] += v_loss.item() / self.total_minibatches
+            losses['entropy'] += entropy_loss.item() / self.total_minibatches
+            losses['old_approx_kl'] += old_approx_kl.item() / self.total_minibatches
+            losses['approx_kl'] += approx_kl.item() / self.total_minibatches
+            losses['clipfrac'] += clipfrac.item() / self.total_minibatches
+            losses['importance'] += ratio.mean().item() / self.total_minibatches
 
             # Learn on accumulated minibatches
             profile('learn', epoch)
@@ -602,35 +438,235 @@ class PuffeRL:
                 self.optimizer.step()
                 self.optimizer.zero_grad()
 
-        '''
-        if self.epoch % 1 == 0:
-            for (p1, p2) in zip(self.policy.policy.vtarg.parameters(), self.policy.policy.val.parameters()):
-                p1.data.copy_(p2.data)
 
         '''
+        # World model training
+        for mb in range(self.total_minibatches):
+            idx = torch.randint(0, self.full_segments,
+                size=(self.minibatch_segments,), device=device)
+            mb_obs = self.observations[idx]
+            mb_actions = self.actions[idx]
+            mb_rewards = self.rewards[idx]
+            mb_terminals = self.terminals[idx]
+
+            reward_loss = 0
+            terminal_loss = 0
+            recon_loss = 0
+            dyn_loss = 0
+            rep_loss = 0
+            hidden_loss = 0
+
+            n = self.minibatch_segments
+            h = self.world_model.cell_size
+            state = (
+                torch.zeros(n, h, device=device),
+                torch.zeros(n, h, device=device),
+            )
+
+            a_prev = torch.zeros(n, dtype=torch.int32, device=device)
+            z_prev = torch.zeros(n, self.policy.policy.z_flat, device=device)
+            for t in range(config['bptt_horizon']):
+                x = mb_obs[:, t]
+                a_prev = torch.nn.functional.one_hot(
+                    a_prev.long(), self.policy.policy.num_atns)
+
+                z, z_hat, samp, reward, terminal, x_hat, state = self.world_model(
+                    x, state, z_prev, a_prev)
+
+                wm_hidden = self.world_model.hidden(samp)
+                agent_hidden = self.policy.policy.encode_observations(x)
+
+                reward_loss = reward_loss + torch.nn.functional.mse_loss(
+                    reward, mb_rewards[:, t])
+
+                y_term = mb_terminals[:, t].long().view(-1)
+                term = terminal.reshape(-1, 2)
+                terminal_loss = (terminal_loss
+                    + torch.nn.functional.cross_entropy(term, y_term))
+                recon_loss = (recon_loss
+                    + torch.nn.functional.mse_loss(x_hat, x))
+
+                z_probs = torch.nn.functional.log_softmax(z, dim=-1)
+                z_hat_probs = torch.nn.functional.log_softmax(z_hat, dim=-1)
+                dyn_loss = dyn_loss + torch.nn.functional.kl_div(
+                    z_hat_probs, z_probs.detach(),
+                    reduction='none', log_target=True).sum(-1).mean()
+                rep_loss = rep_loss + torch.nn.functional.kl_div(
+                    z_hat, z_hat_probs.detach(), reduction='none',
+                    log_target=True).sum(-1).mean()
+
+                hidden_loss = hidden_loss + torch.nn.functional.mse_loss(
+                    agent_hidden, wm_hidden)
+
+      
+                z_prev = samp
+                a_prev = mb_actions[:, t]
+
+            # Value
+            loss = (
+                reward_loss
+                + terminal_loss
+                + recon_loss
+                + dyn_loss
+                + 0.1*rep_loss
+                + hidden_loss
+            )
+
+            # Learn on accumulated minibatches
+            profile('learn', epoch)
+            loss.backward()
+            torch.nn.utils.clip_grad_norm_(
+                self.world_model.parameters(), config['max_grad_norm'])
+            self.wm_optimizer.step()
+            self.wm_optimizer.zero_grad()
+
+            self.amp_context.__enter__() # TODO: AMP needs some debugging
+
+        for mb in range(self.total_minibatches):
+            idx = torch.randint(0, self.full_segments,
+                size=(self.minibatch_segments,), device=device)
+            mb_obs = self.observations[idx]
+            mb_actions = self.actions[idx]
+            mb_logprobs = self.logprobs[idx]
+            mb_rewards = self.rewards[idx]
+            mb_terminals = self.terminals[idx]
+            mb_truncations = self.truncations[idx]
+            mb_ratio = self.ratio[idx]
+            mb_values = self.values[idx]
+
+            # Hallucinate trajectories
+            all_logits = []
+            all_newvalue = []
+            all_newlogprob = []
+            all_entropy = []
+            all_reward = []
+            all_terminal = []
+            all_actions = []
+            all_logprobs = []
+            all_obs = []
+
+            n = self.minibatch_segments
+            h = self.policy.hidden_size
+            wm_state = (
+                torch.zeros(n, 4*h, device=device),
+                torch.zeros(n, 4*h, device=device),
+            )
+            state = dict(
+                action=mb_actions,
+                lstm_h=None,
+                lstm_c=None,
+            )
+
+            a_prev = torch.zeros(n, dtype=torch.int32, device=device)
+            z = torch.zeros(n, self.policy.policy.z_flat, device=device)
+            terminal = torch.ones(n, dtype=torch.bool, device=device)
+
+            a_prev = torch.zeros(n, dtype=torch.int32, device=device)
+            z_prev = torch.zeros(n, self.policy.policy.z_flat, device=device)
+            for t in range(config['bptt_horizon']):
+                a_prev = torch.nn.functional.one_hot(
+                    a_prev.long(), self.policy.policy.num_atns)
+
+                with torch.no_grad():
+                    if t == 0:
+                        x = mb_obs[:, t]
+                        z, z_hat, samp, reward, terminal, x_hat, wm_state = self.world_model(
+                            x, wm_state, z_prev, a_prev)
+                    else:
+                        z_hat, samp, reward, terminal, x_hat, wm_state = self.world_model.imagine(
+                            wm_state, z_prev, a_prev)
+
+
+                hidden = self.world_model.hidden(samp)
+                logits, value = self.policy.forward_eval(hidden, state, encode=False)
+                action, logprob, entropy = pufferlib.pytorch.sample_logits(logits)
+ 
+          
+                all_reward.append(reward)
+                all_terminal.append(terminal)
+                all_obs.append(x)
+                all_actions.append(action)
+                all_logprobs.append(logprob)
+                all_logits.append(logits)
+                all_newvalue.append(value)
+                all_entropy.append(entropy)
+
+                z_prev = samp
+                a_prev = mb_actions[:, t]
+
+
+            logits = torch.stack(all_logits, dim=1)
+            newvalue = torch.stack(all_newvalue, dim=1)
+            newlogprob = torch.stack(all_logprobs, dim=1)
+            entropy = torch.stack(all_entropy, dim=1)
+            mb_rewards = torch.stack(all_reward, dim=1).squeeze(-1).detach()
+            mb_terminals = torch.stack(all_terminal, dim=1).float().detach()
+            mb_terminals = pufferlib.pytorch.sample_logits(mb_terminals)[0].float()
+            mb_actions = torch.stack(all_actions, dim=1)
+
+            mb_values = newvalue.squeeze(-1)
+            #mb_values = (torch.nn.functional.softmax(newvalue, dim=-1)*bins).sum(-1)
+            profile('train_misc', epoch)
+            newlogprob = newlogprob.reshape(mb_logprobs.shape)
+            logratio = newlogprob - mb_logprobs
+            ratio = logratio.exp()
+            self.ratio[idx] = ratio.detach()
+
+            with torch.no_grad():
+                old_approx_kl = (-logratio).mean()
+                approx_kl = ((ratio - 1) - logratio).mean()
+                clipfrac = ((ratio - 1.0).abs() > config['clip_coef']).float().mean()
+
+            adv = advantages[idx]
+            adv = compute_puff_advantage(mb_values, mb_rewards, mb_terminals,
+                ratio, adv, config['gamma'], config['gae_lambda'],
+                config['vtrace_rho_clip'], config['vtrace_c_clip'])
+            adv = mb_advantages
+            adv = mb_prio * (adv - adv.mean()) / (adv.std() + 1e-8)
+
+            # Losses
+            pg_loss1 = -adv * ratio
+            pg_loss2 = -adv * torch.clamp(ratio, 1 - clip_coef, 1 + clip_coef)
+            pg_loss = torch.max(pg_loss1, pg_loss2).mean()
+
+            newvalue = newvalue.view(mb_returns.shape)
+            v_clipped = mb_values + torch.clamp(newvalue - mb_values, -vf_clip, vf_clip)
+            v_loss_unclipped = (newvalue - mb_returns) ** 2
+            v_loss_clipped = (v_clipped - mb_returns) ** 2
+            v_loss = 0.5*torch.max(v_loss_unclipped, v_loss_clipped).mean()
+
+            entropy_loss = entropy.mean()
+
+            loss = pg_loss + config['vf_coef']*v_loss - config['ent_coef']*entropy_loss
+            self.amp_context.__enter__() # TODO: AMP needs some debugging
+
+            # Logging
+            profile('train_misc', epoch)
+            losses['policy_loss'] += pg_loss.item() / self.total_minibatches
+            losses['value_loss'] += v_loss.item() / self.total_minibatches
+            losses['entropy'] += entropy_loss.item() / self.total_minibatches
+            losses['old_approx_kl'] += old_approx_kl.item() / self.total_minibatches
+            losses['approx_kl'] += approx_kl.item() / self.total_minibatches
+            losses['clipfrac'] += clipfrac.item() / self.total_minibatches
+            losses['importance'] += ratio.mean().item() / self.total_minibatches
+
+            # Learn on accumulated minibatches
+            profile('learn', epoch)
+            loss.backward()
+            if (mb + 1) % self.accumulate_minibatches == 0:
+                torch.nn.utils.clip_grad_norm_(self.policy.parameters(), config['max_grad_norm'])
+                self.optimizer.step()
+                self.optimizer.zero_grad()
+        '''
+
+
 
         # Reprioritize experience
         profile('train_misc', epoch)
         if config['anneal_lr']:
             self.scheduler.step()
 
-
-        # Shift replay segments
-        mmax = self.replay_segments - self.segments
-        n = min(self.full_segments, mmax)
-
-        # TODO: Is there a safe way to do this without .clone()?
-        with torch.no_grad():
-            self.observations[self.segments:self.segments+n] = self.observations[:n].clone()
-            self.actions[self.segments:self.segments+n] = self.actions[:n].clone()
-            self.logprobs[self.segments:self.segments+n] = self.logprobs[:n].clone()
-            self.rewards[self.segments:self.segments+n] = self.rewards[:n].clone()
-            self.terminals[self.segments:self.segments+n] = self.terminals[:n].clone()
-            self.truncations[self.segments:self.segments+n] = self.truncations[:n].clone()
-            self.ratio[self.segments:self.segments+n] = self.ratio[:n].clone()
-            self.values[self.segments:self.segments+n] = self.values[:n].clone()
-
-        y_pred = self.values.flatten()
+        #y_pred = self.values.flatten()
         #y_true = advantages.flatten() + self.values.flatten()
         #var_y = y_true.var()
         #explained_var = torch.nan if var_y == 0 else 1 - (y_true - y_pred).var() / var_y
