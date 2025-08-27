@@ -8,6 +8,67 @@ import pufferlib.emulation
 import pufferlib.pytorch
 import pufferlib.spaces
 
+class SimpleWM(nn.Module):
+    def __init__(self, input_size, atn_dim, hidden_size=128):
+        super().__init__()
+        self.input_size = input_size
+        self.hidden_size = hidden_size
+        self.atn_dim = atn_dim
+
+        x = input_size
+        h = hidden_size
+
+        self.encoder = torch.nn.Sequential(
+            pufferlib.pytorch.layer_init(nn.Linear(x, 2*h)),
+            nn.GELU(),
+            pufferlib.pytorch.layer_init(nn.Linear(2*h, 2*h)),
+            nn.GELU(),
+            pufferlib.pytorch.layer_init(nn.Linear(2*h, h)),
+        )
+        self.dynamics = torch.nn.Sequential(
+            pufferlib.pytorch.layer_init(nn.Linear(h + atn_dim, 2*h)),
+            nn.GELU(),
+            pufferlib.pytorch.layer_init(nn.Linear(2*h, 2*h)),
+            nn.GELU(),
+            pufferlib.pytorch.layer_init(nn.Linear(2*h, x)),
+        )
+        self.reward = torch.nn.Sequential(
+            pufferlib.pytorch.layer_init(nn.Linear(h + atn_dim, 2*h)),
+            nn.GELU(),
+            pufferlib.pytorch.layer_init(nn.Linear(2*h, 1)),
+        )
+        self.terminal = torch.nn.Sequential(
+            pufferlib.pytorch.layer_init(nn.Linear(h + atn_dim, 2*h)),
+            nn.GELU(),
+            pufferlib.pytorch.layer_init(nn.Linear(2*h, 1)),
+        )
+
+    def sequence(self, x, atns):
+        z = self.encoder(x)
+        atns = torch.nn.functional.one_hot(atns, self.atn_dim)
+        ha = torch.cat([z, atns], dim=-1)
+        x_pred = self.dynamics(ha)
+        reward = self.reward(ha).squeeze(-1)
+        terminal = self.terminal(ha).squeeze(-1)
+        return z, x_pred, reward, terminal
+
+    def imagine_from_real(self, x, atn):
+        z = self.encoder(x)
+        atn = torch.nn.functional.one_hot(atn, self.atn_dim)
+        ha = torch.cat([z, atn], dim=-1)
+        x_pred = self.dynamics(ha)
+        reward = self.reward(ha)
+        terminal = self.terminal(ha)
+        return x_pred, reward, terminal
+
+    def imagine_from_sample(self, z, atn):
+        atn = torch.nn.functional.one_hot(atn, self.atn_dim)
+        ha = torch.cat([z, atn], dim=-1)
+        x_pred = self.dynamics(ha)
+        reward = self.reward(ha)
+        terminal = self.terminal(ha)
+        return x_pred, reward, terminal
+
 class RSSM(nn.Module):
     def __init__(self, input_size, atn_dim, hidden_size=128, z_dim=32, z_samples=32):
         super().__init__()
