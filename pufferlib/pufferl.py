@@ -1,4 +1,4 @@
-## puffer [train | eval | sweep] [env_name] [optional args] -- See https://puffer.ai for full detail0
+## puffer [train | eval | sweep] [env_name] [optional args] -- See https://puffer.ai for full details
 # This is the same as python -m pufferlib.pufferl [train | eval | sweep] [env_name] [optional args]
 # Distributed example: torchrun --standalone --nnodes=1 --nproc-per-node=6 -m pufferlib.pufferl train puffer_nmmo3
 
@@ -328,14 +328,14 @@ class PuffeRL:
         config = self.config
         device = config['device']
 
-        self.train_world_model(losses)
-
         b0 = config['prio_beta0']
         a = config['prio_alpha']
         clip_coef = config['clip_coef']
         vf_clip = config['vf_clip_coef']
         anneal_beta = b0 + (1 - b0)*a*self.epoch/self.total_epochs
         self.ratio[:] = 1
+
+        mean_entropy = 0
 
         for mb in range(self.total_minibatches):
             profile('train_misc', epoch, nest=True)
@@ -407,15 +407,9 @@ class PuffeRL:
             v_loss = 0.5*torch.max(v_loss_unclipped, v_loss_clipped).mean()
 
             entropy_loss = entropy.mean()
+            mean_entropy += entropy_loss.item() / self.total_minibatches
 
-            # Representation loss
-            #with torch.no_grad():
-            #    z, _, _, _ = self.world_model.sequence(mb_obs, mb_actions)
-
-            #agent_rep_loss = torch.nn.functional.mse_loss(state['hidden'], z)
-
-
-            loss = pg_loss + config['vf_coef']*v_loss - config['ent_coef']*entropy_loss# + agent_rep_loss
+            loss = pg_loss + config['vf_coef']*v_loss - config['ent_coef']*entropy_loss
             self.amp_context.__enter__() # TODO: AMP needs some debugging
 
             # This breaks vloss clipping?
@@ -430,7 +424,6 @@ class PuffeRL:
             losses['approx_kl'] += approx_kl.item() / self.total_minibatches
             losses['clipfrac'] += clipfrac.item() / self.total_minibatches
             losses['importance'] += ratio.mean().item() / self.total_minibatches
-            #losses['agent_rep_loss'] += agent_rep_loss.item() / self.total_minibatches
 
             # Learn on accumulated minibatches
             profile('learn', epoch)
@@ -440,7 +433,8 @@ class PuffeRL:
                 self.optimizer.step()
                 self.optimizer.zero_grad()
 
-        self.rl_world_model(losses)
+        self.train_world_model(losses)
+        self.rl_world_model(losses, mean_entropy)
 
         # Reprioritize experience
         profile('train_misc', epoch)
@@ -477,7 +471,7 @@ class PuffeRL:
         config = self.config
         device = config['device']
 
-        for mb in range(4*self.total_minibatches):
+        for mb in range(8*self.total_minibatches):
             idx = torch.randint(0, self.segments,
                 size=(self.minibatch_segments,), device=device)
             mb_obs = self.observations[idx]
@@ -548,7 +542,7 @@ class PuffeRL:
             self.world_optimizer.step()
             self.world_optimizer.zero_grad()
 
-    def rl_world_model(self, losses):
+    def rl_world_model(self, losses, mean_entropy):
         epoch = self.epoch
         config = self.config
         device = config['device']
@@ -584,7 +578,7 @@ class PuffeRL:
             )
 
             #for t in range(config['bptt_horizon']):
-            for t in range(16):
+            for t in range(8):
                 if t == 0:
                     logits, value = self.policy.forward_eval(mb_obs[:, t], state)
                     action, logprob, entropy = pufferlib.pytorch.sample_logits(logits)
@@ -606,15 +600,21 @@ class PuffeRL:
                 all_newvalue.append(value)
                 all_entropy.append(entropy)
 
-
             logits = torch.stack(all_logits, dim=1)
             newvalue = torch.stack(all_newvalue, dim=1).squeeze(-1)
             newlogprob = torch.stack(all_logprobs, dim=1)
             entropy = torch.stack(all_entropy, dim=1)
             mb_rewards = torch.stack(all_reward, dim=1).squeeze(-1).detach()
-            mb_terminals = torch.stack(all_terminal, dim=1).float().detach()
-            mb_terminals = pufferlib.pytorch.sample_logits(mb_terminals)[0].float()
+            mb_terminals = torch.stack(all_terminal, dim=1).squeeze(-1)
+            mb_terminals = (mb_terminals > 0.8).float().detach()
             mb_actions = torch.stack(all_actions, dim=1)
+
+            # Clamp values
+            mb_rewards = torch.nan_to_num(mb_rewards)
+            mb_rewards = torch.clamp(mb_rewards, -1, 1)
+
+            mb_terminals = torch.nan_to_num(mb_terminals)
+            mb_terminals = torch.clamp(mb_terminals, 0, 1)
 
             mb_values = newvalue
             newlogprob = newlogprob.reshape(mb_rewards.shape)
@@ -633,8 +633,11 @@ class PuffeRL:
             pg_loss = (-adv * newlogprob).mean()
             v_loss = 0.5*((newvalue - mb_returns) ** 2).mean()
             entropy_loss = entropy.mean()
+            #entropy_loss = (entropy - mean_entropy).pow(2).mean()
 
             loss = pg_loss + config['vf_coef']*v_loss - 0.05*entropy_loss
+            #loss = pg_loss + config['vf_coef']*v_loss - config['ent_coef']*entropy_loss
+            #loss = pg_loss + config['vf_coef']*v_loss + entropy_loss
             loss.backward()
             torch.nn.utils.clip_grad_norm_(self.policy.parameters(),
                 config['max_grad_norm'])
