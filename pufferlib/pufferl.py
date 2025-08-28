@@ -334,17 +334,8 @@ class PuffeRL:
             self.amp_context.__enter__()
 
             shape = self.values.shape
-            advantages = torch.zeros(shape, device=device)
-            advantages = compute_puff_advantage(self.values, self.rewards,
-                self.terminals, self.ratio, advantages, config['gamma'],
-                config['gae_lambda'], config['vtrace_rho_clip'], config['vtrace_c_clip'])
-
             profile('train_copy', epoch)
-            adv = advantages.abs().sum(axis=1)
-            prio_weights = torch.nan_to_num(adv**a, 0, 0, 0)
-            prio_probs = (prio_weights + 1e-6)/(prio_weights.sum() + 1e-6)
-            idx = torch.multinomial(prio_probs, self.minibatch_segments)
-            mb_prio = (self.segments*prio_probs[idx, None])**-anneal_beta
+            idx = slice(None)
             mb_obs = self.observations[idx]
             mb_actions = self.actions[idx]
             mb_logprobs = self.logprobs[idx]
@@ -353,8 +344,6 @@ class PuffeRL:
             mb_truncations = self.truncations[idx]
             mb_ratio = self.ratio[idx]
             mb_values = self.values[idx]
-            mb_returns = advantages[idx] + mb_values
-            mb_advantages = advantages[idx]
 
             profile('train_forward', epoch)
             if not config['use_rnn']:
@@ -380,12 +369,13 @@ class PuffeRL:
                 approx_kl = ((ratio - 1) - logratio).mean()
                 clipfrac = ((ratio - 1.0).abs() > config['clip_coef']).float().mean()
 
-            adv = advantages[idx]
+            adv = torch.zeros(mb_values.shape, device=device)
             adv = compute_puff_advantage(mb_values, mb_rewards, mb_terminals,
                 ratio, adv, config['gamma'], config['gae_lambda'],
                 config['vtrace_rho_clip'], config['vtrace_c_clip'])
-            adv = mb_advantages
-            adv = mb_prio * (adv - adv.mean()) / (adv.std() + 1e-8)
+            mb_advantages = adv
+            mb_returns = adv + mb_values
+            adv = (adv - adv.mean()) / (adv.std() + 1e-8)
 
             # Losses
             pg_loss1 = -adv * ratio
@@ -429,11 +419,11 @@ class PuffeRL:
         if config['anneal_lr']:
             self.scheduler.step()
 
-        y_pred = self.values.flatten()
-        y_true = advantages.flatten() + self.values.flatten()
-        var_y = y_true.var()
-        explained_var = torch.nan if var_y == 0 else 1 - (y_true - y_pred).var() / var_y
-        losses['explained_variance'] = explained_var.item()
+        #y_pred = self.values.flatten()
+        #y_true = advantages.flatten() + self.values.flatten()
+        #var_y = y_true.var()
+        #explained_var = torch.nan if var_y == 0 else 1 - (y_true - y_pred).var() / var_y
+        #losses['explained_variance'] = explained_var.item()
 
         profile.end()
         logs = None
