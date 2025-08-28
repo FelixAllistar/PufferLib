@@ -335,8 +335,6 @@ class PuffeRL:
         anneal_beta = b0 + (1 - b0)*a*self.epoch/self.total_epochs
         self.ratio[:] = 1
 
-        mean_entropy = 0
-
         for mb in range(self.total_minibatches):
             profile('train_misc', epoch, nest=True)
             self.amp_context.__enter__()
@@ -407,7 +405,6 @@ class PuffeRL:
             v_loss = 0.5*torch.max(v_loss_unclipped, v_loss_clipped).mean()
 
             entropy_loss = entropy.mean()
-            mean_entropy += entropy_loss.item() / self.total_minibatches
 
             loss = pg_loss + config['vf_coef']*v_loss - config['ent_coef']*entropy_loss
             self.amp_context.__enter__() # TODO: AMP needs some debugging
@@ -434,7 +431,7 @@ class PuffeRL:
                 self.optimizer.zero_grad()
 
         self.train_world_model(losses)
-        self.rl_world_model(losses, mean_entropy)
+        self.rl_world_model(losses)
 
         # Reprioritize experience
         profile('train_misc', epoch)
@@ -542,7 +539,7 @@ class PuffeRL:
             self.world_optimizer.step()
             self.world_optimizer.zero_grad()
 
-    def rl_world_model(self, losses, mean_entropy):
+    def rl_world_model(self, losses):
         epoch = self.epoch
         config = self.config
         device = config['device']
@@ -633,11 +630,9 @@ class PuffeRL:
             pg_loss = (-adv * newlogprob).mean()
             v_loss = 0.5*((newvalue - mb_returns) ** 2).mean()
             entropy_loss = entropy.mean()
-            #entropy_loss = (entropy - mean_entropy).pow(2).mean()
 
             loss = pg_loss + config['vf_coef']*v_loss - 0.05*entropy_loss
             #loss = pg_loss + config['vf_coef']*v_loss - config['ent_coef']*entropy_loss
-            #loss = pg_loss + config['vf_coef']*v_loss + entropy_loss
             loss.backward()
             torch.nn.utils.clip_grad_norm_(self.policy.parameters(),
                 config['max_grad_norm'])
