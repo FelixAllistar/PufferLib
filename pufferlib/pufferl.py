@@ -597,6 +597,7 @@ class PuffeRL:
             )
 
             for t in range(config['bptt_horizon']):
+                '''
                 if t == 0:
                     logits, value = self.policy.forward_eval(mb_obs[:, t], state)
                     action, logprob, entropy = pufferlib.pytorch.sample_logits(logits)
@@ -609,12 +610,23 @@ class PuffeRL:
                     with torch.no_grad():
                         x, reward, terminal = self.world_model.imagine_from_real(
                             x, action.long())
+                '''
+                x, reward, terminal, _, _, _, _ = self.vecenv.recv()
+                x = torch.from_numpy(x).to(self.config['device'])
+                logits, value = self.policy.forward_eval(x, state)
+                action, logprob, entropy = pufferlib.pytorch.sample_logits(logits)
+                cpu_action = action.cpu().numpy().reshape(self.vecenv.action_space.shape)
+                self.vecenv.send(cpu_action)
+
+                reward = torch.from_numpy(reward).to(self.config['device'])
+                terminal = torch.from_numpy(terminal).to(self.config['device'])
+
 
                 # Must clamp to avoid accumulating errors
                 # TODO: Base on observation space etc
-                x = torch.clamp(x, -1, 1)
-                reward = torch.clamp(reward, -1, 1)
-                terminal = torch.clamp(terminal, 0, 1)
+                #x = torch.clamp(x, -1, 1)
+                #reward = torch.clamp(reward, -1, 1)
+                #terminal = torch.clamp(terminal, 0, 1)
 
                 all_reward.append(reward)
                 all_terminal.append(terminal)
@@ -629,9 +641,10 @@ class PuffeRL:
             newlogprob = torch.stack(all_logprobs, dim=1)
             entropy = torch.stack(all_entropy, dim=1)
             mb_rewards = torch.stack(all_reward, dim=1).squeeze(-1).detach()
-            mb_terminals = torch.stack(all_terminal, dim=1).squeeze(-1)
-            mb_terminals = (mb_terminals > 0.8).float().detach()
+            mb_terminals = torch.stack(all_terminal, dim=1).squeeze(-1).float()
+            #mb_terminals = (mb_terminals > 0.8).float().detach()
             mb_actions = torch.stack(all_actions, dim=1)
+            mb_logprobs = newlogprob.detach()
 
             # Clamp values
             mb_rewards = torch.nan_to_num(mb_rewards)
@@ -643,6 +656,42 @@ class PuffeRL:
             mb_values = newvalue
             newlogprob = newlogprob.reshape(mb_rewards.shape)
 
+            newlogprob = newlogprob.reshape(mb_logprobs.shape)
+            logratio = newlogprob - mb_logprobs
+            ratio = logratio.exp()
+
+            with torch.no_grad():
+                old_approx_kl = (-logratio).mean()
+                approx_kl = ((ratio - 1) - logratio).mean()
+                clipfrac = ((ratio - 1.0).abs() > config['clip_coef']).float().mean()
+
+            #adv = advantages[idx]
+            adv = torch.zeros_like(mb_values)
+            ratio = torch.ones_like(mb_values)
+            adv = compute_puff_advantage(mb_values, mb_rewards, mb_terminals,
+                ratio, adv, config['gamma'], config['gae_lambda'],
+                config['vtrace_rho_clip'], config['vtrace_c_clip'])
+            #adv = mb_advantages
+            #adv = mb_prio * (adv - adv.mean()) / (adv.std() + 1e-8)
+            adv = (adv - adv.mean()) / (adv.std() + 1e-8)
+            mb_returns = adv + mb_values
+
+            # Losses
+            pg_loss1 = -adv * ratio
+            pg_loss2 = -adv * torch.clamp(ratio, 1 - clip_coef, 1 + clip_coef)
+            pg_loss = torch.max(pg_loss1, pg_loss2).mean()
+
+            newvalue = newvalue.view(mb_returns.shape)
+            v_clipped = mb_values + torch.clamp(newvalue - mb_values, -vf_clip, vf_clip)
+            v_loss_unclipped = (newvalue - mb_returns) ** 2
+            v_loss_clipped = (v_clipped - mb_returns) ** 2
+            v_loss = 0.5*torch.max(v_loss_unclipped, v_loss_clipped).mean()
+
+            entropy_loss = entropy.mean()
+
+            loss = pg_loss + config['vf_coef']*v_loss - config['ent_coef']*entropy_loss
+ 
+            '''
             adv = torch.zeros_like(mb_values)
             ratio = torch.ones_like(mb_values)
             adv = compute_puff_advantage(mb_values, mb_rewards, mb_terminals,
@@ -658,8 +707,9 @@ class PuffeRL:
             v_loss = 0.5*((newvalue - mb_returns) ** 2).mean()
             entropy_loss = entropy.mean()
 
-            loss = pg_loss + config['vf_coef']*v_loss - 0.05*entropy_loss
-            #loss = pg_loss + config['vf_coef']*v_loss - config['ent_coef']*entropy_loss
+            loss = pg_loss + config['vf_coef']*v_loss - config['ent_coef']*entropy_loss
+            '''
+
             loss.backward()
             torch.nn.utils.clip_grad_norm_(self.policy.parameters(),
                 config['max_grad_norm'])
