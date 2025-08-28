@@ -596,8 +596,7 @@ class PuffeRL:
                 lstm_c=None,
             )
 
-            #for t in range(config['bptt_horizon']):
-            for t in range(8):
+            for t in range(config['bptt_horizon']):
                 if t == 0:
                     logits, value = self.policy.forward_eval(mb_obs[:, t], state)
                     action, logprob, entropy = pufferlib.pytorch.sample_logits(logits)
@@ -610,6 +609,12 @@ class PuffeRL:
                     with torch.no_grad():
                         x, reward, terminal = self.world_model.imagine_from_real(
                             x, action.long())
+
+                # Must clamp to avoid accumulating errors
+                # TODO: Base on observation space etc
+                x = torch.clamp(x, -1, 1)
+                reward = torch.clamp(reward, -1, 1)
+                terminal = torch.clamp(terminal, 0, 1)
 
                 all_reward.append(reward)
                 all_terminal.append(terminal)
