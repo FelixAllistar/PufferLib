@@ -491,6 +491,28 @@ class PuffeRL:
 
             z, x_pred, reward, terminal = self.world_model.sequence(mb_obs, mb_actions)
 
+            '''
+            all_obs = []
+            all_reward = []
+            all_terminal = []
+
+            for t in range(config['bptt_horizon']):
+                if t % 4 == 0:
+                    x = mb_obs[:, t]
+
+                x, reward, terminal = self.world_model.imagine_from_real(
+                    x, mb_actions[:, t])
+
+                all_obs.append(x)
+                all_reward.append(reward)
+                all_terminal.append(terminal)
+
+            x_pred = torch.stack(all_obs, dim=1)
+            reward = torch.stack(all_reward, dim=1).squeeze(-1)
+            terminal = torch.stack(all_terminal, dim=1).squeeze(-1)
+            '''
+
+
             #state = dict(
             #    lstm_h=None,
             #    lstm_c=None,
