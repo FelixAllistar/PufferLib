@@ -25,6 +25,14 @@ class SimpleWM(nn.Module):
             nn.GELU(),
             pufferlib.pytorch.layer_init(nn.Linear(2*h, h)),
         )
+
+        self.lstm = nn.LSTM(h, h)
+        self.cell = torch.nn.LSTMCell(h, h)
+        self.cell.weight_ih = self.lstm.weight_ih_l0
+        self.cell.weight_hh = self.lstm.weight_hh_l0
+        self.cell.bias_ih = self.lstm.bias_ih_l0
+        self.cell.bias_hh = self.lstm.bias_hh_l0
+
         self.dynamics = torch.nn.Sequential(
             pufferlib.pytorch.layer_init(nn.Linear(h + atn_dim, 2*h)),
             nn.GELU(),
@@ -35,16 +43,21 @@ class SimpleWM(nn.Module):
         self.reward = torch.nn.Sequential(
             pufferlib.pytorch.layer_init(nn.Linear(h + atn_dim, 2*h)),
             nn.GELU(),
+            pufferlib.pytorch.layer_init(nn.Linear(2*h, 2*h)),
+            nn.GELU(),
             pufferlib.pytorch.layer_init(nn.Linear(2*h, 1)),
         )
         self.terminal = torch.nn.Sequential(
             pufferlib.pytorch.layer_init(nn.Linear(h + atn_dim, 2*h)),
+            nn.GELU(),
+            pufferlib.pytorch.layer_init(nn.Linear(2*h, 2*h)),
             nn.GELU(),
             pufferlib.pytorch.layer_init(nn.Linear(2*h, 1)),
         )
 
     def sequence(self, x, atns):
         z = self.encoder(x)
+        z, _ = self.lstm(z)
         atns = torch.nn.functional.one_hot(atns, self.atn_dim)
         ha = torch.cat([z, atns], dim=-1)
         x_pred = self.dynamics(ha)
@@ -52,14 +65,16 @@ class SimpleWM(nn.Module):
         terminal = self.terminal(ha).squeeze(-1)
         return z, x_pred, reward, terminal
 
-    def imagine_from_real(self, x, atn):
+    def imagine_from_real(self, x, atn, state):
         z = self.encoder(x)
+        z, c = self.cell(z, state)
+        state = (z, c)
         atn = torch.nn.functional.one_hot(atn, self.atn_dim)
         ha = torch.cat([z, atn], dim=-1)
         x_pred = self.dynamics(ha)
         reward = self.reward(ha)
         terminal = self.terminal(ha)
-        return x_pred, reward, terminal
+        return x_pred, reward, terminal, state
 
     def imagine_from_sample(self, z, atn):
         atn = torch.nn.functional.one_hot(atn, self.atn_dim)
