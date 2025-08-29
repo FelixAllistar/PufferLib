@@ -145,21 +145,13 @@ class PuffeRL:
         warnings.filterwarnings(action='ignore', category=UserWarning, module=r'heavyball.*')
         import heavyball.utils
         heavyball.utils.compile_mode = config['compile_mode'] if config['compile'] else None
-        policy_optimizer = ForeachMuon(
+        optimizer = ForeachMuon(
             self.policy.parameters(),
             lr=config['learning_rate'],
             betas=(config['adam_beta1'], config['adam_beta2']),
             eps=config['adam_eps'],
         )
-        self.policy_optimizer = policy_optimizer
-
-        value_optimizer = ForeachMuon(
-            self.policy.parameters(),
-            lr=config['learning_rate'],
-            betas=(config['adam_beta1'], config['adam_beta2']),
-            eps=config['adam_eps'],
-        )
-        self.value_optimizer = value_optimizer
+        self.optimizer = optimizer
 
         # Logging
         self.logger = logger
@@ -168,8 +160,7 @@ class PuffeRL:
 
         # Learning rate scheduler
         epochs = config['total_timesteps'] // config['batch_size']
-        self.policy_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(policy_optimizer, T_max=epochs)
-        self.value_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(value_optimizer, T_max=epochs)
+        self.scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs)
         self.total_epochs = epochs
 
         # Automatic mixed precision
@@ -381,6 +372,7 @@ class PuffeRL:
             entropy_loss = entropy.mean()
 
             policy_loss = pg_loss + config['ent_coef']*entropy_loss
+            loss = policy_loss + config['vf_coef']*value_loss
 
             # Logging
             profile('train_misc', epoch)
@@ -394,23 +386,16 @@ class PuffeRL:
 
             # Learn on accumulated minibatches
             profile('learn', epoch)
-            policy_loss.backward()
+            loss.backward()
             torch.nn.utils.clip_grad_norm_(
                 self.policy.parameters(), config['max_grad_norm'])
-            self.policy_optimizer.step()
-            self.policy_optimizer.zero_grad()
-
-            value_loss.backward()
-            torch.nn.utils.clip_grad_norm_(
-                self.policy.parameters(), config['max_grad_norm'])
-            self.value_optimizer.step()
-            self.value_optimizer.zero_grad()
+            self.optimizer.step()
+            self.optimizer.zero_grad()
 
         # Reprioritize experience
         profile('train_misc', epoch)
         if config['anneal_lr']:
-            self.policy_scheduler.step()
-            self.value_scheduler.step()
+            self.scheduler.step()
 
         #y_pred = self.values.flatten()
         #y_true = advantages.flatten() + self.values.flatten()
@@ -455,7 +440,7 @@ class PuffeRL:
             'agent_steps': agent_steps,
             'uptime': time.time() - self.start_time,
             'epoch': int(dist_sum(self.epoch, device)),
-            'learning_rate': self.policy_optimizer.param_groups[0]["lr"],
+            'learning_rate': self.optimizer.param_groups[0]["lr"],
             **{f'environment/{k}': v for k, v in self.stats.items()},
             **{f'losses/{k}': v for k, v in self.losses.items()},
             **{f'performance/{k}': v['elapsed'] for k, v in self.profile},
@@ -501,7 +486,7 @@ class PuffeRL:
         torch.save(self.uncompiled_policy.state_dict(), model_path)
 
         state = {
-            'optimizer_state_dict': self.policy_optimizer.state_dict(),
+            'optimizer_state_dict': self.optimizer.state_dict(),
             'global_step': self.global_step,
             'agent_step': self.global_step,
             'update': self.epoch,
