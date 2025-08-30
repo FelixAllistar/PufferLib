@@ -36,6 +36,10 @@ class SimpleWM(nn.Module):
         self.dynamics = torch.nn.Sequential(
             pufferlib.pytorch.layer_init(nn.Linear(2*h + atn_dim, h)),
             nn.GELU(),
+            pufferlib.pytorch.layer_init(nn.Linear(h, h)),
+        )
+        self.decoder = torch.nn.Sequential(
+            nn.GELU(),
             pufferlib.pytorch.layer_init(nn.Linear(h, x)),
         )
         self.reward = torch.nn.Sequential(
@@ -57,10 +61,11 @@ class SimpleWM(nn.Module):
         h, _ = self.lstm(z)
         atns = torch.nn.functional.one_hot(atns, self.atn_dim)
         ha = torch.cat([z, h, atns], dim=-1)
-        x_pred = self.dynamics(ha)
+        z_pred = self.dynamics(ha)
+        x_pred = self.decoder(z_pred)
         reward = self.reward(ha).squeeze(-1)
         terminal = self.terminal(ha).squeeze(-1)
-        return h, x_pred, reward, terminal
+        return h, z_pred, x_pred, reward, terminal
 
     def imagine_from_real(self, x, atn, state):
         z = self.encoder(x)
@@ -70,10 +75,11 @@ class SimpleWM(nn.Module):
         state = (h, c)
         atn = torch.nn.functional.one_hot(atn, self.atn_dim)
         ha = torch.cat([z, h, atn], dim=-1)
-        x_pred = self.dynamics(ha)
+        z_pred = self.dynamics(ha)
+        x_pred = self.decoder(z_pred)
         reward = self.reward(ha)
         terminal = self.terminal(ha)
-        return x_pred, reward, terminal, state
+        return z, x_pred, reward, terminal, state
 
     def imagine_from_sample(self, z, atn):
         atn = torch.nn.functional.one_hot(atn, self.atn_dim)

@@ -476,7 +476,11 @@ class PuffeRL:
         config = self.config
         device = config['device']
 
-        minibatches = config['world_model_minibatches']
+        if self.epoch == 0:
+            minibatches = 64
+        else:
+            minibatches = config['world_model_minibatches']
+
         for mb in range(minibatches):
             idx = torch.randint(0, self.wm_observations.shape[0],
                 size=(self.minibatch_segments,), device=device)
@@ -498,7 +502,7 @@ class PuffeRL:
                 lstm_c=torch.zeros(n, self.policy.hidden_size, device=device),
             )
 
-            z, x_pred, reward, terminal = self.world_model.sequence(mb_obs, mb_actions)
+            z, z_pred, x_pred, reward, terminal = self.world_model.sequence(mb_obs, mb_actions)
 
             '''
             all_obs = []
@@ -539,6 +543,9 @@ class PuffeRL:
             terminal_loss = torch.nn.functional.mse_loss(
                 terminal[:, :-1], mb_terminals[:, 1:])
 
+            dynamics_loss = torch.nn.functional.mse_loss(
+                z_pred[:, :-1], z[:, 1:].detach())
+
             #z_log_probs = torch.nn.functional.log_softmax(z_pred[:, :-1], dim=-1).detach()
             #z_pred_log_probs = torch.nn.functional.log_softmax(z[:, 1:], dim=-1)
             #z_loss = torch.nn.functional.kl_div(z_pred_log_probs, z_log_probs, reduction='batchmean', log_target=True)
@@ -552,6 +559,7 @@ class PuffeRL:
             losses['reconstruction'] += reconstruction_loss.item() / minibatches
             losses['reward_loss'] += reward_loss.item() / minibatches
             losses['terminal_loss'] += terminal_loss.item() / minibatches
+            losses['dynamics_loss'] += dynamics_loss.item() / minibatches
             #losses['z_loss'] += z_loss.item() / self.total_minibatches
 
             # Value
@@ -560,6 +568,7 @@ class PuffeRL:
                 + terminal_loss
                 #+ z_loss
                 #+ world_rep_loss
+                #+ dynamics_loss
                 + reconstruction_loss
             )
 
@@ -653,7 +662,7 @@ class PuffeRL:
                 logits, value = self.policy.forward_eval(x, state)
                 action, logprob, entropy = pufferlib.pytorch.sample_logits(logits)
                 with torch.no_grad():
-                    x, reward, terminal, wm_state = self.world_model.imagine_from_real(
+                    z, x, reward, terminal, wm_state = self.world_model.imagine_from_real(
                         x, action.long(), wm_state)
 
 
@@ -1355,7 +1364,7 @@ def train(env_name, args=None, vecenv=None, policy=None, logger=None):
     # rollouts within a fixed number of epochs)
     i = 0
     stats = {}
-    while i < 32 or not stats:
+    while i < 1024 or not stats:
         stats = pufferl.evaluate()
         i += 1
 
