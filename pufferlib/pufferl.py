@@ -129,11 +129,6 @@ class PuffeRL:
             raise pufferlib.APIUsageError(
                 f'minibatch_size {minibatch_size} > max_minibatch_size {max_minibatch_size} must divide evenly')
 
-        if batch_size < minibatch_size:
-            raise pufferlib.APIUsageError(
-                f'batch_size {batch_size} must be >= minibatch_size {minibatch_size}'
-            )
-
         self.accumulate_minibatches = max(1, minibatch_size // max_minibatch_size)
         self.total_minibatches = int(config['update_epochs'] * batch_size / self.minibatch_size)
         self.minibatch_segments = self.minibatch_size // horizon 
@@ -187,6 +182,7 @@ class PuffeRL:
         # Learning rate scheduler
         epochs = config['total_timesteps'] // config['batch_size']
         self.scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs)
+        self.wm_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(world_optimizer, T_max=epochs)
         self.total_epochs = epochs
 
         # Automatic mixed precision
@@ -326,6 +322,17 @@ class PuffeRL:
         self.ep_indices = torch.arange(self.total_agents, device=device, dtype=torch.int32)
         self.ep_lengths.zero_()
         profile.end()
+
+        sz = self.config['buffer_size']
+        self.wm_observations = torch.cat([
+            self.observations, self.wm_observations], dim=0)[:sz]
+        self.wm_actions = torch.cat([
+            self.actions, self.wm_actions], dim=0)[:sz]
+        self.wm_rewards = torch.cat([
+            self.rewards, self.wm_rewards], dim=0)[:sz]
+        self.wm_terminals = torch.cat([
+            self.terminals, self.wm_terminals], dim=0)[:sz]
+
         return self.stats
 
     @record
@@ -437,6 +444,7 @@ class PuffeRL:
         profile('train_misc', epoch)
         if config['anneal_lr']:
             self.scheduler.step()
+            self.wm_scheduler.step()
 
         #y_pred = self.values.flatten()
         #y_true = advantages.flatten() + self.values.flatten()
@@ -464,22 +472,12 @@ class PuffeRL:
         return logs
 
     def train_world_model(self, losses):
-        sz = self.config['buffer_size']
-        self.wm_observations = torch.cat([
-            self.observations, self.wm_observations], dim=0)[:sz]
-        self.wm_actions = torch.cat([
-            self.actions, self.wm_actions], dim=0)[:sz]
-        self.wm_rewards = torch.cat([
-            self.rewards, self.wm_rewards], dim=0)[:sz]
-        self.wm_terminals = torch.cat([
-            self.terminals, self.wm_terminals], dim=0)[:sz]
-
-
         epoch = self.epoch
         config = self.config
         device = config['device']
 
-        for mb in range(32*self.total_minibatches):
+        minibatches = config['world_model_minibatches']
+        for mb in range(minibatches):
             idx = torch.randint(0, self.wm_observations.shape[0],
                 size=(self.minibatch_segments,), device=device)
             mb_obs = self.wm_observations[idx]
@@ -551,9 +549,9 @@ class PuffeRL:
             #z_loss = torch.nn.functional.mse_loss(z_pred, z.detach())
 
             #losses['world_rep'] += world_rep_loss.item() / self.total_minibatches
-            losses['reconstruction'] += reconstruction_loss.item() / self.total_minibatches
-            losses['reward_loss'] += reward_loss.item() / self.total_minibatches
-            losses['terminal_loss'] += terminal_loss.item() / self.total_minibatches
+            losses['reconstruction'] += reconstruction_loss.item() / minibatches
+            losses['reward_loss'] += reward_loss.item() / minibatches
+            losses['terminal_loss'] += terminal_loss.item() / minibatches
             #losses['z_loss'] += z_loss.item() / self.total_minibatches
 
             # Value
@@ -583,7 +581,8 @@ class PuffeRL:
         vf_clip = config['vf_clip_coef']
         self.ratio[:] = 1
 
-        for mb in range(4*self.total_minibatches):
+        minibatches = config['rl_minibatches']
+        for mb in range(minibatches):
             idx = torch.randint(0, self.wm_observations.shape[0],
                 size=(self.minibatch_segments,), device=device)
             mb_obs = self.wm_observations[idx]
@@ -710,9 +709,9 @@ class PuffeRL:
 
             loss = pg_loss + config['vf_coef']*v_loss - config['ent_coef']*entropy_loss
 
-            losses['policy_loss'] += pg_loss.item() / self.total_minibatches
-            losses['value_loss'] += v_loss.item() / self.total_minibatches
-            losses['entropy'] += entropy_loss.item() / self.total_minibatches
+            losses['policy_loss'] += pg_loss.item() / minibatches
+            losses['value_loss'] += v_loss.item() / minibatches
+            losses['entropy'] += entropy_loss.item() / minibatches
 
             # Learn on accumulated minibatches
             loss.backward()
@@ -1335,6 +1334,10 @@ def train(env_name, args=None, vecenv=None, policy=None, logger=None):
     pufferl = PuffeRL(train_config, vecenv, policy, logger)
 
     all_logs = []
+
+    while pufferl.wm_observations.shape[0] < pufferl.minibatch_segments:
+        pufferl.evaluate()
+
     while pufferl.global_step < train_config['total_timesteps']:
         if train_config['device'] == 'cuda':
             torch.compiler.cudagraph_mark_step_begin()

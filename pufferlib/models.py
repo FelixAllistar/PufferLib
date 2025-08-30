@@ -23,7 +23,7 @@ class SimpleWM(nn.Module):
             nn.GELU(),
             pufferlib.pytorch.layer_init(nn.Linear(2*h, 2*h)),
             nn.GELU(),
-            pufferlib.pytorch.layer_init(nn.Linear(2*h, h)),
+            pufferlib.pytorch.layer_init(nn.Linear(2*h, 2*h)),
         )
 
         self.lstm = nn.LSTM(h, h)
@@ -34,43 +34,42 @@ class SimpleWM(nn.Module):
         self.cell.bias_hh = self.lstm.bias_hh_l0
 
         self.dynamics = torch.nn.Sequential(
-            pufferlib.pytorch.layer_init(nn.Linear(h + atn_dim, 2*h)),
+            pufferlib.pytorch.layer_init(nn.Linear(2*h + atn_dim, h)),
             nn.GELU(),
-            pufferlib.pytorch.layer_init(nn.Linear(2*h, 2*h)),
-            nn.GELU(),
-            pufferlib.pytorch.layer_init(nn.Linear(2*h, x)),
+            pufferlib.pytorch.layer_init(nn.Linear(h, x)),
         )
         self.reward = torch.nn.Sequential(
-            pufferlib.pytorch.layer_init(nn.Linear(h + atn_dim, 2*h)),
+            pufferlib.pytorch.layer_init(nn.Linear(2*h + atn_dim, h)),
             nn.GELU(),
-            pufferlib.pytorch.layer_init(nn.Linear(2*h, 2*h)),
-            nn.GELU(),
-            pufferlib.pytorch.layer_init(nn.Linear(2*h, 1)),
+            pufferlib.pytorch.layer_init(nn.Linear(h, 1)),
         )
         self.terminal = torch.nn.Sequential(
-            pufferlib.pytorch.layer_init(nn.Linear(h + atn_dim, 2*h)),
+            pufferlib.pytorch.layer_init(nn.Linear(2*h + atn_dim, h)),
             nn.GELU(),
-            pufferlib.pytorch.layer_init(nn.Linear(2*h, 2*h)),
-            nn.GELU(),
-            pufferlib.pytorch.layer_init(nn.Linear(2*h, 1)),
+            pufferlib.pytorch.layer_init(nn.Linear(h, 1)),
         )
 
     def sequence(self, x, atns):
         z = self.encoder(x)
-        z, _ = self.lstm(z)
+        half = self.hidden_size
+        z = z[..., :half] + torch.exp(0.5*z[..., half:])*torch.randn_like(z[..., half:], device=z.device)
+        
+        h, _ = self.lstm(z)
         atns = torch.nn.functional.one_hot(atns, self.atn_dim)
-        ha = torch.cat([z, atns], dim=-1)
+        ha = torch.cat([z, h, atns], dim=-1)
         x_pred = self.dynamics(ha)
         reward = self.reward(ha).squeeze(-1)
         terminal = self.terminal(ha).squeeze(-1)
-        return z, x_pred, reward, terminal
+        return h, x_pred, reward, terminal
 
     def imagine_from_real(self, x, atn, state):
         z = self.encoder(x)
-        z, c = self.cell(z, state)
-        state = (z, c)
+        half = self.hidden_size
+        z = z[..., :half] + torch.exp(0.5*z[..., half:])*torch.randn_like(z[..., half:], device=z.device)
+        h, c = self.cell(z, state)
+        state = (h, c)
         atn = torch.nn.functional.one_hot(atn, self.atn_dim)
-        ha = torch.cat([z, atn], dim=-1)
+        ha = torch.cat([z, h, atn], dim=-1)
         x_pred = self.dynamics(ha)
         reward = self.reward(ha)
         terminal = self.terminal(ha)
