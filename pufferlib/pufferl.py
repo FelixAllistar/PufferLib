@@ -389,10 +389,12 @@ class PuffeRL:
 
             profile('train_copy', epoch)
             adv = advantages.abs().sum(axis=1)
-            prio_weights = torch.nan_to_num(adv**a, 0, 0, 0)
-            prio_probs = (prio_weights + 1e-6)/(prio_weights.sum() + 1e-6)
-            idx = torch.multinomial(prio_probs, self.minibatch_segments)
-            mb_prio = (self.segments*prio_probs[idx, None])**-anneal_beta
+            #prio_weights = torch.nan_to_num(adv**a, 0, 0, 0)
+            #prio_probs = (prio_weights + 1e-6)/(prio_weights.sum() + 1e-6)
+            #idx = torch.multinomial(prio_probs, self.minibatch_segments)
+            n = self.gold_observations.shape[0]
+            idx = torch.randint(0, n, (self.minibatch_segments,), device=device)
+            #mb_prio = (self.segments*prio_probs[idx, None])**-anneal_beta
             mb_obs = self.gold_observations[idx]
             mb_actions = self.gold_actions[idx]
             mb_logprobs = self.gold_logprobs[idx]
@@ -434,7 +436,8 @@ class PuffeRL:
             #il_loss = (mb_prio * adv * il).mean()
 
             # Losses
-            adv = mb_prio * (adv - adv.mean()) / (adv.std() + 1e-8)
+            #adv = mb_prio * (adv - adv.mean()) / (adv.std() + 1e-8)
+            adv = (adv - adv.mean()) / (adv.std() + 1e-8)
             pg_loss1 = -adv * ratio
             pg_loss2 = -adv * torch.clamp(ratio, 1 - config['clip_coef'], 1 + config['clip_coef'])
             pg_loss = torch.max(pg_loss1, pg_loss2).mean()
