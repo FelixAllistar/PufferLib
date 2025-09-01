@@ -8,6 +8,27 @@ import pufferlib.emulation
 import pufferlib.pytorch
 import pufferlib.spaces
 
+class ResEnc(nn.Module):
+    def __init__(self, env, hidden_size=128, blocks=2):
+        super().__init__()
+        self.hidden_size = hidden_size
+        self.nets = nn.ModuleList([
+            nn.Sequential(
+                nn.GELU(),
+                pufferlib.pytorch.layer_init(nn.Linear(
+                    hidden_size, hidden_size)),
+                nn.GELU(),
+                pufferlib.pytorch.layer_init(nn.Linear(
+                    hidden_size, hidden_size)),
+            )
+            for _ in range(blocks)
+        ])
+
+    def forward(self, x):
+        for module in self.nets:
+            x = module(x) + x
+
+        return x
 
 class Default(nn.Module):
     '''Default PyTorch policy. Flattens obs and applies a linear layer.
@@ -41,8 +62,8 @@ class Default(nn.Module):
             num_obs = np.prod(env.single_observation_space.shape)
             self.encoder = torch.nn.Sequential(
                 pufferlib.pytorch.layer_init(nn.Linear(num_obs, hidden_size)),
-                nn.GELU(),
             )
+            self.block = ResEnc(env, hidden_size=self.hidden_size)
             
         if self.is_multidiscrete:
             self.action_nvec = tuple(env.single_action_space.nvec)
@@ -79,7 +100,9 @@ class Default(nn.Module):
             observations = torch.cat([v.view(batch_size, -1) for v in observations.values()], dim=1)
         else: 
             observations = observations.view(batch_size, -1)
-        return self.encoder(observations.float())
+        hidden = self.encoder(observations.float())
+        hidden = self.block(hidden)
+        return hidden
 
     def decode_actions(self, hidden):
         '''Decodes a batch of hidden states into (multi)discrete actions.
