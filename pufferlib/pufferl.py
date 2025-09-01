@@ -329,6 +329,9 @@ class PuffeRL:
         anneal_beta = b0 + (1 - b0)*a*self.epoch/self.total_epochs
         self.ratio[:] = 1
 
+        config['gamma'] = cosine_decay(config['gamma0'], config['gamma_scale'], self.epoch, self.total_epochs)
+        config['gae_lambda'] = cosine_decay(config['gae_lambda0'], config['gae_lambda_scale'], self.epoch, self.total_epochs)
+
         for mb in range(self.total_minibatches):
             profile('train_misc', epoch, nest=True)
             self.amp_context.__enter__()
@@ -777,6 +780,10 @@ class Utilization(Thread):
 
     def stop(self):
         self.stopped = True
+
+def cosine_decay(start, scale, step, max_steps):
+    stop = 1.0 - (1.0 - start)/scale
+    return start + 0.5*(stop - start)*(1 + np.cos(np.pi*step/max_steps))
 
 def downsample(arr, m):
     if len(arr) < m:
