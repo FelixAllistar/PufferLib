@@ -119,13 +119,7 @@ class PuffeRL:
             raise pufferlib.APIUsageError(
                 f'minibatch_size {minibatch_size} > max_minibatch_size {max_minibatch_size} must divide evenly')
 
-        if batch_size < minibatch_size:
-            raise pufferlib.APIUsageError(
-                f'batch_size {batch_size} must be >= minibatch_size {minibatch_size}'
-            )
-
         self.accumulate_minibatches = max(1, minibatch_size // max_minibatch_size)
-        self.total_minibatches = int(config['update_epochs'] * batch_size / self.minibatch_size)
         self.minibatch_segments = self.minibatch_size // horizon 
         if self.minibatch_segments * horizon != self.minibatch_size:
             raise pufferlib.APIUsageError(
@@ -332,7 +326,7 @@ class PuffeRL:
         config['gamma'] = cosine_decay(config['gamma0'], config['gamma_scale'], self.epoch, self.total_epochs)
         config['gae_lambda'] = cosine_decay(config['gae_lambda0'], config['gae_lambda_scale'], self.epoch, self.total_epochs)
 
-        for mb in range(self.total_minibatches):
+        for mb in range(config['num_minibatches']):
             profile('train_misc', epoch, nest=True)
             self.amp_context.__enter__()
 
@@ -346,7 +340,7 @@ class PuffeRL:
             adv = advantages.abs().sum(axis=1)
             prio_weights = torch.nan_to_num(adv**a, 0, 0, 0)
             prio_probs = (prio_weights + 1e-6)/(prio_weights.sum() + 1e-6)
-            idx = torch.multinomial(prio_probs, self.minibatch_segments)
+            idx = torch.multinomial(prio_probs, self.minibatch_segments, replacement=True)
             mb_prio = (self.segments*prio_probs[idx, None])**-anneal_beta
             mb_obs = self.observations[idx]
             mb_actions = self.actions[idx]
@@ -411,13 +405,13 @@ class PuffeRL:
 
             # Logging
             profile('train_misc', epoch)
-            losses['policy_loss'] += pg_loss.item() / self.total_minibatches
-            losses['value_loss'] += v_loss.item() / self.total_minibatches
-            losses['entropy'] += entropy_loss.item() / self.total_minibatches
-            losses['old_approx_kl'] += old_approx_kl.item() / self.total_minibatches
-            losses['approx_kl'] += approx_kl.item() / self.total_minibatches
-            losses['clipfrac'] += clipfrac.item() / self.total_minibatches
-            losses['importance'] += ratio.mean().item() / self.total_minibatches
+            losses['policy_loss'] += pg_loss.item() / config['num_minibatches']
+            losses['value_loss'] += v_loss.item() / config['num_minibatches']
+            losses['entropy'] += entropy_loss.item() / config['num_minibatches']
+            losses['old_approx_kl'] += old_approx_kl.item() / config['num_minibatches']
+            losses['approx_kl'] += approx_kl.item() / config['num_minibatches']
+            losses['clipfrac'] += clipfrac.item() / config['num_minibatches']
+            losses['importance'] += ratio.mean().item() / config['num_minibatches']
 
             # Learn on accumulated minibatches
             profile('learn', epoch)
@@ -782,11 +776,14 @@ class Utilization(Thread):
         self.stopped = True
 
 def cosine_decay(start, scale, step, max_steps):
+    if scale == 0:
+        return start
+
     stop = 1.0 - (1.0 - start)/scale
     return start + 0.5*(stop - start)*(1 + np.cos(np.pi*step/max_steps))
 
 def downsample(arr, m):
-    if len(arr) < m:
+    if len(arr) <= m:
         return arr
 
     if m == 0:
@@ -799,7 +796,10 @@ def downsample(arr, m):
     n = len(arr)
     n = (n//m)*m
     arr = arr[-n:]
-    downsampled = arr.reshape(m, -1).mean(axis=1)
+    try:
+        downsampled = arr.reshape(m, -1).mean(axis=1)
+    except:
+        breakpoint()
     return np.concatenate([downsampled, [last]])
 
 class NoLogger:
@@ -916,6 +916,9 @@ def train(env_name, args=None, vecenv=None, policy=None, logger=None):
 
     all_logs = []
     while pufferl.global_step < train_config['total_timesteps']:
+        if train_config['timeout'] != -1 and pufferl.uptime > train_config['timeout']:
+            break
+
         if train_config['device'] == 'cuda':
             torch.compiler.cudagraph_mark_step_begin()
         pufferl.evaluate()
@@ -1003,7 +1006,7 @@ def eval(env_name, args=None, vecenv=None, policy=None):
 
 def sweep(args=None, env_name=None):
     args = args or load_config(env_name)
-    if not args['wandb'] and not args['neptune']:
+    if not args['wandb'] and not args['neptune'] and not args['local']:
         raise pufferlib.APIUsageError('Sweeps require either wandb or neptune')
 
     method = args['sweep'].pop('method')
@@ -1025,7 +1028,10 @@ def sweep(args=None, env_name=None):
         all_logs = train(env_name, args=args)
         all_logs = [e for e in all_logs if target_key in e]
         scores = downsample([log[target_key] for log in all_logs], points_per_run)
-        costs = downsample([log['uptime'] for log in all_logs], points_per_run)
+        times = downsample([log['uptime'] for log in all_logs], points_per_run)
+        steps = downsample([log['agent_steps'] for log in all_logs], points_per_run)
+        costs = np.stack([times, steps], axis=1)
+        #costs = downsample([log['agent_steps'] for log in all_logs], points_per_run)
         timesteps = downsample([log['agent_steps'] for log in all_logs], points_per_run)
         for score, cost, timestep in zip(scores, costs, timesteps):
             args['train']['total_timesteps'] = timestep
@@ -1095,7 +1101,7 @@ def load_policy(args, vecenv, env_name=''):
     rnn_name = args['rnn_name']
     if rnn_name is not None:
         rnn_cls = getattr(env_module.torch, args['rnn_name'])
-        policy = rnn_cls(vecenv.driver_env, policy, **args['rnn'])
+        policy = rnn_cls(vecenv.driver_env, policy, **args['policy'])
 
     policy = policy.to(device)
 
@@ -1141,6 +1147,7 @@ def load_config(env_name):
     parser.add_argument('--gif-path', type=str, default='eval.gif')
     parser.add_argument('--fps', type=float, default=15)
     parser.add_argument('--max-runs', type=int, default=200, help='Max number of sweep runs')
+    parser.add_argument('--local', action='store_true', help='Force no logging backend')
     parser.add_argument('--wandb', action='store_true', help='Use wandb for logging')
     parser.add_argument('--wandb-project', type=str, default='pufferlib')
     parser.add_argument('--wandb-group', type=str, default='debug')

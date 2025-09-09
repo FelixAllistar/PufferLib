@@ -42,9 +42,10 @@ class Default(nn.Module):
     the recurrent cell into encode_observations and put everything after
     into decode_actions.
     '''
-    def __init__(self, env, hidden_size=128):
+    def __init__(self, env, hidden_size=128, blocks=0):
         super().__init__()
         self.hidden_size = hidden_size
+        self.blocks = blocks
         self.is_multidiscrete = isinstance(env.single_action_space,
                 pufferlib.spaces.MultiDiscrete)
         self.is_continuous = isinstance(env.single_action_space,
@@ -63,7 +64,8 @@ class Default(nn.Module):
             self.encoder = torch.nn.Sequential(
                 pufferlib.pytorch.layer_init(nn.Linear(num_obs, hidden_size)),
             )
-            self.block = ResEnc(env, hidden_size=self.hidden_size)
+            if blocks > 0:
+                self.block = ResEnc(env, hidden_size=self.hidden_size)
             
         if self.is_multidiscrete:
             self.action_nvec = tuple(env.single_action_space.nvec)
@@ -101,7 +103,8 @@ class Default(nn.Module):
         else: 
             observations = observations.view(batch_size, -1)
         hidden = self.encoder(observations.float())
-        hidden = self.block(hidden)
+        if self.blocks > 0:
+            hidden = self.block(hidden)
         return hidden
 
     def decode_actions(self, hidden):
@@ -121,7 +124,7 @@ class Default(nn.Module):
         return logits, values
 
 class LSTMWrapper(nn.Module):
-    def __init__(self, env, policy, input_size=128, hidden_size=128):
+    def __init__(self, env, policy, hidden_size=128):
         '''Wraps your policy with an LSTM without letting you shoot yourself in the
         foot with bad transpose and shape operations. This saves much pain.
         Requires that your policy define encode_observations and decode_actions.
@@ -130,6 +133,7 @@ class LSTMWrapper(nn.Module):
         self.obs_shape = env.single_observation_space.shape
 
         self.policy = policy
+        input_size = hidden_size
         self.input_size = input_size
         self.hidden_size = hidden_size
         self.is_continuous = self.policy.is_continuous
