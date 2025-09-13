@@ -98,11 +98,23 @@ def plot_lines(fig, xx, yy):
 def scatter(fig, x, y, c, legend='Trial', log_x=False, i=0):
     mmin = min(c)
     mmax = max(c)
-    vals = [(c - mmin)/(mmax - mmin) for c in c]
-    vals = [max(0.1, v) for v in vals]
-    colors = [f'rgb(0, 0, {c})' for c in vals]
+    #vals = [(c - mmin)/(mmax - mmin) for c in c]
+    #vals = [max(0.01, v) for v in vals]
 
-    c = (np.array(c) - min(c))/(max(c) - min(c))
+    colors = []
+    for e in c:
+        if e > 0.95*mmax:
+            v = 1.0
+        elif e > 0.9*mmax:
+            v = 0.6
+        elif e > 0.5*mmax:
+            v = 0.3
+        else:
+            v = 0
+
+        colors.append(f'rgb(0, 0.5, {v})')
+
+    #c = (np.array(c) - min(c))/(max(c) - min(c))
     fig.add_trace(
         go.Scatter(
             x=x,
@@ -148,7 +160,11 @@ def pareto_points(steps, costs, scores):
     pareto_steps = []
     pareto_costs = []
     pareto_scores = []
+    max_score = max(scores)
     for i in range(len(steps)):
+        if scores[i] < 0.25*max_score:
+            continue 
+
         higher_score = [s for s in scores if s > scores[i]]
         lower_steps = [s for s in steps if s < scores[i]]
         lower_cost = [c for c in costs if c < costs[i]]
@@ -165,10 +181,6 @@ def pareto_points(steps, costs, scores):
     pareto_costs = [pareto_costs[i] for i in idxs]
     pareto_scores = [pareto_scores[i] for i in idxs]
     return pareto_steps, pareto_costs, pareto_scores
-
-# Load data
-with open('puffer_pong_learning_rate.npz', 'r') as f:
-    experiments = json.load(f)
 
 def load_seed_data(filename):
     with open(filename, 'r') as f:
@@ -229,18 +241,18 @@ def load_sweep_data(path):
 
 def layout():
     fig1 = figure(title='Hyperparameter Ablation', xlabel='Learning Rate', legend='Ablate', xaxis_type='log')
-    all_hyper, all_perf = load_hyper_data('puffer_pong_learning_rate.npz')
-    plot_group(fig1, all_hyper, all_perf, legend='Pong')
-    all_hyper, all_perf = load_hyper_data('puffer_breakout_learning_rate.npz')
-    plot_group(fig1, all_hyper, all_perf, legend='Breakout', i=1)
+    #all_hyper, all_perf = load_hyper_data('puffer_pong_learning_rate.npz')
+    #plot_group(fig1, all_hyper, all_perf, legend='Pong')
+    #all_hyper, all_perf = load_hyper_data('puffer_breakout_learning_rate.npz')
+    #plot_group(fig1, all_hyper, all_perf, legend='Breakout', i=1)
 
     fig2 = figure(title='Seed Sensitivity', xlabel='Uptime', legend='Ablate')
-    all_uptime, all_perf = load_seed_data('puffer_pong_seeds.npz')
-    plot_group(fig2, all_uptime, all_perf, legend='Pong')
-    all_uptime, all_perf = load_seed_data('puffer_breakout_seeds.npz')
-    plot_group(fig2, all_uptime, all_perf, legend='Breakout', i=1)
-    all_uptime, all_perf = load_seed_data('puffer_connect4_seeds.npz')
-    plot_group(fig2, all_uptime, all_perf, legend='Connect4', i=2)
+    #all_uptime, all_perf = load_seed_data('puffer_pong_seeds.npz')
+    #plot_group(fig2, all_uptime, all_perf, legend='Pong')
+    #all_uptime, all_perf = load_seed_data('puffer_breakout_seeds.npz')
+    #plot_group(fig2, all_uptime, all_perf, legend='Breakout', i=1)
+    #all_uptime, all_perf = load_seed_data('puffer_connect4_seeds.npz')
+    #plot_group(fig2, all_uptime, all_perf, legend='Connect4', i=2)
 
     fig3 = figure(title='Sweep', xlabel='Steps', ylabel='Cost', legend='Trial')
     steps, costs, scores = load_sweep_data('experiments/logs/puffer_pong/*.json')
@@ -264,4 +276,4 @@ app = Dash()
 # Set layout with static graph
 app.layout = layout
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8000)
+    app.run(host='0.0.0.0', port=8080)

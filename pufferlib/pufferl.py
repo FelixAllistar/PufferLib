@@ -429,8 +429,10 @@ class PuffeRL:
         y_pred = self.values.flatten()
         y_true = advantages.flatten() + self.values.flatten()
         var_y = y_true.var()
-        explained_var = torch.nan if var_y == 0 else 1 - (y_true - y_pred).var() / var_y
-        losses['explained_variance'] = explained_var.item()
+        if var_y == 0:
+            losses['explained_variance'] = torch.nan
+        else:
+            losses['explained_variance'] = (1 - (y_true - y_pred).var()/var_y).item()
 
         profile.end()
         logs = None
@@ -940,6 +942,7 @@ def train(env_name, args=None, vecenv=None, policy=None, logger=None):
     cost = pufferl.uptime
     i = 0
     stats = {}
+    agent_steps = pufferl.global_step
     while i < 32 or not stats:
         stats = pufferl.evaluate()
         i += 1
@@ -948,11 +951,11 @@ def train(env_name, args=None, vecenv=None, policy=None, logger=None):
     if logs is not None:
         all_logs.append(logs)
 
-    pufferl.print_dashboard()
+    #pufferl.print_dashboard()
     model_path = pufferl.close()
     pufferl.logger.log_cost(cost)
     pufferl.logger.close(model_path)
-    return all_logs
+    return all_logs, agent_steps
 
 def eval(env_name, args=None, vecenv=None, policy=None):
     args = args or load_config(env_name)
@@ -1068,9 +1071,8 @@ def _sweep_worker(env_name, q_host, q_worker, device):
 def multisweep(args=None, env_name=None):
     args = args or load_config(env_name)
     sweep_gpus = args['sweep_gpus']
-
-    if not args['wandb'] and not args['neptune'] and not args['local']:
-        raise pufferlib.APIUsageError('Sweeps require either wandb or neptune')
+    if sweep_gpus == -1:
+        sweep_gpus = torch.cuda.device_count()
 
     method = args['sweep'].pop('method')
     try:
@@ -1110,13 +1112,15 @@ def multisweep(args=None, env_name=None):
         worker_queues[w].put(args)
 
     runs = 0
+
+    suggestion = deepcopy(args)
     while runs < args['max_runs']:
         for w in range(sweep_gpus):
             args = worker_args[w]
             if host_queues[w].empty():
                 continue
 
-            all_logs = host_queues[w].get(timeout=0)
+            all_logs, agent_steps = host_queues[w].get(timeout=0)
             if not all_logs:
                 continue
 
@@ -1125,7 +1129,9 @@ def multisweep(args=None, env_name=None):
             times = downsample([log['uptime'] for log in all_logs], points_per_run)
             steps = downsample([log['agent_steps'] for log in all_logs], points_per_run)
             costs = np.stack([times, steps], axis=1)
-            timesteps = downsample([log['agent_steps'] for log in all_logs], points_per_run)
+            timesteps = [log['agent_steps'] for log in all_logs]
+            timesteps[-1] = agent_steps
+            timesteps = downsample(timesteps, points_per_run)
             for score, cost, timestep in zip(scores, costs, timesteps):
                 args['train']['total_timesteps'] = timestep
                 sweep.observe(args, score, cost)
@@ -1133,7 +1139,6 @@ def multisweep(args=None, env_name=None):
             runs += 1
 
             sweep.suggest(args)
-            total_timesteps = args['train']['total_timesteps']
             worker_queues[w].put(args)
 
 def profile(args=None, env_name=None, vecenv=None, policy=None):
@@ -1243,7 +1248,7 @@ def load_config(env_name):
     parser.add_argument('--save-frames', type=int, default=0)
     parser.add_argument('--gif-path', type=str, default='eval.gif')
     parser.add_argument('--fps', type=float, default=15)
-    parser.add_argument('--max-runs', type=int, default=200, help='Max number of sweep runs')
+    parser.add_argument('--max-runs', type=int, default=500, help='Max number of sweep runs')
     parser.add_argument('--wandb', action='store_true', help='Use wandb for logging')
     parser.add_argument('--wandb-project', type=str, default='pufferlib')
     parser.add_argument('--wandb-group', type=str, default='debug')
@@ -1251,7 +1256,7 @@ def load_config(env_name):
     parser.add_argument('--neptune-name', type=str, default='pufferai')
     parser.add_argument('--neptune-project', type=str, default='ablations')
     parser.add_argument('--local-rank', type=int, default=0, help='Used by torchrun for DDP')
-    parser.add_argument('--sweep-gpus', type=int, default=1, help='multigpu sweeps')
+    parser.add_argument('--sweep-gpus', type=int, default=-1, help='multigpu sweeps')
     parser.add_argument('--tag', type=str, default=None, help='Tag for experiment')
     args = parser.parse_known_args()[0]
 

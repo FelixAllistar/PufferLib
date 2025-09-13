@@ -220,11 +220,15 @@ class Hyperparameters:
 def pareto_points(observations, eps=1e-6):
     scores = np.array([e['output'] for e in observations])
     costs = np.array([e['cost'] for e in observations])
+    max_score = scores.max()
     pareto = []
     idxs = []
     for idx, obs in enumerate(observations):
+        if scores[idx] < 0.25*max_score:
+            continue # Eliminate very bad points
+
         higher_score = scores + eps > scores[idx]
-        lower_cost = (costs - eps < costs[idx]).any(axis=-1)
+        lower_cost = (costs - eps < costs[idx]).all(axis=-1)
         better = higher_score & lower_cost
         better[idx] = False
         if not better.any():
@@ -336,6 +340,7 @@ class Protein:
             suggestions_per_pareto = 256,
             seed_with_search_center = True,
             expansion_rate = 0.25,
+            buffer_size = 10,
         ):
         self.hyperparameters = Hyperparameters(sweep_config)
         self.num_random_samples = num_random_samples
@@ -345,6 +350,8 @@ class Protein:
         self.seed_with_search_center = seed_with_search_center
         self.resample_frequency = resample_frequency
         self.expansion_rate = expansion_rate
+        self.buffer_size = buffer_size 
+        self.buffer = []
 
         self.success_observations = []
         self.failure_observations = []
@@ -355,6 +362,11 @@ class Protein:
 
     def suggest(self, fill):
         # TODO: Clip random samples to bounds so we don't get bad high cost samples
+        if len(self.buffer) > 0:
+            suggestion = self.buffer.pop()
+            print('Suggested')
+            return self.hyperparameters.to_dict(suggestion, fill), {}
+
         info = {}
         self.suggestion_idx += 1
         if len(self.success_observations) == 0 and self.seed_with_search_center:
@@ -446,7 +458,10 @@ class Protein:
         suggestion_scores = self.hyperparameters.optimize_direction * (
                 gp_y_norm*weight)
 
-        best_idx = np.argmax(suggestion_scores)
+        idxs = np.argsort(suggestion_scores)[::-1][:self.buffer_size]
+        best_idx = idxs[0]
+        self.buffer = [suggestions[i].numpy() for i in idxs[1:]]
+        
         info = dict(
             cost = gp_c[best_idx].tolist(),
             score = gp_y[best_idx].item(),
