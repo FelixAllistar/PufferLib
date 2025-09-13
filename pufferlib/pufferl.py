@@ -994,6 +994,12 @@ def eval(env_name, args=None, vecenv=None, policy=None):
             imageio.mimsave(args['gif_path'], frames, fps=args['fps'], loop=0)
             frames.append('Done')
 
+def seed_everything():
+    seed = time.time_ns() & 0xFFFFFFFF
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+
 def sweep(args=None, env_name=None):
     args = args or load_config(env_name)
     if not args['wandb'] and not args['neptune']:
@@ -1009,10 +1015,7 @@ def sweep(args=None, env_name=None):
     points_per_run = args['sweep']['downsample']
     target_key = f'environment/{args["sweep"]["metric"]}'
     for i in range(args['max_runs']):
-        seed = time.time_ns() & 0xFFFFFFFF
-        random.seed(seed)
-        np.random.seed(seed)
-        torch.manual_seed(seed)
+        seed_everything()
         sweep.suggest(args)
         total_timesteps = args['train']['total_timesteps']
         all_logs = train(env_name, args=args)
