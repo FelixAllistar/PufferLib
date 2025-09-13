@@ -43,7 +43,6 @@ LEGEND_FONT = dict(
 def rgba(hex, alpha):
     return f"rgba({int(hex[1:3], 16)}, {int(hex[3:5], 16)}, {int(hex[5:7], 16)}, {alpha})"
 
-
 def mean_conf(xx, yy):
     x_min = min([min(x) for x in xx])
     x_max = max([max(x) for x in xx])
@@ -61,13 +60,13 @@ def mean_conf(xx, yy):
     return x, mean, conf
 
 def figure(title='The Puffer Frontier Project',
-           xlabel='Uptime', ylabel='Performance',
+           xlabel='Uptime', ylabel='Score',
            legend='Trial', xaxis_type='linear'):
     fig = go.Figure()
     fig.update_layout(
         title=dict(text=title, font=TITLE_FONT),
         xaxis=dict(title=dict(text=xlabel, font=AXIS_FONT), tickfont=TICK_FONT),
-        yaxis=dict(title=dict(text='Normalized Score', font=AXIS_FONT), tickfont=TICK_FONT),
+        yaxis=dict(title=dict(text=ylabel, font=AXIS_FONT), tickfont=TICK_FONT),
         xaxis_type=xaxis_type,
         showlegend=True,
         legend=dict(font=LEGEND_FONT),
@@ -96,6 +95,27 @@ def plot_lines(fig, xx, yy):
             )
          )
 
+def scatter(fig, x, y, c, legend='Trial', log_x=False, i=0):
+    mmin = min(c)
+    mmax = max(c)
+    vals = [(c - mmin)/(mmax - mmin) for c in c]
+    vals = [max(0.1, v) for v in vals]
+    colors = [f'rgb(0, 0, {c})' for c in vals]
+
+    c = (np.array(c) - min(c))/(max(c) - min(c))
+    fig.add_trace(
+        go.Scatter(
+            x=x,
+            y=y,
+            mode='markers',
+            name=legend,
+            marker=dict(
+                color=colors,
+                size=10
+            )
+        )
+    )
+
 def plot_group(fig, xx, yy, xlabel='Performance', legend='Trial', log_x=False, i=0):
     x, mean, conf = mean_conf(xx, yy)
     fig.add_trace(
@@ -123,6 +143,28 @@ def plot_group(fig, xx, yy, xlabel='Performance', legend='Trial', log_x=False, i
             )
         )
     )
+
+def pareto_points(steps, costs, scores):
+    pareto_steps = []
+    pareto_costs = []
+    pareto_scores = []
+    for i in range(len(steps)):
+        higher_score = [s for s in scores if s > scores[i]]
+        lower_steps = [s for s in steps if s < scores[i]]
+        lower_cost = [c for c in costs if c < costs[i]]
+        better = [scores[j] > scores[i] and 
+            costs[j] < costs[i] and steps[j] < steps[i]
+            for j in range(len(scores))]
+        if not any(better):
+            pareto_steps.append(steps[i])
+            pareto_costs.append(costs[i])
+            pareto_scores.append(scores[i])
+
+    idxs = np.argsort(pareto_steps)
+    pareto_steps = [pareto_steps[i] for i in idxs]
+    pareto_costs = [pareto_costs[i] for i in idxs]
+    pareto_scores = [pareto_scores[i] for i in idxs]
+    return pareto_steps, pareto_costs, pareto_scores
 
 # Load data
 with open('puffer_pong_learning_rate.npz', 'r') as f:
@@ -166,31 +208,60 @@ def load_hyper_data(filename):
     all_perf = np.array(all_perf).reshape(3, -1)
     return all_hyper, all_perf
 
-fig1 = figure(title='Hyperparameter Ablation', xlabel='Learning Rate', legend='Ablate', xaxis_type='log')
-all_hyper, all_perf = load_hyper_data('puffer_pong_learning_rate.npz')
-plot_group(fig1, all_hyper, all_perf, legend='Pong')
-all_hyper, all_perf = load_hyper_data('puffer_breakout_learning_rate.npz')
-plot_group(fig1, all_hyper, all_perf, legend='Breakout', i=1)
+def load_sweep_data(path):
+    import glob
+    costs = []
+    steps = []
+    scores = []
+    for fpath in glob.glob(path):
+        with open(fpath, 'r') as f:
+            exp = json.load(f)
 
-fig2 = figure(title='Seed Sensitivity', xlabel='Uptime', legend='Ablate')
-all_uptime, all_perf = load_seed_data('puffer_pong_seeds.npz')
-plot_group(fig2, all_uptime, all_perf, legend='Pong')
-all_uptime, all_perf = load_seed_data('puffer_breakout_seeds.npz')
-plot_group(fig2, all_uptime, all_perf, legend='Breakout', i=1)
-all_uptime, all_perf = load_seed_data('puffer_connect4_seeds.npz')
-plot_group(fig2, all_uptime, all_perf, legend='Connect4', i=2)
+        cost = exp['cost']
+        step = exp['total_timesteps']
+        score = exp['data'][-1]['environment/score']
+        costs.append(cost)
+        steps.append(step)
+        scores.append(score)
+
+    return steps, costs, scores
+
+
+def layout():
+    fig1 = figure(title='Hyperparameter Ablation', xlabel='Learning Rate', legend='Ablate', xaxis_type='log')
+    all_hyper, all_perf = load_hyper_data('puffer_pong_learning_rate.npz')
+    plot_group(fig1, all_hyper, all_perf, legend='Pong')
+    all_hyper, all_perf = load_hyper_data('puffer_breakout_learning_rate.npz')
+    plot_group(fig1, all_hyper, all_perf, legend='Breakout', i=1)
+
+    fig2 = figure(title='Seed Sensitivity', xlabel='Uptime', legend='Ablate')
+    all_uptime, all_perf = load_seed_data('puffer_pong_seeds.npz')
+    plot_group(fig2, all_uptime, all_perf, legend='Pong')
+    all_uptime, all_perf = load_seed_data('puffer_breakout_seeds.npz')
+    plot_group(fig2, all_uptime, all_perf, legend='Breakout', i=1)
+    all_uptime, all_perf = load_seed_data('puffer_connect4_seeds.npz')
+    plot_group(fig2, all_uptime, all_perf, legend='Connect4', i=2)
+
+    fig3 = figure(title='Sweep', xlabel='Steps', ylabel='Cost', legend='Trial')
+    steps, costs, scores = load_sweep_data('experiments/logs/puffer_pong/*.json')
+    pareto_steps, pareto_costs, pareto_scores = pareto_points(steps, costs, scores)
+    plot_lines(fig3, [pareto_steps], [pareto_costs])
+    scatter(fig3, steps, costs, scores, legend='Pong')
+    layout = html.Div([
+        html.H1('The Puffer Frontier Project', style={'textAlign': 'center'}),
+        dcc.Graph(figure=fig1),
+        html.Br(),
+        dcc.Graph(figure=fig2),
+        dcc.Graph(figure=fig3)
+    ])
+    return layout
+
 
 
 # Initialize Dash app
 app = Dash()
 
 # Set layout with static graph
-app.layout = html.Div([
-    html.H1('The Puffer Frontier Project', style={'textAlign': 'center'}),
-    dcc.Graph(figure=fig1),
-    html.Br(),
-    dcc.Graph(figure=fig2)
-])
-
+app.layout = layout
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8000)

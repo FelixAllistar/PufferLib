@@ -119,13 +119,7 @@ class PuffeRL:
             raise pufferlib.APIUsageError(
                 f'minibatch_size {minibatch_size} > max_minibatch_size {max_minibatch_size} must divide evenly')
 
-        if batch_size < minibatch_size:
-            raise pufferlib.APIUsageError(
-                f'batch_size {batch_size} must be >= minibatch_size {minibatch_size}'
-            )
-
         self.accumulate_minibatches = max(1, minibatch_size // max_minibatch_size)
-        self.total_minibatches = int(config['update_epochs'] * batch_size / self.minibatch_size)
         self.minibatch_segments = self.minibatch_size // horizon 
         if self.minibatch_segments * horizon != self.minibatch_size:
             raise pufferlib.APIUsageError(
@@ -167,7 +161,7 @@ class PuffeRL:
         # Logging
         self.logger = logger
         if logger is None:
-            self.logger = NoLogger(config)
+            self.logger = Logger(config)
 
         # Learning rate scheduler
         epochs = config['total_timesteps'] // config['batch_size']
@@ -329,7 +323,8 @@ class PuffeRL:
         anneal_beta = b0 + (1 - b0)*a*self.epoch/self.total_epochs
         self.ratio[:] = 1
 
-        for mb in range(self.total_minibatches):
+        minibatches = config['num_minibatches']
+        for mb in range(minibatches):
             profile('train_misc', epoch, nest=True)
             self.amp_context.__enter__()
 
@@ -343,7 +338,8 @@ class PuffeRL:
             adv = advantages.abs().sum(axis=1)
             prio_weights = torch.nan_to_num(adv**a, 0, 0, 0)
             prio_probs = (prio_weights + 1e-6)/(prio_weights.sum() + 1e-6)
-            idx = torch.multinomial(prio_probs, self.minibatch_segments)
+            idx = torch.multinomial(prio_probs,
+                self.minibatch_segments, replacement=True)
             mb_prio = (self.segments*prio_probs[idx, None])**-anneal_beta
             mb_obs = self.observations[idx]
             mb_actions = self.actions[idx]
@@ -408,19 +404,20 @@ class PuffeRL:
 
             # Logging
             profile('train_misc', epoch)
-            losses['policy_loss'] += pg_loss.item() / self.total_minibatches
-            losses['value_loss'] += v_loss.item() / self.total_minibatches
-            losses['entropy'] += entropy_loss.item() / self.total_minibatches
-            losses['old_approx_kl'] += old_approx_kl.item() / self.total_minibatches
-            losses['approx_kl'] += approx_kl.item() / self.total_minibatches
-            losses['clipfrac'] += clipfrac.item() / self.total_minibatches
-            losses['importance'] += ratio.mean().item() / self.total_minibatches
+            losses['policy_loss'] += pg_loss.item() / minibatches
+            losses['value_loss'] += v_loss.item() / minibatches
+            losses['entropy'] += entropy_loss.item() / minibatches
+            losses['old_approx_kl'] += old_approx_kl.item() / minibatches
+            losses['approx_kl'] += approx_kl.item() / minibatches
+            losses['clipfrac'] += clipfrac.item() / minibatches
+            losses['importance'] += ratio.mean().item() / minibatches
 
             # Learn on accumulated minibatches
             profile('learn', epoch)
             loss.backward()
             if (mb + 1) % self.accumulate_minibatches == 0:
-                torch.nn.utils.clip_grad_norm_(self.policy.parameters(), config['max_grad_norm'])
+                torch.nn.utils.clip_grad_norm_(
+                    self.policy.parameters(), config['max_grad_norm'])
                 self.optimizer.step()
                 self.optimizer.zero_grad()
 
@@ -496,7 +493,8 @@ class PuffeRL:
         self.utilization.stop()
         model_path = self.save_checkpoint()
         run_id = self.logger.run_id
-        path = os.path.join(self.config['data_dir'], f'{self.config["env"]}_{run_id}.pt')
+        path = os.path.join(self.config['data_dir'],
+            self.config["env"], f'{run_id}.pt')
         shutil.copy(model_path, path)
         return path
 
@@ -506,7 +504,8 @@ class PuffeRL:
                return
  
         run_id = self.logger.run_id
-        path = os.path.join(self.config['data_dir'], f'{self.config["env"]}_{run_id}')
+        path = os.path.join(self.config['data_dir'],
+            self.config["env"], run_id)
         if not os.path.exists(path):
             os.makedirs(path)
 
@@ -516,7 +515,6 @@ class PuffeRL:
             return model_path
 
         torch.save(self.uncompiled_policy.state_dict(), model_path)
-
         state = {
             'optimizer_state_dict': self.optimizer.state_dict(),
             'global_step': self.global_step,
@@ -779,7 +777,7 @@ class Utilization(Thread):
         self.stopped = True
 
 def downsample(arr, m):
-    if len(arr) < m:
+    if len(arr) <= m:
         return arr
 
     if m == 0:
@@ -795,15 +793,28 @@ def downsample(arr, m):
     downsampled = arr.reshape(m, -1).mean(axis=1)
     return np.concatenate([downsampled, [last]])
 
-class NoLogger:
+class Logger:
     def __init__(self, args):
-        self.run_id = str(int(100*time.time()))
+        self.run_id = str(int(1000*time.time()))
+        root = os.path.join(args['data_dir'], 'logs', args['env'])
+        if not os.path.exists(root):
+            os.makedirs(root)
+
+        self.path = os.path.join(root, self.run_id + '.json')
+        self.logs = {'data': []}
+        for k, v in pufferlib.unroll_nested_dict(args):
+            self.logs[k] = v
 
     def log(self, logs, step):
-        pass
+        self.logs['data'].append(logs)
+
+    def log_cost(self, cost):
+        self.logs['cost'] = cost
 
     def close(self, model_path):
-        pass
+        import json
+        with open(self.path, 'w') as f:
+            json.dump(self.logs, f)
 
 class NeptuneLogger:
     def __init__(self, args, load_id=None, mode='async'):
@@ -908,7 +919,10 @@ def train(env_name, args=None, vecenv=None, policy=None, logger=None):
     pufferl = PuffeRL(train_config, vecenv, policy, logger)
 
     all_logs = []
+    timeout = train_config['timeout']
     while pufferl.global_step < train_config['total_timesteps']:
+        if timeout != -1 and pufferl.uptime > timeout:
+            break
         if train_config['device'] == 'cuda':
             torch.compiler.cudagraph_mark_step_begin()
         pufferl.evaluate()
@@ -923,6 +937,7 @@ def train(env_name, args=None, vecenv=None, policy=None, logger=None):
     # Final eval. You can reset the env here, but depending on
     # your env, this can skew data (i.e. you only collect the shortest
     # rollouts within a fixed number of epochs)
+    cost = pufferl.uptime
     i = 0
     stats = {}
     while i < 32 or not stats:
@@ -935,6 +950,7 @@ def train(env_name, args=None, vecenv=None, policy=None, logger=None):
 
     pufferl.print_dashboard()
     model_path = pufferl.close()
+    pufferl.logger.log_cost(cost)
     pufferl.logger.close(model_path)
     return all_logs
 
@@ -1002,9 +1018,6 @@ def seed_everything():
 
 def sweep(args=None, env_name=None):
     args = args or load_config(env_name)
-    if not args['wandb'] and not args['neptune']:
-        raise pufferlib.APIUsageError('Sweeps require either wandb or neptune')
-
     method = args['sweep'].pop('method')
     try:
         sweep_cls = getattr(pufferlib.sweep, method)
@@ -1021,9 +1034,10 @@ def sweep(args=None, env_name=None):
         all_logs = train(env_name, args=args)
         all_logs = [e for e in all_logs if target_key in e]
         scores = downsample([log[target_key] for log in all_logs], points_per_run)
-        costs = downsample([log['uptime'] for log in all_logs], points_per_run)
-        timesteps = downsample([log['agent_steps'] for log in all_logs], points_per_run)
-        for score, cost, timestep in zip(scores, costs, timesteps):
+        times = downsample([log['uptime'] for log in all_logs], points_per_run)
+        steps = downsample([log['agent_steps'] for log in all_logs], points_per_run)
+        costs = np.stack([times, steps], axis=1)
+        for score, cost, timestep in zip(scores, costs, steps):
             args['train']['total_timesteps'] = timestep
             sweep.observe(args, score, cost)
 
@@ -1091,7 +1105,7 @@ def load_policy(args, vecenv, env_name=''):
     rnn_name = args['rnn_name']
     if rnn_name is not None:
         rnn_cls = getattr(env_module.torch, args['rnn_name'])
-        policy = rnn_cls(vecenv.driver_env, policy, **args['rnn'])
+        policy = rnn_cls(vecenv.driver_env, policy, **args['policy'])
 
     policy = policy.to(device)
 
@@ -1110,7 +1124,8 @@ def load_policy(args, vecenv, env_name=''):
 
     load_path = args['load_model_path']
     if load_path == 'latest':
-        load_path = max(glob.glob(f"experiments/{env_name}*.pt"), key=os.path.getctime)
+        load_path = max(glob.glob(
+            f"{args['data_dir']}/{env_name}/*.pt"), key=os.path.getctime)
 
     if load_path is not None:
         state_dict = torch.load(load_path, map_location=device)

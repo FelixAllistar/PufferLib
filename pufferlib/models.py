@@ -98,7 +98,7 @@ class Default(nn.Module):
         return logits, values
 
 class LSTMWrapper(nn.Module):
-    def __init__(self, env, policy, input_size=128, hidden_size=128):
+    def __init__(self, env, policy, hidden_size=128):
         '''Wraps your policy with an LSTM without letting you shoot yourself in the
         foot with bad transpose and shape operations. This saves much pain.
         Requires that your policy define encode_observations and decode_actions.
@@ -107,6 +107,7 @@ class LSTMWrapper(nn.Module):
         self.obs_shape = env.single_observation_space.shape
 
         self.policy = policy
+        input_size = hidden_size
         self.input_size = input_size
         self.hidden_size = hidden_size
         self.is_continuous = self.policy.is_continuous

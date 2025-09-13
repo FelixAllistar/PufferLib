@@ -224,7 +224,7 @@ def pareto_points(observations, eps=1e-6):
     idxs = []
     for idx, obs in enumerate(observations):
         higher_score = scores + eps > scores[idx]
-        lower_cost = costs - eps < costs[idx]
+        lower_cost = (costs - eps < costs[idx]).any(axis=-1)
         better = higher_score & lower_cost
         better[idx] = False
         if not better.any():
@@ -329,7 +329,6 @@ def create_gp(x_dim, scale_length=1.0):
 class Protein:
     def __init__(self,
             sweep_config,
-            max_suggestion_cost = 3600,
             resample_frequency = 0,
             num_random_samples = 50,
             global_search_scale = 1,
@@ -345,7 +344,6 @@ class Protein:
         self.suggestions_per_pareto = suggestions_per_pareto
         self.seed_with_search_center = seed_with_search_center
         self.resample_frequency = resample_frequency
-        self.max_suggestion_cost = max_suggestion_cost
         self.expansion_rate = expansion_rate
 
         self.success_observations = []
@@ -395,12 +393,12 @@ class Protein:
         log_c = np.log(c)
 
         # Linear input norm creates clean 1 mean fn
-        log_c_min = np.min(log_c)
-        log_c_max = np.max(log_c)
+        log_c_min = np.min(log_c, axis=0, keepdims=True)
+        log_c_max = np.max(log_c, axis=0, keepdims=True)
         log_c_norm = (log_c - log_c_min) / (log_c_max - log_c_min + 1e-6)
 
         self.gp_cost.mean_function = lambda x: 1
-        self.gp_cost.set_data(params, torch.from_numpy(log_c_norm))
+        self.gp_cost.set_data(params, torch.from_numpy(log_c_norm.T))
         self.gp_cost.train()
         gp.util.train(self.gp_cost, self.cost_opt)
         self.gp_cost.eval()
@@ -409,7 +407,10 @@ class Protein:
         pareto_costs = np.array([e['cost'] for e in candidates])
 
         ### Sample suggestions
-        search_centers = np.stack([e['input'] for e in candidates])
+        try:
+            search_centers = np.stack([e['input'] for e in candidates])
+        except:
+            breakpoint()
         suggestions = self.hyperparameters.sample(
             len(candidates)*self.suggestions_per_pareto, mu=search_centers)
 
@@ -420,7 +421,7 @@ class Protein:
             gp_log_c_norm, gp_log_c_norm_var = self.gp_cost(suggestions)
 
         gp_y_norm = gp_y_norm.numpy()
-        gp_log_c_norm = gp_log_c_norm.numpy()
+        gp_log_c_norm = gp_log_c_norm.numpy().T
 
         # Unlinearize
         gp_y = gp_y_norm*(max_score - min_score) + min_score
@@ -436,26 +437,24 @@ class Protein:
         pareto_c = c[pareto_idxs]
         pareto_log_c_norm = log_c_norm[pareto_idxs]
 
-        max_c = np.max(c)
-        min_c = np.min(c)
-
-        max_c_mask = gp_c < self.max_suggestion_cost
-
         target = (1 + self.expansion_rate)*np.random.rand()
         weight = 1 - abs(target - gp_log_c_norm)
 
-        suggestion_scores = self.hyperparameters.optimize_direction * max_c_mask * (
+        # Expand either time or steps cost
+        weight = weight[:, np.random.randint(weight.shape[-1])]
+
+        suggestion_scores = self.hyperparameters.optimize_direction * (
                 gp_y_norm*weight)
 
         best_idx = np.argmax(suggestion_scores)
         info = dict(
-            cost = gp_c[best_idx].item(),
+            cost = gp_c[best_idx].tolist(),
             score = gp_y[best_idx].item(),
             rating = suggestion_scores[best_idx].item(),
         )
         print('Predicted -- ',
             f'Score: {info["score"]:.3f}',
-            f'Cost: {info["cost"]:.3f}',
+            f'Cost: {info["cost"]}',
             f'Rating: {info["rating"]:.3f}',
         )
         '''
