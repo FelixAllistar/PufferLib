@@ -26,6 +26,7 @@ import torch
 import torch.distributed
 from torch.distributed.elastic.multiprocessing.errors import record
 import torch.utils.cpp_extension
+torch.autograd.set_detect_anomaly(True)
 
 import pufferlib
 import pufferlib.sweep
@@ -33,6 +34,13 @@ import pufferlib.vector
 import pufferlib.pytorch
 try:
     from pufferlib import _C
+
+    @torch.library.register_fake("pufferlib::compute_puff_advantage")
+    def _(values, rewards, dones, importance, advantages, gamma, lam, rho_clip, c_clip):
+        torch._check(values.shape == rewards.shape == dones.shape == importance.shape == advantages.shape)
+        torch._check(values.dtype == rewards.dtype == dones.dtype == importance.dtype == advantages.dtype == torch.float)
+        torch._check(values.device == rewards.device == dones.device == importance.device == advantages.device)
+        advantages.copy_(advantages)
 except ImportError:
     raise ImportError('Failed to import C/CUDA advantage kernel. If you have non-default PyTorch, try installing with --no-build-isolation')
 
@@ -142,7 +150,6 @@ class PuffeRL:
             from heavyball import ForeachMuon
             warnings.filterwarnings(action='ignore', category=UserWarning, module=r'heavyball.*')
             import heavyball.utils
-            heavyball.utils.compile_mode = config['compile_mode'] if config['compile'] else None
             optimizer = ForeachMuon(
                 self.policy.parameters(),
                 lr=config['learning_rate'],
@@ -304,7 +311,7 @@ class PuffeRL:
         profile.end()
         return self.stats
 
-    @record
+    @torch.compile
     def train(self):
         profile = self.profile
         epoch = self.epoch
@@ -366,7 +373,7 @@ class PuffeRL:
             newlogprob = newlogprob.reshape(mb_logprobs.shape)
             logratio = newlogprob - mb_logprobs
             ratio = logratio.exp()
-            self.ratio[idx] = ratio.detach()
+            #self.ratio[idx] = ratio.detach()
 
             with torch.no_grad():
                 old_approx_kl = (-logratio).mean()
@@ -375,13 +382,13 @@ class PuffeRL:
 
             adv = advantages[idx]
             adv = compute_puff_advantage(mb_values, mb_rewards, mb_terminals,
-                ratio, adv, config['gamma'], config['gae_lambda'],
+                ratio.clone(), adv, config['gamma'], config['gae_lambda'],
                 config['vtrace_rho_clip'], config['vtrace_c_clip'])
             adv = mb_advantages
             adv = mb_prio * (adv - adv.mean()) / (adv.std() + 1e-8)
 
             # Losses
-            pg_loss1 = -adv * ratio
+            pg_loss1 = adv * ratio
             pg_loss2 = -adv * torch.clamp(ratio, 1 - clip_coef, 1 + clip_coef)
             pg_loss = torch.max(pg_loss1, pg_loss2).mean()
 
@@ -397,7 +404,7 @@ class PuffeRL:
             self.amp_context.__enter__() # TODO: AMP needs some debugging
 
             # This breaks vloss clipping?
-            self.values[idx] = newvalue.detach().float()
+            #self.values[idx] = newvalue.detach().float()
 
             # Logging
             profile('train_misc', epoch)

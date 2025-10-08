@@ -26,7 +26,7 @@ extern "C" {
 namespace pufferlib {
 
 void puff_advantage_row(float* values, float* rewards, float* dones,
-        float* importance, float* advantages, float gamma, float lambda,
+        float* importance, float* advantages, float gamma, float lam,
         float rho_clip, float c_clip, int horizon) {
     float lastpufferlam = 0;
     for (int t = horizon-2; t >= 0; t--) {
@@ -35,7 +35,7 @@ void puff_advantage_row(float* values, float* rewards, float* dones,
         float rho_t = fminf(importance[t], rho_clip);
         float c_t = fminf(importance[t], c_clip);
         float delta = rho_t*(rewards[t_next] + gamma*values[t_next]*nextnonterminal - values[t]);
-        lastpufferlam = delta + gamma*lambda*c_t*lastpufferlam*nextnonterminal;
+        lastpufferlam = delta + gamma*lam*c_t*lastpufferlam*nextnonterminal;
         advantages[t] = lastpufferlam;
     }
 }
@@ -61,12 +61,12 @@ void vtrace_check(torch::Tensor values, torch::Tensor rewards,
 
 // [num_steps, horizon]
 void puff_advantage(float* values, float* rewards, float* dones, float* importance,
-        float* advantages, float gamma, float lambda, float rho_clip, float c_clip,
+        float* advantages, float gamma, float lam, float rho_clip, float c_clip,
         int num_steps, const int horizon){
     for (int offset = 0; offset < num_steps*horizon; offset+=horizon) {
         puff_advantage_row(values + offset, rewards + offset,
             dones + offset, importance + offset, advantages + offset,
-            gamma, lambda, rho_clip, c_clip, horizon
+            gamma, lam, rho_clip, c_clip, horizon
         );
     }
 }
@@ -74,18 +74,18 @@ void puff_advantage(float* values, float* rewards, float* dones, float* importan
 
 void compute_puff_advantage_cpu(torch::Tensor values, torch::Tensor rewards,
         torch::Tensor dones, torch::Tensor importance, torch::Tensor advantages,
-        double gamma, double lambda, double rho_clip, double c_clip) {
+        double gamma, double lam, double rho_clip, double c_clip) {
     int num_steps = values.size(0);
     int horizon = values.size(1);
     vtrace_check(values, rewards, dones, importance, advantages, num_steps, horizon);
     puff_advantage(values.data_ptr<float>(), rewards.data_ptr<float>(),
         dones.data_ptr<float>(), importance.data_ptr<float>(), advantages.data_ptr<float>(),
-        gamma, lambda, rho_clip, c_clip, num_steps, horizon
+        gamma, lam, rho_clip, c_clip, num_steps, horizon
     );
 }
 
 TORCH_LIBRARY(pufferlib, m) {
-   m.def("compute_puff_advantage(Tensor(a!) values, Tensor(b!) rewards, Tensor(c!) dones, Tensor(d!) importance, Tensor(e!) advantages, float gamma, float lambda, float rho_clip, float c_clip) -> ()");
+   m.def("compute_puff_advantage(Tensor(a!) values, Tensor(b!) rewards, Tensor(c!) dones, Tensor(d!) importance, Tensor(e!) advantages, float gamma, float lam, float rho_clip, float c_clip) -> ()");
  }
 
 TORCH_LIBRARY_IMPL(pufferlib, CPU, m) {

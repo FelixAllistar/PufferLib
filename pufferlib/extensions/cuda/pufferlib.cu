@@ -5,7 +5,7 @@
 namespace pufferlib {
 
 __host__ __device__ void puff_advantage_row_cuda(float* values, float* rewards, float* dones,
-        float* importance, float* advantages, float gamma, float lambda,
+        float* importance, float* advantages, float gamma, float lam,
         float rho_clip, float c_clip, int horizon) {
     float lastpufferlam = 0;
     for (int t = horizon-2; t >= 0; t--) {
@@ -14,7 +14,7 @@ __host__ __device__ void puff_advantage_row_cuda(float* values, float* rewards, 
         float rho_t = fminf(importance[t], rho_clip);
         float c_t = fminf(importance[t], c_clip);
         float delta = rho_t*(rewards[t_next] + gamma*values[t_next]*nextnonterminal - values[t]);
-        lastpufferlam = delta + gamma*lambda*c_t*lastpufferlam*nextnonterminal;
+        lastpufferlam = delta + gamma*lam*c_t*lastpufferlam*nextnonterminal;
         advantages[t] = lastpufferlam;
     }
 }
@@ -40,19 +40,19 @@ void vtrace_check_cuda(torch::Tensor values, torch::Tensor rewards,
  // [num_steps, horizon]
 __global__ void puff_advantage_kernel(float* values, float* rewards,
         float* dones, float* importance, float* advantages, float gamma,
-        float lambda, float rho_clip, float c_clip, int num_steps, int horizon) {
+        float lam, float rho_clip, float c_clip, int num_steps, int horizon) {
     int row = blockIdx.x*blockDim.x + threadIdx.x;
     if (row >= num_steps) {
         return;
     }
     int offset = row*horizon;
     puff_advantage_row_cuda(values + offset, rewards + offset, dones + offset,
-        importance + offset, advantages + offset, gamma, lambda, rho_clip, c_clip, horizon);
+        importance + offset, advantages + offset, gamma, lam, rho_clip, c_clip, horizon);
 }
 
 void compute_puff_advantage_cuda(torch::Tensor values, torch::Tensor rewards,
         torch::Tensor dones, torch::Tensor importance, torch::Tensor advantages,
-        double gamma, double lambda, double rho_clip, double c_clip) {
+        double gamma, double lam, double rho_clip, double c_clip) {
     int num_steps = values.size(0);
     int horizon = values.size(1);
     vtrace_check_cuda(values, rewards, dones, importance, advantages, num_steps, horizon);
@@ -68,7 +68,7 @@ void compute_puff_advantage_cuda(torch::Tensor values, torch::Tensor rewards,
         importance.data_ptr<float>(),
         advantages.data_ptr<float>(),
         gamma,
-        lambda,
+        lam,
         rho_clip,
         c_clip,
         num_steps,
