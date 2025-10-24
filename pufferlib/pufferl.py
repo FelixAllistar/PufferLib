@@ -906,7 +906,8 @@ def train(env_name, args=None, vecenv=None, policy=None, logger=None):
 
     train_config = dict(**args['train'], env=env_name)
     pufferl = PuffeRL(train_config, vecenv, policy, logger)
-
+    from pufferlib.pufferl_with_contrastive import train_with_contrastive_loss
+ 
     all_logs = []
     while pufferl.global_step < train_config['total_timesteps']:
         if train_config['device'] == 'cuda':
@@ -914,7 +915,9 @@ def train(env_name, args=None, vecenv=None, policy=None, logger=None):
         pufferl.evaluate()
         if train_config['device'] == 'cuda':
             torch.compiler.cudagraph_mark_step_begin()
-        logs = pufferl.train()
+
+        logs = train_with_contrastive_loss(pufferl)
+        #logs = pufferl.train()
 
         if logs is not None:
             if pufferl.global_step > 0.20*train_config['total_timesteps']:

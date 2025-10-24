@@ -8,6 +8,8 @@ The key additions are:
 3. Adding contrastive metrics to logging
 """
 
+import time
+
 import torch
 from collections import defaultdict
 from .contrastive_loss import compute_contrastive_loss_pufferlib, get_embeddings_from_policy_data
@@ -223,12 +225,12 @@ def train_with_contrastive_loss(pufferl_instance):
     pufferl_instance.epoch += 1
     done_training = pufferl_instance.global_step >= config['total_timesteps']
 
-    if done_training or pufferl_instance.global_step == 0 or pufferl_instance.uptime > pufferl_instance.last_log_time + 0.25:
+    if done_training or pufferl_instance.global_step == 0 or time.time() > pufferl_instance.last_log_time + 0.25:
         logs = pufferl_instance.mean_and_log()
         pufferl_instance.losses = losses
         pufferl_instance.print_dashboard()
         pufferl_instance.stats = defaultdict(list)
-        pufferl_instance.last_log_time = pufferl_instance.uptime
+        pufferl_instance.last_log_time = time.time()
         pufferl_instance.last_log_step = pufferl_instance.global_step
         profile.clear()
 
