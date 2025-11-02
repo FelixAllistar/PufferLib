@@ -374,7 +374,8 @@ class PuffeRL:
                 clipfrac = ((ratio - 1.0).abs() > config['clip_coef']).float().mean()
 
             adv = mb_advantages
-            adv = mb_prio * (adv - adv.mean()) / (adv.std() + 1e-8)
+            adv_unprio = (adv - adv.mean()) / (adv.std() + 1e-8)
+            adv = mb_prio * adv_unprio
 
             # Losses
             pg_loss1 = -adv * ratio
@@ -387,7 +388,8 @@ class PuffeRL:
             v_loss_clipped = (v_clipped - mb_returns) ** 2
             v_loss = 0.5*torch.max(v_loss_unclipped, v_loss_clipped).mean()
 
-            entropy_loss = entropy.mean()
+            weighted_entropy = torch.exp(-adv_unprio.abs()).view(-1) * entropy
+            entropy_loss = weighted_entropy.mean()
 
             loss = pg_loss + config['vf_coef']*v_loss - config['ent_coef']*entropy_loss
             self.amp_context.__enter__() # TODO: AMP needs some debugging
