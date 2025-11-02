@@ -40,7 +40,7 @@ class Default(nn.Module):
         else:
             num_obs = np.prod(env.single_observation_space.shape)
             self.encoder = torch.nn.Sequential(
-                pufferlib.pytorch.layer_init(nn.Linear(num_obs, hidden_size)),
+                pufferlib.pytorch.layer_init(nn.Linear(1 + num_obs, hidden_size)),
                 nn.GELU(),
             )
             
@@ -105,6 +105,7 @@ class LSTMWrapper(nn.Module):
         See the Default policy for an example.'''
         super().__init__()
         self.obs_shape = env.single_observation_space.shape
+        self.obs_shape = (np.prod(self.obs_shape) + 1,)
         input_size = hidden_size
 
         self.policy = policy

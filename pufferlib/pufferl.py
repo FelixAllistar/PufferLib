@@ -87,7 +87,8 @@ class PuffeRL:
             )
 
         device = config['device']
-        self.observations = torch.zeros(segments, horizon, *obs_space.shape,
+        num_obs = np.prod(obs_space.shape)
+        self.observations = torch.zeros(segments, horizon, num_obs + 1,
             dtype=pufferlib.pytorch.numpy_to_torch_dtype_dict[obs_space.dtype],
             pin_memory=device == 'cuda' and config['cpu_offload'],
             device='cpu' if config['cpu_offload'] else device)
@@ -98,6 +99,7 @@ class PuffeRL:
         self.rewards = torch.zeros(segments, horizon, device=device)
         self.terminals = torch.zeros(segments, horizon, device=device)
         self.truncations = torch.zeros(segments, horizon, device=device)
+        self.mode = torch.zeros(segments, horizon, device=device)
         self.ratio = torch.ones(segments, horizon, device=device)
         self.importance = torch.ones(segments, horizon, device=device)
         self.ep_lengths = torch.zeros(total_agents, device=device, dtype=torch.int32)
@@ -110,6 +112,9 @@ class PuffeRL:
             h = policy.hidden_size
             self.lstm_h = {i*n: torch.zeros(n, h, device=device) for i in range(total_agents//n)}
             self.lstm_c = {i*n: torch.zeros(n, h, device=device) for i in range(total_agents//n)}
+            self.forward_mode = {i*n: torch.zeros(n, 1, device=device) for i in range(total_agents//n)}
+            self.forward_mode[0][:] = 0
+            self.forward_mode[2048][:] = 1
 
         # Minibatching & gradient accumulation
         minibatch_size = config['minibatch_size']
@@ -246,7 +251,12 @@ class PuffeRL:
                     state['lstm_h'] = self.lstm_h[env_id.start]
                     state['lstm_c'] = self.lstm_c[env_id.start]
 
-                logits, value = self.policy.forward_eval(o_device, state)
+                mode = self.forward_mode[env_id.start]
+                #mode[d] = torch.randint(0, 2, (d.sum(),), device=config['device'])
+
+                o_aug = torch.cat([o_device, mode], dim=1)
+
+                logits, value = self.policy.forward_eval(o_aug, state)
                 action, logprob, _ = pufferlib.pytorch.sample_logits(logits)
                 r = torch.clamp(r, -1, 1)
 
@@ -261,15 +271,16 @@ class PuffeRL:
                 batch_rows = slice(self.ep_indices[env_id.start].item(), 1+self.ep_indices[env_id.stop - 1].item())
 
                 if config['cpu_offload']:
-                    self.observations[batch_rows, l] = o
+                    self.observations[batch_rows, l] = o # Broken
                 else:
-                    self.observations[batch_rows, l] = o_device
+                    self.observations[batch_rows, l] = o_aug
 
                 self.actions[batch_rows, l] = action
                 self.logprobs[batch_rows, l] = logprob
                 self.rewards[batch_rows, l] = r
                 self.terminals[batch_rows, l] = d.float()
                 self.values[batch_rows, l] = value.flatten()
+                self.mode[batch_rows, l] = mode.flatten()
 
                 # Note: We are not yet handling masks in this version
                 self.ep_lengths[env_id] += 1
@@ -331,10 +342,13 @@ class PuffeRL:
                 self.terminals, self.ratio, advantages, config['gamma'],
                 config['gae_lambda'], config['vtrace_rho_clip'], config['vtrace_c_clip'])
 
+            advantages_2 = advantages.abs().cumsum(axis=1)
+
             profile('train_copy', epoch)
             adv = advantages.abs().sum(axis=1)
             prio_weights = torch.nan_to_num(adv**a, 0, 0, 0)
             prio_probs = (prio_weights + 1e-6)/(prio_weights.sum() + 1e-6)
+            prio_probs = torch.ones_like(prio_probs)
             idx = torch.multinomial(prio_probs,
                 self.minibatch_segments, replacement=True)
             mb_prio = (self.segments*prio_probs[idx, None])**-anneal_beta
@@ -344,10 +358,12 @@ class PuffeRL:
             mb_rewards = self.rewards[idx]
             mb_terminals = self.terminals[idx]
             mb_truncations = self.truncations[idx]
+            mb_mode = self.mode[idx]
             mb_ratio = self.ratio[idx]
             mb_values = self.values[idx]
             mb_returns = advantages[idx] + mb_values
             mb_advantages = advantages[idx]
+            mb_advantages_2 = advantages_2[idx]
 
             profile('train_forward', epoch)
             if not config['use_rnn']:
@@ -372,24 +388,41 @@ class PuffeRL:
                 old_approx_kl = (-logratio).mean()
                 approx_kl = ((ratio - 1) - logratio).mean()
                 clipfrac = ((ratio - 1.0).abs() > config['clip_coef']).float().mean()
-
+            
+            # mode 1: maximize surprise: [ent_loss + vf_loss]
+            # mode 0: maximize value: [vf loss + pg loss]
             adv = mb_advantages
             adv_unprio = (adv - adv.mean()) / (adv.std() + 1e-8)
-            adv = mb_prio * adv_unprio
+            #adv = mb_prio * adv_unprio
+            adv = adv_unprio
+
+            adv2 = mb_advantages_2
+            adv2_unprio = (adv2 - adv2.mean()) / (adv2.std() + 1e-8)
+            #adv2 = mb_prio * adv2_unprio
+            adv2 = adv2_unprio
+
+            #adv_total = adv*(mb_mode == 0) + adv2*(mb_mode == 1)
+            #adv = adv_total
 
             # Losses
             pg_loss1 = -adv * ratio
             pg_loss2 = -adv * torch.clamp(ratio, 1 - clip_coef, 1 + clip_coef)
-            pg_loss = torch.max(pg_loss1, pg_loss2).mean()
+            pg_loss = torch.max(pg_loss1, pg_loss2)[mb_mode == 0].mean()
 
             newvalue = newvalue.view(mb_returns.shape)
             v_clipped = mb_values + torch.clamp(newvalue - mb_values, -vf_clip, vf_clip)
             v_loss_unclipped = (newvalue - mb_returns) ** 2
             v_loss_clipped = (v_clipped - mb_returns) ** 2
-            v_loss = 0.5*torch.max(v_loss_unclipped, v_loss_clipped).mean()
+            v_loss = 0.5*torch.max(v_loss_unclipped, v_loss_clipped)
+            v_loss = v_loss.mean()
 
-            weighted_entropy = torch.exp(-adv_unprio.abs()).view(-1) * entropy
-            entropy_loss = weighted_entropy.mean()
+            #weighted_entropy = torch.exp(-adv_unprio.abs()).view(-1) * entropy
+            #entropy_loss = weighted_entropy.mean()
+            #ent_schedule = 1 - (self.epoch / self.total_epochs)
+
+            #entropy_loss = ent_schedule * entropy.mean()
+
+            entropy_loss = entropy[mb_mode.view(-1) == 1].mean()
 
             loss = pg_loss + config['vf_coef']*v_loss - config['ent_coef']*entropy_loss
             self.amp_context.__enter__() # TODO: AMP needs some debugging
@@ -1009,6 +1042,8 @@ def eval(env_name, args=None, vecenv=None, policy=None):
 
         with torch.no_grad():
             ob = torch.as_tensor(ob).to(device)
+            mode = torch.zeros(ob.shape[0], 1, device=device) + 0
+            ob = torch.cat([ob, mode], dim=1)
             logits, value = policy.forward_eval(ob, state)
             action, logprob, _ = pufferlib.pytorch.sample_logits(logits)
             action = action.cpu().numpy().reshape(vecenv.action_space.shape)

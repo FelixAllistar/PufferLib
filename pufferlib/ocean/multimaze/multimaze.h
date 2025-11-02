@@ -282,7 +282,7 @@ void get_state(Multimaze* env, State* state) {
 void set_state(Multimaze* env, State* state) {
     env->width = state->width;
     env->height = state->height;
-    env->horizon = 2*env->width*env->height;
+    env->horizon = env->width*env->height;
     env->num_agents = state->num_agents;
     memcpy(env->agents, state->agents, env->num_agents*sizeof(Agent));
     memcpy(env->multimaze, state->multimaze, env->max_size*env->max_size);
@@ -482,7 +482,7 @@ Renderer* init_renderer(int cell_size, int width, int height) {
     renderer->overlay = (float*)calloc(width*height, sizeof(float));
 
     InitWindow(width*cell_size, height*cell_size, "PufferLib Multimaze");
-    SetTargetFPS(60);
+    SetTargetFPS(10);
 
     renderer->puffer = LoadTexture("resources/shared/puffers_128.png");
     return renderer;
@@ -500,7 +500,7 @@ void close_renderer(Renderer* renderer) {
 
 void c_render(Multimaze* env) {
     // TODO: fractional rendering
-    float frac = 0.0;
+    float frac = 1.0;
     float overlay = 0.0;
     if (env->renderer == NULL) {
         env->renderer = init_renderer(16, env->max_size, env->max_size);
