@@ -140,6 +140,9 @@ typedef struct {
     int head_exposed;          // 1 if head is damageable, 0 otherwise
     int attack_style;          // STYLE_MAGE or STYLE_RANGE (Olm only uses these)
     int attack_tick;           // Next scheduled attack tick
+    // Damage tracking for head turning (reset when head turns)
+    int left_claw_damaged_since_turn;   // 1 if left claw damaged since last head turn
+    int right_claw_damaged_since_turn;  // 1 if right claw damaged since last head turn
 } Olm;
 
 // Main environment struct
@@ -300,18 +303,16 @@ void apply_projectile_damage(Raid* env) {
 int can_olm_see_player(Raid* env, Player* p) {
     if (p->hp <= 0) return 0;  // Can't see dead players
 
-    float mid = env->arena_width / 2.0f;
-
     switch (env->olm.facing) {
         case FACE_CENTER:
-            // Cannot see 3 tiles on each side
-            return (p->x >= 3 && p->x <= env->arena_width - 4);
+            // Blind zones: cols 0-1 on left, cols 13-14 on right
+            return (p->x >= 2 && p->x <= 12);
         case FACE_LEFT:
-            // Can only see up to 1 tile past middle to the right
-            return (p->x <= mid + 1);
+            // Can see left side up to col 7, blind at col 8+
+            return (p->x <= 7);
         case FACE_RIGHT:
-            // Can only see up to 1 tile past middle to the left
-            return (p->x >= mid - 1);
+            // Can see right side from col 7+, blind at col 6 and below
+            return (p->x >= 7);
     }
     return 0;
 }
@@ -332,29 +333,36 @@ int determine_turn_direction(Raid* env) {
     // If we can see any player, no turn needed
     if (any_player_visible(env)) return -1;
 
-    // Find closest invisible player and turn toward them
-    float mid = env->arena_width / 2.0f;
-    int best_turn = -1;
-    float best_dist = 999999.0f;
-
+    // Find player position (for solo, just use first alive player)
+    float player_x = env->arena_width / 2.0f;  // default to center
     for (int i = 0; i < env->num_players; i++) {
         Player* p = &env->players[i];
         if (p->hp <= 0) continue;
-
-        float dist = fabsf(p->x - mid);
-        if (dist < best_dist) {
-            best_dist = dist;
-            if (p->x < mid - 1) {
-                best_turn = FACE_LEFT;
-            } else if (p->x > mid + 1) {
-                best_turn = FACE_RIGHT;
-            } else {
-                best_turn = FACE_CENTER;
-            }
-        }
+        player_x = p->x;
+        break;
     }
 
-    return best_turn;
+    // Edge tiles ALWAYS force turn in that direction (col 1 = left, col 13 = right)
+    // These override damage-based logic
+    if (player_x <= 1) {
+        return FACE_LEFT;  // Always turn left at left edge
+    }
+    if (player_x >= 13) {
+        return FACE_RIGHT;  // Always turn right at right edge
+    }
+
+    // Middle area (cols 2-12): use damage-based logic
+    // If mage claw was damaged since last turn -> turn LEFT toward it
+    if (env->olm.right_claw_damaged_since_turn && env->olm.right_claw_hp > 0) {
+        return FACE_LEFT;
+    }
+    // If melee claw was damaged since last turn -> turn RIGHT toward it
+    if (env->olm.left_claw_damaged_since_turn && env->olm.left_claw_hp > 0) {
+        return FACE_RIGHT;
+    }
+
+    // No damage to any claw - turn to center (follow player)
+    return FACE_CENTER;
 }
 
 // Check if player is in melee range of left claw
@@ -425,6 +433,8 @@ void reset_olm(Raid* env) {
     olm->head_exposed = 0;
     olm->attack_style = STYLE_MAGE;
     olm->attack_tick = OLM_ATTACK_INTERVAL;
+    olm->left_claw_damaged_since_turn = 0;
+    olm->right_claw_damaged_since_turn = 0;
 }
 
 void reset_players(Raid* env) {
@@ -686,6 +696,7 @@ void process_player_attacks(Raid* env) {
                 damage = env->player_damage;
                 env->olm.left_claw_hp -= damage;
                 if (env->olm.left_claw_hp < 0) env->olm.left_claw_hp = 0;
+                env->olm.left_claw_damaged_since_turn = 1;  // Track for head turning
             }
         } else if (p->attack_target == TARGET_MAGE_CLAW) {
             style = STYLE_MAGE;
@@ -693,6 +704,7 @@ void process_player_attacks(Raid* env) {
                 damage = env->player_damage;
                 env->olm.right_claw_hp -= damage;
                 if (env->olm.right_claw_hp < 0) env->olm.right_claw_hp = 0;
+                env->olm.right_claw_damaged_since_turn = 1;  // Track for head turning
             }
         } else if (p->attack_target == TARGET_HEAD) {
             style = STYLE_RANGE;
@@ -735,6 +747,9 @@ void olm_attack_tick(Raid* env) {
     int turn_dir = determine_turn_direction(env);
     if (turn_dir != -1 && turn_dir != olm->facing) {
         olm->facing = turn_dir;
+        // Reset damage tracking on head turn
+        olm->left_claw_damaged_since_turn = 0;
+        olm->right_claw_damaged_since_turn = 0;
         return;  // Turn instead of attack
     }
 

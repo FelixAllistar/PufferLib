@@ -87,15 +87,15 @@ int run_tests(void) {
     ASSERT(env.players[0].active_prayer == -1, "Prayer should be off after toggle");
     printf("PASS\n");
 
-    // Test 5: Olm visibility and turning (15-tile map, 3-tile blind zones)
+    // Test 5: Olm visibility and turning (15-tile map, blind zones at cols 0-1 and 13-14)
     printf("  Test 5: Olm visibility... ");
     c_reset(&env);
     env.olm.facing = FACE_CENTER;
     env.players[0].x = 7;  // Center (middle of 15)
     env.players[0].y = 5;
     ASSERT(can_olm_see_player(&env, &env.players[0]) == 1, "Player in center should be visible");
-    env.players[0].x = 2;  // Far left (< 3, in blind zone)
-    ASSERT(can_olm_see_player(&env, &env.players[0]) == 0, "Player on far left should be invisible to center-facing Olm");
+    env.players[0].x = 1;  // Far left (col 1, in blind zone)
+    ASSERT(can_olm_see_player(&env, &env.players[0]) == 0, "Player at col 1 should be invisible to center-facing Olm");
     env.olm.facing = FACE_LEFT;
     ASSERT(can_olm_see_player(&env, &env.players[0]) == 1, "Player on left should be visible to left-facing Olm");
     printf("PASS\n");
