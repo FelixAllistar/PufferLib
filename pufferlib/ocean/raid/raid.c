@@ -66,13 +66,13 @@ int run_tests(void) {
     // Note: y changes, x changes by +2
     printf("PASS\n");
 
-    // Test 3: Attack style selection
-    printf("  Test 3: Attack style selection... ");
+    // Test 3: Attack target selection
+    printf("  Test 3: Attack target selection... ");
     c_reset(&env);
-    ASSERT(env.players[0].attack_style == STYLE_MELEE, "Default style should be melee");
-    env.actions[0] = ACTION_ATTACK_BASE + STYLE_MAGE;  // 26
+    ASSERT(env.players[0].attack_target == TARGET_NONE, "Default target should be none");
+    env.actions[0] = ACTION_ATTACK_MAGE_CLAW;  // 26
     c_step(&env);
-    ASSERT(env.players[0].attack_style == STYLE_MAGE, "Style should be mage after action 26");
+    ASSERT(env.players[0].attack_target == TARGET_MAGE_CLAW, "Target should be mage claw after action 26");
     printf("PASS\n");
 
     // Test 4: Prayer toggle
@@ -87,11 +87,11 @@ int run_tests(void) {
     ASSERT(env.players[0].active_prayer == -1, "Prayer should be off after toggle");
     printf("PASS\n");
 
-    // Test 5: Olm visibility and turning (19-tile map, 3-tile blind zones)
+    // Test 5: Olm visibility and turning (15-tile map, 3-tile blind zones)
     printf("  Test 5: Olm visibility... ");
     c_reset(&env);
     env.olm.facing = FACE_CENTER;
-    env.players[0].x = 9;  // Center (middle of 19)
+    env.players[0].x = 7;  // Center (middle of 15)
     env.players[0].y = 5;
     ASSERT(can_olm_see_player(&env, &env.players[0]) == 1, "Player in center should be visible");
     env.players[0].x = 2;  // Far left (< 3, in blind zone)
@@ -100,36 +100,36 @@ int run_tests(void) {
     ASSERT(can_olm_see_player(&env, &env.players[0]) == 1, "Player on left should be visible to left-facing Olm");
     printf("PASS\n");
 
-    // Test 6: Melee range detection (y=0, x=13-17 for left claw)
+    // Test 6: Melee range detection (y=0, x=10-14 for left claw)
     printf("  Test 6: Melee range detection... ");
     c_reset(&env);
-    env.players[0].x = 15;  // Within left claw range (13-17)
+    env.players[0].x = 12;  // Within left claw range (10-14)
     env.players[0].y = 0;   // Must be at y=0 (front row, cardinal adjacent)
-    ASSERT(in_melee_range(&env, &env.players[0]) == 1, "Player at (15,0) should be in melee range");
+    ASSERT(in_melee_range(&env, &env.players[0]) == 1, "Player at (12,0) should be in melee range");
     env.players[0].x = 3;   // Outside left claw range
     ASSERT(in_melee_range(&env, &env.players[0]) == 0, "Player at (3,0) should NOT be in melee range");
-    env.players[0].x = 15;
+    env.players[0].x = 12;
     env.players[0].y = 1;   // Not at y=0
-    ASSERT(in_melee_range(&env, &env.players[0]) == 0, "Player at (15,1) should NOT be in melee range");
+    ASSERT(in_melee_range(&env, &env.players[0]) == 0, "Player at (12,1) should NOT be in melee range");
     printf("PASS\n");
 
-    // Test 7: Mage range detection (7 tiles Chebyshev from right claw at x=3)
+    // Test 7: Mage range detection (9 tiles Chebyshev from right claw at x=2)
     printf("  Test 7: Mage range detection... ");
     c_reset(&env);
-    env.players[0].x = 5;   // 2 tiles from x=3
-    env.players[0].y = 2;   // 2 tiles from y=0, Chebyshev = max(2,2) = 2 <= 7
-    ASSERT(in_mage_range(&env, &env.players[0]) == 1, "Player at (5,2) should be in mage range");
-    env.players[0].x = 15;  // 12 tiles from x=3, > 7
+    env.players[0].x = 4;   // 2 tiles from x=2
+    env.players[0].y = 2;   // 2 tiles from y=0, Chebyshev = max(2,2) = 2 <= 9
+    ASSERT(in_mage_range(&env, &env.players[0]) == 1, "Player at (4,2) should be in mage range");
+    env.players[0].x = 14;  // 12 tiles from x=2, > 9
     env.players[0].y = 0;
-    ASSERT(in_mage_range(&env, &env.players[0]) == 0, "Player at (15,0) should NOT be in mage range (too far)");
+    ASSERT(in_mage_range(&env, &env.players[0]) == 0, "Player at (14,0) should NOT be in mage range (too far)");
     printf("PASS\n");
 
     // Test 8: Claw damage
     printf("  Test 8: Claw damage... ");
     c_reset(&env);
-    env.players[0].x = 15;  // In left claw melee range
+    env.players[0].x = 12;  // In left claw melee range (10-14)
     env.players[0].y = 0;   // y=0 for melee
-    env.players[0].attack_style = STYLE_MELEE;
+    env.players[0].attack_target = TARGET_MELEE_CLAW;
     env.players[0].attack_cooldown = 0;
     int initial_hp = env.olm.left_claw_hp;
     process_player_attacks(&env);
@@ -290,31 +290,50 @@ int run_interactive(void) {
     printf("\n=== CONTROLS ===\n");
     printf("LEFT CLICK: Move to tile\n");
     printf("WASD / Arrows: Move manually\n");
-    printf("1: Melee style (attack left claw)\n");
-    printf("2: Mage style (attack right claw)\n");
-    printf("3: Range style (attack head)\n");
+    printf("1: Attack melee claw (right side, drag + melee)\n");
+    printf("2: Attack mage claw (left side, drag + magic)\n");
+    printf("3: Attack head (center, drag + ranged)\n");
     printf("Q: Pray melee | E: Pray mage | R: Pray range\n");
     printf("ESC: Quit\n");
     printf("================\n\n");
 
+    int attack_action = -1;  // -1 = no attack target, else attack action
+
     while (!WindowShouldClose()) {
-        // Handle mouse click for movement target (checked once per tick)
-        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-            Vector2 mouse = GetMousePosition();
-            // Convert screen coords to tile coords (accounting for arena offset)
-            int click_tile_x = (int)(mouse.x / scale);
-            int click_tile_y = (int)((mouse.y - arena_offset) / scale);
-            // Only set target if within walkable area
-            if (click_tile_x >= 0 && click_tile_x < env.arena_width &&
-                click_tile_y >= 0 && click_tile_y < env.arena_height) {
-                target_tile_x = click_tile_x;
-                target_tile_y = click_tile_y;
+        // Check for pending click captured during previous c_render
+        // (clicks are accumulated inside c_render's animation loop)
+        if (env.has_pending_click) {
+            int click_x = env.pending_click_x / scale;
+            int click_screen_y = env.pending_click_y;
+
+            // Check if click is on Olm row (between hp_bar_height and arena_offset)
+            if (click_screen_y >= hp_bar_height && click_screen_y < arena_offset) {
+                // Click on Olm row - determine attack target
+                target_tile_x = -1;  // Clear move target
+                if (click_x >= RIGHT_CLAW_START && click_x <= RIGHT_CLAW_END) {
+                    attack_action = ACTION_ATTACK_MAGE_CLAW;
+                } else if (click_x >= LEFT_CLAW_START && click_x <= LEFT_CLAW_END) {
+                    attack_action = ACTION_ATTACK_MELEE_CLAW;
+                } else if (click_x >= HEAD_CENTER - 1 && click_x <= HEAD_CENTER + 1) {
+                    attack_action = ACTION_ATTACK_HEAD;
+                }
+            } else if (click_screen_y >= arena_offset) {
+                // Click on arena - set move target
+                int click_tile_y = (click_screen_y - arena_offset) / scale;
+                if (click_x >= 0 && click_x < env.arena_width &&
+                    click_tile_y >= 0 && click_tile_y < env.arena_height) {
+                    target_tile_x = click_x;
+                    target_tile_y = click_tile_y;
+                    attack_action = -1;  // Clear attack target
+                }
             }
+            env.has_pending_click = 0;  // Clear after processing
         }
 
-        // Manual keyboard movement cancels click target
+        // Manual keyboard movement cancels both targets
         if (IsKeyDown(KEY_W) || IsKeyDown(KEY_UP)) {
             target_tile_x = -1;
+            attack_action = -1;
             if (IsKeyDown(KEY_A) || IsKeyDown(KEY_LEFT)) {
                 pending_action = 0;  // (-2, -2) up-left
             } else if (IsKeyDown(KEY_D) || IsKeyDown(KEY_RIGHT)) {
@@ -324,6 +343,7 @@ int run_interactive(void) {
             }
         } else if (IsKeyDown(KEY_S) || IsKeyDown(KEY_DOWN)) {
             target_tile_x = -1;
+            attack_action = -1;
             if (IsKeyDown(KEY_A) || IsKeyDown(KEY_LEFT)) {
                 pending_action = 20;  // (-2, +2) down-left
             } else if (IsKeyDown(KEY_D) || IsKeyDown(KEY_RIGHT)) {
@@ -333,19 +353,24 @@ int run_interactive(void) {
             }
         } else if (IsKeyDown(KEY_A) || IsKeyDown(KEY_LEFT)) {
             target_tile_x = -1;
+            attack_action = -1;
             pending_action = 10;  // (-2, 0) left
         } else if (IsKeyDown(KEY_D) || IsKeyDown(KEY_RIGHT)) {
             target_tile_x = -1;
+            attack_action = -1;
             pending_action = 14;  // (+2, 0) right
         }
 
-        // Attack style keys
+        // Attack target keys (clears move target)
         if (IsKeyPressed(KEY_ONE)) {
-            pending_action = ACTION_ATTACK_BASE + STYLE_MELEE;
+            attack_action = ACTION_ATTACK_MELEE_CLAW;
+            target_tile_x = -1;
         } else if (IsKeyPressed(KEY_TWO)) {
-            pending_action = ACTION_ATTACK_BASE + STYLE_MAGE;
+            attack_action = ACTION_ATTACK_MAGE_CLAW;
+            target_tile_x = -1;
         } else if (IsKeyPressed(KEY_THREE)) {
-            pending_action = ACTION_ATTACK_BASE + STYLE_RANGE;
+            attack_action = ACTION_ATTACK_HEAD;
+            target_tile_x = -1;
         }
 
         // Prayer keys
@@ -357,8 +382,12 @@ int run_interactive(void) {
             pending_action = ACTION_PRAYER_BASE + STYLE_RANGE;
         }
 
-        // Compute move action from click target if active
-        if (target_tile_x >= 0) {
+        // Attack action takes priority (env handles drag)
+        if (attack_action >= 0) {
+            pending_action = attack_action;
+        }
+        // Otherwise compute move action from click target
+        else if (target_tile_x >= 0) {
             int px = (int)env.players[0].x;
             int py = (int)env.players[0].y;
             int dx = target_tile_x - px;
@@ -370,17 +399,47 @@ int run_interactive(void) {
                 target_tile_y = -1;
                 pending_action = 12;  // stay
             } else {
-                // Prioritize longer axis first
+                // Pathfinding: reduce long axis first, then diagonal
+                // 2 tiles per tick max
                 int abs_dx = dx < 0 ? -dx : dx;
                 int abs_dy = dy < 0 ? -dy : dy;
+                int sign_dx = dx < 0 ? -1 : (dx > 0 ? 1 : 0);
+                int sign_dy = dy < 0 ? -1 : (dy > 0 ? 1 : 0);
                 int move_dx = 0, move_dy = 0;
+                int remaining = 2;
 
-                if (abs_dx >= abs_dy) {
-                    // Prioritize horizontal
-                    move_dx = dx < -2 ? -2 : (dx > 2 ? 2 : dx);
-                } else {
-                    // Prioritize vertical
-                    move_dy = dy < -2 ? -2 : (dy > 2 ? 2 : dy);
+                // First, reduce excess on long axis to equalize
+                int excess = (abs_dx > abs_dy) ? (abs_dx - abs_dy) : (abs_dy - abs_dx);
+                if (excess > 0) {
+                    int reduce = (excess < remaining) ? excess : remaining;
+                    if (abs_dx > abs_dy) {
+                        move_dx = sign_dx * reduce;
+                    } else {
+                        move_dy = sign_dy * reduce;
+                    }
+                    remaining -= reduce;
+                }
+
+                // Then move diagonally with remaining movement
+                if (remaining > 0 && abs_dx > 0 && abs_dy > 0) {
+                    // After excess reduction, remaining distances
+                    int new_abs_dx = abs_dx - (move_dx < 0 ? -move_dx : move_dx);
+                    int new_abs_dy = abs_dy - (move_dy < 0 ? -move_dy : move_dy);
+                    int diag = (new_abs_dx < remaining) ? new_abs_dx : remaining;
+                    diag = (new_abs_dy < diag) ? new_abs_dy : diag;
+                    move_dx += sign_dx * diag;
+                    move_dy += sign_dy * diag;
+                } else if (remaining > 0) {
+                    // Only one axis has distance, continue on it
+                    if (abs_dx > 0) {
+                        int step = (abs_dx - (move_dx < 0 ? -move_dx : move_dx));
+                        step = (step < remaining) ? step : remaining;
+                        move_dx += sign_dx * step;
+                    } else if (abs_dy > 0) {
+                        int step = (abs_dy - (move_dy < 0 ? -move_dy : move_dy));
+                        step = (step < remaining) ? step : remaining;
+                        move_dy += sign_dy * step;
+                    }
                 }
 
                 // Action encoding: action = (dy + 2) * 5 + (dx + 2)
@@ -394,10 +453,11 @@ int run_interactive(void) {
         steps++;
 
         // Render full tick animation (handles all TICK_FRAMES internally)
+        // Note: c_render captures any clicks during animation into env.has_pending_click
         c_render(&env);
 
-        // Reset to stay unless movement key is held or click target active
-        if (target_tile_x < 0 &&
+        // Reset to stay unless we have an active target or movement key held
+        if (attack_action < 0 && target_tile_x < 0 &&
             !IsKeyDown(KEY_W) && !IsKeyDown(KEY_S) && !IsKeyDown(KEY_A) && !IsKeyDown(KEY_D) &&
             !IsKeyDown(KEY_UP) && !IsKeyDown(KEY_DOWN) && !IsKeyDown(KEY_LEFT) && !IsKeyDown(KEY_RIGHT)) {
             pending_action = 12;  // stay
@@ -408,9 +468,10 @@ int run_interactive(void) {
             printf("Episode %d ended at tick %d. Olm kills: %.0f/%.0f (%.1f%%)\n",
                    episode, steps, env.log.olm_kills, env.log.n,
                    100.0 * env.log.olm_kills / env.log.n);
-            // Clear target on episode end
+            // Clear both targets on episode end
             target_tile_x = -1;
             target_tile_y = -1;
+            attack_action = -1;
         }
     }
 

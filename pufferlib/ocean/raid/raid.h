@@ -25,12 +25,22 @@
 
 // Action encoding (31 total discrete actions)
 // 0-24:  Movement (5x5 grid, -2 to +2 in each axis)
-// 25-27: Attack style selection (melee=25, mage=26, range=27)
+// 25:    Attack melee claw (left claw, right side of screen)
+// 26:    Attack mage claw (right claw, left side of screen)
+// 27:    Attack head (when exposed)
 // 28-30: Prayer toggle (protect melee=28, mage=29, range=30)
 #define ACTION_MOVE_COUNT  25
-#define ACTION_ATTACK_BASE 25
+#define ACTION_ATTACK_MELEE_CLAW 25
+#define ACTION_ATTACK_MAGE_CLAW  26
+#define ACTION_ATTACK_HEAD       27
 #define ACTION_PRAYER_BASE 28
 #define NUM_ACTIONS        31
+
+// Attack targets
+#define TARGET_NONE       0
+#define TARGET_MELEE_CLAW 1
+#define TARGET_MAGE_CLAW  2
+#define TARGET_HEAD       3
 
 // Game constants
 #define CLAW_MAX_HP 600
@@ -39,25 +49,25 @@
 #define OLM_ATTACK_INTERVAL 4
 #define PLAYER_ATTACK_COOLDOWN 4
 #define RESPAWN_DELAY 10
-#define DEFAULT_ARENA_WIDTH 19
+#define DEFAULT_ARENA_WIDTH 15
 #define DEFAULT_ARENA_HEIGHT 10
 #define DEFAULT_MAX_HP 99
 
 // Olm layout - claws at top of arena (y=-1 render row)
 // From player's POV facing north:
-//   LEFT side (tiles 1-5): Right claw, weak to MAGIC
-//   RIGHT side (tiles 13-17): Left claw, weak to MELEE
-//   CENTER (tile 9): Head, weak to RANGED
-#define LEFT_CLAW_START 13   // Left claw (melee) starts at tile 13
-#define LEFT_CLAW_END 17     // Left claw ends at tile 17
-#define LEFT_CLAW_CENTER 15  // Center of left claw
-#define RIGHT_CLAW_START 1   // Right claw (magic) starts at tile 1
-#define RIGHT_CLAW_END 5     // Right claw ends at tile 5
-#define RIGHT_CLAW_CENTER 3  // Center of right claw
-#define HEAD_CENTER 9        // Head at center tile
+//   LEFT side (tiles 0-4): Right claw, weak to MAGIC
+//   RIGHT side (tiles 10-14): Left claw, weak to MELEE
+//   CENTER (tile 7): Head, weak to RANGED
+#define LEFT_CLAW_START 10   // Left claw (melee) starts at tile 10
+#define LEFT_CLAW_END 14     // Left claw ends at tile 14
+#define LEFT_CLAW_CENTER 12  // Center of left claw
+#define RIGHT_CLAW_START 0   // Right claw (magic) starts at tile 0
+#define RIGHT_CLAW_END 4     // Right claw ends at tile 4
+#define RIGHT_CLAW_CENTER 2  // Center of right claw
+#define HEAD_CENTER 7        // Head at center tile
 #define MELEE_RANGE 1        // Melee: 1 tile cardinal only (must be at y=0)
-#define MAGIC_RANGE 7        // Magic: 7 tiles Chebyshev
-#define RANGED_RANGE 7       // Range: 7 tiles Chebyshev
+#define MAGIC_RANGE 9        // Magic: 9 tiles Chebyshev
+#define RANGED_RANGE 10      // Range: 10 tiles Chebyshev
 
 // Observation size per player
 #define OBS_SIZE 26
@@ -110,13 +120,13 @@ typedef struct {
     int hp;                // Current hitpoints
     int max_hp;            // Maximum hitpoints (default 99)
     int active_prayer;     // -1=none, 0=protect melee, 1=protect mage, 2=protect range
-    int attack_style;      // 0=melee, 1=mage, 2=range
+    int attack_target;     // TARGET_NONE/MELEE_CLAW/MAGE_CLAW/HEAD - persists until changed
     int attack_cooldown;   // Ticks until next attack allowed
     int respawn_tick;      // -1 if alive, else tick when respawn occurs
     float episode_return;  // Accumulated rewards this episode
     int episode_start;     // Tick when current episode started
     int attacked_this_tick; // Did player attack this tick? (for animation)
-    float attack_target_x, attack_target_y; // Target of attack
+    float attack_anim_x, attack_anim_y; // Target position for attack animation
 } Player;
 
 // Olm boss entity
@@ -169,6 +179,11 @@ typedef struct {
     int frame;                 // Frame counter within current tick (0 to TICK_FRAMES-1)
     Projectile projectiles[MAX_PROJECTILES];
     int olm_attacked_this_tick;  // Did Olm attack this tick?
+
+    // Pending click (accumulated during render for .c to process)
+    int has_pending_click;     // 1 if click was registered during render
+    int pending_click_x;       // Screen X coordinate of click
+    int pending_click_y;       // Screen Y coordinate of click
 
     // Rendering
     Client* client;
@@ -418,9 +433,11 @@ void reset_players(Raid* env) {
         // Spawn players spread out at back of arena
         p->x = (env->arena_width / (env->num_players + 1)) * (i + 1);
         p->y = env->arena_height - 2;
+        p->prev_x = p->x;
+        p->prev_y = p->y;
         p->hp = p->max_hp;
         p->active_prayer = -1;
-        p->attack_style = STYLE_MELEE;
+        p->attack_target = TARGET_NONE;
         p->attack_cooldown = 0;
         p->respawn_tick = -1;
         p->episode_return = 0.0f;
@@ -443,7 +460,7 @@ void compute_observations(Raid* env) {
         obs[idx++] = p->y / (float)env->arena_height;
         obs[idx++] = p->hp / (float)p->max_hp;
         obs[idx++] = (p->active_prayer + 1) / 4.0f;  // -1 to 2 -> 0 to 0.75
-        obs[idx++] = p->attack_style / 3.0f;
+        obs[idx++] = p->attack_target / 4.0f;  // 0-3 -> 0 to 0.75
         obs[idx++] = p->attack_cooldown / 10.0f;
 
         // Olm state (6-12)
@@ -501,7 +518,7 @@ void process_actions(Raid* env) {
         int action = env->actions[i];
 
         if (action < ACTION_MOVE_COUNT) {
-            // Movement action: decode 5x5 grid
+            // Movement action: decode 5x5 grid - clears attack target
             int dx = (action % 5) - 2;  // -2 to +2
             int dy = (action / 5) - 2;  // -2 to +2
 
@@ -512,9 +529,15 @@ void process_actions(Raid* env) {
             p->x = fclamp(new_x, 0, env->arena_width - 1);
             p->y = fclamp(new_y, 0, env->arena_height - 1);
 
-        } else if (action < ACTION_PRAYER_BASE) {
-            // Attack style selection (25-27)
-            p->attack_style = action - ACTION_ATTACK_BASE;
+            // Manual movement clears attack target
+            p->attack_target = TARGET_NONE;
+
+        } else if (action == ACTION_ATTACK_MELEE_CLAW) {
+            p->attack_target = TARGET_MELEE_CLAW;
+        } else if (action == ACTION_ATTACK_MAGE_CLAW) {
+            p->attack_target = TARGET_MAGE_CLAW;
+        } else if (action == ACTION_ATTACK_HEAD) {
+            p->attack_target = TARGET_HEAD;
 
         } else if (action < NUM_ACTIONS) {
             // Prayer toggle (28-30)
@@ -532,6 +555,87 @@ void process_actions(Raid* env) {
 // Combat
 // ============================================================================
 
+// Get target position for attack target
+void get_target_position(int target, float* out_x, float* out_y) {
+    switch (target) {
+        case TARGET_MELEE_CLAW:
+            *out_x = LEFT_CLAW_CENTER;
+            *out_y = 0;  // y=0 for distance calculation (front row)
+            break;
+        case TARGET_MAGE_CLAW:
+            *out_x = RIGHT_CLAW_CENTER;
+            *out_y = 0;
+            break;
+        case TARGET_HEAD:
+            *out_x = HEAD_CENTER;
+            *out_y = 0;
+            break;
+        default:
+            *out_x = 0;
+            *out_y = 0;
+    }
+}
+
+// Check if player is in range of their current target
+int in_attack_range(Raid* env, Player* p) {
+    switch (p->attack_target) {
+        case TARGET_MELEE_CLAW:
+            return in_melee_range(env, p);
+        case TARGET_MAGE_CLAW:
+            return in_mage_range(env, p);
+        case TARGET_HEAD:
+            return in_range_range(env, p);
+        default:
+            return 0;
+    }
+}
+
+// Move player toward target (2 tiles, long axis first then short)
+// Returns 1 if player moved
+int drag_toward_target(Raid* env, Player* p, float target_x, float target_y) {
+    int dx = (int)target_x - (int)p->x;
+    int dy = (int)target_y - (int)p->y;
+
+    if (dx == 0 && dy == 0) return 0;
+
+    int abs_dx = dx < 0 ? -dx : dx;
+    int abs_dy = dy < 0 ? -dy : dy;
+
+    int move_x = 0, move_y = 0;
+    int remaining = 2;  // 2 tiles per tick
+
+    // Long axis first, then short axis
+    if (abs_dx >= abs_dy) {
+        // Horizontal first
+        if (abs_dx > 0) {
+            int step = (abs_dx < remaining) ? abs_dx : remaining;
+            move_x = (dx > 0) ? step : -step;
+            remaining -= step;
+        }
+        if (remaining > 0 && abs_dy > 0) {
+            int step = (abs_dy < remaining) ? abs_dy : remaining;
+            move_y = (dy > 0) ? step : -step;
+        }
+    } else {
+        // Vertical first
+        if (abs_dy > 0) {
+            int step = (abs_dy < remaining) ? abs_dy : remaining;
+            move_y = (dy > 0) ? step : -step;
+            remaining -= step;
+        }
+        if (remaining > 0 && abs_dx > 0) {
+            int step = (abs_dx < remaining) ? abs_dx : remaining;
+            move_x = (dx > 0) ? step : -step;
+        }
+    }
+
+    // Apply movement with bounds clamping
+    p->x = fclamp(p->x + move_x, 0, env->arena_width - 1);
+    p->y = fclamp(p->y + move_y, 0, env->arena_height - 1);
+
+    return (move_x != 0 || move_y != 0);
+}
+
 void process_player_attacks(Raid* env) {
     for (int i = 0; i < env->num_players; i++) {
         Player* p = &env->players[i];
@@ -540,63 +644,73 @@ void process_player_attacks(Raid* env) {
         // Decrement cooldown
         if (p->attack_cooldown > 0) {
             p->attack_cooldown--;
-            continue;
         }
 
         if (p->hp <= 0) continue;  // Dead players can't attack
+        if (p->attack_target == TARGET_NONE) continue;  // No target selected
 
+        // Check if target is still valid (has HP)
+        int target_valid = 0;
+        switch (p->attack_target) {
+            case TARGET_MELEE_CLAW: target_valid = (env->olm.left_claw_hp > 0); break;
+            case TARGET_MAGE_CLAW: target_valid = (env->olm.right_claw_hp > 0); break;
+            case TARGET_HEAD: target_valid = (env->olm.head_exposed && env->olm.head_hp > 0); break;
+        }
+        if (!target_valid) {
+            p->attack_target = TARGET_NONE;
+            continue;
+        }
+
+        // Get target position for pathfinding
+        float target_x, target_y;
+        get_target_position(p->attack_target, &target_x, &target_y);
+
+        // If not in range, drag toward target
+        if (!in_attack_range(env, p)) {
+            drag_toward_target(env, p, target_x, target_y);
+        }
+
+        // After potential drag, check if we can attack (in range AND cooldown ready)
+        if (p->attack_cooldown > 0) continue;
+        if (!in_attack_range(env, p)) continue;
+
+        // Execute attack
         int damage = 0;
-        int style = p->attack_style;
-        float target_x = 0, target_y = 0;
-        int did_attack = 0;
+        int style = STYLE_MELEE;  // default
+        float anim_target_x = target_x;
+        float anim_target_y = -0.5f;  // Olm row for animation
 
-        // Check which target player can hit based on style and position
-        // Target positions: left claw (melee) at RIGHT, right claw (magic) at LEFT, head at CENTER
-        // y = -0.5 for Olm row (above walkable area)
-        if (style == STYLE_MELEE && env->olm.left_claw_hp > 0) {
-            if (in_melee_range(env, p)) {
-                // Roll hit chance
-                if (rand() % 100 < env->player_hit_chance) {
-                    damage = env->player_damage;
-                    env->olm.left_claw_hp -= damage;
-                    if (env->olm.left_claw_hp < 0) env->olm.left_claw_hp = 0;
-                }
-                p->attack_cooldown = PLAYER_ATTACK_COOLDOWN;
-                target_x = LEFT_CLAW_CENTER; target_y = -0.5f;  // Left claw (RIGHT side)
-                did_attack = 1;
+        if (p->attack_target == TARGET_MELEE_CLAW) {
+            style = STYLE_MELEE;
+            if (rand() % 100 < env->player_hit_chance) {
+                damage = env->player_damage;
+                env->olm.left_claw_hp -= damage;
+                if (env->olm.left_claw_hp < 0) env->olm.left_claw_hp = 0;
             }
-        } else if (style == STYLE_MAGE && env->olm.right_claw_hp > 0) {
-            if (in_mage_range(env, p)) {
-                if (rand() % 100 < env->player_hit_chance) {
-                    damage = env->player_damage;
-                    env->olm.right_claw_hp -= damage;
-                    if (env->olm.right_claw_hp < 0) env->olm.right_claw_hp = 0;
-                }
-                p->attack_cooldown = PLAYER_ATTACK_COOLDOWN;
-                target_x = RIGHT_CLAW_CENTER; target_y = -0.5f;  // Right claw (LEFT side)
-                did_attack = 1;
+        } else if (p->attack_target == TARGET_MAGE_CLAW) {
+            style = STYLE_MAGE;
+            if (rand() % 100 < env->player_hit_chance) {
+                damage = env->player_damage;
+                env->olm.right_claw_hp -= damage;
+                if (env->olm.right_claw_hp < 0) env->olm.right_claw_hp = 0;
             }
-        } else if (style == STYLE_RANGE && env->olm.head_exposed && env->olm.head_hp > 0) {
-            if (in_range_range(env, p)) {
-                if (rand() % 100 < env->player_hit_chance) {
-                    damage = env->player_damage;
-                    env->olm.head_hp -= damage;
-                    if (env->olm.head_hp < 0) env->olm.head_hp = 0;
-                }
-                p->attack_cooldown = PLAYER_ATTACK_COOLDOWN;
-                target_x = HEAD_CENTER; target_y = -0.5f;  // Head (CENTER)
-                did_attack = 1;
+        } else if (p->attack_target == TARGET_HEAD) {
+            style = STYLE_RANGE;
+            if (rand() % 100 < env->player_hit_chance) {
+                damage = env->player_damage;
+                env->olm.head_hp -= damage;
+                if (env->olm.head_hp < 0) env->olm.head_hp = 0;
             }
         }
 
-        if (did_attack) {
-            p->attacked_this_tick = 1;
-            p->attack_target_x = target_x;
-            p->attack_target_y = target_y;
-            // Spawn projectile for ranged/mage attacks (no delayed damage for player->Olm)
-            if (style != STYLE_MELEE) {
-                spawn_projectile(env, p->x, p->y, target_x, target_y, style, 0, -1, 0);
-            }
+        p->attack_cooldown = PLAYER_ATTACK_COOLDOWN;
+        p->attacked_this_tick = 1;
+        p->attack_anim_x = anim_target_x;
+        p->attack_anim_y = anim_target_y;
+
+        // Spawn projectile for mage/range attacks
+        if (style != STYLE_MELEE) {
+            spawn_projectile(env, p->x, p->y, anim_target_x, anim_target_y, style, 0, -1, 0);
         }
 
         if (damage > 0) {
@@ -852,6 +966,9 @@ void c_render(Raid* env) {
     int olm_row_y = hp_bar_height;              // Olm render row below HP bars
     int arena_offset = hp_bar_height + scale;   // Walkable area starts below Olm row
 
+    // Clear pending click at start - will be set if click detected during animation
+    env->has_pending_click = 0;
+
     if (env->client == NULL) {
         InitWindow(width, height, "PufferLib Raid - Great Olm");
         SetTargetFPS(60);
@@ -864,6 +981,14 @@ void c_render(Raid* env) {
     for (int frame = 0; frame < TICK_FRAMES; frame++) {
     if (WindowShouldClose() || IsKeyDown(KEY_ESCAPE)) {
         exit(0);
+    }
+
+    // Capture mouse clicks during animation (raylib clears input on EndDrawing)
+    if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        Vector2 mouse = GetMousePosition();
+        env->has_pending_click = 1;
+        env->pending_click_x = (int)mouse.x;
+        env->pending_click_y = (int)mouse.y;
     }
 
     // Calculate lerp factor for smooth animation (0 to 1 within tick)
@@ -925,6 +1050,12 @@ void c_render(Raid* env) {
     for (int y = 0; y <= env->arena_height; y++) {
         DrawLine(0, y * scale + arena_offset, width, y * scale + arena_offset, (Color){40, 40, 50, 255});
     }
+
+    // Yellow outline indicators on first row (y=0) at columns 1, 6, 8, 13
+    DrawRectangleLines(1 * scale, arena_offset, scale, scale, YELLOW);
+    DrawRectangleLines(6 * scale, arena_offset, scale, scale, YELLOW);
+    DrawRectangleLines(8 * scale, arena_offset, scale, scale, YELLOW);
+    DrawRectangleLines(13 * scale, arena_offset, scale, scale, YELLOW);
 
     // Draw Olm claws in top row (non-walkable)
     // Right claw (MAGIC weakness) - LEFT side of screen, tiles 1-5
@@ -1019,20 +1150,20 @@ void c_render(Raid* env) {
         int center_y = tile_y + scale / 2;
 
         if (p->hp > 0) {
-            // Draw player as full tile rectangle
+            // Draw player as full tile rectangle - color by current attack target
             Color player_color;
-            switch (p->attack_style) {
-                case STYLE_MELEE: player_color = RED; break;
-                case STYLE_MAGE: player_color = BLUE; break;
-                case STYLE_RANGE: player_color = GREEN; break;
-                default: player_color = WHITE;
+            switch (p->attack_target) {
+                case TARGET_MELEE_CLAW: player_color = RED; break;
+                case TARGET_MAGE_CLAW: player_color = BLUE; break;
+                case TARGET_HEAD: player_color = GREEN; break;
+                default: player_color = WHITE;  // No target
             }
             DrawRectangle(tile_x + 2, tile_y + 2, scale - 4, scale - 4, player_color);
             DrawRectangleLines(tile_x + 2, tile_y + 2, scale - 4, scale - 4, WHITE);
 
             // Draw melee attack indicator (slash effect in Olm row)
-            if (p->attacked_this_tick && p->attack_style == STYLE_MELEE && frame < 15) {
-                int attack_tile_x = (int)(p->attack_target_x * scale);
+            if (p->attacked_this_tick && p->attack_target == TARGET_MELEE_CLAW && frame < 15) {
+                int attack_tile_x = (int)(p->attack_anim_x * scale);
                 int attack_tile_y = olm_row_y;  // Attack targets are in Olm row
                 int slash_size = 20 - frame;
                 DrawRectangle(attack_tile_x + scale/2 - slash_size/2, attack_tile_y + scale/2 - slash_size/2,
