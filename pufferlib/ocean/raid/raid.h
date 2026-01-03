@@ -343,25 +343,33 @@ int determine_turn_direction(Raid* env) {
     }
 
     // Edge tiles ALWAYS force turn in that direction (col 1 = left, col 13 = right)
-    // These override damage-based logic
     if (player_x <= 1) {
-        return FACE_LEFT;  // Always turn left at left edge
-    }
-    if (player_x >= 13) {
-        return FACE_RIGHT;  // Always turn right at right edge
-    }
-
-    // Middle area (cols 2-12): use damage-based logic
-    // If mage claw was damaged since last turn -> turn LEFT toward it
-    if (env->olm.right_claw_damaged_since_turn && env->olm.right_claw_hp > 0) {
         return FACE_LEFT;
     }
-    // If melee claw was damaged since last turn -> turn RIGHT toward it
-    if (env->olm.left_claw_damaged_since_turn && env->olm.left_claw_hp > 0) {
+    if (player_x >= 13) {
         return FACE_RIGHT;
     }
 
-    // No damage to any claw - turn to center (follow player)
+    // Player is in a blind zone - determine which side and check damage
+    // Damage check is only for the claw on the PLAYER'S side
+    if (player_x >= 8) {
+        // Player is on RIGHT side (in blind zone when head faces left/center)
+        // Check if melee claw (left_claw, on right side of screen) was damaged
+        if (env->olm.left_claw_damaged_since_turn && env->olm.left_claw_hp > 0) {
+            return FACE_RIGHT;  // Turn all the way to melee claw
+        }
+        return FACE_CENTER;  // No damage on that side - turn to center
+    }
+    if (player_x <= 6) {
+        // Player is on LEFT side (in blind zone when head faces right/center)
+        // Check if mage claw (right_claw, on left side of screen) was damaged
+        if (env->olm.right_claw_damaged_since_turn && env->olm.right_claw_hp > 0) {
+            return FACE_LEFT;  // Turn all the way to mage claw
+        }
+        return FACE_CENTER;  // No damage on that side - turn to center
+    }
+
+    // Player in true middle (col 7) - turn to center
     return FACE_CENTER;
 }
 
@@ -944,20 +952,21 @@ void c_step(Raid* env) {
         env->terminals[i] = 0;
     }
 
-    // 1. Apply pending projectile damage (from last tick's attacks)
+    // 1. Apply pending projectile damage (from previous Olm attacks landing)
     apply_projectile_damage(env);
 
-    // 2. Process player actions (movement, style/prayer changes)
+    // 2. Olm attack/turn (checks visibility BEFORE player moves this tick)
+    // This means you must move BEFORE the tick Olm attacks, not on it
+    olm_attack_tick(env);
+
+    // 3. Process player actions (movement, style/prayer changes)
     process_actions(env);
 
-    // 3. Player attacks
+    // 4. Player attacks (based on new positions)
     process_player_attacks(env);
 
-    // 4. Phase transitions (claw down, head exposure, respawn)
+    // 5. Phase transitions (claw down, head exposure, respawn)
     check_phase_transitions(env);
-
-    // 5. Olm attack (spawns projectiles with deferred damage)
-    olm_attack_tick(env);
 
     // 6. Handle player respawns
     handle_respawns(env);
