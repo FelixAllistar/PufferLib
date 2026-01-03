@@ -12,6 +12,7 @@ static int my_init(Env* env, PyObject* args, PyObject* kwargs) {
     env->player_hit_chance = unpack(kwargs, "player_hit_chance");
     env->olm_base_damage = unpack(kwargs, "olm_base_damage");
     env->prayer_reduction = unpack(kwargs, "prayer_reduction");
+    env->reward_claw_imbalance = unpack(kwargs, "reward_claw_imbalance");
     init(env);
     return 0;
 }

@@ -163,6 +163,7 @@ typedef struct {
     float reward_damage_taken; // Penalty multiplier per damage taken
     float reward_olm_kill;     // Bonus for killing Olm
     float reward_death;        // Penalty for player death
+    float reward_claw_imbalance; // Penalty when killing one claw (scaled by other claw's HP %)
 
     // Animation state
     int frame;                 // Frame counter within current tick (0 to TICK_FRAMES-1)
@@ -390,6 +391,7 @@ void init(Raid* env) {
     if (env->reward_damage_taken == 0) env->reward_damage_taken = 0.02f;
     if (env->reward_olm_kill == 0) env->reward_olm_kill = 10.0f;
     if (env->reward_death == 0) env->reward_death = 1.0f;
+    if (env->reward_claw_imbalance == 0) env->reward_claw_imbalance = 1.0f;
 
     // Initialize player max HP
     for (int i = 0; i < env->num_players; i++) {
@@ -664,12 +666,26 @@ void respawn_claws(Olm* olm) {
 void check_phase_transitions(Raid* env) {
     Olm* olm = &env->olm;
 
-    // Track when claws go down
+    // Track when claws go down and apply imbalance penalty
     if (olm->left_claw_hp <= 0 && olm->left_claw_down_tick == -1) {
         olm->left_claw_down_tick = env->tick;
+        // Penalty proportional to right claw's remaining HP
+        float imbalance = (float)olm->right_claw_hp / CLAW_MAX_HP;
+        float penalty = imbalance * env->reward_claw_imbalance;
+        for (int i = 0; i < env->num_players; i++) {
+            env->rewards[i] -= penalty;
+            env->players[i].episode_return -= penalty;
+        }
     }
     if (olm->right_claw_hp <= 0 && olm->right_claw_down_tick == -1) {
         olm->right_claw_down_tick = env->tick;
+        // Penalty proportional to left claw's remaining HP
+        float imbalance = (float)olm->left_claw_hp / CLAW_MAX_HP;
+        float penalty = imbalance * env->reward_claw_imbalance;
+        for (int i = 0; i < env->num_players; i++) {
+            env->rewards[i] -= penalty;
+            env->players[i].episode_return -= penalty;
+        }
     }
 
     // Check if head should be exposed
@@ -844,16 +860,14 @@ void c_render(Raid* env) {
         env->client->font = GetFontDefault();
     }
 
-    if (IsKeyDown(KEY_ESCAPE)) {
+    // Animation loop - render TICK_FRAMES frames for smooth animation
+    for (int frame = 0; frame < TICK_FRAMES; frame++) {
+    if (WindowShouldClose() || IsKeyDown(KEY_ESCAPE)) {
         exit(0);
     }
 
     // Calculate lerp factor for smooth animation (0 to 1 within tick)
-    float t = (float)env->frame / TICK_FRAMES;
-    if (t > 1.0f) t = 1.0f;
-
-    // Increment frame counter (projectiles use tick-based timing now)
-    env->frame++;
+    float t = (float)frame / TICK_FRAMES;
 
     BeginDrawing();
     ClearBackground((Color){20, 20, 30, 255});
@@ -958,7 +972,7 @@ void c_render(Raid* env) {
 
         // Calculate projectile progress based on ticks and frames
         float total_travel_frames = (float)proj->travel_ticks * TICK_FRAMES;
-        float elapsed_frames = (float)(env->tick - proj->tick_spawned) * TICK_FRAMES + env->frame;
+        float elapsed_frames = (float)(env->tick - proj->tick_spawned) * TICK_FRAMES + frame;
         float proj_t = elapsed_frames / total_travel_frames;
         proj_t = fclamp(proj_t, 0.0f, 1.0f);
 
@@ -1017,10 +1031,10 @@ void c_render(Raid* env) {
             DrawRectangleLines(tile_x + 2, tile_y + 2, scale - 4, scale - 4, WHITE);
 
             // Draw melee attack indicator (slash effect in Olm row)
-            if (p->attacked_this_tick && p->attack_style == STYLE_MELEE && env->frame < 15) {
+            if (p->attacked_this_tick && p->attack_style == STYLE_MELEE && frame < 15) {
                 int attack_tile_x = (int)(p->attack_target_x * scale);
-                int attack_tile_y = (int)((p->attack_target_y + 1) * scale);  // +1 for Olm row
-                int slash_size = 20 - env->frame;
+                int attack_tile_y = olm_row_y;  // Attack targets are in Olm row
+                int slash_size = 20 - frame;
                 DrawRectangle(attack_tile_x + scale/2 - slash_size/2, attack_tile_y + scale/2 - slash_size/2,
                               slash_size, slash_size, (Color){255, 100, 100, 200});
             }
@@ -1061,6 +1075,7 @@ void c_render(Raid* env) {
     DrawText(tick_text, width - 80, hp_bar_y + 12, 16, WHITE);
 
     EndDrawing();
+    }  // End animation loop
 }
 
 void c_close(Raid* env) {

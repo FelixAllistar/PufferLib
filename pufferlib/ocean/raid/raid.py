@@ -19,6 +19,7 @@ class Raid(pufferlib.PufferEnv):
                  max_episode_ticks=10000,
                  player_damage=30, player_hit_chance=70,
                  olm_base_damage=20, prayer_reduction=80,
+                 reward_claw_imbalance=1.0,
                  render_mode=None, log_interval=128, buf=None, seed=0):
         '''Initialize the Great Olm boss fight environment.
 
@@ -32,6 +33,7 @@ class Raid(pufferlib.PufferEnv):
             player_hit_chance: Hit chance percentage (0-100)
             olm_base_damage: Base damage per Olm attack
             prayer_reduction: Damage reduction % with correct prayer
+            reward_claw_imbalance: Penalty when killing one claw (scaled by other's HP %)
             render_mode: Rendering mode (None or 'human')
             log_interval: Steps between log aggregation
             buf: Optional buffer for observations/actions
@@ -64,7 +66,8 @@ class Raid(pufferlib.PufferEnv):
                 player_damage=player_damage,
                 player_hit_chance=player_hit_chance,
                 olm_base_damage=olm_base_damage,
-                prayer_reduction=prayer_reduction)
+                prayer_reduction=prayer_reduction,
+                reward_claw_imbalance=reward_claw_imbalance)
             c_envs.append(c_env)
 
         self.c_envs = binding.vectorize(*c_envs)

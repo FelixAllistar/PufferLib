@@ -298,7 +298,7 @@ int run_interactive(void) {
     printf("================\n\n");
 
     while (!WindowShouldClose()) {
-        // Handle mouse click for movement target
+        // Handle mouse click for movement target (checked once per tick)
         if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
             Vector2 mouse = GetMousePosition();
             // Convert screen coords to tile coords (accounting for arena offset)
@@ -339,7 +339,7 @@ int run_interactive(void) {
             pending_action = 14;  // (+2, 0) right
         }
 
-        // Attack style keys (IsKeyPressed - buffer until next tick)
+        // Attack style keys
         if (IsKeyPressed(KEY_ONE)) {
             pending_action = ACTION_ATTACK_BASE + STYLE_MELEE;
         } else if (IsKeyPressed(KEY_TWO)) {
@@ -348,7 +348,7 @@ int run_interactive(void) {
             pending_action = ACTION_ATTACK_BASE + STYLE_RANGE;
         }
 
-        // Prayer keys (IsKeyPressed - buffer until next tick)
+        // Prayer keys
         if (IsKeyPressed(KEY_Q)) {
             pending_action = ACTION_PRAYER_BASE + STYLE_MELEE;
         } else if (IsKeyPressed(KEY_E)) {
@@ -357,64 +357,60 @@ int run_interactive(void) {
             pending_action = ACTION_PRAYER_BASE + STYLE_RANGE;
         }
 
-        // Render every frame for smooth animation
-        c_render(&env);
+        // Compute move action from click target if active
+        if (target_tile_x >= 0) {
+            int px = (int)env.players[0].x;
+            int py = (int)env.players[0].y;
+            int dx = target_tile_x - px;
+            int dy = target_tile_y - py;
 
-        // Only process game tick every TICK_FRAMES frames
-        if (env.frame >= TICK_FRAMES) {
-            env.frame = 0;
-
-            // Compute move action from click target if active
-            if (target_tile_x >= 0) {
-                int px = (int)env.players[0].x;
-                int py = (int)env.players[0].y;
-                int dx = target_tile_x - px;
-                int dy = target_tile_y - py;
-
-                if (dx == 0 && dy == 0) {
-                    // Reached target
-                    target_tile_x = -1;
-                    target_tile_y = -1;
-                    pending_action = 12;  // stay
-                } else {
-                    // Prioritize longer axis first
-                    int abs_dx = dx < 0 ? -dx : dx;
-                    int abs_dy = dy < 0 ? -dy : dy;
-                    int move_dx = 0, move_dy = 0;
-
-                    if (abs_dx >= abs_dy) {
-                        // Prioritize horizontal
-                        move_dx = dx < -2 ? -2 : (dx > 2 ? 2 : dx);
-                    } else {
-                        // Prioritize vertical
-                        move_dy = dy < -2 ? -2 : (dy > 2 ? 2 : dy);
-                    }
-
-                    // Action encoding: action = (dy + 2) * 5 + (dx + 2)
-                    pending_action = (move_dy + 2) * 5 + (move_dx + 2);
-                }
-            }
-
-            env.actions[0] = pending_action;
-            c_step(&env);
-            steps++;
-
-            // Reset to stay after each tick unless movement key is held or click target active
-            if (target_tile_x < 0 &&
-                !IsKeyDown(KEY_W) && !IsKeyDown(KEY_S) && !IsKeyDown(KEY_A) && !IsKeyDown(KEY_D) &&
-                !IsKeyDown(KEY_UP) && !IsKeyDown(KEY_DOWN) && !IsKeyDown(KEY_LEFT) && !IsKeyDown(KEY_RIGHT)) {
-                pending_action = 12;  // stay
-            }
-
-            if (env.terminals[0]) {
-                episode++;
-                printf("Episode %d ended at tick %d. Olm kills: %.0f/%.0f (%.1f%%)\n",
-                       episode, steps, env.log.olm_kills, env.log.n,
-                       100.0 * env.log.olm_kills / env.log.n);
-                // Clear target on episode end
+            if (dx == 0 && dy == 0) {
+                // Reached target
                 target_tile_x = -1;
                 target_tile_y = -1;
+                pending_action = 12;  // stay
+            } else {
+                // Prioritize longer axis first
+                int abs_dx = dx < 0 ? -dx : dx;
+                int abs_dy = dy < 0 ? -dy : dy;
+                int move_dx = 0, move_dy = 0;
+
+                if (abs_dx >= abs_dy) {
+                    // Prioritize horizontal
+                    move_dx = dx < -2 ? -2 : (dx > 2 ? 2 : dx);
+                } else {
+                    // Prioritize vertical
+                    move_dy = dy < -2 ? -2 : (dy > 2 ? 2 : dy);
+                }
+
+                // Action encoding: action = (dy + 2) * 5 + (dx + 2)
+                pending_action = (move_dy + 2) * 5 + (move_dx + 2);
             }
+        }
+
+        // Process game tick
+        env.actions[0] = pending_action;
+        c_step(&env);
+        steps++;
+
+        // Render full tick animation (handles all TICK_FRAMES internally)
+        c_render(&env);
+
+        // Reset to stay unless movement key is held or click target active
+        if (target_tile_x < 0 &&
+            !IsKeyDown(KEY_W) && !IsKeyDown(KEY_S) && !IsKeyDown(KEY_A) && !IsKeyDown(KEY_D) &&
+            !IsKeyDown(KEY_UP) && !IsKeyDown(KEY_DOWN) && !IsKeyDown(KEY_LEFT) && !IsKeyDown(KEY_RIGHT)) {
+            pending_action = 12;  // stay
+        }
+
+        if (env.terminals[0]) {
+            episode++;
+            printf("Episode %d ended at tick %d. Olm kills: %.0f/%.0f (%.1f%%)\n",
+                   episode, steps, env.log.olm_kills, env.log.n,
+                   100.0 * env.log.olm_kills / env.log.n);
+            // Clear target on episode end
+            target_tile_x = -1;
+            target_tile_y = -1;
         }
     }
 
