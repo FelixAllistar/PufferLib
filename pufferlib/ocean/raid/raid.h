@@ -85,6 +85,7 @@ typedef struct {
     float damage_dealt;    // Total damage dealt to Olm
     float damage_taken;    // Total damage taken by players
     float olm_kills;       // Count of successful Olm kills
+    float player_deaths;   // Count of player deaths
     float n;               // Required as last field - episode count
 } Log;
 
@@ -290,6 +291,7 @@ void apply_projectile_damage(Raid* env) {
                         p->respawn_tick = env->tick + RESPAWN_DELAY;
                         env->rewards[proj->target_player] -= env->reward_death;
                         p->episode_return -= env->reward_death;
+                        env->log.player_deaths++;
                     }
                 }
             }
