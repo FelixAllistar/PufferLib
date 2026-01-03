@@ -15,7 +15,7 @@ NUM_ACTIONS = 31
 
 class Raid(pufferlib.PufferEnv):
     def __init__(self, num_envs=1, num_players=1,
-                 arena_width=23, arena_height=18,
+                 arena_width=19, arena_height=10,
                  max_episode_ticks=10000,
                  player_damage=30, player_hit_chance=70,
                  olm_base_damage=20, prayer_reduction=80,
@@ -25,8 +25,8 @@ class Raid(pufferlib.PufferEnv):
         Args:
             num_envs: Number of parallel environments
             num_players: Number of players per environment (1-N)
-            arena_width: Width of the arena in tiles (default 23)
-            arena_height: Height of the arena in tiles (default 18)
+            arena_width: Width of the arena in tiles (default 19)
+            arena_height: Height of the arena in tiles (default 10)
             max_episode_ticks: Maximum ticks before episode timeout
             player_damage: Damage per successful player hit
             player_hit_chance: Hit chance percentage (0-100)
