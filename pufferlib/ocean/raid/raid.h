@@ -806,22 +806,22 @@ void check_phase_transitions(Raid* env) {
     // Track when claws go down and apply imbalance penalty
     if (olm->left_claw_hp <= 0 && olm->left_claw_down_tick == -1) {
         olm->left_claw_down_tick = env->tick;
-        // Penalty proportional to right claw's remaining HP
-        float imbalance = (float)olm->right_claw_hp / CLAW_MAX_HP;
-        float penalty = imbalance * env->reward_claw_imbalance;
-        for (int i = 0; i < env->num_players; i++) {
-            env->rewards[i] -= penalty;
-            env->players[i].episode_return -= penalty;
+        // Penalty of -1 if other claw has > 50 HP remaining
+        if (olm->right_claw_hp > 50) {
+            for (int i = 0; i < env->num_players; i++) {
+                env->rewards[i] -= 1.0f;
+                env->players[i].episode_return -= 1.0f;
+            }
         }
     }
     if (olm->right_claw_hp <= 0 && olm->right_claw_down_tick == -1) {
         olm->right_claw_down_tick = env->tick;
-        // Penalty proportional to left claw's remaining HP
-        float imbalance = (float)olm->left_claw_hp / CLAW_MAX_HP;
-        float penalty = imbalance * env->reward_claw_imbalance;
-        for (int i = 0; i < env->num_players; i++) {
-            env->rewards[i] -= penalty;
-            env->players[i].episode_return -= penalty;
+        // Penalty of -1 if other claw has > 50 HP remaining
+        if (olm->left_claw_hp > 50) {
+            for (int i = 0; i < env->num_players; i++) {
+                env->rewards[i] -= 1.0f;
+                env->players[i].episode_return -= 1.0f;
+            }
         }
     }
 
