@@ -109,12 +109,15 @@ class PuffeRL:
         self.ep_indices = torch.arange(total_agents, device=device, dtype=torch.int32)
         self.free_idx = total_agents
 
-        # LSTM
+        # Recurrent state
         if config['use_rnn']:
             n = vecenv.agents_per_batch
-            h = policy.hidden_size
-            self.lstm_h = {i*n: torch.zeros(n, h, device=device) for i in range(total_agents//n)}
-            self.lstm_c = {i*n: torch.zeros(n, h, device=device) for i in range(total_agents//n)}
+            if hasattr(policy, 'rnn_state_shape'):
+                rnn_shape = policy.rnn_state_shape(n)
+            else:
+                rnn_shape = (n, policy.hidden_size)
+            self.lstm_h = {i*n: torch.zeros(rnn_shape, device=device) for i in range(total_agents//n)}
+            self.lstm_c = {i*n: torch.zeros(rnn_shape, device=device) for i in range(total_agents//n)}
 
         # Minibatching & gradient accumulation
         minibatch_size = config['minibatch_size']
@@ -345,6 +348,9 @@ class PuffeRL:
         anneal_beta = b0 + (1 - b0)*a*self.epoch/self.total_epochs
         self.ratio[:] = 1
 
+        lstm_h = torch.concat(list(self.lstm_h.values()), dim=1)
+        lstm_c = torch.concat(list(self.lstm_c.values()), dim=1)
+
         for mb in range(self.total_minibatches):
             profile('train_misc', epoch)
             self.amp_context.__enter__()
@@ -380,8 +386,10 @@ class PuffeRL:
 
             state = dict(
                 action=mb_actions,
-                lstm_h=None,
-                lstm_c=None,
+                lstm_h = None,
+                lstm_c = None,
+                #lstm_h=lstm_h[:, idx],
+                #lstm_c=lstm_c[:, idx],
             )
 
             logits, newvalue = self.policy(mb_obs, state)
@@ -1318,7 +1326,7 @@ def process_config(config, parser=None):
         prev[subkey] = value
 
     args['train']['env'] = args['env_name'] or ''  # for trainer dashboard
-    args['train']['use_rnn'] = args['rnn_name'] is not None
+    args['train']['use_rnn'] = args['rnn_name'] is not None or args.get('train', {}).get('use_rnn', False)
     return args
 
 def main():

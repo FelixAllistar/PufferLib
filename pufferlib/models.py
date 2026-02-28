@@ -3,47 +3,50 @@ import numpy as np
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 import pufferlib.emulation
 import pufferlib.pytorch
 import pufferlib.spaces
 
 
-class Default(nn.Module):
-    '''Default PyTorch policy. Flattens obs and applies a linear layer.
-
-    PufferLib is not a framework. It does not enforce a base class.
-    You can use any PyTorch policy that returns actions and values.
-    We structure our forward methods as encode_observations and decode_actions
-    to make it easier to wrap policies with LSTMs. You can do that and use
-    our LSTM wrapper or implement your own. To port an existing policy
-    for use with our LSTM wrapper, simply put everything from forward() before
-    the recurrent cell into encode_observations and put everything after
-    into decode_actions.
-    '''
+class DefaultEncoder(nn.Module):
     def __init__(self, env, hidden_size=128):
         super().__init__()
-        self.hidden_size = hidden_size
+        try:
+            self.is_dict_obs = isinstance(env.env.observation_space, pufferlib.spaces.Dict)
+        except:
+            self.is_dict_obs = isinstance(env.observation_space, pufferlib.spaces.Dict)
+
+        if self.is_dict_obs:
+            dtype = pufferlib.pytorch.nativize_dtype(env.emulated)
+            input_size = int(sum(np.prod(v.shape) for v in env.env.observation_space.values()))
+        else:
+            num_obs = np.prod(env.single_observation_space.shape)
+            dtype = env.single_observation_space.dtype
+
+        self.dtype = dtype
+        self.encoder = pufferlib.pytorch.layer_init(nn.Linear(num_obs, hidden_size))
+
+    def forward(self, observations):
+        batch_size = observations.shape[0]
+        if self.is_dict_obs:
+            observations = pufferlib.pytorch.nativize_tensor(observations, self.dtype)
+            observations = torch.cat([v.view(batch_size, -1) for v in observations.values()], dim=1)
+        else:
+            observations = observations.view(batch_size, -1)
+
+        hidden = self.encoder(observations.float())
+        return F.gelu(hidden)
+
+class DefaultDecoder(nn.Module):
+    def __init__(self, env, hidden_size=128):
+        super().__init__()
         self.is_multidiscrete = isinstance(env.single_action_space,
                 pufferlib.spaces.MultiDiscrete)
         self.is_continuous = isinstance(env.single_action_space,
                 pufferlib.spaces.Box)
-        try:
-            self.is_dict_obs = isinstance(env.env.observation_space, pufferlib.spaces.Dict) 
-        except:
-            self.is_dict_obs = isinstance(env.observation_space, pufferlib.spaces.Dict) 
 
-        if self.is_dict_obs:
-            self.dtype = pufferlib.pytorch.nativize_dtype(env.emulated)
-            input_size = int(sum(np.prod(v.shape) for v in env.env.observation_space.values()))
-            self.encoder = nn.Linear(input_size, self.hidden_size)
-        else:
-            num_obs = np.prod(env.single_observation_space.shape)
-            self.encoder = torch.nn.Sequential(
-                pufferlib.pytorch.layer_init(nn.Linear(num_obs, hidden_size)),
-                nn.GELU(),
-            )
-            
         if self.is_multidiscrete:
             self.action_nvec = tuple(env.single_action_space.nvec)
             num_atns = sum(self.action_nvec)
@@ -59,31 +62,11 @@ class Default(nn.Module):
             self.decoder_logstd = nn.Parameter(torch.zeros(
                 1, env.single_action_space.shape[0]))
 
-        self.value = pufferlib.pytorch.layer_init(
+        self.value_function = pufferlib.pytorch.layer_init(
             nn.Linear(hidden_size, 1), std=1)
 
-    def forward_eval(self, observations, state=None):
-        hidden = self.encode_observations(observations, state=state)
-        logits, values = self.decode_actions(hidden)
-        return logits, values
 
-    def forward(self, observations, state=None):
-        return self.forward_eval(observations, state)
-
-    def encode_observations(self, observations, state=None):
-        '''Encodes a batch of observations into hidden states. Assumes
-        no time dimension (handled by LSTM wrappers).'''
-        batch_size = observations.shape[0]
-        if self.is_dict_obs:
-            observations = pufferlib.pytorch.nativize_tensor(observations, self.dtype)
-            observations = torch.cat([v.view(batch_size, -1) for v in observations.values()], dim=1)
-        else: 
-            observations = observations.view(batch_size, -1)
-        return self.encoder(observations.float())
-
-    def decode_actions(self, hidden):
-        '''Decodes a batch of hidden states into (multi)discrete actions.
-        Assumes no time dimension (handled by LSTM wrappers).'''
+    def forward(self, hidden):
         if self.is_multidiscrete:
             logits = self.decoder(hidden).split(self.action_nvec, dim=1)
         elif self.is_continuous:
@@ -94,8 +77,240 @@ class Default(nn.Module):
         else:
             logits = self.decoder(hidden)
 
-        values = self.value(hidden)
+        values = self.value_function(hidden)
         return logits, values
+
+
+class Default(nn.Module):
+    def __init__(self, env, hidden_size=128, num_layers=1, **kwargs):
+        super().__init__()
+        self.hidden_size = hidden_size
+        self.input_size = hidden_size
+        self.num_layers = num_layers
+        self.obs_shape = env.single_observation_space.shape
+        self.encoder = DefaultEncoder(env, hidden_size)
+        self.decoder = DefaultDecoder(env, hidden_size)
+
+        # Match puffer3 LSTMWrapper: re-init all params before LSTM-specific init
+        for name, param in self.named_parameters():
+            if 'layer_norm' in name:
+                continue
+            if "bias" in name:
+                nn.init.constant_(param, 0)
+            elif "weight" in name and param.ndim >= 2:
+                nn.init.orthogonal_(param, 1.0)
+
+        self.lstm = nn.LSTM(hidden_size, hidden_size, num_layers=num_layers)
+        self.cell = nn.ModuleList([torch.nn.LSTMCell(hidden_size, hidden_size) for _ in range(num_layers)])
+
+        for i in range(num_layers):
+            cell = self.cell[i]
+
+            w_ih = getattr(self.lstm, f'weight_ih_l{i}')
+            w_hh = getattr(self.lstm, f'weight_hh_l{i}')
+            b_ih = getattr(self.lstm, f'bias_ih_l{i}')
+            b_hh = getattr(self.lstm, f'bias_hh_l{i}')
+
+            nn.init.orthogonal_(w_ih, 1.0)
+            nn.init.orthogonal_(w_hh, 1.0)
+            b_ih.data.zero_()
+            b_hh.data.zero_()
+
+            cell.weight_ih = w_ih
+            cell.weight_hh = w_hh
+            cell.bias_ih = b_ih
+            cell.bias_hh = b_hh
+
+    def rnn_state_shape(self, batch_size):
+        return (batch_size, self.hidden_size)
+
+    def forward_eval(self, x, state):
+        '''Forward function for inference. Uses LSTMCell for speed.
+        Adapted for puffer3 state dict interface.'''
+        h = self.encoder(x)
+        lstm_h = state['lstm_h']
+        lstm_c = state['lstm_c']
+
+        if lstm_h is not None:
+            assert lstm_h.shape[0] == lstm_c.shape[0] == x.shape[0], 'LSTM state must be (h, c)'
+            lstm_state = (lstm_h, lstm_c)
+        else:
+            lstm_state = None
+
+        h, c = self.cell[0](h, lstm_state)
+        for i in range(1, self.num_layers):
+            h, c = self.cell[i](h, (h, c))
+
+        state['lstm_h'] = h
+        state['lstm_c'] = c
+        logits, values = self.decoder(h)
+        return logits, values
+
+    def forward(self, x, state=None):
+        '''Forward function for training. Uses LSTM for fast time-batching'''
+        x_shape, space_shape = x.shape, self.obs_shape
+        x_n, space_n = len(x_shape), len(space_shape)
+        assert x_shape[-space_n:] == space_shape, f'Invalid input tensor shape {x.shape} != {space_shape}'
+
+        B, TT = x_shape[:2]
+        x = x.reshape(B*TT, *space_shape)
+        h = self.encoder(x)
+        assert h.shape == (B*TT, self.input_size)
+        h = h.reshape(B, TT, self.input_size)
+
+        h = h.transpose(0, 1)
+        h, (lstm_h, lstm_c) = self.lstm.forward(h)
+        h = h.transpose(0, 1)
+
+        flat_hidden = h.reshape(B*TT, self.hidden_size)
+        logits, values = self.decoder(flat_hidden)
+        values = values.reshape(B, TT)
+        return logits, values
+
+
+# https://arxiv.org/abs/2410.01201v1
+# https://github.com/glassroom/heinsen_sequence
+
+def heinsen_associative_scan_log(log_coeffs, log_values):
+    a_star = log_coeffs.cumsum(dim=1)
+    log_h0_plus_b_star = (log_values - a_star).logcumsumexp(dim=1)
+    log_h = a_star + log_h0_plus_b_star
+    return log_h.exp()
+
+def _g(x):
+    return torch.where(x >= 0, x + 0.5, x.sigmoid())
+
+def _log_g(x):
+    return torch.where(x >= 0, (F.relu(x) + 0.5).log(), -F.softplus(-x))
+
+class MinGRULayer(nn.Module):
+    def __init__(self, dim, expansion_factor=1., proj_out=None):
+        super().__init__()
+        dim_inner = int(dim * expansion_factor)
+        self.proj_out = proj_out if proj_out is not None else (expansion_factor != 1.)
+
+        self.to_hidden_and_gate = nn.Linear(dim, dim_inner * 3, bias=False)
+        torch.nn.init.orthogonal_(self.to_hidden_and_gate.weight)
+
+        if self.proj_out:
+            self.to_out = nn.Linear(dim_inner, dim, bias=False)
+        #self.norm = torch.nn.RMSNorm(dim)
+
+    def forward(self, x, prev_hidden=None):
+        seq_len = x.shape[1]
+        hidden, gate, mul = self.to_hidden_and_gate(x).chunk(3, dim=-1)
+
+        if seq_len == 1:
+            hidden = _g(hidden)
+            gate = gate.sigmoid()
+            out = torch.lerp(prev_hidden, hidden, gate) if prev_hidden is not None else (hidden * gate)
+        else:
+            log_coeffs = -F.softplus(gate)
+            log_z = -F.softplus(-gate)
+            log_tilde_h = _log_g(hidden)
+            log_values = log_z + log_tilde_h
+
+            if prev_hidden is not None:
+                log_values = torch.cat((prev_hidden.log(), log_values), dim=1)
+                log_coeffs = F.pad(log_coeffs, (0, 0, 1, 0))
+
+            out = heinsen_associative_scan_log(log_coeffs, log_values)
+            out = out[:, -seq_len:]
+
+        next_prev_hidden = out[:, -1:]
+
+        if self.proj_out:
+            out = self.to_out(out)
+
+        # 0.90
+        #res = mul.sigmoid()
+        #out = res*out + (1-res)*x
+
+        # 0.84
+        out = out * mul
+
+        #out = out + x
+        #out = self.norm(out)
+
+        return out, next_prev_hidden
+
+class MinGRU(nn.Module):
+    def __init__(self, env, hidden_size=128, num_layers=1, expansion_factor=1, **kwargs):
+        super().__init__()
+        self.hidden_size = hidden_size
+        self.input_size = hidden_size
+        self.expansion_factor = expansion_factor
+        self.obs_shape = env.single_observation_space.shape
+        self.encoder = DefaultEncoder(env, hidden_size)
+        self.decoder = DefaultDecoder(env, hidden_size)
+        self.num_layers = num_layers
+        self.mingru = nn.ModuleList([MinGRULayer(hidden_size, expansion_factor) for _ in range(num_layers)])
+
+        # Match puffer3 LSTMWrapper: re-init all params
+        '''
+        for name, param in self.named_parameters():
+            if 'layer_norm' in name:
+                continue
+            if "bias" in name:
+                nn.init.constant_(param, 0)
+            elif "weight" in name and param.ndim >= 2:
+                nn.init.orthogonal_(param, 1.0)
+        '''
+
+    def rnn_state_shape(self, batch_size):
+        return (self.num_layers, batch_size, self.hidden_size * self.expansion_factor)
+
+    def forward_eval(self, x, state):
+        '''Forward function for inference. Adapted for puffer3 state dict interface.'''
+        mingru_state = state['lstm_h']  # (num_layers, batch, hidden*expansion)
+        h = self.encoder(x)
+        h = h.unsqueeze(1)
+
+        if mingru_state is not None:
+            mingru_state = mingru_state.unsqueeze(2)  # add seq dim
+            state_out = []
+            for i in range(self.num_layers):
+                h, s = self.mingru[i](h, mingru_state[i])
+                state_out.append(s)
+            mingru_state = torch.stack(state_out, 0).squeeze(2)
+        else:
+            state_out = []
+            for i in range(self.num_layers):
+                h, s = self.mingru[i](h)
+                state_out.append(s)
+            mingru_state = torch.stack(state_out, 0).squeeze(2)
+
+        h = h.squeeze(1)
+        state['lstm_h'] = mingru_state
+        state['lstm_c'] = mingru_state  # unused but keeps interface consistent
+        logits, values = self.decoder(h)
+        return logits, values
+
+    def forward(self, x, state=None):
+        '''Forward function for training.'''
+        x_shape, space_shape = x.shape, self.obs_shape
+        x_n, space_n = len(x_shape), len(space_shape)
+        assert x_shape[-space_n:] == space_shape, f'Invalid input tensor shape {x.shape} != {space_shape}'
+
+        B, TT = x_shape[:2]
+        x = x.reshape(B*TT, *space_shape)
+        h = self.encoder(x)
+        assert h.shape == (B*TT, self.input_size)
+        h = h.reshape(B, TT, self.input_size)
+
+        init_state = torch.zeros(self.num_layers, B,
+            self.hidden_size * self.expansion_factor, device=h.device)
+        init_state = init_state.unsqueeze(2)
+        #init_state = state['lstm_h'].unsqueeze(2)
+
+        for i in range(self.num_layers):
+            h, _ = self.mingru[i](h, init_state[i])
+
+        flat_hidden = h.reshape(B*TT, self.hidden_size)
+        logits, values = self.decoder(flat_hidden)
+        values = values.reshape(B, TT)
+        return logits, values
+
 
 class LSTMWrapper(nn.Module):
     def __init__(self, env, policy, input_size=128, hidden_size=128):
