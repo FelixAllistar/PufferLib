@@ -76,6 +76,14 @@ def load_lib():
                  "proj_wgrad", "proj_bgrad", "embed_wgrad"]:
         getattr(lib, f"nmmo3_test_get_{name}").argtypes = [VP]
     lib.nmmo3_test_get_conv1_out.argtypes = [VP, ctypes.c_int]
+
+    # Decoder test functions
+    lib.decoder_test_init.argtypes = [ctypes.c_int, ctypes.c_int, ctypes.c_int]
+    lib.decoder_test_set_weights.argtypes = [VP] * 4
+    lib.decoder_test_forward.argtypes = [VP, VP, ctypes.c_int]
+    lib.decoder_test_backward.argtypes = [VP, VP, ctypes.c_int]
+    for name in ["wgrad", "bgrad", "ln_gamma_grad", "ln_beta_grad", "grad_input"]:
+        getattr(lib, f"decoder_test_get_{name}").argtypes = [VP]
     return lib
 
 
@@ -238,6 +246,111 @@ def test_backward(lib, B):
 
 
 # ============================================================================
+# Decoder tests
+# ============================================================================
+
+HIDDEN = 512
+OUTPUT_DIM = 19  # typical NMMO3 output_dim
+
+
+def test_decoder_forward(lib, B):
+    """Compare CUDA decoder (LayerNorm + Linear) against PyTorch reference."""
+    print(f"\n--- Decoder Forward B={B} ---")
+    device = torch.device("cuda")
+    torch.manual_seed(123)
+    od1 = OUTPUT_DIM + 1
+
+    ln = nn.LayerNorm(HIDDEN).to(device).float()
+    linear = nn.Linear(HIDDEN, od1).to(device).float()
+
+    inp = torch.randn(B, HIDDEN, device=device)
+
+    lib.decoder_test_init(B, HIDDEN, OUTPUT_DIM)
+    # weight is stored as (od1, hidden) in both PyTorch and CUDA
+    lib.decoder_test_set_weights(
+        ptr(linear.weight.data.contiguous()),
+        ptr(linear.bias.data.contiguous()),
+        ptr(ln.weight.data.contiguous()),
+        ptr(ln.bias.data.contiguous()),
+    )
+
+    cuda_out = torch.zeros(B, od1, device=device)
+    lib.decoder_test_forward(ptr(cuda_out), ptr(inp), B)
+    torch.cuda.synchronize()
+
+    with torch.no_grad():
+        ref_out = linear(ln(inp))
+
+    check_match("decoder_forward", cuda_out, ref_out)
+    print("  PASSED")
+
+
+def test_decoder_backward(lib, B):
+    """Compare CUDA decoder backward (all grads) against PyTorch autograd."""
+    print(f"\n--- Decoder Backward B={B} ---")
+    device = torch.device("cuda")
+    torch.manual_seed(123)
+    od1 = OUTPUT_DIM + 1
+
+    ln = nn.LayerNorm(HIDDEN).to(device).float()
+    linear = nn.Linear(HIDDEN, od1).to(device).float()
+
+    inp = torch.randn(B, HIDDEN, device=device, requires_grad=True)
+
+    lib.decoder_test_init(B, HIDDEN, OUTPUT_DIM)
+    lib.decoder_test_set_weights(
+        ptr(linear.weight.data.contiguous()),
+        ptr(linear.bias.data.contiguous()),
+        ptr(ln.weight.data.contiguous()),
+        ptr(ln.bias.data.contiguous()),
+    )
+
+    # CUDA forward
+    cuda_out = torch.zeros(B, od1, device=device)
+    lib.decoder_test_forward(ptr(cuda_out), ptr(inp.detach()), B)
+
+    # PyTorch forward
+    ref_out = linear(ln(inp))
+
+    # Create grad_logits (B, OUTPUT_DIM) and grad_value (B,)
+    torch.manual_seed(456)
+    grad_logits = torch.randn(B, OUTPUT_DIM, device=device)
+    grad_value = torch.randn(B, device=device)
+
+    # PyTorch backward - reconstruct full grad
+    full_grad = torch.cat([grad_logits, grad_value.unsqueeze(1)], dim=1)
+    ref_out.backward(full_grad)
+
+    # CUDA backward
+    lib.decoder_test_backward(ptr(grad_logits), ptr(grad_value), B)
+    torch.cuda.synchronize()
+
+    tol = dict(atol=1e-3, rtol=1e-3)
+
+    cuda_wgrad = torch.zeros(od1, HIDDEN, device=device)
+    lib.decoder_test_get_wgrad(ptr(cuda_wgrad))
+    check_match("decoder_wgrad", cuda_wgrad, linear.weight.grad, **tol)
+
+    cuda_bgrad = torch.zeros(od1, device=device)
+    lib.decoder_test_get_bgrad(ptr(cuda_bgrad))
+    check_match("decoder_bgrad", cuda_bgrad, linear.bias.grad, **tol)
+
+    cuda_ln_gamma_grad = torch.zeros(HIDDEN, device=device)
+    lib.decoder_test_get_ln_gamma_grad(ptr(cuda_ln_gamma_grad))
+    check_match("ln_gamma_grad", cuda_ln_gamma_grad, ln.weight.grad, **tol)
+
+    cuda_ln_beta_grad = torch.zeros(HIDDEN, device=device)
+    lib.decoder_test_get_ln_beta_grad(ptr(cuda_ln_beta_grad))
+    check_match("ln_beta_grad", cuda_ln_beta_grad, ln.bias.grad, **tol)
+
+    cuda_grad_input = torch.zeros(B, HIDDEN, device=device)
+    lib.decoder_test_get_grad_input(ptr(cuda_grad_input))
+    check_match("decoder_grad_input", cuda_grad_input, inp.grad, **tol)
+
+    print("  PASSED")
+
+
+# ============================================================================
 # Benchmarks
 # ============================================================================
 
@@ -290,6 +403,8 @@ if __name__ == "__main__":
         for B in [1, 8, 64]:
             test_forward(lib, B)
             test_backward(lib, B)
+            test_decoder_forward(lib, B)
+            test_decoder_backward(lib, B)
         print("\nAll tests passed!")
 
     if mode in ("bench", "all"):

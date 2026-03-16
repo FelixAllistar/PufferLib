@@ -487,14 +487,198 @@ static void encoder_free_activations(void* activations) {
 
 #include "ocean.cu"
 
+// ============================================================================
+// Layer Norm kernels
+// ============================================================================
+
+// Forward: one block (256 threads) per sample. Two-pass: mean, then variance.
+// Saves mean/rstd for backward if save pointers are non-NULL.
+__global__ void layer_norm_fwd_kernel(
+    precision_t* __restrict__ out,
+    const precision_t* __restrict__ input,
+    const precision_t* __restrict__ gamma,
+    const precision_t* __restrict__ beta,
+    float* __restrict__ save_mean,   // (B,) or NULL
+    float* __restrict__ save_rstd,   // (B,) or NULL
+    int H
+) {
+    int b = blockIdx.x;
+    const precision_t* x = input + b * H;
+    precision_t* y = out + b * H;
+
+    // Pass 1: compute mean
+    float sum = 0.0f;
+    for (int h = threadIdx.x; h < H; h += blockDim.x)
+        sum += to_float(x[h]);
+
+    // Warp reduce
+    for (int offset = 16; offset > 0; offset >>= 1)
+        sum += __shfl_down_sync(0xffffffff, sum, offset);
+    __shared__ float sdata[32];
+    int lane = threadIdx.x % 32, warp = threadIdx.x / 32;
+    if (lane == 0) sdata[warp] = sum;
+    __syncthreads();
+    if (warp == 0) {
+        sum = (lane < (blockDim.x + 31) / 32) ? sdata[lane] : 0.0f;
+        for (int offset = 16; offset > 0; offset >>= 1)
+            sum += __shfl_down_sync(0xffffffff, sum, offset);
+    }
+    __shared__ float s_mean;
+    if (threadIdx.x == 0) s_mean = sum / H;
+    __syncthreads();
+    float mean = s_mean;
+
+    // Pass 2: compute variance
+    float var_sum = 0.0f;
+    for (int h = threadIdx.x; h < H; h += blockDim.x) {
+        float d = to_float(x[h]) - mean;
+        var_sum += d * d;
+    }
+    for (int offset = 16; offset > 0; offset >>= 1)
+        var_sum += __shfl_down_sync(0xffffffff, var_sum, offset);
+    if (lane == 0) sdata[warp] = var_sum;
+    __syncthreads();
+    if (warp == 0) {
+        var_sum = (lane < (blockDim.x + 31) / 32) ? sdata[lane] : 0.0f;
+        for (int offset = 16; offset > 0; offset >>= 1)
+            var_sum += __shfl_down_sync(0xffffffff, var_sum, offset);
+    }
+    __shared__ float s_rstd;
+    if (threadIdx.x == 0) {
+        float rstd = rsqrtf(var_sum / H + 1e-5f);
+        s_rstd = rstd;
+        if (save_mean) save_mean[b] = mean;
+        if (save_rstd) save_rstd[b] = rstd;
+    }
+    __syncthreads();
+    float rstd = s_rstd;
+
+    // Normalize + scale/shift
+    for (int h = threadIdx.x; h < H; h += blockDim.x) {
+        float xhat = (to_float(x[h]) - mean) * rstd;
+        y[h] = from_float(xhat * to_float(gamma[h]) + to_float(beta[h]));
+    }
+}
+
+// Backward: one block per sample, computes grad_input in-place from dy
+__global__ void layer_norm_bwd_kernel(
+    precision_t* __restrict__ grad_input,  // (B, H) - in: dy, out: dx
+    const precision_t* __restrict__ input,  // (B, H) - pre-norm input
+    const precision_t* __restrict__ gamma,
+    const float* __restrict__ save_mean,
+    const float* __restrict__ save_rstd,
+    int H
+) {
+    int b = blockIdx.x;
+    precision_t* dx = grad_input + b * H;
+    const precision_t* x = input + b * H;
+    float mean = save_mean[b];
+    float rstd = save_rstd[b];
+
+    // Compute c1 = mean_H(dy * gamma) and c2 = mean_H(dy * gamma * x_hat)
+    float sum1 = 0.0f, sum2 = 0.0f;
+    for (int h = threadIdx.x; h < H; h += blockDim.x) {
+        float dy_g = to_float(dx[h]) * to_float(gamma[h]);
+        float xhat = (to_float(x[h]) - mean) * rstd;
+        sum1 += dy_g;
+        sum2 += dy_g * xhat;
+    }
+
+    // Warp reduce both sums
+    for (int offset = 16; offset > 0; offset >>= 1) {
+        sum1 += __shfl_down_sync(0xffffffff, sum1, offset);
+        sum2 += __shfl_down_sync(0xffffffff, sum2, offset);
+    }
+    __shared__ float sdata1[32], sdata2[32];
+    int lane = threadIdx.x % 32, warp = threadIdx.x / 32;
+    if (lane == 0) { sdata1[warp] = sum1; sdata2[warp] = sum2; }
+    __syncthreads();
+    if (warp == 0) {
+        sum1 = (lane < (blockDim.x + 31) / 32) ? sdata1[lane] : 0.0f;
+        sum2 = (lane < (blockDim.x + 31) / 32) ? sdata2[lane] : 0.0f;
+        for (int offset = 16; offset > 0; offset >>= 1) {
+            sum1 += __shfl_down_sync(0xffffffff, sum1, offset);
+            sum2 += __shfl_down_sync(0xffffffff, sum2, offset);
+        }
+    }
+    __shared__ float s_c1, s_c2;
+    if (threadIdx.x == 0) { s_c1 = sum1 / H; s_c2 = sum2 / H; }
+    __syncthreads();
+    float c1 = s_c1, c2 = s_c2;
+
+    // dx[h] = rstd * (dy[h] * gamma[h] - c1 - x_hat[h] * c2)
+    for (int h = threadIdx.x; h < H; h += blockDim.x) {
+        float dy_g = to_float(dx[h]) * to_float(gamma[h]);
+        float xhat = (to_float(x[h]) - mean) * rstd;
+        dx[h] = from_float(rstd * (dy_g - c1 - xhat * c2));
+    }
+}
+
+// Param grads: one block per H feature, reduces over B
+// dgamma[h] = sum_B(dy[b,h] * x_hat[b,h])
+// dbeta[h] = sum_B(dy[b,h])
+__global__ void layer_norm_param_grad_kernel(
+    precision_t* __restrict__ dgamma,
+    precision_t* __restrict__ dbeta,
+    const precision_t* __restrict__ dy,     // (B, H)
+    const precision_t* __restrict__ input,  // (B, H) - pre-norm input
+    const float* __restrict__ save_mean,
+    const float* __restrict__ save_rstd,
+    int B, int H
+) {
+    int h = blockIdx.x;
+    if (h >= H) return;
+
+    float sum_gamma = 0.0f, sum_beta = 0.0f;
+    for (int b = threadIdx.x; b < B; b += blockDim.x) {
+        float dy_val = to_float(dy[b * H + h]);
+        float xhat = (to_float(input[b * H + h]) - save_mean[b]) * save_rstd[b];
+        sum_gamma += dy_val * xhat;
+        sum_beta += dy_val;
+    }
+
+    // Warp reduce
+    for (int offset = 16; offset > 0; offset >>= 1) {
+        sum_gamma += __shfl_down_sync(0xffffffff, sum_gamma, offset);
+        sum_beta += __shfl_down_sync(0xffffffff, sum_beta, offset);
+    }
+    __shared__ float sg[32], sb[32];
+    int lane = threadIdx.x % 32, warp = threadIdx.x / 32;
+    if (lane == 0) { sg[warp] = sum_gamma; sb[warp] = sum_beta; }
+    __syncthreads();
+    if (warp == 0) {
+        sum_gamma = (lane < (blockDim.x + 31) / 32) ? sg[lane] : 0.0f;
+        sum_beta = (lane < (blockDim.x + 31) / 32) ? sb[lane] : 0.0f;
+        for (int offset = 16; offset > 0; offset >>= 1) {
+            sum_gamma += __shfl_down_sync(0xffffffff, sum_gamma, offset);
+            sum_beta += __shfl_down_sync(0xffffffff, sum_beta, offset);
+        }
+        if (lane == 0) {
+            dgamma[h] = from_float(sum_gamma);
+            dbeta[h] = from_float(sum_beta);
+        }
+    }
+}
+
+// ============================================================================
+// Decoder
+// ============================================================================
+
 struct DecoderWeights {
     PrecisionTensor weight, bias, logstd;
+    PrecisionTensor ln_gamma, ln_bias;
     int hidden_dim, output_dim;
     bool continuous;
 };
 
 struct DecoderActivations {
     PrecisionTensor out, grad_out, saved_input, grad_input, wgrad_scratch, bgrad_scratch, logstd_scratch;
+    // Layer norm activations
+    PrecisionTensor ln_out;            // (B_TT, hidden_dim) - normed output
+    PrecisionTensor ln_saved_input;    // (B_TT, hidden_dim) - pre-norm input for backward
+    FloatTensor ln_save_mean;          // (B_TT,) - saved mean
+    FloatTensor ln_save_rstd;          // (B_TT,) - saved rstd
+    PrecisionTensor ln_gamma_grad, ln_beta_grad;  // (hidden_dim,) - param grads
 };
 
 __global__ void bias_add_kernel(precision_t* __restrict__ data,
@@ -507,11 +691,25 @@ __global__ void bias_add_kernel(precision_t* __restrict__ data,
 static PrecisionTensor decoder_forward(void* w, void* activations, PrecisionTensor input, cudaStream_t stream) {
     DecoderWeights* dw = (DecoderWeights*)w;
     DecoderActivations* a = (DecoderActivations*)activations;
-    if (a->saved_input.data) {
-        puf_copy(&a->saved_input, &input, stream);
+    int B = input.shape[0], H = dw->hidden_dim, od1 = dw->output_dim + 1;
+
+    // Save pre-norm input for backward (training only)
+    if (a->ln_saved_input.data) {
+        puf_copy(&a->ln_saved_input, &input, stream);
     }
-    puf_mm(&input, &dw->weight, &a->out, stream);
-    int B = input.shape[0], od1 = dw->output_dim + 1;
+
+    // Layer norm
+    layer_norm_fwd_kernel<<<B, 256, 0, stream>>>(
+        a->ln_out.data, input.data, dw->ln_gamma.data, dw->ln_bias.data,
+        a->ln_save_mean.data, a->ln_save_rstd.data, H);
+
+    // Save post-norm output as input to matmul (for wgrad in backward)
+    if (a->saved_input.data) {
+        puf_copy(&a->saved_input, &a->ln_out, stream);
+    }
+
+    // Linear: out = ln_out @ weight^T + bias
+    puf_mm(&a->ln_out, &dw->weight, &a->out, stream);
     bias_add_kernel<<<grid_size(B * od1), BLOCK_SIZE, 0, stream>>>(
         a->out.data, dw->bias.data, B * od1, od1);
     return a->out;
@@ -525,14 +723,22 @@ static void decoder_init_weights(void* w, ulong* seed, cudaStream_t stream) {
     };
     puf_kaiming_init(&wt, 0.01f, (*seed)++, stream);
     cudaMemsetAsync(dw->bias.data, 0, numel(dw->bias.shape) * sizeof(precision_t), stream);
+    // ln_gamma = 1.0, ln_bias = 0.0
+    int H = dw->hidden_dim;
+    fill_precision_kernel<<<grid_size(H), BLOCK_SIZE, 0, stream>>>(dw->ln_gamma.data, from_float(1.0f), H);
+    cudaMemsetAsync(dw->ln_bias.data, 0, H * sizeof(precision_t), stream);
 }
 
 static void decoder_reg_params(void* w, Allocator* alloc) {
     DecoderWeights* dw = (DecoderWeights*)w;
     dw->weight = {.shape = {dw->output_dim + 1, dw->hidden_dim}};
     dw->bias = {.shape = {dw->output_dim + 1}};
+    dw->ln_gamma = {.shape = {dw->hidden_dim}};
+    dw->ln_bias = {.shape = {dw->hidden_dim}};
     alloc_register(alloc,&dw->weight);
     alloc_register(alloc,&dw->bias);
+    alloc_register(alloc,&dw->ln_gamma);
+    alloc_register(alloc,&dw->ln_bias);
     if (dw->continuous) {
         dw->logstd = {.shape = {1, dw->output_dim}};
         alloc_register(alloc,&dw->logstd);
@@ -542,22 +748,34 @@ static void decoder_reg_params(void* w, Allocator* alloc) {
 static void decoder_reg_train(void* w, void* activations, Allocator* acts, Allocator* grads, int B_TT) {
     DecoderWeights* dw = (DecoderWeights*)w;
     DecoderActivations* a = (DecoderActivations*)activations;
-    int od1 = dw->output_dim + 1;
+    int od1 = dw->output_dim + 1, H = dw->hidden_dim;
     *a = (DecoderActivations){
         .out = {.shape = {B_TT, od1}},
         .grad_out = {.shape = {B_TT, od1}},
-        .saved_input = {.shape = {B_TT, dw->hidden_dim}},
-        .grad_input = {.shape = {B_TT, dw->hidden_dim}},
-        .wgrad_scratch = {.shape = {od1, dw->hidden_dim}},
+        .saved_input = {.shape = {B_TT, H}},
+        .grad_input = {.shape = {B_TT, H}},
+        .wgrad_scratch = {.shape = {od1, H}},
         .bgrad_scratch = {.shape = {od1}},
         .logstd_scratch = {.shape = {1, dw->output_dim}},
+        .ln_out = {.shape = {B_TT, H}},
+        .ln_saved_input = {.shape = {B_TT, H}},
+        .ln_save_mean = {.shape = {B_TT}},
+        .ln_save_rstd = {.shape = {B_TT}},
+        .ln_gamma_grad = {.shape = {H}},
+        .ln_beta_grad = {.shape = {H}},
     };
     alloc_register(acts,&a->out);
     alloc_register(acts,&a->saved_input);
+    alloc_register(acts,&a->ln_out);
+    alloc_register(acts,&a->ln_saved_input);
+    alloc_register(acts,&a->ln_save_mean);
+    alloc_register(acts,&a->ln_save_rstd);
     alloc_register(acts,&a->grad_out);
     alloc_register(acts,&a->grad_input);
     alloc_register(grads,&a->wgrad_scratch);
     alloc_register(grads,&a->bgrad_scratch);
+    alloc_register(grads,&a->ln_gamma_grad);
+    alloc_register(grads,&a->ln_beta_grad);
     if (dw->continuous) alloc_register(grads,&a->logstd_scratch);
 }
 
@@ -565,7 +783,9 @@ static void decoder_reg_rollout(void* w, void* activations, Allocator* alloc, in
     DecoderWeights* dw = (DecoderWeights*)w;
     DecoderActivations* a = (DecoderActivations*)activations;
     a->out = {.shape = {B, dw->output_dim + 1}};
+    a->ln_out = {.shape = {B, dw->hidden_dim}};
     alloc_register(alloc,&a->out);
+    alloc_register(alloc,&a->ln_out);
 }
 
 static void* decoder_create_weights(void* self) {
@@ -588,17 +808,38 @@ static PrecisionTensor decoder_backward(void* w, void* activations,
     DecoderWeights* dw = (DecoderWeights*)w;
     DecoderActivations* a = (DecoderActivations*)activations;
     int B_TT = a->saved_input.shape[0];
-    int od = dw->output_dim, od1 = od + 1;
+    int od = dw->output_dim, od1 = od + 1, H = dw->hidden_dim;
+
+    // 1. Assemble grad from logits + value
     assemble_decoder_grad_kernel<<<grid_size(B_TT * od1), BLOCK_SIZE, 0, stream>>>(
         a->grad_out.data, grad_logits.data, grad_value.data, B_TT, od, od1);
+
+    // 2. Weight grad: grad_out^T @ saved_input (saved_input = post-norm ln_out)
     puf_mm_tn(&a->grad_out, &a->saved_input, &a->wgrad_scratch, stream);
+
+    // 3. Bias grad
     n3_bias_grad_kernel<<<od1, 256, 0, stream>>>(
         a->bgrad_scratch.data, a->grad_out.data, B_TT, od1);
+
     if (dw->continuous && grad_logstd.data != nullptr) {
         sum_rows_to_precision_kernel<<<grid_size(dw->output_dim), BLOCK_SIZE, 0, stream>>>(
             a->logstd_scratch.data, grad_logstd.data, B_TT, dw->output_dim);
     }
+
+    // 4. Grad w.r.t. normed output (input to linear layer)
     puf_mm_nn(&a->grad_out, &dw->weight, &a->grad_input, stream);
+
+    // 5. Layer norm param grads (uses grad_input = dy, ln_saved_input = pre-norm x)
+    layer_norm_param_grad_kernel<<<H, 256, 0, stream>>>(
+        a->ln_gamma_grad.data, a->ln_beta_grad.data,
+        a->grad_input.data, a->ln_saved_input.data,
+        a->ln_save_mean.data, a->ln_save_rstd.data, B_TT, H);
+
+    // 6. Layer norm backward: grad_input in-place from dy → dx (grad w.r.t. pre-norm input)
+    layer_norm_bwd_kernel<<<B_TT, 256, 0, stream>>>(
+        a->grad_input.data, a->ln_saved_input.data, dw->ln_gamma.data,
+        a->ln_save_mean.data, a->ln_save_rstd.data, H);
+
     return a->grad_input;
 }
 

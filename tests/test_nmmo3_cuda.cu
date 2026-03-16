@@ -94,4 +94,94 @@ void nmmo3_test_get_conv1_out(void* dst, int B) {
     cudaMemcpy(dst, g_a->conv1.out.data, (int64_t)B * 128 * 3 * 4 * sizeof(float), cudaMemcpyDeviceToDevice);
 }
 
+// ============================================================================
+// Decoder test harness
+// ============================================================================
+
+static Decoder g_dec;
+static DecoderWeights* g_dw = nullptr;
+static DecoderActivations* g_da = nullptr;
+static Allocator g_dec_param_alloc = {}, g_dec_act_alloc = {}, g_dec_grad_alloc = {};
+
+void decoder_test_init(int B, int hidden, int output_dim) {
+    if (g_dw) {
+        alloc_free(&g_dec_param_alloc);
+        alloc_free(&g_dec_act_alloc);
+        alloc_free(&g_dec_grad_alloc);
+        free(g_dw);
+        free(g_da);
+    }
+    g_dec = {};
+    g_dec.hidden_dim = hidden;
+    g_dec.output_dim = output_dim;
+    g_dec.continuous = false;
+    g_dec.forward = decoder_forward;
+    g_dec.backward = (decoder_backward_fn)decoder_backward;
+    g_dec.init_weights = decoder_init_weights;
+    g_dec.reg_params = decoder_reg_params;
+    g_dec.reg_train = decoder_reg_train;
+    g_dec.reg_rollout = decoder_reg_rollout;
+    g_dec.create_weights = decoder_create_weights;
+    g_dec.free_weights = decoder_free_weights;
+    g_dec.free_activations = decoder_free_activations;
+
+    g_dw = (DecoderWeights*)g_dec.create_weights(&g_dec);
+    g_dec_param_alloc = {};
+    g_dec.reg_params(g_dw, &g_dec_param_alloc);
+    alloc_create(&g_dec_param_alloc);
+
+    g_da = (DecoderActivations*)calloc(1, sizeof(DecoderActivations));
+    g_dec_act_alloc = {};
+    g_dec_grad_alloc = {};
+    g_dec.reg_train(g_dw, g_da, &g_dec_act_alloc, &g_dec_grad_alloc, B);
+    alloc_create(&g_dec_act_alloc);
+    alloc_create(&g_dec_grad_alloc);
+}
+
+void decoder_test_set_weights(void* w, void* b, void* ln_g, void* ln_b) {
+    int od1 = g_dw->output_dim + 1, H = g_dw->hidden_dim;
+    cudaMemcpy(g_dw->weight.data, w, od1 * H * sizeof(float), cudaMemcpyDeviceToDevice);
+    cudaMemcpy(g_dw->bias.data, b, od1 * sizeof(float), cudaMemcpyDeviceToDevice);
+    cudaMemcpy(g_dw->ln_gamma.data, ln_g, H * sizeof(float), cudaMemcpyDeviceToDevice);
+    cudaMemcpy(g_dw->ln_bias.data, ln_b, H * sizeof(float), cudaMemcpyDeviceToDevice);
+}
+
+void decoder_test_forward(void* output, void* input, int B) {
+    int od1 = g_dw->output_dim + 1;
+    PrecisionTensor inp = {.data = (precision_t*)input, .shape = {B, g_dw->hidden_dim}};
+    PrecisionTensor result = g_dec.forward(g_dw, g_da, inp, 0);
+    cudaMemcpy(output, result.data, B * od1 * sizeof(float), cudaMemcpyDeviceToDevice);
+    cudaDeviceSynchronize();
+}
+
+void decoder_test_backward(void* grad_logits, void* grad_value, int B) {
+    int od = g_dw->output_dim;
+    FloatTensor gl = {.data = (float*)grad_logits, .shape = {B, od}};
+    FloatTensor gv = {.data = (float*)grad_value, .shape = {B}};
+    FloatTensor gls = {.data = nullptr, .shape = {0}};
+    decoder_backward(g_dw, g_da, gl, gls, gv, 0);
+    cudaDeviceSynchronize();
+}
+
+void decoder_test_get_wgrad(void* dst) {
+    cudaMemcpy(dst, g_da->wgrad_scratch.data,
+        numel(g_da->wgrad_scratch.shape) * sizeof(float), cudaMemcpyDeviceToDevice);
+}
+void decoder_test_get_bgrad(void* dst) {
+    cudaMemcpy(dst, g_da->bgrad_scratch.data,
+        numel(g_da->bgrad_scratch.shape) * sizeof(float), cudaMemcpyDeviceToDevice);
+}
+void decoder_test_get_ln_gamma_grad(void* dst) {
+    cudaMemcpy(dst, g_da->ln_gamma_grad.data,
+        numel(g_da->ln_gamma_grad.shape) * sizeof(float), cudaMemcpyDeviceToDevice);
+}
+void decoder_test_get_ln_beta_grad(void* dst) {
+    cudaMemcpy(dst, g_da->ln_beta_grad.data,
+        numel(g_da->ln_beta_grad.shape) * sizeof(float), cudaMemcpyDeviceToDevice);
+}
+void decoder_test_get_grad_input(void* dst) {
+    cudaMemcpy(dst, g_da->grad_input.data,
+        numel(g_da->grad_input.shape) * sizeof(float), cudaMemcpyDeviceToDevice);
+}
+
 }  // extern "C"
