@@ -73,7 +73,6 @@ typedef struct CTripleTriad {
     float board_y[BOARD_SIZE];
     int board_states[ROWS][COLS];
     int board_card_values[ROWS][COLS][CARD_VALUES];
-    int num_cards;
     int placed_cards;
     int cards_in_hand[PLAYERS][CARDS_PER_PLAYER][CARD_VALUES];
     int card_selected[PLAYERS];
