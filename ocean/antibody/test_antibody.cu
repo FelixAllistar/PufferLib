@@ -11,6 +11,23 @@ typedef struct {
 
 static int g_failures = 0;
 
+static const float PERF_EXPECTED_MIN[SANITY_QUERIES] = {
+    -92.8199996948f,
+    -92.8199996948f,
+    -92.8199996948f,
+    -92.8199996948f,
+    -92.8199996948f,
+    -92.8199996948f,
+    -94.2300033569f,
+    -92.8199996948f,
+};
+
+static const int32_t PERF_LOW_ARGMIN[SANITY_QUERIES] = {0, 0, 0, 0, 0, 0, 0, 0};
+
+static const int32_t PERF_MED_ARGMIN[SANITY_QUERIES] = {
+    34999, 34999, 34999, 34999, 34999, 34999, 34999, 34999,
+};
+
 static uint32_t float_bits(float value) {
     union {
         float f32;
@@ -93,10 +110,16 @@ static void expect_float_array(const float* actual, const float* expected, int c
     }
 }
 
-static void verify_bind(Adios* host, const char* name,
-        const AdiosPoseSet* host_pose_set, const PoseSet* device_pose_set,
-        const int8_t* padded_antibody, const int8_t* padded_antigens,
-        int pool_size, float* out_min, int32_t* out_argmin) {
+static void verify_bind_against_jax(
+        const char* name,
+        const PoseSet* pose_set,
+        const int8_t* padded_antibody,
+        const int8_t* padded_antigens,
+        int pool_size,
+        float* out_min,
+        int32_t* out_argmin,
+        const float* expected_min,
+        const int32_t* expected_argmin) {
     int checks = pool_size < SANITY_QUERIES ? pool_size : SANITY_QUERIES;
     float* gpu_min = (float*)malloc((size_t)checks * sizeof(float));
     int32_t* gpu_argmin = (int32_t*)malloc((size_t)checks * sizeof(int32_t));
@@ -107,23 +130,19 @@ static void verify_bind(Adios* host, const char* name,
         exit(1);
     }
 
-    bind_batch(device_pose_set, padded_antibody, padded_antigens, checks, out_min, out_argmin);
+    bind_batch(pose_set, padded_antibody, padded_antigens, checks, out_min, out_argmin);
     CHECK(cudaDeviceSynchronize());
     CHECK(cudaMemcpy(gpu_min, out_min, (size_t)checks * sizeof(float), cudaMemcpyDeviceToHost));
     CHECK(cudaMemcpy(gpu_argmin, out_argmin, (size_t)checks * sizeof(int32_t), cudaMemcpyDeviceToHost));
 
     for (i = 0; i < checks; i++) {
-        AdiosBindingResult cpu_result = {0};
-        adios_bind(host, host_pose_set, host->viral_target, ADIOS_ANTIBODY_LEN,
-            &host->population_a[(size_t)i * ADIOS_ANTIGEN_LEN], ADIOS_ANTIGEN_LEN,
-            NULL, &cpu_result);
-        if (fabsf(cpu_result.min_value - gpu_min[i]) > 1e-5f || cpu_result.argmin != gpu_argmin[i]) {
+        if (fabsf(expected_min[i] - gpu_min[i]) > 1e-5f || expected_argmin[i] != gpu_argmin[i]) {
             fprintf(stderr,
-                "%s bind mismatch at query %d: cpu=(%0.9f,%d) gpu=(%0.9f,%d)\n",
+                "%s bind mismatch at query %d: expected=(%0.9f,%d) gpu=(%0.9f,%d)\n",
                 name,
                 i,
-                cpu_result.min_value,
-                cpu_result.argmin,
+                expected_min[i],
+                expected_argmin[i],
                 gpu_min[i],
                 gpu_argmin[i]);
             exit(1);
@@ -169,28 +188,28 @@ static void test_rng(void) {
 }
 
 static void test_utils_and_binding(State* state) {
-    Adios* host = state->host;
+    HostData* data = state->data;
     const int32_t expected_viral_target[ADIOS_ANTIBODY_LEN] = {0, 8, 16, 4, 5, 13, 4, 9, 4, 7, 7};
     float binding_value;
     int32_t binding_index;
     char viral_target_str[ADIOS_ANTIBODY_LEN + 1];
 
-    expect_int_array(host->viral_target, expected_viral_target, ADIOS_ANTIBODY_LEN, "viral_target");
-    adios_convert_array_to_aa(host->viral_target, ADIOS_ANTIBODY_LEN, viral_target_str);
+    expect_int_array(data->viral_target, expected_viral_target, ADIOS_ANTIBODY_LEN, "viral_target");
+    adios_convert_array_to_aa(data->viral_target, ADIOS_ANTIBODY_LEN, viral_target_str);
     expect_true(strcmp(viral_target_str, "CARLVQLGLYY") == 0, "convert_array_to_aa");
 
-    bind_single(state, &state->full_pose_set, host->viral_target, ADIOS_ANTIBODY_LEN,
-        host->antigen_array, ADIOS_ANTIGEN_LEN, &binding_value, &binding_index);
+    bind_single(state, &state->full_pose_set, data->viral_target, ADIOS_ANTIBODY_LEN,
+        data->antigen_array, ADIOS_ANTIGEN_LEN, &binding_value, &binding_index);
     expect_float_close(binding_value, -92.8199996948f, "full_bind.min");
     expect_int(binding_index, 1313888, "full_bind.argmin");
 
-    bind_single(state, &state->top_pose_set, host->viral_target, ADIOS_ANTIBODY_LEN,
-        host->antigen_array, ADIOS_ANTIGEN_LEN, &binding_value, &binding_index);
+    bind_single(state, &state->top_pose_set, data->viral_target, ADIOS_ANTIBODY_LEN,
+        data->antigen_array, ADIOS_ANTIGEN_LEN, &binding_value, &binding_index);
     expect_float_close(binding_value, -92.8199996948f, "top_bind.min");
     expect_int(binding_index, 0, "top_bind.argmin");
 
-    bind_single(state, &state->med_pose_set, host->viral_target, ADIOS_ANTIBODY_LEN,
-        host->antigen_array, ADIOS_ANTIGEN_LEN, &binding_value, &binding_index);
+    bind_single(state, &state->med_pose_set, data->viral_target, ADIOS_ANTIBODY_LEN,
+        data->antigen_array, ADIOS_ANTIGEN_LEN, &binding_value, &binding_index);
     expect_float_close(binding_value, -92.8199996948f, "med_bind.min");
     expect_int(binding_index, 34999, "med_bind.argmin");
 }
@@ -204,7 +223,7 @@ static void test_mutate(State* state) {
     int32_t actual_row[20];
     int row;
     int col;
-    fill_population_from_sequence(host_population, 3, state->host->antigen_array, ADIOS_ANTIGEN_LEN);
+    fill_population_from_sequence(host_population, 3, state->data->antigen_array, ADIOS_ANTIGEN_LEN);
     CHECK(cudaMemcpy(state->population_a, host_population, sizeof(host_population), cudaMemcpyHostToDevice));
     CHECK(cudaMemcpy(state->single_antigen, host_population, PADDED_ANTIGEN_LEN * sizeof(int8_t), cudaMemcpyHostToDevice));
     mutate_population(adios_prng_seed(123u), state->single_antigen, state->population_a, 3,
@@ -222,7 +241,7 @@ static void test_mutate(State* state) {
 }
 
 static void test_single_shape_run(State* state) {
-    Adios* host = state->host;
+    HostData* data = state->data;
     AdiosKey seed = adios_prng_seed(10201u);
     AdiosKey split_keys[2];
     int32_t antibody[ADIOS_ANTIBODY_LEN];
@@ -289,9 +308,9 @@ static void test_single_shape_run(State* state) {
     expect_int_array(antibody, expected_antibody, ADIOS_ANTIBODY_LEN, "single_shape.antibody");
 
     result = single_shape_run(
-        state, split_keys[1], antibody, &state->top_pose_set, host->antigen_array,
-        ADIOS_ANTIGEN_LEN, host->viral_target, ADIOS_ANTIBODY_LEN,
-        host->antibody_antitarget_array, ADIOS_ANTIGEN_LEN, 8, ADIOS_DEFAULT_SHAPE_PARAMS);
+        state, split_keys[1], antibody, &state->top_pose_set, data->antigen_array,
+        ADIOS_ANTIGEN_LEN, data->viral_target, ADIOS_ANTIBODY_LEN,
+        data->antibody_antitarget_array, ADIOS_ANTIGEN_LEN, 8, ADIOS_DEFAULT_SHAPE_PARAMS);
 
     expect_float_close(result.binding_penalty, -73.5100021362f, "single_shape.binding_penalty");
     expect_int(result.ab_t_m_pose_index, 10, "single_shape.bind_index");
@@ -364,58 +383,61 @@ static double run_bind_benchmark(const char* name, const PoseSet* pose_set,
 }
 
 static void run_perf(State* state, int pool_size, double seconds) {
-    Adios* host = state->host;
+    HostData* data = state->data;
     int8_t padded_antibody[PADDED_ANTIBODY_LEN];
-    int8_t* host_antigens;
-    int8_t* d_antibody;
-    int8_t* d_antigens;
-    float* d_out_min;
-    int32_t* d_out_argmin;
-    size_t antigen_bytes;
 
-    host_antigens = (int8_t*)malloc((size_t)pool_size * PADDED_ANTIGEN_LEN * sizeof(int8_t));
-    if (host_antigens == NULL) {
-        fprintf(stderr, "failed to allocate perf antigen buffer\n");
-        exit(1);
-    }
-    adios_prepare_population(host, host->antigen_array, ADIOS_ANTIGEN_LEN, pool_size);
-    adios_mutate(adios_prng_seed(424242u), host->population_a, pool_size, ADIOS_ANTIGEN_LEN, 1.0f / (float)ADIOS_ANTIGEN_LEN, host->population_a);
-    make_padded_sequence(host->viral_target, ADIOS_ANTIBODY_LEN, PADDED_ANTIBODY_LEN, padded_antibody);
-    fill_population_from_sequence(host_antigens, pool_size, host->antigen_array, ADIOS_ANTIGEN_LEN);
-    {
-        int i;
-        for (i = 0; i < pool_size; i++) {
-            int j;
-            for (j = 0; j < ADIOS_ANTIGEN_LEN; j++) {
-                host_antigens[(size_t)i * PADDED_ANTIGEN_LEN + j + 1] = (int8_t)host->population_a[(size_t)i * ADIOS_ANTIGEN_LEN + j];
-            }
-        }
-    }
+    make_padded_sequence(data->viral_target, ADIOS_ANTIBODY_LEN, PADDED_ANTIBODY_LEN, padded_antibody);
+    CHECK(cudaMemcpy(state->padded_antibody, padded_antibody, sizeof(padded_antibody), cudaMemcpyHostToDevice));
+    load_single_antigen(state, data->antigen_array, ADIOS_ANTIGEN_LEN);
+    fill_population_device(state->single_antigen, state->population_a, pool_size);
+    mutate_population(
+        adios_prng_seed(424242u),
+        state->single_antigen,
+        state->population_a,
+        pool_size,
+        ADIOS_ANTIGEN_LEN,
+        1.0f / (float)ADIOS_ANTIGEN_LEN);
 
-    antigen_bytes = (size_t)pool_size * PADDED_ANTIGEN_LEN * sizeof(int8_t);
-    CHECK(cudaMalloc((void**)&d_antibody, PADDED_ANTIBODY_LEN * sizeof(int8_t)));
-    CHECK(cudaMalloc((void**)&d_antigens, antigen_bytes));
-    CHECK(cudaMalloc((void**)&d_out_min, (size_t)pool_size * sizeof(float)));
-    CHECK(cudaMalloc((void**)&d_out_argmin, (size_t)pool_size * sizeof(int32_t)));
-    CHECK(cudaMemcpy(d_antibody, padded_antibody, PADDED_ANTIBODY_LEN * sizeof(int8_t), cudaMemcpyHostToDevice));
-    CHECK(cudaMemcpy(d_antigens, host_antigens, antigen_bytes, cudaMemcpyHostToDevice));
-
-    verify_bind(host, "low_res", &host->top_pose_set, &state->top_pose_set, d_antibody,
-        d_antigens, pool_size, d_out_min, d_out_argmin);
-    verify_bind(host, "med_res", &host->med_pose_set, &state->med_pose_set, d_antibody,
-        d_antigens, pool_size, d_out_min, d_out_argmin);
+    verify_bind_against_jax(
+        "low_res",
+        &state->top_pose_set,
+        state->padded_antibody,
+        state->population_a,
+        pool_size,
+        state->target_binding_values,
+        state->target_pose_indices,
+        PERF_EXPECTED_MIN,
+        PERF_LOW_ARGMIN);
+    verify_bind_against_jax(
+        "med_res",
+        &state->med_pose_set,
+        state->padded_antibody,
+        state->population_a,
+        pool_size,
+        state->target_binding_values,
+        state->target_pose_indices,
+        PERF_EXPECTED_MIN,
+        PERF_MED_ARGMIN);
 
     printf("perf target=%.2fs pool=%d\n", seconds, pool_size);
-    run_bind_benchmark("low_res", &state->top_pose_set, d_antibody, d_antigens,
-        pool_size, d_out_min, d_out_argmin, seconds);
-    run_bind_benchmark("med_res", &state->med_pose_set, d_antibody, d_antigens,
-        pool_size, d_out_min, d_out_argmin, seconds);
-
-    CHECK(cudaFree(d_antibody));
-    CHECK(cudaFree(d_antigens));
-    CHECK(cudaFree(d_out_min));
-    CHECK(cudaFree(d_out_argmin));
-    free(host_antigens);
+    run_bind_benchmark(
+        "low_res",
+        &state->top_pose_set,
+        state->padded_antibody,
+        state->population_a,
+        pool_size,
+        state->target_binding_values,
+        state->target_pose_indices,
+        seconds);
+    run_bind_benchmark(
+        "med_res",
+        &state->med_pose_set,
+        state->padded_antibody,
+        state->population_a,
+        pool_size,
+        state->target_binding_values,
+        state->target_pose_indices,
+        seconds);
 }
 
 static CliArgs parse_args(int argc, char** argv) {

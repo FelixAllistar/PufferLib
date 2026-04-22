@@ -49,13 +49,6 @@ typedef struct {
 } AdiosPoseSet;
 
 typedef struct {
-    float min_value;
-    int32_t argmin;
-    float* binding_full_list;
-    int count;
-} AdiosBindingResult;
-
-typedef struct {
     float binding_values_target;
     float binding_values_antitarget;
     int32_t poses_target;
@@ -79,34 +72,14 @@ typedef struct {
     int8_t* secondary_sites_antigen;
     int32_t* med_bind_inds;
 
-    int max_population_size;
-    int max_sequence_length;
-    int max_generations;
-
-    int32_t* population_a;
-    int32_t* population_b;
-    float* fitness_values;
-    float* selection_probs;
-    AdiosFitnessInfo* fitness_info;
-    float* binding_full_list;
-
-    float* ag_performances;
-    float* best_fitness_history;
-    AdiosFitnessInfo* best_member_extra_history;
-    int32_t* best_members_history;
-
     int32_t viral_target[ADIOS_ANTIBODY_LEN];
     int32_t antigen_array[ADIOS_ANTIGEN_LEN];
     int32_t antibody_antitarget_array[ADIOS_ANTIGEN_LEN];
-    int32_t different_antibody_antitarget_array[ADIOS_ANTIGEN_LEN];
-
-    float ag_target_binding;
-    float ag_target_clip_min;
 
     AdiosPoseSet full_pose_set;
     AdiosPoseSet top_pose_set;
     AdiosPoseSet med_pose_set;
-} Adios;
+} HostData;
 
 static const AdiosShapeParams ADIOS_DEFAULT_SHAPE_PARAMS = {
     .antigen_mut_rate = 1.0f,
@@ -118,7 +91,6 @@ static inline uint32_t adios_rotl32(uint32_t value, uint32_t shift) {
     return (value << shift) | (value >> (32u - shift));
 }
 
-// JAX-compatible threefry2x32 block function.
 static inline void adios_threefry2x32(
         AdiosKey key,
         uint32_t count0,
@@ -196,7 +168,6 @@ static inline void adios_threefry2x32(
     *out1 = x1;
 }
 
-// Match jax.random.PRNGKey for 32-bit and 64-bit integer seeds.
 static inline AdiosKey adios_prng_seed(uint64_t seed) {
     AdiosKey key;
     key.k0 = (uint32_t)(seed >> 32u);
@@ -204,7 +175,6 @@ static inline AdiosKey adios_prng_seed(uint64_t seed) {
     return key;
 }
 
-// Match jax.random.split(key, n)[i] for 1-D shapes.
 static inline AdiosKey adios_prng_split_index(AdiosKey key, uint32_t index) {
     AdiosKey out;
     adios_threefry2x32(key, 0u, index, &out.k0, &out.k1);
@@ -226,7 +196,6 @@ static inline uint32_t adios_random_bits32_at(AdiosKey key, uint64_t index) {
     return out0 ^ out1;
 }
 
-// Match jax.random.uniform(key, shape, dtype=float32).
 static inline float adios_uniform_f32_at(AdiosKey key, uint64_t index) {
     uint32_t bits = adios_random_bits32_at(key, index);
     uint32_t float_bits = (bits >> 9u) | 0x3f800000u;
@@ -238,7 +207,6 @@ static inline float adios_uniform_f32_at(AdiosKey key, uint64_t index) {
     return value.f32 - 1.0f;
 }
 
-// Match jax.random.randint for 32-bit integer sampling.
 static inline int32_t adios_randint_i32_at(AdiosKey key, uint64_t index, int32_t minval, int32_t maxval) {
     if (maxval <= minval) {
         return minval;
@@ -263,33 +231,6 @@ static inline int32_t adios_randint_i32_at(AdiosKey key, uint64_t index, int32_t
 
 static inline int adios_bernoulli_f32_at(AdiosKey key, uint64_t index, float p) {
     return adios_uniform_f32_at(key, index) < p;
-}
-
-static inline float adios_clipf(float value, float min_value, float max_value) {
-    if (value < min_value) {
-        return min_value;
-    }
-    if (value > max_value) {
-        return max_value;
-    }
-    return value;
-}
-
-static inline int32_t adios_choice_p(AdiosKey key, const float* probabilities, int count) {
-    float total = 0.0f;
-    for (int i = 0; i < count; i++) {
-        total += probabilities[i];
-    }
-
-    float draw = total * (1.0f - adios_uniform_f32_at(key, 0u));
-    float cumulative = 0.0f;
-    for (int i = 0; i < count; i++) {
-        cumulative += probabilities[i];
-        if (draw <= cumulative) {
-            return i;
-        }
-    }
-    return count - 1;
 }
 
 static inline int adios_aminoacid_id(char aminoacid) {
@@ -329,7 +270,6 @@ static inline char adios_aminoacid_char(int32_t aminoacid) {
     return lookup[aminoacid];
 }
 
-// Convert a packed amino-acid string into integer ids.
 static inline int adios_convert_aa_to_array(const char* sequence, int32_t* out, int max_len) {
     int length = (int)strlen(sequence);
     if (length > max_len) {
@@ -354,595 +294,105 @@ static inline void adios_convert_array_to_aa(const int32_t* sequence, int length
     out[length] = '\0';
 }
 
-static inline bool adios_load_file_exact(const char* path, void* dst, size_t bytes) {
+static inline bool load_file_exact(const char* path, void* dst, size_t bytes) {
     FILE* file = fopen(path, "rb");
     if (file == NULL) {
-        fprintf(stderr, "adios: failed to open %s\n", path);
+        fprintf(stderr, "antibody: failed to open %s\n", path);
         return false;
     }
 
     size_t read_count = fread(dst, 1, bytes, file);
     fclose(file);
     if (read_count != bytes) {
-        fprintf(stderr, "adios: short read for %s (%zu != %zu)\n", path, read_count, bytes);
+        fprintf(stderr, "antibody: short read for %s (%zu != %zu)\n", path, read_count, bytes);
         return false;
     }
     return true;
 }
 
-static inline bool adios_load_generated_data(Adios* adios) {
-    size_t site_bytes = (size_t)ADIOS_PRIMARY_SITES_ANTIBODY_ROWS * (size_t)ADIOS_PRIMARY_SITES_ANTIBODY_COLS * sizeof(int8_t);
-    size_t med_bytes = (size_t)ADIOS_MED_BIND_INDS_COUNT * sizeof(int32_t);
-
-    adios->primary_sites_antibody = (int8_t*)malloc(site_bytes);
-    adios->secondary_sites_antibody = (int8_t*)malloc(site_bytes);
-    adios->secondary_sites_antigen = (int8_t*)malloc(site_bytes);
-    adios->med_bind_inds = (int32_t*)malloc(med_bytes);
-
-    if (adios->primary_sites_antibody == NULL
-            || adios->secondary_sites_antibody == NULL
-            || adios->secondary_sites_antigen == NULL
-            || adios->med_bind_inds == NULL) {
-        fprintf(stderr, "adios: failed to allocate generated data buffers\n");
-        return false;
-    }
-
-    if (!adios_load_file_exact(ADIOS_PRIMARY_SITES_ANTIBODY_BIN, adios->primary_sites_antibody, site_bytes)) {
-        return false;
-    }
-    if (!adios_load_file_exact(ADIOS_SECONDARY_SITES_ANTIBODY_BIN, adios->secondary_sites_antibody, site_bytes)) {
-        return false;
-    }
-    if (!adios_load_file_exact(ADIOS_SECONDARY_SITES_ANTIGEN_BIN, adios->secondary_sites_antigen, site_bytes)) {
-        return false;
-    }
-    if (!adios_load_file_exact(ADIOS_MED_BIND_INDS_BIN, adios->med_bind_inds, med_bytes)) {
-        return false;
-    }
-
-    return true;
-}
-
-static inline bool adios_allocate_scratch(Adios* adios) {
-    size_t max_population = (size_t)adios->max_population_size;
-    size_t max_sequence_length = (size_t)adios->max_sequence_length;
-    size_t max_generations = (size_t)adios->max_generations;
-
-    adios->population_a = (int32_t*)calloc(max_population * max_sequence_length, sizeof(int32_t));
-    adios->population_b = (int32_t*)calloc(max_population * max_sequence_length, sizeof(int32_t));
-    adios->fitness_values = (float*)calloc(max_population, sizeof(float));
-    adios->selection_probs = (float*)calloc(max_population, sizeof(float));
-    adios->fitness_info = (AdiosFitnessInfo*)calloc(max_population, sizeof(AdiosFitnessInfo));
-    adios->binding_full_list = (float*)calloc((size_t)ADIOS_FULL_POSE_COUNT, sizeof(float));
-
-    adios->ag_performances = (float*)calloc(max_generations, sizeof(float));
-    adios->best_fitness_history = (float*)calloc(max_generations, sizeof(float));
-    adios->best_member_extra_history = (AdiosFitnessInfo*)calloc(max_generations, sizeof(AdiosFitnessInfo));
-    adios->best_members_history = (int32_t*)calloc(max_generations * max_sequence_length, sizeof(int32_t));
-
-    if (adios->population_a == NULL
-            || adios->population_b == NULL
-            || adios->fitness_values == NULL
-            || adios->selection_probs == NULL
-            || adios->fitness_info == NULL
-            || adios->binding_full_list == NULL
-            || adios->ag_performances == NULL
-            || adios->best_fitness_history == NULL
-            || adios->best_member_extra_history == NULL
-            || adios->best_members_history == NULL) {
-        fprintf(stderr, "adios: failed to allocate scratch buffers\n");
-        return false;
-    }
-
-    return true;
-}
-
-static inline void adios_free(Adios* adios) {
-    if (adios == NULL) {
+static void free_data(HostData* data) {
+    if (data == NULL) {
         return;
     }
 
-    free(adios->primary_sites_antibody);
-    free(adios->secondary_sites_antibody);
-    free(adios->secondary_sites_antigen);
-    free(adios->med_bind_inds);
-
-    free(adios->population_a);
-    free(adios->population_b);
-    free(adios->fitness_values);
-    free(adios->selection_probs);
-    free(adios->fitness_info);
-    free(adios->binding_full_list);
-    free(adios->ag_performances);
-    free(adios->best_fitness_history);
-    free(adios->best_member_extra_history);
-    free(adios->best_members_history);
-
-    free(adios);
+    free(data->primary_sites_antibody);
+    free(data->secondary_sites_antibody);
+    free(data->secondary_sites_antigen);
+    free(data->med_bind_inds);
+    free(data);
 }
 
-static inline bool adios_init_defaults(Adios* adios) {
-    if (adios_convert_aa_to_array("CARLVQLGLYY", adios->viral_target, ADIOS_ANTIBODY_LEN) != ADIOS_ANTIBODY_LEN) {
-        return false;
-    }
-    if (adios_convert_aa_to_array(
-            "SYSMCTGKFKVVKEIAETQHGTIVIRVQYEGDGSPCKIPFEIMDLEKRHVLGRLITVNPIVTEKDSPVNIEAEPPFGDSYIIIGVEPGQLKLNWFKK",
-            adios->antigen_array,
-            ADIOS_ANTIGEN_LEN) != ADIOS_ANTIGEN_LEN) {
-        return false;
-    }
-    if (adios_convert_aa_to_array(
-            "GRFLVNLQAKKDREAWYYWGPWNKAYWFSDPGMFDPWKQAEQSYFCNANPVCYAEHFMLGPITQKTPMVYHDPEPSKGGCVTVHNNATDYIMPDCYN",
-            adios->antibody_antitarget_array,
-            ADIOS_ANTIGEN_LEN) != ADIOS_ANTIGEN_LEN) {
-        return false;
-    }
-    if (adios_convert_aa_to_array(
-            "MADLEAVLADVSYLMAMEKSKATPAARASKKILLPEPSIRSVMQKYLEDRGEVTFEKIFSQKLGYLLFRDFCLNHLEEARPLVEFYEEIKKYEKLET",
-            adios->different_antibody_antitarget_array,
-            ADIOS_ANTIGEN_LEN) != ADIOS_ANTIGEN_LEN) {
+static bool load_generated_data(HostData* data) {
+    size_t site_bytes = (size_t)ADIOS_PRIMARY_SITES_ANTIBODY_ROWS
+        * (size_t)ADIOS_PRIMARY_SITES_ANTIBODY_COLS * sizeof(int8_t);
+    size_t med_bytes = (size_t)ADIOS_MED_BIND_INDS_COUNT * sizeof(int32_t);
+
+    data->primary_sites_antibody = (int8_t*)malloc(site_bytes);
+    data->secondary_sites_antibody = (int8_t*)malloc(site_bytes);
+    data->secondary_sites_antigen = (int8_t*)malloc(site_bytes);
+    data->med_bind_inds = (int32_t*)malloc(med_bytes);
+    if (data->primary_sites_antibody == NULL
+            || data->secondary_sites_antibody == NULL
+            || data->secondary_sites_antigen == NULL
+            || data->med_bind_inds == NULL) {
+        fprintf(stderr, "antibody: failed to allocate generated data buffers\n");
         return false;
     }
 
-    adios->full_pose_set.indices = NULL;
-    adios->full_pose_set.count = ADIOS_FULL_POSE_COUNT;
-    adios->top_pose_set.indices = ADIOS_TOP_BIND_INDS;
-    adios->top_pose_set.count = ADIOS_TOP_POSE_COUNT;
-    adios->med_pose_set.indices = adios->med_bind_inds;
-    adios->med_pose_set.count = ADIOS_MED_POSE_COUNT;
+    if (!load_file_exact(ADIOS_PRIMARY_SITES_ANTIBODY_BIN, data->primary_sites_antibody, site_bytes)
+            || !load_file_exact(ADIOS_SECONDARY_SITES_ANTIBODY_BIN, data->secondary_sites_antibody, site_bytes)
+            || !load_file_exact(ADIOS_SECONDARY_SITES_ANTIGEN_BIN, data->secondary_sites_antigen, site_bytes)
+            || !load_file_exact(ADIOS_MED_BIND_INDS_BIN, data->med_bind_inds, med_bytes)) {
+        return false;
+    }
+
     return true;
 }
 
-static inline Adios* adios_create(int max_population_size, int max_sequence_length, int max_generations) {
-    Adios* adios = (Adios*)calloc(1, sizeof(Adios));
-    if (adios == NULL) {
-        return NULL;
-    }
-
-    adios->max_population_size = max_population_size;
-    adios->max_sequence_length = max_sequence_length;
-    adios->max_generations = max_generations;
-
-    if (!adios_load_generated_data(adios)) {
-        adios_free(adios);
-        return NULL;
-    }
-    if (!adios_allocate_scratch(adios)) {
-        adios_free(adios);
-        return NULL;
-    }
-    if (!adios_init_defaults(adios)) {
-        adios_free(adios);
-        return NULL;
-    }
-
-    return adios;
-}
-
-static inline void adios_softmax(const float* values, int count, float temperature, float* out) {
-    float max_value = values[0] / temperature;
-    for (int i = 1; i < count; i++) {
-        float value = values[i] / temperature;
-        if (value > max_value) {
-            max_value = value;
-        }
-    }
-
-    float sum = 0.0f;
-    for (int i = 0; i < count; i++) {
-        out[i] = expf(values[i] / temperature - max_value);
-        sum += out[i];
-    }
-    for (int i = 0; i < count; i++) {
-        out[i] /= sum;
-    }
-}
-
-static inline int adios_pose_row_index(const AdiosPoseSet* pose_set, int reduced_pose_index) {
+static inline int pose_row_index(const AdiosPoseSet* pose_set, int reduced_pose_index) {
     if (pose_set->indices == NULL) {
         return reduced_pose_index;
     }
     return pose_set->indices[reduced_pose_index];
 }
 
-static inline int32_t adios_sequence_value_at(const int32_t* sequence, int seq_len, int8_t index) {
-    if (index < 0) {
-        return ADIOS_PAD_INDEX;
-    }
-    if ((int)index >= seq_len) {
-        return ADIOS_PAD_INDEX;
-    }
-    return sequence[(int)index];
-}
-
-// Compute the binding energy and reduced argmin for a pose set.
-static inline void adios_bind(
-        Adios* adios,
-        const AdiosPoseSet* pose_set,
-        const int32_t* antibody,
-        int antibody_len,
-        const int32_t* antigen,
-        int antigen_len,
-        float* binding_full_list,
-        AdiosBindingResult* out) {
-    if (antibody_len > antigen_len) {
-        fprintf(stderr, "adios: antibody is longer than antigen\n");
-        exit(1);
-    }
-
-    float min_value = 0.0f;
-    int32_t argmin = 0;
-    bool first = true;
-    int32_t padded_antibody[ADIOS_ANTIBODY_LEN + 1];
-    int32_t padded_antigen[ADIOS_ANTIGEN_LEN + 1];
-
-    for (int i = 0; i <= ADIOS_ANTIBODY_LEN; i++) {
-        padded_antibody[i] = ADIOS_PAD_INDEX;
-    }
-    for (int i = 0; i <= ADIOS_ANTIGEN_LEN; i++) {
-        padded_antigen[i] = ADIOS_PAD_INDEX;
-    }
-    for (int i = 0; i < antibody_len; i++) {
-        padded_antibody[i + 1] = antibody[i];
-    }
-    for (int i = 0; i < antigen_len; i++) {
-        padded_antigen[i + 1] = antigen[i];
-    }
-
-    for (int pose = 0; pose < pose_set->count; pose++) {
-        int row_index = adios_pose_row_index(pose_set, pose);
-        int base = row_index * ADIOS_MAX_INTERACTIONS;
-        float sum = 0.0f;
-
-        for (int j = 0; j < ADIOS_MAX_INTERACTIONS; j++) {
-            int8_t primary = adios->primary_sites_antibody[base + j];
-            int8_t secondary_ab = adios->secondary_sites_antibody[base + j];
-            int8_t secondary_ag = adios->secondary_sites_antigen[base + j];
-
-            int32_t amino_primary = padded_antibody[(int)primary + 1];
-            int32_t amino_secondary_ag = padded_antigen[(int)secondary_ag + 1];
-            int32_t amino_secondary_ab = padded_antibody[(int)secondary_ab + 1];
-
-            sum += ADIOS_JPADDED_MATRIX[amino_primary * ADIOS_JPADDED_MATRIX_COLS + amino_secondary_ag];
-            sum += ADIOS_JPADDED_MATRIX[amino_primary * ADIOS_JPADDED_MATRIX_COLS + amino_secondary_ab];
-        }
-
-        if (binding_full_list != NULL) {
-            binding_full_list[pose] = sum;
-        }
-        if (first || sum < min_value) {
-            first = false;
-            min_value = sum;
-            argmin = pose;
-        }
-    }
-
-    out->min_value = min_value;
-    out->argmin = argmin;
-    out->binding_full_list = binding_full_list;
-    out->count = pose_set->count;
-}
-
-static inline float adios_antigen_fitness(
-        Adios* adios,
-        const AdiosPoseSet* pose_set,
-        const int32_t* antibody_target,
-        int antibody_target_len,
-        const int32_t* antibody_antitarget,
-        int antibody_antitarget_len,
-        const int32_t* antigen,
-        int antigen_len,
-        float target_clip_min,
-        float target_clip_max,
-        float antitarget_clip_min,
-        float antitarget_clip_max,
-        bool give_poses,
-        AdiosFitnessInfo* out) {
-    AdiosBindingResult target_info = {0};
-    adios_bind(adios, pose_set, antibody_target, antibody_target_len, antigen, antigen_len, NULL, &target_info);
-
-    float binding_values_antitarget = 0.0f;
-    int32_t poses_antitarget = -1;
-    if (antibody_antitarget != NULL) {
-        AdiosBindingResult antitarget_info = {0};
-        adios_bind(adios, pose_set, antibody_antitarget, antibody_antitarget_len, antigen, antigen_len, NULL, &antitarget_info);
-        binding_values_antitarget = antitarget_info.min_value;
-        poses_antitarget = antitarget_info.argmin;
-    }
-
-    if (out != NULL) {
-        out->binding_values_target = target_info.min_value;
-        out->binding_values_antitarget = binding_values_antitarget;
-        out->poses_target = give_poses ? target_info.argmin : -1;
-        out->poses_antitarget = give_poses ? poses_antitarget : -1;
-    }
-
-    float clipped_target = adios_clipf(target_info.min_value, target_clip_min, target_clip_max);
-    float clipped_antitarget = adios_clipf(binding_values_antitarget, antitarget_clip_min, antitarget_clip_max);
-    return -1.0f * (clipped_target - clipped_antitarget);
-}
-
-static inline float adios_antibody_fitness(
-        Adios* adios,
-        const AdiosPoseSet* pose_set,
-        const int32_t* antibody,
-        int antibody_len,
-        const int32_t* antigen_target,
-        int antigen_target_len,
-        const int32_t* antigen_antitarget,
-        int antigen_antitarget_len,
-        float target_clip_min,
-        float target_clip_max,
-        float antitarget_clip_min,
-        float antitarget_clip_max,
-        bool give_poses,
-        AdiosFitnessInfo* out) {
-    AdiosBindingResult target_info = {0};
-    adios_bind(adios, pose_set, antibody, antibody_len, antigen_target, antigen_target_len, NULL, &target_info);
-
-    float binding_values_antitarget = 0.0f;
-    int32_t poses_antitarget = -1;
-    if (antigen_antitarget != NULL) {
-        AdiosBindingResult antitarget_info = {0};
-        adios_bind(adios, pose_set, antibody, antibody_len, antigen_antitarget, antigen_antitarget_len, NULL, &antitarget_info);
-        binding_values_antitarget = antitarget_info.min_value;
-        poses_antitarget = antitarget_info.argmin;
-    }
-
-    if (out != NULL) {
-        out->binding_values_target = target_info.min_value;
-        out->binding_values_antitarget = binding_values_antitarget;
-        out->poses_target = give_poses ? target_info.argmin : -1;
-        out->poses_antitarget = give_poses ? poses_antitarget : -1;
-    }
-
-    float clipped_target = adios_clipf(target_info.min_value, target_clip_min, target_clip_max);
-    float clipped_antitarget = adios_clipf(binding_values_antitarget, antitarget_clip_min, antitarget_clip_max);
-    return -1.0f * (clipped_target - clipped_antitarget);
-}
-
-static inline void adios_antigen_fitness_population(
-        Adios* adios,
-        const AdiosPoseSet* pose_set,
-        const int32_t* antibody_target,
-        int antibody_target_len,
-        const int32_t* antibody_antitarget,
-        int antibody_antitarget_len,
-        const int32_t* population,
-        int population_size,
-        int seq_len,
-        float target_clip_min,
-        float target_clip_max,
-        float antitarget_clip_min,
-        float antitarget_clip_max,
-        bool give_poses,
-        float* fitness_values,
-        AdiosFitnessInfo* info_values) {
-    for (int i = 0; i < population_size; i++) {
-        const int32_t* antigen = &population[i * seq_len];
-        fitness_values[i] = adios_antigen_fitness(
-            adios,
-            pose_set,
-            antibody_target,
-            antibody_target_len,
-            antibody_antitarget,
-            antibody_antitarget_len,
-            antigen,
-            seq_len,
-            target_clip_min,
-            target_clip_max,
-            antitarget_clip_min,
-            antitarget_clip_max,
-            give_poses,
-            &info_values[i]);
-    }
-}
-
-// Mutate a population the same way as adios.gen_alg_basic.mutate.
-static inline void adios_mutate(
-        AdiosKey key,
-        const int32_t* x,
-        int rows,
-        int cols,
-        float p,
-        int32_t* out) {
-    AdiosKey split_keys[2];
-    adios_prng_split_n(key, split_keys, 2);
-
-    for (int i = 0; i < rows * cols; i++) {
-        int mutation_mask = adios_bernoulli_f32_at(split_keys[0], (uint64_t)i, p);
-        int32_t mutation_delta = adios_randint_i32_at(split_keys[1], (uint64_t)i, 1, 20);
-        out[i] = (x[i] + mutation_mask * mutation_delta) % ADIOS_NUM_AMINO_ACIDS;
-    }
-}
-
-static inline bool adios_prepare_population(Adios* adios, const int32_t* sequence, int seq_len, int population_size) {
-    if (population_size > adios->max_population_size) {
+static bool init_defaults(HostData* data) {
+    if (adios_convert_aa_to_array("CARLVQLGLYY", data->viral_target, ADIOS_ANTIBODY_LEN) != ADIOS_ANTIBODY_LEN) {
         return false;
     }
-    if (seq_len > adios->max_sequence_length) {
+    if (adios_convert_aa_to_array(
+            "SYSMCTGKFKVVKEIAETQHGTIVIRVQYEGDGSPCKIPFEIMDLEKRHVLGRLITVNPIVTEKDSPVNIEAEPPFGDSYIIIGVEPGQLKLNWFKK",
+            data->antigen_array,
+            ADIOS_ANTIGEN_LEN) != ADIOS_ANTIGEN_LEN) {
+        return false;
+    }
+    if (adios_convert_aa_to_array(
+            "GRFLVNLQAKKDREAWYYWGPWNKAYWFSDPGMFDPWKQAEQSYFCNANPVCYAEHFMLGPITQKTPMVYHDPEPSKGGCVTVHNNATDYIMPDCYN",
+            data->antibody_antitarget_array,
+            ADIOS_ANTIGEN_LEN) != ADIOS_ANTIGEN_LEN) {
         return false;
     }
 
-    for (int i = 0; i < population_size; i++) {
-        memcpy(&adios->population_a[i * seq_len], sequence, (size_t)seq_len * sizeof(int32_t));
-    }
+    data->full_pose_set.indices = NULL;
+    data->full_pose_set.count = ADIOS_FULL_POSE_COUNT;
+    data->top_pose_set.indices = ADIOS_TOP_BIND_INDS;
+    data->top_pose_set.count = ADIOS_TOP_POSE_COUNT;
+    data->med_pose_set.indices = data->med_bind_inds;
+    data->med_pose_set.count = ADIOS_MED_POSE_COUNT;
     return true;
 }
 
-static inline void adios_single_iteration_antigen(
-        Adios* adios,
-        const AdiosPoseSet* pose_set,
-        const int32_t* antibody_target,
-        int antibody_target_len,
-        const int32_t* antibody_antitarget,
-        int antibody_antitarget_len,
-        const int32_t* population,
-        int population_size,
-        int seq_len,
-        float target_clip_min,
-        float selection_temperature,
-        float mutation_probability,
-        AdiosKey key,
-        int32_t* out_population,
-        float* out_best_fitness,
-        AdiosFitnessInfo* out_best_extra,
-        int32_t* out_best_member) {
-    AdiosKey split_keys[3];
-    adios_prng_split_n(key, split_keys, 3);
-
-    adios_antigen_fitness_population(
-        adios,
-        pose_set,
-        antibody_target,
-        antibody_target_len,
-        antibody_antitarget,
-        antibody_antitarget_len,
-        population,
-        population_size,
-        seq_len,
-        target_clip_min,
-        INFINITY,
-        -INFINITY,
-        INFINITY,
-        true,
-        adios->fitness_values,
-        adios->fitness_info);
-
-    adios_softmax(adios->fitness_values, population_size, selection_temperature, adios->selection_probs);
-    int32_t selected_member = adios_choice_p(split_keys[1], adios->selection_probs, population_size);
-    const int32_t* selected = &population[selected_member * seq_len];
-
-    if (out_best_fitness != NULL) {
-        *out_best_fitness = adios->fitness_values[selected_member];
+static HostData* make_data(void) {
+    HostData* data = (HostData*)calloc(1, sizeof(HostData));
+    if (data == NULL) {
+        return NULL;
     }
-    if (out_best_extra != NULL) {
-        *out_best_extra = adios->fitness_info[selected_member];
+    if (!load_generated_data(data) || !init_defaults(data)) {
+        free_data(data);
+        return NULL;
     }
-    if (out_best_member != NULL) {
-        memcpy(out_best_member, selected, (size_t)seq_len * sizeof(int32_t));
-    }
-
-    for (int i = 0; i < population_size; i++) {
-        memcpy(&out_population[i * seq_len], selected, (size_t)seq_len * sizeof(int32_t));
-    }
-    adios_mutate(split_keys[2], out_population, population_size, seq_len, mutation_probability, out_population);
+    return data;
 }
-
-static inline AdiosShapeRunResult adios_single_shape_run(
-        Adios* adios,
-        AdiosKey rng,
-        const int32_t* antibody,
-        const AdiosPoseSet* pose_set,
-        const int32_t* start_antigen,
-        int antigen_len,
-        const int32_t* antigen_target,
-        int antigen_target_len,
-        const int32_t* antibody_antitarget,
-        int antibody_antitarget_len,
-        int horizon,
-        AdiosShapeParams shape_params) {
-    if (horizon > adios->max_generations) {
-        fprintf(stderr, "adios: horizon exceeds scratch capacity\n");
-        exit(1);
-    }
-    if (shape_params.antigen_pop_size > adios->max_population_size) {
-        fprintf(stderr, "adios: population exceeds scratch capacity\n");
-        exit(1);
-    }
-    if (antigen_len > adios->max_sequence_length) {
-        fprintf(stderr, "adios: antigen length exceeds scratch capacity\n");
-        exit(1);
-    }
-
-    float target_clip_min = -INFINITY;
-    if (antigen_target != NULL) {
-        AdiosBindingResult target_binding = {0};
-        adios_bind(adios, pose_set, antigen_target, antigen_target_len, start_antigen, antigen_len, NULL, &target_binding);
-        target_clip_min = target_binding.min_value - 1.0f;
-    }
-
-    if (!adios_prepare_population(adios, start_antigen, antigen_len, shape_params.antigen_pop_size)) {
-        fprintf(stderr, "adios: failed to prepare initial population\n");
-        exit(1);
-    }
-
-    float mutation_probability = shape_params.antigen_mut_rate / (float)antigen_len;
-    AdiosKey* keys = (AdiosKey*)malloc((size_t)horizon * sizeof(AdiosKey));
-    if (keys == NULL) {
-        fprintf(stderr, "adios: failed to allocate key list\n");
-        exit(1);
-    }
-    adios_prng_split_n(rng, keys, horizon);
-
-    int32_t* current_population = adios->population_a;
-    int32_t* next_population = adios->population_b;
-    for (int step = 0; step < horizon; step++) {
-        adios_single_iteration_antigen(
-            adios,
-            pose_set,
-            antigen_target,
-            antigen_target_len,
-            antibody,
-            ADIOS_ANTIBODY_LEN,
-            current_population,
-            shape_params.antigen_pop_size,
-            antigen_len,
-            target_clip_min,
-            shape_params.antigen_selection_temperature,
-            mutation_probability,
-            keys[step],
-            next_population,
-            &adios->best_fitness_history[step],
-            &adios->best_member_extra_history[step],
-            &adios->best_members_history[step * antigen_len]);
-
-        int32_t* swap = current_population;
-        current_population = next_population;
-        next_population = swap;
-    }
-    free(keys);
-
-    float binding_penalty = 0.0f;
-    int32_t bind_index = -1;
-    if (antibody_antitarget != NULL) {
-        AdiosBindingResult bind_details = {0};
-        adios_bind(adios, pose_set, antibody, ADIOS_ANTIBODY_LEN, antibody_antitarget, antibody_antitarget_len, NULL, &bind_details);
-        binding_penalty = bind_details.min_value;
-        bind_index = bind_details.argmin;
-    }
-
-    for (int i = 0; i < horizon; i++) {
-        adios->ag_performances[i] = adios->best_fitness_history[i] - binding_penalty;
-    }
-
-    AdiosShapeRunResult result;
-    result.horizon = horizon;
-    result.seq_len = antigen_len;
-    result.ag_performances = adios->ag_performances;
-    result.binding_penalty = binding_penalty;
-    result.ab_t_m_pose_index = bind_index;
-    result.best_fitness = adios->best_fitness_history;
-    result.best_member_extra_info = adios->best_member_extra_history;
-    result.best_members = adios->best_members_history;
-    return result;
-}
-
-static inline void adios_init_reference_values(Adios* adios) {
-    AdiosBindingResult binding = {0};
-    adios_bind(
-        adios,
-        &adios->full_pose_set,
-        adios->viral_target,
-        ADIOS_ANTIBODY_LEN,
-        adios->antigen_array,
-        ADIOS_ANTIGEN_LEN,
-        NULL,
-        &binding);
-    adios->ag_target_binding = binding.min_value;
-    adios->ag_target_clip_min = binding.min_value - 1.0f;
-}
-
 
 #define BIND_THREADS 256
 #define SMALL_WARPS 4
@@ -980,7 +430,7 @@ typedef struct {
 } RngTestOutput;
 
 typedef struct {
-    Adios* host;
+    HostData* data;
     int max_population_size;
     int max_generations;
 
@@ -999,6 +449,11 @@ typedef struct {
     float* best_fitness_history;
     AdiosFitnessInfo* best_member_extra_history;
     int32_t* best_members_history;
+
+    float* host_ag_performances;
+    float* host_best_fitness_history;
+    AdiosFitnessInfo* host_best_member_extra_history;
+    int32_t* host_best_members_history;
 
     int8_t* padded_antibody;
     int8_t* padded_target;
@@ -1022,7 +477,7 @@ static void free_pose_set(PoseSet* pose_set) {
     pose_set->secondary_sites_antigen = NULL;
 }
 
-static void upload_pose_set(Adios* adios, const AdiosPoseSet* host_pose_set, PoseSet* device_pose_set) {
+static void upload_pose_set(const HostData* data, const AdiosPoseSet* host_pose_set, PoseSet* device_pose_set) {
     int pose;
     int total = host_pose_set->count * ADIOS_MAX_INTERACTIONS;
     size_t bytes = (size_t)total * sizeof(int8_t);
@@ -1036,12 +491,12 @@ static void upload_pose_set(Adios* adios, const AdiosPoseSet* host_pose_set, Pos
     }
 
     for (pose = 0; pose < host_pose_set->count; pose++) {
-        int row_index = adios_pose_row_index(host_pose_set, pose);
+        int row_index = pose_row_index(host_pose_set, pose);
         int src_base = row_index * ADIOS_MAX_INTERACTIONS;
         int dst_base = pose * ADIOS_MAX_INTERACTIONS;
-        memcpy(&primary[dst_base], &adios->primary_sites_antibody[src_base], ADIOS_MAX_INTERACTIONS * sizeof(int8_t));
-        memcpy(&secondary_ab[dst_base], &adios->secondary_sites_antibody[src_base], ADIOS_MAX_INTERACTIONS * sizeof(int8_t));
-        memcpy(&secondary_ag[dst_base], &adios->secondary_sites_antigen[src_base], ADIOS_MAX_INTERACTIONS * sizeof(int8_t));
+        memcpy(&primary[dst_base], &data->primary_sites_antibody[src_base], ADIOS_MAX_INTERACTIONS * sizeof(int8_t));
+        memcpy(&secondary_ab[dst_base], &data->secondary_sites_antibody[src_base], ADIOS_MAX_INTERACTIONS * sizeof(int8_t));
+        memcpy(&secondary_ag[dst_base], &data->secondary_sites_antigen[src_base], ADIOS_MAX_INTERACTIONS * sizeof(int8_t));
     }
 
     device_pose_set->count = host_pose_set->count;
@@ -1075,62 +530,6 @@ void fill_population_from_sequence(int8_t* dst, int population_size, const int32
     }
 }
 
-State* make_state(int max_population_size, int max_generations) {
-    State* state = (State*)calloc(1, sizeof(State));
-    int8_t* host_population;
-    size_t population_bytes;
-    size_t history_member_bytes;
-    if (state == NULL) {
-        return NULL;
-    }
-
-    state->host = adios_create(max_population_size, ADIOS_ANTIGEN_LEN, max_generations);
-    if (state->host == NULL) {
-        free(state);
-        return NULL;
-    }
-    adios_init_reference_values(state->host);
-    state->max_population_size = max_population_size;
-    state->max_generations = max_generations;
-
-    CHECK(cudaMemcpyToSymbol(JPADDED_MATRIX_DEVICE, ADIOS_JPADDED_MATRIX, sizeof(ADIOS_JPADDED_MATRIX)));
-
-    upload_pose_set(state->host, &state->host->full_pose_set, &state->full_pose_set);
-    upload_pose_set(state->host, &state->host->top_pose_set, &state->top_pose_set);
-    upload_pose_set(state->host, &state->host->med_pose_set, &state->med_pose_set);
-
-    population_bytes = (size_t)max_population_size * PADDED_ANTIGEN_LEN * sizeof(int8_t);
-    history_member_bytes = (size_t)max_generations * ADIOS_ANTIGEN_LEN * sizeof(int32_t);
-
-    CHECK(cudaMalloc((void**)&state->population_a, population_bytes));
-    CHECK(cudaMalloc((void**)&state->target_binding_values, (size_t)max_population_size * sizeof(float)));
-    CHECK(cudaMalloc((void**)&state->target_pose_indices, (size_t)max_population_size * sizeof(int32_t)));
-    CHECK(cudaMalloc((void**)&state->antitarget_binding_values, (size_t)max_population_size * sizeof(float)));
-    CHECK(cudaMalloc((void**)&state->antitarget_pose_indices, (size_t)max_population_size * sizeof(int32_t)));
-    CHECK(cudaMalloc((void**)&state->fitness_values, (size_t)max_population_size * sizeof(float)));
-    CHECK(cudaMalloc((void**)&state->selection_probs, (size_t)max_population_size * sizeof(float)));
-    CHECK(cudaMalloc((void**)&state->fitness_info, (size_t)max_population_size * sizeof(AdiosFitnessInfo)));
-    CHECK(cudaMalloc((void**)&state->best_fitness_history, (size_t)max_generations * sizeof(float)));
-    CHECK(cudaMalloc((void**)&state->best_member_extra_history, (size_t)max_generations * sizeof(AdiosFitnessInfo)));
-    CHECK(cudaMalloc((void**)&state->best_members_history, history_member_bytes));
-    CHECK(cudaMalloc((void**)&state->padded_antibody, PADDED_ANTIBODY_LEN * sizeof(int8_t)));
-    CHECK(cudaMalloc((void**)&state->padded_target, PADDED_ANTIBODY_LEN * sizeof(int8_t)));
-    CHECK(cudaMalloc((void**)&state->single_antigen, PADDED_ANTIGEN_LEN * sizeof(int8_t)));
-    CHECK(cudaMalloc((void**)&state->single_binding_value, sizeof(float)));
-    CHECK(cudaMalloc((void**)&state->single_binding_index, sizeof(int32_t)));
-
-    host_population = (int8_t*)malloc(population_bytes);
-    if (host_population == NULL) {
-        fprintf(stderr, "failed to allocate host population scratch\n");
-        exit(1);
-    }
-    fill_population_from_sequence(host_population, max_population_size, state->host->antigen_array, ADIOS_ANTIGEN_LEN);
-    CHECK(cudaMemcpy(state->population_a, host_population, population_bytes, cudaMemcpyHostToDevice));
-    free(host_population);
-
-    return state;
-}
-
 void free_state(State* state) {
     if (state == NULL) {
         return;
@@ -1157,8 +556,69 @@ void free_state(State* state) {
     CHECK(cudaFree(state->single_binding_value));
     CHECK(cudaFree(state->single_binding_index));
 
-    adios_free(state->host);
+    free(state->host_ag_performances);
+    free(state->host_best_fitness_history);
+    free(state->host_best_member_extra_history);
+    free(state->host_best_members_history);
+    free_data(state->data);
     free(state);
+}
+
+State* make_state(int max_population_size, int max_generations) {
+    State* state = (State*)calloc(1, sizeof(State));
+    size_t population_bytes;
+    size_t history_member_bytes;
+    if (state == NULL) {
+        return NULL;
+    }
+
+    state->data = make_data();
+    if (state->data == NULL) {
+        free(state);
+        return NULL;
+    }
+    state->max_population_size = max_population_size;
+    state->max_generations = max_generations;
+
+    state->host_ag_performances = (float*)calloc((size_t)max_generations, sizeof(float));
+    state->host_best_fitness_history = (float*)calloc((size_t)max_generations, sizeof(float));
+    state->host_best_member_extra_history = (AdiosFitnessInfo*)calloc((size_t)max_generations, sizeof(AdiosFitnessInfo));
+    state->host_best_members_history = (int32_t*)calloc((size_t)max_generations * ADIOS_ANTIGEN_LEN, sizeof(int32_t));
+    if (state->host_ag_performances == NULL
+            || state->host_best_fitness_history == NULL
+            || state->host_best_member_extra_history == NULL
+            || state->host_best_members_history == NULL) {
+        free_state(state);
+        return NULL;
+    }
+
+    CHECK(cudaMemcpyToSymbol(JPADDED_MATRIX_DEVICE, ADIOS_JPADDED_MATRIX, sizeof(ADIOS_JPADDED_MATRIX)));
+
+    upload_pose_set(state->data, &state->data->full_pose_set, &state->full_pose_set);
+    upload_pose_set(state->data, &state->data->top_pose_set, &state->top_pose_set);
+    upload_pose_set(state->data, &state->data->med_pose_set, &state->med_pose_set);
+
+    population_bytes = (size_t)max_population_size * PADDED_ANTIGEN_LEN * sizeof(int8_t);
+    history_member_bytes = (size_t)max_generations * ADIOS_ANTIGEN_LEN * sizeof(int32_t);
+
+    CHECK(cudaMalloc((void**)&state->population_a, population_bytes));
+    CHECK(cudaMalloc((void**)&state->target_binding_values, (size_t)max_population_size * sizeof(float)));
+    CHECK(cudaMalloc((void**)&state->target_pose_indices, (size_t)max_population_size * sizeof(int32_t)));
+    CHECK(cudaMalloc((void**)&state->antitarget_binding_values, (size_t)max_population_size * sizeof(float)));
+    CHECK(cudaMalloc((void**)&state->antitarget_pose_indices, (size_t)max_population_size * sizeof(int32_t)));
+    CHECK(cudaMalloc((void**)&state->fitness_values, (size_t)max_population_size * sizeof(float)));
+    CHECK(cudaMalloc((void**)&state->selection_probs, (size_t)max_population_size * sizeof(float)));
+    CHECK(cudaMalloc((void**)&state->fitness_info, (size_t)max_population_size * sizeof(AdiosFitnessInfo)));
+    CHECK(cudaMalloc((void**)&state->best_fitness_history, (size_t)max_generations * sizeof(float)));
+    CHECK(cudaMalloc((void**)&state->best_member_extra_history, (size_t)max_generations * sizeof(AdiosFitnessInfo)));
+    CHECK(cudaMalloc((void**)&state->best_members_history, history_member_bytes));
+    CHECK(cudaMalloc((void**)&state->padded_antibody, PADDED_ANTIBODY_LEN * sizeof(int8_t)));
+    CHECK(cudaMalloc((void**)&state->padded_target, PADDED_ANTIBODY_LEN * sizeof(int8_t)));
+    CHECK(cudaMalloc((void**)&state->single_antigen, PADDED_ANTIGEN_LEN * sizeof(int8_t)));
+    CHECK(cudaMalloc((void**)&state->single_binding_value, sizeof(float)));
+    CHECK(cudaMalloc((void**)&state->single_binding_index, sizeof(int32_t)));
+
+    return state;
 }
 
 __device__ __forceinline__ uint32_t rotl32(uint32_t value, uint32_t shift) {
@@ -1726,7 +1186,6 @@ AdiosShapeRunResult single_shape_run(
         const int32_t* antigen_target, int antigen_target_len,
         const int32_t* antibody_antitarget, int antibody_antitarget_len,
         int horizon, AdiosShapeParams shape_params) {
-    Adios* host = state->host;
     int8_t padded_antibody[PADDED_ANTIBODY_LEN];
     int8_t padded_target[PADDED_ANTIBODY_LEN];
     int8_t* current_population;
@@ -1793,23 +1252,35 @@ AdiosShapeRunResult single_shape_run(
         CHECK(cudaMemcpy(&bind_index, state->single_binding_index, sizeof(int32_t), cudaMemcpyDeviceToHost));
     }
 
-    CHECK(cudaMemcpy(host->best_fitness_history, state->best_fitness_history, (size_t)horizon * sizeof(float), cudaMemcpyDeviceToHost));
-    CHECK(cudaMemcpy(host->best_member_extra_history, state->best_member_extra_history, (size_t)horizon * sizeof(AdiosFitnessInfo), cudaMemcpyDeviceToHost));
-    CHECK(cudaMemcpy(host->best_members_history, state->best_members_history, (size_t)horizon * antigen_len * sizeof(int32_t), cudaMemcpyDeviceToHost));
+    CHECK(cudaMemcpy(
+        state->host_best_fitness_history,
+        state->best_fitness_history,
+        (size_t)horizon * sizeof(float),
+        cudaMemcpyDeviceToHost));
+    CHECK(cudaMemcpy(
+        state->host_best_member_extra_history,
+        state->best_member_extra_history,
+        (size_t)horizon * sizeof(AdiosFitnessInfo),
+        cudaMemcpyDeviceToHost));
+    CHECK(cudaMemcpy(
+        state->host_best_members_history,
+        state->best_members_history,
+        (size_t)horizon * antigen_len * sizeof(int32_t),
+        cudaMemcpyDeviceToHost));
 
     for (step = 0; step < horizon; step++) {
-        host->ag_performances[step] = host->best_fitness_history[step] - binding_penalty;
+        state->host_ag_performances[step] = state->host_best_fitness_history[step] - binding_penalty;
     }
 
     AdiosShapeRunResult result;
     result.horizon = horizon;
     result.seq_len = antigen_len;
-    result.ag_performances = host->ag_performances;
+    result.ag_performances = state->host_ag_performances;
     result.binding_penalty = binding_penalty;
     result.ab_t_m_pose_index = bind_index;
-    result.best_fitness = host->best_fitness_history;
-    result.best_member_extra_info = host->best_member_extra_history;
-    result.best_members = host->best_members_history;
+    result.best_fitness = state->host_best_fitness_history;
+    result.best_member_extra_info = state->host_best_member_extra_history;
+    result.best_members = state->host_best_members_history;
     return result;
 }
 
