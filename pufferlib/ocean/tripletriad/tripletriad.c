@@ -15,6 +15,7 @@ void interactive() {
         .card_width = 576 / 3,
         .card_height = 672 / 3,
         .game_over = 0,
+        .num_cards = 10,
     };
     allocate_ctripletriad(&env);
     c_reset(&env); 
@@ -86,6 +87,7 @@ void performance_test() {
         .card_width = 576 / 3,
         .card_height = 672 / 3,
         .game_over = 0,
+        .num_cards = 10,
     };
     allocate_ctripletriad(&env);
     c_reset(&env);
