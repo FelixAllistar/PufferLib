@@ -314,6 +314,7 @@ pybind11::dict puf_log(pybind11::object pufferl_obj) {
     debug_dict["prio_beta"] = anneal_beta;
     debug_dict["explore_alpha"] = h.explore_alpha;
     debug_dict["explore_beta"] = h.explore_beta;
+    debug_dict["explore_decay"] = h.explore_decay;
 
     int minibatch_segments = h.horizon > 0 ? h.minibatch_size / h.horizon : 0;
     add_prio_debug(debug_dict, "train_per", pufferl.prio_bufs,
@@ -327,6 +328,8 @@ pybind11::dict puf_log(pybind11::object pufferl_obj) {
         debug_dict["state_buffer_capacity"] = buf.capacity;
         debug_dict["state_num_fresh_envs"] = buf.num_fresh_envs;
         debug_dict["state_num_cl_envs"] = buf.num_cl_envs;
+        debug_dict["state_checkpoint_interval"] = h.state_checkpoint_interval;
+        debug_dict["state_num_checkpoints"] = buf.num_checkpoints;
         debug_dict["state_warmup_active"] = buf.size < h.warmup_states;
         add_prio_debug(debug_dict, "state_per", buf.prio_bufs,
             0, buf.num_cl_envs, 0);
@@ -687,8 +690,10 @@ std::unique_ptr<PuffeRL> create_pufferl(py::dict args) {
     hypers.cl_frac = get_config(train_kwargs, "cl_frac");
     hypers.anneal_cl = get_config(train_kwargs, "anneal_cl");
     hypers.warmup_states = get_config(train_kwargs, "warmup_states");
+    hypers.state_checkpoint_interval = get_config(train_kwargs, "state_checkpoint_interval");
     hypers.explore_alpha = get_config(train_kwargs, "explore_alpha");
     hypers.explore_beta = get_config(train_kwargs, "explore_beta");
+    hypers.explore_decay = get_config(train_kwargs, "explore_decay");
     hypers.reset_state = get_config(args, "reset_state");
     // Base-level config ([base] section becomes top-level in args)
     hypers.cudagraphs = get_config(args, "cudagraphs");
@@ -825,8 +830,10 @@ PYBIND11_MODULE(_C, m) {
         .def_readwrite("cl_frac", &HypersT::cl_frac)
         .def_readwrite("anneal_cl", &HypersT::anneal_cl)
         .def_readwrite("warmup_states", &HypersT::warmup_states)
+        .def_readwrite("state_checkpoint_interval", &HypersT::state_checkpoint_interval)
         .def_readwrite("explore_alpha", &HypersT::explore_alpha)
         .def_readwrite("explore_beta", &HypersT::explore_beta)
+        .def_readwrite("explore_decay", &HypersT::explore_decay)
         .def_readwrite("cudagraphs", &HypersT::cudagraphs)
         .def_readwrite("profile", &HypersT::profile)
         .def_readwrite("rank", &HypersT::rank)
