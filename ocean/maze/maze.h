@@ -9,14 +9,19 @@
 #define TWO_PI 2.0*PI
 
 #define ATN_PASS 0
-#define ATN_EAST 1
-#define ATN_NORTH 2
-#define ATN_WEST 3
-#define ATN_SOUTH 4
+#define ATN_FORWARD 1
+#define ATN_LEFT 2
+#define ATN_RIGHT 3
+#define ATN_BACK 4
+
+#define DIR_EAST 0
+#define DIR_NORTH 1
+#define DIR_WEST 2
+#define DIR_SOUTH 3
 #define EMPTY 0
 #define WALL 1
-#define AGENT 2
-#define GOAL 4
+#define GOAL 3
+#define AGENT 6
 
 #define VISION 5
 #define WINDOW (2*VISION + 1)
@@ -58,6 +63,7 @@ typedef struct {
     int num_levels;
     int num_agents;
     int tick;
+    int randomize_initial_tick;
     unsigned char* observations;
     float* actions;
     float* rewards;
@@ -126,6 +132,14 @@ void c_reset(Grid* env) {
     env->tick = 0;
     int idx = rand_r(&env->rng) % env->num_levels;
     env->state = env->levels[idx];
+    if (env->randomize_initial_tick) {
+        int timeout = 2*env->state.width*env->state.height;
+        if (timeout > 0) {
+            unsigned int tick_rng = env->rng;
+            env->tick = rand_r(&tick_rng) % timeout;
+        }
+        env->randomize_initial_tick = 0;
+    }
     compute_observations(env);
 }
 
@@ -160,37 +174,46 @@ void c_step(Grid* env) {
     State* s = &env->state;
     env->tick++;
 
+    int should_move = 1;
     int atn = env->actions[0];
-    int direction = s->direction;
-    if (atn != ATN_PASS) {
-        direction = atn;
+    if (atn == ATN_PASS) {
+        should_move = 0;
+    } else if (atn == ATN_LEFT) {
+        s->direction = (s->direction + 1) % 4;
+    } else if (atn == ATN_RIGHT) {
+        s->direction = (s->direction + 3) % 4;
+    } else if (atn == ATN_BACK) {
+        s->direction = (s->direction + 2) % 4;
+    } else {
+        assert(atn == ATN_FORWARD);
     }
 
     int x = s->x;
     int y = s->y;
     int dest_x = x;
     int dest_y = y;
-    if (direction == ATN_EAST) {
+    if (s->direction == DIR_EAST) {
         dest_x = x + 1;
-    } else if (direction == ATN_NORTH) {
+    } else if (s->direction == DIR_NORTH) {
         dest_y = y - 1;
-    } else if (direction == ATN_WEST) {
+    } else if (s->direction == DIR_WEST) {
         dest_x = x - 1;
-    } else if (direction == ATN_SOUTH) {
+    } else if (s->direction == DIR_SOUTH) {
         dest_y = y + 1;
     }
-    if (in_bounds(&env->state, dest_y, dest_x)) {
+    if (should_move && in_bounds(&env->state, dest_y, dest_x)) {
         move_to(env, 0, dest_y, dest_x);
     }
 
     compute_observations(env);
 
+    int done = env->terminals[0] != 0.0f;
     if (env->tick >= 2*s->width*s->height) {
-        env->terminals[0] = 1.0f;
+        done = 1;
         add_log(env, 0);
     }
 
-    if (env->terminals[0]) {
+    if (done) {
         c_reset(env);
         int idx = rand_r(&env->rng) % env->num_levels;
         env->state = env->levels[idx];

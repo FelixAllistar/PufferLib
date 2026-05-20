@@ -64,6 +64,7 @@ Env* my_vec_init(int* num_envs_out, int* buffer_env_starts, int* buffer_env_coun
         env->num_agents = 1;
         env->levels = levels;
         env->rng = rand_r(&env_rng);
+        env->randomize_initial_tick = 1;
 
         buf_agents += env->num_agents;
         buffer_env_counts[buf]++;
@@ -86,6 +87,7 @@ void my_vec_close(Env* envs) {
 void my_init(Env* env, Dict* kwargs) {
     env->num_levels = (int)dict_get(kwargs, "num_maps")->value;
     env->num_agents = 1;
+    env->randomize_initial_tick = 1;
 }
 
 void my_log(Log* log, Dict* out) {

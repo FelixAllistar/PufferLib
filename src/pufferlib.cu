@@ -342,6 +342,7 @@ typedef struct {
     // Priority
     float prio_alpha;
     float prio_beta0;
+    bool anneal_prio_beta;
     // Curriculum state buffer
     int state_buffer_size;
     float cl_frac;
@@ -1186,20 +1187,17 @@ __global__ void scatter_state_advantages(
     for (int e = 0; e < env_count; e++) {
         int env_idx = env_start + e;
         int agent_start = env_idx * agents_per_env;
-        float sum_agent_max_abs = 0.0f;
+        float sum_agent_abs = 0.0f;
         for (int a = 0; a < agents_per_env; a++) {
             int offset = (agent_start + a) * horizon;
-            float agent_max_abs = 0.0f;
+            float agent_abs = 0.0f;
             for (int t = 0; t < horizon; t++) {
-                float adv_abs = fabsf(to_float(advantages_bt[offset + t]));
-                if (adv_abs > agent_max_abs) {
-                    agent_max_abs = adv_abs;
-                }
+                agent_abs += fabsf(to_float(advantages_bt[offset + t]));
             }
-            sum_agent_max_abs += agent_max_abs;
+            sum_agent_abs += agent_abs;
         }
         dst[state_inds[agent_start]] = from_float(
-            sum_agent_max_abs / (float)agents_per_env);
+            sum_agent_abs / (float)agents_per_env);
     }
 }
 
@@ -1441,12 +1439,9 @@ void prio_replay_cuda(PrecisionTensor& advantages, float prio_alpha,
         advantages.data, bufs.prio_probs.data, prio_alpha, T);
     compute_prio_normalize<<<1, PRIO_BLOCK_SIZE, 0, stream>>>(
         bufs.prio_probs.data, B);
-    //int block = fmaxf(((minibatch_segments + 31) / 32) * 32, 32);
-    build_cdf_cuda(bufs.cdf.data, bufs.prio_probs.data,
-        bufs.cdf_block_sums.data, B, stream);
-    int threads = 256;
-    int blocks = (minibatch_segments + threads - 1) / threads;
-    multinomial_sample<<<blocks, threads, 0, stream>>>(
+    build_cdf_cuda(bufs.cdf.data, bufs.prio_probs.data, bufs.cdf_block_sums.data, B, stream);
+    int p2_blocks = (minibatch_segments + PRIO_BLOCK_SIZE - 1) / PRIO_BLOCK_SIZE;
+    multinomial_sample<<<p2_blocks, PRIO_BLOCK_SIZE, 0, stream>>>(
         bufs.idx.data, bufs.cdf.data, B, minibatch_segments, seed, offset_ptr);
     advance_rng_offset<<<1, 1, 0, stream>>>(offset_ptr, (int64_t)minibatch_segments);
 
@@ -2078,8 +2073,11 @@ void train_impl(PuffeRL& pufferl) {
                                             current_epoch, total_epochs);
     }
 
-    // Annealed priority exponent
-    float anneal_beta = prio_beta0 + (1.0f - prio_beta0) * prio_alpha * (float)current_epoch/(float)total_epochs;
+    float anneal_beta = prio_beta0;
+    if (hypers.anneal_prio_beta && total_epochs > 0) {
+        anneal_beta += (1.0f - prio_beta0) * prio_alpha
+            * (float)current_epoch / (float)total_epochs;
+    }
     TrainGraph& graph = pufferl.train_buf;
     cudaEventRecord(pufferl.profile.events[1]);  // pre-loop end
 
