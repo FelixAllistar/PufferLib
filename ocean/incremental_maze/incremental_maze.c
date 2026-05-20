@@ -13,23 +13,26 @@ void demo() {
 
     Grid* env = (Grid*)calloc(1, sizeof(Grid));
     env->num_agents = 1;
-    env->rng = 0;
+    env->rng = 1;
     env->observations = calloc(WINDOW*WINDOW, sizeof(unsigned char));
     env->actions = calloc(1, sizeof(float));
     env->rewards = calloc(1, sizeof(float));
     env->terminals = calloc(1, sizeof(float));
 
-    int num_maps = INCREMENTAL_NUM_LEVELS;
+    int num_maps = INCREMENTAL_NUM_LEVELS * INCREMENTAL_LEVEL_POOL;
     State* levels = calloc(num_maps, sizeof(State));
-    for (int i = 0; i < num_maps; i++) {
-        int sz = INCREMENTAL_MIN_SIZE + 2*i;
-        State* level = &levels[i];
-        level->width = sz;
-        level->height = sz;
-        create_maze_level(level, 0.5f, 0);
+    for (int level_idx = 0; level_idx < INCREMENTAL_NUM_LEVELS; level_idx++) {
+        int sz = INCREMENTAL_MIN_SIZE + 2*level_idx;
+        for (int pool_idx = 0; pool_idx < INCREMENTAL_LEVEL_POOL; pool_idx++) {
+            int map_idx = level_idx*INCREMENTAL_LEVEL_POOL + pool_idx;
+            State* level = &levels[map_idx];
+            level->width = sz;
+            level->height = sz;
+            create_maze_level(level, 0.5f, map_idx);
+        }
     }
 
-    env->num_levels = num_maps;
+    env->num_levels = INCREMENTAL_NUM_LEVELS;
     env->levels = levels;
 
     c_reset(env);

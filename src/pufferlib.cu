@@ -345,6 +345,7 @@ typedef struct {
     // Curriculum state buffer
     int state_buffer_size;
     float cl_frac;
+    bool anneal_cl;
     int warmup_states;
     float explore_alpha;
     float explore_beta;
@@ -1166,7 +1167,7 @@ __global__ void compute_prio_adv_reduction(
         local_sum += __shfl_down_sync(PRIO_FULL_MASK, local_sum, s);
     }
     if (tx == 0) {
-        float pw = __powf(local_sum, prio_alpha);
+        float pw = prio_alpha == 0.0f ? 1.0f : __powf(local_sum, prio_alpha);
         if (isnan(pw) || isinf(pw)) {
             pw = 0.0f;
         }
@@ -1185,11 +1186,20 @@ __global__ void scatter_state_advantages(
     for (int e = 0; e < env_count; e++) {
         int env_idx = env_start + e;
         int agent_start = env_idx * agents_per_env;
-        float sum_abs = 0.0f;
+        float sum_agent_max_abs = 0.0f;
         for (int a = 0; a < agents_per_env; a++) {
-            sum_abs += fabsf(to_float(advantages_bt[(agent_start + a) * horizon]));
+            int offset = (agent_start + a) * horizon;
+            float agent_max_abs = 0.0f;
+            for (int t = 0; t < horizon; t++) {
+                float adv_abs = fabsf(to_float(advantages_bt[offset + t]));
+                if (adv_abs > agent_max_abs) {
+                    agent_max_abs = adv_abs;
+                }
+            }
+            sum_agent_max_abs += agent_max_abs;
         }
-        dst[state_inds[agent_start]] = from_float(sum_abs / (float)agents_per_env);
+        dst[state_inds[agent_start]] = from_float(
+            sum_agent_max_abs / (float)agents_per_env);
     }
 }
 
@@ -1554,6 +1564,105 @@ static inline void expand_env_state_inds(StateBuffer* buf) {
     }
 }
 
+#ifdef PUFFER_DEBUG_STATE_POS
+static inline void print_sampled_state_pos_hist(PuffeRL* pufferl,
+        const int* state_inds, int count) {
+    if (count <= 0) {
+        return;
+    }
+
+    StateBuffer* buf = &pufferl->state_buf;
+    int hist_max_pos = 0;
+    int sample_min_pos = 0;
+    int sample_max_pos = 0;
+    long sample_sum_pos = 0;
+    for (int i = 0; i < count; i++) {
+        int pos = PUFFER_DEBUG_STATE_POS(buf->states[state_inds[i]]);
+        if (i == 0 || pos < sample_min_pos) {
+            sample_min_pos = pos;
+        }
+        if (pos > sample_max_pos) {
+            sample_max_pos = pos;
+        }
+        if (pos > hist_max_pos) {
+            hist_max_pos = pos;
+        }
+        sample_sum_pos += pos;
+    }
+
+    int buffer_min_pos = 0;
+    int buffer_max_pos = 0;
+    long buffer_sum_pos = 0;
+    for (int i = 0; i < buf->size; i++) {
+        int pos = PUFFER_DEBUG_STATE_POS(buf->states[i]);
+        if (i == 0 || pos < buffer_min_pos) {
+            buffer_min_pos = pos;
+        }
+        if (pos > buffer_max_pos) {
+            buffer_max_pos = pos;
+        }
+        if (pos > hist_max_pos) {
+            hist_max_pos = pos;
+        }
+        buffer_sum_pos += pos;
+    }
+
+    int hist_size = hist_max_pos + 1;
+    int* sample_hist = (int*)calloc((size_t)hist_size, sizeof(int));
+    int* buffer_hist = (int*)calloc((size_t)hist_size, sizeof(int));
+    if (sample_hist == NULL || buffer_hist == NULL) {
+        printf("cl_state_pos epoch=%ld sampled_n=%d sampled_mean=%.2f sampled_min=%d "
+            "sampled_max=%d buffer_n=%d buffer_mean=%.2f buffer_min=%d hist_oom=1\n",
+            pufferl->epoch, count, (double)sample_sum_pos / (double)count,
+            sample_min_pos, sample_max_pos, buf->size,
+            buf->size > 0 ? (double)buffer_sum_pos / (double)buf->size : 0.0,
+            buffer_min_pos);
+        free(sample_hist);
+        free(buffer_hist);
+        return;
+    }
+    for (int i = 0; i < count; i++) {
+        int pos = PUFFER_DEBUG_STATE_POS(buf->states[state_inds[i]]);
+        if (pos >= 0 && pos < hist_size) {
+            sample_hist[pos] += 1;
+        }
+    }
+    for (int i = 0; i < buf->size; i++) {
+        int pos = PUFFER_DEBUG_STATE_POS(buf->states[i]);
+        if (pos >= 0 && pos < hist_size) {
+            buffer_hist[pos] += 1;
+        }
+    }
+
+    printf("cl_state_pos epoch=%ld sampled_n=%d sampled_mean=%.2f sampled_min=%d "
+        "sampled_max=%d buffer_n=%d buffer_mean=%.2f buffer_min=%d buffer_max=%d sample_hist=",
+        pufferl->epoch, count, (double)sample_sum_pos / (double)count,
+        sample_min_pos, sample_max_pos, buf->size,
+        buf->size > 0 ? (double)buffer_sum_pos / (double)buf->size : 0.0,
+        buffer_min_pos, buffer_max_pos);
+    int printed = 0;
+    for (int pos = 0; pos < hist_size; pos++) {
+        if (sample_hist[pos] == 0) {
+            continue;
+        }
+        printf("%s%d:%d", printed ? "," : "", pos, sample_hist[pos]);
+        printed = 1;
+    }
+    printf(" buffer_hist=");
+    printed = 0;
+    for (int pos = 0; pos < hist_size; pos++) {
+        if (buffer_hist[pos] == 0) {
+            continue;
+        }
+        printf("%s%d:%d", printed ? "," : "", pos, buffer_hist[pos]);
+        printed = 1;
+    }
+    printf("\n");
+    free(sample_hist);
+    free(buffer_hist);
+}
+#endif
+
 void curriculum_rollout_begin(PuffeRL* pufferl) {
     HypersT* h = &pufferl->hypers;
     StateBuffer* buf = &pufferl->state_buf;
@@ -1566,6 +1675,9 @@ void curriculum_rollout_begin(PuffeRL* pufferl) {
     float progress = total_epochs > 0 ? (float)pufferl->epoch / (float)total_epochs : 1.0f;
     progress = fminf(1.0f, fmaxf(0.0f, progress));
     float current_cl_frac = h->cl_frac;
+    if (h->anneal_cl) {
+        current_cl_frac *= 1.0f - progress;
+    }
     int configured_cl = clamp_int((int)(current_cl_frac * (float)total_envs), 0, total_envs);
     int do_warmup = (buf->size == 0 || buf->size < h->warmup_states);
     int num_cl_envs = do_warmup ? 0 : configured_cl;
@@ -1598,6 +1710,10 @@ void curriculum_rollout_begin(PuffeRL* pufferl) {
         cudaMemcpyAsync(buf->env_state_inds_host + num_fresh_envs, buf->prio_bufs.idx.data,
             num_cl_envs * sizeof(int), cudaMemcpyDeviceToHost, stream);
         cudaStreamSynchronize(stream);
+#ifdef PUFFER_DEBUG_STATE_POS
+        print_sampled_state_pos_hist(pufferl,
+            buf->env_state_inds_host + num_fresh_envs, num_cl_envs);
+#endif
 
         load_curriculum_states(vec, buf->states, buf->env_state_inds_host + num_fresh_envs,
             num_fresh_envs, num_cl_envs);

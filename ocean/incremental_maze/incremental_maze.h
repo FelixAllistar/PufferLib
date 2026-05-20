@@ -23,6 +23,7 @@
 #define MAX_SIZE 47
 #define INCREMENTAL_MIN_SIZE 5
 #define INCREMENTAL_NUM_LEVELS (((MAX_SIZE - INCREMENTAL_MIN_SIZE) / 2) + 1)
+#define INCREMENTAL_LEVEL_POOL 512
 
 typedef struct Log Log;
 struct Log {
@@ -145,7 +146,9 @@ void set_level(Grid* env, int level_idx, int reset_episode) {
         episode_return = env->state.episode_return;
     }
 
-    env->state = env->levels[level_idx];
+    int pool_idx = rand_r(&env->rng) % INCREMENTAL_LEVEL_POOL;
+    int map_idx = level_idx*INCREMENTAL_LEVEL_POOL + pool_idx;
+    env->state = env->levels[map_idx];
     env->state.tick = tick;
     env->state.timeout_tick = tick + 2*env->state.width*env->state.height;
     env->state.episode_tick = episode_tick;

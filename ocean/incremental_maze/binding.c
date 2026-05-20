@@ -19,17 +19,21 @@ Env* my_vec_init(int* num_envs_out, int* buffer_env_starts, int* buffer_env_coun
     int agents_per_buffer = total_agents / num_buffers;
     int num_envs = total_agents;
     int num_levels = INCREMENTAL_NUM_LEVELS;
+    int num_maps = num_levels * INCREMENTAL_LEVEL_POOL;
 
     // Generate maze levels (shared across all envs)
-    State* levels = (State*)calloc(num_levels, sizeof(State));
+    State* levels = (State*)calloc(num_maps, sizeof(State));
 
-    for (int i = 0; i < num_levels; i++) {
-        int sz = INCREMENTAL_MIN_SIZE + 2*i;
-        State* level = &levels[i];
-        level->width = sz;
-        level->height = sz;
+    for (int level_idx = 0; level_idx < num_levels; level_idx++) {
+        int sz = INCREMENTAL_MIN_SIZE + 2*level_idx;
+        for (int pool_idx = 0; pool_idx < INCREMENTAL_LEVEL_POOL; pool_idx++) {
+            int map_idx = level_idx*INCREMENTAL_LEVEL_POOL + pool_idx;
+            State* level = &levels[map_idx];
+            level->width = sz;
+            level->height = sz;
 
-        create_maze_level(level, 0.5f, 0);
+            create_maze_level(level, 0.5f, map_idx);
+        }
     }
 
     // Allocate all environments
@@ -40,12 +44,13 @@ Env* my_vec_init(int* num_envs_out, int* buffer_env_starts, int* buffer_env_coun
     buffer_env_starts[0] = 0;
     buffer_env_counts[0] = 0;
 
+    unsigned int env_rng = 42;
     for (int i = 0; i < num_envs; i++) {
         Env* env = &envs[i];
         env->num_levels = num_levels;
         env->num_agents = 1;
         env->levels = levels;
-        env->rng = 0;
+        env->rng = rand_r(&env_rng);
 
         buf_agents += env->num_agents;
         buffer_env_counts[buf]++;
