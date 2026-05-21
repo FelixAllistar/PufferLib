@@ -5,17 +5,78 @@
 
 #define _PUFFER_STRINGIFY(x) #x
 #define PUFFER_STRINGIFY(x) _PUFFER_STRINGIFY(x)
+#include <cstdint>
+#include <cstdlib>
 #include <cstring>
-
-// vecenv.h header section gives us StaticVec, Dict, cudaStream_t typedef
-#include "vecenv.h"
 
 namespace py = pybind11;
 
-// Stub out CUDA functions that the static lib references (dead code when gpu=0)
 extern "C" {
 typedef int cudaError_t;
 typedef int cudaMemcpyKind;
+typedef struct CUstream_st* cudaStream_t;
+
+typedef struct {
+    const char* key;
+    double value;
+    void* ptr;
+} DictItem;
+
+typedef struct {
+    DictItem* items;
+    int size;
+    int capacity;
+} Dict;
+
+typedef struct {
+    void* data;
+    int64_t shape[8];
+} StaticObsTensor;
+
+typedef struct StaticThreading StaticThreading;
+
+typedef struct StaticVec {
+    void* envs;
+    int size;
+    int total_agents;
+    int buffers;
+    int agents_per_buffer;
+    int* buffer_env_starts;
+    int* buffer_env_counts;
+    StaticObsTensor observations;
+    float* actions;
+    float* rewards;
+    float* terminals;
+    unsigned char* action_mask;
+    StaticObsTensor gpu_observations;
+    float* gpu_actions;
+    float* gpu_rewards;
+    float* gpu_terminals;
+    unsigned char* gpu_action_mask;
+    cudaStream_t* streams;
+    StaticThreading* threading;
+    int obs_size;
+    int num_atns;
+    int action_mask_size;
+    int gpu;
+    int* agent_perm;
+    int log_env_limit;
+} StaticVec;
+
+StaticVec* create_static_vec(int total_agents, int num_buffers, int gpu, Dict* vec_kwargs, Dict* env_kwargs);
+void static_vec_reset(StaticVec* vec);
+void static_vec_close(StaticVec* vec);
+void static_vec_log(StaticVec* vec, Dict* out);
+void static_vec_render(StaticVec* vec, int env_id);
+void cpu_vec_step(StaticVec* vec);
+int get_obs_size(void);
+int get_num_atns(void);
+int* get_act_sizes(void);
+int get_num_act_sizes(void);
+const char* get_obs_dtype(void);
+size_t get_obs_elem_size(void);
+
+// Stub out CUDA functions that the static lib references (dead code when gpu=0)
 cudaError_t cudaHostAlloc(void**, size_t, unsigned int) { return 0; }
 cudaError_t cudaMalloc(void**, size_t) { return 0; }
 cudaError_t cudaMemcpy(void*, const void*, size_t, cudaMemcpyKind) { return 0; }
@@ -29,6 +90,33 @@ cudaError_t cudaStreamSynchronize(cudaStream_t) { return 0; }
 cudaError_t cudaStreamCreateWithFlags(cudaStream_t*, unsigned int) { return 0; }
 cudaError_t cudaStreamQuery(cudaStream_t) { return 0; }
 const char* cudaGetErrorString(cudaError_t) { return "stub"; }
+}
+
+static Dict* create_dict(int capacity) {
+    Dict* dict = (Dict*)calloc(1, sizeof(Dict));
+    dict->capacity = capacity;
+    dict->items = (DictItem*)calloc(capacity, sizeof(DictItem));
+    return dict;
+}
+
+static DictItem* dict_get_unsafe(Dict* dict, const char* key) {
+    for (int i = 0; i < dict->size; i++) {
+        if (strcmp(dict->items[i].key, key) == 0) {
+            return &dict->items[i];
+        }
+    }
+    return NULL;
+}
+
+static void dict_set(Dict* dict, const char* key, double value) {
+    DictItem* item = dict_get_unsafe(dict, key);
+    if (item != NULL) {
+        item->value = value;
+        return;
+    }
+    dict->items[dict->size].key = key;
+    dict->items[dict->size].value = value;
+    dict->size++;
 }
 
 // ============================================================================

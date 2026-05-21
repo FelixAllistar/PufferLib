@@ -1,6 +1,6 @@
-// vecenv.h - Static env binding: types + implementation
-// Types/declarations always available (for pufferlib.cu).
-// Implementations compiled only when OBS_SIZE is defined (by binding.c).
+// vecenv.h - Static env binding: typed declarations + implementation.
+// Include an env binding before this header so Env, State, OBS_SIZE, and
+// OBS_TENSOR_T are available.
 
 #pragma once
 
@@ -10,6 +10,7 @@
 #include <assert.h>
 
 #include "tensor.h"
+#include <cuda_runtime_api.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -63,23 +64,11 @@ static inline void dict_set(Dict* dict, const char* key, double value) {
     dict->size++;
 }
 
-// Forward declare CUDA stream type
-typedef struct CUstream_st* cudaStream_t;
-
 // Threading state
 typedef struct StaticThreading StaticThreading;
 
-#ifdef OBS_SIZE
 typedef Env StaticEnv;
 typedef OBS_TENSOR_T StaticObsTensor;
-#else
-typedef void StaticEnv;
-typedef struct {
-    void* data;
-    int64_t shape[PUF_MAX_DIMS];
-} StaticObsTensor;
-#endif
-
 typedef State PufferState;
 
 typedef struct StaticVec {
@@ -172,12 +161,6 @@ int my_put(void* env, Dict* kwargs);
 }
 #endif
 
-// ============================================================================
-// Implementation — only compiled when OBS_SIZE is defined (i.e. from binding.c)
-// ============================================================================
-
-#ifdef OBS_SIZE
-
 static inline size_t obs_element_size(void) {
     OBS_TENSOR_T t;
     return sizeof(*t.data);
@@ -200,7 +183,6 @@ static inline void static_obs_set(StaticObsTensor* obs, void* data, int total_ag
 const char dtype_symbol[] = STRINGIFY(OBS_TENSOR_T);
 
 #include <omp.h>
-#ifdef __cplusplus
 typedef int atomic_int;
 static inline int atomic_load(const atomic_int* ptr) {
     return __atomic_load_n(ptr, __ATOMIC_SEQ_CST);
@@ -208,39 +190,9 @@ static inline int atomic_load(const atomic_int* ptr) {
 static inline void atomic_store(atomic_int* ptr, int value) {
     __atomic_store_n(ptr, value, __ATOMIC_SEQ_CST);
 }
-#else
-#include <stdatomic.h>
-#endif
 #include <pthread.h>
 #include <stdbool.h>
 #include <time.h>
-
-#ifdef __CUDACC__
-#include <cuda_runtime_api.h>
-#else
-// Forward declare CUDA types and functions for C-compiled env bindings.
-typedef int cudaError_t;
-typedef int cudaMemcpyKind;
-#define cudaSuccess 0
-#define cudaMemcpyHostToDevice 1
-#define cudaMemcpyDeviceToHost 2
-#define cudaHostAllocPortable 1
-#define cudaStreamNonBlocking 1
-
-extern cudaError_t cudaHostAlloc(void**, size_t, unsigned int);
-extern cudaError_t cudaMalloc(void**, size_t);
-extern cudaError_t cudaMemcpy(void*, const void*, size_t, cudaMemcpyKind);
-extern cudaError_t cudaMemcpyAsync(void*, const void*, size_t, cudaMemcpyKind, cudaStream_t);
-extern cudaError_t cudaMemset(void*, int, size_t);
-extern cudaError_t cudaFree(void*);
-extern cudaError_t cudaFreeHost(void*);
-extern cudaError_t cudaSetDevice(int);
-extern cudaError_t cudaDeviceSynchronize(void);
-extern cudaError_t cudaStreamSynchronize(cudaStream_t);
-extern cudaError_t cudaStreamCreateWithFlags(cudaStream_t*, unsigned int);
-extern cudaError_t cudaStreamQuery(cudaStream_t);
-extern const char* cudaGetErrorString(cudaError_t);
-#endif
 
 #define OMP_WAITING 5
 #define OMP_RUNNING 6
@@ -845,5 +797,3 @@ int my_put(void* env, Dict* kwargs) {
     return 0;
 }
 #endif
-
-#endif // OBS_SIZE
