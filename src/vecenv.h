@@ -80,15 +80,7 @@ typedef struct {
 } StaticObsTensor;
 #endif
 
-#ifndef PUFFER_HAS_STATE
-#define PUFFER_HAS_STATE 0
-#endif
-
-#if PUFFER_HAS_STATE
 typedef State PufferState;
-#else
-typedef unsigned char PufferState;
-#endif
 
 typedef struct StaticVec {
     StaticEnv* envs;

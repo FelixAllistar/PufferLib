@@ -423,6 +423,9 @@ void alloc_register(Allocator* a, PrecisionTensor* t) {
 void alloc_register(Allocator* a, FloatTensor* t) {
     alloc_register_impl(a, (void**)&t->data, t->shape, sizeof(float));
 }
+void alloc_register(Allocator* a, ByteTensor* t) {
+    alloc_register_impl(a, (void**)&t->data, t->shape, sizeof(unsigned char));
+}
 void alloc_register(Allocator* a, LongTensor* t) {
     alloc_register_impl(a, (void**)&t->data, t->shape, sizeof(long));
 }

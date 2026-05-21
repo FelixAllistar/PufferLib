@@ -198,89 +198,9 @@ void register_ppo_buffers(PPOBuffersPuf& bufs, Allocator* alloc, int N, int T, i
     alloc_register(alloc, &bufs.adv_scratch);
 }
 
-// Prioritized replay over single-epoch data. These kernels are
-// the least cleaned because we will likely have a better method in 5.0
-#define CDF_SCAN_BLOCK_SIZE 1024
-static inline int cdf_scan_blocks(int n) {
-    return (n + CDF_SCAN_BLOCK_SIZE - 1) / CDF_SCAN_BLOCK_SIZE;
-}
-
-struct PrioBuffers {
-    FloatTensor prio_probs, cdf, cdf_block_sums, mb_prio;
-    IntTensor idx;
-};
-
-struct StateBuffer {
-    PufferState* states;       // CPU state_buffer_size entries
-    PufferState* candidate_states; // CPU scratch, length candidate_capacity
-    float* priorities;         // CPU priority per persistent slot
-    precision_t* priorities_host; // CPU scratch for copying priorities to GPU
-    precision_t* env_scores_host; // CPU scratch, length candidate_capacity + num_envs
-    int* heap;                 // CPU min-heap of persistent slot ids
-    int* heap_pos;             // CPU inverse heap position per slot
-    int capacity;
-    int size;
-    int write_pos;
-    int num_envs;
-    int num_checkpoints;
-    int checkpoint_interval;
-    int candidate_capacity;
-    int agents_per_env;
-    int num_cl_envs;
-    int num_fresh_envs;
-    int num_cl_agents;
-    int num_fresh_agents;
-    int* env_state_inds_host;  // CPU scratch, length num_envs
-    int* state_inds_host;      // CPU scratch, length total_agents
-    PrecisionTensor advantages; // GPU, shape {state_buffer_size}
-    PrecisionTensor env_scores; // GPU scratch, shape {candidate_capacity + num_envs}
-    PrecisionTensor importance; // GPU, shape {total_agents}; fresh=1, CL=PER IS weight
-    IntTensor state_inds;       // GPU, shape {total_agents}
-    PrioBuffers prio_bufs;      // GPU CDF/probs/idx/weights for curriculum
-};
-
-void register_prio_buffers(PrioBuffers& bufs, Allocator* alloc, int B, int minibatch_segments) {
-    bufs = (PrioBuffers){
-        .prio_probs = {.shape = {B}},
-        .cdf = {.shape = {B}},
-        .cdf_block_sums = {.shape = {cdf_scan_blocks(B)}},
-        .mb_prio = {.shape = {minibatch_segments}},
-        .idx = {.shape = {minibatch_segments}},
-    };
-    alloc_register(alloc, &bufs.prio_probs);
-    alloc_register(alloc, &bufs.cdf);
-    alloc_register(alloc, &bufs.cdf_block_sums);
-    alloc_register(alloc, &bufs.idx);
-    alloc_register(alloc, &bufs.mb_prio);
-}
-
-void register_state_buffer(StateBuffer* buf, Allocator* alloc,
-        int capacity, int total_agents, int num_envs, int agents_per_env,
-        int num_cl_envs, int horizon, int checkpoint_interval) {
-    buf->capacity = capacity;
-    buf->size = 0;
-    buf->write_pos = 0;
-    buf->num_envs = num_envs;
-    buf->checkpoint_interval = checkpoint_interval;
-    buf->num_checkpoints = (horizon + checkpoint_interval - 1) / checkpoint_interval;
-    buf->candidate_capacity = num_envs * buf->num_checkpoints;
-    buf->agents_per_env = agents_per_env;
-    buf->num_cl_envs = num_cl_envs;
-    buf->num_fresh_envs = num_envs - num_cl_envs;
-    buf->num_cl_agents = num_cl_envs * agents_per_env;
-    buf->num_fresh_agents = buf->num_fresh_envs * agents_per_env;
-    buf->advantages = {.shape = {capacity}};
-    buf->env_scores = {.shape = {buf->candidate_capacity + num_envs}};
-    buf->importance = {.shape = {total_agents}};
-    buf->state_inds = {.shape = {total_agents}};
-    alloc_register(alloc, &buf->advantages);
-    alloc_register(alloc, &buf->env_scores);
-    alloc_register(alloc, &buf->importance);
-    alloc_register(alloc, &buf->state_inds);
-    if (num_cl_envs > 0) {
-        register_prio_buffers(buf->prio_bufs, alloc, capacity, num_cl_envs);
-    }
-}
+#define PUFFER_CURRICULUM_TYPES
+#include "curriculum.cu"
+#undef PUFFER_CURRICULUM_TYPES
 
 // Slice: select dim0 index t, then narrow dim0 from start for count.
 // 3D (T, B, F) -> (count, F); 2D (T, B) -> (count,)
@@ -457,7 +377,9 @@ typedef struct {
     int* bank_layout;
 } PuffeRL;
 
-static inline void capture_curriculum_checkpoint(PuffeRL* pufferl, int buffer_idx, int t);
+#define PUFFER_CURRICULUM_IMPL
+#include "curriculum.cu"
+#undef PUFFER_CURRICULUM_IMPL
 
 Dict* log_environments_impl(PuffeRL& pufferl) {
     // Capacity raised from 32 to 64 to accommodate chess's per-bank
@@ -1172,849 +1094,6 @@ void ppo_loss_fwd_bwd(
         bufs.loss_output.data, losses_acc.data, ppo_partials_buf, ppo_grid);
 }
 
-#define PRIO_WARP_SIZE 32
-#define PRIO_FULL_MASK 0xffffffff
-#define PRIO_BLOCK_SIZE 256
-#define PRIO_NUM_WARPS (PRIO_BLOCK_SIZE / PRIO_WARP_SIZE)
-__global__ void compute_prio_adv_reduction(
-        const precision_t* __restrict__ advantages,
-        float* prio_weights, float prio_alpha, int stride) {
-    int row = blockIdx.x;
-    int tx = threadIdx.x;
-    int offset = row * stride;
-
-    float local_sum = 0.0f;
-    for (int t = tx; t < stride; t += blockDim.x) {
-        local_sum += fabsf(to_float(advantages[offset + t]));
-    }
-
-    for (int s = PRIO_WARP_SIZE / 2; s >= 1; s /= 2) {
-        local_sum += __shfl_down_sync(PRIO_FULL_MASK, local_sum, s);
-    }
-    if (tx == 0) {
-        float pw = prio_alpha == 0.0f ? 1.0f : __powf(local_sum, prio_alpha);
-        if (isnan(pw) || isinf(pw)) {
-            pw = 0.0f;
-        }
-        prio_weights[row] = pw;
-    }
-}
-
-__global__ void compute_curriculum_checkpoint_scores(
-        precision_t* __restrict__ dst,
-        const precision_t* __restrict__ advantages_bt,
-        int num_envs, int num_fresh_envs, int num_cl_envs,
-        int num_checkpoints, int checkpoint_interval,
-        int agents_per_env, int horizon) {
-    if (blockIdx.x != 0 || threadIdx.x != 0) {
-        return;
-    }
-    for (int c = 0; c < num_checkpoints; c++) {
-        int start_t = c * checkpoint_interval;
-        int end_t = start_t + checkpoint_interval;
-        if (end_t > horizon) {
-            end_t = horizon;
-        }
-        for (int e = 0; e < num_fresh_envs; e++) {
-            int agent_start = e * agents_per_env;
-            float sum_agent_abs = 0.0f;
-            for (int a = 0; a < agents_per_env; a++) {
-                int offset = (agent_start + a) * horizon;
-                float agent_abs = 0.0f;
-                for (int t = start_t; t < end_t; t++) {
-                    agent_abs += fabsf(to_float(advantages_bt[offset + t]));
-                }
-                sum_agent_abs += agent_abs;
-            }
-            dst[c * num_envs + e] = from_float(sum_agent_abs / (float)agents_per_env);
-        }
-    }
-
-    int cl_score_offset = num_envs * num_checkpoints;
-    for (int i = 0; i < num_cl_envs; i++) {
-        int e = num_fresh_envs + i;
-        int agent_start = e * agents_per_env;
-        float sum_agent_abs = 0.0f;
-        for (int a = 0; a < agents_per_env; a++) {
-            int offset = (agent_start + a) * horizon;
-            float agent_abs = 0.0f;
-            for (int t = 0; t < horizon; t++) {
-                agent_abs += fabsf(to_float(advantages_bt[offset + t]));
-            }
-            sum_agent_abs += agent_abs;
-        }
-        dst[cl_score_offset + i] = from_float(sum_agent_abs / (float)agents_per_env);
-    }
-}
-
-__global__ void compute_state_prio_abs(
-        const precision_t* __restrict__ advantages,
-        float* __restrict__ prio_weights,
-        float prio_alpha, int length) {
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    if (idx >= length) {
-        return;
-    }
-
-    float adv = fabsf(to_float(advantages[idx]));
-    float pw;
-    if (prio_alpha == 0.0f) {
-        pw = 1.0f;
-    } else if (adv == 0.0f) {
-        pw = 0.0f;
-    } else {
-        pw = __powf(adv, prio_alpha);
-    }
-    if (isnan(pw) || isinf(pw)) {
-        pw = 0.0f;
-    }
-    prio_weights[idx] = pw;
-}
-
-__global__ void compute_state_prio_normalize(float* prio_weights, int length) {
-    __shared__ float shmem[PRIO_NUM_WARPS];
-    __shared__ float block_sum;
-    __shared__ int use_uniform;
-
-    if (length <= 0) {
-        return;
-    }
-
-    int tx = threadIdx.x;
-    int lane = tx % PRIO_WARP_SIZE;
-    int warp_id = tx / PRIO_WARP_SIZE;
-
-    float local_sum = 0.0f;
-    for (int t = tx; t < length; t += blockDim.x) {
-        local_sum += prio_weights[t];
-    }
-    for (int s = PRIO_WARP_SIZE / 2; s >= 1; s /= 2) {
-        local_sum += __shfl_down_sync(PRIO_FULL_MASK, local_sum, s);
-    }
-    if (lane == 0) {
-        shmem[warp_id] = local_sum;
-    }
-    __syncthreads();
-
-    if (warp_id == 0) {
-        float val = (lane < PRIO_NUM_WARPS) ? shmem[lane] : 0.0f;
-        for (int s = PRIO_NUM_WARPS / 2; s >= 1; s /= 2) {
-            val += __shfl_down_sync(PRIO_FULL_MASK, val, s);
-        }
-        if (tx == 0) {
-            block_sum = val;
-            use_uniform = (val <= 0.0f || isnan(val) || isinf(val));
-        }
-    }
-    __syncthreads();
-
-    float inv_sum = use_uniform ? (1.0f / (float)length) : (1.0f / block_sum);
-    for (int t = tx; t < length; t += blockDim.x) {
-        prio_weights[t] = use_uniform ? inv_sum : prio_weights[t] * inv_sum;
-    }
-}
-
-__global__ void compute_prio_normalize(float* prio_weights, int length) {
-    __shared__ float shmem[PRIO_NUM_WARPS];
-    __shared__ float block_sum;
-
-    int tx = threadIdx.x;
-    int lane = tx % PRIO_WARP_SIZE;
-    int warp_id = tx / PRIO_WARP_SIZE;
-    const float eps = 1e-6f;
-
-    float local_sum = 0.0f;
-    for (int t = tx; t < length; t += blockDim.x) {
-        local_sum += prio_weights[t];
-    }
-    for (int s = PRIO_WARP_SIZE / 2; s >= 1; s /= 2) {
-        local_sum += __shfl_down_sync(PRIO_FULL_MASK, local_sum, s);
-    }
-    if (lane == 0) {
-        shmem[warp_id] = local_sum;
-    }
-    __syncthreads();
-
-    if (warp_id == 0) {
-        float val = (lane < PRIO_NUM_WARPS) ? shmem[lane] : 0.0f;
-        for (int s = PRIO_NUM_WARPS / 2; s >= 1; s /= 2) {
-            val += __shfl_down_sync(PRIO_FULL_MASK, val, s);
-        }
-        if (tx == 0) {
-            block_sum = val + eps;
-        }
-    }
-    __syncthreads();
-
-    for (int t = tx; t < length; t += blockDim.x) {
-        prio_weights[t] = (prio_weights[t] + eps) / block_sum;
-    }
-}
-
-// mb_prio[i] = pow(total_agents * prio_probs[idx[i]], -anneal_beta)
-__global__ void compute_prio_imp_weights(
-        const int* __restrict__ indices,
-        const float* __restrict__ prio_probs,
-        float* mb_prio, int total_agents,
-        float anneal_beta, int minibatch_segments) {
-    int tx = threadIdx.x + blockIdx.x * blockDim.x;
-    if (tx < minibatch_segments) {
-        float value = prio_probs[indices[tx]] * (float)total_agents;
-        mb_prio[tx] = __powf(value, -anneal_beta);
-    }
-}
-
-__global__ void build_state_importance(
-        precision_t* __restrict__ out,
-        const int* __restrict__ state_inds,
-        const float* __restrict__ prio_probs,
-        int num_fresh, int num_cl, int buffer_size, float beta) {
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    int total = num_fresh + num_cl;
-    if (idx >= total) {
-        return;
-    }
-
-    float weight = 1.0f;
-    if (idx >= num_fresh) {
-        int state_idx = state_inds[idx];
-        float value = prio_probs[state_idx] * (float)buffer_size;
-        weight = __powf(value, -beta);
-        if (isnan(weight) || isinf(weight)) {
-            weight = 1.0f;
-        }
-    }
-    out[idx] = from_float(weight);
-}
-
-__global__ void build_cdf_block_scan(
-        float* __restrict__ cdf, const float* __restrict__ probs,
-        float* __restrict__ block_sums, int B) {
-    __shared__ float scan[CDF_SCAN_BLOCK_SIZE];
-
-    int tx = threadIdx.x;
-    int idx = blockIdx.x * CDF_SCAN_BLOCK_SIZE + tx;
-    scan[tx] = idx < B ? probs[idx] : 0.0f;
-    __syncthreads();
-
-    for (int offset = 1; offset < CDF_SCAN_BLOCK_SIZE; offset <<= 1) {
-        float add = tx >= offset ? scan[tx - offset] : 0.0f;
-        __syncthreads();
-        scan[tx] += add;
-        __syncthreads();
-    }
-
-    if (idx < B) {
-        cdf[idx] = scan[tx];
-    }
-    if (tx == CDF_SCAN_BLOCK_SIZE - 1) {
-        block_sums[blockIdx.x] = scan[tx];
-    }
-}
-
-__global__ void scan_cdf_block_sums(float* __restrict__ block_sums, int num_blocks) {
-    if (blockIdx.x != 0 || threadIdx.x != 0) {
-        return;
-    }
-    float cum = 0.0f;
-    for (int i = 0; i < num_blocks; i++) {
-        float block_sum = block_sums[i];
-        block_sums[i] = cum;
-        cum += block_sum;
-    }
-}
-
-__global__ void add_cdf_block_offsets(
-        float* __restrict__ cdf, const float* __restrict__ block_sums, int B) {
-    int idx = blockIdx.x * CDF_SCAN_BLOCK_SIZE + threadIdx.x;
-    if (idx < B) {
-        cdf[idx] += block_sums[blockIdx.x];
-    }
-}
-
-static inline void build_cdf_cuda(
-        float* cdf, const float* probs, float* block_sums,
-        int B, cudaStream_t stream) {
-    if (B <= 0) {
-        return;
-    }
-    int blocks = cdf_scan_blocks(B);
-    build_cdf_block_scan<<<blocks, CDF_SCAN_BLOCK_SIZE, 0, stream>>>(
-        cdf, probs, block_sums, B);
-    scan_cdf_block_sums<<<1, 1, 0, stream>>>(block_sums, blocks);
-    add_cdf_block_offsets<<<blocks, CDF_SCAN_BLOCK_SIZE, 0, stream>>>(
-        cdf, block_sums, B);
-}
-
-__global__ void advance_rng_offset(int64_t* __restrict__ offset_ptr, int64_t delta) {
-    if (blockIdx.x == 0 && threadIdx.x == 0) {
-        *offset_ptr += delta;
-    }
-}
-
-// Multinomial with replacement (uses cuRAND)
-__global__ void multinomial_sample(int* __restrict__ out_idx, const float* __restrict__ cdf,
-        int B, int num_samples, uint64_t seed, const int64_t* __restrict__ offset_ptr) {
-    int tid = blockIdx.x * blockDim.x + threadIdx.x;
-    if (tid >= num_samples) return;
-
-    uint64_t base_off = (uint64_t)(*offset_ptr);
-    curandStatePhilox4_32_10_t rng_state;
-    curand_init(seed, base_off + tid, 0, &rng_state);
-    float u = curand_uniform(&rng_state);
-
-    int lo = 0, hi = B - 1;
-    while (lo < hi) {
-        int mid = (lo + hi) / 2;
-        if (cdf[mid] < u) lo = mid + 1;
-        else hi = mid;
-    }
-    out_idx[tid] = lo;
-}
-
-// Prioritize high absolute advantage trajectories
-// This is a form of implicit curriculum learning
-// It is a major improvement in some complex environments
-// The values of alpha and beta found by sweeps will tell you
-// whether it is important for your task
-void prio_replay_cuda(PrecisionTensor& advantages, float prio_alpha,
-        int minibatch_segments, int total_agents, float anneal_beta,
-        PrioBuffers& bufs, ulong seed, long* offset_ptr, cudaStream_t stream) {
-    int B = advantages.shape[0], T = advantages.shape[1];
-    compute_prio_adv_reduction<<<B, PRIO_WARP_SIZE, 0, stream>>>(
-        advantages.data, bufs.prio_probs.data, prio_alpha, T);
-    compute_prio_normalize<<<1, PRIO_BLOCK_SIZE, 0, stream>>>(
-        bufs.prio_probs.data, B);
-    build_cdf_cuda(bufs.cdf.data, bufs.prio_probs.data, bufs.cdf_block_sums.data, B, stream);
-    int p2_blocks = (minibatch_segments + PRIO_BLOCK_SIZE - 1) / PRIO_BLOCK_SIZE;
-    multinomial_sample<<<p2_blocks, PRIO_BLOCK_SIZE, 0, stream>>>(
-        bufs.idx.data, bufs.cdf.data, B, minibatch_segments, seed, offset_ptr);
-    advance_rng_offset<<<1, 1, 0, stream>>>(offset_ptr, (int64_t)minibatch_segments);
-
-    int p3_blocks = (minibatch_segments + PRIO_BLOCK_SIZE - 1) / PRIO_BLOCK_SIZE;
-    compute_prio_imp_weights<<<p3_blocks, PRIO_BLOCK_SIZE, 0, stream>>>(
-        bufs.idx.data, bufs.prio_probs.data,
-        bufs.mb_prio.data, total_agents, anneal_beta, minibatch_segments);
-}
-
-static inline int clamp_int(int v, int lo, int hi) {
-    return v < lo ? lo : (v > hi ? hi : v);
-}
-
-int init_state_buffer(PuffeRL* pufferl) {
-    StateBuffer* buf = &pufferl->state_buf;
-    size_t capacity = (size_t)buf->capacity;
-    size_t state_size = sizeof(PufferState);
-    if (!PUFFER_HAS_STATE || state_size == 0 || capacity > ((size_t)-1) / state_size) {
-        fprintf(stderr, "Failed to allocate curriculum state buffer: invalid size\n");
-        return 0;
-    }
-
-    size_t state_bytes = capacity * state_size;
-    size_t candidate_bytes = (size_t)buf->candidate_capacity * state_size;
-    buf->states = (PufferState*)malloc(state_bytes);
-    buf->candidate_states = (PufferState*)malloc(candidate_bytes);
-    buf->priorities = (float*)malloc(capacity * sizeof(float));
-    buf->priorities_host = (precision_t*)malloc(capacity * sizeof(precision_t));
-    buf->env_scores_host = (precision_t*)malloc(
-        (size_t)(buf->candidate_capacity + buf->num_envs) * sizeof(precision_t));
-    buf->heap = (int*)malloc(capacity * sizeof(int));
-    buf->heap_pos = (int*)malloc(capacity * sizeof(int));
-    buf->env_state_inds_host = (int*)malloc((size_t)buf->num_envs * sizeof(int));
-    buf->state_inds_host = (int*)malloc((size_t)pufferl->hypers.total_agents * sizeof(int));
-    if (buf->states == NULL || buf->candidate_states == NULL
-            || buf->priorities == NULL || buf->priorities_host == NULL
-            || buf->env_scores_host == NULL || buf->heap == NULL || buf->heap_pos == NULL
-            || buf->env_state_inds_host == NULL || buf->state_inds_host == NULL) {
-        fprintf(stderr,
-            "Failed to allocate curriculum state buffer: capacity=%d state_size=%d bytes=%zu\n",
-            buf->capacity, (int)state_size, state_bytes);
-        free(buf->states);
-        free(buf->candidate_states);
-        free(buf->priorities);
-        free(buf->priorities_host);
-        free(buf->env_scores_host);
-        free(buf->heap);
-        free(buf->heap_pos);
-        free(buf->env_state_inds_host);
-        free(buf->state_inds_host);
-        buf->states = NULL;
-        buf->candidate_states = NULL;
-        buf->priorities = NULL;
-        buf->priorities_host = NULL;
-        buf->env_scores_host = NULL;
-        buf->heap = NULL;
-        buf->heap_pos = NULL;
-        buf->env_state_inds_host = NULL;
-        buf->state_inds_host = NULL;
-        return 0;
-    }
-    memset(buf->priorities, 0, capacity * sizeof(float));
-    for (int i = 0; i < buf->capacity; i++) {
-        buf->heap[i] = i;
-        buf->heap_pos[i] = i;
-    }
-    return 1;
-}
-
-void close_state_buffer(PuffeRL* pufferl) {
-    StateBuffer* buf = &pufferl->state_buf;
-    free(buf->states);
-    free(buf->candidate_states);
-    free(buf->priorities);
-    free(buf->priorities_host);
-    free(buf->env_scores_host);
-    free(buf->heap);
-    free(buf->heap_pos);
-    free(buf->env_state_inds_host);
-    free(buf->state_inds_host);
-    buf->states = NULL;
-    buf->candidate_states = NULL;
-    buf->priorities = NULL;
-    buf->priorities_host = NULL;
-    buf->env_scores_host = NULL;
-    buf->heap = NULL;
-    buf->heap_pos = NULL;
-    buf->env_state_inds_host = NULL;
-    buf->state_inds_host = NULL;
-}
-
-static int fixed_agents_per_env(StaticVec* vec) {
-    assert(vec->size > 0 && "state curriculum requires at least one env");
-    int agents_per_env = vec->envs[0].num_agents;
-    assert(agents_per_env > 0 && "env num_agents must be positive");
-    int total_agents = 0;
-    for (int i = 0; i < vec->size; i++) {
-        assert(vec->envs[i].num_agents == agents_per_env
-            && "state curriculum currently requires fixed num_agents per env");
-        total_agents += vec->envs[i].num_agents;
-    }
-    assert(total_agents == vec->total_agents && "env agent counts must sum to total_agents");
-    assert(vec->agents_per_buffer % agents_per_env == 0
-        && "state curriculum requires agents_per_buffer to be divisible by num_agents");
-    return agents_per_env;
-}
-
-static inline float clean_state_priority(float priority) {
-    if (priority < 0.0f || isnan(priority) || isinf(priority)) {
-        return 0.0f;
-    }
-    return priority;
-}
-
-static inline void state_heap_swap(StateBuffer* buf, int a, int b) {
-    int slot_a = buf->heap[a];
-    int slot_b = buf->heap[b];
-    buf->heap[a] = slot_b;
-    buf->heap[b] = slot_a;
-    buf->heap_pos[slot_a] = b;
-    buf->heap_pos[slot_b] = a;
-}
-
-static inline void state_heap_sift_up(StateBuffer* buf, int pos) {
-    while (pos > 0) {
-        int parent = (pos - 1) / 2;
-        if (buf->priorities[buf->heap[parent]] <= buf->priorities[buf->heap[pos]]) {
-            break;
-        }
-        state_heap_swap(buf, parent, pos);
-        pos = parent;
-    }
-}
-
-static inline void state_heap_sift_down(StateBuffer* buf, int pos) {
-    while (true) {
-        int left = 2 * pos + 1;
-        int right = left + 1;
-        int best = pos;
-        if (left < buf->size
-                && buf->priorities[buf->heap[left]] < buf->priorities[buf->heap[best]]) {
-            best = left;
-        }
-        if (right < buf->size
-                && buf->priorities[buf->heap[right]] < buf->priorities[buf->heap[best]]) {
-            best = right;
-        }
-        if (best == pos) {
-            break;
-        }
-        state_heap_swap(buf, pos, best);
-        pos = best;
-    }
-}
-
-static inline void state_heap_update_slot(StateBuffer* buf, int slot, float priority,
-        float decay) {
-    priority = clean_state_priority(priority);
-    float old_priority = buf->priorities[slot];
-    if (priority < old_priority) {
-        priority = decay * old_priority;
-    }
-    buf->priorities[slot] = priority;
-    int pos = buf->heap_pos[slot];
-    if (priority < old_priority) {
-        state_heap_sift_up(buf, pos);
-    } else {
-        state_heap_sift_down(buf, pos);
-    }
-}
-
-static inline void state_heap_insert(StateBuffer* buf, const PufferState* state, float priority) {
-    priority = clean_state_priority(priority);
-    if (buf->size < buf->capacity) {
-        int slot = buf->size;
-        buf->states[slot] = *state;
-        buf->priorities[slot] = priority;
-        buf->heap[slot] = slot;
-        buf->heap_pos[slot] = slot;
-        buf->size++;
-        state_heap_sift_up(buf, slot);
-        return;
-    }
-
-    int min_slot = buf->heap[0];
-    if (priority <= buf->priorities[min_slot]) {
-        return;
-    }
-    buf->states[min_slot] = *state;
-    buf->priorities[min_slot] = priority;
-    state_heap_sift_down(buf, 0);
-}
-
-static inline void sync_state_priorities_to_gpu(StateBuffer* buf, cudaStream_t stream) {
-    if (buf->size <= 0) {
-        return;
-    }
-    for (int i = 0; i < buf->size; i++) {
-        buf->priorities_host[i] = from_float(buf->priorities[i]);
-    }
-    cudaMemcpyAsync(buf->advantages.data, buf->priorities_host,
-        (size_t)buf->size * sizeof(precision_t), cudaMemcpyHostToDevice, stream);
-}
-
-static inline void store_curriculum_states(StaticVec* vec, PufferState* states,
-        const int* state_inds, int env_start, int env_count) {
-#if PUFFER_HAS_STATE
-    Env* envs = vec->envs;
-    for (int i = 0; i < env_count; i++) {
-        states[state_inds[i]] = envs[env_start + i].state;
-    }
-#else
-    (void)vec;
-    (void)states;
-    (void)state_inds;
-    (void)env_start;
-    (void)env_count;
-    assert(0 && "state curriculum requires PUFFER_HAS_STATE");
-#endif
-}
-
-static inline void store_curriculum_candidate_states(StaticVec* vec,
-        PufferState* states, int env_start, int env_count) {
-#if PUFFER_HAS_STATE
-    Env* envs = vec->envs;
-    for (int i = 0; i < env_count; i++) {
-        states[i] = envs[env_start + i].state;
-    }
-#else
-    (void)vec;
-    (void)states;
-    (void)env_start;
-    (void)env_count;
-    assert(0 && "state curriculum requires PUFFER_HAS_STATE");
-#endif
-}
-
-static inline void capture_curriculum_checkpoint(PuffeRL* pufferl, int buffer_idx, int t) {
-#if PUFFER_HAS_STATE
-    StateBuffer* buf = &pufferl->state_buf;
-    int interval = buf->checkpoint_interval;
-    if (interval <= 0 || (t % interval) != 0) {
-        return;
-    }
-    int checkpoint_idx = t / interval;
-    if (checkpoint_idx < 0 || checkpoint_idx >= buf->num_checkpoints) {
-        return;
-    }
-
-    StaticVec* vec = pufferl->vec;
-    int env_start = vec->buffer_env_starts[buffer_idx];
-    int env_end = env_start + vec->buffer_env_counts[buffer_idx];
-    if (env_start >= buf->num_fresh_envs) {
-        return;
-    }
-    if (env_end > buf->num_fresh_envs) {
-        env_end = buf->num_fresh_envs;
-    }
-
-    Env* envs = vec->envs;
-    PufferState* dst = buf->candidate_states + checkpoint_idx * buf->num_envs;
-    for (int env_idx = env_start; env_idx < env_end; env_idx++) {
-        dst[env_idx] = envs[env_idx].state;
-    }
-#else
-    (void)pufferl;
-    (void)buffer_idx;
-    (void)t;
-    assert(0 && "state curriculum requires PUFFER_HAS_STATE");
-#endif
-}
-
-static inline void load_curriculum_states(StaticVec* vec, const PufferState* states,
-        const int* state_inds, int env_start, int env_count) {
-#if PUFFER_HAS_STATE
-    Env* envs = vec->envs;
-    for (int i = 0; i < env_count; i++) {
-        Env* env = &envs[env_start + i];
-        env->state = states[state_inds[i]];
-#ifdef PUFFER_STATE_REFRESH
-        PUFFER_STATE_REFRESH(env);
-#endif
-    }
-#else
-    (void)vec;
-    (void)states;
-    (void)state_inds;
-    (void)env_start;
-    (void)env_count;
-    assert(0 && "state curriculum requires PUFFER_HAS_STATE");
-#endif
-}
-
-static inline void expand_env_state_inds(StateBuffer* buf) {
-    int num_envs = buf->num_fresh_envs + buf->num_cl_envs;
-    int agents_per_env = buf->agents_per_env;
-    for (int env_idx = 0; env_idx < num_envs; env_idx++) {
-        int state_idx = buf->env_state_inds_host[env_idx];
-        int agent_start = env_idx * agents_per_env;
-        for (int a = 0; a < agents_per_env; a++) {
-            buf->state_inds_host[agent_start + a] = state_idx;
-        }
-    }
-}
-
-#ifdef PUFFER_DEBUG_STATE_POS
-static inline void print_sampled_state_pos_hist(PuffeRL* pufferl,
-        const int* state_inds, int count) {
-    if (count <= 0) {
-        return;
-    }
-
-    StateBuffer* buf = &pufferl->state_buf;
-    int hist_max_pos = 0;
-    int sample_min_pos = 0;
-    int sample_max_pos = 0;
-    long sample_sum_pos = 0;
-    for (int i = 0; i < count; i++) {
-        int pos = PUFFER_DEBUG_STATE_POS(buf->states[state_inds[i]]);
-        if (i == 0 || pos < sample_min_pos) {
-            sample_min_pos = pos;
-        }
-        if (pos > sample_max_pos) {
-            sample_max_pos = pos;
-        }
-        if (pos > hist_max_pos) {
-            hist_max_pos = pos;
-        }
-        sample_sum_pos += pos;
-    }
-
-    int buffer_min_pos = 0;
-    int buffer_max_pos = 0;
-    long buffer_sum_pos = 0;
-    for (int i = 0; i < buf->size; i++) {
-        int pos = PUFFER_DEBUG_STATE_POS(buf->states[i]);
-        if (i == 0 || pos < buffer_min_pos) {
-            buffer_min_pos = pos;
-        }
-        if (pos > buffer_max_pos) {
-            buffer_max_pos = pos;
-        }
-        if (pos > hist_max_pos) {
-            hist_max_pos = pos;
-        }
-        buffer_sum_pos += pos;
-    }
-
-    int hist_size = hist_max_pos + 1;
-    int* sample_hist = (int*)calloc((size_t)hist_size, sizeof(int));
-    int* buffer_hist = (int*)calloc((size_t)hist_size, sizeof(int));
-    if (sample_hist == NULL || buffer_hist == NULL) {
-        printf("cl_state_pos epoch=%ld sampled_n=%d sampled_mean=%.2f sampled_min=%d "
-            "sampled_max=%d buffer_n=%d buffer_mean=%.2f buffer_min=%d hist_oom=1\n",
-            pufferl->epoch, count, (double)sample_sum_pos / (double)count,
-            sample_min_pos, sample_max_pos, buf->size,
-            buf->size > 0 ? (double)buffer_sum_pos / (double)buf->size : 0.0,
-            buffer_min_pos);
-        free(sample_hist);
-        free(buffer_hist);
-        return;
-    }
-    for (int i = 0; i < count; i++) {
-        int pos = PUFFER_DEBUG_STATE_POS(buf->states[state_inds[i]]);
-        if (pos >= 0 && pos < hist_size) {
-            sample_hist[pos] += 1;
-        }
-    }
-    for (int i = 0; i < buf->size; i++) {
-        int pos = PUFFER_DEBUG_STATE_POS(buf->states[i]);
-        if (pos >= 0 && pos < hist_size) {
-            buffer_hist[pos] += 1;
-        }
-    }
-
-    printf("cl_state_pos epoch=%ld sampled_n=%d sampled_mean=%.2f sampled_min=%d "
-        "sampled_max=%d buffer_n=%d buffer_mean=%.2f buffer_min=%d buffer_max=%d sample_hist=",
-        pufferl->epoch, count, (double)sample_sum_pos / (double)count,
-        sample_min_pos, sample_max_pos, buf->size,
-        buf->size > 0 ? (double)buffer_sum_pos / (double)buf->size : 0.0,
-        buffer_min_pos, buffer_max_pos);
-    int printed = 0;
-    for (int pos = 0; pos < hist_size; pos++) {
-        if (sample_hist[pos] == 0) {
-            continue;
-        }
-        printf("%s%d:%d", printed ? "," : "", pos, sample_hist[pos]);
-        printed = 1;
-    }
-    printf(" buffer_hist=");
-    printed = 0;
-    for (int pos = 0; pos < hist_size; pos++) {
-        if (buffer_hist[pos] == 0) {
-            continue;
-        }
-        printf("%s%d:%d", printed ? "," : "", pos, buffer_hist[pos]);
-        printed = 1;
-    }
-    printf("\n");
-    free(sample_hist);
-    free(buffer_hist);
-}
-#endif
-
-void curriculum_rollout_begin(PuffeRL* pufferl) {
-    HypersT* h = &pufferl->hypers;
-    StateBuffer* buf = &pufferl->state_buf;
-    StaticVec* vec = pufferl->vec;
-    cudaStream_t stream = pufferl->default_stream;
-    int total_agents = h->total_agents;
-    int total_envs = vec->size;
-    int agents_per_env = buf->agents_per_env;
-    int total_epochs = h->total_timesteps / (h->total_agents * h->horizon);
-    float progress = total_epochs > 0 ? (float)pufferl->epoch / (float)total_epochs : 1.0f;
-    progress = fminf(1.0f, fmaxf(0.0f, progress));
-    float current_cl_frac = h->cl_frac;
-    if (h->anneal_cl) {
-        current_cl_frac *= 1.0f - progress;
-    }
-    int configured_cl = clamp_int((int)(current_cl_frac * (float)total_envs), 0, total_envs);
-    int do_warmup = (buf->size == 0 || buf->size < h->warmup_states);
-    int num_cl_envs = do_warmup ? 0 : configured_cl;
-    int num_fresh_envs = total_envs - num_cl_envs;
-    int num_cl_agents = num_cl_envs * agents_per_env;
-    int num_fresh_agents = num_fresh_envs * agents_per_env;
-    float beta = h->explore_beta;
-
-    buf->num_cl_envs = num_cl_envs;
-    buf->num_fresh_envs = num_fresh_envs;
-    buf->num_cl_agents = num_cl_agents;
-    buf->num_fresh_agents = num_fresh_agents;
-    vec->log_env_limit = (num_cl_envs > 0) ? num_fresh_envs : 0;
-
-    if (num_cl_envs > 0) {
-        compute_state_prio_abs<<<grid_size(buf->size), BLOCK_SIZE, 0, stream>>>(
-            buf->advantages.data, buf->prio_bufs.prio_probs.data,
-            h->explore_alpha, buf->size);
-        compute_state_prio_normalize<<<1, PRIO_BLOCK_SIZE, 0, stream>>>(
-            buf->prio_bufs.prio_probs.data, buf->size);
-        build_cdf_cuda(buf->prio_bufs.cdf.data, buf->prio_bufs.prio_probs.data,
-            buf->prio_bufs.cdf_block_sums.data, buf->size, stream);
-        int threads = 256;
-        int blocks = (num_cl_envs + threads - 1) / threads;
-        long* rng_offset = pufferl->rng_offset_puf.data + h->num_buffers + 1;
-        multinomial_sample<<<blocks, threads, 0, stream>>>(
-            buf->prio_bufs.idx.data, buf->prio_bufs.cdf.data,
-            buf->size, num_cl_envs, pufferl->seed, rng_offset);
-        advance_rng_offset<<<1, 1, 0, stream>>>(rng_offset, (int64_t)num_cl_envs);
-        cudaMemcpyAsync(buf->env_state_inds_host + num_fresh_envs, buf->prio_bufs.idx.data,
-            num_cl_envs * sizeof(int), cudaMemcpyDeviceToHost, stream);
-        cudaStreamSynchronize(stream);
-#ifdef PUFFER_DEBUG_STATE_POS
-        print_sampled_state_pos_hist(pufferl,
-            buf->env_state_inds_host + num_fresh_envs, num_cl_envs);
-#endif
-
-        load_curriculum_states(vec, buf->states, buf->env_state_inds_host + num_fresh_envs,
-            num_fresh_envs, num_cl_envs);
-        if (vec->gpu) {
-            cudaMemcpy(vec->gpu_observations.data, vec->observations.data,
-                (size_t)vec->total_agents * get_obs_size() * get_obs_elem_size(),
-                cudaMemcpyHostToDevice);
-            if (vec->action_mask_size > 0) {
-                cudaMemcpy(vec->gpu_action_mask, vec->action_mask,
-                    (size_t)vec->total_agents * vec->action_mask_size * sizeof(unsigned char),
-                    cudaMemcpyHostToDevice);
-            }
-        }
-    }
-
-    for (int i = 0; i < num_fresh_envs; i++) {
-        buf->env_state_inds_host[i] = i;
-    }
-    if (num_fresh_envs > 0) {
-        store_curriculum_candidate_states(vec, buf->candidate_states, 0, num_fresh_envs);
-    }
-
-    expand_env_state_inds(buf);
-    cudaMemcpyAsync(buf->state_inds.data, buf->state_inds_host,
-        total_agents * sizeof(int), cudaMemcpyHostToDevice, stream);
-    build_state_importance<<<grid_size(total_agents), BLOCK_SIZE, 0, stream>>>(
-        buf->importance.data, buf->state_inds.data, buf->prio_bufs.prio_probs.data,
-        num_fresh_agents, num_cl_agents, buf->size, beta);
-}
-
-void curriculum_update_advantages(PuffeRL* pufferl, PrecisionTensor* advantages,
-        cudaStream_t stream) {
-    StateBuffer* buf = &pufferl->state_buf;
-    int horizon = advantages->shape[1];
-    int num_fresh_envs = buf->num_fresh_envs;
-    int num_cl_envs = buf->num_cl_envs;
-    int agents_per_env = buf->agents_per_env;
-    int num_envs = num_fresh_envs + num_cl_envs;
-
-    if (num_envs <= 0) {
-        return;
-    }
-
-    compute_curriculum_checkpoint_scores<<<1, 1, 0, stream>>>(
-        buf->env_scores.data, advantages->data, buf->num_envs,
-        num_fresh_envs, num_cl_envs, buf->num_checkpoints,
-        buf->checkpoint_interval, agents_per_env, horizon);
-    int cl_score_offset = buf->candidate_capacity;
-    int score_count = buf->candidate_capacity + num_cl_envs;
-    cudaMemcpyAsync(buf->env_scores_host, buf->env_scores.data,
-        (size_t)score_count * sizeof(precision_t), cudaMemcpyDeviceToHost, stream);
-    cudaStreamSynchronize(stream);
-
-    for (int i = 0; i < num_cl_envs; i++) {
-        int env_idx = num_fresh_envs + i;
-        int slot = buf->env_state_inds_host[env_idx];
-        float priority = to_float(buf->env_scores_host[cl_score_offset + i]);
-        state_heap_update_slot(buf, slot, priority, pufferl->hypers.explore_decay);
-    }
-
-    for (int c = 0; c < buf->num_checkpoints; c++) {
-        int candidate_offset = c * buf->num_envs;
-        for (int i = 0; i < num_fresh_envs; i++) {
-            int candidate_idx = candidate_offset + i;
-            float priority = to_float(buf->env_scores_host[candidate_idx]);
-            state_heap_insert(buf, &buf->candidate_states[candidate_idx], priority);
-        }
-    }
-
-    sync_state_priorities_to_gpu(buf, stream);
-}
-
 // Experience the puffer advantage! Generalized advantage estimation + V-Trace
 // importance sampling correction in a single streamlined operation
 __device__ void puff_advantage_row_scalar(
@@ -2201,7 +1280,7 @@ __device__ __forceinline__ void copy_values_adv_returns(
 
 __global__ void select_copy(RolloutBuf rollouts, TrainGraph graph,
         const int* __restrict__ idx, const precision_t* __restrict__ advantages,
-        const float* __restrict__ mb_prio,
+        const precision_t* __restrict__ mb_prio,
         const precision_t* __restrict__ row_importance) {
     int mb = blockIdx.x;
     int ch = blockIdx.y;
@@ -2230,7 +1309,7 @@ __global__ void select_copy(RolloutBuf rollouts, TrainGraph graph,
         break;
     case 4:
         if (threadIdx.x == 0) {
-            float prio = mb_prio[mb];
+            float prio = to_float(mb_prio[mb]);
             if (row_importance != nullptr) {
                 prio *= to_float(row_importance[src_row]);
             }
@@ -2357,9 +1436,14 @@ void train_impl(PuffeRL& pufferl) {
         profile_begin("compute_prio", hypers.profile);
         // Use the training RNG offset slot (last slot, index num_buffers)
         long* train_rng_offset = pufferl.rng_offset_puf.data + hypers.num_buffers;
-        prio_replay_cuda(advantages_puf, prio_alpha, minibatch_segments,
-            hypers.total_agents, anneal_beta,
-            pufferl.prio_bufs, pufferl.seed, train_rng_offset, train_stream);
+        int prio_rows = advantages_puf.shape[0];
+        int prio_stride = advantages_puf.shape[1];
+        compute_prio_abs<<<prio_rows, PRIO_WARP_SIZE, 0, train_stream>>>(
+            advantages_puf.data, pufferl.prio_bufs.prio_weights.data,
+            prio_alpha, 1e-6f, prio_rows, prio_stride);
+        sample_prio_indices(&pufferl.prio_bufs, prio_rows, minibatch_segments,
+            pufferl.seed, train_rng_offset, pufferl.prio_bufs.mb_prio.data,
+            NULL, 0, 1, anneal_beta, train_stream);
         profile_end(hypers.profile);
 
         profile_begin("train_select_and_copy", hypers.profile);
@@ -2732,8 +1816,6 @@ std::unique_ptr<PuffeRL> create_pufferl_impl(HypersT& hypers,
     pufferl->curriculum_enabled = hypers.state_buffer_size > 0 && initial_num_cl_envs > 0;
     int agents_per_env = 0;
     if (pufferl->curriculum_enabled) {
-        assert(PUFFER_HAS_STATE && "state_buffer_size > 0 requires env State support");
-        assert(sizeof(PufferState) > 0 && "state_buffer_size > 0 requires nonzero env state size");
         agents_per_env = fixed_agents_per_env(vec);
         assert(hypers.warmup_states >= 0 && "warmup_states must be nonnegative");
         assert(hypers.warmup_states <= hypers.state_buffer_size
@@ -2863,7 +1945,7 @@ std::unique_ptr<PuffeRL> create_pufferl_impl(HypersT& hypers,
     pufferl->grad_puf = {.data = (precision_t*)grads->mem, .shape = {grads->total_elems}};
     pufferl->param_puf = {.data = (precision_t*)params->mem, .shape = {params->total_elems}};
     if (pufferl->curriculum_enabled) {
-        if (!init_state_buffer(pufferl.get())) {
+        if (!init_state_buffer(&pufferl->state_buf, hypers.total_agents)) {
             alloc_free(params);
             alloc_free(grads);
             alloc_free(acts);
@@ -2953,6 +2035,8 @@ std::unique_ptr<PuffeRL> create_pufferl_impl(HypersT& hypers,
         cudaStream_t warmup_stream;
         cudaStreamCreate(&warmup_stream);
         pufferl->default_stream = warmup_stream;
+        int saved_curriculum_enabled = pufferl->curriculum_enabled;
+        pufferl->curriculum_enabled = 0;
 
         for (pufferl->epoch = 0; pufferl->epoch <= hypers.cudagraphs; pufferl->epoch++) {
             for (int i = 0; i < num_buffers * horizon; ++i) {
@@ -2973,6 +2057,7 @@ std::unique_ptr<PuffeRL> create_pufferl_impl(HypersT& hypers,
         cudaDeviceSynchronize();
         pufferl->default_stream = saved_default;
         tl_stream = saved_tl;
+        pufferl->curriculum_enabled = saved_curriculum_enabled;
         cudaStreamDestroy(warmup_stream);
 
         // Restore weights + optimizer state corrupted by warmup/capture
@@ -2991,6 +2076,8 @@ std::unique_ptr<PuffeRL> create_pufferl_impl(HypersT& hypers,
             rng_init<<<grid_size(agents_per_buf), BLOCK_SIZE>>>(
                 pufferl->rng_states[i], pufferl->seed + i, agents_per_buf);
         }
+        cudaMemset(pufferl->rng_offset_puf.data, 0,
+            numel(pufferl->rng_offset_puf.shape) * sizeof(long));
         cudaDeviceSynchronize();
 
         pufferl->epoch = 0;
@@ -3049,7 +2136,7 @@ void close_impl(PuffeRL& pufferl) {
         cudaFree(pufferl.master_weights.data);
     }
     if (pufferl.curriculum_enabled) {
-        close_state_buffer(&pufferl);
+        close_state_buffer(&pufferl.state_buf);
     }
 
     alloc_free(&pufferl.params_alloc);
