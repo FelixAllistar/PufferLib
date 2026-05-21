@@ -437,7 +437,8 @@ cudaError_t alloc_create(Allocator* alloc) {
     if (alloc->total_bytes == 0) return cudaSuccess;
     cudaError_t err = cudaMalloc(&alloc->mem, alloc->total_bytes);
     if (err != cudaSuccess) return err;
-    cudaMemset(alloc->mem, 0, alloc->total_bytes);
+    err = cudaMemset(alloc->mem, 0, alloc->total_bytes);
+    if (err != cudaSuccess) return err;
     long offset = 0;
     for (int i = 0; i < alloc->num_regs; i++) {
         offset = (offset + 15) & ~15;

@@ -3,12 +3,11 @@
 #define NUM_ATNS 1
 #define ACT_SIZES {5}
 #define OBS_TENSOR_T ByteTensor
-#define PUFFER_HAS_STATE 1
-#define PUFFER_STATE_REFRESH(env) compute_observations(env)
 
 #define MY_VEC_INIT
 #define MY_VEC_CLOSE
 #define Env Grid
+static inline void puffer_state_refresh(Grid* env) { compute_observations(env); }
 #include "vecenv.h"
 
 Env* my_vec_init(int* num_envs_out, int* buffer_env_starts, int* buffer_env_counts,

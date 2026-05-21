@@ -173,11 +173,12 @@ struct PPOKernelArgs {
 struct PPOBuffersPuf {
     FloatTensor loss_output, grad_loss;
     FloatTensor saved_for_bwd;
-    FloatTensor grad_logits, grad_values, grad_logstd, adv_scratch;
+    FloatTensor grad_logits, grad_values, grad_logstd, adv_scratch, partials;
 };
 
 void register_ppo_buffers(PPOBuffersPuf& bufs, Allocator* alloc, int N, int T, int A_total, bool is_continuous) {
     long total = (long)N * T;
+    long partial_blocks = (total + PPO_THREADS - 1) / PPO_THREADS;
     bufs = (PPOBuffersPuf){
         .loss_output = {.shape = {1}},
         .grad_loss = {.shape = {1}},
@@ -186,6 +187,7 @@ void register_ppo_buffers(PPOBuffersPuf& bufs, Allocator* alloc, int N, int T, i
         .grad_values = {.shape = {N, T, 1}},
         .grad_logstd = {.shape = {N, T, A_total}},
         .adv_scratch = {.shape = {2}},
+        .partials = {.shape = {partial_blocks * (LOSS_N + 1)}},
     };
     alloc_register(alloc, &bufs.loss_output);
     alloc_register(alloc, &bufs.saved_for_bwd);
@@ -196,6 +198,7 @@ void register_ppo_buffers(PPOBuffersPuf& bufs, Allocator* alloc, int N, int T, i
         alloc_register(alloc, &bufs.grad_logstd);
     }
     alloc_register(alloc, &bufs.adv_scratch);
+    alloc_register(alloc, &bufs.partials);
 }
 
 #define PUFFER_CURRICULUM_TYPES
@@ -1043,14 +1046,9 @@ void ppo_loss_fwd_bwd(
 
     int ppo_grid = (total + PPO_THREADS - 1) / PPO_THREADS;
 
-    static float* ppo_partials_buf = nullptr;
-    static int ppo_partials_capacity = 0;
     int ppo_partials_needed = ppo_grid * (LOSS_N + 1);
-    if (!ppo_partials_buf || ppo_partials_needed > ppo_partials_capacity) {
-        if (ppo_partials_buf) cudaFree(ppo_partials_buf);
-        ppo_partials_capacity = ppo_partials_needed;
-        cudaMalloc(&ppo_partials_buf, ppo_partials_capacity * sizeof(float));
-    }
+    assert(numel(bufs.partials.shape) >= ppo_partials_needed);
+    float* ppo_partials_buf = bufs.partials.data;
 
     cudaMemsetAsync(bufs.loss_output.data, 0, sizeof(float), stream);
 
@@ -1428,9 +1426,6 @@ void train_impl(PuffeRL& pufferl) {
             zero_frozen_advantages_cuda(advantages_puf, apb,
                 pufferl.bank_layout[1], train_stream);
         }
-        if (mb == 0 && pufferl.curriculum_enabled) {
-            curriculum_update_advantages(&pufferl, &advantages_puf, train_stream);
-        }
         profile_end(hypers.profile);
 
         profile_begin("compute_prio", hypers.profile);
@@ -1531,6 +1526,18 @@ void train_impl(PuffeRL& pufferl) {
                 (const char*)graph.mb_newvalue.data, num_idx, row_bytes);
         }
         cudaEventRecord(pufferl.profile.events[4]);  // end forward
+    }
+    if (pufferl.curriculum_enabled) {
+        puf_zero(&advantages_puf, train_stream);
+        puff_advantage_cuda(rollouts.values, rollouts.rewards, rollouts.terminals,
+            rollouts.ratio, advantages_puf, hypers.gamma, hypers.gae_lambda,
+            hypers.vtrace_rho_clip, hypers.vtrace_c_clip, train_stream);
+        if (pufferl.num_frozen_banks > 0 && pufferl.bank_layout != NULL) {
+            int apb = hypers.total_agents / hypers.num_buffers;
+            zero_frozen_advantages_cuda(advantages_puf, apb,
+                pufferl.bank_layout[1], train_stream);
+        }
+        curriculum_update_advantages(&pufferl, &advantages_puf, train_stream);
     }
     pufferl.epoch += 1;
 
@@ -1958,7 +1965,9 @@ std::unique_ptr<PuffeRL> create_pufferl_impl(HypersT& hypers,
     pufferl->master_weights = {.data = (float*)pufferl->param_puf.data, .shape = {params->total_elems}};
     if (USE_BF16) {
         pufferl->master_weights = {.shape = {params->total_elems}};
-        cudaMalloc(&pufferl->master_weights.data, params->total_elems * sizeof(float));
+        if (cudaMalloc(&pufferl->master_weights.data, params->total_elems * sizeof(float)) != cudaSuccess) {
+            return nullptr;
+        }
         int n = numel(pufferl->param_puf.shape);
         cast<<<grid_size(n), BLOCK_SIZE, 0, pufferl->default_stream>>>(
             pufferl->master_weights.data, pufferl->param_puf.data, n);
@@ -1968,7 +1977,9 @@ std::unique_ptr<PuffeRL> create_pufferl_impl(HypersT& hypers,
     int agents_per_buf = total_agents / num_buffers;
     pufferl->rng_states = (curandStatePhilox4_32_10_t**)calloc(num_buffers, sizeof(curandStatePhilox4_32_10_t*));
     for (int i = 0; i < num_buffers; i++) {
-        cudaMalloc(&pufferl->rng_states[i], agents_per_buf * sizeof(curandStatePhilox4_32_10_t));
+        if (cudaMalloc(&pufferl->rng_states[i], agents_per_buf * sizeof(curandStatePhilox4_32_10_t)) != cudaSuccess) {
+            return nullptr;
+        }
         rng_init<<<grid_size(agents_per_buf), BLOCK_SIZE>>>(
             pufferl->rng_states[i], pufferl->seed + i, agents_per_buf);
     }
@@ -2016,10 +2027,14 @@ std::unique_ptr<PuffeRL> create_pufferl_impl(HypersT& hypers,
         // Snapshot weights + optimizer state before init-time capture
         long wb_bytes = numel(pufferl->master_weights.shape) * sizeof(float);
         void* saved_weights;
-        cudaMalloc(&saved_weights, wb_bytes);
+        if (cudaMalloc(&saved_weights, wb_bytes) != cudaSuccess) {
+            return nullptr;
+        }
         cudaMemcpy(saved_weights, pufferl->master_weights.data, wb_bytes, cudaMemcpyDeviceToDevice);
         void* saved_momentum;
-        cudaMalloc(&saved_momentum, wb_bytes);
+        if (cudaMalloc(&saved_momentum, wb_bytes) != cudaSuccess) {
+            return nullptr;
+        }
         cudaMemcpy(saved_momentum, pufferl->muon.mb_puf.data, wb_bytes, cudaMemcpyDeviceToDevice);
 
         // Create per-buffer streams before capture so graphs are

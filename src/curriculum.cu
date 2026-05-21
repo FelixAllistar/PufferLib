@@ -1,4 +1,4 @@
-g/ Curriculum state-set and prioritized replay implementation.
+// Curriculum state-set and prioritized replay implementation.
 // Included from pufferlib.cu in two phases so the buffer types are
 // visible inside PuffeRL while functions that dereference PuffeRL see
 // the complete struct definition.

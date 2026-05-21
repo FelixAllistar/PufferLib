@@ -74,8 +74,7 @@ void demo() {
     free(levels);
 }
 
-void random_uniform_test(int episodes, int num_maps, unsigned int seed) {
-    int size = 31;
+void random_uniform_test(int episodes, int num_maps, int size, unsigned int seed) {
     int timeout = 2*size*size;
 
     Grid* env = (Grid*)calloc(1, sizeof(Grid));
@@ -135,8 +134,9 @@ int main(int argc, char** argv) {
     if (argc > 1 && strcmp(argv[1], "--random-test") == 0) {
         int episodes = argc > 2 ? atoi(argv[2]) : 10000;
         int num_maps = argc > 3 ? atoi(argv[3]) : 512;
-        unsigned int seed = argc > 4 ? (unsigned int)strtoul(argv[4], NULL, 10) : 123;
-        random_uniform_test(episodes, num_maps, seed);
+        int size = argc > 4 ? atoi(argv[4]) : 31;
+        unsigned int seed = argc > 5 ? (unsigned int)strtoul(argv[5], NULL, 10) : 123;
+        random_uniform_test(episodes, num_maps, size, seed);
         return 0;
     }
 
