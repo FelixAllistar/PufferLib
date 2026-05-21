@@ -9,12 +9,12 @@
 static inline int g2048_min(int a, int b) { return a < b ? a : b; }
 static inline int g2048_max(int a, int b) { return a > b ? a : b; }
 
-#define SIZE 4
-#define EMPTY 0
-#define UP 1
-#define DOWN 2
-#define LEFT 3
-#define RIGHT 4
+#define G2048_SIZE 4
+#define G2048_EMPTY 0
+#define G2048_UP 1
+#define G2048_DOWN 2
+#define G2048_LEFT 3
+#define G2048_RIGHT 4
 #define BASE_MAX_TICKS 1000
 
 // Reward constants
@@ -54,7 +54,7 @@ typedef struct State {
     bool is_scaffolding_episode;
     int score;
     int tick;
-    unsigned char grid[SIZE][SIZE];
+    unsigned char grid[G2048_SIZE][G2048_SIZE];
     unsigned char lifetime_max_tile;
     unsigned char max_tile;         // Episode max tile
     float episode_reward;           // Accumulate episode reward
@@ -118,11 +118,11 @@ void refresh_state(Game* game);
 
 void init(Game* game) {
     game->state.lifetime_max_tile = 0;
-    memset(game->state.grid, EMPTY, sizeof(game->state.grid));
+    memset(game->state.grid, G2048_EMPTY, sizeof(game->state.grid));
 }
 
 void update_observations(Game* game) {
-    memcpy(game->observations, game->state.grid, SIZE * SIZE);
+    memcpy(game->observations, game->state.grid, G2048_SIZE * G2048_SIZE);
 }
 
 void add_log(Game* game) {
@@ -157,9 +157,9 @@ static inline void place_tile_at_random_cell(Game* game, unsigned char tile) {
 
     int target = rand_r(&game->rng) % game->state.empty_count;
     int pos = 0;
-    for (int i = 0; i < SIZE; i++) {
-        for (int j = 0; j < SIZE; j++) {
-            if (game->state.grid[i][j] == EMPTY) {
+    for (int i = 0; i < G2048_SIZE; i++) {
+        for (int j = 0; j < G2048_SIZE; j++) {
+            if (game->state.grid[i][j] == G2048_EMPTY) {
                 if (pos == target) {
                     game->state.grid[i][j] = tile;
                     game->state.empty_count--;
@@ -200,11 +200,11 @@ void set_scaffolding_curriculum(Game* game) {
 }
 
 void c_reset(Game* game) {
-    memset(game->state.grid, EMPTY, sizeof(game->state.grid));
+    memset(game->state.grid, G2048_EMPTY, sizeof(game->state.grid));
     game->state.score = 0;
     game->state.tick = 0;
     game->state.episode_reward = 0;
-    game->state.empty_count = SIZE * SIZE;
+    game->state.empty_count = G2048_SIZE * G2048_SIZE;
     game->state.game_over_cached = false;
     game->state.grid_changed = true;
     game->state.moves_made = 0;
@@ -233,11 +233,11 @@ static inline bool slide_and_merge(Game* game, unsigned char* row, float* reward
     int write_pos = 0;
     
     // Single pass: slide and identify merge candidates
-    for (int read_pos = 0; read_pos < SIZE; read_pos++) {
-        if (row[read_pos] != EMPTY) {
+    for (int read_pos = 0; read_pos < G2048_SIZE; read_pos++) {
+        if (row[read_pos] != G2048_EMPTY) {
             if (write_pos != read_pos) {
                 row[write_pos] = row[read_pos];
-                row[read_pos] = EMPTY;
+                row[read_pos] = G2048_EMPTY;
                 moved = true;
             }
             write_pos++;
@@ -245,8 +245,8 @@ static inline bool slide_and_merge(Game* game, unsigned char* row, float* reward
     }
     
     // Merge pass
-    for (int i = 0; i < SIZE - 1; i++) {
-        if (row[i] != EMPTY && row[i] == row[i + 1]) {
+    for (int i = 0; i < G2048_SIZE - 1; i++) {
+        if (row[i] != G2048_EMPTY && row[i] == row[i + 1]) {
             row[i]++;
             // Tiles 2-64 (row[i] 1-6): base reward only
             // Tiles 128+ (row[i] 7+): base + pow1.5 scaled bonus
@@ -257,10 +257,10 @@ static inline bool slide_and_merge(Game* game, unsigned char* row, float* reward
             }
             *score_increase += (float)(1 << (int)row[i]);
             // Shift remaining elements left
-            for (int j = i + 1; j < SIZE - 1; j++) {
+            for (int j = i + 1; j < G2048_SIZE - 1; j++) {
                 row[j] = row[j + 1];
             }
-            row[SIZE - 1] = EMPTY;
+            row[G2048_SIZE - 1] = G2048_EMPTY;
             moved = true;
         }
     }
@@ -270,38 +270,38 @@ static inline bool slide_and_merge(Game* game, unsigned char* row, float* reward
 
 bool move(Game* game, int direction, float* reward, float* score_increase) {
     bool moved = false;
-    unsigned char temp[SIZE];
+    unsigned char temp[G2048_SIZE];
     
-    if (direction == UP || direction == DOWN) {
-        for (int col = 0; col < SIZE; col++) {
+    if (direction == G2048_UP || direction == G2048_DOWN) {
+        for (int col = 0; col < G2048_SIZE; col++) {
             // Extract column
-            for (int i = 0; i < SIZE; i++) {
-                int idx = (direction == UP) ? i : SIZE - 1 - i;
+            for (int i = 0; i < G2048_SIZE; i++) {
+                int idx = (direction == G2048_UP) ? i : G2048_SIZE - 1 - i;
                 temp[i] = game->state.grid[idx][col];
             }
             
             if (slide_and_merge(game, temp, reward, score_increase)) {
                 moved = true;
                 // Write back column
-                for (int i = 0; i < SIZE; i++) {
-                    int idx = (direction == UP) ? i : SIZE - 1 - i;
+                for (int i = 0; i < G2048_SIZE; i++) {
+                    int idx = (direction == G2048_UP) ? i : G2048_SIZE - 1 - i;
                     game->state.grid[idx][col] = temp[i];
                 }
             }
         }
     } else {
-        for (int row = 0; row < SIZE; row++) {
+        for (int row = 0; row < G2048_SIZE; row++) {
             // Extract row
-            for (int i = 0; i < SIZE; i++) {
-                int idx = (direction == LEFT) ? i : SIZE - 1 - i;
+            for (int i = 0; i < G2048_SIZE; i++) {
+                int idx = (direction == G2048_LEFT) ? i : G2048_SIZE - 1 - i;
                 temp[i] = game->state.grid[row][idx];
             }
             
             if (slide_and_merge(game, temp, reward, score_increase)) {
                 moved = true;
                 // Write back row
-                for (int i = 0; i < SIZE; i++) {
-                    int idx = (direction == LEFT) ? i : SIZE - 1 - i;
+                for (int i = 0; i < G2048_SIZE; i++) {
+                    int idx = (direction == G2048_LEFT) ? i : G2048_SIZE - 1 - i;
                     game->state.grid[row][idx] = temp[i];
                 }
             }
@@ -330,15 +330,15 @@ bool is_game_over(Game* game) {
     }
     
     // Check for possible merges
-    for (int i = 0; i < SIZE; i++) {
-        for (int j = 0; j < SIZE; j++) {
+    for (int i = 0; i < G2048_SIZE; i++) {
+        for (int j = 0; j < G2048_SIZE; j++) {
             unsigned char current = game->state.grid[i][j];
-            if (i < SIZE - 1 && current == game->state.grid[i + 1][j]) {
+            if (i < G2048_SIZE - 1 && current == game->state.grid[i + 1][j]) {
                 game->state.game_over_cached = false;
                 game->state.grid_changed = false;
                 return false;
             }
-            if (j < SIZE - 1 && current == game->state.grid[i][j + 1]) {
+            if (j < G2048_SIZE - 1 && current == game->state.grid[i][j + 1]) {
                 game->state.game_over_cached = false;
                 game->state.grid_changed = false;
                 return false;
@@ -355,11 +355,11 @@ void update_stats(Game* game) {
     int empty_count = 0;
     unsigned char max_tile = 0;
     
-    for (int i = 0; i < SIZE; i++) {
-        for (int j = 0; j < SIZE; j++) {
+    for (int i = 0; i < G2048_SIZE; i++) {
+        for (int j = 0; j < G2048_SIZE; j++) {
             unsigned char val = game->state.grid[i][j];
             // Update empty count and max tile
-            if (val == EMPTY) empty_count++;
+            if (val == G2048_EMPTY) empty_count++;
             if (val > max_tile) {
                 max_tile = val;
             }
@@ -451,7 +451,7 @@ void c_render(Game* game) {
     static const int px = 100;
     
     if (!window_initialized) {
-        InitWindow(px * SIZE, px * SIZE + 50, "2048");
+        InitWindow(px * G2048_SIZE, px * G2048_SIZE + 50, "2048");
         SetTargetFPS(30);
         window_initialized = true;
     }
@@ -465,8 +465,8 @@ void c_render(Game* game) {
     ClearBackground(PUFF_BACKGROUND);
 
     // Draw grid
-    for (int i = 0; i < SIZE; i++) {
-        for (int j = 0; j < SIZE; j++) {
+    for (int i = 0; i < G2048_SIZE; i++) {
+        for (int j = 0; j < G2048_SIZE; j++) {
             int val = game->state.grid[i][j];
             
             // Use precomputed colors
@@ -499,10 +499,10 @@ void c_render(Game* game) {
     
     // Draw score (format once per frame)
     snprintf(score_text, sizeof(score_text), "Score: %d", game->state.score);
-    DrawText(score_text, 10, px * SIZE + 10, 24, PUFF_WHITE);
+    DrawText(score_text, 10, px * G2048_SIZE + 10, 24, PUFF_WHITE);
 
     snprintf(score_text, sizeof(score_text), "Moves: %d", game->state.moves_made);
-    DrawText(score_text, 210, px * SIZE + 10, 24, PUFF_WHITE);
+    DrawText(score_text, 210, px * G2048_SIZE + 10, 24, PUFF_WHITE);
     
     EndDrawing();
 }
