@@ -255,9 +255,7 @@ typedef struct {
     float min_lr_ratio;
     bool anneal_lr;
     // Optimizer
-    float beta1;
-    float beta2;
-    float eps;
+    float momentum;
     // Training
     int minibatch_size;
     float replay_ratio;
@@ -1934,7 +1932,7 @@ std::unique_ptr<PuffeRL> create_pufferl_impl(HypersT& hypers,
     pufferl->advantages_puf = {.shape = {total_agents, horizon}};
     alloc_register(acts, &pufferl->advantages_puf);
 
-    muon_init(&pufferl->muon, params, hypers.lr, hypers.beta1, hypers.eps, 0.0, acts);
+    muon_init(&pufferl->muon, params, hypers.lr, hypers.momentum, 0.0, acts);
     pufferl->muon.nccl_comm = pufferl->nccl_comm;
     pufferl->muon.world_size = hypers.world_size;
 

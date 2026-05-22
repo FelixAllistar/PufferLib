@@ -3,10 +3,9 @@
 #define NUM_ATNS 1
 #define ACT_SIZES {3}
 #define OBS_TENSOR_T FloatTensor
-#define PUFFER_HAS_STATE 1
-#define PUFFER_STATE_REFRESH(env) compute_observations(env)
 
 #define Env Breakout
+static inline void puffer_state_refresh(Breakout* env) { compute_observations(env); }
 #include "vecenv.h"
 
 void my_init(Env* env, Dict* kwargs) {

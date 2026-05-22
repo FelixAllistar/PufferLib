@@ -166,7 +166,7 @@ class PuffeRL:
         self.optimizer = Muon(
             self.policy.parameters(),
             lr=config['learning_rate'],
-            momentum=config['beta1'],
+            momentum=config['momentum'],
             eps=config['eps'],
         )
 
@@ -513,4 +513,3 @@ def load_policy(args, vec):
         policy.load_state_dict(state_dict)
 
     return policy
-

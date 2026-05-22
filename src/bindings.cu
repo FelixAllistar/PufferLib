@@ -417,9 +417,7 @@ std::unique_ptr<PuffeRL> create_pufferl(py::dict args) {
     hypers.min_lr_ratio = get_config(train_kwargs, "min_lr_ratio");
     hypers.anneal_lr = get_config(train_kwargs, "anneal_lr");
     // Optimizer
-    hypers.beta1 = get_config(train_kwargs, "beta1");
-    hypers.beta2 = get_config(train_kwargs, "beta2");
-    hypers.eps = get_config(train_kwargs, "eps");
+    hypers.momentum = get_config(train_kwargs, "momentum");
     // Training
     hypers.minibatch_size = get_config(train_kwargs, "minibatch_size");
     hypers.replay_ratio = get_config(train_kwargs, "replay_ratio");
@@ -565,9 +563,7 @@ PYBIND11_MODULE(_C, m) {
         .def_readwrite("lr", &HypersT::lr)
         .def_readwrite("min_lr_ratio", &HypersT::min_lr_ratio)
         .def_readwrite("anneal_lr", &HypersT::anneal_lr)
-        .def_readwrite("beta1", &HypersT::beta1)
-        .def_readwrite("beta2", &HypersT::beta2)
-        .def_readwrite("eps", &HypersT::eps)
+        .def_readwrite("momentum", &HypersT::momentum)
         .def_readwrite("total_timesteps", &HypersT::total_timesteps)
         .def_readwrite("max_grad_norm", &HypersT::max_grad_norm)
         .def_readwrite("clip_coef", &HypersT::clip_coef)
