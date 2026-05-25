@@ -1,10 +1,10 @@
 /* Pure C demo file for Boxoban. Usage:
- *   bash scripts/build_ocean.sh boxoban
+ *   ./build.sh boxoban --local
  *   ./boxoban [difficulty|path_to_bin]
  *
  * If you pass one of the known difficulty names (basic, easy, medium,
- * hard, unfiltered) the demo looks for pufferlib/ocean/boxoban/boxoban_maps_<difficulty>.bin
- * Otherwise the argument is treated as an explicit path to a bin file.
+ * hard, unfiltered) the demo prepares that difficulty bin. Otherwise the
+ * argument is treated as an explicit path to a bin file.
  */
 
 #define BOXOBAN_MAPS_IMPLEMENTATION
@@ -36,10 +36,46 @@ static const char* resolve_map_path(int argc, char** argv, char* buffer, size_t 
         }
         return buffer;
     }
-    snprintf(buffer, buf_sz, "pufferlib/ocean/boxoban/boxoban_maps_%s.bin", arg);
+    snprintf(buffer, buf_sz, "resources/boxoban/boxoban_maps_%s.bin", arg);
     return buffer;
 }
 
+static int setup_demo_env(Boxoban* env, const char* chosen_path) {
+    memset(env, 0, sizeof(Boxoban));
+    env->size = 10;
+    env->num_agents = 1;
+    env->max_steps = 500;
+    env->int_r_coeff = 0.1f;
+    env->target_loss_pen_coeff = 0.5f;
+    env->difficulty_id = -1;
+
+    size_t obs_count = 4u * (size_t)env->size * (size_t)env->size;
+    env->observations = (unsigned char*)calloc(obs_count, sizeof(unsigned char));
+    env->actions = (float*)calloc(1, sizeof(float));
+    env->rewards = (float*)calloc(1, sizeof(float));
+    env->terminals = (float*)calloc(1, sizeof(float));
+    if (env->observations == NULL || env->actions == NULL ||
+            env->rewards == NULL || env->terminals == NULL) {
+        return -1;
+    }
+
+    if (boxoban_set_map_path(chosen_path) != 0) {
+        fprintf(stderr, "Failed to set map path: %s\n", chosen_path);
+        return -1;
+    }
+
+    init(env);
+    c_reset(env);
+    return 0;
+}
+
+static void free_demo_env(Boxoban* env) {
+    free(env->observations);
+    free(env->actions);
+    free(env->rewards);
+    free(env->terminals);
+    c_close(env);
+}
 
 int demo(int argc, char** argv) {
     char path_buffer[512];
@@ -48,41 +84,13 @@ int demo(int argc, char** argv) {
         fprintf(stderr, "Failed to prepare map path\n");
         return 1;
     }
-    if (boxoban_set_map_path(chosen_path) != 0) {
-        fprintf(stderr, "Failed to set map path: %s\n", chosen_path);
+
+    Boxoban env;
+    if (setup_demo_env(&env, chosen_path) != 0) {
+        free_demo_env(&env);
         return 1;
     }
 
-    Boxoban env = {
-        .size = 10,
-        .observations = NULL,
-        .actions = NULL,
-        .rewards = NULL,
-        .terminals = NULL,
-        .max_steps = 500,
-        .int_r_coeff = 0.1f,
-        .target_loss_pen_coeff = 0.5f,
-        .tick = 0,
-        .agent_x = 0,
-        .agent_y = 0,
-        .intermediate_rewards = NULL,
-        .on_target = 0,
-        .n_boxes = 0,
-        .win = 0,
-        .difficulty_id = -1,
-        .client = NULL,
-        .n_targets = 0,
-
-    };
-
-    size_t obs_count = 4u * (size_t)env.size * (size_t)env.size;
-    env.observations = calloc(obs_count, sizeof(unsigned char));
-    env.actions = calloc(1, sizeof(int));
-    env.rewards = calloc(1, sizeof(float));
-    env.terminals = calloc(1, sizeof(unsigned char));
-
-    init(&env);
-    c_reset(&env);
     c_render(&env);
     while (!WindowShouldClose()) {
         if (IsKeyPressed(KEY_LEFT_SHIFT) || IsKeyPressed(KEY_RIGHT_SHIFT)) {
@@ -98,26 +106,23 @@ int demo(int argc, char** argv) {
             if (IsKeyDown(KEY_RIGHT) || IsKeyDown(KEY_D)) new_action = RIGHT;
 
             if (new_action >= 0) {
-                env.actions[0] = new_action;
+                env.actions[0] = (float)new_action;
                 c_step(&env);
                 stepped = true;
             }
         } else {
-            env.actions[0] = rand() % 5;
+            env.actions[0] = (float)(rand() % 5);
             c_step(&env);
             stepped = true;
         }
 
         if (!stepped) {
-            // Manual mode with no direction: stay paused
+            // Manual mode with no direction: stay paused.
         }
         c_render(&env);
     }
-    free(env.observations);
-    free(env.actions);
-    free(env.rewards);
-    free(env.terminals);
-    c_close(&env);
+
+    free_demo_env(&env);
     return 0;
 }
 
@@ -128,68 +133,30 @@ void test_performance(int argc, char** argv, int timeout) {
         fprintf(stderr, "Failed to prepare map path\n");
         return;
     }
-    if (boxoban_set_map_path(chosen_path) != 0) {
-        fprintf(stderr, "Failed to set map path: %s\n", chosen_path);
-        return;
-    }
     printf("Loaded map: %s\n", chosen_path);
 
-    Boxoban env = {
-        .size = 10,
-        .observations = NULL,
-        .actions = NULL,
-        .rewards = NULL,
-        .terminals = NULL,
-        .max_steps = 500,
-        .int_r_coeff = 0.1f,
-        .target_loss_pen_coeff = 0.5f,
-        .tick = 0,
-        .agent_x = 0,
-        .agent_y = 0,
-        .intermediate_rewards = NULL,
-        .on_target = 0,
-        .n_boxes = 0,
-        .win = 0,
-        .difficulty_id = -1,
-        .client = NULL,
-        .n_targets = 0,
-    };
+    Boxoban env;
+    if (setup_demo_env(&env, chosen_path) != 0) {
+        free_demo_env(&env);
+        return;
+    }
 
-    size_t obs_count = 4u * (size_t)env.size * (size_t)env.size;
-    env.observations = calloc(obs_count, sizeof(unsigned char));
-    env.actions = calloc(1, sizeof(int));
-    env.rewards = calloc(1, sizeof(float));
-    env.terminals = calloc(1, sizeof(unsigned char));
-
-    printf("Initializing...\n");
-    init(&env);
-    printf("Resetting...\n");
-    c_reset(&env);
     printf("Starting test...\n");
-
-    int start = time(NULL);
+    int start = (int)time(NULL);
     int num_steps = 0;
-    while (time(NULL) - start < timeout) {
-        env.actions[0] = rand() % 5;
+    while ((int)time(NULL) - start < timeout) {
+        env.actions[0] = (float)(rand() % 5);
         c_step(&env);
         num_steps++;
     }
 
-    int end = time(NULL);
-    float sps = num_steps / (end - start);
+    int end = (int)time(NULL);
+    float sps = (float)num_steps / (float)(end - start);
     printf("Test Environment SPS: %f\n", sps);
-    free(env.observations);
-    free(env.actions);
-    free(env.rewards);
-    free(env.terminals);
-    c_close(&env);
+    free_demo_env(&env);
 }
 
 int main(int argc, char** argv) {
-    demo(argc, argv);
     setbuf(stdout, NULL);
-    fprintf(stderr, "Entered main\n");
-    fflush(stderr);
-    //test_performance(argc, argv,10);
-    return 0;
+    return demo(argc, argv);
 }

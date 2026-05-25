@@ -7,6 +7,7 @@
 
 
 #define Env Boxoban
+static inline void puffer_state_refresh(Boxoban* env) { refresh_state(env); }
 #include "vecenv.h"
 
 
@@ -17,6 +18,7 @@ void my_init(Env* env, Dict* kwargs) {
     env->max_steps = (int)dict_get(kwargs, "max_steps")->value;
     env->int_r_coeff = (float)dict_get(kwargs, "int_r_coeff")->value;
     env->target_loss_pen_coeff = (float)dict_get(kwargs, "target_loss_pen_coeff")->value;
+    env->curriculum_mode = (env->difficulty_id == BOXOBAN_DIFFICULTY_INCREMENTAL);
     init(env);
 }
 
@@ -26,4 +28,5 @@ void my_log(Log* log, Dict* out) {
     dict_set(out, "episode_return", log->episode_return);
     dict_set(out, "episode_length", log->episode_length);
     dict_set(out, "targets_hit", log->on_targets);
+    dict_set(out, "final_puzzle_tick", log->puzzle_ticks);
 }
