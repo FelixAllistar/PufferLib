@@ -50,17 +50,38 @@ if [ "$ENV" = "all" ]; then
     exit 0
 fi
 
+PYTHON_BIN="${PYTHON:-}"
+if [ -z "$PYTHON_BIN" ]; then
+    if command -v python >/dev/null 2>&1; then
+        PYTHON_BIN=python
+    elif command -v python3 >/dev/null 2>&1; then
+        PYTHON_BIN=python3
+    else
+        echo "Error: python or python3 not found" && exit 1
+    fi
+fi
+
 # Linux/mac
 PLATFORM="$(uname -s)"
 if [ "$PLATFORM" = "Linux" ]; then
     RAYLIB_NAME='raylib-5.5_linux_amd64'
     OMP_LIB=-lomp5
+    OMP_CFLAGS=(-fopenmp)
+    OMP_LDFLAGS=(-fopenmp "$OMP_LIB")
     SANITIZE_FLAGS=(-fsanitize=address,undefined,bounds,pointer-overflow,leak -fno-omit-frame-pointer)
     STANDALONE_LDFLAGS=(-lGL)
     SHARED_LDFLAGS=(-Bsymbolic-functions -Wl,--gc-sections)
 else
     RAYLIB_NAME='raylib-5.5_macos'
     OMP_LIB=-lomp
+    OMP_PREFIX="$(brew --prefix libomp 2>/dev/null || true)"
+    if [ -n "$OMP_PREFIX" ]; then
+        OMP_CFLAGS=(-I"$OMP_PREFIX/include" -Xclang -fopenmp)
+        OMP_LDFLAGS=(-L"$OMP_PREFIX/lib" "$OMP_LIB")
+    else
+        OMP_CFLAGS=(-Xclang -fopenmp)
+        OMP_LDFLAGS=("$OMP_LIB")
+    fi
     SANITIZE_FLAGS=()
     STANDALONE_LDFLAGS=(-framework Cocoa -framework IOKit -framework CoreVideo -framework OpenGL)
     SHARED_LDFLAGS=(-framework Cocoa -framework OpenGL -framework IOKit -undefined dynamic_lookup)
@@ -122,6 +143,20 @@ else
     echo "Error: environment '$ENV' not found" && exit 1
 fi
 
+if [ "$ENV" = "osrs_inferno" ]; then
+    bash ocean/osrs/scripts/setup-data.sh
+fi
+
+CPU_STUB_INCLUDE=()
+if [ "$MODE" = "cpu" ] && [ -d "$SRC_DIR/cpu_stubs" ]; then
+    CPU_STUB_INCLUDE=(-I"$SRC_DIR/cpu_stubs")
+fi
+
+NVCC_ENV_HOST_FLAGS=()
+if [ "$ENV" = "osrs_inferno" ]; then
+    NVCC_ENV_HOST_FLAGS=(-Xcompiler=-fpermissive)
+fi
+
 OUTPUT_NAME=${OUTPUT_NAME:-$ENV}
 
 # Standalone environment build
@@ -140,7 +175,9 @@ if [ "$MODE" = "local" ] || [ "$MODE" = "fast" ]; then
         "$SRC_DIR/$ENV.c" $EXTRA_SRC -o "$OUTPUT_NAME"
         "${LINK_ARCHIVES[@]}"
         "${STANDALONE_LDFLAGS[@]}"
-        -lm -lpthread -fopenmp
+        -lm -lpthread
+        "${OMP_CFLAGS[@]}"
+        "${OMP_LDFLAGS[@]}"
         -DPLATFORM_DESKTOP
     )
     echo "Compiling $ENV..."
@@ -185,10 +222,10 @@ for dir in /usr/local/cuda/lib64 /usr/lib/x86_64-linux-gnu; do
     fi
 done
 if [ -z "$CUDNN_IFLAG" ]; then
-    CUDNN_IFLAG=$(python -c "import nvidia.cudnn, os; print('-I' + os.path.join(nvidia.cudnn.__path__[0], 'include'))" 2>/dev/null || echo "")
+    CUDNN_IFLAG=$("$PYTHON_BIN" -c "import nvidia.cudnn, os; print('-I' + os.path.join(nvidia.cudnn.__path__[0], 'include'))" 2>/dev/null || echo "")
 fi
 if [ -z "$CUDNN_LFLAG" ]; then
-    CUDNN_LFLAG=$(python -c "import nvidia.cudnn, os; print('-L' + os.path.join(nvidia.cudnn.__path__[0], 'lib'))" 2>/dev/null || echo "")
+    CUDNN_LFLAG=$("$PYTHON_BIN" -c "import nvidia.cudnn, os; print('-L' + os.path.join(nvidia.cudnn.__path__[0], 'lib'))" 2>/dev/null || echo "")
 fi
 
 # NCCL include/lib fallback (mirrors the cuDNN fallback above).
@@ -202,10 +239,10 @@ for dir in /usr/lib/x86_64-linux-gnu /usr/local/cuda/lib64; do
     if [ -f "$dir/libnccl.so" ] || [ -f "$dir/libnccl.so.2" ]; then NCCL_LFLAG="-L$dir"; break; fi
 done
 if [ -z "$NCCL_IFLAG" ]; then
-    NCCL_IFLAG=$(python -c "import nvidia.nccl, os; print('-I' + os.path.join(nvidia.nccl.__path__[0], 'include'))" 2>/dev/null || echo "")
+    NCCL_IFLAG=$("$PYTHON_BIN" -c "import nvidia.nccl, os; print('-I' + os.path.join(nvidia.nccl.__path__[0], 'include'))" 2>/dev/null || echo "")
 fi
 if [ -z "$NCCL_LFLAG" ]; then
-    NCCL_LFLAG=$(python -c "import nvidia.nccl, os; print('-L' + os.path.join(nvidia.nccl.__path__[0], 'lib'))" 2>/dev/null || echo "")
+    NCCL_LFLAG=$("$PYTHON_BIN" -c "import nvidia.nccl, os; print('-L' + os.path.join(nvidia.nccl.__path__[0], 'lib'))" 2>/dev/null || echo "")
 fi
 
 WHEEL_RPATH_FLAGS=()
@@ -222,10 +259,10 @@ NVCC="ccache $CUDA_HOME/bin/nvcc"
 CC="${CC:-$(command -v ccache >/dev/null && echo 'ccache clang' || echo 'clang')}"
 ARCH=${NVCC_ARCH:-native}
 
-PYTHON_INCLUDE=$(python -c "import sysconfig; print(sysconfig.get_path('include'))")
-PYBIND_INCLUDE=$(python -c "import pybind11; print(pybind11.get_include())")
-NUMPY_INCLUDE=$(python -c "import numpy; print(numpy.get_include())")
-EXT_SUFFIX=$(python -c "import sysconfig; print(sysconfig.get_config_var('EXT_SUFFIX'))")
+PYTHON_INCLUDE=$("$PYTHON_BIN" -c "import sysconfig; print(sysconfig.get_path('include'))")
+PYBIND_INCLUDE=$("$PYTHON_BIN" -c "import pybind11; print(pybind11.get_include())")
+NUMPY_INCLUDE=$("$PYTHON_BIN" -c "import numpy; print(numpy.get_include())")
+EXT_SUFFIX=$("$PYTHON_BIN" -c "import sysconfig; print(sysconfig.get_config_var('EXT_SUFFIX'))")
 OUTPUT="pufferlib/_C${EXT_SUFFIX}"
 
 BINDING_SRC="$SRC_DIR/binding.c"
@@ -242,10 +279,11 @@ if [ "$MODE" = "cpu" ]; then
     echo "Compiling static library for $ENV..."
     ${CC:-clang} -c "${CLANG_OPT[@]}" $EXTRA_CFLAGS \
         -I. -Isrc -I$SRC_DIR -Ivendor \
+        "${CPU_STUB_INCLUDE[@]}" \
         -I./$RAYLIB_NAME/include -I$CUDA_HOME/include \
         -DPLATFORM_DESKTOP \
         -fno-semantic-interposition -fvisibility=hidden \
-        -fPIC -fopenmp \
+        -fPIC "${OMP_CFLAGS[@]}" \
         "$BINDING_SRC" -o "$STATIC_OBJ"
     ar rcs "$STATIC_LIB" "$STATIC_OBJ"
 fi
@@ -261,6 +299,7 @@ if [ -z "$MODE" ]; then
         -I$PYTHON_INCLUDE -I$PYBIND_INCLUDE -I$NUMPY_INCLUDE \
         -I$CUDA_HOME/include $CUDNN_IFLAG $NCCL_IFLAG -I$RAYLIB_NAME/include \
         -Xcompiler=-fopenmp \
+        "${NVCC_ENV_HOST_FLAGS[@]}" \
         -Xcompiler=-ffunction-sections \
         -Xcompiler=-fdata-sections \
         -DENV_BINDING_SRC=\"$BINDING_SRC\" \
@@ -283,19 +322,20 @@ if [ -z "$MODE" ]; then
 
 elif [ "$MODE" = "cpu" ]; then
     echo "Compiling CPU training backend..."
-    ${CXX:-g++} -c -fPIC -fopenmp \
+    ${CXX:-g++} -c -fPIC \
         -D_GLIBCXX_USE_CXX11_ABI=1 \
         -DPLATFORM_DESKTOP \
         -std=c++17 \
         -I. -Isrc \
         -I$PYTHON_INCLUDE -I$PYBIND_INCLUDE \
+        "${OMP_CFLAGS[@]}" \
         -DENV_NAME=$ENV \
         $PRECISION $LINK_OPT \
         src/bindings_cpu.cpp -o build/bindings_cpu.o
     LINK_CMD=(
-        ${CXX:-g++} -shared -fPIC -fopenmp
+        ${CXX:-g++} -shared -fPIC
         build/bindings_cpu.o "$STATIC_LIB" "$RAYLIB_A"
-        -lm -lpthread $OMP_LIB $LINK_OPT
+        -lm -lpthread "${OMP_LDFLAGS[@]}" $LINK_OPT
         "${SHARED_LDFLAGS[@]}"
         -o "$OUTPUT"
     )
@@ -310,6 +350,7 @@ elif [ "$MODE" = "profile" ]; then
         -DENV_NAME=$ENV \
         -DENV_BINDING_SRC=\"$BINDING_SRC\" \
         -Xcompiler=-DPLATFORM_DESKTOP \
+        "${NVCC_ENV_HOST_FLAGS[@]}" \
         $PRECISION \
         -Xcompiler=-fopenmp \
         tests/profile_kernels.cu vendor/ini.c \
