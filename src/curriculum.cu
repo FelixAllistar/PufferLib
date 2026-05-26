@@ -4,6 +4,7 @@
 // the complete struct definition.
 
 #include <cub/device/device_scan.cuh>
+#include <stdlib.h>
 
 #ifdef PUFFER_CURRICULUM_TYPES
 
@@ -44,7 +45,7 @@ struct StateBuffer {
     float* priorities;         // CPU priority per persistent slot
     precision_t* priorities_host; // CPU scratch for copying priorities to GPU
     precision_t* env_scores_host; // CPU scratch, length candidate_capacity
-    int* heap;                 // CPU min-heap of persistent slot ids
+    int* heap;                 // CPU retained slots: sorted for sampling, min-heap during updates
     int* heap_pos;             // CPU inverse heap position per slot
     int capacity;
     int size;
@@ -105,6 +106,11 @@ int init_state_buffer(StateBuffer* buf, int total_agents) {
             "Failed to allocate curriculum state buffer: capacity=%d state_size=%d bytes=%zu\n",
             buf->capacity, (int)state_size, state_bytes);
         return 0;
+    }
+    for (int i = 0; i < buf->capacity; i++) {
+        buf->heap[i] = i;
+        buf->heap_pos[i] = i;
+        buf->priorities[i] = 0.0f;
     }
     return 1;
 }
@@ -325,6 +331,28 @@ static inline float clean_state_priority(float priority) {
     return priority;
 }
 
+__global__ void compute_rank_prio_weights(
+        float* prio_weights, float prio_alpha, int rows) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx >= rows) {
+        return;
+    }
+    int rank = idx + 1;
+    float rank_metric = 1.0f / (float)rank;
+    prio_weights[idx] = priority_power(rank_metric, prio_alpha);
+}
+
+static StateBuffer* state_sort_buffer = NULL;
+
+static inline int state_priority_less(StateBuffer* buf, int slot_a, int slot_b) {
+    float priority_a = buf->priorities[slot_a];
+    float priority_b = buf->priorities[slot_b];
+    if (priority_a != priority_b) {
+        return priority_a < priority_b;
+    }
+    return slot_a < slot_b;
+}
+
 static inline void state_heap_swap(StateBuffer* buf, int a, int b) {
     int slot_a = buf->heap[a];
     int slot_b = buf->heap[b];
@@ -337,7 +365,7 @@ static inline void state_heap_swap(StateBuffer* buf, int a, int b) {
 static inline void state_heap_sift_up(StateBuffer* buf, int pos) {
     while (pos > 0) {
         int parent = (pos - 1) / 2;
-        if (buf->priorities[buf->heap[parent]] <= buf->priorities[buf->heap[pos]]) {
+        if (!state_priority_less(buf, buf->heap[pos], buf->heap[parent])) {
             break;
         }
         state_heap_swap(buf, parent, pos);
@@ -350,12 +378,10 @@ static inline void state_heap_sift_down(StateBuffer* buf, int pos) {
         int left = 2 * pos + 1;
         int right = left + 1;
         int best = pos;
-        if (left < buf->size
-                && buf->priorities[buf->heap[left]] < buf->priorities[buf->heap[best]]) {
+        if (left < buf->size && state_priority_less(buf, buf->heap[left], buf->heap[best])) {
             best = left;
         }
-        if (right < buf->size
-                && buf->priorities[buf->heap[right]] < buf->priorities[buf->heap[best]]) {
+        if (right < buf->size && state_priority_less(buf, buf->heap[right], buf->heap[best])) {
             best = right;
         }
         if (best == pos) {
@@ -363,6 +389,39 @@ static inline void state_heap_sift_down(StateBuffer* buf, int pos) {
         }
         state_heap_swap(buf, pos, best);
         pos = best;
+    }
+}
+
+static inline void state_build_min_heap(StateBuffer* buf) {
+    for (int pos = buf->size / 2 - 1; pos >= 0; pos--) {
+        state_heap_sift_down(buf, pos);
+    }
+}
+
+static int state_slot_cmp_desc(const void* a, const void* b) {
+    int slot_a = *(const int*)a;
+    int slot_b = *(const int*)b;
+    float priority_a = state_sort_buffer->priorities[slot_a];
+    float priority_b = state_sort_buffer->priorities[slot_b];
+    if (priority_a > priority_b) {
+        return -1;
+    }
+    if (priority_a < priority_b) {
+        return 1;
+    }
+    return slot_a - slot_b;
+}
+
+static inline void state_finalize_epoch(StateBuffer* buf) {
+    if (buf->size > 1) {
+        state_sort_buffer = buf;
+        qsort(buf->heap, (size_t)buf->size, sizeof(int), state_slot_cmp_desc);
+        state_sort_buffer = NULL;
+    }
+    for (int pos = 0; pos < buf->size; pos++) {
+        int slot = buf->heap[pos];
+        buf->heap_pos[slot] = pos;
+        buf->priorities_host[pos] = from_float(buf->priorities[slot]);
     }
 }
 
@@ -374,11 +433,10 @@ static inline void state_heap_update_slot(StateBuffer* buf, int slot, float prio
         priority = decay * old_priority;
     }
     buf->priorities[slot] = priority;
-    buf->priorities_host[slot] = from_float(priority);
     int pos = buf->heap_pos[slot];
     if (priority < old_priority) {
         state_heap_sift_up(buf, pos);
-    } else {
+    } else if (priority > old_priority) {
         state_heap_sift_down(buf, pos);
     }
 }
@@ -389,7 +447,6 @@ static inline void state_heap_insert(StateBuffer* buf, const PufferState* state,
         int slot = buf->size;
         buf->states[slot] = *state;
         buf->priorities[slot] = priority;
-        buf->priorities_host[slot] = from_float(priority);
         buf->heap[slot] = slot;
         buf->heap_pos[slot] = slot;
         buf->size++;
@@ -403,7 +460,6 @@ static inline void state_heap_insert(StateBuffer* buf, const PufferState* state,
     }
     buf->states[min_slot] = *state;
     buf->priorities[min_slot] = priority;
-    buf->priorities_host[min_slot] = from_float(priority);
     state_heap_sift_down(buf, 0);
 }
 
@@ -459,9 +515,8 @@ void curriculum_rollout_begin(PuffeRL* pufferl) {
         buf->importance.data, from_float(1.0f), fresh_agents);
 
     if (num_cl_envs > 0) {
-        compute_prio_abs<<<grid_size(buf->size), BLOCK_SIZE, 0, stream>>>(
-            buf->advantages.data, buf->prio_bufs.prio_weights.data,
-            h->explore_alpha, 0.0f, buf->size, 1);
+        compute_rank_prio_weights<<<grid_size(buf->size), BLOCK_SIZE, 0, stream>>>(
+            buf->prio_bufs.prio_weights.data, h->explore_alpha, buf->size);
         long* rng_offset = pufferl->rng_offset_puf.data + h->num_buffers + 1;
         sample_prio_indices(&buf->prio_bufs, buf->size, num_cl_envs,
             pufferl->seed, rng_offset, NULL, buf->importance.data,
@@ -473,6 +528,7 @@ void curriculum_rollout_begin(PuffeRL* pufferl) {
         Env* envs = vec->envs;
         int* state_inds = buf->env_state_inds_host + num_fresh_envs;
         for (int i = 0; i < num_cl_envs; i++) {
+            state_inds[i] = buf->heap[state_inds[i]];
             Env* env = &envs[num_fresh_envs + i];
             env->state = buf->states[state_inds[i]];
             puffer_state_refresh(env);
@@ -506,6 +562,7 @@ void curriculum_update_advantages(PuffeRL* pufferl, PrecisionTensor* advantages,
         (size_t)score_rows * sizeof(precision_t), cudaMemcpyDeviceToHost, stream);
     cudaStreamSynchronize(stream);
 
+    state_build_min_heap(buf);
     for (int i = 0; i < num_cl_envs; i++) {
         int env_idx = num_fresh_envs + i;
         int slot = buf->env_state_inds_host[env_idx];
@@ -522,6 +579,7 @@ void curriculum_update_advantages(PuffeRL* pufferl, PrecisionTensor* advantages,
         }
     }
 
+    state_finalize_epoch(buf);
     cudaMemcpyAsync(buf->advantages.data, buf->priorities_host,
         (size_t)buf->size * sizeof(precision_t), cudaMemcpyHostToDevice, stream);
 }
