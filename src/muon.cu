@@ -67,6 +67,55 @@ __global__ void muon_weight_update(float* __restrict__ wb, const precision_t* __
     }
 }
 
+__global__ void muon_weight_update_stats(
+        float* __restrict__ wb,
+        const precision_t* __restrict__ update,
+        const float* __restrict__ lr_ptr,
+        float wd, float scale, float* __restrict__ stats, int n) {
+    __shared__ float weight_sq[256];
+    __shared__ float update_sq[256];
+    __shared__ float delta_sq[256];
+
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    int tid = threadIdx.x;
+    float local_weight_sq = 0.0f;
+    float local_update_sq = 0.0f;
+    float local_delta_sq = 0.0f;
+    float lr = *lr_ptr;
+    float wd_scale = 1.0f - lr * wd;
+
+    if (idx < n) {
+        float old_w = wb[idx];
+        float upd = scale * to_float(update[idx]);
+        float new_w = old_w * wd_scale - lr * upd;
+        float delta = new_w - old_w;
+        wb[idx] = new_w;
+        local_weight_sq = old_w * old_w;
+        local_update_sq = upd * upd;
+        local_delta_sq = delta * delta;
+    }
+
+    weight_sq[tid] = local_weight_sq;
+    update_sq[tid] = local_update_sq;
+    delta_sq[tid] = local_delta_sq;
+    __syncthreads();
+
+    for (int stride = blockDim.x / 2; stride > 0; stride >>= 1) {
+        if (tid < stride) {
+            weight_sq[tid] += weight_sq[tid + stride];
+            update_sq[tid] += update_sq[tid + stride];
+            delta_sq[tid] += delta_sq[tid + stride];
+        }
+        __syncthreads();
+    }
+
+    if (tid == 0) {
+        atomicAdd(stats + 0, weight_sq[0]);
+        atomicAdd(stats + 1, update_sq[0]);
+        atomicAdd(stats + 2, delta_sq[0]);
+    }
+}
+
 __global__ void muon_clip_norm(precision_t* __restrict__ dst,
         const float* __restrict__ sum_sq_ptr, float max_norm, float eps, int n) {
     float clip_coef = fminf(max_norm / (sqrtf(*sum_sq_ptr) + eps), 1.0f);
@@ -74,6 +123,23 @@ __global__ void muon_clip_norm(precision_t* __restrict__ dst,
     if (idx < n) {
         dst[idx] = from_float(to_float(dst[idx]) * clip_coef);
     }
+}
+
+__global__ void muon_finalize_step_stats(
+        const float* __restrict__ step_stats,
+        const float* __restrict__ grad_norm_sq,
+        const float* __restrict__ lr_ptr,
+        float* __restrict__ max_stats) {
+    float weight_norm = sqrtf(fmaxf(step_stats[0], 0.0f));
+    float update_norm = sqrtf(fmaxf(step_stats[1], 0.0f));
+    float delta_norm = sqrtf(fmaxf(step_stats[2], 0.0f));
+    float ratio = delta_norm / (weight_norm + 1e-12f);
+    max_stats[0] = fmaxf(max_stats[0], sqrtf(fmaxf(*grad_norm_sq, 0.0f)));
+    max_stats[1] = fmaxf(max_stats[1], update_norm);
+    max_stats[2] = weight_norm;
+    max_stats[3] = fmaxf(max_stats[3], delta_norm);
+    max_stats[4] = fmaxf(max_stats[4], ratio);
+    max_stats[5] = *lr_ptr;
 }
 
 __global__ void muon_init_long_dim_scales(float* __restrict__ long_dim_scale,
@@ -168,7 +234,8 @@ struct Muon {
     float* lr_ptr;
     float* norm_ptr;
     float* grad_norm_ptr;
-    FloatTensor lr_puf, ortho_norm_puf, grad_norm_puf;
+    float* step_stats_ptr;
+    FloatTensor lr_puf, ortho_norm_puf, grad_norm_puf, step_stats_puf, max_stats_puf;
     FloatTensor mb_puf;
     PrecisionTensor gram, gram_buf, x_buf, orig_buf;
     FloatTensor norm_partials, long_dim_scale_puf;
@@ -193,10 +260,14 @@ void muon_init(Muon* m, Allocator* param_alloc, double lr_val,
     m->mb_puf =         {.shape = {n}};
     m->norm_partials =  {.shape = {256}};
     m->grad_norm_puf =  {.shape = {1}};
+    m->step_stats_puf = {.shape = {3}};
+    m->max_stats_puf =  {.shape = {6}};
     alloc_register(alloc, &m->lr_puf);
     alloc_register(alloc, &m->mb_puf);
     alloc_register(alloc, &m->norm_partials);
     alloc_register(alloc, &m->grad_norm_puf);
+    alloc_register(alloc, &m->step_stats_puf);
+    alloc_register(alloc, &m->max_stats_puf);
     long max_M = 0, max_N = 0, max_rect_N = 0;
     for (int _i = 0; _i < param_alloc->num_regs; _i++) {
         AllocEntry& e = param_alloc->regs[_i];
@@ -231,9 +302,12 @@ void muon_init(Muon* m, Allocator* param_alloc, double lr_val,
 void muon_post_create(Muon* m) {
     m->lr_ptr = m->lr_puf.data;
     m->grad_norm_ptr = m->grad_norm_puf.data;
+    m->step_stats_ptr = m->step_stats_puf.data;
     if (m->ortho_norm_puf.data) m->norm_ptr = m->ortho_norm_puf.data;
     cudaMemcpy(m->lr_ptr, &m->lr_val_init, sizeof(float), cudaMemcpyHostToDevice);
     cudaMemset(m->mb_puf.data, 0, numel(m->mb_puf.shape) * sizeof(float));
+    cudaMemset(m->step_stats_puf.data, 0, numel(m->step_stats_puf.shape) * sizeof(float));
+    cudaMemset(m->max_stats_puf.data, 0, numel(m->max_stats_puf.shape) * sizeof(float));
 }
 
 static PrecisionTensor muon_orthogonalize_matrix(Muon* m, PrecisionTensor x, PrecisionTensor x_buf,
@@ -305,6 +379,8 @@ void muon_step(Muon* m, FloatTensor weights, PrecisionTensor grads, float max_gr
     muon_norm_reduce<<<1, 256, 0, stream>>>(m->grad_norm_ptr, m->norm_partials.data, clip_blocks);
     muon_clip_norm<<<grid_size(numel(grads.shape)), BLOCK_SIZE, 0, stream>>>(
         grads.data, m->grad_norm_ptr, max_grad_norm, 1e-6f, numel(grads.shape));
+    cudaMemsetAsync(m->step_stats_puf.data, 0,
+        numel(m->step_stats_puf.shape) * sizeof(float), stream);
 
     // Nesterov momentum
     muon_nesterov<<<grid_size(numel(m->mb_puf.shape)), BLOCK_SIZE, 0, stream>>>(
@@ -363,8 +439,11 @@ void muon_step(Muon* m, FloatTensor weights, PrecisionTensor grads, float max_gr
             }
         }
 
-        muon_weight_update<<<grid_size(ne), BLOCK_SIZE, 0, stream>>>(
-            wb_ptr, update_ptr, m->lr_ptr, (float)m->weight_decay, scale, (int)ne);
+        muon_weight_update_stats<<<grid_size(ne), BLOCK_SIZE, 0, stream>>>(
+            wb_ptr, update_ptr, m->lr_ptr, (float)m->weight_decay,
+            scale, m->step_stats_ptr, (int)ne);
         offset += ne;
     }
+    muon_finalize_step_stats<<<1, 1, 0, stream>>>(
+        m->step_stats_puf.data, m->grad_norm_ptr, m->lr_ptr, m->max_stats_puf.data);
 }

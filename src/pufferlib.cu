@@ -23,6 +23,20 @@ enum LossIdx {
     LOSS_N = 7, NUM_LOSSES = 8,
 };
 
+enum DebugStatIdx {
+    DBG_PG_GRAD_NORM = 0,
+    DBG_PG_GRAD_MAX = 1,
+    DBG_VF_GRAD_NORM = 2,
+    DBG_VF_GRAD_MAX = 3,
+    DBG_ADV_NORM = 4,
+    DBG_ADV_MAX = 5,
+    DBG_RET_NORM = 6,
+    DBG_RET_MAX = 7,
+    DBG_VAL_NORM = 8,
+    DBG_VAL_MAX = 9,
+    NUM_DEBUG_STATS = 10,
+};
+
 enum ProfileIdx {
     PROF_ROLLOUT = 0,
     PROF_EVAL_GPU,
@@ -157,8 +171,6 @@ struct PPOKernelArgs {
     const precision_t* logits;
     const precision_t* logstd; // Continuous only
     const precision_t* values_pred;
-    const float* adv_mean;
-    const float* adv_var;
     const int* act_sizes;
     const precision_t* action_mask; // (N, T, A_total) or nullptr
     int mask_stride_n, mask_stride_t;
@@ -173,7 +185,7 @@ struct PPOKernelArgs {
 struct PPOBuffersPuf {
     FloatTensor loss_output, grad_loss;
     FloatTensor saved_for_bwd;
-    FloatTensor grad_logits, grad_values, grad_logstd, adv_scratch, partials;
+    FloatTensor grad_logits, grad_values, grad_logstd, partials;
 };
 
 void register_ppo_buffers(PPOBuffersPuf& bufs, Allocator* alloc, int N, int T, int A_total, bool is_continuous) {
@@ -186,7 +198,6 @@ void register_ppo_buffers(PPOBuffersPuf& bufs, Allocator* alloc, int N, int T, i
         .grad_logits = {.shape = {N, T, A_total}},
         .grad_values = {.shape = {N, T, 1}},
         .grad_logstd = {.shape = {N, T, A_total}},
-        .adv_scratch = {.shape = {2}},
         .partials = {.shape = {partial_blocks * (LOSS_N + 1)}},
     };
     alloc_register(alloc, &bufs.loss_output);
@@ -197,7 +208,6 @@ void register_ppo_buffers(PPOBuffersPuf& bufs, Allocator* alloc, int N, int T, i
     if (is_continuous) {
         alloc_register(alloc, &bufs.grad_logstd);
     }
-    alloc_register(alloc, &bufs.adv_scratch);
     alloc_register(alloc, &bufs.partials);
 }
 
@@ -261,6 +271,7 @@ typedef struct {
     float replay_ratio;
     long total_timesteps;
     float max_grad_norm;
+    float reward_scale_max;
     // PPO
     float clip_coef;
     float vf_clip_coef;
@@ -290,6 +301,7 @@ typedef struct {
     float explore_alpha;
     float explore_beta;
     float explore_decay;
+    bool frontier_explore;
     // Flags
     bool reset_state;
     int cudagraphs;
@@ -346,6 +358,8 @@ typedef struct {
     cudaStream_t default_stream;  // main-thread stream (captured once at init)
     IntTensor act_sizes_puf;    // CUDA int32 tensor of action head sizes
     FloatTensor losses_puf;     // (NUM_LOSSES,) f32 accumulator
+    FloatTensor debug_stats_puf; // (NUM_DEBUG_STATS,) max diagnostic accumulators
+    FloatTensor reward_stats;   // running reward mean/var for scale-only reward normalization
     PPOBuffersPuf ppo_bufs_puf; // Pre-allocated buffers for ppo_loss_fwd_bwd
     PrioBuffers prio_bufs;      // Pre-allocated buffers for prio_replay
     StateBuffer state_buf;      // Optional curriculum state buffer
@@ -354,6 +368,10 @@ typedef struct {
     PrecisionTensor param_puf;
     PrecisionTensor grad_puf;
     LongTensor rng_offset_puf;   // (num_buffers+1,) int64 CUDA device counters
+    IntTensor frontier_random_mask; // (total_agents,) dynamic Boxoban frontier-random mask
+    IntTensor frontier_random_row_mask; // (total_agents,) rows with any forced-random action this rollout
+    int* frontier_random_mask_host;
+    int* frontier_random_row_mask_host;
     ProfileT profile;
     nvmlDevice_t nvml_device;
     long epoch;
@@ -382,11 +400,259 @@ typedef struct {
 #include "curriculum.cu"
 #undef PUFFER_CURRICULUM_IMPL
 
+#ifdef BOXOBAN_LEVEL_LOGS
+static long boxoban_t80_first_step[BOXOBAN_LEVEL_LOGS];
+static long boxoban_t80_done_step[BOXOBAN_LEVEL_LOGS];
+static long boxoban_t80_last_epoch = -1;
+static int boxoban_t80_initialized = 0;
+static double boxoban_t80_prev_episodes = 0.0;
+static double boxoban_t80_prev_successes[BOXOBAN_LEVEL_LOGS];
+static long long boxoban_frontier_random_steps[BOXOBAN_LEVEL_LOGS];
+static long long boxoban_frontier_random_solve_steps[BOXOBAN_LEVEL_LOGS];
+static double boxoban_frontier_prev_successes[BOXOBAN_LEVEL_LOGS];
+
+static inline const char* boxoban_t80_key(int level) {
+    static int initialized = 0;
+    static char keys[BOXOBAN_LEVEL_LOGS][16];
+    if (!initialized) {
+        for (int i = 0; i < BOXOBAN_LEVEL_LOGS; i++) {
+            snprintf(keys[i], sizeof(keys[i]), "l%d_t80", i + 1);
+        }
+        initialized = 1;
+    }
+    return keys[level];
+}
+
+static inline const char* boxoban_rx_key(int level) {
+    static int initialized = 0;
+    static char keys[BOXOBAN_LEVEL_LOGS][16];
+    if (!initialized) {
+        for (int i = 0; i < BOXOBAN_LEVEL_LOGS; i++) {
+            snprintf(keys[i], sizeof(keys[i]), "l%d_rx", i + 1);
+        }
+        initialized = 1;
+    }
+    return keys[level];
+}
+
+static inline void boxoban_t80_reset_arrays(void) {
+    for (int i = 0; i < BOXOBAN_LEVEL_LOGS; i++) {
+        boxoban_t80_first_step[i] = -1;
+        boxoban_t80_done_step[i] = -1;
+        boxoban_t80_prev_successes[i] = 0.0;
+        boxoban_frontier_random_steps[i] = 0;
+        boxoban_frontier_random_solve_steps[i] = -1;
+        boxoban_frontier_prev_successes[i] = 0.0;
+    }
+    boxoban_t80_prev_episodes = 0.0;
+}
+
+static inline void boxoban_t80_ensure_initialized(void) {
+    if (!boxoban_t80_initialized) {
+        boxoban_t80_reset_arrays();
+        boxoban_t80_initialized = 1;
+    }
+}
+
+static inline void boxoban_t80_reset(void) {
+    boxoban_t80_reset_arrays();
+    boxoban_t80_initialized = 1;
+}
+
+static inline long boxoban_agent_steps(PuffeRL& pufferl) {
+    return pufferl.global_step * (long)pufferl.hypers.world_size;
+}
+
+static inline void boxoban_update_t80(PuffeRL& pufferl) {
+    boxoban_t80_ensure_initialized();
+    if (boxoban_t80_last_epoch < 0 || (long)pufferl.epoch < boxoban_t80_last_epoch) {
+        boxoban_t80_reset();
+    }
+    boxoban_t80_last_epoch = (long)pufferl.epoch;
+    long step = boxoban_agent_steps(pufferl);
+
+    if (!pufferl.curriculum_enabled) {
+        return;
+    }
+#ifdef PUFFER_CURRICULUM_DIAG_SEQUENCE_OUTCOME
+    StateBuffer* state_buf = &pufferl.state_buf;
+    int saved_level = state_buf->oracle_saved_level;
+    if (saved_level >= 0 && saved_level < BOXOBAN_LEVEL_LOGS
+            && boxoban_t80_first_step[saved_level] < 0) {
+        long start = state_buf->oracle_saved_agent_step >= 0
+            ? state_buf->oracle_saved_agent_step
+            : step;
+        boxoban_t80_first_step[saved_level] = start;
+    }
+    if (saved_level >= 0 && saved_level < BOXOBAN_LEVEL_LOGS
+            && boxoban_t80_done_step[saved_level] >= 0) {
+        state_buf->oracle_saved_mastered = 1;
+    }
+#endif
+
+    StaticVec* vec = pufferl.vec;
+    int start_env = pufferl.state_buf.num_fresh_envs;
+    int end_env = start_env + pufferl.state_buf.num_cl_envs;
+    if (start_env < 0) {
+        start_env = 0;
+    }
+    if (end_env > vec->size) {
+        end_env = vec->size;
+    }
+    if (start_env >= end_env) {
+        return;
+    }
+
+    double episodes = 0.0;
+    double successes[BOXOBAN_LEVEL_LOGS] = {};
+    for (int i = start_env; i < end_env; i++) {
+        Env* env = &vec->envs[i];
+        if (env->log.n == 0.0f) {
+            continue;
+        }
+        episodes += (double)env->log.n;
+        for (int level = 0; level < BOXOBAN_LEVEL_LOGS; level++) {
+            successes[level] += (double)env->log.level_solved[level];
+        }
+    }
+
+    if (episodes == 0.0) {
+        return;
+    }
+
+    if (episodes < boxoban_t80_prev_episodes) {
+        boxoban_t80_prev_episodes = 0.0;
+        for (int level = 0; level < BOXOBAN_LEVEL_LOGS; level++) {
+            boxoban_t80_prev_successes[level] = 0.0;
+        }
+    }
+
+    double delta_episodes = episodes - boxoban_t80_prev_episodes;
+    if (delta_episodes <= 0.0) {
+        return;
+    }
+
+    for (int level = 0; level < BOXOBAN_LEVEL_LOGS; level++) {
+        double delta_successes = successes[level] - boxoban_t80_prev_successes[level];
+        if (delta_successes < 0.0) {
+            delta_successes = successes[level];
+        }
+
+        if (boxoban_t80_first_step[level] >= 0 && boxoban_t80_done_step[level] < 0) {
+            double rate = delta_successes / delta_episodes;
+            if (rate >= 0.80) {
+                boxoban_t80_done_step[level] = step;
+#ifdef PUFFER_CURRICULUM_DIAG_SEQUENCE_OUTCOME
+                if (level == state_buf->oracle_saved_level) {
+                    state_buf->oracle_saved_mastered = 1;
+                }
+#endif
+            }
+        }
+        boxoban_t80_prev_successes[level] = successes[level];
+    }
+    boxoban_t80_prev_episodes = episodes;
+}
+
+static inline int boxoban_frontier_level(void);
+
+static inline int boxoban_monitor_envs(PuffeRL& pufferl) {
+    int num_fresh_envs = pufferl.curriculum_enabled
+        ? pufferl.state_buf.num_fresh_envs
+        : pufferl.vec->size;
+    int monitor_envs = num_fresh_envs / 2;
+    if (monitor_envs < 1 && num_fresh_envs > 0) {
+        monitor_envs = 1;
+    }
+    return monitor_envs;
+}
+
+static inline void boxoban_update_frontier_random_solves(PuffeRL& pufferl) {
+    if (!pufferl.hypers.frontier_explore || !pufferl.curriculum_enabled) {
+        return;
+    }
+
+    boxoban_t80_ensure_initialized();
+    StaticVec* vec = pufferl.vec;
+    int num_fresh_envs = pufferl.state_buf.num_fresh_envs;
+    int monitor_envs = boxoban_monitor_envs(pufferl);
+    if (monitor_envs >= num_fresh_envs) {
+        return;
+    }
+    int frontier = boxoban_frontier_level();
+    if (frontier <= 0 || frontier >= BOXOBAN_LEVEL_LOGS) {
+        return;
+    }
+
+    double successes = 0.0;
+    for (int i = monitor_envs; i < num_fresh_envs; i++) {
+        Env* env = &vec->envs[i];
+        successes += (double)env->log.level_solved[frontier];
+    }
+
+    if (successes < boxoban_frontier_prev_successes[frontier]) {
+        boxoban_frontier_prev_successes[frontier] = 0.0;
+    }
+    double delta = successes - boxoban_frontier_prev_successes[frontier];
+    if (delta > 0.0 && boxoban_frontier_random_solve_steps[frontier] < 0) {
+        boxoban_frontier_random_solve_steps[frontier] =
+            boxoban_frontier_random_steps[frontier];
+    }
+    boxoban_frontier_prev_successes[frontier] = successes;
+}
+
+static inline void boxoban_log_t80(Dict* out, PuffeRL& pufferl) {
+    long step = boxoban_agent_steps(pufferl);
+    for (int level = 0; level < BOXOBAN_LEVEL_LOGS; level++) {
+        double value = -1.0;
+        long first = boxoban_t80_first_step[level];
+        if (first >= 0) {
+            long end = boxoban_t80_done_step[level] >= 0
+                ? boxoban_t80_done_step[level]
+                : step;
+            if (end < first) {
+                end = first;
+            }
+            value = (double)(end - first) / 1000000.0;
+        }
+        dict_set(out, boxoban_t80_key(level), value);
+    }
+    for (int level = 0; level < BOXOBAN_LEVEL_LOGS; level++) {
+        long long steps = boxoban_frontier_random_solve_steps[level] >= 0
+            ? boxoban_frontier_random_solve_steps[level]
+            : boxoban_frontier_random_steps[level];
+        dict_set(out, boxoban_rx_key(level), (double)steps / 1000000.0);
+    }
+    dict_set(out, "fr", (double)(boxoban_frontier_level() + 1));
+}
+
+static inline int boxoban_frontier_level(void) {
+    boxoban_t80_ensure_initialized();
+    for (int level = 0; level < BOXOBAN_LEVEL_LOGS; level++) {
+        if (boxoban_t80_done_step[level] < 0) {
+            return level;
+        }
+    }
+    return BOXOBAN_LEVEL_LOGS;
+}
+#endif
+
 Dict* log_environments_impl(PuffeRL& pufferl) {
-    // Capacity raised from 32 to 64 to accommodate chess's per-bank
-    // hist_score_bank_<b> / hist_n_bank_<b> entries (16 keys for 8 banks).
-    Dict* out = create_dict(64);
+    // Capacity covers env logs plus optional compact curriculum diagnostics.
+    Dict* out = create_dict(96);
+#ifdef BOXOBAN_LEVEL_LOGS
+    boxoban_update_frontier_random_solves(pufferl);
+    boxoban_update_t80(pufferl);
+#endif
     static_vec_log(pufferl.vec, out);
+#ifdef BOXOBAN_LEVEL_LOGS
+    boxoban_log_t80(out, pufferl);
+#endif
+#ifdef PUFFER_CURRICULUM_DIAG_SEQUENCE_OUTCOME
+    if (pufferl.curriculum_enabled) {
+        curriculum_log_diagnostics(&pufferl, out);
+    }
+#endif
     return out;
 }
 
@@ -566,6 +832,112 @@ __global__ void sample_logits(
     rng_states[idx] = state;
 }
 
+#ifdef BOXOBAN_LEVEL_LOGS
+__global__ void boxoban_frontier_random_actions_kernel(
+        precision_t* __restrict__ rollout_actions,
+        float* __restrict__ env_actions,
+        const int* __restrict__ frontier_mask,
+        IntTensor act_sizes_puf,
+        curandStatePhilox4_32_10_t* __restrict__ rng_states,
+        int start, int B, int num_atns, long act_cols) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx >= B) {
+        return;
+    }
+    int global_idx = start + idx;
+    if (frontier_mask[global_idx] == 0) {
+        return;
+    }
+
+    curandStatePhilox4_32_10_t state = rng_states[idx];
+    const int* act_sizes = act_sizes_puf.data;
+    for (int h = 0; h < num_atns; h++) {
+        int A = act_sizes[h];
+        int action = (int)(curand_uniform(&state) * (float)A);
+        if (action >= A) {
+            action = A - 1;
+        }
+        rollout_actions[idx * num_atns + h] = from_float((float)action);
+        env_actions[(long)global_idx * act_cols + h] = (float)action;
+    }
+    rng_states[idx] = state;
+}
+
+static inline void boxoban_apply_frontier_random_actions(
+        PuffeRL* pufferl, int buf, int t, cudaStream_t stream) {
+    if (!pufferl->hypers.frontier_explore || !pufferl->curriculum_enabled
+            || pufferl->frontier_random_mask_host == NULL
+            || pufferl->frontier_random_row_mask_host == NULL) {
+        return;
+    }
+
+    StateBuffer* state_buf = &pufferl->state_buf;
+    StaticVec* vec = pufferl->vec;
+    int frontier = boxoban_frontier_level();
+    if (frontier <= 0 || frontier >= BOXOBAN_LEVEL_LOGS) {
+        return;
+    }
+
+    int block_size = vec->total_agents / pufferl->hypers.num_buffers;
+    int start = buf * block_size;
+    int end = start + block_size;
+    int* mask = pufferl->frontier_random_mask_host;
+    int* row_mask = pufferl->frontier_random_row_mask_host;
+    memset(mask + start, 0, (size_t)block_size * sizeof(int));
+
+    int env_start = vec->buffer_env_starts[buf];
+    int env_count = vec->buffer_env_counts[buf];
+    int num_fresh_envs = state_buf->num_fresh_envs;
+    int monitor_envs = boxoban_monitor_envs(*pufferl);
+    int agents_per_env = state_buf->agents_per_env;
+    int any = 0;
+    int random_count = 0;
+    for (int i = env_start; i < env_start + env_count && i < num_fresh_envs; i++) {
+        if (i < monitor_envs) {
+            continue;
+        }
+        Env* env = &vec->envs[i];
+        if (env->map_sequence_len <= 0 || frontier >= env->map_sequence_len) {
+            continue;
+        }
+        if (env->state.sequence_pos != frontier) {
+            continue;
+        }
+        int agent_start = i * agents_per_env;
+        for (int a = 0; a < agents_per_env; a++) {
+            int agent_idx = agent_start + a;
+            if (agent_idx >= start && agent_idx < end) {
+                mask[agent_idx] = 1;
+                row_mask[agent_idx] = 1;
+                any = 1;
+                random_count++;
+            }
+        }
+    }
+
+    if (!any) {
+        return;
+    }
+    if (frontier >= 0 && frontier < BOXOBAN_LEVEL_LOGS && random_count > 0) {
+        __sync_fetch_and_add(&boxoban_frontier_random_steps[frontier],
+            (long long)random_count);
+    }
+
+    cudaMemcpyAsync(pufferl->frontier_random_mask.data + start, mask + start,
+        (size_t)block_size * sizeof(int), cudaMemcpyHostToDevice, stream);
+    cudaMemcpyAsync(pufferl->frontier_random_row_mask.data + start, row_mask + start,
+        (size_t)block_size * sizeof(int), cudaMemcpyHostToDevice, stream);
+    RolloutBuf& rollouts = pufferl->rollouts;
+    PrecisionTensor actions = puf_slice(rollouts.actions, t, start, block_size);
+    int num_atns = actions.shape[1];
+    long act_cols = pufferl->env.actions.shape[1];
+    boxoban_frontier_random_actions_kernel<<<grid_size(block_size), BLOCK_SIZE, 0, stream>>>(
+        actions.data, pufferl->env.actions.data, pufferl->frontier_random_mask.data,
+        pufferl->act_sizes_puf, pufferl->rng_states[buf],
+        start, block_size, num_atns, act_cols);
+}
+#endif
+
 // Single step rollout forward pass. Called by each environment worker in their
 // own buffer thread. This operation is cudagraphed.
 extern "C" void net_callback_wrapper(void* ctx, int buf, int t) {
@@ -581,6 +953,9 @@ extern "C" void net_callback_wrapper(void* ctx, int buf, int t) {
     if (pufferl->rollout_captured) {
         assert(cudaGraphLaunch(pufferl->fused_rollout_cudagraphs[graph], current_stream) == cudaSuccess
                 && "cudaGraphLaunch failed");
+#ifdef BOXOBAN_LEVEL_LOGS
+        boxoban_apply_frontier_random_actions(pufferl, buf, t, current_stream);
+#endif
         profile_end(hypers.profile);
         return;
     }
@@ -687,6 +1062,10 @@ extern "C" void net_callback_wrapper(void* ctx, int buf, int t) {
                 env.actions.data + (long)sub_start * act_cols,
                 act_b.data, numel(act_b.shape));
     }
+
+#ifdef BOXOBAN_LEVEL_LOGS
+    boxoban_apply_frontier_random_actions(pufferl, buf, t, stream);
+#endif
 
     if (capturing) {
         cudaGraph_t _graph;
@@ -798,9 +1177,6 @@ __global__ void ppo_loss_compute(
     float val_pred = to_float(a.values_pred[values_idx]);
     g.out_newvalue[nt] = from_float(val_pred);
 
-    float adv_std = sqrtf(float(a.adv_var[0]));
-    float adv_normalized = (adv - float(a.adv_mean[0])) / (adv_std + 1e-8f);
-
     // grad_loss is always 1.0 (set in post_create, never changes)
     float dL = inv_NT;
     float d_pg_loss = dL;
@@ -872,7 +1248,7 @@ __global__ void ppo_loss_compute(
     ratio = __expf(logratio);
     g.out_ratio[nt] = from_float(ratio);
     float ratio_clipped = fmaxf(1.0f - a.clip_coef, fminf(1.0f + a.clip_coef, ratio));
-    float wa = -w * adv_normalized;
+    float wa = -w * adv;
     float pg_loss1 = wa * ratio;
     float pg_loss2 = wa * ratio_clipped;
     pg_loss = fmaxf(pg_loss1, pg_loss2);
@@ -980,45 +1356,6 @@ __global__ void ppo_loss_reduce(
     }
 }
 
-__global__ void ppo_var_mean(const precision_t* __restrict__ src,
-        float* __restrict__ var_out, float* __restrict__ mean_out, int n) {
-    __shared__ float sdata[256];
-    int tid = threadIdx.x;
-    float sum = 0.0f;
-    for (int i = tid; i < n; i += blockDim.x) {
-        sum += to_float(src[i]);
-    }
-    sdata[tid] = sum;
-    __syncthreads();
-    for (int s = blockDim.x / 2; s > 0; s >>= 1) {
-        if (tid < s) {
-            sdata[tid] += sdata[tid + s];
-        }
-        __syncthreads();
-    }
-    float mean = sdata[0] / (float)n;
-    if (tid == 0) {
-        *mean_out = mean;
-    }
-    __syncthreads();
-    float ss = 0.0f;
-    for (int i = tid; i < n; i += blockDim.x) {
-        float d = to_float(src[i]) - mean;
-        ss += d * d;
-    }
-    sdata[tid] = ss;
-    __syncthreads();
-    for (int s = blockDim.x / 2; s > 0; s >>= 1) {
-        if (tid < s) {
-            sdata[tid] += sdata[tid + s];
-        }
-        __syncthreads();
-    }
-    if (tid == 0) {
-        *var_out = sdata[0] / (float)(n - 1);
-    }
-}
-
 // This is a huge kernel for a relatively cheap operation. But without this,
 // it's death by a thousand cuts with repeated kernel launches. Even graphed, you
 // blow up the memory bandwidth.
@@ -1036,11 +1373,6 @@ void ppo_loss_fwd_bwd(
 
     // Pointers into fused decoder output
     const precision_t* logits_ptr = dec_out.data;
-
-    float* adv_var_ptr = bufs.adv_scratch.data;
-    float* adv_mean_ptr = adv_var_ptr + 1;
-    ppo_var_mean<<<1, 256, 0, stream>>>(
-        graph.mb_advantages.data, adv_var_ptr, adv_mean_ptr, numel(graph.mb_advantages.shape));
 
     int ppo_grid = (total + PPO_THREADS - 1) / PPO_THREADS;
 
@@ -1069,8 +1401,6 @@ void ppo_loss_fwd_bwd(
         .logits = logits_ptr,
         .logstd = is_continuous ? logstd.data : nullptr,
         .values_pred = logits_ptr + A_total,
-        .adv_mean = adv_mean_ptr,
-        .adv_var = adv_var_ptr,
         .act_sizes = act_sizes.data,
         .action_mask = has_mask ? graph.mb_action_mask.data : nullptr,
         .mask_stride_n = has_mask ? T * A_total : 0,
@@ -1090,6 +1420,64 @@ void ppo_loss_fwd_bwd(
         bufs.loss_output.data, losses_acc.data, ppo_partials_buf, ppo_grid);
 }
 
+__global__ void debug_float_norm_max_kernel(
+        const float* __restrict__ data, float* __restrict__ stats,
+        int norm_idx, int max_idx, int n) {
+    __shared__ float sum_sq[256];
+    __shared__ float max_abs[256];
+    int tid = threadIdx.x;
+    float local_sum = 0.0f;
+    float local_max = 0.0f;
+    for (int i = tid; i < n; i += blockDim.x) {
+        float v = data[i];
+        local_sum += v * v;
+        local_max = fmaxf(local_max, fabsf(v));
+    }
+    sum_sq[tid] = local_sum;
+    max_abs[tid] = local_max;
+    __syncthreads();
+    for (int stride = blockDim.x / 2; stride > 0; stride >>= 1) {
+        if (tid < stride) {
+            sum_sq[tid] += sum_sq[tid + stride];
+            max_abs[tid] = fmaxf(max_abs[tid], max_abs[tid + stride]);
+        }
+        __syncthreads();
+    }
+    if (tid == 0) {
+        stats[norm_idx] = fmaxf(stats[norm_idx], sqrtf(fmaxf(sum_sq[0], 0.0f)));
+        stats[max_idx] = fmaxf(stats[max_idx], max_abs[0]);
+    }
+}
+
+__global__ void debug_precision_norm_max_kernel(
+        const precision_t* __restrict__ data, float* __restrict__ stats,
+        int norm_idx, int max_idx, int n) {
+    __shared__ float sum_sq[256];
+    __shared__ float max_abs[256];
+    int tid = threadIdx.x;
+    float local_sum = 0.0f;
+    float local_max = 0.0f;
+    for (int i = tid; i < n; i += blockDim.x) {
+        float v = to_float(data[i]);
+        local_sum += v * v;
+        local_max = fmaxf(local_max, fabsf(v));
+    }
+    sum_sq[tid] = local_sum;
+    max_abs[tid] = local_max;
+    __syncthreads();
+    for (int stride = blockDim.x / 2; stride > 0; stride >>= 1) {
+        if (tid < stride) {
+            sum_sq[tid] += sum_sq[tid + stride];
+            max_abs[tid] = fmaxf(max_abs[tid], max_abs[tid + stride]);
+        }
+        __syncthreads();
+    }
+    if (tid == 0) {
+        stats[norm_idx] = fmaxf(stats[norm_idx], sqrtf(fmaxf(sum_sq[0], 0.0f)));
+        stats[max_idx] = fmaxf(stats[max_idx], max_abs[0]);
+    }
+}
+
 // Experience the puffer advantage! Generalized advantage estimation + V-Trace
 // importance sampling correction in a single streamlined operation
 __device__ void puff_advantage_row_scalar(
@@ -1102,7 +1490,7 @@ __device__ void puff_advantage_row_scalar(
         float nextnonterminal = 1.0f - to_float(dones[t_next]);
         float imp = to_float(importance[t]);
         float rho_t = fminf(imp, rho_clip);
-        float c_t = fminf(imp, c_clip);
+        float c_t = fminf(fminf(imp, c_clip), 1.0f);
         float r_nxt = to_float(rewards[t_next]);
         float v = to_float(values[t]);
         float v_nxt = to_float(values[t_next]);
@@ -1170,7 +1558,7 @@ __device__ __forceinline__ void puff_advantage_row_vec(
         for (int i = start_idx; i >= 0; i--) {
             float nextnonterminal = 1.0f - next_done;
             float rho_t = fminf(imp[i], rho_clip);
-            float c_t = fminf(imp[i], c_clip);
+            float c_t = fminf(fminf(imp[i], c_clip), 1.0f);
             float delta = rho_t * (next_reward + gamma * next_value * nextnonterminal - v[i]);
             lastpufferlam = delta + gamma * lambda * c_t * lastpufferlam * nextnonterminal;
             adv[i] = lastpufferlam;
@@ -1241,6 +1629,14 @@ void zero_frozen_advantages_cuda(PrecisionTensor& advantages,
     int total = total_rows * horizon;
     zero_frozen_advantages_kernel<<<grid_size(total), BLOCK_SIZE, 0, stream>>>(
         advantages.data, agents_per_buffer, primary_per_buffer, total_rows, horizon);
+}
+
+__global__ void zero_masked_prio_weights_kernel(
+        float* weights, const int* row_mask, int n) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx < n && row_mask[idx] != 0) {
+        weights[idx] = 0.0f;
+    }
 }
 
 // Minor copy bandwidth optimizations
@@ -1330,6 +1726,50 @@ inline float cosine_annealing(float lr_base, float lr_min, long t, long T) {
     return lr_min + 0.5f*(lr_base - lr_min)*(1.0f + std::cos(M_PI * ratio));
 }
 
+__global__ void scale_rewards_by_running_std(
+        precision_t* __restrict__ rewards, float* __restrict__ stats,
+        int n, float decay, float eps, float max_scale) {
+    __shared__ float sums[2][256];
+    int tid = threadIdx.x;
+    float sum = 0.0f;
+    float sumsq = 0.0f;
+    for (int i = tid; i < n; i += blockDim.x) {
+        float reward = to_float(rewards[i]);
+        sum += reward;
+        sumsq += reward * reward;
+    }
+    sums[0][tid] = sum;
+    sums[1][tid] = sumsq;
+    __syncthreads();
+
+    for (int s = blockDim.x / 2; s > 0; s >>= 1) {
+        if (tid < s) {
+            sums[0][tid] += sums[0][tid + s];
+            sums[1][tid] += sums[1][tid + s];
+        }
+        __syncthreads();
+    }
+
+    if (tid == 0) {
+        float inv_n = 1.0f / (float)n;
+        float mean = sums[0][0] * inv_n;
+        float var = fmaxf(sums[1][0] * inv_n - mean * mean, 0.0f);
+        stats[0] = decay * stats[0] + (1.0f - decay) * mean;
+        stats[1] = decay * stats[1] + (1.0f - decay) * var;
+        float scale = rsqrtf(stats[1] + eps);
+        if (max_scale > 0.0f) {
+            scale = fminf(scale, max_scale);
+        }
+        sums[0][0] = scale;
+    }
+    __syncthreads();
+
+    float scale = sums[0][0];
+    for (int i = tid; i < n; i += blockDim.x) {
+        rewards[i] = from_float(to_float(rewards[i]) * scale);
+    }
+}
+
 void train_impl(PuffeRL& pufferl) {
     // Update to HypersT& p
     HypersT& hypers = pufferl.hypers;
@@ -1366,9 +1806,11 @@ void train_impl(PuffeRL& pufferl) {
             rollouts.action_mask.data, src.action_mask.data, T, B, mask_size);
     }
 
-    // We hard-clamp rewards to -1, 1. Our envs are mostly designed to respect this range
     clamp_precision_kernel<<<grid_size(numel(rollouts.rewards.shape)), BLOCK_SIZE, 0, train_stream>>>(
         rollouts.rewards.data, -1.0f, 1.0f, numel(rollouts.rewards.shape));
+    scale_rewards_by_running_std<<<1, 256, 0, train_stream>>>(
+        rollouts.rewards.data, pufferl.reward_stats.data,
+        numel(rollouts.rewards.shape), 0.99f, 1e-8f, hypers.reward_scale_max);
 
     // Set importance weights to 1.0
     fill_precision_kernel<<<grid_size(numel(rollouts.ratio.shape)), BLOCK_SIZE, 0, train_stream>>>(
@@ -1410,7 +1852,16 @@ void train_impl(PuffeRL& pufferl) {
     TrainGraph& graph = pufferl.train_buf;
     cudaEventRecord(pufferl.profile.events[1]);  // pre-loop end
 
+    bool frontier_explore = hypers.frontier_explore && pufferl.curriculum_enabled;
+#ifdef BOXOBAN_LEVEL_LOGS
+    if (frontier_explore && boxoban_frontier_level() <= 0) {
+        frontier_explore = false;
+    }
+#endif
     int total_minibatches = hypers.replay_ratio * batch_size / hypers.minibatch_size;
+    if (frontier_explore && pufferl.state_buf.num_cl_envs == 0) {
+        total_minibatches = 0;
+    }
     for (int mb = 0; mb < total_minibatches; ++mb) {
         cudaEventRecord(pufferl.profile.events[2]);  // start of misc (overwritten each iter)
         puf_zero(&advantages_puf, train_stream);
@@ -1434,6 +1885,11 @@ void train_impl(PuffeRL& pufferl) {
         compute_prio_abs<<<prio_rows, PRIO_WARP_SIZE, 0, train_stream>>>(
             advantages_puf.data, pufferl.prio_bufs.prio_weights.data,
             prio_alpha, 1e-6f, prio_rows, prio_stride);
+        if (frontier_explore) {
+            zero_masked_prio_weights_kernel<<<grid_size(prio_rows), BLOCK_SIZE, 0, train_stream>>>(
+                pufferl.prio_bufs.prio_weights.data,
+                pufferl.frontier_random_row_mask.data, prio_rows);
+        }
         sample_prio_indices(&pufferl.prio_bufs, prio_rows, minibatch_segments,
             pufferl.seed, train_rng_offset, pufferl.prio_bufs.mb_prio.data,
             NULL, 0, 1, anneal_beta, train_stream);
@@ -1484,6 +1940,23 @@ void train_impl(PuffeRL& pufferl) {
             FloatTensor grad_logits_puf = pufferl.ppo_bufs_puf.grad_logits;
             FloatTensor grad_logstd_puf = pufferl.is_continuous ? pufferl.ppo_bufs_puf.grad_logstd : FloatTensor();
             FloatTensor grad_values_puf = pufferl.ppo_bufs_puf.grad_values;
+            debug_float_norm_max_kernel<<<1, 256, 0, stream>>>(
+                grad_logits_puf.data, pufferl.debug_stats_puf.data,
+                DBG_PG_GRAD_NORM, DBG_PG_GRAD_MAX,
+                numel(grad_logits_puf.shape));
+            debug_float_norm_max_kernel<<<1, 256, 0, stream>>>(
+                grad_values_puf.data, pufferl.debug_stats_puf.data,
+                DBG_VF_GRAD_NORM, DBG_VF_GRAD_MAX,
+                numel(grad_values_puf.shape));
+            debug_precision_norm_max_kernel<<<1, 256, 0, stream>>>(
+                graph.mb_advantages.data, pufferl.debug_stats_puf.data,
+                DBG_ADV_NORM, DBG_ADV_MAX, numel(graph.mb_advantages.shape));
+            debug_precision_norm_max_kernel<<<1, 256, 0, stream>>>(
+                graph.mb_returns.data, pufferl.debug_stats_puf.data,
+                DBG_RET_NORM, DBG_RET_MAX, numel(graph.mb_returns.shape));
+            debug_precision_norm_max_kernel<<<1, 256, 0, stream>>>(
+                graph.mb_values.data, pufferl.debug_stats_puf.data,
+                DBG_VAL_NORM, DBG_VAL_MAX, numel(graph.mb_values.shape));
             policy_backward(&pufferl.policy, pufferl.weights, pufferl.train_activations,
                 grad_logits_puf, grad_logstd_puf, grad_values_puf, stream);
 
@@ -1923,11 +2396,22 @@ std::unique_ptr<PuffeRL> create_pufferl_impl(HypersT& hypers,
     pufferl->rng_offset_puf = {.shape = {num_buffers + 1 + (int)pufferl->curriculum_enabled}};
     alloc_register(acts, &pufferl->rng_offset_puf);
 
+    pufferl->frontier_random_mask = {.shape = {total_agents}};
+    alloc_register(acts, &pufferl->frontier_random_mask);
+    pufferl->frontier_random_row_mask = {.shape = {total_agents}};
+    alloc_register(acts, &pufferl->frontier_random_row_mask);
+
     pufferl->act_sizes_puf  = {.shape = {num_action_heads}};
     alloc_register(acts, &pufferl->act_sizes_puf);
 
     pufferl->losses_puf = {.shape = {NUM_LOSSES}};
     alloc_register(acts, &pufferl->losses_puf);
+
+    pufferl->debug_stats_puf = {.shape = {NUM_DEBUG_STATS}};
+    alloc_register(acts, &pufferl->debug_stats_puf);
+
+    pufferl->reward_stats = {.shape = {2}};
+    alloc_register(acts, &pufferl->reward_stats);
 
     pufferl->advantages_puf = {.shape = {total_agents, horizon}};
     alloc_register(acts, &pufferl->advantages_puf);
@@ -1984,7 +2468,20 @@ std::unique_ptr<PuffeRL> create_pufferl_impl(HypersT& hypers,
 
     // Post-create initialization
     cudaMemcpy(pufferl->act_sizes_puf.data, raw_act_sizes, num_action_heads * sizeof(int), cudaMemcpyHostToDevice);
+    cudaMemset(pufferl->frontier_random_mask.data, 0, total_agents * sizeof(int));
+    cudaMemset(pufferl->frontier_random_row_mask.data, 0, total_agents * sizeof(int));
+    if (hypers.frontier_explore) {
+        pufferl->frontier_random_mask_host = (int*)calloc(total_agents, sizeof(int));
+        pufferl->frontier_random_row_mask_host = (int*)calloc(total_agents, sizeof(int));
+        if (pufferl->frontier_random_mask_host == NULL
+                || pufferl->frontier_random_row_mask_host == NULL) {
+            return nullptr;
+        }
+    }
     cudaMemset(pufferl->losses_puf.data, 0, NUM_LOSSES * sizeof(float));
+    cudaMemset(pufferl->debug_stats_puf.data, 0, NUM_DEBUG_STATS * sizeof(float));
+    float reward_stats_init[2] = {0.0f, 1.0f};
+    cudaMemcpy(pufferl->reward_stats.data, reward_stats_init, sizeof(reward_stats_init), cudaMemcpyHostToDevice);
     float one = 1.0f;
     cudaMemcpy(pufferl->ppo_bufs_puf.grad_loss.data, &one, sizeof(float), cudaMemcpyHostToDevice);
     muon_post_create(&pufferl->muon);
@@ -2091,6 +2588,8 @@ std::unique_ptr<PuffeRL> create_pufferl_impl(HypersT& hypers,
         }
         cudaMemset(pufferl->rng_offset_puf.data, 0,
             numel(pufferl->rng_offset_puf.shape) * sizeof(long));
+        cudaMemcpy(pufferl->reward_stats.data, reward_stats_init,
+            sizeof(reward_stats_init), cudaMemcpyHostToDevice);
         cudaDeviceSynchronize();
 
         pufferl->epoch = 0;
@@ -2170,6 +2669,8 @@ void close_impl(PuffeRL& pufferl) {
     free(pufferl.buffer_activations);
     free(pufferl.fused_rollout_cudagraphs);
     free(pufferl.streams);
+    free(pufferl.frontier_random_mask_host);
+    free(pufferl.frontier_random_row_mask_host);
 
     for (int b = 0; b < pufferl.num_frozen_banks; b++) {
         weight_bank_destroy(&pufferl.frozen_banks[b], &pufferl);

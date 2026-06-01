@@ -8,6 +8,8 @@
 #include <pybind11/stl.h>
 #include <pybind11/numpy.h>
 #include <vector>
+#include <string>
+#include <string.h>
 #include "pufferlib.cu"
 
 #define _PUFFER_STRINGIFY(x) #x
@@ -58,6 +60,41 @@ pybind11::dict puf_log(pybind11::object pufferl_obj) {
         losses_dict["kl"] = losses_host[LOSS_APPROX_KL] * inv_n;
         losses_dict["clipfrac"] = losses_host[LOSS_CLIPFRAC] * inv_n;
     }
+    float opt_stats_host[6] = {};
+    cudaMemcpy(opt_stats_host, pufferl.muon.max_stats_puf.data,
+        sizeof(opt_stats_host), cudaMemcpyDeviceToHost);
+    losses_dict["grad_norm"] = opt_stats_host[0];
+    losses_dict["update_norm"] = opt_stats_host[1];
+    losses_dict["weight_norm"] = opt_stats_host[2];
+    losses_dict["delta_norm"] = opt_stats_host[3];
+    losses_dict["delta_ratio"] = opt_stats_host[4];
+    losses_dict["lr"] = opt_stats_host[5];
+    cudaMemset(pufferl.muon.max_stats_puf.data, 0,
+        numel(pufferl.muon.max_stats_puf.shape) * sizeof(float));
+    float debug_stats_host[NUM_DEBUG_STATS] = {};
+    cudaMemcpy(debug_stats_host, pufferl.debug_stats_puf.data,
+        sizeof(debug_stats_host), cudaMemcpyDeviceToHost);
+    losses_dict["pg_gn"] = debug_stats_host[DBG_PG_GRAD_NORM];
+    losses_dict["pg_gmax"] = debug_stats_host[DBG_PG_GRAD_MAX];
+    losses_dict["vf_gn"] = debug_stats_host[DBG_VF_GRAD_NORM];
+    losses_dict["vf_gmax"] = debug_stats_host[DBG_VF_GRAD_MAX];
+    losses_dict["adv_n"] = debug_stats_host[DBG_ADV_NORM];
+    losses_dict["adv_max"] = debug_stats_host[DBG_ADV_MAX];
+    losses_dict["ret_n"] = debug_stats_host[DBG_RET_NORM];
+    losses_dict["ret_max"] = debug_stats_host[DBG_RET_MAX];
+    losses_dict["val_n"] = debug_stats_host[DBG_VAL_NORM];
+    losses_dict["val_max"] = debug_stats_host[DBG_VAL_MAX];
+    cudaMemset(pufferl.debug_stats_puf.data, 0,
+        numel(pufferl.debug_stats_puf.shape) * sizeof(float));
+    float reward_stats_host[2] = {};
+    cudaMemcpy(reward_stats_host, pufferl.reward_stats.data,
+        sizeof(reward_stats_host), cudaMemcpyDeviceToHost);
+    losses_dict["rvar"] = reward_stats_host[1];
+    float reward_scale = 1.0f / sqrtf(reward_stats_host[1] + 1e-8f);
+    if (pufferl.hypers.reward_scale_max > 0.0f) {
+        reward_scale = fminf(reward_scale, pufferl.hypers.reward_scale_max);
+    }
+    losses_dict["rscale"] = reward_scale;
     cudaMemset(pufferl.losses_puf.data, 0, numel(pufferl.losses_puf.shape) * sizeof(float));
     result["loss"] = losses_dict;
 
@@ -161,6 +198,14 @@ void rollouts(pybind11::object pufferl_obj) {
     } else {
         pufferl.vec->log_env_limit = 0;
     }
+#ifdef BOXOBAN_LEVEL_LOGS
+    if (pufferl.hypers.frontier_explore
+            && pufferl.frontier_random_row_mask_host != NULL) {
+        size_t mask_bytes = (size_t)pufferl.hypers.total_agents * sizeof(int);
+        memset(pufferl.frontier_random_row_mask_host, 0, mask_bytes);
+        cudaMemset(pufferl.frontier_random_row_mask.data, 0, mask_bytes);
+    }
+#endif
 
     static_vec_omp_step(pufferl.vec);
     float sec = (float)(wall_clock() - t0);
@@ -171,6 +216,12 @@ void rollouts(pybind11::object pufferl_obj) {
     pufferl.profile.accum[PROF_EVAL_GPU] += eval_prof[EVAL_GPU];
     pufferl.profile.accum[PROF_EVAL_ENV] += eval_prof[EVAL_ENV_STEP];
     pufferl.global_step += pufferl.hypers.horizon * pufferl.hypers.total_agents;
+#ifdef BOXOBAN_LEVEL_LOGS
+    if (pufferl.hypers.frontier_explore) {
+        boxoban_update_frontier_random_solves(pufferl);
+        boxoban_update_t80(pufferl);
+    }
+#endif
 }
 
 pybind11::dict train(pybind11::object pufferl_obj) {
@@ -304,7 +355,12 @@ Dict* py_dict_to_c_dict(py::dict py_dict) {
         try {
             dict_set(c_dict, key, item.second.cast<double>());
         } catch (const py::cast_error&) {
-            // Skip non-numeric values
+            if (PyUnicode_Check(item.second.ptr()) ||
+                    PyList_Check(item.second.ptr()) ||
+                    PyTuple_Check(item.second.ptr())) {
+                std::string value = py::str(item.second);
+                dict_set_ptr(c_dict, key, strdup(value.c_str()));
+            }
         }
     }
     return c_dict;
@@ -423,6 +479,7 @@ std::unique_ptr<PuffeRL> create_pufferl(py::dict args) {
     hypers.replay_ratio = get_config(train_kwargs, "replay_ratio");
     hypers.total_timesteps = get_config(train_kwargs, "total_timesteps");
     hypers.max_grad_norm = get_config(train_kwargs, "max_grad_norm");
+    hypers.reward_scale_max = get_config(train_kwargs, "reward_scale_max");
     // PPO
     hypers.clip_coef = get_config(train_kwargs, "clip_coef");
     hypers.vf_clip_coef = get_config(train_kwargs, "vf_clip_coef");
@@ -449,6 +506,7 @@ std::unique_ptr<PuffeRL> create_pufferl(py::dict args) {
     hypers.explore_alpha = get_config(train_kwargs, "explore_alpha");
     hypers.explore_beta = get_config(train_kwargs, "explore_beta");
     hypers.explore_decay = get_config(train_kwargs, "explore_decay");
+    hypers.frontier_explore = get_config(train_kwargs, "frontier_explore");
     hypers.reset_state = get_config(args, "reset_state");
     // Base-level config ([base] section becomes top-level in args)
     hypers.cudagraphs = get_config(args, "cudagraphs");
@@ -566,6 +624,7 @@ PYBIND11_MODULE(_C, m) {
         .def_readwrite("momentum", &HypersT::momentum)
         .def_readwrite("total_timesteps", &HypersT::total_timesteps)
         .def_readwrite("max_grad_norm", &HypersT::max_grad_norm)
+        .def_readwrite("reward_scale_max", &HypersT::reward_scale_max)
         .def_readwrite("clip_coef", &HypersT::clip_coef)
         .def_readwrite("vf_clip_coef", &HypersT::vf_clip_coef)
         .def_readwrite("vf_coef", &HypersT::vf_coef)
@@ -587,6 +646,7 @@ PYBIND11_MODULE(_C, m) {
         .def_readwrite("explore_alpha", &HypersT::explore_alpha)
         .def_readwrite("explore_beta", &HypersT::explore_beta)
         .def_readwrite("explore_decay", &HypersT::explore_decay)
+        .def_readwrite("frontier_explore", &HypersT::frontier_explore)
         .def_readwrite("cudagraphs", &HypersT::cudagraphs)
         .def_readwrite("profile", &HypersT::profile)
         .def_readwrite("rank", &HypersT::rank)
