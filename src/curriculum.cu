@@ -733,22 +733,17 @@ static inline int curriculum_oracle_segment_better(
     if (score < ref_score - 1e-6f) {
         return 0;
     }
-    if (full && !ref_full) {
+    if (priority > ref_priority + 1e-6f) {
         return 1;
     }
-    if (full == ref_full && priority > ref_priority + 1e-6f) {
-        return 1;
-    }
-    if (full == ref_full && priority < ref_priority - 1e-6f) {
+    if (priority < ref_priority - 1e-6f) {
         return 0;
     }
-    if (full == ref_full && full && last_t >= 0 && ref_last_t >= 0
-            && last_t < ref_last_t) {
-        return 1;
-    }
-    if (full == ref_full && !full && count > ref_count) {
-        return 1;
-    }
+    (void)full;
+    (void)last_t;
+    (void)ref_count;
+    (void)ref_full;
+    (void)ref_last_t;
     return 0;
 }
 
@@ -835,12 +830,13 @@ static inline void curriculum_oracle_publish_history(
     float admission_priority = needs_priority
         ? fmaxf(buf->oracle_saved_priority, buf->oracle_pending_priority) + 1.0f
         : priority;
-    int initial_frontier = buf->oracle_saved_score <= 0.0f || buf->size <= 0;
-    int higher_frontier = score > buf->oracle_saved_score + 1e-6f;
-    int same_frontier = fabsf(score - buf->oracle_saved_score) <= 1e-6f;
+    int higher_score = score > buf->oracle_saved_score + 1e-6f;
+    int tied_score = fabsf(score - buf->oracle_saved_score) <= 1e-6f;
+    int shorter_solve = tied_score && last_t >= 0
+        && (buf->oracle_saved_last_t < 0 || last_t < buf->oracle_saved_last_t);
     if (count <= 0 || !buf->oracle_hist_from_entry[env_idx]
             || (!needs_priority && admission_priority <= 0.0f)
-            || (!initial_frontier && !higher_frontier && !same_frontier)) {
+            || (!higher_score && !shorter_solve)) {
         return;
     }
 
