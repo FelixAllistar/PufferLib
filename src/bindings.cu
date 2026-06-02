@@ -199,7 +199,7 @@ void rollouts(pybind11::object pufferl_obj) {
         pufferl.vec->log_env_limit = 0;
     }
 #ifdef BOXOBAN_LEVEL_LOGS
-    if (pufferl.hypers.frontier_explore
+    if (pufferl.hypers.frontier_random
             && pufferl.frontier_random_row_mask_host != NULL) {
         size_t mask_bytes = (size_t)pufferl.hypers.total_agents * sizeof(int);
         memset(pufferl.frontier_random_row_mask_host, 0, mask_bytes);
@@ -217,10 +217,10 @@ void rollouts(pybind11::object pufferl_obj) {
     pufferl.profile.accum[PROF_EVAL_ENV] += eval_prof[EVAL_ENV_STEP];
     pufferl.global_step += pufferl.hypers.horizon * pufferl.hypers.total_agents;
 #ifdef BOXOBAN_LEVEL_LOGS
-    if (pufferl.hypers.frontier_explore) {
+    if (pufferl.hypers.frontier_random) {
         boxoban_update_frontier_random_solves(pufferl);
-        boxoban_update_t80(pufferl);
     }
+    boxoban_update_t80(pufferl);
 #endif
 }
 
@@ -490,6 +490,7 @@ std::unique_ptr<PuffeRL> create_pufferl(py::dict args) {
     // GAE
     hypers.gamma = get_config(train_kwargs, "gamma");
     hypers.gae_lambda = get_config(train_kwargs, "gae_lambda");
+    hypers.state_lambda = get_config(train_kwargs, "state_lambda");
     // VTrace
     hypers.vtrace_rho_clip = get_config(train_kwargs, "vtrace_rho_clip");
     hypers.vtrace_c_clip = get_config(train_kwargs, "vtrace_c_clip");
@@ -507,6 +508,7 @@ std::unique_ptr<PuffeRL> create_pufferl(py::dict args) {
     hypers.explore_beta = get_config(train_kwargs, "explore_beta");
     hypers.explore_decay = get_config(train_kwargs, "explore_decay");
     hypers.frontier_explore = get_config(train_kwargs, "frontier_explore");
+    hypers.frontier_random = get_config(train_kwargs, "frontier_random");
     hypers.reset_state = get_config(args, "reset_state");
     // Base-level config ([base] section becomes top-level in args)
     hypers.cudagraphs = get_config(args, "cudagraphs");
@@ -633,6 +635,7 @@ PYBIND11_MODULE(_C, m) {
         .def_readwrite("anneal_ent_coef", &HypersT::anneal_ent_coef)
         .def_readwrite("gamma", &HypersT::gamma)
         .def_readwrite("gae_lambda", &HypersT::gae_lambda)
+        .def_readwrite("state_lambda", &HypersT::state_lambda)
         .def_readwrite("vtrace_rho_clip", &HypersT::vtrace_rho_clip)
         .def_readwrite("vtrace_c_clip", &HypersT::vtrace_c_clip)
         .def_readwrite("prio_alpha", &HypersT::prio_alpha)
@@ -647,6 +650,7 @@ PYBIND11_MODULE(_C, m) {
         .def_readwrite("explore_beta", &HypersT::explore_beta)
         .def_readwrite("explore_decay", &HypersT::explore_decay)
         .def_readwrite("frontier_explore", &HypersT::frontier_explore)
+        .def_readwrite("frontier_random", &HypersT::frontier_random)
         .def_readwrite("cudagraphs", &HypersT::cudagraphs)
         .def_readwrite("profile", &HypersT::profile)
         .def_readwrite("rank", &HypersT::rank)

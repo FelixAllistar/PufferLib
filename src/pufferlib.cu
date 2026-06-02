@@ -67,6 +67,7 @@ struct RolloutBuf {
     PrecisionTensor actions;       // (horizon, agents, num_atns)
     PrecisionTensor values;        // (horizon, agents)
     PrecisionTensor logprobs;      // ...
+    PrecisionTensor entropy;
     PrecisionTensor rewards;
     PrecisionTensor terminals;
     PrecisionTensor ratio;
@@ -83,6 +84,7 @@ void register_rollout_buffers(RolloutBuf& bufs, Allocator* alloc, int T, int B, 
         .actions      = {.shape = {T, B, num_atns}},
         .values       = {.shape = {T, B}},
         .logprobs     = {.shape = {T, B}},
+        .entropy      = {.shape = {T, B}},
         .rewards      = {.shape = {T, B}},
         .terminals    = {.shape = {T, B}},
         .ratio        = {.shape = {T, B}},
@@ -93,6 +95,7 @@ void register_rollout_buffers(RolloutBuf& bufs, Allocator* alloc, int T, int B, 
     alloc_register(alloc, &bufs.actions);
     alloc_register(alloc, &bufs.values);
     alloc_register(alloc, &bufs.logprobs);
+    alloc_register(alloc, &bufs.entropy);
     alloc_register(alloc, &bufs.rewards);
     alloc_register(alloc, &bufs.terminals);
     alloc_register(alloc, &bufs.ratio);
@@ -285,6 +288,7 @@ typedef struct {
     // GAE
     float gamma;
     float gae_lambda;
+    float state_lambda;
     // VTrace
     float vtrace_rho_clip;
     float vtrace_c_clip;
@@ -302,6 +306,7 @@ typedef struct {
     float explore_beta;
     float explore_decay;
     bool frontier_explore;
+    bool frontier_random;
     // Flags
     bool reset_state;
     int cudagraphs;
@@ -417,18 +422,6 @@ static inline const char* boxoban_t80_key(int level) {
     if (!initialized) {
         for (int i = 0; i < BOXOBAN_LEVEL_LOGS; i++) {
             snprintf(keys[i], sizeof(keys[i]), "l%d_t80", i + 1);
-        }
-        initialized = 1;
-    }
-    return keys[level];
-}
-
-static inline const char* boxoban_rx_key(int level) {
-    static int initialized = 0;
-    static char keys[BOXOBAN_LEVEL_LOGS][16];
-    if (!initialized) {
-        for (int i = 0; i < BOXOBAN_LEVEL_LOGS; i++) {
-            snprintf(keys[i], sizeof(keys[i]), "l%d_rx", i + 1);
         }
         initialized = 1;
     }
@@ -568,7 +561,7 @@ static inline int boxoban_monitor_envs(PuffeRL& pufferl) {
 }
 
 static inline void boxoban_update_frontier_random_solves(PuffeRL& pufferl) {
-    if (!pufferl.hypers.frontier_explore || !pufferl.curriculum_enabled) {
+    if (!pufferl.hypers.frontier_random || !pufferl.curriculum_enabled) {
         return;
     }
 
@@ -617,12 +610,6 @@ static inline void boxoban_log_t80(Dict* out, PuffeRL& pufferl) {
         }
         dict_set(out, boxoban_t80_key(level), value);
     }
-    for (int level = 0; level < BOXOBAN_LEVEL_LOGS; level++) {
-        long long steps = boxoban_frontier_random_solve_steps[level] >= 0
-            ? boxoban_frontier_random_solve_steps[level]
-            : boxoban_frontier_random_steps[level];
-        dict_set(out, boxoban_rx_key(level), (double)steps / 1000000.0);
-    }
     dict_set(out, "fr", (double)(boxoban_frontier_level() + 1));
 }
 
@@ -639,7 +626,7 @@ static inline int boxoban_frontier_level(void) {
 
 Dict* log_environments_impl(PuffeRL& pufferl) {
     // Capacity covers env logs plus optional compact curriculum diagnostics.
-    Dict* out = create_dict(96);
+    Dict* out = create_dict(128);
 #ifdef BOXOBAN_LEVEL_LOGS
     boxoban_update_frontier_random_solves(pufferl);
     boxoban_update_t80(pufferl);
@@ -710,6 +697,7 @@ __global__ void sample_logits(
         IntTensor act_sizes_puf,              // (num_atns,) action head sizes
         precision_t* __restrict__ actions,    // (B, num_atns)
         precision_t* __restrict__ logprobs,   // (B,)
+        precision_t* __restrict__ entropy_out,// (B,)
         precision_t* __restrict__ value_out,  // (B,)
         curandStatePhilox4_32_10_t* __restrict__ rng_states,
         const precision_t* __restrict__ action_mask, // (B, A_total) or nullptr
@@ -736,10 +724,12 @@ __global__ void sample_logits(
 
     int logits_base = idx * logits_stride;
     float total_log_prob = 0.0f;
+    float total_entropy = 0.0f;
 
     if (is_continuous) {
         // Continuous action sampling from Normal(mean, exp(logstd))
         constexpr float LOG_2PI = 1.8378770664093453f;  // log(2*pi)
+        constexpr float HALF_1_PLUS_LOG_2PI = 1.4189385332046727f;
         int logstd_base = idx * logstd_stride;  // separate stride for logstd (may be 0 for broadcast)
 
         for (int h = 0; h < num_atns; ++h) {
@@ -757,6 +747,7 @@ __global__ void sample_logits(
 
             actions[idx * num_atns + h] = from_float(action);
             total_log_prob += log_prob;
+            total_entropy += HALF_1_PLUS_LOG_2PI + log_std;
         }
     } else {
         // Discrete action sampling (original multinomial logic)
@@ -778,6 +769,14 @@ __global__ void sample_logits(
                 sum_exp += expf(l - max_val);
             }
             float logsumexp = max_val + logf(sum_exp);
+            float head_entropy = 0.0f;
+            for (int a = 0; a < A; ++a) {
+                float l = masked_logit(logits, logits_base, logits_offset, a, action_mask, mask_base);
+                float logp = l - logsumexp;
+                float prob = expf(logp);
+                head_entropy += -prob * logp;
+            }
+            total_entropy += head_entropy;
 
             // Step 3: Generate random value for this action head
             float rand_val = curand_uniform(&state);
@@ -824,6 +823,7 @@ __global__ void sample_logits(
 
     // Write summed log probability (log of joint probability)
     logprobs[idx] = from_float(total_log_prob);
+    entropy_out[idx] = from_float(total_entropy);
 
     // Copy value (fused to avoid separate elementwise kernel for strided->contiguous copy)
     value_out[idx] = value[idx * value_stride];
@@ -865,7 +865,7 @@ __global__ void boxoban_frontier_random_actions_kernel(
 
 static inline void boxoban_apply_frontier_random_actions(
         PuffeRL* pufferl, int buf, int t, cudaStream_t stream) {
-    if (!pufferl->hypers.frontier_explore || !pufferl->curriculum_enabled
+    if (!pufferl->hypers.frontier_random || !pufferl->curriculum_enabled
             || pufferl->frontier_random_mask_host == NULL
             || pufferl->frontier_random_row_mask_host == NULL) {
         return;
@@ -1035,6 +1035,7 @@ extern "C" void net_callback_wrapper(void* ctx, int buf, int t) {
         PrecisionTensor obs_b   = puf_slice(rollouts.observations, t, sub_start, bank_size);
         PrecisionTensor act_b   = puf_slice(rollouts.actions,      t, sub_start, bank_size);
         PrecisionTensor lp_b    = puf_slice(rollouts.logprobs,     t, sub_start, bank_size);
+        PrecisionTensor ent_b   = puf_slice(rollouts.entropy,      t, sub_start, bank_size);
         PrecisionTensor val_b   = puf_slice(rollouts.values,       t, sub_start, bank_size);
         PrecisionTensor mask_b  = {};
         int mask_stride_b = 0;
@@ -1054,7 +1055,7 @@ extern "C" void net_callback_wrapper(void* ctx, int buf, int t) {
         // Offset RNG by bank_off so banks don't collide on per-buffer rng slots.
         sample_logits<<<grid_size(bank_size), BLOCK_SIZE, 0, stream>>>(
             dec_puf, p_logstd, pufferl->act_sizes_puf,
-            act_b.data, lp_b.data, val_b.data,
+            act_b.data, lp_b.data, ent_b.data, val_b.data,
             pufferl->rng_states[buf] + bank_off,
             mask_b.data, mask_stride_b);
 
@@ -1793,6 +1794,8 @@ void train_impl(PuffeRL& pufferl) {
     transpose_102<<<grid_size(T*B), BLOCK_SIZE, 0, train_stream>>>(
         rollouts.logprobs.data, src.logprobs.data, T, B, 1);
     transpose_102<<<grid_size(T*B), BLOCK_SIZE, 0, train_stream>>>(
+        rollouts.entropy.data, src.entropy.data, T, B, 1);
+    transpose_102<<<grid_size(T*B), BLOCK_SIZE, 0, train_stream>>>(
         rollouts.rewards.data, src.rewards.data, T, B, 1);
     transpose_102<<<grid_size(T*B), BLOCK_SIZE, 0, train_stream>>>(
         rollouts.terminals.data, src.terminals.data, T, B, 1);
@@ -1852,14 +1855,14 @@ void train_impl(PuffeRL& pufferl) {
     TrainGraph& graph = pufferl.train_buf;
     cudaEventRecord(pufferl.profile.events[1]);  // pre-loop end
 
-    bool frontier_explore = hypers.frontier_explore && pufferl.curriculum_enabled;
+    bool frontier_random = hypers.frontier_random && pufferl.curriculum_enabled;
 #ifdef BOXOBAN_LEVEL_LOGS
-    if (frontier_explore && boxoban_frontier_level() <= 0) {
-        frontier_explore = false;
+    if (frontier_random && boxoban_frontier_level() <= 0) {
+        frontier_random = false;
     }
 #endif
     int total_minibatches = hypers.replay_ratio * batch_size / hypers.minibatch_size;
-    if (frontier_explore && pufferl.state_buf.num_cl_envs == 0) {
+    if (frontier_random && pufferl.state_buf.num_cl_envs == 0) {
         total_minibatches = 0;
     }
     for (int mb = 0; mb < total_minibatches; ++mb) {
@@ -1885,7 +1888,7 @@ void train_impl(PuffeRL& pufferl) {
         compute_prio_abs<<<prio_rows, PRIO_WARP_SIZE, 0, train_stream>>>(
             advantages_puf.data, pufferl.prio_bufs.prio_weights.data,
             prio_alpha, 1e-6f, prio_rows, prio_stride);
-        if (frontier_explore) {
+        if (frontier_random) {
             zero_masked_prio_weights_kernel<<<grid_size(prio_rows), BLOCK_SIZE, 0, train_stream>>>(
                 pufferl.prio_bufs.prio_weights.data,
                 pufferl.frontier_random_row_mask.data, prio_rows);
@@ -2001,14 +2004,14 @@ void train_impl(PuffeRL& pufferl) {
     if (pufferl.curriculum_enabled) {
         puf_zero(&advantages_puf, train_stream);
         puff_advantage_cuda(rollouts.values, rollouts.rewards, rollouts.terminals,
-            rollouts.ratio, advantages_puf, hypers.gamma, hypers.gae_lambda,
+            rollouts.ratio, advantages_puf, hypers.gamma, hypers.state_lambda,
             hypers.vtrace_rho_clip, hypers.vtrace_c_clip, train_stream);
         if (pufferl.num_frozen_banks > 0 && pufferl.bank_layout != NULL) {
             int apb = hypers.total_agents / hypers.num_buffers;
             zero_frozen_advantages_cuda(advantages_puf, apb,
                 pufferl.bank_layout[1], train_stream);
         }
-        curriculum_update_advantages(&pufferl, &advantages_puf, train_stream);
+        curriculum_update_advantages(&pufferl, &advantages_puf, &rollouts.entropy, train_stream);
     }
     pufferl.epoch += 1;
 
@@ -2300,6 +2303,8 @@ std::unique_ptr<PuffeRL> create_pufferl_impl(HypersT& hypers,
             && "warmup_states must be <= state_buffer_size");
         assert(hypers.state_checkpoint_interval > 0
             && "state_checkpoint_interval must be positive");
+        assert(hypers.state_lambda >= 0.0f && hypers.state_lambda <= 1.0f
+            && "state_lambda must be in [0, 1]");
         assert(hypers.explore_decay >= 0.0f && hypers.explore_decay <= 1.0f
             && "explore_decay must be in [0, 1]");
     }
@@ -2470,7 +2475,7 @@ std::unique_ptr<PuffeRL> create_pufferl_impl(HypersT& hypers,
     cudaMemcpy(pufferl->act_sizes_puf.data, raw_act_sizes, num_action_heads * sizeof(int), cudaMemcpyHostToDevice);
     cudaMemset(pufferl->frontier_random_mask.data, 0, total_agents * sizeof(int));
     cudaMemset(pufferl->frontier_random_row_mask.data, 0, total_agents * sizeof(int));
-    if (hypers.frontier_explore) {
+    if (hypers.frontier_random) {
         pufferl->frontier_random_mask_host = (int*)calloc(total_agents, sizeof(int));
         pufferl->frontier_random_row_mask_host = (int*)calloc(total_agents, sizeof(int));
         if (pufferl->frontier_random_mask_host == NULL
