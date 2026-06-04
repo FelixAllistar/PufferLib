@@ -87,6 +87,7 @@ struct StateBuffer {
     int oracle_segment_capacity;
     int oracle_max_segments;
     int oracle_segment_count;
+    float* oracle_state_priority;
     float* oracle_segment_priority;
     float* oracle_segment_score;
     int* oracle_segment_level;
@@ -195,6 +196,7 @@ int init_state_buffer(StateBuffer* buf, int total_agents) {
     memset(buf->oracle_cl_attempts, 0, sizeof(buf->oracle_cl_attempts));
     memset(buf->oracle_cl_successes, 0, sizeof(buf->oracle_cl_successes));
     buf->state_outcomes = (int*)malloc(capacity * sizeof(int));
+    buf->oracle_state_priority = (float*)malloc(capacity * sizeof(float));
     buf->oracle_segment_priority = (float*)malloc(
         (size_t)buf->oracle_max_segments * sizeof(float));
     buf->oracle_segment_score = (float*)malloc(
@@ -218,6 +220,7 @@ int init_state_buffer(StateBuffer* buf, int total_agents) {
             || buf->env_state_inds_host == NULL
 #ifdef PUFFER_CURRICULUM_DIAG_SEQUENCE_OUTCOME
             || buf->state_outcomes == NULL
+            || buf->oracle_state_priority == NULL
             || buf->oracle_segment_priority == NULL
             || buf->oracle_segment_score == NULL
             || buf->oracle_segment_level == NULL
@@ -238,6 +241,7 @@ int init_state_buffer(StateBuffer* buf, int total_agents) {
     }
 #ifdef PUFFER_CURRICULUM_DIAG_SEQUENCE_OUTCOME
     memset(buf->state_outcomes, 0, capacity * sizeof(int));
+    memset(buf->oracle_state_priority, 0, capacity * sizeof(float));
     memset(buf->diag_retained_outcome, 0, sizeof(buf->diag_retained_outcome));
     memset(buf->diag_retained_priority_sum, 0, sizeof(buf->diag_retained_priority_sum));
     for (int i = 0; i < buf->oracle_max_segments; i++) {
@@ -268,6 +272,7 @@ void close_state_buffer(StateBuffer* buf) {
     free(buf->env_state_inds_host);
 #ifdef PUFFER_CURRICULUM_DIAG_SEQUENCE_OUTCOME
     free(buf->state_outcomes);
+    free(buf->oracle_state_priority);
     free(buf->oracle_segment_priority);
     free(buf->oracle_segment_score);
     free(buf->oracle_segment_level);
@@ -346,22 +351,9 @@ static inline int curriculum_oracle_monitor_envs(StateBuffer* buf) {
 }
 
 static inline void curriculum_oracle_refresh_sample_priorities(StateBuffer* buf) {
-    float max_score = 0.0f;
-    for (int seg = 0; seg < buf->oracle_segment_count; seg++) {
-        if (buf->oracle_segment_score[seg] > max_score) {
-            max_score = buf->oracle_segment_score[seg];
-        }
-    }
-
-    int seg_cap = buf->oracle_segment_capacity;
     for (int i = 0; i < buf->size; i++) {
-        int seg = seg_cap > 0 ? i / seg_cap : 0;
-        float priority = 1.0f;
-        if (max_score > 0.0f && seg >= 0 && seg < buf->oracle_segment_count) {
-            float score_ratio = buf->oracle_segment_score[seg] / max_score;
-            score_ratio = fminf(1.0f, fmaxf(0.0f, score_ratio));
-            priority = powf(score_ratio, 64.0f);
-        }
+        float advantage_weight = clean_state_priority(buf->oracle_state_priority[i]);
+        float priority = advantage_weight + 1e-6f;
         buf->priorities[i] = priority;
         buf->priorities_host[i] = from_float(priority);
     }
@@ -762,21 +754,7 @@ static inline int curriculum_oracle_segment_better(
 }
 
 static inline int curriculum_oracle_current_promotable(StateBuffer* buf) {
-    return buf->oracle_saved_score > 0.0f && buf->size > 0;
-}
-
-static inline int curriculum_oracle_history_improves(
-        StateBuffer* buf, float score, float priority, int count, int full,
-        int last_t) {
-    return curriculum_oracle_segment_better(
-        score, priority, count, full, last_t,
-        buf->oracle_saved_score, buf->oracle_saved_priority, buf->size,
-        buf->oracle_saved_full, buf->oracle_saved_last_t);
-}
-
-static inline int curriculum_oracle_pending_can_replace_saved(StateBuffer* buf) {
-    (void)buf;
-    return 1;
+    return buf->size > 0;
 }
 
 static inline void curriculum_oracle_clear_pending(StateBuffer* buf) {
@@ -842,8 +820,8 @@ static inline void curriculum_oracle_publish_history(
         last_t = last != NULL ? last->puzzle_tick : -1;
     }
     float admission_priority = needs_priority
-        ? fmaxf(buf->oracle_saved_priority, buf->oracle_pending_priority) + 1.0f
-        : priority;
+        ? buf->oracle_pending_priority + 1.0f
+        : clean_state_priority(priority);
     if (count <= 0 || !buf->oracle_hist_from_entry[env_idx]
             || (!needs_priority && admission_priority <= 0.0f)) {
         return;
@@ -888,19 +866,15 @@ static inline int curriculum_same_state_checkpoint(
         && a->episode_maps_solved == b->episode_maps_solved;
 }
 
-static inline void curriculum_oracle_update_pending_priority(StateBuffer* buf) {
-    if (!buf->oracle_pending_needs_priority) {
-        return;
-    }
-    int env_idx = buf->oracle_pending_env_idx;
-    if (env_idx < 0 || env_idx >= buf->num_envs) {
-        buf->oracle_pending_needs_priority = 0;
-        return;
+static inline float curriculum_oracle_compute_history_priority(
+        StateBuffer* buf, const PufferState* states, int count, int env_idx) {
+    if (env_idx < 0 || env_idx >= buf->num_envs || count <= 0) {
+        return 0.0f;
     }
 
     float priority = 0.0f;
-    for (int i = 0; i < buf->oracle_pending_count; i++) {
-        const PufferState* pending = &buf->oracle_pending_states[i];
+    for (int i = 0; i < count; i++) {
+        const PufferState* pending = &states[i];
         for (int c = 0; c < buf->num_checkpoints; c++) {
             int idx = c * buf->num_envs + env_idx;
             const PufferState* checkpoint = &buf->candidate_states[idx];
@@ -908,19 +882,97 @@ static inline void curriculum_oracle_update_pending_priority(StateBuffer* buf) {
                 continue;
             }
             float checkpoint_priority = to_float(buf->env_scores_host[idx]);
-            if (!isnan(checkpoint_priority) && !isinf(checkpoint_priority)) {
-                int episode_tick = checkpoint->tick > 0 ? checkpoint->tick : 1;
-                float normalized_priority =
-                    checkpoint_priority / (float)episode_tick;
-                if (normalized_priority > priority) {
-                    priority = normalized_priority;
-                }
+            if (!isnan(checkpoint_priority) && !isinf(checkpoint_priority)
+                    && checkpoint_priority > priority) {
+                priority = checkpoint_priority;
             }
             break;
         }
     }
-    buf->oracle_pending_priority = clean_state_priority(priority);
+    return clean_state_priority(priority);
+}
+
+static inline void curriculum_oracle_update_pending_priority(StateBuffer* buf) {
+    if (!buf->oracle_pending_needs_priority) {
+        return;
+    }
+    buf->oracle_pending_priority = curriculum_oracle_compute_history_priority(
+        buf, buf->oracle_pending_states, buf->oracle_pending_count,
+        buf->oracle_pending_env_idx);
     buf->oracle_pending_needs_priority = 0;
+}
+
+static inline void curriculum_oracle_update_segment_priority_from_slots(
+        StateBuffer* buf, int seg) {
+    int seg_cap = buf->oracle_segment_capacity;
+    if (seg_cap <= 0 || seg < 0 || seg >= buf->oracle_segment_count) {
+        return;
+    }
+
+    int base = seg * seg_cap;
+    int end = base + seg_cap;
+    if (end > buf->size) {
+        end = buf->size;
+    }
+
+    float priority = 0.0f;
+    for (int slot = base; slot < end; slot++) {
+        float slot_priority = clean_state_priority(buf->oracle_state_priority[slot]);
+        if (slot_priority > priority) {
+            priority = slot_priority;
+        }
+    }
+    buf->oracle_segment_priority[seg] = priority;
+}
+
+static inline void curriculum_oracle_refresh_saved_diagnostics(
+        StateBuffer* buf, long agent_step) {
+    int best_seg = -1;
+    for (int seg = 0; seg < buf->oracle_segment_count; seg++) {
+        if (curriculum_oracle_segment_better(
+                buf->oracle_segment_score[seg],
+                buf->oracle_segment_priority[seg],
+                1, 1, -1,
+                best_seg >= 0 ? buf->oracle_segment_score[best_seg] : 0.0f,
+                best_seg >= 0 ? buf->oracle_segment_priority[best_seg] : 0.0f,
+                best_seg >= 0 ? 1 : 0, 1, -1)) {
+            best_seg = seg;
+        }
+    }
+    if (best_seg < 0) {
+        return;
+    }
+
+    int seg_cap = buf->oracle_segment_capacity;
+    int base = best_seg * seg_cap;
+    int end = base + seg_cap;
+    if (seg_cap <= 0 || base < 0 || base >= buf->size) {
+        return;
+    }
+    if (end > buf->size) {
+        end = buf->size;
+    }
+    int last = end - 1;
+
+    float old_score = buf->oracle_saved_score;
+    int old_level = buf->oracle_saved_level;
+    float score = buf->oracle_segment_score[best_seg];
+    int level = buf->oracle_segment_level[best_seg];
+    int changed = fabsf(score - old_score) > 1e-6f || level != old_level;
+
+    buf->oracle_saved_level = level;
+    buf->oracle_saved_score = score;
+    buf->oracle_saved_priority = buf->oracle_segment_priority[best_seg];
+    buf->oracle_saved_pick_t = buf->states[last].puzzle_tick;
+    buf->oracle_saved_first_t = buf->states[base].puzzle_tick;
+    buf->oracle_saved_last_t = buf->states[last].puzzle_tick;
+    buf->oracle_saved_full = buf->states[base].puzzle_tick <= 1;
+    if (changed) {
+        buf->oracle_saved_mastered = 0;
+        if (agent_step >= 0) {
+            buf->oracle_saved_agent_step = agent_step;
+        }
+    }
 }
 
 static inline void curriculum_oracle_recompute_segment_priorities(StateBuffer* buf) {
@@ -928,10 +980,6 @@ static inline void curriculum_oracle_recompute_segment_priorities(StateBuffer* b
     int seg_count = buf->oracle_segment_count;
     if (seg_cap <= 0 || seg_count <= 0 || buf->num_cl_envs <= 0) {
         return;
-    }
-
-    for (int seg = 0; seg < seg_count; seg++) {
-        buf->oracle_segment_priority[seg] = 0.0f;
     }
 
     int num_envs = buf->num_envs;
@@ -948,38 +996,58 @@ static inline void curriculum_oracle_recompute_segment_priorities(StateBuffer* b
         if (seg < 0 || seg >= seg_count) {
             continue;
         }
+        int end = (seg + 1) * seg_cap;
+        if (end > buf->size) {
+            end = buf->size;
+        }
+        for (int slot = sampled_slot; slot < end; slot++) {
+            buf->oracle_state_priority[slot] = 0.0f;
+        }
+    }
 
-        float priority = buf->oracle_segment_priority[seg];
+    for (int i = 0; i < buf->num_cl_envs; i++) {
+        int env_idx = buf->num_fresh_envs + i;
+        if (env_idx < 0 || env_idx >= num_envs) {
+            continue;
+        }
+        int sampled_slot = buf->env_state_inds_host[env_idx];
+        if (sampled_slot < 0 || sampled_slot >= buf->size) {
+            continue;
+        }
+        int seg = sampled_slot / seg_cap;
+        if (seg < 0 || seg >= seg_count) {
+            continue;
+        }
+
         for (int c = 0; c < buf->num_checkpoints; c++) {
             int idx = c * num_envs + env_idx;
-            const PufferState* checkpoint = &buf->candidate_states[idx];
             float checkpoint_priority = to_float(buf->env_scores_host[idx]);
             if (isnan(checkpoint_priority) || isinf(checkpoint_priority)) {
                 continue;
             }
-            int episode_tick = checkpoint->tick > 0 ? checkpoint->tick : 1;
-            float normalized_priority =
-                checkpoint_priority / (float)episode_tick;
-            if (normalized_priority > priority) {
-                priority = normalized_priority;
+            int slot = sampled_slot + c * buf->checkpoint_interval;
+            if (slot < sampled_slot || slot >= (seg + 1) * seg_cap
+                    || slot >= buf->size) {
+                continue;
+            }
+            checkpoint_priority = clean_state_priority(checkpoint_priority);
+            if (checkpoint_priority > buf->oracle_state_priority[slot]) {
+                buf->oracle_state_priority[slot] = checkpoint_priority;
             }
         }
-        buf->oracle_segment_priority[seg] = clean_state_priority(priority);
     }
 
-    float saved_priority = 0.0f;
     for (int seg = 0; seg < seg_count; seg++) {
-        if (fabsf(buf->oracle_segment_score[seg] - buf->oracle_saved_score) <= 1e-6f
-                && buf->oracle_segment_priority[seg] > saved_priority) {
-            saved_priority = buf->oracle_segment_priority[seg];
-        }
+        curriculum_oracle_update_segment_priority_from_slots(buf, seg);
     }
-    buf->oracle_saved_priority = saved_priority;
+
+    curriculum_oracle_refresh_saved_diagnostics(buf, -1);
 }
 
 static inline void curriculum_oracle_capture_state(
         StateBuffer* buf, int env_idx, const PufferState* state,
         float reward, float terminal) {
+    (void)terminal;
     if (buf->oracle_hist_capacity <= 0) {
         return;
     }
@@ -991,8 +1059,8 @@ static inline void curriculum_oracle_capture_state(
     }
 
     int hist_level = buf->oracle_hist_level[env_idx];
-    int terminal_solve = terminal > 0.5f && reward > 0.5f;
-    if (terminal_solve) {
+    int solve_event = reward > 0.5f;
+    if (solve_event) {
         float terminal_score = fmaxf(state->episode_return,
             last->episode_return + reward);
         if (hist_level == buf->oracle_saved_level) {
@@ -1041,6 +1109,8 @@ static inline void curriculum_oracle_clear_segments(StateBuffer* buf) {
     buf->size = 0;
     buf->oracle_segment_count = 0;
     buf->min_priority = 0.0f;
+    memset(buf->oracle_state_priority, 0,
+        (size_t)buf->capacity * sizeof(float));
     for (int i = 0; i < buf->oracle_max_segments; i++) {
         buf->oracle_segment_priority[i] = 0.0f;
         buf->oracle_segment_score[i] = 0.0f;
@@ -1097,33 +1167,10 @@ static inline int curriculum_oracle_store_pending_segment(
         return 0;
     }
 
-    int level = buf->oracle_pending_level;
-    int fresh_env = buf->oracle_pending_env_idx >= 0
-        && buf->oracle_pending_env_idx < buf->num_fresh_envs;
-    int higher_score = buf->oracle_pending_score > buf->oracle_saved_score + 1e-6f;
-    int tied_score = fabsf(buf->oracle_pending_score - buf->oracle_saved_score) <= 1e-6f;
-    int higher_priority = tied_score
-        && buf->oracle_pending_priority > buf->oracle_saved_priority + 1e-6f;
-    if (higher_score && !fresh_env) {
-        return 0;
-    }
-
     int segment_slot = curriculum_oracle_find_segment_slot(
         buf, buf->oracle_pending_score, buf->oracle_pending_priority);
     if (segment_slot < 0) {
         return 0;
-    }
-
-    if (higher_score || higher_priority || buf->oracle_saved_score <= 0.0f) {
-        buf->oracle_saved_level = level;
-        buf->oracle_saved_score = buf->oracle_pending_score;
-        buf->oracle_saved_priority = buf->oracle_pending_priority;
-        buf->oracle_saved_pick_t = buf->oracle_pending_last_t;
-        buf->oracle_saved_first_t = buf->oracle_pending_first_t;
-        buf->oracle_saved_last_t = buf->oracle_pending_last_t;
-        buf->oracle_saved_full = buf->oracle_pending_full;
-        buf->oracle_saved_mastered = 0;
-        buf->oracle_saved_agent_step = agent_step;
     }
 
     int base = segment_slot * seg_cap;
@@ -1134,6 +1181,7 @@ static inline int curriculum_oracle_store_pending_segment(
         }
         int slot = base + i;
         buf->states[slot] = buf->oracle_pending_states[src];
+        buf->oracle_state_priority[slot] = buf->oracle_pending_priority;
         buf->priorities[slot] = 1.0f;
         buf->priorities_host[slot] = from_float(1.0f);
         buf->heap[slot] = slot;
@@ -1143,8 +1191,9 @@ static inline int curriculum_oracle_store_pending_segment(
     }
     buf->oracle_segment_priority[segment_slot] = buf->oracle_pending_priority;
     buf->oracle_segment_score[segment_slot] = buf->oracle_pending_score;
-    buf->oracle_segment_level[segment_slot] = level;
+    buf->oracle_segment_level[segment_slot] = buf->oracle_pending_level;
     buf->size = buf->oracle_segment_count * seg_cap;
+    curriculum_oracle_refresh_saved_diagnostics(buf, agent_step);
     curriculum_oracle_refresh_sample_priorities(buf);
     state_heap_refresh_min(buf);
     curriculum_diag_recount_retained(buf);
@@ -1325,6 +1374,7 @@ void curriculum_update_advantages(PuffeRL* pufferl, PrecisionTensor* advantages,
         curriculum_oracle_update_pending_priority(buf);
         curriculum_try_oracle_solve_segment(pufferl);
         curriculum_oracle_maybe_expand_window(buf);
+        curriculum_oracle_refresh_sample_priorities(buf);
         if (buf->size > 0) {
             cudaMemcpyAsync(buf->advantages.data, buf->priorities_host,
                 (size_t)buf->size * sizeof(precision_t), cudaMemcpyHostToDevice, stream);
