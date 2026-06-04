@@ -815,7 +815,7 @@ static inline void curriculum_oracle_publish_history(
     int full = buf->oracle_hist_from_entry[env_idx];
     int last_t = count > 0 ? count - 1 : -1;
     float admission_priority = needs_priority
-        ? buf->oracle_pending_priority + 1.0f
+        ? (float)(buf->num_envs - env_idx)
         : clean_state_priority(priority);
     if (count <= 0
             || (!needs_priority && admission_priority <= 0.0f)) {
@@ -842,8 +842,7 @@ static inline void curriculum_oracle_publish_history(
             }
             buf->oracle_pending_level = level;
             buf->oracle_pending_score = score;
-            buf->oracle_pending_priority = needs_priority
-                ? 0.0f : clean_state_priority(priority);
+            buf->oracle_pending_priority = admission_priority;
             buf->oracle_pending_count = count;
             buf->oracle_pending_first_t = 0;
             buf->oracle_pending_last_t = count - 1;

@@ -464,31 +464,11 @@ static inline void boxoban_update_t80(PuffeRL& pufferl) {
     boxoban_t80_last_epoch = (long)pufferl.epoch;
     long step = boxoban_agent_steps(pufferl);
 
-    if (!pufferl.curriculum_enabled) {
-        return;
-    }
-#ifdef PUFFER_CURRICULUM_DIAG_SEQUENCE_OUTCOME
-    StateBuffer* state_buf = &pufferl.state_buf;
-    int saved_level = state_buf->oracle_saved_level;
-    if (saved_level >= 0 && saved_level < BOXOBAN_LEVEL_LOGS
-            && boxoban_t80_first_step[saved_level] < 0) {
-        long start = state_buf->oracle_saved_agent_step >= 0
-            ? state_buf->oracle_saved_agent_step
-            : step;
-        boxoban_t80_first_step[saved_level] = start;
-    }
-    if (saved_level >= 0 && saved_level < BOXOBAN_LEVEL_LOGS
-            && boxoban_t80_done_step[saved_level] >= 0) {
-        state_buf->oracle_saved_mastered = 1;
-    }
-#endif
-
     StaticVec* vec = pufferl.vec;
-    int start_env = pufferl.state_buf.num_fresh_envs;
-    int end_env = start_env + pufferl.state_buf.num_cl_envs;
-    if (start_env < 0) {
-        start_env = 0;
-    }
+    int end_env = pufferl.curriculum_enabled
+        ? pufferl.state_buf.num_fresh_envs
+        : vec->size;
+    int start_env = 0;
     if (end_env > vec->size) {
         end_env = vec->size;
     }
@@ -531,15 +511,13 @@ static inline void boxoban_update_t80(PuffeRL& pufferl) {
             delta_successes = successes[level];
         }
 
+        if (delta_successes > 0.0 && boxoban_t80_first_step[level] < 0) {
+            boxoban_t80_first_step[level] = step;
+        }
         if (boxoban_t80_first_step[level] >= 0 && boxoban_t80_done_step[level] < 0) {
             double rate = delta_successes / delta_episodes;
             if (rate >= 0.80) {
                 boxoban_t80_done_step[level] = step;
-#ifdef PUFFER_CURRICULUM_DIAG_SEQUENCE_OUTCOME
-                if (level == state_buf->oracle_saved_level) {
-                    state_buf->oracle_saved_mastered = 1;
-                }
-#endif
             }
         }
         boxoban_t80_prev_successes[level] = successes[level];
