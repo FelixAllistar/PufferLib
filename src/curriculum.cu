@@ -92,11 +92,13 @@ struct StateBuffer {
     float* oracle_segment_score;
     int* oracle_segment_level;
     PufferState* oracle_hist_states;
+    int* oracle_hist_source;
     int* oracle_hist_count;
     int* oracle_hist_write;
     int* oracle_hist_level;
     int* oracle_hist_from_entry;
     PufferState* oracle_pending_states;
+    int* oracle_pending_source;
     int oracle_pending_level;
     float oracle_pending_score;
     float oracle_pending_priority;
@@ -205,6 +207,8 @@ int init_state_buffer(StateBuffer* buf, int total_agents) {
         (size_t)buf->oracle_max_segments * sizeof(int));
     buf->oracle_hist_states = (PufferState*)malloc(
         (size_t)buf->num_envs * buf->oracle_hist_capacity * sizeof(PufferState));
+    buf->oracle_hist_source = (int*)malloc(
+        (size_t)buf->num_envs * buf->oracle_hist_capacity * sizeof(int));
     buf->oracle_hist_count = (int*)malloc((size_t)buf->num_envs * sizeof(int));
     buf->oracle_hist_write = (int*)malloc((size_t)buf->num_envs * sizeof(int));
     buf->oracle_hist_level = (int*)malloc((size_t)buf->num_envs * sizeof(int));
@@ -213,6 +217,8 @@ int init_state_buffer(StateBuffer* buf, int total_agents) {
     buf->oracle_cl_start_slot = (int*)malloc((size_t)buf->num_envs * sizeof(int));
     buf->oracle_pending_states = (PufferState*)malloc(
         (size_t)buf->oracle_hist_capacity * sizeof(PufferState));
+    buf->oracle_pending_source = (int*)malloc(
+        (size_t)buf->oracle_hist_capacity * sizeof(int));
 #endif
     if (buf->states == NULL || buf->candidate_states == NULL
             || buf->priorities == NULL || buf->priorities_host == NULL
@@ -225,6 +231,7 @@ int init_state_buffer(StateBuffer* buf, int total_agents) {
             || buf->oracle_segment_score == NULL
             || buf->oracle_segment_level == NULL
             || buf->oracle_hist_states == NULL
+            || buf->oracle_hist_source == NULL
             || buf->oracle_hist_count == NULL
             || buf->oracle_hist_write == NULL
             || buf->oracle_hist_level == NULL
@@ -232,6 +239,7 @@ int init_state_buffer(StateBuffer* buf, int total_agents) {
             || buf->oracle_cl_start_bucket == NULL
             || buf->oracle_cl_start_slot == NULL
             || buf->oracle_pending_states == NULL
+            || buf->oracle_pending_source == NULL
 #endif
             ) {
         fprintf(stderr,
@@ -251,6 +259,10 @@ int init_state_buffer(StateBuffer* buf, int total_agents) {
     }
     memset(buf->oracle_hist_count, 0, (size_t)buf->num_envs * sizeof(int));
     memset(buf->oracle_hist_write, 0, (size_t)buf->num_envs * sizeof(int));
+    memset(buf->oracle_hist_source, -1,
+        (size_t)buf->num_envs * buf->oracle_hist_capacity * sizeof(int));
+    memset(buf->oracle_pending_source, -1,
+        (size_t)buf->oracle_hist_capacity * sizeof(int));
     for (int i = 0; i < buf->num_envs; i++) {
         buf->oracle_hist_level[i] = -1;
         buf->oracle_hist_from_entry[i] = 0;
@@ -277,6 +289,7 @@ void close_state_buffer(StateBuffer* buf) {
     free(buf->oracle_segment_score);
     free(buf->oracle_segment_level);
     free(buf->oracle_hist_states);
+    free(buf->oracle_hist_source);
     free(buf->oracle_hist_count);
     free(buf->oracle_hist_write);
     free(buf->oracle_hist_level);
@@ -284,6 +297,7 @@ void close_state_buffer(StateBuffer* buf) {
     free(buf->oracle_cl_start_bucket);
     free(buf->oracle_cl_start_slot);
     free(buf->oracle_pending_states);
+    free(buf->oracle_pending_source);
 #endif
 }
 
@@ -744,14 +758,27 @@ static inline void curriculum_oracle_clear_pending(StateBuffer* buf) {
     buf->oracle_pending_full = 0;
     buf->oracle_pending_env_idx = -1;
     buf->oracle_pending_needs_priority = 0;
+    if (buf->oracle_pending_source != NULL) {
+        memset(buf->oracle_pending_source, -1,
+            (size_t)buf->oracle_hist_capacity * sizeof(int));
+    }
+}
+
+static inline int curriculum_oracle_state_slot_source(int slot) {
+    return -slot - 2;
+}
+
+static inline int curriculum_oracle_source_state_slot(int source) {
+    return -source - 2;
 }
 
 static inline void curriculum_oracle_push_history(
-        StateBuffer* buf, int env_idx, const PufferState* state) {
+        StateBuffer* buf, int env_idx, const PufferState* state, int source) {
     int cap = buf->oracle_hist_capacity;
     int base = env_idx * cap;
     int write = buf->oracle_hist_write[env_idx];
     buf->oracle_hist_states[base + write] = *state;
+    buf->oracle_hist_source[base + write] = source;
     write = (write + 1) % cap;
     buf->oracle_hist_write[env_idx] = write;
     if (buf->oracle_hist_count[env_idx] < cap) {
@@ -760,12 +787,12 @@ static inline void curriculum_oracle_push_history(
 }
 
 static inline void curriculum_oracle_reset_history(
-        StateBuffer* buf, int env_idx, const PufferState* state) {
+        StateBuffer* buf, int env_idx, const PufferState* state, int source) {
     buf->oracle_hist_count[env_idx] = 0;
     buf->oracle_hist_write[env_idx] = 0;
     buf->oracle_hist_level[env_idx] = -1;
     buf->oracle_hist_from_entry[env_idx] = 1;
-    curriculum_oracle_push_history(buf, env_idx, state);
+    curriculum_oracle_push_history(buf, env_idx, state, source);
 }
 
 static inline const PufferState* curriculum_oracle_last_history_state(
@@ -811,6 +838,7 @@ static inline void curriculum_oracle_publish_history(
             for (int i = 0; i < count; i++) {
                 int src = (start + i) % cap;
                 buf->oracle_pending_states[i] = buf->oracle_hist_states[base + src];
+                buf->oracle_pending_source[i] = buf->oracle_hist_source[base + src];
             }
             buf->oracle_pending_level = level;
             buf->oracle_pending_score = score;
@@ -826,32 +854,27 @@ static inline void curriculum_oracle_publish_history(
     }
 }
 
-static inline int curriculum_same_state_checkpoint(
-        const PufferState* a, const PufferState* b) {
-    return a->tick == b->tick;
-}
-
 static inline float curriculum_oracle_compute_history_priority(
-        StateBuffer* buf, const PufferState* states, int count, int env_idx) {
+        StateBuffer* buf, const int* sources, int count, int env_idx) {
     if (env_idx < 0 || env_idx >= buf->num_envs || count <= 0) {
         return 0.0f;
     }
 
     float priority = 0.0f;
     for (int i = 0; i < count; i++) {
-        const PufferState* pending = &states[i];
-        for (int c = 0; c < buf->num_checkpoints; c++) {
-            int idx = c * buf->num_envs + env_idx;
-            const PufferState* checkpoint = &buf->candidate_states[idx];
-            if (!curriculum_same_state_checkpoint(pending, checkpoint)) {
-                continue;
+        int source = sources[i];
+        float source_priority = 0.0f;
+        if (source >= 0 && source < buf->candidate_capacity) {
+            source_priority = to_float(buf->env_scores_host[source]);
+        } else if (source <= -2) {
+            int slot = curriculum_oracle_source_state_slot(source);
+            if (slot >= 0 && slot < buf->size) {
+                source_priority = buf->oracle_state_priority[slot];
             }
-            float checkpoint_priority = to_float(buf->env_scores_host[idx]);
-            if (!isnan(checkpoint_priority) && !isinf(checkpoint_priority)
-                    && checkpoint_priority > priority) {
-                priority = checkpoint_priority;
-            }
-            break;
+        }
+        if (!isnan(source_priority) && !isinf(source_priority)
+                && source_priority > priority) {
+            priority = source_priority;
         }
     }
     return clean_state_priority(priority);
@@ -862,7 +885,7 @@ static inline void curriculum_oracle_update_pending_priority(StateBuffer* buf) {
         return;
     }
     buf->oracle_pending_priority = curriculum_oracle_compute_history_priority(
-        buf, buf->oracle_pending_states, buf->oracle_pending_count,
+        buf, buf->oracle_pending_source, buf->oracle_pending_count,
         buf->oracle_pending_env_idx);
     buf->oracle_pending_needs_priority = 0;
 }
@@ -1009,7 +1032,7 @@ static inline void curriculum_oracle_recompute_segment_priorities(StateBuffer* b
 
 static inline void curriculum_oracle_capture_state(
         StateBuffer* buf, int env_idx, const PufferState* state,
-        float reward, float terminal) {
+        float reward, float terminal, int source) {
     (void)terminal;
     if (buf->oracle_hist_capacity <= 0) {
         return;
@@ -1017,7 +1040,7 @@ static inline void curriculum_oracle_capture_state(
 
     const PufferState* last = curriculum_oracle_last_history_state(buf, env_idx);
     if (last == NULL) {
-        curriculum_oracle_reset_history(buf, env_idx, state);
+        curriculum_oracle_reset_history(buf, env_idx, state, source);
         return;
     }
 
@@ -1027,7 +1050,7 @@ static inline void curriculum_oracle_capture_state(
         curriculum_oracle_publish_history(buf, env_idx, terminal_score, 0.0f, 1);
     }
 
-    curriculum_oracle_push_history(buf, env_idx, state);
+    curriculum_oracle_push_history(buf, env_idx, state, source);
 }
 
 static inline void curriculum_oracle_clear_segments(StateBuffer* buf) {
@@ -1158,7 +1181,8 @@ static inline void capture_curriculum_checkpoint(PuffeRL* pufferl, int buffer_id
         if (pufferl->hypers.frontier_explore) {
             Env* env = &envs[env_idx];
             curriculum_oracle_capture_state(
-                buf, env_idx, &env->state, env->rewards[0], env->terminals[0]);
+                buf, env_idx, &env->state, env->rewards[0], env->terminals[0],
+                checkpoint_idx * buf->num_envs + env_idx);
         }
 #endif
     }
@@ -1253,7 +1277,8 @@ void curriculum_rollout_begin(PuffeRL* pufferl) {
                     }
                     buf->oracle_window_attempts++;
                 }
-                curriculum_oracle_reset_history(buf, env_idx, sampled_state);
+                curriculum_oracle_reset_history(buf, env_idx, sampled_state,
+                    curriculum_oracle_state_slot_source(sampled_slot));
             }
 #endif
         }
