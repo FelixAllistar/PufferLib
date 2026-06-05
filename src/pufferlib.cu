@@ -305,6 +305,7 @@ typedef struct {
     float explore_alpha;
     float explore_beta;
     float explore_decay;
+    float state_priority_decay;
     bool frontier_explore;
     bool frontier_random;
     // Flags
@@ -603,8 +604,8 @@ static inline int boxoban_frontier_level(void) {
 #endif
 
 Dict* log_environments_impl(PuffeRL& pufferl) {
-    // Capacity covers env logs plus optional compact curriculum diagnostics.
-    Dict* out = create_dict(128);
+    // Capacity covers env logs plus optional curriculum diagnostics.
+    Dict* out = create_dict(512);
 #ifdef BOXOBAN_LEVEL_LOGS
     boxoban_update_frontier_random_solves(pufferl);
     boxoban_update_t80(pufferl);
@@ -2285,6 +2286,9 @@ std::unique_ptr<PuffeRL> create_pufferl_impl(HypersT& hypers,
             && "state_lambda must be in [0, 1]");
         assert(hypers.explore_decay >= 0.0f && hypers.explore_decay <= 1.0f
             && "explore_decay must be in [0, 1]");
+        assert(hypers.state_priority_decay >= 0.0f
+            && hypers.state_priority_decay <= 1.0f
+            && "state_priority_decay must be in [0, 1]");
     }
 
     // Sanity check action space
