@@ -408,13 +408,45 @@ static inline int curriculum_oracle_monitor_envs(StateBuffer* buf) {
 }
 
 static inline void curriculum_oracle_refresh_sample_priorities(StateBuffer* buf) {
+    int seg_cap = buf->oracle_segment_capacity;
+    float min_return = 1e30f;
+    int valid_count = 0;
     for (int i = 0; i < buf->size; i++) {
-        int seg_cap = buf->oracle_segment_capacity;
         int seg = seg_cap > 0 ? i / seg_cap : -1;
         int offset = seg_cap > 0 ? i - seg * seg_cap : -1;
         int valid = seg >= 0 && seg < buf->oracle_segment_count
             && offset >= 0 && offset < buf->oracle_segment_len[seg];
-        float priority = valid ? 1.0f : 0.0f;
+        if (!valid) {
+            continue;
+        }
+        float retained_return = buf->oracle_state_return[i];
+        if (isnan(retained_return) || isinf(retained_return)) {
+            retained_return = 0.0f;
+        }
+        if (retained_return < min_return) {
+            min_return = retained_return;
+        }
+        valid_count++;
+    }
+
+    for (int i = 0; i < buf->size; i++) {
+        int seg = seg_cap > 0 ? i / seg_cap : -1;
+        int offset = seg_cap > 0 ? i - seg * seg_cap : -1;
+        int valid = valid_count > 0
+            && seg >= 0 && seg < buf->oracle_segment_count
+            && offset >= 0 && offset < buf->oracle_segment_len[seg];
+        float priority = 0.0f;
+        if (valid) {
+            float retained_return = buf->oracle_state_return[i];
+            if (isnan(retained_return) || isinf(retained_return)) {
+                retained_return = 0.0f;
+            }
+            priority = retained_return - min_return;
+            if (priority < 0.0f || isnan(priority) || isinf(priority)) {
+                priority = 0.0f;
+            }
+            priority += 1e-6f;
+        }
         buf->priorities[i] = priority;
         buf->priorities_host[i] = from_float(priority);
     }
