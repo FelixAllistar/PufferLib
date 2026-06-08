@@ -4,6 +4,7 @@
 // the complete struct definition.
 
 #include <cub/device/device_scan.cuh>
+#include <stdio.h>
 
 #ifndef PUFFER_CURRICULUM_DIAG_BINS
 #define PUFFER_CURRICULUM_DIAG_BINS 16
@@ -19,6 +20,30 @@
 
 #ifndef PUFFER_CURRICULUM_TOP_DIAG
 #define PUFFER_CURRICULUM_TOP_DIAG 4
+#endif
+
+#ifndef PUFFER_CURRICULUM_PRIORITY_TOPK
+#define PUFFER_CURRICULUM_PRIORITY_TOPK 16
+#endif
+
+#ifndef PUFFER_CURRICULUM_DEBUG_FIELDS
+#define PUFFER_CURRICULUM_DEBUG_FIELDS 6
+#endif
+
+#ifndef PUFFER_CURRICULUM_TRACE_MAX
+#define PUFFER_CURRICULUM_TRACE_MAX 256
+#endif
+
+#ifndef PUFFER_CURRICULUM_TRACE_PER_SCORE
+#define PUFFER_CURRICULUM_TRACE_PER_SCORE 16
+#endif
+
+#ifndef PUFFER_CURRICULUM_TRACE_MIN_STEPS
+#define PUFFER_CURRICULUM_TRACE_MIN_STEPS 4000000LL
+#endif
+
+#ifndef PUFFER_CURRICULUM_TRACE_PATH
+#define PUFFER_CURRICULUM_TRACE_PATH "logs/boxoban_cl_segments.jsonl"
 #endif
 
 #ifdef PUFFER_CURRICULUM_TYPES
@@ -82,6 +107,8 @@ struct StateBuffer {
     PrecisionTensor importance; // GPU, shape {total_agents}; fresh=1, CL=PER IS weight
     PrioBuffers prio_bufs;      // GPU CDF/weights/idx/importance for curriculum
 #ifdef PUFFER_CURRICULUM_DIAG_SEQUENCE_OUTCOME
+    PrecisionTensor env_debug;  // GPU scratch, shape {candidate_capacity * debug_fields}
+    precision_t* env_debug_host; // CPU scratch, checkpoint source debug fields
     int* state_outcomes;        // CPU outcome bucket per persistent slot
     long diag_retained_outcome[PUFFER_CURRICULUM_DIAG_BINS];
     float diag_retained_priority_sum[PUFFER_CURRICULUM_DIAG_BINS];
@@ -104,6 +131,10 @@ struct StateBuffer {
     int* oracle_segment_level;
     int* oracle_segment_len;
     long* oracle_segment_agent_step;
+    long long* oracle_segment_sample_count;
+#ifdef BOXOBAN_LEVEL_LOGS
+    float* oracle_segment_solve_rate;
+#endif
     float* oracle_env_discounted_return;
     PufferState* oracle_hist_states;
     int* oracle_hist_source;
@@ -131,6 +162,9 @@ struct StateBuffer {
     long long oracle_diag_vferr_count[PUFFER_CURRICULUM_SOLVE_RATE_BINS];
     float oracle_diag_vferr_sum[PUFFER_CURRICULUM_SOLVE_RATE_BINS];
     float oracle_diag_vferr_max[PUFFER_CURRICULUM_SOLVE_RATE_BINS];
+    long long oracle_diag_eject_count[PUFFER_CURRICULUM_SOLVE_RATE_BINS];
+    long long oracle_diag_eject_samples_sum[PUFFER_CURRICULUM_SOLVE_RATE_BINS];
+    long long oracle_diag_eject_samples_max[PUFFER_CURRICULUM_SOLVE_RATE_BINS];
 #endif
     float oracle_diag_candidate_top_raw[PUFFER_CURRICULUM_TOP_DIAG];
     float oracle_diag_candidate_top_priority[PUFFER_CURRICULUM_TOP_DIAG];
@@ -140,6 +174,7 @@ struct StateBuffer {
     float oracle_pending_score;
     float oracle_pending_terminal_return;
     float oracle_pending_priority;
+    float oracle_pending_solve_rate;
     int oracle_pending_count;
     int oracle_pending_first_t;
     int oracle_pending_last_t;
@@ -160,6 +195,42 @@ struct StateBuffer {
     float oracle_diag_selected_priority;
     float oracle_diag_selected_solve_rate;
     int oracle_diag_selected_solve_level;
+    int oracle_diag_raw_selected;
+    int oracle_diag_raw_retained;
+    int oracle_diag_frontier_offenders;
+    float oracle_diag_frontier_offender_priority_sum;
+    float oracle_diag_frontier_offender_priority_max;
+    float oracle_diag_frontier_offender_raw;
+    int oracle_diag_frontier_offender_solve_level;
+    float oracle_diag_frontier_offender_solve_rate;
+    float oracle_diag_frontier_offender_gap_sum;
+    float oracle_diag_frontier_offender_gap_max;
+    int oracle_diag_frontier_offender_len;
+    float oracle_diag_frontier_offender_abs_mean;
+    float oracle_diag_frontier_offender_pos_mean;
+    float oracle_diag_frontier_offender_neg_mean;
+    float oracle_diag_frontier_offender_pos_frac;
+    float oracle_diag_frontier_offender_neg_frac;
+    float oracle_diag_frontier_offender_max_pos;
+    float oracle_diag_frontier_offender_min_neg;
+    float oracle_diag_frontier_offender_max_abs;
+    float oracle_diag_frontier_offender_max_raw;
+    int oracle_diag_frontier_offender_solve_offset;
+    int oracle_diag_frontier_offender_max_offset;
+    int oracle_diag_frontier_offender_reward_dist;
+    int oracle_diag_frontier_offender_maps_solved;
+    int oracle_diag_frontier_offender_sequence_pos;
+    int oracle_diag_frontier_offender_puzzle_tick;
+    float oracle_diag_frontier_offender_value;
+    float oracle_diag_frontier_offender_next_value;
+    float oracle_diag_frontier_offender_reward;
+    float oracle_diag_frontier_offender_terminal;
+    float oracle_diag_frontier_offender_delta;
+    float oracle_diag_frontier_offender_gae;
+#ifdef BOXOBAN_LEVEL_LOGS
+    long long oracle_diag_frontier_offender_bucket_count[PUFFER_CURRICULUM_SOLVE_RATE_BINS];
+    float oracle_diag_frontier_offender_bucket_max[PUFFER_CURRICULUM_SOLVE_RATE_BINS];
+#endif
     float oracle_diag_min_priority;
     float oracle_diag_min_raw;
     int oracle_diag_raw_solve_offset;
@@ -194,6 +265,9 @@ struct StateBuffer {
     float oracle_diag_adv_pre_adv[5];
     int* oracle_cl_start_bucket;
     int* oracle_cl_start_slot;
+    int* oracle_cl_head_sample;
+    int* oracle_head_update_seg;
+    int* oracle_head_update_count;
     int oracle_sample_start;
     long long oracle_window_attempts;
     long long oracle_window_successes;
@@ -208,6 +282,10 @@ struct StateBuffer {
     long long oracle_cl_terminals;
     long long oracle_cl_solve_terminals;
     long long oracle_cl_tail_replacements;
+    int oracle_trace_dump_count;
+    long long oracle_trace_last_agent_step;
+    long long oracle_trace_score_last_agent_step[PUFFER_CURRICULUM_DIAG_BINS];
+    int oracle_trace_score_count[PUFFER_CURRICULUM_DIAG_BINS];
 #endif
 };
 
@@ -232,6 +310,11 @@ void register_state_buffer(StateBuffer* buf, Allocator* alloc,
     alloc_register(alloc, &buf->advantages);
     alloc_register(alloc, &buf->env_scores);
     alloc_register(alloc, &buf->importance);
+#ifdef PUFFER_CURRICULUM_DIAG_SEQUENCE_OUTCOME
+    buf->env_debug = {
+        .shape = {buf->candidate_capacity * PUFFER_CURRICULUM_DEBUG_FIELDS}};
+    alloc_register(alloc, &buf->env_debug);
+#endif
     if (num_cl_envs > 0) {
         register_prio_buffers(buf->prio_bufs, alloc, capacity, num_cl_envs);
     }
@@ -252,6 +335,9 @@ int init_state_buffer(StateBuffer* buf, int total_agents) {
     buf->heap_pos = (int*)malloc(capacity * sizeof(int));
     buf->env_state_inds_host = (int*)malloc((size_t)buf->num_envs * sizeof(int));
 #ifdef PUFFER_CURRICULUM_DIAG_SEQUENCE_OUTCOME
+    buf->env_debug_host = (precision_t*)malloc(
+        (size_t)buf->candidate_capacity
+        * PUFFER_CURRICULUM_DEBUG_FIELDS * sizeof(precision_t));
     buf->oracle_saved_score = 0.0f;
     buf->oracle_saved_priority = 0.0f;
     buf->oracle_saved_pick_t = -1;
@@ -273,6 +359,7 @@ int init_state_buffer(StateBuffer* buf, int total_agents) {
     buf->oracle_pending_score = 0.0f;
     buf->oracle_pending_terminal_return = 0.0f;
     buf->oracle_pending_priority = 0.0f;
+    buf->oracle_pending_solve_rate = -1.0f;
     buf->oracle_pending_count = 0;
     buf->oracle_pending_first_t = -1;
     buf->oracle_pending_last_t = -1;
@@ -293,6 +380,38 @@ int init_state_buffer(StateBuffer* buf, int total_agents) {
     buf->oracle_diag_selected_priority = 0.0f;
     buf->oracle_diag_selected_solve_rate = -1.0f;
     buf->oracle_diag_selected_solve_level = -1;
+    buf->oracle_diag_raw_selected = 0;
+    buf->oracle_diag_raw_retained = 0;
+    buf->oracle_diag_frontier_offenders = 0;
+    buf->oracle_diag_frontier_offender_priority_sum = 0.0f;
+    buf->oracle_diag_frontier_offender_priority_max = 0.0f;
+    buf->oracle_diag_frontier_offender_raw = 0.0f;
+    buf->oracle_diag_frontier_offender_solve_level = -1;
+    buf->oracle_diag_frontier_offender_solve_rate = -1.0f;
+    buf->oracle_diag_frontier_offender_gap_sum = 0.0f;
+    buf->oracle_diag_frontier_offender_gap_max = 0.0f;
+    buf->oracle_diag_frontier_offender_len = 0;
+    buf->oracle_diag_frontier_offender_abs_mean = 0.0f;
+    buf->oracle_diag_frontier_offender_pos_mean = 0.0f;
+    buf->oracle_diag_frontier_offender_neg_mean = 0.0f;
+    buf->oracle_diag_frontier_offender_pos_frac = 0.0f;
+    buf->oracle_diag_frontier_offender_neg_frac = 0.0f;
+    buf->oracle_diag_frontier_offender_max_pos = 0.0f;
+    buf->oracle_diag_frontier_offender_min_neg = 0.0f;
+    buf->oracle_diag_frontier_offender_max_abs = 0.0f;
+    buf->oracle_diag_frontier_offender_max_raw = 0.0f;
+    buf->oracle_diag_frontier_offender_solve_offset = -1;
+    buf->oracle_diag_frontier_offender_max_offset = -1;
+    buf->oracle_diag_frontier_offender_reward_dist = -1;
+    buf->oracle_diag_frontier_offender_maps_solved = -1;
+    buf->oracle_diag_frontier_offender_sequence_pos = -1;
+    buf->oracle_diag_frontier_offender_puzzle_tick = -1;
+    buf->oracle_diag_frontier_offender_value = 0.0f;
+    buf->oracle_diag_frontier_offender_next_value = 0.0f;
+    buf->oracle_diag_frontier_offender_reward = 0.0f;
+    buf->oracle_diag_frontier_offender_terminal = 0.0f;
+    buf->oracle_diag_frontier_offender_delta = 0.0f;
+    buf->oracle_diag_frontier_offender_gae = 0.0f;
     buf->oracle_diag_min_priority = 0.0f;
     buf->oracle_diag_min_raw = 0.0f;
     buf->oracle_diag_raw_solve_offset = -1;
@@ -320,6 +439,11 @@ int init_state_buffer(StateBuffer* buf, int total_agents) {
         buf->oracle_diag_vferr_count[i] = 0;
         buf->oracle_diag_vferr_sum[i] = 0.0f;
         buf->oracle_diag_vferr_max[i] = 0.0f;
+        buf->oracle_diag_eject_count[i] = 0;
+        buf->oracle_diag_eject_samples_sum[i] = 0;
+        buf->oracle_diag_eject_samples_max[i] = 0;
+        buf->oracle_diag_frontier_offender_bucket_count[i] = 0;
+        buf->oracle_diag_frontier_offender_bucket_max[i] = 0.0f;
     }
 #endif
     for (int i = 0; i < PUFFER_CURRICULUM_TOP_DIAG; i++) {
@@ -354,6 +478,17 @@ int init_state_buffer(StateBuffer* buf, int total_agents) {
     buf->oracle_cl_terminals = 0;
     buf->oracle_cl_solve_terminals = 0;
     buf->oracle_cl_tail_replacements = 0;
+    buf->oracle_trace_dump_count = 0;
+    buf->oracle_trace_last_agent_step = -PUFFER_CURRICULUM_TRACE_MIN_STEPS;
+    for (int i = 0; i < PUFFER_CURRICULUM_DIAG_BINS; i++) {
+        buf->oracle_trace_score_count[i] = 0;
+        buf->oracle_trace_score_last_agent_step[i] =
+            -PUFFER_CURRICULUM_TRACE_MIN_STEPS;
+    }
+    FILE* trace_file = fopen(PUFFER_CURRICULUM_TRACE_PATH, "w");
+    if (trace_file != NULL) {
+        fclose(trace_file);
+    }
     memset(buf->oracle_cl_attempts, 0, sizeof(buf->oracle_cl_attempts));
     memset(buf->oracle_cl_successes, 0, sizeof(buf->oracle_cl_successes));
     buf->state_outcomes = (int*)malloc(capacity * sizeof(int));
@@ -371,6 +506,12 @@ int init_state_buffer(StateBuffer* buf, int total_agents) {
         (size_t)buf->oracle_max_segments * sizeof(int));
     buf->oracle_segment_agent_step = (long*)malloc(
         (size_t)buf->oracle_max_segments * sizeof(long));
+    buf->oracle_segment_sample_count = (long long*)malloc(
+        (size_t)buf->oracle_max_segments * sizeof(long long));
+#ifdef BOXOBAN_LEVEL_LOGS
+    buf->oracle_segment_solve_rate = (float*)malloc(
+        (size_t)buf->oracle_max_segments * sizeof(float));
+#endif
     buf->oracle_env_discounted_return = (float*)malloc(
         (size_t)buf->num_envs * sizeof(float));
     buf->oracle_hist_states = (PufferState*)malloc(
@@ -383,6 +524,9 @@ int init_state_buffer(StateBuffer* buf, int total_agents) {
     buf->oracle_hist_from_entry = (int*)malloc((size_t)buf->num_envs * sizeof(int));
     buf->oracle_cl_start_bucket = (int*)malloc((size_t)buf->num_envs * sizeof(int));
     buf->oracle_cl_start_slot = (int*)malloc((size_t)buf->num_envs * sizeof(int));
+    buf->oracle_cl_head_sample = (int*)malloc((size_t)buf->num_envs * sizeof(int));
+    buf->oracle_head_update_seg = (int*)malloc((size_t)buf->num_envs * sizeof(int));
+    buf->oracle_head_update_count = (int*)malloc((size_t)buf->num_envs * sizeof(int));
     buf->oracle_pending_states = (PufferState*)malloc(
         (size_t)buf->oracle_hist_capacity * sizeof(PufferState));
     buf->oracle_pending_source = (int*)malloc(
@@ -419,6 +563,7 @@ int init_state_buffer(StateBuffer* buf, int total_agents) {
             || buf->env_scores_host == NULL || buf->heap == NULL || buf->heap_pos == NULL
             || buf->env_state_inds_host == NULL
 #ifdef PUFFER_CURRICULUM_DIAG_SEQUENCE_OUTCOME
+            || buf->env_debug_host == NULL
             || buf->state_outcomes == NULL
             || buf->oracle_state_priority == NULL
             || buf->oracle_state_return == NULL
@@ -428,6 +573,10 @@ int init_state_buffer(StateBuffer* buf, int total_agents) {
             || buf->oracle_segment_level == NULL
             || buf->oracle_segment_len == NULL
             || buf->oracle_segment_agent_step == NULL
+            || buf->oracle_segment_sample_count == NULL
+#ifdef BOXOBAN_LEVEL_LOGS
+            || buf->oracle_segment_solve_rate == NULL
+#endif
             || buf->oracle_env_discounted_return == NULL
             || buf->oracle_hist_states == NULL
             || buf->oracle_hist_source == NULL
@@ -437,6 +586,9 @@ int init_state_buffer(StateBuffer* buf, int total_agents) {
             || buf->oracle_hist_from_entry == NULL
             || buf->oracle_cl_start_bucket == NULL
             || buf->oracle_cl_start_slot == NULL
+            || buf->oracle_cl_head_sample == NULL
+            || buf->oracle_head_update_seg == NULL
+            || buf->oracle_head_update_count == NULL
             || buf->oracle_pending_states == NULL
             || buf->oracle_pending_source == NULL
             || buf->oracle_candidate_states == NULL
@@ -461,6 +613,9 @@ int init_state_buffer(StateBuffer* buf, int total_agents) {
         return 0;
     }
 #ifdef PUFFER_CURRICULUM_DIAG_SEQUENCE_OUTCOME
+    memset(buf->env_debug_host, 0,
+        (size_t)buf->candidate_capacity
+        * PUFFER_CURRICULUM_DEBUG_FIELDS * sizeof(precision_t));
     memset(buf->state_outcomes, 0, capacity * sizeof(int));
     memset(buf->oracle_state_priority, 0, capacity * sizeof(float));
     memset(buf->oracle_state_return, 0, capacity * sizeof(float));
@@ -475,6 +630,10 @@ int init_state_buffer(StateBuffer* buf, int total_agents) {
         buf->oracle_segment_level[i] = -1;
         buf->oracle_segment_len[i] = 0;
         buf->oracle_segment_agent_step[i] = -1;
+        buf->oracle_segment_sample_count[i] = 0;
+#ifdef BOXOBAN_LEVEL_LOGS
+        buf->oracle_segment_solve_rate[i] = -1.0f;
+#endif
     }
     memset(buf->oracle_hist_count, 0, (size_t)buf->num_envs * sizeof(int));
     memset(buf->oracle_hist_write, 0, (size_t)buf->num_envs * sizeof(int));
@@ -504,6 +663,9 @@ int init_state_buffer(StateBuffer* buf, int total_agents) {
         buf->oracle_candidate_solve_rate[i] = -1.0f;
         buf->oracle_cl_start_bucket[i] = -1;
         buf->oracle_cl_start_slot[i] = -1;
+        buf->oracle_cl_head_sample[i] = 0;
+        buf->oracle_head_update_seg[i] = -1;
+        buf->oracle_head_update_count[i] = 0;
     }
 #endif
     return 1;
@@ -519,6 +681,7 @@ void close_state_buffer(StateBuffer* buf) {
     free(buf->heap_pos);
     free(buf->env_state_inds_host);
 #ifdef PUFFER_CURRICULUM_DIAG_SEQUENCE_OUTCOME
+    free(buf->env_debug_host);
     free(buf->state_outcomes);
     free(buf->oracle_state_priority);
     free(buf->oracle_state_return);
@@ -528,6 +691,10 @@ void close_state_buffer(StateBuffer* buf) {
     free(buf->oracle_segment_level);
     free(buf->oracle_segment_len);
     free(buf->oracle_segment_agent_step);
+    free(buf->oracle_segment_sample_count);
+#ifdef BOXOBAN_LEVEL_LOGS
+    free(buf->oracle_segment_solve_rate);
+#endif
     free(buf->oracle_env_discounted_return);
     free(buf->oracle_hist_states);
     free(buf->oracle_hist_source);
@@ -537,6 +704,9 @@ void close_state_buffer(StateBuffer* buf) {
     free(buf->oracle_hist_from_entry);
     free(buf->oracle_cl_start_bucket);
     free(buf->oracle_cl_start_slot);
+    free(buf->oracle_cl_head_sample);
+    free(buf->oracle_head_update_seg);
+    free(buf->oracle_head_update_count);
     free(buf->oracle_pending_states);
     free(buf->oracle_pending_source);
     free(buf->oracle_candidate_states);
@@ -610,9 +780,20 @@ static inline void curriculum_oracle_reset_cl_counters(StateBuffer* buf) {
     buf->oracle_cl_terminals = 0;
     buf->oracle_cl_solve_terminals = 0;
     buf->oracle_cl_tail_replacements = 0;
+#ifdef BOXOBAN_LEVEL_LOGS
+    memset(buf->oracle_diag_eject_count, 0,
+        sizeof(buf->oracle_diag_eject_count));
+    memset(buf->oracle_diag_eject_samples_sum, 0,
+        sizeof(buf->oracle_diag_eject_samples_sum));
+    memset(buf->oracle_diag_eject_samples_max, 0,
+        sizeof(buf->oracle_diag_eject_samples_max));
+#endif
     for (int i = 0; i < buf->num_envs; i++) {
         buf->oracle_cl_start_bucket[i] = -1;
         buf->oracle_cl_start_slot[i] = -1;
+        buf->oracle_cl_head_sample[i] = 0;
+        buf->oracle_head_update_seg[i] = -1;
+        buf->oracle_head_update_count[i] = 0;
     }
 }
 
@@ -764,11 +945,15 @@ __global__ void compute_prio_abs(
 
 __global__ void compute_curriculum_checkpoint_scores(
         precision_t* __restrict__ dst,
+        precision_t* __restrict__ debug_dst,
         const precision_t* __restrict__ advantages_bt,
         const precision_t* __restrict__ entropy_bt,
+        const precision_t* __restrict__ values_bt,
+        const precision_t* __restrict__ rewards_bt,
+        const precision_t* __restrict__ terminals_bt,
         int num_envs, int num_fresh_envs, int num_cl_envs,
         int num_checkpoints, int checkpoint_interval,
-        int agents_per_env, int horizon) {
+        int agents_per_env, float gamma, int horizon) {
     (void)entropy_bt;
     int row = blockIdx.x * blockDim.x + threadIdx.x;
     int checkpoint_rows = num_checkpoints * num_envs;
@@ -790,6 +975,11 @@ __global__ void compute_curriculum_checkpoint_scores(
 
     int agent_start = env_idx * agents_per_env;
     float sum_agent_adv = 0.0f;
+    float sum_value = 0.0f;
+    float sum_next_value = 0.0f;
+    float sum_next_reward = 0.0f;
+    float sum_next_terminal = 0.0f;
+    float sum_delta = 0.0f;
     for (int a = 0; a < agents_per_env; a++) {
         int offset = (agent_start + a) * horizon;
         // GAE already carries forward-looking credit, so score the checkpoint
@@ -798,8 +988,41 @@ __global__ void compute_curriculum_checkpoint_scores(
             ? to_float(advantages_bt[offset + start_t])
             : 0.0f;
         sum_agent_adv += agent_adv;
+        if (debug_dst != NULL && row < checkpoint_rows
+                && values_bt != NULL && rewards_bt != NULL
+                && terminals_bt != NULL) {
+            float value = start_t < horizon
+                ? to_float(values_bt[offset + start_t]) : 0.0f;
+            float next_value = start_t < horizon - 1
+                ? to_float(values_bt[offset + start_t + 1]) : 0.0f;
+            float next_reward = start_t < horizon - 1
+                ? to_float(rewards_bt[offset + start_t + 1]) : 0.0f;
+            float next_terminal = start_t < horizon - 1
+                ? to_float(terminals_bt[offset + start_t + 1]) : 1.0f;
+            float delta = start_t < horizon - 1
+                ? next_reward + gamma * next_value * (1.0f - next_terminal) - value
+                : 0.0f;
+            sum_value += value;
+            sum_next_value += next_value;
+            sum_next_reward += next_reward;
+            sum_next_terminal += next_terminal;
+            sum_delta += delta;
+        }
     }
-    dst[row] = from_float(sum_agent_adv / (float)agents_per_env);
+    float inv_agents = 1.0f / (float)agents_per_env;
+    float mean_adv = sum_agent_adv * inv_agents;
+    dst[row] = from_float(mean_adv);
+    if (debug_dst != NULL && row < checkpoint_rows
+            && values_bt != NULL && rewards_bt != NULL
+            && terminals_bt != NULL) {
+        int base = row * PUFFER_CURRICULUM_DEBUG_FIELDS;
+        debug_dst[base + 0] = from_float(sum_value * inv_agents);
+        debug_dst[base + 1] = from_float(sum_next_value * inv_agents);
+        debug_dst[base + 2] = from_float(sum_next_reward * inv_agents);
+        debug_dst[base + 3] = from_float(sum_next_terminal * inv_agents);
+        debug_dst[base + 4] = from_float(sum_delta * inv_agents);
+        debug_dst[base + 5] = from_float(mean_adv);
+    }
 }
 
 // Multinomial with replacement (uses cuRAND)
@@ -1050,6 +1273,7 @@ static inline void curriculum_oracle_clear_pending(StateBuffer* buf) {
     buf->oracle_pending_score = 0.0f;
     buf->oracle_pending_terminal_return = 0.0f;
     buf->oracle_pending_priority = 0.0f;
+    buf->oracle_pending_solve_rate = -1.0f;
     buf->oracle_pending_first_t = -1;
     buf->oracle_pending_last_t = -1;
     buf->oracle_pending_full = 0;
@@ -1165,6 +1389,7 @@ static inline void curriculum_oracle_publish_history(
             buf->oracle_pending_score = admission_score;
             buf->oracle_pending_terminal_return = terminal_return;
             buf->oracle_pending_priority = admission_priority;
+            buf->oracle_pending_solve_rate = -1.0f;
             buf->oracle_pending_count = count;
             buf->oracle_pending_first_t = 0;
             buf->oracle_pending_last_t = count - 1;
@@ -1224,18 +1449,44 @@ static inline void curriculum_oracle_clear_candidates(StateBuffer* buf) {
 static inline float curriculum_oracle_source_advantage(
         StateBuffer* buf, int source);
 
+static inline void curriculum_oracle_insert_top_abs_error(
+        float* top, float adv) {
+    if (isnan(adv) || isinf(adv)) {
+        return;
+    }
+    float value = fabsf(adv);
+    if (isnan(value) || isinf(value) || value <= top[PUFFER_CURRICULUM_PRIORITY_TOPK - 1]) {
+        return;
+    }
+
+    int dst = PUFFER_CURRICULUM_PRIORITY_TOPK - 1;
+    while (dst > 0 && value > top[dst - 1]) {
+        top[dst] = top[dst - 1];
+        dst--;
+    }
+    top[dst] = value;
+}
+
+static inline float curriculum_oracle_top_abs_error_sum(const float* top) {
+    float priority = 0.0f;
+    for (int i = 0; i < PUFFER_CURRICULUM_PRIORITY_TOPK; i++) {
+        priority += top[i];
+    }
+    return clean_state_priority(priority);
+}
+
 static inline float curriculum_oracle_compute_history_priority(
         StateBuffer* buf, const int* sources, int count, int env_idx) {
     if (env_idx < 0 || env_idx >= buf->num_envs || count <= 0) {
         return 0.0f;
     }
 
-    float priority = 0.0f;
+    float top[PUFFER_CURRICULUM_PRIORITY_TOPK] = {};
     for (int i = 0; i < count; i++) {
         float adv = curriculum_oracle_source_advantage(buf, sources[i]);
-        priority += adv * adv;
+        curriculum_oracle_insert_top_abs_error(top, adv);
     }
-    return clean_state_priority(sqrtf(priority));
+    return curriculum_oracle_top_abs_error_sum(top);
 }
 
 static inline float curriculum_oracle_source_advantage(
@@ -1253,6 +1504,204 @@ static inline float curriculum_oracle_source_advantage(
         return 0.0f;
     }
     return fabsf(adv);
+}
+
+static inline float curriculum_oracle_source_raw_advantage(
+        StateBuffer* buf, int source) {
+    float adv = 0.0f;
+    if (source >= 0 && source < buf->candidate_capacity) {
+        adv = to_float(buf->env_scores_host[source]);
+    } else if (source <= -2) {
+        int slot = curriculum_oracle_source_state_slot(source);
+        if (slot >= 0 && slot < buf->size) {
+            adv = buf->oracle_state_priority[slot];
+        }
+    }
+    if (isnan(adv) || isinf(adv)) {
+        return 0.0f;
+    }
+    return adv;
+}
+
+static inline float curriculum_oracle_source_debug(
+        StateBuffer* buf, int source, int field) {
+    if (buf->env_debug_host == NULL
+            || source < 0 || source >= buf->candidate_capacity
+            || field < 0 || field >= PUFFER_CURRICULUM_DEBUG_FIELDS) {
+        return 0.0f;
+    }
+    float value = to_float(
+        buf->env_debug_host[source * PUFFER_CURRICULUM_DEBUG_FIELDS + field]);
+    if (isnan(value) || isinf(value)) {
+        return 0.0f;
+    }
+    return value;
+}
+
+static inline int curriculum_oracle_source_has_debug(StateBuffer* buf, int source) {
+    return buf->env_debug_host != NULL
+        && source >= 0
+        && source < buf->candidate_capacity;
+}
+
+static inline void curriculum_oracle_trace_number(
+        FILE* file, float value, int valid) {
+    if (!valid || isnan(value) || isinf(value)) {
+        fprintf(file, "null");
+        return;
+    }
+    fprintf(file, "%.9g", value);
+}
+
+static inline void curriculum_oracle_trace_segment(
+        FILE* file, StateBuffer* buf, const char* name, int env_idx,
+        const PufferState* states, const int* sources, int count,
+        float score, float priority, int solve_level, float solve_rate) {
+    fprintf(file,
+        "\"%s\":{\"env\":%d,\"score\":%.9g,\"priority\":%.9g,"
+        "\"solve_level\":%d,\"solve_rate\":",
+        name, env_idx, score, priority, solve_level);
+    curriculum_oracle_trace_number(file, solve_rate, solve_rate >= 0.0f);
+    fprintf(file, ",\"count\":%d,\"steps\":[", count);
+
+    for (int i = 0; i < count; i++) {
+        const PufferState* state = &states[i];
+        int source = sources != NULL ? sources[i] : -1;
+        int has_debug = curriculum_oracle_source_has_debug(buf, source);
+        float adv = curriculum_oracle_source_raw_advantage(buf, source);
+        float value = curriculum_oracle_source_debug(buf, source, 0);
+        float next_value = curriculum_oracle_source_debug(buf, source, 1);
+        float reward = curriculum_oracle_source_debug(buf, source, 2);
+        float terminal = curriculum_oracle_source_debug(buf, source, 3);
+        float delta = curriculum_oracle_source_debug(buf, source, 4);
+        float gae = curriculum_oracle_source_debug(buf, source, 5);
+        int target_valid = has_debug && !isnan(value) && !isinf(value)
+            && !isnan(adv) && !isinf(adv);
+        int td_target_valid = has_debug && !isnan(value) && !isinf(value)
+            && !isnan(delta) && !isinf(delta);
+
+        if (i > 0) {
+            fprintf(file, ",");
+        }
+        fprintf(file,
+            "{\"i\":%d,\"source\":%d,\"tick\":%d,"
+            "\"episode_return\":%.9g",
+            i, source, state->tick, state->episode_return);
+#ifdef BOXOBAN_LEVEL_LOGS
+        fprintf(file,
+            ",\"maps_solved\":%d,\"sequence_pos\":%d,"
+            "\"puzzle_tick\":%d",
+            state->episode_maps_solved, state->sequence_pos,
+            state->puzzle_tick);
+        if (source >= 0 && source < buf->candidate_capacity) {
+            fprintf(file,
+                ",\"source_solve_level\":%d,\"source_solve_rate\":",
+                buf->oracle_source_solve_level[source]);
+            curriculum_oracle_trace_number(
+                file, buf->oracle_source_solve_rate[source],
+                buf->oracle_source_solve_rate[source] >= 0.0f);
+            fprintf(file, ",\"source_step_m\":");
+            if (buf->oracle_source_agent_step[source] >= 0) {
+                fprintf(file, "%.9g",
+                    (double)buf->oracle_source_agent_step[source] / 1000000.0);
+            } else {
+                fprintf(file, "null");
+            }
+        }
+#endif
+        fprintf(file, ",\"adv\":");
+        curriculum_oracle_trace_number(file, adv, 1);
+        fprintf(file, ",\"abs_adv\":");
+        curriculum_oracle_trace_number(file, fabsf(adv), 1);
+        fprintf(file, ",\"value\":");
+        curriculum_oracle_trace_number(file, value, has_debug);
+        fprintf(file, ",\"next_value\":");
+        curriculum_oracle_trace_number(file, next_value, has_debug);
+        fprintf(file, ",\"reward\":");
+        curriculum_oracle_trace_number(file, reward, has_debug);
+        fprintf(file, ",\"terminal\":");
+        curriculum_oracle_trace_number(file, terminal, has_debug);
+        fprintf(file, ",\"delta\":");
+        curriculum_oracle_trace_number(file, delta, has_debug);
+        fprintf(file, ",\"gae\":");
+        curriculum_oracle_trace_number(file, gae, has_debug);
+        fprintf(file, ",\"target\":");
+        curriculum_oracle_trace_number(file, value + adv, target_valid);
+        fprintf(file, ",\"td_target\":");
+        curriculum_oracle_trace_number(file, value + delta, td_target_valid);
+        fprintf(file, "}");
+    }
+
+    fprintf(file, "]}");
+}
+
+static inline void curriculum_oracle_maybe_trace_candidate_compare(
+        StateBuffer* buf, long long agent_step,
+        int raw_env, int raw_count, float raw_score, float raw_priority,
+        int offender_env, int offender_count, float offender_score,
+        float offender_priority) {
+    int score_bucket = curriculum_diag_bucket((int)floorf(raw_score));
+    if (buf->oracle_trace_dump_count >= PUFFER_CURRICULUM_TRACE_MAX
+            || raw_env < 0 || offender_env < 0
+            || raw_count <= 0 || offender_count <= 0
+            || raw_score <= offender_score + 1e-6f
+            || offender_priority <= raw_priority + 1e-6f
+            || buf->oracle_trace_score_count[score_bucket]
+                >= PUFFER_CURRICULUM_TRACE_PER_SCORE
+            || agent_step - buf->oracle_trace_score_last_agent_step[score_bucket]
+                < PUFFER_CURRICULUM_TRACE_MIN_STEPS) {
+        return;
+    }
+
+#ifdef BOXOBAN_LEVEL_LOGS
+    float offender_solve_rate = buf->oracle_candidate_solve_rate[offender_env];
+    if (offender_solve_rate >= 0.0f && offender_solve_rate < 0.90f) {
+        return;
+    }
+#endif
+
+    FILE* file = fopen(PUFFER_CURRICULUM_TRACE_PATH, "a");
+    if (file == NULL) {
+        return;
+    }
+
+    int cap = buf->oracle_hist_capacity;
+    int raw_base = raw_env * cap;
+    int offender_base = offender_env * cap;
+    fprintf(file,
+        "{\"event\":%d,\"agent_steps\":%lld,"
+        "\"agent_steps_m\":%.9g,\"checkpoint_interval\":%d,"
+        "\"priority_topk\":%d,\"score_bucket\":%d,"
+        "\"score_bucket_event\":%d,\"min_priority\":%.9g,"
+        "\"min_score\":%.9g,",
+        buf->oracle_trace_dump_count, agent_step,
+        (double)agent_step / 1000000.0, buf->checkpoint_interval,
+        PUFFER_CURRICULUM_PRIORITY_TOPK, score_bucket,
+        buf->oracle_trace_score_count[score_bucket],
+        buf->oracle_diag_min_priority,
+        buf->oracle_diag_min_raw);
+    curriculum_oracle_trace_segment(
+        file, buf, "frontier", raw_env,
+        buf->oracle_candidate_states + raw_base,
+        buf->oracle_candidate_source + raw_base, raw_count,
+        raw_score, raw_priority,
+        buf->oracle_candidate_solve_level[raw_env],
+        buf->oracle_candidate_solve_rate[raw_env]);
+    fprintf(file, ",");
+    curriculum_oracle_trace_segment(
+        file, buf, "offender", offender_env,
+        buf->oracle_candidate_states + offender_base,
+        buf->oracle_candidate_source + offender_base, offender_count,
+        offender_score, offender_priority,
+        buf->oracle_candidate_solve_level[offender_env],
+        buf->oracle_candidate_solve_rate[offender_env]);
+    fprintf(file, "}\n");
+    fclose(file);
+
+    buf->oracle_trace_dump_count++;
+    buf->oracle_trace_last_agent_step = agent_step;
+    buf->oracle_trace_score_count[score_bucket]++;
+    buf->oracle_trace_score_last_agent_step[score_bucket] = agent_step;
 }
 
 #ifdef BOXOBAN_LEVEL_LOGS
@@ -1309,6 +1758,27 @@ static inline void curriculum_oracle_record_vferr_bucket(
     buf->oracle_diag_vferr_sum[bucket] += value_error;
     if (value_error > buf->oracle_diag_vferr_max[bucket]) {
         buf->oracle_diag_vferr_max[bucket] = value_error;
+    }
+}
+
+static inline void curriculum_oracle_record_segment_ejection(
+        StateBuffer* buf, int seg) {
+    if (seg < 0 || seg >= buf->oracle_segment_count) {
+        return;
+    }
+    int bucket = curriculum_oracle_solve_rate_bucket(
+        buf->oracle_segment_solve_rate[seg]);
+    if (bucket < 0 || bucket >= PUFFER_CURRICULUM_SOLVE_RATE_BINS) {
+        return;
+    }
+    long long samples = buf->oracle_segment_sample_count[seg];
+    if (samples < 0) {
+        samples = 0;
+    }
+    buf->oracle_diag_eject_count[bucket]++;
+    buf->oracle_diag_eject_samples_sum[bucket] += samples;
+    if (samples > buf->oracle_diag_eject_samples_max[bucket]) {
+        buf->oracle_diag_eject_samples_max[bucket] = samples;
     }
 }
 #endif
@@ -1394,6 +1864,45 @@ static inline const char* curriculum_diag_vferr_key(int index, int field) {
     }
     if (index < 0 || index >= PUFFER_CURRICULUM_SOLVE_RATE_BINS
             || field < 0 || field >= 3) {
+        return "";
+    }
+    return keys[index][field];
+}
+
+static inline const char* curriculum_diag_frontier_offender_key(
+        int index, int field) {
+    static char keys[PUFFER_CURRICULUM_SOLVE_RATE_BINS][2][16];
+    static int initialized = 0;
+    if (!initialized) {
+        for (int i = 0; i < PUFFER_CURRICULUM_SOLVE_RATE_BINS; i++) {
+            snprintf(keys[i][0], sizeof(keys[i][0]), "fo%d_n", i);
+            snprintf(keys[i][1], sizeof(keys[i][1]), "fo%d_x", i);
+        }
+        initialized = 1;
+    }
+    if (index < 0 || index >= PUFFER_CURRICULUM_SOLVE_RATE_BINS
+            || field < 0 || field >= 2) {
+        return "";
+    }
+    return keys[index][field];
+}
+
+static inline const char* curriculum_diag_segment_use_key(
+        int index, int field) {
+    static char keys[PUFFER_CURRICULUM_SOLVE_RATE_BINS][5][16];
+    static int initialized = 0;
+    if (!initialized) {
+        for (int i = 0; i < PUFFER_CURRICULUM_SOLVE_RATE_BINS; i++) {
+            snprintf(keys[i][0], sizeof(keys[i][0]), "ej%d_n", i);
+            snprintf(keys[i][1], sizeof(keys[i][1]), "ej%d_m", i);
+            snprintf(keys[i][2], sizeof(keys[i][2]), "ej%d_x", i);
+            snprintf(keys[i][3], sizeof(keys[i][3]), "lv%d_n", i);
+            snprintf(keys[i][4], sizeof(keys[i][4]), "lv%d_m", i);
+        }
+        initialized = 1;
+    }
+    if (index < 0 || index >= PUFFER_CURRICULUM_SOLVE_RATE_BINS
+            || field < 0 || field >= 5) {
         return "";
     }
     return keys[index][field];
@@ -1546,6 +2055,131 @@ static inline void curriculum_oracle_profile_max_source_diag(
     }
 }
 
+static inline void curriculum_oracle_profile_frontier_offender(
+        StateBuffer* buf, const PufferState* states, const int* sources,
+        int count, float terminal_return) {
+    if (states == NULL || sources == NULL || count <= 0) {
+        return;
+    }
+
+    double abs_sum = 0.0;
+    double pos_sum = 0.0;
+    double neg_sum = 0.0;
+    int pos_count = 0;
+    int neg_count = 0;
+    float max_pos = 0.0f;
+    float min_neg = 0.0f;
+    float max_abs = 0.0f;
+    float max_raw = 0.0f;
+    int max_offset = -1;
+    for (int i = 0; i < count; i++) {
+        float adv = curriculum_oracle_source_raw_advantage(buf, sources[i]);
+        float abs_adv = fabsf(adv);
+        abs_sum += (double)abs_adv;
+        if (adv > 0.0f) {
+            pos_sum += (double)adv;
+            pos_count++;
+            if (adv > max_pos) {
+                max_pos = adv;
+            }
+        } else if (adv < 0.0f) {
+            neg_sum += (double)adv;
+            neg_count++;
+            if (adv < min_neg) {
+                min_neg = adv;
+            }
+        }
+        if (abs_adv > max_abs + 1e-6f) {
+            max_abs = abs_adv;
+            max_raw = adv;
+            max_offset = i;
+        }
+    }
+
+    int solve_offset = -1;
+    int prev_reward_offset = -1;
+    int next_reward_offset = -1;
+    for (int i = 1; i < count; i++) {
+        float reward = states[i].episode_return - states[i - 1].episode_return;
+        if (!isnan(reward) && !isinf(reward) && reward > 1e-6f) {
+            solve_offset = i;
+            if (max_offset >= 0) {
+                if (i <= max_offset) {
+                    prev_reward_offset = i;
+                } else if (next_reward_offset < 0) {
+                    next_reward_offset = i;
+                }
+            }
+        }
+    }
+    float terminal_reward = terminal_return - states[count - 1].episode_return;
+    if (!isnan(terminal_reward) && !isinf(terminal_reward)
+            && terminal_reward > 1e-6f) {
+        solve_offset = count;
+        if (max_offset >= 0) {
+            if (count <= max_offset) {
+                prev_reward_offset = count;
+            } else if (next_reward_offset < 0) {
+                next_reward_offset = count;
+            }
+        }
+    }
+
+    int reward_dist = -1;
+    if (max_offset >= 0) {
+        if (prev_reward_offset >= 0) {
+            reward_dist = max_offset - prev_reward_offset;
+        } else if (next_reward_offset >= 0) {
+            reward_dist = next_reward_offset - max_offset;
+        }
+    }
+
+    buf->oracle_diag_frontier_offender_len = count;
+    buf->oracle_diag_frontier_offender_abs_mean =
+        (float)(abs_sum / (double)count);
+    buf->oracle_diag_frontier_offender_pos_mean =
+        pos_count > 0 ? (float)(pos_sum / (double)pos_count) : 0.0f;
+    buf->oracle_diag_frontier_offender_neg_mean =
+        neg_count > 0 ? (float)(neg_sum / (double)neg_count) : 0.0f;
+    buf->oracle_diag_frontier_offender_pos_frac =
+        (float)pos_count / (float)count;
+    buf->oracle_diag_frontier_offender_neg_frac =
+        (float)neg_count / (float)count;
+    buf->oracle_diag_frontier_offender_max_pos = max_pos;
+    buf->oracle_diag_frontier_offender_min_neg = min_neg;
+    buf->oracle_diag_frontier_offender_max_abs = max_abs;
+    buf->oracle_diag_frontier_offender_max_raw = max_raw;
+    buf->oracle_diag_frontier_offender_solve_offset = solve_offset;
+    buf->oracle_diag_frontier_offender_max_offset = max_offset;
+    buf->oracle_diag_frontier_offender_reward_dist = reward_dist;
+    if (max_offset >= 0 && max_offset < count) {
+        int source = sources[max_offset];
+        buf->oracle_diag_frontier_offender_value =
+            curriculum_oracle_source_debug(buf, source, 0);
+        buf->oracle_diag_frontier_offender_next_value =
+            curriculum_oracle_source_debug(buf, source, 1);
+        buf->oracle_diag_frontier_offender_reward =
+            curriculum_oracle_source_debug(buf, source, 2);
+        buf->oracle_diag_frontier_offender_terminal =
+            curriculum_oracle_source_debug(buf, source, 3);
+        buf->oracle_diag_frontier_offender_delta =
+            curriculum_oracle_source_debug(buf, source, 4);
+        buf->oracle_diag_frontier_offender_gae =
+            curriculum_oracle_source_debug(buf, source, 5);
+        const PufferState* state = &states[max_offset];
+#ifdef BOXOBAN_LEVEL_LOGS
+        buf->oracle_diag_frontier_offender_maps_solved =
+            state->episode_maps_solved;
+        buf->oracle_diag_frontier_offender_sequence_pos =
+            state->sequence_pos;
+        buf->oracle_diag_frontier_offender_puzzle_tick =
+            state->puzzle_tick;
+#else
+        buf->oracle_diag_frontier_offender_puzzle_tick = state->tick;
+#endif
+    }
+}
+
 static inline void curriculum_oracle_reset_candidate_diagnostics(StateBuffer* buf) {
     buf->oracle_diag_candidate_count = 0;
     buf->oracle_diag_selected_stored = 0;
@@ -1561,6 +2195,38 @@ static inline void curriculum_oracle_reset_candidate_diagnostics(StateBuffer* bu
     buf->oracle_diag_selected_priority = 0.0f;
     buf->oracle_diag_selected_solve_rate = -1.0f;
     buf->oracle_diag_selected_solve_level = -1;
+    buf->oracle_diag_raw_selected = 0;
+    buf->oracle_diag_raw_retained = 0;
+    buf->oracle_diag_frontier_offenders = 0;
+    buf->oracle_diag_frontier_offender_priority_sum = 0.0f;
+    buf->oracle_diag_frontier_offender_priority_max = 0.0f;
+    buf->oracle_diag_frontier_offender_raw = 0.0f;
+    buf->oracle_diag_frontier_offender_solve_level = -1;
+    buf->oracle_diag_frontier_offender_solve_rate = -1.0f;
+    buf->oracle_diag_frontier_offender_gap_sum = 0.0f;
+    buf->oracle_diag_frontier_offender_gap_max = 0.0f;
+    buf->oracle_diag_frontier_offender_len = 0;
+    buf->oracle_diag_frontier_offender_abs_mean = 0.0f;
+    buf->oracle_diag_frontier_offender_pos_mean = 0.0f;
+    buf->oracle_diag_frontier_offender_neg_mean = 0.0f;
+    buf->oracle_diag_frontier_offender_pos_frac = 0.0f;
+    buf->oracle_diag_frontier_offender_neg_frac = 0.0f;
+    buf->oracle_diag_frontier_offender_max_pos = 0.0f;
+    buf->oracle_diag_frontier_offender_min_neg = 0.0f;
+    buf->oracle_diag_frontier_offender_max_abs = 0.0f;
+    buf->oracle_diag_frontier_offender_max_raw = 0.0f;
+    buf->oracle_diag_frontier_offender_solve_offset = -1;
+    buf->oracle_diag_frontier_offender_max_offset = -1;
+    buf->oracle_diag_frontier_offender_reward_dist = -1;
+    buf->oracle_diag_frontier_offender_maps_solved = -1;
+    buf->oracle_diag_frontier_offender_sequence_pos = -1;
+    buf->oracle_diag_frontier_offender_puzzle_tick = -1;
+    buf->oracle_diag_frontier_offender_value = 0.0f;
+    buf->oracle_diag_frontier_offender_next_value = 0.0f;
+    buf->oracle_diag_frontier_offender_reward = 0.0f;
+    buf->oracle_diag_frontier_offender_terminal = 0.0f;
+    buf->oracle_diag_frontier_offender_delta = 0.0f;
+    buf->oracle_diag_frontier_offender_gae = 0.0f;
     buf->oracle_diag_min_priority = 0.0f;
     buf->oracle_diag_min_raw = 0.0f;
     buf->oracle_diag_raw_solve_offset = -1;
@@ -1584,6 +2250,8 @@ static inline void curriculum_oracle_reset_candidate_diagnostics(StateBuffer* bu
         buf->oracle_diag_vferr_count[i] = 0;
         buf->oracle_diag_vferr_sum[i] = 0.0f;
         buf->oracle_diag_vferr_max[i] = 0.0f;
+        buf->oracle_diag_frontier_offender_bucket_count[i] = 0;
+        buf->oracle_diag_frontier_offender_bucket_max[i] = 0.0f;
     }
 #endif
     for (int i = 0; i < PUFFER_CURRICULUM_TOP_DIAG; i++) {
@@ -1633,7 +2301,10 @@ static inline void curriculum_oracle_update_retention_threshold_diag(
     buf->oracle_diag_min_raw = buf->oracle_segment_terminal_return[min_idx];
 }
 
-static inline void curriculum_oracle_select_pending_candidate(StateBuffer* buf) {
+static inline int curriculum_oracle_min_segment(StateBuffer* buf);
+
+static inline void curriculum_oracle_select_pending_candidate(
+        StateBuffer* buf, long long agent_step) {
     curriculum_oracle_clear_pending(buf);
     curriculum_oracle_reset_candidate_diagnostics(buf);
     curriculum_oracle_update_retention_threshold_diag(buf);
@@ -1648,6 +2319,10 @@ static inline void curriculum_oracle_select_pending_candidate(StateBuffer* buf) 
     int raw_best_count = 0;
     int adv_best_env = -1;
     int adv_best_count = 0;
+    int offender_best_env = -1;
+    int offender_best_count = 0;
+    float offender_best_score = 0.0f;
+    float offender_best_priority = 0.0f;
     int cap = buf->oracle_hist_capacity;
     int max_envs = buf->num_fresh_envs;
     if (max_envs > buf->num_envs) {
@@ -1710,6 +2385,81 @@ static inline void curriculum_oracle_select_pending_candidate(StateBuffer* buf) 
             best_full = full;
             best_last_t = last_t;
         }
+    }
+
+    if (raw_best_env >= 0 && raw_best_count > 0) {
+        int raw_base = raw_best_env * cap;
+        float raw_score = buf->oracle_candidate_terminal_return[raw_best_env];
+        float raw_priority = curriculum_oracle_compute_history_priority(
+            buf, buf->oracle_candidate_source + raw_base,
+            raw_best_count, raw_best_env);
+        int raw_full = buf->oracle_candidate_full[raw_best_env];
+        int raw_last_t = raw_best_count - 1;
+        buf->oracle_diag_raw_selected = raw_best_env == best_env;
+        int min_idx = curriculum_oracle_min_segment(buf);
+        buf->oracle_diag_raw_retained =
+            buf->oracle_segment_count < buf->oracle_max_segments
+            || min_idx < 0
+            || curriculum_oracle_segment_better(
+                raw_score, raw_priority, raw_best_count, raw_full, raw_last_t,
+                buf->oracle_segment_score[min_idx],
+                buf->oracle_segment_priority[min_idx],
+                1, 1, -1);
+
+        for (int env_idx = 0; env_idx < max_envs; env_idx++) {
+            int count = buf->oracle_candidate_count[env_idx];
+            if (count <= 0 || count > cap) {
+                continue;
+            }
+            int base = env_idx * cap;
+            float score = buf->oracle_candidate_terminal_return[env_idx];
+            float priority = curriculum_oracle_compute_history_priority(
+                buf, buf->oracle_candidate_source + base, count, env_idx);
+            if (score >= raw_score - 1e-6f
+                    || priority <= raw_priority + 1e-6f) {
+                continue;
+            }
+
+            float gap = raw_score - score;
+            buf->oracle_diag_frontier_offenders++;
+            buf->oracle_diag_frontier_offender_priority_sum += priority;
+            buf->oracle_diag_frontier_offender_gap_sum += gap;
+            if (gap > buf->oracle_diag_frontier_offender_gap_max) {
+                buf->oracle_diag_frontier_offender_gap_max = gap;
+            }
+            if (priority > buf->oracle_diag_frontier_offender_priority_max) {
+                buf->oracle_diag_frontier_offender_priority_max = priority;
+                buf->oracle_diag_frontier_offender_raw = score;
+                buf->oracle_diag_frontier_offender_solve_level =
+                    buf->oracle_candidate_solve_level[env_idx];
+                buf->oracle_diag_frontier_offender_solve_rate =
+                    buf->oracle_candidate_solve_rate[env_idx];
+                offender_best_env = env_idx;
+                offender_best_count = count;
+                offender_best_score = score;
+                offender_best_priority = priority;
+                curriculum_oracle_profile_frontier_offender(
+                    buf, buf->oracle_candidate_states + base,
+                    buf->oracle_candidate_source + base, count, score);
+            }
+#ifdef BOXOBAN_LEVEL_LOGS
+            int bucket = curriculum_oracle_solve_rate_bucket(
+                buf->oracle_candidate_solve_rate[env_idx]);
+            if (bucket >= 0 && bucket < PUFFER_CURRICULUM_SOLVE_RATE_BINS) {
+                buf->oracle_diag_frontier_offender_bucket_count[bucket]++;
+                if (priority
+                        > buf->oracle_diag_frontier_offender_bucket_max[bucket]) {
+                    buf->oracle_diag_frontier_offender_bucket_max[bucket] =
+                        priority;
+                }
+            }
+#endif
+        }
+        curriculum_oracle_maybe_trace_candidate_compare(
+            buf, agent_step,
+            raw_best_env, raw_best_count, raw_score, raw_priority,
+            offender_best_env, offender_best_count, offender_best_score,
+            offender_best_priority);
     }
 
     if (best_env < 0 || best_count <= 0) {
@@ -1802,6 +2552,8 @@ static inline void curriculum_oracle_select_pending_candidate(StateBuffer* buf) 
     buf->oracle_pending_score = best_score;
     buf->oracle_pending_terminal_return = best_score;
     buf->oracle_pending_priority = best_priority;
+    buf->oracle_pending_solve_rate =
+        buf->oracle_candidate_solve_rate[best_env];
     buf->oracle_pending_count = best_count;
     buf->oracle_pending_first_t = 0;
     buf->oracle_pending_last_t = best_last_t;
@@ -1857,17 +2609,16 @@ static inline void curriculum_oracle_update_segment_priority_from_slots(
         end = buf->size;
     }
 
-    float priority = 0.0f;
+    float top[PUFFER_CURRICULUM_PRIORITY_TOPK] = {};
     for (int slot = base; slot < end; slot++) {
         float slot_priority = buf->oracle_state_priority[slot];
         if (isnan(slot_priority) || isinf(slot_priority)) {
             continue;
         }
-        slot_priority = fabsf(slot_priority);
-        priority += slot_priority * slot_priority;
+        curriculum_oracle_insert_top_abs_error(top, slot_priority);
     }
     buf->oracle_segment_priority[seg] =
-        clean_state_priority(sqrtf(priority));
+        curriculum_oracle_top_abs_error_sum(top);
 }
 
 static inline void curriculum_oracle_refresh_saved_diagnostics(
@@ -1990,6 +2741,45 @@ static inline void curriculum_oracle_recompute_segment_priorities(StateBuffer* b
     curriculum_oracle_refresh_saved_diagnostics(buf, -1);
 }
 
+static inline float curriculum_oracle_history_discounted_return(
+        StateBuffer* buf, int env_idx, int count, float terminal_score,
+        float gamma) {
+    int hist_cap = buf->oracle_hist_capacity;
+    if (env_idx < 0 || env_idx >= buf->num_envs
+            || hist_cap <= 0 || count <= 0 || count > hist_cap) {
+        return 0.0f;
+    }
+
+    int hist_base = env_idx * hist_cap;
+    int hist_start = (buf->oracle_hist_write[env_idx] + hist_cap - count) % hist_cap;
+    PufferState* hist_states = buf->oracle_hist_states + hist_base;
+    gamma = fminf(1.0f, fmaxf(0.0f, gamma));
+
+    float ret = 0.0f;
+    for (int i = count - 1; i >= 0; i--) {
+        int src = (hist_start + i) % hist_cap;
+        PufferState* state = &hist_states[src];
+        if (i == count - 1) {
+            ret = terminal_score - state->episode_return;
+            if (isnan(ret) || isinf(ret)) {
+                ret = 0.0f;
+            }
+        } else {
+            int next_src = (hist_start + i + 1) % hist_cap;
+            PufferState* next_state = &hist_states[next_src];
+            float reward = next_state->episode_return - state->episode_return;
+            if (isnan(reward) || isinf(reward)) {
+                reward = 0.0f;
+            }
+            ret = reward + gamma * ret;
+        }
+    }
+    if (isnan(ret) || isinf(ret)) {
+        return 0.0f;
+    }
+    return ret;
+}
+
 static inline int curriculum_oracle_replace_cl_tail(
         StateBuffer* buf, int env_idx, float terminal_score, float gamma) {
     int sampled_slot = buf->oracle_cl_start_slot[env_idx];
@@ -2017,25 +2807,8 @@ static inline int curriculum_oracle_replace_cl_tail(
 
     float old_return = buf->oracle_state_return[sampled_slot];
 
-    float candidate_return = 0.0f;
-    for (int i = count - 1; i >= 0; i--) {
-        int src = (hist_start + i) % hist_cap;
-        PufferState* state = &hist_states[src];
-        if (i == count - 1) {
-            candidate_return = terminal_score - state->episode_return;
-            if (isnan(candidate_return) || isinf(candidate_return)) {
-                candidate_return = 0.0f;
-            }
-        } else {
-            int next_src = (hist_start + i + 1) % hist_cap;
-            PufferState* next_state = &hist_states[next_src];
-            float reward = next_state->episode_return - state->episode_return;
-            if (isnan(reward) || isinf(reward)) {
-                reward = 0.0f;
-            }
-            candidate_return = reward + gamma * candidate_return;
-        }
-    }
+    float candidate_return = curriculum_oracle_history_discounted_return(
+        buf, env_idx, count, terminal_score, gamma);
     if (isnan(candidate_return) || isinf(candidate_return)
             || candidate_return <= old_return + 1e-6f) {
         return 0;
@@ -2086,6 +2859,58 @@ static inline int curriculum_oracle_replace_cl_tail(
     }
     curriculum_oracle_refresh_saved_diagnostics(buf, -1);
     return 1;
+}
+
+static inline void curriculum_oracle_apply_head_priority_updates(StateBuffer* buf) {
+    int seg_cap = buf->oracle_segment_capacity;
+    if (seg_cap <= 0 || buf->oracle_segment_count <= 0) {
+        return;
+    }
+
+    int updated = 0;
+    for (int env_idx = 0; env_idx < buf->num_envs; env_idx++) {
+        int seg = buf->oracle_head_update_seg[env_idx];
+        int count = buf->oracle_head_update_count[env_idx];
+        buf->oracle_head_update_seg[env_idx] = -1;
+        buf->oracle_head_update_count[env_idx] = 0;
+        if (seg < 0 || seg >= buf->oracle_segment_count || count <= 0) {
+            continue;
+        }
+
+        int seg_len = buf->oracle_segment_len[seg];
+        if (seg_len <= 0 || seg_len > seg_cap) {
+            continue;
+        }
+        int usable = count;
+        if (usable > seg_len) {
+            usable = seg_len;
+        }
+        if (usable > buf->num_checkpoints) {
+            usable = buf->num_checkpoints;
+        }
+        if (usable <= 0) {
+            continue;
+        }
+
+        int base = seg * seg_cap;
+        for (int offset = 0; offset < seg_len; offset++) {
+            buf->oracle_state_priority[base + offset] = 0.0f;
+        }
+        for (int c = 0; c < usable; c++) {
+            int idx = c * buf->num_envs + env_idx;
+            float adv = fabsf(to_float(buf->env_scores_host[idx]));
+            if (isnan(adv) || isinf(adv)) {
+                adv = 0.0f;
+            }
+            buf->oracle_state_priority[base + c] = clean_state_priority(adv);
+        }
+        curriculum_oracle_update_segment_priority_from_slots(buf, seg);
+        updated = 1;
+    }
+
+    if (updated) {
+        curriculum_oracle_refresh_saved_diagnostics(buf, -1);
+    }
 }
 
 static inline void curriculum_oracle_capture_state(
@@ -2152,6 +2977,31 @@ static inline void curriculum_oracle_capture_state(
 #pragma omp critical(puffer_oracle_tail)
 #endif
             {
+                if (buf->oracle_cl_head_sample[env_idx]) {
+                    int sampled_slot = buf->oracle_cl_start_slot[env_idx];
+                    int seg_cap = buf->oracle_segment_capacity;
+                    int count = buf->oracle_hist_count[env_idx];
+                    if (sampled_slot >= 0 && sampled_slot < buf->size
+                            && seg_cap > 0 && count > 0
+                            && (sampled_slot % seg_cap) == 0) {
+                        int seg = sampled_slot / seg_cap;
+                        if (seg >= 0 && seg < buf->oracle_segment_count
+                                && buf->oracle_segment_len[seg] > 0) {
+                            float old_return = buf->oracle_state_return[sampled_slot];
+                            if (isnan(old_return) || isinf(old_return)) {
+                                old_return = 0.0f;
+                            }
+                            float candidate_return =
+                                curriculum_oracle_history_discounted_return(
+                                    buf, env_idx, count, terminal_return, gamma);
+                            if (!isnan(candidate_return) && !isinf(candidate_return)
+                                    && candidate_return + 1e-6f >= old_return) {
+                                buf->oracle_head_update_seg[env_idx] = seg;
+                                buf->oracle_head_update_count[env_idx] = count;
+                            }
+                        }
+                    }
+                }
                 int replaced = curriculum_oracle_replace_cl_tail(
                     buf, env_idx, terminal_return, gamma);
                 if (replaced) {
@@ -2159,6 +3009,7 @@ static inline void curriculum_oracle_capture_state(
                 }
                 buf->oracle_cl_start_slot[env_idx] = -1;
                 buf->oracle_cl_start_bucket[env_idx] = -1;
+                buf->oracle_cl_head_sample[env_idx] = 0;
             }
         }
         int reset_episode = state->tick <= last->tick;
@@ -2173,6 +3024,11 @@ static inline void curriculum_oracle_capture_state(
 }
 
 static inline void curriculum_oracle_clear_segments(StateBuffer* buf) {
+#ifdef BOXOBAN_LEVEL_LOGS
+    for (int i = 0; i < buf->oracle_segment_count; i++) {
+        curriculum_oracle_record_segment_ejection(buf, i);
+    }
+#endif
     buf->size = 0;
     buf->oracle_segment_count = 0;
     buf->min_priority = 0.0f;
@@ -2187,6 +3043,10 @@ static inline void curriculum_oracle_clear_segments(StateBuffer* buf) {
         buf->oracle_segment_level[i] = -1;
         buf->oracle_segment_len[i] = 0;
         buf->oracle_segment_agent_step[i] = -1;
+        buf->oracle_segment_sample_count[i] = 0;
+#ifdef BOXOBAN_LEVEL_LOGS
+        buf->oracle_segment_solve_rate[i] = -1.0f;
+#endif
     }
 }
 
@@ -2228,6 +3088,9 @@ static inline int curriculum_oracle_find_segment_slot(
             1, 1, -1)) {
         return -1;
     }
+#ifdef BOXOBAN_LEVEL_LOGS
+    curriculum_oracle_record_segment_ejection(buf, min_idx);
+#endif
     return min_idx;
 }
 
@@ -2276,6 +3139,11 @@ static inline int curriculum_oracle_store_pending_segment(
     buf->oracle_segment_level[segment_slot] = buf->oracle_pending_level;
     buf->oracle_segment_len[segment_slot] = count;
     buf->oracle_segment_agent_step[segment_slot] = agent_step;
+    buf->oracle_segment_sample_count[segment_slot] = 0;
+#ifdef BOXOBAN_LEVEL_LOGS
+    buf->oracle_segment_solve_rate[segment_slot] =
+        buf->oracle_pending_solve_rate;
+#endif
     buf->size = buf->oracle_segment_count * seg_cap;
     __sync_fetch_and_add(&buf->oracle_fresh_segments_stored, 1);
     curriculum_oracle_refresh_saved_diagnostics(buf, agent_step);
@@ -2507,8 +3375,40 @@ void curriculum_rollout_begin(PuffeRL* pufferl) {
         int* state_inds = buf->env_state_inds_host + num_fresh_envs;
         for (int i = 0; i < num_cl_envs; i++) {
             int sampled_slot = state_inds[i];
-            const PufferState* sampled_state = &buf->states[sampled_slot];
             int env_idx = num_fresh_envs + i;
+#ifdef PUFFER_CURRICULUM_DIAG_SEQUENCE_OUTCOME
+            if (h->frontier_explore) {
+                buf->oracle_cl_head_sample[env_idx] = 0;
+                buf->oracle_head_update_seg[env_idx] = -1;
+                buf->oracle_head_update_count[env_idx] = 0;
+                int seg_cap = buf->oracle_segment_capacity;
+                if ((i & 1) == 0 && seg_cap > 0
+                        && sampled_slot >= 0 && sampled_slot < buf->size) {
+                    int seg = sampled_slot / seg_cap;
+                    if (seg >= 0 && seg < buf->oracle_segment_count
+                            && buf->oracle_segment_len[seg] > 0) {
+                        sampled_slot = seg * seg_cap;
+                        state_inds[i] = sampled_slot;
+                        buf->oracle_cl_head_sample[env_idx] = 1;
+                    }
+                }
+            }
+#endif
+#ifdef PUFFER_CURRICULUM_DIAG_SEQUENCE_OUTCOME
+            if (h->frontier_explore && buf->oracle_segment_capacity > 0
+                    && sampled_slot >= 0 && sampled_slot < buf->size) {
+                int sampled_seg = sampled_slot / buf->oracle_segment_capacity;
+                int sampled_offset =
+                    sampled_slot - sampled_seg * buf->oracle_segment_capacity;
+                if (sampled_seg >= 0
+                        && sampled_seg < buf->oracle_segment_count
+                        && sampled_offset >= 0
+                        && sampled_offset < buf->oracle_segment_len[sampled_seg]) {
+                    buf->oracle_segment_sample_count[sampled_seg]++;
+                }
+            }
+#endif
+            const PufferState* sampled_state = &buf->states[sampled_slot];
             Env* env = &envs[env_idx];
             env->state = *sampled_state;
             puffer_state_refresh(env);
@@ -2569,17 +3469,28 @@ void curriculum_update_advantages(PuffeRL* pufferl, PrecisionTensor* advantages,
         int num_envs = buf->num_envs;
         int checkpoint_rows = buf->num_checkpoints * num_envs;
         compute_curriculum_checkpoint_scores<<<grid_size(checkpoint_rows), BLOCK_SIZE, 0, stream>>>(
-            buf->env_scores.data, advantages->data, entropy->data, num_envs,
+            buf->env_scores.data, buf->env_debug.data,
+            advantages->data, entropy->data,
+            pufferl->train_rollouts.values.data,
+            pufferl->train_rollouts.rewards.data,
+            pufferl->train_rollouts.terminals.data,
+            num_envs,
             buf->num_fresh_envs, buf->num_cl_envs, buf->num_checkpoints,
-            buf->checkpoint_interval, buf->agents_per_env, horizon);
+            buf->checkpoint_interval, buf->agents_per_env,
+            pufferl->hypers.gamma, horizon);
         cudaMemcpyAsync(buf->env_scores_host, buf->env_scores.data,
             (size_t)checkpoint_rows * sizeof(precision_t),
             cudaMemcpyDeviceToHost, stream);
+        cudaMemcpyAsync(buf->env_debug_host, buf->env_debug.data,
+            (size_t)checkpoint_rows * PUFFER_CURRICULUM_DEBUG_FIELDS
+                * sizeof(precision_t),
+            cudaMemcpyDeviceToHost, stream);
         cudaStreamSynchronize(stream);
 
-        curriculum_oracle_decay_segment_priorities(
-            buf, pufferl->hypers.state_priority_decay);
-        curriculum_oracle_select_pending_candidate(buf);
+        curriculum_oracle_apply_head_priority_updates(buf);
+        long long agent_step =
+            pufferl->global_step * (long long)pufferl->hypers.world_size;
+        curriculum_oracle_select_pending_candidate(buf, agent_step);
         curriculum_try_oracle_solve_segment(pufferl);
         curriculum_oracle_clear_candidates(buf);
         curriculum_oracle_refresh_saved_diagnostics(buf, -1);
@@ -2602,9 +3513,11 @@ void curriculum_update_advantages(PuffeRL* pufferl, PrecisionTensor* advantages,
     int checkpoint_rows = buf->num_checkpoints * num_envs;
     int score_rows = checkpoint_rows + num_cl_envs;
     compute_curriculum_checkpoint_scores<<<grid_size(score_rows), BLOCK_SIZE, 0, stream>>>(
-        buf->env_scores.data, advantages->data, entropy->data, num_envs,
+        buf->env_scores.data, NULL, advantages->data, entropy->data,
+        NULL, NULL, NULL, num_envs,
         num_fresh_envs, num_cl_envs, buf->num_checkpoints,
-        buf->checkpoint_interval, agents_per_env, horizon);
+        buf->checkpoint_interval, agents_per_env, pufferl->hypers.gamma,
+        horizon);
     int cl_score_offset = checkpoint_rows;
     cudaMemcpyAsync(buf->env_scores_host, buf->env_scores.data,
         (size_t)score_rows * sizeof(precision_t), cudaMemcpyDeviceToHost, stream);
@@ -2684,6 +3597,7 @@ static inline void curriculum_log_diagnostics(PuffeRL* pufferl, Dict* out) {
         }
         dict_set(out, "seg", (double)buf->oracle_saved_score);
         dict_set(out, "seg_raw", (double)buf->oracle_saved_terminal_return);
+        dict_set(out, "trace_n", (double)buf->oracle_trace_dump_count);
         dict_set(out, "buf_raw", max_raw);
         dict_set(out, "buf_raw_n", max_raw_n);
         int retained_top[PUFFER_CURRICULUM_TOP_DIAG];
@@ -2768,6 +3682,78 @@ static inline void curriculum_log_diagnostics(PuffeRL* pufferl, Dict* out) {
         dict_set(out, "ca_in", (double)buf->oracle_diag_selected_stored);
         dict_set(out, "ca_min", (double)buf->oracle_diag_min_priority);
         dict_set(out, "ca_minr", (double)buf->oracle_diag_min_raw);
+        dict_set(out, "ca_rawsel", (double)buf->oracle_diag_raw_selected);
+        dict_set(out, "ca_rawin", (double)buf->oracle_diag_raw_retained);
+        dict_set(out, "fo_n",
+            (double)buf->oracle_diag_frontier_offenders);
+        dict_set(out, "fo_a", buf->oracle_diag_frontier_offenders > 0
+            ? (double)buf->oracle_diag_frontier_offender_priority_sum
+                / (double)buf->oracle_diag_frontier_offenders : 0.0);
+        dict_set(out, "fo_x",
+            (double)buf->oracle_diag_frontier_offender_priority_max);
+        dict_set(out, "fo_r",
+            (double)buf->oracle_diag_frontier_offender_raw);
+        dict_set(out, "fo_l",
+            (double)buf->oracle_diag_frontier_offender_solve_level);
+        dict_set(out, "fo_s",
+            (double)buf->oracle_diag_frontier_offender_solve_rate);
+        dict_set(out, "fo_g", buf->oracle_diag_frontier_offenders > 0
+            ? (double)buf->oracle_diag_frontier_offender_gap_sum
+                / (double)buf->oracle_diag_frontier_offenders : 0.0);
+        dict_set(out, "fo_gx",
+            (double)buf->oracle_diag_frontier_offender_gap_max);
+        dict_set(out, "fo_len",
+            (double)buf->oracle_diag_frontier_offender_len);
+        dict_set(out, "fo_am",
+            (double)buf->oracle_diag_frontier_offender_abs_mean);
+        dict_set(out, "fo_pm",
+            (double)buf->oracle_diag_frontier_offender_pos_mean);
+        dict_set(out, "fo_nm",
+            (double)buf->oracle_diag_frontier_offender_neg_mean);
+        dict_set(out, "fo_pf",
+            (double)buf->oracle_diag_frontier_offender_pos_frac);
+        dict_set(out, "fo_nf",
+            (double)buf->oracle_diag_frontier_offender_neg_frac);
+        dict_set(out, "fo_mx",
+            (double)buf->oracle_diag_frontier_offender_max_pos);
+        dict_set(out, "fo_mn",
+            (double)buf->oracle_diag_frontier_offender_min_neg);
+        dict_set(out, "fo_ma",
+            (double)buf->oracle_diag_frontier_offender_max_abs);
+        dict_set(out, "fo_mraw",
+            (double)buf->oracle_diag_frontier_offender_max_raw);
+        dict_set(out, "fo_so",
+            (double)buf->oracle_diag_frontier_offender_solve_offset);
+        dict_set(out, "fo_mo",
+            (double)buf->oracle_diag_frontier_offender_max_offset);
+        dict_set(out, "fo_rd",
+            (double)buf->oracle_diag_frontier_offender_reward_dist);
+        dict_set(out, "fo_v",
+            (double)buf->oracle_diag_frontier_offender_value);
+        dict_set(out, "fo_vn",
+            (double)buf->oracle_diag_frontier_offender_next_value);
+        dict_set(out, "fo_rw",
+            (double)buf->oracle_diag_frontier_offender_reward);
+        dict_set(out, "fo_dn",
+            (double)buf->oracle_diag_frontier_offender_terminal);
+        dict_set(out, "fo_de",
+            (double)buf->oracle_diag_frontier_offender_delta);
+        dict_set(out, "fo_ga",
+            (double)buf->oracle_diag_frontier_offender_gae);
+        dict_set(out, "fo_lvl",
+            (double)buf->oracle_diag_frontier_offender_maps_solved);
+        dict_set(out, "fo_seq",
+            (double)buf->oracle_diag_frontier_offender_sequence_pos);
+        dict_set(out, "fo_pt",
+            (double)buf->oracle_diag_frontier_offender_puzzle_tick);
+#ifdef BOXOBAN_LEVEL_LOGS
+        for (int i = 0; i < PUFFER_CURRICULUM_SOLVE_RATE_BINS; i++) {
+            dict_set(out, curriculum_diag_frontier_offender_key(i, 0),
+                (double)buf->oracle_diag_frontier_offender_bucket_count[i]);
+            dict_set(out, curriculum_diag_frontier_offender_key(i, 1),
+                (double)buf->oracle_diag_frontier_offender_bucket_max[i]);
+        }
+#endif
         for (int i = 0; i < PUFFER_CURRICULUM_TOP_DIAG; i++) {
             dict_set(out, curriculum_diag_top_key("ct", i, 0),
                 (double)buf->oracle_diag_candidate_top_raw[i]);
@@ -2843,6 +3829,34 @@ static inline void curriculum_log_diagnostics(PuffeRL* pufferl, Dict* out) {
                 : 0.0);
             dict_set(out, curriculum_diag_vferr_key(i, 2),
                 (double)buf->oracle_diag_vferr_max[i]);
+        }
+        long long live_count[PUFFER_CURRICULUM_SOLVE_RATE_BINS] = {};
+        long long live_samples_sum[PUFFER_CURRICULUM_SOLVE_RATE_BINS] = {};
+        for (int seg = 0; seg < buf->oracle_segment_count; seg++) {
+            int bucket = curriculum_oracle_solve_rate_bucket(
+                buf->oracle_segment_solve_rate[seg]);
+            if (bucket < 0 || bucket >= PUFFER_CURRICULUM_SOLVE_RATE_BINS) {
+                continue;
+            }
+            live_count[bucket]++;
+            live_samples_sum[bucket] += buf->oracle_segment_sample_count[seg];
+        }
+        for (int i = 0; i < PUFFER_CURRICULUM_SOLVE_RATE_BINS; i++) {
+            dict_set(out, curriculum_diag_segment_use_key(i, 0),
+                (double)buf->oracle_diag_eject_count[i]);
+            dict_set(out, curriculum_diag_segment_use_key(i, 1),
+                buf->oracle_diag_eject_count[i] > 0
+                ? (double)buf->oracle_diag_eject_samples_sum[i]
+                    / (double)buf->oracle_diag_eject_count[i]
+                : 0.0);
+            dict_set(out, curriculum_diag_segment_use_key(i, 2),
+                (double)buf->oracle_diag_eject_samples_max[i]);
+            dict_set(out, curriculum_diag_segment_use_key(i, 3),
+                (double)live_count[i]);
+            dict_set(out, curriculum_diag_segment_use_key(i, 4),
+                live_count[i] > 0
+                ? (double)live_samples_sum[i] / (double)live_count[i]
+                : 0.0);
         }
 #endif
         long long attempts = 0;

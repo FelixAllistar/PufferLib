@@ -90,10 +90,14 @@ pybind11::dict puf_log(pybind11::object pufferl_obj) {
     cudaMemcpy(reward_stats_host, pufferl.reward_stats.data,
         sizeof(reward_stats_host), cudaMemcpyDeviceToHost);
     losses_dict["rvar"] = reward_stats_host[1];
+#if PUFFER_SCALE_REWARDS || PUFFER_ADV_LOSS_SCALE
     float reward_scale = 1.0f / sqrtf(reward_stats_host[1] + 1e-8f);
     if (pufferl.hypers.reward_scale_max > 0.0f) {
         reward_scale = fminf(reward_scale, pufferl.hypers.reward_scale_max);
     }
+#else
+    float reward_scale = 1.0f;
+#endif
     losses_dict["rscale"] = reward_scale;
     cudaMemset(pufferl.losses_puf.data, 0, numel(pufferl.losses_puf.shape) * sizeof(float));
     result["loss"] = losses_dict;

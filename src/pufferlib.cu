@@ -11,6 +11,18 @@
 #include "muon.cu"
 #include "vecenv.h"
 
+#ifndef PUFFER_SCALE_REWARDS
+#define PUFFER_SCALE_REWARDS 0
+#endif
+
+#ifndef PUFFER_ADV_LOSS_SCALE
+#define PUFFER_ADV_LOSS_SCALE 1
+#endif
+
+#ifndef PUFFER_CENTER_ADVANTAGES
+#define PUFFER_CENTER_ADVANTAGES 0
+#endif
+
 static double wall_clock() {
     struct timespec ts;
     clock_gettime(CLOCK_REALTIME, &ts);
@@ -174,11 +186,15 @@ struct PPOKernelArgs {
     const precision_t* logits;
     const precision_t* logstd; // Continuous only
     const precision_t* values_pred;
+    const float* adv_mean;
+    const float* adv_var;
+    const float* reward_stats;
     const int* act_sizes;
     const precision_t* action_mask; // (N, T, A_total) or nullptr
     int mask_stride_n, mask_stride_t;
     int num_atns;
     float clip_coef, vf_clip_coef, vf_coef, ent_coef;
+    float reward_scale_max;
     int T_seq, A_total, N;
     int logits_stride_n, logits_stride_t, logits_stride_a;
     int values_stride_n, values_stride_t;
@@ -189,6 +205,7 @@ struct PPOBuffersPuf {
     FloatTensor loss_output, grad_loss;
     FloatTensor saved_for_bwd;
     FloatTensor grad_logits, grad_values, grad_logstd, partials;
+    FloatTensor adv_scratch;
 };
 
 void register_ppo_buffers(PPOBuffersPuf& bufs, Allocator* alloc, int N, int T, int A_total, bool is_continuous) {
@@ -202,6 +219,7 @@ void register_ppo_buffers(PPOBuffersPuf& bufs, Allocator* alloc, int N, int T, i
         .grad_values = {.shape = {N, T, 1}},
         .grad_logstd = {.shape = {N, T, A_total}},
         .partials = {.shape = {partial_blocks * (LOSS_N + 1)}},
+        .adv_scratch = {.shape = {2}},
     };
     alloc_register(alloc, &bufs.loss_output);
     alloc_register(alloc, &bufs.saved_for_bwd);
@@ -212,6 +230,7 @@ void register_ppo_buffers(PPOBuffersPuf& bufs, Allocator* alloc, int N, int T, i
         alloc_register(alloc, &bufs.grad_logstd);
     }
     alloc_register(alloc, &bufs.partials);
+    alloc_register(alloc, &bufs.adv_scratch);
 }
 
 #define PUFFER_CURRICULUM_TYPES
@@ -1156,6 +1175,20 @@ __global__ void ppo_loss_compute(
     float ret = to_float(g.returns[nt]);
     float val_pred = to_float(a.values_pred[values_idx]);
     g.out_newvalue[nt] = from_float(val_pred);
+    float adv_policy = adv;
+#if PUFFER_CENTER_ADVANTAGES
+    float adv_std = sqrtf(fmaxf(a.adv_var[0], 0.0f));
+    adv_policy = (adv - a.adv_mean[0]) / (adv_std + 1e-8f);
+#endif
+#if PUFFER_ADV_LOSS_SCALE
+    if (a.reward_stats != nullptr) {
+        float reward_scale = rsqrtf(fmaxf(a.reward_stats[1], 0.0f) + 1e-8f);
+        if (a.reward_scale_max > 0.0f) {
+            reward_scale = fminf(reward_scale, a.reward_scale_max);
+        }
+        adv_policy *= reward_scale;
+    }
+#endif
 
     // grad_loss is always 1.0 (set in post_create, never changes)
     float dL = inv_NT;
@@ -1228,7 +1261,7 @@ __global__ void ppo_loss_compute(
     ratio = __expf(logratio);
     g.out_ratio[nt] = from_float(ratio);
     float ratio_clipped = fmaxf(1.0f - a.clip_coef, fminf(1.0f + a.clip_coef, ratio));
-    float wa = -w * adv;
+    float wa = -w * adv_policy;
     float pg_loss1 = wa * ratio;
     float pg_loss2 = wa * ratio_clipped;
     pg_loss = fmaxf(pg_loss1, pg_loss2);
@@ -1336,6 +1369,54 @@ __global__ void ppo_loss_reduce(
     }
 }
 
+__global__ void ppo_var_mean(const precision_t* __restrict__ src,
+        float* __restrict__ var_out, float* __restrict__ mean_out, int n) {
+    __shared__ float sdata[256];
+    int tid = threadIdx.x;
+    if (n <= 1) {
+        if (tid == 0) {
+            *mean_out = n == 1 ? to_float(src[0]) : 0.0f;
+            *var_out = 0.0f;
+        }
+        return;
+    }
+
+    float sum = 0.0f;
+    for (int i = tid; i < n; i += blockDim.x) {
+        sum += to_float(src[i]);
+    }
+    sdata[tid] = sum;
+    __syncthreads();
+    for (int s = blockDim.x / 2; s > 0; s >>= 1) {
+        if (tid < s) {
+            sdata[tid] += sdata[tid + s];
+        }
+        __syncthreads();
+    }
+    float mean = sdata[0] / (float)n;
+    if (tid == 0) {
+        *mean_out = mean;
+    }
+    __syncthreads();
+
+    float ss = 0.0f;
+    for (int i = tid; i < n; i += blockDim.x) {
+        float d = to_float(src[i]) - mean;
+        ss += d * d;
+    }
+    sdata[tid] = ss;
+    __syncthreads();
+    for (int s = blockDim.x / 2; s > 0; s >>= 1) {
+        if (tid < s) {
+            sdata[tid] += sdata[tid + s];
+        }
+        __syncthreads();
+    }
+    if (tid == 0) {
+        *var_out = sdata[0] / (float)(n - 1);
+    }
+}
+
 // This is a huge kernel for a relatively cheap operation. But without this,
 // it's death by a thousand cuts with repeated kernel launches. Even graphed, you
 // blow up the memory bandwidth.
@@ -1346,6 +1427,7 @@ void ppo_loss_fwd_bwd(
         IntTensor& act_sizes, FloatTensor& losses_acc,
         float clip_coef, float vf_clip_coef, float vf_coef, float ent_coef,
         PPOBuffersPuf& bufs, bool is_continuous,
+        FloatTensor& reward_stats, float reward_scale_max,
         cudaStream_t stream) {
     int N = dec_out.shape[0], T = dec_out.shape[1], fused_cols = dec_out.shape[2];
     int A_total = fused_cols - 1;  // last column is value
@@ -1353,6 +1435,14 @@ void ppo_loss_fwd_bwd(
 
     // Pointers into fused decoder output
     const precision_t* logits_ptr = dec_out.data;
+
+    float* adv_var_ptr = bufs.adv_scratch.data;
+    float* adv_mean_ptr = adv_var_ptr + 1;
+#if PUFFER_CENTER_ADVANTAGES
+    ppo_var_mean<<<1, 256, 0, stream>>>(
+        graph.mb_advantages.data, adv_var_ptr, adv_mean_ptr,
+        numel(graph.mb_advantages.shape));
+#endif
 
     int ppo_grid = (total + PPO_THREADS - 1) / PPO_THREADS;
 
@@ -1381,6 +1471,9 @@ void ppo_loss_fwd_bwd(
         .logits = logits_ptr,
         .logstd = is_continuous ? logstd.data : nullptr,
         .values_pred = logits_ptr + A_total,
+        .adv_mean = adv_mean_ptr,
+        .adv_var = adv_var_ptr,
+        .reward_stats = reward_stats.data,
         .act_sizes = act_sizes.data,
         .action_mask = has_mask ? graph.mb_action_mask.data : nullptr,
         .mask_stride_n = has_mask ? T * A_total : 0,
@@ -1388,6 +1481,7 @@ void ppo_loss_fwd_bwd(
         .num_atns = (int)numel(act_sizes.shape),
         .clip_coef = clip_coef, .vf_clip_coef = vf_clip_coef,
         .vf_coef = vf_coef, .ent_coef = ent_coef,
+        .reward_scale_max = reward_scale_max,
         .T_seq = T, .A_total = A_total, .N = N,
         .logits_stride_n = T * fused_cols, .logits_stride_t = fused_cols, .logits_stride_a = 1,
         .values_stride_n = T * fused_cols, .values_stride_t = fused_cols,
@@ -1708,7 +1802,7 @@ inline float cosine_annealing(float lr_base, float lr_min, long t, long T) {
 
 __global__ void scale_rewards_by_running_std(
         precision_t* __restrict__ rewards, float* __restrict__ stats,
-        int n, float decay, float eps, float max_scale) {
+        int n, float decay, float eps, float max_scale, int apply_scale) {
     __shared__ float sums[2][256];
     int tid = threadIdx.x;
     float sum = 0.0f;
@@ -1745,8 +1839,10 @@ __global__ void scale_rewards_by_running_std(
     __syncthreads();
 
     float scale = sums[0][0];
-    for (int i = tid; i < n; i += blockDim.x) {
-        rewards[i] = from_float(to_float(rewards[i]) * scale);
+    if (apply_scale) {
+        for (int i = tid; i < n; i += blockDim.x) {
+            rewards[i] = from_float(to_float(rewards[i]) * scale);
+        }
     }
 }
 
@@ -1788,11 +1884,16 @@ void train_impl(PuffeRL& pufferl) {
             rollouts.action_mask.data, src.action_mask.data, T, B, mask_size);
     }
 
+#if PUFFER_SCALE_REWARDS
     clamp_precision_kernel<<<grid_size(numel(rollouts.rewards.shape)), BLOCK_SIZE, 0, train_stream>>>(
         rollouts.rewards.data, -1.0f, 1.0f, numel(rollouts.rewards.shape));
+#endif
+#if PUFFER_SCALE_REWARDS || PUFFER_ADV_LOSS_SCALE
     scale_rewards_by_running_std<<<1, 256, 0, train_stream>>>(
         rollouts.rewards.data, pufferl.reward_stats.data,
-        numel(rollouts.rewards.shape), 0.99f, 1e-8f, hypers.reward_scale_max);
+        numel(rollouts.rewards.shape), 0.99f, 1e-8f, hypers.reward_scale_max,
+        PUFFER_SCALE_REWARDS);
+#endif
 
     // Set importance weights to 1.0
     fill_precision_kernel<<<grid_size(numel(rollouts.ratio.shape)), BLOCK_SIZE, 0, train_stream>>>(
@@ -1917,7 +2018,8 @@ void train_impl(PuffeRL& pufferl) {
             ppo_loss_fwd_bwd(dec_puf, p_logstd, graph,
                 pufferl.act_sizes_puf, pufferl.losses_puf,
                 hypers.clip_coef, hypers.vf_clip_coef, hypers.vf_coef, current_ent_coef,
-                pufferl.ppo_bufs_puf, pufferl.is_continuous, stream);
+                pufferl.ppo_bufs_puf, pufferl.is_continuous,
+                pufferl.reward_stats, hypers.reward_scale_max, stream);
 
             FloatTensor grad_logits_puf = pufferl.ppo_bufs_puf.grad_logits;
             FloatTensor grad_logstd_puf = pufferl.is_continuous ? pufferl.ppo_bufs_puf.grad_logstd : FloatTensor();
