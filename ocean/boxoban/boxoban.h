@@ -501,7 +501,6 @@ void c_step(Boxoban* env) {
         if (env->map_sequence_len > 0) {
             s->episode_maps_solved += 1;
             if (s->sequence_pos + 1 < env->map_sequence_len) {
-                env->terminals[0] = 1;
                 s->sequence_pos += 1;
                 s->win = 0;
                 load_random_puzzle(env);

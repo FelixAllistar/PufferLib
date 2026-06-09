@@ -325,6 +325,7 @@ typedef struct {
     float explore_beta;
     float explore_decay;
     float state_priority_decay;
+    bool admit_adv;
     bool frontier_explore;
     bool frontier_random;
     // Flags
@@ -1899,6 +1900,20 @@ void train_impl(PuffeRL& pufferl) {
     fill_precision_kernel<<<grid_size(numel(rollouts.ratio.shape)), BLOCK_SIZE, 0, train_stream>>>(
         rollouts.ratio.data, from_float(1.0f), numel(rollouts.ratio.shape));
 
+    if (pufferl.curriculum_enabled) {
+        puf_zero(&advantages_puf, train_stream);
+        puff_advantage_cuda(rollouts.values, rollouts.rewards, rollouts.terminals,
+            rollouts.ratio, advantages_puf, hypers.gamma, hypers.state_lambda,
+            hypers.vtrace_rho_clip, hypers.vtrace_c_clip, train_stream);
+        if (pufferl.num_frozen_banks > 0 && pufferl.bank_layout != NULL) {
+            int apb = hypers.total_agents / hypers.num_buffers;
+            zero_frozen_advantages_cuda(advantages_puf, apb,
+                pufferl.bank_layout[1], train_stream);
+        }
+        curriculum_update_advantages(&pufferl, &advantages_puf,
+            &rollouts.entropy, train_stream);
+    }
+
     // Inline any of these only used once
     int minibatch_size = hypers.minibatch_size;
     int batch_size = hypers.total_agents * hypers.horizon;
@@ -2081,18 +2096,6 @@ void train_impl(PuffeRL& pufferl) {
                 (const char*)graph.mb_newvalue.data, num_idx, row_bytes);
         }
         cudaEventRecord(pufferl.profile.events[4]);  // end forward
-    }
-    if (pufferl.curriculum_enabled) {
-        puf_zero(&advantages_puf, train_stream);
-        puff_advantage_cuda(rollouts.values, rollouts.rewards, rollouts.terminals,
-            rollouts.ratio, advantages_puf, hypers.gamma, hypers.state_lambda,
-            hypers.vtrace_rho_clip, hypers.vtrace_c_clip, train_stream);
-        if (pufferl.num_frozen_banks > 0 && pufferl.bank_layout != NULL) {
-            int apb = hypers.total_agents / hypers.num_buffers;
-            zero_frozen_advantages_cuda(advantages_puf, apb,
-                pufferl.bank_layout[1], train_stream);
-        }
-        curriculum_update_advantages(&pufferl, &advantages_puf, &rollouts.entropy, train_stream);
     }
     pufferl.epoch += 1;
 
@@ -2479,6 +2482,7 @@ std::unique_ptr<PuffeRL> create_pufferl_impl(HypersT& hypers,
         register_state_buffer(&pufferl->state_buf,
             acts, hypers.state_buffer_size, total_agents, vec->size,
             agents_per_env, num_cl_envs, horizon, hypers.state_checkpoint_interval);
+        pufferl->state_buf.admit_adv = hypers.admit_adv;
     }
 
     // Extra cuda buffers just reuse activ allocator

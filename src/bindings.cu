@@ -512,6 +512,7 @@ std::unique_ptr<PuffeRL> create_pufferl(py::dict args) {
     hypers.explore_beta = get_config(train_kwargs, "explore_beta");
     hypers.explore_decay = get_config(train_kwargs, "explore_decay");
     hypers.state_priority_decay = get_config(train_kwargs, "state_priority_decay");
+    hypers.admit_adv = get_config(train_kwargs, "admit_adv");
     hypers.frontier_explore = get_config(train_kwargs, "frontier_explore");
     hypers.frontier_random = get_config(train_kwargs, "frontier_random");
     hypers.reset_state = get_config(args, "reset_state");
@@ -655,6 +656,7 @@ PYBIND11_MODULE(_C, m) {
         .def_readwrite("explore_beta", &HypersT::explore_beta)
         .def_readwrite("explore_decay", &HypersT::explore_decay)
         .def_readwrite("state_priority_decay", &HypersT::state_priority_decay)
+        .def_readwrite("admit_adv", &HypersT::admit_adv)
         .def_readwrite("frontier_explore", &HypersT::frontier_explore)
         .def_readwrite("frontier_random", &HypersT::frontier_random)
         .def_readwrite("cudagraphs", &HypersT::cudagraphs)
