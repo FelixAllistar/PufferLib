@@ -8,7 +8,6 @@
 #define PRIO_WARP_SIZE 32
 #define PRIO_FULL_MASK 0xffffffff
 #define PRIO_BLOCK_SIZE 256
-#define CURRICULUM_TRAJECTORY_MAX_LEN 1024
 
 #ifdef PUFFER_CURRICULUM_TYPES
 
@@ -58,7 +57,6 @@ struct StateBuffer {
     int* best_len;
     int* best_episode_len;
     float* best_return;
-    long* best_agent_step;
     int* env_role;
     int* env_active_slot;
     int* env_best_slot;
@@ -82,15 +80,15 @@ struct StateBuffer {
     int num_cl_envs;
     int seeded;
     int host_lock;
-    PrecisionTensor importance;      // GPU, shape {total_agents}
+    long capture_ticket;
 };
 
 static inline int curriculum_clamp_int(int v, int lo, int hi) {
     return v < lo ? lo : (v > hi ? hi : v);
 }
 
-void register_state_buffer(StateBuffer* buf, Allocator* alloc,
-        int total_agents, int num_envs, int agents_per_env, int max_active_envs,
+void register_state_buffer(StateBuffer* buf,
+        int num_envs, int agents_per_env, int max_active_envs,
         int num_start_states, int trajectory_max_len, int checkpoint_interval) {
     if (num_start_states < 1) {
         num_start_states = 1;
@@ -110,7 +108,6 @@ void register_state_buffer(StateBuffer* buf, Allocator* alloc,
     buf->best_len = NULL;
     buf->best_episode_len = NULL;
     buf->best_return = NULL;
-    buf->best_agent_step = NULL;
     buf->env_role = NULL;
     buf->env_active_slot = NULL;
     buf->env_best_slot = NULL;
@@ -134,11 +131,10 @@ void register_state_buffer(StateBuffer* buf, Allocator* alloc,
     buf->num_cl_envs = 0;
     buf->seeded = 0;
     buf->host_lock = 0;
-    buf->importance = {.shape = {total_agents}};
-    alloc_register(alloc, &buf->importance);
+    buf->capture_ticket = 0;
 }
 
-int init_state_buffer(StateBuffer* buf, int total_agents) {
+int init_state_buffer(StateBuffer* buf) {
     size_t best_rows = (size_t)buf->num_start_states;
     size_t traj_len = (size_t)buf->trajectory_max_len;
     size_t active_rows = (size_t)buf->max_active_envs;
@@ -162,7 +158,6 @@ int init_state_buffer(StateBuffer* buf, int total_agents) {
     buf->best_len = (int*)malloc(best_rows * sizeof(int));
     buf->best_episode_len = (int*)malloc(best_rows * sizeof(int));
     buf->best_return = (float*)malloc(best_rows * sizeof(float));
-    buf->best_agent_step = (long*)malloc(best_rows * sizeof(long));
     buf->env_role = (int*)malloc(env_bytes);
     buf->env_active_slot = (int*)malloc(env_bytes);
     buf->env_best_slot = (int*)malloc(env_bytes);
@@ -181,8 +176,7 @@ int init_state_buffer(StateBuffer* buf, int total_agents) {
             || buf->best_state_step == NULL || buf->active_state_step == NULL
             || buf->best_valid == NULL || buf->best_len == NULL
             || buf->best_episode_len == NULL || buf->best_return == NULL
-            || buf->best_agent_step == NULL || buf->env_role == NULL
-            || buf->env_active_slot == NULL
+            || buf->env_role == NULL || buf->env_active_slot == NULL
             || buf->env_best_slot == NULL || buf->env_sample_offset == NULL
             || buf->env_history_count == NULL || buf->env_episode_return == NULL
             || buf->env_prefix_return == NULL || buf->env_episode_len == NULL
@@ -204,7 +198,6 @@ int init_state_buffer(StateBuffer* buf, int total_agents) {
     memset(buf->best_valid, 0, best_rows * sizeof(int));
     memset(buf->best_len, 0, best_rows * sizeof(int));
     memset(buf->best_episode_len, 0, best_rows * sizeof(int));
-    memset(buf->best_agent_step, 0, best_rows * sizeof(long));
     memset(buf->best_generation, 0, best_rows * sizeof(long long));
     for (int i = 0; i < buf->num_start_states; i++) {
         buf->best_return[i] = -3.402823466e+38F;
@@ -237,7 +230,6 @@ void close_state_buffer(StateBuffer* buf) {
     free(buf->best_len);
     free(buf->best_episode_len);
     free(buf->best_return);
-    free(buf->best_agent_step);
     free(buf->env_role);
     free(buf->env_active_slot);
     free(buf->env_best_slot);
@@ -327,10 +319,8 @@ __global__ void compute_prio_abs(
 
 __global__ void multinomial_sample_advance(int* __restrict__ out_idx,
         precision_t* __restrict__ out_importance,
-        precision_t* __restrict__ row_importance,
         const float* __restrict__ prio_weights, const float* __restrict__ cdf,
         int B, int num_samples, uint64_t seed, float beta,
-        int row_importance_offset, int agents_per_sample,
         int64_t* __restrict__ offset_ptr, int* __restrict__ done_counter,
         int launch_blocks) {
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
@@ -361,7 +351,7 @@ __global__ void multinomial_sample_advance(int* __restrict__ out_idx,
                 }
             }
         }
-        if (out_importance != NULL || row_importance != NULL) {
+        if (out_importance != NULL) {
             float weight = 1.0f;
             if (!use_uniform) {
                 float value = prio_weights[lo] * (float)B / total_weight;
@@ -371,15 +361,7 @@ __global__ void multinomial_sample_advance(int* __restrict__ out_idx,
                 }
             }
             precision_t value = from_float(weight);
-            if (out_importance != NULL) {
-                out_importance[tid] = value;
-            }
-            if (row_importance != NULL) {
-                int base = row_importance_offset + tid * agents_per_sample;
-                for (int a = 0; a < agents_per_sample; a++) {
-                    row_importance[base + a] = value;
-                }
-            }
+            out_importance[tid] = value;
         }
         out_idx[tid] = lo;
     }
@@ -397,16 +379,14 @@ __global__ void multinomial_sample_advance(int* __restrict__ out_idx,
 
 static inline void sample_prio_indices(PrioBuffers* bufs, int population,
         int samples, ulong seed, long* offset_ptr, precision_t* out_importance,
-        precision_t* row_importance, int row_importance_offset,
-        int agents_per_sample, float beta, cudaStream_t stream) {
+        float beta, cudaStream_t stream) {
     size_t cdf_temp_bytes = (size_t)bufs->cdf_temp.shape[0];
     cub::DeviceScan::InclusiveSum(bufs->cdf_temp.data, cdf_temp_bytes,
         bufs->prio_weights.data, bufs->cdf.data, population, stream);
     int blocks = (samples + PRIO_BLOCK_SIZE - 1) / PRIO_BLOCK_SIZE;
     multinomial_sample_advance<<<blocks, PRIO_BLOCK_SIZE, 0, stream>>>(
-        bufs->idx.data, out_importance, row_importance,
+        bufs->idx.data, out_importance,
         bufs->prio_weights.data, bufs->cdf.data, population, samples, seed, beta,
-        row_importance_offset, agents_per_sample,
         offset_ptr, bufs->sample_done.data, blocks);
 }
 
@@ -448,7 +428,6 @@ static inline void curriculum_seed_best(PuffeRL* pufferl) {
         buf->best_return[slot] = 0.0f;
         buf->best_state_return[curriculum_best_base(buf, slot)] = 0.0f;
         buf->best_state_step[curriculum_best_base(buf, slot)] = 0;
-        buf->best_agent_step[slot] = pufferl->global_step;
         buf->best_generation[slot] = 1;
     }
     buf->seeded = 1;
@@ -648,7 +627,7 @@ static inline int curriculum_total_episode_len(StateBuffer* buf, int env_idx) {
 }
 
 static inline int curriculum_replace_full(PuffeRL* pufferl, int slot, int env_idx,
-        float terminal_return, int episode_len, long agent_step) {
+        float terminal_return, int episode_len) {
     StateBuffer* buf = &pufferl->state_buf;
     int row = buf->env_active_slot[env_idx];
     int count = buf->env_history_count[env_idx];
@@ -688,7 +667,6 @@ static inline int curriculum_replace_full(PuffeRL* pufferl, int slot, int env_id
     buf->best_len[slot] = count;
     buf->best_episode_len[slot] = episode_len;
     buf->best_return[slot] = terminal_return;
-    buf->best_agent_step[slot] = agent_step;
     buf->best_generation[slot]++;
     if (buf->best_generation[slot] <= 0) {
         buf->best_generation[slot] = 1;
@@ -698,7 +676,7 @@ static inline int curriculum_replace_full(PuffeRL* pufferl, int slot, int env_id
 }
 
 static inline int curriculum_replace_tail(PuffeRL* pufferl, int slot, int env_idx,
-        float terminal_return, int episode_len, long agent_step) {
+        float terminal_return, int episode_len) {
     StateBuffer* buf = &pufferl->state_buf;
     int row = buf->env_active_slot[env_idx];
     int count = buf->env_history_count[env_idx];
@@ -743,7 +721,6 @@ static inline int curriculum_replace_tail(PuffeRL* pufferl, int slot, int env_id
     buf->best_len[slot] = offset + copy_count;
     buf->best_episode_len[slot] = episode_len;
     buf->best_return[slot] = terminal_return;
-    buf->best_agent_step[slot] = agent_step;
     buf->best_generation[slot]++;
     if (buf->best_generation[slot] <= 0) {
         buf->best_generation[slot] = 1;
@@ -770,12 +747,12 @@ static inline void curriculum_process_terminal(PuffeRL* pufferl, int env_idx,
 
     if (role == CURRICULUM_ROLE_FRESH) {
         curriculum_replace_full(pufferl, slot, env_idx, terminal_return,
-            episode_len, pufferl->global_step);
+            episode_len);
         curriculum_start_env(pufferl, env_idx, CURRICULUM_ROLE_FRESH,
             salt ^ 0x2f1bbcdcU, 0);
     } else {
         curriculum_replace_tail(pufferl, slot, env_idx, terminal_return,
-            episode_len, pufferl->global_step);
+            episode_len);
         curriculum_start_env(pufferl, env_idx, CURRICULUM_ROLE_CL,
             salt ^ 0x9e3779b9U, 0);
     }
@@ -784,6 +761,8 @@ static inline void curriculum_process_terminal(PuffeRL* pufferl, int env_idx,
 static inline void capture_curriculum_checkpoint(PuffeRL* pufferl, int buffer_idx, int t) {
     StateBuffer* buf = &pufferl->state_buf;
     StaticVec* vec = pufferl->vec;
+    long ticket = (long)t * (long)vec->buffers + (long)buffer_idx;
+    while (__atomic_load_n(&buf->capture_ticket, __ATOMIC_SEQ_CST) != ticket) {}
     long rollout_step = pufferl->global_step;
     int env_start = vec->buffer_env_starts[buffer_idx];
     int env_count = vec->buffer_env_counts[buffer_idx];
@@ -808,18 +787,19 @@ static inline void capture_curriculum_checkpoint(PuffeRL* pufferl, int buffer_id
             curriculum_record_state(buf, env_idx, &env->state);
         }
     }
+    __sync_fetch_and_add(&buf->capture_ticket, 1);
 }
 
 void curriculum_rollout_begin(PuffeRL* pufferl) {
     StateBuffer* buf = &pufferl->state_buf;
     StaticVec* vec = pufferl->vec;
     HypersT* h = &pufferl->hypers;
-    cudaStream_t stream = pufferl->default_stream;
     int total_envs = vec->size;
     long pending_step = pufferl->global_step - (long)vec->total_agents;
     if (pending_step < 0) {
         pending_step = 0;
     }
+    __atomic_store_n(&buf->capture_ticket, 0, __ATOMIC_SEQ_CST);
 
     curriculum_seed_best(pufferl);
     if (curriculum_count_valid(buf) <= 0) {
@@ -920,16 +900,6 @@ void curriculum_rollout_begin(PuffeRL* pufferl) {
         vec->log_env_limit = 0;
     }
 
-    fill_precision_kernel<<<grid_size(numel(buf->importance.shape)), BLOCK_SIZE, 0, stream>>>(
-        buf->importance.data, from_float(1.0f), numel(buf->importance.shape));
-}
-
-void curriculum_update_advantages(PuffeRL* pufferl, PrecisionTensor* advantages,
-        PrecisionTensor* entropy, cudaStream_t stream) {
-    (void)pufferl;
-    (void)advantages;
-    (void)entropy;
-    (void)stream;
 }
 
 #endif

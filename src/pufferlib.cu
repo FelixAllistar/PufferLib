@@ -65,7 +65,6 @@ struct RolloutBuf {
     PrecisionTensor actions;       // (horizon, agents, num_atns)
     PrecisionTensor values;        // (horizon, agents)
     PrecisionTensor logprobs;      // ...
-    PrecisionTensor entropy;
     PrecisionTensor rewards;
     PrecisionTensor terminals;
     PrecisionTensor ratio;
@@ -82,7 +81,6 @@ void register_rollout_buffers(RolloutBuf& bufs, Allocator* alloc, int T, int B, 
         .actions      = {.shape = {T, B, num_atns}},
         .values       = {.shape = {T, B}},
         .logprobs     = {.shape = {T, B}},
-        .entropy      = {.shape = {T, B}},
         .rewards      = {.shape = {T, B}},
         .terminals    = {.shape = {T, B}},
         .ratio        = {.shape = {T, B}},
@@ -93,7 +91,6 @@ void register_rollout_buffers(RolloutBuf& bufs, Allocator* alloc, int T, int B, 
     alloc_register(alloc, &bufs.actions);
     alloc_register(alloc, &bufs.values);
     alloc_register(alloc, &bufs.logprobs);
-    alloc_register(alloc, &bufs.entropy);
     alloc_register(alloc, &bufs.rewards);
     alloc_register(alloc, &bufs.terminals);
     alloc_register(alloc, &bufs.ratio);
@@ -305,6 +302,7 @@ typedef struct {
     float cl_frac;
     float fresh_frac;
     bool anneal_cl;
+    int state_trajectory_max_len;
     int state_checkpoint_interval;
     // Flags
     bool reset_state;
@@ -461,7 +459,6 @@ __global__ void sample_logits(
         IntTensor act_sizes_puf,              // (num_atns,) action head sizes
         precision_t* __restrict__ actions,    // (B, num_atns)
         precision_t* __restrict__ logprobs,   // (B,)
-        precision_t* __restrict__ entropy_out,// (B,)
         precision_t* __restrict__ value_out,  // (B,)
         curandStatePhilox4_32_10_t* __restrict__ rng_states,
         const precision_t* __restrict__ action_mask, // (B, A_total) or nullptr
@@ -488,12 +485,10 @@ __global__ void sample_logits(
 
     int logits_base = idx * logits_stride;
     float total_log_prob = 0.0f;
-    float total_entropy = 0.0f;
 
     if (is_continuous) {
         // Continuous action sampling from Normal(mean, exp(logstd))
         constexpr float LOG_2PI = 1.8378770664093453f;  // log(2*pi)
-        constexpr float HALF_1_PLUS_LOG_2PI = 1.4189385332046727f;
         int logstd_base = idx * logstd_stride;  // separate stride for logstd (may be 0 for broadcast)
 
         for (int h = 0; h < num_atns; ++h) {
@@ -511,7 +506,6 @@ __global__ void sample_logits(
 
             actions[idx * num_atns + h] = from_float(action);
             total_log_prob += log_prob;
-            total_entropy += HALF_1_PLUS_LOG_2PI + log_std;
         }
     } else {
         // Discrete action sampling (original multinomial logic)
@@ -533,14 +527,6 @@ __global__ void sample_logits(
                 sum_exp += expf(l - max_val);
             }
             float logsumexp = max_val + logf(sum_exp);
-            float head_entropy = 0.0f;
-            for (int a = 0; a < A; ++a) {
-                float l = masked_logit(logits, logits_base, logits_offset, a, action_mask, mask_base);
-                float logp = l - logsumexp;
-                float prob = expf(logp);
-                head_entropy += -prob * logp;
-            }
-            total_entropy += head_entropy;
 
             // Step 3: Generate random value for this action head
             float rand_val = curand_uniform(&state);
@@ -587,7 +573,6 @@ __global__ void sample_logits(
 
     // Write summed log probability (log of joint probability)
     logprobs[idx] = from_float(total_log_prob);
-    entropy_out[idx] = from_float(total_entropy);
 
     // Copy value (fused to avoid separate elementwise kernel for strided->contiguous copy)
     value_out[idx] = value[idx * value_stride];
@@ -690,7 +675,6 @@ extern "C" void net_callback_wrapper(void* ctx, int buf, int t) {
         PrecisionTensor obs_b   = puf_slice(rollouts.observations, t, sub_start, bank_size);
         PrecisionTensor act_b   = puf_slice(rollouts.actions,      t, sub_start, bank_size);
         PrecisionTensor lp_b    = puf_slice(rollouts.logprobs,     t, sub_start, bank_size);
-        PrecisionTensor ent_b   = puf_slice(rollouts.entropy,      t, sub_start, bank_size);
         PrecisionTensor val_b   = puf_slice(rollouts.values,       t, sub_start, bank_size);
         PrecisionTensor mask_b  = {};
         int mask_stride_b = 0;
@@ -710,7 +694,7 @@ extern "C" void net_callback_wrapper(void* ctx, int buf, int t) {
         // Offset RNG by bank_off so banks don't collide on per-buffer rng slots.
         sample_logits<<<grid_size(bank_size), BLOCK_SIZE, 0, stream>>>(
             dec_puf, p_logstd, pufferl->act_sizes_puf,
-            act_b.data, lp_b.data, ent_b.data, val_b.data,
+            act_b.data, lp_b.data, val_b.data,
             pufferl->rng_states[buf] + bank_off,
             mask_b.data, mask_stride_b);
 
@@ -1333,8 +1317,7 @@ __device__ __forceinline__ void copy_values_adv_returns(
 
 __global__ void select_copy(RolloutBuf rollouts, TrainGraph graph,
         const int* __restrict__ idx, const precision_t* __restrict__ advantages,
-        const precision_t* __restrict__ mb_prio,
-        const precision_t* __restrict__ row_importance) {
+        const precision_t* __restrict__ mb_prio) {
     int mb = blockIdx.x;
     int ch = blockIdx.y;
     int src_row = idx[mb];
@@ -1362,11 +1345,7 @@ __global__ void select_copy(RolloutBuf rollouts, TrainGraph graph,
         break;
     case 4:
         if (threadIdx.x == 0) {
-            float prio = to_float(mb_prio[mb]);
-            if (row_importance != nullptr) {
-                prio *= to_float(row_importance[src_row]);
-            }
-            graph.mb_prio.data[mb] = from_float(prio);
+            graph.mb_prio.data[mb] = mb_prio[mb];
         }
         break;
     case 5:
@@ -1455,8 +1434,6 @@ void train_impl(PuffeRL& pufferl) {
         rollouts.actions.data, src.actions.data, T, B, num_atns);
     transpose_102<<<grid_size(T*B), BLOCK_SIZE, 0, train_stream>>>(
         rollouts.logprobs.data, src.logprobs.data, T, B, 1);
-    transpose_102<<<grid_size(T*B), BLOCK_SIZE, 0, train_stream>>>(
-        rollouts.entropy.data, src.entropy.data, T, B, 1);
     transpose_102<<<grid_size(T*B), BLOCK_SIZE, 0, train_stream>>>(
         rollouts.rewards.data, src.rewards.data, T, B, 1);
     transpose_102<<<grid_size(T*B), BLOCK_SIZE, 0, train_stream>>>(
@@ -1548,7 +1525,7 @@ void train_impl(PuffeRL& pufferl) {
             prio_alpha, 1e-6f, prio_rows, prio_stride);
         sample_prio_indices(&pufferl.prio_bufs, prio_rows, minibatch_segments,
             pufferl.seed, train_rng_offset, pufferl.prio_bufs.mb_prio.data,
-            NULL, 0, 1, anneal_beta, train_stream);
+            anneal_beta, train_stream);
         profile_end(hypers.profile);
 
         profile_begin("train_select_and_copy", hypers.profile);
@@ -1558,12 +1535,9 @@ void train_impl(PuffeRL& pufferl) {
             sel_src.values = rollouts.values;
             int mb_segs = pufferl.prio_bufs.idx.shape[0];
             int channels = (graph.mb_action_mask.data != nullptr) ? 6 : 5;
-            const precision_t* row_importance = pufferl.curriculum_enabled
-                ? pufferl.state_buf.importance.data : nullptr;
             select_copy<<<dim3(mb_segs, channels), SELECT_COPY_THREADS, 0, train_stream>>>(
                 sel_src, graph, pufferl.prio_bufs.idx.data,
-                advantages_puf.data, pufferl.prio_bufs.mb_prio.data,
-                row_importance);
+                advantages_puf.data, pufferl.prio_bufs.mb_prio.data);
         }
         profile_end(hypers.profile);
 
@@ -1928,6 +1902,8 @@ std::unique_ptr<PuffeRL> create_pufferl_impl(HypersT& hypers,
     int agents_per_env = 0;
     if (pufferl->curriculum_enabled) {
         agents_per_env = fixed_agents_per_env(vec);
+        assert(hypers.state_trajectory_max_len > 0
+            && "state_trajectory_max_len must be positive");
         assert(hypers.state_checkpoint_interval > 0
             && "state_checkpoint_interval must be positive");
     }
@@ -2020,8 +1996,8 @@ std::unique_ptr<PuffeRL> create_pufferl_impl(HypersT& hypers,
         acts, hypers.total_agents, minibatch_segments);
     if (pufferl->curriculum_enabled) {
         register_state_buffer(&pufferl->state_buf,
-            acts, total_agents, vec->size, agents_per_env, max_active_envs,
-            hypers.state_buffer_size, CURRICULUM_TRAJECTORY_MAX_LEN,
+            vec->size, agents_per_env, max_active_envs,
+            hypers.state_buffer_size, hypers.state_trajectory_max_len,
             hypers.state_checkpoint_interval);
     }
 
@@ -2059,7 +2035,7 @@ std::unique_ptr<PuffeRL> create_pufferl_impl(HypersT& hypers,
     pufferl->grad_puf = {.data = (precision_t*)grads->mem, .shape = {grads->total_elems}};
     pufferl->param_puf = {.data = (precision_t*)params->mem, .shape = {params->total_elems}};
     if (pufferl->curriculum_enabled) {
-        if (!init_state_buffer(&pufferl->state_buf, hypers.total_agents)) {
+        if (!init_state_buffer(&pufferl->state_buf)) {
             alloc_free(params);
             alloc_free(grads);
             alloc_free(acts);

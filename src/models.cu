@@ -9,21 +9,11 @@
 
 #include "kernels.cu"
 
-#ifndef PUFFER_ZERO_RNN_STATE_INPUT
-#define PUFFER_ZERO_RNN_STATE_INPUT 0
-#endif
-
 #ifndef PUFFER_RNN_STATE_INPUT_EPS
 #define PUFFER_RNN_STATE_INPUT_EPS 1e-6f
 #endif
 
-static inline void reset_rnn_state_input(PrecisionTensor* state, cudaStream_t stream) {
-    int n = (int)numel(state->shape);
-    fill_precision_kernel<<<grid_size(n), BLOCK_SIZE, 0, stream>>>(
-        state->data, from_float(PUFFER_RNN_STATE_INPUT_EPS), n);
-}
-
-#ifdef BOXOBAN_LEVEL_LOGS
+#ifdef PUFFER_BOXOBAN_RNN_RESET
 __global__ void boxoban_reset_rollout_rnn_state_kernel(
         precision_t* __restrict__ state, const precision_t* __restrict__ obs,
         int B, int input_dim, int layers, int H) {
@@ -32,10 +22,8 @@ __global__ void boxoban_reset_rollout_rnn_state_kernel(
     if (idx >= total) {
         return;
     }
-    int h = idx % H;
     int rem = idx / H;
     int b = rem % B;
-    (void)h;
     float remaining = to_float(obs[b * input_dim + input_dim - 1]);
     if (remaining >= 0.999f) {
         state[idx] = from_float(PUFFER_RNN_STATE_INPUT_EPS);
@@ -865,7 +853,7 @@ static void policy_activations_free(Policy* p, PolicyActivations& a) {
 
 PrecisionTensor policy_forward(Policy* p, PolicyWeights& w, PolicyActivations& activations,
         PrecisionTensor obs, PrecisionTensor state, cudaStream_t stream) {
-#ifdef BOXOBAN_LEVEL_LOGS
+#ifdef PUFFER_BOXOBAN_RNN_RESET
     {
         int B = obs.shape[0];
         int layers = state.shape[0];
@@ -876,10 +864,6 @@ PrecisionTensor policy_forward(Policy* p, PolicyWeights& w, PolicyActivations& a
     }
 #endif
     PrecisionTensor enc_out = p->encoder.forward(w.encoder, activations.encoder, obs, stream);
-#if PUFFER_ZERO_RNN_STATE_INPUT
-    // Temporary diagnostic: remove recurrent history from the policy input.
-    reset_rnn_state_input(&state, stream);
-#endif
     PrecisionTensor h = p->network.forward(w.network, enc_out, state, activations.network, stream);
     return p->decoder.forward(w.decoder, activations.decoder, h, stream);
 }
@@ -887,7 +871,7 @@ PrecisionTensor policy_forward(Policy* p, PolicyWeights& w, PolicyActivations& a
 PrecisionTensor policy_forward_train(Policy* p, PolicyWeights& w, PolicyActivations& activations,
         PrecisionTensor x, PrecisionTensor state, cudaStream_t stream) {
     int B = x.shape[0], TT = x.shape[1];
-#ifdef BOXOBAN_LEVEL_LOGS
+#ifdef PUFFER_BOXOBAN_RNN_RESET
     {
         MinGRUActivations* na = (MinGRUActivations*)activations.network;
         boxoban_make_rnn_reset_mask_kernel<<<grid_size(B * TT), BLOCK_SIZE, 0, stream>>>(
@@ -895,10 +879,6 @@ PrecisionTensor policy_forward_train(Policy* p, PolicyWeights& w, PolicyActivati
     }
 #endif
     PrecisionTensor h = p->encoder.forward(w.encoder, activations.encoder, *puf_squeeze(&x, 0), stream);
-#if PUFFER_ZERO_RNN_STATE_INPUT
-    // Keep train/eval behavior matched for the recurrence-ablation run.
-    reset_rnn_state_input(&state, stream);
-#endif
     h = p->network.forward_train(w.network, *puf_unsqueeze(&h, 0, B, TT), state, activations.network, stream);
     PrecisionTensor dec_out = p->decoder.forward(w.decoder, activations.decoder, *puf_squeeze(&h, 0), stream);
     return *puf_unsqueeze(&dec_out, 0, B, TT);

@@ -60,17 +60,6 @@ pybind11::dict puf_log(pybind11::object pufferl_obj) {
         losses_dict["kl"] = losses_host[LOSS_APPROX_KL] * inv_n;
         losses_dict["clipfrac"] = losses_host[LOSS_CLIPFRAC] * inv_n;
     }
-    float opt_stats_host[6] = {};
-    cudaMemcpy(opt_stats_host, pufferl.muon.max_stats_puf.data,
-        sizeof(opt_stats_host), cudaMemcpyDeviceToHost);
-    losses_dict["grad_norm"] = opt_stats_host[0];
-    losses_dict["update_norm"] = opt_stats_host[1];
-    losses_dict["weight_norm"] = opt_stats_host[2];
-    losses_dict["delta_norm"] = opt_stats_host[3];
-    losses_dict["delta_ratio"] = opt_stats_host[4];
-    losses_dict["lr"] = opt_stats_host[5];
-    cudaMemset(pufferl.muon.max_stats_puf.data, 0,
-        numel(pufferl.muon.max_stats_puf.shape) * sizeof(float));
     cudaMemset(pufferl.losses_puf.data, 0, numel(pufferl.losses_puf.shape) * sizeof(float));
     result["loss"] = losses_dict;
 
@@ -464,6 +453,7 @@ std::unique_ptr<PuffeRL> create_pufferl(py::dict args) {
     hypers.cl_frac = get_config(train_kwargs, "cl_frac");
     hypers.fresh_frac = get_config(train_kwargs, "fresh_frac");
     hypers.anneal_cl = get_config(train_kwargs, "anneal_cl");
+    hypers.state_trajectory_max_len = get_config(train_kwargs, "state_trajectory_max_len");
     hypers.state_checkpoint_interval = get_config(train_kwargs, "state_checkpoint_interval");
     hypers.reset_state = get_config(args, "reset_state");
     // Base-level config ([base] section becomes top-level in args)
@@ -600,6 +590,7 @@ PYBIND11_MODULE(_C, m) {
         .def_readwrite("cl_frac", &HypersT::cl_frac)
         .def_readwrite("fresh_frac", &HypersT::fresh_frac)
         .def_readwrite("anneal_cl", &HypersT::anneal_cl)
+        .def_readwrite("state_trajectory_max_len", &HypersT::state_trajectory_max_len)
         .def_readwrite("state_checkpoint_interval", &HypersT::state_checkpoint_interval)
         .def_readwrite("cudagraphs", &HypersT::cudagraphs)
         .def_readwrite("profile", &HypersT::profile)

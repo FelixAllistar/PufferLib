@@ -4,24 +4,13 @@
 #define NUM_ATNS 1
 #define ACT_SIZES {5}
 #define OBS_TENSOR_T FloatTensor
+#define PUFFER_BOXOBAN_RNN_RESET
 
 
 #define Env Boxoban
 #define PUFFER_CURRICULUM_DIAG_SEQUENCE_OUTCOME
 static inline void puffer_state_refresh(Boxoban* env) { refresh_state(env); }
 #include "vecenv.h"
-
-static inline const char* boxoban_level_solve_rate_key(int level) {
-    static int initialized = 0;
-    static char keys[BOXOBAN_LEVEL_LOGS][32];
-    if (!initialized) {
-        for (int i = 0; i < BOXOBAN_LEVEL_LOGS; i++) {
-            snprintf(keys[i], sizeof(keys[i]), "level_%d_solve_rate", i + 1);
-        }
-        initialized = 1;
-    }
-    return keys[level];
-}
 
 void my_init(Env* env, Dict* kwargs) {
     env->difficulty_id = (int)dict_get(kwargs, "difficulty")->value;
@@ -50,7 +39,4 @@ void my_log(Log* log, Dict* out) {
     dict_set(out, "episode_length", log->episode_length);
     dict_set(out, "targets_hit", log->on_targets);
     dict_set(out, "final_puzzle_tick", log->puzzle_ticks);
-    for (int i = 0; i < BOXOBAN_LEVEL_LOGS; i++) {
-        dict_set(out, boxoban_level_solve_rate_key(i), log->level_solved[i]);
-    }
 }

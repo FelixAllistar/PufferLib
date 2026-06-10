@@ -17,11 +17,6 @@ static const unsigned char WALLS = 1;
 static const unsigned char BOXES = 2;
 static const unsigned char TARGET = 3;
 
-#ifndef BOXOBAN_LEVEL_LOGS
-#define BOXOBAN_LEVEL_LOGS 15
-#endif
-
-
 // Required struct. Only use floats!
 typedef struct {
     float perf; // Recommended 0-1 normalized single real number perf metric
@@ -31,7 +26,6 @@ typedef struct {
     // Any extra fields you add here may be exported to Python in binding.c
     float on_targets; // Fraction of targets currently boxed
     float puzzle_ticks; // Steps spent on the final puzzle of the episode
-    float level_solved[BOXOBAN_LEVEL_LOGS]; // Episode solved at least N sequence maps
     float n; // Required as the last field
 } Log;
 
@@ -319,9 +313,6 @@ void add_log(Boxoban* env) {
     env->log.episode_return += s->episode_return;
     env->log.on_targets += targets_hit;
     env->log.puzzle_ticks += (float)s->puzzle_tick;
-    for (int i = 0; i < BOXOBAN_LEVEL_LOGS; i++) {
-        env->log.level_solved[i] += (s->episode_maps_solved >= i + 1) ? 1.0f : 0.0f;
-    }
     env->log.n++;
 }
 
