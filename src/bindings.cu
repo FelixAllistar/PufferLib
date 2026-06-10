@@ -202,14 +202,6 @@ void rollouts(pybind11::object pufferl_obj) {
     } else {
         pufferl.vec->log_env_limit = 0;
     }
-#ifdef BOXOBAN_LEVEL_LOGS
-    if (pufferl.hypers.frontier_random
-            && pufferl.frontier_random_row_mask_host != NULL) {
-        size_t mask_bytes = (size_t)pufferl.hypers.total_agents * sizeof(int);
-        memset(pufferl.frontier_random_row_mask_host, 0, mask_bytes);
-        cudaMemset(pufferl.frontier_random_row_mask.data, 0, mask_bytes);
-    }
-#endif
 
     static_vec_omp_step(pufferl.vec);
     float sec = (float)(wall_clock() - t0);
@@ -220,12 +212,6 @@ void rollouts(pybind11::object pufferl_obj) {
     pufferl.profile.accum[PROF_EVAL_GPU] += eval_prof[EVAL_GPU];
     pufferl.profile.accum[PROF_EVAL_ENV] += eval_prof[EVAL_ENV_STEP];
     pufferl.global_step += pufferl.hypers.horizon * pufferl.hypers.total_agents;
-#ifdef BOXOBAN_LEVEL_LOGS
-    if (pufferl.hypers.frontier_random) {
-        boxoban_update_frontier_random_solves(pufferl);
-    }
-    boxoban_update_t80(pufferl);
-#endif
 }
 
 pybind11::dict train(pybind11::object pufferl_obj) {
@@ -508,13 +494,8 @@ std::unique_ptr<PuffeRL> create_pufferl(py::dict args) {
     hypers.anneal_cl = get_config(train_kwargs, "anneal_cl");
     hypers.warmup_states = get_config(train_kwargs, "warmup_states");
     hypers.state_checkpoint_interval = get_config(train_kwargs, "state_checkpoint_interval");
-    hypers.explore_alpha = get_config(train_kwargs, "explore_alpha");
-    hypers.explore_beta = get_config(train_kwargs, "explore_beta");
-    hypers.explore_decay = get_config(train_kwargs, "explore_decay");
-    hypers.state_priority_decay = get_config(train_kwargs, "state_priority_decay");
     hypers.admit_adv = get_config(train_kwargs, "admit_adv");
-    hypers.frontier_explore = get_config(train_kwargs, "frontier_explore");
-    hypers.frontier_random = get_config(train_kwargs, "frontier_random");
+    hypers.curriculum_diagnostics = get_config(train_kwargs, "curriculum_diagnostics");
     hypers.reset_state = get_config(args, "reset_state");
     // Base-level config ([base] section becomes top-level in args)
     hypers.cudagraphs = get_config(args, "cudagraphs");
@@ -652,13 +633,8 @@ PYBIND11_MODULE(_C, m) {
         .def_readwrite("anneal_cl", &HypersT::anneal_cl)
         .def_readwrite("warmup_states", &HypersT::warmup_states)
         .def_readwrite("state_checkpoint_interval", &HypersT::state_checkpoint_interval)
-        .def_readwrite("explore_alpha", &HypersT::explore_alpha)
-        .def_readwrite("explore_beta", &HypersT::explore_beta)
-        .def_readwrite("explore_decay", &HypersT::explore_decay)
-        .def_readwrite("state_priority_decay", &HypersT::state_priority_decay)
         .def_readwrite("admit_adv", &HypersT::admit_adv)
-        .def_readwrite("frontier_explore", &HypersT::frontier_explore)
-        .def_readwrite("frontier_random", &HypersT::frontier_random)
+        .def_readwrite("curriculum_diagnostics", &HypersT::curriculum_diagnostics)
         .def_readwrite("cudagraphs", &HypersT::cudagraphs)
         .def_readwrite("profile", &HypersT::profile)
         .def_readwrite("rank", &HypersT::rank)

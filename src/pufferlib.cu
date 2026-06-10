@@ -321,13 +321,8 @@ typedef struct {
     bool anneal_cl;
     int warmup_states;
     int state_checkpoint_interval;
-    float explore_alpha;
-    float explore_beta;
-    float explore_decay;
-    float state_priority_decay;
     bool admit_adv;
-    bool frontier_explore;
-    bool frontier_random;
+    bool curriculum_diagnostics;
     // Flags
     bool reset_state;
     int cudagraphs;
@@ -394,10 +389,6 @@ typedef struct {
     PrecisionTensor param_puf;
     PrecisionTensor grad_puf;
     LongTensor rng_offset_puf;   // (num_buffers+1,) int64 CUDA device counters
-    IntTensor frontier_random_mask; // (total_agents,) dynamic Boxoban frontier-random mask
-    IntTensor frontier_random_row_mask; // (total_agents,) rows with any forced-random action this rollout
-    int* frontier_random_mask_host;
-    int* frontier_random_row_mask_host;
     ProfileT profile;
     nvmlDevice_t nvml_device;
     long epoch;
@@ -425,220 +416,25 @@ typedef struct {
 #define PUFFER_CURRICULUM_IMPL
 #include "curriculum.cu"
 #undef PUFFER_CURRICULUM_IMPL
-
-#ifdef BOXOBAN_LEVEL_LOGS
-static long boxoban_t80_first_step[BOXOBAN_LEVEL_LOGS];
-static long boxoban_t80_done_step[BOXOBAN_LEVEL_LOGS];
-static long boxoban_t80_last_epoch = -1;
-static int boxoban_t80_initialized = 0;
-static double boxoban_t80_prev_episodes = 0.0;
-static double boxoban_t80_prev_successes[BOXOBAN_LEVEL_LOGS];
-static long long boxoban_frontier_random_steps[BOXOBAN_LEVEL_LOGS];
-static long long boxoban_frontier_random_solve_steps[BOXOBAN_LEVEL_LOGS];
-static double boxoban_frontier_prev_successes[BOXOBAN_LEVEL_LOGS];
-
-static inline const char* boxoban_t80_key(int level) {
-    static int initialized = 0;
-    static char keys[BOXOBAN_LEVEL_LOGS][16];
-    if (!initialized) {
-        for (int i = 0; i < BOXOBAN_LEVEL_LOGS; i++) {
-            snprintf(keys[i], sizeof(keys[i]), "l%d_t80", i + 1);
-        }
-        initialized = 1;
-    }
-    return keys[level];
-}
-
-static inline void boxoban_t80_reset_arrays(void) {
-    for (int i = 0; i < BOXOBAN_LEVEL_LOGS; i++) {
-        boxoban_t80_first_step[i] = -1;
-        boxoban_t80_done_step[i] = -1;
-        boxoban_t80_prev_successes[i] = 0.0;
-        boxoban_frontier_random_steps[i] = 0;
-        boxoban_frontier_random_solve_steps[i] = -1;
-        boxoban_frontier_prev_successes[i] = 0.0;
-    }
-    boxoban_t80_prev_episodes = 0.0;
-}
-
-static inline void boxoban_t80_ensure_initialized(void) {
-    if (!boxoban_t80_initialized) {
-        boxoban_t80_reset_arrays();
-        boxoban_t80_initialized = 1;
-    }
-}
-
-static inline void boxoban_t80_reset(void) {
-    boxoban_t80_reset_arrays();
-    boxoban_t80_initialized = 1;
-}
-
-static inline long boxoban_agent_steps(PuffeRL& pufferl) {
-    return pufferl.global_step * (long)pufferl.hypers.world_size;
-}
-
-static inline void boxoban_update_t80(PuffeRL& pufferl) {
-    boxoban_t80_ensure_initialized();
-    if (boxoban_t80_last_epoch < 0 || (long)pufferl.epoch < boxoban_t80_last_epoch) {
-        boxoban_t80_reset();
-    }
-    boxoban_t80_last_epoch = (long)pufferl.epoch;
-    long step = boxoban_agent_steps(pufferl);
-
-    StaticVec* vec = pufferl.vec;
-    int end_env = pufferl.curriculum_enabled
-        ? pufferl.state_buf.num_fresh_envs
-        : vec->size;
-    int start_env = 0;
-    if (end_env > vec->size) {
-        end_env = vec->size;
-    }
-    if (start_env >= end_env) {
-        return;
-    }
-
-    double episodes = 0.0;
-    double successes[BOXOBAN_LEVEL_LOGS] = {};
-    for (int i = start_env; i < end_env; i++) {
-        Env* env = &vec->envs[i];
-        if (env->log.n == 0.0f) {
-            continue;
-        }
-        episodes += (double)env->log.n;
-        for (int level = 0; level < BOXOBAN_LEVEL_LOGS; level++) {
-            successes[level] += (double)env->log.level_solved[level];
-        }
-    }
-
-    if (episodes == 0.0) {
-        return;
-    }
-
-    if (episodes < boxoban_t80_prev_episodes) {
-        boxoban_t80_prev_episodes = 0.0;
-        for (int level = 0; level < BOXOBAN_LEVEL_LOGS; level++) {
-            boxoban_t80_prev_successes[level] = 0.0;
-        }
-    }
-
-    double delta_episodes = episodes - boxoban_t80_prev_episodes;
-    if (delta_episodes <= 0.0) {
-        return;
-    }
-
-    for (int level = 0; level < BOXOBAN_LEVEL_LOGS; level++) {
-        double delta_successes = successes[level] - boxoban_t80_prev_successes[level];
-        if (delta_successes < 0.0) {
-            delta_successes = successes[level];
-        }
-
-        if (delta_successes > 0.0 && boxoban_t80_first_step[level] < 0) {
-            boxoban_t80_first_step[level] = step;
-        }
-        if (boxoban_t80_first_step[level] >= 0 && boxoban_t80_done_step[level] < 0) {
-            double rate = delta_successes / delta_episodes;
-            if (rate >= 0.80) {
-                boxoban_t80_done_step[level] = step;
-            }
-        }
-        boxoban_t80_prev_successes[level] = successes[level];
-    }
-    boxoban_t80_prev_episodes = episodes;
-}
-
-static inline int boxoban_frontier_level(void);
-
-static inline int boxoban_monitor_envs(PuffeRL& pufferl) {
-    int num_fresh_envs = pufferl.curriculum_enabled
-        ? pufferl.state_buf.num_fresh_envs
-        : pufferl.vec->size;
-    int monitor_envs = num_fresh_envs / 2;
-    if (monitor_envs < 1 && num_fresh_envs > 0) {
-        monitor_envs = 1;
-    }
-    return monitor_envs;
-}
-
-static inline void boxoban_update_frontier_random_solves(PuffeRL& pufferl) {
-    if (!pufferl.hypers.frontier_random || !pufferl.curriculum_enabled) {
-        return;
-    }
-
-    boxoban_t80_ensure_initialized();
-    StaticVec* vec = pufferl.vec;
-    int num_fresh_envs = pufferl.state_buf.num_fresh_envs;
-    int monitor_envs = boxoban_monitor_envs(pufferl);
-    if (monitor_envs >= num_fresh_envs) {
-        return;
-    }
-    int frontier = boxoban_frontier_level();
-    if (frontier <= 0 || frontier >= BOXOBAN_LEVEL_LOGS) {
-        return;
-    }
-
-    double successes = 0.0;
-    for (int i = monitor_envs; i < num_fresh_envs; i++) {
-        Env* env = &vec->envs[i];
-        successes += (double)env->log.level_solved[frontier];
-    }
-
-    if (successes < boxoban_frontier_prev_successes[frontier]) {
-        boxoban_frontier_prev_successes[frontier] = 0.0;
-    }
-    double delta = successes - boxoban_frontier_prev_successes[frontier];
-    if (delta > 0.0 && boxoban_frontier_random_solve_steps[frontier] < 0) {
-        boxoban_frontier_random_solve_steps[frontier] =
-            boxoban_frontier_random_steps[frontier];
-    }
-    boxoban_frontier_prev_successes[frontier] = successes;
-}
-
-static inline void boxoban_log_t80(Dict* out, PuffeRL& pufferl) {
-    long step = boxoban_agent_steps(pufferl);
-    for (int level = 0; level < BOXOBAN_LEVEL_LOGS; level++) {
-        double value = -1.0;
-        long first = boxoban_t80_first_step[level];
-        if (first >= 0) {
-            long end = boxoban_t80_done_step[level] >= 0
-                ? boxoban_t80_done_step[level]
-                : step;
-            if (end < first) {
-                end = first;
-            }
-            value = (double)(end - first) / 1000000.0;
-        }
-        dict_set(out, boxoban_t80_key(level), value);
-    }
-    dict_set(out, "fr", (double)(boxoban_frontier_level() + 1));
-}
-
-static inline int boxoban_frontier_level(void) {
-    boxoban_t80_ensure_initialized();
-    for (int level = 0; level < BOXOBAN_LEVEL_LOGS; level++) {
-        if (boxoban_t80_done_step[level] < 0) {
-            return level;
-        }
-    }
-    return BOXOBAN_LEVEL_LOGS;
-}
-#endif
+#include "curriculum_diag.cu"
 
 Dict* log_environments_impl(PuffeRL& pufferl) {
     // Capacity covers env logs plus optional curriculum diagnostics.
     Dict* out = create_dict(512);
 #ifdef BOXOBAN_LEVEL_LOGS
-    boxoban_update_frontier_random_solves(pufferl);
-    boxoban_update_t80(pufferl);
+    if (pufferl.hypers.curriculum_diagnostics) {
+        boxoban_update_t80(pufferl);
+    }
 #endif
     static_vec_log(pufferl.vec, out);
 #ifdef BOXOBAN_LEVEL_LOGS
-    boxoban_log_t80(out, pufferl);
-#endif
-#ifdef PUFFER_CURRICULUM_DIAG_SEQUENCE_OUTCOME
-    if (pufferl.curriculum_enabled) {
-        curriculum_log_diagnostics(&pufferl, out);
+    if (pufferl.hypers.curriculum_diagnostics) {
+        boxoban_log_t80(out, pufferl);
     }
 #endif
+    if (pufferl.curriculum_enabled && pufferl.hypers.curriculum_diagnostics) {
+        curriculum_log_diagnostics(&pufferl, out);
+    }
     return out;
 }
 
@@ -831,112 +627,6 @@ __global__ void sample_logits(
     rng_states[idx] = state;
 }
 
-#ifdef BOXOBAN_LEVEL_LOGS
-__global__ void boxoban_frontier_random_actions_kernel(
-        precision_t* __restrict__ rollout_actions,
-        float* __restrict__ env_actions,
-        const int* __restrict__ frontier_mask,
-        IntTensor act_sizes_puf,
-        curandStatePhilox4_32_10_t* __restrict__ rng_states,
-        int start, int B, int num_atns, long act_cols) {
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    if (idx >= B) {
-        return;
-    }
-    int global_idx = start + idx;
-    if (frontier_mask[global_idx] == 0) {
-        return;
-    }
-
-    curandStatePhilox4_32_10_t state = rng_states[idx];
-    const int* act_sizes = act_sizes_puf.data;
-    for (int h = 0; h < num_atns; h++) {
-        int A = act_sizes[h];
-        int action = (int)(curand_uniform(&state) * (float)A);
-        if (action >= A) {
-            action = A - 1;
-        }
-        rollout_actions[idx * num_atns + h] = from_float((float)action);
-        env_actions[(long)global_idx * act_cols + h] = (float)action;
-    }
-    rng_states[idx] = state;
-}
-
-static inline void boxoban_apply_frontier_random_actions(
-        PuffeRL* pufferl, int buf, int t, cudaStream_t stream) {
-    if (!pufferl->hypers.frontier_random || !pufferl->curriculum_enabled
-            || pufferl->frontier_random_mask_host == NULL
-            || pufferl->frontier_random_row_mask_host == NULL) {
-        return;
-    }
-
-    StateBuffer* state_buf = &pufferl->state_buf;
-    StaticVec* vec = pufferl->vec;
-    int frontier = boxoban_frontier_level();
-    if (frontier <= 0 || frontier >= BOXOBAN_LEVEL_LOGS) {
-        return;
-    }
-
-    int block_size = vec->total_agents / pufferl->hypers.num_buffers;
-    int start = buf * block_size;
-    int end = start + block_size;
-    int* mask = pufferl->frontier_random_mask_host;
-    int* row_mask = pufferl->frontier_random_row_mask_host;
-    memset(mask + start, 0, (size_t)block_size * sizeof(int));
-
-    int env_start = vec->buffer_env_starts[buf];
-    int env_count = vec->buffer_env_counts[buf];
-    int num_fresh_envs = state_buf->num_fresh_envs;
-    int monitor_envs = boxoban_monitor_envs(*pufferl);
-    int agents_per_env = state_buf->agents_per_env;
-    int any = 0;
-    int random_count = 0;
-    for (int i = env_start; i < env_start + env_count && i < num_fresh_envs; i++) {
-        if (i < monitor_envs) {
-            continue;
-        }
-        Env* env = &vec->envs[i];
-        if (env->map_sequence_len <= 0 || frontier >= env->map_sequence_len) {
-            continue;
-        }
-        if (env->state.sequence_pos != frontier) {
-            continue;
-        }
-        int agent_start = i * agents_per_env;
-        for (int a = 0; a < agents_per_env; a++) {
-            int agent_idx = agent_start + a;
-            if (agent_idx >= start && agent_idx < end) {
-                mask[agent_idx] = 1;
-                row_mask[agent_idx] = 1;
-                any = 1;
-                random_count++;
-            }
-        }
-    }
-
-    if (!any) {
-        return;
-    }
-    if (frontier >= 0 && frontier < BOXOBAN_LEVEL_LOGS && random_count > 0) {
-        __sync_fetch_and_add(&boxoban_frontier_random_steps[frontier],
-            (long long)random_count);
-    }
-
-    cudaMemcpyAsync(pufferl->frontier_random_mask.data + start, mask + start,
-        (size_t)block_size * sizeof(int), cudaMemcpyHostToDevice, stream);
-    cudaMemcpyAsync(pufferl->frontier_random_row_mask.data + start, row_mask + start,
-        (size_t)block_size * sizeof(int), cudaMemcpyHostToDevice, stream);
-    RolloutBuf& rollouts = pufferl->rollouts;
-    PrecisionTensor actions = puf_slice(rollouts.actions, t, start, block_size);
-    int num_atns = actions.shape[1];
-    long act_cols = pufferl->env.actions.shape[1];
-    boxoban_frontier_random_actions_kernel<<<grid_size(block_size), BLOCK_SIZE, 0, stream>>>(
-        actions.data, pufferl->env.actions.data, pufferl->frontier_random_mask.data,
-        pufferl->act_sizes_puf, pufferl->rng_states[buf],
-        start, block_size, num_atns, act_cols);
-}
-#endif
-
 // Single step rollout forward pass. Called by each environment worker in their
 // own buffer thread. This operation is cudagraphed.
 extern "C" void net_callback_wrapper(void* ctx, int buf, int t) {
@@ -952,9 +642,6 @@ extern "C" void net_callback_wrapper(void* ctx, int buf, int t) {
     if (pufferl->rollout_captured) {
         assert(cudaGraphLaunch(pufferl->fused_rollout_cudagraphs[graph], current_stream) == cudaSuccess
                 && "cudaGraphLaunch failed");
-#ifdef BOXOBAN_LEVEL_LOGS
-        boxoban_apply_frontier_random_actions(pufferl, buf, t, current_stream);
-#endif
         profile_end(hypers.profile);
         return;
     }
@@ -1062,10 +749,6 @@ extern "C" void net_callback_wrapper(void* ctx, int buf, int t) {
                 env.actions.data + (long)sub_start * act_cols,
                 act_b.data, numel(act_b.shape));
     }
-
-#ifdef BOXOBAN_LEVEL_LOGS
-    boxoban_apply_frontier_random_actions(pufferl, buf, t, stream);
-#endif
 
     if (capturing) {
         cudaGraph_t _graph;
@@ -1706,14 +1389,6 @@ void zero_frozen_advantages_cuda(PrecisionTensor& advantages,
         advantages.data, agents_per_buffer, primary_per_buffer, total_rows, horizon);
 }
 
-__global__ void zero_masked_prio_weights_kernel(
-        float* weights, const int* row_mask, int n) {
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    if (idx < n && row_mask[idx] != 0) {
-        weights[idx] = 0.0f;
-    }
-}
-
 // Minor copy bandwidth optimizations
 __global__ void index_copy(char* __restrict__ dst, const int* __restrict__ idx,
         const char* __restrict__ src, int num_idx, int row_bytes) {
@@ -1950,16 +1625,7 @@ void train_impl(PuffeRL& pufferl) {
     TrainGraph& graph = pufferl.train_buf;
     cudaEventRecord(pufferl.profile.events[1]);  // pre-loop end
 
-    bool frontier_random = hypers.frontier_random && pufferl.curriculum_enabled;
-#ifdef BOXOBAN_LEVEL_LOGS
-    if (frontier_random && boxoban_frontier_level() <= 0) {
-        frontier_random = false;
-    }
-#endif
     int total_minibatches = hypers.replay_ratio * batch_size / hypers.minibatch_size;
-    if (frontier_random && pufferl.state_buf.num_cl_envs == 0) {
-        total_minibatches = 0;
-    }
     for (int mb = 0; mb < total_minibatches; ++mb) {
         cudaEventRecord(pufferl.profile.events[2]);  // start of misc (overwritten each iter)
         puf_zero(&advantages_puf, train_stream);
@@ -1983,11 +1649,6 @@ void train_impl(PuffeRL& pufferl) {
         compute_prio_abs<<<prio_rows, PRIO_WARP_SIZE, 0, train_stream>>>(
             advantages_puf.data, pufferl.prio_bufs.prio_weights.data,
             prio_alpha, 1e-6f, prio_rows, prio_stride);
-        if (frontier_random) {
-            zero_masked_prio_weights_kernel<<<grid_size(prio_rows), BLOCK_SIZE, 0, train_stream>>>(
-                pufferl.prio_bufs.prio_weights.data,
-                pufferl.frontier_random_row_mask.data, prio_rows);
-        }
         sample_prio_indices(&pufferl.prio_bufs, prio_rows, minibatch_segments,
             pufferl.seed, train_rng_offset, pufferl.prio_bufs.mb_prio.data,
             NULL, 0, 1, anneal_beta, train_stream);
@@ -2389,11 +2050,6 @@ std::unique_ptr<PuffeRL> create_pufferl_impl(HypersT& hypers,
             && "state_checkpoint_interval must be positive");
         assert(hypers.state_lambda >= 0.0f && hypers.state_lambda <= 1.0f
             && "state_lambda must be in [0, 1]");
-        assert(hypers.explore_decay >= 0.0f && hypers.explore_decay <= 1.0f
-            && "explore_decay must be in [0, 1]");
-        assert(hypers.state_priority_decay >= 0.0f
-            && hypers.state_priority_decay <= 1.0f
-            && "state_priority_decay must be in [0, 1]");
     }
 
     // Sanity check action space
@@ -2483,16 +2139,12 @@ std::unique_ptr<PuffeRL> create_pufferl_impl(HypersT& hypers,
             acts, hypers.state_buffer_size, total_agents, vec->size,
             agents_per_env, num_cl_envs, horizon, hypers.state_checkpoint_interval);
         pufferl->state_buf.admit_adv = hypers.admit_adv;
+        pufferl->state_buf.diagnostics_enabled = hypers.curriculum_diagnostics;
     }
 
     // Extra cuda buffers just reuse activ allocator
-    pufferl->rng_offset_puf = {.shape = {num_buffers + 1 + (int)pufferl->curriculum_enabled}};
+    pufferl->rng_offset_puf = {.shape = {num_buffers + 1}};
     alloc_register(acts, &pufferl->rng_offset_puf);
-
-    pufferl->frontier_random_mask = {.shape = {total_agents}};
-    alloc_register(acts, &pufferl->frontier_random_mask);
-    pufferl->frontier_random_row_mask = {.shape = {total_agents}};
-    alloc_register(acts, &pufferl->frontier_random_row_mask);
 
     pufferl->act_sizes_puf  = {.shape = {num_action_heads}};
     alloc_register(acts, &pufferl->act_sizes_puf);
@@ -2561,16 +2213,6 @@ std::unique_ptr<PuffeRL> create_pufferl_impl(HypersT& hypers,
 
     // Post-create initialization
     cudaMemcpy(pufferl->act_sizes_puf.data, raw_act_sizes, num_action_heads * sizeof(int), cudaMemcpyHostToDevice);
-    cudaMemset(pufferl->frontier_random_mask.data, 0, total_agents * sizeof(int));
-    cudaMemset(pufferl->frontier_random_row_mask.data, 0, total_agents * sizeof(int));
-    if (hypers.frontier_random) {
-        pufferl->frontier_random_mask_host = (int*)calloc(total_agents, sizeof(int));
-        pufferl->frontier_random_row_mask_host = (int*)calloc(total_agents, sizeof(int));
-        if (pufferl->frontier_random_mask_host == NULL
-                || pufferl->frontier_random_row_mask_host == NULL) {
-            return nullptr;
-        }
-    }
     cudaMemset(pufferl->losses_puf.data, 0, NUM_LOSSES * sizeof(float));
     cudaMemset(pufferl->debug_stats_puf.data, 0, NUM_DEBUG_STATS * sizeof(float));
     float reward_stats_init[2] = {0.0f, 1.0f};
@@ -2762,8 +2404,6 @@ void close_impl(PuffeRL& pufferl) {
     free(pufferl.buffer_activations);
     free(pufferl.fused_rollout_cudagraphs);
     free(pufferl.streams);
-    free(pufferl.frontier_random_mask_host);
-    free(pufferl.frontier_random_row_mask_host);
 
     for (int b = 0; b < pufferl.num_frozen_banks; b++) {
         weight_bank_destroy(&pufferl.frozen_banks[b], &pufferl);
