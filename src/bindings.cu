@@ -71,34 +71,6 @@ pybind11::dict puf_log(pybind11::object pufferl_obj) {
     losses_dict["lr"] = opt_stats_host[5];
     cudaMemset(pufferl.muon.max_stats_puf.data, 0,
         numel(pufferl.muon.max_stats_puf.shape) * sizeof(float));
-    float debug_stats_host[NUM_DEBUG_STATS] = {};
-    cudaMemcpy(debug_stats_host, pufferl.debug_stats_puf.data,
-        sizeof(debug_stats_host), cudaMemcpyDeviceToHost);
-    losses_dict["pg_gn"] = debug_stats_host[DBG_PG_GRAD_NORM];
-    losses_dict["pg_gmax"] = debug_stats_host[DBG_PG_GRAD_MAX];
-    losses_dict["vf_gn"] = debug_stats_host[DBG_VF_GRAD_NORM];
-    losses_dict["vf_gmax"] = debug_stats_host[DBG_VF_GRAD_MAX];
-    losses_dict["adv_n"] = debug_stats_host[DBG_ADV_NORM];
-    losses_dict["adv_max"] = debug_stats_host[DBG_ADV_MAX];
-    losses_dict["ret_n"] = debug_stats_host[DBG_RET_NORM];
-    losses_dict["ret_max"] = debug_stats_host[DBG_RET_MAX];
-    losses_dict["val_n"] = debug_stats_host[DBG_VAL_NORM];
-    losses_dict["val_max"] = debug_stats_host[DBG_VAL_MAX];
-    cudaMemset(pufferl.debug_stats_puf.data, 0,
-        numel(pufferl.debug_stats_puf.shape) * sizeof(float));
-    float reward_stats_host[2] = {};
-    cudaMemcpy(reward_stats_host, pufferl.reward_stats.data,
-        sizeof(reward_stats_host), cudaMemcpyDeviceToHost);
-    losses_dict["rvar"] = reward_stats_host[1];
-#if PUFFER_SCALE_REWARDS || PUFFER_ADV_LOSS_SCALE
-    float reward_scale = 1.0f / sqrtf(reward_stats_host[1] + 1e-8f);
-    if (pufferl.hypers.reward_scale_max > 0.0f) {
-        reward_scale = fminf(reward_scale, pufferl.hypers.reward_scale_max);
-    }
-#else
-    float reward_scale = 1.0f;
-#endif
-    losses_dict["rscale"] = reward_scale;
     cudaMemset(pufferl.losses_puf.data, 0, numel(pufferl.losses_puf.shape) * sizeof(float));
     result["loss"] = losses_dict;
 
@@ -493,9 +465,6 @@ std::unique_ptr<PuffeRL> create_pufferl(py::dict args) {
     hypers.fresh_frac = get_config(train_kwargs, "fresh_frac");
     hypers.anneal_cl = get_config(train_kwargs, "anneal_cl");
     hypers.state_checkpoint_interval = get_config(train_kwargs, "state_checkpoint_interval");
-    hypers.num_start_states = get_config(train_kwargs, "num_start_states");
-    hypers.trajectory_max_len = get_config(train_kwargs, "trajectory_max_len");
-    hypers.curriculum_diagnostics = get_config(train_kwargs, "curriculum_diagnostics");
     hypers.reset_state = get_config(args, "reset_state");
     // Base-level config ([base] section becomes top-level in args)
     hypers.cudagraphs = get_config(args, "cudagraphs");
@@ -632,9 +601,6 @@ PYBIND11_MODULE(_C, m) {
         .def_readwrite("fresh_frac", &HypersT::fresh_frac)
         .def_readwrite("anneal_cl", &HypersT::anneal_cl)
         .def_readwrite("state_checkpoint_interval", &HypersT::state_checkpoint_interval)
-        .def_readwrite("num_start_states", &HypersT::num_start_states)
-        .def_readwrite("trajectory_max_len", &HypersT::trajectory_max_len)
-        .def_readwrite("curriculum_diagnostics", &HypersT::curriculum_diagnostics)
         .def_readwrite("cudagraphs", &HypersT::cudagraphs)
         .def_readwrite("profile", &HypersT::profile)
         .def_readwrite("rank", &HypersT::rank)

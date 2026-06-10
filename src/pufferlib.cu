@@ -35,20 +35,6 @@ enum LossIdx {
     LOSS_N = 7, NUM_LOSSES = 8,
 };
 
-enum DebugStatIdx {
-    DBG_PG_GRAD_NORM = 0,
-    DBG_PG_GRAD_MAX = 1,
-    DBG_VF_GRAD_NORM = 2,
-    DBG_VF_GRAD_MAX = 3,
-    DBG_ADV_NORM = 4,
-    DBG_ADV_MAX = 5,
-    DBG_RET_NORM = 6,
-    DBG_RET_MAX = 7,
-    DBG_VAL_NORM = 8,
-    DBG_VAL_MAX = 9,
-    NUM_DEBUG_STATS = 10,
-};
-
 enum ProfileIdx {
     PROF_ROLLOUT = 0,
     PROF_EVAL_GPU,
@@ -320,9 +306,6 @@ typedef struct {
     float fresh_frac;
     bool anneal_cl;
     int state_checkpoint_interval;
-    int num_start_states;
-    int trajectory_max_len;
-    bool curriculum_diagnostics;
     // Flags
     bool reset_state;
     int cudagraphs;
@@ -379,7 +362,6 @@ typedef struct {
     cudaStream_t default_stream;  // main-thread stream (captured once at init)
     IntTensor act_sizes_puf;    // CUDA int32 tensor of action head sizes
     FloatTensor losses_puf;     // (NUM_LOSSES,) f32 accumulator
-    FloatTensor debug_stats_puf; // (NUM_DEBUG_STATS,) max diagnostic accumulators
     FloatTensor reward_stats;   // running reward mean/var for scale-only reward normalization
     PPOBuffersPuf ppo_bufs_puf; // Pre-allocated buffers for ppo_loss_fwd_bwd
     PrioBuffers prio_bufs;      // Pre-allocated buffers for prio_replay
@@ -416,15 +398,12 @@ typedef struct {
 #define PUFFER_CURRICULUM_IMPL
 #include "curriculum.cu"
 #undef PUFFER_CURRICULUM_IMPL
-#include "curriculum_trajectory_diag.cu"
 
 Dict* log_environments_impl(PuffeRL& pufferl) {
-    // Capacity covers env logs plus optional curriculum diagnostics.
-    Dict* out = create_dict(512);
+    // Capacity raised from 32 to 64 to accommodate chess's per-bank
+    // hist_score_bank_<b> / hist_n_bank_<b> entries (16 keys for 8 banks).
+    Dict* out = create_dict(64);
     static_vec_log(pufferl.vec, out);
-    if (pufferl.curriculum_enabled && pufferl.hypers.curriculum_diagnostics) {
-        curriculum_log_diagnostics(&pufferl, out);
-    }
     return out;
 }
 
@@ -1168,64 +1147,6 @@ void ppo_loss_fwd_bwd(
         bufs.loss_output.data, losses_acc.data, ppo_partials_buf, ppo_grid);
 }
 
-__global__ void debug_float_norm_max_kernel(
-        const float* __restrict__ data, float* __restrict__ stats,
-        int norm_idx, int max_idx, int n) {
-    __shared__ float sum_sq[256];
-    __shared__ float max_abs[256];
-    int tid = threadIdx.x;
-    float local_sum = 0.0f;
-    float local_max = 0.0f;
-    for (int i = tid; i < n; i += blockDim.x) {
-        float v = data[i];
-        local_sum += v * v;
-        local_max = fmaxf(local_max, fabsf(v));
-    }
-    sum_sq[tid] = local_sum;
-    max_abs[tid] = local_max;
-    __syncthreads();
-    for (int stride = blockDim.x / 2; stride > 0; stride >>= 1) {
-        if (tid < stride) {
-            sum_sq[tid] += sum_sq[tid + stride];
-            max_abs[tid] = fmaxf(max_abs[tid], max_abs[tid + stride]);
-        }
-        __syncthreads();
-    }
-    if (tid == 0) {
-        stats[norm_idx] = fmaxf(stats[norm_idx], sqrtf(fmaxf(sum_sq[0], 0.0f)));
-        stats[max_idx] = fmaxf(stats[max_idx], max_abs[0]);
-    }
-}
-
-__global__ void debug_precision_norm_max_kernel(
-        const precision_t* __restrict__ data, float* __restrict__ stats,
-        int norm_idx, int max_idx, int n) {
-    __shared__ float sum_sq[256];
-    __shared__ float max_abs[256];
-    int tid = threadIdx.x;
-    float local_sum = 0.0f;
-    float local_max = 0.0f;
-    for (int i = tid; i < n; i += blockDim.x) {
-        float v = to_float(data[i]);
-        local_sum += v * v;
-        local_max = fmaxf(local_max, fabsf(v));
-    }
-    sum_sq[tid] = local_sum;
-    max_abs[tid] = local_max;
-    __syncthreads();
-    for (int stride = blockDim.x / 2; stride > 0; stride >>= 1) {
-        if (tid < stride) {
-            sum_sq[tid] += sum_sq[tid + stride];
-            max_abs[tid] = fmaxf(max_abs[tid], max_abs[tid + stride]);
-        }
-        __syncthreads();
-    }
-    if (tid == 0) {
-        stats[norm_idx] = fmaxf(stats[norm_idx], sqrtf(fmaxf(sum_sq[0], 0.0f)));
-        stats[max_idx] = fmaxf(stats[max_idx], max_abs[0]);
-    }
-}
-
 // Experience the puffer advantage! Generalized advantage estimation + V-Trace
 // importance sampling correction in a single streamlined operation
 __device__ void puff_advantage_row_scalar(
@@ -1676,23 +1597,6 @@ void train_impl(PuffeRL& pufferl) {
             FloatTensor grad_logits_puf = pufferl.ppo_bufs_puf.grad_logits;
             FloatTensor grad_logstd_puf = pufferl.is_continuous ? pufferl.ppo_bufs_puf.grad_logstd : FloatTensor();
             FloatTensor grad_values_puf = pufferl.ppo_bufs_puf.grad_values;
-            debug_float_norm_max_kernel<<<1, 256, 0, stream>>>(
-                grad_logits_puf.data, pufferl.debug_stats_puf.data,
-                DBG_PG_GRAD_NORM, DBG_PG_GRAD_MAX,
-                numel(grad_logits_puf.shape));
-            debug_float_norm_max_kernel<<<1, 256, 0, stream>>>(
-                grad_values_puf.data, pufferl.debug_stats_puf.data,
-                DBG_VF_GRAD_NORM, DBG_VF_GRAD_MAX,
-                numel(grad_values_puf.shape));
-            debug_precision_norm_max_kernel<<<1, 256, 0, stream>>>(
-                graph.mb_advantages.data, pufferl.debug_stats_puf.data,
-                DBG_ADV_NORM, DBG_ADV_MAX, numel(graph.mb_advantages.shape));
-            debug_precision_norm_max_kernel<<<1, 256, 0, stream>>>(
-                graph.mb_returns.data, pufferl.debug_stats_puf.data,
-                DBG_RET_NORM, DBG_RET_MAX, numel(graph.mb_returns.shape));
-            debug_precision_norm_max_kernel<<<1, 256, 0, stream>>>(
-                graph.mb_values.data, pufferl.debug_stats_puf.data,
-                DBG_VAL_NORM, DBG_VAL_MAX, numel(graph.mb_values.shape));
             policy_backward(&pufferl.policy, pufferl.weights, pufferl.train_activations,
                 grad_logits_puf, grad_logstd_puf, grad_values_puf, stream);
 
@@ -2026,10 +1930,6 @@ std::unique_ptr<PuffeRL> create_pufferl_impl(HypersT& hypers,
         agents_per_env = fixed_agents_per_env(vec);
         assert(hypers.state_checkpoint_interval > 0
             && "state_checkpoint_interval must be positive");
-        assert(hypers.num_start_states > 0
-            && "num_start_states must be positive");
-        assert(hypers.trajectory_max_len > 0
-            && "trajectory_max_len must be positive");
     }
 
     // Sanity check action space
@@ -2121,9 +2021,8 @@ std::unique_ptr<PuffeRL> create_pufferl_impl(HypersT& hypers,
     if (pufferl->curriculum_enabled) {
         register_state_buffer(&pufferl->state_buf,
             acts, total_agents, vec->size, agents_per_env, max_active_envs,
-            hypers.num_start_states, hypers.trajectory_max_len,
+            hypers.state_buffer_size, CURRICULUM_TRAJECTORY_MAX_LEN,
             hypers.state_checkpoint_interval);
-        pufferl->state_buf.diagnostics_enabled = hypers.curriculum_diagnostics;
     }
 
     // Extra cuda buffers just reuse activ allocator
@@ -2135,9 +2034,6 @@ std::unique_ptr<PuffeRL> create_pufferl_impl(HypersT& hypers,
 
     pufferl->losses_puf = {.shape = {NUM_LOSSES}};
     alloc_register(acts, &pufferl->losses_puf);
-
-    pufferl->debug_stats_puf = {.shape = {NUM_DEBUG_STATS}};
-    alloc_register(acts, &pufferl->debug_stats_puf);
 
     pufferl->reward_stats = {.shape = {2}};
     alloc_register(acts, &pufferl->reward_stats);
@@ -2198,7 +2094,6 @@ std::unique_ptr<PuffeRL> create_pufferl_impl(HypersT& hypers,
     // Post-create initialization
     cudaMemcpy(pufferl->act_sizes_puf.data, raw_act_sizes, num_action_heads * sizeof(int), cudaMemcpyHostToDevice);
     cudaMemset(pufferl->losses_puf.data, 0, NUM_LOSSES * sizeof(float));
-    cudaMemset(pufferl->debug_stats_puf.data, 0, NUM_DEBUG_STATS * sizeof(float));
     float reward_stats_init[2] = {0.0f, 1.0f};
     cudaMemcpy(pufferl->reward_stats.data, reward_stats_init, sizeof(reward_stats_init), cudaMemcpyHostToDevice);
     float one = 1.0f;

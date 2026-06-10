@@ -4,15 +4,13 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/stat.h>
 
 #define PRIO_WARP_SIZE 32
 #define PRIO_FULL_MASK 0xffffffff
 #define PRIO_BLOCK_SIZE 256
+#define CURRICULUM_TRAJECTORY_MAX_LEN 1024
 
 #ifdef PUFFER_CURRICULUM_TYPES
-
-struct CurriculumDiagnostics;
 
 struct PrioBuffers {
     FloatTensor prio_weights, cdf;
@@ -61,7 +59,6 @@ struct StateBuffer {
     int* best_episode_len;
     float* best_return;
     long* best_agent_step;
-    long long* best_sample_count;
     int* env_role;
     int* env_active_slot;
     int* env_best_slot;
@@ -74,8 +71,6 @@ struct StateBuffer {
     long* env_last_observed_step;
     long long* best_generation;
     long long* env_best_generation;
-    int capacity;
-    int size;
     int num_envs;
     int agents_per_env;
     int max_active_envs;
@@ -86,20 +81,9 @@ struct StateBuffer {
     int num_fresh_envs;
     int num_cl_envs;
     int seeded;
-    int diagnostics_enabled;
     int host_lock;
-    long long fresh_attempts;
-    long long fresh_replacements;
-    long long cl_attempts;
-    long long cl_replacements;
-    long long cl_starts;
-    long long fresh_starts;
     PrecisionTensor importance;      // GPU, shape {total_agents}
-    CurriculumDiagnostics* diag;
 };
-
-static inline int curriculum_diag_init_state_buffer(StateBuffer* buf, int total_agents);
-static inline void curriculum_diag_close_state_buffer(StateBuffer* buf);
 
 static inline int curriculum_clamp_int(int v, int lo, int hi) {
     return v < lo ? lo : (v > hi ? hi : v);
@@ -127,7 +111,6 @@ void register_state_buffer(StateBuffer* buf, Allocator* alloc,
     buf->best_episode_len = NULL;
     buf->best_return = NULL;
     buf->best_agent_step = NULL;
-    buf->best_sample_count = NULL;
     buf->env_role = NULL;
     buf->env_active_slot = NULL;
     buf->env_best_slot = NULL;
@@ -140,8 +123,6 @@ void register_state_buffer(StateBuffer* buf, Allocator* alloc,
     buf->env_last_observed_step = NULL;
     buf->best_generation = NULL;
     buf->env_best_generation = NULL;
-    buf->capacity = num_start_states * trajectory_max_len;
-    buf->size = 0;
     buf->num_envs = num_envs;
     buf->agents_per_env = agents_per_env;
     buf->max_active_envs = max_active_envs;
@@ -152,15 +133,7 @@ void register_state_buffer(StateBuffer* buf, Allocator* alloc,
     buf->num_fresh_envs = 0;
     buf->num_cl_envs = 0;
     buf->seeded = 0;
-    buf->diagnostics_enabled = 0;
     buf->host_lock = 0;
-    buf->fresh_attempts = 0;
-    buf->fresh_replacements = 0;
-    buf->cl_attempts = 0;
-    buf->cl_replacements = 0;
-    buf->cl_starts = 0;
-    buf->fresh_starts = 0;
-    buf->diag = NULL;
     buf->importance = {.shape = {total_agents}};
     alloc_register(alloc, &buf->importance);
 }
@@ -190,7 +163,6 @@ int init_state_buffer(StateBuffer* buf, int total_agents) {
     buf->best_episode_len = (int*)malloc(best_rows * sizeof(int));
     buf->best_return = (float*)malloc(best_rows * sizeof(float));
     buf->best_agent_step = (long*)malloc(best_rows * sizeof(long));
-    buf->best_sample_count = (long long*)malloc(best_rows * sizeof(long long));
     buf->env_role = (int*)malloc(env_bytes);
     buf->env_active_slot = (int*)malloc(env_bytes);
     buf->env_best_slot = (int*)malloc(env_bytes);
@@ -209,8 +181,8 @@ int init_state_buffer(StateBuffer* buf, int total_agents) {
             || buf->best_state_step == NULL || buf->active_state_step == NULL
             || buf->best_valid == NULL || buf->best_len == NULL
             || buf->best_episode_len == NULL || buf->best_return == NULL
-            || buf->best_agent_step == NULL || buf->best_sample_count == NULL
-            || buf->env_role == NULL || buf->env_active_slot == NULL
+            || buf->best_agent_step == NULL || buf->env_role == NULL
+            || buf->env_active_slot == NULL
             || buf->env_best_slot == NULL || buf->env_sample_offset == NULL
             || buf->env_history_count == NULL || buf->env_episode_return == NULL
             || buf->env_prefix_return == NULL || buf->env_episode_len == NULL
@@ -233,7 +205,6 @@ int init_state_buffer(StateBuffer* buf, int total_agents) {
     memset(buf->best_len, 0, best_rows * sizeof(int));
     memset(buf->best_episode_len, 0, best_rows * sizeof(int));
     memset(buf->best_agent_step, 0, best_rows * sizeof(long));
-    memset(buf->best_sample_count, 0, best_rows * sizeof(long long));
     memset(buf->best_generation, 0, best_rows * sizeof(long long));
     for (int i = 0; i < buf->num_start_states; i++) {
         buf->best_return[i] = -3.402823466e+38F;
@@ -252,11 +223,10 @@ int init_state_buffer(StateBuffer* buf, int total_agents) {
         buf->env_best_generation[i] = -1;
     }
 
-    return curriculum_diag_init_state_buffer(buf, total_agents);
+    return 1;
 }
 
 void close_state_buffer(StateBuffer* buf) {
-    curriculum_diag_close_state_buffer(buf);
     free(buf->best_states);
     free(buf->active_states);
     free(buf->best_state_return);
@@ -268,7 +238,6 @@ void close_state_buffer(StateBuffer* buf) {
     free(buf->best_episode_len);
     free(buf->best_return);
     free(buf->best_agent_step);
-    free(buf->best_sample_count);
     free(buf->env_role);
     free(buf->env_active_slot);
     free(buf->env_best_slot);
@@ -462,16 +431,6 @@ static inline int curriculum_count_valid(StateBuffer* buf) {
     return count;
 }
 
-static inline void curriculum_recompute_size(StateBuffer* buf) {
-    int size = 0;
-    for (int i = 0; i < buf->num_start_states; i++) {
-        if (buf->best_valid[i]) {
-            size += buf->best_len[i];
-        }
-    }
-    buf->size = size;
-}
-
 static inline void curriculum_seed_best(PuffeRL* pufferl) {
     StateBuffer* buf = &pufferl->state_buf;
     StaticVec* vec = pufferl->vec;
@@ -490,11 +449,9 @@ static inline void curriculum_seed_best(PuffeRL* pufferl) {
         buf->best_state_return[curriculum_best_base(buf, slot)] = 0.0f;
         buf->best_state_step[curriculum_best_base(buf, slot)] = 0;
         buf->best_agent_step[slot] = pufferl->global_step;
-        buf->best_sample_count[slot] = 0;
         buf->best_generation[slot] = 1;
     }
     buf->seeded = 1;
-    curriculum_recompute_size(buf);
 }
 
 static inline int curriculum_sample_best_slot(StateBuffer* buf, unsigned int salt) {
@@ -617,10 +574,6 @@ static inline void curriculum_observe_step(StateBuffer* buf, int env_idx,
     buf->env_episode_len[env_idx] += 1;
 }
 
-static inline void curriculum_guard_state_return(PuffeRL* pufferl, int env_idx,
-        const PufferState* state, float stored_return, int stored_step,
-        const char* stage, int local_index);
-
 static inline int curriculum_start_env(PuffeRL* pufferl, int env_idx,
         int role, unsigned int salt, int clear_outputs) {
     StateBuffer* buf = &pufferl->state_buf;
@@ -651,17 +604,10 @@ static inline int curriculum_start_env(PuffeRL* pufferl, int env_idx,
     if (role == CURRICULUM_ROLE_CL) {
         prefix_return = buf->best_state_return[best_base + offset];
         prefix_step = buf->best_state_step[best_base + offset];
-        buf->cl_starts++;
-        buf->best_sample_count[slot]++;
-    } else if (role == CURRICULUM_ROLE_FRESH) {
-        buf->fresh_starts++;
     }
     generation = buf->best_generation[slot];
     curriculum_host_unlock(buf);
 
-    curriculum_guard_state_return(pufferl, env_idx, &start_state,
-        prefix_return, prefix_step,
-        "start_sample", offset);
     Env* env = &vec->envs[env_idx];
     curriculum_set_env_state(env, &start_state, clear_outputs);
     buf->env_role[env_idx] = role;
@@ -701,260 +647,6 @@ static inline int curriculum_total_episode_len(StateBuffer* buf, int env_idx) {
     return len;
 }
 
-static inline const char* curriculum_role_name(int role) {
-    switch (role) {
-        case CURRICULUM_ROLE_FRESH:
-            return "fresh";
-        case CURRICULUM_ROLE_CL:
-            return "cl";
-        default:
-            return "vanilla";
-    }
-}
-
-#ifdef BOXOBAN_LEVEL_LOGS
-static inline float curriculum_prefix_return(StateBuffer* buf, int env_idx) {
-    if (buf->env_role[env_idx] != CURRICULUM_ROLE_CL) {
-        return 0.0f;
-    }
-    return buf->env_prefix_return[env_idx];
-}
-
-static inline int curriculum_prefix_step(StateBuffer* buf, int env_idx) {
-    if (buf->env_role[env_idx] != CURRICULUM_ROLE_CL) {
-        return 0;
-    }
-    return buf->env_prefix_step[env_idx];
-}
-
-static inline void curriculum_dump_boxoban_state(FILE* out,
-        const char* label, const PufferState* state) {
-    if (state == NULL) {
-        return;
-    }
-    fprintf(out,
-        "%s tick=%d puzzle_tick=%d sequence_pos=%d maps_solved=%d "
-        "state_episode_return=%.9g win=%d on_target=%d n_targets=%d initialized=%d\n",
-        label, state->tick, state->puzzle_tick, state->sequence_pos,
-        state->episode_maps_solved, state->episode_return, state->win,
-        state->on_target, state->n_targets, state->initialized ? 1 : 0);
-}
-
-static inline void curriculum_dump_return_guard_to(FILE* out, PuffeRL* pufferl,
-        int env_idx, int buffer_idx, int t, const char* stage, float total_return) {
-    StateBuffer* buf = &pufferl->state_buf;
-    StaticVec* vec = pufferl->vec;
-    Env* env = &vec->envs[env_idx];
-    int role = buf->env_role[env_idx];
-    int slot = buf->env_best_slot[env_idx];
-    int offset = buf->env_sample_offset[env_idx];
-    int row = buf->env_active_slot[env_idx];
-    int active_count = buf->env_history_count[env_idx];
-    int best_valid = slot >= 0 && slot < buf->num_start_states
-        ? buf->best_valid[slot] : 0;
-    int best_len = best_valid ? buf->best_len[slot] : 0;
-    int best_episode_len = best_valid ? buf->best_episode_len[slot] : 0;
-    float best_return = best_valid ? buf->best_return[slot] : 0.0f;
-    long best_agent_step = best_valid ? buf->best_agent_step[slot] : -1;
-    long long best_samples = best_valid ? buf->best_sample_count[slot] : 0;
-    long long best_generation = best_valid ? buf->best_generation[slot] : -1;
-    long long env_generation = buf->env_best_generation[env_idx];
-    float prefix_return = curriculum_prefix_return(buf, env_idx);
-    int prefix_step = curriculum_prefix_step(buf, env_idx);
-
-    fprintf(out,
-        "\nCURRICULUM_RETURN_GUARD stage=%s epoch=%ld global_step=%ld "
-        "buffer_idx=%d t=%d env_idx=%d role=%s total_return=%.9g limit=%d\n",
-        stage, pufferl->epoch, pufferl->global_step, buffer_idx, t, env_idx,
-        curriculum_role_name(role), total_return, BOXOBAN_LEVEL_LOGS);
-    fprintf(out,
-        "observed_return=%.9g observed_len=%d last_observed_step=%ld "
-        "prefix_return=%.9g prefix_step=%d slot=%d offset=%d active_row=%d active_count=%d\n",
-        buf->env_episode_return[env_idx], buf->env_episode_len[env_idx],
-        buf->env_last_observed_step[env_idx], prefix_return, prefix_step,
-        slot, offset, row, active_count);
-    fprintf(out,
-        "best_valid=%d best_return=%.9g best_episode_len=%d best_len=%d "
-        "best_agent_step=%ld best_sample_count=%lld best_generation=%lld "
-        "env_generation=%lld\n",
-        best_valid, best_return, best_episode_len, best_len,
-        best_agent_step, best_samples, best_generation, env_generation);
-    fprintf(out,
-        "layout vanilla=%d fresh=%d cl=%d starts=%d trajectory_max_len=%d "
-        "checkpoint_interval=%d size=%d seeded=%d\n",
-        buf->num_vanilla_envs, buf->num_fresh_envs, buf->num_cl_envs,
-        buf->num_start_states, buf->trajectory_max_len,
-        buf->checkpoint_interval, buf->size, buf->seeded);
-    fprintf(out,
-        "env max_steps=%d num_levels=%d map_sequence_len=%d map_idx=%d "
-        "int_r_coeff=%.9g num_agents=%d\n",
-        env->max_steps, env->num_levels, env->map_sequence_len,
-        env->map_idx, env->int_r_coeff, env->num_agents);
-
-    int reward_agents = env->num_agents < 8 ? env->num_agents : 8;
-    fprintf(out, "rewards");
-    for (int a = 0; a < reward_agents; a++) {
-        fprintf(out, " [%d]=%.9g", a, env->rewards[a]);
-    }
-    fprintf(out, "\nterminals");
-    for (int a = 0; a < reward_agents; a++) {
-        fprintf(out, " [%d]=%.9g", a, env->terminals[a]);
-    }
-    fprintf(out, "\n");
-    curriculum_dump_boxoban_state(out, "env_state", &env->state);
-
-    if (row >= 0 && row < buf->max_active_envs) {
-        int active_base = row * buf->trajectory_max_len;
-        int lo = active_count > 32 ? active_count - 32 : 0;
-        fprintf(out, "active_tail row=%d count=%d from=%d\n",
-            row, active_count, lo);
-        for (int i = lo; i < active_count && i < buf->trajectory_max_len; i++) {
-            int idx = active_base + i;
-            fprintf(out, "active[%d] observed_return=%.9g observed_step=%d ",
-                i, buf->active_state_return[idx], buf->active_state_step[idx]);
-            curriculum_dump_boxoban_state(out, "state", &buf->active_states[idx]);
-        }
-    }
-
-    if (best_valid) {
-        int best_base = curriculum_best_base(buf, slot);
-        int lo = offset - 8;
-        int hi = offset + 9;
-        if (lo < 0) {
-            lo = 0;
-        }
-        if (hi > best_len) {
-            hi = best_len;
-        }
-        fprintf(out, "best_window slot=%d len=%d from=%d to=%d\n",
-            slot, best_len, lo, hi);
-        for (int i = lo; i < hi; i++) {
-            int idx = best_base + i;
-            fprintf(out, "best[%d] prefix_return=%.9g prefix_step=%d ",
-                i, buf->best_state_return[idx], buf->best_state_step[idx]);
-            curriculum_dump_boxoban_state(out, "state", &buf->best_states[idx]);
-        }
-    }
-    fflush(out);
-}
-
-static inline void curriculum_dump_return_guard(PuffeRL* pufferl,
-        int env_idx, int buffer_idx, int t, const char* stage, float total_return) {
-    curriculum_dump_return_guard_to(stderr, pufferl, env_idx, buffer_idx, t,
-        stage, total_return);
-    mkdir("logs", 0755);
-    FILE* out = fopen("logs/curriculum_return_guard.txt", "a");
-    if (out != NULL) {
-        curriculum_dump_return_guard_to(out, pufferl, env_idx, buffer_idx, t,
-            stage, total_return);
-        fclose(out);
-    }
-}
-
-static inline int curriculum_boxoban_return_check_enabled(Env* env) {
-    return env != NULL
-        && env->map_sequence_len == BOXOBAN_LEVEL_LOGS
-        && fabsf(env->int_r_coeff) <= 1e-6f;
-}
-
-static inline void curriculum_dump_state_return_guard_to(FILE* out,
-        PuffeRL* pufferl, int env_idx, const PufferState* state,
-        float stored_return, int stored_step, const char* stage, int local_index) {
-    StateBuffer* buf = &pufferl->state_buf;
-    float total_return = curriculum_total_return(buf, env_idx);
-    curriculum_dump_return_guard_to(out, pufferl, env_idx, -1, local_index,
-        stage, total_return);
-    fprintf(out,
-        "CURRICULUM_STATE_RETURN_GUARD stage=%s local_index=%d "
-        "stored_return=%.9g stored_step=%d state_maps_solved=%d "
-        "state_sequence_pos=%d state_episode_return=%.9g\n",
-        stage, local_index, stored_return, stored_step,
-        state != NULL ? state->episode_maps_solved : -1,
-        state != NULL ? state->sequence_pos : -1,
-        state != NULL ? state->episode_return : 0.0f);
-    curriculum_dump_boxoban_state(out, "offending_state", state);
-    fflush(out);
-}
-
-static inline void curriculum_dump_state_return_guard(PuffeRL* pufferl,
-        int env_idx, const PufferState* state, float stored_return, int stored_step,
-        const char* stage, int local_index) {
-    curriculum_dump_state_return_guard_to(stderr, pufferl, env_idx, state,
-        stored_return, stored_step, stage, local_index);
-    mkdir("logs", 0755);
-    FILE* out = fopen("logs/curriculum_return_guard.txt", "a");
-    if (out != NULL) {
-        curriculum_dump_state_return_guard_to(out, pufferl, env_idx, state,
-            stored_return, stored_step, stage, local_index);
-        fclose(out);
-    }
-}
-
-static inline void curriculum_guard_state_return(PuffeRL* pufferl, int env_idx,
-        const PufferState* state, float stored_return, int stored_step,
-        const char* stage, int local_index) {
-    if (pufferl == NULL || pufferl->vec == NULL || state == NULL
-            || env_idx < 0 || env_idx >= pufferl->vec->size) {
-        return;
-    }
-    Env* env = &pufferl->vec->envs[env_idx];
-    if (!curriculum_boxoban_return_check_enabled(env)) {
-        return;
-    }
-    float solved = (float)state->episode_maps_solved;
-    int bad = state->episode_maps_solved < 0
-        || state->episode_maps_solved > BOXOBAN_LEVEL_LOGS
-        || stored_return < -1e-6f
-        || fabsf(stored_return - solved) > 1e-6f;
-    if (!bad) {
-        return;
-    }
-    curriculum_dump_state_return_guard(pufferl, env_idx, state, stored_return,
-        stored_step, stage, local_index);
-    abort();
-}
-
-static inline void curriculum_guard_return(PuffeRL* pufferl, int env_idx,
-        int buffer_idx, int t, const char* stage) {
-    StateBuffer* buf = &pufferl->state_buf;
-    if (env_idx < 0 || env_idx >= buf->num_envs) {
-        return;
-    }
-    int role = buf->env_role[env_idx];
-    if (role != CURRICULUM_ROLE_FRESH && role != CURRICULUM_ROLE_CL) {
-        return;
-    }
-    float total_return = curriculum_total_return(buf, env_idx);
-    if (total_return <= (float)BOXOBAN_LEVEL_LOGS + 1e-6f) {
-        return;
-    }
-    curriculum_dump_return_guard(pufferl, env_idx, buffer_idx, t, stage,
-        total_return);
-    abort();
-}
-#else
-static inline void curriculum_guard_state_return(PuffeRL* pufferl, int env_idx,
-        const PufferState* state, float stored_return, int stored_step,
-        const char* stage, int local_index) {
-    (void)pufferl;
-    (void)env_idx;
-    (void)state;
-    (void)stored_return;
-    (void)stored_step;
-    (void)stage;
-    (void)local_index;
-}
-
-static inline void curriculum_guard_return(PuffeRL* pufferl, int env_idx,
-        int buffer_idx, int t, const char* stage) {
-    (void)pufferl;
-    (void)env_idx;
-    (void)buffer_idx;
-    (void)t;
-    (void)stage;
-}
-#endif
-
 static inline int curriculum_replace_full(PuffeRL* pufferl, int slot, int env_idx,
         float terminal_return, int episode_len, long agent_step) {
     StateBuffer* buf = &pufferl->state_buf;
@@ -968,14 +660,6 @@ static inline int curriculum_replace_full(PuffeRL* pufferl, int slot, int env_id
     }
 
     int active_base = row * buf->trajectory_max_len;
-    for (int i = 0; i < count; i++) {
-        curriculum_guard_state_return(pufferl, env_idx,
-            &buf->active_states[active_base + i],
-            buf->active_state_return[active_base + i],
-            buf->active_state_step[active_base + i],
-            "replace_full", i);
-    }
-
     curriculum_host_lock(buf);
     int replace = 0;
     if (!buf->best_valid[slot]) {
@@ -1009,7 +693,6 @@ static inline int curriculum_replace_full(PuffeRL* pufferl, int slot, int env_id
     if (buf->best_generation[slot] <= 0) {
         buf->best_generation[slot] = 1;
     }
-    curriculum_recompute_size(buf);
     curriculum_host_unlock(buf);
     return 1;
 }
@@ -1040,13 +723,6 @@ static inline int curriculum_replace_tail(PuffeRL* pufferl, int slot, int env_id
     float prefix_return = buf->env_prefix_return[env_idx];
     int prefix_step = buf->env_prefix_step[env_idx];
     int active_base = row * buf->trajectory_max_len;
-    for (int i = 0; i < copy_count; i++) {
-        curriculum_guard_state_return(pufferl, env_idx,
-            &buf->active_states[active_base + i],
-            prefix_return + buf->active_state_return[active_base + i],
-            prefix_step + buf->active_state_step[active_base + i],
-            "replace_tail", offset + i);
-    }
 
     curriculum_host_lock(buf);
     if (terminal_return <= buf->best_return[slot] + 1e-6f
@@ -1072,7 +748,6 @@ static inline int curriculum_replace_tail(PuffeRL* pufferl, int slot, int env_id
     if (buf->best_generation[slot] <= 0) {
         buf->best_generation[slot] = 1;
     }
-    curriculum_recompute_size(buf);
     curriculum_host_unlock(buf);
     return 1;
 }
@@ -1093,22 +768,14 @@ static inline void curriculum_process_terminal(PuffeRL* pufferl, int env_idx,
         + (uint64_t)t * 101ULL
         + (uint64_t)env_idx * 17ULL);
 
-    curriculum_guard_return(pufferl, env_idx, buffer_idx, t, "terminal");
-
     if (role == CURRICULUM_ROLE_FRESH) {
-        buf->fresh_attempts++;
-        if (curriculum_replace_full(pufferl, slot, env_idx, terminal_return,
-                episode_len, pufferl->global_step)) {
-            buf->fresh_replacements++;
-        }
+        curriculum_replace_full(pufferl, slot, env_idx, terminal_return,
+            episode_len, pufferl->global_step);
         curriculum_start_env(pufferl, env_idx, CURRICULUM_ROLE_FRESH,
             salt ^ 0x2f1bbcdcU, 0);
     } else {
-        buf->cl_attempts++;
-        if (curriculum_replace_tail(pufferl, slot, env_idx, terminal_return,
-                episode_len, pufferl->global_step)) {
-            buf->cl_replacements++;
-        }
+        curriculum_replace_tail(pufferl, slot, env_idx, terminal_return,
+            episode_len, pufferl->global_step);
         curriculum_start_env(pufferl, env_idx, CURRICULUM_ROLE_CL,
             salt ^ 0x9e3779b9U, 0);
     }
@@ -1132,18 +799,12 @@ static inline void capture_curriculum_checkpoint(PuffeRL* pufferl, int buffer_id
             long step_serial = rollout_step
                 + (long)(t - 1) * (long)vec->total_agents;
             curriculum_observe_step(buf, env_idx, env, step_serial);
-            curriculum_guard_return(pufferl, env_idx, buffer_idx, t,
-                "capture_observe");
         }
         if (t > 0 && env->terminals[0] > 0.5f) {
             curriculum_process_terminal(pufferl, env_idx, buffer_idx, t);
             continue;
         }
         if (t > 0 && curriculum_should_record_checkpoint(buf, env_idx)) {
-            curriculum_guard_state_return(pufferl, env_idx, &env->state,
-                curriculum_total_return(buf, env_idx),
-                curriculum_total_episode_len(buf, env_idx),
-                "record_checkpoint", buf->env_history_count[env_idx]);
             curriculum_record_state(buf, env_idx, &env->state);
         }
     }
@@ -1172,15 +833,9 @@ void curriculum_rollout_begin(PuffeRL* pufferl) {
                 && vec->envs[env_idx].rewards != NULL) {
             Env* env = &vec->envs[env_idx];
             curriculum_observe_step(buf, env_idx, env, pending_step);
-            curriculum_guard_return(pufferl, env_idx, -1, -1,
-                "rollout_begin_observe");
             if (env->terminals[0] > 0.5f) {
                 curriculum_process_terminal(pufferl, env_idx, -1, -1);
             } else if (curriculum_should_record_checkpoint(buf, env_idx)) {
-                curriculum_guard_state_return(pufferl, env_idx, &env->state,
-                    curriculum_total_return(buf, env_idx),
-                    curriculum_total_episode_len(buf, env_idx),
-                    "rollout_begin_record", buf->env_history_count[env_idx]);
                 curriculum_record_state(buf, env_idx, &env->state);
             }
         }
