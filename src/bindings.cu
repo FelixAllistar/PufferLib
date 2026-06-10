@@ -480,7 +480,6 @@ std::unique_ptr<PuffeRL> create_pufferl(py::dict args) {
     // GAE
     hypers.gamma = get_config(train_kwargs, "gamma");
     hypers.gae_lambda = get_config(train_kwargs, "gae_lambda");
-    hypers.state_lambda = get_config(train_kwargs, "state_lambda");
     // VTrace
     hypers.vtrace_rho_clip = get_config(train_kwargs, "vtrace_rho_clip");
     hypers.vtrace_c_clip = get_config(train_kwargs, "vtrace_c_clip");
@@ -491,10 +490,11 @@ std::unique_ptr<PuffeRL> create_pufferl(py::dict args) {
     // Curriculum state buffer
     hypers.state_buffer_size = get_config(train_kwargs, "state_buffer_size");
     hypers.cl_frac = get_config(train_kwargs, "cl_frac");
+    hypers.fresh_frac = get_config(train_kwargs, "fresh_frac");
     hypers.anneal_cl = get_config(train_kwargs, "anneal_cl");
-    hypers.warmup_states = get_config(train_kwargs, "warmup_states");
     hypers.state_checkpoint_interval = get_config(train_kwargs, "state_checkpoint_interval");
-    hypers.admit_adv = get_config(train_kwargs, "admit_adv");
+    hypers.num_start_states = get_config(train_kwargs, "num_start_states");
+    hypers.trajectory_max_len = get_config(train_kwargs, "trajectory_max_len");
     hypers.curriculum_diagnostics = get_config(train_kwargs, "curriculum_diagnostics");
     hypers.reset_state = get_config(args, "reset_state");
     // Base-level config ([base] section becomes top-level in args)
@@ -622,7 +622,6 @@ PYBIND11_MODULE(_C, m) {
         .def_readwrite("anneal_ent_coef", &HypersT::anneal_ent_coef)
         .def_readwrite("gamma", &HypersT::gamma)
         .def_readwrite("gae_lambda", &HypersT::gae_lambda)
-        .def_readwrite("state_lambda", &HypersT::state_lambda)
         .def_readwrite("vtrace_rho_clip", &HypersT::vtrace_rho_clip)
         .def_readwrite("vtrace_c_clip", &HypersT::vtrace_c_clip)
         .def_readwrite("prio_alpha", &HypersT::prio_alpha)
@@ -630,10 +629,11 @@ PYBIND11_MODULE(_C, m) {
         .def_readwrite("anneal_prio_beta", &HypersT::anneal_prio_beta)
         .def_readwrite("state_buffer_size", &HypersT::state_buffer_size)
         .def_readwrite("cl_frac", &HypersT::cl_frac)
+        .def_readwrite("fresh_frac", &HypersT::fresh_frac)
         .def_readwrite("anneal_cl", &HypersT::anneal_cl)
-        .def_readwrite("warmup_states", &HypersT::warmup_states)
         .def_readwrite("state_checkpoint_interval", &HypersT::state_checkpoint_interval)
-        .def_readwrite("admit_adv", &HypersT::admit_adv)
+        .def_readwrite("num_start_states", &HypersT::num_start_states)
+        .def_readwrite("trajectory_max_len", &HypersT::trajectory_max_len)
         .def_readwrite("curriculum_diagnostics", &HypersT::curriculum_diagnostics)
         .def_readwrite("cudagraphs", &HypersT::cudagraphs)
         .def_readwrite("profile", &HypersT::profile)

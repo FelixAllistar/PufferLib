@@ -307,7 +307,6 @@ typedef struct {
     // GAE
     float gamma;
     float gae_lambda;
-    float state_lambda;
     // VTrace
     float vtrace_rho_clip;
     float vtrace_c_clip;
@@ -318,10 +317,11 @@ typedef struct {
     // Curriculum state buffer
     int state_buffer_size;
     float cl_frac;
+    float fresh_frac;
     bool anneal_cl;
-    int warmup_states;
     int state_checkpoint_interval;
-    bool admit_adv;
+    int num_start_states;
+    int trajectory_max_len;
     bool curriculum_diagnostics;
     // Flags
     bool reset_state;
@@ -416,22 +416,12 @@ typedef struct {
 #define PUFFER_CURRICULUM_IMPL
 #include "curriculum.cu"
 #undef PUFFER_CURRICULUM_IMPL
-#include "curriculum_diag.cu"
+#include "curriculum_trajectory_diag.cu"
 
 Dict* log_environments_impl(PuffeRL& pufferl) {
     // Capacity covers env logs plus optional curriculum diagnostics.
     Dict* out = create_dict(512);
-#ifdef BOXOBAN_LEVEL_LOGS
-    if (pufferl.hypers.curriculum_diagnostics) {
-        boxoban_update_t80(pufferl);
-    }
-#endif
     static_vec_log(pufferl.vec, out);
-#ifdef BOXOBAN_LEVEL_LOGS
-    if (pufferl.hypers.curriculum_diagnostics) {
-        boxoban_log_t80(out, pufferl);
-    }
-#endif
     if (pufferl.curriculum_enabled && pufferl.hypers.curriculum_diagnostics) {
         curriculum_log_diagnostics(&pufferl, out);
     }
@@ -1575,20 +1565,6 @@ void train_impl(PuffeRL& pufferl) {
     fill_precision_kernel<<<grid_size(numel(rollouts.ratio.shape)), BLOCK_SIZE, 0, train_stream>>>(
         rollouts.ratio.data, from_float(1.0f), numel(rollouts.ratio.shape));
 
-    if (pufferl.curriculum_enabled) {
-        puf_zero(&advantages_puf, train_stream);
-        puff_advantage_cuda(rollouts.values, rollouts.rewards, rollouts.terminals,
-            rollouts.ratio, advantages_puf, hypers.gamma, hypers.state_lambda,
-            hypers.vtrace_rho_clip, hypers.vtrace_c_clip, train_stream);
-        if (pufferl.num_frozen_banks > 0 && pufferl.bank_layout != NULL) {
-            int apb = hypers.total_agents / hypers.num_buffers;
-            zero_frozen_advantages_cuda(advantages_puf, apb,
-                pufferl.bank_layout[1], train_stream);
-        }
-        curriculum_update_advantages(&pufferl, &advantages_puf,
-            &rollouts.entropy, train_stream);
-    }
-
     // Inline any of these only used once
     int minibatch_size = hypers.minibatch_size;
     int batch_size = hypers.total_agents * hypers.horizon;
@@ -2036,20 +2012,24 @@ std::unique_ptr<PuffeRL> create_pufferl_impl(HypersT& hypers,
         env_name, vec_kwargs, env_kwargs, pufferl->env);
     pufferl->vec = vec;
     assert(hypers.cl_frac >= 0.0f && "cl_frac must be nonnegative");
-    assert(hypers.cl_frac <= 0.9f && "cl_frac must be <= 0.9");
+    assert(hypers.cl_frac <= 1.0f && "cl_frac must be <= 1.0");
+    assert(hypers.fresh_frac >= 0.0f && "fresh_frac must be nonnegative");
+    assert(hypers.fresh_frac <= 1.0f && "fresh_frac must be <= 1.0");
     int initial_num_cl_envs = clamp_int(
         (int)(hypers.cl_frac * (float)vec->size), 0, vec->size);
-    pufferl->curriculum_enabled = hypers.state_buffer_size > 0 && initial_num_cl_envs > 0;
+    int initial_num_fresh_envs = clamp_int(
+        (int)(hypers.fresh_frac * (float)vec->size), 0, vec->size);
+    pufferl->curriculum_enabled = hypers.state_buffer_size > 0
+        && initial_num_cl_envs + initial_num_fresh_envs > 0;
     int agents_per_env = 0;
     if (pufferl->curriculum_enabled) {
         agents_per_env = fixed_agents_per_env(vec);
-        assert(hypers.warmup_states >= 0 && "warmup_states must be nonnegative");
-        assert(hypers.warmup_states <= hypers.state_buffer_size
-            && "warmup_states must be <= state_buffer_size");
         assert(hypers.state_checkpoint_interval > 0
             && "state_checkpoint_interval must be positive");
-        assert(hypers.state_lambda >= 0.0f && hypers.state_lambda <= 1.0f
-            && "state_lambda must be in [0, 1]");
+        assert(hypers.num_start_states > 0
+            && "num_start_states must be positive");
+        assert(hypers.trajectory_max_len > 0
+            && "trajectory_max_len must be positive");
     }
 
     // Sanity check action space
@@ -2100,6 +2080,10 @@ std::unique_ptr<PuffeRL> create_pufferl_impl(HypersT& hypers,
     int num_cl_envs = pufferl->curriculum_enabled
         ? clamp_int((int)(hypers.cl_frac * (float)vec->size), 0, vec->size)
         : 0;
+    int num_fresh_envs = pufferl->curriculum_enabled
+        ? clamp_int((int)(hypers.fresh_frac * (float)vec->size), 0, vec->size)
+        : 0;
+    int max_active_envs = num_cl_envs + num_fresh_envs;
 
     pufferl->policy = build_policy(env_name.c_str(), input_size, hidden_size,
         num_layers, decoder_output_size, act_n, is_continuous, hypers.horizon);
@@ -2136,9 +2120,9 @@ std::unique_ptr<PuffeRL> create_pufferl_impl(HypersT& hypers,
         acts, hypers.total_agents, minibatch_segments);
     if (pufferl->curriculum_enabled) {
         register_state_buffer(&pufferl->state_buf,
-            acts, hypers.state_buffer_size, total_agents, vec->size,
-            agents_per_env, num_cl_envs, horizon, hypers.state_checkpoint_interval);
-        pufferl->state_buf.admit_adv = hypers.admit_adv;
+            acts, total_agents, vec->size, agents_per_env, max_active_envs,
+            hypers.num_start_states, hypers.trajectory_max_len,
+            hypers.state_checkpoint_interval);
         pufferl->state_buf.diagnostics_enabled = hypers.curriculum_diagnostics;
     }
 
