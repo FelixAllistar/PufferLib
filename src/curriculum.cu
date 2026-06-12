@@ -18,28 +18,6 @@ struct PrioBuffers {
     IntTensor idx, sample_done;
 };
 
-void register_prio_buffers(PrioBuffers& bufs, Allocator* alloc, int B, int minibatch_segments) {
-    size_t cdf_temp_bytes = 0;
-    cudaError_t err = cub::DeviceScan::InclusiveSum(
-        NULL, cdf_temp_bytes, (float*)NULL, (float*)NULL, B);
-    assert(err == cudaSuccess);
-
-    bufs = (PrioBuffers){
-        .prio_weights = {.shape = {B}},
-        .cdf = {.shape = {B}},
-        .cdf_temp = {.shape = {(int64_t)cdf_temp_bytes}},
-        .mb_prio = {.shape = {minibatch_segments}},
-        .idx = {.shape = {minibatch_segments}},
-        .sample_done = {.shape = {1}},
-    };
-    alloc_register(alloc, &bufs.prio_weights);
-    alloc_register(alloc, &bufs.cdf);
-    alloc_register(alloc, &bufs.cdf_temp);
-    alloc_register(alloc, &bufs.idx);
-    alloc_register(alloc, &bufs.sample_done);
-    alloc_register(alloc, &bufs.mb_prio);
-}
-
 enum CurriculumRole {
     CURRICULUM_ROLE_VANILLA = 0,
     CURRICULUM_ROLE_FRESH = 1,
@@ -87,6 +65,8 @@ static inline int curriculum_clamp_int(int v, int lo, int hi) {
     return v < lo ? lo : (v > hi ? hi : v);
 }
 
+void close_state_buffer(StateBuffer* buf);
+
 void register_state_buffer(StateBuffer* buf,
         int num_envs, int agents_per_env, int max_active_envs,
         int num_start_states, int trajectory_max_len, int checkpoint_interval) {
@@ -98,28 +78,6 @@ void register_state_buffer(StateBuffer* buf,
     }
     max_active_envs = curriculum_clamp_int(max_active_envs, 1, num_envs);
 
-    buf->best_states = NULL;
-    buf->active_states = NULL;
-    buf->best_state_return = NULL;
-    buf->active_state_return = NULL;
-    buf->best_state_step = NULL;
-    buf->active_state_step = NULL;
-    buf->best_valid = NULL;
-    buf->best_len = NULL;
-    buf->best_episode_len = NULL;
-    buf->best_return = NULL;
-    buf->env_role = NULL;
-    buf->env_active_slot = NULL;
-    buf->env_best_slot = NULL;
-    buf->env_sample_offset = NULL;
-    buf->env_history_count = NULL;
-    buf->env_episode_return = NULL;
-    buf->env_prefix_return = NULL;
-    buf->env_episode_len = NULL;
-    buf->env_prefix_step = NULL;
-    buf->env_last_observed_step = NULL;
-    buf->best_generation = NULL;
-    buf->env_best_generation = NULL;
     buf->num_envs = num_envs;
     buf->agents_per_env = agents_per_env;
     buf->max_active_envs = max_active_envs;
@@ -138,38 +96,32 @@ int init_state_buffer(StateBuffer* buf) {
     size_t best_rows = (size_t)buf->num_start_states;
     size_t traj_len = (size_t)buf->trajectory_max_len;
     size_t active_rows = (size_t)buf->max_active_envs;
-    size_t best_state_bytes = best_rows * traj_len * sizeof(PufferState);
-    size_t active_state_bytes = active_rows * traj_len * sizeof(PufferState);
-    size_t best_float_bytes = best_rows * traj_len * sizeof(float);
-    size_t active_float_bytes = active_rows * traj_len * sizeof(float);
-    size_t best_step_bytes = best_rows * traj_len * sizeof(int);
-    size_t active_step_bytes = active_rows * traj_len * sizeof(int);
-    size_t env_bytes = (size_t)buf->num_envs * sizeof(int);
-    size_t env_float_bytes = (size_t)buf->num_envs * sizeof(float);
-    size_t env_longlong_bytes = (size_t)buf->num_envs * sizeof(long long);
+    size_t best_entries = best_rows * traj_len;
+    size_t active_entries = active_rows * traj_len;
+    size_t envs = (size_t)buf->num_envs;
 
-    buf->best_states = (PufferState*)malloc(best_state_bytes);
-    buf->active_states = (PufferState*)malloc(active_state_bytes);
-    buf->best_state_return = (float*)malloc(best_float_bytes);
-    buf->active_state_return = (float*)malloc(active_float_bytes);
-    buf->best_state_step = (int*)malloc(best_step_bytes);
-    buf->active_state_step = (int*)malloc(active_step_bytes);
-    buf->best_valid = (int*)malloc(best_rows * sizeof(int));
-    buf->best_len = (int*)malloc(best_rows * sizeof(int));
-    buf->best_episode_len = (int*)malloc(best_rows * sizeof(int));
-    buf->best_return = (float*)malloc(best_rows * sizeof(float));
-    buf->env_role = (int*)malloc(env_bytes);
-    buf->env_active_slot = (int*)malloc(env_bytes);
-    buf->env_best_slot = (int*)malloc(env_bytes);
-    buf->env_sample_offset = (int*)malloc(env_bytes);
-    buf->env_history_count = (int*)malloc(env_bytes);
-    buf->env_episode_return = (float*)malloc(env_float_bytes);
-    buf->env_prefix_return = (float*)malloc(env_float_bytes);
-    buf->env_episode_len = (int*)malloc(env_bytes);
-    buf->env_prefix_step = (int*)malloc(env_bytes);
-    buf->env_last_observed_step = (long*)malloc((size_t)buf->num_envs * sizeof(long));
-    buf->best_generation = (long long*)malloc(best_rows * sizeof(long long));
-    buf->env_best_generation = (long long*)malloc(env_longlong_bytes);
+    buf->best_states = (PufferState*)calloc(best_entries, sizeof(PufferState));
+    buf->active_states = (PufferState*)calloc(active_entries, sizeof(PufferState));
+    buf->best_state_return = (float*)calloc(best_entries, sizeof(float));
+    buf->active_state_return = (float*)calloc(active_entries, sizeof(float));
+    buf->best_state_step = (int*)calloc(best_entries, sizeof(int));
+    buf->active_state_step = (int*)calloc(active_entries, sizeof(int));
+    buf->best_valid = (int*)calloc(best_rows, sizeof(int));
+    buf->best_len = (int*)calloc(best_rows, sizeof(int));
+    buf->best_episode_len = (int*)calloc(best_rows, sizeof(int));
+    buf->best_return = (float*)calloc(best_rows, sizeof(float));
+    buf->env_role = (int*)calloc(envs, sizeof(int));
+    buf->env_active_slot = (int*)calloc(envs, sizeof(int));
+    buf->env_best_slot = (int*)calloc(envs, sizeof(int));
+    buf->env_sample_offset = (int*)calloc(envs, sizeof(int));
+    buf->env_history_count = (int*)calloc(envs, sizeof(int));
+    buf->env_episode_return = (float*)calloc(envs, sizeof(float));
+    buf->env_prefix_return = (float*)calloc(envs, sizeof(float));
+    buf->env_episode_len = (int*)calloc(envs, sizeof(int));
+    buf->env_prefix_step = (int*)calloc(envs, sizeof(int));
+    buf->env_last_observed_step = (long*)calloc(envs, sizeof(long));
+    buf->best_generation = (long long*)calloc(best_rows, sizeof(long long));
+    buf->env_best_generation = (long long*)calloc(envs, sizeof(long long));
 
     if (buf->best_states == NULL || buf->active_states == NULL
             || buf->best_state_return == NULL || buf->active_state_return == NULL
@@ -186,19 +138,10 @@ int init_state_buffer(StateBuffer* buf) {
             "Failed to allocate curriculum trajectory buffer: starts=%d len=%d active=%d state_size=%d\n",
             buf->num_start_states, buf->trajectory_max_len,
             buf->max_active_envs, (int)sizeof(PufferState));
+        close_state_buffer(buf);
         return 0;
     }
 
-    memset(buf->best_states, 0, best_state_bytes);
-    memset(buf->active_states, 0, active_state_bytes);
-    memset(buf->best_state_return, 0, best_float_bytes);
-    memset(buf->active_state_return, 0, active_float_bytes);
-    memset(buf->best_state_step, 0, best_step_bytes);
-    memset(buf->active_state_step, 0, active_step_bytes);
-    memset(buf->best_valid, 0, best_rows * sizeof(int));
-    memset(buf->best_len, 0, best_rows * sizeof(int));
-    memset(buf->best_episode_len, 0, best_rows * sizeof(int));
-    memset(buf->best_generation, 0, best_rows * sizeof(long long));
     for (int i = 0; i < buf->num_start_states; i++) {
         buf->best_return[i] = -3.402823466e+38F;
     }
@@ -246,6 +189,32 @@ void close_state_buffer(StateBuffer* buf) {
 
 #endif
 
+#ifdef PUFFER_CURRICULUM_TYPES
+
+void register_prio_buffers(PrioBuffers& bufs, Allocator* alloc, int B, int minibatch_segments) {
+    size_t cdf_temp_bytes = 0;
+    cudaError_t err = cub::DeviceScan::InclusiveSum(
+        NULL, cdf_temp_bytes, (float*)NULL, (float*)NULL, B);
+    assert(err == cudaSuccess);
+
+    bufs = (PrioBuffers){
+        .prio_weights = {.shape = {B}},
+        .cdf = {.shape = {B}},
+        .cdf_temp = {.shape = {(int64_t)cdf_temp_bytes}},
+        .mb_prio = {.shape = {minibatch_segments}},
+        .idx = {.shape = {minibatch_segments}},
+        .sample_done = {.shape = {1}},
+    };
+    alloc_register(alloc, &bufs.prio_weights);
+    alloc_register(alloc, &bufs.cdf);
+    alloc_register(alloc, &bufs.cdf_temp);
+    alloc_register(alloc, &bufs.idx);
+    alloc_register(alloc, &bufs.sample_done);
+    alloc_register(alloc, &bufs.mb_prio);
+}
+
+#endif
+
 #ifdef PUFFER_CURRICULUM_IMPL
 
 static inline int clamp_int(int v, int lo, int hi) {
@@ -273,121 +242,6 @@ static int fixed_agents_per_env(StaticVec* vec) {
     assert(vec->agents_per_buffer % agents_per_env == 0
         && "state curriculum requires agents_per_buffer to be divisible by num_agents");
     return agents_per_env;
-}
-
-__device__ __forceinline__ float priority_power(float value, float alpha) {
-    if (alpha == 0.0f) {
-        return 1.0f;
-    }
-    if (value <= 0.0f) {
-        return 0.0f;
-    }
-    value = __powf(value, alpha);
-    if (isnan(value) || isinf(value)) {
-        return 0.0f;
-    }
-    return value;
-}
-
-__global__ void compute_prio_abs(
-        const precision_t* __restrict__ advantages,
-        float* prio_weights, float prio_alpha, float eps, int rows, int stride) {
-    if (stride == 1) {
-        int idx = blockIdx.x * blockDim.x + threadIdx.x;
-        if (idx < rows) {
-            prio_weights[idx] = priority_power(fabsf(to_float(advantages[idx])), prio_alpha) + eps;
-        }
-        return;
-    }
-
-    int row = blockIdx.x;
-    int tx = threadIdx.x;
-    int offset = row * stride;
-
-    float local_sum = 0.0f;
-    for (int t = tx; t < stride; t += blockDim.x) {
-        local_sum += fabsf(to_float(advantages[offset + t]));
-    }
-
-    for (int s = PRIO_WARP_SIZE / 2; s >= 1; s /= 2) {
-        local_sum += __shfl_down_sync(PRIO_FULL_MASK, local_sum, s);
-    }
-    if (tx == 0) {
-        prio_weights[row] = priority_power(local_sum, prio_alpha) + eps;
-    }
-}
-
-__global__ void multinomial_sample_advance(int* __restrict__ out_idx,
-        precision_t* __restrict__ out_importance,
-        const float* __restrict__ prio_weights, const float* __restrict__ cdf,
-        int B, int num_samples, uint64_t seed, float beta,
-        int64_t* __restrict__ offset_ptr, int* __restrict__ done_counter,
-        int launch_blocks) {
-    int tid = blockIdx.x * blockDim.x + threadIdx.x;
-    int64_t base_off = *offset_ptr;
-    float total_weight = cdf[B - 1];
-    if (tid < num_samples) {
-        curandStatePhilox4_32_10_t rng_state;
-        curand_init(seed, (uint64_t)base_off + tid, 0, &rng_state);
-        float u = curand_uniform(&rng_state);
-
-        int lo;
-        int use_uniform = total_weight <= 0.0f || isnan(total_weight) || isinf(total_weight);
-        if (use_uniform) {
-            lo = (int)(u * (float)B);
-            if (lo >= B) {
-                lo = B - 1;
-            }
-        } else {
-            float target = u * total_weight;
-            lo = 0;
-            int hi = B - 1;
-            while (lo < hi) {
-                int mid = (lo + hi) / 2;
-                if (cdf[mid] < target) {
-                    lo = mid + 1;
-                } else {
-                    hi = mid;
-                }
-            }
-        }
-        if (out_importance != NULL) {
-            float weight = 1.0f;
-            if (!use_uniform) {
-                float value = prio_weights[lo] * (float)B / total_weight;
-                weight = __powf(value, -beta);
-                if (isnan(weight) || isinf(weight)) {
-                    weight = 1.0f;
-                }
-            }
-            precision_t value = from_float(weight);
-            out_importance[tid] = value;
-        }
-        out_idx[tid] = lo;
-    }
-    __syncthreads();
-
-    if (threadIdx.x == 0) {
-        __threadfence();
-        int ticket = atomicAdd(done_counter, 1);
-        if (ticket == launch_blocks - 1) {
-            *offset_ptr = base_off + num_samples;
-            *done_counter = 0;
-        }
-    }
-}
-
-static inline void sample_prio_indices(PrioBuffers* bufs, int population,
-        int samples, ulong seed, long* offset_ptr, precision_t* out_importance,
-        float beta, cudaStream_t stream) {
-    size_t cdf_temp_bytes = (size_t)bufs->cdf_temp.shape[0];
-    cub::DeviceScan::InclusiveSum(bufs->cdf_temp.data, cdf_temp_bytes,
-        bufs->prio_weights.data, bufs->cdf.data, population, stream);
-    int blocks = (samples + PRIO_BLOCK_SIZE - 1) / PRIO_BLOCK_SIZE;
-    multinomial_sample_advance<<<blocks, PRIO_BLOCK_SIZE, 0, stream>>>(
-        bufs->idx.data, out_importance,
-        bufs->prio_weights.data, bufs->cdf.data, population, samples, seed, beta,
-        offset_ptr, bufs->sample_done.data, blocks);
 }
 
 static inline unsigned int curriculum_mix32(unsigned int x) {
@@ -900,6 +754,121 @@ void curriculum_rollout_begin(PuffeRL* pufferl) {
         vec->log_env_limit = 0;
     }
 
+}
+
+__device__ __forceinline__ float priority_power(float value, float alpha) {
+    if (alpha == 0.0f) {
+        return 1.0f;
+    }
+    if (value <= 0.0f) {
+        return 0.0f;
+    }
+    value = __powf(value, alpha);
+    if (isnan(value) || isinf(value)) {
+        return 0.0f;
+    }
+    return value;
+}
+
+__global__ void compute_prio_abs(
+        const precision_t* __restrict__ advantages,
+        float* prio_weights, float prio_alpha, float eps, int rows, int stride) {
+    if (stride == 1) {
+        int idx = blockIdx.x * blockDim.x + threadIdx.x;
+        if (idx < rows) {
+            prio_weights[idx] = priority_power(fabsf(to_float(advantages[idx])), prio_alpha) + eps;
+        }
+        return;
+    }
+
+    int row = blockIdx.x;
+    int tx = threadIdx.x;
+    int offset = row * stride;
+
+    float local_sum = 0.0f;
+    for (int t = tx; t < stride; t += blockDim.x) {
+        local_sum += fabsf(to_float(advantages[offset + t]));
+    }
+
+    for (int s = PRIO_WARP_SIZE / 2; s >= 1; s /= 2) {
+        local_sum += __shfl_down_sync(PRIO_FULL_MASK, local_sum, s);
+    }
+    if (tx == 0) {
+        prio_weights[row] = priority_power(local_sum, prio_alpha) + eps;
+    }
+}
+
+__global__ void multinomial_sample_advance(int* __restrict__ out_idx,
+        precision_t* __restrict__ out_importance,
+        const float* __restrict__ prio_weights, const float* __restrict__ cdf,
+        int B, int num_samples, uint64_t seed, float beta,
+        int64_t* __restrict__ offset_ptr, int* __restrict__ done_counter,
+        int launch_blocks) {
+    int tid = blockIdx.x * blockDim.x + threadIdx.x;
+    int64_t base_off = *offset_ptr;
+    float total_weight = cdf[B - 1];
+    if (tid < num_samples) {
+        curandStatePhilox4_32_10_t rng_state;
+        curand_init(seed, (uint64_t)base_off + tid, 0, &rng_state);
+        float u = curand_uniform(&rng_state);
+
+        int lo;
+        int use_uniform = total_weight <= 0.0f || isnan(total_weight) || isinf(total_weight);
+        if (use_uniform) {
+            lo = (int)(u * (float)B);
+            if (lo >= B) {
+                lo = B - 1;
+            }
+        } else {
+            float target = u * total_weight;
+            lo = 0;
+            int hi = B - 1;
+            while (lo < hi) {
+                int mid = (lo + hi) / 2;
+                if (cdf[mid] < target) {
+                    lo = mid + 1;
+                } else {
+                    hi = mid;
+                }
+            }
+        }
+        if (out_importance != NULL) {
+            float weight = 1.0f;
+            if (!use_uniform) {
+                float value = prio_weights[lo] * (float)B / total_weight;
+                weight = __powf(value, -beta);
+                if (isnan(weight) || isinf(weight)) {
+                    weight = 1.0f;
+                }
+            }
+            precision_t value = from_float(weight);
+            out_importance[tid] = value;
+        }
+        out_idx[tid] = lo;
+    }
+    __syncthreads();
+
+    if (threadIdx.x == 0) {
+        __threadfence();
+        int ticket = atomicAdd(done_counter, 1);
+        if (ticket == launch_blocks - 1) {
+            *offset_ptr = base_off + num_samples;
+            *done_counter = 0;
+        }
+    }
+}
+
+static inline void sample_prio_indices(PrioBuffers* bufs, int population,
+        int samples, ulong seed, long* offset_ptr, precision_t* out_importance,
+        float beta, cudaStream_t stream) {
+    size_t cdf_temp_bytes = (size_t)bufs->cdf_temp.shape[0];
+    cub::DeviceScan::InclusiveSum(bufs->cdf_temp.data, cdf_temp_bytes,
+        bufs->prio_weights.data, bufs->cdf.data, population, stream);
+    int blocks = (samples + PRIO_BLOCK_SIZE - 1) / PRIO_BLOCK_SIZE;
+    multinomial_sample_advance<<<blocks, PRIO_BLOCK_SIZE, 0, stream>>>(
+        bufs->idx.data, out_importance,
+        bufs->prio_weights.data, bufs->cdf.data, population, samples, seed, beta,
+        offset_ptr, bufs->sample_done.data, blocks);
 }
 
 #endif
