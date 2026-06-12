@@ -165,6 +165,9 @@ void rollouts(pybind11::object pufferl_obj) {
     }
 
     static_vec_omp_step(pufferl.vec);
+    if (pufferl.curriculum_enabled) {
+        curriculum_rollout_end(&pufferl);
+    }
     float sec = (float)(wall_clock() - t0);
     pufferl.profile.accum[PROF_ROLLOUT] += sec * 1000.0f;  // store as ms
 
@@ -452,7 +455,6 @@ std::unique_ptr<PuffeRL> create_pufferl(py::dict args) {
     hypers.state_buffer_size = get_config(train_kwargs, "state_buffer_size");
     hypers.cl_frac = get_config(train_kwargs, "cl_frac");
     hypers.fresh_frac = get_config(train_kwargs, "fresh_frac");
-    hypers.anneal_cl = get_config(train_kwargs, "anneal_cl");
     hypers.state_trajectory_max_len = get_config(train_kwargs, "state_trajectory_max_len");
     hypers.state_checkpoint_interval = get_config(train_kwargs, "state_checkpoint_interval");
     hypers.reset_state = get_config(args, "reset_state");
@@ -589,7 +591,6 @@ PYBIND11_MODULE(_C, m) {
         .def_readwrite("state_buffer_size", &HypersT::state_buffer_size)
         .def_readwrite("cl_frac", &HypersT::cl_frac)
         .def_readwrite("fresh_frac", &HypersT::fresh_frac)
-        .def_readwrite("anneal_cl", &HypersT::anneal_cl)
         .def_readwrite("state_trajectory_max_len", &HypersT::state_trajectory_max_len)
         .def_readwrite("state_checkpoint_interval", &HypersT::state_checkpoint_interval)
         .def_readwrite("cudagraphs", &HypersT::cudagraphs)

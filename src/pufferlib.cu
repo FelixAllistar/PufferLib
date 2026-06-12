@@ -301,7 +301,6 @@ typedef struct {
     int state_buffer_size;
     float cl_frac;
     float fresh_frac;
-    bool anneal_cl;
     int state_trajectory_max_len;
     int state_checkpoint_interval;
     // Flags
@@ -1998,7 +1997,7 @@ std::unique_ptr<PuffeRL> create_pufferl_impl(HypersT& hypers,
         register_state_buffer(&pufferl->state_buf,
             vec->size, agents_per_env, max_active_envs,
             hypers.state_buffer_size, hypers.state_trajectory_max_len,
-            hypers.state_checkpoint_interval);
+            hypers.state_checkpoint_interval, hypers.horizon);
     }
 
     // Extra cuda buffers just reuse activ allocator
