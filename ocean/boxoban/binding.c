@@ -4,7 +4,6 @@
 #define NUM_ATNS 1
 #define ACT_SIZES {5}
 #define OBS_TENSOR_T FloatTensor
-#define PUFFER_BOXOBAN_RNN_RESET
 
 
 #define Env Boxoban

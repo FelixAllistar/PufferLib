@@ -13,36 +13,6 @@
 #define PUFFER_RNN_STATE_INPUT_EPS 1e-6f
 #endif
 
-#ifdef PUFFER_BOXOBAN_RNN_RESET
-__global__ void boxoban_reset_rollout_rnn_state_kernel(
-        precision_t* __restrict__ state, const precision_t* __restrict__ obs,
-        int B, int input_dim, int layers, int H) {
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    int total = layers * B * H;
-    if (idx >= total) {
-        return;
-    }
-    int rem = idx / H;
-    int b = rem % B;
-    float remaining = to_float(obs[b * input_dim + input_dim - 1]);
-    if (remaining >= 0.999f) {
-        state[idx] = from_float(PUFFER_RNN_STATE_INPUT_EPS);
-    }
-}
-
-__global__ void boxoban_make_rnn_reset_mask_kernel(
-        precision_t* __restrict__ reset_mask, const precision_t* __restrict__ obs,
-        int B, int T, int input_dim) {
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    int total = B * T;
-    if (idx >= total) {
-        return;
-    }
-    float remaining = to_float(obs[idx * input_dim + input_dim - 1]);
-    reset_mask[idx] = from_float(remaining >= 0.999f ? 1.0f : 0.0f);
-}
-#endif
-
 // Signatures used by encoder and decoder. Writing custom nets in 4.0 requires a fair bit of code,
 // because you are responsible for defining your own activation and gradient buffers.
 // In practice, this is fairly simple. See our Encoder and Decoder for examples.
@@ -853,16 +823,6 @@ static void policy_activations_free(Policy* p, PolicyActivations& a) {
 
 PrecisionTensor policy_forward(Policy* p, PolicyWeights& w, PolicyActivations& activations,
         PrecisionTensor obs, PrecisionTensor state, cudaStream_t stream) {
-#ifdef PUFFER_BOXOBAN_RNN_RESET
-    {
-        int B = obs.shape[0];
-        int layers = state.shape[0];
-        int H = state.shape[2];
-        int total = layers * B * H;
-        boxoban_reset_rollout_rnn_state_kernel<<<grid_size(total), BLOCK_SIZE, 0, stream>>>(
-            state.data, obs.data, B, p->input_dim, layers, H);
-    }
-#endif
     PrecisionTensor enc_out = p->encoder.forward(w.encoder, activations.encoder, obs, stream);
     PrecisionTensor h = p->network.forward(w.network, enc_out, state, activations.network, stream);
     return p->decoder.forward(w.decoder, activations.decoder, h, stream);
@@ -871,13 +831,6 @@ PrecisionTensor policy_forward(Policy* p, PolicyWeights& w, PolicyActivations& a
 PrecisionTensor policy_forward_train(Policy* p, PolicyWeights& w, PolicyActivations& activations,
         PrecisionTensor x, PrecisionTensor state, cudaStream_t stream) {
     int B = x.shape[0], TT = x.shape[1];
-#ifdef PUFFER_BOXOBAN_RNN_RESET
-    {
-        MinGRUActivations* na = (MinGRUActivations*)activations.network;
-        boxoban_make_rnn_reset_mask_kernel<<<grid_size(B * TT), BLOCK_SIZE, 0, stream>>>(
-            na->reset_mask.data, x.data, B, TT, p->input_dim);
-    }
-#endif
     PrecisionTensor h = p->encoder.forward(w.encoder, activations.encoder, *puf_squeeze(&x, 0), stream);
     h = p->network.forward_train(w.network, *puf_unsqueeze(&h, 0, B, TT), state, activations.network, stream);
     PrecisionTensor dec_out = p->decoder.forward(w.decoder, activations.decoder, *puf_squeeze(&h, 0), stream);
