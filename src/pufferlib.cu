@@ -580,14 +580,18 @@ __global__ void sample_logits(
     rng_states[idx] = state;
 }
 
+extern "C" void post_step_callback_wrapper(void* ctx, int buf, int t, int env_idx) {
+    PuffeRL* pufferl = (PuffeRL*)ctx;
+    if (pufferl->curriculum_enabled) {
+        curriculum_post_step(pufferl, buf, t, env_idx);
+    }
+}
+
 // Single step rollout forward pass. Called by each environment worker in their
 // own buffer thread. This operation is cudagraphed.
 extern "C" void net_callback_wrapper(void* ctx, int buf, int t) {
     PuffeRL* pufferl = (PuffeRL*)ctx;
     HypersT& hypers = pufferl->hypers;
-    if (pufferl->curriculum_enabled) {
-        capture_curriculum_checkpoint(pufferl, buf, t);
-    }
     int graph = t * hypers.num_buffers + buf;
     profile_begin("fused_rollout", hypers.profile);
 
@@ -2195,7 +2199,9 @@ std::unique_ptr<PuffeRL> create_pufferl_impl(HypersT& hypers,
     }
 
     create_static_threads(vec, hypers.num_threads, horizon, pufferl.get(),
-        net_callback_wrapper, thread_init_wrapper);
+        net_callback_wrapper,
+        pufferl->curriculum_enabled ? post_step_callback_wrapper : NULL,
+        thread_init_wrapper);
     static_vec_reset(vec);
 
     if (hypers.profile) {

@@ -70,10 +70,6 @@ struct StateBuffer {
     int seeded;
 };
 
-static inline int curriculum_clamp_int(int v, int lo, int hi) {
-    return v < lo ? lo : (v > hi ? hi : v);
-}
-
 void close_state_buffer(StateBuffer* buf);
 
 void register_state_buffer(StateBuffer* buf,
@@ -89,7 +85,9 @@ void register_state_buffer(StateBuffer* buf,
     if (rollout_horizon < 1) {
         rollout_horizon = 1;
     }
-    max_active_envs = curriculum_clamp_int(max_active_envs, 1, num_envs);
+    // curriculum_clamp_int
+    max_active_envs = max_active_envs < 1 ? 1
+        : (max_active_envs > num_envs ? num_envs : max_active_envs);
 
     buf->agents_per_env = agents_per_env;
     buf->max_active_envs = max_active_envs;
@@ -323,69 +321,14 @@ static inline void curriculum_seed_best(PuffeRL* pufferl) {
     buf->seeded = 1;
 }
 
-static inline int curriculum_sample_best_slot(StateBuffer* buf, unsigned int salt) {
-    int valid = curriculum_count_valid(buf);
-    if (valid <= 0) {
-        return -1;
+static inline unsigned int curriculum_epoch_start_salt(PuffeRL* pufferl,
+        int env_idx, int role) {
+    if (role == CURRICULUM_ROLE_FRESH) {
+        return (unsigned int)(pufferl->seed
+            + pufferl->epoch * 4099 + env_idx * 31) ^ 0xb5297a4dU;
     }
-    int pick = (int)(curriculum_mix32(salt) % (unsigned int)valid);
-    for (int slot = 0; slot < buf->num_start_states; slot++) {
-        if (!buf->best_valid[slot]) {
-            continue;
-        }
-        if (pick == 0) {
-            return slot;
-        }
-        pick--;
-    }
-    return -1;
-}
-
-static inline int curriculum_sample_offset(StateBuffer* buf, int slot, unsigned int salt) {
-    int len = slot >= 0 && slot < buf->num_start_states ? buf->best_len[slot] : 0;
-    if (len <= 1) {
-        return 0;
-    }
-    return (int)(curriculum_mix32(salt) % (unsigned int)len);
-}
-
-static inline void curriculum_copy_env_obs_to_gpu(StaticVec* vec,
-        StateBuffer* buf, int env_idx) {
-    if (vec == NULL || buf == NULL || !vec->gpu) {
-        return;
-    }
-    int agent_start = env_idx * buf->agents_per_env;
-    size_t agent_bytes = (size_t)buf->agents_per_env * sizeof(float);
-    cudaMemcpy(vec->gpu_rewards + agent_start,
-        vec->rewards + agent_start, agent_bytes, cudaMemcpyHostToDevice);
-    cudaMemcpy(vec->gpu_terminals + agent_start,
-        vec->terminals + agent_start, agent_bytes, cudaMemcpyHostToDevice);
-    size_t obs_size = (size_t)get_obs_size();
-    size_t obs_bytes = (size_t)buf->agents_per_env * obs_size
-        * get_obs_elem_size();
-    cudaMemcpy(vec->gpu_observations.data + (long)agent_start * obs_size,
-        vec->observations.data + (long)agent_start * obs_size,
-        obs_bytes, cudaMemcpyHostToDevice);
-    if (vec->action_mask_size > 0) {
-        size_t mask_size = (size_t)vec->action_mask_size;
-        size_t mask_bytes = (size_t)buf->agents_per_env * mask_size
-            * sizeof(unsigned char);
-        cudaMemcpy(vec->gpu_action_mask + (long)agent_start * mask_size,
-            vec->action_mask + (long)agent_start * mask_size,
-            mask_bytes, cudaMemcpyHostToDevice);
-    }
-}
-
-static inline void curriculum_set_env_state(Env* env, const PufferState* state,
-        int clear_outputs) {
-    env->state = *state;
-    puffer_state_refresh(env);
-    if (clear_outputs) {
-        for (int a = 0; a < env->num_agents; a++) {
-            env->rewards[a] = 0.0f;
-            env->terminals[a] = 0.0f;
-        }
-    }
+    return (unsigned int)(pufferl->seed
+        + pufferl->epoch * 65537 + env_idx * 131) ^ 0x68e31da4U;
 }
 
 static inline int curriculum_active_row(StateBuffer* buf, int env_idx) {
@@ -460,7 +403,8 @@ static inline void curriculum_observe_step(StateBuffer* buf, int env_idx,
 }
 
 static inline int curriculum_start_env(PuffeRL* pufferl, int env_idx,
-        int role, unsigned int salt, int clear_outputs, int reset_history) {
+        int role, unsigned int salt, int clear_outputs, int reset_history,
+        int copy_to_gpu) {
     StateBuffer* buf = &pufferl->state_buf;
     StaticVec* vec = pufferl->vec;
     int active_row = curriculum_active_row(buf, env_idx);
@@ -475,13 +419,34 @@ static inline int curriculum_start_env(PuffeRL* pufferl, int env_idx,
     long long generation = -1;
     PufferState start_state;
 
-    slot = curriculum_sample_best_slot(buf, salt);
+    // curriculum_sample_best_slot
+    int valid = curriculum_count_valid(buf);
+    if (valid <= 0) {
+        return 0;
+    }
+    int pick = (int)(curriculum_mix32(salt) % (unsigned int)valid);
+    for (int i = 0; i < buf->num_start_states; i++) {
+        if (!buf->best_valid[i]) {
+            continue;
+        }
+        if (pick == 0) {
+            slot = i;
+            break;
+        }
+        pick--;
+    }
     if (slot < 0 || !buf->best_valid[slot]) {
         return 0;
     }
-    offset = role == CURRICULUM_ROLE_CL
-        ? curriculum_sample_offset(buf, slot, salt ^ 0xa511e9b3U)
-        : 0;
+    if (role == CURRICULUM_ROLE_CL) {
+        // curriculum_sample_offset
+        int len = slot >= 0 && slot < buf->num_start_states
+            ? buf->best_len[slot] : 0;
+        offset = len <= 1
+            ? 0
+            : (int)(curriculum_mix32(salt ^ 0xa511e9b3U)
+                % (unsigned int)len);
+    }
     int best_base = curriculum_best_base(buf, slot);
     start_state = buf->best_states[best_base + offset];
     if (role == CURRICULUM_ROLE_CL) {
@@ -491,7 +456,15 @@ static inline int curriculum_start_env(PuffeRL* pufferl, int env_idx,
     generation = buf->best_generation[slot];
 
     Env* env = &vec->envs[env_idx];
-    curriculum_set_env_state(env, &start_state, clear_outputs);
+    // curriculum_set_env_state
+    env->state = start_state;
+    puffer_state_refresh(env);
+    if (clear_outputs) {
+        for (int a = 0; a < env->num_agents; a++) {
+            env->rewards[a] = 0.0f;
+            env->terminals[a] = 0.0f;
+        }
+    }
     if (reset_history) {
         buf->active_history_count[active_row] = 0;
         buf->active_segment_start[active_row] = 0;
@@ -512,136 +485,194 @@ static inline int curriculum_start_env(PuffeRL* pufferl, int env_idx,
         buf->active_last_observed_step[active_row] = -1;
     }
     curriculum_record_state(buf, env_idx, &env->state);
-    curriculum_copy_env_obs_to_gpu(vec, buf, env_idx);
+    // curriculum_copy_env_obs_to_gpu
+    if (copy_to_gpu && vec != NULL && buf != NULL && vec->gpu) {
+        int agent_start = env_idx * buf->agents_per_env;
+        size_t agent_bytes = (size_t)buf->agents_per_env * sizeof(float);
+        cudaMemcpy(vec->gpu_rewards + agent_start,
+            vec->rewards + agent_start, agent_bytes, cudaMemcpyHostToDevice);
+        cudaMemcpy(vec->gpu_terminals + agent_start,
+            vec->terminals + agent_start, agent_bytes,
+            cudaMemcpyHostToDevice);
+        size_t obs_size = (size_t)get_obs_size();
+        size_t obs_bytes = (size_t)buf->agents_per_env * obs_size
+            * get_obs_elem_size();
+        cudaMemcpy(vec->gpu_observations.data + (long)agent_start * obs_size,
+            vec->observations.data + (long)agent_start * obs_size,
+            obs_bytes, cudaMemcpyHostToDevice);
+        if (vec->action_mask_size > 0) {
+            size_t mask_size = (size_t)vec->action_mask_size;
+            size_t mask_bytes = (size_t)buf->agents_per_env * mask_size
+                * sizeof(unsigned char);
+            cudaMemcpy(vec->gpu_action_mask + (long)agent_start * mask_size,
+                vec->action_mask + (long)agent_start * mask_size,
+                mask_bytes, cudaMemcpyHostToDevice);
+        }
+    }
     return 1;
 }
 
-static inline int curriculum_segment_beats(StateBuffer* buf, int seg_idx,
-        float best_return, int best_episode_len) {
-    float terminal_return = buf->segment_return[seg_idx];
-    if (terminal_return > best_return + 1e-6f) {
-        return 1;
+static inline void curriculum_process_terminal(PuffeRL* pufferl, int env_idx,
+        int buffer_idx, int t, int restart, int copy_to_gpu) {
+    StateBuffer* buf = &pufferl->state_buf;
+    int row = curriculum_active_row(buf, env_idx);
+    if (row < 0) {
+        return;
     }
-    if (fabsf(terminal_return - best_return) <= 1e-6f
-            && buf->segment_episode_len[seg_idx] < best_episode_len) {
-        return 1;
-    }
-    return 0;
-}
-
-static inline int curriculum_append_completed_segment(StateBuffer* buf, int row) {
     int role = buf->active_role[row];
+    if (role != CURRICULUM_ROLE_FRESH && role != CURRICULUM_ROLE_CL) {
+        return;
+    }
+    // curriculum_append_completed_segment
     int slot = buf->active_best_slot[row];
     int start = buf->active_segment_start[row];
     int count = buf->active_history_count[row] - start;
     int seg_count = buf->row_segment_count[row];
-    if ((role != CURRICULUM_ROLE_FRESH && role != CURRICULUM_ROLE_CL)
-            || slot < 0 || start < 0 || count <= 0
-            || seg_count >= buf->max_segments_per_row) {
-        return 0;
+    if ((role == CURRICULUM_ROLE_FRESH || role == CURRICULUM_ROLE_CL)
+            && slot >= 0 && start >= 0 && count > 0
+            && seg_count < buf->max_segments_per_row) {
+        int seg_idx = curriculum_segment_base(buf, row) + seg_count;
+        buf->row_segment_count[row] = seg_count + 1;
+        buf->segment_role[seg_idx] = role;
+        buf->segment_best_slot[seg_idx] = slot;
+        buf->segment_sample_offset[seg_idx] =
+            buf->active_sample_offset[row];
+        buf->segment_start[seg_idx] = start;
+        buf->segment_count[seg_idx] = count;
+        buf->segment_return[seg_idx] = buf->active_episode_return[row];
+        if (role == CURRICULUM_ROLE_CL) {
+            buf->segment_return[seg_idx] += buf->active_prefix_return[row];
+        }
+        if (isnan(buf->segment_return[seg_idx])
+                || isinf(buf->segment_return[seg_idx])) {
+            buf->segment_return[seg_idx] = -3.402823466e+38F;
+        }
+        buf->segment_prefix_return[seg_idx] = buf->active_prefix_return[row];
+        buf->segment_episode_len[seg_idx] = buf->active_episode_len[row];
+        if (role == CURRICULUM_ROLE_CL) {
+            buf->segment_episode_len[seg_idx] +=
+                buf->active_prefix_step[row];
+        }
+        buf->segment_prefix_step[seg_idx] = buf->active_prefix_step[row];
+        buf->segment_best_generation[seg_idx] =
+            buf->active_best_generation[row];
     }
-
-    int seg_idx = curriculum_segment_base(buf, row) + seg_count;
-    buf->row_segment_count[row] = seg_count + 1;
-    buf->segment_role[seg_idx] = role;
-    buf->segment_best_slot[seg_idx] = slot;
-    buf->segment_sample_offset[seg_idx] = buf->active_sample_offset[row];
-    buf->segment_start[seg_idx] = start;
-    buf->segment_count[seg_idx] = count;
-    buf->segment_return[seg_idx] = buf->active_episode_return[row];
-    if (role == CURRICULUM_ROLE_CL) {
-        buf->segment_return[seg_idx] += buf->active_prefix_return[row];
-    }
-    if (isnan(buf->segment_return[seg_idx])
-            || isinf(buf->segment_return[seg_idx])) {
-        buf->segment_return[seg_idx] = -3.402823466e+38F;
-    }
-    buf->segment_prefix_return[seg_idx] = buf->active_prefix_return[row];
-    buf->segment_episode_len[seg_idx] = buf->active_episode_len[row];
-    if (role == CURRICULUM_ROLE_CL) {
-        buf->segment_episode_len[seg_idx] += buf->active_prefix_step[row];
-    }
-    buf->segment_prefix_step[seg_idx] = buf->active_prefix_step[row];
-    buf->segment_best_generation[seg_idx] = buf->active_best_generation[row];
-    return 1;
-}
-
-static inline void curriculum_apply_full_segment(StateBuffer* buf, int row,
-        int seg_idx) {
-    int slot = buf->segment_best_slot[seg_idx];
-    int count = buf->segment_count[seg_idx];
-    if (count > buf->trajectory_max_len) {
-        count = buf->trajectory_max_len;
-    }
-    if (slot < 0 || count <= 0) {
+    if (!restart) {
+        buf->active_best_slot[row] = -1;
         return;
     }
-    int active_base = row * buf->trajectory_max_len
-        + buf->segment_start[seg_idx];
-    int best_base = curriculum_best_base(buf, slot);
-    memcpy(buf->best_states + best_base, buf->active_states + active_base,
-        (size_t)count * sizeof(PufferState));
-    memcpy(buf->best_state_return + best_base,
-        buf->active_state_return + active_base,
-        (size_t)count * sizeof(float));
-    memcpy(buf->best_state_step + best_base,
-        buf->active_state_step + active_base,
-        (size_t)count * sizeof(int));
-    buf->best_valid[slot] = 1;
-    buf->best_len[slot] = count;
-    buf->best_episode_len[slot] = buf->segment_episode_len[seg_idx];
-    buf->best_return[slot] = buf->segment_return[seg_idx];
-    buf->best_generation[slot]++;
-    if (buf->best_generation[slot] <= 0) {
-        buf->best_generation[slot] = 1;
+    // curriculum_terminal_salt
+    unsigned int salt = (unsigned int)(pufferl->seed
+        + (uint64_t)pufferl->epoch * 1000003ULL
+        + (uint64_t)buffer_idx * 9176ULL
+        + (uint64_t)t * 101ULL
+        + (uint64_t)env_idx * 17ULL);
+    salt = role == CURRICULUM_ROLE_FRESH
+        ? salt ^ 0x2f1bbcdcU
+        : salt ^ 0x9e3779b9U;
+
+    if (role == CURRICULUM_ROLE_FRESH) {
+        curriculum_start_env(pufferl, env_idx, CURRICULUM_ROLE_FRESH,
+            salt, 0, 0, copy_to_gpu);
+    } else {
+        curriculum_start_env(pufferl, env_idx, CURRICULUM_ROLE_CL,
+            salt, 0, 0, copy_to_gpu);
     }
 }
 
-static inline void curriculum_apply_tail_segment(StateBuffer* buf, int row,
-        int seg_idx) {
-    int slot = buf->segment_best_slot[seg_idx];
-    int offset = buf->segment_sample_offset[seg_idx];
-    int count = buf->segment_count[seg_idx];
-    if (slot < 0 || !buf->best_valid[slot] || count <= 0) {
+static inline void curriculum_post_step(PuffeRL* pufferl, int buffer_idx,
+        int t, int env_idx) {
+    StateBuffer* buf = &pufferl->state_buf;
+    StaticVec* vec = pufferl->vec;
+    int role = curriculum_env_role(buf, env_idx);
+    if (role != CURRICULUM_ROLE_FRESH && role != CURRICULUM_ROLE_CL) {
         return;
     }
-    if (offset < 0) {
-        offset = 0;
-    }
-    if (offset >= buf->trajectory_max_len) {
-        offset = buf->trajectory_max_len - 1;
-    }
-    if (offset + count > buf->trajectory_max_len) {
-        count = buf->trajectory_max_len - offset;
-    }
-    if (count <= 0) {
+    Env* env = &vec->envs[env_idx];
+    if (env->rewards == NULL || env->terminals == NULL) {
         return;
     }
-
-    int active_base = row * buf->trajectory_max_len
-        + buf->segment_start[seg_idx];
-    int best_base = curriculum_best_base(buf, slot);
-    memcpy(buf->best_states + best_base + offset,
-        buf->active_states + active_base,
-        (size_t)count * sizeof(PufferState));
-    for (int i = 0; i < count; i++) {
-        buf->best_state_return[best_base + offset + i] =
-            buf->segment_prefix_return[seg_idx]
-            + buf->active_state_return[active_base + i];
-        buf->best_state_step[best_base + offset + i] =
-            buf->segment_prefix_step[seg_idx]
-            + buf->active_state_step[active_base + i];
+    long step_serial = pufferl->global_step
+        + (long)t * (long)vec->total_agents;
+    curriculum_observe_step(buf, env_idx, env, step_serial);
+    if (env->terminals[0] > 0.5f) {
+        curriculum_process_terminal(pufferl, env_idx, buffer_idx,
+            t + 1, 1, 0);
+        return;
     }
-    buf->best_len[slot] = offset + count;
-    buf->best_episode_len[slot] = buf->segment_episode_len[seg_idx];
-    buf->best_return[slot] = buf->segment_return[seg_idx];
-    buf->best_generation[slot]++;
-    if (buf->best_generation[slot] <= 0) {
-        buf->best_generation[slot] = 1;
+    if (curriculum_should_record_checkpoint(buf, env_idx)) {
+        curriculum_record_state(buf, env_idx, &env->state);
     }
 }
 
-static inline void curriculum_apply_completed_segments(StateBuffer* buf) {
+void curriculum_rollout_begin(PuffeRL* pufferl) {
+    StateBuffer* buf = &pufferl->state_buf;
+    StaticVec* vec = pufferl->vec;
+    HypersT* h = &pufferl->hypers;
+    int total_envs = vec->size;
+
+    curriculum_seed_best(pufferl);
+    if (curriculum_count_valid(buf) <= 0) {
+        vec->log_env_limit = 0;
+        return;
+    }
+
+    int num_cl_envs = h->cl_frac * total_envs;
+    int num_fresh_envs = h->fresh_frac * total_envs;
+    int active_envs = num_cl_envs + num_fresh_envs;
+
+    buf->num_cl_envs = num_cl_envs;
+    buf->num_fresh_envs = num_fresh_envs;
+    buf->num_vanilla_envs = total_envs - active_envs;
+    vec->log_env_limit = active_envs > 0 ? buf->num_vanilla_envs : 0;
+
+    int started = 0;
+    int fresh_start = buf->num_vanilla_envs;
+    int cl_start = fresh_start + num_fresh_envs;
+    for (int i = 0; i < num_fresh_envs; i++) {
+        int env_idx = fresh_start + i;
+        int active_row = curriculum_active_row(buf, env_idx);
+        if (active_row >= 0
+                && buf->active_role[active_row] == CURRICULUM_ROLE_FRESH
+                && buf->active_best_slot[active_row] >= 0) {
+            started++;
+            continue;
+        }
+        unsigned int salt = curriculum_epoch_start_salt(
+            pufferl, env_idx, CURRICULUM_ROLE_FRESH);
+        started += curriculum_start_env(pufferl, env_idx,
+            CURRICULUM_ROLE_FRESH, salt, 1, 1, 1);
+    }
+    for (int i = 0; i < num_cl_envs; i++) {
+        int env_idx = cl_start + i;
+        int active_row = curriculum_active_row(buf, env_idx);
+        if (active_row >= 0
+                && buf->active_role[active_row] == CURRICULUM_ROLE_CL
+                && buf->active_best_slot[active_row] >= 0) {
+            started++;
+            continue;
+        }
+        unsigned int salt = curriculum_epoch_start_salt(
+            pufferl, env_idx, CURRICULUM_ROLE_CL);
+        started += curriculum_start_env(pufferl, env_idx,
+            CURRICULUM_ROLE_CL, salt, 1, 1, 1);
+    }
+    if (started <= 0) {
+        buf->num_cl_envs = 0;
+        buf->num_fresh_envs = 0;
+        buf->num_vanilla_envs = total_envs;
+        vec->log_env_limit = 0;
+        for (int row = 0; row < buf->max_active_envs; row++) {
+            buf->active_role[row] = CURRICULUM_ROLE_VANILLA;
+            buf->active_best_slot[row] = -1;
+        }
+    }
+
+}
+
+void curriculum_rollout_end(PuffeRL* pufferl) {
+    StateBuffer* buf = &pufferl->state_buf;
+    // curriculum_apply_completed_segments
     for (int slot = 0; slot < buf->num_start_states; slot++) {
         int best_row = -1;
         int best_seg = -1;
@@ -657,8 +688,13 @@ static inline void curriculum_apply_completed_segments(StateBuffer* buf) {
                         || buf->segment_best_generation[seg_idx] != generation) {
                     continue;
                 }
-                if (curriculum_segment_beats(buf, seg_idx,
-                        candidate_return, candidate_len)) {
+                // curriculum_segment_beats
+                float terminal_return = buf->segment_return[seg_idx];
+                int segment_beats =
+                    terminal_return > candidate_return + 1e-6f
+                    || (fabsf(terminal_return - candidate_return) <= 1e-6f
+                        && buf->segment_episode_len[seg_idx] < candidate_len);
+                if (segment_beats) {
                     best_row = row;
                     best_seg = seg_idx;
                     candidate_return = buf->segment_return[seg_idx];
@@ -670,14 +706,82 @@ static inline void curriculum_apply_completed_segments(StateBuffer* buf) {
             continue;
         }
         if (buf->segment_role[best_seg] == CURRICULUM_ROLE_FRESH) {
-            curriculum_apply_full_segment(buf, best_row, best_seg);
+            // curriculum_apply_full_segment
+            int apply_slot = buf->segment_best_slot[best_seg];
+            int apply_count = buf->segment_count[best_seg];
+            if (apply_count > buf->trajectory_max_len) {
+                apply_count = buf->trajectory_max_len;
+            }
+            if (apply_slot >= 0 && apply_count > 0) {
+                int active_base = best_row * buf->trajectory_max_len
+                    + buf->segment_start[best_seg];
+                int best_base = curriculum_best_base(buf, apply_slot);
+                memcpy(buf->best_states + best_base,
+                    buf->active_states + active_base,
+                    (size_t)apply_count * sizeof(PufferState));
+                memcpy(buf->best_state_return + best_base,
+                    buf->active_state_return + active_base,
+                    (size_t)apply_count * sizeof(float));
+                memcpy(buf->best_state_step + best_base,
+                    buf->active_state_step + active_base,
+                    (size_t)apply_count * sizeof(int));
+                buf->best_valid[apply_slot] = 1;
+                buf->best_len[apply_slot] = apply_count;
+                buf->best_episode_len[apply_slot] =
+                    buf->segment_episode_len[best_seg];
+                buf->best_return[apply_slot] =
+                    buf->segment_return[best_seg];
+                buf->best_generation[apply_slot]++;
+                if (buf->best_generation[apply_slot] <= 0) {
+                    buf->best_generation[apply_slot] = 1;
+                }
+            }
         } else {
-            curriculum_apply_tail_segment(buf, best_row, best_seg);
+            // curriculum_apply_tail_segment
+            int apply_slot = buf->segment_best_slot[best_seg];
+            int offset = buf->segment_sample_offset[best_seg];
+            int apply_count = buf->segment_count[best_seg];
+            if (apply_slot >= 0 && buf->best_valid[apply_slot]
+                    && apply_count > 0) {
+                if (offset < 0) {
+                    offset = 0;
+                }
+                if (offset >= buf->trajectory_max_len) {
+                    offset = buf->trajectory_max_len - 1;
+                }
+                if (offset + apply_count > buf->trajectory_max_len) {
+                    apply_count = buf->trajectory_max_len - offset;
+                }
+                if (apply_count > 0) {
+                    int active_base = best_row * buf->trajectory_max_len
+                        + buf->segment_start[best_seg];
+                    int best_base = curriculum_best_base(buf, apply_slot);
+                    memcpy(buf->best_states + best_base + offset,
+                        buf->active_states + active_base,
+                        (size_t)apply_count * sizeof(PufferState));
+                    for (int i = 0; i < apply_count; i++) {
+                        buf->best_state_return[best_base + offset + i] =
+                            buf->segment_prefix_return[best_seg]
+                            + buf->active_state_return[active_base + i];
+                        buf->best_state_step[best_base + offset + i] =
+                            buf->segment_prefix_step[best_seg]
+                            + buf->active_state_step[active_base + i];
+                    }
+                    buf->best_len[apply_slot] = offset + apply_count;
+                    buf->best_episode_len[apply_slot] =
+                        buf->segment_episode_len[best_seg];
+                    buf->best_return[apply_slot] =
+                        buf->segment_return[best_seg];
+                    buf->best_generation[apply_slot]++;
+                    if (buf->best_generation[apply_slot] <= 0) {
+                        buf->best_generation[apply_slot] = 1;
+                    }
+                }
+            }
         }
     }
-}
 
-static inline void curriculum_compact_active_rows(StateBuffer* buf) {
+    // curriculum_compact_active_rows
     for (int row = 0; row < buf->max_active_envs; row++) {
         int keep = buf->active_role[row] != CURRICULUM_ROLE_VANILLA
             && buf->active_best_slot[row] >= 0;
@@ -711,175 +815,6 @@ static inline void curriculum_compact_active_rows(StateBuffer* buf) {
             buf->active_best_generation[row] = -1;
         }
     }
-}
-
-static inline void curriculum_process_terminal(PuffeRL* pufferl, int env_idx,
-        int buffer_idx, int t, int restart) {
-    StateBuffer* buf = &pufferl->state_buf;
-    int row = curriculum_active_row(buf, env_idx);
-    if (row < 0) {
-        return;
-    }
-    int role = buf->active_role[row];
-    if (role != CURRICULUM_ROLE_FRESH && role != CURRICULUM_ROLE_CL) {
-        return;
-    }
-    curriculum_append_completed_segment(buf, row);
-    if (!restart) {
-        buf->active_best_slot[row] = -1;
-        return;
-    }
-    unsigned int salt = (unsigned int)(pufferl->seed
-        + (uint64_t)pufferl->epoch * 1000003ULL
-        + (uint64_t)buffer_idx * 9176ULL
-        + (uint64_t)t * 101ULL
-        + (uint64_t)env_idx * 17ULL);
-
-    if (role == CURRICULUM_ROLE_FRESH) {
-        curriculum_start_env(pufferl, env_idx, CURRICULUM_ROLE_FRESH,
-            salt ^ 0x2f1bbcdcU, 0, 0);
-    } else {
-        curriculum_start_env(pufferl, env_idx, CURRICULUM_ROLE_CL,
-            salt ^ 0x9e3779b9U, 0, 0);
-    }
-}
-
-static inline void capture_curriculum_checkpoint(PuffeRL* pufferl, int buffer_idx, int t) {
-    StateBuffer* buf = &pufferl->state_buf;
-    StaticVec* vec = pufferl->vec;
-    long rollout_step = pufferl->global_step;
-    int env_start = vec->buffer_env_starts[buffer_idx];
-    int env_count = vec->buffer_env_counts[buffer_idx];
-
-    for (int i = 0; i < env_count; i++) {
-        int env_idx = env_start + i;
-        int role = curriculum_env_role(buf, env_idx);
-        if (role != CURRICULUM_ROLE_FRESH && role != CURRICULUM_ROLE_CL) {
-            continue;
-        }
-        Env* env = &vec->envs[env_idx];
-        if (t > 0) {
-            long step_serial = rollout_step
-                + (long)(t - 1) * (long)vec->total_agents;
-            curriculum_observe_step(buf, env_idx, env, step_serial);
-        }
-        if (t > 0 && env->terminals[0] > 0.5f) {
-            curriculum_process_terminal(pufferl, env_idx, buffer_idx, t, 1);
-            continue;
-        }
-        if (t > 0 && curriculum_should_record_checkpoint(buf, env_idx)) {
-            curriculum_record_state(buf, env_idx, &env->state);
-        }
-    }
-}
-
-void curriculum_rollout_begin(PuffeRL* pufferl) {
-    StateBuffer* buf = &pufferl->state_buf;
-    StaticVec* vec = pufferl->vec;
-    HypersT* h = &pufferl->hypers;
-    int total_envs = vec->size;
-
-    curriculum_seed_best(pufferl);
-    if (curriculum_count_valid(buf) <= 0) {
-        vec->log_env_limit = 0;
-        return;
-    }
-
-    int num_cl_envs = clamp_int((int)(h->cl_frac * (float)total_envs), 0, total_envs);
-    int num_fresh_envs = clamp_int((int)(h->fresh_frac * (float)total_envs), 0, total_envs);
-    if (num_cl_envs + num_fresh_envs > total_envs) {
-        num_cl_envs = total_envs - num_fresh_envs;
-    }
-    int active_envs = num_cl_envs + num_fresh_envs;
-    if (active_envs > buf->max_active_envs) {
-        int overflow = active_envs - buf->max_active_envs;
-        num_cl_envs = clamp_int(num_cl_envs - overflow, 0, total_envs);
-        active_envs = num_cl_envs + num_fresh_envs;
-    }
-    if (active_envs > buf->max_active_envs) {
-        num_fresh_envs = clamp_int(buf->max_active_envs - num_cl_envs, 0, total_envs);
-        active_envs = num_cl_envs + num_fresh_envs;
-    }
-
-    buf->num_cl_envs = num_cl_envs;
-    buf->num_fresh_envs = num_fresh_envs;
-    buf->num_vanilla_envs = total_envs - active_envs;
-    vec->log_env_limit = active_envs > 0 ? buf->num_vanilla_envs : 0;
-
-    int started = 0;
-    int fresh_start = buf->num_vanilla_envs;
-    int cl_start = fresh_start + num_fresh_envs;
-    for (int i = 0; i < num_fresh_envs; i++) {
-        int env_idx = fresh_start + i;
-        int active_row = curriculum_active_row(buf, env_idx);
-        if (active_row >= 0
-                && buf->active_role[active_row] == CURRICULUM_ROLE_FRESH
-                && buf->active_best_slot[active_row] >= 0) {
-            started++;
-            continue;
-        }
-        unsigned int salt = (unsigned int)(pufferl->seed
-            + pufferl->epoch * 4099 + env_idx * 31);
-        started += curriculum_start_env(pufferl, env_idx,
-            CURRICULUM_ROLE_FRESH, salt ^ 0xb5297a4dU, 1, 1);
-    }
-    for (int i = 0; i < num_cl_envs; i++) {
-        int env_idx = cl_start + i;
-        int active_row = curriculum_active_row(buf, env_idx);
-        if (active_row >= 0
-                && buf->active_role[active_row] == CURRICULUM_ROLE_CL
-                && buf->active_best_slot[active_row] >= 0) {
-            started++;
-            continue;
-        }
-        unsigned int salt = (unsigned int)(pufferl->seed
-            + pufferl->epoch * 65537 + env_idx * 131);
-        started += curriculum_start_env(pufferl, env_idx,
-            CURRICULUM_ROLE_CL, salt ^ 0x68e31da4U, 1, 1);
-    }
-    if (started <= 0) {
-        buf->num_cl_envs = 0;
-        buf->num_fresh_envs = 0;
-        buf->num_vanilla_envs = total_envs;
-        vec->log_env_limit = 0;
-        for (int row = 0; row < buf->max_active_envs; row++) {
-            buf->active_role[row] = CURRICULUM_ROLE_VANILLA;
-            buf->active_best_slot[row] = -1;
-        }
-    }
-
-}
-
-void curriculum_rollout_end(PuffeRL* pufferl) {
-    StateBuffer* buf = &pufferl->state_buf;
-    StaticVec* vec = pufferl->vec;
-    int horizon = pufferl->hypers.horizon;
-    if (horizon <= 0) {
-        return;
-    }
-    long final_step = pufferl->global_step
-        + (long)(horizon - 1) * (long)vec->total_agents;
-    int active_envs = buf->num_fresh_envs + buf->num_cl_envs;
-    int start_env = buf->num_vanilla_envs;
-    for (int i = 0; i < active_envs; i++) {
-        int env_idx = start_env + i;
-        int role = curriculum_env_role(buf, env_idx);
-        if (role != CURRICULUM_ROLE_FRESH && role != CURRICULUM_ROLE_CL) {
-            continue;
-        }
-        Env* env = &vec->envs[env_idx];
-        if (env->rewards == NULL) {
-            continue;
-        }
-        curriculum_observe_step(buf, env_idx, env, final_step);
-        if (env->terminals[0] > 0.5f) {
-            curriculum_process_terminal(pufferl, env_idx, -1, horizon, 0);
-        } else if (curriculum_should_record_checkpoint(buf, env_idx)) {
-            curriculum_record_state(buf, env_idx, &env->state);
-        }
-    }
-    curriculum_apply_completed_segments(buf);
-    curriculum_compact_active_rows(buf);
 }
 
 __device__ __forceinline__ float priority_power(float value, float alpha) {
