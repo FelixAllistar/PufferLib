@@ -180,6 +180,10 @@ def _resolve_backend(args):
 def _train_worker(args):
     backend = _resolve_backend(args)
     pufferl = backend.create_pufferl(args)
+    load_path = resolve_load_path(args)
+    if load_path is not None:
+        backend.load_weights(pufferl, load_path)
+        print(f'Loaded weights from {load_path}')
     args.pop('nccl_id', None)
     while pufferl.global_step < args['train']['total_timesteps']:
         backend.rollouts(pufferl)
@@ -223,6 +227,15 @@ def _train(env_name, args, sweep_obj=None, result_queue=None, verbose=False):
         if result_queue is not None:
             result_queue.put((args['gpu_id'], [], [], []))
         return
+
+    load_path = resolve_load_path(args)
+    if load_path is not None:
+        try:
+            backend.load_weights(pufferl, load_path)
+            print(f'Loaded weights from {load_path}')
+        except RuntimeError:
+            backend.close(pufferl)
+            raise
 
     args.pop('nccl_id', None)
     model_size = pufferl.num_params()
@@ -465,6 +478,17 @@ def sweep(env_name, args=None, pareto=False):
         train(env_name, exp_args, range(gpu_id, gpu_id + exp_gpus),
             sweep_obj=sweep_obj, result_queue=result_queue)
 
+def resolve_load_path(args, load_path=None):
+    load_path = load_path or args.get('load_model_path')
+    if load_path == 'latest':
+        checkpoint_dir = args['checkpoint_dir']
+        pattern = os.path.join(checkpoint_dir, args['env_name'], '**', '*.bin')
+        candidates = glob.glob(pattern, recursive=True)
+        if not candidates:
+            raise FileNotFoundError(f'No .bin checkpoints found in {checkpoint_dir}/{args["env_name"]}/')
+        load_path = max(candidates, key=os.path.getctime)
+    return load_path
+
 def eval(env_name, args=None, load_path=None):
     '''Evaluate a trained policy. Supports both native and --slowly torch backends.'''
     args = args or load_config(env_name)
@@ -474,15 +498,7 @@ def eval(env_name, args=None, load_path=None):
     backend = _resolve_backend(args)
     pufferl = backend.create_pufferl(args)
 
-    # Resolve load path
-    load_path = load_path or args.get('load_model_path')
-    if load_path == 'latest':
-        checkpoint_dir = args['checkpoint_dir']
-        pattern = os.path.join(checkpoint_dir, args['env_name'], '**', '*.bin')
-        candidates = glob.glob(pattern, recursive=True)
-        if not candidates:
-            raise FileNotFoundError(f'No .bin checkpoints found in {checkpoint_dir}/{args["env_name"]}/')
-        load_path = max(candidates, key=os.path.getctime)
+    load_path = resolve_load_path(args, load_path)
 
     if load_path is not None:
         backend.load_weights(pufferl, load_path)
