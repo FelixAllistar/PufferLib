@@ -217,6 +217,120 @@ void load_weights(pybind11::object pufferl_obj, const std::string& path) {
     }
 }
 
+py::dict debug_policy_forward(py::object pufferl_obj, py::array_t<float, py::array::c_style | py::array::forcecast> obs,
+                              py::array_t<float, py::array::c_style | py::array::forcecast> state) {
+    PuffeRL& pufferl = pufferl_obj.cast<PuffeRL&>();
+    auto obs_buf = obs.request();
+    auto state_buf = state.request();
+    if (obs_buf.ndim != 2) {
+        throw std::runtime_error("obs must have shape [batch, obs_size]");
+    }
+    if (state_buf.ndim != 3) {
+        throw std::runtime_error("state must have shape [num_layers, batch, hidden_size]");
+    }
+    int B = (int)obs_buf.shape[0];
+    int obs_size = (int)obs_buf.shape[1];
+    int num_layers = (int)state_buf.shape[0];
+    int state_batch = (int)state_buf.shape[1];
+    int hidden_size = (int)state_buf.shape[2];
+    if (obs_size != pufferl.policy.input_dim) {
+        throw std::runtime_error("obs size does not match policy input_dim");
+    }
+    if (state_batch != B || num_layers != pufferl.policy.network.num_layers ||
+            hidden_size != pufferl.policy.hidden_dim) {
+        throw std::runtime_error("state shape must be [policy.num_layers, batch, policy.hidden_dim]");
+    }
+
+    float* obs_f = nullptr;
+    float* state_f = nullptr;
+    precision_t* obs_p = nullptr;
+    precision_t* state_p = nullptr;
+    cudaMalloc(&obs_f, B * obs_size * sizeof(float));
+    cudaMalloc(&state_f, num_layers * B * hidden_size * sizeof(float));
+    cudaMalloc(&obs_p, B * obs_size * sizeof(precision_t));
+    cudaMalloc(&state_p, num_layers * B * hidden_size * sizeof(precision_t));
+    cudaMemcpy(obs_f, obs_buf.ptr, B * obs_size * sizeof(float), cudaMemcpyHostToDevice);
+    cudaMemcpy(state_f, state_buf.ptr, num_layers * B * hidden_size * sizeof(float), cudaMemcpyHostToDevice);
+    cast_dispatch(obs_p, obs_f, B * obs_size, pufferl.default_stream);
+    cast_dispatch(state_p, state_f, num_layers * B * hidden_size, pufferl.default_stream);
+
+    Allocator debug_acts = {};
+    PolicyActivations activations = policy_reg_rollout(&pufferl.policy, pufferl.weights,
+        &debug_acts, B);
+    if (alloc_create(&debug_acts) != cudaSuccess) {
+        policy_activations_free(&pufferl.policy, activations);
+        alloc_free(&debug_acts);
+        cudaFree(obs_f);
+        cudaFree(state_f);
+        cudaFree(obs_p);
+        cudaFree(state_p);
+        throw std::runtime_error("Failed to allocate debug policy activations");
+    }
+    PrecisionTensor obs_t = {.data = obs_p, .shape = {B, obs_size}};
+    PrecisionTensor state_t = {.data = state_p, .shape = {num_layers, B, hidden_size}};
+    PrecisionTensor out_t = policy_forward(&pufferl.policy, pufferl.weights, activations,
+        obs_t, state_t, pufferl.default_stream);
+    cudaStreamSynchronize(pufferl.default_stream);
+
+    int output_size = pufferl.policy.output_dim + 1;
+    std::vector<float> out_host(B * output_size);
+    float* out_f = nullptr;
+    cudaMalloc(&out_f, B * output_size * sizeof(float));
+    if (USE_BF16) {
+        cast<<<grid_size(B * output_size), BLOCK_SIZE, 0, pufferl.default_stream>>>(
+            out_f, out_t.data, B * output_size);
+    } else {
+        cudaMemcpyAsync(out_f, out_t.data, B * output_size * sizeof(float),
+            cudaMemcpyDeviceToDevice, pufferl.default_stream);
+    }
+    cudaMemcpy(out_host.data(), out_f, B * output_size * sizeof(float), cudaMemcpyDeviceToHost);
+
+    std::vector<float> state_host(num_layers * B * hidden_size);
+    if (USE_BF16) {
+        cast<<<grid_size(num_layers * B * hidden_size), BLOCK_SIZE, 0, pufferl.default_stream>>>(
+            state_f, state_p, num_layers * B * hidden_size);
+    } else {
+        cudaMemcpyAsync(state_f, state_p, num_layers * B * hidden_size * sizeof(float),
+            cudaMemcpyDeviceToDevice, pufferl.default_stream);
+    }
+    cudaMemcpy(state_host.data(), state_f, num_layers * B * hidden_size * sizeof(float), cudaMemcpyDeviceToHost);
+    cudaStreamSynchronize(pufferl.default_stream);
+
+    py::array_t<float> logits({B, pufferl.policy.output_dim});
+    py::array_t<float> value({B, 1});
+    py::array_t<float> next_state({num_layers, B, hidden_size});
+    auto logits_buf = logits.mutable_unchecked<2>();
+    auto value_buf = value.mutable_unchecked<2>();
+    auto next_state_buf = next_state.mutable_unchecked<3>();
+    for (int b = 0; b < B; b++) {
+        for (int a = 0; a < pufferl.policy.output_dim; a++) {
+            logits_buf(b, a) = out_host[b * output_size + a];
+        }
+        value_buf(b, 0) = out_host[b * output_size + pufferl.policy.output_dim];
+    }
+    for (int l = 0; l < num_layers; l++) {
+        for (int b = 0; b < B; b++) {
+            for (int h = 0; h < hidden_size; h++) {
+                next_state_buf(l, b, h) = state_host[(l * B + b) * hidden_size + h];
+            }
+        }
+    }
+
+    policy_activations_free(&pufferl.policy, activations);
+    alloc_free(&debug_acts);
+    cudaFree(obs_f);
+    cudaFree(state_f);
+    cudaFree(obs_p);
+    cudaFree(state_p);
+    cudaFree(out_f);
+
+    py::dict result;
+    result["logits"] = logits;
+    result["value"] = value;
+    result["next_state"] = next_state;
+    return result;
+}
+
 int py_add_frozen_bank(py::object pufferl_obj, int slice_size,
                        int hidden_size, int num_layers) {
     PuffeRL& pufferl = pufferl_obj.cast<PuffeRL&>();
@@ -519,6 +633,7 @@ PYBIND11_MODULE(_C, m) {
     m.def("close", &puf_close);
     m.def("save_weights", &save_weights);
     m.def("load_weights", &load_weights);
+    m.def("debug_policy_forward", &debug_policy_forward);
     m.def("add_frozen_bank", &py_add_frozen_bank);
     m.def("load_frozen_bank", &py_load_frozen_bank);
     m.def("set_agent_perm", &py_set_agent_perm);
