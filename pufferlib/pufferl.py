@@ -494,6 +494,7 @@ def eval(env_name, args=None, load_path=None):
     args = args or load_config(env_name)
     args['reset_state'] = False
     args['train']['horizon'] = 1
+    args.setdefault('eval_episodes', 1)
 
     backend = _resolve_backend(args)
     pufferl = backend.create_pufferl(args)
@@ -504,11 +505,19 @@ def eval(env_name, args=None, load_path=None):
         backend.load_weights(pufferl, load_path)
         print(f'Loaded weights from {load_path}')
 
-    while True:
-        backend.render(pufferl, 0)
-        backend.rollouts(pufferl)
-
-    backend.close(pufferl)
+    should_render = args.get('render_mode') not in (None, 'None', 'none')
+    try:
+        while True:
+            if should_render:
+                backend.render(pufferl, 0)
+            backend.rollouts(pufferl)
+            flat_logs = dict(unroll_nested_dict(backend.eval_log(pufferl)))
+            n = int(flat_logs.get('env/n', 0))
+            if n >= int(args['eval_episodes']):
+                print(json.dumps(flat_logs))
+                break
+    finally:
+        backend.close(pufferl)
 
 def match(env_name, policy_a_path, policy_b_path, num_games=4096, args=None, verbose=True):
     '''Head-to-head match between two trained policies in a 2-agent selfplay env.
