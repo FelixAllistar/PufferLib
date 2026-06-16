@@ -8,6 +8,20 @@
 #define Env TriplePendulum
 #include "vecenv.h"
 
+static void assert_positive_finite(float value, const char* name) {
+    if (!isfinite(value) || value <= 0.0f) {
+        fprintf(stderr, "triple_pendulum: %s must be finite and > 0, got %g\n", name, value);
+        assert(false);
+    }
+}
+
+static void assert_finite(float value, const char* name) {
+    if (!isfinite(value)) {
+        fprintf(stderr, "triple_pendulum: %s must be finite, got %g\n", name, value);
+        assert(false);
+    }
+}
+
 void my_init(Env* env, Dict* kwargs) {
     env->num_agents = 1;
     env->cart_mass = dict_get(kwargs, "cart_mass")->value;
@@ -20,6 +34,19 @@ void my_init(Env* env, Dict* kwargs) {
     env->gravity = dict_get(kwargs, "gravity")->value;
     env->force_mag = dict_get(kwargs, "force_mag")->value;
     env->dt = dict_get(kwargs, "dt")->value;
+
+    assert_positive_finite(env->cart_mass, "cart_mass");
+    for (int i = 0; i < TP_LINKS; i++) {
+        char name[32];
+        snprintf(name, sizeof(name), "link%d_mass", i + 1);
+        assert_positive_finite(env->link_mass[i], name);
+        snprintf(name, sizeof(name), "link%d_length", i + 1);
+        assert_positive_finite(env->link_length[i], name);
+    }
+    assert_finite(env->gravity, "gravity");
+    assert_positive_finite(env->force_mag, "force_mag");
+    assert_positive_finite(env->dt, "dt");
+
     init(env);
 }
 
