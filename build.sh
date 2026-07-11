@@ -107,6 +107,25 @@ if [ "$ENV" = "constellation" ]; then
 elif [ "$ENV" = "trailer" ]; then
     SRC_DIR="trailer"
     OUTPUT_NAME="trailer/trailer"
+elif [ "$ENV" = "box3d_hover" ] || [ "$ENV" = "box3d_pusher" ]; then
+    SRC_DIR="ocean/$ENV"
+    BOX3D_DIR=${BOX3D_DIR:-../box3d}
+    if [ "$MODE" = "web" ]; then
+        BOX3D_BUILD_DIR=${BOX3D_BUILD_DIR:-"$BOX3D_DIR/build-wasm-core"}
+        BOX3D_A="$BOX3D_BUILD_DIR/src/libbox3d.a"
+        BOX3D_BUILD_CMD="emcmake cmake -S $BOX3D_DIR -B $BOX3D_BUILD_DIR -G Ninja -DCMAKE_BUILD_TYPE=Release -DBOX3D_SAMPLES=OFF -DBOX3D_UNIT_TESTS=OFF -DBOX3D_BENCHMARKS=OFF"
+    else
+        BOX3D_BUILD_DIR=${BOX3D_BUILD_DIR:-"$BOX3D_DIR/build-puffer"}
+        BOX3D_A="$BOX3D_BUILD_DIR/src/libbox3d.a"
+        BOX3D_BUILD_CMD="cmake -S $BOX3D_DIR -B $BOX3D_BUILD_DIR -G Ninja -DCMAKE_BUILD_TYPE=Release -DBOX3D_SAMPLES=OFF -DBOX3D_UNIT_TESTS=OFF -DBOX3D_BENCHMARKS=ON"
+    fi
+    if [ ! -f "$BOX3D_A" ]; then
+        echo "Error: Box3D static library not found at $BOX3D_A"
+        echo "Build it with: $BOX3D_BUILD_CMD && cmake --build $BOX3D_BUILD_DIR --target box3d -j4"
+        exit 1
+    fi
+    INCLUDES+=(-I"$BOX3D_DIR/include")
+    LINK_ARCHIVES+=("$BOX3D_A")
 elif [ "$ENV" = "impulse_wars" ]; then
     SRC_DIR="ocean/$ENV"
     if [ "$MODE" = "web" ]; then BOX2D_NAME='box2d-web'
@@ -170,6 +189,10 @@ if [ "$MODE" = "local" ] || [ "$MODE" = "fast" ]; then
 elif [ "$MODE" = "web" ]; then
     mkdir -p "build/web/$ENV"
     echo "Compiling $ENV for web..."
+    WEB_PRELOAD_FLAGS=(--preload-file resources/shared@resources/shared)
+    if [ -d "resources/$ENV" ]; then
+        WEB_PRELOAD_FLAGS+=(--preload-file "resources/$ENV@resources/$ENV")
+    fi
     emcc \
         -o "build/web/$ENV/game.html" \
         "$SRC_DIR/$ENV.c" $EXTRA_SRC \
@@ -182,8 +205,7 @@ elif [ "$MODE" = "web" ]; then
         --shell-file vendor/minshell.html \
         -sINITIAL_MEMORY=512MB -sALLOW_MEMORY_GROWTH -sSTACK_SIZE=512KB \
         -DNDEBUG -DPLATFORM_WEB -DGRAPHICS_API_OPENGL_ES3 \
-        --preload-file resources/$ENV@resources/$ENV \
-        --preload-file resources/shared@resources/shared
+        "${WEB_PRELOAD_FLAGS[@]}"
     echo "Built: build/web/$ENV/game.html"
     exit 0
 fi
@@ -336,7 +358,7 @@ if [ -z "$MODE" ]; then
 
     LINK_CMD=(
         ${CXX:-g++} -shared -fPIC -fopenmp
-        build/bindings.o "$STATIC_LIB" "$RAYLIB_A"
+        build/bindings.o "$STATIC_LIB" "${LINK_ARCHIVES[@]}"
         -L$CUDA_HOME/lib64 $CUDNN_LFLAG $NCCL_LFLAG
         "${WHEEL_RPATH_FLAGS[@]}"
         "${EXTRA_LDFLAGS[@]}"
@@ -362,7 +384,7 @@ elif [ "$MODE" = "cpu" ]; then
         src/bindings_cpu.cpp -o build/bindings_cpu.o
     LINK_CMD=(
         ${CXX:-g++} -shared -fPIC -fopenmp
-        build/bindings_cpu.o "$STATIC_LIB" "$RAYLIB_A"
+        build/bindings_cpu.o "$STATIC_LIB" "${LINK_ARCHIVES[@]}"
         "${EXTRA_LDFLAGS[@]}"
         -lm -lpthread $OMP_LIB $LINK_OPT
         "${SHARED_LDFLAGS[@]}"
@@ -382,7 +404,7 @@ elif [ "$MODE" = "profile" ]; then
         $PRECISION \
         -Xcompiler=-fopenmp \
         tests/profile_kernels.cu vendor/ini.c \
-        "$STATIC_LIB" "$RAYLIB_A" \
+        "$STATIC_LIB" "${LINK_ARCHIVES[@]}" \
         -lnccl -lnvidia-ml -lcublas -lcurand -lcudnn \
         -lGL -lm -lpthread $OMP_LIB \
         -o profile
