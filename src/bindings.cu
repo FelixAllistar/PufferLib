@@ -107,9 +107,10 @@ pybind11::dict puf_eval_log(pybind11::object pufferl_obj) {
     pufferl.last_log_step = pufferl.global_step;
  
     pybind11::dict env_dict;
-    // Capacity 64 to fit chess's per-bank hist_score_bank/hist_n_bank entries
-    // (16 keys across 8 banks) on top of base env-log fields.
-    Dict* env_out = create_dict(64);
+    // PTCG emits dense tactical diagnostics plus selfplay bank stats; keep this
+    // comfortably above the current largest env log to avoid release-build heap
+    // corruption when asserts are disabled.
+    Dict* env_out = create_dict(128);
     static_vec_eval_log(pufferl.vec, env_out);
     for (int i = 0; i < env_out->size; i++) {
         env_dict[env_out->items[i].key] = env_out->items[i].value;
@@ -515,6 +516,8 @@ std::unique_ptr<PuffeRL> create_pufferl(py::dict args) {
     // Model architecture (num_atns computed from env in C++)
     hypers.hidden_size = get_config(policy_kwargs, "hidden_size");
     hypers.num_layers = get_config(policy_kwargs, "num_layers");
+    hypers.model_type = get_config(policy_kwargs, "model_type");
+    hypers.option_embed_size = get_config(policy_kwargs, "option_embed_size");
     // Learning rate
     hypers.lr = get_config(train_kwargs, "learning_rate");
     hypers.min_lr_ratio = get_config(train_kwargs, "min_lr_ratio");
@@ -545,6 +548,7 @@ std::unique_ptr<PuffeRL> create_pufferl(py::dict args) {
     hypers.prio_alpha = get_config(train_kwargs, "prio_alpha");
     hypers.prio_beta0 = get_config(train_kwargs, "prio_beta0");
     hypers.reset_state = get_config(args, "reset_state");
+    hypers.eval_deterministic = get_config(args, "eval_deterministic");
     // Base-level config ([base] section becomes top-level in args)
     hypers.cudagraphs = get_config(args, "cudagraphs");
     hypers.profile = get_config(args, "profile");
@@ -653,6 +657,8 @@ PYBIND11_MODULE(_C, m) {
         .def_readwrite("num_buffers", &HypersT::num_buffers)
         .def_readwrite("num_atns", &HypersT::num_atns)
         .def_readwrite("hidden_size", &HypersT::hidden_size)
+        .def_readwrite("model_type", &HypersT::model_type)
+        .def_readwrite("option_embed_size", &HypersT::option_embed_size)
 
         .def_readwrite("replay_ratio", &HypersT::replay_ratio)
         .def_readwrite("num_layers", &HypersT::num_layers)

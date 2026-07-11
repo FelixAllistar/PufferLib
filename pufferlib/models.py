@@ -85,6 +85,108 @@ class DefaultDecoder(nn.Module):
         values = self.value_function(hidden)
         return logits, values
 
+class PTCGPointerPolicy(nn.Module):
+    STATE_DIM = 224
+    OPTION_DIM = 128
+    MAX_OPTIONS = 128
+    N_ACTIONS = MAX_OPTIONS + 1
+    NUM_CARDS = 4096
+
+    def __init__(
+        self,
+        obs_size,
+        nvec,
+        network_cls,
+        hidden_size=256,
+        **policy_kwargs,
+    ):
+        super().__init__()
+        expected_obs = self.STATE_DIM + self.N_ACTIONS * self.OPTION_DIM
+        if obs_size != expected_obs:
+            raise ValueError(f'PTCGPointerPolicy expected obs_size {expected_obs}, got {obs_size}')
+        if tuple(nvec) != (self.N_ACTIONS,):
+            raise ValueError(f'PTCGPointerPolicy expected one action head of {self.N_ACTIONS}, got {nvec}')
+
+        self.hidden_size = hidden_size
+        self.card_embedding = nn.Embedding(self.NUM_CARDS, 32)
+        self.option_type_embedding = nn.Embedding(256, 16)
+        self.select_type_embedding = nn.Embedding(32, 8)
+        self.context_embedding = nn.Embedding(64, 8)
+        self.zone_embedding = nn.Embedding(64, 8)
+
+        option_input = self.OPTION_DIM + 32 + 32 + 16 + 8 + 8 + 8 + 8
+        self.state_encoder = nn.Sequential(
+            nn.Linear(self.STATE_DIM, hidden_size),
+            nn.GELU(),
+            nn.Linear(hidden_size, hidden_size),
+            nn.GELU(),
+        )
+        self.option_encoder = nn.Sequential(
+            nn.Linear(option_input, hidden_size),
+            nn.GELU(),
+            nn.Linear(hidden_size, hidden_size),
+            nn.GELU(),
+        )
+        self.network = network_cls(hidden_size=hidden_size, **policy_kwargs)
+        self.score_head = nn.Sequential(
+            nn.Linear(hidden_size * 2, hidden_size),
+            nn.GELU(),
+            nn.Linear(hidden_size, 1),
+        )
+        self.value_function = nn.Linear(hidden_size, 1)
+
+    def initial_state(self, batch_size, device):
+        return self.network.initial_state(batch_size, device)
+
+    def _split_obs(self, x):
+        x = x.view(x.shape[0], -1)
+        state = x[:, :self.STATE_DIM].float() / 255.0
+        options = x[:, self.STATE_DIM:].view(x.shape[0], self.N_ACTIONS, self.OPTION_DIM)
+        options_float = options.float() / 255.0
+
+        card_id = (options[:, :, 20].long() + 256 * options[:, :, 21].long()).clamp(0, self.NUM_CARDS - 1)
+        target_card_id = (options[:, :, 22].long() + 256 * options[:, :, 23].long()).clamp(0, self.NUM_CARDS - 1)
+        option_type = options[:, :, 3].long().clamp(0, 255)
+        select_type = options[:, :, 4].long().clamp(0, 31)
+        context = options[:, :, 5].long().clamp(0, 63)
+        source_zone = options[:, :, 24].long().clamp(0, 63)
+        target_zone = options[:, :, 27].long().clamp(0, 63)
+
+        option_parts = [
+            options_float,
+            self.card_embedding(card_id),
+            self.card_embedding(target_card_id),
+            self.option_type_embedding(option_type),
+            self.select_type_embedding(select_type),
+            self.context_embedding(context),
+            self.zone_embedding(source_zone),
+            self.zone_embedding(target_zone),
+        ]
+        return state, torch.cat(option_parts, dim=-1)
+
+    def _decode(self, hidden, option_input):
+        option_hidden = self.option_encoder(option_input)
+        hidden_expanded = hidden.unsqueeze(1).expand(-1, self.N_ACTIONS, -1)
+        logits = self.score_head(torch.cat([hidden_expanded, option_hidden], dim=-1)).squeeze(-1)
+        values = self.value_function(hidden)
+        return logits, values
+
+    def forward_eval(self, x, state):
+        state_features, option_input = self._split_obs(x)
+        hidden = self.state_encoder(state_features)
+        hidden, state = self.network.forward_eval(hidden, state)
+        logits, values = self._decode(hidden, option_input)
+        return logits, values, state
+
+    def forward(self, x):
+        B, TT = x.shape[:2]
+        flat = x.reshape(B * TT, *x.shape[2:])
+        state_features, option_input = self._split_obs(flat)
+        hidden = self.state_encoder(state_features).reshape(B, TT, -1)
+        hidden = self.network.forward_train(hidden).reshape(B * TT, -1)
+        logits, values = self._decode(hidden, option_input)
+        return logits, values.reshape(B, TT)
+
 class MLP(nn.Module):
     def __init__(self, hidden_size, num_layers=1, **kwargs):
         super().__init__()

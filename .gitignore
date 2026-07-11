@@ -172,3 +172,34 @@ pufferlib/ocean/impulse_wars/benchmark/
 resources/drive/data/*
 resources/drive/binaries/*
 
+# Local generated training and experiment outputs
+/saved/
+/cache.json
+/emsdk/
+/build.sh.pre-binding-cpp
+
+# Generated native binaries and profiling artifacts
+/box3d_hover
+/box3d_pusher
+/double_pendulum
+/puffer_survivors
+/seethestars
+/ocean/puffer_survivors/bench_ps_profile
+/ocean/puffer_survivors/bench_ps_profile_*
+/ocean/puffer_survivors/bench_ps_profile_debug
+/ocean/puffer_survivors/bench_ps_profile_debug_radius
+/ocean/puffer_survivors/bench_ps_profile_enemyprof
+/ocean/puffer_survivors/bench_ps_profile_exact
+/ocean/puffer_survivors/bench_ps_profile_exact_sector
+/ocean/puffer_survivors/bench_ps_profile_fast_ttc
+/ocean/puffer_survivors/bench_ps_profile_prof
+/ocean/puffer_survivors/cuda/add_cuda
+/ocean/puffer_survivors/cuda/nsys_easy
+/ocean/puffer_survivors/cuda/ps_cuda
+/ocean/puffer_survivors/ps_cuda
+/ocean/puffer_survivors/tests/bench_cuda
+*.bak
+*.bak.*
+*.oldobs
+*.nsys-rep
+*.sqlite

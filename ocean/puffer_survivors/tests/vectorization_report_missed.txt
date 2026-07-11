@@ -1,0 +1,223 @@
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_observation.h:267:23: missed: couldn't vectorize loop
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_observation.h:267:23: missed: not vectorized: control flow in loop.
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_observation.h:257:23: missed: couldn't vectorize loop
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_observation.h:257:23: missed: not vectorized: control flow in loop.
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_observation.h:241:23: missed: couldn't vectorize loop
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_observation.h:241:23: missed: not vectorized: control flow in loop.
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_observation.h:225:23: missed: couldn't vectorize loop
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_observation.h:225:23: missed: not vectorized: control flow in loop.
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_observation.h:203:23: missed: couldn't vectorize loop
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_observation.h:203:23: missed: not vectorized: control flow in loop.
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_observation.h:170:23: missed: couldn't vectorize loop
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_observation.h:170:23: missed: not vectorized: control flow in loop.
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_observation.h:118:23: missed: couldn't vectorize loop
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_observation.h:118:23: missed: not vectorized: control flow in loop.
+/usr/include/x86_64-linux-gnu/bits/string_fortified.h:59:10: missed: statement clobbers memory: __builtin_memset (obs_410, 0, 1376);
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_observation.h:195:33: missed: statement clobbers memory: nearest_xp_dist_633 = sqrtf (nearest_xp_d2_461);
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:69:23: missed: couldn't vectorize loop
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:69:23: missed: not vectorized: multiple nested loops.
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_state.h:125:12: missed: couldn't vectorize loop
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_state.h:125:12: missed: not vectorized: control flow in loop.
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:24:56: missed: couldn't vectorize loop
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:24:56: missed: not vectorized: control flow in loop.
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:69:23: missed: couldn't vectorize loop
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:69:23: missed: not vectorized: control flow in loop.
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_state.h:125:12: missed: couldn't vectorize loop
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_state.h:125:12: missed: not vectorized: control flow in loop.
+/usr/include/x86_64-linux-gnu/bits/string_fortified.h:59:10: missed: statement clobbers memory: __builtin_memset (_6, 0, 20);
+/usr/include/x86_64-linux-gnu/bits/string_fortified.h:59:10: missed: statement clobbers memory: __builtin_memset (_7, 0, 20);
+/usr/include/x86_64-linux-gnu/bits/string_fortified.h:59:10: missed: statement clobbers memory: __builtin_memset (_218, 0, 16);
+/usr/include/x86_64-linux-gnu/bits/string_fortified.h:59:10: missed: statement clobbers memory: __builtin_memset (_176, 0, 12800);
+/usr/include/x86_64-linux-gnu/bits/string_fortified.h:59:10: missed: statement clobbers memory: __builtin_memset (_178, 0, 21504);
+/usr/include/x86_64-linux-gnu/bits/string_fortified.h:59:10: missed: statement clobbers memory: __builtin_memset (_180, 0, 5632);
+/usr/include/x86_64-linux-gnu/bits/string_fortified.h:59:10: missed: statement clobbers memory: __builtin_memset (_182, 0, 1824);
+/usr/include/x86_64-linux-gnu/bits/string_fortified.h:59:10: missed: statement clobbers memory: __builtin_memset (_184, 255, 1024);
+/usr/include/x86_64-linux-gnu/bits/string_fortified.h:59:10: missed: statement clobbers memory: __builtin_memset (_186, 255, 2048);
+/usr/include/x86_64-linux-gnu/bits/string_fortified.h:59:10: missed: statement clobbers memory: __builtin_memset (_188, 255, 1024);
+/usr/include/x86_64-linux-gnu/bits/string_fortified.h:59:10: missed: statement clobbers memory: __builtin_memset (_190, 255, 192);
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:140:27: missed: statement clobbers memory: __builtin_memset (_211, 255, 4096);
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:937:5: missed: statement clobbers memory: ps_compute_observations (env_14(D));
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:35:23: missed: couldn't vectorize loop
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:35:23: missed: not vectorized: control flow in loop.
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:36:56: missed: couldn't vectorize loop
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:36:56: missed: not vectorized: control flow in loop.
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:152:13: missed: couldn't vectorize loop
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:152:13: missed: not vectorized: control flow in loop.
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:47:23: missed: couldn't vectorize loop
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:47:23: missed: not vectorized: control flow in loop.
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:152:13: missed: couldn't vectorize loop
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:152:13: missed: not vectorized: control flow in loop.
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:47:23: missed: couldn't vectorize loop
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:47:23: missed: not vectorized: control flow in loop.
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:152:13: missed: couldn't vectorize loop
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:152:13: missed: not vectorized: control flow in loop.
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:881:33: missed: couldn't vectorize loop
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:881:33: missed: not vectorized: loop nest containing two or more consecutive inner loops cannot be vectorized
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:47:23: missed: couldn't vectorize loop
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:47:23: missed: not vectorized: control flow in loop.
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:152:13: missed: couldn't vectorize loop
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:152:13: missed: not vectorized: control flow in loop.
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:736:30: missed: couldn't vectorize loop
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:736:30: missed: not vectorized: multiple nested loops.
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:737:34: missed: couldn't vectorize loop
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:737:34: missed: not vectorized: control flow in loop.
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:739:25: missed: couldn't vectorize loop
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:739:25: missed: not vectorized: control flow in loop.
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:446:42: missed: couldn't vectorize loop
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:446:42: missed: not vectorized: control flow in loop.
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:152:13: missed: couldn't vectorize loop
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:152:13: missed: not vectorized: control flow in loop.
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:703:23: missed: couldn't vectorize loop
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:703:23: missed: not vectorized: control flow in loop.
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:47:23: missed: couldn't vectorize loop
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:47:23: missed: not vectorized: control flow in loop.
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:152:13: missed: couldn't vectorize loop
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:152:13: missed: not vectorized: control flow in loop.
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:736:30: missed: couldn't vectorize loop
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:736:30: missed: not vectorized: multiple nested loops.
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:737:34: missed: couldn't vectorize loop
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:737:34: missed: not vectorized: control flow in loop.
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:739:25: missed: couldn't vectorize loop
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:739:25: missed: not vectorized: control flow in loop.
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:813:23: missed: couldn't vectorize loop
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:813:23: missed: not vectorized: loop nest containing two or more consecutive inner loops cannot be vectorized
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:736:30: missed: couldn't vectorize loop
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:736:30: missed: not vectorized: loop nest containing two or more consecutive inner loops cannot be vectorized
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:737:34: missed: couldn't vectorize loop
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:737:34: missed: not vectorized: loop nest containing two or more consecutive inner loops cannot be vectorized
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:739:25: missed: couldn't vectorize loop
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:739:25: missed: not vectorized: loop nest containing two or more consecutive inner loops cannot be vectorized
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:47:23: missed: couldn't vectorize loop
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:47:23: missed: not vectorized: control flow in loop.
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:152:13: missed: couldn't vectorize loop
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:152:13: missed: not vectorized: control flow in loop.
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:47:23: missed: couldn't vectorize loop
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:47:23: missed: not vectorized: control flow in loop.
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:152:13: missed: couldn't vectorize loop
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:152:13: missed: not vectorized: control flow in loop.
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:829:36: missed: couldn't vectorize loop
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:829:36: missed: not vectorized: loop nest containing two or more consecutive inner loops cannot be vectorized
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:47:23: missed: couldn't vectorize loop
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:47:23: missed: not vectorized: control flow in loop.
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:152:13: missed: couldn't vectorize loop
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:152:13: missed: not vectorized: control flow in loop.
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:703:23: missed: couldn't vectorize loop
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:703:23: missed: not vectorized: control flow in loop.
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:47:23: missed: couldn't vectorize loop
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:47:23: missed: not vectorized: control flow in loop.
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:152:13: missed: couldn't vectorize loop
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:152:13: missed: not vectorized: control flow in loop.
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:842:23: missed: couldn't vectorize loop
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:842:23: missed: not vectorized: control flow in loop.
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:764:14: missed: couldn't vectorize loop
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:764:14: missed: not vectorized: multiple nested loops.
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:736:30: missed: couldn't vectorize loop
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:736:30: missed: not vectorized: multiple nested loops.
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:737:34: missed: couldn't vectorize loop
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:737:34: missed: not vectorized: control flow in loop.
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:739:25: missed: couldn't vectorize loop
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:739:25: missed: not vectorized: control flow in loop.
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:873:23: missed: couldn't vectorize loop
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:873:23: missed: not vectorized: control flow in loop.
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:747:38: missed: statement clobbers memory: killed_164 = ps_damage_enemy (env_22(D), eidx_1364, _93);
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:747:38: missed: statement clobbers memory: killed_469 = ps_damage_enemy (env_22(D), eidx_1319, _390);
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:747:38: missed: statement clobbers memory: killed_1095 = ps_damage_enemy (env_22(D), eidx_998, _1016);
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:687:20: missed: couldn't vectorize loop
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:687:20: missed: not vectorized: loop nest containing two or more consecutive inner loops cannot be vectorized
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:256:23: missed: couldn't vectorize loop
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:256:23: missed: not vectorized: loop nest containing two or more consecutive inner loops cannot be vectorized
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_state.h:124:21: missed: couldn't vectorize loop
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_state.h:124:21: missed: not vectorized: control flow in loop.
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_state.h:124:21: missed: couldn't vectorize loop
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_state.h:124:21: missed: not vectorized: control flow in loop.
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_state.h:124:21: missed: couldn't vectorize loop
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_state.h:124:21: missed: not vectorized: control flow in loop.
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:687:15: missed: couldn't vectorize loop
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:687:15: missed: not vectorized: control flow in loop.
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:659:14: missed: couldn't vectorize loop
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:659:14: missed: not vectorized: control flow in loop.
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:604:14: missed: couldn't vectorize loop
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:604:14: missed: not vectorized: loop nest containing two or more consecutive inner loops cannot be vectorized
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:633:35: missed: couldn't vectorize loop
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:633:35: missed: not vectorized: multiple nested loops.
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:636:39: missed: couldn't vectorize loop
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:636:39: missed: not vectorized: control flow in loop.
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:640:45: missed: couldn't vectorize loop
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:640:45: missed: not vectorized: control flow in loop.
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:615:44: missed: couldn't vectorize loop
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:615:44: missed: not vectorized: control flow in loop.
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:491:23: missed: couldn't vectorize loop
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:491:23: missed: not vectorized: control flow in loop.
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:487:23: missed: couldn't vectorize loop
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:488:41: missed: possible alias involving gather/scatter between env_66(D)->grid_touched[i_149] and env_66(D)->grid_head[_163]
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:566:23: missed: couldn't vectorize loop
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:566:23: missed: not vectorized: control flow in loop.
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:47:23: missed: couldn't vectorize loop
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:47:23: missed: not vectorized: control flow in loop.
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:546:24: missed: couldn't vectorize loop
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:546:24: missed: not vectorized: control flow in loop.
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:531:14: missed: couldn't vectorize loop
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:531:14: missed: not vectorized: control flow in loop.
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:111:23: missed: couldn't vectorize loop
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:111:23: missed: not vectorized: multiple nested loops.
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_state.h:125:12: missed: couldn't vectorize loop
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_state.h:125:12: missed: not vectorized: control flow in loop.
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:23:12: missed: couldn't vectorize loop
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:23:12: missed: not vectorized: control flow in loop.
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:47:23: missed: couldn't vectorize loop
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:47:23: missed: not vectorized: control flow in loop.
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:256:23: missed: couldn't vectorize loop
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:256:23: missed: not vectorized: loop nest containing two or more consecutive inner loops cannot be vectorized
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_state.h:124:21: missed: couldn't vectorize loop
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_state.h:124:21: missed: not vectorized: control flow in loop.
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_state.h:124:21: missed: couldn't vectorize loop
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_state.h:124:21: missed: not vectorized: control flow in loop.
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_state.h:124:21: missed: couldn't vectorize loop
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_state.h:124:21: missed: not vectorized: control flow in loop.
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:531:14: missed: statement clobbers memory: _264 = ps_spawn_enemy (env_66(D));
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:537:84: missed: statement clobbers memory: ps_spawn_enemy (env_66(D));
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:546:24: missed: statement clobbers memory: slot_289 = ps_spawn_enemy (env_66(D));
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:981:5: missed: statement clobbers memory: ps_update_weapons (env_66(D));
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:643:21: missed: statement clobbers memory: ps_damage_enemy (env_66(D), eidx_272, _675);
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:1001:5: missed: statement clobbers memory: ps_compute_observations (env_66(D));
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:996:9: missed: statement clobbers memory: ps_reset_core (env_66(D), 0);
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:322:19: missed: Using original scalar computation for live lane because there is an out-of-loop definition for it
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:322:19: missed: Using original scalar computation for live lane because there is an out-of-loop definition for it
+/puffertank/pufferlib/ocean/puffer_survivors/tests/bench_cpu.c:71:23: missed: couldn't vectorize loop
+/puffertank/pufferlib/ocean/puffer_survivors/tests/bench_cpu.c:72:52: missed: not vectorized: complicated access pattern.
+/puffertank/pufferlib/ocean/puffer_survivors/tests/bench_cpu.c:61:23: missed: couldn't vectorize loop
+/puffertank/pufferlib/ocean/puffer_survivors/tests/bench_cpu.c:65:13: missed: statement clobbers memory: c_step (_57);
+/puffertank/pufferlib/ocean/puffer_survivors/tests/bench_cpu.c:62:27: missed: couldn't vectorize loop
+/puffertank/pufferlib/ocean/puffer_survivors/tests/bench_cpu.c:65:13: missed: statement clobbers memory: c_step (_57);
+/puffertank/pufferlib/ocean/puffer_survivors/tests/bench_cpu.c:52:23: missed: couldn't vectorize loop
+/puffertank/pufferlib/ocean/puffer_survivors/tests/bench_cpu.c:56:13: missed: statement clobbers memory: c_step (_43);
+/puffertank/pufferlib/ocean/puffer_survivors/tests/bench_cpu.c:53:27: missed: couldn't vectorize loop
+/puffertank/pufferlib/ocean/puffer_survivors/tests/bench_cpu.c:56:13: missed: statement clobbers memory: c_step (_43);
+/puffertank/pufferlib/ocean/puffer_survivors/tests/bench_cpu.c:39:23: missed: couldn't vectorize loop
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:941:5: missed: statement clobbers memory: ps_reset_core (env_120, 1);
+/usr/include/stdlib.h:483:16: missed: statement clobbers memory: _133 = strtol (_1, 0B, 10);
+/usr/include/stdlib.h:483:16: missed: statement clobbers memory: _135 = strtol (_2, 0B, 10);
+/puffertank/pufferlib/ocean/puffer_survivors/tests/bench_cpu.c:25:29: missed: statement clobbers memory: envs_92 = calloc (_8, 47808);
+/puffertank/pufferlib/ocean/puffer_survivors/tests/bench_cpu.c:26:27: missed: statement clobbers memory: observations_94 = calloc (_9, 4);
+/puffertank/pufferlib/ocean/puffer_survivors/tests/bench_cpu.c:27:22: missed: statement clobbers memory: actions_96 = calloc (_10, 4);
+/puffertank/pufferlib/ocean/puffer_survivors/tests/bench_cpu.c:28:22: missed: statement clobbers memory: rewards_98 = calloc (_8, 4);
+/puffertank/pufferlib/ocean/puffer_survivors/tests/bench_cpu.c:29:24: missed: statement clobbers memory: terminals_100 = calloc (_8, 4);
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:941:5: missed: statement clobbers memory: ps_reset_core (env_120, 1);
+/puffertank/pufferlib/ocean/puffer_survivors/tests/bench_cpu.c:56:13: missed: statement clobbers memory: c_step (_43);
+/puffertank/pufferlib/ocean/puffer_survivors/tests/bench_cpu.c:13:5: missed: statement clobbers memory: clock_gettime (1, &ts);
+/puffertank/pufferlib/ocean/puffer_survivors/tests/bench_cpu.c:65:13: missed: statement clobbers memory: c_step (_57);
+/puffertank/pufferlib/ocean/puffer_survivors/tests/bench_cpu.c:13:5: missed: statement clobbers memory: clock_gettime (1, &ts);
+/usr/include/x86_64-linux-gnu/bits/stdio2.h:86:10: missed: statement clobbers memory: __printf_chk (2, "num_envs %d\nsteps %d\nseconds %.6f\nenv_steps_per_sec %.2f\nchecksum %.6f\n", iftmp.0_198, iftmp.1_197, seconds_101, _71, checksum_276);
+/puffertank/pufferlib/ocean/puffer_survivors/tests/bench_cpu.c:78:5: missed: statement clobbers memory: free (envs_92);
+/puffertank/pufferlib/ocean/puffer_survivors/tests/bench_cpu.c:79:5: missed: statement clobbers memory: free (observations_94);
+/puffertank/pufferlib/ocean/puffer_survivors/tests/bench_cpu.c:80:5: missed: statement clobbers memory: free (actions_96);
+/puffertank/pufferlib/ocean/puffer_survivors/tests/bench_cpu.c:81:5: missed: statement clobbers memory: free (rewards_98);
+/puffertank/pufferlib/ocean/puffer_survivors/tests/bench_cpu.c:82:5: missed: statement clobbers memory: free (terminals_100);
+/usr/include/x86_64-linux-gnu/bits/stdio2.h:79:10: missed: statement clobbers memory: __fprintf_chk (stderr.3_18, 2, "allocation failed\n");
+/puffertank/pufferlib/ocean/puffer_survivors/tests/bench_cpu.c:32:9: missed: statement clobbers memory: free (envs_92);
+/puffertank/pufferlib/ocean/puffer_survivors/tests/bench_cpu.c:32:21: missed: statement clobbers memory: free (observations_94);
+/puffertank/pufferlib/ocean/puffer_survivors/tests/bench_cpu.c:32:41: missed: statement clobbers memory: free (actions_96);
+/puffertank/pufferlib/ocean/puffer_survivors/tests/bench_cpu.c:32:56: missed: statement clobbers memory: free (rewards_98);
+/puffertank/pufferlib/ocean/puffer_survivors/tests/bench_cpu.c:32:71: missed: statement clobbers memory: free (terminals_100);
+/usr/include/x86_64-linux-gnu/bits/stdio2.h:79:10: missed: statement clobbers memory: __fprintf_chk (stderr.2_7, 2, "usage: %s [num_envs] [steps]\n", _6);
+/puffertank/pufferlib/ocean/puffer_survivors/tests/bench_cpu.c:41:27: missed: not vectorized: vectorization is not profitable.

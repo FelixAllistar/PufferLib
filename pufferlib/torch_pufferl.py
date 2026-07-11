@@ -46,12 +46,12 @@ def _entropy(logits):
     p_log_p = logits * logits_to_probs(logits)
     return -p_log_p.sum(-1)
 
-def sample_logits(logits, action=None):
+def sample_logits(logits, action=None, deterministic=False):
     is_discrete = isinstance(logits, torch.Tensor)
     if isinstance(logits, torch.distributions.Normal):
         batch = logits.loc.shape[0]
         if action is None:
-            action = logits.sample().view(batch, -1)
+            action = logits.loc.view(batch, -1) if deterministic else logits.sample().view(batch, -1)
         log_probs = logits.log_prob(action.view(batch, -1)).sum(1)
         logits_entropy = logits.entropy().view(batch, -1).sum(1)
         return action, log_probs, logits_entropy
@@ -68,9 +68,12 @@ def sample_logits(logits, action=None):
     probs = logits_to_probs(logits)
 
     if action is None:
-        probs = torch.nan_to_num(probs, 1e-8, 1e-8, 1e-8)
-        action = torch.multinomial(probs.reshape(-1, probs.shape[-1]), 1, replacement=True).int()
-        action = action.reshape(probs.shape[:-1])
+        if deterministic:
+            action = logits.argmax(dim=-1).int()
+        else:
+            probs = torch.nan_to_num(probs, 1e-8, 1e-8, 1e-8)
+            action = torch.multinomial(probs.reshape(-1, probs.shape[-1]), 1, replacement=True).int()
+            action = action.reshape(probs.shape[:-1])
     else:
         batch = logits[0].shape[0]
         action = action.view(batch, -1).T
@@ -219,7 +222,7 @@ class PuffeRL:
             prof.mark(1)
             with torch.no_grad():
                 logits, value, state = self.policy.forward_eval(o_device, self.state)
-                action, logprob, _ = sample_logits(logits)
+                action, logprob, _ = sample_logits(logits, deterministic=bool(self.args.get('eval_deterministic', 0)))
             prof.mark(2)
 
             with torch.no_grad():
@@ -476,13 +479,18 @@ def load_policy(args, vec):
     import pufferlib.models
     policy_kwargs = args['policy']
     network_cls = getattr(pufferlib.models, args['torch']['network'])
-    encoder_cls = getattr(pufferlib.models, args['torch']['encoder'])
-    decoder_cls = getattr(pufferlib.models, args['torch']['decoder'])
+    custom_policy = args['torch'].get('policy', None)
+    if custom_policy:
+        policy_cls = getattr(pufferlib.models, custom_policy)
+        policy = policy_cls(vec.obs_size, vec.act_sizes, network_cls, **policy_kwargs)
+    else:
+        encoder_cls = getattr(pufferlib.models, args['torch']['encoder'])
+        decoder_cls = getattr(pufferlib.models, args['torch']['decoder'])
 
-    network = network_cls(**policy_kwargs)
-    encoder = encoder_cls(vec.obs_size, policy_kwargs['hidden_size'])
-    decoder = decoder_cls(vec.act_sizes, policy_kwargs['hidden_size'])
-    policy = pufferlib.models.Policy(encoder, decoder, network)
+        network = network_cls(**policy_kwargs)
+        encoder = encoder_cls(vec.obs_size, policy_kwargs['hidden_size'])
+        decoder = decoder_cls(vec.act_sizes, policy_kwargs['hidden_size'])
+        policy = pufferlib.models.Policy(encoder, decoder, network)
 
     device = 'cuda' if _C.gpu else 'cpu'
     policy = policy.to(device)
@@ -513,4 +521,3 @@ def load_policy(args, vec):
         policy.load_state_dict(state_dict)
 
     return policy
-

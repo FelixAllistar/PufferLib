@@ -570,8 +570,374 @@ static void* nmmo3_encoder_create_weights(void* self) {
 static void nmmo3_encoder_free_weights(void* weights) { free(weights); }
 static void nmmo3_encoder_free_activations(void* activations) { free(activations); }
 
-// Override encoder vtable for known ocean environments. No-op for unknown envs.
-static void create_custom_encoder(const std::string& env_name, Encoder* enc) {
+// ---- PTCG native pointer model ------------------------------------------------
+
+static constexpr int PTCG_MODEL_FLAT = 0;
+static constexpr int PTCG_MODEL_POINTER_DOT_V1 = 1;
+static constexpr int PTCG_STATE_DIM = 96;
+static constexpr int PTCG_MAX_OPTIONS = 128;
+static constexpr int PTCG_N_ACTIONS = PTCG_MAX_OPTIONS + 1;
+static constexpr int PTCG_OPTION_DIM = 48;
+static constexpr int PTCG_OBS_DIM = PTCG_STATE_DIM + PTCG_N_ACTIONS * PTCG_OPTION_DIM;
+static constexpr float PTCG_BYTE_SCALE = 1.0f / 255.0f;
+static constexpr float PTCG_INVALID_LOGIT = -1.0e30f;
+
+struct PTCGStateEncoderWeights {
+    PrecisionTensor weight;
+    int obs_size, hidden;
+};
+
+struct PTCGStateEncoderActivations {
+    PrecisionTensor state_input, out, wgrad_scratch;
+};
+
+__global__ void ptcg_extract_state_kernel(
+        precision_t* __restrict__ dst,
+        const precision_t* __restrict__ obs,
+        int B, int obs_size) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    int total = B * PTCG_STATE_DIM;
+    if (idx >= total) {
+        return;
+    }
+    int b = idx / PTCG_STATE_DIM;
+    int c = idx % PTCG_STATE_DIM;
+    dst[idx] = from_float(to_float(obs[b * obs_size + c]) * PTCG_BYTE_SCALE);
+}
+
+static PrecisionTensor ptcg_state_encoder_forward(
+        void* w, void* activations, PrecisionTensor input, cudaStream_t stream) {
+    PTCGStateEncoderWeights* ew = (PTCGStateEncoderWeights*)w;
+    PTCGStateEncoderActivations* a = (PTCGStateEncoderActivations*)activations;
+    int B = input.shape[0];
+    ptcg_extract_state_kernel<<<grid_size(B * PTCG_STATE_DIM), BLOCK_SIZE, 0, stream>>>(
+        a->state_input.data, input.data, B, ew->obs_size);
+    puf_mm(&a->state_input, &ew->weight, &a->out, stream);
+    return a->out;
+}
+
+static void ptcg_state_encoder_backward(
+        void* w, void* activations, PrecisionTensor grad, cudaStream_t stream) {
+    PTCGStateEncoderActivations* a = (PTCGStateEncoderActivations*)activations;
+    puf_mm_tn(&grad, &a->state_input, &a->wgrad_scratch, stream);
+}
+
+static void ptcg_state_encoder_init_weights(void* w, uint64_t* seed, cudaStream_t stream) {
+    PTCGStateEncoderWeights* ew = (PTCGStateEncoderWeights*)w;
+    PrecisionTensor wt = {
+        .data = ew->weight.data,
+        .shape = {ew->hidden, PTCG_STATE_DIM},
+    };
+    puf_kaiming_init(&wt, std::sqrt(2.0f), (*seed)++, stream);
+}
+
+static void ptcg_state_encoder_reg_params(void* w, Allocator* alloc) {
+    PTCGStateEncoderWeights* ew = (PTCGStateEncoderWeights*)w;
+    ew->weight = {.shape = {ew->hidden, PTCG_STATE_DIM}};
+    alloc_register(alloc, &ew->weight);
+}
+
+static void ptcg_state_encoder_reg_train(
+        void* w, void* activations, Allocator* acts, Allocator* grads, int B_TT) {
+    PTCGStateEncoderWeights* ew = (PTCGStateEncoderWeights*)w;
+    PTCGStateEncoderActivations* a = (PTCGStateEncoderActivations*)activations;
+    *a = {
+        .state_input =   {.shape = {B_TT, PTCG_STATE_DIM}},
+        .out =           {.shape = {B_TT, ew->hidden}},
+        .wgrad_scratch = {.shape = {ew->hidden, PTCG_STATE_DIM}},
+    };
+    alloc_register(acts, &a->state_input);
+    alloc_register(acts, &a->out);
+    alloc_register(grads, &a->wgrad_scratch);
+}
+
+static void ptcg_state_encoder_reg_rollout(
+        void* w, void* activations, Allocator* alloc, int B) {
+    PTCGStateEncoderWeights* ew = (PTCGStateEncoderWeights*)w;
+    PTCGStateEncoderActivations* a = (PTCGStateEncoderActivations*)activations;
+    *a = {
+        .state_input = {.shape = {B, PTCG_STATE_DIM}},
+        .out =         {.shape = {B, ew->hidden}},
+    };
+    alloc_register(alloc, &a->state_input);
+    alloc_register(alloc, &a->out);
+}
+
+static void* ptcg_state_encoder_create_weights(void* self) {
+    Encoder* e = (Encoder*)self;
+    PTCGStateEncoderWeights* ew = (PTCGStateEncoderWeights*)calloc(1, sizeof(PTCGStateEncoderWeights));
+    ew->obs_size = e->in_dim;
+    ew->hidden = e->out_dim;
+    return ew;
+}
+
+static void ptcg_state_encoder_free_weights(void* weights) { free(weights); }
+static void ptcg_state_encoder_free_activations(void* activations) { free(activations); }
+
+struct PTCGPointerDecoderWeights {
+    PrecisionTensor wq, wk, wb, wv;
+    int hidden_dim, output_dim, option_embed_size;
+    bool continuous;
+};
+
+struct PTCGPointerDecoderActivations {
+    PrecisionTensor out, saved_hidden, option_input, q, k, bias, value;
+    PrecisionTensor grad_hidden, qgrad, kgrad, dlogits_rows, value_grad, value_hidden_grad;
+    PrecisionTensor wq_grad, wk_grad, wb_grad, wv_grad;
+};
+
+__global__ void ptcg_extract_options_kernel(
+        precision_t* __restrict__ dst,
+        const precision_t* __restrict__ obs,
+        int B, int obs_size) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    int total = B * PTCG_N_ACTIONS * PTCG_OPTION_DIM;
+    if (idx >= total) {
+        return;
+    }
+    int c = idx % PTCG_OPTION_DIM;
+    int row = idx / PTCG_OPTION_DIM;
+    int b = row / PTCG_N_ACTIONS;
+    int option = row % PTCG_N_ACTIONS;
+    int obs_idx = b * obs_size + PTCG_STATE_DIM + option * PTCG_OPTION_DIM + c;
+    dst[idx] = from_float(to_float(obs[obs_idx]) * PTCG_BYTE_SCALE);
+}
+
+__global__ void ptcg_pointer_logits_kernel(
+        precision_t* __restrict__ out,
+        const precision_t* __restrict__ q,
+        const precision_t* __restrict__ k,
+        const precision_t* __restrict__ bias,
+        const precision_t* __restrict__ value,
+        const precision_t* __restrict__ option_input,
+        int B, int E) {
+    int logits_total = B * PTCG_N_ACTIONS;
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx < logits_total) {
+        int b = idx / PTCG_N_ACTIONS;
+        float dot = 0.0f;
+        for (int e = 0; e < E; e++) {
+            dot += to_float(q[b * E + e]) * to_float(k[idx * E + e]);
+        }
+        float logit = dot * rsqrtf((float)E) + to_float(bias[idx]);
+        int option_base = idx * PTCG_OPTION_DIM;
+        bool valid_row = to_float(option_input[option_base + 0]) > 0.0f;
+        bool is_stop = to_float(option_input[option_base + 1]) > 0.0f;
+        bool already_selected = to_float(option_input[option_base + 2]) > 0.0f;
+        float select_min = to_float(option_input[option_base + 6]) * 255.0f;
+        float select_max = to_float(option_input[option_base + 7]) * 255.0f;
+        float selected_count = to_float(option_input[option_base + 8]) * 255.0f;
+        bool can_choose_more = selected_count < select_max;
+        bool legal_option = valid_row && !is_stop && !already_selected && can_choose_more;
+        bool legal_stop = valid_row && is_stop && selected_count >= select_min;
+        if (!(legal_option || legal_stop)) {
+            logit = PTCG_INVALID_LOGIT;
+        }
+        out[b * (PTCG_N_ACTIONS + 1) + (idx % PTCG_N_ACTIONS)] = from_float(logit);
+    }
+    if (idx < B) {
+        out[idx * (PTCG_N_ACTIONS + 1) + PTCG_N_ACTIONS] = value[idx];
+    }
+}
+
+__global__ void ptcg_pointer_qgrad_kernel(
+        precision_t* __restrict__ qgrad,
+        const float* __restrict__ grad_logits,
+        const precision_t* __restrict__ k,
+        int B, int E) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    int total = B * E;
+    if (idx >= total) {
+        return;
+    }
+    int b = idx / E;
+    int e = idx % E;
+    float acc = 0.0f;
+    for (int i = 0; i < PTCG_N_ACTIONS; i++) {
+        int row = b * PTCG_N_ACTIONS + i;
+        acc += grad_logits[row] * to_float(k[row * E + e]);
+    }
+    qgrad[idx] = from_float(acc * rsqrtf((float)E));
+}
+
+__global__ void ptcg_pointer_kgrad_dlogits_kernel(
+        precision_t* __restrict__ kgrad,
+        precision_t* __restrict__ dlogits_rows,
+        const float* __restrict__ grad_logits,
+        const precision_t* __restrict__ q,
+        int B, int E) {
+    int total = B * PTCG_N_ACTIONS * E;
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx < total) {
+        int e = idx % E;
+        int row = idx / E;
+        int b = row / PTCG_N_ACTIONS;
+        float grad = grad_logits[row];
+        kgrad[idx] = from_float(grad * to_float(q[b * E + e]) * rsqrtf((float)E));
+    }
+    int rows = B * PTCG_N_ACTIONS;
+    if (idx < rows) {
+        dlogits_rows[idx] = from_float(grad_logits[idx]);
+    }
+}
+
+__global__ void ptcg_pointer_value_grad_kernel(
+        precision_t* __restrict__ value_grad,
+        const float* __restrict__ grad_value,
+        int B) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx < B) {
+        value_grad[idx] = from_float(grad_value[idx]);
+    }
+}
+
+static PrecisionTensor ptcg_pointer_decoder_forward(
+        void* w, void* activations, PrecisionTensor hidden, PrecisionTensor obs, cudaStream_t stream) {
+    PTCGPointerDecoderWeights* dw = (PTCGPointerDecoderWeights*)w;
+    PTCGPointerDecoderActivations* a = (PTCGPointerDecoderActivations*)activations;
+    int B = hidden.shape[0];
+    if (a->saved_hidden.data) {
+        puf_copy(&a->saved_hidden, &hidden, stream);
+    }
+    ptcg_extract_options_kernel<<<grid_size(B * PTCG_N_ACTIONS * PTCG_OPTION_DIM), BLOCK_SIZE, 0, stream>>>(
+        a->option_input.data, obs.data, B, obs.shape[1]);
+    puf_mm(&hidden, &dw->wq, &a->q, stream);
+    puf_mm(&a->option_input, &dw->wk, &a->k, stream);
+    puf_mm(&a->option_input, &dw->wb, &a->bias, stream);
+    puf_mm(&hidden, &dw->wv, &a->value, stream);
+    ptcg_pointer_logits_kernel<<<grid_size(B * PTCG_N_ACTIONS), BLOCK_SIZE, 0, stream>>>(
+        a->out.data, a->q.data, a->k.data, a->bias.data, a->value.data,
+        a->option_input.data, B, dw->option_embed_size);
+    return a->out;
+}
+
+static void ptcg_pointer_decoder_init_weights(void* w, uint64_t* seed, cudaStream_t stream) {
+    PTCGPointerDecoderWeights* dw = (PTCGPointerDecoderWeights*)w;
+    puf_kaiming_init(&dw->wq, 1.0f, (*seed)++, stream);
+    puf_kaiming_init(&dw->wk, 1.0f, (*seed)++, stream);
+    puf_kaiming_init(&dw->wb, 0.01f, (*seed)++, stream);
+    puf_kaiming_init(&dw->wv, 1.0f, (*seed)++, stream);
+}
+
+static void ptcg_pointer_decoder_reg_params(void* w, Allocator* alloc) {
+    PTCGPointerDecoderWeights* dw = (PTCGPointerDecoderWeights*)w;
+    int H = dw->hidden_dim, E = dw->option_embed_size;
+    dw->wq = {.shape = {E, H}};
+    dw->wk = {.shape = {E, PTCG_OPTION_DIM}};
+    dw->wb = {.shape = {1, PTCG_OPTION_DIM}};
+    dw->wv = {.shape = {1, H}};
+    alloc_register(alloc, &dw->wq);
+    alloc_register(alloc, &dw->wk);
+    alloc_register(alloc, &dw->wb);
+    alloc_register(alloc, &dw->wv);
+}
+
+static void ptcg_pointer_decoder_reg_train(
+        void* w, void* activations, Allocator* acts, Allocator* grads, int B_TT) {
+    PTCGPointerDecoderWeights* dw = (PTCGPointerDecoderWeights*)w;
+    PTCGPointerDecoderActivations* a = (PTCGPointerDecoderActivations*)activations;
+    int H = dw->hidden_dim, E = dw->option_embed_size;
+    *a = {
+        .out =                {.shape = {B_TT, PTCG_N_ACTIONS + 1}},
+        .saved_hidden =       {.shape = {B_TT, H}},
+        .option_input =       {.shape = {B_TT * PTCG_N_ACTIONS, PTCG_OPTION_DIM}},
+        .q =                  {.shape = {B_TT, E}},
+        .k =                  {.shape = {B_TT * PTCG_N_ACTIONS, E}},
+        .bias =               {.shape = {B_TT * PTCG_N_ACTIONS, 1}},
+        .value =              {.shape = {B_TT, 1}},
+        .grad_hidden =        {.shape = {B_TT, H}},
+        .qgrad =              {.shape = {B_TT, E}},
+        .kgrad =              {.shape = {B_TT * PTCG_N_ACTIONS, E}},
+        .dlogits_rows =       {.shape = {B_TT * PTCG_N_ACTIONS, 1}},
+        .value_grad =         {.shape = {B_TT, 1}},
+        .value_hidden_grad =  {.shape = {B_TT, H}},
+        .wq_grad =            {.shape = {E, H}},
+        .wk_grad =            {.shape = {E, PTCG_OPTION_DIM}},
+        .wb_grad =            {.shape = {1, PTCG_OPTION_DIM}},
+        .wv_grad =            {.shape = {1, H}},
+    };
+    alloc_register(acts, &a->out);
+    alloc_register(acts, &a->saved_hidden);
+    alloc_register(acts, &a->option_input);
+    alloc_register(acts, &a->q);
+    alloc_register(acts, &a->k);
+    alloc_register(acts, &a->bias);
+    alloc_register(acts, &a->value);
+    alloc_register(acts, &a->grad_hidden);
+    alloc_register(acts, &a->qgrad);
+    alloc_register(acts, &a->kgrad);
+    alloc_register(acts, &a->dlogits_rows);
+    alloc_register(acts, &a->value_grad);
+    alloc_register(acts, &a->value_hidden_grad);
+    alloc_register(grads, &a->wq_grad);
+    alloc_register(grads, &a->wk_grad);
+    alloc_register(grads, &a->wb_grad);
+    alloc_register(grads, &a->wv_grad);
+}
+
+static void ptcg_pointer_decoder_reg_rollout(
+        void* w, void* activations, Allocator* alloc, int B) {
+    PTCGPointerDecoderWeights* dw = (PTCGPointerDecoderWeights*)w;
+    PTCGPointerDecoderActivations* a = (PTCGPointerDecoderActivations*)activations;
+    int E = dw->option_embed_size;
+    *a = {
+        .out =          {.shape = {B, PTCG_N_ACTIONS + 1}},
+        .option_input = {.shape = {B * PTCG_N_ACTIONS, PTCG_OPTION_DIM}},
+        .q =            {.shape = {B, E}},
+        .k =            {.shape = {B * PTCG_N_ACTIONS, E}},
+        .bias =         {.shape = {B * PTCG_N_ACTIONS, 1}},
+        .value =        {.shape = {B, 1}},
+    };
+    alloc_register(alloc, &a->out);
+    alloc_register(alloc, &a->option_input);
+    alloc_register(alloc, &a->q);
+    alloc_register(alloc, &a->k);
+    alloc_register(alloc, &a->bias);
+    alloc_register(alloc, &a->value);
+}
+
+static void* ptcg_pointer_decoder_create_weights(void* self) {
+    Decoder* d = (Decoder*)self;
+    PTCGPointerDecoderWeights* dw = (PTCGPointerDecoderWeights*)calloc(1, sizeof(PTCGPointerDecoderWeights));
+    dw->hidden_dim = d->hidden_dim;
+    dw->output_dim = d->output_dim;
+    dw->continuous = d->continuous;
+    dw->option_embed_size = d->option_embed_size;
+    return dw;
+}
+
+static void ptcg_pointer_decoder_free_weights(void* weights) { free(weights); }
+static void ptcg_pointer_decoder_free_activations(void* activations) { free(activations); }
+
+static PrecisionTensor ptcg_pointer_decoder_backward(
+        void* w, void* activations,
+        FloatTensor grad_logits, FloatTensor grad_logstd, FloatTensor grad_value,
+        cudaStream_t stream) {
+    (void)grad_logstd;
+    PTCGPointerDecoderWeights* dw = (PTCGPointerDecoderWeights*)w;
+    PTCGPointerDecoderActivations* a = (PTCGPointerDecoderActivations*)activations;
+    int B = a->saved_hidden.shape[0], H = dw->hidden_dim, E = dw->option_embed_size;
+
+    ptcg_pointer_qgrad_kernel<<<grid_size(B * E), BLOCK_SIZE, 0, stream>>>(
+        a->qgrad.data, grad_logits.data, a->k.data, B, E);
+    ptcg_pointer_kgrad_dlogits_kernel<<<grid_size(B * PTCG_N_ACTIONS * E), BLOCK_SIZE, 0, stream>>>(
+        a->kgrad.data, a->dlogits_rows.data, grad_logits.data, a->q.data, B, E);
+    ptcg_pointer_value_grad_kernel<<<grid_size(B), BLOCK_SIZE, 0, stream>>>(
+        a->value_grad.data, grad_value.data, B);
+
+    puf_mm_tn(&a->qgrad, &a->saved_hidden, &a->wq_grad, stream);
+    puf_mm_nn(&a->qgrad, &dw->wq, &a->grad_hidden, stream);
+    puf_mm_tn(&a->kgrad, &a->option_input, &a->wk_grad, stream);
+    puf_mm_tn(&a->dlogits_rows, &a->option_input, &a->wb_grad, stream);
+    puf_mm_tn(&a->value_grad, &a->saved_hidden, &a->wv_grad, stream);
+    puf_mm_nn(&a->value_grad, &dw->wv, &a->value_hidden_grad, stream);
+    add_kernel<<<grid_size(B * H), BLOCK_SIZE, 0, stream>>>(
+        a->grad_hidden.data, a->value_hidden_grad.data, B * H);
+    return a->grad_hidden;
+}
+
+// Override encoder/decoder vtables for known ocean environments. No-op for unknown envs.
+static void create_custom_encoder(const std::string& env_name, int model_type, Encoder* enc) {
     if (env_name == "nmmo3") {
         *enc = Encoder{
             .forward = nmmo3_encoder_forward,
@@ -585,6 +951,52 @@ static void create_custom_encoder(const std::string& env_name, Encoder* enc) {
             .free_activations = nmmo3_encoder_free_activations,
             .in_dim = enc->in_dim, .out_dim = enc->out_dim,
             .activation_size = sizeof(NMMO3EncoderActivations),
+        };
+    } else if (env_name == "ptcg" && model_type == PTCG_MODEL_POINTER_DOT_V1) {
+        if (enc->in_dim != PTCG_OBS_DIM) {
+            fprintf(stderr, "PTCG pointer encoder expected obs dim %d, got %d\n", PTCG_OBS_DIM, enc->in_dim);
+        }
+        *enc = Encoder{
+            .forward = ptcg_state_encoder_forward,
+            .backward = ptcg_state_encoder_backward,
+            .init_weights = ptcg_state_encoder_init_weights,
+            .reg_params = ptcg_state_encoder_reg_params,
+            .reg_train = ptcg_state_encoder_reg_train,
+            .reg_rollout = ptcg_state_encoder_reg_rollout,
+            .create_weights = ptcg_state_encoder_create_weights,
+            .free_weights = ptcg_state_encoder_free_weights,
+            .free_activations = ptcg_state_encoder_free_activations,
+            .in_dim = enc->in_dim, .out_dim = enc->out_dim,
+            .activation_size = sizeof(PTCGStateEncoderActivations),
+        };
+    }
+}
+
+static void create_custom_decoder(
+        const std::string& env_name, int model_type, int option_embed_size, Decoder* dec) {
+    if (env_name == "ptcg" && model_type == PTCG_MODEL_POINTER_DOT_V1) {
+        if (dec->continuous || dec->output_dim != PTCG_N_ACTIONS) {
+            fprintf(stderr, "PTCG pointer decoder expected one discrete head of %d actions, got output_dim=%d continuous=%d\n",
+                PTCG_N_ACTIONS, dec->output_dim, (int)dec->continuous);
+        }
+        if (option_embed_size <= 0) {
+            fprintf(stderr, "PTCG pointer decoder requires positive option_embed_size, got %d\n", option_embed_size);
+        }
+        *dec = Decoder{
+            .forward = ptcg_pointer_decoder_forward,
+            .backward = ptcg_pointer_decoder_backward,
+            .init_weights = ptcg_pointer_decoder_init_weights,
+            .reg_params = ptcg_pointer_decoder_reg_params,
+            .reg_train = ptcg_pointer_decoder_reg_train,
+            .reg_rollout = ptcg_pointer_decoder_reg_rollout,
+            .create_weights = ptcg_pointer_decoder_create_weights,
+            .free_weights = ptcg_pointer_decoder_free_weights,
+            .free_activations = ptcg_pointer_decoder_free_activations,
+            .hidden_dim = dec->hidden_dim,
+            .output_dim = dec->output_dim,
+            .continuous = dec->continuous,
+            .activation_size = sizeof(PTCGPointerDecoderActivations),
+            .option_embed_size = option_embed_size,
         };
     }
 }

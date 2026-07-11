@@ -16,6 +16,7 @@ void my_init(Env* env, Dict* kwargs) {
     env->force_mag = dict_get(kwargs, "force_mag")->value;
     env->tau = dict_get(kwargs, "dt")->value;
     env->continuous = dict_get(kwargs, "continuous")->value;
+    env->max_steps = (int)dict_get(kwargs, "max_steps")->value;
     init(env);
 }
 

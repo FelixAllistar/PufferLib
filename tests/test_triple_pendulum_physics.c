@@ -84,6 +84,27 @@ static void make_triple(TriplePendulum* env, float obs[TP_OBS_SIZE],
     env->gravity = 9.8f;
     env->force_mag = 12.0f;
     env->dt = 0.02f;
+    env->catch_weight = 1.0f;
+    env->smooth_weight = 1.0f;
+    env->hold_weight = 1.0f;
+    env->fast_weight = 1.0f;
+    env->force_penalty = 1.0f;
+    env->slow_target_steps = 220.0f;
+    env->action_sensitivity = 1.0f;
+    env->first_stable_tick = -1;
+    env->first_high_tick = -1;
+    env->first_upright_tick = -1;
+    env->first_slow_tick = -1;
+    env->stable_steps_total = 0;
+    env->episode_max_steps = TP_MAX_STEPS;
+    env->episode_abs_x = 0.0f;
+    env->episode_force_effort = 0.0f;
+    env->episode_force_switch = 0.0f;
+    env->episode_soft_actions = 0;
+    env->episode_hard_actions = 0;
+    env->episode_coast_actions = 0;
+    env->prev_height = 0.0f;
+    env->prev_force = 0.0f;
 }
 
 static void test_observations_match_state(void) {
@@ -112,6 +133,28 @@ static void test_observations_match_state(void) {
         check_close(obs[off + 1], cosf(env.theta[i]), 1e-6f, "cos observation");
         check_close(obs[off + 2], env.theta_dot[i] / 8.0f, 1e-6f, "theta_dot observation");
     }
+}
+
+static void test_action_force_mapping(void) {
+    float obs[TP_OBS_SIZE] = {0};
+    float actions[1] = {0};
+    float rewards[1] = {0};
+    float terminals[1] = {0};
+    TriplePendulum env;
+    make_triple(&env, obs, actions, rewards, terminals);
+
+    check(TP_ACTIONS == 5, "triple pendulum uses five discrete force actions");
+    check_close(tp_action_force(&env, 0), -12.0f, 1e-6f, "hard left force");
+    check_close(tp_action_force(&env, 1), -6.0f, 1e-6f, "soft left force");
+    check_close(tp_action_force(&env, 2), 0.0f, 1e-6f, "coast force");
+    check_close(tp_action_force(&env, 3), 6.0f, 1e-6f, "soft right force");
+    check_close(tp_action_force(&env, 4), 12.0f, 1e-6f, "hard right force");
+    check_close(tp_action_force(&env, 99), 0.0f, 1e-6f, "invalid action coasts");
+    check_close(tp_continuous_force(&env, -2.0f), tanhf(-2.0f) * 12.0f, 1e-6f, "continuous hard left squashes");
+    check_close(tp_continuous_force(&env, -0.25f), tanhf(-0.25f) * 12.0f, 1e-6f, "continuous partial left");
+    check_close(tp_continuous_force(&env, 0.0f), 0.0f, 1e-6f, "continuous zero");
+    check_close(tp_continuous_force(&env, 0.25f), tanhf(0.25f) * 12.0f, 1e-6f, "continuous partial right");
+    check_close(tp_continuous_force(&env, 2.0f), tanhf(2.0f) * 12.0f, 1e-6f, "continuous hard right squashes");
 }
 
 static void test_downward_equilibrium_stays_put(void) {
@@ -178,11 +221,68 @@ static void test_reward_sanity(void) {
     float upright = upright_reward(&env, 0.0f);
     check(upright > 0.5f, "upright reward should be high");
     check(env.upright_steps == 1, "upright streak increments");
+    check(env.first_stable_tick == 0, "first stable step is recorded");
+    check(env.first_high_tick == 0, "first high step is recorded");
+    check(env.first_upright_tick == 0, "first upright step is recorded");
+    check(env.first_slow_tick == 0, "first slow step is recorded");
 
     env.upright_steps = 0;
+    env.first_stable_tick = -1;
+    env.first_high_tick = -1;
+    env.first_upright_tick = -1;
+    env.first_slow_tick = -1;
     for (int i = 0; i < TP_LINKS; i++) env.theta[i] = M_PI;
+    env.prev_height = tp_height(&env);
     float downward = upright_reward(&env, 0.0f);
     check(downward < 0.01f, "downward reward should be near zero");
+}
+
+static void test_random_episode_cap_and_logging(void) {
+    float obs[TP_OBS_SIZE] = {0};
+    float actions[1] = {1};
+    float rewards[1] = {0};
+    float terminals[1] = {0};
+    TriplePendulum env;
+    make_triple(&env, obs, actions, rewards, terminals);
+    c_reset(&env);
+
+    check(env.episode_max_steps >= TP_MIN_EPISODE_STEPS, "episode cap above minimum");
+    check(env.episode_max_steps <= TP_MAX_STEPS, "episode cap below maximum");
+    int cap = env.episode_max_steps;
+
+    env.tick = cap;
+    env.episode_return = 10.0f;
+    env.first_high_tick = 12;
+    env.first_upright_tick = 34;
+    env.first_slow_tick = 45;
+    env.first_stable_tick = 56;
+    env.stable_steps_total = 20;
+    env.episode_abs_x = 100.0f;
+    env.episode_force_effort = 50.0f;
+    env.episode_force_switch = 25.0f;
+    env.episode_soft_actions = 5;
+    env.episode_hard_actions = 15;
+    env.episode_coast_actions = 30;
+    add_log(&env, false, true);
+
+    check_close(env.log.episode_max_steps, (float)cap, 1e-6f, "episode cap logged");
+    check_close(env.log.slow_deadline_miss, 0.0f, 1e-6f, "early slow is not a deadline miss");
+    check_close(env.log.first_high_step, 12.0f, 1e-6f, "first high logged");
+    check_close(env.log.first_upright_step, 34.0f, 1e-6f, "first upright logged");
+    check_close(env.log.first_slow_step, 45.0f, 1e-6f, "first slow logged");
+    check_close(env.log.first_stable_step, 56.0f, 1e-6f, "first stable logged");
+    check_close(env.log.force_effort, 50.0f / (float)cap, 1e-6f, "force effort logged");
+    check_close(env.log.force_switch, 25.0f / (float)cap, 1e-6f, "force switch logged");
+    check_close(env.log.soft_action_rate, 5.0f / (float)cap, 1e-6f, "soft actions logged");
+    check_close(env.log.hard_action_rate, 15.0f / (float)cap, 1e-6f, "hard actions logged");
+    check_close(env.log.coast_action_rate, 30.0f / (float)cap, 1e-6f, "coast actions logged");
+
+    TriplePendulum late = env;
+    late.log = (Log){0};
+    late.tick = TP_SLOW_TARGET_STEPS + 1;
+    late.first_slow_tick = -1;
+    add_log(&late, false, false);
+    check_close(late.log.slow_deadline_miss, 1.0f, 1e-6f, "late slow is logged as a miss");
 }
 
 static void test_random_rollout_stays_finite(void) {
@@ -206,7 +306,7 @@ static void test_random_rollout_stays_finite(void) {
         for (int i = 0; i < TP_OBS_SIZE; i++) {
             check(isfinite(obs[i]), "finite observation");
         }
-        check(rewards[0] >= 0.0f && rewards[0] <= 1.5f, "reward bounds");
+        check(rewards[0] >= -2.6f && rewards[0] <= 3.2f, "reward bounds");
     }
 }
 
@@ -257,9 +357,11 @@ static void test_near_zero_third_link_approximates_double(void) {
 
 int main(void) {
     test_observations_match_state();
+    test_action_force_mapping();
     test_downward_equilibrium_stays_put();
     test_upright_equilibrium_stays_put();
     test_reward_sanity();
+    test_random_episode_cap_and_logging();
     test_random_rollout_stays_finite();
     test_near_zero_third_link_approximates_double();
     printf("triple_pendulum physics tests passed\n");

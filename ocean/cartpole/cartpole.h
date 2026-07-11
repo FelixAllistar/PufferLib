@@ -8,7 +8,7 @@
 
 #define X_THRESHOLD 2.4f
 #define THETA_THRESHOLD_RADIANS (12 * 2 * M_PI / 360)
-#define MAX_STEPS 200
+#define MAX_STEPS 100000
 #define WIDTH 600
 #define HEIGHT 200
 #define SCALE 100
@@ -43,6 +43,7 @@ struct Cartpole {
     float theta;
     float theta_dot;
     int tick;
+    int max_steps;
     float cart_mass;
     float pole_mass;
     float pole_length;
@@ -56,7 +57,7 @@ struct Cartpole {
 
 void add_log(Cartpole* env) {
     if (env->episode_return > 0) {
-        env->log.perf = env->episode_return / MAX_STEPS;
+        env->log.perf = env->episode_return / env->max_steps;
     } else {
         env->log.perf = 0.0f;
     }
@@ -64,7 +65,7 @@ void add_log(Cartpole* env) {
     env->log.score += env->tick;
     env->log.x_threshold_termination += (env->x < -X_THRESHOLD || env->x > X_THRESHOLD);
     env->log.pole_angle_termination += (env->theta < -THETA_THRESHOLD_RADIANS || env->theta > THETA_THRESHOLD_RADIANS);
-    env->log.max_steps_termination += (env->tick >= MAX_STEPS);
+    env->log.max_steps_termination += (env->tick >= env->max_steps);
     env->log.n += 1;
 }
 
@@ -182,7 +183,7 @@ void c_step(Cartpole* env) {
     
     bool terminated = env->x < -X_THRESHOLD || env->x > X_THRESHOLD ||
                 env->theta < -THETA_THRESHOLD_RADIANS || env->theta > THETA_THRESHOLD_RADIANS;
-    bool truncated = env->tick >= MAX_STEPS;
+    bool truncated = env->tick >= env->max_steps;
     bool done = terminated || truncated;
 
     env->rewards[0] = done ? 0.0f : 1.0f;

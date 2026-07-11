@@ -19,15 +19,23 @@ int main(void) {
         .gravity = 9.8f,
         .force_mag = 12.0f,
         .dt = 0.02f,
+        .catch_weight = 1.0f,
+        .smooth_weight = 1.0f,
+        .hold_weight = 1.0f,
+        .fast_weight = 1.0f,
+        .force_penalty = 1.0f,
+        .slow_target_steps = 220.0f,
     };
 
     init(&env);
     c_reset(&env);
     c_render(&env);
     while (!WindowShouldClose()) {
-        if (IsKeyDown(KEY_LEFT) || IsKeyDown(KEY_A)) actions[0] = 0;
-        else if (IsKeyDown(KEY_RIGHT) || IsKeyDown(KEY_D)) actions[0] = 2;
-        else actions[0] = 1;
+        if (IsKeyDown(KEY_LEFT_SHIFT) && (IsKeyDown(KEY_LEFT) || IsKeyDown(KEY_A))) actions[0] = 0;
+        else if (IsKeyDown(KEY_LEFT) || IsKeyDown(KEY_A)) actions[0] = 1;
+        else if (IsKeyDown(KEY_LEFT_SHIFT) && (IsKeyDown(KEY_RIGHT) || IsKeyDown(KEY_D))) actions[0] = 4;
+        else if (IsKeyDown(KEY_RIGHT) || IsKeyDown(KEY_D)) actions[0] = 3;
+        else actions[0] = 2;
         c_step(&env);
         c_render(&env);
     }

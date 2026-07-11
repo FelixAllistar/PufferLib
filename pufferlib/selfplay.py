@@ -17,7 +17,10 @@ Pool storage is disk-only (paths held in memory; weights only on GPU when
 loaded as the frozen bank). Stride-eviction preserves temporal coverage when
 the pool exceeds its cap.
 """
+import glob
+import json
 import os
+import re
 
 import numpy as np
 
@@ -45,6 +48,146 @@ def evict(pool, max_size):
         return pool
     half = len(pool) // 2
     return pool[:half:2] + pool[half:]
+
+
+def split_seed_tokens(value):
+    if value is None:
+        return []
+    if isinstance(value, (list, tuple)):
+        return [str(v).strip() for v in value if str(v).strip()]
+    return [token for token in re.split(r'[\s,;]+', str(value).strip()) if token]
+
+
+def boolish(value, default=False):
+    if value is None:
+        return default
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        return bool(value)
+    return str(value).strip().lower() in ('1', 'true', 'yes', 'on')
+
+
+def native_policy_matches(entry, args, explicit=False):
+    '''Reject obvious checkpoint/profile mismatches before loading frozen banks.
+
+    Direct paths and globs often do not have metadata, so explicit=True lets them
+    through and relies on the native loader's byte-size guard. Registry entries
+    are filtered strictly because we do have their declared layout.
+    '''
+    if explicit:
+        return True
+    policy = args.get('policy', {})
+    checks = (
+        ('model_type', int),
+        ('hidden_size', int),
+        ('num_layers', int),
+        ('expansion_factor', int),
+    )
+    for key, caster in checks:
+        if key not in entry:
+            continue
+        if key not in policy:
+            continue
+        try:
+            if caster(entry[key]) != caster(policy[key]):
+                return False
+        except (TypeError, ValueError):
+            return False
+    return True
+
+
+def existing_seed_path(path):
+    path = os.path.expanduser(str(path))
+    if os.path.isfile(path) and os.path.getsize(path) > 0:
+        return path
+    return None
+
+
+def load_registry(path):
+    if not path:
+        return {}
+    path = os.path.expanduser(str(path))
+    if not os.path.isfile(path):
+        return {}
+    with open(path, 'r', encoding='utf-8') as f:
+        return json.load(f)
+
+
+def resolve_initial_opponents(sp, args):
+    registry = load_registry(sp.get('registry_file') or sp.get('registry_path'))
+    learned = registry.get('learned_opponents', []) if isinstance(registry, dict) else []
+    by_name = {str(entry.get('name', '')).lower(): entry for entry in learned
+               if entry.get('name')}
+    player_deck = int(args.get('env', {}).get('player_deck', -1))
+    same_deck_only = boolish(sp.get('initial_same_deck_only'), True)
+    names = split_seed_tokens(sp.get('initial_opponent_names'))
+
+    entries = []
+
+    def add_entry(name, path, entry=None, explicit=False):
+        path = existing_seed_path(path)
+        if path is None:
+            return
+        if entry is not None and not native_policy_matches(entry, args, explicit=explicit):
+            return
+        entries.append({
+            'path': path,
+            'elo': float(sp.get('elo_init', 0.0)),
+            'name': name or os.path.basename(path),
+            'seeded': True,
+        })
+
+    def add_learned(entry, explicit=False):
+        if entry is None:
+            return
+        add_entry(entry.get('name'), entry.get('path'), entry=entry, explicit=explicit)
+        for path in entry.get('paths', []) or []:
+            add_entry(entry.get('name'), path, entry=entry, explicit=explicit)
+        for pattern in split_seed_tokens(entry.get('glob')):
+            for path in sorted(glob.glob(os.path.expanduser(pattern), recursive=True)):
+                add_entry(entry.get('name'), path, entry=entry, explicit=explicit)
+
+    if learned and (not names or any(name.lower() == 'same_deck' for name in names)):
+        for entry in learned:
+            if same_deck_only and int(entry.get('deck_id', -999)) != player_deck:
+                continue
+            add_learned(entry)
+
+    if any(name.lower() == 'all' for name in names):
+        for entry in learned:
+            add_learned(entry)
+    else:
+        for name in names:
+            lowered = name.lower()
+            if lowered in ('same_deck', ''):
+                continue
+            entry = by_name.get(lowered)
+            if entry is not None:
+                add_learned(entry, explicit=True)
+            else:
+                add_entry(name, name, explicit=True)
+
+    for token in split_seed_tokens(sp.get('initial_opponents')):
+        entry = by_name.get(token.lower())
+        if entry is not None:
+            add_learned(entry, explicit=True)
+        else:
+            add_entry(token, token, explicit=True)
+
+    for pattern in split_seed_tokens(sp.get('initial_opponent_glob')):
+        for path in sorted(glob.glob(os.path.expanduser(pattern), recursive=True)):
+            add_entry(os.path.basename(path), path, explicit=True)
+
+    deduped = []
+    seen = set()
+    for entry in entries:
+        real = os.path.realpath(entry['path'])
+        if real in seen:
+            continue
+        seen.add(real)
+        deduped.append(entry)
+    return deduped
 
 
 def build_perm_tags(num_buffers, agents_per_buffer, agents_per_env, frozen_sizes, num_envs):
@@ -170,23 +313,39 @@ def setup(pufferl, backend, args, run_id):
     os.makedirs(pool_dir, exist_ok=True)
     bootstrap_path = os.path.join(pool_dir, f'{pufferl.global_step:016d}.bin')
     backend.save_weights(pufferl, bootstrap_path)
-    # Load bootstrap into every bank — they'll diverge as each bank's swap fires.
-    for b in range(num_banks):
-        backend.load_frozen_bank(pufferl, b, bootstrap_path)
 
     elo_init = float(sp.get('elo_init', 0.0))
     elo_k    = float(sp.get('elo_k',    16.0))
     rng = np.random.default_rng(int(sp.get('seed', 0)))
+    bootstrap_entry = {
+        'path': bootstrap_path,
+        'elo': elo_init,
+        'name': 'bootstrap_current',
+        'seeded': False,
+    }
+    initial_entries = resolve_initial_opponents(sp, args)
+    pool = [bootstrap_entry] + initial_entries
+    bank_entries = initial_entries if initial_entries else [bootstrap_entry]
+    if initial_entries:
+        names = ', '.join(entry['name'] for entry in initial_entries[:8])
+        suffix = '' if len(initial_entries) <= 8 else f', +{len(initial_entries) - 8} more'
+        print(f'selfplay seeded {len(initial_entries)} initial opponent(s): {names}{suffix}', flush=True)
+    else:
+        print('selfplay seeded 0 initial opponents; frozen banks start from current bootstrap', flush=True)
 
     banks_state = []
     for b in range(num_banks):
+        bank_entry = bank_entries[b % len(bank_entries)]
+        backend.load_frozen_bank(pufferl, b, bank_entry['path'])
         banks_state.append({
-            'cur_opp_path': bootstrap_path,
-            'cur_opp_elo': elo_init,
+            'cur_opp_path': bank_entry['path'],
+            'cur_opp_elo': bank_entry['elo'],
+            'cur_opp_name': bank_entry['name'],
             'hist_score': 0.0,
             'hist_n': 0.0,
             'pending_opp_path': None,
             'pending_opp_elo': None,
+            'pending_opp_name': None,
             'epoch_armed': 0,
             'opp_started_step': int(pufferl.global_step),
             'num_hist_envs': num_hist_envs_per_bank[b],
@@ -196,7 +355,8 @@ def setup(pufferl, backend, args, run_id):
 
     return {
         'pool_dir': pool_dir,
-        'pool': [{'path': bootstrap_path, 'elo': elo_init}],
+        'pool': pool,
+        'seeded_opponents': len(initial_entries),
         'rng': rng,
         'max_size': int(sp['max_size']),
         'min_games': int(sp['min_games']),
@@ -246,7 +406,12 @@ def step(pufferl, backend, pool_state, flat_logs, epoch):
         snap_path = os.path.join(pool_state['pool_dir'],
             f'{pufferl.global_step:016d}.bin')
         backend.save_weights(pufferl, snap_path)
-        pool_state['pool'].append({'path': snap_path, 'elo': pool_state['primary_elo']})
+        pool_state['pool'].append({
+            'path': snap_path,
+            'elo': pool_state['primary_elo'],
+            'name': f'snapshot_{pufferl.global_step:016d}',
+            'seeded': False,
+        })
         pool_state['pool'] = evict(pool_state['pool'], pool_state['max_size'])
         pool_state['last_snapshot_step'] = int(pufferl.global_step)
 
@@ -270,8 +435,10 @@ def step(pufferl, backend, pool_state, flat_logs, epoch):
                 backend.count_aligned(pufferl, tag_value, 1)
                 bank['cur_opp_path'] = bank['pending_opp_path']
                 bank['cur_opp_elo'] = bank['pending_opp_elo']
+                bank['cur_opp_name'] = bank['pending_opp_name']
                 bank['pending_opp_path'] = None
                 bank['pending_opp_elo'] = None
+                bank['pending_opp_name'] = None
                 bank['hist_score'] = 0.0
                 bank['hist_n'] = 0.0
                 bank['opp_started_step'] = int(pufferl.global_step)
@@ -284,12 +451,18 @@ def step(pufferl, backend, pool_state, flat_logs, epoch):
                 snap_path = os.path.join(pool_state['pool_dir'],
                     f'{pufferl.global_step:016d}.bin')
                 backend.save_weights(pufferl, snap_path)
-                pool_state['pool'].append({'path': snap_path, 'elo': pool_state['primary_elo']})
+                pool_state['pool'].append({
+                    'path': snap_path,
+                    'elo': pool_state['primary_elo'],
+                    'name': f'snapshot_{pufferl.global_step:016d}',
+                    'seeded': False,
+                })
                 pool_state['pool'] = evict(pool_state['pool'], pool_state['max_size'])
                 pool_state['last_snapshot_step'] = int(pufferl.global_step)
             opp_entry = sample_opponent(pool_state['pool'], pool_state['rng'])
             bank['pending_opp_path'] = opp_entry['path']
             bank['pending_opp_elo'] = opp_entry['elo']
+            bank['pending_opp_name'] = opp_entry.get('name', os.path.basename(opp_entry['path']))
             bank['epoch_armed'] = epoch
             bank['last_winrate_at_swap'] = winrate if winrate is not None else 0.0
 
@@ -297,6 +470,7 @@ def step(pufferl, backend, pool_state, flat_logs, epoch):
     flat_logs['pool/size']     = len(pool_state['pool'])
     flat_logs['env/elo']       = pool_state['primary_elo']
     flat_logs['pool/num_banks'] = num_banks
+    flat_logs['pool/seeded_opponents'] = pool_state.get('seeded_opponents', 0)
     total_score = 0.0
     total_n     = 0.0
     for b in range(num_banks):
@@ -305,9 +479,8 @@ def step(pufferl, backend, pool_state, flat_logs, epoch):
               if bank['hist_n'] > 0 else None)
         flat_logs[f'pool/winrate_at_swap_bank_{b}'] = bank['last_winrate_at_swap']
         flat_logs[f'pool/epochs_to_align_bank_{b}'] = bank['last_epochs_to_align']
-        if wr is not None:
-            flat_logs[f'pool/winrate_bank_{b}']           = wr
-            flat_logs[f'env/historical_winrate_bank_{b}'] = wr
+        flat_logs[f'pool/winrate_bank_{b}'] = wr if wr is not None else 0.0
+        flat_logs[f'env/historical_winrate_bank_{b}'] = wr if wr is not None else 0.0
         total_score += bank['hist_score']
         total_n     += bank['hist_n']
     # Aggregate winrate across all banks (legacy compat with old dashboards).

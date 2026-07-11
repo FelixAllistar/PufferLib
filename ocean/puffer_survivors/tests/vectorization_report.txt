@@ -1,0 +1,49 @@
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_observation.h:267:23: optimized: loop vectorized using 16 byte vectors
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_observation.h:241:23: optimized: loop vectorized using 32 byte vectors
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_observation.h:241:23: optimized: loop vectorized using 32 byte vectors
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_observation.h:218:23: optimized: loop vectorized using 32 byte vectors
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_observation.h:218:23: optimized: loop vectorized using 16 byte vectors
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_observation.h:273:20: optimized: basic block part vectorized using 32 byte vectors
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_observation.h:273:20: optimized: basic block part vectorized using 32 byte vectors
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_observation.h:273:20: optimized: basic block part vectorized using 32 byte vectors
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_observation.h:273:20: optimized: basic block part vectorized using 32 byte vectors
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_observation.h:273:20: optimized: basic block part vectorized using 32 byte vectors
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_observation.h:273:20: optimized: basic block part vectorized using 32 byte vectors
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_observation.h:273:20: optimized: basic block part vectorized using 32 byte vectors
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_observation.h:273:20: optimized: basic block part vectorized using 32 byte vectors
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_observation.h:273:20: optimized: basic block part vectorized using 32 byte vectors
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_observation.h:273:20: optimized: basic block part vectorized using 32 byte vectors
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_observation.h:273:20: optimized: basic block part vectorized using 32 byte vectors
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_observation.h:273:20: optimized: basic block part vectorized using 32 byte vectors
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_observation.h:273:20: optimized: basic block part vectorized using 32 byte vectors
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_observation.h:273:20: optimized: basic block part vectorized using 32 byte vectors
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_observation.h:273:20: optimized: basic block part vectorized using 32 byte vectors
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_observation.h:273:20: optimized: basic block part vectorized using 32 byte vectors
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_observation.h:273:20: optimized: basic block part vectorized using 32 byte vectors
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_observation.h:273:20: optimized: basic block part vectorized using 32 byte vectors
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_observation.h:273:20: optimized: basic block part vectorized using 32 byte vectors
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_observation.h:273:20: optimized: basic block part vectorized using 32 byte vectors
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_observation.h:273:20: optimized: basic block part vectorized using 32 byte vectors
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_observation.h:273:20: optimized: basic block part vectorized using 32 byte vectors
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_observation.h:273:20: optimized: basic block part vectorized using 32 byte vectors
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:128:22: optimized: basic block part vectorized using 32 byte vectors
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:128:22: optimized: basic block part vectorized using 32 byte vectors
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:128:22: optimized: basic block part vectorized using 32 byte vectors
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:128:22: optimized: basic block part vectorized using 32 byte vectors
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:128:22: optimized: basic block part vectorized using 32 byte vectors
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:128:22: optimized: basic block part vectorized using 32 byte vectors
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:128:22: optimized: basic block part vectorized using 32 byte vectors
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:128:22: optimized: basic block part vectorized using 32 byte vectors
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:320:23: optimized: loop vectorized using 16 byte vectors
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:322:19: optimized: basic block part vectorized using 32 byte vectors
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:322:19: optimized: basic block part vectorized using 32 byte vectors
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:322:19: optimized: basic block part vectorized using 32 byte vectors
+/puffertank/pufferlib/ocean/puffer_survivors/tests/../ps_systems.h:322:19: optimized: basic block part vectorized using 32 byte vectors
+/puffertank/pufferlib/ocean/puffer_survivors/tests/bench_cpu.c:63:36: optimized: basic block part vectorized using 32 byte vectors
+/puffertank/pufferlib/ocean/puffer_survivors/tests/bench_cpu.c:63:36: optimized: basic block part vectorized using 32 byte vectors
+/puffertank/pufferlib/ocean/puffer_survivors/tests/bench_cpu.c:63:36: optimized: basic block part vectorized using 32 byte vectors
+/puffertank/pufferlib/ocean/puffer_survivors/tests/bench_cpu.c:63:36: optimized: basic block part vectorized using 32 byte vectors
+/puffertank/pufferlib/ocean/puffer_survivors/tests/bench_cpu.c:63:36: optimized: basic block part vectorized using 32 byte vectors
+/puffertank/pufferlib/ocean/puffer_survivors/tests/bench_cpu.c:63:36: optimized: basic block part vectorized using 32 byte vectors
+/puffertank/pufferlib/ocean/puffer_survivors/tests/bench_cpu.c:63:36: optimized: basic block part vectorized using 32 byte vectors
+/puffertank/pufferlib/ocean/puffer_survivors/tests/bench_cpu.c:63:36: optimized: basic block part vectorized using 32 byte vectors

@@ -249,9 +249,22 @@ EXT_SUFFIX=$(python -c "import sysconfig; print(sysconfig.get_config_var('EXT_SU
 OUTPUT="pufferlib/_C${EXT_SUFFIX}"
 
 BINDING_SRC="$SRC_DIR/binding.c"
+BINDING_LANG="c"
+if [ ! -f "$BINDING_SRC" ] && [ -f "$SRC_DIR/binding.cpp" ]; then
+    BINDING_SRC="$SRC_DIR/binding.cpp"
+    BINDING_LANG="cpp"
+fi
 mkdir -p build
 STATIC_OBJ="build/libstatic_${ENV}.o"
 STATIC_LIB="build/libstatic_${ENV}.a"
+CUDA_SIM_OBJ=""
+CUDA_VEC_OBJ=""
+
+if [ "$ENV" = "puffer_survivors" ] && [ "$MODE" != "cpu" ]; then
+    EXTRA_CFLAGS="$EXTRA_CFLAGS -DPS_ENABLE_CUDA_VEC"
+    CUDA_SIM_OBJ="build/libstatic_${ENV}_cuda_sim.o"
+    CUDA_VEC_OBJ="build/libstatic_${ENV}_cuda_vec.o"
+fi
 
 if [ ! -f "$BINDING_SRC" ]; then
     echo "Error: $BINDING_SRC not found"
@@ -259,7 +272,14 @@ if [ ! -f "$BINDING_SRC" ]; then
 fi
 
 echo "Compiling static library for $ENV..."
-${CC:-clang} -c "${CLANG_OPT[@]}" $EXTRA_CFLAGS \
+BINDING_CC="${CC:-clang}"
+BINDING_STD=()
+if [ "$BINDING_LANG" = "cpp" ]; then
+    BINDING_CC="${CXX:-clang++}"
+    BINDING_STD=(-std=c++20)
+fi
+
+$BINDING_CC -c "${CLANG_OPT[@]}" "${BINDING_STD[@]}" $EXTRA_CFLAGS \
     -I. -Isrc -I$SRC_DIR -Ivendor \
     "${INCLUDES[@]}" \
     -I./$RAYLIB_NAME/include -I$CUDA_HOME/include \
@@ -267,7 +287,29 @@ ${CC:-clang} -c "${CLANG_OPT[@]}" $EXTRA_CFLAGS \
     -fno-semantic-interposition -fvisibility=hidden \
     -fPIC -fopenmp \
     "$BINDING_SRC" -o "$STATIC_OBJ"
-ar rcs "$STATIC_LIB" "$STATIC_OBJ"
+
+STATIC_OBJS=("$STATIC_OBJ")
+if [ -n "$CUDA_VEC_OBJ" ]; then
+    echo "Compiling optional CUDA simulator for $ENV..."
+    $NVCC -c -arch=$ARCH -Xcompiler -fPIC \
+        -std=c++17 \
+        -I. -Isrc -I$SRC_DIR -I$SRC_DIR/cuda -Ivendor \
+        -I$CUDA_HOME/include \
+        $NVCC_OPT \
+        "$SRC_DIR/cuda/ps_cuda_sim.cu" -o "$CUDA_SIM_OBJ"
+
+    echo "Compiling optional CUDA vec adapter for $ENV..."
+    $NVCC -c -arch=$ARCH -Xcompiler -fPIC \
+        -std=c++17 \
+        -I. -Isrc -I$SRC_DIR -I$SRC_DIR/cuda -Ivendor \
+        -I$CUDA_HOME/include \
+        $NVCC_OPT \
+        "$SRC_DIR/cuda/ps_cuda_vec.cu" -o "$CUDA_VEC_OBJ"
+
+    STATIC_OBJS+=("$CUDA_SIM_OBJ" "$CUDA_VEC_OBJ")
+fi
+rm -f "$STATIC_LIB"
+ar rcs "$STATIC_LIB" "${STATIC_OBJS[@]}"
 
 # Brittle hack: have to extract the tensor type from the static lib to build trainer
 OBS_TENSOR_T=$(awk '/^#define OBS_TENSOR_T/{print $3}' "$BINDING_SRC")

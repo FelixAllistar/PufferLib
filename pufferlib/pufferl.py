@@ -225,7 +225,7 @@ def _train(env_name, args, sweep_obj=None, result_queue=None, verbose=False):
     except RuntimeError as e:
         print(f'WARNING: {e}, skipping')
         if result_queue is not None:
-            result_queue.put((args['gpu_id'], [], [], []))
+            result_queue.put((args['gpu_id'], run_id, [], [], []))
         return
 
     load_path = resolve_load_path(args)
@@ -252,7 +252,7 @@ def _train(env_name, args, sweep_obj=None, result_queue=None, verbose=False):
         print(f'WARNING: {e}, skipping')
         backend.close(pufferl)
         if result_queue is not None:
-            result_queue.put((args['gpu_id'], [], [], []))
+            result_queue.put((args['gpu_id'], run_id, [], [], []))
         return
 
     model_path = ''
@@ -267,9 +267,11 @@ def _train(env_name, args, sweep_obj=None, result_queue=None, verbose=False):
 
         # In match-sweep mode we need the final checkpoint to feed into match().
         is_final = epoch == train_epochs - 1
-        should_save = (sweep_obj is None
-            and (epoch % args['checkpoint_interval'] == 0 or is_final)
-        ) or (match_mode and is_final)
+        should_save = (
+            (sweep_obj is None and (epoch % args['checkpoint_interval'] == 0 or is_final))
+            or (sweep_obj is not None and is_final)
+            or (match_mode and is_final)
+        )
         if should_save:
             model_path = os.path.join(checkpoint_dir, f'{pufferl.global_step:016d}.bin')
             backend.save_weights(pufferl, model_path)
@@ -314,7 +316,7 @@ def _train(env_name, args, sweep_obj=None, result_queue=None, verbose=False):
 
     if target_key not in flat_logs:
         if result_queue is not None:
-            result_queue.put((args['gpu_id'], None, None, None))
+            result_queue.put((args['gpu_id'], run_id, None, None, None))
         return
 
     # Match-mode scoring: primary = trained policy (model_path); frozen bank =
@@ -384,10 +386,10 @@ def _train(env_name, args, sweep_obj=None, result_queue=None, verbose=False):
     if result_queue is not None:
         if match_mode:
             # One observation: final hypers -> match winrate, at total training cost.
-            result_queue.put((args['gpu_id'], [match_score],
+            result_queue.put((args['gpu_id'], run_id, [match_score],
                 [metrics['uptime'][-1]], [metrics['agent_steps'][-1]]))
         else:
-            result_queue.put((args['gpu_id'], metrics['env/score'], metrics['uptime'], metrics['agent_steps']))
+            result_queue.put((args['gpu_id'], run_id, metrics['env/score'], metrics['uptime'], metrics['agent_steps']))
 
 def train(env_name, args=None, gpus=None, **kwargs):
     args = args or load_config(env_name)
@@ -420,8 +422,22 @@ def sweep(env_name, args=None, pareto=False):
     '''Train entry point. Handles single-GPU, multi-GPU DDP, and sweeps.'''
     args = args or load_config(env_name)
     exp_gpus = args['train']['gpus']
-    sweep_gpus = args['sweep']['gpus'] or len(os.listdir('/proc/driver/nvidia/gpus'))
-    args['vec']['num_threads'] //= (sweep_gpus // exp_gpus)
+    if exp_gpus < 1:
+        raise ValueError('train.gpus is GPUs per sweep experiment; use 1 for a single CUDA GPU')
+
+    sweep_gpus = args['sweep']['gpus']
+    if not sweep_gpus:
+        try:
+            sweep_gpus = len(os.listdir('/proc/driver/nvidia/gpus'))
+        except FileNotFoundError:
+            try:
+                import torch
+                sweep_gpus = torch.cuda.device_count()
+            except Exception:
+                sweep_gpus = 0
+    sweep_gpus = max(int(sweep_gpus), exp_gpus)
+    parallel_experiments = max(1, sweep_gpus // exp_gpus)
+    args['vec']['num_threads'] = max(1, args['vec']['num_threads'] // parallel_experiments)
     args['no_model_upload'] = True
 
     sweep_config = args['sweep']
@@ -439,22 +455,75 @@ def sweep(env_name, args=None, pareto=False):
     
     all_timesteps = np.geomspace(ts_config['min'], ts_config['max'], sweep_gpus)
     result_queue = mp.get_context('spawn').Queue()
+    sweep_run_id = str(int(1000*time.time()))
+    sweep_dir = os.path.join(args['log_dir'], args['env_name'], 'sweeps')
+    os.makedirs(sweep_dir, exist_ok=True)
+    sweep_manifest_path = os.path.join(sweep_dir, sweep_run_id + '.json')
+    sweep_manifest = {
+        'env_name': env_name,
+        'sweep_id': sweep_run_id,
+        'started_at': time.time(),
+        'metric': args['sweep']['metric'],
+        'goal': args['sweep'].get('goal'),
+        'method': method,
+        'max_runs': num_experiments,
+        'train_gpus': exp_gpus,
+        'sweep_gpus': sweep_gpus,
+        'trials': [],
+    }
+
+    def write_sweep_manifest():
+        tmp = sweep_manifest_path + '.tmp'
+        with open(tmp, 'w') as f:
+            json.dump(sweep_manifest, f, indent=2, default=str)
+        os.replace(tmp, sweep_manifest_path)
+
+    write_sweep_manifest()
 
     active = {}
     completed = 0
     while completed < num_experiments:
-        if len(active) >= sweep_gpus//exp_gpus: # Collect completed runs
-            gpu_id, scores, costs, timesteps = result_queue.get()
+        if len(active) >= parallel_experiments: # Collect completed runs
+            gpu_id, run_id, scores, costs, timesteps = result_queue.get()
             done_args = active.pop(gpu_id)
 
             if not scores:
                 sweep_obj.observe(done_args, 0, 0, is_failure=True)
+                trial = next((t for t in sweep_manifest['trials']
+                    if t.get('trial_idx') == done_args.get('sweep_trial_idx')), None)
+                if trial is not None:
+                    trial.update({
+                        'run_id': run_id,
+                        'status': 'failed',
+                        'scores': [],
+                        'costs': [],
+                        'timesteps': [],
+                        'log_path': os.path.join(args['log_dir'], args['env_name'], run_id + '.json') if run_id else None,
+                    })
+                    write_sweep_manifest()
             else:
                 completed += 1
 
-            for s, c, t in zip(scores, costs, timesteps):
-                done_args['train']['total_timesteps'] = t
-                sweep_obj.observe(done_args, s, c, is_failure=False)
+                trial = next((t for t in sweep_manifest['trials']
+                    if t.get('trial_idx') == done_args.get('sweep_trial_idx')), None)
+                if trial is not None:
+                    trial.update({
+                        'run_id': run_id,
+                        'status': 'done',
+                        'scores': [float(s) for s in scores],
+                        'costs': [float(c) for c in costs],
+                        'timesteps': [float(t) for t in timesteps],
+                        'score': float(scores[-1]) if scores else None,
+                        'cost': float(costs[-1]) if costs else None,
+                        'agent_steps': float(timesteps[-1]) if timesteps else None,
+                        'log_path': os.path.join(args['log_dir'], args['env_name'], run_id + '.json') if run_id else None,
+                    })
+                    write_sweep_manifest()
+
+            if scores:
+                for s, c, t in zip(scores, costs, timesteps):
+                    done_args['train']['total_timesteps'] = t
+                    sweep_obj.observe(done_args, s, c, is_failure=False)
 
         idx = completed + len(active)
         if idx >= num_experiments:
@@ -474,9 +543,23 @@ def sweep(env_name, args=None, pareto=False):
             continue
 
         exp_args = deepcopy(args)
+        exp_args['sweep_id'] = sweep_run_id
+        exp_args['sweep_trial_idx'] = idx
+        exp_args['sweep_manifest_path'] = sweep_manifest_path
         active[gpu_id] = exp_args
+        sweep_manifest['trials'].append({
+            'trial_idx': idx,
+            'status': 'running',
+            'gpu_id': gpu_id,
+            'launched_at': time.time(),
+            'args': deepcopy(exp_args),
+        })
+        write_sweep_manifest()
         train(env_name, exp_args, range(gpu_id, gpu_id + exp_gpus),
             sweep_obj=sweep_obj, result_queue=result_queue)
+
+    sweep_manifest['ended_at'] = time.time()
+    write_sweep_manifest()
 
 def resolve_load_path(args, load_path=None):
     load_path = load_path or args.get('load_model_path')
@@ -495,6 +578,17 @@ def eval(env_name, args=None, load_path=None):
     args['reset_state'] = False
     args['train']['horizon'] = 1
     args.setdefault('eval_episodes', 1)
+    should_render = args.get('render_mode') not in (None, 'None', 'none')
+
+    if should_render:
+        env_args = args.setdefault('env', {})
+        for key in ('cuda_sim', 'use_cuda_sim', 'cuda_env'):
+            if key in env_args:
+                env_args[key] = 0
+        args['vec']['total_agents'] = 1
+        args['vec']['num_buffers'] = 1
+        args['vec']['num_threads'] = 1
+        args['train']['minibatch_size'] = 1
 
     backend = _resolve_backend(args)
     pufferl = backend.create_pufferl(args)
@@ -505,7 +599,6 @@ def eval(env_name, args=None, load_path=None):
         backend.load_weights(pufferl, load_path)
         print(f'Loaded weights from {load_path}')
 
-    should_render = args.get('render_mode') not in (None, 'None', 'none')
     try:
         while True:
             if should_render:

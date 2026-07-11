@@ -266,6 +266,8 @@ typedef struct {
     int num_atns;
     int hidden_size;
     int num_layers;
+    int model_type;
+    int option_embed_size;
     // Learning rate
     float lr;
     float min_lr_ratio;
@@ -300,6 +302,7 @@ typedef struct {
     float prio_beta0;
     // Flags
     bool reset_state;
+    bool eval_deterministic;
     int cudagraphs;
     bool profile;
     // Multi-GPU
@@ -384,10 +387,15 @@ typedef struct {
     int* bank_layout;
 } PuffeRL;
 
+__device__ __forceinline__ float clamp_continuous_logstd(float log_std) {
+    return fminf(fmaxf(log_std, -5.0f), -1.0f);
+}
+
 Dict* log_environments_impl(PuffeRL& pufferl) {
-    // Capacity raised from 32 to 64 to accommodate chess's per-bank
-    // hist_score_bank_<b> / hist_n_bank_<b> entries (16 keys for 8 banks).
-    Dict* out = create_dict(64);
+    // PTCG emits dense tactical diagnostics plus selfplay bank stats; keep this
+    // comfortably above the current largest env log to avoid release-build heap
+    // corruption when asserts are disabled.
+    Dict* out = create_dict(128);
     static_vec_log(pufferl.vec, out);
     return out;
 }
@@ -434,7 +442,7 @@ __device__ __forceinline__ float masked_logit(const precision_t* logits,
     float l = safe_logit(logits, logits_base, logits_offset, offset);
     if (mask != nullptr) {
         float m = to_float(mask[mask_base + logits_offset + offset]);
-        if (m == 0.0f) l = -1e4f;
+        if (m == 0.0f) l = -3.402823466e38f;
     }
     return l;
 }
@@ -449,7 +457,8 @@ __global__ void sample_logits(
         precision_t* __restrict__ value_out,  // (B,)
         curandStatePhilox4_32_10_t* __restrict__ rng_states,
         const precision_t* __restrict__ action_mask, // (B, A_total) or nullptr
-        int mask_stride) {                    // 0 when action_mask is nullptr
+        int mask_stride,                      // 0 when action_mask is nullptr
+        bool deterministic_actions) {
     int B = dec_out.shape[0];
     int fused_cols = dec_out.shape[1];
     int num_atns = numel(act_sizes_puf.shape);
@@ -480,18 +489,20 @@ __global__ void sample_logits(
 
         for (int h = 0; h < num_atns; ++h) {
             float mean = to_float(logits[logits_base + h]);
-            float log_std = to_float(logstd[logstd_base + h]);
+            float log_std = clamp_continuous_logstd(to_float(logstd[logstd_base + h]));
             float std = expf(log_std);
 
             // Sample from N(0,1) and transform: action = mean + std * noise
-            float noise = curand_normal(&state);
+            float noise = deterministic_actions ? 0.0f : curand_normal(&state);
             float action = mean + std * noise;
+            precision_t stored_action_p = from_float(action);
+            float stored_action = to_float(stored_action_p);
 
             // Log probability: -0.5 * ((action - mean) / std)^2 - 0.5 * log(2*pi) - log(std)
-            float normalized = (action - mean) / std;
+            float normalized = (stored_action - mean) / std;
             float log_prob = -0.5f * normalized * normalized - 0.5f * LOG_2PI - log_std;
 
-            actions[idx * num_atns + h] = from_float(action);
+            actions[idx * num_atns + h] = stored_action_p;
             total_log_prob += log_prob;
         }
     } else {
@@ -505,8 +516,14 @@ __global__ void sample_logits(
             // Step 1: Find max and sum for numerical stability (with nan_to_num)
             float max_val = -INFINITY;
             float sum_exp = 0.0f;
+            float best_logit = -INFINITY;
+            int best_action = 0;
             for (int a = 0; a < A; ++a) {
                 float l = masked_logit(logits, logits_base, logits_offset, a, action_mask, mask_base);
+                if (l > best_logit) {
+                    best_logit = l;
+                    best_action = a;
+                }
                 if (l > max_val) {
                     sum_exp *= expf(max_val - l);
                     max_val = l;
@@ -515,33 +532,58 @@ __global__ void sample_logits(
             }
             float logsumexp = max_val + logf(sum_exp);
 
-            // Step 3: Generate random value for this action head
-            float rand_val = curand_uniform(&state);
+            int sampled_action = best_action;
+            if (!deterministic_actions) {
+                // Step 3: Generate random value for this action head
+                float rand_val = curand_uniform(&state);
 
-            // Step 4: Multinomial sampling using inverse CDF
-            float cumsum = 0.0f;
-            int sampled_action = -1;  // sentinel: no action chosen yet
+                // Step 4: Multinomial sampling using inverse CDF
+                float cumsum = 0.0f;
+                sampled_action = -1;  // sentinel: no action chosen yet
 
-            for (int a = 0; a < A; ++a) {
-                float l = masked_logit(logits, logits_base, logits_offset, a, action_mask, mask_base);
-                float prob = expf(l - logsumexp);
-                cumsum += prob;
-                if (rand_val < cumsum) {
-                    sampled_action = a;
-                    break;
+                for (int a = 0; a < A; ++a) {
+                    float l = masked_logit(logits, logits_base, logits_offset, a, action_mask, mask_base);
+                    float prob = expf(l - logsumexp);
+                    cumsum += prob;
+                    if (rand_val < cumsum) {
+                        sampled_action = a;
+                        break;
+                    }
+                }
+
+                // Float rounding can leave cumsum < 1.0; fall back to the last legal action.
+                if (sampled_action < 0) {
+                    sampled_action = A - 1;
+                    if (action_mask != nullptr) {
+                        for (int a = A - 1; a >= 0; --a) {
+                            if (to_float(action_mask[mask_base + logits_offset + a]) != 0.0f) {
+                                sampled_action = a;
+                                break;
+                            }
+                        }
+                    }
                 }
             }
 
-            // Float rounding can leave cumsum < 1.0; fall back to the last legal action.
-            if (sampled_action < 0) {
-                sampled_action = A - 1;
-                if (action_mask != nullptr) {
-                    for (int a = A - 1; a >= 0; --a) {
-                        if (to_float(action_mask[mask_base + logits_offset + a]) != 0.0f) {
-                            sampled_action = a;
-                            break;
-                        }
+            // Hard invariant: never emit an action that is illegal under the
+            // provided mask. This protects environments from any numerical
+            // edge case in the masked softmax path.
+            if (action_mask != nullptr &&
+                    to_float(action_mask[mask_base + logits_offset + sampled_action]) == 0.0f) {
+                int best_legal_action = -1;
+                float best_legal_logit = -INFINITY;
+                for (int a = 0; a < A; ++a) {
+                    if (to_float(action_mask[mask_base + logits_offset + a]) == 0.0f) {
+                        continue;
                     }
+                    float l = safe_logit(logits, logits_base, logits_offset, a);
+                    if (l > best_legal_logit) {
+                        best_legal_logit = l;
+                        best_legal_action = a;
+                    }
+                }
+                if (best_legal_action >= 0) {
+                    sampled_action = best_legal_action;
                 }
             }
 
@@ -669,8 +711,8 @@ extern "C" void net_callback_wrapper(void* ctx, int buf, int t) {
         PrecisionTensor dec_puf = policy_forward(p_bank, *w_bank, *a_bank, obs_b, *s_bank, stream);
 
         PrecisionTensor p_logstd = {};
-        DecoderWeights* dw = (DecoderWeights*)w_bank->decoder;
-        if (dw->continuous) {
+        if (p_bank->decoder.continuous) {
+            DecoderWeights* dw = (DecoderWeights*)w_bank->decoder;
             p_logstd = dw->logstd;
         }
 
@@ -679,7 +721,7 @@ extern "C" void net_callback_wrapper(void* ctx, int buf, int t) {
             dec_puf, p_logstd, pufferl->act_sizes_puf,
             act_b.data, lp_b.data, val_b.data,
             pufferl->rng_states[buf] + bank_off,
-            mask_b.data, mask_stride_b);
+            mask_b.data, mask_stride_b, hypers.eval_deterministic);
 
         cast<<<grid_size(numel(act_b.shape)), BLOCK_SIZE, 0, stream>>>(
                 env.actions.data + (long)sub_start * act_cols,
@@ -707,7 +749,7 @@ __device__ __forceinline__ float load_logit_masked(
     if (mask != nullptr) {
         float m = to_float(mask[mask_base + logits_offset + a]);
         if (m == 0.0f) {
-            l = -1e4f;
+            l = -3.402823466e38f;
             return l;
         }
     }
@@ -752,6 +794,7 @@ __device__ __forceinline__ void ppo_discrete_head(
 __device__ __forceinline__ void ppo_continuous_head(
         float mean, float log_std, float action,
         float* out_logp, float* out_entropy) {
+    log_std = clamp_continuous_logstd(log_std);
     constexpr float HALF_LOG_2PI = 0.9189385332046727f;
     constexpr float HALF_1_PLUS_LOG_2PI = 1.4189385332046727f;
     float std = __expf(log_std);
@@ -856,7 +899,7 @@ __global__ void ppo_loss_compute(
     } else {
         for (int h = 0; h < a.num_atns; ++h) {
             float mean = to_float(a.logits[logits_base + h * a.logits_stride_a]);
-            float log_std = to_float(a.logstd[h]);
+            float log_std = clamp_continuous_logstd(to_float(a.logstd[h]));
             float action = float(g.actions[nt * a.num_atns + h]);
             float lp, ent;
             ppo_continuous_head(mean, log_std, action, &lp, &ent);
@@ -906,7 +949,7 @@ __global__ void ppo_loss_compute(
     } else {
         for (int h = 0; h < a.num_atns; ++h) {
             float mean = to_float(a.logits[logits_base + h * a.logits_stride_a]);
-            float log_std = to_float(a.logstd[h]);
+            float log_std = clamp_continuous_logstd(to_float(a.logstd[h]));
             float std = __expf(log_std);
             float var = std * std;
             float action = float(g.actions[nt * a.num_atns + h]);
@@ -1599,9 +1642,9 @@ void train_impl(PuffeRL& pufferl) {
             PrecisionTensor obs_puf = graph.mb_obs;
             PrecisionTensor state_puf = graph.mb_state;
             PrecisionTensor dec_puf = policy_forward_train(&pufferl.policy, pufferl.weights, pufferl.train_activations, obs_puf, state_puf, stream);
-            DecoderWeights* dw_train = (DecoderWeights*)pufferl.weights.decoder;
-            PrecisionTensor p_logstd;
-            if (dw_train->continuous) {
+            PrecisionTensor p_logstd = {};
+            if (pufferl.is_continuous) {
+                DecoderWeights* dw_train = (DecoderWeights*)pufferl.weights.decoder;
                 p_logstd = dw_train->logstd;
             }
 
@@ -1678,7 +1721,8 @@ void train_impl(PuffeRL& pufferl) {
 // has no heap state so this returns by value; callers store it wherever.
 static Policy build_policy(const char* env_name, int input_size, int hidden_size,
                            int num_layers, int decoder_output_size, int act_n,
-                           bool is_continuous, int horizon) {
+                           bool is_continuous, int horizon, int model_type,
+                           int option_embed_size) {
     Encoder encoder = {
         .forward = encoder_forward,
         .backward = encoder_backward,
@@ -1692,7 +1736,7 @@ static Policy build_policy(const char* env_name, int input_size, int hidden_size
         .in_dim = input_size, .out_dim = hidden_size,
         .activation_size = sizeof(EncoderActivations),
     };
-    create_custom_encoder(env_name, &encoder);
+    create_custom_encoder(env_name, model_type, &encoder);
     Decoder decoder = {
         .forward = decoder_forward,
         .backward = decoder_backward,
@@ -1704,7 +1748,10 @@ static Policy build_policy(const char* env_name, int input_size, int hidden_size
         .free_weights = decoder_free_weights,
         .free_activations = decoder_free_activations,
         .hidden_dim = hidden_size, .output_dim = decoder_output_size, .continuous = is_continuous,
+        .activation_size = sizeof(DecoderActivations),
+        .option_embed_size = option_embed_size,
     };
+    create_custom_decoder(env_name, model_type, option_embed_size, &decoder);
     Network network = {
         .forward = mingru_forward,
         .forward_train = mingru_forward_train,
@@ -1740,7 +1787,8 @@ static void weight_bank_create_for_pufferl(WeightBank* bank, PuffeRL* pufferl,
     for (int i = 0; i < num_action_heads; i++) act_n += raw_act_sizes[i];
     int decoder_output_size = pufferl->is_continuous ? num_action_heads : act_n;
     bank->policy = build_policy(pufferl->env_name.c_str(), input_size, hidden_size,
-        num_layers, decoder_output_size, act_n, pufferl->is_continuous, pufferl->hypers.horizon);
+        num_layers, decoder_output_size, act_n, pufferl->is_continuous, pufferl->hypers.horizon,
+        pufferl->hypers.model_type, pufferl->hypers.option_embed_size);
     bank->hidden_size = hidden_size;
     bank->num_layers = num_layers;
 
@@ -1968,6 +2016,8 @@ std::unique_ptr<PuffeRL> create_pufferl_impl(HypersT& hypers,
     int input_size = pufferl->env.obs.shape[1];
     int hidden_size = hypers.hidden_size;
     int num_layers = hypers.num_layers;
+    int model_type = hypers.model_type;
+    int option_embed_size = hypers.option_embed_size;
     bool is_continuous = pufferl->is_continuous;
     int decoder_output_size = is_continuous ? num_action_heads : act_n;
     int minibatch_segments = hypers.minibatch_size / hypers.horizon;
@@ -1979,7 +2029,8 @@ std::unique_ptr<PuffeRL> create_pufferl_impl(HypersT& hypers,
     int num_buffers = hypers.num_buffers;
 
     pufferl->policy = build_policy(env_name.c_str(), input_size, hidden_size,
-        num_layers, decoder_output_size, act_n, is_continuous, hypers.horizon);
+        num_layers, decoder_output_size, act_n, is_continuous, hypers.horizon,
+        model_type, option_embed_size);
 
     // Create and allocate params
     Allocator* params = &pufferl->params_alloc;
@@ -2201,9 +2252,15 @@ void close_impl(PuffeRL& pufferl) {
         cudaProfilerStop();
     }
 
-    cudaGraphExecDestroy(pufferl.train_cudagraph);
-    for (int i = 0; i < pufferl.hypers.horizon * pufferl.hypers.num_buffers; i++) {
-        cudaGraphExecDestroy(pufferl.fused_rollout_cudagraphs[i]);
+    if (pufferl.train_cudagraph != nullptr) {
+        cudaGraphExecDestroy(pufferl.train_cudagraph);
+    }
+    if (pufferl.fused_rollout_cudagraphs != nullptr) {
+        for (int i = 0; i < pufferl.hypers.horizon * pufferl.hypers.num_buffers; i++) {
+            if (pufferl.fused_rollout_cudagraphs[i] != nullptr) {
+                cudaGraphExecDestroy(pufferl.fused_rollout_cudagraphs[i]);
+            }
+        }
     }
 
     policy_weights_free(&pufferl.policy, &pufferl.weights);
@@ -2225,8 +2282,12 @@ void close_impl(PuffeRL& pufferl) {
     alloc_free(&pufferl.grads_alloc);
     alloc_free(&pufferl.activations_alloc);
 
-    for (int i = 0; i < pufferl.hypers.num_buffers; i++) {
-        cudaStreamDestroy(pufferl.streams[i]);
+    if (pufferl.streams != nullptr) {
+        for (int i = 0; i < pufferl.hypers.num_buffers; i++) {
+            if (pufferl.streams[i] != nullptr) {
+                cudaStreamDestroy(pufferl.streams[i]);
+            }
+        }
     }
     for (int i = 0; i < NUM_TRAIN_EVENTS; i++) {
         cudaEventDestroy(pufferl.profile.events[i]);
