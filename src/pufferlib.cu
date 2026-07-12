@@ -163,7 +163,8 @@ struct PPOKernelArgs {
     const precision_t* action_mask; // (N, T, A_total) or nullptr
     int mask_stride_n, mask_stride_t;
     int num_atns;
-    float clip_coef, vf_clip_coef, vf_coef, ent_coef;
+    float clip_coef, vf_clip_coef, vf_coef;
+    const float* ent_coef; // device ptr, by-value args get baked into the cuda graph
     int T_seq, A_total, N;
     int logits_stride_n, logits_stride_t, logits_stride_a;
     int values_stride_n, values_stride_t;
@@ -174,6 +175,7 @@ struct PPOBuffersPuf {
     FloatTensor loss_output, grad_loss;
     FloatTensor saved_for_bwd;
     FloatTensor grad_logits, grad_values, grad_logstd, adv_scratch;
+    FloatTensor ent_coef;
 };
 
 void register_ppo_buffers(PPOBuffersPuf& bufs, Allocator* alloc, int N, int T, int A_total, bool is_continuous) {
@@ -186,6 +188,7 @@ void register_ppo_buffers(PPOBuffersPuf& bufs, Allocator* alloc, int N, int T, i
         .grad_values = {.shape = {N, T, 1}},
         .grad_logstd = {.shape = {N, T, A_total}},
         .adv_scratch = {.shape = {2}},
+        .ent_coef = {.shape = {1}},
     };
     alloc_register(alloc, &bufs.loss_output);
     alloc_register(alloc, &bufs.saved_for_bwd);
@@ -196,6 +199,7 @@ void register_ppo_buffers(PPOBuffersPuf& bufs, Allocator* alloc, int N, int T, i
         alloc_register(alloc, &bufs.grad_logstd);
     }
     alloc_register(alloc, &bufs.adv_scratch);
+    alloc_register(alloc, &bufs.ent_coef);
 }
 
 // Prioritized replay over single-epoch data. These kernels are
@@ -436,6 +440,24 @@ __device__ __forceinline__ float safe_logit(const precision_t* logits,
     return l;
 }
 
+__device__ __forceinline__ float finite_or_clamp(float x, float lo, float hi) {
+    if (isnan(x)) {
+        return 0.0f;
+    }
+    if (isinf(x)) {
+        return x > 0.0f ? hi : lo;
+    }
+    return fminf(hi, fmaxf(lo, x));
+}
+
+__device__ __forceinline__ float safe_continuous_mean(const precision_t* logits, int idx) {
+    return finite_or_clamp(to_float(logits[idx]), -1.0e6f, 1.0e6f);
+}
+
+__device__ __forceinline__ float safe_continuous_logstd(const precision_t* logstd, int idx) {
+    return finite_or_clamp(to_float(logstd[idx]), -20.0f, 2.0f);
+}
+
 __device__ __forceinline__ float masked_logit(const precision_t* logits,
         int logits_base, int logits_offset, int offset,
         const precision_t* mask, int mask_base) {
@@ -488,16 +510,16 @@ __global__ void sample_logits(
         int logstd_base = idx * logstd_stride;  // separate stride for logstd (may be 0 for broadcast)
 
         for (int h = 0; h < num_atns; ++h) {
-            float mean = to_float(logits[logits_base + h]);
-            float log_std = clamp_continuous_logstd(to_float(logstd[logstd_base + h]));
+            float mean = safe_continuous_mean(logits, logits_base + h);
+            float log_std = safe_continuous_logstd(logstd, logstd_base + h);
             float std = expf(log_std);
 
             // Sample from N(0,1) and transform: action = mean + std * noise
             float noise = deterministic_actions ? 0.0f : curand_normal(&state);
-            float action = mean + std * noise;
+            float action = finite_or_clamp(mean + std * noise, -1.0e6f, 1.0e6f);
+
             precision_t stored_action_p = from_float(action);
             float stored_action = to_float(stored_action_p);
-
             // Log probability: -0.5 * ((action - mean) / std)^2 - 0.5 * log(2*pi) - log(std)
             float normalized = (stored_action - mean) / std;
             float log_prob = -0.5f * normalized * normalized - 0.5f * LOG_2PI - log_std;
@@ -845,7 +867,8 @@ __global__ void ppo_loss_compute(
     // grad_loss is always 1.0 (set in post_create, never changes)
     float dL = inv_NT;
     float d_pg_loss = dL;
-    float d_entropy_term = dL * (-a.ent_coef);
+    float ent_coef = *a.ent_coef;
+    float d_entropy_term = dL * (-ent_coef);
 
     // Value loss (forward) + value gradient (backward)
 
@@ -898,9 +921,9 @@ __global__ void ppo_loss_compute(
         }
     } else {
         for (int h = 0; h < a.num_atns; ++h) {
-            float mean = to_float(a.logits[logits_base + h * a.logits_stride_a]);
-            float log_std = clamp_continuous_logstd(to_float(a.logstd[h]));
-            float action = float(g.actions[nt * a.num_atns + h]);
+            float mean = safe_continuous_mean(a.logits, logits_base + h * a.logits_stride_a);
+            float log_std = safe_continuous_logstd(a.logstd, h);
+            float action = finite_or_clamp(float(g.actions[nt * a.num_atns + h]), -1.0e6f, 1.0e6f);
             float lp, ent;
             ppo_continuous_head(mean, log_std, action, &lp, &ent);
             total_log_prob += lp;
@@ -948,11 +971,11 @@ __global__ void ppo_loss_compute(
         }
     } else {
         for (int h = 0; h < a.num_atns; ++h) {
-            float mean = to_float(a.logits[logits_base + h * a.logits_stride_a]);
-            float log_std = clamp_continuous_logstd(to_float(a.logstd[h]));
+            float mean = safe_continuous_mean(a.logits, logits_base + h * a.logits_stride_a);
+            float log_std = safe_continuous_logstd(a.logstd, h);
             float std = __expf(log_std);
             float var = std * std;
-            float action = float(g.actions[nt * a.num_atns + h]);
+            float action = finite_or_clamp(float(g.actions[nt * a.num_atns + h]), -1.0e6f, 1.0e6f);
             float diff = action - mean;
 
             a.grad_logits[grad_logits_base + h] = d_new_logp * diff / var;
@@ -961,7 +984,7 @@ __global__ void ppo_loss_compute(
     }
 
     // Forward: loss partials
-    float thread_loss = (pg_loss + a.vf_coef * v_loss - a.ent_coef * total_entropy) * inv_NT;
+    float thread_loss = (pg_loss + a.vf_coef * v_loss - ent_coef * total_entropy) * inv_NT;
     block_losses[LOSS_PG][tid] = pg_loss * inv_NT;
     block_losses[LOSS_VF][tid] = v_loss * inv_NT;
     block_losses[LOSS_ENT][tid] = total_entropy * inv_NT;
@@ -1068,7 +1091,7 @@ void ppo_loss_fwd_bwd(
         PrecisionTensor& logstd,     // continuous logstd or empty
         TrainGraph& graph,
         IntTensor& act_sizes, FloatTensor& losses_acc,
-        float clip_coef, float vf_clip_coef, float vf_coef, float ent_coef,
+        float clip_coef, float vf_clip_coef, float vf_coef, const float* ent_coef,
         PPOBuffersPuf& bufs, bool is_continuous,
         cudaStream_t stream) {
     int N = dec_out.shape[0], T = dec_out.shape[1], fused_cols = dec_out.shape[2];
@@ -1584,6 +1607,9 @@ void train_impl(PuffeRL& pufferl) {
         current_ent_coef = cosine_annealing(hypers.ent_coef, ent_min,
                                             current_epoch, total_epochs);
     }
+    // copy ent_coef to the device buffer read by the loss kernel
+    cudaMemcpy(pufferl.ppo_bufs_puf.ent_coef.data, &current_ent_coef,
+               sizeof(float), cudaMemcpyHostToDevice);
 
     // Annealed priority exponent
     float anneal_beta = prio_beta0 + (1.0f - prio_beta0) * prio_alpha * (float)current_epoch/(float)total_epochs;
@@ -1650,7 +1676,8 @@ void train_impl(PuffeRL& pufferl) {
 
             ppo_loss_fwd_bwd(dec_puf, p_logstd, graph,
                 pufferl.act_sizes_puf, pufferl.losses_puf,
-                hypers.clip_coef, hypers.vf_clip_coef, hypers.vf_coef, current_ent_coef,
+                hypers.clip_coef, hypers.vf_clip_coef, hypers.vf_coef,
+                pufferl.ppo_bufs_puf.ent_coef.data,
                 pufferl.ppo_bufs_puf, pufferl.is_continuous, stream);
 
             FloatTensor grad_logits_puf = pufferl.ppo_bufs_puf.grad_logits;
