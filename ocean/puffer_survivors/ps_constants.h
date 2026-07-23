@@ -1,0 +1,92 @@
+#pragma once
+
+#ifndef PI
+#define PI 3.14159265358979323846f
+#endif
+
+#define PS_MAX_ENEMIES 256
+#define PS_MAX_PROJECTILES 512
+#define PS_MAX_DROPS 256
+#define PS_MAX_OBSTACLES 32
+#define PS_MAX_AREAS 48
+#define PS_GRID_W 32
+#define PS_GRID_H 32
+#define PS_GRID_CELLS (PS_GRID_W * PS_GRID_H)
+
+#define PS_SECTORS 8
+#define PS_RINGS 3
+#define PS_PLAYER_FEATURES 30
+#define PS_BOSS_FEATURES 8
+#define PS_ENEMY_CHANNELS 4
+#define PS_DROP_CHANNELS 3
+#define PS_OBSTACLE_CHANNELS 2
+#define PS_DANGER_CHANNELS 4
+#define PS_AREA_CHANNELS 3
+#define PS_WEAPON_COUNT 5
+#define PS_WEAPON_FEATURES (PS_WEAPON_COUNT * 4)
+#define PS_UPGRADE_SLOTS 3
+#define PS_UPGRADE_FEATURES 6
+#define PS_EXACT_OBSTACLE_FEATURES (PS_SECTORS * PS_RINGS * 2)
+#define PS_OBS_VERSION 9
+#define PS_OBS_SIZE (PS_PLAYER_FEATURES \
+    + PS_BOSS_FEATURES \
+    + PS_SECTORS * PS_RINGS * PS_ENEMY_CHANNELS \
+    + PS_SECTORS * PS_RINGS * PS_DROP_CHANNELS \
+    + PS_SECTORS * PS_RINGS * PS_OBSTACLE_CHANNELS \
+    + PS_SECTORS * PS_DANGER_CHANNELS \
+    + PS_SECTORS * PS_AREA_CHANNELS \
+    + PS_WEAPON_FEATURES \
+    + PS_UPGRADE_SLOTS * PS_UPGRADE_FEATURES \
+    + PS_EXACT_OBSTACLE_FEATURES)
+
+#define PS_SPRITE_PLAYER 0
+#define PS_SPRITE_JELLY 1
+#define PS_SPRITE_URCHIN 2
+#define PS_SPRITE_BUBBLE 3
+#define PS_SPRITE_XP 4
+#define PS_SPRITE_HEALTH 5
+#define PS_SPRITE_CORAL 6
+#define PS_SPRITE_ROCK 7
+#define PS_SPRITE_KELP 8
+#define PS_SPRITE_EEL 9
+#define PS_SPRITE_ORB 10
+#define PS_SPRITE_INK 11
+#define PS_SPRITE_SONAR 12
+#define PS_SPRITE_WHIRL 13
+#define PS_SPRITE_ELITE 14
+#define PS_SPRITE_BOSS 15
+
+#define PS_ENEMY_KIND_MASK 7
+#define PS_ENEMY_ELITE_FLAG 8
+#define PS_ENEMY_BOSS_FLAG 16
+#define PS_ENEMY_ARI_K_FLAG 32
+
+typedef enum {
+    PS_WEAPON_BUBBLE = 0,
+    PS_WEAPON_WHIRLPOOL = 1,
+    PS_WEAPON_ORBIT = 2,
+    PS_WEAPON_INK = 3,
+    PS_WEAPON_SONAR = 4,
+} PSWeaponId;
+
+typedef enum {
+    PS_UPGRADE_BUBBLE = 0,
+    PS_UPGRADE_WHIRLPOOL = 1,
+    PS_UPGRADE_ORBIT = 2,
+    PS_UPGRADE_INK = 3,
+    PS_UPGRADE_SONAR = 4,
+    PS_UPGRADE_SPEED = 5,
+    PS_UPGRADE_MAGNET = 6,
+    PS_UPGRADE_HEALTH = 7,
+    PS_UPGRADE_MIGHT = 8,
+    PS_UPGRADE_COOLDOWN = 9,
+    PS_UPGRADE_AREA = 10,
+    PS_UPGRADE_PIERCE = 11,
+    PS_UPGRADE_COUNT = 12,
+} PSUpgradeId;
+
+#if defined(__cplusplus)
+static_assert(PS_OBS_SIZE == 396, "Unexpected Puffer Survivors observation size");
+#else
+_Static_assert(PS_OBS_SIZE == 396, "Unexpected Puffer Survivors observation size");
+#endif

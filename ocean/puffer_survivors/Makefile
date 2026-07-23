@@ -1,0 +1,39 @@
+ROOT := ../..
+CC ?= clang
+NVCC ?= nvcc
+CPPFLAGS := -I. -I$(ROOT)/src -I$(ROOT)/raylib-5.5_linux_amd64/include
+CFLAGS ?= -O2 -std=c17 -Wall -Wextra -Werror
+CUDAFLAGS ?= -O3 --use_fast_math -std=c++17
+
+.PHONY: verify test sanitize cuda-test bench-cpu clean
+
+verify: test sanitize cuda-test
+
+test: tests/test_cpu
+	./tests/test_cpu
+
+tests/test_cpu: tests/test_cpu.c $(wildcard ps_*.h) puffer_survivors.h
+	$(CC) $(CPPFLAGS) $(CFLAGS) -DPS_HEADLESS_BINDING $< -lm -o $@
+
+sanitize: tests/test_cpu_san
+	ASAN_OPTIONS=detect_leaks=1 ./tests/test_cpu_san
+
+tests/test_cpu_san: tests/test_cpu.c $(wildcard ps_*.h) puffer_survivors.h
+	$(CC) $(CPPFLAGS) $(CFLAGS) -O1 -g -DPS_HEADLESS_BINDING \
+		-fsanitize=address,undefined -fno-omit-frame-pointer $< -lm -o $@
+
+cuda-test: tests/test_cuda
+	cd $(ROOT) && ./ocean/puffer_survivors/tests/test_cuda
+
+tests/test_cuda: tests/test_cuda.cu $(wildcard ps_*.h) puffer_survivors.h \
+		puffer_survivors.cu cuda/ps_cuda_sim.cu
+	$(NVCC) $(CPPFLAGS) $(CUDAFLAGS) -DPUFFER_GPU_ENV $< -o $@
+
+bench-cpu: tests/bench_cpu
+
+tests/bench_cpu: tests/bench_cpu.c $(wildcard ps_*.h) puffer_survivors.h
+	$(CC) $(CPPFLAGS) -O3 -march=native -std=c17 -DNDEBUG \
+		-DPS_HEADLESS_BINDING $< -lm -o $@
+
+clean:
+	rm -f tests/test_cpu tests/test_cpu_san tests/test_cuda tests/bench_cpu

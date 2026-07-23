@@ -161,6 +161,19 @@ wandb/
 raylib*/
 box2d*/
 
+# Native build/test products
+/puffer
+/ocean/abyss/tests/test_abyss
+/ocean/abyss/tests/test_abyss_san
+/ocean/puffer_survivors/tests/test_cpu
+/ocean/puffer_survivors/tests/test_cpu_san
+/ocean/puffer_survivors/tests/test_cuda
+/ocean/puffer_survivors/tests/bench_cpu
+/exports/
+
+# Local raw calibration input; compact generated catalogs are versioned.
+/ocean/abyss/data/recorded/frames.jsonl
+
 # Temp Impulse Wars files
 pufferlib/ocean/impulse_wars/*-debug/
 pufferlib/ocean/impulse_wars/*-release/
@@ -171,4 +184,3 @@ pufferlib/ocean/impulse_wars/benchmark/
 # Data
 resources/drive/data/*
 resources/drive/binaries/*
-

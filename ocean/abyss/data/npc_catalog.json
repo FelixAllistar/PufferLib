@@ -1,0 +1,4603 @@
+[
+  {
+    "name": "Drifter Foothold Battleship",
+    "hull_class": "battleship",
+    "signature_radius_m": 400.0,
+    "shield_hp": 40000.0,
+    "armor_hp": 10000.0,
+    "structure_hp": 20000.0,
+    "max_speed_mps": 300.0,
+    "orbit_speed_mps": 0.0,
+    "orbit_range_m": 0.0,
+    "turret_optimal_m": 60000.0,
+    "turret_falloff_m": 20000.0,
+    "turret_tracking": 2.0,
+    "turret_cycle_s": 5.0,
+    "dps": 100.0,
+    "shield_resists": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ],
+    "armor_resists": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ],
+    "structure_resists": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "damage_mix": [
+      0.25,
+      0.25,
+      0.25,
+      0.25
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 0.0,
+    "remote_repair_hp_per_s": 0.0
+  },
+  {
+    "name": "Drifter Assault Battleship",
+    "hull_class": "battleship",
+    "signature_radius_m": 400.0,
+    "shield_hp": 40000.0,
+    "armor_hp": 10000.0,
+    "structure_hp": 20000.0,
+    "max_speed_mps": 300.0,
+    "orbit_speed_mps": 0.0,
+    "orbit_range_m": 0.0,
+    "turret_optimal_m": 60000.0,
+    "turret_falloff_m": 20000.0,
+    "turret_tracking": 2.0,
+    "turret_cycle_s": 5.0,
+    "dps": 500.0,
+    "shield_resists": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ],
+    "armor_resists": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ],
+    "structure_resists": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "damage_mix": [
+      0.25,
+      0.25,
+      0.25,
+      0.25
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 0.0,
+    "remote_repair_hp_per_s": 0.0
+  },
+  {
+    "name": "Drifter Command Battleship",
+    "hull_class": "battleship",
+    "signature_radius_m": 400.0,
+    "shield_hp": 40000.0,
+    "armor_hp": 10000.0,
+    "structure_hp": 20000.0,
+    "max_speed_mps": 300.0,
+    "orbit_speed_mps": 0.0,
+    "orbit_range_m": 0.0,
+    "turret_optimal_m": 60000.0,
+    "turret_falloff_m": 20000.0,
+    "turret_tracking": 2.0,
+    "turret_cycle_s": 5.0,
+    "dps": 600.0,
+    "shield_resists": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ],
+    "armor_resists": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ],
+    "structure_resists": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "damage_mix": [
+      0.25,
+      0.25,
+      0.25,
+      0.25
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 0.0,
+    "remote_repair_hp_per_s": 0.0
+  },
+  {
+    "name": "Drifter Frontline Battleship",
+    "hull_class": "battleship",
+    "signature_radius_m": 400.0,
+    "shield_hp": 40000.0,
+    "armor_hp": 10000.0,
+    "structure_hp": 20000.0,
+    "max_speed_mps": 300.0,
+    "orbit_speed_mps": 0.0,
+    "orbit_range_m": 0.0,
+    "turret_optimal_m": 60000.0,
+    "turret_falloff_m": 20000.0,
+    "turret_tracking": 2.0,
+    "turret_cycle_s": 5.0,
+    "dps": 300.0,
+    "shield_resists": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ],
+    "armor_resists": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ],
+    "structure_resists": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "damage_mix": [
+      0.25,
+      0.25,
+      0.25,
+      0.25
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 0.0,
+    "remote_repair_hp_per_s": 0.0
+  },
+  {
+    "name": "Drifter Rearguard Battleship",
+    "hull_class": "battleship",
+    "signature_radius_m": 400.0,
+    "shield_hp": 40000.0,
+    "armor_hp": 10000.0,
+    "structure_hp": 20000.0,
+    "max_speed_mps": 300.0,
+    "orbit_speed_mps": 0.0,
+    "orbit_range_m": 0.0,
+    "turret_optimal_m": 60000.0,
+    "turret_falloff_m": 20000.0,
+    "turret_tracking": 2.0,
+    "turret_cycle_s": 5.0,
+    "dps": 200.0,
+    "shield_resists": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ],
+    "armor_resists": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ],
+    "structure_resists": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "damage_mix": [
+      0.25,
+      0.25,
+      0.25,
+      0.25
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 0.0,
+    "remote_repair_hp_per_s": 0.0
+  },
+  {
+    "name": "Drifter Vanguard Battleship",
+    "hull_class": "battleship",
+    "signature_radius_m": 400.0,
+    "shield_hp": 40000.0,
+    "armor_hp": 10000.0,
+    "structure_hp": 20000.0,
+    "max_speed_mps": 300.0,
+    "orbit_speed_mps": 0.0,
+    "orbit_range_m": 0.0,
+    "turret_optimal_m": 60000.0,
+    "turret_falloff_m": 20000.0,
+    "turret_tracking": 2.0,
+    "turret_cycle_s": 5.0,
+    "dps": 400.0,
+    "shield_resists": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ],
+    "armor_resists": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ],
+    "structure_resists": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "damage_mix": [
+      0.25,
+      0.25,
+      0.25,
+      0.25
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 0.0,
+    "remote_repair_hp_per_s": 0.0
+  },
+  {
+    "name": "Drifter Entanglement Cruiser",
+    "hull_class": "cruiser",
+    "signature_radius_m": 400.0,
+    "shield_hp": 10000.0,
+    "armor_hp": 5000.0,
+    "structure_hp": 7500.0,
+    "max_speed_mps": 1000.0,
+    "orbit_speed_mps": 800.0,
+    "orbit_range_m": 7500.0,
+    "turret_optimal_m": 6000.0,
+    "turret_falloff_m": 10000.0,
+    "turret_tracking": 50.0,
+    "turret_cycle_s": 5.0,
+    "dps": 40.0,
+    "shield_resists": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ],
+    "armor_resists": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ],
+    "structure_resists": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "damage_mix": [
+      0.25,
+      0.25,
+      0.25,
+      0.25
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 0.0,
+    "remote_repair_hp_per_s": 0.0
+  },
+  {
+    "name": "Drifter Nullwarp Cruiser",
+    "hull_class": "cruiser",
+    "signature_radius_m": 400.0,
+    "shield_hp": 10000.0,
+    "armor_hp": 5000.0,
+    "structure_hp": 7500.0,
+    "max_speed_mps": 1000.0,
+    "orbit_speed_mps": 800.0,
+    "orbit_range_m": 7500.0,
+    "turret_optimal_m": 6000.0,
+    "turret_falloff_m": 10000.0,
+    "turret_tracking": 50.0,
+    "turret_cycle_s": 5.0,
+    "dps": 40.0,
+    "shield_resists": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ],
+    "armor_resists": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ],
+    "structure_resists": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "damage_mix": [
+      0.25,
+      0.25,
+      0.25,
+      0.25
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 0.0,
+    "remote_repair_hp_per_s": 0.0
+  },
+  {
+    "name": "Drifter Nullcharge Cruiser",
+    "hull_class": "cruiser",
+    "signature_radius_m": 400.0,
+    "shield_hp": 10000.0,
+    "armor_hp": 5000.0,
+    "structure_hp": 7500.0,
+    "max_speed_mps": 1000.0,
+    "orbit_speed_mps": 800.0,
+    "orbit_range_m": 7500.0,
+    "turret_optimal_m": 6000.0,
+    "turret_falloff_m": 10000.0,
+    "turret_tracking": 50.0,
+    "turret_cycle_s": 5.0,
+    "dps": 40.0,
+    "shield_resists": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ],
+    "armor_resists": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ],
+    "structure_resists": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "damage_mix": [
+      0.25,
+      0.25,
+      0.25,
+      0.25
+    ],
+    "neutralizer_gj_per_s": 15.0,
+    "local_repair_hp_per_s": 0.0,
+    "remote_repair_hp_per_s": 0.0
+  },
+  {
+    "name": "Devoted Fisher",
+    "hull_class": "frigate",
+    "signature_radius_m": 49.0,
+    "shield_hp": 1500.0,
+    "armor_hp": 500.0,
+    "structure_hp": 525.0,
+    "max_speed_mps": 740.0,
+    "orbit_speed_mps": 320.0,
+    "orbit_range_m": 7000.0,
+    "turret_optimal_m": 18000.0,
+    "turret_falloff_m": 8000.0,
+    "turret_tracking": 600.0,
+    "turret_cycle_s": 5.0,
+    "dps": 27.588,
+    "shield_resists": [
+      0.05,
+      0.15,
+      0.25,
+      0.35
+    ],
+    "armor_resists": [
+      0.05,
+      0.2,
+      0.3,
+      0.4
+    ],
+    "structure_resists": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "damage_mix": [
+      0.5454545454545454,
+      0.4545454545454545,
+      0.0,
+      0.0
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 12.5,
+    "remote_repair_hp_per_s": 0.0
+  },
+  {
+    "name": "Devoted Herald",
+    "hull_class": "frigate",
+    "signature_radius_m": 49.0,
+    "shield_hp": 1500.0,
+    "armor_hp": 500.0,
+    "structure_hp": 525.0,
+    "max_speed_mps": 740.0,
+    "orbit_speed_mps": 400.0,
+    "orbit_range_m": 7000.0,
+    "turret_optimal_m": 18000.0,
+    "turret_falloff_m": 8000.0,
+    "turret_tracking": 600.0,
+    "turret_cycle_s": 5.0,
+    "dps": 27.588,
+    "shield_resists": [
+      0.05,
+      0.15,
+      0.25,
+      0.35
+    ],
+    "armor_resists": [
+      0.05,
+      0.2,
+      0.3,
+      0.4
+    ],
+    "structure_resists": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "damage_mix": [
+      0.5454545454545454,
+      0.4545454545454545,
+      0.0,
+      0.0
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 12.5,
+    "remote_repair_hp_per_s": 0.0
+  },
+  {
+    "name": "Devoted Hunter",
+    "hull_class": "frigate",
+    "signature_radius_m": 49.0,
+    "shield_hp": 2500.0,
+    "armor_hp": 700.0,
+    "structure_hp": 675.0,
+    "max_speed_mps": 740.0,
+    "orbit_speed_mps": 400.0,
+    "orbit_range_m": 7000.0,
+    "turret_optimal_m": 18000.0,
+    "turret_falloff_m": 8000.0,
+    "turret_tracking": 600.0,
+    "turret_cycle_s": 4.0,
+    "dps": 55.0,
+    "shield_resists": [
+      0.05,
+      0.19,
+      0.29,
+      0.4
+    ],
+    "armor_resists": [
+      0.05,
+      0.19,
+      0.29,
+      0.4
+    ],
+    "structure_resists": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "damage_mix": [
+      0.5454545454545454,
+      0.45454545454545453,
+      0.0,
+      0.0
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 12.5,
+    "remote_repair_hp_per_s": 0.0
+  },
+  {
+    "name": "Devoted Knight",
+    "hull_class": "cruiser",
+    "signature_radius_m": 660.0,
+    "shield_hp": 6500.0,
+    "armor_hp": 1500.0,
+    "structure_hp": 2000.0,
+    "max_speed_mps": 580.0,
+    "orbit_speed_mps": 270.0,
+    "orbit_range_m": 32000.0,
+    "turret_optimal_m": 20000.0,
+    "turret_falloff_m": 15000.0,
+    "turret_tracking": 21.0,
+    "turret_cycle_s": 3.0,
+    "dps": 173.33333333333334,
+    "shield_resists": [
+      0.25,
+      0.62,
+      0.56,
+      0.4
+    ],
+    "armor_resists": [
+      0.5,
+      0.2,
+      0.25,
+      0.35
+    ],
+    "structure_resists": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "damage_mix": [
+      0.6,
+      0.4,
+      0.0,
+      0.0
+    ],
+    "neutralizer_gj_per_s": 16.0,
+    "local_repair_hp_per_s": 26.0,
+    "remote_repair_hp_per_s": 0.0
+  },
+  {
+    "name": "Devoted Lookout",
+    "hull_class": "frigate",
+    "signature_radius_m": 49.0,
+    "shield_hp": 1500.0,
+    "armor_hp": 500.0,
+    "structure_hp": 525.0,
+    "max_speed_mps": 740.0,
+    "orbit_speed_mps": 400.0,
+    "orbit_range_m": 7000.0,
+    "turret_optimal_m": 18000.0,
+    "turret_falloff_m": 8000.0,
+    "turret_tracking": 600.0,
+    "turret_cycle_s": 5.0,
+    "dps": 27.588,
+    "shield_resists": [
+      0.05,
+      0.15,
+      0.25,
+      0.35
+    ],
+    "armor_resists": [
+      0.05,
+      0.2,
+      0.3,
+      0.4
+    ],
+    "structure_resists": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "damage_mix": [
+      0.5454545454545454,
+      0.4545454545454545,
+      0.0,
+      0.0
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 12.5,
+    "remote_repair_hp_per_s": 0.0
+  },
+  {
+    "name": "Devoted Priest",
+    "hull_class": "frigate",
+    "signature_radius_m": 49.0,
+    "shield_hp": 1500.0,
+    "armor_hp": 500.0,
+    "structure_hp": 525.0,
+    "max_speed_mps": 740.0,
+    "orbit_speed_mps": 400.0,
+    "orbit_range_m": 7000.0,
+    "turret_optimal_m": 18000.0,
+    "turret_falloff_m": 8000.0,
+    "turret_tracking": 600.0,
+    "turret_cycle_s": 5.0,
+    "dps": 27.588,
+    "shield_resists": [
+      0.05,
+      0.15,
+      0.25,
+      0.35
+    ],
+    "armor_resists": [
+      0.05,
+      0.2,
+      0.3,
+      0.4
+    ],
+    "structure_resists": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "damage_mix": [
+      0.5454545454545454,
+      0.4545454545454545,
+      0.0,
+      0.0
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 12.5,
+    "remote_repair_hp_per_s": 16.666666666666668
+  },
+  {
+    "name": "Devoted Smith",
+    "hull_class": "frigate",
+    "signature_radius_m": 49.0,
+    "shield_hp": 1500.0,
+    "armor_hp": 500.0,
+    "structure_hp": 525.0,
+    "max_speed_mps": 740.0,
+    "orbit_speed_mps": 400.0,
+    "orbit_range_m": 7000.0,
+    "turret_optimal_m": 18000.0,
+    "turret_falloff_m": 8000.0,
+    "turret_tracking": 600.0,
+    "turret_cycle_s": 5.0,
+    "dps": 27.588,
+    "shield_resists": [
+      0.05,
+      0.15,
+      0.25,
+      0.35
+    ],
+    "armor_resists": [
+      0.05,
+      0.2,
+      0.3,
+      0.4
+    ],
+    "structure_resists": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "damage_mix": [
+      0.5454545454545454,
+      0.4545454545454545,
+      0.0,
+      0.0
+    ],
+    "neutralizer_gj_per_s": 12.0,
+    "local_repair_hp_per_s": 12.5,
+    "remote_repair_hp_per_s": 0.0
+  },
+  {
+    "name": "Devoted Torchbearer",
+    "hull_class": "frigate",
+    "signature_radius_m": 49.0,
+    "shield_hp": 1500.0,
+    "armor_hp": 500.0,
+    "structure_hp": 525.0,
+    "max_speed_mps": 740.0,
+    "orbit_speed_mps": 400.0,
+    "orbit_range_m": 7000.0,
+    "turret_optimal_m": 18000.0,
+    "turret_falloff_m": 8000.0,
+    "turret_tracking": 600.0,
+    "turret_cycle_s": 5.0,
+    "dps": 27.588,
+    "shield_resists": [
+      0.05,
+      0.15,
+      0.25,
+      0.35
+    ],
+    "armor_resists": [
+      0.05,
+      0.2,
+      0.3,
+      0.4
+    ],
+    "structure_resists": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "damage_mix": [
+      0.5454545454545454,
+      0.4545454545454545,
+      0.0,
+      0.0
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 12.5,
+    "remote_repair_hp_per_s": 0.0
+  },
+  {
+    "name": "Devoted Trapper",
+    "hull_class": "frigate",
+    "signature_radius_m": 49.0,
+    "shield_hp": 1500.0,
+    "armor_hp": 500.0,
+    "structure_hp": 525.0,
+    "max_speed_mps": 740.0,
+    "orbit_speed_mps": 400.0,
+    "orbit_range_m": 7000.0,
+    "turret_optimal_m": 18000.0,
+    "turret_falloff_m": 8000.0,
+    "turret_tracking": 600.0,
+    "turret_cycle_s": 5.0,
+    "dps": 27.588,
+    "shield_resists": [
+      0.05,
+      0.15,
+      0.25,
+      0.35
+    ],
+    "armor_resists": [
+      0.05,
+      0.2,
+      0.3,
+      0.4
+    ],
+    "structure_resists": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "damage_mix": [
+      0.5454545454545454,
+      0.4545454545454545,
+      0.0,
+      0.0
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 12.5,
+    "remote_repair_hp_per_s": 0.0
+  },
+  {
+    "name": "Elite Lucifer Cynabal",
+    "hull_class": "cruiser",
+    "signature_radius_m": 146.0,
+    "shield_hp": 4368.0,
+    "armor_hp": 2190.0,
+    "structure_hp": 2190.0,
+    "max_speed_mps": 2658.0,
+    "orbit_speed_mps": 410.0,
+    "orbit_range_m": 8000.0,
+    "turret_optimal_m": 10000.0,
+    "turret_falloff_m": 62000.0,
+    "turret_tracking": 60.0,
+    "turret_cycle_s": 5.0,
+    "dps": 110.0,
+    "shield_resists": [
+      0.7,
+      0.68,
+      0.63,
+      0.6
+    ],
+    "armor_resists": [
+      0.65,
+      0.4,
+      0.3,
+      0.15
+    ],
+    "structure_resists": [
+      0.54,
+      0.54,
+      0.54,
+      0.54
+    ],
+    "damage_mix": [
+      0.7272727272727273,
+      0.0,
+      0.0,
+      0.2727272727272727
+    ],
+    "neutralizer_gj_per_s": 10.0,
+    "local_repair_hp_per_s": 18.77777777777778,
+    "remote_repair_hp_per_s": 0.0
+  },
+  {
+    "name": "Lucifer Cynabal",
+    "hull_class": "cruiser",
+    "signature_radius_m": 146.0,
+    "shield_hp": 2912.0,
+    "armor_hp": 1460.0,
+    "structure_hp": 1460.0,
+    "max_speed_mps": 2070.0,
+    "orbit_speed_mps": 328.0,
+    "orbit_range_m": 8000.0,
+    "turret_optimal_m": 9000.0,
+    "turret_falloff_m": 52000.0,
+    "turret_tracking": 40.0,
+    "turret_cycle_s": 7.0,
+    "dps": 70.71428571428571,
+    "shield_resists": [
+      0.6,
+      0.58,
+      0.53,
+      0.5
+    ],
+    "armor_resists": [
+      0.6,
+      0.35,
+      0.25,
+      0.1
+    ],
+    "structure_resists": [
+      0.33,
+      0.33,
+      0.33,
+      0.33
+    ],
+    "damage_mix": [
+      0.7272727272727273,
+      0.0,
+      0.0,
+      0.2727272727272727
+    ],
+    "neutralizer_gj_per_s": 7.0,
+    "local_repair_hp_per_s": 15.0,
+    "remote_repair_hp_per_s": 0.0
+  },
+  {
+    "name": "Lucifer Ixion",
+    "hull_class": "cruiser",
+    "signature_radius_m": 125.0,
+    "shield_hp": 2480.0,
+    "armor_hp": 1120.0,
+    "structure_hp": 1120.0,
+    "max_speed_mps": 1489.0,
+    "orbit_speed_mps": 200.0,
+    "orbit_range_m": 18000.0,
+    "turret_optimal_m": 70000.0,
+    "turret_falloff_m": 28000.0,
+    "turret_tracking": 25.0,
+    "turret_cycle_s": 20.0,
+    "dps": 47.2,
+    "shield_resists": [
+      0.6,
+      0.58,
+      0.53,
+      0.5
+    ],
+    "armor_resists": [
+      0.6,
+      0.35,
+      0.25,
+      0.1
+    ],
+    "structure_resists": [
+      0.33,
+      0.33,
+      0.33,
+      0.33
+    ],
+    "damage_mix": [
+      0.0,
+      0.0423728813559322,
+      0.01059322033898305,
+      0.9470338983050848
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 11.11111111111111,
+    "remote_repair_hp_per_s": 0.0
+  },
+  {
+    "name": "Elite Lucifer Dramiel",
+    "hull_class": "frigate",
+    "signature_radius_m": 70.0,
+    "shield_hp": 1100.0,
+    "armor_hp": 1100.0,
+    "structure_hp": 975.0,
+    "max_speed_mps": 3709.0,
+    "orbit_speed_mps": 620.0,
+    "orbit_range_m": 6000.0,
+    "turret_optimal_m": 6000.0,
+    "turret_falloff_m": 28000.0,
+    "turret_tracking": 1200.0,
+    "turret_cycle_s": 6.0,
+    "dps": 31.53333333333333,
+    "shield_resists": [
+      0.6,
+      0.58,
+      0.53,
+      0.5
+    ],
+    "armor_resists": [
+      0.65,
+      0.4,
+      0.3,
+      0.15
+    ],
+    "structure_resists": [
+      0.54,
+      0.54,
+      0.54,
+      0.54
+    ],
+    "damage_mix": [
+      0.4186046511627907,
+      0.0,
+      0.17441860465116277,
+      0.4069767441860465
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 9.0,
+    "remote_repair_hp_per_s": 0.0
+  },
+  {
+    "name": "Lucifer Dramiel",
+    "hull_class": "frigate",
+    "signature_radius_m": 70.0,
+    "shield_hp": 737.0,
+    "armor_hp": 737.0,
+    "structure_hp": 650.0,
+    "max_speed_mps": 3219.0,
+    "orbit_speed_mps": 575.0,
+    "orbit_range_m": 6000.0,
+    "turret_optimal_m": 6000.0,
+    "turret_falloff_m": 22000.0,
+    "turret_tracking": 1000.0,
+    "turret_cycle_s": 6.0,
+    "dps": 21.6,
+    "shield_resists": [
+      0.55,
+      0.53,
+      0.48,
+      0.45
+    ],
+    "armor_resists": [
+      0.6,
+      0.35,
+      0.25,
+      0.1
+    ],
+    "structure_resists": [
+      0.33,
+      0.33,
+      0.33,
+      0.33
+    ],
+    "damage_mix": [
+      0.3055555555555555,
+      0.0,
+      0.20833333333333331,
+      0.4861111111111111
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 7.0,
+    "remote_repair_hp_per_s": 0.0
+  },
+  {
+    "name": "Lucifer Burst",
+    "hull_class": "frigate",
+    "signature_radius_m": 100.0,
+    "shield_hp": 700.0,
+    "armor_hp": 700.0,
+    "structure_hp": 500.0,
+    "max_speed_mps": 2430.0,
+    "orbit_speed_mps": 270.0,
+    "orbit_range_m": 9000.0,
+    "turret_optimal_m": 0.0,
+    "turret_falloff_m": 0.0,
+    "turret_tracking": 0.0,
+    "turret_cycle_s": 0.0,
+    "dps": 0.0,
+    "shield_resists": [
+      0.5,
+      0.48,
+      0.43,
+      0.4
+    ],
+    "armor_resists": [
+      0.6,
+      0.35,
+      0.25,
+      0.1
+    ],
+    "structure_resists": [
+      0.33,
+      0.33,
+      0.33,
+      0.33
+    ],
+    "damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 4.0,
+    "remote_repair_hp_per_s": 12.5
+  },
+  {
+    "name": "Lucifer Echo",
+    "hull_class": "frigate",
+    "signature_radius_m": 80.0,
+    "shield_hp": 650.0,
+    "armor_hp": 650.0,
+    "structure_hp": 650.0,
+    "max_speed_mps": 4125.0,
+    "orbit_speed_mps": 550.0,
+    "orbit_range_m": 4000.0,
+    "turret_optimal_m": 4000.0,
+    "turret_falloff_m": 20000.0,
+    "turret_tracking": 700.0,
+    "turret_cycle_s": 6.0,
+    "dps": 11.666666666666666,
+    "shield_resists": [
+      0.55,
+      0.53,
+      0.48,
+      0.45
+    ],
+    "armor_resists": [
+      0.6,
+      0.35,
+      0.25,
+      0.1
+    ],
+    "structure_resists": [
+      0.33,
+      0.33,
+      0.33,
+      0.33
+    ],
+    "damage_mix": [
+      0.0,
+      0.0,
+      0.3,
+      0.7
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 7.0,
+    "remote_repair_hp_per_s": 0.0
+  },
+  {
+    "name": "Lucifer Fury",
+    "hull_class": "frigate",
+    "signature_radius_m": 80.0,
+    "shield_hp": 700.0,
+    "armor_hp": 700.0,
+    "structure_hp": 600.0,
+    "max_speed_mps": 3000.0,
+    "orbit_speed_mps": 500.0,
+    "orbit_range_m": 8000.0,
+    "turret_optimal_m": 8000.0,
+    "turret_falloff_m": 20000.0,
+    "turret_tracking": 700.0,
+    "turret_cycle_s": 6.0,
+    "dps": 11.666666666666666,
+    "shield_resists": [
+      0.55,
+      0.53,
+      0.48,
+      0.45
+    ],
+    "armor_resists": [
+      0.6,
+      0.35,
+      0.25,
+      0.1
+    ],
+    "structure_resists": [
+      0.33,
+      0.33,
+      0.33,
+      0.33
+    ],
+    "damage_mix": [
+      0.0,
+      0.0,
+      0.3,
+      0.7
+    ],
+    "neutralizer_gj_per_s": 5.0,
+    "local_repair_hp_per_s": 7.0,
+    "remote_repair_hp_per_s": 0.0
+  },
+  {
+    "name": "Lucifer Medusa",
+    "hull_class": "frigate",
+    "signature_radius_m": 90.0,
+    "shield_hp": 700.0,
+    "armor_hp": 600.0,
+    "structure_hp": 600.0,
+    "max_speed_mps": 2800.0,
+    "orbit_speed_mps": 350.0,
+    "orbit_range_m": 8000.0,
+    "turret_optimal_m": 6000.0,
+    "turret_falloff_m": 20000.0,
+    "turret_tracking": 700.0,
+    "turret_cycle_s": 6.0,
+    "dps": 20.0,
+    "shield_resists": [
+      0.55,
+      0.53,
+      0.48,
+      0.45
+    ],
+    "armor_resists": [
+      0.6,
+      0.35,
+      0.25,
+      0.1
+    ],
+    "structure_resists": [
+      0.33,
+      0.33,
+      0.33,
+      0.33
+    ],
+    "damage_mix": [
+      0.0,
+      0.0,
+      0.3,
+      0.7
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 7.0,
+    "remote_repair_hp_per_s": 0.0
+  },
+  {
+    "name": "Lucifer Swordspine",
+    "hull_class": "frigate",
+    "signature_radius_m": 90.0,
+    "shield_hp": 700.0,
+    "armor_hp": 600.0,
+    "structure_hp": 600.0,
+    "max_speed_mps": 3188.0,
+    "orbit_speed_mps": 425.0,
+    "orbit_range_m": 12000.0,
+    "turret_optimal_m": 12000.0,
+    "turret_falloff_m": 20000.0,
+    "turret_tracking": 500.0,
+    "turret_cycle_s": 6.0,
+    "dps": 11.666666666666666,
+    "shield_resists": [
+      0.55,
+      0.53,
+      0.48,
+      0.45
+    ],
+    "armor_resists": [
+      0.6,
+      0.35,
+      0.25,
+      0.1
+    ],
+    "structure_resists": [
+      0.33,
+      0.33,
+      0.33,
+      0.33
+    ],
+    "damage_mix": [
+      0.0,
+      0.0,
+      0.3,
+      0.7
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 7.0,
+    "remote_repair_hp_per_s": 0.0
+  },
+  {
+    "name": "Arrester Marshal Disparu Troop",
+    "hull_class": "battleship",
+    "signature_radius_m": 370.0,
+    "shield_hp": 7500.0,
+    "armor_hp": 7500.0,
+    "structure_hp": 5200.0,
+    "max_speed_mps": 340.0,
+    "orbit_speed_mps": 100.0,
+    "orbit_range_m": 15000.0,
+    "turret_optimal_m": 0.0,
+    "turret_falloff_m": 0.0,
+    "turret_tracking": 0.0,
+    "turret_cycle_s": 0.0,
+    "dps": 427.5,
+    "shield_resists": [
+      0.3,
+      0.3,
+      0.3,
+      0.3
+    ],
+    "armor_resists": [
+      0.3,
+      0.3,
+      0.3,
+      0.3
+    ],
+    "structure_resists": [
+      0.3,
+      0.3,
+      0.3,
+      0.3
+    ],
+    "damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 0.0,
+    "remote_repair_hp_per_s": 0.0
+  },
+  {
+    "name": "Attacker Marshal Disparu Troop",
+    "hull_class": "battleship",
+    "signature_radius_m": 370.0,
+    "shield_hp": 7500.0,
+    "armor_hp": 7500.0,
+    "structure_hp": 5200.0,
+    "max_speed_mps": 340.0,
+    "orbit_speed_mps": 100.0,
+    "orbit_range_m": 15000.0,
+    "turret_optimal_m": 0.0,
+    "turret_falloff_m": 0.0,
+    "turret_tracking": 0.0,
+    "turret_cycle_s": 0.0,
+    "dps": 427.5,
+    "shield_resists": [
+      0.3,
+      0.3,
+      0.3,
+      0.3
+    ],
+    "armor_resists": [
+      0.3,
+      0.3,
+      0.3,
+      0.3
+    ],
+    "structure_resists": [
+      0.3,
+      0.3,
+      0.3,
+      0.3
+    ],
+    "damage_mix": [
+      0.0,
+      1.0,
+      0.0,
+      0.0
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 0.0,
+    "remote_repair_hp_per_s": 0.0
+  },
+  {
+    "name": "Drainer Marshal Disparu Troop",
+    "hull_class": "battleship",
+    "signature_radius_m": 370.0,
+    "shield_hp": 7500.0,
+    "armor_hp": 7500.0,
+    "structure_hp": 5200.0,
+    "max_speed_mps": 340.0,
+    "orbit_speed_mps": 100.0,
+    "orbit_range_m": 15000.0,
+    "turret_optimal_m": 0.0,
+    "turret_falloff_m": 0.0,
+    "turret_tracking": 0.0,
+    "turret_cycle_s": 0.0,
+    "dps": 427.5,
+    "shield_resists": [
+      0.3,
+      0.3,
+      0.3,
+      0.3
+    ],
+    "armor_resists": [
+      0.3,
+      0.3,
+      0.3,
+      0.3
+    ],
+    "structure_resists": [
+      0.3,
+      0.3,
+      0.3,
+      0.3
+    ],
+    "damage_mix": [
+      0.0,
+      1.0,
+      0.0,
+      0.0
+    ],
+    "neutralizer_gj_per_s": 16.666666666666668,
+    "local_repair_hp_per_s": 0.0,
+    "remote_repair_hp_per_s": 0.0
+  },
+  {
+    "name": "Arrester Pacifier Disparu Troop",
+    "hull_class": "frigate",
+    "signature_radius_m": 150.0,
+    "shield_hp": 1450.0,
+    "armor_hp": 1450.0,
+    "structure_hp": 290.0,
+    "max_speed_mps": 2400.0,
+    "orbit_speed_mps": 1000.0,
+    "orbit_range_m": 15000.0,
+    "turret_optimal_m": 0.0,
+    "turret_falloff_m": 0.0,
+    "turret_tracking": 0.0,
+    "turret_cycle_s": 0.0,
+    "dps": 39.6,
+    "shield_resists": [
+      0.3,
+      0.3,
+      0.3,
+      0.3
+    ],
+    "armor_resists": [
+      0.3,
+      0.3,
+      0.3,
+      0.3
+    ],
+    "structure_resists": [
+      0.3,
+      0.3,
+      0.3,
+      0.3
+    ],
+    "damage_mix": [
+      0.0,
+      1.0,
+      0.0,
+      0.0
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 24.0,
+    "remote_repair_hp_per_s": 0.0
+  },
+  {
+    "name": "Attacker Pacifier Disparu Troop",
+    "hull_class": "frigate",
+    "signature_radius_m": 150.0,
+    "shield_hp": 1450.0,
+    "armor_hp": 1450.0,
+    "structure_hp": 290.0,
+    "max_speed_mps": 2400.0,
+    "orbit_speed_mps": 1000.0,
+    "orbit_range_m": 10000.0,
+    "turret_optimal_m": 0.0,
+    "turret_falloff_m": 0.0,
+    "turret_tracking": 0.0,
+    "turret_cycle_s": 0.0,
+    "dps": 39.6,
+    "shield_resists": [
+      0.3,
+      0.3,
+      0.3,
+      0.3
+    ],
+    "armor_resists": [
+      0.3,
+      0.3,
+      0.3,
+      0.3
+    ],
+    "structure_resists": [
+      0.3,
+      0.3,
+      0.3,
+      0.3
+    ],
+    "damage_mix": [
+      0.0,
+      1.0,
+      0.0,
+      0.0
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 26.0,
+    "remote_repair_hp_per_s": 0.0
+  },
+  {
+    "name": "Drainer Pacifier Disparu Troop",
+    "hull_class": "frigate",
+    "signature_radius_m": 150.0,
+    "shield_hp": 1450.0,
+    "armor_hp": 1450.0,
+    "structure_hp": 290.0,
+    "max_speed_mps": 2400.0,
+    "orbit_speed_mps": 1000.0,
+    "orbit_range_m": 10000.0,
+    "turret_optimal_m": 0.0,
+    "turret_falloff_m": 0.0,
+    "turret_tracking": 0.0,
+    "turret_cycle_s": 0.0,
+    "dps": 39.6,
+    "shield_resists": [
+      0.3,
+      0.3,
+      0.3,
+      0.3
+    ],
+    "armor_resists": [
+      0.3,
+      0.3,
+      0.3,
+      0.3
+    ],
+    "structure_resists": [
+      0.3,
+      0.3,
+      0.3,
+      0.3
+    ],
+    "damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ],
+    "neutralizer_gj_per_s": 12.5,
+    "local_repair_hp_per_s": 24.0,
+    "remote_repair_hp_per_s": 0.0
+  },
+  {
+    "name": "Marker Pacifier Disparu Troop",
+    "hull_class": "frigate",
+    "signature_radius_m": 150.0,
+    "shield_hp": 1450.0,
+    "armor_hp": 1450.0,
+    "structure_hp": 290.0,
+    "max_speed_mps": 2400.0,
+    "orbit_speed_mps": 1000.0,
+    "orbit_range_m": 10000.0,
+    "turret_optimal_m": 0.0,
+    "turret_falloff_m": 0.0,
+    "turret_tracking": 0.0,
+    "turret_cycle_s": 0.0,
+    "dps": 39.6,
+    "shield_resists": [
+      0.3,
+      0.3,
+      0.3,
+      0.3
+    ],
+    "armor_resists": [
+      0.3,
+      0.3,
+      0.3,
+      0.3
+    ],
+    "structure_resists": [
+      0.3,
+      0.3,
+      0.3,
+      0.3
+    ],
+    "damage_mix": [
+      0.0,
+      1.0,
+      0.0,
+      0.0
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 24.0,
+    "remote_repair_hp_per_s": 0.0
+  },
+  {
+    "name": "Assault Enforcer Disparu Troop",
+    "hull_class": "cruiser",
+    "signature_radius_m": 660.0,
+    "shield_hp": 5200.0,
+    "armor_hp": 5200.0,
+    "structure_hp": 1050.0,
+    "max_speed_mps": 1300.0,
+    "orbit_speed_mps": 1000.0,
+    "orbit_range_m": 9000.0,
+    "turret_optimal_m": 0.0,
+    "turret_falloff_m": 0.0,
+    "turret_tracking": 0.0,
+    "turret_cycle_s": 0.0,
+    "dps": 130.76923076923077,
+    "shield_resists": [
+      0.3,
+      0.3,
+      0.3,
+      0.3
+    ],
+    "armor_resists": [
+      0.3,
+      0.3,
+      0.3,
+      0.3
+    ],
+    "structure_resists": [
+      0.3,
+      0.3,
+      0.3,
+      0.3
+    ],
+    "damage_mix": [
+      0.0,
+      1.0,
+      0.0,
+      0.0
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 26.666666666666668,
+    "remote_repair_hp_per_s": 0.0
+  },
+  {
+    "name": "Drainer Enforcer Disparu Troop",
+    "hull_class": "cruiser",
+    "signature_radius_m": 660.0,
+    "shield_hp": 5200.0,
+    "armor_hp": 5200.0,
+    "structure_hp": 1050.0,
+    "max_speed_mps": 1300.0,
+    "orbit_speed_mps": 900.0,
+    "orbit_range_m": 9000.0,
+    "turret_optimal_m": 0.0,
+    "turret_falloff_m": 0.0,
+    "turret_tracking": 0.0,
+    "turret_cycle_s": 0.0,
+    "dps": 123.07692307692308,
+    "shield_resists": [
+      0.3,
+      0.3,
+      0.3,
+      0.3
+    ],
+    "armor_resists": [
+      0.3,
+      0.3,
+      0.3,
+      0.3
+    ],
+    "structure_resists": [
+      0.3,
+      0.3,
+      0.3,
+      0.3
+    ],
+    "damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ],
+    "neutralizer_gj_per_s": 18.0,
+    "local_repair_hp_per_s": 25.0,
+    "remote_repair_hp_per_s": 0.0
+  },
+  {
+    "name": "Marker Enforcer Disparu Troop",
+    "hull_class": "cruiser",
+    "signature_radius_m": 660.0,
+    "shield_hp": 5200.0,
+    "armor_hp": 5200.0,
+    "structure_hp": 1050.0,
+    "max_speed_mps": 1300.0,
+    "orbit_speed_mps": 1000.0,
+    "orbit_range_m": 9000.0,
+    "turret_optimal_m": 0.0,
+    "turret_falloff_m": 0.0,
+    "turret_tracking": 0.0,
+    "turret_cycle_s": 0.0,
+    "dps": 130.76923076923077,
+    "shield_resists": [
+      0.3,
+      0.3,
+      0.3,
+      0.3
+    ],
+    "armor_resists": [
+      0.3,
+      0.3,
+      0.3,
+      0.3
+    ],
+    "structure_resists": [
+      0.3,
+      0.3,
+      0.3,
+      0.3
+    ],
+    "damage_mix": [
+      0.0,
+      1.0,
+      0.0,
+      0.0
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 26.666666666666668,
+    "remote_repair_hp_per_s": 0.0
+  },
+  {
+    "name": "Thunderchild Disparu Troop",
+    "hull_class": "battleship",
+    "signature_radius_m": 370.0,
+    "shield_hp": 11500.0,
+    "armor_hp": 5100.0,
+    "structure_hp": 7400.0,
+    "max_speed_mps": 400.0,
+    "orbit_speed_mps": 0.0,
+    "orbit_range_m": 0.0,
+    "turret_optimal_m": 64000.0,
+    "turret_falloff_m": 0.0,
+    "turret_tracking": 0.0,
+    "turret_cycle_s": 15.0,
+    "dps": 164.66666666666666,
+    "shield_resists": [
+      0.44,
+      0.44,
+      0.65,
+      0.65
+    ],
+    "armor_resists": [
+      0.5,
+      0.1,
+      0.25,
+      0.45
+    ],
+    "structure_resists": [
+      0.33,
+      0.33,
+      0.33,
+      0.33
+    ],
+    "damage_mix": [
+      0.23481781376518218,
+      0.0,
+      0.7651821862348178,
+      0.0
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 43.333333333333336,
+    "remote_repair_hp_per_s": 0.0
+  },
+  {
+    "name": "Stormbringer Disparu Troop",
+    "hull_class": "cruiser",
+    "signature_radius_m": 660.0,
+    "shield_hp": 7500.0,
+    "armor_hp": 800.0,
+    "structure_hp": 1300.0,
+    "max_speed_mps": 1000.0,
+    "orbit_speed_mps": 300.0,
+    "orbit_range_m": 0.0,
+    "turret_optimal_m": 38400.0,
+    "turret_falloff_m": 0.0,
+    "turret_tracking": 0.0,
+    "turret_cycle_s": 9.0,
+    "dps": 74.0,
+    "shield_resists": [
+      0.44,
+      0.44,
+      0.65,
+      0.65
+    ],
+    "armor_resists": [
+      0.5,
+      0.1,
+      0.25,
+      0.45
+    ],
+    "structure_resists": [
+      0.33,
+      0.33,
+      0.33,
+      0.33
+    ],
+    "damage_mix": [
+      0.12612612612612611,
+      0.0,
+      0.8738738738738737,
+      0.0
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 36.666666666666664,
+    "remote_repair_hp_per_s": 0.0
+  },
+  {
+    "name": "Skybreaker Disparu Troop",
+    "hull_class": "frigate",
+    "signature_radius_m": 192.0,
+    "shield_hp": 1600.0,
+    "armor_hp": 400.0,
+    "structure_hp": 450.0,
+    "max_speed_mps": 2000.0,
+    "orbit_speed_mps": 500.0,
+    "orbit_range_m": 0.0,
+    "turret_optimal_m": 19200.0,
+    "turret_falloff_m": 0.0,
+    "turret_tracking": 0.0,
+    "turret_cycle_s": 6.0,
+    "dps": 74.0,
+    "shield_resists": [
+      0.44,
+      0.44,
+      0.65,
+      0.65
+    ],
+    "armor_resists": [
+      0.5,
+      0.1,
+      0.25,
+      0.45
+    ],
+    "structure_resists": [
+      0.33,
+      0.33,
+      0.33,
+      0.33
+    ],
+    "damage_mix": [
+      0.8738738738738737,
+      0.0,
+      0.12612612612612611,
+      0.0
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 32.0,
+    "remote_repair_hp_per_s": 0.0
+  },
+  {
+    "name": "Ephialtes Confuser",
+    "hull_class": "cruiser",
+    "signature_radius_m": 150.0,
+    "shield_hp": 2500.0,
+    "armor_hp": 1500.0,
+    "structure_hp": 1000.0,
+    "max_speed_mps": 1400.0,
+    "orbit_speed_mps": 1000.0,
+    "orbit_range_m": 10000.0,
+    "turret_optimal_m": 12000.0,
+    "turret_falloff_m": 10000.0,
+    "turret_tracking": 100.0,
+    "turret_cycle_s": 4.0,
+    "dps": 24.98,
+    "shield_resists": [
+      0.1,
+      0.1,
+      0.1,
+      0.1
+    ],
+    "armor_resists": [
+      0.1,
+      0.1,
+      0.1,
+      0.1
+    ],
+    "structure_resists": [
+      0.1,
+      0.1,
+      0.1,
+      0.1
+    ],
+    "damage_mix": [
+      0.400320256204964,
+      0.5,
+      0.0,
+      0.09967974379503602
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 0.0,
+    "remote_repair_hp_per_s": 0.0
+  },
+  {
+    "name": "Ephialtes Dissipator",
+    "hull_class": "cruiser",
+    "signature_radius_m": 150.0,
+    "shield_hp": 2500.0,
+    "armor_hp": 1500.0,
+    "structure_hp": 1000.0,
+    "max_speed_mps": 1400.0,
+    "orbit_speed_mps": 1000.0,
+    "orbit_range_m": 10000.0,
+    "turret_optimal_m": 12000.0,
+    "turret_falloff_m": 10000.0,
+    "turret_tracking": 100.0,
+    "turret_cycle_s": 4.0,
+    "dps": 24.98,
+    "shield_resists": [
+      0.1,
+      0.1,
+      0.1,
+      0.1
+    ],
+    "armor_resists": [
+      0.1,
+      0.1,
+      0.1,
+      0.1
+    ],
+    "structure_resists": [
+      0.1,
+      0.1,
+      0.1,
+      0.1
+    ],
+    "damage_mix": [
+      0.400320256204964,
+      0.5,
+      0.0,
+      0.09967974379503602
+    ],
+    "neutralizer_gj_per_s": 10.0,
+    "local_repair_hp_per_s": 0.0,
+    "remote_repair_hp_per_s": 0.0
+  },
+  {
+    "name": "Ephialtes Entangler",
+    "hull_class": "cruiser",
+    "signature_radius_m": 150.0,
+    "shield_hp": 2500.0,
+    "armor_hp": 1500.0,
+    "structure_hp": 1000.0,
+    "max_speed_mps": 1400.0,
+    "orbit_speed_mps": 1000.0,
+    "orbit_range_m": 10000.0,
+    "turret_optimal_m": 12000.0,
+    "turret_falloff_m": 10000.0,
+    "turret_tracking": 100.0,
+    "turret_cycle_s": 4.0,
+    "dps": 24.98,
+    "shield_resists": [
+      0.1,
+      0.1,
+      0.1,
+      0.1
+    ],
+    "armor_resists": [
+      0.1,
+      0.1,
+      0.1,
+      0.1
+    ],
+    "structure_resists": [
+      0.1,
+      0.1,
+      0.1,
+      0.1
+    ],
+    "damage_mix": [
+      0.400320256204964,
+      0.5,
+      0.0,
+      0.09967974379503602
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 0.0,
+    "remote_repair_hp_per_s": 0.0
+  },
+  {
+    "name": "Ephialtes Illuminator",
+    "hull_class": "cruiser",
+    "signature_radius_m": 150.0,
+    "shield_hp": 2500.0,
+    "armor_hp": 1500.0,
+    "structure_hp": 1000.0,
+    "max_speed_mps": 1400.0,
+    "orbit_speed_mps": 1000.0,
+    "orbit_range_m": 10000.0,
+    "turret_optimal_m": 12000.0,
+    "turret_falloff_m": 10000.0,
+    "turret_tracking": 100.0,
+    "turret_cycle_s": 4.0,
+    "dps": 24.98,
+    "shield_resists": [
+      0.1,
+      0.1,
+      0.1,
+      0.1
+    ],
+    "armor_resists": [
+      0.1,
+      0.1,
+      0.1,
+      0.1
+    ],
+    "structure_resists": [
+      0.1,
+      0.1,
+      0.1,
+      0.1
+    ],
+    "damage_mix": [
+      0.400320256204964,
+      0.5,
+      0.0,
+      0.09967974379503602
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 0.0,
+    "remote_repair_hp_per_s": 0.0
+  },
+  {
+    "name": "Ephialtes Lancer",
+    "hull_class": "cruiser",
+    "signature_radius_m": 150.0,
+    "shield_hp": 2500.0,
+    "armor_hp": 1500.0,
+    "structure_hp": 1000.0,
+    "max_speed_mps": 1400.0,
+    "orbit_speed_mps": 1000.0,
+    "orbit_range_m": 10000.0,
+    "turret_optimal_m": 12000.0,
+    "turret_falloff_m": 10000.0,
+    "turret_tracking": 100.0,
+    "turret_cycle_s": 4.0,
+    "dps": 36.64,
+    "shield_resists": [
+      0.1,
+      0.1,
+      0.1,
+      0.1
+    ],
+    "armor_resists": [
+      0.1,
+      0.1,
+      0.1,
+      0.1
+    ],
+    "structure_resists": [
+      0.1,
+      0.1,
+      0.1,
+      0.1
+    ],
+    "damage_mix": [
+      0.4093886462882096,
+      0.5,
+      0.0,
+      0.0906113537117904
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 0.0,
+    "remote_repair_hp_per_s": 0.0
+  },
+  {
+    "name": "Ephialtes Obfuscator",
+    "hull_class": "cruiser",
+    "signature_radius_m": 150.0,
+    "shield_hp": 2500.0,
+    "armor_hp": 1500.0,
+    "structure_hp": 1000.0,
+    "max_speed_mps": 1400.0,
+    "orbit_speed_mps": 1000.0,
+    "orbit_range_m": 10000.0,
+    "turret_optimal_m": 12000.0,
+    "turret_falloff_m": 10000.0,
+    "turret_tracking": 100.0,
+    "turret_cycle_s": 4.0,
+    "dps": 24.98,
+    "shield_resists": [
+      0.1,
+      0.1,
+      0.1,
+      0.1
+    ],
+    "armor_resists": [
+      0.1,
+      0.1,
+      0.1,
+      0.1
+    ],
+    "structure_resists": [
+      0.1,
+      0.1,
+      0.1,
+      0.1
+    ],
+    "damage_mix": [
+      0.400320256204964,
+      0.5,
+      0.0,
+      0.09967974379503602
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 0.0,
+    "remote_repair_hp_per_s": 0.0
+  },
+  {
+    "name": "Ephialtes Spearfisher",
+    "hull_class": "cruiser",
+    "signature_radius_m": 150.0,
+    "shield_hp": 2500.0,
+    "armor_hp": 1500.0,
+    "structure_hp": 1000.0,
+    "max_speed_mps": 1400.0,
+    "orbit_speed_mps": 1000.0,
+    "orbit_range_m": 7000.0,
+    "turret_optimal_m": 12000.0,
+    "turret_falloff_m": 10000.0,
+    "turret_tracking": 100.0,
+    "turret_cycle_s": 4.0,
+    "dps": 24.98,
+    "shield_resists": [
+      0.1,
+      0.1,
+      0.1,
+      0.1
+    ],
+    "armor_resists": [
+      0.1,
+      0.1,
+      0.1,
+      0.1
+    ],
+    "structure_resists": [
+      0.1,
+      0.1,
+      0.1,
+      0.1
+    ],
+    "damage_mix": [
+      0.400320256204964,
+      0.5,
+      0.0,
+      0.09967974379503602
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 0.0,
+    "remote_repair_hp_per_s": 0.0
+  },
+  {
+    "name": "Lucid Deepwatcher",
+    "hull_class": "battleship",
+    "signature_radius_m": 400.0,
+    "shield_hp": 0.0,
+    "armor_hp": 22000.0,
+    "structure_hp": 25000.0,
+    "max_speed_mps": 100.0,
+    "orbit_speed_mps": 0.0,
+    "orbit_range_m": 50000.0,
+    "turret_optimal_m": 50000.0,
+    "turret_falloff_m": 50000.0,
+    "turret_tracking": 1.0,
+    "turret_cycle_s": 5.0,
+    "dps": 348.0,
+    "shield_resists": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "armor_resists": [
+      0.7,
+      0.7,
+      0.7,
+      0.7
+    ],
+    "structure_resists": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "damage_mix": [
+      0.22988505747126436,
+      0.22988505747126436,
+      0.27011494252873564,
+      0.27011494252873564
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 7.777777777777778,
+    "remote_repair_hp_per_s": 4.444444444444445
+  },
+  {
+    "name": "Lucid Aegis",
+    "hull_class": "frigate",
+    "signature_radius_m": 70.0,
+    "shield_hp": 0.0,
+    "armor_hp": 1000.0,
+    "structure_hp": 1250.0,
+    "max_speed_mps": 1000.0,
+    "orbit_speed_mps": 800.0,
+    "orbit_range_m": 8000.0,
+    "turret_optimal_m": 10000.0,
+    "turret_falloff_m": 5000.0,
+    "turret_tracking": 500.0,
+    "turret_cycle_s": 2.0,
+    "dps": 42.25,
+    "shield_resists": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "armor_resists": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ],
+    "structure_resists": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "damage_mix": [
+      0.4260355029585799,
+      0.4260355029585799,
+      0.07396449704142012,
+      0.07396449704142012
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 6.0,
+    "remote_repair_hp_per_s": 2.142857142857143
+  },
+  {
+    "name": "Lucid Escort",
+    "hull_class": "frigate",
+    "signature_radius_m": 70.0,
+    "shield_hp": 0.0,
+    "armor_hp": 800.0,
+    "structure_hp": 900.0,
+    "max_speed_mps": 1750.0,
+    "orbit_speed_mps": 1400.0,
+    "orbit_range_m": 8000.0,
+    "turret_optimal_m": 10000.0,
+    "turret_falloff_m": 5000.0,
+    "turret_tracking": 500.0,
+    "turret_cycle_s": 2.0,
+    "dps": 28.166666666666668,
+    "shield_resists": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "armor_resists": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ],
+    "structure_resists": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "damage_mix": [
+      0.42603550295857984,
+      0.42603550295857984,
+      0.07396449704142012,
+      0.07396449704142012
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 4.0,
+    "remote_repair_hp_per_s": 2.142857142857143
+  },
+  {
+    "name": "Lucid Preserver",
+    "hull_class": "frigate",
+    "signature_radius_m": 100.0,
+    "shield_hp": 0.0,
+    "armor_hp": 1200.0,
+    "structure_hp": 1100.0,
+    "max_speed_mps": 1100.0,
+    "orbit_speed_mps": 0.0,
+    "orbit_range_m": 0.0,
+    "turret_optimal_m": 0.0,
+    "turret_falloff_m": 0.0,
+    "turret_tracking": 0.0,
+    "turret_cycle_s": 0.0,
+    "dps": 0.0,
+    "shield_resists": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "armor_resists": [
+      0.2,
+      0.2,
+      0.2,
+      0.2
+    ],
+    "structure_resists": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 6.0,
+    "remote_repair_hp_per_s": 8.0
+  },
+  {
+    "name": "Lucid Firewatcher",
+    "hull_class": "frigate",
+    "signature_radius_m": 70.0,
+    "shield_hp": 0.0,
+    "armor_hp": 1000.0,
+    "structure_hp": 1250.0,
+    "max_speed_mps": 1000.0,
+    "orbit_speed_mps": 800.0,
+    "orbit_range_m": 8000.0,
+    "turret_optimal_m": 10000.0,
+    "turret_falloff_m": 5000.0,
+    "turret_tracking": 500.0,
+    "turret_cycle_s": 2.0,
+    "dps": 33.75,
+    "shield_resists": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "armor_resists": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ],
+    "structure_resists": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "damage_mix": [
+      0.4444444444444444,
+      0.4444444444444444,
+      0.05555555555555555,
+      0.05555555555555555
+    ],
+    "neutralizer_gj_per_s": 8.0,
+    "local_repair_hp_per_s": 6.0,
+    "remote_repair_hp_per_s": 2.142857142857143
+  },
+  {
+    "name": "Lucid Warden",
+    "hull_class": "frigate",
+    "signature_radius_m": 70.0,
+    "shield_hp": 0.0,
+    "armor_hp": 800.0,
+    "structure_hp": 900.0,
+    "max_speed_mps": 1750.0,
+    "orbit_speed_mps": 1400.0,
+    "orbit_range_m": 8000.0,
+    "turret_optimal_m": 10000.0,
+    "turret_falloff_m": 5000.0,
+    "turret_tracking": 500.0,
+    "turret_cycle_s": 2.0,
+    "dps": 23.75,
+    "shield_resists": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "armor_resists": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ],
+    "structure_resists": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "damage_mix": [
+      0.42105263157894735,
+      0.42105263157894735,
+      0.07894736842105263,
+      0.07894736842105263
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 4.0,
+    "remote_repair_hp_per_s": 2.142857142857143
+  },
+  {
+    "name": "Lucid Sentinel",
+    "hull_class": "cruiser",
+    "signature_radius_m": 150.0,
+    "shield_hp": 0.0,
+    "armor_hp": 3500.0,
+    "structure_hp": 3250.0,
+    "max_speed_mps": 600.0,
+    "orbit_speed_mps": 450.0,
+    "orbit_range_m": 12000.0,
+    "turret_optimal_m": 20000.0,
+    "turret_falloff_m": 20000.0,
+    "turret_tracking": 100.0,
+    "turret_cycle_s": 5.0,
+    "dps": 50.375,
+    "shield_resists": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "armor_resists": [
+      0.6,
+      0.6,
+      0.6,
+      0.6
+    ],
+    "structure_resists": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "damage_mix": [
+      0.3970223325062035,
+      0.5,
+      0.0,
+      0.10297766749379653
+    ],
+    "neutralizer_gj_per_s": 15.0,
+    "local_repair_hp_per_s": 8.333333333333334,
+    "remote_repair_hp_per_s": 4.166666666666667
+  },
+  {
+    "name": "Lucid Upholder",
+    "hull_class": "cruiser",
+    "signature_radius_m": 150.0,
+    "shield_hp": 0.0,
+    "armor_hp": 3500.0,
+    "structure_hp": 3250.0,
+    "max_speed_mps": 800.0,
+    "orbit_speed_mps": 600.0,
+    "orbit_range_m": 12000.0,
+    "turret_optimal_m": 20000.0,
+    "turret_falloff_m": 20000.0,
+    "turret_tracking": 100.0,
+    "turret_cycle_s": 5.0,
+    "dps": 50.375,
+    "shield_resists": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "armor_resists": [
+      0.6,
+      0.6,
+      0.6,
+      0.6
+    ],
+    "structure_resists": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "damage_mix": [
+      0.3970223325062035,
+      0.5,
+      0.0,
+      0.10297766749379653
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 8.333333333333334,
+    "remote_repair_hp_per_s": 4.166666666666667
+  },
+  {
+    "name": "Lucid Watchman",
+    "hull_class": "cruiser",
+    "signature_radius_m": 150.0,
+    "shield_hp": 0.0,
+    "armor_hp": 3500.0,
+    "structure_hp": 3250.0,
+    "max_speed_mps": 700.0,
+    "orbit_speed_mps": 525.0,
+    "orbit_range_m": 12000.0,
+    "turret_optimal_m": 20000.0,
+    "turret_falloff_m": 20000.0,
+    "turret_tracking": 100.0,
+    "turret_cycle_s": 5.0,
+    "dps": 59.85714285714286,
+    "shield_resists": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "armor_resists": [
+      0.6,
+      0.6,
+      0.6,
+      0.6
+    ],
+    "structure_resists": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "damage_mix": [
+      0.4009546539379475,
+      0.5,
+      0.0,
+      0.09904534606205251
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 8.333333333333334,
+    "remote_repair_hp_per_s": 4.166666666666667
+  },
+  {
+    "name": "Twilit Abyssal Overmind",
+    "hull_class": "battleship",
+    "signature_radius_m": 465.0,
+    "shield_hp": 9000.0,
+    "armor_hp": 10000.0,
+    "structure_hp": 10625.0,
+    "max_speed_mps": 250.0,
+    "orbit_speed_mps": 0.0,
+    "orbit_range_m": 0.0,
+    "turret_optimal_m": 36000.0,
+    "turret_falloff_m": 15000.0,
+    "turret_tracking": 4.26,
+    "turret_cycle_s": 3.0,
+    "dps": 294.4,
+    "shield_resists": [
+      0.12,
+      0.3,
+      0.48,
+      0.56
+    ],
+    "armor_resists": [
+      0.68,
+      0.59,
+      0.77,
+      0.68
+    ],
+    "structure_resists": [
+      0.6,
+      0.6,
+      0.6,
+      0.6
+    ],
+    "damage_mix": [
+      0.0,
+      0.37500000000000006,
+      0.625,
+      0.0
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 0.0,
+    "remote_repair_hp_per_s": 0.0
+  },
+  {
+    "name": "Photic Abyssal Overmind",
+    "hull_class": "battleship",
+    "signature_radius_m": 465.0,
+    "shield_hp": 9000.0,
+    "armor_hp": 10000.0,
+    "structure_hp": 10625.0,
+    "max_speed_mps": 200.0,
+    "orbit_speed_mps": 0.0,
+    "orbit_range_m": 0.0,
+    "turret_optimal_m": 30000.0,
+    "turret_falloff_m": 15000.0,
+    "turret_tracking": 3.6,
+    "turret_cycle_s": 4.0,
+    "dps": 114.4,
+    "shield_resists": [
+      0.0,
+      0.2,
+      0.4,
+      0.5
+    ],
+    "armor_resists": [
+      0.62,
+      0.51,
+      0.51,
+      0.32
+    ],
+    "structure_resists": [
+      0.33,
+      0.33,
+      0.33,
+      0.33
+    ],
+    "damage_mix": [
+      0.0,
+      0.37500000000000006,
+      0.625,
+      0.0
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 0.0,
+    "remote_repair_hp_per_s": 0.0
+  },
+  {
+    "name": "Bathyic Abyssal Overmind",
+    "hull_class": "battleship",
+    "signature_radius_m": 465.0,
+    "shield_hp": 9000.0,
+    "armor_hp": 20000.0,
+    "structure_hp": 10625.0,
+    "max_speed_mps": 300.0,
+    "orbit_speed_mps": 0.0,
+    "orbit_range_m": 0.0,
+    "turret_optimal_m": 29025.0,
+    "turret_falloff_m": 28750.0,
+    "turret_tracking": 2.89,
+    "turret_cycle_s": 4.0,
+    "dps": 414.0,
+    "shield_resists": [
+      0.12,
+      0.3,
+      0.48,
+      0.56
+    ],
+    "armor_resists": [
+      0.68,
+      0.59,
+      0.59,
+      0.68
+    ],
+    "structure_resists": [
+      0.6,
+      0.6,
+      0.6,
+      0.6
+    ],
+    "damage_mix": [
+      0.0,
+      0.4166666666666666,
+      0.5833333333333334,
+      0.0
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 0.0,
+    "remote_repair_hp_per_s": 0.0
+  },
+  {
+    "name": "Hadal Abyssal Overmind",
+    "hull_class": "battleship",
+    "signature_radius_m": 455.0,
+    "shield_hp": 11875.0,
+    "armor_hp": 22500.0,
+    "structure_hp": 13750.0,
+    "max_speed_mps": 350.0,
+    "orbit_speed_mps": 0.0,
+    "orbit_range_m": 0.0,
+    "turret_optimal_m": 20790.0,
+    "turret_falloff_m": 19820.0,
+    "turret_tracking": 4.33,
+    "turret_cycle_s": 3.0,
+    "dps": 533.6,
+    "shield_resists": [
+      0.12,
+      0.3,
+      0.48,
+      0.56
+    ],
+    "armor_resists": [
+      0.77,
+      0.7,
+      0.7,
+      0.68
+    ],
+    "structure_resists": [
+      0.6,
+      0.6,
+      0.6,
+      0.6
+    ],
+    "damage_mix": [
+      0.0,
+      0.41666666666666663,
+      0.5833333333333334,
+      0.0
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 0.0,
+    "remote_repair_hp_per_s": 0.0
+  },
+  {
+    "name": "Benthic Abyssal Overmind",
+    "hull_class": "battleship",
+    "signature_radius_m": 455.0,
+    "shield_hp": 11875.0,
+    "armor_hp": 25750.0,
+    "structure_hp": 13750.0,
+    "max_speed_mps": 400.0,
+    "orbit_speed_mps": 0.0,
+    "orbit_range_m": 0.0,
+    "turret_optimal_m": 29160.0,
+    "turret_falloff_m": 29000.0,
+    "turret_tracking": 3.23,
+    "turret_cycle_s": 3.0,
+    "dps": 787.1999999999999,
+    "shield_resists": [
+      0.21,
+      0.37,
+      0.53,
+      0.61
+    ],
+    "armor_resists": [
+      0.76,
+      0.68,
+      0.68,
+      0.7
+    ],
+    "structure_resists": [
+      0.68,
+      0.68,
+      0.68,
+      0.68
+    ],
+    "damage_mix": [
+      0.0,
+      0.41666666666666663,
+      0.5833333333333334,
+      0.0
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 0.0,
+    "remote_repair_hp_per_s": 0.0
+  },
+  {
+    "name": "Endobenthic Abyssal Overmind",
+    "hull_class": "battleship",
+    "signature_radius_m": 455.0,
+    "shield_hp": 14850.0,
+    "armor_hp": 32180.0,
+    "structure_hp": 17000.0,
+    "max_speed_mps": 400.0,
+    "orbit_speed_mps": 0.0,
+    "orbit_range_m": 0.0,
+    "turret_optimal_m": 29160.0,
+    "turret_falloff_m": 29000.0,
+    "turret_tracking": 3.23,
+    "turret_cycle_s": 3.0,
+    "dps": 960.0,
+    "shield_resists": [
+      0.21,
+      0.37,
+      0.53,
+      0.61
+    ],
+    "armor_resists": [
+      0.76,
+      0.68,
+      0.68,
+      0.7
+    ],
+    "structure_resists": [
+      0.68,
+      0.68,
+      0.68,
+      0.68
+    ],
+    "damage_mix": [
+      0.0,
+      0.41666666666666663,
+      0.5833333333333334,
+      0.0
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 0.0,
+    "remote_repair_hp_per_s": 0.0
+  },
+  {
+    "name": "Blastgrip Tessera",
+    "hull_class": "battlecruiser",
+    "signature_radius_m": 300.0,
+    "shield_hp": 3000.0,
+    "armor_hp": 2300.0,
+    "structure_hp": 2500.0,
+    "max_speed_mps": 900.0,
+    "orbit_speed_mps": 0.0,
+    "orbit_range_m": 2000.0,
+    "turret_optimal_m": 2000.0,
+    "turret_falloff_m": 6000.0,
+    "turret_tracking": 4000.0,
+    "turret_cycle_s": 5.0,
+    "dps": 200.0,
+    "shield_resists": [
+      0.6,
+      0.7,
+      0.7,
+      0.6
+    ],
+    "armor_resists": [
+      0.6,
+      0.7,
+      0.7,
+      0.6
+    ],
+    "structure_resists": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 0.0,
+    "remote_repair_hp_per_s": 0.0
+  },
+  {
+    "name": "Embergrip Tessera",
+    "hull_class": "battlecruiser",
+    "signature_radius_m": 300.0,
+    "shield_hp": 3000.0,
+    "armor_hp": 2300.0,
+    "structure_hp": 2500.0,
+    "max_speed_mps": 525.0,
+    "orbit_speed_mps": 0.0,
+    "orbit_range_m": 2000.0,
+    "turret_optimal_m": 2000.0,
+    "turret_falloff_m": 6000.0,
+    "turret_tracking": 4000.0,
+    "turret_cycle_s": 5.0,
+    "dps": 200.0,
+    "shield_resists": [
+      0.6,
+      0.7,
+      0.7,
+      0.6
+    ],
+    "armor_resists": [
+      0.6,
+      0.7,
+      0.7,
+      0.6
+    ],
+    "structure_resists": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "damage_mix": [
+      0.0,
+      1.0,
+      0.0,
+      0.0
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 0.0,
+    "remote_repair_hp_per_s": 0.0
+  },
+  {
+    "name": "Strikegrip Tessera",
+    "hull_class": "battlecruiser",
+    "signature_radius_m": 300.0,
+    "shield_hp": 3000.0,
+    "armor_hp": 2300.0,
+    "structure_hp": 2500.0,
+    "max_speed_mps": 650.0,
+    "orbit_speed_mps": 0.0,
+    "orbit_range_m": 2000.0,
+    "turret_optimal_m": 2000.0,
+    "turret_falloff_m": 6000.0,
+    "turret_tracking": 4000.0,
+    "turret_cycle_s": 5.0,
+    "dps": 200.0,
+    "shield_resists": [
+      0.6,
+      0.7,
+      0.7,
+      0.6
+    ],
+    "armor_resists": [
+      0.6,
+      0.7,
+      0.7,
+      0.6
+    ],
+    "structure_resists": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "damage_mix": [
+      0.0,
+      0.0,
+      1.0,
+      0.0
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 0.0,
+    "remote_repair_hp_per_s": 0.0
+  },
+  {
+    "name": "Sparkgrip Tessera",
+    "hull_class": "battlecruiser",
+    "signature_radius_m": 300.0,
+    "shield_hp": 3000.0,
+    "armor_hp": 2300.0,
+    "structure_hp": 2500.0,
+    "max_speed_mps": 775.0,
+    "orbit_speed_mps": 0.0,
+    "orbit_range_m": 2000.0,
+    "turret_optimal_m": 2000.0,
+    "turret_falloff_m": 6000.0,
+    "turret_tracking": 4000.0,
+    "turret_cycle_s": 5.0,
+    "dps": 200.0,
+    "shield_resists": [
+      0.6,
+      0.7,
+      0.7,
+      0.6
+    ],
+    "armor_resists": [
+      0.6,
+      0.7,
+      0.7,
+      0.6
+    ],
+    "structure_resists": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "damage_mix": [
+      1.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 0.0,
+    "remote_repair_hp_per_s": 0.0
+  },
+  {
+    "name": "Blastlance Tessella",
+    "hull_class": "frigate",
+    "signature_radius_m": 50.0,
+    "shield_hp": 1100.0,
+    "armor_hp": 200.0,
+    "structure_hp": 400.0,
+    "max_speed_mps": 1500.0,
+    "orbit_speed_mps": 1000.0,
+    "orbit_range_m": 9000.0,
+    "turret_optimal_m": 5000.0,
+    "turret_falloff_m": 10000.0,
+    "turret_tracking": 4000.0,
+    "turret_cycle_s": 2.0,
+    "dps": 50.0,
+    "shield_resists": [
+      0.0,
+      0.2,
+      0.4,
+      0.5
+    ],
+    "armor_resists": [
+      0.5,
+      0.35,
+      0.25,
+      0.2
+    ],
+    "structure_resists": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 0.0,
+    "remote_repair_hp_per_s": 0.0
+  },
+  {
+    "name": "Blastneedle Tessella",
+    "hull_class": "frigate",
+    "signature_radius_m": 50.0,
+    "shield_hp": 550.0,
+    "armor_hp": 200.0,
+    "structure_hp": 400.0,
+    "max_speed_mps": 1500.0,
+    "orbit_speed_mps": 1000.0,
+    "orbit_range_m": 5000.0,
+    "turret_optimal_m": 2500.0,
+    "turret_falloff_m": 5000.0,
+    "turret_tracking": 4000.0,
+    "turret_cycle_s": 2.0,
+    "dps": 25.0,
+    "shield_resists": [
+      0.0,
+      0.2,
+      0.4,
+      0.5
+    ],
+    "armor_resists": [
+      0.5,
+      0.35,
+      0.25,
+      0.2
+    ],
+    "structure_resists": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 0.0,
+    "remote_repair_hp_per_s": 0.0
+  },
+  {
+    "name": "Emberlance Tessella",
+    "hull_class": "frigate",
+    "signature_radius_m": 50.0,
+    "shield_hp": 200.0,
+    "armor_hp": 1000.0,
+    "structure_hp": 450.0,
+    "max_speed_mps": 1500.0,
+    "orbit_speed_mps": 1000.0,
+    "orbit_range_m": 9000.0,
+    "turret_optimal_m": 5000.0,
+    "turret_falloff_m": 10000.0,
+    "turret_tracking": 4000.0,
+    "turret_cycle_s": 2.0,
+    "dps": 50.0,
+    "shield_resists": [
+      0.0,
+      0.2,
+      0.4,
+      0.5
+    ],
+    "armor_resists": [
+      0.5,
+      0.35,
+      0.35,
+      0.1
+    ],
+    "structure_resists": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "damage_mix": [
+      0.0,
+      1.0,
+      0.0,
+      0.0
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 0.0,
+    "remote_repair_hp_per_s": 0.0
+  },
+  {
+    "name": "Emberneedle Tessella",
+    "hull_class": "frigate",
+    "signature_radius_m": 50.0,
+    "shield_hp": 200.0,
+    "armor_hp": 500.0,
+    "structure_hp": 450.0,
+    "max_speed_mps": 1500.0,
+    "orbit_speed_mps": 1000.0,
+    "orbit_range_m": 5000.0,
+    "turret_optimal_m": 2500.0,
+    "turret_falloff_m": 5000.0,
+    "turret_tracking": 4000.0,
+    "turret_cycle_s": 2.0,
+    "dps": 25.0,
+    "shield_resists": [
+      0.0,
+      0.2,
+      0.4,
+      0.5
+    ],
+    "armor_resists": [
+      0.5,
+      0.35,
+      0.35,
+      0.1
+    ],
+    "structure_resists": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "damage_mix": [
+      0.0,
+      1.0,
+      0.0,
+      0.0
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 0.0,
+    "remote_repair_hp_per_s": 0.0
+  },
+  {
+    "name": "Sparklance Tessella",
+    "hull_class": "frigate",
+    "signature_radius_m": 50.0,
+    "shield_hp": 200.0,
+    "armor_hp": 1000.0,
+    "structure_hp": 450.0,
+    "max_speed_mps": 1500.0,
+    "orbit_speed_mps": 1000.0,
+    "orbit_range_m": 9000.0,
+    "turret_optimal_m": 5000.0,
+    "turret_falloff_m": 10000.0,
+    "turret_tracking": 4000.0,
+    "turret_cycle_s": 2.0,
+    "dps": 50.0,
+    "shield_resists": [
+      0.0,
+      0.2,
+      0.4,
+      0.5
+    ],
+    "armor_resists": [
+      0.5,
+      0.35,
+      0.35,
+      0.1
+    ],
+    "structure_resists": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "damage_mix": [
+      1.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 0.0,
+    "remote_repair_hp_per_s": 0.0
+  },
+  {
+    "name": "Sparkneedle Tessella",
+    "hull_class": "frigate",
+    "signature_radius_m": 50.0,
+    "shield_hp": 200.0,
+    "armor_hp": 500.0,
+    "structure_hp": 450.0,
+    "max_speed_mps": 1500.0,
+    "orbit_speed_mps": 1000.0,
+    "orbit_range_m": 5000.0,
+    "turret_optimal_m": 2500.0,
+    "turret_falloff_m": 5000.0,
+    "turret_tracking": 4000.0,
+    "turret_cycle_s": 2.0,
+    "dps": 25.0,
+    "shield_resists": [
+      0.0,
+      0.2,
+      0.4,
+      0.5
+    ],
+    "armor_resists": [
+      0.5,
+      0.35,
+      0.35,
+      0.1
+    ],
+    "structure_resists": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "damage_mix": [
+      1.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 0.0,
+    "remote_repair_hp_per_s": 0.0
+  },
+  {
+    "name": "Strikelance Tessella",
+    "hull_class": "frigate",
+    "signature_radius_m": 50.0,
+    "shield_hp": 1100.0,
+    "armor_hp": 200.0,
+    "structure_hp": 400.0,
+    "max_speed_mps": 1500.0,
+    "orbit_speed_mps": 1000.0,
+    "orbit_range_m": 9000.0,
+    "turret_optimal_m": 8000.0,
+    "turret_falloff_m": 4000.0,
+    "turret_tracking": 4000.0,
+    "turret_cycle_s": 2.0,
+    "dps": 50.0,
+    "shield_resists": [
+      0.0,
+      0.2,
+      0.4,
+      0.5
+    ],
+    "armor_resists": [
+      0.5,
+      0.45,
+      0.25,
+      0.1
+    ],
+    "structure_resists": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "damage_mix": [
+      0.0,
+      0.0,
+      1.0,
+      0.0
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 0.0,
+    "remote_repair_hp_per_s": 0.0
+  },
+  {
+    "name": "Strikeneedle Tessella",
+    "hull_class": "frigate",
+    "signature_radius_m": 50.0,
+    "shield_hp": 550.0,
+    "armor_hp": 200.0,
+    "structure_hp": 400.0,
+    "max_speed_mps": 1500.0,
+    "orbit_speed_mps": 1000.0,
+    "orbit_range_m": 5000.0,
+    "turret_optimal_m": 4000.0,
+    "turret_falloff_m": 2000.0,
+    "turret_tracking": 4000.0,
+    "turret_cycle_s": 2.0,
+    "dps": 25.0,
+    "shield_resists": [
+      0.0,
+      0.2,
+      0.4,
+      0.5
+    ],
+    "armor_resists": [
+      0.5,
+      0.45,
+      0.25,
+      0.1
+    ],
+    "structure_resists": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "damage_mix": [
+      0.0,
+      0.0,
+      1.0,
+      0.0
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 0.0,
+    "remote_repair_hp_per_s": 0.0
+  },
+  {
+    "name": "Fieldweaver Tessella",
+    "hull_class": "frigate",
+    "signature_radius_m": 75.0,
+    "shield_hp": 500.0,
+    "armor_hp": 300.0,
+    "structure_hp": 500.0,
+    "max_speed_mps": 900.0,
+    "orbit_speed_mps": 0.0,
+    "orbit_range_m": 0.0,
+    "turret_optimal_m": 0.0,
+    "turret_falloff_m": 0.0,
+    "turret_tracking": 0.0,
+    "turret_cycle_s": 0.0,
+    "dps": 0.0,
+    "shield_resists": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "armor_resists": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "structure_resists": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 0.0,
+    "remote_repair_hp_per_s": 10.0
+  },
+  {
+    "name": "Plateforger Tessella",
+    "hull_class": "frigate",
+    "signature_radius_m": 75.0,
+    "shield_hp": 300.0,
+    "armor_hp": 500.0,
+    "structure_hp": 500.0,
+    "max_speed_mps": 900.0,
+    "orbit_speed_mps": 0.0,
+    "orbit_range_m": 0.0,
+    "turret_optimal_m": 0.0,
+    "turret_falloff_m": 0.0,
+    "turret_tracking": 0.0,
+    "turret_cycle_s": 0.0,
+    "dps": 0.0,
+    "shield_resists": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "armor_resists": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "structure_resists": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 0.0,
+    "remote_repair_hp_per_s": 10.0
+  },
+  {
+    "name": "Snarecaster Tessella",
+    "hull_class": "frigate",
+    "signature_radius_m": 50.0,
+    "shield_hp": 300.0,
+    "armor_hp": 300.0,
+    "structure_hp": 400.0,
+    "max_speed_mps": 1500.0,
+    "orbit_speed_mps": 0.0,
+    "orbit_range_m": 8000.0,
+    "turret_optimal_m": 8000.0,
+    "turret_falloff_m": 4000.0,
+    "turret_tracking": 4000.0,
+    "turret_cycle_s": 4.0,
+    "dps": 10.0,
+    "shield_resists": [
+      0.0,
+      0.2,
+      0.4,
+      0.5
+    ],
+    "armor_resists": [
+      0.6,
+      0.35,
+      0.25,
+      0.1
+    ],
+    "structure_resists": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "damage_mix": [
+      0.25,
+      0.25,
+      0.25,
+      0.25
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 0.0,
+    "remote_repair_hp_per_s": 0.0
+  },
+  {
+    "name": "Spotlighter Tessella",
+    "hull_class": "frigate",
+    "signature_radius_m": 50.0,
+    "shield_hp": 350.0,
+    "armor_hp": 350.0,
+    "structure_hp": 300.0,
+    "max_speed_mps": 1000.0,
+    "orbit_speed_mps": 0.0,
+    "orbit_range_m": 8000.0,
+    "turret_optimal_m": 8000.0,
+    "turret_falloff_m": 4000.0,
+    "turret_tracking": 4000.0,
+    "turret_cycle_s": 4.0,
+    "dps": 10.0,
+    "shield_resists": [
+      0.0,
+      0.2,
+      0.4,
+      0.5
+    ],
+    "armor_resists": [
+      0.6,
+      0.35,
+      0.25,
+      0.1
+    ],
+    "structure_resists": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "damage_mix": [
+      0.25,
+      0.25,
+      0.25,
+      0.25
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 0.0,
+    "remote_repair_hp_per_s": 0.0
+  },
+  {
+    "name": "Fogcaster Tessella",
+    "hull_class": "frigate",
+    "signature_radius_m": 50.0,
+    "shield_hp": 350.0,
+    "armor_hp": 350.0,
+    "structure_hp": 300.0,
+    "max_speed_mps": 1000.0,
+    "orbit_speed_mps": 0.0,
+    "orbit_range_m": 8000.0,
+    "turret_optimal_m": 8000.0,
+    "turret_falloff_m": 4000.0,
+    "turret_tracking": 4000.0,
+    "turret_cycle_s": 4.0,
+    "dps": 10.0,
+    "shield_resists": [
+      0.0,
+      0.2,
+      0.4,
+      0.5
+    ],
+    "armor_resists": [
+      0.6,
+      0.35,
+      0.25,
+      0.1
+    ],
+    "structure_resists": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "damage_mix": [
+      0.25,
+      0.25,
+      0.25,
+      0.25
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 0.0,
+    "remote_repair_hp_per_s": 0.0
+  },
+  {
+    "name": "Gazedimmer Tessella",
+    "hull_class": "frigate",
+    "signature_radius_m": 50.0,
+    "shield_hp": 350.0,
+    "armor_hp": 350.0,
+    "structure_hp": 350.0,
+    "max_speed_mps": 1000.0,
+    "orbit_speed_mps": 0.0,
+    "orbit_range_m": 8000.0,
+    "turret_optimal_m": 8000.0,
+    "turret_falloff_m": 4000.0,
+    "turret_tracking": 4000.0,
+    "turret_cycle_s": 4.0,
+    "dps": 10.0,
+    "shield_resists": [
+      0.0,
+      0.2,
+      0.4,
+      0.5
+    ],
+    "armor_resists": [
+      0.6,
+      0.35,
+      0.25,
+      0.1
+    ],
+    "structure_resists": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "damage_mix": [
+      0.25,
+      0.25,
+      0.25,
+      0.25
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 0.0,
+    "remote_repair_hp_per_s": 0.0
+  },
+  {
+    "name": "Vila Swarmer",
+    "hull_class": "drone",
+    "signature_radius_m": 25.0,
+    "shield_hp": 50.0,
+    "armor_hp": 200.0,
+    "structure_hp": 100.0,
+    "max_speed_mps": 3500.0,
+    "orbit_speed_mps": 0.0,
+    "orbit_range_m": 2500.0,
+    "turret_optimal_m": 3000.0,
+    "turret_falloff_m": 3000.0,
+    "turret_tracking": 4000.0,
+    "turret_cycle_s": 2.0,
+    "dps": 8.0,
+    "shield_resists": [
+      0.0,
+      0.2,
+      0.4,
+      0.5
+    ],
+    "armor_resists": [
+      0.5,
+      0.35,
+      0.25,
+      0.2
+    ],
+    "structure_resists": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "damage_mix": [
+      0.25,
+      0.25,
+      0.25,
+      0.25
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 0.0,
+    "remote_repair_hp_per_s": 0.0
+  },
+  {
+    "name": "Harrowing Vila Vedmak",
+    "hull_class": "cruiser",
+    "signature_radius_m": 660.0,
+    "shield_hp": 2000.0,
+    "armor_hp": 7000.0,
+    "structure_hp": 3000.0,
+    "max_speed_mps": 2000.0,
+    "orbit_speed_mps": 1000.0,
+    "orbit_range_m": 15000.0,
+    "turret_optimal_m": 22000.0,
+    "turret_falloff_m": 0.0,
+    "turret_tracking": 65.0,
+    "turret_cycle_s": 5.0,
+    "dps": 79.2,
+    "shield_resists": [
+      0.0,
+      0.2,
+      0.4,
+      0.5
+    ],
+    "armor_resists": [
+      0.6,
+      0.48,
+      0.53,
+      0.36
+    ],
+    "structure_resists": [
+      0.33,
+      0.33,
+      0.33,
+      0.33
+    ],
+    "damage_mix": [
+      0.0,
+      0.5757575757575758,
+      0.0,
+      0.42424242424242425
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 0.0,
+    "remote_repair_hp_per_s": 0.0
+  },
+  {
+    "name": "Anchoring Vila Damavik",
+    "hull_class": "frigate",
+    "signature_radius_m": 192.0,
+    "shield_hp": 500.0,
+    "armor_hp": 2200.0,
+    "structure_hp": 650.0,
+    "max_speed_mps": 3000.0,
+    "orbit_speed_mps": 1500.0,
+    "orbit_range_m": 6000.0,
+    "turret_optimal_m": 8000.0,
+    "turret_falloff_m": 0.0,
+    "turret_tracking": 500.0,
+    "turret_cycle_s": 3.0,
+    "dps": 7.0,
+    "shield_resists": [
+      0.0,
+      0.2,
+      0.4,
+      0.5
+    ],
+    "armor_resists": [
+      0.6,
+      0.48,
+      0.53,
+      0.36
+    ],
+    "structure_resists": [
+      0.33,
+      0.33,
+      0.33,
+      0.33
+    ],
+    "damage_mix": [
+      0.0,
+      0.6857142857142857,
+      0.0,
+      0.31428571428571433
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 0.0,
+    "remote_repair_hp_per_s": 0.0
+  },
+  {
+    "name": "Blinding Vila Damavik",
+    "hull_class": "frigate",
+    "signature_radius_m": 192.0,
+    "shield_hp": 500.0,
+    "armor_hp": 2200.0,
+    "structure_hp": 650.0,
+    "max_speed_mps": 2700.0,
+    "orbit_speed_mps": 1350.0,
+    "orbit_range_m": 6000.0,
+    "turret_optimal_m": 8000.0,
+    "turret_falloff_m": 0.0,
+    "turret_tracking": 500.0,
+    "turret_cycle_s": 3.0,
+    "dps": 7.0,
+    "shield_resists": [
+      0.0,
+      0.2,
+      0.4,
+      0.5
+    ],
+    "armor_resists": [
+      0.6,
+      0.48,
+      0.53,
+      0.36
+    ],
+    "structure_resists": [
+      0.33,
+      0.33,
+      0.33,
+      0.33
+    ],
+    "damage_mix": [
+      0.0,
+      0.6857142857142857,
+      0.0,
+      0.31428571428571433
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 0.0,
+    "remote_repair_hp_per_s": 0.0
+  },
+  {
+    "name": "Ghosting Vila Damavik",
+    "hull_class": "frigate",
+    "signature_radius_m": 192.0,
+    "shield_hp": 500.0,
+    "armor_hp": 2200.0,
+    "structure_hp": 650.0,
+    "max_speed_mps": 2700.0,
+    "orbit_speed_mps": 1350.0,
+    "orbit_range_m": 6000.0,
+    "turret_optimal_m": 8000.0,
+    "turret_falloff_m": 0.0,
+    "turret_tracking": 500.0,
+    "turret_cycle_s": 3.0,
+    "dps": 7.0,
+    "shield_resists": [
+      0.0,
+      0.2,
+      0.4,
+      0.5
+    ],
+    "armor_resists": [
+      0.6,
+      0.48,
+      0.53,
+      0.36
+    ],
+    "structure_resists": [
+      0.33,
+      0.33,
+      0.33,
+      0.33
+    ],
+    "damage_mix": [
+      0.0,
+      0.6857142857142857,
+      0.0,
+      0.31428571428571433
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 0.0,
+    "remote_repair_hp_per_s": 0.0
+  },
+  {
+    "name": "Shining Vila Damavik",
+    "hull_class": "frigate",
+    "signature_radius_m": 192.0,
+    "shield_hp": 500.0,
+    "armor_hp": 2200.0,
+    "structure_hp": 650.0,
+    "max_speed_mps": 2800.0,
+    "orbit_speed_mps": 1400.0,
+    "orbit_range_m": 6000.0,
+    "turret_optimal_m": 8000.0,
+    "turret_falloff_m": 0.0,
+    "turret_tracking": 500.0,
+    "turret_cycle_s": 3.0,
+    "dps": 7.0,
+    "shield_resists": [
+      0.0,
+      0.2,
+      0.4,
+      0.5
+    ],
+    "armor_resists": [
+      0.6,
+      0.48,
+      0.53,
+      0.36
+    ],
+    "structure_resists": [
+      0.33,
+      0.33,
+      0.33,
+      0.33
+    ],
+    "damage_mix": [
+      0.0,
+      0.6857142857142857,
+      0.0,
+      0.31428571428571433
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 0.0,
+    "remote_repair_hp_per_s": 0.0
+  },
+  {
+    "name": "Striking Vila Damavik",
+    "hull_class": "frigate",
+    "signature_radius_m": 192.0,
+    "shield_hp": 500.0,
+    "armor_hp": 2200.0,
+    "structure_hp": 650.0,
+    "max_speed_mps": 2900.0,
+    "orbit_speed_mps": 1450.0,
+    "orbit_range_m": 6000.0,
+    "turret_optimal_m": 8000.0,
+    "turret_falloff_m": 0.0,
+    "turret_tracking": 500.0,
+    "turret_cycle_s": 3.0,
+    "dps": 7.0,
+    "shield_resists": [
+      0.0,
+      0.2,
+      0.4,
+      0.5
+    ],
+    "armor_resists": [
+      0.6,
+      0.48,
+      0.53,
+      0.36
+    ],
+    "structure_resists": [
+      0.33,
+      0.33,
+      0.33,
+      0.33
+    ],
+    "damage_mix": [
+      0.0,
+      0.6857142857142857,
+      0.0,
+      0.31428571428571433
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 0.0,
+    "remote_repair_hp_per_s": 0.0
+  },
+  {
+    "name": "Tangling Vila Damavik",
+    "hull_class": "frigate",
+    "signature_radius_m": 192.0,
+    "shield_hp": 500.0,
+    "armor_hp": 2200.0,
+    "structure_hp": 650.0,
+    "max_speed_mps": 3000.0,
+    "orbit_speed_mps": 1500.0,
+    "orbit_range_m": 6000.0,
+    "turret_optimal_m": 8000.0,
+    "turret_falloff_m": 0.0,
+    "turret_tracking": 500.0,
+    "turret_cycle_s": 3.0,
+    "dps": 7.0,
+    "shield_resists": [
+      0.0,
+      0.2,
+      0.4,
+      0.5
+    ],
+    "armor_resists": [
+      0.6,
+      0.48,
+      0.53,
+      0.36
+    ],
+    "structure_resists": [
+      0.33,
+      0.33,
+      0.33,
+      0.33
+    ],
+    "damage_mix": [
+      0.0,
+      0.6857142857142857,
+      0.0,
+      0.31428571428571433
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 0.0,
+    "remote_repair_hp_per_s": 0.0
+  },
+  {
+    "name": "Anchoring Damavik",
+    "hull_class": "frigate",
+    "signature_radius_m": 192.0,
+    "shield_hp": 500.0,
+    "armor_hp": 2200.0,
+    "structure_hp": 650.0,
+    "max_speed_mps": 3000.0,
+    "orbit_speed_mps": 1500.0,
+    "orbit_range_m": 6000.0,
+    "turret_optimal_m": 10000.0,
+    "turret_falloff_m": 0.0,
+    "turret_tracking": 500.0,
+    "turret_cycle_s": 3.0,
+    "dps": 28.0,
+    "shield_resists": [
+      0.0,
+      0.2,
+      0.4,
+      0.5
+    ],
+    "armor_resists": [
+      0.6,
+      0.48,
+      0.53,
+      0.36
+    ],
+    "structure_resists": [
+      0.33,
+      0.33,
+      0.33,
+      0.33
+    ],
+    "damage_mix": [
+      0.0,
+      0.6857142857142857,
+      0.0,
+      0.31428571428571433
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 0.0,
+    "remote_repair_hp_per_s": 13.333333333333334
+  },
+  {
+    "name": "Ghosting Damavik",
+    "hull_class": "frigate",
+    "signature_radius_m": 192.0,
+    "shield_hp": 500.0,
+    "armor_hp": 2200.0,
+    "structure_hp": 650.0,
+    "max_speed_mps": 2800.0,
+    "orbit_speed_mps": 1400.0,
+    "orbit_range_m": 6000.0,
+    "turret_optimal_m": 10000.0,
+    "turret_falloff_m": 0.0,
+    "turret_tracking": 500.0,
+    "turret_cycle_s": 3.0,
+    "dps": 28.0,
+    "shield_resists": [
+      0.0,
+      0.2,
+      0.4,
+      0.5
+    ],
+    "armor_resists": [
+      0.6,
+      0.48,
+      0.53,
+      0.36
+    ],
+    "structure_resists": [
+      0.33,
+      0.33,
+      0.33,
+      0.33
+    ],
+    "damage_mix": [
+      0.0,
+      0.6857142857142857,
+      0.0,
+      0.31428571428571433
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 0.0,
+    "remote_repair_hp_per_s": 13.333333333333334
+  },
+  {
+    "name": "Starving Damavik",
+    "hull_class": "frigate",
+    "signature_radius_m": 192.0,
+    "shield_hp": 500.0,
+    "armor_hp": 2200.0,
+    "structure_hp": 650.0,
+    "max_speed_mps": 2700.0,
+    "orbit_speed_mps": 1350.0,
+    "orbit_range_m": 6000.0,
+    "turret_optimal_m": 10000.0,
+    "turret_falloff_m": 0.0,
+    "turret_tracking": 500.0,
+    "turret_cycle_s": 3.0,
+    "dps": 28.0,
+    "shield_resists": [
+      0.0,
+      0.2,
+      0.4,
+      0.5
+    ],
+    "armor_resists": [
+      0.6,
+      0.48,
+      0.53,
+      0.36
+    ],
+    "structure_resists": [
+      0.33,
+      0.33,
+      0.33,
+      0.33
+    ],
+    "damage_mix": [
+      0.0,
+      0.6857142857142857,
+      0.0,
+      0.31428571428571433
+    ],
+    "neutralizer_gj_per_s": 12.5,
+    "local_repair_hp_per_s": 0.0,
+    "remote_repair_hp_per_s": 0.0
+  },
+  {
+    "name": "Striking Damavik",
+    "hull_class": "frigate",
+    "signature_radius_m": 192.0,
+    "shield_hp": 500.0,
+    "armor_hp": 2200.0,
+    "structure_hp": 650.0,
+    "max_speed_mps": 2900.0,
+    "orbit_speed_mps": 1450.0,
+    "orbit_range_m": 6000.0,
+    "turret_optimal_m": 10000.0,
+    "turret_falloff_m": 0.0,
+    "turret_tracking": 500.0,
+    "turret_cycle_s": 3.0,
+    "dps": 28.0,
+    "shield_resists": [
+      0.0,
+      0.2,
+      0.4,
+      0.5
+    ],
+    "armor_resists": [
+      0.6,
+      0.48,
+      0.53,
+      0.36
+    ],
+    "structure_resists": [
+      0.33,
+      0.33,
+      0.33,
+      0.33
+    ],
+    "damage_mix": [
+      0.0,
+      0.6857142857142857,
+      0.0,
+      0.31428571428571433
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 0.0,
+    "remote_repair_hp_per_s": 13.333333333333334
+  },
+  {
+    "name": "Tangling Damavik",
+    "hull_class": "frigate",
+    "signature_radius_m": 192.0,
+    "shield_hp": 500.0,
+    "armor_hp": 2200.0,
+    "structure_hp": 650.0,
+    "max_speed_mps": 3000.0,
+    "orbit_speed_mps": 1500.0,
+    "orbit_range_m": 6000.0,
+    "turret_optimal_m": 10000.0,
+    "turret_falloff_m": 0.0,
+    "turret_tracking": 500.0,
+    "turret_cycle_s": 3.0,
+    "dps": 28.0,
+    "shield_resists": [
+      0.0,
+      0.2,
+      0.4,
+      0.5
+    ],
+    "armor_resists": [
+      0.6,
+      0.48,
+      0.53,
+      0.36
+    ],
+    "structure_resists": [
+      0.33,
+      0.33,
+      0.33,
+      0.33
+    ],
+    "damage_mix": [
+      0.0,
+      0.6857142857142857,
+      0.0,
+      0.31428571428571433
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 0.0,
+    "remote_repair_hp_per_s": 13.333333333333334
+  },
+  {
+    "name": "Harrowing Vedmak",
+    "hull_class": "cruiser",
+    "signature_radius_m": 660.0,
+    "shield_hp": 2000.0,
+    "armor_hp": 7000.0,
+    "structure_hp": 3000.0,
+    "max_speed_mps": 2000.0,
+    "orbit_speed_mps": 1000.0,
+    "orbit_range_m": 15000.0,
+    "turret_optimal_m": 22000.0,
+    "turret_falloff_m": 0.0,
+    "turret_tracking": 65.0,
+    "turret_cycle_s": 5.0,
+    "dps": 158.4,
+    "shield_resists": [
+      0.0,
+      0.2,
+      0.4,
+      0.5
+    ],
+    "armor_resists": [
+      0.6,
+      0.48,
+      0.53,
+      0.36
+    ],
+    "structure_resists": [
+      0.33,
+      0.33,
+      0.33,
+      0.33
+    ],
+    "damage_mix": [
+      0.0,
+      0.5757575757575758,
+      0.0,
+      0.42424242424242425
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 0.0,
+    "remote_repair_hp_per_s": 26.666666666666668
+  },
+  {
+    "name": "Starving Vedmak",
+    "hull_class": "cruiser",
+    "signature_radius_m": 660.0,
+    "shield_hp": 2000.0,
+    "armor_hp": 7000.0,
+    "structure_hp": 3000.0,
+    "max_speed_mps": 1800.0,
+    "orbit_speed_mps": 900.0,
+    "orbit_range_m": 0.0,
+    "turret_optimal_m": 22000.0,
+    "turret_falloff_m": 0.0,
+    "turret_tracking": 65.0,
+    "turret_cycle_s": 5.0,
+    "dps": 158.4,
+    "shield_resists": [
+      0.0,
+      0.2,
+      0.4,
+      0.5
+    ],
+    "armor_resists": [
+      0.6,
+      0.48,
+      0.53,
+      0.36
+    ],
+    "structure_resists": [
+      0.33,
+      0.33,
+      0.33,
+      0.33
+    ],
+    "damage_mix": [
+      0.0,
+      0.5757575757575758,
+      0.0,
+      0.42424242424242425
+    ],
+    "neutralizer_gj_per_s": 18.0,
+    "local_repair_hp_per_s": 0.0,
+    "remote_repair_hp_per_s": 0.0
+  },
+  {
+    "name": "Striking Drekavac",
+    "hull_class": "battlecruiser",
+    "signature_radius_m": 300.0,
+    "shield_hp": 2700.0,
+    "armor_hp": 9500.0,
+    "structure_hp": 6800.0,
+    "max_speed_mps": 450.0,
+    "orbit_speed_mps": 0.0,
+    "orbit_range_m": 30000.0,
+    "turret_optimal_m": 38000.0,
+    "turret_falloff_m": 0.0,
+    "turret_tracking": 10.0,
+    "turret_cycle_s": 5.0,
+    "dps": 115.5,
+    "shield_resists": [
+      0.0,
+      0.2,
+      0.4,
+      0.5
+    ],
+    "armor_resists": [
+      0.6,
+      0.48,
+      0.53,
+      0.36
+    ],
+    "structure_resists": [
+      0.33,
+      0.33,
+      0.33,
+      0.33
+    ],
+    "damage_mix": [
+      0.0,
+      0.5714285714285714,
+      0.0,
+      0.42857142857142855
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 0.0,
+    "remote_repair_hp_per_s": 34.0
+  },
+  {
+    "name": "Shining Drekavac",
+    "hull_class": "battlecruiser",
+    "signature_radius_m": 300.0,
+    "shield_hp": 2700.0,
+    "armor_hp": 9500.0,
+    "structure_hp": 6800.0,
+    "max_speed_mps": 450.0,
+    "orbit_speed_mps": 0.0,
+    "orbit_range_m": 30000.0,
+    "turret_optimal_m": 38000.0,
+    "turret_falloff_m": 0.0,
+    "turret_tracking": 10.0,
+    "turret_cycle_s": 5.0,
+    "dps": 94.5,
+    "shield_resists": [
+      0.0,
+      0.2,
+      0.4,
+      0.5
+    ],
+    "armor_resists": [
+      0.6,
+      0.48,
+      0.53,
+      0.36
+    ],
+    "structure_resists": [
+      0.33,
+      0.33,
+      0.33,
+      0.33
+    ],
+    "damage_mix": [
+      0.0,
+      0.5714285714285714,
+      0.0,
+      0.42857142857142855
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 0.0,
+    "remote_repair_hp_per_s": 34.0
+  },
+  {
+    "name": "Ghosting Kikimora",
+    "hull_class": "destroyer",
+    "signature_radius_m": 192.0,
+    "shield_hp": 1100.0,
+    "armor_hp": 2900.0,
+    "structure_hp": 1300.0,
+    "max_speed_mps": 1400.0,
+    "orbit_speed_mps": 450.0,
+    "orbit_range_m": 16000.0,
+    "turret_optimal_m": 25000.0,
+    "turret_falloff_m": 0.0,
+    "turret_tracking": 500.0,
+    "turret_cycle_s": 3.0,
+    "dps": 83.33333333333333,
+    "shield_resists": [
+      0.0,
+      0.2,
+      0.4,
+      0.5
+    ],
+    "armor_resists": [
+      0.6,
+      0.48,
+      0.53,
+      0.36
+    ],
+    "structure_resists": [
+      0.33,
+      0.33,
+      0.33,
+      0.33
+    ],
+    "damage_mix": [
+      0.0,
+      0.68,
+      0.0,
+      0.32
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 0.0,
+    "remote_repair_hp_per_s": 20.0
+  },
+  {
+    "name": "Tangling Kikimora",
+    "hull_class": "destroyer",
+    "signature_radius_m": 192.0,
+    "shield_hp": 1100.0,
+    "armor_hp": 2900.0,
+    "structure_hp": 1300.0,
+    "max_speed_mps": 1400.0,
+    "orbit_speed_mps": 450.0,
+    "orbit_range_m": 16000.0,
+    "turret_optimal_m": 25000.0,
+    "turret_falloff_m": 0.0,
+    "turret_tracking": 500.0,
+    "turret_cycle_s": 3.0,
+    "dps": 83.33333333333333,
+    "shield_resists": [
+      0.0,
+      0.2,
+      0.4,
+      0.5
+    ],
+    "armor_resists": [
+      0.6,
+      0.48,
+      0.53,
+      0.36
+    ],
+    "structure_resists": [
+      0.33,
+      0.33,
+      0.33,
+      0.33
+    ],
+    "damage_mix": [
+      0.0,
+      0.68,
+      0.0,
+      0.32
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 0.0,
+    "remote_repair_hp_per_s": 20.0
+  },
+  {
+    "name": "Striking Kikimora",
+    "hull_class": "destroyer",
+    "signature_radius_m": 192.0,
+    "shield_hp": 1100.0,
+    "armor_hp": 2900.0,
+    "structure_hp": 1300.0,
+    "max_speed_mps": 1400.0,
+    "orbit_speed_mps": 450.0,
+    "orbit_range_m": 16000.0,
+    "turret_optimal_m": 25000.0,
+    "turret_falloff_m": 0.0,
+    "turret_tracking": 500.0,
+    "turret_cycle_s": 3.0,
+    "dps": 83.33333333333333,
+    "shield_resists": [
+      0.0,
+      0.2,
+      0.4,
+      0.5
+    ],
+    "armor_resists": [
+      0.6,
+      0.48,
+      0.53,
+      0.36
+    ],
+    "structure_resists": [
+      0.33,
+      0.33,
+      0.33,
+      0.33
+    ],
+    "damage_mix": [
+      0.0,
+      0.68,
+      0.0,
+      0.32
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 0.0,
+    "remote_repair_hp_per_s": 20.0
+  },
+  {
+    "name": "Blinding Leshak",
+    "hull_class": "battleship",
+    "signature_radius_m": 370.0,
+    "shield_hp": 5000.0,
+    "armor_hp": 13000.0,
+    "structure_hp": 10000.0,
+    "max_speed_mps": 400.0,
+    "orbit_speed_mps": 0.0,
+    "orbit_range_m": 0.0,
+    "turret_optimal_m": 63000.0,
+    "turret_falloff_m": 0.0,
+    "turret_tracking": 7.0,
+    "turret_cycle_s": 5.0,
+    "dps": 98.56,
+    "shield_resists": [
+      0.0,
+      0.2,
+      0.4,
+      0.5
+    ],
+    "armor_resists": [
+      0.6,
+      0.48,
+      0.53,
+      0.36
+    ],
+    "structure_resists": [
+      0.33,
+      0.33,
+      0.33,
+      0.33
+    ],
+    "damage_mix": [
+      0.0,
+      0.6136363636363636,
+      0.0,
+      0.38636363636363635
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 0.0,
+    "remote_repair_hp_per_s": 37.5
+  },
+  {
+    "name": "Renewing Leshak",
+    "hull_class": "battleship",
+    "signature_radius_m": 370.0,
+    "shield_hp": 5000.0,
+    "armor_hp": 13000.0,
+    "structure_hp": 10000.0,
+    "max_speed_mps": 400.0,
+    "orbit_speed_mps": 0.0,
+    "orbit_range_m": 0.0,
+    "turret_optimal_m": 63000.0,
+    "turret_falloff_m": 0.0,
+    "turret_tracking": 7.0,
+    "turret_cycle_s": 5.0,
+    "dps": 98.56,
+    "shield_resists": [
+      0.0,
+      0.2,
+      0.4,
+      0.5
+    ],
+    "armor_resists": [
+      0.6,
+      0.48,
+      0.53,
+      0.36
+    ],
+    "structure_resists": [
+      0.33,
+      0.33,
+      0.33,
+      0.33
+    ],
+    "damage_mix": [
+      0.0,
+      0.6136363636363636,
+      0.0,
+      0.38636363636363635
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 0.0,
+    "remote_repair_hp_per_s": 75.0
+  },
+  {
+    "name": "Striking Leshak",
+    "hull_class": "battleship",
+    "signature_radius_m": 370.0,
+    "shield_hp": 5000.0,
+    "armor_hp": 13000.0,
+    "structure_hp": 10000.0,
+    "max_speed_mps": 400.0,
+    "orbit_speed_mps": 0.0,
+    "orbit_range_m": 0.0,
+    "turret_optimal_m": 63000.0,
+    "turret_falloff_m": 0.0,
+    "turret_tracking": 7.0,
+    "turret_cycle_s": 5.0,
+    "dps": 98.56,
+    "shield_resists": [
+      0.0,
+      0.2,
+      0.4,
+      0.5
+    ],
+    "armor_resists": [
+      0.6,
+      0.48,
+      0.53,
+      0.36
+    ],
+    "structure_resists": [
+      0.33,
+      0.33,
+      0.33,
+      0.33
+    ],
+    "damage_mix": [
+      0.0,
+      0.6136363636363636,
+      0.0,
+      0.38636363636363635
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 0.0,
+    "remote_repair_hp_per_s": 37.5
+  },
+  {
+    "name": "Tangling Leshak",
+    "hull_class": "battleship",
+    "signature_radius_m": 370.0,
+    "shield_hp": 5000.0,
+    "armor_hp": 13000.0,
+    "structure_hp": 10000.0,
+    "max_speed_mps": 400.0,
+    "orbit_speed_mps": 0.0,
+    "orbit_range_m": 12000.0,
+    "turret_optimal_m": 63000.0,
+    "turret_falloff_m": 0.0,
+    "turret_tracking": 7.0,
+    "turret_cycle_s": 5.0,
+    "dps": 98.56,
+    "shield_resists": [
+      0.0,
+      0.2,
+      0.4,
+      0.5
+    ],
+    "armor_resists": [
+      0.6,
+      0.48,
+      0.53,
+      0.36
+    ],
+    "structure_resists": [
+      0.33,
+      0.33,
+      0.33,
+      0.33
+    ],
+    "damage_mix": [
+      0.0,
+      0.6136363636363636,
+      0.0,
+      0.38636363636363635
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 0.0,
+    "remote_repair_hp_per_s": 37.5
+  },
+  {
+    "name": "Starving Leshak",
+    "hull_class": "battleship",
+    "signature_radius_m": 370.0,
+    "shield_hp": 5000.0,
+    "armor_hp": 13000.0,
+    "structure_hp": 10000.0,
+    "max_speed_mps": 400.0,
+    "orbit_speed_mps": 0.0,
+    "orbit_range_m": 12000.0,
+    "turret_optimal_m": 63000.0,
+    "turret_falloff_m": 0.0,
+    "turret_tracking": 7.0,
+    "turret_cycle_s": 5.0,
+    "dps": 98.56,
+    "shield_resists": [
+      0.0,
+      0.2,
+      0.4,
+      0.5
+    ],
+    "armor_resists": [
+      0.6,
+      0.48,
+      0.53,
+      0.36
+    ],
+    "structure_resists": [
+      0.33,
+      0.33,
+      0.33,
+      0.33
+    ],
+    "damage_mix": [
+      0.0,
+      0.6136363636363636,
+      0.0,
+      0.38636363636363635
+    ],
+    "neutralizer_gj_per_s": 25.0,
+    "local_repair_hp_per_s": 0.0,
+    "remote_repair_hp_per_s": 37.5
+  },
+  {
+    "name": "Renewing Rodiva",
+    "hull_class": "cruiser",
+    "signature_radius_m": 150.0,
+    "shield_hp": 1200.0,
+    "armor_hp": 4700.0,
+    "structure_hp": 2400.0,
+    "max_speed_mps": 1900.0,
+    "orbit_speed_mps": 380.0,
+    "orbit_range_m": 15000.0,
+    "turret_optimal_m": 22000.0,
+    "turret_falloff_m": 0.0,
+    "turret_tracking": 70.0,
+    "turret_cycle_s": 5.0,
+    "dps": 65.1,
+    "shield_resists": [
+      0.0,
+      0.2,
+      0.4,
+      0.5
+    ],
+    "armor_resists": [
+      0.6,
+      0.48,
+      0.53,
+      0.36
+    ],
+    "structure_resists": [
+      0.33,
+      0.33,
+      0.33,
+      0.33
+    ],
+    "damage_mix": [
+      0.0,
+      0.5806451612903226,
+      0.0,
+      0.41935483870967744
+    ],
+    "neutralizer_gj_per_s": 0.0,
+    "local_repair_hp_per_s": 0.0,
+    "remote_repair_hp_per_s": 75.0
+  }
+]
