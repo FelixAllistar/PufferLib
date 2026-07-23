@@ -3080,13 +3080,7 @@ EvalResult run_eval(Ini* ini, TrainContext* ctx, int mode, int verbose) {
             break;
         }
 
-        // Long-horizon environments may not finish an episode during the
-        // first one-step eval rollout. Until then vec_log publishes env/n=0
-        // but no aggregate metrics, so env/score and env/perf do not exist.
         if (n == 0) {
-            if (verbose) {
-                printf("\rbot_eval=0/%ld  waiting for first completed episode", num_games);
-            }
             continue;
         }
 
