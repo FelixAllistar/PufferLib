@@ -21,6 +21,21 @@ bash build.sh puffer_survivors --gpu
 ./puffer train puffer_survivors
 ```
 
+### Play it yourself
+
+From `ocean/puffer_survivors`:
+
+```bash
+make play
+```
+
+Controls: WASD/arrows to move, `1`/`2`/`3` for upgrade cards, `R` to restart,
+`H` hitboxes, `Q` FX quality, Esc to quit. Run is launched from the repo root
+so relative resource paths resolve.
+
+You can also build the same standalone binary with
+`bash build.sh puffer_survivors --fast` from the repo root.
+
 The action heads are movement `[9]` and upgrade choice `[3]`. Observation v9
 contains 396 floats, including explicit boss and obstacle geometry.
 

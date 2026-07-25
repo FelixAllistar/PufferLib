@@ -24,8 +24,27 @@ python ocean/abyss/tools/build_collider_catalog.py /path/to/registry-live-new-ab
 ```
 
 Build the environment with `bash build.sh abyss`. Dark weather, the modern turret hit
-equation, and targeting time are represented. The current combat constants marked
-provisional in `config/abyss.ini` still need exact fitted module values.
+equation, targeting time, layer resistances, nonlinear capacitor recharge, cycle-based
+module capacitor costs, MWD signature bloom, and start/end local-repair timing are
+represented. `SHIP_PROFILE.md` documents the resolved fit values required for another ship.
+
+The policy ABI uses 64 randomized, room-stable entity slots. Overview ordering is not
+part of identity: an NPC, cache, conduit, or tower keeps its slot until the room changes.
+Destroyed NPC slots become absent vectors without being reused; the cache remains observable
+as its wreck. Six independently masked heads select navigation
+`hold|stop|approach(slot)`, targeting `hold|lock(slot)|focus(slot)`, weapon
+`hold|off|fire(slot)`, propulsion/repair desired state, and interaction
+`hold|loot|open(slot)|activate(slot)`. `fire(slot)` is a persistent retargeting transaction:
+stop the old cycle, focus the requested target, then start the weapon on a later tick.
+`open(slot)` and `activate(slot)` are also persistent transactions: one command starts
+automatic approach and completes at cargo or conduit range, matching EVE's default action.
+Only one pointer operation lands at the end of each tick, after the old world has advanced,
+prioritized as open/activate, weapon focus, explicit targeting, then navigation. Loot is
+the non-pointer Enter shortcut and can coexist with that pointer operation. This matches
+the measured live proposal-to-landing median of about 0.95 seconds. There is no
+nearest-hostile shortcut. The observation
+has 1,224 floats and the flattened action mask has 397 entries. Earlier Abyss checkpoints
+are incompatible and must be retrained.
 
 The runtime samples one of 28 recorded three-room sequences. It uses the observed hostile
 compositions, NPC catalog statistics, cache/conduit XYZ, hostile XYZ, and named support-pylon
