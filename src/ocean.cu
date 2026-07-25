@@ -17,8 +17,14 @@ void puf_normal_init(PrecisionTensor* dst, float std, ulong seed, cudaStream_t s
     cudaFree(buf);
 }
 
+#if __has_include("../ocean/nmmo3/nmmo3.cu")
+#define PUFFER_NMMO3
 #include "../ocean/nmmo3/nmmo3.cu"
+#endif
+#if __has_include("../ocean/minimal/minimal.cu")
+#define PUFFER_MINIMAL
 #include "../ocean/minimal/minimal.cu"
+#endif
 #ifdef PUFFER_NETHACK
 #include "../ocean/nethack/nethack.cu"
 #endif
@@ -31,14 +37,18 @@ static void create_custom_encoder(const char* env_name, Encoder* enc) {
         return;
     }
 #endif
+#ifdef PUFFER_NMMO3
     if (strcmp(env_name, "nmmo3") == 0) {
         create_nmmo3_encoder(enc);
         return;
     }
+#endif
+#ifdef PUFFER_MINIMAL
     if (strcmp(env_name, "minimal") == 0) {
         create_minimal_encoder(enc);
         return;
     }
+#endif
 }
 
 static void create_custom_decoder(const char* env_name, Decoder* dec) {
