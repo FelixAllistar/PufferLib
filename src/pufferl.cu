@@ -3158,6 +3158,14 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
     }
 
     PuffeRL* pufferl = create_pufferl(ini, ctx);
+    char resolved_path[4096];
+    const char* load_path = puf_checkpoint_path_key(ini,
+        "load_model_path", resolved_path, sizeof(resolved_path));
+    if (load_path) {
+        puf_load_weights_into(pufferl->master_weights, pufferl->param_puf,
+            pufferl->default_stream, load_path);
+        printf("Loaded weights from %s\n", load_path);
+    }
     Selfplay selfplay = {0};
     if (use_selfplay) {
         char initial_checkpoint[4096];
