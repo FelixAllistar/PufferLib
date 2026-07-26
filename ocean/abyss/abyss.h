@@ -6,10 +6,11 @@
 
 #define ABYSS_NAV_ACTIONS (2 + ABYSS_MAX_ENTITIES)
 #define ABYSS_TARGET_ACTIONS (1 + 2*ABYSS_MAX_ENTITIES)
-#define ABYSS_WEAPON_ACTIONS (2 + ABYSS_MAX_ENTITIES)
+#define ABYSS_WEAPON_ACTIONS (1 + ABYSS_MAX_ENTITIES)
+#define ABYSS_DESIRED_ACTIONS 2
 #define ABYSS_INTERACTION_ACTIONS (2 + 2*ABYSS_MAX_ENTITIES)
-#define ABYSS_ACTION_MASK_SIZE (ABYSS_NAV_ACTIONS + ABYSS_TARGET_ACTIONS + ABYSS_WEAPON_ACTIONS + 3 + 3 + ABYSS_INTERACTION_ACTIONS)
-#define ACT_SIZES {ABYSS_NAV_ACTIONS, ABYSS_TARGET_ACTIONS, ABYSS_WEAPON_ACTIONS, 3, 3, ABYSS_INTERACTION_ACTIONS}
+#define ABYSS_ACTION_MASK_SIZE (ABYSS_NAV_ACTIONS + ABYSS_TARGET_ACTIONS + ABYSS_WEAPON_ACTIONS + 2*ABYSS_DESIRED_ACTIONS + ABYSS_INTERACTION_ACTIONS)
+#define ACT_SIZES {ABYSS_NAV_ACTIONS, ABYSS_TARGET_ACTIONS, ABYSS_WEAPON_ACTIONS, ABYSS_DESIRED_ACTIONS, ABYSS_DESIRED_ACTIONS, ABYSS_INTERACTION_ACTIONS}
 #define NUM_ATNS ABYSS_ACTION_LANES
 
 #define ABYSS_MAX_ENTITIES 64
@@ -32,8 +33,8 @@ enum { EFFECT_CYCLE_START, EFFECT_CYCLE_END };
 enum { NAV_HOLD, NAV_STOP, NAV_APPROACH_BASE };
 enum { TARGET_HOLD, TARGET_LOCK_BASE };
 #define TARGET_FOCUS_BASE (TARGET_LOCK_BASE + ABYSS_MAX_ENTITIES)
-enum { WEAPON_HOLD, WEAPON_OFF, WEAPON_FIRE_BASE };
-enum { DESIRED_HOLD, DESIRED_ON, DESIRED_OFF };
+enum { WEAPON_OFF, WEAPON_FIRE_BASE };
+enum { DESIRED_OFF, DESIRED_ON };
 enum { INTERACT_HOLD, INTERACT_LOOT, INTERACT_OPEN_BASE };
 #define INTERACT_ACTIVATE_BASE (INTERACT_OPEN_BASE + ABYSS_MAX_ENTITIES)
 enum { INTERACTION_NONE, INTERACTION_OPEN, INTERACTION_ACTIVATE };
@@ -583,8 +584,8 @@ static void ab_compute_action_mask(Env* e) {
     int target_offset=nav_offset+ABYSS_NAV_ACTIONS;
     int weapon_offset=target_offset+ABYSS_TARGET_ACTIONS;
     int prop_offset=weapon_offset+ABYSS_WEAPON_ACTIONS;
-    int rep_offset=prop_offset+3;
-    int interaction_offset=rep_offset+3;
+    int rep_offset=prop_offset+ABYSS_DESIRED_ACTIONS;
+    int interaction_offset=rep_offset+ABYSS_DESIRED_ACTIONS;
 
     int loot_recovery=e->cargo_open&&e->cargo_index>=0&&!e->cache_looted;
     int recovery_approach_available=loot_recovery&&
@@ -593,14 +594,13 @@ static void ab_compute_action_mask(Env* e) {
     if(e->interaction_kind==INTERACTION_NONE&&!loot_recovery)
         mask[nav_offset+NAV_STOP]=1;
     mask[target_offset+TARGET_HOLD]=1;
-    mask[weapon_offset+WEAPON_HOLD]=1;
-    mask[prop_offset+DESIRED_HOLD]=1;
-    mask[rep_offset+DESIRED_HOLD]=1;
+    mask[weapon_offset+WEAPON_OFF]=1;
+    mask[prop_offset+DESIRED_OFF]=1;
+    mask[prop_offset+DESIRED_ON]=1;
+    mask[rep_offset+DESIRED_OFF]=1;
+    mask[rep_offset+DESIRED_ON]=1;
     mask[interaction_offset+INTERACT_HOLD]=1;
 
-    if(e->weapon_on||e->weapon_desired_target_index>=0)mask[weapon_offset+WEAPON_OFF]=1;
-    mask[prop_offset+(e->prop_desired_on?DESIRED_OFF:DESIRED_ON)]=1;
-    mask[rep_offset+(e->rep_on?DESIRED_OFF:DESIRED_ON)]=1;
     if(ab_loot_in_range(e))mask[interaction_offset+INTERACT_LOOT]=1;
 
     for(int slot=0;slot<ABYSS_MAX_ENTITIES;slot++) {
@@ -617,7 +617,7 @@ static void ab_compute_action_mask(Env* e) {
             mask[target_offset+TARGET_LOCK_BASE+slot]=1;
         if(ab_damageable(n)&&n->locked&&!n->focused)
             mask[target_offset+TARGET_FOCUS_BASE+slot]=1;
-        if(ab_damageable(n)&&n->locked&&e->weapon_desired_target_index!=index)
+        if(ab_damageable(n)&&n->locked)
             mask[weapon_offset+WEAPON_FIRE_BASE+slot]=1;
         if(e->interaction_kind==INTERACTION_NONE&&n->kind==ENTITY_CACHE&&!n->alive&&!e->cache_looted&&!e->cargo_open)
             mask[interaction_offset+INTERACT_OPEN_BASE+slot]=1;
@@ -1036,13 +1036,8 @@ void puf_step(Env* e) {
     int threats_at_tick_start=ab_gate_targets_alive(e)>0;
     int nav=(int)actions[0], target_action=(int)actions[1], weapon=(int)actions[2];
     int prop=(int)actions[3], rep=(int)actions[4], interact=(int)actions[5];
-    if(prop==DESIRED_ON&&!e->prop_desired_on){
-        e->prop_desired_on=1;
-    }else if(prop==DESIRED_OFF&&e->prop_desired_on){
-        e->prop_desired_on=0;
-    }
-    if(rep==DESIRED_ON&&!e->rep_on)e->rep_on=1;
-    else if(rep==DESIRED_OFF&&e->rep_on)e->rep_on=0;
+    e->prop_desired_on=prop==DESIRED_ON;
+    e->rep_on=rep==DESIRED_ON;
 
     int gate=ab_find_kind(e,ENTITY_CONDUIT);
 

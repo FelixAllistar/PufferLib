@@ -300,22 +300,33 @@ int main(void) {
     env.entities[hostile].locked = 1;
     compute_observations(&env);
     int weapon_offset = ABYSS_NAV_ACTIONS + ABYSS_TARGET_ACTIONS;
+    int prop_offset = weapon_offset + ABYSS_WEAPON_ACTIONS;
+    int rep_offset = prop_offset + ABYSS_DESIRED_ACTIONS;
+    assert(action_mask[weapon_offset + WEAPON_OFF] == 1);
     assert(action_mask[weapon_offset + WEAPON_FIRE_BASE + cache_slot] == 1);
     assert(action_mask[weapon_offset + WEAPON_FIRE_BASE + hostile_slot] == 1);
     assert(action_mask[weapon_offset + WEAPON_FIRE_BASE + gate_slot] == 0);
+    assert(action_mask[prop_offset + DESIRED_OFF] == 1);
+    assert(action_mask[prop_offset + DESIRED_ON] == 1);
+    assert(action_mask[rep_offset + DESIRED_OFF] == 1);
+    assert(action_mask[rep_offset + DESIRED_ON] == 1);
     env.weapon_cooldown = 100;
     actions[2] = WEAPON_FIRE_BASE + cache_slot;
     puf_step(&env);
     assert(env.focus_index == cache);
     assert(env.weapon_on == 0);
     assert(env.weapon_desired_target_index == cache);
+    compute_observations(&env);
+    assert(action_mask[weapon_offset + WEAPON_FIRE_BASE + cache_slot] == 1);
     memset(actions, 0, sizeof(actions));
+    actions[2] = WEAPON_FIRE_BASE + cache_slot;
     puf_step(&env);
     assert(env.weapon_target_index == cache);
 
     // A later focus click does not silently redirect an active weapon.
     memset(actions, 0, sizeof(actions));
     actions[1] = TARGET_FOCUS_BASE + hostile_slot;
+    actions[2] = WEAPON_FIRE_BASE + cache_slot;
     puf_step(&env);
     assert(env.focus_index == hostile);
     assert(env.weapon_target_index == cache);
@@ -328,10 +339,12 @@ int main(void) {
     assert(env.weapon_on == 0);
     assert(env.weapon_desired_target_index == hostile);
     memset(actions, 0, sizeof(actions));
+    actions[2] = WEAPON_FIRE_BASE + hostile_slot;
     puf_step(&env);
     assert(env.weapon_target_index == hostile);
     memset(actions, 0, sizeof(actions));
     actions[1] = TARGET_FOCUS_BASE + gate_slot;
+    actions[2] = WEAPON_FIRE_BASE + hostile_slot;
     puf_step(&env);
     assert(env.focus_index == hostile);
     memset(actions, 0, sizeof(actions));
@@ -373,7 +386,7 @@ int main(void) {
     env.ship_pos = ab_add(env.entities[cache].pos, (Vec3){10000, 0, 0});
     compute_observations(&env);
     int interaction_offset = ABYSS_NAV_ACTIONS + ABYSS_TARGET_ACTIONS +
-        ABYSS_WEAPON_ACTIONS + 3 + 3;
+        ABYSS_WEAPON_ACTIONS + 2*ABYSS_DESIRED_ACTIONS;
     assert(action_mask[interaction_offset + INTERACT_OPEN_BASE + cache_slot] == 1);
     memset(actions, 0, sizeof(actions));
     actions[5] = INTERACT_OPEN_BASE + cache_slot;
@@ -467,6 +480,10 @@ int main(void) {
     assert(terminals[0] == 0.0f);
     assert(env.tick == 1);
     assert(env.prop_desired_on == 1);
+    memset(actions, 0, sizeof(actions));
+    puf_step(&env);
+    assert(env.prop_desired_on == 0);
+    assert(env.rep_on == 0);
 
     // Completion requires all three caches, and completion dominates speed.
     Env incomplete = {0};

@@ -33,8 +33,9 @@ part of identity: an NPC, cache, conduit, or tower keeps its slot until the room
 Destroyed NPC slots become absent vectors without being reused; the cache remains observable
 as its wreck. Six independently masked heads select navigation
 `hold|stop|approach(slot)`, targeting `hold|lock(slot)|focus(slot)`, weapon
-`hold|off|fire(slot)`, propulsion/repair desired state, and interaction
-`hold|loot|open(slot)|activate(slot)`. `fire(slot)` is a persistent retargeting transaction:
+`off|fire(slot)`, propulsion/repair `off|on`, and interaction
+`hold|loot|open(slot)|activate(slot)`. The three module heads declare their complete
+desired state every tick. `fire(slot)` is reconciled as a persistent retargeting transaction:
 stop the old cycle, focus the requested target, then start the weapon on a later tick.
 `open(slot)` and `activate(slot)` are also persistent transactions: one command starts
 automatic approach and completes at cargo or conduit range, matching EVE's default action.
@@ -43,7 +44,7 @@ prioritized as open/activate, weapon focus, explicit targeting, then navigation.
 the non-pointer Enter shortcut and can coexist with that pointer operation. This matches
 the measured live proposal-to-landing median of about 0.95 seconds. There is no
 nearest-hostile shortcut. The observation
-has 1,224 floats and the flattened action mask has 397 entries. Earlier Abyss checkpoints
+has 1,224 floats and the flattened action mask has 394 entries. Earlier Abyss checkpoints
 are incompatible and must be retrained.
 
 The runtime samples one of 28 recorded three-room sequences. It uses the observed hostile
