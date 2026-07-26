@@ -3022,7 +3022,9 @@ EvalResult run_eval(Ini* ini, TrainContext* ctx, int mode, int verbose) {
         puf_ini_put(ini, "env.num_bots", "0");
     }
     puf_ini_put(ini, "base.reset_every_horizon", "0");
-    puf_ini_put(ini, "train.horizon", "1");
+    char eval_horizon[16];
+    snprintf(eval_horizon, sizeof(eval_horizon), "%d", ADV_VEC_WIDTH);
+    puf_ini_put(ini, "train.horizon", eval_horizon);
 
     PuffeRL* pufferl = create_pufferl(ini, ctx);
     if (match) {
@@ -3114,6 +3116,26 @@ EvalResult run_eval(Ini* ini, TrainContext* ctx, int mode, int verbose) {
         if ((n - baseline_n) >= num_games && (!burnin_games || baseline_n > 0)) {
             result.score = (float)score;
             result.games = (int)scored_n;
+            if (verbose) {
+                printf("\n{");
+                int emitted = 0;
+                for (int i = 0; i < log.size; i++) {
+                    const char* key = log.items[i].key;
+                    if (strncmp(key, "env/", 4) != 0) {
+                        continue;
+                    }
+                    double value = log.items[i].value;
+                    if (baseline_n > 0 && scored_n > 0) {
+                        DictItem* base = dict_find(&baseline, key);
+                        if (base) {
+                            value = (value * (double)n -
+                                base->value * (double)baseline_n) / scored_n;
+                        }
+                    }
+                    printf("%s\"%s\":%.9g", emitted++ ? "," : "", key, value);
+                }
+                printf("}");
+            }
             break;
         }
     }

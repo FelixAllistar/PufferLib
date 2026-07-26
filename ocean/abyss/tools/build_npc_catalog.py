@@ -27,6 +27,22 @@ FIELDS = {
     "dps": "Total DPS",
 }
 
+# EVE static-data dogma attributes for the missile charges present in the
+# recorded T0 rooms: aoeCloudSize, aoeVelocity, aoeDamageReductionFactor.
+MISSILE_APPLICATION = {
+    "Caldari Navy Inferno Heavy Missile": (140.0, 85.0, 0.682),
+    "Caldari Navy Nova Heavy Missile": (140.0, 85.0, 0.682),
+    "Inferno Heavy Assault Missile": (125.0, 101.0, 0.882),
+    "Inferno Rocket": (20.0, 150.0, 0.644),
+    "Mjolnir Rocket": (20.0, 150.0, 0.644),
+    "Nova Heavy Assault Missile": (125.0, 101.0, 0.882),
+    "Nova Heavy Missile": (140.0, 85.0, 0.682),
+    "Nova Rocket": (20.0, 150.0, 0.644),
+    "Oneiric Missile": (40.0, 170.0, 0.604),
+    "Phantasmata Missile": (330.0, 69.0, 0.882),
+    "Praedormitan Missile": (125.0, 85.0, 0.682),
+}
+
 
 def number(value: str | None) -> float:
     if value is None or not value.strip():
@@ -50,6 +66,8 @@ def build(source: Path, destination: Path) -> list[dict]:
         item["structure_resists"] = [number(row.get(f"structure_{d}")) / 100.0 for d in ("em", "thermal", "kinetic", "exp")]
         turret_dps = number(row.get("Weapon DPS"))
         missile_dps = number(row.get("Missile DPS"))
+        item["turret_dps"] = turret_dps
+        item["missile_dps"] = missile_dps
         if not item["dps"]:
             item["dps"] = turret_dps + missile_dps
         turret_raw = [number(row.get(f"ammo_{d}")) for d in ("em", "thermal", "kinetic", "exp")]
@@ -61,6 +79,18 @@ def build(source: Path, destination: Path) -> list[dict]:
             missile_raw[damage_index[damage_type]] += float(amount)
         missile_total = sum(missile_raw)
         missile_mix = [value / missile_total if missile_total else 0.0 for value in missile_raw]
+        item["turret_damage_mix"] = turret_mix
+        item["missile_damage_mix"] = missile_mix
+        missile_name = row.get("missile_type", "").strip()
+        if missile_dps and missile_name not in MISSILE_APPLICATION:
+            raise ValueError(f"missing missile application profile for {missile_name!r}")
+        explosion_radius, explosion_velocity, damage_reduction_factor = (
+            MISSILE_APPLICATION.get(missile_name, (0.0, 0.0, 0.0))
+        )
+        item["missile_range_m"] = number(row.get("Approximate Missile Range"))
+        item["missile_explosion_radius_m"] = explosion_radius
+        item["missile_explosion_velocity_mps"] = explosion_velocity
+        item["missile_damage_reduction_factor"] = damage_reduction_factor
         combined_dps = turret_dps + missile_dps
         item["damage_mix"] = [
             (turret_mix[i] * turret_dps + missile_mix[i] * missile_dps) / combined_dps

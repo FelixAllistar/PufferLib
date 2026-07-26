@@ -7,7 +7,8 @@ into the `[env]` profile block.
 
 ## Required hull values
 
-- Shield, armor, and hull hit points.
+- Shield, armor, and hull hit points, plus the displayed passive shield
+  recharge time in seconds.
 - EM, thermal, kinetic, and explosive resistance for each hit-point layer.
 - Capacitor capacity and the displayed capacitor recharge time in seconds.
 - Base mass, propulsion-module mass addition, inertia modifier, base speed,
@@ -16,8 +17,9 @@ into the `[env]` profile block.
   profile's 62 m base radius therefore becomes 372 m while the MWD cycle is active.
 - Scan resolution and maximum targeting range.
 
-The capacitor recharge time is the displayed full recharge attribute, not
-`capacity / passive GJ/s`. The simulator applies EVE's nonlinear curve.
+Shield and capacitor recharge times are the displayed full recharge attributes,
+not `capacity / passive HP/s` or `capacity / passive GJ/s`. The simulator
+applies EVE's nonlinear recharge curve to both pools.
 
 ## Required module values
 

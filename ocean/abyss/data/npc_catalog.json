@@ -32,6 +32,24 @@
       0.0,
       0.0
     ],
+    "turret_dps": 100.0,
+    "missile_dps": 0.0,
+    "turret_damage_mix": [
+      0.25,
+      0.25,
+      0.25,
+      0.25
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 0.0,
+    "missile_explosion_radius_m": 0.0,
+    "missile_explosion_velocity_mps": 0.0,
+    "missile_damage_reduction_factor": 0.0,
     "damage_mix": [
       0.25,
       0.25,
@@ -75,6 +93,24 @@
       0.0,
       0.0
     ],
+    "turret_dps": 500.0,
+    "missile_dps": 0.0,
+    "turret_damage_mix": [
+      0.25,
+      0.25,
+      0.25,
+      0.25
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 0.0,
+    "missile_explosion_radius_m": 0.0,
+    "missile_explosion_velocity_mps": 0.0,
+    "missile_damage_reduction_factor": 0.0,
     "damage_mix": [
       0.25,
       0.25,
@@ -118,6 +154,24 @@
       0.0,
       0.0
     ],
+    "turret_dps": 600.0,
+    "missile_dps": 0.0,
+    "turret_damage_mix": [
+      0.25,
+      0.25,
+      0.25,
+      0.25
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 0.0,
+    "missile_explosion_radius_m": 0.0,
+    "missile_explosion_velocity_mps": 0.0,
+    "missile_damage_reduction_factor": 0.0,
     "damage_mix": [
       0.25,
       0.25,
@@ -161,6 +215,24 @@
       0.0,
       0.0
     ],
+    "turret_dps": 300.0,
+    "missile_dps": 0.0,
+    "turret_damage_mix": [
+      0.25,
+      0.25,
+      0.25,
+      0.25
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 0.0,
+    "missile_explosion_radius_m": 0.0,
+    "missile_explosion_velocity_mps": 0.0,
+    "missile_damage_reduction_factor": 0.0,
     "damage_mix": [
       0.25,
       0.25,
@@ -204,6 +276,24 @@
       0.0,
       0.0
     ],
+    "turret_dps": 200.0,
+    "missile_dps": 0.0,
+    "turret_damage_mix": [
+      0.25,
+      0.25,
+      0.25,
+      0.25
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 0.0,
+    "missile_explosion_radius_m": 0.0,
+    "missile_explosion_velocity_mps": 0.0,
+    "missile_damage_reduction_factor": 0.0,
     "damage_mix": [
       0.25,
       0.25,
@@ -247,6 +337,24 @@
       0.0,
       0.0
     ],
+    "turret_dps": 400.0,
+    "missile_dps": 0.0,
+    "turret_damage_mix": [
+      0.25,
+      0.25,
+      0.25,
+      0.25
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 0.0,
+    "missile_explosion_radius_m": 0.0,
+    "missile_explosion_velocity_mps": 0.0,
+    "missile_damage_reduction_factor": 0.0,
     "damage_mix": [
       0.25,
       0.25,
@@ -290,6 +398,24 @@
       0.0,
       0.0
     ],
+    "turret_dps": 40.0,
+    "missile_dps": 0.0,
+    "turret_damage_mix": [
+      0.25,
+      0.25,
+      0.25,
+      0.25
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 0.0,
+    "missile_explosion_radius_m": 0.0,
+    "missile_explosion_velocity_mps": 0.0,
+    "missile_damage_reduction_factor": 0.0,
     "damage_mix": [
       0.25,
       0.25,
@@ -333,6 +459,24 @@
       0.0,
       0.0
     ],
+    "turret_dps": 40.0,
+    "missile_dps": 0.0,
+    "turret_damage_mix": [
+      0.25,
+      0.25,
+      0.25,
+      0.25
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 0.0,
+    "missile_explosion_radius_m": 0.0,
+    "missile_explosion_velocity_mps": 0.0,
+    "missile_damage_reduction_factor": 0.0,
     "damage_mix": [
       0.25,
       0.25,
@@ -376,6 +520,24 @@
       0.0,
       0.0
     ],
+    "turret_dps": 40.0,
+    "missile_dps": 0.0,
+    "turret_damage_mix": [
+      0.25,
+      0.25,
+      0.25,
+      0.25
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 0.0,
+    "missile_explosion_radius_m": 0.0,
+    "missile_explosion_velocity_mps": 0.0,
+    "missile_damage_reduction_factor": 0.0,
     "damage_mix": [
       0.25,
       0.25,
@@ -419,6 +581,24 @@
       0.0,
       0.0
     ],
+    "turret_dps": 27.588,
+    "missile_dps": 0.0,
+    "turret_damage_mix": [
+      0.5454545454545454,
+      0.45454545454545453,
+      0.0,
+      0.0
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 0.0,
+    "missile_explosion_radius_m": 0.0,
+    "missile_explosion_velocity_mps": 0.0,
+    "missile_damage_reduction_factor": 0.0,
     "damage_mix": [
       0.5454545454545454,
       0.4545454545454545,
@@ -462,6 +642,24 @@
       0.0,
       0.0
     ],
+    "turret_dps": 27.588,
+    "missile_dps": 0.0,
+    "turret_damage_mix": [
+      0.5454545454545454,
+      0.45454545454545453,
+      0.0,
+      0.0
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 0.0,
+    "missile_explosion_radius_m": 0.0,
+    "missile_explosion_velocity_mps": 0.0,
+    "missile_damage_reduction_factor": 0.0,
     "damage_mix": [
       0.5454545454545454,
       0.4545454545454545,
@@ -505,6 +703,24 @@
       0.0,
       0.0
     ],
+    "turret_dps": 55.0,
+    "missile_dps": 0.0,
+    "turret_damage_mix": [
+      0.5454545454545454,
+      0.45454545454545453,
+      0.0,
+      0.0
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 0.0,
+    "missile_explosion_radius_m": 0.0,
+    "missile_explosion_velocity_mps": 0.0,
+    "missile_damage_reduction_factor": 0.0,
     "damage_mix": [
       0.5454545454545454,
       0.45454545454545453,
@@ -548,6 +764,24 @@
       0.0,
       0.0
     ],
+    "turret_dps": 173.33333333333334,
+    "missile_dps": 0.0,
+    "turret_damage_mix": [
+      0.6,
+      0.4,
+      0.0,
+      0.0
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 0.0,
+    "missile_explosion_radius_m": 0.0,
+    "missile_explosion_velocity_mps": 0.0,
+    "missile_damage_reduction_factor": 0.0,
     "damage_mix": [
       0.6,
       0.4,
@@ -591,6 +825,24 @@
       0.0,
       0.0
     ],
+    "turret_dps": 27.588,
+    "missile_dps": 0.0,
+    "turret_damage_mix": [
+      0.5454545454545454,
+      0.45454545454545453,
+      0.0,
+      0.0
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 0.0,
+    "missile_explosion_radius_m": 0.0,
+    "missile_explosion_velocity_mps": 0.0,
+    "missile_damage_reduction_factor": 0.0,
     "damage_mix": [
       0.5454545454545454,
       0.4545454545454545,
@@ -634,6 +886,24 @@
       0.0,
       0.0
     ],
+    "turret_dps": 27.588,
+    "missile_dps": 0.0,
+    "turret_damage_mix": [
+      0.5454545454545454,
+      0.45454545454545453,
+      0.0,
+      0.0
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 0.0,
+    "missile_explosion_radius_m": 0.0,
+    "missile_explosion_velocity_mps": 0.0,
+    "missile_damage_reduction_factor": 0.0,
     "damage_mix": [
       0.5454545454545454,
       0.4545454545454545,
@@ -677,6 +947,24 @@
       0.0,
       0.0
     ],
+    "turret_dps": 27.588,
+    "missile_dps": 0.0,
+    "turret_damage_mix": [
+      0.5454545454545454,
+      0.45454545454545453,
+      0.0,
+      0.0
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 0.0,
+    "missile_explosion_radius_m": 0.0,
+    "missile_explosion_velocity_mps": 0.0,
+    "missile_damage_reduction_factor": 0.0,
     "damage_mix": [
       0.5454545454545454,
       0.4545454545454545,
@@ -720,6 +1008,24 @@
       0.0,
       0.0
     ],
+    "turret_dps": 27.588,
+    "missile_dps": 0.0,
+    "turret_damage_mix": [
+      0.5454545454545454,
+      0.45454545454545453,
+      0.0,
+      0.0
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 0.0,
+    "missile_explosion_radius_m": 0.0,
+    "missile_explosion_velocity_mps": 0.0,
+    "missile_damage_reduction_factor": 0.0,
     "damage_mix": [
       0.5454545454545454,
       0.4545454545454545,
@@ -763,6 +1069,24 @@
       0.0,
       0.0
     ],
+    "turret_dps": 27.588,
+    "missile_dps": 0.0,
+    "turret_damage_mix": [
+      0.5454545454545454,
+      0.45454545454545453,
+      0.0,
+      0.0
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 0.0,
+    "missile_explosion_radius_m": 0.0,
+    "missile_explosion_velocity_mps": 0.0,
+    "missile_damage_reduction_factor": 0.0,
     "damage_mix": [
       0.5454545454545454,
       0.4545454545454545,
@@ -806,6 +1130,24 @@
       0.54,
       0.54
     ],
+    "turret_dps": 110.0,
+    "missile_dps": 0.0,
+    "turret_damage_mix": [
+      0.7272727272727273,
+      0.0,
+      0.0,
+      0.2727272727272727
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 0.0,
+    "missile_explosion_radius_m": 0.0,
+    "missile_explosion_velocity_mps": 0.0,
+    "missile_damage_reduction_factor": 0.0,
     "damage_mix": [
       0.7272727272727273,
       0.0,
@@ -849,6 +1191,24 @@
       0.33,
       0.33
     ],
+    "turret_dps": 70.71428571428571,
+    "missile_dps": 0.0,
+    "turret_damage_mix": [
+      0.7272727272727273,
+      0.0,
+      0.0,
+      0.2727272727272727
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 0.0,
+    "missile_explosion_radius_m": 0.0,
+    "missile_explosion_velocity_mps": 0.0,
+    "missile_damage_reduction_factor": 0.0,
     "damage_mix": [
       0.7272727272727273,
       0.0,
@@ -892,6 +1252,24 @@
       0.33,
       0.33
     ],
+    "turret_dps": 2.5,
+    "missile_dps": 44.7,
+    "turret_damage_mix": [
+      0.0,
+      0.8,
+      0.2,
+      0.0
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ],
+    "missile_range_m": 154800.0,
+    "missile_explosion_radius_m": 140.0,
+    "missile_explosion_velocity_mps": 85.0,
+    "missile_damage_reduction_factor": 0.682,
     "damage_mix": [
       0.0,
       0.0423728813559322,
@@ -935,6 +1313,24 @@
       0.54,
       0.54
     ],
+    "turret_dps": 18.333333333333332,
+    "missile_dps": 13.2,
+    "turret_damage_mix": [
+      0.0,
+      0.0,
+      0.3,
+      0.7
+    ],
+    "missile_damage_mix": [
+      1.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 20250.0,
+    "missile_explosion_radius_m": 20.0,
+    "missile_explosion_velocity_mps": 150.0,
+    "missile_damage_reduction_factor": 0.644,
     "damage_mix": [
       0.4186046511627907,
       0.0,
@@ -978,6 +1374,24 @@
       0.33,
       0.33
     ],
+    "turret_dps": 15.0,
+    "missile_dps": 6.6,
+    "turret_damage_mix": [
+      0.0,
+      0.0,
+      0.3,
+      0.7
+    ],
+    "missile_damage_mix": [
+      1.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 20250.0,
+    "missile_explosion_radius_m": 20.0,
+    "missile_explosion_velocity_mps": 150.0,
+    "missile_damage_reduction_factor": 0.644,
     "damage_mix": [
       0.3055555555555555,
       0.0,
@@ -1021,6 +1435,24 @@
       0.33,
       0.33
     ],
+    "turret_dps": 0.0,
+    "missile_dps": 0.0,
+    "turret_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 0.0,
+    "missile_explosion_radius_m": 0.0,
+    "missile_explosion_velocity_mps": 0.0,
+    "missile_damage_reduction_factor": 0.0,
     "damage_mix": [
       0.0,
       0.0,
@@ -1064,6 +1496,24 @@
       0.33,
       0.33
     ],
+    "turret_dps": 11.666666666666666,
+    "missile_dps": 0.0,
+    "turret_damage_mix": [
+      0.0,
+      0.0,
+      0.3,
+      0.7
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 0.0,
+    "missile_explosion_radius_m": 0.0,
+    "missile_explosion_velocity_mps": 0.0,
+    "missile_damage_reduction_factor": 0.0,
     "damage_mix": [
       0.0,
       0.0,
@@ -1107,6 +1557,24 @@
       0.33,
       0.33
     ],
+    "turret_dps": 11.666666666666666,
+    "missile_dps": 0.0,
+    "turret_damage_mix": [
+      0.0,
+      0.0,
+      0.3,
+      0.7
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 0.0,
+    "missile_explosion_radius_m": 0.0,
+    "missile_explosion_velocity_mps": 0.0,
+    "missile_damage_reduction_factor": 0.0,
     "damage_mix": [
       0.0,
       0.0,
@@ -1150,6 +1618,24 @@
       0.33,
       0.33
     ],
+    "turret_dps": 20.0,
+    "missile_dps": 0.0,
+    "turret_damage_mix": [
+      0.0,
+      0.0,
+      0.3,
+      0.7
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 0.0,
+    "missile_explosion_radius_m": 0.0,
+    "missile_explosion_velocity_mps": 0.0,
+    "missile_damage_reduction_factor": 0.0,
     "damage_mix": [
       0.0,
       0.0,
@@ -1193,6 +1679,24 @@
       0.33,
       0.33
     ],
+    "turret_dps": 11.666666666666666,
+    "missile_dps": 0.0,
+    "turret_damage_mix": [
+      0.0,
+      0.0,
+      0.3,
+      0.7
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 0.0,
+    "missile_explosion_radius_m": 0.0,
+    "missile_explosion_velocity_mps": 0.0,
+    "missile_damage_reduction_factor": 0.0,
     "damage_mix": [
       0.0,
       0.0,
@@ -1236,6 +1740,24 @@
       0.3,
       0.3
     ],
+    "turret_dps": 0.0,
+    "missile_dps": 427.5,
+    "turret_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ],
+    "missile_range_m": 69660.0,
+    "missile_explosion_radius_m": 140.0,
+    "missile_explosion_velocity_mps": 85.0,
+    "missile_damage_reduction_factor": 0.682,
     "damage_mix": [
       0.0,
       0.0,
@@ -1279,6 +1801,24 @@
       0.3,
       0.3
     ],
+    "turret_dps": 0.0,
+    "missile_dps": 427.5,
+    "turret_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_damage_mix": [
+      0.0,
+      1.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 69660.0,
+    "missile_explosion_radius_m": 140.0,
+    "missile_explosion_velocity_mps": 85.0,
+    "missile_damage_reduction_factor": 0.682,
     "damage_mix": [
       0.0,
       1.0,
@@ -1322,6 +1862,24 @@
       0.3,
       0.3
     ],
+    "turret_dps": 0.0,
+    "missile_dps": 427.5,
+    "turret_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_damage_mix": [
+      0.0,
+      1.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 69660.0,
+    "missile_explosion_radius_m": 140.0,
+    "missile_explosion_velocity_mps": 85.0,
+    "missile_damage_reduction_factor": 0.682,
     "damage_mix": [
       0.0,
       1.0,
@@ -1365,6 +1923,24 @@
       0.3,
       0.3
     ],
+    "turret_dps": 0.0,
+    "missile_dps": 39.6,
+    "turret_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_damage_mix": [
+      0.0,
+      1.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 36000.0,
+    "missile_explosion_radius_m": 20.0,
+    "missile_explosion_velocity_mps": 150.0,
+    "missile_damage_reduction_factor": 0.644,
     "damage_mix": [
       0.0,
       1.0,
@@ -1408,6 +1984,24 @@
       0.3,
       0.3
     ],
+    "turret_dps": 0.0,
+    "missile_dps": 39.6,
+    "turret_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_damage_mix": [
+      0.0,
+      1.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 36000.0,
+    "missile_explosion_radius_m": 20.0,
+    "missile_explosion_velocity_mps": 150.0,
+    "missile_damage_reduction_factor": 0.644,
     "damage_mix": [
       0.0,
       1.0,
@@ -1451,6 +2045,24 @@
       0.3,
       0.3
     ],
+    "turret_dps": 0.0,
+    "missile_dps": 39.6,
+    "turret_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ],
+    "missile_range_m": 36000.0,
+    "missile_explosion_radius_m": 20.0,
+    "missile_explosion_velocity_mps": 150.0,
+    "missile_damage_reduction_factor": 0.644,
     "damage_mix": [
       0.0,
       0.0,
@@ -1494,6 +2106,24 @@
       0.3,
       0.3
     ],
+    "turret_dps": 0.0,
+    "missile_dps": 39.6,
+    "turret_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_damage_mix": [
+      0.0,
+      1.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 36000.0,
+    "missile_explosion_radius_m": 20.0,
+    "missile_explosion_velocity_mps": 150.0,
+    "missile_damage_reduction_factor": 0.644,
     "damage_mix": [
       0.0,
       1.0,
@@ -1537,6 +2167,24 @@
       0.3,
       0.3
     ],
+    "turret_dps": 0.0,
+    "missile_dps": 130.76923076923077,
+    "turret_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_damage_mix": [
+      0.0,
+      1.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 36000.0,
+    "missile_explosion_radius_m": 125.0,
+    "missile_explosion_velocity_mps": 101.0,
+    "missile_damage_reduction_factor": 0.882,
     "damage_mix": [
       0.0,
       1.0,
@@ -1580,6 +2228,24 @@
       0.3,
       0.3
     ],
+    "turret_dps": 0.0,
+    "missile_dps": 123.07692307692308,
+    "turret_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ],
+    "missile_range_m": 36000.0,
+    "missile_explosion_radius_m": 125.0,
+    "missile_explosion_velocity_mps": 101.0,
+    "missile_damage_reduction_factor": 0.882,
     "damage_mix": [
       0.0,
       0.0,
@@ -1623,6 +2289,24 @@
       0.3,
       0.3
     ],
+    "turret_dps": 0.0,
+    "missile_dps": 130.76923076923077,
+    "turret_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_damage_mix": [
+      0.0,
+      1.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 36000.0,
+    "missile_explosion_radius_m": 125.0,
+    "missile_explosion_velocity_mps": 101.0,
+    "missile_damage_reduction_factor": 0.882,
     "damage_mix": [
       0.0,
       1.0,
@@ -1666,6 +2350,24 @@
       0.33,
       0.33
     ],
+    "turret_dps": 164.66666666666666,
+    "missile_dps": 0.0,
+    "turret_damage_mix": [
+      0.23481781376518218,
+      0.0,
+      0.7651821862348178,
+      0.0
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 0.0,
+    "missile_explosion_radius_m": 0.0,
+    "missile_explosion_velocity_mps": 0.0,
+    "missile_damage_reduction_factor": 0.0,
     "damage_mix": [
       0.23481781376518218,
       0.0,
@@ -1709,6 +2411,24 @@
       0.33,
       0.33
     ],
+    "turret_dps": 74.0,
+    "missile_dps": 0.0,
+    "turret_damage_mix": [
+      0.12612612612612611,
+      0.0,
+      0.8738738738738738,
+      0.0
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 0.0,
+    "missile_explosion_radius_m": 0.0,
+    "missile_explosion_velocity_mps": 0.0,
+    "missile_damage_reduction_factor": 0.0,
     "damage_mix": [
       0.12612612612612611,
       0.0,
@@ -1752,6 +2472,24 @@
       0.33,
       0.33
     ],
+    "turret_dps": 74.0,
+    "missile_dps": 0.0,
+    "turret_damage_mix": [
+      0.8738738738738738,
+      0.0,
+      0.12612612612612611,
+      0.0
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 0.0,
+    "missile_explosion_radius_m": 0.0,
+    "missile_explosion_velocity_mps": 0.0,
+    "missile_damage_reduction_factor": 0.0,
     "damage_mix": [
       0.8738738738738737,
       0.0,
@@ -1795,6 +2533,24 @@
       0.1,
       0.1
     ],
+    "turret_dps": 20.0,
+    "missile_dps": 4.9799999999999995,
+    "turret_damage_mix": [
+      0.5,
+      0.5,
+      0.0,
+      0.0
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.5,
+      0.0,
+      0.5
+    ],
+    "missile_range_m": 56250.0,
+    "missile_explosion_radius_m": 125.0,
+    "missile_explosion_velocity_mps": 85.0,
+    "missile_damage_reduction_factor": 0.682,
     "damage_mix": [
       0.400320256204964,
       0.5,
@@ -1838,6 +2594,24 @@
       0.1,
       0.1
     ],
+    "turret_dps": 20.0,
+    "missile_dps": 4.9799999999999995,
+    "turret_damage_mix": [
+      0.5,
+      0.5,
+      0.0,
+      0.0
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.5,
+      0.0,
+      0.5
+    ],
+    "missile_range_m": 56250.0,
+    "missile_explosion_radius_m": 125.0,
+    "missile_explosion_velocity_mps": 85.0,
+    "missile_damage_reduction_factor": 0.682,
     "damage_mix": [
       0.400320256204964,
       0.5,
@@ -1881,6 +2655,24 @@
       0.1,
       0.1
     ],
+    "turret_dps": 20.0,
+    "missile_dps": 4.9799999999999995,
+    "turret_damage_mix": [
+      0.5,
+      0.5,
+      0.0,
+      0.0
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.5,
+      0.0,
+      0.5
+    ],
+    "missile_range_m": 56250.0,
+    "missile_explosion_radius_m": 125.0,
+    "missile_explosion_velocity_mps": 85.0,
+    "missile_damage_reduction_factor": 0.682,
     "damage_mix": [
       0.400320256204964,
       0.5,
@@ -1924,6 +2716,24 @@
       0.1,
       0.1
     ],
+    "turret_dps": 20.0,
+    "missile_dps": 4.9799999999999995,
+    "turret_damage_mix": [
+      0.5,
+      0.5,
+      0.0,
+      0.0
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.5,
+      0.0,
+      0.5
+    ],
+    "missile_range_m": 56250.0,
+    "missile_explosion_radius_m": 125.0,
+    "missile_explosion_velocity_mps": 85.0,
+    "missile_damage_reduction_factor": 0.682,
     "damage_mix": [
       0.400320256204964,
       0.5,
@@ -1967,6 +2777,24 @@
       0.1,
       0.1
     ],
+    "turret_dps": 30.0,
+    "missile_dps": 6.640000000000001,
+    "turret_damage_mix": [
+      0.5,
+      0.5,
+      0.0,
+      0.0
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.5,
+      0.0,
+      0.5
+    ],
+    "missile_range_m": 56250.0,
+    "missile_explosion_radius_m": 125.0,
+    "missile_explosion_velocity_mps": 85.0,
+    "missile_damage_reduction_factor": 0.682,
     "damage_mix": [
       0.4093886462882096,
       0.5,
@@ -2010,6 +2838,24 @@
       0.1,
       0.1
     ],
+    "turret_dps": 20.0,
+    "missile_dps": 4.9799999999999995,
+    "turret_damage_mix": [
+      0.5,
+      0.5,
+      0.0,
+      0.0
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.5,
+      0.0,
+      0.5
+    ],
+    "missile_range_m": 56250.0,
+    "missile_explosion_radius_m": 125.0,
+    "missile_explosion_velocity_mps": 85.0,
+    "missile_damage_reduction_factor": 0.682,
     "damage_mix": [
       0.400320256204964,
       0.5,
@@ -2053,6 +2899,24 @@
       0.1,
       0.1
     ],
+    "turret_dps": 20.0,
+    "missile_dps": 4.9799999999999995,
+    "turret_damage_mix": [
+      0.5,
+      0.5,
+      0.0,
+      0.0
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.5,
+      0.0,
+      0.5
+    ],
+    "missile_range_m": 56250.0,
+    "missile_explosion_radius_m": 125.0,
+    "missile_explosion_velocity_mps": 85.0,
+    "missile_damage_reduction_factor": 0.682,
     "damage_mix": [
       0.400320256204964,
       0.5,
@@ -2096,6 +2960,24 @@
       0.0,
       0.0
     ],
+    "turret_dps": 160.0,
+    "missile_dps": 188.0,
+    "turret_damage_mix": [
+      0.5,
+      0.5,
+      0.0,
+      0.0
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.5,
+      0.5
+    ],
+    "missile_range_m": 1974000.0,
+    "missile_explosion_radius_m": 330.0,
+    "missile_explosion_velocity_mps": 69.0,
+    "missile_damage_reduction_factor": 0.882,
     "damage_mix": [
       0.22988505747126436,
       0.22988505747126436,
@@ -2139,6 +3021,24 @@
       0.0,
       0.0
     ],
+    "turret_dps": 36.0,
+    "missile_dps": 6.25,
+    "turret_damage_mix": [
+      0.5,
+      0.5,
+      0.0,
+      0.0
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.5,
+      0.5
+    ],
+    "missile_range_m": 37500.0,
+    "missile_explosion_radius_m": 40.0,
+    "missile_explosion_velocity_mps": 170.0,
+    "missile_damage_reduction_factor": 0.604,
     "damage_mix": [
       0.4260355029585799,
       0.4260355029585799,
@@ -2182,6 +3082,24 @@
       0.0,
       0.0
     ],
+    "turret_dps": 24.0,
+    "missile_dps": 4.166666666666667,
+    "turret_damage_mix": [
+      0.5,
+      0.5,
+      0.0,
+      0.0
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.5,
+      0.5
+    ],
+    "missile_range_m": 37500.0,
+    "missile_explosion_radius_m": 40.0,
+    "missile_explosion_velocity_mps": 170.0,
+    "missile_damage_reduction_factor": 0.604,
     "damage_mix": [
       0.42603550295857984,
       0.42603550295857984,
@@ -2225,6 +3143,24 @@
       0.0,
       0.0
     ],
+    "turret_dps": 0.0,
+    "missile_dps": 0.0,
+    "turret_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 0.0,
+    "missile_explosion_radius_m": 0.0,
+    "missile_explosion_velocity_mps": 0.0,
+    "missile_damage_reduction_factor": 0.0,
     "damage_mix": [
       0.0,
       0.0,
@@ -2268,6 +3204,24 @@
       0.0,
       0.0
     ],
+    "turret_dps": 30.0,
+    "missile_dps": 3.75,
+    "turret_damage_mix": [
+      0.5,
+      0.5,
+      0.0,
+      0.0
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.5,
+      0.5
+    ],
+    "missile_range_m": 37500.0,
+    "missile_explosion_radius_m": 40.0,
+    "missile_explosion_velocity_mps": 170.0,
+    "missile_damage_reduction_factor": 0.604,
     "damage_mix": [
       0.4444444444444444,
       0.4444444444444444,
@@ -2311,6 +3265,24 @@
       0.0,
       0.0
     ],
+    "turret_dps": 20.0,
+    "missile_dps": 3.75,
+    "turret_damage_mix": [
+      0.5,
+      0.5,
+      0.0,
+      0.0
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.5,
+      0.5
+    ],
+    "missile_range_m": 37500.0,
+    "missile_explosion_radius_m": 40.0,
+    "missile_explosion_velocity_mps": 170.0,
+    "missile_damage_reduction_factor": 0.604,
     "damage_mix": [
       0.42105263157894735,
       0.42105263157894735,
@@ -2354,6 +3326,24 @@
       0.0,
       0.0
     ],
+    "turret_dps": 40.0,
+    "missile_dps": 10.375,
+    "turret_damage_mix": [
+      0.5,
+      0.5,
+      0.0,
+      0.0
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.5,
+      0.0,
+      0.5
+    ],
+    "missile_range_m": 75000.0,
+    "missile_explosion_radius_m": 125.0,
+    "missile_explosion_velocity_mps": 85.0,
+    "missile_damage_reduction_factor": 0.682,
     "damage_mix": [
       0.3970223325062035,
       0.5,
@@ -2397,6 +3387,24 @@
       0.0,
       0.0
     ],
+    "turret_dps": 40.0,
+    "missile_dps": 10.375,
+    "turret_damage_mix": [
+      0.5,
+      0.5,
+      0.0,
+      0.0
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.5,
+      0.0,
+      0.5
+    ],
+    "missile_range_m": 75000.0,
+    "missile_explosion_radius_m": 125.0,
+    "missile_explosion_velocity_mps": 85.0,
+    "missile_damage_reduction_factor": 0.682,
     "damage_mix": [
       0.3970223325062035,
       0.5,
@@ -2440,6 +3448,24 @@
       0.0,
       0.0
     ],
+    "turret_dps": 48.0,
+    "missile_dps": 11.857142857142858,
+    "turret_damage_mix": [
+      0.5,
+      0.5,
+      0.0,
+      0.0
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.5,
+      0.0,
+      0.5
+    ],
+    "missile_range_m": 75000.0,
+    "missile_explosion_radius_m": 125.0,
+    "missile_explosion_velocity_mps": 85.0,
+    "missile_damage_reduction_factor": 0.682,
     "damage_mix": [
       0.4009546539379475,
       0.5,
@@ -2483,6 +3509,24 @@
       0.6,
       0.6
     ],
+    "turret_dps": 294.4,
+    "missile_dps": 0.0,
+    "turret_damage_mix": [
+      0.0,
+      0.37500000000000006,
+      0.625,
+      0.0
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 0.0,
+    "missile_explosion_radius_m": 0.0,
+    "missile_explosion_velocity_mps": 0.0,
+    "missile_damage_reduction_factor": 0.0,
     "damage_mix": [
       0.0,
       0.37500000000000006,
@@ -2526,6 +3570,24 @@
       0.33,
       0.33
     ],
+    "turret_dps": 114.4,
+    "missile_dps": 0.0,
+    "turret_damage_mix": [
+      0.0,
+      0.375,
+      0.625,
+      0.0
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 0.0,
+    "missile_explosion_radius_m": 0.0,
+    "missile_explosion_velocity_mps": 0.0,
+    "missile_damage_reduction_factor": 0.0,
     "damage_mix": [
       0.0,
       0.37500000000000006,
@@ -2569,6 +3631,24 @@
       0.6,
       0.6
     ],
+    "turret_dps": 414.0,
+    "missile_dps": 0.0,
+    "turret_damage_mix": [
+      0.0,
+      0.41666666666666663,
+      0.5833333333333334,
+      0.0
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 0.0,
+    "missile_explosion_radius_m": 0.0,
+    "missile_explosion_velocity_mps": 0.0,
+    "missile_damage_reduction_factor": 0.0,
     "damage_mix": [
       0.0,
       0.4166666666666666,
@@ -2612,6 +3692,24 @@
       0.6,
       0.6
     ],
+    "turret_dps": 533.6,
+    "missile_dps": 0.0,
+    "turret_damage_mix": [
+      0.0,
+      0.41666666666666663,
+      0.5833333333333334,
+      0.0
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 0.0,
+    "missile_explosion_radius_m": 0.0,
+    "missile_explosion_velocity_mps": 0.0,
+    "missile_damage_reduction_factor": 0.0,
     "damage_mix": [
       0.0,
       0.41666666666666663,
@@ -2655,6 +3753,24 @@
       0.68,
       0.68
     ],
+    "turret_dps": 787.1999999999999,
+    "missile_dps": 0.0,
+    "turret_damage_mix": [
+      0.0,
+      0.41666666666666663,
+      0.5833333333333334,
+      0.0
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 0.0,
+    "missile_explosion_radius_m": 0.0,
+    "missile_explosion_velocity_mps": 0.0,
+    "missile_damage_reduction_factor": 0.0,
     "damage_mix": [
       0.0,
       0.41666666666666663,
@@ -2698,6 +3814,24 @@
       0.68,
       0.68
     ],
+    "turret_dps": 960.0,
+    "missile_dps": 0.0,
+    "turret_damage_mix": [
+      0.0,
+      0.41666666666666663,
+      0.5833333333333334,
+      0.0
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 0.0,
+    "missile_explosion_radius_m": 0.0,
+    "missile_explosion_velocity_mps": 0.0,
+    "missile_damage_reduction_factor": 0.0,
     "damage_mix": [
       0.0,
       0.41666666666666663,
@@ -2741,6 +3875,24 @@
       0.0,
       0.0
     ],
+    "turret_dps": 200.0,
+    "missile_dps": 0.0,
+    "turret_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 0.0,
+    "missile_explosion_radius_m": 0.0,
+    "missile_explosion_velocity_mps": 0.0,
+    "missile_damage_reduction_factor": 0.0,
     "damage_mix": [
       0.0,
       0.0,
@@ -2784,6 +3936,24 @@
       0.0,
       0.0
     ],
+    "turret_dps": 200.0,
+    "missile_dps": 0.0,
+    "turret_damage_mix": [
+      0.0,
+      1.0,
+      0.0,
+      0.0
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 0.0,
+    "missile_explosion_radius_m": 0.0,
+    "missile_explosion_velocity_mps": 0.0,
+    "missile_damage_reduction_factor": 0.0,
     "damage_mix": [
       0.0,
       1.0,
@@ -2827,6 +3997,24 @@
       0.0,
       0.0
     ],
+    "turret_dps": 200.0,
+    "missile_dps": 0.0,
+    "turret_damage_mix": [
+      0.0,
+      0.0,
+      1.0,
+      0.0
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 0.0,
+    "missile_explosion_radius_m": 0.0,
+    "missile_explosion_velocity_mps": 0.0,
+    "missile_damage_reduction_factor": 0.0,
     "damage_mix": [
       0.0,
       0.0,
@@ -2870,6 +4058,24 @@
       0.0,
       0.0
     ],
+    "turret_dps": 200.0,
+    "missile_dps": 0.0,
+    "turret_damage_mix": [
+      1.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 0.0,
+    "missile_explosion_radius_m": 0.0,
+    "missile_explosion_velocity_mps": 0.0,
+    "missile_damage_reduction_factor": 0.0,
     "damage_mix": [
       1.0,
       0.0,
@@ -2913,6 +4119,24 @@
       0.0,
       0.0
     ],
+    "turret_dps": 50.0,
+    "missile_dps": 0.0,
+    "turret_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 0.0,
+    "missile_explosion_radius_m": 0.0,
+    "missile_explosion_velocity_mps": 0.0,
+    "missile_damage_reduction_factor": 0.0,
     "damage_mix": [
       0.0,
       0.0,
@@ -2956,6 +4180,24 @@
       0.0,
       0.0
     ],
+    "turret_dps": 25.0,
+    "missile_dps": 0.0,
+    "turret_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 0.0,
+    "missile_explosion_radius_m": 0.0,
+    "missile_explosion_velocity_mps": 0.0,
+    "missile_damage_reduction_factor": 0.0,
     "damage_mix": [
       0.0,
       0.0,
@@ -2999,6 +4241,24 @@
       0.0,
       0.0
     ],
+    "turret_dps": 50.0,
+    "missile_dps": 0.0,
+    "turret_damage_mix": [
+      0.0,
+      1.0,
+      0.0,
+      0.0
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 0.0,
+    "missile_explosion_radius_m": 0.0,
+    "missile_explosion_velocity_mps": 0.0,
+    "missile_damage_reduction_factor": 0.0,
     "damage_mix": [
       0.0,
       1.0,
@@ -3042,6 +4302,24 @@
       0.0,
       0.0
     ],
+    "turret_dps": 25.0,
+    "missile_dps": 0.0,
+    "turret_damage_mix": [
+      0.0,
+      1.0,
+      0.0,
+      0.0
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 0.0,
+    "missile_explosion_radius_m": 0.0,
+    "missile_explosion_velocity_mps": 0.0,
+    "missile_damage_reduction_factor": 0.0,
     "damage_mix": [
       0.0,
       1.0,
@@ -3085,6 +4363,24 @@
       0.0,
       0.0
     ],
+    "turret_dps": 50.0,
+    "missile_dps": 0.0,
+    "turret_damage_mix": [
+      1.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 0.0,
+    "missile_explosion_radius_m": 0.0,
+    "missile_explosion_velocity_mps": 0.0,
+    "missile_damage_reduction_factor": 0.0,
     "damage_mix": [
       1.0,
       0.0,
@@ -3128,6 +4424,24 @@
       0.0,
       0.0
     ],
+    "turret_dps": 25.0,
+    "missile_dps": 0.0,
+    "turret_damage_mix": [
+      1.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 0.0,
+    "missile_explosion_radius_m": 0.0,
+    "missile_explosion_velocity_mps": 0.0,
+    "missile_damage_reduction_factor": 0.0,
     "damage_mix": [
       1.0,
       0.0,
@@ -3171,6 +4485,24 @@
       0.0,
       0.0
     ],
+    "turret_dps": 50.0,
+    "missile_dps": 0.0,
+    "turret_damage_mix": [
+      0.0,
+      0.0,
+      1.0,
+      0.0
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 0.0,
+    "missile_explosion_radius_m": 0.0,
+    "missile_explosion_velocity_mps": 0.0,
+    "missile_damage_reduction_factor": 0.0,
     "damage_mix": [
       0.0,
       0.0,
@@ -3214,6 +4546,24 @@
       0.0,
       0.0
     ],
+    "turret_dps": 25.0,
+    "missile_dps": 0.0,
+    "turret_damage_mix": [
+      0.0,
+      0.0,
+      1.0,
+      0.0
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 0.0,
+    "missile_explosion_radius_m": 0.0,
+    "missile_explosion_velocity_mps": 0.0,
+    "missile_damage_reduction_factor": 0.0,
     "damage_mix": [
       0.0,
       0.0,
@@ -3257,6 +4607,24 @@
       0.0,
       0.0
     ],
+    "turret_dps": 0.0,
+    "missile_dps": 0.0,
+    "turret_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 0.0,
+    "missile_explosion_radius_m": 0.0,
+    "missile_explosion_velocity_mps": 0.0,
+    "missile_damage_reduction_factor": 0.0,
     "damage_mix": [
       0.0,
       0.0,
@@ -3300,6 +4668,24 @@
       0.0,
       0.0
     ],
+    "turret_dps": 0.0,
+    "missile_dps": 0.0,
+    "turret_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 0.0,
+    "missile_explosion_radius_m": 0.0,
+    "missile_explosion_velocity_mps": 0.0,
+    "missile_damage_reduction_factor": 0.0,
     "damage_mix": [
       0.0,
       0.0,
@@ -3343,6 +4729,24 @@
       0.0,
       0.0
     ],
+    "turret_dps": 10.0,
+    "missile_dps": 0.0,
+    "turret_damage_mix": [
+      0.25,
+      0.25,
+      0.25,
+      0.25
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 0.0,
+    "missile_explosion_radius_m": 0.0,
+    "missile_explosion_velocity_mps": 0.0,
+    "missile_damage_reduction_factor": 0.0,
     "damage_mix": [
       0.25,
       0.25,
@@ -3386,6 +4790,24 @@
       0.0,
       0.0
     ],
+    "turret_dps": 10.0,
+    "missile_dps": 0.0,
+    "turret_damage_mix": [
+      0.25,
+      0.25,
+      0.25,
+      0.25
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 0.0,
+    "missile_explosion_radius_m": 0.0,
+    "missile_explosion_velocity_mps": 0.0,
+    "missile_damage_reduction_factor": 0.0,
     "damage_mix": [
       0.25,
       0.25,
@@ -3429,6 +4851,24 @@
       0.0,
       0.0
     ],
+    "turret_dps": 10.0,
+    "missile_dps": 0.0,
+    "turret_damage_mix": [
+      0.25,
+      0.25,
+      0.25,
+      0.25
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 0.0,
+    "missile_explosion_radius_m": 0.0,
+    "missile_explosion_velocity_mps": 0.0,
+    "missile_damage_reduction_factor": 0.0,
     "damage_mix": [
       0.25,
       0.25,
@@ -3472,6 +4912,24 @@
       0.0,
       0.0
     ],
+    "turret_dps": 10.0,
+    "missile_dps": 0.0,
+    "turret_damage_mix": [
+      0.25,
+      0.25,
+      0.25,
+      0.25
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 0.0,
+    "missile_explosion_radius_m": 0.0,
+    "missile_explosion_velocity_mps": 0.0,
+    "missile_damage_reduction_factor": 0.0,
     "damage_mix": [
       0.25,
       0.25,
@@ -3515,6 +4973,24 @@
       0.0,
       0.0
     ],
+    "turret_dps": 8.0,
+    "missile_dps": 0.0,
+    "turret_damage_mix": [
+      0.25,
+      0.25,
+      0.25,
+      0.25
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 0.0,
+    "missile_explosion_radius_m": 0.0,
+    "missile_explosion_velocity_mps": 0.0,
+    "missile_damage_reduction_factor": 0.0,
     "damage_mix": [
       0.25,
       0.25,
@@ -3558,6 +5034,24 @@
       0.33,
       0.33
     ],
+    "turret_dps": 79.2,
+    "missile_dps": 0.0,
+    "turret_damage_mix": [
+      0.0,
+      0.5757575757575758,
+      0.0,
+      0.42424242424242425
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 0.0,
+    "missile_explosion_radius_m": 0.0,
+    "missile_explosion_velocity_mps": 0.0,
+    "missile_damage_reduction_factor": 0.0,
     "damage_mix": [
       0.0,
       0.5757575757575758,
@@ -3601,6 +5095,24 @@
       0.33,
       0.33
     ],
+    "turret_dps": 7.0,
+    "missile_dps": 0.0,
+    "turret_damage_mix": [
+      0.0,
+      0.6857142857142857,
+      0.0,
+      0.3142857142857143
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 0.0,
+    "missile_explosion_radius_m": 0.0,
+    "missile_explosion_velocity_mps": 0.0,
+    "missile_damage_reduction_factor": 0.0,
     "damage_mix": [
       0.0,
       0.6857142857142857,
@@ -3644,6 +5156,24 @@
       0.33,
       0.33
     ],
+    "turret_dps": 7.0,
+    "missile_dps": 0.0,
+    "turret_damage_mix": [
+      0.0,
+      0.6857142857142857,
+      0.0,
+      0.3142857142857143
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 0.0,
+    "missile_explosion_radius_m": 0.0,
+    "missile_explosion_velocity_mps": 0.0,
+    "missile_damage_reduction_factor": 0.0,
     "damage_mix": [
       0.0,
       0.6857142857142857,
@@ -3687,6 +5217,24 @@
       0.33,
       0.33
     ],
+    "turret_dps": 7.0,
+    "missile_dps": 0.0,
+    "turret_damage_mix": [
+      0.0,
+      0.6857142857142857,
+      0.0,
+      0.3142857142857143
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 0.0,
+    "missile_explosion_radius_m": 0.0,
+    "missile_explosion_velocity_mps": 0.0,
+    "missile_damage_reduction_factor": 0.0,
     "damage_mix": [
       0.0,
       0.6857142857142857,
@@ -3730,6 +5278,24 @@
       0.33,
       0.33
     ],
+    "turret_dps": 7.0,
+    "missile_dps": 0.0,
+    "turret_damage_mix": [
+      0.0,
+      0.6857142857142857,
+      0.0,
+      0.3142857142857143
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 0.0,
+    "missile_explosion_radius_m": 0.0,
+    "missile_explosion_velocity_mps": 0.0,
+    "missile_damage_reduction_factor": 0.0,
     "damage_mix": [
       0.0,
       0.6857142857142857,
@@ -3773,6 +5339,24 @@
       0.33,
       0.33
     ],
+    "turret_dps": 7.0,
+    "missile_dps": 0.0,
+    "turret_damage_mix": [
+      0.0,
+      0.6857142857142857,
+      0.0,
+      0.3142857142857143
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 0.0,
+    "missile_explosion_radius_m": 0.0,
+    "missile_explosion_velocity_mps": 0.0,
+    "missile_damage_reduction_factor": 0.0,
     "damage_mix": [
       0.0,
       0.6857142857142857,
@@ -3816,6 +5400,24 @@
       0.33,
       0.33
     ],
+    "turret_dps": 7.0,
+    "missile_dps": 0.0,
+    "turret_damage_mix": [
+      0.0,
+      0.6857142857142857,
+      0.0,
+      0.3142857142857143
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 0.0,
+    "missile_explosion_radius_m": 0.0,
+    "missile_explosion_velocity_mps": 0.0,
+    "missile_damage_reduction_factor": 0.0,
     "damage_mix": [
       0.0,
       0.6857142857142857,
@@ -3859,6 +5461,24 @@
       0.33,
       0.33
     ],
+    "turret_dps": 28.0,
+    "missile_dps": 0.0,
+    "turret_damage_mix": [
+      0.0,
+      0.6857142857142857,
+      0.0,
+      0.3142857142857143
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 0.0,
+    "missile_explosion_radius_m": 0.0,
+    "missile_explosion_velocity_mps": 0.0,
+    "missile_damage_reduction_factor": 0.0,
     "damage_mix": [
       0.0,
       0.6857142857142857,
@@ -3902,6 +5522,24 @@
       0.33,
       0.33
     ],
+    "turret_dps": 28.0,
+    "missile_dps": 0.0,
+    "turret_damage_mix": [
+      0.0,
+      0.6857142857142857,
+      0.0,
+      0.3142857142857143
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 0.0,
+    "missile_explosion_radius_m": 0.0,
+    "missile_explosion_velocity_mps": 0.0,
+    "missile_damage_reduction_factor": 0.0,
     "damage_mix": [
       0.0,
       0.6857142857142857,
@@ -3945,6 +5583,24 @@
       0.33,
       0.33
     ],
+    "turret_dps": 28.0,
+    "missile_dps": 0.0,
+    "turret_damage_mix": [
+      0.0,
+      0.6857142857142857,
+      0.0,
+      0.3142857142857143
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 0.0,
+    "missile_explosion_radius_m": 0.0,
+    "missile_explosion_velocity_mps": 0.0,
+    "missile_damage_reduction_factor": 0.0,
     "damage_mix": [
       0.0,
       0.6857142857142857,
@@ -3988,6 +5644,24 @@
       0.33,
       0.33
     ],
+    "turret_dps": 28.0,
+    "missile_dps": 0.0,
+    "turret_damage_mix": [
+      0.0,
+      0.6857142857142857,
+      0.0,
+      0.3142857142857143
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 0.0,
+    "missile_explosion_radius_m": 0.0,
+    "missile_explosion_velocity_mps": 0.0,
+    "missile_damage_reduction_factor": 0.0,
     "damage_mix": [
       0.0,
       0.6857142857142857,
@@ -4031,6 +5705,24 @@
       0.33,
       0.33
     ],
+    "turret_dps": 28.0,
+    "missile_dps": 0.0,
+    "turret_damage_mix": [
+      0.0,
+      0.6857142857142857,
+      0.0,
+      0.3142857142857143
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 0.0,
+    "missile_explosion_radius_m": 0.0,
+    "missile_explosion_velocity_mps": 0.0,
+    "missile_damage_reduction_factor": 0.0,
     "damage_mix": [
       0.0,
       0.6857142857142857,
@@ -4074,6 +5766,24 @@
       0.33,
       0.33
     ],
+    "turret_dps": 158.4,
+    "missile_dps": 0.0,
+    "turret_damage_mix": [
+      0.0,
+      0.5757575757575758,
+      0.0,
+      0.42424242424242425
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 0.0,
+    "missile_explosion_radius_m": 0.0,
+    "missile_explosion_velocity_mps": 0.0,
+    "missile_damage_reduction_factor": 0.0,
     "damage_mix": [
       0.0,
       0.5757575757575758,
@@ -4117,6 +5827,24 @@
       0.33,
       0.33
     ],
+    "turret_dps": 158.4,
+    "missile_dps": 0.0,
+    "turret_damage_mix": [
+      0.0,
+      0.5757575757575758,
+      0.0,
+      0.42424242424242425
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 0.0,
+    "missile_explosion_radius_m": 0.0,
+    "missile_explosion_velocity_mps": 0.0,
+    "missile_damage_reduction_factor": 0.0,
     "damage_mix": [
       0.0,
       0.5757575757575758,
@@ -4160,6 +5888,24 @@
       0.33,
       0.33
     ],
+    "turret_dps": 115.5,
+    "missile_dps": 0.0,
+    "turret_damage_mix": [
+      0.0,
+      0.5714285714285714,
+      0.0,
+      0.42857142857142855
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 0.0,
+    "missile_explosion_radius_m": 0.0,
+    "missile_explosion_velocity_mps": 0.0,
+    "missile_damage_reduction_factor": 0.0,
     "damage_mix": [
       0.0,
       0.5714285714285714,
@@ -4203,6 +5949,24 @@
       0.33,
       0.33
     ],
+    "turret_dps": 94.5,
+    "missile_dps": 0.0,
+    "turret_damage_mix": [
+      0.0,
+      0.5714285714285714,
+      0.0,
+      0.42857142857142855
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 0.0,
+    "missile_explosion_radius_m": 0.0,
+    "missile_explosion_velocity_mps": 0.0,
+    "missile_damage_reduction_factor": 0.0,
     "damage_mix": [
       0.0,
       0.5714285714285714,
@@ -4246,6 +6010,24 @@
       0.33,
       0.33
     ],
+    "turret_dps": 83.33333333333333,
+    "missile_dps": 0.0,
+    "turret_damage_mix": [
+      0.0,
+      0.68,
+      0.0,
+      0.32
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 0.0,
+    "missile_explosion_radius_m": 0.0,
+    "missile_explosion_velocity_mps": 0.0,
+    "missile_damage_reduction_factor": 0.0,
     "damage_mix": [
       0.0,
       0.68,
@@ -4289,6 +6071,24 @@
       0.33,
       0.33
     ],
+    "turret_dps": 83.33333333333333,
+    "missile_dps": 0.0,
+    "turret_damage_mix": [
+      0.0,
+      0.68,
+      0.0,
+      0.32
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 0.0,
+    "missile_explosion_radius_m": 0.0,
+    "missile_explosion_velocity_mps": 0.0,
+    "missile_damage_reduction_factor": 0.0,
     "damage_mix": [
       0.0,
       0.68,
@@ -4332,6 +6132,24 @@
       0.33,
       0.33
     ],
+    "turret_dps": 83.33333333333333,
+    "missile_dps": 0.0,
+    "turret_damage_mix": [
+      0.0,
+      0.68,
+      0.0,
+      0.32
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 0.0,
+    "missile_explosion_radius_m": 0.0,
+    "missile_explosion_velocity_mps": 0.0,
+    "missile_damage_reduction_factor": 0.0,
     "damage_mix": [
       0.0,
       0.68,
@@ -4375,6 +6193,24 @@
       0.33,
       0.33
     ],
+    "turret_dps": 98.56,
+    "missile_dps": 0.0,
+    "turret_damage_mix": [
+      0.0,
+      0.6136363636363636,
+      0.0,
+      0.38636363636363635
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 0.0,
+    "missile_explosion_radius_m": 0.0,
+    "missile_explosion_velocity_mps": 0.0,
+    "missile_damage_reduction_factor": 0.0,
     "damage_mix": [
       0.0,
       0.6136363636363636,
@@ -4418,6 +6254,24 @@
       0.33,
       0.33
     ],
+    "turret_dps": 98.56,
+    "missile_dps": 0.0,
+    "turret_damage_mix": [
+      0.0,
+      0.6136363636363636,
+      0.0,
+      0.38636363636363635
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 0.0,
+    "missile_explosion_radius_m": 0.0,
+    "missile_explosion_velocity_mps": 0.0,
+    "missile_damage_reduction_factor": 0.0,
     "damage_mix": [
       0.0,
       0.6136363636363636,
@@ -4461,6 +6315,24 @@
       0.33,
       0.33
     ],
+    "turret_dps": 98.56,
+    "missile_dps": 0.0,
+    "turret_damage_mix": [
+      0.0,
+      0.6136363636363636,
+      0.0,
+      0.38636363636363635
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 0.0,
+    "missile_explosion_radius_m": 0.0,
+    "missile_explosion_velocity_mps": 0.0,
+    "missile_damage_reduction_factor": 0.0,
     "damage_mix": [
       0.0,
       0.6136363636363636,
@@ -4504,6 +6376,24 @@
       0.33,
       0.33
     ],
+    "turret_dps": 98.56,
+    "missile_dps": 0.0,
+    "turret_damage_mix": [
+      0.0,
+      0.6136363636363636,
+      0.0,
+      0.38636363636363635
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 0.0,
+    "missile_explosion_radius_m": 0.0,
+    "missile_explosion_velocity_mps": 0.0,
+    "missile_damage_reduction_factor": 0.0,
     "damage_mix": [
       0.0,
       0.6136363636363636,
@@ -4547,6 +6437,24 @@
       0.33,
       0.33
     ],
+    "turret_dps": 98.56,
+    "missile_dps": 0.0,
+    "turret_damage_mix": [
+      0.0,
+      0.6136363636363636,
+      0.0,
+      0.38636363636363635
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 0.0,
+    "missile_explosion_radius_m": 0.0,
+    "missile_explosion_velocity_mps": 0.0,
+    "missile_damage_reduction_factor": 0.0,
     "damage_mix": [
       0.0,
       0.6136363636363636,
@@ -4590,6 +6498,24 @@
       0.33,
       0.33
     ],
+    "turret_dps": 65.1,
+    "missile_dps": 0.0,
+    "turret_damage_mix": [
+      0.0,
+      0.5806451612903226,
+      0.0,
+      0.41935483870967744
+    ],
+    "missile_damage_mix": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "missile_range_m": 0.0,
+    "missile_explosion_radius_m": 0.0,
+    "missile_explosion_velocity_mps": 0.0,
+    "missile_damage_reduction_factor": 0.0,
     "damage_mix": [
       0.0,
       0.5806451612903226,
