@@ -2695,6 +2695,24 @@ typedef struct {
     TrainResult result;
 } SweepJob;
 
+static int sweep_param_included(const char* path, const char* only) {
+    if (!only || !*only) return 1;
+    while (*only) {
+        while (*only == ',' || isspace((unsigned char)*only)) only++;
+        const char* end = only;
+        while (*end && *end != ',') end++;
+        while (end > only && isspace((unsigned char)end[-1])) end--;
+        if (end > only) {
+            size_t len = (size_t)(end - only);
+            for (const char* match = path; *match; match++) {
+                if (strlen(match) >= len && strncmp(match, only, len) == 0) return 1;
+            }
+        }
+        only = *end ? end + 1 : end;
+    }
+    return 0;
+}
+
 void run_sweep(Ini* ini, const char* exe_path) {
     // Build SweepSpace + param map from [sweep.<section>.<key>] sections.
     const char* goal = puf_ini_get_str(ini, "sweep", "goal");
@@ -2705,12 +2723,17 @@ void run_sweep(Ini* ini, const char* exe_path) {
     SweepParam* params = (SweepParam*)calloc((size_t)ini->num_sections, sizeof(SweepParam));
     SweepSpace* space = sweep_space_create(ini->num_sections, -1, direction);
     int n_params = 0;
+    DictItem* only_item = dict_find(puf_ini_section(ini, "sweep", 0), "sweep_only");
+    const char* sweep_only = only_item ? only_item->str : NULL;
     for (int i = 0; i < ini->num_sections; i++) {
         Dict* dict = &ini->sections[i];
         if (strncmp(dict->name, "sweep.", 6) != 0) {
             continue;
         }
         const char* path = dict->name + 6;
+        if (!sweep_param_included(path, sweep_only)) {
+            continue;
+        }
         const char* dot = strrchr(path, '.');
         assert(dot && dot != path && dot[1]
             && "expected section [sweep.<section>.<key>]");
