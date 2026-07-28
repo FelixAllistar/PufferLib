@@ -335,7 +335,7 @@ static inline Client* bm_make_client(Env* env) {
     Client* c = (Client*)calloc(1, sizeof(Client));
     c->cell = 40;
     int w = env->match.width * c->cell;
-    int h = env->match.height * c->cell;
+    int h = env->match.height * c->cell + 92;
     InitWindow(w, h, "PufferLib Bomberman");
     // Render FPS only — game step rate is controlled in bomberman.c play loop.
     SetTargetFPS(30);
@@ -363,7 +363,9 @@ void puf_render(Env* env) {
     const Color empty_c = (Color){20, 45, 45, 255};
     const Color flame_c = (Color){255, 120, 40, 200};
     const Color bomb_c = (Color){30, 30, 30, 255};
-    const Color item_c = (Color){80, 200, 120, 255};
+    const Color bomb_item_c = (Color){80, 220, 120, 255};
+    const Color range_item_c = (Color){255, 175, 45, 255};
+    const Color speed_item_c = (Color){80, 165, 255, 255};
     const Color agent_cols[BM_MAX_AGENTS] = {
         {0, 200, 200, 255},
         {220, 80, 80, 255},
@@ -380,7 +382,14 @@ void puf_render(Env* env) {
             else if (m->tiles[i] == BM_TILE_SOFT) col = soft_c;
             DrawRectangle(x * cell, y * cell, cell - 1, cell - 1, col);
             if (m->tiles[i] == BM_TILE_EMPTY && m->items[i] != BM_ITEM_NONE) {
-                DrawCircle(x * cell + cell / 2, y * cell + cell / 2, cell / 6.0f, item_c);
+                int cx = x * cell + cell / 2;
+                int cy = y * cell + cell / 2;
+                Color item_c = m->items[i] == BM_ITEM_BOMB ? bomb_item_c
+                    : m->items[i] == BM_ITEM_FLAME ? range_item_c : speed_item_c;
+                DrawCircle(cx, cy, cell / 4.5f, item_c);
+                const char* label = m->items[i] == BM_ITEM_BOMB ? "B"
+                    : m->items[i] == BM_ITEM_FLAME ? "R" : "S";
+                DrawText(label, cx - 5, cy - 8, 16, BLACK);
             }
             if (m->bomb_here[i]) {
                 DrawCircle(x * cell + cell / 2, y * cell + cell / 2, cell / 3.5f, bomb_c);
@@ -401,10 +410,22 @@ void puf_render(Env* env) {
 
     int alive = 0;
     for (int a = 0; a < m->num_agents; a++) if (m->agents[a].alive) alive++;
+    int hud_y = m->height * cell + 4;
     DrawText(TextFormat(
-        "t=%d/%d  alive=%d  winner=%d  bombs~%d frames  [WASD/arrows, Space, R reset]",
+        "t=%d/%d  alive=%d  winner=%d  fuse=%d  [R reset]",
         m->tick, env->cfg.max_ticks, alive, m->winner, env->cfg.bomb_timer),
-        8, 8, 16, (Color){241, 241, 241, 255});
+        8, hud_y, 16, (Color){241, 241, 241, 255});
+    for (int a = 0; a < m->num_agents && a < 2; a++) {
+        BMAgent* ag = &m->agents[a];
+        int available = bm_max_i(0, ag->max_bombs - ag->bombs_out);
+        DrawText(TextFormat(
+            "P%d  bombs=%d/%d  deployed=%d  range=%d  speed=%d  %s",
+            a, available, ag->max_bombs, ag->bombs_out,
+            ag->bomb_range, ag->speed_level, ag->alive ? "alive" : "DEAD"),
+            8, hud_y + 20 + 18 * a, 16, agent_cols[a]);
+    }
+    DrawText("Items: B = bomb capacity   R = blast range   S = movement speed",
+        8, hud_y + 58, 15, (Color){210, 220, 220, 255});
     EndDrawing();
 }
 #else
