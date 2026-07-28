@@ -19,6 +19,7 @@
 
 #include "bomberman.h"
 #include "puffercpu.h"
+#include "ini.h"
 
 #include <dirent.h>
 #include <stdio.h>
@@ -77,6 +78,70 @@ static const char* resolve_model_path(const char* arg, char* buf, size_t buf_sz)
         return NULL;
     }
     return buf;
+}
+
+static int regular_file_exists(const char* path) {
+    struct stat st;
+    return stat(path, &st) == 0 && S_ISREG(st.st_mode);
+}
+
+// Saved models keep config.ini beside model.bin. Training checkpoints keep the
+// resolved run config in logs/bomberman/RUN.ini.
+static int resolve_model_config_path(const char* model_path,
+        char* out, size_t out_size) {
+    const char* slash = strrchr(model_path, '/');
+    if (slash) {
+        snprintf(out, out_size, "%.*s/config.ini",
+            (int)(slash - model_path), model_path);
+        if (regular_file_exists(out)) return 1;
+    }
+
+    const char* marker = strstr(model_path, "checkpoints/bomberman/");
+    if (marker) {
+        marker += strlen("checkpoints/bomberman/");
+        const char* run_end = strchr(marker, '/');
+        if (run_end && run_end > marker) {
+            snprintf(out, out_size, "logs/bomberman/%.*s.ini",
+                (int)(run_end - marker), marker);
+            if (regular_file_exists(out)) return 1;
+        }
+    }
+
+    out[0] = 0;
+    return 0;
+}
+
+static void load_model_config(const char* model_path, BMConfig* cfg,
+        int* hidden, int* layers, char* config_path, size_t config_path_size) {
+    Ini ini = {0};
+    // Start with complete current defaults so older checkpoint configs that
+    // predate a newly added reward key remain loadable.
+    puf_ini_load_file(&ini, "config/default.ini");
+    puf_ini_load_file(&ini, "config/bomberman.ini");
+
+    if (resolve_model_config_path(model_path, config_path, config_path_size)) {
+        puf_ini_load_file(&ini, config_path);
+    } else {
+        fprintf(stderr,
+            "Warning: no run config found for %s; using config/bomberman.ini\n",
+            model_path);
+        snprintf(config_path, config_path_size, "%s", "config/bomberman.ini");
+    }
+
+    bm_load_config(cfg, puf_ini_section(&ini, "env", 0));
+    *hidden = puf_ini_get_int(&ini, "policy", "hidden_size");
+    *layers = puf_ini_get_int(&ini, "policy", "num_layers");
+    puf_ini_free(&ini);
+}
+
+static void reset_policy_state(PufferNet* net) {
+    if (!net || !net->mingru) return;
+    MinGRU* gru = net->mingru;
+    size_t state_count = (size_t)gru->num_layers
+        * (size_t)gru->batch_size * (size_t)gru->hidden_size;
+    size_t output_count = (size_t)gru->batch_size * (size_t)gru->hidden_size;
+    memset(gru->state, 0, state_count * sizeof(float));
+    memset(gru->output, 0, output_count * sizeof(float));
 }
 
 static int pressed_keyboard_action(void) {
@@ -164,12 +229,13 @@ static void random_other_agents(Env* env) {
     }
 }
 
-static Env make_play_env(int num_agents) {
+static Env make_play_env(int num_agents, const BMConfig* loaded_cfg) {
     Env env = {0};
-    env.cfg = bm_default_config();
+    env.cfg = loaded_cfg ? *loaded_cfg : bm_default_config();
     env.cfg.num_agents = num_agents;
-    // Play/watch: long cap so you can see full games (train uses config max_ticks).
-    env.cfg.max_ticks = 30000;
+    // Visual evaluation always uses ordinary games. All other simulator values,
+    // especially max_ticks, come from the model's training config.
+    env.cfg.reverse_curriculum = 0;
     env.num_agents = num_agents;
     env.rng = 42;
     for (int i = 0; i < num_agents; i++) {
@@ -179,9 +245,18 @@ static Env make_play_env(int num_agents) {
 }
 
 // mode: 0 = human vs random, 1 = human vs net, 2 = net vs net (watch)
-static void play_loop(int mode, const char* model_path) {
+static void play_loop(int mode, const char* model_path, int max_ticks_override) {
     int num_agents = 2;
-    Env env = make_play_env(num_agents);
+    BMConfig play_cfg = bm_default_config();
+    int hidden = 128;
+    int layers = 2;
+    char config_path[4096] = "built-in defaults";
+    if (mode != 0 && model_path) {
+        load_model_config(model_path, &play_cfg, &hidden, &layers,
+            config_path, sizeof(config_path));
+    }
+    if (max_ticks_override > 0) play_cfg.max_ticks = max_ticks_override;
+    Env env = make_play_env(num_agents, &play_cfg);
     env.hold_on_done = 1; // freeze death frame in play/watch
 
     obs_t* observations = (obs_t*)calloc((size_t)num_agents * OBS_SIZE, sizeof(obs_t));
@@ -194,9 +269,8 @@ static void play_loop(int mode, const char* model_path) {
     PufferNet* net = NULL;
     Weights* weights = NULL;
     int act_sizes[] = ACT_SIZES;
-    // Defaults match config/bomberman.ini [policy]; override via env if needed.
-    int hidden = 128;
-    int layers = 2;
+    // Explicit environment variables remain useful for bare checkpoints that
+    // have lost their config metadata.
     const char* h_env = getenv("BOMBERMAN_HIDDEN");
     const char* l_env = getenv("BOMBERMAN_LAYERS");
     if (h_env && *h_env) hidden = atoi(h_env);
@@ -216,6 +290,8 @@ static void play_loop(int mode, const char* model_path) {
         net = make_puffernet(weights, num_agents, OBS_SIZE, hidden, layers,
             act_sizes, NUM_ATNS);
         printf("Loaded policy: %s  (hidden=%d layers=%d)\n", model_path, hidden, layers);
+        printf("Loaded config: %s%s\n", config_path,
+            max_ticks_override > 0 ? "  (max_ticks overridden)" : "");
     }
 
     env.client = NULL;
@@ -239,8 +315,13 @@ static void play_loop(int mode, const char* model_path) {
         printf("R reset, Esc quit.\n");
     }
     printf("Game step ~8 Hz. HUD t=step/max (timeout). Death freezes ~1.5s then new round.\n");
-    printf("OBS_SIZE=%d  max_ticks=%d  bomb_timer=%d\n",
-        OBS_SIZE, env.cfg.max_ticks, env.cfg.bomb_timer);
+    printf("OBS_SIZE=%d  board=%dx%d  max_ticks=%d  bomb=%d  flame=%d\n",
+        OBS_SIZE, env.cfg.width, env.cfg.height, env.cfg.max_ticks,
+        env.cfg.bomb_timer, env.cfg.flame_duration);
+    printf("movement_period=%d  soft_density=%.3f  item_chance=%.3f  pillar=%d"
+        "  curriculum=off (visual ordinary-game eval)\n",
+        env.cfg.frames_per_cell, env.cfg.soft_density, env.cfg.item_chance,
+        env.cfg.pillar_mode);
     fflush(stdout);
 
     int frame = 0;
@@ -249,6 +330,15 @@ static void play_loop(int mode, const char* model_path) {
     // ~8 game-steps per second at 30 render FPS
     const int frames_per_step = 4;
     while (!WindowShouldClose()) {
+        if (IsKeyPressed(KEY_R)) {
+            puf_reset(&env);
+            reset_policy_state(net);
+            freeze_frames = 0;
+            pending_human_action = BM_ACT_STAY;
+            puf_render(&env);
+            frame++;
+            continue;
+        }
         int pressed = pressed_keyboard_action();
         if (pressed != BM_ACT_STAY) pending_human_action = pressed;
 
@@ -257,6 +347,7 @@ static void play_loop(int mode, const char* model_path) {
             puf_render(&env);
             if (freeze_frames == 0) {
                 puf_reset(&env); // leave death board, start next round
+                reset_policy_state(net);
             }
             frame++;
             continue;
@@ -304,7 +395,7 @@ cleanup:
 }
 
 void performance_test(void) {
-    Env env = make_play_env(4);
+    Env env = make_play_env(4, NULL);
     obs_t* observations = (obs_t*)calloc((size_t)env.num_agents * OBS_SIZE, sizeof(obs_t));
     float* actions = (float*)calloc((size_t)env.num_agents * NUM_ATNS, sizeof(float));
     float* rewards = (float*)calloc((size_t)env.num_agents, sizeof(float));
@@ -339,12 +430,13 @@ static void usage(const char* argv0) {
     fprintf(stderr,
         "usage:\n"
         "  %s                  human vs RANDOM (no AI load)\n"
-        "  %s play [model]     human vs checkpoint (default: latest .bin)\n"
-        "  %s watch [model]    checkpoint vs itself (default: latest .bin)\n"
+        "  %s play [model] [max_ticks]   human vs checkpoint\n"
+        "  %s watch [model] [max_ticks]  checkpoint vs itself\n"
         "  %s bench            headless SPS\n"
         "\n"
         "Plain '%s' does NOT load a model — use play/watch for that.\n"
-        "Play/watch max_ticks=30000 (long games).\n"
+        "Play/watch loads simulator and policy settings from the model's run config.\n"
+        "An optional max_ticks argument overrides the saved deadline.\n"
         "\n"
         "Headless A vs B:\n"
         "  ./puffer match bomberman \\\n"
@@ -357,7 +449,7 @@ static void usage(const char* argv0) {
 int main(int argc, char** argv) {
     char path_buf[4096];
     if (argc < 2) {
-        play_loop(0, NULL);
+        play_loop(0, NULL, 0);
         return 0;
     }
     if (strcmp(argv[1], "bench") == 0) {
@@ -367,13 +459,23 @@ int main(int argc, char** argv) {
     if (strcmp(argv[1], "play") == 0) {
         const char* p = resolve_model_path(argc > 2 ? argv[2] : "latest", path_buf, sizeof(path_buf));
         if (!p) return 1;
-        play_loop(1, p);
+        int max_ticks = argc > 3 ? atoi(argv[3]) : 0;
+        if (argc > 3 && max_ticks <= 0) {
+            fprintf(stderr, "max_ticks must be a positive integer\n");
+            return 1;
+        }
+        play_loop(1, p, max_ticks);
         return 0;
     }
     if (strcmp(argv[1], "watch") == 0) {
         const char* p = resolve_model_path(argc > 2 ? argv[2] : "latest", path_buf, sizeof(path_buf));
         if (!p) return 1;
-        play_loop(2, p);
+        int max_ticks = argc > 3 ? atoi(argv[3]) : 0;
+        if (argc > 3 && max_ticks <= 0) {
+            fprintf(stderr, "max_ticks must be a positive integer\n");
+            return 1;
+        }
+        play_loop(2, p, max_ticks);
         return 0;
     }
     if (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0) {
