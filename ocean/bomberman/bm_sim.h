@@ -92,7 +92,7 @@ typedef struct {
     int tick;
     int done;
     int winner;
-    int curriculum_stage;      // -1 normal reset; 0..7 reverse-curriculum stage
+    int curriculum_stage;      // -1 normal reset; otherwise reverse-curriculum stage
     int curriculum_aimed;
     int curriculum_escaped;
     uint32_t rng;
@@ -327,14 +327,14 @@ BM_HD void bm_reset_match(BMMatch* m, const BMConfig* cfg, uint32_t seed) {
 BM_HD void bm_refresh_danger(BMMatch* m);
 BM_HD int bm_blast_reaches(const BMMatch* m,
     int sx, int sy, int range, int tx, int ty);
+BM_HD int bm_bomb_escape(const BMMatch* m, const BMConfig* cfg,
+    int agent_i, int* out_margin_num, int* out_margin_den);
 
-// Reverse curriculum for the two-player training setup. Stages 0-1 use a
-// reachable late-game pillar/soft-block trap with no synthetic bombs or bogus
-// cooldowns. Stage 2 is an untouched random opening for generic bomb escape.
-// Stages 3-4 are reachable cleared late-game boards against a nearby passive,
-// then moving player. Stage 5 restores part of the destructible maze, stage 6
-// restores the untouched opening against a movement-only player, and stage 7
-// is the ordinary game with all actions enabled.
+// Reverse curriculum for the two-player training setup. Stages 0-1 finish a
+// reachable pillar trap. Stages 2-3 teach the ordinary L-pocket breakout first
+// from the bomb cell, then from the real corner spawn. Stage 4 is generic bomb
+// escape. Stages 5-6 are cleared late-game boards, stage 7 is midgame, stage 8
+// is the untouched opening, and stage 9 is the ordinary full game.
 BM_HD int bm_apply_reverse_curriculum(BMMatch* m, const BMConfig* cfg,
         float progress) {
     if (!cfg->reverse_curriculum || m->num_agents != 2 || progress >= 1.0f) {
@@ -348,7 +348,9 @@ BM_HD int bm_apply_reverse_curriculum(BMMatch* m, const BMConfig* cfg,
         return 0;
     }
 
-    int hardest_stage = bm_clamp_i((int)(8.0f * progress), 0, 7);
+    int hardest_stage = bm_clamp_i(
+        (int)((float)BM_CURRICULUM_STAGES * progress),
+        0, BM_CURRICULUM_STAGES - 1);
     int stage = hardest_stage;
     // Rehearse solved suffixes so moving the start backward does not erase the
     // finishing behavior. Half of tactical resets use the current frontier;
@@ -358,8 +360,8 @@ BM_HD int bm_apply_reverse_curriculum(BMMatch* m, const BMConfig* cfg,
     }
     m->curriculum_stage = stage;
 
-    // Stage 2 and the final two stages retain the untouched opening.
-    if (stage == 2 || stage >= 6) {
+    // Generic escape and the final two stages retain the untouched opening.
+    if (stage == 4 || stage >= 8) {
         m->tick = 0;
         m->done = 0;
         m->winner = -1;
@@ -367,7 +369,7 @@ BM_HD int bm_apply_reverse_curriculum(BMMatch* m, const BMConfig* cfg,
         return 1;
     }
 
-    if (stage == 5) {
+    if (stage == 7) {
         // A reachable mid-game snapshot between the cleared late board and the
         // untouched opening. Randomly remove about two thirds of remaining
         // soft blocks (as if bombed) and collect exposed items. No bombs,
@@ -389,13 +391,13 @@ BM_HD int bm_apply_reverse_curriculum(BMMatch* m, const BMConfig* cfg,
         return 1;
     }
 
-    if (stage == 3 || stage == 4) {
+    if (stage == 5 || stage == 6) {
         // A reachable late-game snapshot: all destructible blocks have been
         // bombed away or their items collected, while the generated border and
         // pillar topology is untouched. Inventories remain the ordinary
         // turn-zero values and there are no bombs, flames, cooldowns, or spawn
-        // invulnerability. Stage 3's opponent stays by curriculum policy;
-        // stage 4's opponent moves normally.
+        // invulnerability. Stage 5's opponent stays by curriculum policy;
+        // stage 6's opponent moves normally.
         for (int y = 1; y < m->height - 1; y++) {
             for (int x = 1; x < m->width - 1; x++) {
                 int i = bm_idx(m, x, y);
@@ -414,6 +416,47 @@ BM_HD int bm_apply_reverse_curriculum(BMMatch* m, const BMConfig* cfg,
         learner->move_cd = foe->move_cd = 0;
         learner->bombs_out = foe->bombs_out = 0;
         learner->invuln = foe->invuln = 0;
+        m->tick = 0;
+        m->done = 0;
+        m->winner = -1;
+        bm_refresh_danger(m);
+        return 1;
+    }
+
+    if (stage == 2 || stage == 3) {
+        // A normal top-left spawn pocket whose two arms are capped by soft
+        // blocks. Bombing the corner is fatal. The valid breakout is to enter
+        // one arm, bomb there, retreat through the corner, and turn into the
+        // other arm. Stage 2 starts at the bomb cell; stage 3 starts at spawn.
+        // No bomb, inventory, cooldown, or invulnerability is fabricated.
+        const int use_horizontal_arm = bm_randi(&m->rng, 2);
+        const int spawn_x = 1;
+        const int spawn_y = 1;
+        const int arm_x = use_horizontal_arm ? 2 : 1;
+        const int arm_y = use_horizontal_arm ? 1 : 2;
+        const int cells[][2] = {
+            {1, 1}, {2, 1}, {1, 2},
+        };
+        for (int i = 0; i < 3; i++) {
+            int idx = bm_idx(m, cells[i][0], cells[i][1]);
+            m->tiles[idx] = BM_TILE_EMPTY;
+            m->items[idx] = BM_ITEM_NONE;
+        }
+        m->tiles[bm_idx(m, 3, 1)] = BM_TILE_SOFT;
+        m->tiles[bm_idx(m, 1, 3)] = BM_TILE_SOFT;
+        m->items[bm_idx(m, 3, 1)] = BM_ITEM_NONE;
+        m->items[bm_idx(m, 1, 3)] = BM_ITEM_NONE;
+
+        BMAgent* learner = &m->agents[0];
+        learner->x = stage == 2 ? arm_x : spawn_x;
+        learner->y = stage == 2 ? arm_y : spawn_y;
+        learner->bomb_range = 1;
+        learner->move_cd = 0;
+        learner->bombs_out = 0;
+        learner->invuln = 0;
+        m->agents[1].move_cd = 0;
+        m->agents[1].bombs_out = 0;
+        m->agents[1].invuln = 0;
         m->tick = 0;
         m->done = 0;
         m->winner = -1;
@@ -717,7 +760,8 @@ BM_HD int bm_action_legal_world(const BMMatch* m, int agent_i, int action) {
     if (!a->alive) return action == BM_ACT_STAY;
     if (action == BM_ACT_STAY) return 1;
     if (action == BM_ACT_BOMB) {
-        if (m->curriculum_stage >= 0 && m->curriculum_stage < 7
+        if (m->curriculum_stage >= 0
+                && m->curriculum_stage < BM_CURRICULUM_STAGES - 1
                 && agent_i > 0) return 0;
         int i = bm_idx(m, a->x, a->y);
         return a->bombs_out < a->max_bombs && !m->bomb_here[i] && bm_has_free_bomb_slot(m);
@@ -758,9 +802,10 @@ BM_HD void bm_resolve_actions(BMMatch* m, const BMConfig* cfg, const int* canoni
     for (int a = 0; a < BM_MAX_AGENTS; a++) {
         if (a >= na) break;
         actions[a] = bm_action_to_world(a, canonical_actions[a]);
-        if (m->curriculum_stage == 3 && a > 0) {
+        if (m->curriculum_stage == 5 && a > 0) {
             actions[a] = BM_ACT_STAY;
-        } else if (m->curriculum_stage >= 0 && m->curriculum_stage < 7
+        } else if (m->curriculum_stage >= 0
+                && m->curriculum_stage < BM_CURRICULUM_STAGES - 1
                 && a > 0 && actions[a] == BM_ACT_BOMB) {
             actions[a] = BM_ACT_STAY;
         }
@@ -893,10 +938,11 @@ BM_HD void bm_check_done(BMMatch* m, const BMConfig* cfg,
         }
     }
 
-    // Stage 2 is a short lesson on a completely normal random opening. End the
-    // rollout once slot 0 has genuinely left its own bomb's blast; this is an
-    // episode boundary, not a fabricated board state or a credited game win.
-    if (m->curriculum_stage == 2 && m->curriculum_escaped
+    // Stages 2-4 are short, valid-state escape lessons. End once slot 0 has
+    // genuinely left its own bomb's blast; this is an episode boundary, not a
+    // fabricated board state or a credited game win.
+    if (m->curriculum_stage >= 2 && m->curriculum_stage <= 4
+            && m->curriculum_escaped
             && m->agents[0].alive) {
         m->done = 1;
         m->winner = -1;
@@ -948,6 +994,7 @@ BM_HD void bm_step_match(BMMatch* m, const BMConfig* cfg,
 
     int old_finish_dist = 0;
     int aimed_now = 0;
+    int safe_escape_bomb_now = 0;
     if (m->curriculum_stage >= 0 && m->curriculum_stage < 2) {
         BMAgent* learner = &m->agents[0];
         old_finish_dist = (learner->x > 5 ? learner->x - 5 : 5 - learner->x)
@@ -958,13 +1005,28 @@ BM_HD void bm_step_match(BMMatch* m, const BMConfig* cfg,
             && bm_blast_reaches(m, learner->x, learner->y,
                 learner->bomb_range, m->agents[1].x, m->agents[1].y);
     }
+    if (m->curriculum_stage >= 2 && m->curriculum_stage <= 4
+            && !m->curriculum_aimed
+            && bm_action_to_world(0, actions[0]) == BM_ACT_BOMB
+            && bm_action_legal_world(m, 0, BM_ACT_BOMB)) {
+        int margin_num = 0, margin_den = 1;
+        safe_escape_bomb_now = bm_bomb_escape(
+            m, cfg, 0, &margin_num, &margin_den);
+    }
 
     bm_resolve_actions(m, cfg, actions);
 
-    // Stage 2 is the one explicit bomb-escape lesson. Ordinary games do not
+    if (safe_escape_bomb_now) {
+        m->curriculum_aimed = 1;
+        rewards[0] += cfg->reward_curriculum_aim;
+        m->agents[0].ep_return += cfg->reward_curriculum_aim;
+    }
+
+    // Stages 2-4 are explicit bomb-escape lessons. Ordinary games do not
     // pay for merely placing or escaping a bomb; their bonuses are coupled to
     // credited kills in bm_resolve_deaths above.
-    if (m->curriculum_stage == 2 && !m->curriculum_escaped) {
+    if (m->curriculum_stage >= 2 && m->curriculum_stage <= 4
+            && !m->curriculum_escaped) {
         BMAgent* learner = &m->agents[0];
         for (int b = 0; b < BM_MAX_BOMBS; b++) {
             BMBomb* bomb = &m->bombs[b];

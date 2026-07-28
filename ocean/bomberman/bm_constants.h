@@ -26,6 +26,10 @@
 #define BM_ACT_BOMB 5
 #define BM_NUM_ACTIONS 6
 
+// Reverse curriculum: two finish lessons, two corner-breakout lessons,
+// generic escape, passive/moving late game, midgame, opening, full game.
+#define BM_CURRICULUM_STAGES 10
+
 // Tile kinds stored in the static map layer.
 #define BM_TILE_EMPTY 0
 #define BM_TILE_HARD 1

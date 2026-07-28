@@ -385,36 +385,86 @@ static void test_reverse_curriculum_finish(void) {
     int found_stage2 = 0;
     for (uint32_t seed = 100; seed < 1000 && !found_stage2; seed++) {
         bm_reset_match(&m, &cfg, seed);
-        bm_apply_reverse_curriculum(&m, &cfg, 2.0f / 8.0f);
+        bm_apply_reverse_curriculum(&m, &cfg,
+            2.0f / (float)BM_CURRICULUM_STAGES);
         found_stage2 = m.curriculum_stage == 2;
     }
-    CHECK(found_stage2, "stage 2 random-opening lesson is reachable");
-    CHECK(m.agents[0].x == 1 && m.agents[0].y == 1,
-        "stage 2 keeps the ordinary turn-zero learner spawn");
+    CHECK(found_stage2, "stage 2 arm-first corner lesson is reachable");
+    CHECK((m.agents[0].x == 2 && m.agents[0].y == 1)
+            || (m.agents[0].x == 1 && m.agents[0].y == 2),
+        "stage 2 starts one reachable move into an L-pocket arm");
+    CHECK(m.tiles[bm_idx(&m, 3, 1)] == BM_TILE_SOFT
+            && m.tiles[bm_idx(&m, 1, 3)] == BM_TILE_SOFT,
+        "corner lesson reproduces the double-capped opening");
+    for (int b = 0; b < BM_MAX_BOMBS; b++) {
+        CHECK(!m.bombs[b].active, "corner lesson starts without a synthetic bomb");
+    }
     CHECK(!bm_action_legal_world(&m, 1, BM_ACT_BOMB),
-        "stage 2 isolates generic escape with a movement-only opponent");
+        "stage 2 isolates breakout with a movement-only opponent");
     actions[0] = BM_ACT_BOMB;
     actions[1] = BM_ACT_STAY;
     bm_step_match(&m, &cfg, actions, rewards, terminals);
-    actions[0] = BM_ACT_RIGHT;
-    for (int step = 0; step < 4 && !m.done; step++) {
+    int horizontal = m.agents[0].x == 2;
+    actions[0] = horizontal ? BM_ACT_LEFT : BM_ACT_UP;
+    bm_step_match(&m, &cfg, actions, rewards, terminals);
+    actions[0] = horizontal ? BM_ACT_DOWN : BM_ACT_RIGHT;
+    for (int step = 0; step < 3 && !m.done; step++) {
         bm_step_match(&m, &cfg, actions, rewards, terminals);
     }
     CHECK(m.done && m.curriculum_escaped && m.winner == -1,
-        "stage 2 ends after a real safe escape without inventing a win");
+        "stage 2 teaches bomb, retreat through corner, then turn");
+    CHECK(m.agents[0].self_kills == 0,
+        "arm-first breakout completes without suicide");
 
     int found_stage3 = 0;
     for (uint32_t seed = 1000; seed < 3000 && !found_stage3; seed++) {
         bm_reset_match(&m, &cfg, seed);
-        bm_apply_reverse_curriculum(&m, &cfg, 3.0f / 8.0f);
+        bm_apply_reverse_curriculum(&m, &cfg,
+            3.0f / (float)BM_CURRICULUM_STAGES);
         found_stage3 = m.curriculum_stage == 3;
     }
-    CHECK(found_stage3, "stage 3 passive nearby-target lesson is reachable");
+    CHECK(found_stage3, "stage 3 full corner-breakout lesson is reachable");
+    CHECK(m.agents[0].x == 1 && m.agents[0].y == 1,
+        "stage 3 starts at the real ordinary corner spawn");
+    actions[0] = BM_ACT_RIGHT;
+    bm_step_match(&m, &cfg, actions, rewards, terminals);
+    actions[0] = BM_ACT_BOMB;
+    bm_step_match(&m, &cfg, actions, rewards, terminals);
+    actions[0] = BM_ACT_LEFT;
+    bm_step_match(&m, &cfg, actions, rewards, terminals);
+    actions[0] = BM_ACT_DOWN;
+    for (int step = 0; step < 3 && !m.done; step++) {
+        bm_step_match(&m, &cfg, actions, rewards, terminals);
+    }
+    CHECK(m.done && m.curriculum_escaped
+            && m.agents[0].self_kills == 0,
+        "stage 3 learns move, bomb, retreat, and turn from spawn");
+
+    cfg.soft_density = 0.0f;
+    int found_stage4 = 0;
+    for (uint32_t seed = 3000; seed < 5000 && !found_stage4; seed++) {
+        bm_reset_match(&m, &cfg, seed);
+        bm_apply_reverse_curriculum(&m, &cfg,
+            4.0f / (float)BM_CURRICULUM_STAGES);
+        found_stage4 = m.curriculum_stage == 4;
+    }
+    CHECK(found_stage4, "stage 4 generic opening escape is reachable");
+    CHECK(m.agents[0].x == 1 && m.agents[0].y == 1,
+        "generic escape keeps the ordinary turn-zero spawn");
+
+    int found_stage5 = 0;
+    for (uint32_t seed = 5000; seed < 7000 && !found_stage5; seed++) {
+        bm_reset_match(&m, &cfg, seed);
+        bm_apply_reverse_curriculum(&m, &cfg,
+            5.0f / (float)BM_CURRICULUM_STAGES);
+        found_stage5 = m.curriculum_stage == 5;
+    }
+    CHECK(found_stage5, "stage 5 passive nearby-target lesson is reachable");
     int nearby_dx = m.agents[0].x - m.agents[1].x;
     if (nearby_dx < 0) nearby_dx = -nearby_dx;
     CHECK(nearby_dx == 4
             && m.agents[0].y == m.agents[1].y,
-        "stage 3 begins from a plausible nearby late-game position");
+        "stage 5 begins from a plausible nearby late-game position");
     for (int y = 1; y < m.height - 1; y++) {
         for (int x = 1; x < m.width - 1; x++) {
             CHECK(m.tiles[bm_idx(&m, x, y)] != BM_TILE_SOFT,
@@ -422,27 +472,30 @@ static void test_reverse_curriculum_finish(void) {
         }
     }
     CHECK(!bm_action_legal_world(&m, 1, BM_ACT_BOMB),
-        "stage 3 requires a credited learner kill instead of opponent suicide");
+        "stage 5 requires a credited learner kill instead of opponent suicide");
 
-    int found_stage4 = 0;
-    for (uint32_t seed = 3000; seed < 5000 && !found_stage4; seed++) {
+    int found_stage6 = 0;
+    for (uint32_t seed = 7000; seed < 9000 && !found_stage6; seed++) {
         bm_reset_match(&m, &cfg, seed);
-        bm_apply_reverse_curriculum(&m, &cfg, 4.0f / 8.0f);
-        found_stage4 = m.curriculum_stage == 4;
+        bm_apply_reverse_curriculum(&m, &cfg,
+            6.0f / (float)BM_CURRICULUM_STAGES);
+        found_stage6 = m.curriculum_stage == 6;
     }
-    CHECK(found_stage4, "stage 4 moving nearby-target lesson is reachable");
+    CHECK(found_stage6, "stage 6 moving nearby-target lesson is reachable");
     CHECK(!bm_action_legal_world(&m, 1, BM_ACT_BOMB),
-        "stage 4 opponent moves but cannot end the lesson by suicide");
+        "stage 6 opponent moves but cannot end the lesson by suicide");
 
-    int found_stage7 = 0;
-    for (uint32_t seed = 5000; seed < 8000 && !found_stage7; seed++) {
+    int found_final = 0;
+    for (uint32_t seed = 9000; seed < 12000 && !found_final; seed++) {
         bm_reset_match(&m, &cfg, seed);
-        bm_apply_reverse_curriculum(&m, &cfg, 7.0f / 8.0f);
-        found_stage7 = m.curriculum_stage == 7;
+        bm_apply_reverse_curriculum(&m, &cfg,
+            (float)(BM_CURRICULUM_STAGES - 1)
+                / (float)BM_CURRICULUM_STAGES);
+        found_final = m.curriculum_stage == BM_CURRICULUM_STAGES - 1;
     }
-    CHECK(found_stage7, "stage 7 ordinary full game is reachable");
+    CHECK(found_final, "final ordinary full game is reachable");
     CHECK(bm_action_legal_world(&m, 1, BM_ACT_BOMB),
-        "stage 7 restores ordinary opponent bomb actions");
+        "final stage restores ordinary opponent bomb actions");
     printf("  reverse curriculum terminal-to-normal progression ok\n");
 }
 

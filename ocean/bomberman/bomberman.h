@@ -174,8 +174,10 @@ static inline void bm_end_episode(Env* env, int outcome) {
     }
     env->log.slot_0_opponent_suicides += (float)opponent_suicides * na;
     int curriculum_stage = env->match.curriculum_stage;
-    env->log.curriculum_stage += (float)(curriculum_stage < 0 ? 8 : curriculum_stage) * na;
-    env->log.curriculum_full_game += (curriculum_stage < 0 || curriculum_stage == 7
+    env->log.curriculum_stage += (float)(curriculum_stage < 0
+        ? BM_CURRICULUM_STAGES : curriculum_stage) * na;
+    env->log.curriculum_full_game += (curriculum_stage < 0
+        || curriculum_stage == BM_CURRICULUM_STAGES - 1
         ? 1.0f : 0.0f) * na;
 
     int draw = (outcome == 0) ? 1 : 0;
@@ -193,12 +195,12 @@ static inline void bm_end_episode(Env* env, int outcome) {
         env->log.deaths += ag->alive ? 0.0f : 1.0f;
         env->log.n += 1.0f;
     }
-    int mastery_stage = env->curriculum_level < 8
-        ? env->curriculum_level : 7;
+    int mastery_stage = env->curriculum_level < BM_CURRICULUM_STAGES
+        ? env->curriculum_level : BM_CURRICULUM_STAGES - 1;
     // Rehearsal episodes retain old skills but cannot promote the frontier.
     if (env->cfg.reverse_curriculum && curriculum_stage == mastery_stage) {
         env->curriculum_attempts += 1;
-        int success = curriculum_stage == 2
+        int success = curriculum_stage >= 2 && curriculum_stage <= 4
             ? (env->match.curriculum_escaped
                 && env->match.agents[0].self_kills == 0)
             : (env->match.winner == 0 && env->match.agents[0].kills > 0
@@ -216,13 +218,13 @@ static inline void bm_end_episode(Env* env, int outcome) {
             // forced finish, but every success is still a real, safe credited
             // kill because the sparring opponent cannot bomb. Use attainable
             // gates so training can actually move backward to the opening.
-            if (mastery_stage == 4 && required_rate > 0.05f) {
+            if (mastery_stage == 6 && required_rate > 0.05f) {
                 required_rate = 0.05f;
-            } else if (mastery_stage >= 5 && required_rate > 0.02f) {
+            } else if (mastery_stage >= 7 && required_rate > 0.02f) {
                 required_rate = 0.02f;
             }
             if (rate >= required_rate
-                    && env->curriculum_level < 8) {
+                    && env->curriculum_level < BM_CURRICULUM_STAGES) {
                 env->curriculum_level += 1;
             }
             env->curriculum_attempts = 0;
@@ -250,9 +252,10 @@ void puf_reset(Env* env) {
     if (env->cfg.reverse_curriculum) {
         if (env->cfg.curriculum_steps > 0
                 && env->curriculum_elapsed >= (uint64_t)env->cfg.curriculum_steps) {
-            env->curriculum_level = 8;
+            env->curriculum_level = BM_CURRICULUM_STAGES;
         }
-        progress = (float)env->curriculum_level / 8.0f;
+        progress = (float)env->curriculum_level
+            / (float)BM_CURRICULUM_STAGES;
     }
     bm_apply_reverse_curriculum(&env->match, &env->cfg, progress);
     // Advance rng so consecutive resets differ.
