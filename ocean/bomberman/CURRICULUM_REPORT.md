@@ -141,11 +141,12 @@ HUD displays distinct B/R/S pickups and both players' statistics.
 
 The bomberman3 baseline had no immediate pickup reward. The next experiment
 adds `reward_pickup = 0.5` only when a pickup actually increases a statistic,
-which is small relative to the credited-kill reward. Total and per-type pickups
-are logged separately. This tests whether denser credit teaches purposeful
-acquisition without making collection more important than combat. No late-game
-penalty, bomb cost, horizon change, or specialist opponent is introduced in the
-same run.
+which we initially believed was small relative to the raw credited-kill reward.
+Because the kill was clipped to `+1`, a pickup was actually half of the entire
+learner-visible kill signal. Total and per-type pickups were logged separately;
+the experiment demonstrated that dense pickup credit changes acquisition, but
+not that `0.5` was an appropriately scaled value. No late-game penalty, bomb
+cost, horizon change, or specialist opponent was introduced in that run.
 
 After evaluating that isolated change, reasonable separate ablations are:
 
@@ -223,3 +224,21 @@ inspection did not show excessive pickup chasing. This is preliminary evidence
 that a small dense reward improved access to strategically useful capabilities
 and thereby helped the sparse combat objective; it is not yet a multi-seed
 causal result. Bomberman3 is retained as the zero-reward control.
+
+## Reward-clipping correction
+
+Puffer hard-clamps every learner-visible per-step reward to `[-1, 1]`. Earlier
+Bomberman configurations were written and interpreted as if their raw values
+were preserved. They were not: safe kills above `+70` became `+1`, while timeout
+`-2` and self-kill near `-101` both became `-1`. Pickup `+0.5` and soft-block
+`+0.3` remained unsaturated, making each dense event enormous relative to the
+actual kill signal. Environment logs retained raw returns, further obscuring
+the discrepancy.
+
+`saved/bomberman5` preserves the final policy trained under that clipped reward
+system. The next configuration keeps all complete two-player event sums within
+the learner's range: safe credited kill `+0.849`, timeout `-0.301`, ordinary
+death `-0.401`, mutual credited kill `-0.441`, and unproductive self-kill
+`-0.991`, including the per-step time cost. Pickup and soft-block rewards are
+reduced to `+0.02` and `+0.01`. This restores meaningful reward ordering without
+depending on hidden clipping.

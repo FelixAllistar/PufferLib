@@ -603,6 +603,29 @@ static void test_timeout_penalty(void) {
     printf("  timeout anti-camping reward ok\n");
 }
 
+static void test_default_reward_envelope(void) {
+    BMConfig cfg = bm_default_config();
+    float safe_kill = cfg.reward_alive + cfg.reward_kill
+        + cfg.reward_bomb_threat + cfg.reward_bomb_escape + cfg.reward_win;
+    float timeout = cfg.reward_alive + cfg.reward_timeout;
+    float killed = cfg.reward_alive + cfg.reward_death;
+    float mutual = cfg.reward_alive + cfg.reward_death + cfg.reward_self_kill
+        + cfg.reward_kill + cfg.reward_bomb_threat;
+    float self_kill = cfg.reward_alive + cfg.reward_death
+        + cfg.reward_self_kill;
+
+    CHECK(safe_kill < 1.0f && safe_kill > 0.0f,
+        "safe kill remains positive without learner clipping");
+    CHECK(timeout > mutual && mutual < killed && killed > self_kill,
+        "timeout, mutual kill, death, and self-kill have intended ordering");
+    CHECK(timeout >= -1.0f && killed >= -1.0f
+        && mutual >= -1.0f && self_kill >= -1.0f,
+        "primary negative outcomes remain inside learner reward envelope");
+    printf("  reward envelope safe=%.3f timeout=%.3f killed=%.3f"
+        " mutual=%.3f self=%.3f\n",
+        safe_kill, timeout, killed, mutual, self_kill);
+}
+
 static void test_random_rollout_and_determinism(void) {
     BMConfig cfg = bm_default_config();
     cfg.num_agents = 4;
@@ -657,6 +680,7 @@ int main(void) {
     test_observation_and_mask();
     test_pickup_reward();
     test_timeout_penalty();
+    test_default_reward_envelope();
     test_random_rollout_and_determinism();
 
     if (g_fail) {
