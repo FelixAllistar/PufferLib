@@ -139,12 +139,13 @@ capacity, deployed bombs, blast range, and speed for both players. Previously
 the viewer rendered all pickups identically and omitted inventory; the revised
 HUD displays distinct B/R/S pickups and both players' statistics.
 
-There is currently no immediate pickup reward. The first next experiment is a
-small reward for a pickup that actually increases a statistic. It should be
-small relative to the credited-kill reward and logged separately. This tests
-whether denser credit teaches purposeful acquisition without making collection
-more important than combat. No late-game penalty, bomb cost, horizon change, or
-specialist opponent should be introduced in the same run.
+The bomberman3 baseline had no immediate pickup reward. The next experiment
+adds `reward_pickup = 0.5` only when a pickup actually increases a statistic,
+which is small relative to the credited-kill reward. Total and per-type pickups
+are logged separately. This tests whether denser credit teaches purposeful
+acquisition without making collection more important than combat. No late-game
+penalty, bomb cost, horizon change, or specialist opponent is introduced in the
+same run.
 
 After evaluating that isolated change, reasonable separate ablations are:
 

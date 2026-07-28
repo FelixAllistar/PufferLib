@@ -42,6 +42,7 @@ static void bm_host_load_config(BMConfig* cfg, Dict* kwargs) {
     cfg->soft_density = (float)dict_get(kwargs, "soft_density");
     cfg->item_chance = (float)dict_get(kwargs, "item_chance");
     cfg->reward_soft = (float)dict_get(kwargs, "reward_soft");
+    cfg->reward_pickup = (float)dict_get(kwargs, "reward_pickup");
     cfg->reward_kill = (float)dict_get(kwargs, "reward_kill");
     cfg->reward_death = (float)dict_get(kwargs, "reward_death");
     cfg->reward_self_kill = (float)dict_get(kwargs, "reward_self_kill");
@@ -99,6 +100,11 @@ __device__ void bm_gpu_fold_logs(Env* envs, BMMatch* match, int match_id, int nu
         log->kills += (float)ag->kills;
         log->self_kills += (float)ag->self_kills;
         log->soft_breaks += (float)ag->soft_breaks;
+        log->bomb_pickups += (float)ag->bomb_pickups;
+        log->range_pickups += (float)ag->range_pickups;
+        log->speed_pickups += (float)ag->speed_pickups;
+        log->pickups += (float)(ag->bomb_pickups
+            + ag->range_pickups + ag->speed_pickups);
         log->wins += (float)win;
         log->draws += (float)draw;
         log->deaths += ag->alive ? 0.0f : 1.0f;

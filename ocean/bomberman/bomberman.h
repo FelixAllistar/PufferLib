@@ -26,6 +26,10 @@ struct Log {
     float kills;
     float self_kills;
     float soft_breaks;
+    float pickups;
+    float bomb_pickups;
+    float range_pickups;
+    float speed_pickups;
     float wins;
     float draws;
     float deaths;
@@ -86,6 +90,7 @@ static inline void bm_load_config(BMConfig* cfg, Dict* kwargs) {
     cfg->soft_density = bm_kw(kwargs, "soft_density");
     cfg->item_chance = bm_kw(kwargs, "item_chance");
     cfg->reward_soft = bm_kw(kwargs, "reward_soft");
+    cfg->reward_pickup = bm_kw(kwargs, "reward_pickup");
     cfg->reward_kill = bm_kw(kwargs, "reward_kill");
     cfg->reward_death = bm_kw(kwargs, "reward_death");
     cfg->reward_self_kill = bm_kw(kwargs, "reward_self_kill");
@@ -135,6 +140,10 @@ void puf_log(Log* log, Dict* out) {
     dict_set(out, "kills", log->kills);
     dict_set(out, "self_kills", log->self_kills);
     dict_set(out, "soft_breaks", log->soft_breaks);
+    dict_set(out, "pickups", log->pickups);
+    dict_set(out, "bomb_pickups", log->bomb_pickups);
+    dict_set(out, "range_pickups", log->range_pickups);
+    dict_set(out, "speed_pickups", log->speed_pickups);
     dict_set(out, "wins", log->wins);
     dict_set(out, "draws", log->draws);
     dict_set(out, "deaths", log->deaths);
@@ -190,6 +199,11 @@ static inline void bm_end_episode(Env* env, int outcome) {
         env->log.kills += (float)ag->kills;
         env->log.self_kills += (float)ag->self_kills;
         env->log.soft_breaks += (float)ag->soft_breaks;
+        env->log.bomb_pickups += (float)ag->bomb_pickups;
+        env->log.range_pickups += (float)ag->range_pickups;
+        env->log.speed_pickups += (float)ag->speed_pickups;
+        env->log.pickups += (float)(ag->bomb_pickups
+            + ag->range_pickups + ag->speed_pickups);
         env->log.wins += (float)win;
         env->log.draws += (float)draw;
         env->log.deaths += ag->alive ? 0.0f : 1.0f;
@@ -446,6 +460,10 @@ void puf_log(Log* log, Dict* out) {
     dict_set(out, "kills", log->kills);
     dict_set(out, "self_kills", log->self_kills);
     dict_set(out, "soft_breaks", log->soft_breaks);
+    dict_set(out, "pickups", log->pickups);
+    dict_set(out, "bomb_pickups", log->bomb_pickups);
+    dict_set(out, "range_pickups", log->range_pickups);
+    dict_set(out, "speed_pickups", log->speed_pickups);
     dict_set(out, "wins", log->wins);
     dict_set(out, "draws", log->draws);
     dict_set(out, "deaths", log->deaths);

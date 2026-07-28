@@ -554,6 +554,40 @@ static void test_observation_and_mask(void) {
     printf("  float tactical observation + action mask ok\n");
 }
 
+static void test_pickup_reward(void) {
+    BMConfig cfg;
+    BMMatch m;
+    clear_arena(&m, &cfg, 2, 71u);
+    cfg.reward_pickup = 0.5f;
+    BMAgent* agent = &m.agents[0];
+    agent->x = 4;
+    agent->y = 4;
+    int i = bm_idx(&m, agent->x, agent->y);
+    float rewards[BM_MAX_AGENTS] = {0};
+
+    m.items[i] = BM_ITEM_BOMB;
+    bm_pickup(&m, &cfg, 0, rewards);
+    m.items[i] = BM_ITEM_FLAME;
+    bm_pickup(&m, &cfg, 0, rewards);
+    m.items[i] = BM_ITEM_SPEED;
+    bm_pickup(&m, &cfg, 0, rewards);
+
+    CHECK(agent->max_bombs == 2 && agent->bomb_range == 2
+        && agent->speed_level == 1, "all pickup types improve their statistic");
+    CHECK(agent->bomb_pickups == 1 && agent->range_pickups == 1
+        && agent->speed_pickups == 1, "successful pickup types are counted");
+    CHECK(fabsf(rewards[0] - 1.5f) < 1e-6f
+        && fabsf(agent->ep_return - 1.5f) < 1e-6f,
+        "successful pickups receive configured reward");
+
+    agent->max_bombs = BM_MAX_BOMBS_PER_AGENT;
+    m.items[i] = BM_ITEM_BOMB;
+    bm_pickup(&m, &cfg, 0, rewards);
+    CHECK(fabsf(rewards[0] - 1.5f) < 1e-6f && agent->bomb_pickups == 1,
+        "capped pickup is consumed without reward or count");
+    printf("  useful pickup reward + typed counters ok\n");
+}
+
 static void test_timeout_penalty(void) {
     BMConfig cfg;
     BMMatch m;
@@ -621,6 +655,7 @@ int main(void) {
     test_kill_coupled_bomb_shaping();
     test_reverse_curriculum_finish();
     test_observation_and_mask();
+    test_pickup_reward();
     test_timeout_penalty();
     test_random_rollout_and_determinism();
 

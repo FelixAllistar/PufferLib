@@ -26,6 +26,7 @@ typedef struct {
     float soft_density;
     float item_chance;
     float reward_soft;
+    float reward_pickup;       // paid only when a pickup increases a stat
     float reward_kill;
     float reward_death;
     float reward_self_kill;    // additional penalty when an agent dies to its own flame
@@ -59,6 +60,9 @@ typedef struct {
     int kills;
     int self_kills;
     int soft_breaks;
+    int bomb_pickups;
+    int range_pickups;
+    int speed_pickups;
 } BMAgent;
 
 // Eight bytes instead of six 32-bit ints. This substantially improves match
@@ -146,6 +150,7 @@ BM_H BMConfig bm_default_config(void) {
     c.soft_density = 0.55f;
     c.item_chance = 0.35f;
     c.reward_soft = 0.02f;
+    c.reward_pickup = 0.0f;
     c.reward_kill = 1.0f;
     c.reward_death = -1.0f;
     c.reward_self_kill = -5.0f;
@@ -780,18 +785,36 @@ BM_HD int bm_action_legal(const BMMatch* m, int agent_i, int canonical_action) {
         bm_action_to_world(agent_i, canonical_action));
 }
 
-BM_HD void bm_pickup(BMMatch* m, int agent_i) {
+BM_HD void bm_pickup(BMMatch* m, const BMConfig* cfg, int agent_i,
+        float* rewards) {
     BMAgent* a = &m->agents[agent_i];
     int i = bm_idx(m, a->x, a->y);
     uint8_t item = m->items[i];
     if (item == BM_ITEM_NONE || m->tiles[i] != BM_TILE_EMPTY) return;
-    if (item == BM_ITEM_BOMB && a->max_bombs < BM_MAX_BOMBS_PER_AGENT) a->max_bombs += 1;
-    else if (item == BM_ITEM_FLAME && a->bomb_range < BM_MAX_FLAME_RANGE) a->bomb_range += 1;
-    else if (item == BM_ITEM_SPEED && a->speed_level < BM_MAX_SPEED_LEVEL) a->speed_level += 1;
+    int upgraded = 0;
+    if (item == BM_ITEM_BOMB && a->max_bombs < BM_MAX_BOMBS_PER_AGENT) {
+        a->max_bombs += 1;
+        a->bomb_pickups += 1;
+        upgraded = 1;
+    } else if (item == BM_ITEM_FLAME && a->bomb_range < BM_MAX_FLAME_RANGE) {
+        a->bomb_range += 1;
+        a->range_pickups += 1;
+        upgraded = 1;
+    } else if (item == BM_ITEM_SPEED && a->speed_level < BM_MAX_SPEED_LEVEL) {
+        a->speed_level += 1;
+        a->speed_pickups += 1;
+        upgraded = 1;
+    }
+    if (upgraded) {
+        rewards[agent_i] += cfg->reward_pickup;
+        a->ep_return += cfg->reward_pickup;
+        a->ep_score += cfg->reward_pickup;
+    }
     m->items[i] = BM_ITEM_NONE;
 }
 
-BM_HD void bm_resolve_actions(BMMatch* m, const BMConfig* cfg, const int* canonical_actions) {
+BM_HD void bm_resolve_actions(BMMatch* m, const BMConfig* cfg,
+        const int* canonical_actions, float* rewards) {
     int na = bm_clamp_i(m->num_agents, 0, BM_MAX_AGENTS);
     int actions[BM_MAX_AGENTS];
     int tx[BM_MAX_AGENTS];
@@ -872,7 +895,7 @@ BM_HD void bm_resolve_actions(BMMatch* m, const BMConfig* cfg, const int* canoni
     }
     for (int a = 0; a < BM_MAX_AGENTS; a++) {
         if (a >= na) break;
-        if (move_ok[a]) bm_pickup(m, a);
+        if (move_ok[a]) bm_pickup(m, cfg, a, rewards);
     }
 }
 
@@ -1014,7 +1037,7 @@ BM_HD void bm_step_match(BMMatch* m, const BMConfig* cfg,
             m, cfg, 0, &margin_num, &margin_den);
     }
 
-    bm_resolve_actions(m, cfg, actions);
+    bm_resolve_actions(m, cfg, actions, rewards);
 
     if (safe_escape_bomb_now) {
         m->curriculum_aimed = 1;
