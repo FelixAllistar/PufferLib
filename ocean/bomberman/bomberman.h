@@ -91,6 +91,7 @@ static inline void bm_load_config(BMConfig* cfg, Dict* kwargs) {
     cfg->item_chance = bm_kw(kwargs, "item_chance");
     cfg->reward_soft = bm_kw(kwargs, "reward_soft");
     cfg->reward_pickup = bm_kw(kwargs, "reward_pickup");
+    cfg->reward_closer = bm_kw(kwargs, "reward_closer");
     cfg->reward_kill = bm_kw(kwargs, "reward_kill");
     cfg->reward_death = bm_kw(kwargs, "reward_death");
     cfg->reward_self_kill = bm_kw(kwargs, "reward_self_kill");
@@ -185,9 +186,7 @@ static inline void bm_end_episode(Env* env, int outcome) {
     int curriculum_stage = env->match.curriculum_stage;
     env->log.curriculum_stage += (float)(curriculum_stage < 0
         ? BM_CURRICULUM_STAGES : curriculum_stage) * na;
-    env->log.curriculum_full_game += (curriculum_stage < 0
-        || curriculum_stage == BM_CURRICULUM_STAGES - 1
-        ? 1.0f : 0.0f) * na;
+    env->log.curriculum_full_game += (curriculum_stage < 0 ? 1.0f : 0.0f) * na;
 
     int draw = (outcome == 0) ? 1 : 0;
     for (int a = 0; a < env->num_agents; a++) {
@@ -214,11 +213,9 @@ static inline void bm_end_episode(Env* env, int outcome) {
     // Rehearsal episodes retain old skills but cannot promote the frontier.
     if (env->cfg.reverse_curriculum && curriculum_stage == mastery_stage) {
         env->curriculum_attempts += 1;
-        int success = curriculum_stage >= 2 && curriculum_stage <= 4
-            ? (env->match.curriculum_escaped
-                && env->match.agents[0].self_kills == 0)
-            : (env->match.winner == 0 && env->match.agents[0].kills > 0
-                && env->match.agents[0].self_kills == 0);
+        int success = env->match.winner == 0
+            && env->match.agents[0].kills > 0
+            && env->match.agents[0].self_kills == 0;
         if (success) {
             env->curriculum_successes += 1;
         }
@@ -232,9 +229,9 @@ static inline void bm_end_episode(Env* env, int outcome) {
             // forced finish, but every success is still a real, safe credited
             // kill because the sparring opponent cannot bomb. Use attainable
             // gates so training can actually move backward to the opening.
-            if (mastery_stage == 6 && required_rate > 0.05f) {
+            if (mastery_stage == 2 && required_rate > 0.05f) {
                 required_rate = 0.05f;
-            } else if (mastery_stage >= 7 && required_rate > 0.02f) {
+            } else if (mastery_stage >= 3 && required_rate > 0.02f) {
                 required_rate = 0.02f;
             }
             if (rate >= required_rate

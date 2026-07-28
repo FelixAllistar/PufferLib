@@ -233,8 +233,8 @@ static Env make_play_env(int num_agents, const BMConfig* loaded_cfg) {
     Env env = {0};
     env.cfg = loaded_cfg ? *loaded_cfg : bm_default_config();
     env.cfg.num_agents = num_agents;
-    // Visual evaluation always uses ordinary games. All other simulator values,
-    // especially max_ticks, come from the model's training config.
+    // Visual evaluation always uses ordinary games. Simulator values initially
+    // come from the model config; play_loop may deliberately extend max_ticks.
     env.cfg.reverse_curriculum = 0;
     env.num_agents = num_agents;
     env.rng = 42;
@@ -255,7 +255,11 @@ static void play_loop(int mode, const char* model_path, int max_ticks_override) 
         load_model_config(model_path, &play_cfg, &hidden, &layers,
             config_path, sizeof(config_path));
     }
-    if (max_ticks_override > 0) play_cfg.max_ticks = max_ticks_override;
+    int trained_max_ticks = play_cfg.max_ticks;
+    // Visual sessions are intentionally long enough to observe an actual
+    // resolution. Pass the saved deadline explicitly as argv[3] for exact
+    // training-distribution timing.
+    play_cfg.max_ticks = max_ticks_override > 0 ? max_ticks_override : 30000;
     Env env = make_play_env(num_agents, &play_cfg);
     env.hold_on_done = 1; // freeze death frame in play/watch
 
@@ -290,8 +294,8 @@ static void play_loop(int mode, const char* model_path, int max_ticks_override) 
         net = make_puffernet(weights, num_agents, OBS_SIZE, hidden, layers,
             act_sizes, NUM_ATNS);
         printf("Loaded policy: %s  (hidden=%d layers=%d)\n", model_path, hidden, layers);
-        printf("Loaded config: %s%s\n", config_path,
-            max_ticks_override > 0 ? "  (max_ticks overridden)" : "");
+        printf("Loaded config: %s  (trained max_ticks=%d, visual max_ticks=%d)\n",
+            config_path, trained_max_ticks, play_cfg.max_ticks);
     }
 
     env.client = NULL;
@@ -435,8 +439,9 @@ static void usage(const char* argv0) {
         "  %s bench            headless SPS\n"
         "\n"
         "Plain '%s' does NOT load a model — use play/watch for that.\n"
-        "Play/watch loads simulator and policy settings from the model's run config.\n"
-        "An optional max_ticks argument overrides the saved deadline.\n"
+        "Play/watch loads simulator and policy settings from the model's run config,\n"
+        "but defaults to a 30000-tick visual session. Pass max_ticks explicitly\n"
+        "to reproduce the training deadline exactly.\n"
         "\n"
         "Headless A vs B:\n"
         "  ./puffer match bomberman \\\n"

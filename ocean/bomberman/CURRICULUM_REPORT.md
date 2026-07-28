@@ -19,31 +19,33 @@ behaviors must be learned.
 
 ## Current training system
 
-Each environment advances through the curriculum independently. At its current
-frontier, half of tactical resets rehearse a uniformly sampled earlier stage.
-Ordinary full games are mixed in with probability `progress^2`, so their share
-rises continuously rather than appearing at one hard transition. Only frontier
+Each environment advances through the curriculum independently. The original
+ten-stage ladder accumulated useful but non-monotonic corner/escape insertions
+and eventually demanded too much stochastic mastery from every worker. The
+current five-stage ladder is again an explicit reverse combat chain. Among
+tactical resets, 75% use the frontier and 25% rehearse an earlier stage.
+Ordinary games are mixed in with probability `0.5 * progress^2`. Only frontier
 episodes count toward graduation.
 
 | Stage | Reset | Intended skill |
 |---:|---|---|
-| 0 | Fixed, valid near-terminal pillar trap | Bomb, escape, and finish a credited kill |
-| 1 | Randomized valid versions of the trap | Generalize the finishing sequence |
-| 2 | Learner in one arm of a real L-shaped spawn pocket | Bomb, retreat through the corner, and turn to safety |
-| 3 | Learner at the actual corner spawn | Enter an arm and execute the whole breakout |
-| 4 | Untouched random opening | Generic bomb escape |
-| 5 | Cleared board and nearby stationary opponent | Find and execute a kill |
-| 6 | Cleared board and moving opponent | Kill a moving target |
-| 7 | Partially cleared plausible midgame | Join navigation, bombing, escape, and combat |
-| 8 | Untouched opening with movement-only opponent | Play from turn zero against limited pressure |
-| 9 | Ordinary self-play | Complete game |
+| 0 | Cleared board, stationary target two cells away | Move once, bomb at the correct range, retreat, and kill |
+| 1 | Cleared board, stationary target four cells away | Find and execute a stationary-target kill |
+| 2 | Same farther setup with a moving target | Transfer the kill sequence to target motion |
+| 3 | Plausible partially cleared midgame | Connect navigation, bombing, escape, and pursuit |
+| 4 | Untouched opening with movement-only opponent | Execute a credited kill from turn zero |
 
-Graduation is evaluated in windows of 32 frontier episodes. Stages 2--4
-require escape without a self-kill. The other stages require a win containing a
-credited kill and no self-kill. The nominal threshold is 45%; stage 6 is capped
-at 5%, and stages 7--9 at 2%, because their moving-opponent tasks are much less
-deterministic. The time-based fallback is effectively disabled at one billion
-environment steps, so progress is mastery-driven.
+Graduation is evaluated in windows of 64 frontier episodes. Every stage
+requires a win containing a credited kill and no self-kill. Stages 0--1 require
+45% success (29/64), stage 2 requires 5% (4/64), and stages 3--4 require 2%
+(2/64). Passing stage 4 exits directly into ordinary self-play; ordinary games
+are not redundantly gated as a final curriculum stage. The time-based fallback
+is effectively disabled at one billion per-environment steps.
+
+The optional `reward_closer` is signed nearest-opponent Manhattan-distance
+progress: approaching pays `+x` per cell and retreating pays `-x`, so an
+approach/retreat cycle has zero undiscounted shaping return. It defaults to
+`0.0` at the current experimental pivot.
 
 Training also uses a rotating pool of up to 32 historical learner checkpoints.
 This reduces immediate overfitting to the newest opponent, but it is not a full
@@ -114,8 +116,8 @@ capacity, blast range, speed, and spatial control. The policy has observations
 for all three pickup types and for both players' inventory statistics; the
 problem is experience and credit assignment, not missing state information.
 
-With `max_ticks = 1600` and `gamma = 0.99`, a terminal outcome 1,600 decisions
-away has a direct discount of roughly `0.99^1600`, effectively zero. Thus a
+With `max_ticks = 1000` and `gamma = 0.99`, a terminal outcome 1,000 decisions
+away has a direct discount of roughly `0.99^1000`, effectively zero. Thus a
 timeout penalty alone gives very weak early pressure against a late draw. The
 64-step rollout horizon covers the 18-decision bomb fuse, but not necessarily
 long-term resource conservation or endgame initiative.
@@ -138,6 +140,12 @@ The policy observes the pickup type on the board plus available bombs, maximum
 capacity, deployed bombs, blast range, and speed for both players. Previously
 the viewer rendered all pickups identically and omitted inventory; the revised
 HUD displays distinct B/R/S pickups and both players' statistics.
+
+`play/watch` loads the checkpoint's board, timer, movement, density, item, and
+architecture settings, but deliberately extends visual sessions to 30,000
+ticks so observation can continue until a death. Passing `1000` as the final
+CLI argument restores exact training-deadline timing for controlled evaluation.
+The viewer prints both the trained and visual deadlines at startup.
 
 The bomberman3 baseline had no immediate pickup reward. The next experiment
 adds `reward_pickup = 0.5` only when a pickup actually increases a statistic,
@@ -166,11 +174,13 @@ After evaluating that isolated change, reasonable separate ablations are:
 a timestamp; it does not change learning. Loading a `.bin` restores weights but
 not optimizer state or cumulative step metadata.
 
-From random weights, the current ten-stage experiment is:
+From random weights, the current five-stage experiment is:
 
 ```bash
 ./puffer train bomberman \
   base.load_model_path=None \
+  env.reverse_curriculum=1 \
+  train.total_timesteps=1000000000 \
   base.run_id=bomberman_from_zero
 ```
 
