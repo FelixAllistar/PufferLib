@@ -213,3 +213,13 @@ The core result so far is that believable reverse curriculum solved the initial
 sparse-exploration barrier, while extended full-game self-play improved
 integration. The remaining scientific question is how best to supply realistic
 late-game credit and coverage without hand-coding the desired strategy.
+
+## Pickup experiment result
+
+The isolated 100M-step pickup-reward continuation produced `saved/bomberman4`.
+Training telemetry increased from almost no acquisition to more than 5.5 useful
+pickups per agent episode, accompanied by an increase in raw kills. Qualitative
+inspection did not show excessive pickup chasing. This is preliminary evidence
+that a small dense reward improved access to strategically useful capabilities
+and thereby helped the sparse combat objective; it is not yet a multi-seed
+causal result. Bomberman3 is retained as the zero-reward control.
