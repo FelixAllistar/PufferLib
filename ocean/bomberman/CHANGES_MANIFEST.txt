@@ -1,0 +1,22 @@
+BOMBERMAN-ONLY PACKAGE
+======================
+
+This archive intentionally contains no shared PufferLib core files.
+
+DO NOT replace:
+- pufferl.cu
+- puffercpu.h
+- pufferenv.h
+- algo.cu
+- ini.h
+- nethack.cu
+- protein.cu
+- constellation.c
+- ocean.cu
+
+Replace/add only the files included in this archive inside your Bomberman
+environment directory.
+
+Observation transport: standard float obs_t, values in [0, 1].
+Observation size: 1200 floats per agent.
+Old checkpoints: incompatible; retrain from scratch.
