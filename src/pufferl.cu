@@ -3642,6 +3642,11 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
     long local_timesteps = total_timesteps / ctx->world_size;
     long train_epochs = local_timesteps / batch_size;
     long eval_epochs = train_epochs / 2;
+#ifdef PUF_SWEEP_SCORE
+    if (puf_ini_get(ini, "base", "result_fd") > 0) {
+        eval_epochs = 0;
+    }
+#endif
     // Optional multiplier for longer post-train eval (noise studies). Default 1.
     double eval_epoch_mult = puf_ini_get(ini, "base", "eval_epoch_mult");
     if (eval_epoch_mult > 1.0) {

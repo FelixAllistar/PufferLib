@@ -62,6 +62,7 @@ static int gs_exact_count;
 static uint64_t gs_exact_seen;
 static float gs_exact_current_prob;
 static int gs_exact_restored;
+static float gs_sweep_best = INFINITY;
 
 static inline int gs_kw(Dict* kwargs, const char* key) {
     return (int)dict_get(kwargs, key);
@@ -125,7 +126,7 @@ static inline float gs_cpu_exploit(const char* checkpoint, Ini* ini) {
     return score;
 }
 
-static inline float gs_sweep_score(const char* checkpoint, Ini* ini) {
+static inline float gs_checkpoint_score(const char* checkpoint, Ini* ini) {
 #ifdef __CUDACC__
     float score = (float)gs_cuda_exploit(checkpoint, ini, NULL, NULL);
 #else
@@ -154,6 +155,12 @@ static inline float gs_sweep_score(const char* checkpoint, Ini* ini) {
         score = fminf(score, magnet_score);
     }
     return score;
+}
+
+static inline float gs_sweep_score(const char* checkpoint, Ini* ini) {
+    float score = gs_checkpoint_score(checkpoint, ini);
+    gs_sweep_best = fminf(gs_sweep_best, score);
+    return gs_sweep_best;
 }
 
 #define PUF_SWEEP_SCORE(checkpoint, ini) gs_sweep_score(checkpoint, ini)
@@ -399,6 +406,14 @@ static inline void gs_load_hook(const char* checkpoint, Ini* ini) {
 #define PUF_LOAD_HOOK(checkpoint, ini) gs_load_hook(checkpoint, ini)
 
 static inline void gs_checkpoint_hook(const char* checkpoint, Ini* ini) {
+    if (puf_ini_get(ini, "base", "result_fd") > 0) {
+        float score = gs_checkpoint_score(checkpoint, ini);
+        if (score < gs_sweep_best) {
+            gs_sweep_best = score;
+            printf("Sweep exact best: exploitability=%.9f checkpoint=%s\n",
+                score, checkpoint);
+        }
+    }
     if (!puf_ini_get(ini, "env", "exact_exploiter")) {
         return;
     }
