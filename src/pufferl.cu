@@ -168,6 +168,12 @@ __global__ void cast(precision_t* dst,
     }
 }
 
+__global__ void ema_weights(float* magnet, const float* weights,
+        float tau, int n) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx < n) magnet[idx] += tau * (weights[idx] - magnet[idx]);
+}
+
 #ifndef PRECISION_FLOAT
 // Identity overload so obs→rollout cast arm typechecks when obs_t is bf16.
 __global__ void cast(precision_t* dst,
@@ -310,6 +316,8 @@ typedef struct {
     float vf_clip_coef;
     float vf_coef;
     float ent_coef;
+    float emag_kl_coef;
+    float emag_tau;
     float min_ent_coef_ratio;
     bool anneal_ent_coef;
     float gamma;
@@ -318,6 +326,7 @@ typedef struct {
     float vtrace_c_clip;
     float prio_alpha;
     float prio_beta0;
+    bool epoch_sampling;
     bool async;
     bool reset_every_horizon;
     // true when base.cudagraphs >= 0: first real rollout/train use captures.
@@ -514,11 +523,16 @@ typedef struct PuffeRL {
     Policy policy;
     PolicyWeights weights;       // current precision_t weights (structured)
     PolicyWeights actor_weights; // async rollout snapshot; unused when async=0
+    PolicyWeights magnet_weights;
     PolicyActivations train_activations;
+    PolicyActivations magnet_activations;
     Allocator params_alloc;
     Allocator actor_params_alloc;
     Allocator grads_alloc;
     Allocator activations_alloc;
+    Allocator magnet_params_alloc;
+    Allocator magnet_grads_alloc;
+    Allocator magnet_acts_alloc;
     VecEnv* vec;
     Muon muon;
     ncclComm_t nccl_comm;  // NCCL communicator for multi-GPU
@@ -541,7 +555,9 @@ typedef struct PuffeRL {
     PPOBuffersPuf ppo_bufs_puf; // Pre-allocated buffers for ppo_loss_fwd_bwd
     PrioBuffers prio_bufs;      // Pre-allocated buffers for prio_replay
     FloatTensor master_weights;  // fp32 master weights (flat); same buffer as param_puf in fp32 mode
+    FloatTensor magnet_master_weights;
     PrecisionTensor param_puf;
+    PrecisionTensor magnet_param_puf;
     PrecisionTensor actor_param_puf;
     PrecisionTensor grad_puf;
     LongTensor rng_offset_puf;   // (num_buffers+1,) int64 CUDA device counters
@@ -563,6 +579,19 @@ typedef struct PuffeRL {
     int num_frozen_banks;
     char env_name[64];  // For frozen-bank policy rebuild at create.
 } PuffeRL;
+
+static inline void update_emag(PuffeRL& pufferl, float tau,
+        cudaStream_t stream) {
+    int n = numel(pufferl.master_weights.shape);
+    ema_weights<<<grid_size(n), BLOCK_SIZE, 0, stream>>>(
+        pufferl.magnet_master_weights.data,
+        pufferl.master_weights.data, tau, n);
+    if (USE_BF16) {
+        cast<<<grid_size(n), BLOCK_SIZE, 0, stream>>>(
+            pufferl.magnet_param_puf.data,
+            pufferl.magnet_master_weights.data, n);
+    }
+}
 
 // --- Infer path: sample + forward, then vec workers ---
 static void profile_begin(const char* tag, bool enable) {
@@ -855,8 +884,8 @@ void pufferl_forward(PuffeRL* pufferl, int buf, int t, cudaStream_t stream) {
         PrecisionTensor dec_puf = policy_forward(p_bank, *w_bank, *a_bank, obs_b, *s_bank, stream);
 
         PrecisionTensor p_logstd = {};
-        DecoderWeights* dw = (DecoderWeights*)w_bank->decoder;
-        if (dw->continuous) {
+        if (pufferl->is_continuous) {
+            DecoderWeights* dw = (DecoderWeights*)w_bank->decoder;
             p_logstd = dw->logstd;
         }
 
@@ -1100,6 +1129,27 @@ void vec_log(VecEnv* vec, Dict* out, int clear) {
     dict_clear(&env_out);
 }
 
+#ifndef PUFFER_GPU_ENV
+void vec_log_tag(VecEnv* vec, int tag, Dict* out) {
+    Log aggregate = {0};
+    int num_keys = (int)(sizeof(Log) / sizeof(float));
+    float* acc = (float*)&aggregate;
+    for (int i = 0; i < vec->size; i++) {
+        Env* env = &vec->envs[i];
+        if (env->tag != tag || env->log.n == 0.0f) continue;
+        float* log = (float*)&env->log;
+        for (int j = 0; j < num_keys; j++) acc[j] += log[j];
+    }
+
+    float n = aggregate.n;
+    if (n > 0.0f) {
+        for (int j = 0; j < num_keys; j++) acc[j] /= n;
+        puf_log(&aggregate, out);
+    }
+    dict_set(out, "n", n);
+}
+#endif
+
 // Zero advantages on frozen-bank rows so prio_replay never samples them. Frozen
 // rollout rows hold actions/logprobs from the frozen policy; training the
 // primary's PPO on them produces garbage ratios and poisoned gradients.
@@ -1308,12 +1358,12 @@ void train_impl(PuffeRL& pufferl, RolloutBuf* src_arg) {
     bool anneal_lr = hypers.anneal_lr;
     int current_epoch = pufferl.epoch;
 
-    Muon* muon = &pufferl.muon;
     int total_epochs = hypers.total_timesteps / batch_size;
     if (anneal_lr) {
         float lr_min = hypers.min_lr_ratio * hypers.lr;
         float lr = cosine_annealing(hypers.lr, lr_min, current_epoch, total_epochs);
-        cudaMemcpy(muon->lr_puf.data, &lr, sizeof(float), cudaMemcpyHostToDevice);
+        cudaMemcpy(pufferl.muon.lr_puf.data, &lr,
+            sizeof(float), cudaMemcpyHostToDevice);
     }
 
     // Annealed entropy coefficient — same cosine shape as lr. With PG signal
@@ -1353,17 +1403,44 @@ void train_impl(PuffeRL& pufferl, RolloutBuf* src_arg) {
     profile_end(hypers.profile);
 
     profile_begin("compute_prio", hypers.profile);
-    prio_build_cdf_cuda(advantages_puf, prio_alpha, pufferl.prio_bufs, train_stream);
+    prio_build_cdf_cuda(advantages_puf, prio_alpha,
+        pufferl.prio_bufs, train_stream);
     profile_end(hypers.profile);
 
     long* train_rng_offset = pufferl.rng_offset_puf.data + hypers.num_buffers;
     int total_minibatches = hypers.replay_ratio * batch_size / hypers.minibatch_size;
+    int minibatches_per_epoch = batch_size / hypers.minibatch_size;
+    if (hypers.epoch_sampling) {
+        assert(hypers.prio_alpha == 0.0f
+            && "train.epoch_sampling requires train.prio_alpha=0");
+        assert(batch_size % hypers.minibatch_size == 0
+            && "epoch sampling requires batch divisible by minibatch_size");
+    }
+    int completed_emag_epochs = 0;
     for (int mb = 0; mb < total_minibatches; ++mb) {
         cudaEventRecord(pufferl.profile.events[2], train_stream);  // start of misc (overwritten each iter)
 
         profile_begin("compute_prio", hypers.profile);
-        prio_sample_cuda(anneal_beta, pufferl.prio_bufs, pufferl.seed,
-            train_rng_offset, train_stream);
+        if (hypers.epoch_sampling) {
+            int within_epoch = mb % minibatches_per_epoch;
+            if (within_epoch == 0) {
+                uint64_t shuffle_seed = pufferl.seed
+                    ^ ((uint64_t)pufferl.epoch << 32)
+                    ^ (uint64_t)(mb / minibatches_per_epoch + 1);
+                puf_shuffle_rows<<<1, 1, 0, train_stream>>>(
+                    pufferl.prio_bufs.permutation.data,
+                    hypers.total_agents, shuffle_seed);
+            }
+            int segments = pufferl.prio_bufs.idx.shape[0];
+            puf_epoch_sample<<<grid_size(segments), BLOCK_SIZE, 0, train_stream>>>(
+                pufferl.prio_bufs.idx.data,
+                pufferl.prio_bufs.mb_prio.data,
+                pufferl.prio_bufs.permutation.data,
+                within_epoch * segments, segments);
+        } else {
+            prio_sample_cuda(anneal_beta, pufferl.prio_bufs, pufferl.seed,
+                train_rng_offset, train_stream);
+        }
         profile_end(hypers.profile);
 
         profile_begin("train_select_and_copy", hypers.profile);
@@ -1391,7 +1468,8 @@ void train_impl(PuffeRL& pufferl, RolloutBuf* src_arg) {
             / rollouts.terminals.shape[0]) * pe;
         int sel_horizon = rollouts.values.shape[1];
         select_copy<<<mb_segs, SELECT_COPY_THREADS, 0, train_stream>>>(
-            sel_src, graph, sel_idx, advantages_puf.data, pufferl.prio_bufs.mb_prio.data,
+            sel_src, graph, sel_idx, advantages_puf.data,
+            pufferl.prio_bufs.mb_prio.data,
             obs_rb, act_rb, lp_rb, term_rb, sel_horizon);
         int mask_rb = (numel(rollouts.action_mask.shape)
             / rollouts.action_mask.shape[0]) * pe;
@@ -1414,18 +1492,32 @@ void train_impl(PuffeRL& pufferl, RolloutBuf* src_arg) {
             PrecisionTensor obs_puf = graph.mb_obs;
             PrecisionTensor state_puf = graph.mb_state;
             PrecisionTensor terminals_puf = graph.mb_terminals;
+            PrecisionTensor magnet_out;
+            PrecisionTensor magnet_logstd;
+            if (hypers.emag_kl_coef > 0.0f) {
+                magnet_out = policy_forward_train(&pufferl.policy,
+                    pufferl.magnet_weights, pufferl.magnet_activations,
+                    obs_puf, state_puf, terminals_puf, stream);
+                if (pufferl.is_continuous) {
+                    DecoderWeights* mdw = (DecoderWeights*)
+                        pufferl.magnet_weights.decoder;
+                    magnet_logstd = mdw->logstd;
+                }
+            }
             PrecisionTensor dec_puf = policy_forward_train(&pufferl.policy, pufferl.weights,
                 pufferl.train_activations, obs_puf, state_puf, terminals_puf, stream);
-            DecoderWeights* dw_train = (DecoderWeights*)pufferl.weights.decoder;
             PrecisionTensor p_logstd;
-            if (dw_train->continuous) {
+            if (pufferl.is_continuous) {
+                DecoderWeights* dw_train = (DecoderWeights*)
+                    pufferl.weights.decoder;
                 p_logstd = dw_train->logstd;
             }
 
-            ppo_loss_fwd_bwd(dec_puf, p_logstd, graph,
+            ppo_loss_fwd_bwd(dec_puf, p_logstd, magnet_out, magnet_logstd, graph,
                 pufferl.act_sizes_puf, pufferl.losses_puf,
                 hypers.clip_coef, hypers.vf_clip_coef, hypers.vf_coef,
                 pufferl.ppo_bufs_puf.ent_coef.data,
+                hypers.emag_kl_coef,
                 pufferl.ppo_bufs_puf, pufferl.is_continuous, stream);
 
             FloatTensor grad_logits_puf = pufferl.ppo_bufs_puf.grad_logits;
@@ -1439,7 +1531,8 @@ void train_impl(PuffeRL& pufferl, RolloutBuf* src_arg) {
                     numel(pufferl.grad_puf.shape), NCCL_PRECISION, ncclAvg,
                     pufferl.nccl_comm, stream);
             }
-            muon_step(&pufferl.muon, pufferl.master_weights, pufferl.grad_puf, hypers.max_grad_norm, stream);
+            muon_step(&pufferl.muon, pufferl.master_weights,
+                pufferl.grad_puf, hypers.max_grad_norm, stream);
             if (USE_BF16) {
                 int n = numel(pufferl.param_puf.shape);
                 cast<<<grid_size(n), BLOCK_SIZE, 0, stream>>>(
@@ -1470,7 +1563,25 @@ void train_impl(PuffeRL& pufferl, RolloutBuf* src_arg) {
         scatter_rows<<<grid_size(num_idx * value_row), BLOCK_SIZE, 0, train_stream>>>(
             rollouts.values.data, pufferl.prio_bufs.idx.data,
             graph.mb_newvalue.data, num_idx, value_row);
+
+        int completed_epochs = (mb + 1) * hypers.minibatch_size / batch_size;
+        if (hypers.emag_kl_coef > 0.0f
+                && completed_epochs > completed_emag_epochs) {
+            update_emag(pufferl, hypers.emag_tau, train_stream);
+            completed_emag_epochs = completed_epochs;
+        }
         cudaEventRecord(pufferl.profile.events[4], train_stream);  // end forward
+    }
+
+    if (hypers.emag_kl_coef > 0.0f) {
+        float replay_epochs = (float)total_minibatches
+            * hypers.minibatch_size / batch_size;
+        float partial_epoch = replay_epochs - completed_emag_epochs;
+        if (partial_epoch > 0.0f) {
+            float partial_tau = 1.0f
+                - powf(1.0f - hypers.emag_tau, partial_epoch);
+            update_emag(pufferl, partial_tau, train_stream);
+        }
     }
 
     cudaStreamSynchronize(train_stream);
@@ -1574,10 +1685,10 @@ const char* puf_checkpoint_path_key(Ini* ini, const char* key,
     return out;
 }
 
-void puf_save_weights(PuffeRL* p, const char* path) {
-    int64_t nbytes = numel(p->master_weights.shape) * sizeof(float);
+void puf_save_tensor(FloatTensor weights, const char* path) {
+    int64_t nbytes = numel(weights.shape) * sizeof(float);
     char* buf = (char*)malloc(nbytes);
-    cudaMemcpy(buf, p->master_weights.data, nbytes, cudaMemcpyDeviceToHost);
+    cudaMemcpy(buf, weights.data, nbytes, cudaMemcpyDeviceToHost);
     char tmp[4096];
     snprintf(tmp, sizeof(tmp), "%s.tmp.%d", path, getpid());
     FILE* fp = fopen(tmp, "wb");
@@ -1597,6 +1708,15 @@ void puf_save_weights(PuffeRL* p, const char* path) {
     if (rename(tmp, path) != 0) {
         fprintf(stderr, "failed to publish weights to %s\n", path);
         exit(1);
+    }
+}
+
+void puf_save_weights(PuffeRL* p, const char* path) {
+    puf_save_tensor(p->master_weights, path);
+    if (p->hypers.emag_kl_coef > 0.0f) {
+        char magnet_path[8192];
+        snprintf(magnet_path, sizeof(magnet_path), "%s.emag", path);
+        puf_save_tensor(p->magnet_master_weights, magnet_path);
     }
 }
 
@@ -1682,6 +1802,8 @@ PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx) {
         .vf_clip_coef = puf_ini_get_float(ini, "train", "vf_clip_coef"),
         .vf_coef = puf_ini_get_float(ini, "train", "vf_coef"),
         .ent_coef = puf_ini_get_float(ini, "train", "ent_coef"),
+        .emag_kl_coef = puf_ini_get_float(ini, "train", "emag_kl_coef"),
+        .emag_tau = puf_ini_get_float(ini, "train", "emag_tau"),
         .min_ent_coef_ratio = puf_ini_get_float(ini, "train", "min_ent_coef_ratio"),
         .anneal_ent_coef = puf_ini_get_int(ini, "train", "anneal_ent_coef") != 0,
         .gamma = puf_ini_get_float(ini, "train", "gamma"),
@@ -1690,6 +1812,8 @@ PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx) {
         .vtrace_c_clip = puf_ini_get_float(ini, "train", "vtrace_c_clip"),
         .prio_alpha = puf_ini_get_float(ini, "train", "prio_alpha"),
         .prio_beta0 = puf_ini_get_float(ini, "train", "prio_beta0"),
+        .epoch_sampling = puf_ini_get_int(
+            ini, "train", "epoch_sampling") != 0,
         .async = puf_ini_get_int(ini, "base", "async") != 0,
         .reset_every_horizon = puf_ini_get_int(ini, "base", "reset_every_horizon") != 0,
         .cudagraphs = puf_ini_get(ini, "base", "cudagraphs") >= 0,
@@ -1854,7 +1978,8 @@ PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx) {
             for (int e = 0; e < env_count; e++) {
                 Env* eptr = &vec->envs[env_start + e];
                 for (int s = 0; s < eptr->num_agents; s++) {
-                    int policy = e < frozen_start ? 0 : eptr->agents[s].policy;
+                    int policy = e < frozen_start || eptr->agents[s].policy == 0
+                        ? 0 : 1 + (e - frozen_start) % frozen_banks;
                     assert(policy >= 0 && policy < vec->num_banks
                         && "agent policy outside bank range");
                     counts[policy]++;
@@ -1888,7 +2013,8 @@ PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx) {
                 Env* eptr = &vec->envs[env_start + e];
                 int tag = 0;
                 for (int s = 0; s < eptr->num_agents; s++) {
-                    int policy = e < frozen_start ? 0 : eptr->agents[s].policy;
+                    int policy = e < frozen_start || eptr->agents[s].policy == 0
+                        ? 0 : 1 + (e - frozen_start) % frozen_banks;
                     if (policy > tag) {
                         tag = policy;
                     }
@@ -1936,9 +2062,10 @@ PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx) {
     int hidden_size = hypers.hidden_size;
     int num_layers = hypers.num_layers;
     int decoder_output_size = is_continuous ? num_action_heads : act_n;
-    int minibatch_segments = hypers.minibatch_size / hypers.horizon;
+    int train_horizon = hypers.horizon;
+    int minibatch_segments = hypers.minibatch_size / train_horizon;
     int inf_batch = total_agents / num_buffers;
-    int B_TT = minibatch_segments * hypers.horizon;
+    int B_TT = minibatch_segments * train_horizon;
     int horizon = hypers.horizon;
     int batch = total_agents / num_buffers;
 
@@ -1960,6 +2087,15 @@ PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx) {
 
     // Buffers for weights, grads, and activations
     pufferl->weights = policy_weights_create(&pufferl->policy, params);
+    if (hypers.emag_kl_coef > 0.0f) {
+        assert(hypers.emag_tau > 0.0f && hypers.emag_tau <= 1.0f
+            && "train.emag_tau must be in (0, 1]");
+        pufferl->magnet_weights = policy_weights_create(
+            &pufferl->policy, &pufferl->magnet_params_alloc);
+        pufferl->magnet_activations = policy_reg_train(
+            &pufferl->policy, pufferl->magnet_weights,
+            &pufferl->magnet_acts_alloc, &pufferl->magnet_grads_alloc, B_TT);
+    }
     if (hypers.async) {
         pufferl->actor_weights = policy_weights_create(&pufferl->policy, &pufferl->actor_params_alloc);
     }
@@ -1986,12 +2122,13 @@ PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx) {
         alloc_register(acts, &pufferl->rollouts.initial_states);
     }
     register_train_buffers(pufferl->train_buf,
-        acts, minibatch_segments, horizon, input_size,
+        acts, minibatch_segments, train_horizon, input_size,
         hidden_size, num_action_heads, num_layers, mask_size);
     register_rollout_buffers(pufferl->train_rollouts,
         acts, total_agents, horizon, input_size, num_action_heads, mask_size);
     register_ppo_buffers(pufferl->ppo_bufs_puf,
-        acts, minibatch_segments, hypers.horizon, decoder_output_size, is_continuous);
+        acts, minibatch_segments, train_horizon,
+        decoder_output_size, is_continuous);
     register_prio_buffers(pufferl->prio_bufs,
         acts, hypers.total_agents, minibatch_segments);
 
@@ -2017,6 +2154,15 @@ PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx) {
     }
     create_allocator_or_die("grads", grads);
     create_allocator_or_die("acts", acts);
+    if (hypers.emag_kl_coef > 0.0f) {
+        create_allocator_or_die("magnet_params", &pufferl->magnet_params_alloc);
+        create_allocator_or_die("magnet_grads", &pufferl->magnet_grads_alloc);
+        create_allocator_or_die("magnet_acts", &pufferl->magnet_acts_alloc);
+        pufferl->magnet_param_puf = {
+            .data = (precision_t*)pufferl->magnet_params_alloc.mem,
+            .shape = {pufferl->magnet_params_alloc.total_elems},
+        };
+    }
 
     pufferl->grad_puf = {.data = (precision_t*)grads->mem, .shape = {grads->total_elems}};
     pufferl->param_puf = {.data = (precision_t*)params->mem, .shape = {params->total_elems}};
@@ -2031,6 +2177,20 @@ PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx) {
     policy_init_weights(&pufferl->policy, pufferl->weights, &init_seed, pufferl->default_stream);
     master_weights_setup(&pufferl->master_weights, &pufferl->param_puf, true,
         pufferl->default_stream);
+    if (hypers.emag_kl_coef > 0.0f) {
+        master_weights_setup(&pufferl->magnet_master_weights,
+            &pufferl->magnet_param_puf, false, pufferl->default_stream);
+        cudaMemcpyAsync(pufferl->magnet_master_weights.data,
+            pufferl->master_weights.data,
+            numel(pufferl->master_weights.shape) * sizeof(float),
+            cudaMemcpyDeviceToDevice, pufferl->default_stream);
+        if (USE_BF16) {
+            int n = numel(pufferl->magnet_param_puf.shape);
+            cast<<<grid_size(n), BLOCK_SIZE, 0, pufferl->default_stream>>>(
+                pufferl->magnet_param_puf.data,
+                pufferl->magnet_master_weights.data, n);
+        }
+    }
     if (hypers.async) {
         puf_copy(&pufferl->actor_param_puf, &pufferl->param_puf, pufferl->default_stream);
         cudaStreamSynchronize(pufferl->default_stream);
@@ -2049,8 +2209,10 @@ PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx) {
     cudaMemcpy(pufferl->act_sizes_puf.data, act_sizes, num_action_heads * sizeof(int),
         cudaMemcpyHostToDevice);
     cudaMemset(pufferl->losses_puf.data, 0, NUM_LOSSES * sizeof(float));
-    cudaMemcpy(pufferl->muon.lr_puf.data, &hypers.lr, sizeof(float), cudaMemcpyHostToDevice);
-    cudaMemset(pufferl->muon.mb_puf.data, 0, numel(pufferl->muon.mb_puf.shape) * sizeof(float));
+    cudaMemcpy(pufferl->muon.lr_puf.data, &hypers.lr,
+        sizeof(float), cudaMemcpyHostToDevice);
+    cudaMemset(pufferl->muon.mb_puf.data, 0,
+        numel(pufferl->muon.mb_puf.shape) * sizeof(float));
 
     // Frozen banks (selfplay/match opponents): rollout-only policy.
     // Arch comes from vec.frozen_bank_*; required when banks > 0.
@@ -2647,7 +2809,18 @@ typedef struct {
     char pending_path[SELFPLAY_PATH_MAX];
     long opp_started_step;
     int num_envs;
+    int opponent;
 } SelfplayBank;
+
+typedef struct {
+    char path[SELFPLAY_PATH_MAX];
+    double wins;
+    double draws;
+    double losses;
+    double samples;
+    float recent_score;
+    float recent_draw;
+} SelfplayPayoff;
 
 typedef struct {
     int num_banks;
@@ -2656,11 +2829,34 @@ typedef struct {
     unsigned int rng;
     char (*pool)[SELFPLAY_PATH_MAX];
     int pool_size;
+    char (*external)[SELFPLAY_PATH_MAX];
+    float* external_weights;
+    int external_size;
+    float external_prob;
+    float pfsp_alpha;
+    float payoff_ema;
+    SelfplayPayoff* payoffs;
+    int payoff_size;
+    char payoff_path[SELFPLAY_PATH_MAX];
     SelfplayBank banks[SELFPLAY_MAX_BANKS];
 } Selfplay;
 
+int selfplay_payoff(Selfplay* sp, const char* path) {
+    for (int i = 0; i < sp->payoff_size; i++) {
+        if (strcmp(sp->payoffs[i].path, path) == 0) return i;
+    }
+    sp->payoffs = (SelfplayPayoff*)realloc(sp->payoffs,
+        (size_t)(sp->payoff_size + 1) * sizeof(*sp->payoffs));
+    SelfplayPayoff* payoff = &sp->payoffs[sp->payoff_size];
+    *payoff = (SelfplayPayoff){0};
+    snprintf(payoff->path, sizeof(payoff->path), "%s", path);
+    payoff->recent_score = 0.5f;
+    return sp->payoff_size++;
+}
+
 void selfplay_add_checkpoint(Selfplay* sp, const char* path) {
     while (access(path, R_OK) != 0) usleep(50000);
+    selfplay_payoff(sp, path);
     for (int i = 0; i < sp->pool_size; i++) {
         if (strcmp(sp->pool[i], path) == 0) return;
     }
@@ -2672,9 +2868,143 @@ void selfplay_add_checkpoint(Selfplay* sp, const char* path) {
     snprintf(sp->pool[sp->pool_size++], sizeof(sp->pool[0]), "%s", path);
 }
 
+void selfplay_add_external(Selfplay* sp, const char* path) {
+    selfplay_payoff(sp, path);
+    for (int i = 0; i < sp->external_size; i++) {
+        if (strcmp(sp->external[i], path) == 0) return;
+    }
+    sp->external = (char (*)[SELFPLAY_PATH_MAX])realloc(sp->external,
+        (size_t)(sp->external_size + 1) * sizeof(*sp->external));
+    snprintf(sp->external[sp->external_size++], sizeof(sp->external[0]), "%s", path);
+}
+
+void selfplay_add_external_list(Selfplay* sp, const char* paths) {
+    if (!paths[0] || strcmp(paths, "None") == 0) return;
+    char* list = strdup(paths);
+    for (char* path = list; path;) {
+        char* next = strchr(path, ',');
+        if (next) *next++ = 0;
+        path = puf_ini_trim(path);
+        if (*path) selfplay_add_external(sp, path);
+        path = next;
+    }
+    free(list);
+}
+
+void selfplay_set_external_weights(Selfplay* sp, const char* values) {
+    if (!values[0] || strcmp(values, "None") == 0) return;
+    sp->external_weights = (float*)calloc((size_t)sp->external_size, sizeof(float));
+    char* list = strdup(values);
+    char* value = list;
+    float total = 0.0f;
+    int i = 0;
+    while (value && i < sp->external_size) {
+        char* next = strchr(value, ',');
+        if (next) *next++ = 0;
+        sp->external_weights[i] = strtof(puf_ini_trim(value), NULL);
+        if (sp->external_weights[i] < 0.0f) break;
+        total += sp->external_weights[i++];
+        value = next;
+    }
+    free(list);
+    if (i != sp->external_size || value || total <= 0.0f) {
+        fprintf(stderr, "selfplay.opponent_pool_weights must contain one "
+            "nonnegative weight per external opponent\n");
+        exit(1);
+    }
+}
+
+const char* selfplay_sample_set(Selfplay* sp,
+        char (*paths)[SELFPLAY_PATH_MAX], float* weights, int size) {
+    if (sp->pfsp_alpha == 0.0f && !weights) {
+        return paths[rand_r(&sp->rng) % (unsigned int)size];
+    }
+
+    float total = 0.0f;
+    for (int i = 0; i < size; i++) {
+        SelfplayPayoff* payoff = &sp->payoffs[selfplay_payoff(sp, paths[i])];
+        float base = weights ? weights[i] : 1.0f;
+        float hard = sp->pfsp_alpha == 0.0f ? 1.0f
+            : powf(1.0f - payoff->recent_score, sp->pfsp_alpha);
+        total += base * hard;
+    }
+    int use_hard = total > 0.0f;
+    if (total == 0.0f) {
+        for (int i = 0; i < size; i++) {
+            total += weights ? weights[i] : 1.0f;
+        }
+    }
+
+    float sample = rand_r(&sp->rng) / ((float)RAND_MAX + 1.0f) * total;
+    for (int i = 0; i < size; i++) {
+        SelfplayPayoff* payoff = &sp->payoffs[selfplay_payoff(sp, paths[i])];
+        float base = weights ? weights[i] : 1.0f;
+        float hard = !use_hard || sp->pfsp_alpha == 0.0f ? 1.0f
+            : powf(1.0f - payoff->recent_score, sp->pfsp_alpha);
+        sample -= base * hard;
+        if (sample <= 0.0f) return paths[i];
+    }
+    return paths[size - 1];
+}
+
 const char* selfplay_sample(Selfplay* sp) {
-    int idx = (int)(rand_r(&sp->rng) % (unsigned int)sp->pool_size);
-    return sp->pool[idx];
+    if (sp->external_size &&
+            rand_r(&sp->rng) / ((float)RAND_MAX + 1.0f) < sp->external_prob) {
+        return selfplay_sample_set(sp, sp->external,
+            sp->external_weights, sp->external_size);
+    }
+    return selfplay_sample_set(sp, sp->pool, NULL, sp->pool_size);
+}
+
+void selfplay_record(Selfplay* sp, int opponent,
+        float score, float draw, float samples) {
+    if (samples == 0.0f) return;
+    SelfplayPayoff* payoff = &sp->payoffs[opponent];
+    if (payoff->samples) {
+        payoff->recent_score += sp->payoff_ema * (score - payoff->recent_score);
+        payoff->recent_draw += sp->payoff_ema * (draw - payoff->recent_draw);
+    } else {
+        payoff->recent_score = score;
+        payoff->recent_draw = draw;
+    }
+    payoff->wins += (score - 0.5f * draw) * samples;
+    payoff->draws += draw * samples;
+    payoff->losses += (1.0f - score - 0.5f * draw) * samples;
+    payoff->samples += samples;
+}
+
+void selfplay_write_payoffs(Selfplay* sp) {
+    char tmp[SELFPLAY_PATH_MAX + 4];
+    snprintf(tmp, sizeof(tmp), "%s.tmp", sp->payoff_path);
+    FILE* file = fopen(tmp, "w");
+    if (!file) {
+        fprintf(stderr, "failed to write %s\n", tmp);
+        exit(1);
+    }
+    fprintf(file, "id\tsamples\twins\tdraws\tlosses\tscore\trecent_score\trecent_draw\tpath\n");
+    for (int i = 0; i < sp->payoff_size; i++) {
+        SelfplayPayoff* payoff = &sp->payoffs[i];
+        double score = payoff->samples
+            ? (payoff->wins + 0.5 * payoff->draws) / payoff->samples
+            : 0.5;
+        fprintf(file, "%d\t%.0f\t%.3f\t%.3f\t%.3f\t%.6f\t%.6f\t%.6f\t%s\n",
+            i, payoff->samples, payoff->wins, payoff->draws, payoff->losses,
+            score, payoff->recent_score, payoff->recent_draw, payoff->path);
+    }
+    fclose(file);
+    if (rename(tmp, sp->payoff_path) != 0) {
+        fprintf(stderr, "failed to publish %s\n", sp->payoff_path);
+        exit(1);
+    }
+}
+
+void selfplay_load_bank(Selfplay* sp, PuffeRL* pufferl,
+        int bank, const char* path, long step) {
+    pufferl_load_frozen_bank(pufferl, bank, path);
+    SelfplayBank* state = &sp->banks[bank];
+    state->opponent = selfplay_payoff(sp, path);
+    state->opp_started_step = step;
+    printf("Selfplay bank %d opponent %d: %s\n", bank, state->opponent, path);
 }
 
 typedef struct {
@@ -3029,12 +3359,14 @@ EvalResult run_eval(Ini* ini, TrainContext* ctx, int mode, int verbose) {
         puf_ini_put(ini, "vec.total_agents", agents_buf);
     }
     if (match) {
-        // Enemy bank uses same arch as policy (match loads both checkpoints).
+        // Match opponents may use a different policy architecture.
+        int enemy_hidden = (int)puf_ini_get(ini, "base", "enemy_hidden_size");
+        int enemy_layers = (int)puf_ini_get(ini, "base", "enemy_num_layers");
+        if (!enemy_hidden) enemy_hidden = (int)puf_ini_get(ini, "policy", "hidden_size");
+        if (!enemy_layers) enemy_layers = (int)puf_ini_get(ini, "policy", "num_layers");
         char hidden_buf[32], layers_buf[32];
-        snprintf(hidden_buf, sizeof(hidden_buf), "%d",
-            (int)puf_ini_get(ini, "policy", "hidden_size"));
-        snprintf(layers_buf, sizeof(layers_buf), "%d",
-            (int)puf_ini_get(ini, "policy", "num_layers"));
+        snprintf(hidden_buf, sizeof(hidden_buf), "%d", enemy_hidden);
+        snprintf(layers_buf, sizeof(layers_buf), "%d", enemy_layers);
         puf_ini_put(ini, "vec.num_frozen_banks", "1");
         puf_ini_put(ini, "vec.frozen_bank_pct", "1");
         puf_ini_put(ini, "vec.frozen_bank_hidden_size", hidden_buf);
@@ -3163,7 +3495,12 @@ EvalResult run_eval(Ini* ini, TrainContext* ctx, int mode, int verbose) {
         }
     }
     if (!render && verbose) {
-        printf("\n");
+        if (match) {
+            printf("\rgames=%d/%ld  A=%.3f  B=%.3f  draw=%.3f\n",
+                result.games, num_games, result.score, 1.0f - result.score, result.draw);
+        } else {
+            printf("\n");
+        }
     }
     close_pufferl(pufferl);
     return result;
@@ -3210,6 +3547,31 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
         puf_load_weights_into(pufferl->master_weights, pufferl->param_puf,
             pufferl->default_stream, load_path);
         printf("Loaded weights from %s\n", load_path);
+        if (pufferl->hypers.emag_kl_coef > 0.0f) {
+            char magnet_path[8192];
+            snprintf(magnet_path, sizeof(magnet_path), "%s.emag", load_path);
+            if (access(magnet_path, R_OK) == 0) {
+                puf_load_weights_into(pufferl->magnet_master_weights,
+                    pufferl->magnet_param_puf, pufferl->default_stream,
+                    magnet_path);
+                printf("Loaded EMA magnet from %s\n", magnet_path);
+            } else {
+                cudaMemcpyAsync(pufferl->magnet_master_weights.data,
+                    pufferl->master_weights.data,
+                    numel(pufferl->master_weights.shape) * sizeof(float),
+                    cudaMemcpyDeviceToDevice, pufferl->default_stream);
+                if (USE_BF16) {
+                    int n = numel(pufferl->magnet_param_puf.shape);
+                    cast<<<grid_size(n), BLOCK_SIZE, 0,
+                        pufferl->default_stream>>>(pufferl->magnet_param_puf.data,
+                        pufferl->magnet_master_weights.data, n);
+                }
+                printf("Initialized EMA magnet from loaded policy\n");
+            }
+        }
+#ifdef PUF_LOAD_HOOK
+        PUF_LOAD_HOOK(load_path, ini);
+#endif
     }
     Selfplay selfplay = {0};
     if (use_selfplay) {
@@ -3218,6 +3580,9 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
             "%s/%016ld.bin", checkpoint_dir, pufferl->global_step);
         if (ctx->artifact_owner) {
             puf_save_weights(pufferl, initial_checkpoint);
+#ifdef PUF_CHECKPOINT_HOOK
+            PUF_CHECKPOINT_HOOK(initial_checkpoint, ini);
+#endif
         }
         selfplay.num_banks = pufferl->num_frozen_banks;
         if (selfplay.num_banks <= 0 || selfplay.num_banks > SELFPLAY_MAX_BANKS) {
@@ -3231,6 +3596,23 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
         selfplay.opp_timeout_steps = (long)puf_ini_get(ini, "selfplay", "opp_timeout_steps");
         selfplay.rng = (unsigned int)puf_ini_get(ini, "selfplay", "seed")
             + (unsigned int)pufferl->hypers.rank;
+        selfplay.external_prob = (float)puf_ini_get(
+            ini, "selfplay", "opponent_pool_prob");
+        selfplay.pfsp_alpha = (float)puf_ini_get(ini, "selfplay", "pfsp_alpha");
+        selfplay.payoff_ema = (float)puf_ini_get(ini, "selfplay", "payoff_ema");
+        assert(selfplay.pfsp_alpha >= 0.0f && "selfplay.pfsp_alpha must be nonnegative");
+        assert(selfplay.payoff_ema > 0.0f && selfplay.payoff_ema <= 1.0f
+            && "selfplay.payoff_ema must be in (0, 1]");
+        snprintf(selfplay.payoff_path, sizeof(selfplay.payoff_path),
+            "%s/payoffs.tsv", checkpoint_dir);
+        selfplay_add_external_list(&selfplay,
+            puf_ini_get_str(ini, "selfplay", "opponent_pool"));
+        char enemy_resolved[4096];
+        const char* enemy_path = puf_checkpoint_path_key(ini,
+            "load_enemy_model_path", enemy_resolved, sizeof(enemy_resolved));
+        if (enemy_path) selfplay_add_external(&selfplay, enemy_path);
+        selfplay_set_external_weights(&selfplay,
+            puf_ini_get_str(ini, "selfplay", "opponent_pool_weights"));
         long current_step = pufferl->global_step * pufferl->hypers.world_size;
 
 #ifndef PUFFER_GPU_ENV
@@ -3244,10 +3626,14 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
 #endif
 
         selfplay_add_checkpoint(&selfplay, initial_checkpoint);
+        printf("Selfplay pool: history=%d external=%d banks=%d external_prob=%.2f pfsp=%.2f\n",
+            selfplay.pool_size, selfplay.external_size,
+            selfplay.num_banks, selfplay.external_prob, selfplay.pfsp_alpha);
         for (int b = 0; b < selfplay.num_banks; b++) {
-            pufferl_load_frozen_bank(pufferl, b, selfplay_sample(&selfplay));
-            selfplay.banks[b].opp_started_step = current_step;
+            selfplay_load_bank(&selfplay, pufferl, b,
+                selfplay_sample(&selfplay), current_step);
         }
+        if (ctx->artifact_owner) selfplay_write_payoffs(&selfplay);
     }
 
     long total_timesteps = puf_ini_get(ini, "train", "total_timesteps");
@@ -3319,6 +3705,9 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
                 "%s/%016ld.bin", checkpoint_dir, pufferl->global_step);
             if (ctx->artifact_owner) {
                 puf_save_weights(pufferl, saved_checkpoint);
+#ifdef PUF_CHECKPOINT_HOOK
+                PUF_CHECKPOINT_HOOK(saved_checkpoint, ini);
+#endif
                 snprintf(final_checkpoint, sizeof(final_checkpoint),
                     "%s", saved_checkpoint);
             }
@@ -3351,6 +3740,33 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
             dict_set(&new_log, "uptime", now - pufferl->start_time);
             dict_set(&new_log, "epoch", (double)pufferl->epoch);
 
+#ifndef PUFFER_GPU_ENV
+            if (use_selfplay) {
+                for (int b = 0; b < selfplay.num_banks; b++) {
+                    SelfplayBank* bank = &selfplay.banks[b];
+                    Dict payoff = {0};
+                    vec_log_tag(pufferl->vec, b + 1, &payoff);
+                    char key[64];
+                    snprintf(key, sizeof(key), "league/bank_%d_opponent", b);
+                    dict_set(&new_log, key, bank->opponent);
+                    float samples = (float)dict_get(&payoff, "n");
+                    if (samples > 0.0f) {
+                        float score = (float)dict_get(&payoff, "slot_0_score");
+                        float draw = (float)dict_get(&payoff, "draw_rate");
+                        selfplay_record(&selfplay, bank->opponent,
+                            score, draw, samples);
+                        snprintf(key, sizeof(key), "league/bank_%d_score", b);
+                        dict_set(&new_log, key, score);
+                        snprintf(key, sizeof(key), "league/bank_%d_draw", b);
+                        dict_set(&new_log, key, draw);
+                    }
+                    dict_clear(&payoff);
+                }
+                if (ctx->artifact_owner && saved_checkpoint[0]) {
+                    selfplay_write_payoffs(&selfplay);
+                }
+            }
+#endif
             vec_log(pufferl->vec, &new_log, 1);
 
             float losses_host[NUM_LOSSES];
@@ -3365,6 +3781,7 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
             dict_set(&new_log, "loss/old_kl", losses_host[LOSS_OLD_APPROX_KL] * inv_n);
             dict_set(&new_log, "loss/kl", losses_host[LOSS_APPROX_KL] * inv_n);
             dict_set(&new_log, "loss/clipfrac", losses_host[LOSS_CLIPFRAC] * inv_n);
+            dict_set(&new_log, "loss/emag_kl", losses_host[LOSS_EMAG_KL] * inv_n);
             cudaMemset(pufferl->losses_puf.data, 0,
                 numel(pufferl->losses_puf.shape) * sizeof(float));
 
@@ -3401,12 +3818,12 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
                         if (envs[i].tag == tag && envs[i].boundary_reached) aligned++;
                     }
                     if (aligned >= bank->num_envs) {
-                        pufferl_load_frozen_bank(pufferl, b, bank->pending_path);
+                        selfplay_load_bank(&selfplay, pufferl, b,
+                            bank->pending_path, current_step);
                         for (int i = 0; i < pufferl->vec->size; i++) {
                             if (envs[i].tag == tag) envs[i].boundary_reached = 0;
                         }
                         bank->pending_path[0] = 0;
-                        bank->opp_started_step = current_step;
                     }
                 } else if (selfplay.opp_timeout_steps > 0 &&
                         current_step - bank->opp_started_step >= selfplay.opp_timeout_steps) {
@@ -3417,7 +3834,9 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
                 }
             }
             dict_set(&last_log, "pool/size", selfplay.pool_size);
+            dict_set(&last_log, "pool/external_size", selfplay.external_size);
             dict_set(&last_log, "pool/num_banks", selfplay.num_banks);
+            dict_set(&last_log, "league/opponents", selfplay.payoff_size);
         }
 #endif
 
@@ -3495,8 +3914,11 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
             puf_ini_put(ini, "base.load_model_path", final_checkpoint);
 
             float sum = 0;
-            for (int i = 0; i < selfplay.pool_size && n_opp < max_opp; i++) {
-                const char* opponent = selfplay.pool[i];
+            int pool_size = selfplay.external_size + selfplay.pool_size;
+            for (int i = 0; i < pool_size && n_opp < max_opp; i++) {
+                const char* opponent = i < selfplay.external_size
+                    ? selfplay.external[i]
+                    : selfplay.pool[i - selfplay.external_size];
                 if (strcmp(opponent, final_checkpoint) == 0) continue;
                 puf_ini_put(ini, "base.load_enemy_model_path", opponent);
                 EvalResult r = run_eval(ini, ctx, EVAL_MATCH, 0);
@@ -3517,6 +3939,20 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
             }
         }
     }
+
+#ifdef PUF_SWEEP_SCORE
+    if (ctx->artifact_owner && final_checkpoint[0]
+            && puf_ini_get(ini, "base", "result_fd") > 0) {
+        double exact_start = wall_clock();
+        result.score = PUF_SWEEP_SCORE(final_checkpoint, ini);
+        result.cost += (float)(wall_clock() - exact_start);
+        result.points = 1;
+        result.scores[0] = result.score;
+        result.costs[0] = result.cost;
+        result.step_points[0] = result.steps;
+        dict_set(&last_log, "sweep/exact_score", result.score);
+    }
+#endif
 
     if (ctx->artifact_owner) {
         puf_log_history_add(&log_history, &last_log);
@@ -3619,7 +4055,11 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
         dict_clear(&log_history.items[i]);
     }
     free(log_history.items);
+    if (use_selfplay && ctx->artifact_owner) selfplay_write_payoffs(&selfplay);
     free(selfplay.pool);
+    free(selfplay.external);
+    free(selfplay.external_weights);
+    free(selfplay.payoffs);
     return result;
 }
 

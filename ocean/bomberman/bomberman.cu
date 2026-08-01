@@ -43,7 +43,6 @@ static void bm_host_load_config(BMConfig* cfg, Dict* kwargs) {
     cfg->item_chance = (float)dict_get(kwargs, "item_chance");
     cfg->reward_soft = (float)dict_get(kwargs, "reward_soft");
     cfg->reward_pickup = (float)dict_get(kwargs, "reward_pickup");
-    cfg->reward_closer = (float)dict_get(kwargs, "reward_closer");
     cfg->reward_kill = (float)dict_get(kwargs, "reward_kill");
     cfg->reward_death = (float)dict_get(kwargs, "reward_death");
     cfg->reward_self_kill = (float)dict_get(kwargs, "reward_self_kill");
@@ -88,8 +87,7 @@ __device__ void bm_gpu_fold_logs(Env* envs, BMMatch* match, int match_id, int nu
         opponent_suicides += match->agents[a].self_kills;
     }
     log->slot_0_opponent_suicides += (float)opponent_suicides * na;
-    log->curriculum_stage += (float)(match->curriculum_stage < 0
-        ? BM_CURRICULUM_STAGES : match->curriculum_stage) * na;
+    log->curriculum_stage += (float)(match->curriculum_stage < 0 ? 4 : match->curriculum_stage) * na;
     log->curriculum_full_game += (match->curriculum_stage < 0 ? 1.0f : 0.0f) * na;
 
     int draw = (outcome == 0) ? 1 : 0;

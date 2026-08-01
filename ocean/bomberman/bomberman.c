@@ -2,8 +2,9 @@
 //
 //   bash build.sh bomberman --fast
 //   ./bomberman                          # human vs random
-//   ./bomberman watch                    # latest ckpt vs itself (both AI)
+//   ./bomberman watch                    # validated baseline vs itself
 //   ./bomberman watch path/to/model.bin  # that ckpt vs itself
+//   ./bomberman watch A.bin B.bin        # visible A vs B
 //   ./bomberman play  path/to/model.bin  # human vs that ckpt
 //   ./bomberman bench
 //
@@ -221,6 +222,40 @@ static void forward_masked_bomberman(PufferNet* net, Env* env,
     }
 }
 
+static void forward_masked_agent(PufferNet* net, Env* env, int agent,
+        float* observations, float* actions) {
+    linear(net->encoder, observations + (size_t)agent * OBS_SIZE);
+    mingru(net->mingru, net->encoder->output);
+    linear(net->decoder, net->mingru->output);
+
+    const float* logits = net->decoder->output;
+    float max_logit = -INFINITY;
+    for (int action = 0; action < BM_NUM_ACTIONS; action++) {
+        if (bm_action_legal(&env->match, agent, action)
+                && logits[action] > max_logit) {
+            max_logit = logits[action];
+        }
+    }
+
+    float sum = 0.0f;
+    for (int action = 0; action < BM_NUM_ACTIONS; action++) {
+        if (bm_action_legal(&env->match, agent, action)) {
+            sum += expf(logits[action] - max_logit);
+        }
+    }
+
+    float target = (rand() / ((float)RAND_MAX + 1.0f)) * sum;
+    float cumulative = 0.0f;
+    int sampled = BM_ACT_STAY;
+    for (int action = 0; action < BM_NUM_ACTIONS; action++) {
+        if (!bm_action_legal(&env->match, agent, action)) continue;
+        cumulative += expf(logits[action] - max_logit);
+        sampled = action;
+        if (target < cumulative) break;
+    }
+    actions[agent] = (float)sampled;
+}
+
 static void random_other_agents(Env* env) {
     for (int i = 1; i < env->num_agents; i++) {
         // Bias away from bomb-spam: 5 move/stay, rare bomb
@@ -245,7 +280,8 @@ static Env make_play_env(int num_agents, const BMConfig* loaded_cfg) {
 }
 
 // mode: 0 = human vs random, 1 = human vs net, 2 = net vs net (watch)
-static void play_loop(int mode, const char* model_path, int max_ticks_override) {
+static void play_loop(int mode, const char* model_path,
+        const char* enemy_model_path, int max_ticks_override) {
     int num_agents = 2;
     BMConfig play_cfg = bm_default_config();
     int hidden = 128;
@@ -271,7 +307,9 @@ static void play_loop(int mode, const char* model_path, int max_ticks_override) 
     puf_reset(&env);
 
     PufferNet* net = NULL;
+    PufferNet* enemy_net = NULL;
     Weights* weights = NULL;
+    Weights* enemy_weights = NULL;
     int act_sizes[] = ACT_SIZES;
     // Explicit environment variables remain useful for bare checkpoints that
     // have lost their config metadata.
@@ -291,11 +329,31 @@ static void play_loop(int mode, const char* model_path, int max_ticks_override) 
             goto cleanup;
         }
         // Same arch as config/bomberman.ini [policy]
-        net = make_puffernet(weights, num_agents, OBS_SIZE, hidden, layers,
+        int net_batch = enemy_model_path ? 1 : num_agents;
+        net = make_puffernet(weights, net_batch, OBS_SIZE, hidden, layers,
             act_sizes, NUM_ATNS);
         printf("Loaded policy: %s  (hidden=%d layers=%d)\n", model_path, hidden, layers);
         printf("Loaded config: %s  (trained max_ticks=%d, visual max_ticks=%d)\n",
             config_path, trained_max_ticks, play_cfg.max_ticks);
+
+        if (enemy_model_path) {
+            BMConfig enemy_cfg;
+            int enemy_hidden = 128;
+            int enemy_layers = 2;
+            char enemy_config_path[4096] = "built-in defaults";
+            load_model_config(enemy_model_path, &enemy_cfg,
+                &enemy_hidden, &enemy_layers,
+                enemy_config_path, sizeof(enemy_config_path));
+            enemy_weights = load_weights(enemy_model_path);
+            if (!enemy_weights) {
+                fprintf(stderr, "Failed to load weights: %s\n", enemy_model_path);
+                goto cleanup;
+            }
+            enemy_net = make_puffernet(enemy_weights, 1, OBS_SIZE,
+                enemy_hidden, enemy_layers, act_sizes, NUM_ATNS);
+            printf("Loaded opponent: %s  (hidden=%d layers=%d)\n",
+                enemy_model_path, enemy_hidden, enemy_layers);
+        }
     }
 
     env.client = NULL;
@@ -308,14 +366,16 @@ static void play_loop(int mode, const char* model_path, int max_ticks_override) 
 
     if (mode == 0) {
         printf("Human vs RANDOM (no network). Opponent bombs randomly → often suicide.\n");
-        printf("  For AI opponent:  ./bomberman play     (loads latest checkpoint)\n");
+        printf("  For AI opponent:  ./bomberman play     (loads validated baseline)\n");
         printf("  For AI vs AI:     ./bomberman watch\n");
         printf("Controls: WASD/arrows, Space bomb, R reset, Esc quit\n");
     } else if (mode == 1) {
-        printf("Human vs checkpoint (latest unless you pass a path). Cyan=you, red=AI.\n");
+        printf("Human vs checkpoint (validated baseline unless a path is passed). Cyan=you, red=AI.\n");
         printf("Shift=AI controls you too. R reset, Esc quit.\n");
     } else {
-        printf("Watch: both agents use checkpoint (latest unless you pass a path).\n");
+        printf(enemy_net
+            ? "Watch: policy A (cyan) vs policy B (red).\n"
+            : "Watch: both agents use checkpoint (validated baseline unless a path is passed).\n");
         printf("R reset, Esc quit.\n");
     }
     printf("Game step ~8 Hz. HUD t=step/max (timeout). Death freezes ~1.5s then new round.\n");
@@ -337,6 +397,7 @@ static void play_loop(int mode, const char* model_path, int max_ticks_override) 
         if (IsKeyPressed(KEY_R)) {
             puf_reset(&env);
             reset_policy_state(net);
+            reset_policy_state(enemy_net);
             freeze_frames = 0;
             pending_human_action = BM_ACT_STAY;
             puf_render(&env);
@@ -352,6 +413,7 @@ static void play_loop(int mode, const char* model_path, int max_ticks_override) 
             if (freeze_frames == 0) {
                 puf_reset(&env); // leave death board, start next round
                 reset_policy_state(net);
+                reset_policy_state(enemy_net);
             }
             frame++;
             continue;
@@ -360,7 +422,12 @@ static void play_loop(int mode, const char* model_path, int max_ticks_override) 
         if (frame % frames_per_step == 0) {
             int run_net = (mode != 0);
             if (run_net) {
-                forward_masked_bomberman(net, &env, observations, actions);
+                if (enemy_net) {
+                    forward_masked_agent(net, &env, 0, observations, actions);
+                    forward_masked_agent(enemy_net, &env, 1, observations, actions);
+                } else {
+                    forward_masked_bomberman(net, &env, observations, actions);
+                }
             }
             if (mode == 0) {
                 apply_keyboard_agent0(&env, &pending_human_action);
@@ -391,11 +458,66 @@ cleanup:
     }
     if (IsWindowReady()) CloseWindow();
     if (net) free_puffernet(net);
+    if (enemy_net) free_puffernet(enemy_net);
     if (weights) free(weights);
+    if (enemy_weights) free(enemy_weights);
     free(observations);
     free(actions);
     free(rewards);
     free(terminals);
+}
+
+static int self_match(const char* model_path, int games) {
+    BMConfig cfg = bm_default_config();
+    int hidden = 128;
+    int layers = 2;
+    char config_path[4096] = "built-in defaults";
+    load_model_config(model_path, &cfg, &hidden, &layers,
+        config_path, sizeof(config_path));
+    cfg.reverse_curriculum = 0;
+
+    Env env = make_play_env(2, &cfg);
+    env.hold_on_done = 1;
+    obs_t* observations = (obs_t*)calloc(2 * OBS_SIZE, sizeof(obs_t));
+    float* actions = (float*)calloc(2 * NUM_ATNS, sizeof(float));
+    float rewards[2] = {0};
+    float terminals[2] = {0};
+    bind_agents(&env, observations, actions, rewards, terminals);
+    puf_reset(&env);
+
+    Weights* weights = load_weights(model_path);
+    if (!weights) {
+        fprintf(stderr, "Failed to load weights: %s\n", model_path);
+        free(observations);
+        free(actions);
+        return 1;
+    }
+    int act_sizes[] = ACT_SIZES;
+    PufferNet* net = make_puffernet(weights, 2, OBS_SIZE, hidden, layers,
+        act_sizes, NUM_ATNS);
+    srand(42);
+
+    int wins[2] = {0, 0};
+    int draws = 0;
+    for (int game = 0; game < games;) {
+        forward_masked_bomberman(net, &env, observations, actions);
+        puf_step(&env);
+        if (!env.match.done) continue;
+        if (env.match.winner >= 0) wins[env.match.winner]++;
+        else draws++;
+        game++;
+        puf_reset(&env);
+        reset_policy_state(net);
+    }
+
+    float score0 = ((float)wins[0] + 0.5f * (float)draws) / (float)games;
+    printf("self_match model=%s games=%d p0_wins=%d p1_wins=%d draws=%d score0=%.4f\n",
+        model_path, games, wins[0], wins[1], draws, score0);
+    free_puffernet(net);
+    free(weights);
+    free(observations);
+    free(actions);
+    return 0;
 }
 
 void performance_test(void) {
@@ -435,7 +557,8 @@ static void usage(const char* argv0) {
         "usage:\n"
         "  %s                  human vs RANDOM (no AI load)\n"
         "  %s play [model] [max_ticks]   human vs checkpoint\n"
-        "  %s watch [model] [max_ticks]  checkpoint vs itself\n"
+        "  %s watch [model_a] [model_b] [max_ticks]  visible checkpoint match\n"
+        "  %s selftest [model] [games]    headless checkpoint mirror match\n"
         "  %s bench            headless SPS\n"
         "\n"
         "Plain '%s' does NOT load a model — use play/watch for that.\n"
@@ -448,39 +571,64 @@ static void usage(const char* argv0) {
         "      base.load_model_path=PATH_A \\\n"
         "      base.load_enemy_model_path=PATH_B \\\n"
         "      base.num_games=4096\n",
-        argv0, argv0, argv0, argv0, argv0);
+        argv0, argv0, argv0, argv0, argv0, argv0);
 }
 
 int main(int argc, char** argv) {
     char path_buf[4096];
     if (argc < 2) {
-        play_loop(0, NULL, 0);
+        play_loop(0, NULL, NULL, 0);
         return 0;
     }
     if (strcmp(argv[1], "bench") == 0) {
         performance_test();
         return 0;
     }
+    if (strcmp(argv[1], "selftest") == 0) {
+        const char* p = resolve_model_path(argc > 2
+            ? argv[2] : "saved/bomberman5/model.bin", path_buf, sizeof(path_buf));
+        if (!p) return 1;
+        int games = argc > 3 ? atoi(argv[3]) : 4096;
+        if (games <= 0) {
+            fprintf(stderr, "games must be a positive integer\n");
+            return 1;
+        }
+        return self_match(p, games);
+    }
     if (strcmp(argv[1], "play") == 0) {
-        const char* p = resolve_model_path(argc > 2 ? argv[2] : "latest", path_buf, sizeof(path_buf));
+        const char* p = resolve_model_path(argc > 2
+            ? argv[2] : "saved/bomberman5/model.bin", path_buf, sizeof(path_buf));
         if (!p) return 1;
         int max_ticks = argc > 3 ? atoi(argv[3]) : 0;
         if (argc > 3 && max_ticks <= 0) {
             fprintf(stderr, "max_ticks must be a positive integer\n");
             return 1;
         }
-        play_loop(1, p, max_ticks);
+        play_loop(1, p, NULL, max_ticks);
         return 0;
     }
     if (strcmp(argv[1], "watch") == 0) {
-        const char* p = resolve_model_path(argc > 2 ? argv[2] : "latest", path_buf, sizeof(path_buf));
+        const char* p = resolve_model_path(argc > 2
+            ? argv[2] : "saved/bomberman5/model.bin", path_buf, sizeof(path_buf));
         if (!p) return 1;
-        int max_ticks = argc > 3 ? atoi(argv[3]) : 0;
-        if (argc > 3 && max_ticks <= 0) {
+        const char* enemy = NULL;
+        int max_ticks = 0;
+        if (argc > 3) {
+            char* end = NULL;
+            long value = strtol(argv[3], &end, 10);
+            if (*argv[3] && end && *end == '\0') {
+                max_ticks = (int)value;
+            } else {
+                enemy = argv[3];
+                if (argc > 4) max_ticks = atoi(argv[4]);
+            }
+        }
+        if ((argc > 3 && !enemy && max_ticks <= 0)
+                || (argc > 4 && max_ticks <= 0)) {
             fprintf(stderr, "max_ticks must be a positive integer\n");
             return 1;
         }
-        play_loop(2, p, max_ticks);
+        play_loop(2, p, enemy, max_ticks);
         return 0;
     }
     if (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0) {

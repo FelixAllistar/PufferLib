@@ -11,6 +11,8 @@ set -e
 #   ./build.sh breakout --fast       # Standalone executable (optimized)
 #   ./build.sh breakout --web        # Emscripten web build
 #   ./build.sh breakout --profile    # Kernel profiling binary
+#   ./build.sh goofspiel --exploit   # Exact small-game exploitability
+#   ./build.sh goofspiel --exploit-gpu # Batched CUDA exact exploitability
 #   ./build.sh all                   # Build all envs native and native float32
 
 if [ -z "$1" ]; then
@@ -30,6 +32,8 @@ for arg in "$@"; do
         --fast)  MODE=fast ;;
         --web)   MODE=web ;;
         --profile) MODE=profile ;;
+        --exploit) MODE=exploit ;;
+        --exploit-gpu) MODE=exploit_gpu ;;
         --cpu)   MODE=cpu ;;
         *) echo "Error: unknown argument '$arg'" && exit 1 ;;
     esac
@@ -184,6 +188,28 @@ if [ "$MODE" = "local" ] || [ "$MODE" = "fast" ]; then
     echo "Compiling $ENV..."
     ${CC:-clang} "${CLANG_OPT[@]}" "${FLAGS[@]}"
     echo "Built: ./$OUTPUT_NAME"
+    exit 0
+elif [ "$MODE" = "exploit" ]; then
+    if [ "$ENV" != "goofspiel" ]; then
+        echo "Error: --exploit is only available for goofspiel"
+        exit 1
+    fi
+    ${CC:-clang} -O3 "${CLANG_WARN[@]}" "${SIMD_FLAGS[@]}" \
+        -I. -Isrc -I$SRC_DIR -Ivendor \
+        "$SRC_DIR/goofspiel_exploit.c" -lm -o goofspiel_exploit
+    echo "Built: ./goofspiel_exploit"
+    exit 0
+elif [ "$MODE" = "exploit_gpu" ]; then
+    if [ "$ENV" != "goofspiel" ]; then
+        echo "Error: --exploit-gpu is only available for goofspiel"
+        exit 1
+    fi
+    CUDA_HOME=${CUDA_HOME:-${CUDA_PATH:-$(dirname "$(dirname "$(which nvcc)")")}}
+    ${CUDA_HOME}/bin/nvcc -O3 --threads 0 -arch=${NVCC_ARCH:-native} -std=c++17 \
+        -I. -Isrc -I$SRC_DIR -Ivendor \
+        "$SRC_DIR/goofspiel_exploit.cu" -L$CUDA_HOME/lib64 -lcublas -lm \
+        -o goofspiel_exploit_gpu
+    echo "Built: ./goofspiel_exploit_gpu"
     exit 0
 elif [ "$MODE" = "web" ]; then
     mkdir -p "build/web/$ENV"

@@ -26,10 +26,9 @@
 #define BM_ACT_BOMB 5
 #define BM_NUM_ACTIONS 6
 
-// Reverse combat curriculum: adjacent stationary finish, farther stationary
-// target, moving target, plausible midgame, then untouched opening. Reaching
-// level 5 exits the curriculum into ordinary self-play.
-#define BM_CURRICULUM_STAGES 5
+// Reverse curriculum: two finish lessons, two corner-breakout lessons,
+// generic escape, passive/moving late game, midgame, opening, full game.
+#define BM_CURRICULUM_STAGES 10
 
 // Tile kinds stored in the static map layer.
 #define BM_TILE_EMPTY 0

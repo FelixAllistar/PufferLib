@@ -335,126 +335,167 @@ static void test_kill_coupled_bomb_shaping(void) {
 static void test_reverse_curriculum_finish(void) {
     BMConfig cfg = bm_default_config();
     cfg.num_agents = 2;
+    cfg.soft_density = 0.0f;
     cfg.reverse_curriculum = 1;
     cfg.curriculum_steps = 1000;
-    cfg.reward_alive = 0.0f;
+    cfg.reward_kill = 2.0f;
+    cfg.reward_win = 1.0f;
+    cfg.reward_death = -1.0f;
     BMMatch m;
     bm_reset_match(&m, &cfg, 62u);
     CHECK(bm_apply_reverse_curriculum(&m, &cfg, 0.0f) == 1,
         "zero-progress reset uses reverse curriculum");
-    CHECK(m.curriculum_stage == 0,
-        "curriculum begins one move before a stationary finish");
-    int initial_distance = bm_nearest_foe_distance(&m, 0);
-    CHECK(initial_distance == 2 && m.agents[0].y == m.agents[1].y,
-        "first stationary target is exactly two cells away");
-    for (int y = 1; y < m.height - 1; y++) {
-        for (int x = 1; x < m.width - 1; x++) {
-            CHECK(m.tiles[bm_idx(&m, x, y)] != BM_TILE_SOFT,
-                "terminal lesson uses a cleared reachable board");
-        }
+    CHECK(m.curriculum_stage == 0, "curriculum begins at bomb-now stage");
+    CHECK(m.agents[0].x == 5 && m.agents[0].y == 3,
+        "learner begins in finishing cell");
+    CHECK(m.agents[1].x == 4 && m.agents[1].y == 3,
+        "opponent begins in a valid pillar/soft-block trap");
+    CHECK(m.tiles[bm_idx(&m, 3, 3)] == BM_TILE_SOFT
+            && m.tiles[bm_idx(&m, 4, 2)] == BM_TILE_HARD
+            && m.tiles[bm_idx(&m, 4, 4)] == BM_TILE_HARD,
+        "first lesson uses tiles possible on an ordinary pillar map");
+    CHECK(m.agents[1].bombs_out == 0,
+        "curriculum uses no fabricated outstanding bomb");
+    for (int b = 0; b < BM_MAX_BOMBS; b++) {
+        CHECK(!m.bombs[b].active, "curriculum starts without synthetic bombs");
     }
     CHECK(!bm_action_legal_world(&m, 1, BM_ACT_BOMB),
-        "curriculum opponent cannot end lessons by suicide");
+        "movement-only sparring policy cannot preempt the lesson with suicide");
 
-    int toward = m.agents[1].x > m.agents[0].x ? BM_ACT_RIGHT : BM_ACT_LEFT;
-    int away = toward == BM_ACT_RIGHT ? BM_ACT_LEFT : BM_ACT_RIGHT;
-    int actions[2] = {toward, BM_ACT_RIGHT};
+    int actions[2] = {BM_ACT_BOMB, BM_ACT_STAY};
     float rewards[2], terminals[2];
-    int foe_x = m.agents[1].x;
-    int foe_y = m.agents[1].y;
-    bm_step_match(&m, &cfg, actions, rewards, terminals);
-    CHECK(m.agents[1].x == foe_x && m.agents[1].y == foe_y,
-        "stage 0 target remains stationary despite policy action");
-    actions[0] = BM_ACT_BOMB;
-    bm_step_match(&m, &cfg, actions, rewards, terminals);
-    actions[0] = away;
-    bm_step_match(&m, &cfg, actions, rewards, terminals);
-    // Movement period is two: one repeated action consumes cooldown, the next
-    // reaches the second retreat cell outside the range-1 blast.
-    bm_step_match(&m, &cfg, actions, rewards, terminals);
-    bm_step_match(&m, &cfg, actions, rewards, terminals);
-    actions[0] = BM_ACT_STAY;
-    for (int step = 0; step < bm_bomb_timer(&cfg) + 3 && !m.done; step++) {
+    int limit = bm_bomb_timer(&cfg) + 3;
+    for (int step = 0; step < limit && !m.done; step++) {
         bm_step_match(&m, &cfg, actions, rewards, terminals);
+        // Move two cells away from the range-1 bomb before the fuse expires.
+        actions[0] = step <= 2 ? BM_ACT_RIGHT : BM_ACT_STAY;
     }
-    CHECK(m.done && m.winner == 0,
-        "move, bomb, and retreat solves the stationary finish");
+    CHECK(m.done && m.winner == 0, "one bomb solves the first curriculum stage");
     CHECK(m.agents[0].kills == 1 && m.agents[0].self_kills == 0,
         "curriculum finish is a credited enemy kill, not suicide");
     CHECK(m.curriculum_aimed && m.curriculum_escaped,
-        "general curriculum shaping records aim and survival");
+        "curriculum records both the aimed bomb and safe corner escape");
 
     bm_reset_match(&m, &cfg, 63u);
     CHECK(bm_apply_reverse_curriculum(&m, &cfg, 1.0f) == 0,
         "completed curriculum uses ordinary turn-zero reset");
     CHECK(m.curriculum_stage == -1, "normal reset is marked separately");
-    CHECK(bm_action_legal_world(&m, 1, BM_ACT_BOMB),
-        "ordinary self-play restores opponent bomb actions");
 
-    int found_stage1 = 0;
-    for (uint32_t seed = 100; seed < 2000 && !found_stage1; seed++) {
-        bm_reset_match(&m, &cfg, seed);
-        bm_apply_reverse_curriculum(&m, &cfg,
-            1.0f / (float)BM_CURRICULUM_STAGES);
-        found_stage1 = m.curriculum_stage == 1;
-    }
-    CHECK(found_stage1 && bm_nearest_foe_distance(&m, 0) == 4,
-        "stage 1 moves backward to a farther stationary target");
-
+    cfg.soft_density = 0.0f;
     int found_stage2 = 0;
-    for (uint32_t seed = 2000; seed < 5000 && !found_stage2; seed++) {
+    for (uint32_t seed = 100; seed < 1000 && !found_stage2; seed++) {
         bm_reset_match(&m, &cfg, seed);
         bm_apply_reverse_curriculum(&m, &cfg,
             2.0f / (float)BM_CURRICULUM_STAGES);
         found_stage2 = m.curriculum_stage == 2;
     }
-    CHECK(found_stage2 && bm_nearest_foe_distance(&m, 0) == 4,
-        "stage 2 activates the same farther target setup");
-    int old_x = m.agents[1].x;
-    int old_y = m.agents[1].y;
-    int move_action = BM_ACT_STAY;
-    for (int a = BM_ACT_UP; a <= BM_ACT_RIGHT; a++) {
-        if (bm_action_legal(&m, 1, a)) {
-            move_action = a;
-            break;
-        }
+    CHECK(found_stage2, "stage 2 arm-first corner lesson is reachable");
+    CHECK((m.agents[0].x == 2 && m.agents[0].y == 1)
+            || (m.agents[0].x == 1 && m.agents[0].y == 2),
+        "stage 2 starts one reachable move into an L-pocket arm");
+    CHECK(m.tiles[bm_idx(&m, 3, 1)] == BM_TILE_SOFT
+            && m.tiles[bm_idx(&m, 1, 3)] == BM_TILE_SOFT,
+        "corner lesson reproduces the double-capped opening");
+    for (int b = 0; b < BM_MAX_BOMBS; b++) {
+        CHECK(!m.bombs[b].active, "corner lesson starts without a synthetic bomb");
     }
-    actions[0] = BM_ACT_STAY;
-    actions[1] = move_action;
+    CHECK(!bm_action_legal_world(&m, 1, BM_ACT_BOMB),
+        "stage 2 isolates breakout with a movement-only opponent");
+    actions[0] = BM_ACT_BOMB;
+    actions[1] = BM_ACT_STAY;
     bm_step_match(&m, &cfg, actions, rewards, terminals);
-    CHECK(m.agents[1].x != old_x || m.agents[1].y != old_y,
-        "stage 2 target can move but still cannot bomb");
+    int horizontal = m.agents[0].x == 2;
+    actions[0] = horizontal ? BM_ACT_LEFT : BM_ACT_UP;
+    bm_step_match(&m, &cfg, actions, rewards, terminals);
+    actions[0] = horizontal ? BM_ACT_DOWN : BM_ACT_RIGHT;
+    for (int step = 0; step < 3 && !m.done; step++) {
+        bm_step_match(&m, &cfg, actions, rewards, terminals);
+    }
+    CHECK(m.done && m.curriculum_escaped && m.winner == -1,
+        "stage 2 teaches bomb, retreat through corner, then turn");
+    CHECK(m.agents[0].self_kills == 0,
+        "arm-first breakout completes without suicide");
 
     int found_stage3 = 0;
-    for (uint32_t seed = 5000; seed < 9000 && !found_stage3; seed++) {
+    for (uint32_t seed = 1000; seed < 3000 && !found_stage3; seed++) {
         bm_reset_match(&m, &cfg, seed);
         bm_apply_reverse_curriculum(&m, &cfg,
             3.0f / (float)BM_CURRICULUM_STAGES);
         found_stage3 = m.curriculum_stage == 3;
     }
-    CHECK(found_stage3, "stage 3 plausible midgame is reachable");
+    CHECK(found_stage3, "stage 3 full corner-breakout lesson is reachable");
+    CHECK(m.agents[0].x == 1 && m.agents[0].y == 1,
+        "stage 3 starts at the real ordinary corner spawn");
+    actions[0] = BM_ACT_RIGHT;
+    bm_step_match(&m, &cfg, actions, rewards, terminals);
+    actions[0] = BM_ACT_BOMB;
+    bm_step_match(&m, &cfg, actions, rewards, terminals);
+    actions[0] = BM_ACT_LEFT;
+    bm_step_match(&m, &cfg, actions, rewards, terminals);
+    actions[0] = BM_ACT_DOWN;
+    for (int step = 0; step < 3 && !m.done; step++) {
+        bm_step_match(&m, &cfg, actions, rewards, terminals);
+    }
+    CHECK(m.done && m.curriculum_escaped
+            && m.agents[0].self_kills == 0,
+        "stage 3 learns move, bomb, retreat, and turn from spawn");
 
+    cfg.soft_density = 0.0f;
     int found_stage4 = 0;
-    for (uint32_t seed = 9000; seed < 15000 && !found_stage4; seed++) {
+    for (uint32_t seed = 3000; seed < 5000 && !found_stage4; seed++) {
         bm_reset_match(&m, &cfg, seed);
         bm_apply_reverse_curriculum(&m, &cfg,
             4.0f / (float)BM_CURRICULUM_STAGES);
         found_stage4 = m.curriculum_stage == 4;
     }
-    CHECK(found_stage4 && m.agents[0].x == 1 && m.agents[0].y == 1,
-        "stage 4 restores the untouched ordinary opening");
-    CHECK(!bm_action_legal_world(&m, 1, BM_ACT_BOMB),
-        "last curriculum opponent remains movement-only");
+    CHECK(found_stage4, "stage 4 generic opening escape is reachable");
+    CHECK(m.agents[0].x == 1 && m.agents[0].y == 1,
+        "generic escape keeps the ordinary turn-zero spawn");
 
-    int found_mixed_full_game = 0;
-    for (uint32_t seed = 15000; seed < 25000 && !found_mixed_full_game; seed++) {
+    int found_stage5 = 0;
+    for (uint32_t seed = 5000; seed < 7000 && !found_stage5; seed++) {
         bm_reset_match(&m, &cfg, seed);
         bm_apply_reverse_curriculum(&m, &cfg,
-            4.0f / (float)BM_CURRICULUM_STAGES);
-        found_mixed_full_game = m.curriculum_stage == -1;
+            5.0f / (float)BM_CURRICULUM_STAGES);
+        found_stage5 = m.curriculum_stage == 5;
     }
-    CHECK(found_mixed_full_game,
-        "ordinary full games remain mixed before curriculum completion");
+    CHECK(found_stage5, "stage 5 passive nearby-target lesson is reachable");
+    int nearby_dx = m.agents[0].x - m.agents[1].x;
+    if (nearby_dx < 0) nearby_dx = -nearby_dx;
+    CHECK(nearby_dx == 4
+            && m.agents[0].y == m.agents[1].y,
+        "stage 5 begins from a plausible nearby late-game position");
+    for (int y = 1; y < m.height - 1; y++) {
+        for (int x = 1; x < m.width - 1; x++) {
+            CHECK(m.tiles[bm_idx(&m, x, y)] != BM_TILE_SOFT,
+                "late-game lesson contains only already-cleared soft blocks");
+        }
+    }
+    CHECK(!bm_action_legal_world(&m, 1, BM_ACT_BOMB),
+        "stage 5 requires a credited learner kill instead of opponent suicide");
+
+    int found_stage6 = 0;
+    for (uint32_t seed = 7000; seed < 9000 && !found_stage6; seed++) {
+        bm_reset_match(&m, &cfg, seed);
+        bm_apply_reverse_curriculum(&m, &cfg,
+            6.0f / (float)BM_CURRICULUM_STAGES);
+        found_stage6 = m.curriculum_stage == 6;
+    }
+    CHECK(found_stage6, "stage 6 moving nearby-target lesson is reachable");
+    CHECK(!bm_action_legal_world(&m, 1, BM_ACT_BOMB),
+        "stage 6 opponent moves but cannot end the lesson by suicide");
+
+    int found_final = 0;
+    for (uint32_t seed = 9000; seed < 12000 && !found_final; seed++) {
+        bm_reset_match(&m, &cfg, seed);
+        bm_apply_reverse_curriculum(&m, &cfg,
+            (float)(BM_CURRICULUM_STAGES - 1)
+                / (float)BM_CURRICULUM_STAGES);
+        found_final = m.curriculum_stage == BM_CURRICULUM_STAGES - 1;
+    }
+    CHECK(found_final, "final ordinary full game is reachable");
+    CHECK(bm_action_legal_world(&m, 1, BM_ACT_BOMB),
+        "final stage restores ordinary opponent bomb actions");
     printf("  reverse curriculum terminal-to-normal progression ok\n");
 }
 
@@ -547,34 +588,6 @@ static void test_pickup_reward(void) {
     printf("  useful pickup reward + typed counters ok\n");
 }
 
-static void test_closer_reward_is_signed(void) {
-    BMConfig cfg;
-    BMMatch m;
-    clear_arena(&m, &cfg, 2, 72u);
-    cfg.frames_per_cell = 1;
-    cfg.reward_closer = 0.1f;
-    m.agents[0].x = 3;
-    m.agents[0].y = 3;
-    m.agents[1].x = 6;
-    m.agents[1].y = 3;
-    int actions[2] = {BM_ACT_RIGHT, BM_ACT_STAY};
-    float rewards[BM_MAX_AGENTS] = {0};
-
-    bm_resolve_actions(&m, &cfg, actions, rewards);
-    CHECK(fabsf(rewards[0] - 0.1f) < 1e-6f,
-        "reducing nearest-foe distance earns configured shaping");
-    float approach_reward = rewards[0];
-
-    rewards[0] = rewards[1] = 0.0f;
-    actions[0] = BM_ACT_LEFT;
-    bm_resolve_actions(&m, &cfg, actions, rewards);
-    CHECK(fabsf(rewards[0] + 0.1f) < 1e-6f,
-        "increasing nearest-foe distance pays the symmetric penalty");
-    CHECK(fabsf(approach_reward + rewards[0]) < 1e-6f,
-        "approach-retreat oscillation has zero undiscounted shaping return");
-    printf("  optional signed nearest-foe shaping ok\n");
-}
-
 static void test_timeout_penalty(void) {
     BMConfig cfg;
     BMMatch m;
@@ -650,6 +663,47 @@ static void test_random_rollout_and_determinism(void) {
     printf("  random rollout + deterministic state transitions ok (episodes=%d)\n", episodes);
 }
 
+static void test_two_player_random_seat_symmetry(void) {
+    BMConfig cfg = bm_default_config();
+    cfg.num_agents = 2;
+    cfg.max_ticks = 400;
+    cfg.reverse_curriculum = 0;
+    int wins[2] = {0, 0};
+    int draws = 0;
+    const int episodes = 20000;
+
+    for (int ep = 0; ep < episodes; ep++) {
+        BMMatch m;
+        bm_reset_match(&m, &cfg, (uint32_t)(ep + 1));
+        uint32_t action_rng[2] = {
+            0x9e3779b9u ^ (uint32_t)ep,
+            0x85ebca6bu ^ (uint32_t)(ep * 3 + 1),
+        };
+        while (!m.done) {
+            int actions[BM_MAX_AGENTS] = {BM_ACT_STAY};
+            float rewards[BM_MAX_AGENTS], terminals[BM_MAX_AGENTS];
+            for (int a = 0; a < 2; a++) {
+                int legal[BM_NUM_ACTIONS];
+                int n = 0;
+                for (int action = 0; action < BM_NUM_ACTIONS; action++) {
+                    if (bm_action_legal(&m, a, action)) legal[n++] = action;
+                }
+                actions[a] = legal[bm_randi(&action_rng[a], n)];
+            }
+            bm_step_match(&m, &cfg, actions, rewards, terminals);
+        }
+        if (m.winner >= 0) wins[m.winner]++;
+        else draws++;
+    }
+
+    int win_gap = wins[0] - wins[1];
+    if (win_gap < 0) win_gap = -win_gap;
+    CHECK(win_gap < episodes / 20,
+        "uniform-random play has no material seat advantage");
+    printf("  random seat symmetry p0=%d p1=%d draws=%d\n",
+        wins[0], wins[1], draws);
+}
+
 int main(void) {
     printf("bomberman reworked simulator tests\n");
     test_layout();
@@ -666,10 +720,10 @@ int main(void) {
     test_reverse_curriculum_finish();
     test_observation_and_mask();
     test_pickup_reward();
-    test_closer_reward_is_signed();
     test_timeout_penalty();
     test_default_reward_envelope();
     test_random_rollout_and_determinism();
+    test_two_player_random_seat_symmetry();
 
     if (g_fail) {
         fprintf(stderr, "\n%d check(s) failed\n", g_fail);

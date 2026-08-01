@@ -1138,7 +1138,7 @@ void register_train_buffers(TrainGraph& bufs, Allocator* alloc, int B, int T, in
 // the least cleaned because we will likely have a better method in 5.0.
 struct PrioBuffers {
     FloatTensor prio_probs, cdf, mb_prio;
-    IntTensor idx;
+    IntTensor idx, permutation;
 };
 
 void register_prio_buffers(PrioBuffers& bufs, Allocator* alloc, int B, int minibatch_segments) {
@@ -1147,11 +1147,43 @@ void register_prio_buffers(PrioBuffers& bufs, Allocator* alloc, int B, int minib
         .cdf = {.shape = {B}},
         .mb_prio = {.shape = {minibatch_segments}},
         .idx = {.shape = {minibatch_segments}},
+        .permutation = {.shape = {B}},
     };
     alloc_register(alloc, &bufs.prio_probs);
     alloc_register(alloc, &bufs.cdf);
     alloc_register(alloc, &bufs.idx);
     alloc_register(alloc, &bufs.mb_prio);
+    alloc_register(alloc, &bufs.permutation);
+}
+
+__device__ static uint64_t puf_shuffle_rand(uint64_t* state) {
+    uint64_t x = *state;
+    x ^= x >> 12;
+    x ^= x << 25;
+    x ^= x >> 27;
+    *state = x;
+    return x * 0x2545f4914f6cdd1dULL;
+}
+
+__global__ void puf_shuffle_rows(int* permutation, int rows, uint64_t seed) {
+    if (blockIdx.x || threadIdx.x) return;
+    for (int i = 0; i < rows; i++) permutation[i] = i;
+    uint64_t state = seed | 1ULL;
+    for (int i = rows - 1; i > 0; i--) {
+        int j = (int)(puf_shuffle_rand(&state) % (uint64_t)(i + 1));
+        int tmp = permutation[i];
+        permutation[i] = permutation[j];
+        permutation[j] = tmp;
+    }
+}
+
+__global__ void puf_epoch_sample(int* idx, float* weights,
+        const int* permutation, int offset, int count) {
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i < count) {
+        idx[i] = permutation[offset + i];
+        weights[i] = 1.0f;
+    }
 }
 
 #define PRIO_WARP_SIZE 32
@@ -1349,7 +1381,7 @@ constexpr int MAX_ATN_HEADS = 16; // TODO: use env atn dim directly
 enum LossIdx {
     LOSS_PG = 0, LOSS_VF = 1, LOSS_ENT = 2, LOSS_TOTAL = 3,
     LOSS_OLD_APPROX_KL = 4, LOSS_APPROX_KL = 5, LOSS_CLIPFRAC = 6,
-    LOSS_N = 7, NUM_LOSSES = 8,
+    LOSS_EMAG_KL = 7, LOSS_N = 8, NUM_LOSSES = 9,
 };
 
 // PPO buffers + args are quite complex. We do the entire
@@ -1371,6 +1403,8 @@ struct PPOKernelArgs {
     float* grad_values_pred;
     const precision_t* logits;
     const precision_t* logstd; // Continuous only
+    const precision_t* magnet_logits;
+    const precision_t* magnet_logstd;
     const precision_t* values_pred;
     const float* adv_mean;
     const float* adv_var;
@@ -1378,6 +1412,7 @@ struct PPOKernelArgs {
     const precision_t* action_mask; // (N, T, A_total); always present
     int num_atns;
     float clip_coef, vf_clip_coef, vf_coef;
+    float emag_kl_coef;
     const float* ent_coef;  // device ptr — host by-value bakes into CUDA graphs
     int T_seq, A_total, N;
     bool is_continuous;
@@ -1534,9 +1569,10 @@ __global__ void ppo_loss_compute(
 
     // Policy loss + gradients
 
-    float pg_loss, total_entropy, logratio, ratio;
+    float pg_loss, total_entropy, emag_kl, logratio, ratio;
     float total_log_prob = 0.0f;
     total_entropy = 0.0f;
+    emag_kl = 0.0f;
 
     // Discrete-only: per-head arrays needed across forward + backward
     float head_logsumexp[MAX_ATN_HEADS];
@@ -1598,15 +1634,40 @@ __global__ void ppo_loss_compute(
             int act = head_act[h];
             float logsumexp = head_logsumexp[h];
             float ent = head_entropy[h];
+            float magnet_logsumexp = 0.0f;
+            if (a.emag_kl_coef > 0.0f) {
+                float magnet_max = -INFINITY;
+                float magnet_sum = 0.0f;
+                for (int j = 0; j < A; j++) {
+                    float ml = load_logit_masked(a.magnet_logits, logits_base,
+                        logits_offset, j, a.action_mask, mask_base);
+                    if (ml > magnet_max) {
+                        magnet_sum *= __expf(magnet_max - ml);
+                        magnet_max = ml;
+                    }
+                    magnet_sum += __expf(ml - magnet_max);
+                }
+                magnet_logsumexp = magnet_max + __logf(magnet_sum);
+            }
 
             for (int j = 0; j < A; ++j) {
                 float l = load_logit_masked(a.logits, logits_base,
                                             logits_offset, j, a.action_mask, mask_base);
                 float logp = l - logsumexp;
                 float p = __expf(logp);
+                float magnet_logp = 0.0f;
+                float q = 0.0f;
+                if (a.emag_kl_coef > 0.0f) {
+                    float ml = load_logit_masked(a.magnet_logits, logits_base,
+                        logits_offset, j, a.action_mask, mask_base);
+                    magnet_logp = ml - magnet_logsumexp;
+                    q = __expf(magnet_logp);
+                    emag_kl += q * (magnet_logp - logp);
+                }
                 float d_logit = (j == act) ? d_new_logp : 0.0f;
                 d_logit -= p * d_new_logp;
                 d_logit += d_entropy_term * p * (-ent - logp);
+                d_logit += dL * a.emag_kl_coef * (p - q);
                 a.grad_logits[grad_logits_base + logits_offset + j] = d_logit;
             }
             logits_offset += A;
@@ -1619,14 +1680,28 @@ __global__ void ppo_loss_compute(
             float var = std * std;
             float action = finite_or_clamp(float(g.actions[nt * a.num_atns + h]), -1.0e6f, 1.0e6f);
             float diff = action - mean;
+            float magnet_mean = a.emag_kl_coef > 0.0f
+                ? safe_continuous_mean(a.magnet_logits, logits_base + h) : mean;
+            float magnet_log_std = a.emag_kl_coef > 0.0f
+                ? safe_continuous_logstd(a.magnet_logstd, h) : log_std;
+            float magnet_var = __expf(2.0f * magnet_log_std);
+            float mean_diff = mean - magnet_mean;
+            if (a.emag_kl_coef > 0.0f) {
+                emag_kl += log_std - magnet_log_std
+                    + (magnet_var + mean_diff * mean_diff) / (2.0f * var) - 0.5f;
+            }
 
-            a.grad_logits[grad_logits_base + h] = d_new_logp * diff / var;
-            a.grad_logstd[nt * a.num_atns + h] = d_new_logp * (diff * diff / var - 1.0f) + d_entropy_term;
+            a.grad_logits[grad_logits_base + h] = d_new_logp * diff / var
+                + dL * a.emag_kl_coef * mean_diff / var;
+            a.grad_logstd[nt * a.num_atns + h] = d_new_logp * (diff * diff / var - 1.0f)
+                + d_entropy_term + dL * a.emag_kl_coef
+                * (1.0f - (magnet_var + mean_diff * mean_diff) / var);
         }
     }
 
     // Forward: loss partials
-    float thread_loss = (pg_loss + a.vf_coef * v_loss - ent_coef * total_entropy) * inv_NT;
+    float thread_loss = (pg_loss + a.vf_coef * v_loss - ent_coef * total_entropy
+        + a.emag_kl_coef * emag_kl) * inv_NT;
     block_losses[LOSS_PG][tid] = pg_loss * inv_NT;
     block_losses[LOSS_VF][tid] = v_loss * inv_NT;
     block_losses[LOSS_ENT][tid] = total_entropy * inv_NT;
@@ -1634,6 +1709,7 @@ __global__ void ppo_loss_compute(
     block_losses[LOSS_OLD_APPROX_KL][tid] = (-logratio) * inv_NT;
     block_losses[LOSS_APPROX_KL][tid] = ((ratio - 1.0f) - logratio) * inv_NT;
     block_losses[LOSS_CLIPFRAC][tid] = (fabsf(ratio - 1.0f) > a.clip_coef ? 1.0f : 0.0f) * inv_NT;
+    block_losses[LOSS_EMAG_KL][tid] = emag_kl * inv_NT;
     } // end if (idx < total_elements)
 
 // Deterministic aggregation
@@ -1741,9 +1817,12 @@ __global__ void ppo_adv_finalize(const float* __restrict__ partial,
 void ppo_loss_fwd_bwd(
         PrecisionTensor& dec_out,    // (N, T, fused_cols) - fused logits+value from decoder
         PrecisionTensor& logstd,     // continuous logstd or empty
+        PrecisionTensor& magnet_out,
+        PrecisionTensor& magnet_logstd,
         TrainGraph& graph,
         IntTensor& act_sizes, FloatTensor& losses_acc,
         float clip_coef, float vf_clip_coef, float vf_coef, const float* ent_coef,
+        float emag_kl_coef,
         PPOBuffersPuf& bufs, bool is_continuous,
         cudaStream_t stream) {
     int N = dec_out.shape[0], T = dec_out.shape[1], fused_cols = dec_out.shape[2];
@@ -1780,6 +1859,9 @@ void ppo_loss_fwd_bwd(
         .grad_values_pred = bufs.grad_values.data,
         .logits = dec_out.data,
         .logstd = is_continuous ? logstd.data : nullptr,
+        .magnet_logits = emag_kl_coef > 0.0f ? magnet_out.data : nullptr,
+        .magnet_logstd = is_continuous && emag_kl_coef > 0.0f
+            ? magnet_logstd.data : nullptr,
         .values_pred = dec_out.data + A_total,
         .adv_mean = adv_mean,
         .adv_var = adv_var,
@@ -1787,7 +1869,8 @@ void ppo_loss_fwd_bwd(
         .action_mask = graph.mb_action_mask.data,
         .num_atns = (int)numel(act_sizes.shape),
         .clip_coef = clip_coef, .vf_clip_coef = vf_clip_coef,
-        .vf_coef = vf_coef, .ent_coef = ent_coef,
+        .vf_coef = vf_coef, .emag_kl_coef = emag_kl_coef,
+        .ent_coef = ent_coef,
         .T_seq = T, .A_total = A_total, .N = N,
         .is_continuous = is_continuous,
     };

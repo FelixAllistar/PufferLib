@@ -19,33 +19,31 @@ behaviors must be learned.
 
 ## Current training system
 
-Each environment advances through the curriculum independently. The original
-ten-stage ladder accumulated useful but non-monotonic corner/escape insertions
-and eventually demanded too much stochastic mastery from every worker. The
-current five-stage ladder is again an explicit reverse combat chain. Among
-tactical resets, 75% use the frontier and 25% rehearse an earlier stage.
-Ordinary games are mixed in with probability `0.5 * progress^2`. Only frontier
+Each environment advances through the curriculum independently. At its current
+frontier, half of tactical resets rehearse a uniformly sampled earlier stage.
+Ordinary full games are mixed in with probability `progress^2`, so their share
+rises continuously rather than appearing at one hard transition. Only frontier
 episodes count toward graduation.
 
 | Stage | Reset | Intended skill |
 |---:|---|---|
-| 0 | Cleared board, stationary target two cells away | Move once, bomb at the correct range, retreat, and kill |
-| 1 | Cleared board, stationary target four cells away | Find and execute a stationary-target kill |
-| 2 | Same farther setup with a moving target | Transfer the kill sequence to target motion |
-| 3 | Plausible partially cleared midgame | Connect navigation, bombing, escape, and pursuit |
-| 4 | Untouched opening with movement-only opponent | Execute a credited kill from turn zero |
+| 0 | Fixed, valid near-terminal pillar trap | Bomb, escape, and finish a credited kill |
+| 1 | Randomized valid versions of the trap | Generalize the finishing sequence |
+| 2 | Learner in one arm of a real L-shaped spawn pocket | Bomb, retreat through the corner, and turn to safety |
+| 3 | Learner at the actual corner spawn | Enter an arm and execute the whole breakout |
+| 4 | Untouched random opening | Generic bomb escape |
+| 5 | Cleared board and nearby stationary opponent | Find and execute a kill |
+| 6 | Cleared board and moving opponent | Kill a moving target |
+| 7 | Partially cleared plausible midgame | Join navigation, bombing, escape, and combat |
+| 8 | Untouched opening with movement-only opponent | Play from turn zero against limited pressure |
+| 9 | Ordinary self-play | Complete game |
 
-Graduation is evaluated in windows of 64 frontier episodes. Every stage
-requires a win containing a credited kill and no self-kill. Stages 0--1 require
-45% success (29/64), stage 2 requires 5% (4/64), and stages 3--4 require 2%
-(2/64). Passing stage 4 exits directly into ordinary self-play; ordinary games
-are not redundantly gated as a final curriculum stage. The time-based fallback
-is effectively disabled at one billion per-environment steps.
-
-The optional `reward_closer` is signed nearest-opponent Manhattan-distance
-progress: approaching pays `+x` per cell and retreating pays `-x`, so an
-approach/retreat cycle has zero undiscounted shaping return. It defaults to
-`0.0` at the current experimental pivot.
+Graduation is evaluated in windows of 32 frontier episodes. Stages 2--4
+require escape without a self-kill. The other stages require a win containing a
+credited kill and no self-kill. The nominal threshold is 45%; stage 6 is capped
+at 5%, and stages 7--9 at 2%, because their moving-opponent tasks are much less
+deterministic. The time-based fallback is effectively disabled at one billion
+environment steps, so progress is mastery-driven.
 
 Training also uses a rotating pool of up to 32 historical learner checkpoints.
 This reduces immediate overfitting to the newest opponent, but it is not a full
@@ -116,8 +114,8 @@ capacity, blast range, speed, and spatial control. The policy has observations
 for all three pickup types and for both players' inventory statistics; the
 problem is experience and credit assignment, not missing state information.
 
-With `max_ticks = 1000` and `gamma = 0.99`, a terminal outcome 1,000 decisions
-away has a direct discount of roughly `0.99^1000`, effectively zero. Thus a
+With `max_ticks = 1600` and `gamma = 0.99`, a terminal outcome 1,600 decisions
+away has a direct discount of roughly `0.99^1600`, effectively zero. Thus a
 timeout penalty alone gives very weak early pressure against a late draw. The
 64-step rollout horizon covers the 18-decision bomb fuse, but not necessarily
 long-term resource conservation or endgame initiative.
@@ -140,12 +138,6 @@ The policy observes the pickup type on the board plus available bombs, maximum
 capacity, deployed bombs, blast range, and speed for both players. Previously
 the viewer rendered all pickups identically and omitted inventory; the revised
 HUD displays distinct B/R/S pickups and both players' statistics.
-
-`play/watch` loads the checkpoint's board, timer, movement, density, item, and
-architecture settings, but deliberately extends visual sessions to 30,000
-ticks so observation can continue until a death. Passing `1000` as the final
-CLI argument restores exact training-deadline timing for controlled evaluation.
-The viewer prints both the trained and visual deadlines at startup.
 
 The bomberman3 baseline had no immediate pickup reward. The next experiment
 adds `reward_pickup = 0.5` only when a pickup actually increases a statistic,
@@ -174,13 +166,11 @@ After evaluating that isolated change, reasonable separate ablations are:
 a timestamp; it does not change learning. Loading a `.bin` restores weights but
 not optimizer state or cumulative step metadata.
 
-From random weights, the current five-stage experiment is:
+From random weights, the current ten-stage experiment is:
 
 ```bash
 ./puffer train bomberman \
   base.load_model_path=None \
-  env.reverse_curriculum=1 \
-  train.total_timesteps=1000000000 \
   base.run_id=bomberman_from_zero
 ```
 
@@ -220,10 +210,68 @@ not mixed-curriculum returns alone. Report at minimum:
 - sampled versus greedy action selection;
 - worst scenario cluster, not only the mean.
 
+### Pending upstream fix: native match terminal output
+
+As of 2026-07-30, freshly fetched `upstream/5c` at `67a69341` still has a
+generic native `./puffer match` display bug. `run_eval` stores the correct final
+score and draw rate in `EvalResult`, but verbose match mode prints only while
+`env/n < base.num_games`. When the terminal rollout crosses the requested game
+count, it breaks without printing that final result. The last visible line is
+therefore an intermediate aggregate, not the returned aggregate.
+
+This is especially misleading with many parallel Bomberman environments and a
+shared short deadline: thousands of episodes can time out in the final rollout,
+so the displayed pre-terminal score excludes a large batch of draws. Training,
+environment accounting, and native end-of-training `selfplay_eval` are not
+affected; the latter consumes the returned `EvalResult`. Previously hand-read
+direct-match results should be rerun.
+
+There is an uncommitted local output-only fix in `src/pufferl.cu` that prints the
+already-computed terminal `EvalResult`. Before upstreaming it:
+
+1. Diff the local evaluator against the then-current `upstream/5c` after dealing
+   with our branch divergence.
+2. Reproduce the issue on unmodified upstream with a large `base.eval_agents`
+   value and synchronized episode endings.
+3. Verify the returned terminal score against the added final line, and repeat
+   with a small evaluation batch to show convergence to the same result.
+4. Confirm `eval`, end-of-training `selfplay_eval`, and sweep scoring are
+   unchanged.
+5. Commit the reporting fix separately from external-pool and Bomberman work,
+   then submit that minimal commit upstream.
+
 The core result so far is that believable reverse curriculum solved the initial
 sparse-exploration barrier, while extended full-game self-play improved
 integration. The remaining scientific question is how best to supply realistic
 late-game credit and coverage without hand-coding the desired strategy.
+
+## Native payoff-aware opponent pool
+
+Native C self-play can retain permanent external checkpoints alongside its
+rolling checkpoint FIFO and distribute frozen-opponent environments across up
+to eight independently rotating banks. Each bank has a stable integer opponent
+ID and prints its checkpoint path whenever it loads.
+
+Before aggregate environment logs are cleared, the trainer groups completed
+episodes by bank tag and records learner-perspective score, draws, and derived
+W/D/L against that bank's current checkpoint. The run writes an atomic
+`payoffs.tsv` in its checkpoint directory with the full ID-to-path mapping,
+cumulative results, and recent EMA payoff. Run metrics additionally contain
+`league/bank_<n>_opponent`, `score`, and `draw` series.
+
+`selfplay.pfsp_alpha` controls payoff-aware sampling within the permanent and
+historical pools. Zero preserves uniform sampling. Positive values use
+`(1 - recent_score)^alpha`, prioritizing opponents the current learner scores
+poorly against; `selfplay.payoff_ema` controls recency. The configured
+`opponent_pool_prob` still chooses between permanent and historical pools
+before PFSP chooses a checkpoint within that pool.
+
+This is an online learner-versus-opponent payoff table, not yet a complete
+pairwise league matrix or Elo system. It makes mixed training attributable and
+payoff-aware without scheduling extra matches. Exact seat-balanced relations
+between frozen checkpoints must still come from headless matches; persistent
+cross-run matchmaking would build on those results rather than mislabeling the
+nonstationary online learner as a fixed policy.
 
 ## Pickup experiment result
 
