@@ -1,8 +1,10 @@
 # Goofspiel
 
-CPU Goofspiel supports 2-10 players, 2-16 cards, random/ascending/descending
-prizes, perfect/hidden information, egocentric observations, discard/carry ties,
-and OpenSpiel-compatible terminal returns.
+CPU Goofspiel is specialized for two players and up to four cards. It supports
+random/ascending/descending prizes, perfect/hidden information, egocentric
+observations, discard/carry ties, and OpenSpiel-compatible terminal returns.
+The fixed model interface has four actions and 48 observation values. Compact
+observations use the first 27 values; OpenSpiel observations use all 48.
 
 ## Exact exploitability
 
@@ -25,7 +27,7 @@ Evaluate a checkpoint on the four-card game:
 
 Use `uniform` instead of a checkpoint to evaluate the uniform random policy.
 The exact evaluator supports shared egocentric recurrent policies in two-player
-perfect-information zero-sum games with 2-5 cards. It enumerates seeded chance
+perfect-information zero-sum games with 2-4 cards. It enumerates seeded chance
 outcomes exactly, advances the MinGRU on the same pre-action observation used
 during training, masks spent cards, and computes a pure best response without
 revealing the opponent's simultaneous bid.
@@ -39,9 +41,7 @@ NashConv = best_response_0 + best_response_1
 exploitability = NashConv / 2
 ```
 
-Five-card neural evaluation visits 456,505 opponent histories. Four cards is
-useful for fast checkpoint-by-checkpoint measurement; five cards is a stronger
-final audit.
+Four cards is small enough for fast checkpoint-by-checkpoint exact measurement.
 
 Uniform-policy NashConv fixtures match OpenSpiel exactly:
 
@@ -68,11 +68,10 @@ reviewed. Verify every supported rule family against it with:
 ocean/goofspiel/tests/test_exploit_gpu.sh MODEL HIDDEN_SIZE NUM_LAYERS
 ```
 
-On a GTX 1060, a 32x1 five-card checkpoint takes about 96 ms on CUDA versus
-5.18 seconds on the scalar CPU oracle. Across 2-5 cards, shortened episodes,
-fixed prize orders, carry ties, and point-difference returns, measured absolute
-CPU/CUDA error is below `6e-8`. The CPU uniform-policy fixtures above are the
-transitive check against OpenSpiel's exact results.
+Across 2-4 cards, shortened episodes, fixed prize orders, carry ties, and
+point-difference returns, measured CPU/CUDA absolute error is below `6e-8`.
+The CPU uniform-policy fixtures above are the transitive check against
+OpenSpiel's exact results.
 
 ## Checkpoint cross-play
 
@@ -117,8 +116,8 @@ mixture, then admit the response only if it adds strategic coverage.
 
 ## Online exact response
 
-Four- and five-card training can replace frozen-bank actions with the exact
-response to the latest learner checkpoint:
+Four-card training can replace frozen-bank actions with the exact response to
+the latest learner checkpoint:
 
 ```bash
 ./puffer train goofspiel \

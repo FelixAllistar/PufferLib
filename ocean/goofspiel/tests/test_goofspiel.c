@@ -34,17 +34,17 @@ static void test_prize_orders(void) {
     GSState state;
     GSHistory history;
     uint32_t rng = gs_mix32(1);
-    GSConfig cfg = make_config(2, 5, 5);
+    GSConfig cfg = make_config(2, 4, 4);
 
     gs_reset(&state, &history, &cfg, &rng);
-    for (int i = 0; i < 5; i++) {
+    for (int i = 0; i < 4; i++) {
         assert(state.prizes[i] == i);
     }
 
     cfg.prize_order = GS_PRIZES_DESCENDING;
     gs_reset(&state, &history, &cfg, &rng);
-    for (int i = 0; i < 5; i++) {
-        assert(state.prizes[i] == 4 - i);
+    for (int i = 0; i < 4; i++) {
+        assert(state.prizes[i] == 3 - i);
     }
 
     cfg.prize_order = GS_PRIZES_RANDOM;
@@ -131,18 +131,18 @@ static void test_short_game_and_forced_last(void) {
     GSState state;
     GSHistory history;
     uint32_t rng = gs_mix32(11);
-    GSConfig cfg = make_config(2, 5, 3);
+    GSConfig cfg = make_config(2, 4, 3);
     cfg.auto_forced_last = 1;
     gs_reset(&state, &history, &cfg, &rng);
 
-    uint8_t bids0[] = {4, 3};
-    uint8_t bids1[] = {3, 2};
-    uint8_t bids2[] = {2, 1};
+    uint8_t bids0[] = {3, 2};
+    uint8_t bids1[] = {2, 1};
+    uint8_t bids2[] = {1, 0};
     assert(!gs_step(&state, &history, &cfg, bids0));
     assert(!gs_step(&state, &history, &cfg, bids1));
     assert(gs_step(&state, &history, &cfg, bids2));
-    assert(__builtin_popcount((unsigned int)state.hands[0]) == 2);
-    assert(__builtin_popcount((unsigned int)state.hands[1]) == 2);
+    assert(__builtin_popcount((unsigned int)state.hands[0]) == 1);
+    assert(__builtin_popcount((unsigned int)state.hands[1]) == 1);
 
     cfg = make_config(2, 3, 3);
     cfg.auto_forced_last = 1;
@@ -158,51 +158,46 @@ static void test_short_game_and_forced_last(void) {
 }
 
 static void test_returns(void) {
-    GSConfig cfg = make_config(3, 5, 5);
+    GSConfig cfg = make_config(2, 4, 4);
     GSState state = {0};
-    state.scores[0] = 10;
-    state.scores[1] = 5;
-    state.scores[2] = 5;
+    state.scores[0] = 7;
+    state.scores[1] = 3;
     float returns[GS_MAX_PLAYERS] = {0};
 
     gs_returns(&state, &cfg, returns);
     assert(returns[0] == 1.0f);
-    assert(returns[1] == -0.5f && returns[2] == -0.5f);
+    assert(returns[1] == -1.0f);
 
     cfg.return_type = GS_RETURN_POINT_DIFFERENCE;
     gs_returns(&state, &cfg, returns);
-    assert(fabsf(returns[0] - 10.0f / 3.0f) < 1e-5f);
-    assert(fabsf(returns[1] + 5.0f / 3.0f) < 1e-5f);
-    assert(fabsf(returns[2] + 5.0f / 3.0f) < 1e-5f);
+    assert(returns[0] == 2.0f && returns[1] == -2.0f);
 
     cfg.return_type = GS_RETURN_TOTAL_POINTS;
     gs_returns(&state, &cfg, returns);
-    assert(returns[0] == 10.0f && returns[1] == 5.0f
-        && returns[2] == 5.0f);
+    assert(returns[0] == 7.0f && returns[1] == 3.0f);
 
     cfg.return_type = GS_RETURN_WIN_LOSS;
-    state.scores[0] = state.scores[1] = state.scores[2] = 4;
+    state.scores[0] = state.scores[1] = 4;
     gs_returns(&state, &cfg, returns);
-    assert(returns[0] == 0.0f && returns[1] == 0.0f
-        && returns[2] == 0.0f);
+    assert(returns[0] == 0.0f && returns[1] == 0.0f);
 }
 
 static void test_state_copy_replay(void) {
-    GSConfig cfg = make_config(2, 5, 5);
+    GSConfig cfg = make_config(2, 4, 4);
     cfg.prize_order = GS_PRIZES_RANDOM;
     GSState a;
     GSHistory ha;
     uint32_t rng_a = gs_mix32(99);
     gs_reset(&a, &ha, &cfg, &rng_a);
 
-    uint8_t first[] = {4, 3};
+    uint8_t first[] = {3, 2};
     assert(!gs_step(&a, &ha, &cfg, first));
     GSState b = a;
     GSHistory hb = ha;
     uint32_t rng_b = rng_a;
 
-    uint8_t bids[][2] = {{3, 4}, {2, 1}, {1, 2}, {0, 0}};
-    for (int i = 0; i < 4; i++) {
+    uint8_t bids[][2] = {{2, 3}, {1, 0}, {0, 1}};
+    for (int i = 0; i < 3; i++) {
         int done_a = gs_step(&a, &ha, &cfg, bids[i]);
         int done_b = gs_step(&b, &hb, &cfg, bids[i]);
         assert(done_a == done_b);
@@ -227,8 +222,8 @@ static uint8_t random_card(uint16_t hand, uint32_t* rng) {
 static void test_random_properties(void) {
     uint32_t rng = gs_mix32(20260730);
     for (int game = 0; game < 2000; game++) {
-        int players = 2 + (int)gs_random_bounded(&rng, 9);
-        int cards = 2 + (int)gs_random_bounded(&rng, 15);
+        int players = 2;
+        int cards = 2 + (int)gs_random_bounded(&rng, 3);
         int turns = 1 + (int)gs_random_bounded(&rng, (uint32_t)cards);
         GSConfig cfg = make_config(players, cards, turns);
         cfg.prize_order = GS_PRIZES_RANDOM;

@@ -447,10 +447,7 @@ void puf_render(Env* env) {
         SetTargetFPS(12);
     }
 
-    static const Color colors[GS_MAX_PLAYERS] = {
-        SKYBLUE, ORANGE, LIME, PINK, GOLD,
-        VIOLET, BEIGE, MAROON, DARKGREEN, DARKBLUE,
-    };
+    static const Color colors[GS_MAX_PLAYERS] = {SKYBLUE, ORANGE};
 
     BeginDrawing();
     ClearBackground((Color){14, 20, 28, 255});

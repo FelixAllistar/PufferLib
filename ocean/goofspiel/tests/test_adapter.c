@@ -150,7 +150,8 @@ static void test_open_spiel_observation(void) {
 }
 
 int main(void) {
-    assert(OBS_SIZE == 231);
+    assert(GS_COMPACT_OBS_SIZE == 27);
+    assert(OBS_SIZE == 48);
     test_observation_views();
     test_open_spiel_observation();
     test_masks_and_terminal_reset();

@@ -3,8 +3,8 @@
 #include <stdint.h>
 #include <string.h>
 
-#define GS_MAX_PLAYERS 10
-#define GS_MAX_CARDS 16
+#define GS_MAX_PLAYERS 2
+#define GS_MAX_CARDS 4
 
 enum {
     GS_PRIZES_RANDOM = 0,
