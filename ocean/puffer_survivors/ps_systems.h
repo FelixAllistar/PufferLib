@@ -1,37 +1,22 @@
 #pragma once
 
 #include "ps_observation.h"
+#include "ps_geometry.h"
 
 static inline void ps_init(PufferSurvivors* env) {
-    if (env->rng == 0) env->rng = 1;
-    env->cfg.enemy_cap = env->cfg.enemy_cap < 1 ? 1 : (env->cfg.enemy_cap > PS_MAX_ENEMIES ? PS_MAX_ENEMIES : env->cfg.enemy_cap);
-    env->cfg.projectile_cap = env->cfg.projectile_cap < 1 ? 1 : (env->cfg.projectile_cap > PS_MAX_PROJECTILES ? PS_MAX_PROJECTILES : env->cfg.projectile_cap);
-    env->cfg.drop_cap = env->cfg.drop_cap < 1 ? 1 : (env->cfg.drop_cap > PS_MAX_DROPS ? PS_MAX_DROPS : env->cfg.drop_cap);
-    env->cfg.obstacle_count = env->cfg.obstacle_count < 0 ? 0 : (env->cfg.obstacle_count > PS_MAX_OBSTACLES ? PS_MAX_OBSTACLES : env->cfg.obstacle_count);
-    env->cfg.wave_length_steps = env->cfg.wave_length_steps < 60 ? 60 : env->cfg.wave_length_steps;
-    env->cfg.player_health = fmaxf(1.0f, env->cfg.player_health);
-    env->cfg.projectile_damage = env->cfg.projectile_damage <= 0.0f ? 1.0f : env->cfg.projectile_damage;
-    env->cfg.fire_cooldown = env->cfg.fire_cooldown <= 0.0f ? 22.0f : env->cfg.fire_cooldown;
-    env->cfg.health_heal = fmaxf(1.0f, env->cfg.health_heal);
-    env->cfg.invuln_steps = env->cfg.invuln_steps < 0 ? 0 : env->cfg.invuln_steps;
-    env->cfg.enemy_obstacle_stride = env->cfg.enemy_obstacle_stride < 1 ? 1 : env->cfg.enemy_obstacle_stride;
-    if (env->cfg.observation_version < 6 || env->cfg.observation_version > 9)
-        env->cfg.observation_version = 9;
-    if (env->cfg.free_upgrade < -1 || env->cfg.free_upgrade >= PS_UPGRADE_COUNT)
-        env->cfg.free_upgrade = -1;
-    if (env->cfg.free_upgrade_count < 0) env->cfg.free_upgrade_count = 0;
+    ps_config_validate(&env->cfg);
 }
 
 static inline int ps_obstacle_position_clear(PufferSurvivors* env, int count, int skip, float x, float y, float radius) {
-    if (ps_dist2(x, y, env->px, env->py) < 48.0f) return 0;
+    if (ps_dist2(x, y, env->px, env->py)
+            < env->cfg.obstacle_player_spawn_clearance
+            * env->cfg.obstacle_player_spawn_clearance) return 0;
     for (int i = 0; i < count; i++) {
         if (i == skip) continue;
-        float min_dist = radius + env->obstacles.radius[i] + 1.15f;
+        float min_dist = radius + env->obstacles.radius[i] + env->cfg.obstacle_spawn_clearance;
         float dx = x - env->obstacles.x[i];
-        if (dx >= min_dist || dx <= -min_dist) continue;
         float dy = y - env->obstacles.y[i];
-        if (dy >= min_dist || dy <= -min_dist) continue;
-        if (dx * dx + dy * dy < min_dist * min_dist) return 0;
+        if (ps_geometry_circle_overlaps(dx, dy, min_dist)) return 0;
     }
     return 1;
 }
@@ -40,29 +25,33 @@ static inline int ps_overlaps_obstacle(PufferSurvivors* env, float x, float y, f
     for (int i = 0; i < env->cfg.obstacle_count; i++) {
         float min_dist = radius + env->obstacles.radius[i] + padding;
         float dx = x - env->obstacles.x[i];
-        if (dx >= min_dist || dx <= -min_dist) continue;
         float dy = y - env->obstacles.y[i];
-        if (dy >= min_dist || dy <= -min_dist) continue;
-        if (dx * dx + dy * dy < min_dist * min_dist) return 1;
+        if (ps_geometry_circle_overlaps(dx, dy, min_dist)) return 1;
     }
     return 0;
 }
 
 static inline void ps_push_out_obstacles(PufferSurvivors* env, float* x, float* y, float radius, int penalize) {
     for (int i = 0; i < env->cfg.obstacle_count; i++) {
-        float min_dist = radius + env->obstacles.radius[i];
-        float dx = *x - env->obstacles.x[i];
-        if (dx >= min_dist || dx <= -min_dist) continue;
-        float dy = *y - env->obstacles.y[i];
-        if (dy >= min_dist || dy <= -min_dist) continue;
-        float d2 = dx * dx + dy * dy;
-        float min2 = min_dist * min_dist;
-        if (d2 >= min2) continue;
-        float d = sqrtf(fmaxf(d2, 0.0001f));
-        float push = min_dist - d;
-        *x += dx / d * push;
-        *y += dy / d * push;
-        if (penalize) {
+        int pushed = ps_geometry_push_out_shape_circle(x, y, PS_SHAPE_CIRCLE,
+            radius, radius, radius, env->obstacles.x[i], env->obstacles.y[i],
+            env->obstacles.radius[i]);
+        if (pushed && penalize) {
+            env->agents[0].rewards[0] += env->cfg.obstacle_penalty;
+            env->episode_reward_obstacle += env->cfg.obstacle_penalty;
+            env->episode_obstacle_hits += 1.0f;
+        }
+    }
+}
+
+static inline void ps_push_out_obstacles_shape(PufferSurvivors* env,
+        float* x, float* y, int shape, float radius, float half_width,
+        float half_height, int penalize) {
+    for (int i = 0; i < env->cfg.obstacle_count; i++) {
+        int pushed = ps_geometry_push_out_shape_circle(x, y, shape, radius,
+            half_width, half_height, env->obstacles.x[i], env->obstacles.y[i],
+            env->obstacles.radius[i]);
+        if (pushed && penalize) {
             env->agents[0].rewards[0] += env->cfg.obstacle_penalty;
             env->episode_reward_obstacle += env->cfg.obstacle_penalty;
             env->episode_obstacle_hits += 1.0f;
@@ -73,12 +62,15 @@ static inline void ps_push_out_obstacles(PufferSurvivors* env, float* x, float* 
 static inline void ps_spawn_obstacles(PufferSurvivors* env) {
     float half = 0.5f * env->cfg.arena_size;
     for (int i = 0; i < env->cfg.obstacle_count; i++) {
-        env->obstacles.radius[i] = 0.52f + ps_randf(env) * 0.52f;
+        env->obstacles.radius[i] = env->cfg.obstacle_radius_min
+            + ps_randf(env) * (env->cfg.obstacle_radius_max - env->cfg.obstacle_radius_min);
         env->obstacles.type[i] = (uint8_t)(ps_rand_u32(env) % 3u);
         int placed = 0;
         for (int tries = 0; tries < 96; tries++) {
             float angle = ps_randf(env) * 2.0f * PI;
-            float dist = half * (0.28f + 0.62f * ps_randf(env));
+            float dist = half * (env->cfg.obstacle_spawn_min_ratio
+                + (env->cfg.obstacle_spawn_max_ratio - env->cfg.obstacle_spawn_min_ratio)
+                * ps_randf(env));
             float x = env->px + cosf(angle) * dist;
             float y = env->py + sinf(angle) * dist;
             if (!ps_obstacle_position_clear(env, i, -1, x, y, env->obstacles.radius[i])) continue;
@@ -88,8 +80,12 @@ static inline void ps_spawn_obstacles(PufferSurvivors* env) {
             break;
         }
         if (!placed) {
-            float a = ((float)i * 2.3999632f) + ps_randf(env) * 0.35f;
-            float r = half * (0.34f + 0.48f * ((float)(i % 7) / 6.0f));
+            float a = (float)i * env->cfg.obstacle_fallback_angle_step
+                + ps_randf(env) * env->cfg.obstacle_fallback_angle_jitter;
+            float r = half * (env->cfg.obstacle_fallback_min_ratio
+                + (env->cfg.obstacle_fallback_max_ratio - env->cfg.obstacle_fallback_min_ratio)
+                * ((float)(i % env->cfg.obstacle_fallback_spoke_count)
+                / (float)(env->cfg.obstacle_fallback_spoke_count - 1)));
             env->obstacles.x[i] = env->px + cosf(a) * r;
             env->obstacles.y[i] = env->py + sinf(a) * r;
         }
@@ -100,7 +96,9 @@ static inline void ps_recycle_obstacle(PufferSurvivors* env, int idx) {
     float half = 0.5f * env->cfg.arena_size;
     for (int tries = 0; tries < 64; tries++) {
         float angle = ps_randf(env) * 2.0f * PI;
-        float dist = half * (0.62f + 0.34f * ps_randf(env));
+        float dist = half * (env->cfg.obstacle_recycle_spawn_min_ratio
+            + (env->cfg.obstacle_recycle_spawn_max_ratio
+            - env->cfg.obstacle_recycle_spawn_min_ratio) * ps_randf(env));
         float x = env->px + cosf(angle) * dist;
         float y = env->py + sinf(angle) * dist;
         if (!ps_obstacle_position_clear(env, env->cfg.obstacle_count, idx, x, y, env->obstacles.radius[idx])) continue;
@@ -112,7 +110,7 @@ static inline void ps_recycle_obstacle(PufferSurvivors* env, int idx) {
 }
 
 static inline void ps_recycle_far_obstacles(PufferSurvivors* env) {
-    float recycle_radius = env->cfg.arena_size * 0.62f;
+    float recycle_radius = env->cfg.arena_size * env->cfg.obstacle_recycle_radius_ratio;
     float recycle2 = recycle_radius * recycle_radius;
     for (int i = 0; i < env->cfg.obstacle_count; i++) {
         if (ps_dist2(env->obstacles.x[i], env->obstacles.y[i], env->px, env->py) > recycle2) {
@@ -121,24 +119,116 @@ static inline void ps_recycle_far_obstacles(PufferSurvivors* env) {
     }
 }
 
+static inline int ps_find_free_slot(uint8_t* active, int cap, int* cursor);
+static inline void ps_dense_add(int* dense, int* dense_pos, int* count, int slot);
+static inline void ps_deactivate_moving_obstacle(PufferSurvivors* env, int i);
+
+static inline int ps_spawn_moving_obstacle(PufferSurvivors* env) {
+    if (env->cfg.moving_obstacle_cap <= 0
+            || env->moving_obstacle_count >= env->cfg.moving_obstacle_cap) return 0;
+    int i = ps_find_free_slot(env->moving_obstacles.active,
+        PS_MAX_MOVING_OBSTACLES, &env->next_moving_obstacle_slot);
+    if (i < 0) return 0;
+
+    int type = (int)(ps_rand_u32(env) % PS_MOVING_OBSTACLE_TYPE_COUNT);
+    float half = 0.5f * env->cfg.arena_size;
+    float margin = env->cfg.moving_obstacle_spawn_margin;
+    float hw = env->cfg.moving_obstacle_half_width[type];
+    float hh = env->cfg.moving_obstacle_half_height[type];
+    float speed = env->cfg.moving_obstacle_speed[type];
+    env->moving_obstacles.type[i] = (uint8_t)type;
+    env->moving_obstacles.shape[i] = PS_SHAPE_AABB;
+    env->moving_obstacles.half_width[i] = hw;
+    env->moving_obstacles.half_height[i] = hh;
+    env->moving_obstacles.bound_radius[i] = ps_geometry_shape_bound_radius(
+        PS_SHAPE_AABB, 0.0f, hw, hh);
+    env->moving_obstacles.ttl[i] = env->cfg.moving_obstacle_ttl;
+    if (type == PS_MOVING_OBSTACLE_ANCHOR) {
+        env->moving_obstacles.x[i] = env->px
+            + (ps_randf(env) * 2.0f - 1.0f) * half * 0.72f;
+        env->moving_obstacles.y[i] = env->py - half - margin - hh;
+        env->moving_obstacles.vx[i] = 0.0f;
+        env->moving_obstacles.vy[i] = speed;
+    } else {
+        int from_left = (int)(ps_rand_u32(env) & 1u) == 0;
+        env->moving_obstacles.x[i] = env->px
+            + (from_left ? -1.0f : 1.0f) * (half + margin + hw);
+        env->moving_obstacles.y[i] = env->py
+            + (ps_randf(env) * 2.0f - 1.0f) * half * 0.72f;
+        env->moving_obstacles.vx[i] = (from_left ? 1.0f : -1.0f) * speed;
+        env->moving_obstacles.vy[i] = 0.0f;
+    }
+    env->moving_obstacles.active[i] = 1;
+    ps_dense_add(env->moving_obstacles.dense,
+        env->moving_obstacles.dense_pos, &env->moving_obstacle_count, i);
+    return 1;
+}
+
+static inline void ps_update_moving_obstacles(PufferSurvivors* env) {
+    int wave = ps_wave_index(env);
+    if (wave >= env->cfg.moving_obstacle_start_wave
+            && env->tick % env->cfg.moving_obstacle_spawn_interval == 0) {
+        ps_spawn_moving_obstacle(env);
+    }
+
+    float half = 0.5f * env->cfg.arena_size;
+    float cleanup = half + env->cfg.moving_obstacle_spawn_margin + half;
+    float cleanup2 = cleanup * cleanup;
+    int k = 0;
+    while (k < env->moving_obstacle_count) {
+        int i = env->moving_obstacles.dense[k];
+        env->moving_obstacles.x[i] += env->moving_obstacles.vx[i];
+        env->moving_obstacles.y[i] += env->moving_obstacles.vy[i];
+        env->moving_obstacles.ttl[i]--;
+        float dx = env->px - env->moving_obstacles.x[i];
+        float dy = env->py - env->moving_obstacles.y[i];
+        int outside = dx * dx + dy * dy > cleanup2;
+        if (env->moving_obstacles.ttl[i] <= 0 || outside) {
+            ps_deactivate_moving_obstacle(env, i);
+            continue;
+        }
+        if (env->invuln_timer <= 0 && env->cfg.moving_obstacle_damage > 0.0f
+                && ps_geometry_shape_overlaps_circle(
+                    env->moving_obstacles.shape[i],
+                    dx, dy, env->moving_obstacles.bound_radius[i],
+                    env->moving_obstacles.half_width[i],
+                    env->moving_obstacles.half_height[i],
+                    env->cfg.player_radius)) {
+            float damage = fmaxf(1.0f, ceilf(env->cfg.moving_obstacle_damage));
+            env->hp -= damage;
+            env->agents[0].rewards[0] += env->cfg.reward_hurt * damage;
+            env->episode_reward_hurt += env->cfg.reward_hurt * damage;
+            env->episode_damage_taken += damage;
+            env->invuln_timer = env->cfg.invuln_steps;
+        }
+        k++;
+    }
+}
+
 static inline void ps_clear_entities(PufferSurvivors* env) {
     memset(&env->enemies, 0, sizeof(env->enemies));
     memset(&env->projectiles, 0, sizeof(env->projectiles));
     memset(&env->drops, 0, sizeof(env->drops));
     memset(&env->areas, 0, sizeof(env->areas));
+    memset(&env->moving_obstacles, 0, sizeof(env->moving_obstacles));
     memset(env->enemies.dense_pos, 0xff, sizeof(env->enemies.dense_pos));
     memset(env->projectiles.dense_pos, 0xff, sizeof(env->projectiles.dense_pos));
     memset(env->drops.dense_pos, 0xff, sizeof(env->drops.dense_pos));
     memset(env->areas.dense_pos, 0xff, sizeof(env->areas.dense_pos));
+    memset(env->moving_obstacles.dense_pos, 0xff,
+        sizeof(env->moving_obstacles.dense_pos));
 
     env->enemy_count = 0;
     env->projectile_count = 0;
     env->drop_count = 0;
     env->area_count = 0;
+    env->moving_obstacle_count = 0;
+    env->active_ink_count = 0;
     env->next_enemy_slot = 0;
     env->next_projectile_slot = 0;
     env->next_drop_slot = 0;
     env->next_area_slot = 0;
+    env->next_moving_obstacle_slot = 0;
     env->nearest_enemy = -1;
     env->nearest_enemy_d2 = 1e30f;
 
@@ -146,6 +236,7 @@ static inline void ps_clear_entities(PufferSurvivors* env) {
         env->grid_head[i] = -1;
     }
     env->grid_touched_count = 0;
+    env->aabb_count = 0;
 }
 
 static inline int ps_find_free_slot(uint8_t* active, int cap, int* cursor) {
@@ -208,7 +299,16 @@ static inline void ps_deactivate_drop(PufferSurvivors* env, int i) {
 static inline void ps_deactivate_area(PufferSurvivors* env, int i) {
     if (i < 0 || i >= PS_MAX_AREAS || !env->areas.active[i]) return;
     env->areas.active[i] = 0;
+    if (env->areas.type[i] == PS_WEAPON_INK && env->active_ink_count > 0)
+        env->active_ink_count--;
     ps_dense_remove(env->areas.dense, env->areas.dense_pos, &env->area_count, i);
+}
+
+static inline void ps_deactivate_moving_obstacle(PufferSurvivors* env, int i) {
+    if (i < 0 || i >= PS_MAX_MOVING_OBSTACLES || !env->moving_obstacles.active[i]) return;
+    env->moving_obstacles.active[i] = 0;
+    ps_dense_remove(env->moving_obstacles.dense,
+        env->moving_obstacles.dense_pos, &env->moving_obstacle_count, i);
 }
 
 #ifdef PS_DEBUG_COUNTS
@@ -261,7 +361,7 @@ static inline void ps_offer_upgrades(PufferSurvivors* env) {
     env->pending_upgrade = 1;
     for (int i = 0; i < PS_UPGRADE_SLOTS; i++) {
         int offer = -1;
-        for (int tries = 0; tries < 32; tries++) {
+        for (;;) {
             int candidate = (int)(ps_rand_u32(env) % PS_UPGRADE_COUNT);
             int duplicate = 0;
             for (int j = 0; j < i; j++) duplicate |= env->offered[j] == candidate;
@@ -270,7 +370,7 @@ static inline void ps_offer_upgrades(PufferSurvivors* env) {
                 break;
             }
         }
-        env->offered[i] = offer >= 0 ? offer : PS_UPGRADE_MIGHT;
+        env->offered[i] = offer;
     }
 }
 
@@ -281,17 +381,18 @@ static inline void ps_apply_upgrade_effect(PufferSurvivors* env, int upgrade) {
         case PS_UPGRADE_ORBIT:
         case PS_UPGRADE_INK:
         case PS_UPGRADE_SONAR:
-            if (env->weapon_level[upgrade] < 8) env->weapon_level[upgrade]++;
+            if (env->weapon_level[upgrade] < env->cfg.weapon_max_level)
+                env->weapon_level[upgrade]++;
             break;
-        case PS_UPGRADE_SPEED: env->speed_bonus += 0.10f; break;
-        case PS_UPGRADE_MAGNET: env->magnet_bonus += 0.25f; break;
+        case PS_UPGRADE_SPEED: env->speed_bonus += env->cfg.upgrade_speed_bonus; break;
+        case PS_UPGRADE_MAGNET: env->magnet_bonus += env->cfg.upgrade_magnet_bonus; break;
         case PS_UPGRADE_HEALTH:
-            env->max_hp += 1.0f;
+            env->max_hp += env->cfg.upgrade_health_bonus;
             env->hp = fminf(env->max_hp, env->hp + env->cfg.health_heal);
             break;
-        case PS_UPGRADE_MIGHT: env->damage_bonus += 0.18f; break;
-        case PS_UPGRADE_COOLDOWN: env->cooldown_mult *= 0.91f; break;
-        case PS_UPGRADE_AREA: env->area_bonus += 0.12f; break;
+        case PS_UPGRADE_MIGHT: env->damage_bonus += env->cfg.upgrade_might_bonus; break;
+        case PS_UPGRADE_COOLDOWN: env->cooldown_mult *= env->cfg.upgrade_cooldown_multiplier; break;
+        case PS_UPGRADE_AREA: env->area_bonus += env->cfg.upgrade_area_bonus; break;
         case PS_UPGRADE_PIERCE: env->pierce_bonus += 1; break;
     }
 }
@@ -300,7 +401,6 @@ static inline void ps_apply_upgrade(PufferSurvivors* env, int choice) {
     if (!env->pending_upgrade || choice < 0 || choice >= PS_UPGRADE_SLOTS) return;
     int upgrade = env->offered[choice];
     ps_apply_upgrade_effect(env, upgrade);
-    env->episode_upgrade_counts[upgrade] += 1.0f;
     env->episode_levelups += 1.0f;
     env->pending_upgrade = 0;
     if (env->queued_upgrades > 0) env->queued_upgrades--;
@@ -348,14 +448,6 @@ static inline void ps_add_log(PufferSurvivors* env, int survived) {
     env->log.peak_enemies += env->episode_peak_enemies;
     env->log.peak_projectiles += env->episode_peak_projectiles;
     env->log.min_hp += env->episode_min_hp;
-    for (int i = 0; i < PS_UPGRADE_COUNT; i++) {
-        env->log.upgrade_counts[i] += env->episode_upgrade_counts[i];
-        if (survived) env->log.win_upgrade_counts[i] += env->episode_upgrade_counts[i];
-    }
-    for (int i = 0; i < 9; i++) {
-        env->log.move_counts[i] += env->episode_move_counts[i];
-        if (survived) env->log.win_move_counts[i] += env->episode_move_counts[i];
-    }
     if (survived) {
         env->log.success += 1.0f;
     } else {
@@ -370,7 +462,7 @@ static inline void ps_add_log(PufferSurvivors* env, int survived) {
 
 static inline int ps_pick_spawn_side(PufferSurvivors* env) {
     float m2 = env->pvx * env->pvx + env->pvy * env->pvy;
-    if (m2 > 0.0001f && ps_randf(env) < 0.14f) {
+    if (m2 > 0.0001f && ps_randf(env) < env->cfg.spawn_velocity_bias_probability) {
         if (fabsf(env->pvx) > fabsf(env->pvy)) return env->pvx > 0.0f ? 1 : 0;
         return env->pvy > 0.0f ? 3 : 2;
     }
@@ -379,8 +471,8 @@ static inline int ps_pick_spawn_side(PufferSurvivors* env) {
 
 static inline void ps_pick_spawn_position(PufferSurvivors* env, float radius, float* x, float* y) {
     float half = 0.5f * env->cfg.arena_size;
-    float edge = half + radius + 1.0f;
-    float along = (ps_randf(env) * 2.0f - 1.0f) * half * 0.98f;
+    float edge = half + radius + env->cfg.enemy_spawn_edge_margin;
+    float along = (ps_randf(env) * 2.0f - 1.0f) * half * env->cfg.enemy_spawn_along_ratio;
     int side = ps_pick_spawn_side(env);
     if (side == 0) {
         *x = env->px - edge;
@@ -397,47 +489,78 @@ static inline void ps_pick_spawn_position(PufferSurvivors* env, float radius, fl
     }
 }
 
-static inline PSEnemyDef ps_enemy_stats(PufferSurvivors* env, int* kind_out, int elite, int boss, int ari_k) {
+static inline PSEnemyDef ps_enemy_stats(PufferSurvivors* env, int* kind_out,
+        float* radius_out, int elite, int boss, int ari_k) {
     int wave = ps_wave_index(env);
     float progress = ps_episode_progress(env);
     int kind = 0;
-    if (wave >= 2) {
+    if (wave >= env->cfg.enemy_mix_start_wave) {
         uint32_t roll = ps_rand_u32(env) % 100u;
-        if (wave < 4) kind = roll < 35u ? 1 : 0;
-        else if (wave < 7) kind = roll < 25u ? 2 : (roll < 55u ? 1 : 0);
-        else kind = roll < 20u ? 2 : (roll < 55u ? 3 : (roll < 80u ? 1 : 0));
+        if (wave < env->cfg.enemy_mix_phase_one_end_wave) {
+            kind = roll < (uint32_t)env->cfg.enemy_mix_phase_one_jelly_pct ? 1 : 0;
+        } else if (wave < env->cfg.enemy_mix_phase_two_end_wave) {
+            kind = roll < (uint32_t)env->cfg.enemy_mix_phase_two_urchin_pct
+                ? 2
+                : (roll < (uint32_t)env->cfg.enemy_mix_phase_two_jelly_pct ? 1 : 0);
+        } else {
+            kind = roll < (uint32_t)env->cfg.enemy_mix_late_urchin_pct
+                ? 2
+                : (roll < (uint32_t)env->cfg.enemy_mix_late_eel_pct
+                    ? 3
+                    : (roll < (uint32_t)env->cfg.enemy_mix_late_jelly_pct ? 1 : 0));
+        }
     }
 
-    PSEnemyDef stats = PS_ENEMY_DEFS[kind];
-    float hp_growth = 1.0f + 0.065f * (float)wave + 0.42f * progress * env->cfg.spawn_ramp;
-    float speed_growth = 1.0f + 0.012f * (float)(wave < 18 ? wave : 18);
+    PSEnemyDef stats = {
+        env->cfg.enemy_base_hp[kind],
+        env->cfg.enemy_speed_mult[kind],
+        env->cfg.enemy_base_damage[kind],
+    };
+    float radius = env->cfg.enemy_radius[kind];
+    float hp_growth = 1.0f + env->cfg.enemy_hp_growth_per_wave * (float)wave
+        + env->cfg.enemy_hp_progress_scale * progress * env->cfg.spawn_ramp;
+    float speed_growth_wave = (float)(wave < env->cfg.enemy_speed_growth_wave_cap
+        ? wave : env->cfg.enemy_speed_growth_wave_cap);
+    float speed_growth = 1.0f + env->cfg.enemy_speed_growth_per_wave * speed_growth_wave;
     stats.hp *= hp_growth * env->cfg.enemy_hp_scale;
     stats.speed_mult *= env->cfg.enemy_speed * speed_growth;
     stats.damage *= env->cfg.enemy_damage_scale;
 
     if (elite) {
-        stats.hp *= 4.0f;
-        stats.speed_mult *= 0.88f;
-        stats.radius = fmaxf(stats.radius + 0.18f, 0.62f);
-        stats.damage *= 2.0f;
+        stats.hp *= env->cfg.elite_hp_multiplier;
+        stats.speed_mult *= env->cfg.elite_speed_multiplier;
+        radius = fmaxf(radius + env->cfg.elite_radius_bonus, env->cfg.elite_min_radius);
+        stats.damage *= env->cfg.elite_damage_multiplier;
     }
     if (boss) {
-        stats.hp = (32.0f + 8.0f * (float)wave) * env->cfg.enemy_hp_scale;
-        stats.speed_mult = env->cfg.enemy_speed * 0.62f;
-        stats.radius = 1.20f;
-        stats.damage = 4.0f * env->cfg.enemy_damage_scale;
+        stats.hp = (env->cfg.boss_hp_base + env->cfg.boss_hp_per_wave * (float)wave)
+            * env->cfg.enemy_hp_scale;
+        stats.speed_mult = env->cfg.enemy_speed * env->cfg.boss_speed_multiplier;
+        radius = env->cfg.boss_radius;
+        stats.damage = env->cfg.boss_damage * env->cfg.enemy_damage_scale;
     }
     if (ari_k) {
-        stats.hp *= 2.25f;
-        stats.speed_mult = env->cfg.enemy_speed * 0.48f;
-        stats.radius = 1.55f;
-        stats.damage = 6.0f * env->cfg.enemy_damage_scale;
+        stats.hp *= env->cfg.ari_k_hp_multiplier;
+        stats.speed_mult = env->cfg.enemy_speed * env->cfg.ari_k_speed_multiplier;
+        radius = env->cfg.ari_k_radius;
+        stats.damage = env->cfg.ari_k_damage * env->cfg.enemy_damage_scale;
     }
 
     stats.hp = fmaxf(1.0f, ceilf(stats.hp));
     stats.damage = fmaxf(1.0f, ceilf(stats.damage));
     *kind_out = kind;
+    *radius_out = radius;
     return stats;
+}
+
+static inline void ps_enemy_geometry(PufferSurvivors* env, int kind, int ari_k,
+        float radius, int* shape, float* half_width, float* half_height,
+        float* bound_radius) {
+    *shape = ari_k ? env->cfg.ari_k_shape : env->cfg.enemy_shape[kind];
+    *half_width = ari_k ? env->cfg.ari_k_half_width : env->cfg.enemy_half_width[kind];
+    *half_height = ari_k ? env->cfg.ari_k_half_height : env->cfg.enemy_half_height[kind];
+    *bound_radius = ps_geometry_shape_bound_radius(*shape, radius,
+        *half_width, *half_height);
 }
 
 static inline int ps_spawn_enemy(PufferSurvivors* env) {
@@ -447,22 +570,26 @@ static inline int ps_spawn_enemy(PufferSurvivors* env) {
     if (slot < 0) return 0;
 
     float x = 0.0f, y = 0.0f;
-    ps_pick_spawn_position(env, 0.45f, &x, &y);
-    for (int tries = 0; tries < 16 && ps_overlaps_obstacle(env, x, y, 0.45f, 0.25f); tries++) {
-        ps_pick_spawn_position(env, 0.45f, &x, &y);
+    ps_pick_spawn_position(env, env->cfg.enemy_spawn_radius, &x, &y);
+    for (int tries = 0; tries < 16 && ps_overlaps_obstacle(env, x, y,
+            env->cfg.enemy_spawn_radius, env->cfg.enemy_spawn_padding); tries++) {
+        ps_pick_spawn_position(env, env->cfg.enemy_spawn_radius, &x, &y);
     }
 
-    int elite = ps_randf(env) < env->cfg.elite_spawn_rate + 0.0000015f * (float)env->tick;
-    int wave_len = env->cfg.wave_length_steps > 0 ? env->cfg.wave_length_steps : 600;
+    int elite = ps_randf(env) < env->cfg.elite_spawn_rate
+        + env->cfg.elite_spawn_ramp_per_tick * (float)env->tick;
+    int wave_len = env->cfg.wave_length_steps;
     int wave = ps_wave_index(env);
-    int ari_k_wave = wave >= 29 && (wave - 29) % 5 == 0;
+    int ari_k_wave = wave >= env->cfg.ari_k_start_wave
+        && (wave - env->cfg.ari_k_start_wave) % env->cfg.ari_k_wave_period == 0;
     int ari_k = ari_k_wave && env->tick % wave_len == 1
         && env->last_boss_tick != env->tick;
-    int boss = ari_k || (env->tick > 0 && env->tick % 900 == 0
+    int boss = ari_k || (env->tick > 0 && env->tick % env->cfg.boss_period_steps == 0
         && env->last_boss_tick != env->tick);
     if (boss) env->last_boss_tick = env->tick;
     int kind = 0;
-    PSEnemyDef stats = ps_enemy_stats(env, &kind, elite, boss, ari_k);
+    float radius = 0.0f;
+    PSEnemyDef stats = ps_enemy_stats(env, &kind, &radius, elite, boss, ari_k);
     uint8_t visual_type = (uint8_t)(kind & PS_ENEMY_KIND_MASK);
     if (elite) visual_type |= PS_ENEMY_ELITE_FLAG;
     if (boss) visual_type = PS_ENEMY_BOSS_FLAG;
@@ -474,7 +601,17 @@ static inline int ps_spawn_enemy(PufferSurvivors* env) {
     env->enemies.vy[slot] = 0.0f;
     env->enemies.max_hp[slot] = stats.hp;
     env->enemies.hp[slot] = stats.hp;
-    env->enemies.radius[slot] = stats.radius;
+    env->enemies.radius[slot] = radius;
+    int shape = PS_SHAPE_CIRCLE;
+    float half_width = radius;
+    float half_height = radius;
+    float bound_radius = radius;
+    ps_enemy_geometry(env, kind, ari_k, radius, &shape, &half_width,
+        &half_height, &bound_radius);
+    env->enemies.shape[slot] = (uint8_t)shape;
+    env->enemies.half_width[slot] = half_width;
+    env->enemies.half_height[slot] = half_height;
+    env->enemies.bound_radius[slot] = bound_radius;
     env->enemies.speed[slot] = stats.speed_mult;
     env->enemies.damage[slot] = stats.damage;
     env->enemies.active[slot] = 1;
@@ -489,7 +626,7 @@ static inline void ps_spawn_drop(PufferSurvivors* env, float x, float y, float v
     int i = ps_find_free_slot(env->drops.active, env->cfg.drop_cap, &env->next_drop_slot);
     if (i < 0) return;
 
-    ps_push_out_obstacles(env, &x, &y, 0.25f, 0);
+    ps_push_out_obstacles(env, &x, &y, env->cfg.drop_spawn_radius, 0);
     env->drops.x[i] = x;
     env->drops.y[i] = y;
     env->drops.value[i] = value;
@@ -521,7 +658,7 @@ static inline void ps_spawn_projectile(PufferSurvivors* env, int type, float sx,
 }
 
 static inline void ps_spawn_area(PufferSurvivors* env, int type, float x, float y, float radius, float damage, int ttl, int tick_rate) {
-    if (env->area_count >= PS_MAX_AREAS) return;
+    if (env->area_count >= env->cfg.area_cap) return;
 
     int i = ps_find_free_slot(env->areas.active, PS_MAX_AREAS, &env->next_area_slot);
     if (i < 0) return;
@@ -533,9 +670,10 @@ static inline void ps_spawn_area(PufferSurvivors* env, int type, float x, float 
     env->areas.radius[i] = radius;
     env->areas.damage[i] = damage;
     env->areas.ttl[i] = ttl;
-    env->areas.tick_rate[i] = tick_rate < 1 ? 1 : tick_rate;
+    env->areas.tick_rate[i] = tick_rate;
     env->areas.tick_timer[i] = 0;
     env->areas.active[i] = 1;
+    if (type == PS_WEAPON_INK) env->active_ink_count++;
     ps_dense_add(env->areas.dense, env->areas.dense_pos, &env->area_count, i);
 }
 
@@ -547,6 +685,9 @@ static inline void ps_rebuild_grid(PufferSurvivors* env) {
     for (int i = 0; i < env->cfg.enemy_cap; i++) {
         env->enemies.next[i] = -1;
         if (!env->enemies.active[i]) continue;
+        if (env->enemies.shape[i] == PS_SHAPE_AABB) {
+            env->aabb_indices[env->aabb_count++] = i;
+        }
         int cell = ps_cell(env, env->enemies.x[i], env->enemies.y[i]);
         if (env->grid_head[cell] == -1 && env->grid_touched_count < PS_MAX_ENEMIES) {
             env->grid_touched[env->grid_touched_count++] = cell;
@@ -570,12 +711,20 @@ static inline int ps_damage_enemy(PufferSurvivors* env, int eidx, float damage) 
     env->agents[0].rewards[0] += env->cfg.reward_kill;
     env->episode_reward_kill += env->cfg.reward_kill;
     env->episode_kills += 1.0f;
-    env->episode_score += boss ? 24.0f : (elite ? 12.0f : 5.0f);
-    ps_spawn_drop(env, env->enemies.x[eidx], env->enemies.y[eidx], boss ? 8.0f : (elite ? 3.0f : 1.0f), 0);
-    float missing_hp = env->max_hp > 0.0f ? ps_clampf((env->max_hp - env->hp) / env->max_hp, 0.0f, 1.0f) : 0.0f;
-    float health_chance = env->cfg.health_drop_rate * (1.0f + 2.0f * (float)elite + 5.0f * (float)boss + 1.5f * missing_hp);
+    env->episode_score += boss ? env->cfg.kill_score_boss
+        : (elite ? env->cfg.kill_score_elite : env->cfg.kill_score_default);
+    ps_spawn_drop(env, env->enemies.x[eidx], env->enemies.y[eidx],
+        boss ? env->cfg.drop_value_boss
+        : (elite ? env->cfg.drop_value_elite : env->cfg.drop_value_default), 0);
+    float missing_hp = ps_clampf((env->max_hp - env->hp) / env->max_hp, 0.0f, 1.0f);
+    float health_chance = env->cfg.health_drop_rate
+        * (1.0f + env->cfg.health_drop_elite_bonus * (float)elite
+        + env->cfg.health_drop_boss_bonus * (float)boss
+        + env->cfg.health_drop_missing_hp_bonus * missing_hp);
     if (ps_randf(env) < health_chance) {
-        ps_spawn_drop(env, env->enemies.x[eidx] + 0.2f, env->enemies.y[eidx] - 0.2f, env->cfg.health_heal, 1);
+        ps_spawn_drop(env, env->enemies.x[eidx] + env->cfg.health_drop_offset_x,
+            env->enemies.y[eidx] + env->cfg.health_drop_offset_y,
+            env->cfg.health_heal, 1);
     }
     ps_deactivate_enemy(env, eidx);
     return 1;
@@ -594,32 +743,40 @@ static inline void ps_wave_spawns(PufferSurvivors* env) {
     int interval = ps_wave_spawn_interval(env);
     if (interval > 0 && env->tick % interval == 0 && enemies < env->cfg.enemy_cap) ps_spawn_enemy(env);
 
-    int len = env->cfg.wave_length_steps > 0 ? env->cfg.wave_length_steps : 600;
+    int len = env->cfg.wave_length_steps;
     int local = env->tick % len;
     int wave = ps_wave_index(env);
-    if (local == 1 && wave >= 29 && (wave - 29) % 5 == 0) ps_spawn_enemy(env);
-    if (local == 1 && (wave == 5 || wave == 10 || wave == 15)) {
+    if (local == 1 && wave >= env->cfg.ari_k_start_wave
+            && (wave - env->cfg.ari_k_start_wave) % env->cfg.ari_k_wave_period == 0)
+        ps_spawn_enemy(env);
+    int special_ring = 0;
+    for (int i = 0; i < env->cfg.special_ring_wave_count; i++) {
+        special_ring |= wave == env->cfg.special_ring_waves[i];
+    }
+    if (local == 1 && special_ring) {
         float half = 0.5f * env->cfg.arena_size;
-        float radius = half * 0.82f;
-        for (int i = 0; i < 18; i++) {
+        float radius = half * env->cfg.special_ring_radius_ratio;
+        for (int i = 0; i < env->cfg.special_ring_enemy_count; i++) {
             int slot = ps_spawn_enemy(env);
             if (!slot) return;
             int idx = slot - 1;
-            float angle = 2.0f * PI * ((float)i / 18.0f);
+            float angle = 2.0f * PI * ((float)i
+                / (float)env->cfg.special_ring_enemy_count);
             env->enemies.x[idx] = env->px + cosf(angle) * radius;
             env->enemies.y[idx] = env->py + sinf(angle) * radius;
-            env->enemies.speed[idx] *= 0.78f;
+            env->enemies.speed[idx] *= env->cfg.special_ring_speed_mult;
         }
     }
 }
 
 static inline void ps_update_enemies(PufferSurvivors* env) {
     float half = 0.5f * env->cfg.arena_size;
-    float far2 = (half * 1.55f) * (half * 1.55f);
+    float far2 = (half * env->cfg.enemy_recycle_radius_ratio)
+        * (half * env->cfg.enemy_recycle_radius_ratio);
     float player_x = env->px;
     float player_y = env->py;
-    float player_radius = 0.42f;
-    int obstacle_stride = env->cfg.enemy_obstacle_stride < 1 ? 1 : env->cfg.enemy_obstacle_stride;
+    float player_radius = env->cfg.player_radius;
+    int obstacle_stride = env->cfg.enemy_obstacle_stride;
     env->nearest_enemy = -1;
     env->nearest_enemy_d2 = 1e30f;
     for (int i = 0; i < env->cfg.enemy_cap; i++) {
@@ -632,13 +789,15 @@ static inline void ps_update_enemies(PufferSurvivors* env) {
         env->enemies.x[i] += env->enemies.vx[i];
         env->enemies.y[i] += env->enemies.vy[i];
         if (obstacle_stride <= 1 || ((env->tick + i) % obstacle_stride) == 0) {
-            ps_push_out_obstacles(env, &env->enemies.x[i], &env->enemies.y[i], env->enemies.radius[i], 0);
+            ps_push_out_obstacles_shape(env, &env->enemies.x[i], &env->enemies.y[i],
+                env->enemies.shape[i], env->enemies.radius[i],
+                env->enemies.half_width[i], env->enemies.half_height[i], 0);
         }
         float post_dx = env->enemies.x[i] - player_x;
         float post_dy = env->enemies.y[i] - player_y;
         float post_d2 = post_dx * post_dx + post_dy * post_dy;
         if (post_d2 > far2) {
-            ps_pick_spawn_position(env, env->enemies.radius[i], &env->enemies.x[i], &env->enemies.y[i]);
+            ps_pick_spawn_position(env, env->enemies.bound_radius[i], &env->enemies.x[i], &env->enemies.y[i]);
             if ((env->enemies.type[i] & PS_ENEMY_KIND_MASK) != 2) env->enemies.hp[i] = env->enemies.max_hp[i];
             continue;
         }
@@ -646,8 +805,11 @@ static inline void ps_update_enemies(PufferSurvivors* env) {
             env->nearest_enemy_d2 = post_d2;
             env->nearest_enemy = i;
         }
-        float hit = env->enemies.radius[i] + player_radius;
-        if (env->invuln_timer <= 0 && post_d2 < hit * hit) {
+        int hit = ps_geometry_shape_overlaps_circle(env->enemies.shape[i],
+            player_x - env->enemies.x[i], player_y - env->enemies.y[i],
+            env->enemies.radius[i], env->enemies.half_width[i],
+            env->enemies.half_height[i], player_radius);
+        if (env->invuln_timer <= 0 && hit) {
             float dmg = fmaxf(1.0f, ceilf(env->enemies.damage[i] * env->cfg.contact_damage));
             env->hp -= dmg;
             env->agents[0].rewards[0] += env->cfg.reward_hurt * dmg;
@@ -674,10 +836,8 @@ static inline void ps_update_projectiles(PufferSurvivors* env) {
         for (int o = 0; o < env->cfg.obstacle_count; o++) {
             float r = env->obstacles.radius[o] + env->projectiles.radius[i];
             float dx = env->projectiles.x[i] - env->obstacles.x[o];
-            if (dx >= r || dx <= -r) continue;
             float dy = env->projectiles.y[i] - env->obstacles.y[o];
-            if (dy >= r || dy <= -r) continue;
-            if (dx * dx + dy * dy < r * r) {
+            if (ps_geometry_circle_overlaps(dx, dy, r)) {
                 blocked = 1;
                 break;
             }
@@ -698,14 +858,32 @@ static inline void ps_update_projectiles(PufferSurvivors* env) {
                 if (gx < 0 || gx >= PS_GRID_W) continue;
                 for (int eidx = env->grid_head[gy * PS_GRID_W + gx]; eidx >= 0; eidx = env->enemies.next[eidx]) {
                     if (!env->enemies.active[eidx]) continue;
-                    float r = env->enemies.radius[eidx] + env->projectiles.radius[i];
-                    if (ps_dist2(env->projectiles.x[i], env->projectiles.y[i], env->enemies.x[eidx], env->enemies.y[eidx]) >= r * r) continue;
+                    if (env->enemies.shape[eidx] != PS_SHAPE_CIRCLE) continue;
+                    if (!ps_geometry_shape_overlaps_circle(env->enemies.shape[eidx],
+                            env->projectiles.x[i] - env->enemies.x[eidx],
+                            env->projectiles.y[i] - env->enemies.y[eidx],
+                            env->enemies.radius[eidx],
+                            env->enemies.half_width[eidx],
+                            env->enemies.half_height[eidx],
+                            env->projectiles.radius[i])) continue;
                     ps_damage_enemy(env, eidx, env->projectiles.damage[i]);
                     if (env->projectiles.pierce[i] <= 0) ps_deactivate_projectile(env, i);
                     else env->projectiles.pierce[i]--;
                     break;
                 }
             }
+        }
+        for (int a = 0; a < env->aabb_count && env->projectiles.active[i]; a++) {
+            int eidx = env->aabb_indices[a];
+            if (!env->enemies.active[eidx]) continue;
+            if (!ps_geometry_shape_overlaps_circle(env->enemies.shape[eidx],
+                    env->projectiles.x[i] - env->enemies.x[eidx],
+                    env->projectiles.y[i] - env->enemies.y[eidx],
+                    env->enemies.radius[eidx], env->enemies.half_width[eidx],
+                    env->enemies.half_height[eidx], env->projectiles.radius[i])) continue;
+            ps_damage_enemy(env, eidx, env->projectiles.damage[i]);
+            if (env->projectiles.pierce[i] <= 0) ps_deactivate_projectile(env, i);
+            else env->projectiles.pierce[i]--;
         }
         if (env->projectiles.active[i]) k++;
     }
@@ -741,8 +919,8 @@ static inline void ps_update_drops(PufferSurvivors* env) {
 
         if (dist2 < magnet2) {
             float dist = sqrtf(fmaxf(dist2, 0.0001f));
-            env->drops.x[i] += dx / dist * 0.28f;
-            env->drops.y[i] += dy / dist * 0.28f;
+            env->drops.x[i] += dx / dist * env->cfg.pickup_magnet_speed;
+            env->drops.y[i] += dy / dist * env->cfg.pickup_magnet_speed;
         }
         k++;
     }
@@ -774,7 +952,9 @@ static inline int ps_nearest_enemy(PufferSurvivors* env, float range) {
     return best;
 }
 
-static inline void ps_damage_radius(PufferSurvivors* env, float x, float y, float radius, float damage, float knockback) {
+static inline void ps_damage_radius_with_query_pad(PufferSurvivors* env,
+        float x, float y, float radius, float damage, float knockback,
+        float query_pad) {
     if (knockback > 0.0f) {
         env->nearest_enemy = -1;
         env->nearest_enemy_d2 = 1e30f;
@@ -782,7 +962,6 @@ static inline void ps_damage_radius(PufferSurvivors* env, float x, float y, floa
 
     // The grid was built before weapon updates. Expand the cell query enough to
     // cover the largest enemy and small same-step knockback without rebuilding.
-    const float query_pad = 1.50f;
     float half = 0.5f * env->cfg.arena_size;
     float inv_cell_x = (float)PS_GRID_W / env->cfg.arena_size;
     float inv_cell_y = (float)PS_GRID_H / env->cfg.arena_size;
@@ -802,11 +981,17 @@ static inline void ps_damage_radius(PufferSurvivors* env, float x, float y, floa
             while (eidx >= 0) {
                 int next = env->enemies.next[eidx];
                 if (env->enemies.active[eidx]) {
+                    if (env->enemies.shape[eidx] != PS_SHAPE_CIRCLE) {
+                        eidx = next;
+                        continue;
+                    }
                     float dx = env->enemies.x[eidx] - x;
                     float dy = env->enemies.y[eidx] - y;
-                    float hit_r = radius + env->enemies.radius[eidx];
                     float d2 = dx * dx + dy * dy;
-                    if (d2 <= hit_r * hit_r) {
+                    if (ps_geometry_shape_overlaps_circle(env->enemies.shape[eidx],
+                            dx, dy, env->enemies.radius[eidx],
+                            env->enemies.half_width[eidx],
+                            env->enemies.half_height[eidx], radius)) {
                         int killed = ps_damage_enemy(env, eidx, damage);
                         if (!killed && knockback > 0.0f && env->enemies.active[eidx]) {
                             float d = sqrtf(fmaxf(d2, 0.0001f));
@@ -819,18 +1004,42 @@ static inline void ps_damage_radius(PufferSurvivors* env, float x, float y, floa
             }
         }
     }
+    for (int a = 0; a < env->aabb_count; a++) {
+        int eidx = env->aabb_indices[a];
+        if (!env->enemies.active[eidx]) continue;
+        float dx = env->enemies.x[eidx] - x;
+        float dy = env->enemies.y[eidx] - y;
+        float d2 = dx * dx + dy * dy;
+        if (!ps_geometry_shape_overlaps_circle(env->enemies.shape[eidx],
+                dx, dy, env->enemies.radius[eidx],
+                env->enemies.half_width[eidx], env->enemies.half_height[eidx], radius)) continue;
+        int killed = ps_damage_enemy(env, eidx, damage);
+        if (!killed && knockback > 0.0f && env->enemies.active[eidx]) {
+            float d = sqrtf(fmaxf(d2, 0.0001f));
+            env->enemies.x[eidx] += dx / d * knockback;
+            env->enemies.y[eidx] += dy / d * knockback;
+        }
+    }
+}
+
+static inline void ps_damage_radius(PufferSurvivors* env, float x, float y,
+        float radius, float damage, float knockback) {
+    ps_damage_radius_with_query_pad(env, x, y, radius, damage, knockback, 1.50f);
 }
 
 static inline void ps_update_areas(PufferSurvivors* env) {
-    int active_ink = 0;
     int k = 0;
     while (k < env->area_count) {
         int i = env->areas.dense[k];
-        if (env->areas.type[i] == PS_WEAPON_INK) active_ink++;
         env->areas.ttl[i]--;
         env->areas.tick_timer[i]--;
         if (env->areas.tick_timer[i] <= 0 && env->areas.damage[i] > 0.0f) {
-            ps_damage_radius(env, env->areas.x[i], env->areas.y[i], env->areas.radius[i], env->areas.damage[i], 0.02f);
+            // The grid query is exact for persistent area ticks. The old
+            // knockback safety pad made every oil pool inspect many extra
+            // cells while not changing which enemies actually took damage.
+            ps_damage_radius_with_query_pad(env, env->areas.x[i], env->areas.y[i],
+                env->areas.radius[i], env->areas.damage[i],
+                env->cfg.area_tick_knockback, 0.0f);
             env->areas.tick_timer[i] = env->areas.tick_rate[i];
         }
         if (env->areas.ttl[i] <= 0) {
@@ -839,59 +1048,70 @@ static inline void ps_update_areas(PufferSurvivors* env) {
         }
         k++;
     }
-    env->weapon_active[PS_WEAPON_INK] = ps_clampf((float)active_ink / 8.0f, 0.0f, 1.0f);
+    env->weapon_active[PS_WEAPON_INK] = ps_clampf((float)env->active_ink_count / 8.0f, 0.0f, 1.0f);
 }
 
 static inline void ps_cast_bubble(PufferSurvivors* env, int level) {
-    int target = ps_nearest_enemy(env, 18.0f + 4.0f * env->area_bonus);
+    int target = ps_nearest_enemy(env,
+        env->cfg.bubble_target_range + env->cfg.bubble_target_area_range * env->area_bonus);
     if (target < 0) return;
     int shots = 1 + level / 3;
-    const PSWeaponDef* def = &PS_WEAPON_DEFS[PS_WEAPON_BUBBLE];
     float damage = ps_weapon_damage(env, PS_WEAPON_BUBBLE, level, 1);
-    float radius = def->base_radius * (1.0f + env->area_bonus);
+    float radius = ps_geometry_weapon_radius(&env->cfg, PS_WEAPON_BUBBLE, 0)
+        * (1.0f + env->area_bonus);
     float speed = env->cfg.projectile_speed * (1.0f + env->projectile_speed_bonus);
     int pierce = env->pierce_bonus + level / 4;
     for (int i = 0; i < shots; i++) {
-        float jitter = ((float)i - 0.5f * (float)(shots - 1)) * 0.35f;
-        ps_spawn_projectile(env, PS_WEAPON_BUBBLE, env->px, env->py, env->enemies.x[target] + jitter, env->enemies.y[target] - jitter, damage, radius, speed, pierce, 100);
+        float jitter = ((float)i - 0.5f * (float)(shots - 1)) * env->cfg.bubble_shot_spread;
+        ps_spawn_projectile(env, PS_WEAPON_BUBBLE, env->px, env->py,
+            env->enemies.x[target] + jitter, env->enemies.y[target] - jitter,
+            damage, radius, speed, pierce, env->cfg.bubble_projectile_ttl);
     }
     env->weapon_active[PS_WEAPON_BUBBLE] = 1.0f;
 }
 
 static inline void ps_cast_whirlpool(PufferSurvivors* env, int level) {
-    const PSWeaponDef* def = &PS_WEAPON_DEFS[PS_WEAPON_WHIRLPOOL];
-    float radius = (def->base_radius + def->radius_per_level * (float)(level - 1)) * (1.0f + env->area_bonus);
+    float radius = ps_geometry_weapon_radius(&env->cfg, PS_WEAPON_WHIRLPOOL, level - 1)
+        * (1.0f + env->area_bonus);
     float damage = ps_weapon_damage(env, PS_WEAPON_WHIRLPOOL, level, 0);
-    ps_damage_radius(env, env->px, env->py, radius, damage, 0.06f);
-    ps_spawn_area(env, PS_WEAPON_WHIRLPOOL, env->px, env->py, radius, 0.0f, 18, 99);
+    ps_damage_radius(env, env->px, env->py, radius, damage, env->cfg.whirlpool_knockback);
+    ps_spawn_area(env, PS_WEAPON_WHIRLPOOL, env->px, env->py, radius, 0.0f,
+        env->cfg.whirlpool_ttl, env->cfg.whirlpool_tick_rate);
     env->weapon_active[PS_WEAPON_WHIRLPOOL] = 1.0f;
 }
 
 static inline void ps_cast_orbit(PufferSurvivors* env, int level) {
-    const PSWeaponDef* def = &PS_WEAPON_DEFS[PS_WEAPON_ORBIT];
     int count = 1 + level / 2;
-    float orbit_r = (2.25f + 0.18f * (float)level) * (1.0f + 0.5f * env->area_bonus);
-    float hit_r = (def->base_radius + def->radius_per_level * (float)level) * (1.0f + env->area_bonus);
+    float orbit_r = (env->cfg.weapon_orbit_distance
+        + env->cfg.weapon_orbit_distance_per_level * (float)level)
+        * (1.0f + env->cfg.orbit_area_distance_bonus * env->area_bonus);
+    float hit_r = ps_geometry_weapon_radius(&env->cfg, PS_WEAPON_ORBIT, level)
+        * (1.0f + env->area_bonus);
     float damage = ps_weapon_damage(env, PS_WEAPON_ORBIT, level, 0);
     for (int i = 0; i < count; i++) {
         float a = env->orbit_phase + 2.0f * PI * ((float)i / (float)count);
-        ps_damage_radius(env, env->px + cosf(a) * orbit_r, env->py + sinf(a) * orbit_r, hit_r, damage, 0.04f);
+        ps_damage_radius(env, env->px + cosf(a) * orbit_r,
+            env->py + sinf(a) * orbit_r, hit_r, damage, env->cfg.orbit_knockback);
     }
     env->weapon_active[PS_WEAPON_ORBIT] = 1.0f;
 }
 
 static inline void ps_cast_ink(PufferSurvivors* env, int level) {
-    int target = ps_nearest_enemy(env, env->cfg.arena_size * 0.50f);
+    int target = ps_nearest_enemy(env, env->cfg.arena_size * env->cfg.ink_target_range_ratio);
     if (target < 0) return;
     int pools = 1 + level / 3;
-    const PSWeaponDef* def = &PS_WEAPON_DEFS[PS_WEAPON_INK];
-    float radius = (def->base_radius + def->radius_per_level * (float)level) * (1.0f + env->area_bonus);
+    float radius = ps_geometry_weapon_radius(&env->cfg, PS_WEAPON_INK, level)
+        * (1.0f + env->area_bonus);
     float damage = ps_weapon_damage(env, PS_WEAPON_INK, level, 0);
-    int ttl = 140 + 12 * level;
+    int ttl = env->cfg.ink_pool_ttl_base + env->cfg.ink_pool_ttl_per_level * level;
     for (int i = 0; i < pools; i++) {
-        float angle = 2.0f * PI * ((float)i / (float)pools) + ps_randf(env) * 0.5f;
-        float dist = pools > 1 ? 1.4f : 0.0f;
-        ps_spawn_area(env, PS_WEAPON_INK, env->enemies.x[target] + cosf(angle) * dist, env->enemies.y[target] + sinf(angle) * dist, radius, damage, ttl, 8);
+        float angle = 2.0f * PI * ((float)i / (float)pools)
+            + ps_randf(env) * env->cfg.ink_pool_angle_jitter;
+        float dist = pools > 1 ? env->cfg.ink_pool_spread : 0.0f;
+        ps_spawn_area(env, PS_WEAPON_INK,
+            env->enemies.x[target] + cosf(angle) * dist,
+            env->enemies.y[target] + sinf(angle) * dist,
+            radius, damage, ttl, env->cfg.ink_pool_tick_rate);
     }
     env->weapon_active[PS_WEAPON_INK] = 1.0f;
 }
@@ -899,45 +1119,54 @@ static inline void ps_cast_ink(PufferSurvivors* env, int level) {
 static inline void ps_update_poison_oil_trail(PufferSurvivors* env, int level) {
     if (level <= 0) return;
     float speed2 = env->pvx * env->pvx + env->pvy * env->pvy;
-    if (speed2 < 0.0004f) return;
+    if (speed2 < env->cfg.ink_trail_min_speed2) return;
 
-    int active_oil = 0;
-    for (int i = 0; i < PS_MAX_AREAS; i++) {
-        active_oil += env->areas.active[i] && env->areas.type[i] == PS_WEAPON_INK;
-    }
-    int max_oil = 14 + level * 4;
+    int active_oil = env->active_ink_count;
+    int max_oil = env->cfg.ink_trail_max_base
+        + level * env->cfg.ink_trail_max_per_level;
     if (active_oil >= max_oil) return;
 
-    int cadence = 6 - level / 2;
-    cadence = cadence < 3 ? 3 : cadence;
+    int cadence = env->cfg.ink_trail_cadence_base
+        - level / env->cfg.ink_trail_cadence_level_divisor;
+    if (cadence < env->cfg.ink_trail_cadence_min)
+        cadence = env->cfg.ink_trail_cadence_min;
     if (env->tick % cadence != 0) return;
 
-    const PSWeaponDef* def = &PS_WEAPON_DEFS[PS_WEAPON_INK];
     float speed = sqrtf(speed2);
     float nx = env->pvx / speed;
     float ny = env->pvy / speed;
-    float radius = (0.88f + 0.10f * (float)level + 0.10f * def->radius_per_level * (float)level) * (1.0f + env->area_bonus);
-    float damage = ps_weapon_damage(env, PS_WEAPON_INK, level, 0) * 0.36f;
-    int ttl = 42 + 8 * level;
-    ps_spawn_area(env, PS_WEAPON_INK, env->px - nx * 0.95f, env->py - ny * 0.95f, radius, damage, ttl, 6);
+    float radius = (env->cfg.ink_trail_radius_base
+        + env->cfg.ink_trail_radius_per_level * (float)level
+        + env->cfg.ink_trail_radius_config_scale
+            * env->cfg.weapon_radius_per_level[PS_WEAPON_INK] * (float)level)
+        * (1.0f + env->area_bonus);
+    float damage = ps_weapon_damage(env, PS_WEAPON_INK, level, 0)
+        * env->cfg.ink_trail_damage_multiplier;
+    int ttl = env->cfg.ink_trail_ttl_base + env->cfg.ink_trail_ttl_per_level * level;
+    ps_spawn_area(env, PS_WEAPON_INK, env->px - nx * env->cfg.ink_trail_offset,
+        env->py - ny * env->cfg.ink_trail_offset, radius, damage, ttl,
+        env->cfg.ink_trail_tick_rate);
     env->weapon_active[PS_WEAPON_INK] = 1.0f;
 }
 
 static inline void ps_cast_sonar(PufferSurvivors* env, int level) {
-    const PSWeaponDef* def = &PS_WEAPON_DEFS[PS_WEAPON_SONAR];
-    float radius = (def->base_radius + def->radius_per_level * (float)level) * (1.0f + env->area_bonus);
+    float radius = ps_geometry_weapon_radius(&env->cfg, PS_WEAPON_SONAR, level)
+        * (1.0f + env->area_bonus);
     float damage = ps_weapon_damage(env, PS_WEAPON_SONAR, level, 0);
-    ps_damage_radius(env, env->px, env->py, radius, damage, 0.50f);
-    ps_spawn_area(env, PS_WEAPON_SONAR, env->px, env->py, radius, 0.0f, 24, 99);
+    ps_damage_radius(env, env->px, env->py, radius, damage, env->cfg.sonar_knockback);
+    ps_spawn_area(env, PS_WEAPON_SONAR, env->px, env->py, radius, 0.0f,
+        env->cfg.sonar_ttl, env->cfg.sonar_tick_rate);
     env->weapon_active[PS_WEAPON_SONAR] = 1.0f;
 }
 
 static inline void ps_update_weapons(PufferSurvivors* env) {
     for (int i = 0; i < PS_WEAPON_COUNT; i++) {
-        env->weapon_active[i] *= 0.82f;
+        env->weapon_active[i] *= env->cfg.weapon_active_decay;
         if (env->weapon_cd[i] > 0.0f) env->weapon_cd[i] -= 1.0f;
     }
-    env->orbit_phase += 0.045f + 0.006f * (float)env->weapon_level[PS_WEAPON_ORBIT];
+    env->orbit_phase += env->cfg.orbit_phase_speed
+        + env->cfg.orbit_phase_per_level
+            * (float)env->weapon_level[PS_WEAPON_ORBIT];
     ps_update_areas(env);
     ps_update_poison_oil_trail(env, env->weapon_level[PS_WEAPON_INK]);
 
@@ -965,7 +1194,7 @@ static inline void ps_reset_core(PufferSurvivors* env, int clear_outputs) {
     env->pvx = 0.0f;
     env->pvy = 0.0f;
     env->player_facing_left = 0;
-    env->max_hp = fmaxf(1.0f, floorf(env->cfg.player_health));
+    env->max_hp = floorf(env->cfg.player_health);
     env->hp = env->max_hp;
     env->xp = 0.0f;
     env->level = 1;
@@ -983,11 +1212,10 @@ static inline void ps_reset_core(PufferSurvivors* env, int clear_outputs) {
     memset(env->weapon_active, 0, sizeof(env->weapon_active));
     memset(env->weapon_level, 0, sizeof(env->weapon_level));
     env->weapon_level[PS_WEAPON_BUBBLE] = 1;
-    if (env->cfg.free_upgrade >= 0 && env->cfg.free_upgrade < PS_UPGRADE_COUNT) {
-        int count = env->cfg.free_upgrade_count > 0 ? env->cfg.free_upgrade_count : 0;
+    if (env->cfg.free_upgrade >= 0) {
+        int count = env->cfg.free_upgrade_count;
         for (int i = 0; i < count; i++) {
             ps_apply_upgrade_effect(env, env->cfg.free_upgrade);
-            env->episode_upgrade_counts[env->cfg.free_upgrade] += 1.0f;
         }
     }
     env->orbit_phase = ps_randf(env) * 2.0f * PI;
@@ -1014,8 +1242,6 @@ static inline void ps_reset_core(PufferSurvivors* env, int clear_outputs) {
     env->episode_peak_enemies = 0.0f;
     env->episode_peak_projectiles = 0.0f;
     env->episode_min_hp = env->hp;
-    memset(env->episode_upgrade_counts, 0, sizeof(env->episode_upgrade_counts));
-    memset(env->episode_move_counts, 0, sizeof(env->episode_move_counts));
     ps_clear_entities(env);
     ps_spawn_obstacles(env);
     ps_compute_observations(env);
@@ -1042,14 +1268,13 @@ static inline void c_step(PufferSurvivors* env) {
     };
     int action = (int)env->agents[0].actions[0];
     action = action < 0 ? 0 : (action > 8 ? 8 : action);
-    env->episode_move_counts[action] += 1.0f;
     float speed = env->cfg.player_speed * (1.0f + env->speed_bonus);
     float target_vx = dirs[action][0] * speed;
     float target_vy = dirs[action][1] * speed;
     if (target_vx < -0.001f) env->player_facing_left = 1;
     else if (target_vx > 0.001f) env->player_facing_left = 0;
-    env->pvx += (target_vx - env->pvx) * 0.35f;
-    env->pvy += (target_vy - env->pvy) * 0.35f;
+    env->pvx += (target_vx - env->pvx) * env->cfg.movement_smoothing;
+    env->pvy += (target_vy - env->pvy) * env->cfg.movement_smoothing;
     float v2 = env->pvx * env->pvx + env->pvy * env->pvy;
     if (v2 > speed * speed) {
         float inv = speed / sqrtf(v2);
@@ -1058,8 +1283,9 @@ static inline void c_step(PufferSurvivors* env) {
     }
     env->px += env->pvx;
     env->py += env->pvy;
-    ps_push_out_obstacles(env, &env->px, &env->py, 0.42f, 1);
+    ps_push_out_obstacles(env, &env->px, &env->py, env->cfg.player_radius, 1);
     ps_recycle_far_obstacles(env);
+    ps_update_moving_obstacles(env);
 
     ps_wave_spawns(env);
     ps_update_enemies(env);

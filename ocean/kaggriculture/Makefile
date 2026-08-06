@@ -1,0 +1,53 @@
+ROOT := ../..
+CC ?= clang
+BUILD := build
+LIB := $(BUILD)/libkaggriculture.so
+CFLAGS ?= -O3 -std=c17 -Wall -Wextra -Werror -fPIC
+
+.PHONY: all lib parity bench hotpath adapter eval metagame native-test test clean
+
+all: lib
+
+lib: $(LIB)
+
+$(BUILD):
+	mkdir -p $(BUILD)
+
+$(LIB): kaggriculture_core.c kaggriculture_core.h | $(BUILD)
+	$(CC) $(CFLAGS) -shared kaggriculture_core.c -lm -o $@
+
+parity: $(LIB)
+	$(ROOT)/../.venv/bin/python parity.py --lib $(LIB)
+
+bench: $(LIB)
+	$(ROOT)/../.venv/bin/python parity.py --lib $(LIB) --bench
+
+hotpath: | $(BUILD)
+	$(CC) -O3 -std=c17 -Wall -Wextra -Werror \
+		-I$(ROOT) -I$(ROOT)/src -I$(ROOT)/vendor -I$(ROOT)/raylib-5.5_linux_amd64/include \
+		bench_hotpath.c $(ROOT)/raylib-5.5_linux_amd64/lib/libraylib.a \
+		-lGL -lm -lpthread -o $(BUILD)/bench_hotpath
+	$(BUILD)/bench_hotpath
+
+adapter: | $(BUILD)
+	$(CC) -O3 -std=c17 -Wall -Wextra -Werror \
+		-I$(ROOT) -I$(ROOT)/src -I$(ROOT)/vendor -I$(ROOT)/raylib-5.5_linux_amd64/include \
+		tests/test_adapter.c $(ROOT)/raylib-5.5_linux_amd64/lib/libraylib.a \
+		-lGL -lm -lpthread -o $(BUILD)/test_adapter
+	$(BUILD)/test_adapter
+
+eval: | $(BUILD)
+	$(CC) -O3 -std=c17 -Wall -Wextra -Werror \
+		eval.c kaggriculture_core.c -lm -o $(BUILD)/kaggriculture_eval
+	$(BUILD)/kaggriculture_eval --episodes 32
+
+metagame: | $(BUILD)
+	$(CC) -O3 -std=c17 -Wall -Wextra -Werror metagame.c -lm \
+		-o $(BUILD)/kaggriculture_metagame
+
+native-test: adapter eval
+
+test: native-test parity
+
+clean:
+	rm -rf $(BUILD)

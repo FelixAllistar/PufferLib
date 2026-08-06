@@ -45,11 +45,6 @@ struct Log {
     float peak_enemies;
     float peak_projectiles;
     float min_hp;
-    float upgrade_counts[PS_UPGRADE_COUNT];
-    float win_upgrade_counts[PS_UPGRADE_COUNT];
-    float move_counts[9];
-    float win_move_counts[9];
-    float env_id;
 };
 
 #ifdef __cplusplus

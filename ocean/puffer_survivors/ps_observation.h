@@ -59,9 +59,9 @@ static inline void ps_compute_observations(PufferSurvivors* env) {
     memset(obs, 0, PS_OBS_SIZE * sizeof(float));
 
     int idx = 0;
-    int wave_len = env->cfg.wave_length_steps > 0 ? env->cfg.wave_length_steps : 600;
+    int wave_len = env->cfg.wave_length_steps;
     int wave = ps_wave_index(env);
-    int boss_period = 900;
+    int boss_period = env->cfg.boss_period_steps;
 
     // Player/global features. Unbounded counters use soft normalization rather
     // than clipping, so wave 30 remains distinguishable from wave 100.
@@ -181,7 +181,7 @@ static inline void ps_compute_observations(PufferSurvivors* env) {
         sector_pressure[sector] = fminf(sector_pressure[sector] + 0.12f * threat, 1.0f);
         sector_front[sector] = fmaxf(sector_front[sector], proximity);
 
-        float clearance = fmaxf(d - (env->enemies.radius[i] + 0.42f), 0.0f);
+        float clearance = fmaxf(d - (env->enemies.bound_radius[i] + env->cfg.player_radius), 0.0f);
         float closing = -(env->enemies.vx[i] * dx + env->enemies.vy[i] * dy) / fmaxf(d, 0.001f);
         float ttc = clearance / fmaxf(closing, 0.001f);
         sector_ttc[sector] = fmaxf(sector_ttc[sector], 1.0f - ps_clampf(ttc / 180.0f, 0.0f, 1.0f));
@@ -288,9 +288,10 @@ static inline void ps_compute_observations(PufferSurvivors* env) {
 
     if (env->cfg.observation_version == 8 && nearest_obstacle_d2 < 1e29f) {
         float center_dist = sqrtf(nearest_obstacle_d2);
-        float clearance = fmaxf(center_dist - nearest_obstacle_radius - 0.42f, 0.0f);
+        float clearance = fmaxf(center_dist - nearest_obstacle_radius - env->cfg.player_radius, 0.0f);
         obs[alt_c_idx] = ps_clampf(clearance * inv_observe_radius, 0.0f, 1.0f);
-        obs[alt_d_idx] = ps_clampf(nearest_obstacle_radius / 1.1f, 0.0f, 1.0f);
+        float obstacle_radius_norm = fmaxf(env->cfg.obstacle_radius_max, 1.1f);
+        obs[alt_d_idx] = ps_clampf(nearest_obstacle_radius / obstacle_radius_norm, 0.0f, 1.0f);
     }
 
     if (env->cfg.observation_version == 6 || env->cfg.observation_version >= 9) {
@@ -338,7 +339,7 @@ static inline void ps_compute_observations(PufferSurvivors* env) {
         int level = env->weapon_level[i];
         float cd_total = ps_weapon_cooldown_total(env, i);
         float ready = level > 0 ? 1.0f - ps_clampf(env->weapon_cd[i] / cd_total, 0.0f, 1.0f) : 0.0f;
-        obs[idx++] = (float)level / 8.0f;
+        obs[idx++] = (float)level / (float)env->cfg.weapon_max_level;
         obs[idx++] = ready;
         obs[idx++] = ps_clampf(env->weapon_active[i], 0.0f, 1.0f);
         obs[idx++] = ps_weapon_power(env, i);
@@ -355,6 +356,48 @@ static inline void ps_compute_observations(PufferSurvivors* env) {
     }
 
     idx += PS_EXACT_OBSTACLE_FEATURES;
+
+    // Moving hazards are presented as a stable set of nearest-distance slots,
+    // rather than raw pool indices. Each slot is:
+    // active, type (0 anchor/1 submarine), player-relative dx, player-relative dy.
+    // The coordinates are translated into the player's frame and clipped to
+    // the observation radius. Do not bake velocity, proximity, or collision
+    // predictions into this: the policy gets the raw geometry and can learn
+    // the consequences from the transition stream.
+    int moving_idx[PS_MOVING_OBSTACLE_SLOTS];
+    float moving_score[PS_MOVING_OBSTACLE_SLOTS];
+    for (int s = 0; s < PS_MOVING_OBSTACLE_SLOTS; s++) {
+        moving_idx[s] = -1;
+        moving_score[s] = 1e30f;
+    }
+    for (int k = 0; k < env->moving_obstacle_count; k++) {
+        int i = env->moving_obstacles.dense[k];
+        float dx = env->moving_obstacles.x[i] - env->px;
+        float dy = env->moving_obstacles.y[i] - env->py;
+        float d2 = dx * dx + dy * dy;
+        for (int s = 0; s < PS_MOVING_OBSTACLE_SLOTS; s++) {
+            if (d2 >= moving_score[s]) continue;
+            for (int j = PS_MOVING_OBSTACLE_SLOTS - 1; j > s; j--) {
+                moving_score[j] = moving_score[j - 1];
+                moving_idx[j] = moving_idx[j - 1];
+            }
+            moving_score[s] = d2;
+            moving_idx[s] = i;
+            break;
+        }
+    }
+    for (int s = 0; s < PS_MOVING_OBSTACLE_SLOTS; s++) {
+        int o = PS_OBS_MOVING_OBSTACLE_BASE + s * PS_MOVING_OBSTACLE_FEATURES;
+        int i = moving_idx[s];
+        if (i < 0) continue;
+        float dx = env->moving_obstacles.x[i] - env->px;
+        float dy = env->moving_obstacles.y[i] - env->py;
+        obs[o + 0] = 1.0f;
+        obs[o + 1] = env->moving_obstacles.type[i] == PS_MOVING_OBSTACLE_SUBMARINE ? 1.0f : 0.0f;
+        obs[o + 2] = ps_clampf(dx * inv_observe_radius, -1.0f, 1.0f);
+        obs[o + 3] = ps_clampf(dy * inv_observe_radius, -1.0f, 1.0f);
+    }
+    idx += PS_MOVING_OBSTACLE_OBS_FEATURES;
 
     if (idx != PS_OBS_SIZE) {
         fprintf(stderr, "Puffer Survivors observation layout mismatch: %d != %d\n", idx, PS_OBS_SIZE);

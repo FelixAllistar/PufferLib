@@ -1,0 +1,588 @@
+#!/bin/bash
+set -uo pipefail
+
+cd "$(dirname "$0")/../.."
+
+kag_games=50
+kag_jobs=4
+kag_output=logs/kaggriculture/population
+kag_final_only=0
+kag_sample_run=0
+kag_percentages=
+kag_range=
+kag_latest_run=0
+kag_include_emag=0
+kag_fixed=pass,rules
+kag_stage=4
+kag_preunlocked_land=0
+kag_inputs=()
+
+kag_usage() {
+    printf '%s\n' \
+        "Usage: $0 [options] [CHECKPOINT_OR_DIRECTORY ...]" \
+        "" \
+        "Options:" \
+        "  --games N          Total games per pairing, split across both seats (default 50)" \
+        "  --jobs N           Parallel pairings (default 4)" \
+        "  --output PREFIX    Output prefix (default logs/kaggriculture/population)" \
+        "  --fixed LIST       Comma-separated fixed sides (default pass,rules; use none to disable)" \
+        "  --stage N          Evaluator curriculum stage 1..6 (default 4)" \
+        "  --preunlocked-land 0|1|2  Normal, paid 50-tile, or NE-only drill" \
+        "  --final-only       Keep only the lexically last raw checkpoint in each run directory" \
+        "  --sample-run N     Evenly sample at most N numeric checkpoints per run directory" \
+        "  --percentages LIST Select numeric checkpoints nearest comma-separated percentages" \
+        "  --range A:B:N      Select N checkpoints spanning A through B percent" \
+        "  --latest-run       Add the newest non-sweep checkpoint directory" \
+        "  --include-emag     Include *.bin.emag files" \
+        "  -h, --help         Show this help" \
+        "" \
+        "Directories are scanned recursively. Without inputs, the active saved league is evaluated." \
+        "Examples:" \
+        "  $0 --sample-run 12 saved/kaggriculture_league checkpoints/kaggriculture/NEW_RUN" \
+        "  $0 --final-only checkpoints/kaggriculture" \
+        "  $0 --games 100 --output logs/kaggriculture/confirm saved/kaggriculture_league"
+}
+
+while (($#)); do
+    case "$1" in
+        --games) kag_games=$2; shift 2 ;;
+        --jobs) kag_jobs=$2; shift 2 ;;
+        --output) kag_output=$2; shift 2 ;;
+        --fixed) kag_fixed=$2; shift 2 ;;
+        --stage) kag_stage=$2; shift 2 ;;
+        --preunlocked-land) kag_preunlocked_land=$2; shift 2 ;;
+        --final-only) kag_final_only=1; shift ;;
+        --sample-run) kag_sample_run=$2; shift 2 ;;
+        --percentages) kag_percentages=$2; shift 2 ;;
+        --range) kag_range=$2; shift 2 ;;
+        --latest-run) kag_latest_run=1; shift ;;
+        --include-emag) kag_include_emag=1; shift ;;
+        -h|--help) kag_usage; exit 0 ;;
+        --*) printf 'Unknown option: %s\n' "$1" >&2; kag_usage >&2; exit 2 ;;
+        *) kag_inputs+=("$1"); shift ;;
+    esac
+done
+
+if ! [[ $kag_games =~ ^[0-9]+$ ]] || ((kag_games < 2 || kag_games % 2)); then
+    printf '%s\n' '--games must be a positive even integer of at least 2' >&2
+    exit 2
+fi
+if ! [[ $kag_stage =~ ^[1-6]$ ]]; then
+    printf '%s\n' '--stage must be an integer from 1 through 6' >&2
+    exit 2
+fi
+if ! [[ $kag_preunlocked_land =~ ^[012]$ ]]; then
+    printf '%s\n' '--preunlocked-land must be 0, 1, or 2' >&2
+    exit 2
+fi
+if ! [[ $kag_jobs =~ ^[0-9]+$ ]] || ((kag_jobs < 1)); then
+    printf '%s\n' '--jobs must be a positive integer' >&2
+    exit 2
+fi
+if ! [[ $kag_sample_run =~ ^[0-9]+$ ]]; then
+    printf '%s\n' '--sample-run must be a nonnegative integer' >&2
+    exit 2
+fi
+if [[ -n $kag_percentages ]]; then
+    IFS=',' read -r -a kag_percentage_values <<< "$kag_percentages"
+    for kag_pct in "${kag_percentage_values[@]}"; do
+        if ! [[ $kag_pct =~ ^[0-9]+$ ]] || ((kag_pct > 100)); then
+            printf '%s\n' '--percentages values must be integers from 0 through 100' >&2
+            exit 2
+        fi
+    done
+fi
+if [[ -n $kag_range ]]; then
+    if ! [[ $kag_range =~ ^([0-9]+):([0-9]+):([0-9]+)$ ]]; then
+        printf '%s\n' '--range must have the form START_PERCENT:END_PERCENT:COUNT' >&2
+        exit 2
+    fi
+    kag_range_start=${BASH_REMATCH[1]}
+    kag_range_end=${BASH_REMATCH[2]}
+    kag_range_count=${BASH_REMATCH[3]}
+    if ((kag_range_start > kag_range_end || kag_range_end > 100
+            || kag_range_count < 2)); then
+        printf '%s\n' '--range requires 0 <= START <= END <= 100 and COUNT >= 2' >&2
+        exit 2
+    fi
+fi
+kag_selector_count=$((kag_final_only + (kag_sample_run > 0)))
+[[ -n $kag_percentages ]] && ((kag_selector_count++))
+[[ -n $kag_range ]] && ((kag_selector_count++))
+if ((kag_selector_count > 1)); then
+    printf '%s\n' '--final-only, --sample-run, --percentages, and --range are mutually exclusive' >&2
+    exit 2
+fi
+if [[ ! -x ./kaggriculture ]]; then
+    printf '%s\n' 'Build the native evaluator first: bash build.sh kaggriculture --fast' >&2
+    exit 1
+fi
+if ((${#kag_inputs[@]} == 0)); then
+    kag_inputs=(saved/kaggriculture_league)
+fi
+if ((kag_latest_run)); then
+    kag_latest=$(find checkpoints/kaggriculture -mindepth 2 -maxdepth 2 \
+        -type f -regextype posix-extended -regex '.*/[0-9]{16}\.bin' \
+        ! -path '*/sweep_*/*' -printf '%T@\t%h\n' | sort -nr \
+        | awk -F '\t' 'NR == 1 {print $2}')
+    if [[ -z $kag_latest ]]; then
+        printf '%s\n' 'No non-sweep Kaggriculture checkpoint run found' >&2
+        exit 1
+    fi
+    kag_inputs+=("$kag_latest")
+    printf 'Newest run: %s\n' "$kag_latest"
+fi
+
+declare -A kag_seen_path=()
+kag_paths=()
+kag_add_path() {
+    local kag_path=$1
+    [[ -f $kag_path ]] || return
+    if [[ $kag_path == *.bin.emag && $kag_include_emag -eq 0 ]]; then
+        return
+    fi
+    if [[ -z ${kag_seen_path["$kag_path"]+x} ]]; then
+        kag_seen_path["$kag_path"]=1
+        kag_paths+=("$kag_path")
+    fi
+}
+
+kag_add_named_files() {
+    local kag_root=$1 kag_path kag_base
+    while IFS= read -r kag_path; do
+        kag_base=${kag_path##*/}
+        kag_base=${kag_base%.emag}
+        kag_base=${kag_base%.bin}
+        [[ $kag_base =~ ^[0-9]{16}$ ]] || kag_add_path "$kag_path"
+    done < <(find "$kag_root" -type f \
+        \( -name '*.bin' -o -name '*.bin.emag' \) -print | sort)
+}
+
+kag_add_numeric_runs() {
+    local kag_root=$1 kag_limit=$2 kag_dir kag_count kag_pick kag_idx kag_path
+    while IFS= read -r kag_dir; do
+        mapfile -t kag_files < <(find "$kag_dir" -maxdepth 1 -type f \
+            -regextype posix-extended -regex '.*/[0-9]{16}\.bin' -print | sort)
+        kag_count=${#kag_files[@]}
+        ((kag_count)) || continue
+        if ((kag_limit == 1)); then
+            kag_add_path "${kag_files[kag_count-1]}"
+            if ((kag_include_emag)) && [[ -f ${kag_files[kag_count-1]}.emag ]]; then
+                kag_add_path "${kag_files[kag_count-1]}.emag"
+            fi
+            continue
+        fi
+        if ((kag_limit == 0 || kag_count <= kag_limit)); then
+            for kag_path in "${kag_files[@]}"; do
+                kag_add_path "$kag_path"
+                if ((kag_include_emag)) && [[ -f $kag_path.emag ]]; then
+                    kag_add_path "$kag_path.emag"
+                fi
+            done
+            continue
+        fi
+        for ((kag_pick=0; kag_pick<kag_limit; kag_pick++)); do
+            kag_idx=$((kag_pick * (kag_count - 1) / (kag_limit - 1)))
+            kag_path=${kag_files[kag_idx]}
+            kag_add_path "$kag_path"
+            if ((kag_include_emag)) && [[ -f $kag_path.emag ]]; then
+                kag_add_path "$kag_path.emag"
+            fi
+        done
+    done < <(find "$kag_root" -type f -regextype posix-extended \
+        -regex '.*/[0-9]{16}\.bin' -printf '%h\n' | sort -u)
+}
+
+kag_add_numeric_percentages() {
+    local kag_root=$1 kag_dir kag_count kag_pct kag_idx kag_path
+    while IFS= read -r kag_dir; do
+        mapfile -t kag_files < <(find "$kag_dir" -maxdepth 1 -type f \
+            -regextype posix-extended -regex '.*/[0-9]{16}\.bin' -print | sort)
+        kag_count=${#kag_files[@]}
+        ((kag_count)) || continue
+        for kag_pct in "${kag_percentage_values[@]}"; do
+            kag_idx=$(((kag_pct * (kag_count - 1) + 50) / 100))
+            kag_path=${kag_files[kag_idx]}
+            kag_add_path "$kag_path"
+            if ((kag_include_emag)) && [[ -f $kag_path.emag ]]; then
+                kag_add_path "$kag_path.emag"
+            fi
+        done
+    done < <(find "$kag_root" -type f -regextype posix-extended \
+        -regex '.*/[0-9]{16}\.bin' -printf '%h\n' | sort -u)
+}
+
+kag_add_numeric_range() {
+    local kag_root=$1 kag_dir kag_count kag_first kag_last kag_pick kag_idx kag_path
+    while IFS= read -r kag_dir; do
+        mapfile -t kag_files < <(find "$kag_dir" -maxdepth 1 -type f \
+            -regextype posix-extended -regex '.*/[0-9]{16}\.bin' -print | sort)
+        kag_count=${#kag_files[@]}
+        ((kag_count)) || continue
+        kag_first=$(((kag_range_start * (kag_count - 1) + 50) / 100))
+        kag_last=$(((kag_range_end * (kag_count - 1) + 50) / 100))
+        for ((kag_pick=0; kag_pick<kag_range_count; kag_pick++)); do
+            kag_idx=$((kag_first + kag_pick * (kag_last - kag_first) / (kag_range_count - 1)))
+            kag_path=${kag_files[kag_idx]}
+            kag_add_path "$kag_path"
+            if ((kag_include_emag)) && [[ -f $kag_path.emag ]]; then
+                kag_add_path "$kag_path.emag"
+            fi
+        done
+    done < <(find "$kag_root" -type f -regextype posix-extended \
+        -regex '.*/[0-9]{16}\.bin' -printf '%h\n' | sort -u)
+}
+
+for kag_input in "${kag_inputs[@]}"; do
+    if [[ -f $kag_input ]]; then
+        kag_add_path "$kag_input"
+    elif [[ -d $kag_input ]]; then
+        if ((kag_final_only)); then
+            kag_add_named_files "$kag_input"
+            kag_add_numeric_runs "$kag_input" 1
+        elif ((kag_sample_run)); then
+            kag_add_named_files "$kag_input"
+            kag_add_numeric_runs "$kag_input" "$kag_sample_run"
+        elif [[ -n $kag_percentages ]]; then
+            kag_add_named_files "$kag_input"
+            kag_add_numeric_percentages "$kag_input"
+        elif [[ -n $kag_range ]]; then
+            kag_add_named_files "$kag_input"
+            kag_add_numeric_range "$kag_input"
+        else
+            while IFS= read -r kag_path; do
+                kag_add_path "$kag_path"
+            done < <(find "$kag_input" -type f \
+                \( -name '*.bin' -o -name '*.bin.emag' \) -print | sort)
+        fi
+    else
+        printf 'Input does not exist: %s\n' "$kag_input" >&2
+        exit 1
+    fi
+done
+
+kag_count=${#kag_paths[@]}
+if ((kag_count < 2)); then
+    printf 'Need at least two checkpoints; found %d\n' "$kag_count" >&2
+    exit 1
+fi
+if ((kag_count > 32)); then
+    printf 'Refusing an accidental %d-policy O(N^2) evaluation; use --final-only or narrower inputs\n' \
+        "$kag_count" >&2
+    exit 1
+fi
+
+kag_names=()
+declare -A kag_seen_name=()
+for kag_path in "${kag_paths[@]}"; do
+    kag_base=${kag_path##*/}
+    kag_base=${kag_base%.emag}
+    kag_base=${kag_base%.bin}
+    kag_parent=${kag_path%/*}
+    kag_parent=${kag_parent##*/}
+    if [[ $kag_base =~ ^[0-9]{16}$ ]]; then
+        kag_step=$((10#$kag_base))
+        kag_millions=$(awk -v n="$kag_step" 'BEGIN {printf "%.2fM", n/1000000}')
+        kag_name="${kag_parent}@${kag_millions}"
+    else
+        kag_name=$kag_base
+        [[ $kag_path == *.emag ]] && kag_name="${kag_name}.emag"
+    fi
+    if [[ -n ${kag_seen_name["$kag_name"]+x} ]]; then
+        kag_name="${kag_parent}:${kag_name}"
+    fi
+    kag_seen_name["$kag_name"]=1
+    kag_names+=("$kag_name")
+done
+
+mkdir -p "$(dirname "$kag_output")"
+kag_manifest="${kag_output}_manifest.tsv"
+kag_matches="${kag_output}_matches.tsv"
+kag_matrix="${kag_output}_matrix.tsv"
+kag_ranking="${kag_output}_ranking.tsv"
+kag_cycles="${kag_output}_cycles.tsv"
+kag_trajectory="${kag_output}_trajectory.tsv"
+kag_fixed_out="${kag_output}_fixed.tsv"
+kag_tmp=$(mktemp -d)
+trap 'rm -r "$kag_tmp"' EXIT
+
+printf 'id\tpolicy\tcheckpoint\n' > "$kag_manifest"
+for ((kag_i=0; kag_i<kag_count; kag_i++)); do
+    printf '%d\t%s\t%s\n' "$kag_i" "${kag_names[kag_i]}" \
+        "${kag_paths[kag_i]}" >> "$kag_manifest"
+done
+
+kag_games_per_seat=$((kag_games / 2))
+kag_steps=$((kag_games_per_seat * 720))
+kag_pairs=$((kag_count * (kag_count - 1) / 2))
+printf 'Evaluating %d policies: %d pairs, %d games/pair (%d/seat), %d jobs\n' \
+    "$kag_count" "$kag_pairs" "$kag_games" "$kag_games_per_seat" "$kag_jobs"
+
+kag_parse_summary() {
+    awk '/agent-steps\/s/ {
+        for (i=1; i<=NF; i++) {
+            if ($i ~ /^score=/) {score=$i; sub(/^score=/,"",score); gsub(/,/,"",score)}
+            if ($i ~ /^draw=/) {draw=$i; sub(/^draw=/,"",draw); gsub(/,/,"",draw)}
+            if ($i ~ /^avg_money=/) {
+                a=$i; sub(/^avg_money=\(/,"",a); gsub(/,/,"",a)
+                b=$(i+1); gsub(/[(),]/,"",b)
+            }
+        }
+        print score, draw, a, b
+        exit
+    }'
+}
+
+kag_run_pair() {
+    local kag_i=$1 kag_j=$2 kag_a=$3 kag_b=$4 kag_result=$5
+    local kag_forward kag_reverse kag_sf kag_df kag_af kag_bf
+    local kag_sr kag_dr kag_br kag_ar kag_score kag_draw kag_money_a kag_money_b
+    if ! kag_forward=$(KAG_STAGE="$kag_stage" \
+            KAG_PREUNLOCKED_LAND="$kag_preunlocked_land" ./kaggriculture bench \
+            "$kag_steps" "$kag_a" "$kag_b" 2>&1); then
+        printf '%s\n' "$kag_forward" > "${kag_result}.error"
+        return 1
+    fi
+    if ! kag_reverse=$(KAG_STAGE="$kag_stage" \
+            KAG_PREUNLOCKED_LAND="$kag_preunlocked_land" ./kaggriculture bench \
+            "$kag_steps" "$kag_b" "$kag_a" 2>&1); then
+        printf '%s\n' "$kag_reverse" > "${kag_result}.error"
+        return 1
+    fi
+    read -r kag_sf kag_df kag_af kag_bf < <(printf '%s\n' "$kag_forward" | kag_parse_summary)
+    read -r kag_sr kag_dr kag_br kag_ar < <(printf '%s\n' "$kag_reverse" | kag_parse_summary)
+    if [[ -z ${kag_sf:-} || -z ${kag_sr:-} ]]; then
+        printf '%s\n%s\n' "$kag_forward" "$kag_reverse" > "${kag_result}.error"
+        return 1
+    fi
+    read -r kag_score kag_draw kag_money_a kag_money_b < <(awk \
+        -v sf="$kag_sf" -v sr="$kag_sr" -v df="$kag_df" -v dr="$kag_dr" \
+        -v af="$kag_af" -v ar="$kag_ar" -v bf="$kag_bf" -v br="$kag_br" \
+        'BEGIN {printf "%.6f %.6f %.3f %.3f\n", (sf+1-sr)/2, (df+dr)/2, (af+ar)/2, (bf+br)/2}')
+    printf '%s\t%s\t%s\t%s\t%s\t%s\n' "$kag_i" "$kag_j" "$kag_score" \
+        "$kag_draw" "$kag_money_a" "$kag_money_b" > "$kag_result"
+}
+
+kag_wait_slot() {
+    local kag_active
+    while :; do
+        kag_active=$(jobs -rp | wc -l)
+        ((kag_active < kag_jobs)) && return
+        wait -n || true
+    done
+}
+
+for ((kag_i=0; kag_i<kag_count; kag_i++)); do
+    for ((kag_j=kag_i+1; kag_j<kag_count; kag_j++)); do
+        kag_wait_slot
+        kag_run_pair "$kag_i" "$kag_j" "${kag_paths[kag_i]}" \
+            "${kag_paths[kag_j]}" "$kag_tmp/p_${kag_i}_${kag_j}.tsv" &
+    done
+done
+wait
+
+if find "$kag_tmp" -name '*.error' -print -quit | grep -q .; then
+    printf '%s\n' 'At least one matchup failed:' >&2
+    while IFS= read -r kag_error; do
+        printf '%s\n' "--- $kag_error ---" >&2
+        sed -n '1,20p' "$kag_error" >&2
+    done < <(find "$kag_tmp" -name '*.error' -print | sort)
+    exit 1
+fi
+
+declare -A kag_payoff=() kag_draws=() kag_money=()
+for ((kag_i=0; kag_i<kag_count; kag_i++)); do
+    kag_payoff["$kag_i,$kag_i"]=0.500000
+    kag_draws["$kag_i,$kag_i"]=0.000000
+    kag_money["$kag_i,$kag_i"]=0.000
+done
+printf 'a\tb\tscore_a\tdraw\tmoney_a\tmoney_b\n' > "$kag_matches"
+while IFS=$'\t' read -r kag_i kag_j kag_score kag_draw kag_money_a kag_money_b; do
+    kag_reverse_score=$(awk -v x="$kag_score" 'BEGIN {printf "%.6f", 1-x}')
+    kag_payoff["$kag_i,$kag_j"]=$kag_score
+    kag_payoff["$kag_j,$kag_i"]=$kag_reverse_score
+    kag_draws["$kag_i,$kag_j"]=$kag_draw
+    kag_draws["$kag_j,$kag_i"]=$kag_draw
+    kag_money["$kag_i,$kag_j"]=$kag_money_a
+    kag_money["$kag_j,$kag_i"]=$kag_money_b
+    printf '%s\t%s\t%s\t%s\t%s\t%s\n' "${kag_names[kag_i]}" \
+        "${kag_names[kag_j]}" "$kag_score" "$kag_draw" "$kag_money_a" \
+        "$kag_money_b" >> "$kag_matches"
+done < <(sort -t$'\t' -k1,1n -k2,2n "$kag_tmp"/p_*.tsv)
+
+{
+    printf 'policy'
+    printf '\t%s' "${kag_names[@]}"
+    printf '\n'
+    for ((kag_i=0; kag_i<kag_count; kag_i++)); do
+        printf '%s' "${kag_names[kag_i]}"
+        for ((kag_j=0; kag_j<kag_count; kag_j++)); do
+            printf '\t%s' "${kag_payoff["$kag_i,$kag_j"]}"
+        done
+        printf '\n'
+    done
+} > "$kag_matrix"
+
+if ! awk -F '\t' '
+        NR == 1 {
+            for (i = 2; i <= NF; i++) name[i-1] = $i
+            n = NF - 1
+            next
+        }
+        {
+            row = NR - 1
+            for (i = 2; i <= NF; i++) payoff[row,i-1] = $i
+        }
+        END {
+            for (i = 1; i <= n; i++) {
+                for (j = i + 1; j <= n; j++) {
+                    for (k = j + 1; k <= n; k++) {
+                        if (payoff[i,j] > 0.55 && payoff[j,k] > 0.55 && payoff[k,i] > 0.55) {
+                            edge = payoff[i,j]
+                            if (payoff[j,k] < edge) edge = payoff[j,k]
+                            if (payoff[k,i] < edge) edge = payoff[k,i]
+                            printf "%.6f\t%s\t%s\t%.6f\t%s\t%.6f\t%.6f\n",
+                                edge, name[i], name[j], payoff[i,j], name[k],
+                                payoff[j,k], payoff[k,i]
+                        }
+                        if (payoff[j,i] > 0.55 && payoff[k,j] > 0.55 && payoff[i,k] > 0.55) {
+                            edge = payoff[j,i]
+                            if (payoff[k,j] < edge) edge = payoff[k,j]
+                            if (payoff[i,k] < edge) edge = payoff[i,k]
+                            printf "%.6f\t%s\t%s\t%.6f\t%s\t%.6f\t%.6f\n",
+                                edge, name[j], name[i], payoff[j,i], name[k],
+                                payoff[k,j], payoff[i,k]
+                        }
+                    }
+                }
+            }
+        }
+    ' "$kag_matrix" | sort -t$'\t' -k1,1gr > "$kag_tmp/cycles.tsv"; then
+    printf '%s\n' 'Failed to derive non-transitive cycles' >&2
+    exit 1
+fi
+{
+    printf 'min_edge\ta\tb\tscore_ab\tc\tscore_bc\tscore_ca\n'
+    cat "$kag_tmp/cycles.tsv"
+} > "$kag_cycles"
+
+kag_rank_raw="$kag_tmp/ranking.tsv"
+: > "$kag_rank_raw"
+for ((kag_i=0; kag_i<kag_count; kag_i++)); do
+    kag_score_sum=0
+    kag_money_sum=0
+    for ((kag_j=0; kag_j<kag_count; kag_j++)); do
+        ((kag_i == kag_j)) && continue
+        kag_score_sum=$(awk -v a="$kag_score_sum" -v b="${kag_payoff["$kag_i,$kag_j"]}" \
+            'BEGIN {printf "%.9f", a+b}')
+        kag_money_sum=$(awk -v a="$kag_money_sum" -v b="${kag_money["$kag_i,$kag_j"]}" \
+            'BEGIN {printf "%.9f", a+b}')
+    done
+    kag_mean_score=$(awk -v x="$kag_score_sum" -v n="$((kag_count-1))" \
+        'BEGIN {printf "%.6f", x/n}')
+    kag_mean_money=$(awk -v x="$kag_money_sum" -v n="$((kag_count-1))" \
+        'BEGIN {printf "%.1f", x/n}')
+    printf '%s\t%s\t%s\n' "${kag_names[kag_i]}" "$kag_mean_score" \
+        "$kag_mean_money" >> "$kag_rank_raw"
+done
+{
+    printf 'rank\tpolicy\tmean_score\tmean_money\n'
+    sort -t$'\t' -k2,2gr "$kag_rank_raw" \
+        | awk -F '\t' 'BEGIN{OFS="\t"} {print NR,$1,$2,$3}'
+} > "$kag_ranking"
+
+kag_run_max="$kag_tmp/run_max.tsv"
+: > "$kag_run_max"
+declare -A kag_seen_run_max=()
+for kag_path in "${kag_paths[@]}"; do
+    kag_base=${kag_path##*/}
+    kag_base=${kag_base%.bin}
+    [[ $kag_base =~ ^[0-9]{16}$ ]] || continue
+    kag_parent=${kag_path%/*}
+    kag_run=${kag_parent##*/}
+    [[ -n ${kag_seen_run_max["$kag_parent"]+x} ]] && continue
+    kag_seen_run_max["$kag_parent"]=1
+    kag_latest_name=$(find "$kag_parent" -maxdepth 1 -type f \
+        -regextype posix-extended -regex '.*/[0-9]{16}\.bin' -printf '%f\n' \
+        | sort | tail -n 1)
+    kag_latest_name=${kag_latest_name%.bin}
+    printf '%s\t%d\n' "$kag_run" "$((10#$kag_latest_name))" >> "$kag_run_max"
+done
+
+awk -F '\t' -v rankfile="$kag_ranking" -v maxfile="$kag_run_max" '
+    FILENAME == rankfile {
+        if (FNR > 1) {score[$2] = $3; money[$2] = $4}
+        next
+    }
+    FILENAME == maxfile {
+        maximum[$1] = $2
+        next
+    }
+    FNR > 1 {
+        count = split($3, part, "/")
+        file = part[count]
+        if (length(file) != 20 || file !~ /^[0-9]+\.bin$/) next
+        run = part[count-1]
+        sub(/\.bin$/, "", file)
+        step = file + 0
+        rows++
+        row_run[rows] = run
+        row_step[rows] = step
+        row_policy[rows] = $2
+    }
+    END {
+        for (i = 1; i <= rows; i++) {
+            run = row_run[i]
+            pct = maximum[run] ? 100 * row_step[i] / maximum[run] : 0
+            printf "%s\t%.2f\t%.0f\t%s\t%s\t%s\n", run, pct,
+                row_step[i], row_policy[i], score[row_policy[i]], money[row_policy[i]]
+        }
+    }
+' "$kag_ranking" "$kag_run_max" "$kag_manifest" | sort -t$'\t' -k1,1 -k3,3n \
+    > "$kag_tmp/trajectory.tsv"
+{
+    printf 'run\tpercent\tsteps\tpolicy\tmean_score\tmean_money\n'
+    cat "$kag_tmp/trajectory.tsv"
+} > "$kag_trajectory"
+
+printf 'policy\tfixed\tscore\tdraw\tmoney\tfixed_money\n' > "$kag_fixed_out"
+if [[ $kag_fixed != none && -n $kag_fixed ]]; then
+    IFS=',' read -r -a kag_fixed_sides <<< "$kag_fixed"
+    for ((kag_i=0; kag_i<kag_count; kag_i++)); do
+        for kag_side in "${kag_fixed_sides[@]}"; do
+            kag_wait_slot
+            kag_run_pair "$kag_i" "$kag_side" "${kag_paths[kag_i]}" "$kag_side" \
+                "$kag_tmp/f_${kag_i}_${kag_side}.tsv" &
+        done
+    done
+    wait
+    if find "$kag_tmp" -name 'f_*.error' -print -quit | grep -q .; then
+        printf '%s\n' 'At least one fixed-opponent matchup failed' >&2
+        exit 1
+    fi
+    for ((kag_i=0; kag_i<kag_count; kag_i++)); do
+        for kag_side in "${kag_fixed_sides[@]}"; do
+            IFS=$'\t' read -r _ _ kag_score kag_draw kag_money_a kag_money_b \
+                < "$kag_tmp/f_${kag_i}_${kag_side}.tsv"
+            printf '%s\t%s\t%s\t%s\t%s\t%s\n' "${kag_names[kag_i]}" "$kag_side" \
+                "$kag_score" "$kag_draw" "$kag_money_a" "$kag_money_b" \
+                >> "$kag_fixed_out"
+        done
+    done
+fi
+
+if command -v column >/dev/null 2>&1; then
+    column -t -s $'\t' "$kag_ranking"
+else
+    cat "$kag_ranking"
+fi
+if [[ $(wc -l < "$kag_cycles") -gt 1 ]]; then
+    printf '%s\n' 'Strongest non-transitive cycles (A > B > C > A):'
+    if command -v column >/dev/null 2>&1; then
+        head -n 6 "$kag_cycles" | column -t -s $'\t'
+    else
+        head -n 6 "$kag_cycles"
+    fi
+fi
+printf 'Wrote %s, %s, %s, %s, %s, %s, and %s\n' "$kag_manifest" "$kag_matches" \
+    "$kag_matrix" "$kag_ranking" "$kag_cycles" "$kag_trajectory" "$kag_fixed_out"

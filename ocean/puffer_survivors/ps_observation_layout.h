@@ -13,14 +13,15 @@ enum {
     PS_OBS_WEAPON_BASE = PS_OBS_AREA_BASE + PS_SECTORS * PS_AREA_CHANNELS,
     PS_OBS_UPGRADE_BASE = PS_OBS_WEAPON_BASE + PS_WEAPON_FEATURES,
     PS_OBS_EXACT_OBSTACLE_BASE = PS_OBS_UPGRADE_BASE + PS_UPGRADE_SLOTS * PS_UPGRADE_FEATURES,
-    PS_OBS_END = PS_OBS_EXACT_OBSTACLE_BASE + PS_EXACT_OBSTACLE_FEATURES,
+    PS_OBS_MOVING_OBSTACLE_BASE = PS_OBS_EXACT_OBSTACLE_BASE + PS_EXACT_OBSTACLE_FEATURES,
+    PS_OBS_END = PS_OBS_MOVING_OBSTACLE_BASE + PS_MOVING_OBSTACLE_OBS_FEATURES,
 };
 
 // Runtime-selectable legacy/POI slots. Version 6 contains projectile count and
 // Bubble readiness; version 7 replaces those with exact health-drop direction;
 // Version 8 was the experimental semantic-replacement layout. Version 9 keeps
-// the complete v6 prefix intact and appends exact obstacle dx/dy bins, allowing
-// legacy checkpoints to migrate by zero-padding only the new encoder columns.
+// the complete v6 prefix intact and appends exact obstacle dx/dy bins followed
+// by fixed moving-hazard slots. The latter changes the policy input width.
 enum {
     PS_PLAYER_ALT_A = 9,
     PS_PLAYER_ALT_B = 11,

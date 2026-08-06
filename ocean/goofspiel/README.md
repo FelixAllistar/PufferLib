@@ -114,6 +114,30 @@ population. The intended loop is restricted-population self-play: evaluate the
 matrix, solve a meta-strategy over it, train a response against that weighted
 mixture, then admit the response only if it adds strategic coverage.
 
+Behavioral diversity can be measured independently of payoff. Build the native
+reachable-state policy evaluator, then scan every raw and EMAg checkpoint in a
+population:
+
+```bash
+bash build.sh goofspiel --behavior-gpu
+ocean/goofspiel/eval_population.sh population64x1 0 0.002 jsd
+python3 scripts/goofspiel_behavior.py \
+    logs/goofspiel/population64x1_behavior.tsv \
+    --similarity 0.05 --minimum-distance 0.05 --max-policies 32
+
+# Prefer behaviorally far-apart checkpoints, including weaker early policies:
+python3 scripts/goofspiel_behavior.py \
+    logs/goofspiel/population64x1_behavior.tsv \
+    --strategy farthest --max-policies 16 \
+    --output logs/goofspiel/population64x1_behavior_farthest16
+```
+
+The native tool compares action distributions on the identical exact state tree
+and reports Jensen-Shannon divergence, Jensen-Shannon distance, total variation,
+and exact exploitability. The Python step is offline grouping only: it writes
+near-duplicate behavior groups and a diverse representative list. It does not
+change training or the environment.
+
 ## Online exact response
 
 Four-card training can replace frozen-bank actions with the exact response to

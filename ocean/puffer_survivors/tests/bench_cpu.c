@@ -14,6 +14,14 @@ static double now_seconds(void) {
     return (double)ts.tv_sec + (double)ts.tv_nsec * 1e-9;
 }
 
+static PSConfig bench_config_from_ini(void) {
+    Ini ini = {0};
+    puf_ini_load_env(&ini, "puffer_survivors", 0, NULL);
+    PSConfig cfg = ps_config_from_kwargs(puf_ini_section(&ini, "env", 0));
+    puf_ini_free(&ini);
+    return cfg;
+}
+
 int main(int argc, char** argv) {
     int num_envs = argc > 1 ? atoi(argv[1]) : 64;
     int steps = argc > 2 ? atoi(argv[2]) : 5000;
@@ -33,7 +41,7 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    PSConfig cfg = ps_default_config();
+    PSConfig cfg = bench_config_from_ini();
     cfg.player_health = 1000000.0f;
     cfg.max_steps = 1000000000;
     for (int e = 0; e < num_envs; e++) {

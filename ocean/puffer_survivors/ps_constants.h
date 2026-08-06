@@ -9,6 +9,7 @@
 #define PS_MAX_DROPS 256
 #define PS_MAX_OBSTACLES 32
 #define PS_MAX_AREAS 48
+#define PS_MAX_MOVING_OBSTACLES 8
 #define PS_GRID_W 32
 #define PS_GRID_H 32
 #define PS_GRID_CELLS (PS_GRID_W * PS_GRID_H)
@@ -23,11 +24,16 @@
 #define PS_DANGER_CHANNELS 4
 #define PS_AREA_CHANNELS 3
 #define PS_WEAPON_COUNT 5
+#define PS_ENEMY_KIND_COUNT 4
+#define PS_WAVE_TABLE_COUNT 24
 #define PS_WEAPON_FEATURES (PS_WEAPON_COUNT * 4)
 #define PS_UPGRADE_SLOTS 3
 #define PS_UPGRADE_FEATURES 6
 #define PS_EXACT_OBSTACLE_FEATURES (PS_SECTORS * PS_RINGS * 2)
-#define PS_OBS_VERSION 9
+#define PS_MOVING_OBSTACLE_SLOTS 4
+#define PS_MOVING_OBSTACLE_FEATURES 4
+#define PS_MOVING_OBSTACLE_OBS_FEATURES (PS_MOVING_OBSTACLE_SLOTS * PS_MOVING_OBSTACLE_FEATURES)
+#define PS_OBS_VERSION 10
 #define PS_OBS_SIZE (PS_PLAYER_FEATURES \
     + PS_BOSS_FEATURES \
     + PS_SECTORS * PS_RINGS * PS_ENEMY_CHANNELS \
@@ -37,7 +43,8 @@
     + PS_SECTORS * PS_AREA_CHANNELS \
     + PS_WEAPON_FEATURES \
     + PS_UPGRADE_SLOTS * PS_UPGRADE_FEATURES \
-    + PS_EXACT_OBSTACLE_FEATURES)
+    + PS_EXACT_OBSTACLE_FEATURES \
+    + PS_MOVING_OBSTACLE_OBS_FEATURES)
 
 #define PS_SPRITE_PLAYER 0
 #define PS_SPRITE_JELLY 1
@@ -60,6 +67,17 @@
 #define PS_ENEMY_ELITE_FLAG 8
 #define PS_ENEMY_BOSS_FLAG 16
 #define PS_ENEMY_ARI_K_FLAG 32
+
+typedef enum {
+    PS_SHAPE_CIRCLE = 0,
+    PS_SHAPE_AABB = 1,
+} PSShape;
+
+typedef enum {
+    PS_MOVING_OBSTACLE_ANCHOR = 0,
+    PS_MOVING_OBSTACLE_SUBMARINE = 1,
+    PS_MOVING_OBSTACLE_TYPE_COUNT = 2,
+} PSMovingObstacleType;
 
 typedef enum {
     PS_WEAPON_BUBBLE = 0,
@@ -86,7 +104,7 @@ typedef enum {
 } PSUpgradeId;
 
 #if defined(__cplusplus)
-static_assert(PS_OBS_SIZE == 396, "Unexpected Puffer Survivors observation size");
+static_assert(PS_OBS_SIZE == 412, "Unexpected Puffer Survivors observation size");
 #else
-_Static_assert(PS_OBS_SIZE == 396, "Unexpected Puffer Survivors observation size");
+_Static_assert(PS_OBS_SIZE == 412, "Unexpected Puffer Survivors observation size");
 #endif

@@ -32,7 +32,26 @@ static void assert_dense(const uint8_t* active, const int* dense, const int* den
     }
 }
 
+static PSConfig test_config_from_ini(void) {
+    Ini ini = {0};
+    puf_ini_load_env(&ini, "puffer_survivors", 0, NULL);
+    PSConfig cfg = ps_config_from_kwargs(puf_ini_section(&ini, "env", 0));
+    puf_ini_free(&ini);
+    return cfg;
+}
+
 int main(void) {
+    // The same INI arrays feed both the native CPU binding and the CUDA
+    // simulator. Check that list-valued gameplay config reaches PSConfig.
+    {
+        PSConfig ini_cfg = test_config_from_ini();
+        assert(ini_cfg.player_radius > 0.0f);
+        assert(ini_cfg.enemy_base_hp[0] > 0.0f);
+        assert(ini_cfg.weapon_base_damage[PS_WEAPON_INK] > 0.0f);
+        assert(ini_cfg.wave_minimum[PS_WAVE_TABLE_COUNT - 1] > 0);
+        assert(ini_cfg.wave_interval[PS_WAVE_TABLE_COUNT - 1] > 0);
+    }
+
     // A time-limit success must have identical, configurable reward semantics
     // on CPU and CUDA. Keep all unrelated shaping disabled for this check.
     {
@@ -48,7 +67,7 @@ int main(void) {
         terminal_env.agents[0].terminals = terminal_flags;
         terminal_env.num_agents = 1;
         terminal_env.rng = 1;
-        terminal_env.cfg = ps_default_config();
+        terminal_env.cfg = test_config_from_ini();
         terminal_env.cfg.max_steps = 1;
         terminal_env.cfg.player_health = 1000000.0f;
         terminal_env.cfg.reward_xp = 0.0f;
@@ -73,8 +92,6 @@ int main(void) {
         assert(fabsf(terminal_env.log.reward_terminal - 0.75f) < 1e-5f);
         assert(fabsf(terminal_env.log.episode_return -
             (terminal_env.log.reward_survival + terminal_env.log.reward_terminal)) < 1e-5f);
-        assert(fabsf(terminal_env.log.move_counts[0] - 1.0f) < 1e-5f);
-        assert(terminal_env.log.move_counts[1] == 0.0f);
     }
 
     PufferSurvivors env;
@@ -89,16 +106,20 @@ int main(void) {
     env.agents[0].terminals = terminals;
     env.num_agents = 1;
     env.rng = 1;
-    env.cfg = ps_default_config();
+    env.cfg = test_config_from_ini();
     env.cfg.max_steps = 5000;
     env.cfg.player_health = 1000000.0f;
     env.cfg.enemy_obstacle_stride = 2;
     ps_init(&env);
     c_reset(&env);
 
-    assert(PS_OBS_VERSION == 9);
-    assert(PS_OBS_SIZE == 396);
+    assert(PS_OBS_VERSION == 10);
+    assert(PS_OBS_SIZE == 412);
     assert_finite_observation(observations);
+    assert(ps_geometry_shape_overlaps_circle(PS_SHAPE_AABB,
+        4.0f, 0.0f, 0.0f, 4.65f, 4.65f, 0.5f));
+    assert(!ps_geometry_shape_overlaps_circle(PS_SHAPE_AABB,
+        5.3f, 0.0f, 0.0f, 4.65f, 4.65f, 0.5f));
 
     // Explicit boss slot: exact relative coordinates plus boss-specific state.
     ps_clear_entities(&env);
@@ -120,9 +141,9 @@ int main(void) {
     ps_compute_observations(&env);
     assert(observations[PS_OBS_BOSS_BASE + PS_BOSS_PRESENT] == 0.0f);
 
-    // V9 preserves the legacy obstacle density/proximity map and appends exact
+    // V10 preserves the legacy obstacle density/proximity map and appends exact
     // dx/dy in stable spatial bins. V6 remains a valid legacy prefix mode.
-    env.cfg.observation_version = 9;
+    env.cfg.observation_version = 10;
     env.cfg.obstacle_count = 2;
     env.obstacles.x[0] = env.px + 3.0f;
     env.obstacles.y[0] = env.py + 1.0f;
@@ -147,7 +168,7 @@ int main(void) {
     assert(observations[obstacle_slot] > 0.0f);
     assert(observations[obstacle_slot + 1] > 0.0f);
     assert(observations[exact_slot] == 0.0f);
-    env.cfg.observation_version = 9;
+    env.cfg.observation_version = 10;
 
     for (int t = 0; t < 20000; t++) {
         actions[0] = (float)((t / 37) % 9);
@@ -158,6 +179,9 @@ int main(void) {
         assert_dense(env.projectiles.active, env.projectiles.dense, env.projectiles.dense_pos, env.projectile_count, env.cfg.projectile_cap);
         assert_dense(env.drops.active, env.drops.dense, env.drops.dense_pos, env.drop_count, env.cfg.drop_cap);
         assert_dense(env.areas.active, env.areas.dense, env.areas.dense_pos, env.area_count, PS_MAX_AREAS);
+        assert_dense(env.moving_obstacles.active, env.moving_obstacles.dense,
+            env.moving_obstacles.dense_pos, env.moving_obstacle_count,
+            PS_MAX_MOVING_OBSTACLES);
     }
 
     printf("cpu smoke ok: obs=%d enemies=%d projectiles=%d drops=%d areas=%d\n",

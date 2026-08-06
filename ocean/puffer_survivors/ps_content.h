@@ -2,47 +2,6 @@
 
 #include "ps_state.h"
 
-typedef struct {
-    float hp;
-    float speed_mult;
-    float radius;
-    float damage;
-} PSEnemyDef;
-
-typedef struct {
-    float base_cd;
-    float cd_per_level;
-    float base_damage;
-    float damage_per_level;
-    float base_radius;
-    float radius_per_level;
-} PSWeaponDef;
-
-static const PSEnemyDef PS_ENEMY_DEFS[] = {
-    {2.0f, 1.00f, 0.42f, 1.0f},
-    {1.0f, 1.28f, 0.34f, 1.0f},
-    {4.0f, 0.76f, 0.52f, 1.0f},
-    {3.0f, 0.92f, 0.46f, 1.0f},
-};
-
-static const PSWeaponDef PS_WEAPON_DEFS[PS_WEAPON_COUNT] = {
-    [PS_WEAPON_BUBBLE] = {16.0f, -0.8f, 1.15f, 0.22f, 0.30f, 0.015f},
-    [PS_WEAPON_WHIRLPOOL] = {24.0f, -1.8f, 0.90f, 0.34f, 2.20f, 0.24f},
-    [PS_WEAPON_ORBIT] = {10.0f, -0.7f, 1.15f, 0.42f, 0.44f, 0.04f},
-    [PS_WEAPON_INK] = {96.0f, -6.0f, 0.95f, 0.34f, 1.35f, 0.18f},
-    [PS_WEAPON_SONAR] = {135.0f, -7.0f, 1.00f, 0.38f, 4.85f, 0.52f},
-};
-
-static const int PS_WAVE_MINS[] = {
-    10, 16, 26, 36, 32, 26, 48, 58, 70, 46, 68, 86,
-    96, 108, 80, 104, 126, 94, 116, 138, 154, 168, 180, 192,
-};
-
-static const int PS_WAVE_INTERVALS[] = {
-    74, 68, 48, 30, 68, 62, 40, 38, 88, 40, 34, 24,
-    24, 34, 18, 16, 15, 54, 34, 28, 16, 14, 13, 12,
-};
-
 static inline const char* ps_upgrade_name(int type) {
     switch (type) {
         case PS_UPGRADE_BUBBLE: return "Bubble";
@@ -80,17 +39,18 @@ static inline const char* ps_upgrade_description(int type) {
 }
 
 static inline float ps_xp_threshold(PufferSurvivors* env) {
-    return 6.0f + 4.0f * (float)(env->level - 1);
+    return env->cfg.xp_threshold_base
+        + env->cfg.xp_threshold_per_level * (float)(env->level - 1);
 }
 
 static inline int ps_wave_index(PufferSurvivors* env) {
-    int len = env->cfg.wave_length_steps > 0 ? env->cfg.wave_length_steps : 600;
-    return env->tick / len;
+    return env->tick / env->cfg.wave_length_steps;
 }
 
 static inline float ps_episode_progress(PufferSurvivors* env) {
-    float max_steps = fmaxf((float)env->cfg.max_steps, 1.0f);
-    float normal_steps = fmaxf((float)(env->cfg.wave_length_steps > 0 ? env->cfg.wave_length_steps : 600) * 7.0f, 1.0f);
+    float max_steps = (float)env->cfg.max_steps;
+    float normal_steps = (float)env->cfg.wave_length_steps
+        * (float)env->cfg.progress_normal_wave_count;
     float scale = fminf(max_steps, normal_steps);
     return ps_clampf((float)env->tick / scale, 0.0f, 1.0f);
 }
@@ -98,10 +58,11 @@ static inline float ps_episode_progress(PufferSurvivors* env) {
 static inline float ps_weapon_cooldown_total(PufferSurvivors* env, int weapon) {
     int level = env->weapon_level[weapon];
     if (level <= 0) return 1.0f;
-    const PSWeaponDef* def = &PS_WEAPON_DEFS[weapon];
-    float cd = def->base_cd + def->cd_per_level * (float)(level - 1);
-    cd *= env->cooldown_mult * env->cfg.fire_cooldown / fmaxf(PS_WEAPON_DEFS[PS_WEAPON_BUBBLE].base_cd, 1.0f);
-    return fmaxf(cd, 3.0f);
+    float cd = env->cfg.weapon_base_cooldown[weapon]
+        + env->cfg.weapon_cooldown_per_level[weapon] * (float)(level - 1);
+    cd *= env->cooldown_mult * env->cfg.fire_cooldown
+        / fmaxf(env->cfg.weapon_base_cooldown[PS_WEAPON_BUBBLE], 1.0f);
+    return cd;
 }
 
 static inline float ps_weapon_power(PufferSurvivors* env, int weapon) {
@@ -109,38 +70,49 @@ static inline float ps_weapon_power(PufferSurvivors* env, int weapon) {
     if (level <= 0) return 0.0f;
     float area = 1.0f + env->area_bonus;
     float might = env->cfg.projectile_damage * (1.0f + env->damage_bonus);
-    return ps_clampf(((float)level / 8.0f) * might * area, 0.0f, 3.0f) / 3.0f;
+    return ps_clampf(((float)level / (float)env->cfg.weapon_max_level) * might * area,
+        0.0f, 3.0f) / 3.0f;
 }
 
 static inline float ps_weapon_damage(PufferSurvivors* env, int weapon, int level, int first_level_zero) {
-    const PSWeaponDef* def = &PS_WEAPON_DEFS[weapon];
     float level_delta = (float)(first_level_zero ? level - 1 : level);
-    return (def->base_damage + def->damage_per_level * level_delta) * env->cfg.projectile_damage * (1.0f + env->damage_bonus);
+    return (env->cfg.weapon_base_damage[weapon]
+        + env->cfg.weapon_damage_per_level[weapon] * level_delta)
+        * env->cfg.projectile_damage * (1.0f + env->damage_bonus);
 }
 
 static inline int ps_upgrade_available(PufferSurvivors* env, int type) {
     if (type >= PS_UPGRADE_BUBBLE && type <= PS_UPGRADE_SONAR) {
-        return env->weapon_level[type] < 8;
+        return env->weapon_level[type] < env->cfg.weapon_max_level;
     }
     return type >= 0 && type < PS_UPGRADE_COUNT;
 }
 
 static inline int ps_wave_minimum(PufferSurvivors* env) {
-    int n = (int)(sizeof(PS_WAVE_MINS) / sizeof(PS_WAVE_MINS[0]));
     int wave = ps_wave_index(env);
-    int base = wave < n ? PS_WAVE_MINS[wave] : 210 + 7 * (wave - n);
-    float spawn_scale = ps_clampf(env->cfg.enemy_spawn_rate / 0.085f, 0.25f, 3.0f);
+    int base = wave < PS_WAVE_TABLE_COUNT
+        ? env->cfg.wave_minimum[wave]
+        : env->cfg.wave_tail_minimum_base
+            + env->cfg.wave_tail_minimum_step * (wave - PS_WAVE_TABLE_COUNT);
+    float spawn_scale = ps_clampf(env->cfg.enemy_spawn_rate
+        / env->cfg.wave_spawn_reference_rate,
+        env->cfg.wave_spawn_scale_min, env->cfg.wave_spawn_scale_max);
     float progress = ps_episode_progress(env);
-    int scaled = (int)ceilf((float)base * spawn_scale * (1.0f + 0.12f * env->cfg.spawn_ramp * progress));
-    int cap = env->cfg.enemy_cap < 240 ? env->cfg.enemy_cap : 240;
+    int scaled = (int)ceilf((float)base * spawn_scale
+        * (1.0f + env->cfg.wave_progress_spawn_scale * env->cfg.spawn_ramp * progress));
+    int cap = env->cfg.wave_population_cap;
     return scaled > cap ? cap : scaled;
 }
 
 static inline int ps_wave_spawn_interval(PufferSurvivors* env) {
-    int n = (int)(sizeof(PS_WAVE_INTERVALS) / sizeof(PS_WAVE_INTERVALS[0]));
     int wave = ps_wave_index(env);
-    int base = wave < n ? PS_WAVE_INTERVALS[wave] : 8;
-    float spawn_scale = ps_clampf(env->cfg.enemy_spawn_rate / 0.085f, 0.25f, 3.0f);
+    int base = wave < PS_WAVE_TABLE_COUNT
+        ? env->cfg.wave_interval[wave]
+        : env->cfg.wave_tail_interval;
+    float spawn_scale = ps_clampf(env->cfg.enemy_spawn_rate
+        / env->cfg.wave_spawn_reference_rate,
+        env->cfg.wave_spawn_scale_min, env->cfg.wave_spawn_scale_max);
     int scaled = (int)ceilf((float)base / spawn_scale);
-    return scaled < 5 ? 5 : scaled;
+    return scaled < env->cfg.wave_min_spawn_interval
+        ? env->cfg.wave_min_spawn_interval : scaled;
 }

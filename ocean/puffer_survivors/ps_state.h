@@ -12,8 +12,12 @@ typedef struct {
     float hp[PS_MAX_ENEMIES];
     float max_hp[PS_MAX_ENEMIES];
     float radius[PS_MAX_ENEMIES];
+    float bound_radius[PS_MAX_ENEMIES];
+    float half_width[PS_MAX_ENEMIES];
+    float half_height[PS_MAX_ENEMIES];
     float speed[PS_MAX_ENEMIES];
     float damage[PS_MAX_ENEMIES];
+    uint8_t shape[PS_MAX_ENEMIES];
     int next[PS_MAX_ENEMIES];
     int dense[PS_MAX_ENEMIES];
     int dense_pos[PS_MAX_ENEMIES];
@@ -65,6 +69,22 @@ typedef struct {
     float radius[PS_MAX_OBSTACLES];
 } PSObstaclePool;
 
+typedef struct {
+    uint8_t active[PS_MAX_MOVING_OBSTACLES];
+    uint8_t type[PS_MAX_MOVING_OBSTACLES];
+    uint8_t shape[PS_MAX_MOVING_OBSTACLES];
+    float x[PS_MAX_MOVING_OBSTACLES];
+    float y[PS_MAX_MOVING_OBSTACLES];
+    float vx[PS_MAX_MOVING_OBSTACLES];
+    float vy[PS_MAX_MOVING_OBSTACLES];
+    float bound_radius[PS_MAX_MOVING_OBSTACLES];
+    float half_width[PS_MAX_MOVING_OBSTACLES];
+    float half_height[PS_MAX_MOVING_OBSTACLES];
+    int ttl[PS_MAX_MOVING_OBSTACLES];
+    int dense[PS_MAX_MOVING_OBSTACLES];
+    int dense_pos[PS_MAX_MOVING_OBSTACLES];
+} PSMovingObstaclePool;
+
 struct Env {
     Log log;
     Agent agents[1];
@@ -93,19 +113,25 @@ struct Env {
     PSDropPool drops;
     PSAreaPool areas;
     PSObstaclePool obstacles;
+    PSMovingObstaclePool moving_obstacles;
     int grid_head[PS_GRID_CELLS];
     int grid_touched[PS_MAX_ENEMIES];
     int grid_touched_count;
+    int aabb_indices[PS_MAX_ENEMIES];
+    int aabb_count;
     int nearest_enemy;
     float nearest_enemy_d2;
     int enemy_count;
     int projectile_count;
     int drop_count;
     int area_count;
+    int moving_obstacle_count;
+    int active_ink_count;
     int next_enemy_slot;
     int next_projectile_slot;
     int next_drop_slot;
     int next_area_slot;
+    int next_moving_obstacle_slot;
 
     float episode_return;
     float episode_reward_survival;
@@ -128,8 +154,6 @@ struct Env {
     float episode_peak_enemies;
     float episode_peak_projectiles;
     float episode_min_hp;
-    float episode_upgrade_counts[PS_UPGRADE_COUNT];
-    float episode_move_counts[9];
 };
 
 typedef Env PufferSurvivors;
