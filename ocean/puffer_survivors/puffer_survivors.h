@@ -289,7 +289,6 @@ static inline PSConfig ps_config_from_kwargs(Dict* kwargs) {
     ps_kwarg_float_array(kwargs, "moving_obstacle_half_width", cfg.moving_obstacle_half_width, PS_MOVING_OBSTACLE_TYPE_COUNT);
     ps_kwarg_float_array(kwargs, "moving_obstacle_half_height", cfg.moving_obstacle_half_height, PS_MOVING_OBSTACLE_TYPE_COUNT);
     cfg.moving_obstacle_damage = ps_kwarg(kwargs, "moving_obstacle_damage");
-    cfg.observation_version = ps_kwarg_int(kwargs, "observation_version");
     cfg.free_upgrade = ps_kwarg_int(kwargs, "free_upgrade");
     cfg.free_upgrade_count = ps_kwarg_int(kwargs, "free_upgrade_count");
     ps_config_validate(&cfg);

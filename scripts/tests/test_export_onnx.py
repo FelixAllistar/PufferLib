@@ -12,7 +12,7 @@ from export_onnx import NativeMinGRU, load_weights, read_env_schema
 class ExportTests(unittest.TestCase):
     def test_environment_schemas(self):
         self.assertEqual(read_env_schema("abyss"), (328, [5, 3, 3, 3, 3, 3]))
-        self.assertEqual(read_env_schema("puffer_survivors"), (396, [9, 3]))
+        self.assertEqual(read_env_schema("puffer_survivors"), (321, [9, 3]))
 
     def test_flat_checkpoint_order(self):
         model = NativeMinGRU(7, 8, 2, 5)

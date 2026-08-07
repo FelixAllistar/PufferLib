@@ -179,25 +179,3 @@ static inline int ps_cell(PufferSurvivors* env, float x, float y) {
     gy = gy < 0 ? 0 : (gy >= PS_GRID_H ? PS_GRID_H - 1 : gy);
     return gy * PS_GRID_W + gx;
 }
-
-static inline int ps_count_enemies(PufferSurvivors* env) {
-    return env->enemy_count;
-}
-
-static inline int ps_count_projectiles(PufferSurvivors* env) {
-    return env->projectile_count;
-}
-
-static inline int ps_count_drops(PufferSurvivors* env) {
-    return env->drop_count;
-}
-
-static inline int ps_count_areas(PufferSurvivors* env) {
-    return env->area_count;
-}
-
-static inline void ps_count_entities(PufferSurvivors* env, int* enemies, int* projectiles, int* drops) {
-    *enemies = ps_count_enemies(env);
-    *projectiles = ps_count_projectiles(env);
-    *drops = ps_count_drops(env);
-}

@@ -18,7 +18,20 @@ RESULT = re.compile(
 
 
 def checkpoints(path: Path, count: int) -> list[Path]:
-    paths = sorted(path.glob("*.bin")) if path.is_dir() else [path]
+    if path.is_file() and path.suffix in {".tsv", ".txt"}:
+        paths = []
+        with path.open() as file:
+            for line in file:
+                fields = line.rstrip("\n").split("\t")
+                if not fields or fields[0] in {"policy", "checkpoint"}:
+                    continue
+                candidate = Path(fields[0])
+                if not candidate.is_absolute():
+                    candidate = ROOT / candidate
+                if candidate.exists():
+                    paths.append(candidate.resolve())
+    else:
+        paths = sorted(path.glob("*.bin")) if path.is_dir() else [path]
     if not paths:
         raise FileNotFoundError(f"no checkpoints in {path}")
     if count <= 0 or count >= len(paths):
@@ -55,19 +68,46 @@ def write_csv(path: Path, labels: list[str], matrix: list[list[float]]) -> None:
             writer.writerow([label, *(f"{value:.6f}" for value in row)])
 
 
+def labels_for(paths: list[Path]) -> list[str]:
+    labels = [path.stem for path in paths]
+    if len(set(labels)) == len(labels):
+        return labels
+    return [f"{path.parent.name}/{path.name}" for path in paths]
+
+
+def cycles(scores: list[list[float]], labels: list[str],
+        threshold: float) -> list[dict[str, str]]:
+    found = []
+    for i in range(len(labels)):
+        for j in range(i + 1, len(labels)):
+            for k in range(j + 1, len(labels)):
+                if (scores[i][j] > 0.5 + threshold
+                        and scores[j][k] > 0.5 + threshold
+                        and scores[k][i] > 0.5 + threshold):
+                    found.append({"a": labels[i], "b": labels[j],
+                        "c": labels[k], "direction": "a>b>c>a"})
+                if (scores[i][k] > 0.5 + threshold
+                        and scores[k][j] > 0.5 + threshold
+                        and scores[j][i] > 0.5 + threshold):
+                    found.append({"a": labels[i], "b": labels[j],
+                        "c": labels[k], "direction": "a>c>b>a"})
+    return found
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("env")
     parser.add_argument("path", type=Path)
     parser.add_argument("--count", type=int, default=8)
     parser.add_argument("--games", type=int, default=65536)
+    parser.add_argument("--cycle-threshold", type=float, default=0.002)
     parser.add_argument("--output", type=Path, default=Path("payoff_matrix"))
     parser.add_argument("--override", action="append", default=[],
         help="additional section.key=value override; repeat as needed")
     args = parser.parse_args()
 
     paths = [path.resolve() for path in checkpoints(args.path, args.count)]
-    labels = [path.stem for path in paths]
+    labels = labels_for(paths)
     size = len(paths)
     scores = [[0.5] * size for _ in paths]
     draws = [[0.0] * size for _ in paths]
@@ -96,12 +136,15 @@ def main() -> int:
     write_csv(output.with_suffix(".scores.csv"), labels, scores)
     write_csv(output.with_suffix(".draws.csv"), labels, draws)
     with output.with_suffix(".json").open("w") as file:
+        found_cycles = cycles(scores, labels, args.cycle_threshold)
         json.dump({
             "env": args.env, "games_per_orientation": args.games,
             "checkpoints": [str(path) for path in paths],
             "scores": scores, "draws": draws, "matches": matches,
+            "cycles": found_cycles,
         }, file, indent=2)
         file.write("\n")
+    print(f"cycles={len(found_cycles)}")
     return 0
 
 

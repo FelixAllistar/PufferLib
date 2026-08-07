@@ -155,10 +155,6 @@ static inline void ps_draw_sprite_screen(PufferSurvivors* env, int sprite, float
     }
 }
 
-static inline void ps_draw_sprite(PufferSurvivors* env, int sprite, float x, float y, float radius, Color fallback) {
-    ps_draw_sprite_ex(env, sprite, x, y, radius, 2.6f, 0.0f, 0, fallback);
-}
-
 #ifdef PS_FAST_RENDER
 static inline float ps_fast_smoothstep(float edge0, float edge1, float x) {
     float t = ps_clampf((x - edge0) / (edge1 - edge0), 0.0f, 1.0f);
@@ -693,7 +689,6 @@ static inline void ps_update_action_debug(PufferSurvivors* env) {
     if (client == NULL) return;
 
     int action = (int)env->agents[0].actions[0];
-    action = action < 0 ? 0 : (action > 8 ? 8 : action);
     double now = GetTime();
     if (!client->action_debug_init) {
         client->action_debug_init = 1;
@@ -722,7 +717,6 @@ static inline void ps_draw_action_debug(PufferSurvivors* env, int sw) {
     if (client == NULL || !client->action_debug_init) return;
 
     int action = (int)env->agents[0].actions[0];
-    action = action < 0 ? 0 : (action > 8 ? 8 : action);
     int upgrade = (int)env->agents[0].actions[1];
     int x = sw - 270;
     int y = 14;

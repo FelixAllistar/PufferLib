@@ -523,7 +523,7 @@ void one_hot(OneHot* layer, int* input) {
 typedef struct Multidiscrete Multidiscrete;
 struct Multidiscrete {
     int batch_size;
-    int logit_sizes[32];
+    int* logit_sizes;
     int num_actions;
 };
 
@@ -531,6 +531,7 @@ Multidiscrete* make_multidiscrete(int batch_size, int logit_sizes[], int num_act
     Multidiscrete* layer = (Multidiscrete*)calloc(1, sizeof(Multidiscrete));
     layer->batch_size = batch_size;
     layer->num_actions = num_actions;
+    layer->logit_sizes = (int*)malloc((size_t)num_actions * sizeof(int));
     memcpy(layer->logit_sizes, logit_sizes, num_actions*sizeof(int));
     return layer;
 }
@@ -575,6 +576,7 @@ void free_default(Default* net) {
     free(net->relu1);
     free(net->actor);
     free(net->value_fn);
+    free(net->multidiscrete->logit_sizes);
     free(net->multidiscrete);
     free(net);
 }
@@ -725,6 +727,7 @@ void free_puffernet(PufferNet* net) {
     free(net->decoder);
     free_mingru(net->mingru);
     if (net->multidiscrete) {
+        free(net->multidiscrete->logit_sizes);
         free(net->multidiscrete);
     }
     free(net);

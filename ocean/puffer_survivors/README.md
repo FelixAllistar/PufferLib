@@ -49,12 +49,17 @@ upgrade, Space to confirm, and `1`/`2`/`3` for direct card choice. `R` restarts,
 `--deterministic` to `watch` for discrete argmax actions; otherwise watch
 samples the policy. Watch mode auto-resets on death.
 
-The action heads are movement `[9]` and upgrade choice `[3]`. Observation v10
-contains 412 floats: the existing 396-float prefix, explicit boss/obstacle
-geometry, and four fixed moving-hazard slots. Each slot encodes active/type and
-player-relative `dx/dy`, sorted by nearest distance rather than pool allocation
-order. The policy receives raw relative geometry; velocity and collision
-predictions are not hand-coded into the input.
+The action heads are movement `[9]` and upgrade choice `[3]`. The fixed
+observation schema contains 321 floats: player and boss state, enemy and drop
+sector/ring summaries, nearest-obstacle relative `dx/dy`, weapon state, three
+one-hot upgrade cards, and four nearest moving-hazard slots. Friendly weapon
+areas and derived danger summaries are intentionally omitted. All
+spatial values are translated into player-centered world axes and normalized.
+The axes are not rotated by facing direction because movement actions use the
+same fixed world axes. Velocity
+and time-to-collision features are intentionally omitted so the recurrent
+policy can infer changes from consecutive observations. Changing this layout
+requires a fresh policy checkpoint.
 
 Gameplay geometry is runtime configuration, not renderer state. Player, enemy,
 elite/boss, obstacle, spawn-clearance, projectile, and area radii are defined
@@ -66,6 +71,68 @@ or the observation layout changes the game and requires a fresh policy run.
 Enemy/weapon tuning and the wave tables are list-valued `[env]` config entries
 as well. The INI is required for play, CPU training, CUDA training, and WASM;
 a missing or invalid value fails fast.
+
+## Performance measurements
+
+Build the standalone native GPU simulation benchmark with:
+
+```bash
+make -C ocean/puffer_survivors NVCC=/usr/local/cuda/bin/nvcc bench-cuda
+./ocean/puffer_survivors/tests/bench_cuda 5120 2000 200 3
+```
+
+It reports raw simulation throughput and the real wrapper throughput including
+episode-log packing. Remaining arguments use normal `section.key=value`
+overrides, so hot-path A/B tests are reproducible:
+
+```bash
+./ocean/puffer_survivors/tests/bench_cuda 5120 2000 200 3 env.moving_obstacle_cap=0
+```
+
+Append `--stats` before the overrides to print population snapshots without
+including the diagnostic copies in the timed result:
+
+```bash
+./ocean/puffer_survivors/tests/bench_cuda 5120 8000 500 1 --stats
+```
+
+For per-stage device timing, build the opt-in profiler variant:
+
+```bash
+make -C ocean/puffer_survivors NVCC=/usr/local/cuda/bin/nvcc bench-cuda-profile
+./ocean/puffer_survivors/tests/bench_cuda_profile 5120 2000 200 1 --stats
+```
+
+It reports average and worst-environment microseconds for movement, wave
+spawning, enemy movement, grid rebuild, weapons, projectiles, drops, and
+observations. `--stress` fills the existing pools with stable generated data
+at their configured capacities, which isolates saturated hot paths without
+allocating entities during the run:
+
+```bash
+./ocean/puffer_survivors/tests/bench_cuda_profile 5120 500 50 1 --stress
+```
+
+The normal CUDA build uses an occupancy-aware enemy scan: it walks the dense
+active list while the pool is sparse, then scans the fixed capacity once the
+pool is at least half full. This keeps low-population waves cheap while
+preserving coalesced SoA reads after late-game deaths and respawns. The
+capacity-only A/B build is available as:
+
+```bash
+make -C ocean/puffer_survivors NVCC=/usr/local/cuda/bin/nvcc bench-cuda-capacity-profile
+./ocean/puffer_survivors/tests/bench_cuda_capacity_profile 5120 1000 100 1 --stress-churn
+```
+
+The normal simulator has no profiler fields or device-clock work; they are
+compiled only into `bench-cuda-profile`.
+
+For end-to-end PPO timing, run a short isolated job with `base.profile=1`.
+The dashboard's `eval_env`, `eval_model`, `eval_copy`, `train_model`, and
+`train_misc` fields are CUDA-event timings; compare identical
+`vec.total_agents`, `train.horizon`, `base.async`, and `base.cudagraphs`.
+Nsight Systems can use the same command with `--trace=cuda,nvtx,osrt` to show
+the rollout and training ranges.
 
 ## Layout
 

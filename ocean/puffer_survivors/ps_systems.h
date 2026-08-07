@@ -128,7 +128,6 @@ static inline int ps_spawn_moving_obstacle(PufferSurvivors* env) {
             || env->moving_obstacle_count >= env->cfg.moving_obstacle_cap) return 0;
     int i = ps_find_free_slot(env->moving_obstacles.active,
         PS_MAX_MOVING_OBSTACLES, &env->next_moving_obstacle_slot);
-    if (i < 0) return 0;
 
     int type = (int)(ps_rand_u32(env) % PS_MOVING_OBSTACLE_TYPE_COUNT);
     float half = 0.5f * env->cfg.arena_size;
@@ -240,11 +239,7 @@ static inline void ps_clear_entities(PufferSurvivors* env) {
 }
 
 static inline int ps_find_free_slot(uint8_t* active, int cap, int* cursor) {
-    if (cap <= 0) return -1;
-
     int start = *cursor;
-    if (start < 0 || start >= cap) start = 0;
-
     for (int tries = 0; tries < cap; tries++) {
         int i = start + tries;
         if (i >= cap) i -= cap;
@@ -256,7 +251,6 @@ static inline int ps_find_free_slot(uint8_t* active, int cap, int* cursor) {
         }
     }
 
-    *cursor = start;
     return -1;
 }
 
@@ -270,7 +264,6 @@ static inline void ps_dense_add(int* dense, int* dense_pos, int* count, int slot
 static inline void ps_dense_remove(int* dense, int* dense_pos, int* count, int slot) {
     int pos = dense_pos[slot];
     int last_pos = *count - 1;
-    if (pos < 0 || pos > last_pos) return;
     int moved = dense[last_pos];
     dense[pos] = moved;
     dense_pos[moved] = pos;
@@ -279,33 +272,27 @@ static inline void ps_dense_remove(int* dense, int* dense_pos, int* count, int s
 }
 
 static inline void ps_deactivate_enemy(PufferSurvivors* env, int i) {
-    if (i < 0 || i >= env->cfg.enemy_cap || !env->enemies.active[i]) return;
     env->enemies.active[i] = 0;
     ps_dense_remove(env->enemies.dense, env->enemies.dense_pos, &env->enemy_count, i);
 }
 
 static inline void ps_deactivate_projectile(PufferSurvivors* env, int i) {
-    if (i < 0 || i >= env->cfg.projectile_cap || !env->projectiles.active[i]) return;
     env->projectiles.active[i] = 0;
     ps_dense_remove(env->projectiles.dense, env->projectiles.dense_pos, &env->projectile_count, i);
 }
 
 static inline void ps_deactivate_drop(PufferSurvivors* env, int i) {
-    if (i < 0 || i >= env->cfg.drop_cap || !env->drops.active[i]) return;
     env->drops.active[i] = 0;
     ps_dense_remove(env->drops.dense, env->drops.dense_pos, &env->drop_count, i);
 }
 
 static inline void ps_deactivate_area(PufferSurvivors* env, int i) {
-    if (i < 0 || i >= PS_MAX_AREAS || !env->areas.active[i]) return;
     env->areas.active[i] = 0;
-    if (env->areas.type[i] == PS_WEAPON_INK && env->active_ink_count > 0)
-        env->active_ink_count--;
+    if (env->areas.type[i] == PS_WEAPON_INK) env->active_ink_count--;
     ps_dense_remove(env->areas.dense, env->areas.dense_pos, &env->area_count, i);
 }
 
 static inline void ps_deactivate_moving_obstacle(PufferSurvivors* env, int i) {
-    if (i < 0 || i >= PS_MAX_MOVING_OBSTACLES || !env->moving_obstacles.active[i]) return;
     env->moving_obstacles.active[i] = 0;
     ps_dense_remove(env->moving_obstacles.dense,
         env->moving_obstacles.dense_pos, &env->moving_obstacle_count, i);
@@ -349,10 +336,6 @@ static inline void ps_verify_counts(PufferSurvivors* env) {
         );
         abort();
     }
-}
-#else
-static inline void ps_verify_counts(PufferSurvivors* env) {
-    (void)env;
 }
 #endif
 
@@ -398,7 +381,6 @@ static inline void ps_apply_upgrade_effect(PufferSurvivors* env, int upgrade) {
 }
 
 static inline void ps_apply_upgrade(PufferSurvivors* env, int choice) {
-    if (!env->pending_upgrade || choice < 0 || choice >= PS_UPGRADE_SLOTS) return;
     int upgrade = env->offered[choice];
     ps_apply_upgrade_effect(env, upgrade);
     env->episode_levelups += 1.0f;
@@ -408,11 +390,7 @@ static inline void ps_apply_upgrade(PufferSurvivors* env, int choice) {
 }
 
 static inline void ps_add_log(PufferSurvivors* env, int survived) {
-    int enemies = 0, projectiles = 0, drops = 0;
-    ps_count_entities(env, &enemies, &projectiles, &drops);
-    float perf = env->cfg.max_steps > 0
-        ? ps_clampf((float)env->tick / (float)env->cfg.max_steps, 0.0f, 1.0f)
-        : 0.0f;
+    float perf = ps_clampf((float)env->tick / (float)env->cfg.max_steps, 0.0f, 1.0f);
     env->log.perf += perf;
     env->log.score += env->episode_score;
     env->log.episode_return += env->episode_return;
@@ -434,15 +412,15 @@ static inline void ps_add_log(PufferSurvivors* env, int survived) {
     env->log.pickups += env->episode_pickups;
     env->log.levelups += env->episode_levelups;
     env->log.obstacle_hits += env->episode_obstacle_hits;
-    env->log.enemies_alive += (float)enemies;
-    env->log.projectiles_alive += (float)projectiles;
-    env->log.drops_alive += (float)drops;
-    env->log.areas_alive += (float)ps_count_areas(env);
+    env->log.enemies_alive += (float)env->enemy_count;
+    env->log.projectiles_alive += (float)env->projectile_count;
+    env->log.drops_alive += (float)env->drop_count;
+    env->log.areas_alive += (float)env->area_count;
     int weapon_levels = 0;
     for (int i = 0; i < PS_WEAPON_COUNT; i++) weapon_levels += env->weapon_level[i];
     env->log.weapon_levels += (float)weapon_levels;
     env->log.wave += (float)(ps_wave_index(env) + 1);
-    env->log.hp += fmaxf(env->hp, 0.0f);
+    env->log.hp += env->hp;
     env->log.survived += (float)survived;
     env->log.n += 1.0f;
     env->log.peak_enemies += env->episode_peak_enemies;
@@ -451,8 +429,7 @@ static inline void ps_add_log(PufferSurvivors* env, int survived) {
     if (survived) {
         env->log.success += 1.0f;
     } else {
-        float progress = env->cfg.max_steps > 0
-            ? (float)env->tick / (float)env->cfg.max_steps : 0.0f;
+        float progress = (float)env->tick / (float)env->cfg.max_steps;
         if (progress < 0.25f) env->log.death_0_25 += 1.0f;
         else if (progress < 0.50f) env->log.death_25_50 += 1.0f;
         else if (progress < 0.75f) env->log.death_50_75 += 1.0f;
@@ -567,7 +544,6 @@ static inline int ps_spawn_enemy(PufferSurvivors* env) {
     if (env->enemy_count >= env->cfg.enemy_cap) return 0;
 
     int slot = ps_find_free_slot(env->enemies.active, env->cfg.enemy_cap, &env->next_enemy_slot);
-    if (slot < 0) return 0;
 
     float x = 0.0f, y = 0.0f;
     ps_pick_spawn_position(env, env->cfg.enemy_spawn_radius, &x, &y);
@@ -616,7 +592,6 @@ static inline int ps_spawn_enemy(PufferSurvivors* env) {
     env->enemies.damage[slot] = stats.damage;
     env->enemies.active[slot] = 1;
     ps_dense_add(env->enemies.dense, env->enemies.dense_pos, &env->enemy_count, slot);
-    (void)kind;
     return slot + 1;
 }
 
@@ -624,7 +599,6 @@ static inline void ps_spawn_drop(PufferSurvivors* env, float x, float y, float v
     if (env->drop_count >= env->cfg.drop_cap) return;
 
     int i = ps_find_free_slot(env->drops.active, env->cfg.drop_cap, &env->next_drop_slot);
-    if (i < 0) return;
 
     ps_push_out_obstacles(env, &x, &y, env->cfg.drop_spawn_radius, 0);
     env->drops.x[i] = x;
@@ -639,7 +613,6 @@ static inline void ps_spawn_projectile(PufferSurvivors* env, int type, float sx,
     if (env->projectile_count >= env->cfg.projectile_cap) return;
 
     int i = ps_find_free_slot(env->projectiles.active, env->cfg.projectile_cap, &env->next_projectile_slot);
-    if (i < 0) return;
 
     float dx = tx - sx;
     float dy = ty - sy;
@@ -661,7 +634,6 @@ static inline void ps_spawn_area(PufferSurvivors* env, int type, float x, float 
     if (env->area_count >= env->cfg.area_cap) return;
 
     int i = ps_find_free_slot(env->areas.active, PS_MAX_AREAS, &env->next_area_slot);
-    if (i < 0) return;
 
     ps_push_out_obstacles(env, &x, &y, radius, 0);
     env->areas.type[i] = (uint8_t)type;
@@ -682,9 +654,10 @@ static inline void ps_rebuild_grid(PufferSurvivors* env) {
         env->grid_head[env->grid_touched[i]] = -1;
     }
     env->grid_touched_count = 0;
-    for (int i = 0; i < env->cfg.enemy_cap; i++) {
+    env->aabb_count = 0;
+    for (int k = 0; k < env->enemy_count; k++) {
+        int i = env->enemies.dense[k];
         env->enemies.next[i] = -1;
-        if (!env->enemies.active[i]) continue;
         if (env->enemies.shape[i] == PS_SHAPE_AABB) {
             env->aabb_indices[env->aabb_count++] = i;
         }
@@ -695,6 +668,16 @@ static inline void ps_rebuild_grid(PufferSurvivors* env) {
         env->enemies.next[i] = env->grid_head[cell];
         env->grid_head[cell] = i;
     }
+}
+
+static inline int ps_grid_needed(PufferSurvivors* env) {
+    if (env->enemy_count <= 0) return 0;
+    if (env->projectile_count > 0 || env->active_ink_count > 0) return 1;
+    for (int weapon = 0; weapon < PS_WEAPON_COUNT; weapon++) {
+        if (env->weapon_level[weapon] > 0 && env->weapon_cd[weapon] <= 1.0f)
+            return 1;
+    }
+    return 0;
 }
 
 static inline int ps_damage_enemy(PufferSurvivors* env, int eidx, float damage) {
@@ -731,7 +714,7 @@ static inline int ps_damage_enemy(PufferSurvivors* env, int eidx, float damage) 
 }
 
 static inline void ps_wave_spawns(PufferSurvivors* env) {
-    int enemies = ps_count_enemies(env);
+    int enemies = env->enemy_count;
     int target = ps_wave_minimum(env);
     int burst = 0;
     while (enemies < target && burst < 4) {
@@ -741,7 +724,7 @@ static inline void ps_wave_spawns(PufferSurvivors* env) {
     }
 
     int interval = ps_wave_spawn_interval(env);
-    if (interval > 0 && env->tick % interval == 0 && enemies < env->cfg.enemy_cap) ps_spawn_enemy(env);
+    if (env->tick % interval == 0) ps_spawn_enemy(env);
 
     int len = env->cfg.wave_length_steps;
     int local = env->tick % len;
@@ -776,11 +759,10 @@ static inline void ps_update_enemies(PufferSurvivors* env) {
     float player_x = env->px;
     float player_y = env->py;
     float player_radius = env->cfg.player_radius;
-    int obstacle_stride = env->cfg.enemy_obstacle_stride;
     env->nearest_enemy = -1;
     env->nearest_enemy_d2 = 1e30f;
-    for (int i = 0; i < env->cfg.enemy_cap; i++) {
-        if (!env->enemies.active[i]) continue;
+    for (int k = 0; k < env->enemy_count; k++) {
+        int i = env->enemies.dense[k];
         float dx = player_x - env->enemies.x[i];
         float dy = player_y - env->enemies.y[i];
         float d = sqrtf(fmaxf(dx * dx + dy * dy, 0.0001f));
@@ -788,11 +770,10 @@ static inline void ps_update_enemies(PufferSurvivors* env) {
         env->enemies.vy[i] = dy / d * env->enemies.speed[i];
         env->enemies.x[i] += env->enemies.vx[i];
         env->enemies.y[i] += env->enemies.vy[i];
-        if (obstacle_stride <= 1 || ((env->tick + i) % obstacle_stride) == 0) {
+        if ((env->tick + i) % env->cfg.enemy_obstacle_stride == 0)
             ps_push_out_obstacles_shape(env, &env->enemies.x[i], &env->enemies.y[i],
                 env->enemies.shape[i], env->enemies.radius[i],
                 env->enemies.half_width[i], env->enemies.half_height[i], 0);
-        }
         float post_dx = env->enemies.x[i] - player_x;
         float post_dy = env->enemies.y[i] - player_y;
         float post_d2 = post_dx * post_dx + post_dy * post_dy;
@@ -941,8 +922,8 @@ static inline int ps_nearest_enemy(PufferSurvivors* env, float range) {
         return cached;
     }
     int best = -1;
-    for (int i = 0; i < env->cfg.enemy_cap; i++) {
-        if (!env->enemies.active[i]) continue;
+    for (int k = 0; k < env->enemy_count; k++) {
+        int i = env->enemies.dense[k];
         float d2 = ps_dist2(env->px, env->py, env->enemies.x[i], env->enemies.y[i]);
         if (d2 < best_d2) {
             best_d2 = d2;
@@ -993,7 +974,7 @@ static inline void ps_damage_radius_with_query_pad(PufferSurvivors* env,
                             env->enemies.half_width[eidx],
                             env->enemies.half_height[eidx], radius)) {
                         int killed = ps_damage_enemy(env, eidx, damage);
-                        if (!killed && knockback > 0.0f && env->enemies.active[eidx]) {
+                        if (!killed && knockback > 0.0f) {
                             float d = sqrtf(fmaxf(d2, 0.0001f));
                             env->enemies.x[eidx] += dx / d * knockback;
                             env->enemies.y[eidx] += dy / d * knockback;
@@ -1014,7 +995,7 @@ static inline void ps_damage_radius_with_query_pad(PufferSurvivors* env,
                 dx, dy, env->enemies.radius[eidx],
                 env->enemies.half_width[eidx], env->enemies.half_height[eidx], radius)) continue;
         int killed = ps_damage_enemy(env, eidx, damage);
-        if (!killed && knockback > 0.0f && env->enemies.active[eidx]) {
+        if (!killed && knockback > 0.0f) {
             float d = sqrtf(fmaxf(d2, 0.0001f));
             env->enemies.x[eidx] += dx / d * knockback;
             env->enemies.y[eidx] += dy / d * knockback;
@@ -1259,7 +1240,7 @@ static inline void c_step(PufferSurvivors* env) {
     if (env->invuln_timer > 0) env->invuln_timer--;
 
     int upgrade_action = (int)env->agents[0].actions[1];
-    if (env->pending_upgrade && upgrade_action < PS_UPGRADE_SLOTS) ps_apply_upgrade(env, upgrade_action);
+    if (env->pending_upgrade) ps_apply_upgrade(env, upgrade_action);
 
     static const float dirs[9][2] = {
         {0, 0}, {0, -1}, {0, 1}, {-1, 0}, {1, 0},
@@ -1267,7 +1248,6 @@ static inline void c_step(PufferSurvivors* env) {
         {-0.70710678f, 0.70710678f}, {0.70710678f, 0.70710678f},
     };
     int action = (int)env->agents[0].actions[0];
-    action = action < 0 ? 0 : (action > 8 ? 8 : action);
     float speed = env->cfg.player_speed * (1.0f + env->speed_bonus);
     float target_vx = dirs[action][0] * speed;
     float target_vy = dirs[action][1] * speed;
@@ -1289,19 +1269,15 @@ static inline void c_step(PufferSurvivors* env) {
 
     ps_wave_spawns(env);
     ps_update_enemies(env);
-    ps_rebuild_grid(env);
+    if (ps_grid_needed(env)) ps_rebuild_grid(env);
     ps_update_weapons(env);
-    if (env->projectile_count > 0) {
-        ps_update_projectiles(env);
-    }
+    ps_update_projectiles(env);
     ps_update_drops(env);
 
-    int live_enemies = 0, live_projectiles = 0, live_drops = 0;
-    ps_count_entities(env, &live_enemies, &live_projectiles, &live_drops);
-    if ((float)live_enemies > env->episode_peak_enemies)
-        env->episode_peak_enemies = (float)live_enemies;
-    if ((float)live_projectiles > env->episode_peak_projectiles)
-        env->episode_peak_projectiles = (float)live_projectiles;
+    if ((float)env->enemy_count > env->episode_peak_enemies)
+        env->episode_peak_enemies = (float)env->enemy_count;
+    if ((float)env->projectile_count > env->episode_peak_projectiles)
+        env->episode_peak_projectiles = (float)env->projectile_count;
     if (env->hp < env->episode_min_hp) env->episode_min_hp = env->hp;
 
     env->episode_return += env->agents[0].rewards[0];
@@ -1328,6 +1304,8 @@ static inline void c_step(PufferSurvivors* env) {
         return;
     }
 
+#ifdef PS_DEBUG_COUNTS
     ps_verify_counts(env);
+#endif
     ps_compute_observations(env);
 }

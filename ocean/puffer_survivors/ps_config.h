@@ -219,7 +219,6 @@ typedef struct {
     float moving_obstacle_half_width[PS_MOVING_OBSTACLE_TYPE_COUNT];
     float moving_obstacle_half_height[PS_MOVING_OBSTACLE_TYPE_COUNT];
     float moving_obstacle_damage;
-    int observation_version;
     int free_upgrade;
     int free_upgrade_count;
 } PSConfig;
@@ -398,7 +397,6 @@ static inline void ps_config_validate(const PSConfig* cfg) {
     PS_REQUIRE_FINITE(cfg->obstacle_penalty, "obstacle_penalty");
     PS_REQUIRE_NONNEGATIVE(cfg->contact_damage, "contact_damage");
     PS_REQUIRE_INT_RANGE(cfg->invuln_steps, 0, INT_MAX, "invuln_steps");
-    PS_REQUIRE_INT_RANGE(cfg->enemy_obstacle_stride, 1, INT_MAX, "enemy_obstacle_stride");
     PS_REQUIRE_UNIT(cfg->movement_smoothing, "movement_smoothing");
     PS_REQUIRE_NONNEGATIVE(cfg->pickup_magnet_speed, "pickup_magnet_speed");
     PS_REQUIRE_INT_RANGE(cfg->weapon_max_level, 1, INT_MAX, "weapon_max_level");
@@ -480,7 +478,6 @@ static inline void ps_config_validate(const PSConfig* cfg) {
         + (long long)cfg->weapon_max_level * cfg->ink_trail_max_per_level;
     if (max_ink_areas > cfg->area_cap)
         ps_config_error("ink_trail_max_per_level");
-    PS_REQUIRE_INT_RANGE(cfg->observation_version, 6, 10, "observation_version");
     PS_REQUIRE_INT_RANGE(cfg->free_upgrade, -1, PS_UPGRADE_COUNT - 1, "free_upgrade");
     PS_REQUIRE_INT_RANGE(cfg->free_upgrade_count, 0, INT_MAX, "free_upgrade_count");
     if (cfg->free_upgrade < 0 && cfg->free_upgrade_count != 0)

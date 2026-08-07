@@ -1101,7 +1101,7 @@ struct TrainGraph {
     PrecisionTensor mb_ratio;
     PrecisionTensor mb_newvalue;
     PrecisionTensor mb_prio;        // (B,)
-    PrecisionTensor mb_action_mask; // (B, T, mask_size); always allocated
+    ByteTensor mb_action_mask;      // (B, T, ceil(mask_size/8)); packed bits
 };
 
 void register_train_buffers(TrainGraph& bufs, Allocator* alloc, int B, int T, int input_size,
@@ -1118,7 +1118,7 @@ void register_train_buffers(TrainGraph& bufs, Allocator* alloc, int B, int T, in
         .mb_ratio =         {.shape = {B, T}},
         .mb_newvalue =      {.shape = {B, T}},
         .mb_prio =          {.shape = {B}},
-        .mb_action_mask =   {.shape = {B, T, mask_size}},
+        .mb_action_mask =   {.shape = {B, T, (mask_size + 7) / 8}},
     };
     alloc_register(alloc, &bufs.mb_obs);
     alloc_register(alloc, &bufs.mb_state);
@@ -1178,10 +1178,14 @@ __global__ void puf_shuffle_rows(int* permutation, int rows, uint64_t seed) {
 }
 
 __global__ void puf_epoch_sample(int* idx, float* weights,
-        const int* permutation, int offset, int count) {
+        const int* permutation, int offset, int count,
+        int agents_per_buffer, int primary_per_buffer) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i < count) {
-        idx[i] = permutation[offset + i];
+        int logical = permutation[offset + i];
+        int buffer = logical / primary_per_buffer;
+        int row = logical - buffer * primary_per_buffer;
+        idx[i] = buffer * agents_per_buffer + row;
         weights[i] = 1.0f;
     }
 }
@@ -1193,10 +1197,16 @@ __global__ void puf_epoch_sample(int* idx, float* weights,
 
 __global__ void compute_prio_adv_reduction(
         const precision_t* __restrict__ advantages,
-        float* prio_weights, float prio_alpha, int stride) {
+        float* prio_weights, float prio_alpha, int stride,
+        int agents_per_buffer, int primary_per_buffer) {
     int row = blockIdx.x;
     int tx = threadIdx.x;
     int offset = row * stride;
+
+    if (row % agents_per_buffer >= primary_per_buffer) {
+        if (tx == 0) prio_weights[row] = 0.0f;
+        return;
+    }
 
     float local_sum = 0.0f;
     for (int t = tx; t < stride; t += blockDim.x) {
@@ -1248,7 +1258,7 @@ __global__ void compute_prio_normalize(float* prio_weights, int length) {
     __syncthreads();
 
     for (int t = tx; t < length; t += blockDim.x) {
-        prio_weights[t] = (prio_weights[t] + eps) / block_sum;
+        prio_weights[t] /= block_sum;
     }
 }
 
@@ -1330,11 +1340,13 @@ __global__ void multinomial_sample(int* __restrict__ out_idx, const float* __res
 // Build per-trajectory prio probs + CDF from advantages. Independent of the
 // minibatch sample — call once per train_impl, not once per minibatch.
 void prio_build_cdf_cuda(PrecisionTensor& advantages, float prio_alpha,
-        PrioBuffers& bufs, cudaStream_t stream) {
+        PrioBuffers& bufs, int agents_per_buffer, int primary_per_buffer,
+        cudaStream_t stream) {
     int B = advantages.shape[0];
     int T = advantages.shape[1];
     compute_prio_adv_reduction<<<B, PRIO_WARP_SIZE, 0, stream>>>(
-        advantages.data, bufs.prio_probs.data, prio_alpha, T);
+        advantages.data, bufs.prio_probs.data, prio_alpha, T,
+        agents_per_buffer, primary_per_buffer);
     compute_prio_normalize<<<1, PRIO_BLOCK_SIZE, 0, stream>>>(
         bufs.prio_probs.data, B);
     build_cdf<<<1, PRIO_BLOCK_SIZE, 0, stream>>>(bufs.cdf.data, bufs.prio_probs.data, B);
@@ -1376,7 +1388,40 @@ __device__ __forceinline__ float safe_continuous_logstd(const precision_t* logst
 
 // Fused loss function. PPO clipped loss + value + entropy
 constexpr int PPO_THREADS = 256;
-constexpr int MAX_ATN_HEADS = 16; // TODO: use env atn dim directly
+constexpr int MAX_ATN_HEADS = NUM_ATNS;
+
+/* Environments with a conditionally visited action tree expose its compact
+ * layout through compile-time constants in ENV_HEADER. Ordinary multidiscrete
+ * environments take the zero-cost all-active branch. */
+__device__ __forceinline__ bool puf_action_head_active(
+        const precision_t* actions, int action_base, int head) {
+#ifdef PUFFER_CONDITIONAL_MARKET_QUEUE
+    if (head < PUFFER_CONDITIONAL_PREFIX_HEADS) return true;
+    int relative = head - PUFFER_CONDITIONAL_PREFIX_HEADS;
+    int slot = relative / PUFFER_CONDITIONAL_HEADS_PER_SLOT;
+    int node = relative % PUFFER_CONDITIONAL_HEADS_PER_SLOT;
+    for (int previous = 0; previous < slot; previous++) {
+        int continue_head = PUFFER_CONDITIONAL_PREFIX_HEADS
+            + PUFFER_CONDITIONAL_HEADS_PER_SLOT * previous;
+        if ((int)to_float(actions[action_base + continue_head])
+                != PUFFER_CONDITIONAL_CONTINUE) return false;
+    }
+    if (node == 0) return true;
+    int continue_head = PUFFER_CONDITIONAL_PREFIX_HEADS
+        + PUFFER_CONDITIONAL_HEADS_PER_SLOT * slot;
+    if ((int)to_float(actions[action_base + continue_head])
+            != PUFFER_CONDITIONAL_CONTINUE) return false;
+    if (node == 1) return true;
+    int command_head = continue_head + 1;
+    return (int)to_float(actions[action_base + command_head])
+        < PUFFER_CONDITIONAL_QUANTITY_COMMANDS;
+#else
+    (void)actions;
+    (void)action_base;
+    (void)head;
+    return true;
+#endif
+}
 
 enum LossIdx {
     LOSS_PG = 0, LOSS_VF = 1, LOSS_ENT = 2, LOSS_TOTAL = 3,
@@ -1409,7 +1454,7 @@ struct PPOKernelArgs {
     const float* adv_mean;
     const float* adv_var;
     const int* act_sizes;
-    const precision_t* action_mask; // (N, T, A_total); always present
+    const unsigned char* action_mask; // (N, T, ceil(A_total/8)); packed bits
     int num_atns;
     float clip_coef, vf_clip_coef, vf_coef;
     float emag_kl_coef;
@@ -1446,14 +1491,23 @@ void register_ppo_buffers(PPOBuffersPuf& bufs, Allocator* alloc, int N, int T, i
     alloc_register(alloc, &bufs.ppo_partials);
 }
 
-// Discrete only. mask is always present (env mask or synthetic all-ones).
-__device__ __forceinline__ float load_logit_masked(
+// Rollout sampling reads the environment's unpacked byte mask directly.
+__device__ __forceinline__ float load_logit_masked_byte(
         const precision_t* __restrict__ logits, int logits_base,
         int logits_offset, int a,
-        const precision_t* __restrict__ mask, int mask_base) {
+        const unsigned char* __restrict__ mask, int mask_base) {
     float l = to_float(logits[logits_base + logits_offset + a]);
-    float m = to_float(mask[mask_base + logits_offset + a]);
-    if (m == 0.0f) {
+    if (mask[mask_base + logits_offset + a] == 0) l = -1e4f;
+    return l;
+}
+
+__device__ __forceinline__ float load_logit_masked_bit(
+        const precision_t* __restrict__ logits, int logits_base,
+        int logits_offset, int a,
+        const unsigned char* __restrict__ mask, int mask_base) {
+    int action = logits_offset + a;
+    float l = to_float(logits[logits_base + action]);
+    if ((mask[mask_base + (action >> 3)] & (1u << (action & 7))) == 0) {
         l = -1e4f;
     }
     return l;
@@ -1462,14 +1516,14 @@ __device__ __forceinline__ float load_logit_masked(
 __device__ __forceinline__ void ppo_discrete_head(
         const precision_t* __restrict__ logits, int logits_base,
         int logits_offset, int A, int act,
-        const precision_t* __restrict__ mask, int mask_base,
+        const unsigned char* __restrict__ mask, int mask_base,
         float* out_logsumexp, float* out_entropy, float* out_logp) {
     float max_logit = -INFINITY;
     float sum = 0.0f;
     float act_logit = 0.0f;
 
     for (int a = 0; a < A; ++a) {
-        float l = load_logit_masked(logits, logits_base, logits_offset, a, mask, mask_base);
+        float l = load_logit_masked_bit(logits, logits_base, logits_offset, a, mask, mask_base);
         if (a == act) {
             act_logit = l;
         }
@@ -1483,7 +1537,7 @@ __device__ __forceinline__ void ppo_discrete_head(
 
     float ent = 0.0f;
     for (int a = 0; a < A; ++a) {
-        float l = load_logit_masked(logits, logits_base, logits_offset, a, mask, mask_base);
+        float l = load_logit_masked_bit(logits, logits_base, logits_offset, a, mask, mask_base);
         float logp = l - logsumexp;
         float p = __expf(logp);
         ent -= p * logp;
@@ -1578,16 +1632,26 @@ __global__ void ppo_loss_compute(
     float head_logsumexp[MAX_ATN_HEADS];
     float head_entropy[MAX_ATN_HEADS];
     int head_act[MAX_ATN_HEADS];
+    bool head_active[MAX_ATN_HEADS];
 
     // Discrete always registers mb_action_mask; continuous never uses this arm.
-    int mask_base = nt * a.A_total;
+    int mask_base = nt * ((a.A_total + 7) / 8);
 
     if (!a.is_continuous) {
         int logits_offset = 0;
         for (int h = 0; h < a.num_atns; ++h) {
             int A = a.act_sizes[h];
             int act = static_cast<int>(g.actions[nt * a.num_atns + h]);
+            bool active = puf_action_head_active(g.actions,
+                nt * a.num_atns, h);
+            head_active[h] = active;
             head_act[h] = act;
+            if (!active) {
+                head_logsumexp[h] = 0.0f;
+                head_entropy[h] = 0.0f;
+                logits_offset += A;
+                continue;
+            }
             float lse, ent, lp;
             ppo_discrete_head(a.logits, logits_base, logits_offset, A, act,
                               a.action_mask, mask_base, &lse, &ent, &lp);
@@ -1610,7 +1674,9 @@ __global__ void ppo_loss_compute(
     }
 
     // Shared pg loss computation
-    logratio = total_log_prob - old_logp;
+    // Multi-discrete policies sum head log-probabilities. A corrupted or very
+    // stale behavior row must not overflow exp() and poison every parameter.
+    logratio = fmaxf(-20.0f, fminf(20.0f, total_log_prob - old_logp));
     ratio = __expf(logratio);
     g.out_ratio[nt] = from_float(ratio);
     float ratio_clipped = fmaxf(1.0f - a.clip_coef, fminf(1.0f + a.clip_coef, ratio));
@@ -1631,6 +1697,13 @@ __global__ void ppo_loss_compute(
         int logits_offset = 0;
         for (int h = 0; h < a.num_atns; ++h) {
             int A = a.act_sizes[h];
+            if (!head_active[h]) {
+                for (int j = 0; j < A; j++) {
+                    a.grad_logits[grad_logits_base + logits_offset + j] = 0.0f;
+                }
+                logits_offset += A;
+                continue;
+            }
             int act = head_act[h];
             float logsumexp = head_logsumexp[h];
             float ent = head_entropy[h];
@@ -1639,7 +1712,7 @@ __global__ void ppo_loss_compute(
                 float magnet_max = -INFINITY;
                 float magnet_sum = 0.0f;
                 for (int j = 0; j < A; j++) {
-                    float ml = load_logit_masked(a.magnet_logits, logits_base,
+                    float ml = load_logit_masked_bit(a.magnet_logits, logits_base,
                         logits_offset, j, a.action_mask, mask_base);
                     if (ml > magnet_max) {
                         magnet_sum *= __expf(magnet_max - ml);
@@ -1651,14 +1724,14 @@ __global__ void ppo_loss_compute(
             }
 
             for (int j = 0; j < A; ++j) {
-                float l = load_logit_masked(a.logits, logits_base,
-                                            logits_offset, j, a.action_mask, mask_base);
+                float l = load_logit_masked_bit(a.logits, logits_base,
+                    logits_offset, j, a.action_mask, mask_base);
                 float logp = l - logsumexp;
                 float p = __expf(logp);
                 float magnet_logp = 0.0f;
                 float q = 0.0f;
                 if (a.emag_kl_coef > 0.0f) {
-                    float ml = load_logit_masked(a.magnet_logits, logits_base,
+                    float ml = load_logit_masked_bit(a.magnet_logits, logits_base,
                         logits_offset, j, a.action_mask, mask_base);
                     magnet_logp = ml - magnet_logsumexp;
                     q = __expf(magnet_logp);

@@ -255,6 +255,9 @@ void alloc_register(Allocator* a, LongTensor* t) {
 void alloc_register(Allocator* a, IntTensor* t) {
     alloc_register_impl(a, (void**)&t->data, t->shape, sizeof(int));
 }
+void alloc_register(Allocator* a, ByteTensor* t) {
+    alloc_register_impl(a, (void**)&t->data, t->shape, sizeof(unsigned char));
+}
 
 cudaError_t alloc_create(Allocator* alloc) {
     if (alloc->total_bytes == 0) {
@@ -367,7 +370,7 @@ struct RolloutBuf {
     PrecisionTensor terminals;
     PrecisionTensor ratio;
     PrecisionTensor importance;
-    PrecisionTensor action_mask;   // (horizon, agents, mask_size); always allocated
+    ByteTensor action_mask;        // (horizon, agents, ceil(mask_size/8)); packed bits
 };
 
 // Buffers are initialized as raw structs with only shape information. alloc_register
@@ -383,15 +386,15 @@ void register_rollout_buffers(RolloutBuf& bufs, Allocator* alloc, int T, int B, 
     bufs.terminals = {.shape = {T, B}};
     bufs.ratio = {.shape = {T, B}};
     bufs.importance = {.shape = {T, B}};
-    bufs.action_mask = {.shape = {T, B, mask_size}};
+    bufs.action_mask = {.shape = {T, B, (mask_size + 7) / 8}};
     PrecisionTensor* fields[] = {
         &bufs.observations, &bufs.actions, &bufs.values, &bufs.logprobs,
         &bufs.rewards, &bufs.terminals, &bufs.ratio, &bufs.importance,
-        &bufs.action_mask,
     };
     for (int i = 0; i < (int)(sizeof(fields) / sizeof(fields[0])); i++) {
         alloc_register(alloc, fields[i]);
     }
+    alloc_register(alloc, &bufs.action_mask);
 }
 
 // Rank-2 or rank-3 time-major tensor. F==0 means rank-2 (zero-terminated shape);
@@ -402,6 +405,15 @@ PrecisionTensor puf_time_view(PrecisionTensor p, int start_t, int T) {
     long stride_f = F > 1 ? F : 1;
     return {
         .data = p.data + (long)start_t * B * stride_f,
+        .shape = {T, B, F},
+    };
+}
+
+ByteTensor puf_time_view(ByteTensor p, int start_t, int T) {
+    long B = p.shape[1];
+    long F = p.shape[2];
+    return {
+        .data = p.data + (long)start_t * B * F,
         .shape = {T, B, F},
     };
 }
@@ -624,7 +636,7 @@ __global__ void sample_logits(
         precision_t* logprobs,                // (B,)
         precision_t* value_out,               // (B,)
         curandStatePhilox4_32_10_t* rng_states,
-        precision_t* action_mask,             // (B, A_total); always allocated
+        const unsigned char* action_mask,     // (B, A_total); unpacked live mask
         int mask_stride) {
     int B = dec_out.shape[0];
     int fused_cols = dec_out.shape[1];
@@ -663,11 +675,16 @@ __global__ void sample_logits(
         int mask_base = idx * mask_stride;
         for (int h = 0; h < num_atns; h++) {
             int A = act_sizes[h];
+            if (!puf_action_head_active(actions, idx * num_atns, h)) {
+                actions[idx * num_atns + h] = from_float(0.0f);
+                logits_offset += A;
+                continue;
+            }
             float cache[LOGIT_CACHE];
             int use_cache = A <= LOGIT_CACHE;
             float max_val = -INFINITY;
             for (int a = 0; a < A; a++) {
-                float l = load_logit_masked(
+                float l = load_logit_masked_byte(
                     logits, logits_base, logits_offset, a, action_mask, mask_base);
                 if (use_cache) {
                     cache[a] = l;
@@ -676,7 +693,7 @@ __global__ void sample_logits(
             }
             float sum_exp = 0.0f;
             for (int a = 0; a < A; a++) {
-                float l = use_cache ? cache[a] : load_logit_masked(
+                float l = use_cache ? cache[a] : load_logit_masked_byte(
                     logits, logits_base, logits_offset, a, action_mask, mask_base);
                 sum_exp += expf(l - max_val);
             }
@@ -686,7 +703,7 @@ __global__ void sample_logits(
             float cumsum = 0.0f;
             int sampled = A - 1;
             for (int a = 0; a < A; a++) {
-                float l = use_cache ? cache[a] : load_logit_masked(
+                float l = use_cache ? cache[a] : load_logit_masked_byte(
                     logits, logits_base, logits_offset, a, action_mask, mask_base);
                 cumsum += expf(l - logsumexp);
                 if (rand_val < cumsum) {
@@ -695,7 +712,7 @@ __global__ void sample_logits(
                 }
             }
 
-            float sampled_logit = use_cache ? cache[sampled] : load_logit_masked(
+            float sampled_logit = use_cache ? cache[sampled] : load_logit_masked_byte(
                 logits, logits_base, logits_offset, sampled, action_mask, mask_base);
             actions[idx * num_atns + h] = from_float((float)sampled);
             total_log_prob += sampled_logit - logsumexp;
@@ -776,6 +793,18 @@ PrecisionTensor puf_slice(PrecisionTensor& p, int t, int start, int count) {
     };
 }
 
+ByteTensor puf_slice(ByteTensor& p, int t, int start, int count) {
+    long B = p.shape[1];
+    long F = p.shape[2];
+    return {
+        .data = p.data + (long)(t * B + start) * F,
+        .shape = {count, F},
+    };
+}
+
+__global__ void pack_action_mask(unsigned char* dst,
+        const unsigned char* src, int B, int mask_size, int packed_stride);
+
 void pufferl_forward(PuffeRL* pufferl, int buf, int t, cudaStream_t stream) {
     HypersT& hypers = pufferl->hypers;
     int graph_slot = hypers.async ? pufferl->rollout_write_slot : 0;
@@ -824,14 +853,14 @@ void pufferl_forward(PuffeRL* pufferl, int buf, int t, cudaStream_t stream) {
         rew_dst.data, env.rewards.data + start,
         term_dst.data, env.terminals.data + start, block_size);
 
-    // Mask always allocated (env-written or synthetic all-ones). Continuous ignores it in sample.
-    int mask_size = rollouts.action_mask.shape[2];
-    int mask_stride = mask_size;
-    PrecisionTensor mask_slice = puf_slice(rollouts.action_mask, t, start, block_size);
-    cast<<<grid_size(block_size * mask_size), BLOCK_SIZE, 0, stream>>>(
+    // Keep the live byte mask for sampling, but archive one bit per action for PPO.
+    int mask_stride = vec->action_mask_size;
+    int packed_stride = (mask_stride + 7) / 8;
+    ByteTensor mask_slice = puf_slice(rollouts.action_mask, t, start, block_size);
+    pack_action_mask<<<grid_size(block_size * packed_stride), BLOCK_SIZE, 0, stream>>>(
         mask_slice.data,
-        env.action_mask.data + (long)start * mask_size,
-        block_size * mask_size);
+        env.action_mask.data + (long)start * mask_stride,
+        block_size, mask_stride, packed_stride);
 
     // Per-bank forward: layout[b]..layout[b+1) within each buffer chunk.
     int num_banks = 1 + pufferl->num_frozen_banks;
@@ -866,7 +895,6 @@ void pufferl_forward(PuffeRL* pufferl, int buf, int t, cudaStream_t stream) {
         PrecisionTensor act_b  = puf_slice(rollouts.actions,      t, sub_start, bank_size);
         PrecisionTensor lp_b   = puf_slice(rollouts.logprobs,     t, sub_start, bank_size);
         PrecisionTensor val_b  = puf_slice(rollouts.values,       t, sub_start, bank_size);
-        PrecisionTensor mask_b = puf_slice(rollouts.action_mask,  t, sub_start, bank_size);
 
         int state_start = (b == 0) ? bank_off : 0;
         int state_n = (int)s_bank->shape[0] * bank_size * (int)s_bank->shape[2];
@@ -894,7 +922,7 @@ void pufferl_forward(PuffeRL* pufferl, int buf, int t, cudaStream_t stream) {
             dec_puf, p_logstd, pufferl->act_sizes_puf,
             act_b.data, lp_b.data, val_b.data,
             pufferl->rng_states[buf] + bank_off,
-            mask_b.data, mask_stride);
+            env.action_mask.data + (long)sub_start * mask_stride, mask_stride);
 
         cast<<<grid_size(numel(act_b.shape)), BLOCK_SIZE, 0, stream>>>(
                 env.actions.data + (long)sub_start * act_cols,
@@ -1251,6 +1279,25 @@ __global__ void select_copy_mask(const char* src, char* dst, int* idx, int row_b
     copy_bytes(src, dst, idx[mb], mb, row_bytes);
 }
 
+__global__ void pack_action_mask(unsigned char* __restrict__ dst,
+        const unsigned char* __restrict__ src, int B, int mask_size,
+        int packed_stride) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx >= B * packed_stride) return;
+    int b = idx / packed_stride;
+    int byte = idx % packed_stride;
+    int base = byte * 8;
+    unsigned char bits = 0;
+    #pragma unroll
+    for (int bit = 0; bit < 8; bit++) {
+        int action = base + bit;
+        if (action < mask_size && src[(long)b * mask_size + action]) {
+            bits |= (unsigned char)(1u << bit);
+        }
+    }
+    dst[idx] = bits;
+}
+
 // Transpose dims 0,1: [A, B, C] -> [B, A, C]. For 2D, pass C=1.
 __global__ void transpose_102(precision_t* dst,
         precision_t* src, int A, int B, int C) {
@@ -1259,6 +1306,18 @@ __global__ void transpose_102(precision_t* dst,
     if (idx >= total) {
         return;
     }
+    int a = idx / (B * C);
+    int rem = idx % (B * C);
+    int b = rem / C;
+    int c = rem % C;
+    dst[b * A * C + a * C + c] = src[idx];
+}
+
+__global__ void transpose_102(unsigned char* dst,
+        const unsigned char* src, int A, int B, int C) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    int total = A * B * C;
+    if (idx >= total) return;
     int a = idx / (B * C);
     int rem = idx % (B * C);
     int b = rem / C;
@@ -1403,18 +1462,25 @@ void train_impl(PuffeRL& pufferl, RolloutBuf* src_arg) {
     profile_end(hypers.profile);
 
     profile_begin("compute_prio", hypers.profile);
+    int agents_per_buffer = hypers.total_agents / hypers.num_buffers;
+    int primary_per_buffer = pufferl.vec->bank_layout[1];
+    int primary_agents = primary_per_buffer * hypers.num_buffers;
     prio_build_cdf_cuda(advantages_puf, prio_alpha,
-        pufferl.prio_bufs, train_stream);
+        pufferl.prio_bufs, agents_per_buffer, primary_per_buffer, train_stream);
     profile_end(hypers.profile);
 
     long* train_rng_offset = pufferl.rng_offset_puf.data + hypers.num_buffers;
-    int total_minibatches = hypers.replay_ratio * batch_size / hypers.minibatch_size;
-    int minibatches_per_epoch = batch_size / hypers.minibatch_size;
+    int primary_batch_size = primary_agents * hypers.horizon;
+    assert(hypers.minibatch_size <= primary_batch_size
+        && "minibatch_size exceeds primary-policy rollout size");
+    int total_minibatches = hypers.replay_ratio
+        * primary_batch_size / hypers.minibatch_size;
+    int minibatches_per_epoch = primary_batch_size / hypers.minibatch_size;
     if (hypers.epoch_sampling) {
         assert(hypers.prio_alpha == 0.0f
             && "train.epoch_sampling requires train.prio_alpha=0");
-        assert(batch_size % hypers.minibatch_size == 0
-            && "epoch sampling requires batch divisible by minibatch_size");
+        assert(primary_batch_size % hypers.minibatch_size == 0
+            && "epoch sampling requires primary batch divisible by minibatch_size");
     }
     int completed_emag_epochs = 0;
     for (int mb = 0; mb < total_minibatches; ++mb) {
@@ -1428,15 +1494,16 @@ void train_impl(PuffeRL& pufferl, RolloutBuf* src_arg) {
                     ^ ((uint64_t)pufferl.epoch << 32)
                     ^ (uint64_t)(mb / minibatches_per_epoch + 1);
                 puf_shuffle_rows<<<1, 1, 0, train_stream>>>(
-                    pufferl.prio_bufs.permutation.data,
-                    hypers.total_agents, shuffle_seed);
+                    pufferl.prio_bufs.permutation.data, primary_agents,
+                    shuffle_seed);
             }
             int segments = pufferl.prio_bufs.idx.shape[0];
             puf_epoch_sample<<<grid_size(segments), BLOCK_SIZE, 0, train_stream>>>(
                 pufferl.prio_bufs.idx.data,
                 pufferl.prio_bufs.mb_prio.data,
                 pufferl.prio_bufs.permutation.data,
-                within_epoch * segments, segments);
+                within_epoch * segments, segments,
+                agents_per_buffer, primary_per_buffer);
         } else {
             prio_sample_cuda(anneal_beta, pufferl.prio_bufs, pufferl.seed,
                 train_rng_offset, train_stream);
@@ -1471,8 +1538,8 @@ void train_impl(PuffeRL& pufferl, RolloutBuf* src_arg) {
             sel_src, graph, sel_idx, advantages_puf.data,
             pufferl.prio_bufs.mb_prio.data,
             obs_rb, act_rb, lp_rb, term_rb, sel_horizon);
-        int mask_rb = (numel(rollouts.action_mask.shape)
-            / rollouts.action_mask.shape[0]) * pe;
+        int mask_rb = numel(rollouts.action_mask.shape)
+            / rollouts.action_mask.shape[0];
         select_copy_mask<<<mb_segs, SELECT_COPY_THREADS, 0, train_stream>>>(
             (const char*)rollouts.action_mask.data,
             (char*)graph.mb_action_mask.data, sel_idx, mask_rb);
@@ -1650,6 +1717,10 @@ void puf_find_latest_checkpoint(const char* dir,
         } else if (S_ISREG(st.st_mode)) {
             size_t plen = strlen(path);
             if (plen < 4 || strcmp(path + plen - 4, ".bin") != 0) continue;
+            // A self-play run may create a bootstrap copy at step zero.  It is
+            // not a resumable training checkpoint, so `latest` must never
+            // select it over a real learned checkpoint.
+            if (strcmp(ent->d_name, "0000000000000000.bin") == 0) continue;
             if (st.st_ctime < *best_time) continue;
             *best_time = st.st_ctime;
             snprintf(out, out_size, "%s", path);
@@ -1679,7 +1750,7 @@ const char* puf_checkpoint_path_key(Ini* ini, const char* key,
     time_t best_time = 0;
     puf_find_latest_checkpoint(root, out, out_size, &best_time);
     if (!out[0]) {
-        fprintf(stderr, "no .bin checkpoints found in %s\n", root);
+        fprintf(stderr, "no learned .bin checkpoints found in %s\n", root);
         exit(1);
     }
     return out;
@@ -1723,6 +1794,17 @@ void puf_save_weights(PuffeRL* p, const char* path) {
 void puf_load_weights_into(FloatTensor dst, PrecisionTensor params,
         cudaStream_t stream, const char* path) {
     int64_t nbytes = numel(dst.shape) * sizeof(float);
+    struct stat info;
+    if (stat(path, &info) != 0) {
+        fprintf(stderr, "failed to stat weights %s: %s\n", path, strerror(errno));
+        exit(1);
+    }
+    if (info.st_size != nbytes) {
+        fprintf(stderr, "incompatible weights %s: got %lld bytes, expected %lld "
+            "for this policy architecture\n", path, (long long)info.st_size,
+            (long long)nbytes);
+        exit(1);
+    }
     FILE* fp = fopen(path, "rb");
     if (!fp) {
         fprintf(stderr, "failed to open %s for reading\n", path);
@@ -1749,6 +1831,41 @@ void pufferl_load_frozen_bank(PuffeRL* pufferl, int bank_idx, const char* path) 
     puf_load_weights_into(bank->master_weights, bank->param_puf,
         pufferl->default_stream, path);
     cudaDeviceSynchronize();
+}
+
+// Bootstrap a frozen opponent from the learner without creating a fake
+// zero-step checkpoint.  This is used only when training starts from a fresh
+// policy; resumed training uses the requested checkpoint path directly.
+void pufferl_copy_frozen_bank_from_learner(PuffeRL* pufferl, int bank_idx) {
+    WeightBank* bank = &pufferl->frozen_banks[bank_idx];
+    int64_t learner_n = numel(pufferl->master_weights.shape);
+    int64_t bank_n = numel(bank->master_weights.shape);
+    if (learner_n != bank_n) {
+        fprintf(stderr, "fresh self-play bootstrap requires learner and frozen "
+            "bank architectures to have the same parameter count: learner=%lld "
+            "bank=%lld\n", (long long)learner_n, (long long)bank_n);
+        exit(1);
+    }
+    cudaMemcpyAsync(bank->master_weights.data, pufferl->master_weights.data,
+        (size_t)learner_n * sizeof(float), cudaMemcpyDeviceToDevice,
+        pufferl->default_stream);
+    if (USE_BF16) {
+        cast<<<grid_size((int)bank_n), BLOCK_SIZE, 0, pufferl->default_stream>>>(
+            bank->param_puf.data, bank->master_weights.data, (int)bank_n);
+    }
+    cudaStreamSynchronize(pufferl->default_stream);
+}
+
+// Loading updates the learner/master tensors.  Async rollout inference uses
+// a separate actor snapshot, so it must be refreshed before the first
+// bootstrap save or rollout; otherwise the actor can run the random init.
+void pufferl_sync_loaded_policy(PuffeRL* pufferl) {
+    cudaStreamSynchronize(pufferl->default_stream);
+    if (pufferl->hypers.async) {
+        puf_copy(&pufferl->actor_param_puf, &pufferl->param_puf,
+            pufferl->default_stream);
+        cudaStreamSynchronize(pufferl->default_stream);
+    }
 }
 
 // Die on OOM in the train worker. Sweep observes failed workers as bad samples and continues.
@@ -1881,8 +1998,11 @@ PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx) {
     if (action_mask_size == 0) {
         action_mask_size = act_n;
     }
-    assert(action_mask_size == act_n
-        && "vec.action_mask_size must match sum(ACT_SIZES)");
+    if (action_mask_size != act_n) {
+        fprintf(stderr, "vec.action_mask_size=%d but sum(ACT_SIZES)=%d\n",
+            action_mask_size, act_n);
+        abort();
+    }
     vec->num_banks = frozen_banks + 1;
     vec->bank_layout = (int*)xcalloc((size_t)(vec->num_banks + 1) * sizeof(int));
     vec->buffer_env_starts = (int*)xcalloc((size_t)num_buffers * sizeof(int));
@@ -2466,6 +2586,21 @@ static void dash_loss(Dict* log, const char* key, char* out, size_t n) {
     }
 }
 
+static void dash_env_pair(Dict* log, const char* left, const char* right) {
+    char left_key[128], right_key[128];
+    char left_value[32], right_value[32];
+    snprintf(left_key, sizeof(left_key), "env/%s", left);
+    snprintf(right_key, sizeof(right_key), "env/%s", right);
+    snprintf(left_value, sizeof(left_value), "%.3f",
+        dash_num(log, left_key, 0.0));
+    snprintf(right_value, sizeof(right_value), "%.3f",
+        dash_num(log, right_key, 0.0));
+    printf("%s│%s %s%-25.25s%s %s%9.9s%s   %s%-25.25s%s %s%9.9s%s    %s│%s",
+        PUF_W, PUF_R, PUF_A, left, PUF_R, PUF_W, left_value, PUF_R,
+        PUF_A, right, PUF_R, PUF_W, right_value, PUF_R, PUF_W, PUF_R);
+    dash_eol();
+}
+
 void puf_dashboard_print(Ini* ini, PuffeRL* p, Dict* log, int epoch) {
     puf_dashboard_tty = isatty(STDOUT_FILENO);
     int term_rows = 1000, term_cols = PUF_DASH_W;
@@ -2590,6 +2725,33 @@ void puf_dashboard_print(Ini* ini, PuffeRL* p, Dict* log, int epoch) {
     dash_row("To go", remaining, "  Misc", mt, mp, "clipfrac", lcf);
     printf("%s│%*s│%s", PUF_W, PUF_DASH_W - 2, "", PUF_R);
     dash_eol();
+
+    if (!strcmp(env_name, "kaggriculture")) {
+        static const char* const rows[][2] = {
+            {"score", "opponent_score"},
+            {"win_rate", "draw_rate"},
+            {"land_purchases", "productive_extra_tiles"},
+            {"water_coverage", "neglect_deaths"},
+            {"planting_day_deaths", "unused_seed_value"},
+            {"plants_alive", "weeds"},
+            {"animals_alive", "animal_place_actions"},
+            {"animal_feed_actions", "animal_care_actions"},
+            {"animal_harvest_actions", "fertilizer_collect_actions"},
+            {"orders_per_turn", "buy_orders"},
+            {"seed_buy_orders", "product_buy_orders"},
+            {"animal_buy_orders", "sell_orders"},
+            {"hire_orders", "land_orders"},
+            {"checkpoint_fraction", "starter_fraction"},
+            {"rules_fraction", "specialist_fraction"},
+        };
+        int row_count = (int)(sizeof(rows) / sizeof(rows[0]));
+        for (int row = 0; row < row_count; row++) {
+            dash_env_pair(log, rows[row][0], rows[row][1]);
+        }
+        dash_rule("╰", "╯");
+        dash_end();
+        return;
+    }
 
     int user_rows = PUF_DASH_MAX_USER_ROWS;
     if (puf_dashboard_tty) {
@@ -2782,6 +2944,8 @@ void rollouts(PuffeRL* p) {
 typedef struct {
     float score;
     float draw;
+    float money;
+    float opponent_money;
     int games;
 } EvalResult;
 
@@ -2804,6 +2968,12 @@ EvalResult run_eval(Ini* ini, TrainContext* ctx, int mode, int verbose);
 
 #define SELFPLAY_MAX_BANKS 8
 #define SELFPLAY_PATH_MAX 4096
+#define SELFPLAY_MEMORY_BOOTSTRAP "<fresh-policy>"
+
+enum {
+    PFSP_HARD,
+    PFSP_VARIANCE,
+};
 
 typedef struct {
     char pending_path[SELFPLAY_PATH_MAX];
@@ -2834,6 +3004,8 @@ typedef struct {
     int external_size;
     float external_prob;
     float pfsp_alpha;
+    float pfsp_uniform_mix;
+    int pfsp_mode;
     float payoff_ema;
     SelfplayPayoff* payoffs;
     int payoff_size;
@@ -2855,7 +3027,9 @@ int selfplay_payoff(Selfplay* sp, const char* path) {
 }
 
 void selfplay_add_checkpoint(Selfplay* sp, const char* path) {
-    while (access(path, R_OK) != 0) usleep(50000);
+    if (strcmp(path, SELFPLAY_MEMORY_BOOTSTRAP) != 0) {
+        while (access(path, R_OK) != 0) usleep(50000);
+    }
     selfplay_payoff(sp, path);
     for (int i = 0; i < sp->pool_size; i++) {
         if (strcmp(sp->pool[i], path) == 0) return;
@@ -2891,6 +3065,24 @@ void selfplay_add_external_list(Selfplay* sp, const char* paths) {
     free(list);
 }
 
+static void selfplay_validate_external(Selfplay* sp, size_t expected_bytes) {
+    for (int i = 0; i < sp->external_size; i++) {
+        struct stat info;
+        if (stat(sp->external[i], &info) != 0) {
+            fprintf(stderr, "selfplay opponent %s is not readable: %s\n",
+                sp->external[i], strerror(errno));
+            exit(1);
+        }
+        if ((size_t)info.st_size != expected_bytes) {
+            fprintf(stderr, "selfplay opponent %s is incompatible: got %lld "
+                "bytes, expected %zu for the frozen-bank architecture; "
+                "start a fresh league or remove it from selfplay.opponent_pool\n",
+                sp->external[i], (long long)info.st_size, expected_bytes);
+            exit(1);
+        }
+    }
+}
+
 void selfplay_set_external_weights(Selfplay* sp, const char* values) {
     if (!values[0] || strcmp(values, "None") == 0) return;
     sp->external_weights = (float*)calloc((size_t)sp->external_size, sizeof(float));
@@ -2914,8 +3106,21 @@ void selfplay_set_external_weights(Selfplay* sp, const char* values) {
     }
 }
 
+static inline float selfplay_priority(const Selfplay* sp, float recent_score) {
+    if (sp->pfsp_alpha == 0.0f) return 1.0f;
+    float score = fminf(1.0f, fmaxf(0.0f, recent_score));
+    float priority = sp->pfsp_mode == PFSP_VARIANCE
+        ? 4.0f * score * (1.0f - score) : 1.0f - score;
+    return powf(priority, sp->pfsp_alpha);
+}
+
 const char* selfplay_sample_set(Selfplay* sp,
         char (*paths)[SELFPLAY_PATH_MAX], float* weights, int size) {
+    if (sp->pfsp_uniform_mix > 0.0f &&
+            rand_r(&sp->rng) / ((float)RAND_MAX + 1.0f)
+                < sp->pfsp_uniform_mix) {
+        return paths[rand_r(&sp->rng) % (unsigned int)size];
+    }
     if (sp->pfsp_alpha == 0.0f && !weights) {
         return paths[rand_r(&sp->rng) % (unsigned int)size];
     }
@@ -2924,11 +3129,9 @@ const char* selfplay_sample_set(Selfplay* sp,
     for (int i = 0; i < size; i++) {
         SelfplayPayoff* payoff = &sp->payoffs[selfplay_payoff(sp, paths[i])];
         float base = weights ? weights[i] : 1.0f;
-        float hard = sp->pfsp_alpha == 0.0f ? 1.0f
-            : powf(1.0f - payoff->recent_score, sp->pfsp_alpha);
-        total += base * hard;
+        total += base * selfplay_priority(sp, payoff->recent_score);
     }
-    int use_hard = total > 0.0f;
+    int use_priority = total > 0.0f;
     if (total == 0.0f) {
         for (int i = 0; i < size; i++) {
             total += weights ? weights[i] : 1.0f;
@@ -2939,9 +3142,9 @@ const char* selfplay_sample_set(Selfplay* sp,
     for (int i = 0; i < size; i++) {
         SelfplayPayoff* payoff = &sp->payoffs[selfplay_payoff(sp, paths[i])];
         float base = weights ? weights[i] : 1.0f;
-        float hard = !use_hard || sp->pfsp_alpha == 0.0f ? 1.0f
-            : powf(1.0f - payoff->recent_score, sp->pfsp_alpha);
-        sample -= base * hard;
+        float priority = use_priority
+            ? selfplay_priority(sp, payoff->recent_score) : 1.0f;
+        sample -= base * priority;
         if (sample <= 0.0f) return paths[i];
     }
     return paths[size - 1];
@@ -3000,7 +3203,11 @@ void selfplay_write_payoffs(Selfplay* sp) {
 
 void selfplay_load_bank(Selfplay* sp, PuffeRL* pufferl,
         int bank, const char* path, long step) {
-    pufferl_load_frozen_bank(pufferl, bank, path);
+    if (strcmp(path, SELFPLAY_MEMORY_BOOTSTRAP) == 0) {
+        pufferl_copy_frozen_bank_from_learner(pufferl, bank);
+    } else {
+        pufferl_load_frozen_bank(pufferl, bank, path);
+    }
     SelfplayBank* state = &sp->banks[bank];
     state->opponent = selfplay_payoff(sp, path);
     state->opp_started_step = step;
@@ -3375,6 +3582,10 @@ EvalResult run_eval(Ini* ini, TrainContext* ctx, int mode, int verbose) {
         puf_ini_put(ini, "env.dr", "0");
         puf_ini_put(ini, "env.num_agents", "2");
         puf_ini_put(ini, "env.num_bots", "0");
+        // Environment-specific scripted curricula must not replace either
+        // policy during a requested model-vs-model match.
+        puf_ini_put(ini, "env.bot_opponent_fraction", "0");
+        puf_ini_put(ini, "env.bot_rules_fraction", "0");
     }
     puf_ini_put(ini, "base.reset_every_horizon", "0");
     char eval_horizon[16];
@@ -3406,6 +3617,7 @@ EvalResult run_eval(Ini* ini, TrainContext* ctx, int mode, int verbose) {
             printf("Loaded weights from %s\n", load_path);
         }
     }
+    pufferl_sync_loaded_policy(pufferl);
 
     Dict baseline = {0};
     long baseline_n = 0;
@@ -3435,6 +3647,8 @@ EvalResult run_eval(Ini* ini, TrainContext* ctx, int mode, int verbose) {
             }
             result.score = (float)dict_get(&log, "env/slot_0_score");
             result.draw = (float)dict_get(&log, "env/draw_rate");
+            result.money = (float)dict_get(&log, "env/score");
+            result.opponent_money = (float)dict_get(&log, "env/opponent_score");
             result.games = (int)n;
             break;
         }
@@ -3573,17 +3787,17 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
         PUF_LOAD_HOOK(load_path, ini);
 #endif
     }
+    // Keep the rollout actor identical to the loaded learner before any
+    // self-play bootstrap or first rollout.  This is a no-op apart from the
+    // stream fence when async collection is disabled.
+    pufferl_sync_loaded_policy(pufferl);
     Selfplay selfplay = {0};
     if (use_selfplay) {
-        char initial_checkpoint[4096];
-        snprintf(initial_checkpoint, sizeof(initial_checkpoint),
-            "%s/%016ld.bin", checkpoint_dir, pufferl->global_step);
-        if (ctx->artifact_owner) {
-            puf_save_weights(pufferl, initial_checkpoint);
-#ifdef PUF_CHECKPOINT_HOOK
-            PUF_CHECKPOINT_HOOK(initial_checkpoint, ini);
-#endif
-        }
+        // A requested checkpoint is the first historical opponent.  A fresh
+        // run uses an in-memory frozen copy of the initialized learner rather
+        // than manufacturing a disk checkpoint named step zero.
+        const char* initial_opponent = load_path
+            ? load_path : SELFPLAY_MEMORY_BOOTSTRAP;
         selfplay.num_banks = pufferl->num_frozen_banks;
         if (selfplay.num_banks <= 0 || selfplay.num_banks > SELFPLAY_MAX_BANKS) {
             fprintf(stderr, "selfplay requires 1..%d frozen banks\n", SELFPLAY_MAX_BANKS);
@@ -3599,8 +3813,23 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
         selfplay.external_prob = (float)puf_ini_get(
             ini, "selfplay", "opponent_pool_prob");
         selfplay.pfsp_alpha = (float)puf_ini_get(ini, "selfplay", "pfsp_alpha");
+        selfplay.pfsp_uniform_mix = (float)puf_ini_get(
+            ini, "selfplay", "pfsp_uniform_mix");
+        const char* pfsp_mode = puf_ini_get_str(ini, "selfplay", "pfsp_mode");
+        if (strcmp(pfsp_mode, "hard") == 0) {
+            selfplay.pfsp_mode = PFSP_HARD;
+        } else if (strcmp(pfsp_mode, "variance") == 0) {
+            selfplay.pfsp_mode = PFSP_VARIANCE;
+        } else {
+            fprintf(stderr, "selfplay.pfsp_mode must be hard or variance\n");
+            exit(1);
+        }
         selfplay.payoff_ema = (float)puf_ini_get(ini, "selfplay", "payoff_ema");
+        assert(selfplay.external_prob >= 0.0f && selfplay.external_prob <= 1.0f
+            && "selfplay.opponent_pool_prob must be in [0, 1]");
         assert(selfplay.pfsp_alpha >= 0.0f && "selfplay.pfsp_alpha must be nonnegative");
+        assert(selfplay.pfsp_uniform_mix >= 0.0f && selfplay.pfsp_uniform_mix <= 1.0f
+            && "selfplay.pfsp_uniform_mix must be in [0, 1]");
         assert(selfplay.payoff_ema > 0.0f && selfplay.payoff_ema <= 1.0f
             && "selfplay.payoff_ema must be in (0, 1]");
         snprintf(selfplay.payoff_path, sizeof(selfplay.payoff_path),
@@ -3611,6 +3840,9 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
         const char* enemy_path = puf_checkpoint_path_key(ini,
             "load_enemy_model_path", enemy_resolved, sizeof(enemy_resolved));
         if (enemy_path) selfplay_add_external(&selfplay, enemy_path);
+        size_t frozen_bytes = (size_t)numel(
+            pufferl->frozen_banks[0].master_weights.shape) * sizeof(float);
+        selfplay_validate_external(&selfplay, frozen_bytes);
         selfplay_set_external_weights(&selfplay,
             puf_ini_get_str(ini, "selfplay", "opponent_pool_weights"));
         long current_step = pufferl->global_step * pufferl->hypers.world_size;
@@ -3625,10 +3857,12 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
         }
 #endif
 
-        selfplay_add_checkpoint(&selfplay, initial_checkpoint);
-        printf("Selfplay pool: history=%d external=%d banks=%d external_prob=%.2f pfsp=%.2f\n",
+        selfplay_add_checkpoint(&selfplay, initial_opponent);
+        printf("Selfplay pool: history=%d external=%d banks=%d external_prob=%.2f "
+            "pfsp=%s:%.2f uniform=%.2f\n",
             selfplay.pool_size, selfplay.external_size,
-            selfplay.num_banks, selfplay.external_prob, selfplay.pfsp_alpha);
+            selfplay.num_banks, selfplay.external_prob, pfsp_mode,
+            selfplay.pfsp_alpha, selfplay.pfsp_uniform_mix);
         for (int b = 0; b < selfplay.num_banks; b++) {
             selfplay_load_bank(&selfplay, pufferl, b,
                 selfplay_sample(&selfplay), current_step);
@@ -3906,17 +4140,23 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
     }
     close_pufferl(pufferl);
 
-    // Selfplay end rating: match final checkpoint vs a small fixed opponent pool.
-    // Mean A winrate is the sole protein score when eval_games > 0.
+    // Selfplay end rating: seat-balanced matches against a fixed external panel.
+    // This replaces the noisy final training rollout as the protein objective.
     if (use_selfplay && final_checkpoint[0] && ctx->artifact_owner) {
         int max_opp = (int)puf_ini_get(ini, "selfplay", "eval_pool_size");
         long games = (long)puf_ini_get(ini, "selfplay", "eval_games");
         if (max_opp > 0 && games > 0) {
+            const char* eval_metric = puf_ini_get_str(
+                ini, "selfplay", "eval_metric");
+            if (strcmp(eval_metric, "winrate") != 0 &&
+                    strcmp(eval_metric, "money") != 0) {
+                fprintf(stderr, "selfplay.eval_metric must be winrate or money\n");
+                exit(1);
+            }
             int n_opp = 0;
             char games_buf[32];
             snprintf(games_buf, sizeof(games_buf), "%ld", games);
             puf_ini_put(ini, "base.num_games", games_buf);
-            puf_ini_put(ini, "base.load_model_path", final_checkpoint);
 
             float sum = 0;
             int pool_size = selfplay.external_size + selfplay.pool_size;
@@ -3924,17 +4164,31 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
                 const char* opponent = i < selfplay.external_size
                     ? selfplay.external[i]
                     : selfplay.pool[i - selfplay.external_size];
-                if (strcmp(opponent, final_checkpoint) == 0) continue;
+                if (strcmp(opponent, final_checkpoint) == 0 ||
+                        strcmp(opponent, SELFPLAY_MEMORY_BOOTSTRAP) == 0) {
+                    continue;
+                }
+
+                puf_ini_put(ini, "base.load_model_path", final_checkpoint);
                 puf_ini_put(ini, "base.load_enemy_model_path", opponent);
-                EvalResult r = run_eval(ini, ctx, EVAL_MATCH, 0);
-                sum += r.score;
+                EvalResult first = run_eval(ini, ctx, EVAL_MATCH, 0);
+
+                puf_ini_put(ini, "base.load_model_path", opponent);
+                puf_ini_put(ini, "base.load_enemy_model_path", final_checkpoint);
+                EvalResult second = run_eval(ini, ctx, EVAL_MATCH, 0);
+
+                float winrate = 0.5f * (first.score + 1.0f - second.score);
+                float draw = 0.5f * (first.draw + second.draw);
+                float money = 0.5f * (first.money + second.opponent_money);
+                sum += strcmp(eval_metric, "money") == 0 ? money : winrate;
                 n_opp++;
-                printf("selfplay_eval vs %s games=%d score=%.4f draw=%.4f\n",
-                    opponent, r.games, r.score, r.draw);
+                printf("selfplay_eval vs %s games=%d/seat win=%.4f draw=%.4f "
+                    "money=%.1f\n", opponent, first.games, winrate, draw, money);
             }
             if (n_opp) {
                 float pool_score = sum / n_opp;
-                printf("selfplay_eval mean_score=%.4f n=%d\n", pool_score, n_opp);
+                printf("selfplay_eval metric=%s mean=%.4f n=%d\n",
+                    eval_metric, pool_score, n_opp);
                 result.score = pool_score;
                 result.points = 1;
                 result.scores[0] = pool_score;

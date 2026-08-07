@@ -3,13 +3,15 @@ c_*.c
 pufferlib/extensions.c
 pufferlib/puffernet.c
 logs/
-
+saved/
+kaggle_sources/
+v27_agents/
 # Build dir
 build/
-
+goof*
 # hipified cuda extensions dir [HIP/ROCM]
 pufferlib/extensions/hip/
-
+*.py
 # Raylib
 raylib_wasm/
 

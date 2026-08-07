@@ -109,12 +109,10 @@ int main(void) {
     env.cfg = test_config_from_ini();
     env.cfg.max_steps = 5000;
     env.cfg.player_health = 1000000.0f;
-    env.cfg.enemy_obstacle_stride = 2;
     ps_init(&env);
     c_reset(&env);
 
-    assert(PS_OBS_VERSION == 10);
-    assert(PS_OBS_SIZE == 412);
+    assert(PS_OBS_SIZE == 321);
     assert_finite_observation(observations);
     assert(ps_geometry_shape_overlaps_circle(PS_SHAPE_AABB,
         4.0f, 0.0f, 0.0f, 4.65f, 4.65f, 0.5f));
@@ -137,13 +135,15 @@ int main(void) {
     assert(observations[PS_OBS_BOSS_BASE + PS_BOSS_DX] > 0.0f);
     assert(observations[PS_OBS_BOSS_BASE + PS_BOSS_DY] < 0.0f);
     assert(fabsf(observations[PS_OBS_BOSS_BASE + PS_BOSS_HP_FRACTION] - 0.5f) < 1e-5f);
+    env.enemies.shape[boss_slot] = PS_SHAPE_AABB;
+    ps_rebuild_grid(&env);
+    ps_rebuild_grid(&env);
+    assert(env.aabb_count == 1);
     ps_clear_entities(&env);
     ps_compute_observations(&env);
     assert(observations[PS_OBS_BOSS_BASE + PS_BOSS_PRESENT] == 0.0f);
 
-    // V10 preserves the legacy obstacle density/proximity map and appends exact
-    // dx/dy in stable spatial bins. V6 remains a valid legacy prefix mode.
-    env.cfg.observation_version = 10;
+    // Each obstacle bin contains the nearest obstacle's exact relative dx/dy.
     env.cfg.obstacle_count = 2;
     env.obstacles.x[0] = env.px + 3.0f;
     env.obstacles.y[0] = env.py + 1.0f;
@@ -157,18 +157,26 @@ int main(void) {
     int ring = ps_obs_ring_d2(10.0f, observe_radius * observe_radius);
     int obstacle_slot = PS_OBS_OBSTACLE_BASE
         + (ring * PS_SECTORS + sector) * PS_OBSTACLE_CHANNELS;
-    assert(observations[obstacle_slot] > 0.0f);
-    assert(observations[obstacle_slot + 1] > 0.0f);
-    int exact_slot = PS_OBS_EXACT_OBSTACLE_BASE
-        + 2 * (ring * PS_SECTORS + sector);
-    assert(fabsf(observations[exact_slot] - 3.0f / observe_radius) < 1e-5f);
-    assert(fabsf(observations[exact_slot + 1] - 1.0f / observe_radius) < 1e-5f);
-    env.cfg.observation_version = 6;
+    assert(fabsf(observations[obstacle_slot] - 3.0f / observe_radius) < 1e-5f);
+    assert(fabsf(observations[obstacle_slot + 1] - 1.0f / observe_radius) < 1e-5f);
+
+    // Upgrade cards are exact one-hot IDs, with inactive cards all zero.
+    env.pending_upgrade = 1;
+    env.offered[0] = PS_UPGRADE_BUBBLE;
+    env.offered[1] = PS_UPGRADE_AREA;
+    env.offered[2] = PS_UPGRADE_PIERCE;
     ps_compute_observations(&env);
-    assert(observations[obstacle_slot] > 0.0f);
-    assert(observations[obstacle_slot + 1] > 0.0f);
-    assert(observations[exact_slot] == 0.0f);
-    env.cfg.observation_version = 10;
+    for (int slot = 0; slot < PS_UPGRADE_SLOTS; slot++) {
+        int selected = env.offered[slot];
+        for (int type = 0; type < PS_UPGRADE_COUNT; type++) {
+            float expected = type == selected ? 1.0f : 0.0f;
+            assert(observations[PS_OBS_UPGRADE_BASE + slot * PS_UPGRADE_FEATURES + type] == expected);
+        }
+    }
+    env.pending_upgrade = 0;
+    ps_compute_observations(&env);
+    for (int i = 0; i < PS_UPGRADE_SLOTS * PS_UPGRADE_FEATURES; i++)
+        assert(observations[PS_OBS_UPGRADE_BASE + i] == 0.0f);
 
     for (int t = 0; t < 20000; t++) {
         actions[0] = (float)((t / 37) % 9);

@@ -59,8 +59,6 @@ static void puf_envs_step(Env* envs, const float* actions, obs_t* observations,
     ps_native_sim->rewards = rewards;
     ps_native_sim->terminals = terminals;
     ps_cuda_step_range(ps_native_sim, start, count, stream);
-    int blocks = (ps_native_sim->num_envs + PS_CUDA_BLOCK_SIZE - 1) / PS_CUDA_BLOCK_SIZE;
-    ps_pack_episode_logs_kernel<<<blocks, PS_CUDA_BLOCK_SIZE, 0, stream>>>(*ps_native_sim);
 }
 
 static void puf_envs_close(Env* envs) {

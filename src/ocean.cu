@@ -25,12 +25,22 @@ void puf_normal_init(PrecisionTensor* dst, float std, ulong seed, cudaStream_t s
 #define PUFFER_MINIMAL
 #include "../ocean/minimal/minimal.cu"
 #endif
+#if __has_include("../ocean/kaggriculture/kaggriculture.cu")
+#define PUFFER_KAGGRICULTURE
+#include "../ocean/kaggriculture/kaggriculture.cu"
+#endif
 #ifdef PUFFER_NETHACK
 #include "../ocean/nethack/nethack.cu"
 #endif
 
 // Override encoder vtable for known ocean environments. No-op for unknown envs.
 static void create_custom_encoder(const char* env_name, Encoder* enc) {
+#ifdef PUFFER_KAGGRICULTURE
+    if (strcmp(env_name, "kaggriculture") == 0) {
+        create_kaggriculture_encoder(enc);
+        return;
+    }
+#endif
 #ifdef PUFFER_NETHACK
     if (strcmp(env_name, "nethack") == 0) {
         create_nethack_encoder(enc);

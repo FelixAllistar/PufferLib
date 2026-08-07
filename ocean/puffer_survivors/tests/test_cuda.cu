@@ -21,7 +21,7 @@ int main() {
     Ini ini = {};
     puf_ini_load_env(&ini, "puffer_survivors", 0, nullptr);
     Dict* cfg = puf_ini_section(&ini, "env", 0);
-    dict_set(cfg, "max_steps", 1);
+    dict_set(cfg, "max_steps", 2);
     dict_set(cfg, "player_health", 1000000.0);
     dict_set(cfg, "reward_xp", 0.0);
     dict_set(cfg, "reward_kill", 0.0);
@@ -54,13 +54,21 @@ int main() {
     Log log = {};
     CUDA_CHECK(cudaMemcpy(&reward, rewards, sizeof(float), cudaMemcpyDeviceToHost));
     CUDA_CHECK(cudaMemcpy(&terminal, terminals, sizeof(float), cudaMemcpyDeviceToHost));
+    assert(terminal == 0.0f);
+    assert(std::fabs(reward - 0.125f) < 1e-5f);
+
+    puf_envs_step(envs, actions, observations, rewards, terminals, 0, 1, 0);
+    CUDA_CHECK(cudaDeviceSynchronize());
+    CUDA_CHECK(cudaMemcpy(&reward, rewards, sizeof(float), cudaMemcpyDeviceToHost));
+    CUDA_CHECK(cudaMemcpy(&terminal, terminals, sizeof(float), cudaMemcpyDeviceToHost));
     CUDA_CHECK(cudaMemcpy(&log, &envs[0].log, sizeof(Log), cudaMemcpyDeviceToHost));
     assert(terminal == 1.0f);
     assert(std::fabs(reward - 0.875f) < 1e-5f);
     assert(log.n == 1.0f);
     assert(log.perf == 1.0f);
     assert(log.survived == 1.0f);
-    assert(std::fabs(log.reward_survival - 0.125f) < 1e-5f);
+    assert(log.episode_length == 2.0f);
+    assert(std::fabs(log.reward_survival - 0.25f) < 1e-5f);
     assert(std::fabs(log.reward_terminal - 0.75f) < 1e-5f);
 
     puf_envs_close(envs);

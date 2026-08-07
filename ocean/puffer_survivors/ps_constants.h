@@ -16,34 +16,28 @@
 
 #define PS_SECTORS 8
 #define PS_RINGS 3
-#define PS_PLAYER_FEATURES 30
-#define PS_BOSS_FEATURES 8
+#define PS_PLAYER_FEATURES 26
+#define PS_BOSS_FEATURES 7
 #define PS_ENEMY_CHANNELS 4
 #define PS_DROP_CHANNELS 3
 #define PS_OBSTACLE_CHANNELS 2
-#define PS_DANGER_CHANNELS 4
-#define PS_AREA_CHANNELS 3
 #define PS_WEAPON_COUNT 5
 #define PS_ENEMY_KIND_COUNT 4
 #define PS_WAVE_TABLE_COUNT 24
 #define PS_WEAPON_FEATURES (PS_WEAPON_COUNT * 4)
 #define PS_UPGRADE_SLOTS 3
-#define PS_UPGRADE_FEATURES 6
-#define PS_EXACT_OBSTACLE_FEATURES (PS_SECTORS * PS_RINGS * 2)
+#define PS_UPGRADE_FEATURES 12
+#define PS_OBSTACLE_FEATURES (PS_SECTORS * PS_RINGS * 2)
 #define PS_MOVING_OBSTACLE_SLOTS 4
 #define PS_MOVING_OBSTACLE_FEATURES 4
 #define PS_MOVING_OBSTACLE_OBS_FEATURES (PS_MOVING_OBSTACLE_SLOTS * PS_MOVING_OBSTACLE_FEATURES)
-#define PS_OBS_VERSION 10
 #define PS_OBS_SIZE (PS_PLAYER_FEATURES \
     + PS_BOSS_FEATURES \
     + PS_SECTORS * PS_RINGS * PS_ENEMY_CHANNELS \
     + PS_SECTORS * PS_RINGS * PS_DROP_CHANNELS \
-    + PS_SECTORS * PS_RINGS * PS_OBSTACLE_CHANNELS \
-    + PS_SECTORS * PS_DANGER_CHANNELS \
-    + PS_SECTORS * PS_AREA_CHANNELS \
+    + PS_OBSTACLE_FEATURES \
     + PS_WEAPON_FEATURES \
     + PS_UPGRADE_SLOTS * PS_UPGRADE_FEATURES \
-    + PS_EXACT_OBSTACLE_FEATURES \
     + PS_MOVING_OBSTACLE_OBS_FEATURES)
 
 #define PS_SPRITE_PLAYER 0
@@ -53,8 +47,6 @@
 #define PS_SPRITE_XP 4
 #define PS_SPRITE_HEALTH 5
 #define PS_SPRITE_CORAL 6
-#define PS_SPRITE_ROCK 7
-#define PS_SPRITE_KELP 8
 #define PS_SPRITE_EEL 9
 #define PS_SPRITE_ORB 10
 #define PS_SPRITE_INK 11
@@ -100,11 +92,11 @@ typedef enum {
     PS_UPGRADE_COOLDOWN = 9,
     PS_UPGRADE_AREA = 10,
     PS_UPGRADE_PIERCE = 11,
-    PS_UPGRADE_COUNT = 12,
+    PS_UPGRADE_COUNT = PS_UPGRADE_FEATURES,
 } PSUpgradeId;
 
 #if defined(__cplusplus)
-static_assert(PS_OBS_SIZE == 412, "Unexpected Puffer Survivors observation size");
+static_assert(PS_OBS_SIZE == 321, "Unexpected Puffer Survivors observation size");
 #else
-_Static_assert(PS_OBS_SIZE == 412, "Unexpected Puffer Survivors observation size");
+_Static_assert(PS_OBS_SIZE == 321, "Unexpected Puffer Survivors observation size");
 #endif

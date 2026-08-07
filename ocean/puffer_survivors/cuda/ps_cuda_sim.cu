@@ -26,14 +26,9 @@
 #define PS_CUDA_BLOCK_SIZE 256
 #endif
 
-// Default layout is env-major because most RL tensors are [num_envs, features].
-// For better coalesced observation writes from one-thread-per-env, compile with:
-//   -DPS_CUDA_OBS_ENV_MAJOR=0 -DPS_CUDA_ACTION_ENV_MAJOR=0
-#ifndef PS_CUDA_OBS_ENV_MAJOR
-#define PS_CUDA_OBS_ENV_MAJOR 1
-#endif
-#ifndef PS_CUDA_ACTION_ENV_MAJOR
-#define PS_CUDA_ACTION_ENV_MAJOR 1
+#ifndef PS_CUDA_ENEMY_SCAN_MODE
+// 1 = full capacity, 2 = choose by occupancy.
+#define PS_CUDA_ENEMY_SCAN_MODE 2
 #endif
 
 #define PS_HD __host__ __device__ __forceinline__
@@ -47,6 +42,19 @@
 #define PS_GIDX(sim, i, env) ((i) * (sim).num_envs + (env))
 #define PS_WIDX(sim, weapon, env) ((weapon) * (sim).num_envs + (env))
 #define PS_UIDX(sim, slot, env) ((slot) * (sim).num_envs + (env))
+
+#ifdef PS_CUDA_PROFILE
+#define PS_PROFILE_STAGE_COUNT 9
+#define PS_PROFILE_TOTAL 0
+#define PS_PROFILE_MOVEMENT 1
+#define PS_PROFILE_WAVE_SPAWNS 2
+#define PS_PROFILE_ENEMIES 3
+#define PS_PROFILE_GRID 4
+#define PS_PROFILE_WEAPONS 5
+#define PS_PROFILE_PROJECTILES 6
+#define PS_PROFILE_DROPS 7
+#define PS_PROFILE_OBSERVATIONS 8
+#endif
 
 // -----------------------------------------------------------------------------
 // Config and simulator SoA
@@ -89,7 +97,7 @@ struct PSCudaSim {
     float *enemy_x, *enemy_y, *enemy_vx, *enemy_vy;
     float *enemy_hp, *enemy_max_hp, *enemy_radius, *enemy_bound_radius;
     float *enemy_half_width, *enemy_half_height, *enemy_speed, *enemy_damage;
-    int *enemy_next;
+    int *enemy_next, *enemy_dense, *enemy_dense_pos;
 
     // Projectile pool [PS_MAX_PROJECTILES, N]
     uint8_t *projectile_active, *projectile_type;
@@ -144,18 +152,11 @@ struct PSCudaSim {
     float *episode_levelups, *episode_obstacle_hits;
     float *episode_peak_enemies, *episode_peak_projectiles, *episode_min_hp;
 
-    // Accumulated logs over completed episodes, SoA fields.
-    float *log_perf, *log_score, *log_episode_return;
-    float *log_reward_survival, *log_reward_damage, *log_reward_kill;
-    float *log_reward_hurt, *log_reward_pickup, *log_reward_xp;
-    float *log_reward_levelup, *log_reward_obstacle, *log_reward_terminal;
-    float *log_episode_length;
-    float *log_kills, *log_level, *log_xp, *log_damage_dealt, *log_damage_taken;
-    float *log_pickups, *log_levelups, *log_obstacle_hits;
-    float *log_enemies_alive, *log_projectiles_alive, *log_drops_alive, *log_areas_alive;
-    float *log_weapon_levels, *log_wave, *log_hp, *log_survived, *log_n;
-    float *log_death_0_25, *log_death_25_50, *log_death_50_75, *log_death_75_100;
-    float *log_success, *log_peak_enemies, *log_peak_projectiles, *log_min_hp;
+#ifdef PS_CUDA_PROFILE
+    // Accumulated device clock cycles per stage, [stage, environment].
+    unsigned long long* profile_cycles;
+#endif
+
 };
 
 // -----------------------------------------------------------------------------
@@ -219,6 +220,7 @@ static inline void ps_cuda_alloc(PSCudaSim* sim, int num_envs, PSConfig cfg) {
     PS_ALLOC_FIELD(sim, enemy_hp, NE); PS_ALLOC_FIELD(sim, enemy_max_hp, NE); PS_ALLOC_FIELD(sim, enemy_radius, NE); PS_ALLOC_FIELD(sim, enemy_bound_radius, NE);
     PS_ALLOC_FIELD(sim, enemy_half_width, NE); PS_ALLOC_FIELD(sim, enemy_half_height, NE);
     PS_ALLOC_FIELD(sim, enemy_speed, NE); PS_ALLOC_FIELD(sim, enemy_damage, NE); PS_ALLOC_FIELD(sim, enemy_next, NE);
+    PS_ALLOC_FIELD(sim, enemy_dense, NE); PS_ALLOC_FIELD(sim, enemy_dense_pos, NE);
 
     PS_ALLOC_FIELD(sim, projectile_active, NP); PS_ALLOC_FIELD(sim, projectile_type, NP);
     PS_ALLOC_FIELD(sim, projectile_x, NP); PS_ALLOC_FIELD(sim, projectile_y, NP); PS_ALLOC_FIELD(sim, projectile_vx, NP); PS_ALLOC_FIELD(sim, projectile_vy, NP);
@@ -257,17 +259,9 @@ static inline void ps_cuda_alloc(PSCudaSim* sim, int num_envs, PSConfig cfg) {
     PS_ALLOC_FIELD(sim, episode_levelups, N); PS_ALLOC_FIELD(sim, episode_obstacle_hits, N);
     PS_ALLOC_FIELD(sim, episode_peak_enemies, N); PS_ALLOC_FIELD(sim, episode_peak_projectiles, N); PS_ALLOC_FIELD(sim, episode_min_hp, N);
 
-    PS_ALLOC_FIELD(sim, log_perf, N); PS_ALLOC_FIELD(sim, log_score, N); PS_ALLOC_FIELD(sim, log_episode_return, N);
-    PS_ALLOC_FIELD(sim, log_reward_survival, N); PS_ALLOC_FIELD(sim, log_reward_damage, N); PS_ALLOC_FIELD(sim, log_reward_kill, N);
-    PS_ALLOC_FIELD(sim, log_reward_hurt, N); PS_ALLOC_FIELD(sim, log_reward_pickup, N); PS_ALLOC_FIELD(sim, log_reward_xp, N);
-    PS_ALLOC_FIELD(sim, log_reward_levelup, N); PS_ALLOC_FIELD(sim, log_reward_obstacle, N); PS_ALLOC_FIELD(sim, log_reward_terminal, N);
-    PS_ALLOC_FIELD(sim, log_episode_length, N);
-    PS_ALLOC_FIELD(sim, log_kills, N); PS_ALLOC_FIELD(sim, log_level, N); PS_ALLOC_FIELD(sim, log_xp, N); PS_ALLOC_FIELD(sim, log_damage_dealt, N);
-    PS_ALLOC_FIELD(sim, log_damage_taken, N); PS_ALLOC_FIELD(sim, log_pickups, N); PS_ALLOC_FIELD(sim, log_levelups, N); PS_ALLOC_FIELD(sim, log_obstacle_hits, N);
-    PS_ALLOC_FIELD(sim, log_enemies_alive, N); PS_ALLOC_FIELD(sim, log_projectiles_alive, N); PS_ALLOC_FIELD(sim, log_drops_alive, N); PS_ALLOC_FIELD(sim, log_areas_alive, N);
-    PS_ALLOC_FIELD(sim, log_weapon_levels, N); PS_ALLOC_FIELD(sim, log_wave, N); PS_ALLOC_FIELD(sim, log_hp, N); PS_ALLOC_FIELD(sim, log_survived, N); PS_ALLOC_FIELD(sim, log_n, N);
-    PS_ALLOC_FIELD(sim, log_death_0_25, N); PS_ALLOC_FIELD(sim, log_death_25_50, N); PS_ALLOC_FIELD(sim, log_death_50_75, N); PS_ALLOC_FIELD(sim, log_death_75_100, N);
-    PS_ALLOC_FIELD(sim, log_success, N); PS_ALLOC_FIELD(sim, log_peak_enemies, N); PS_ALLOC_FIELD(sim, log_peak_projectiles, N); PS_ALLOC_FIELD(sim, log_min_hp, N);
+#ifdef PS_CUDA_PROFILE
+    PS_ALLOC_FIELD(sim, profile_cycles, N * PS_PROFILE_STAGE_COUNT);
+#endif
 
     // Zero everything. Reset kernel will fill live state.
     PS_CUDA_CHECK(cudaMemset(sim->observations, 0, sizeof(float) * N * PS_OBS_SIZE));
@@ -289,7 +283,7 @@ static inline void ps_cuda_alloc(PSCudaSim* sim, int num_envs, PSConfig cfg) {
     PS_ZERO_FIELD(sim, weapon_cd, N * PS_WEAPON_COUNT); PS_ZERO_FIELD(sim, weapon_active, N * PS_WEAPON_COUNT); PS_ZERO_FIELD(sim, weapon_level, N * PS_WEAPON_COUNT);
     PS_ZERO_FIELD(sim, orbit_phase, N); PS_ZERO_FIELD(sim, tick, N); PS_ZERO_FIELD(sim, invuln_timer, N);
     PS_ZERO_FIELD(sim, enemy_type, NE); PS_ZERO_FIELD(sim, enemy_shape, NE); PS_ZERO_FIELD(sim, enemy_x, NE); PS_ZERO_FIELD(sim, enemy_y, NE); PS_ZERO_FIELD(sim, enemy_vx, NE); PS_ZERO_FIELD(sim, enemy_vy, NE);
-    PS_ZERO_FIELD(sim, enemy_hp, NE); PS_ZERO_FIELD(sim, enemy_max_hp, NE); PS_ZERO_FIELD(sim, enemy_radius, NE); PS_ZERO_FIELD(sim, enemy_bound_radius, NE); PS_ZERO_FIELD(sim, enemy_half_width, NE); PS_ZERO_FIELD(sim, enemy_half_height, NE); PS_ZERO_FIELD(sim, enemy_speed, NE); PS_ZERO_FIELD(sim, enemy_damage, NE); PS_ZERO_FIELD(sim, enemy_next, NE);
+    PS_ZERO_FIELD(sim, enemy_hp, NE); PS_ZERO_FIELD(sim, enemy_max_hp, NE); PS_ZERO_FIELD(sim, enemy_radius, NE); PS_ZERO_FIELD(sim, enemy_bound_radius, NE); PS_ZERO_FIELD(sim, enemy_half_width, NE); PS_ZERO_FIELD(sim, enemy_half_height, NE); PS_ZERO_FIELD(sim, enemy_speed, NE); PS_ZERO_FIELD(sim, enemy_damage, NE); PS_ZERO_FIELD(sim, enemy_next, NE); PS_ZERO_FIELD(sim, enemy_dense, NE); PS_ZERO_FIELD(sim, enemy_dense_pos, NE);
     PS_ZERO_FIELD(sim, projectile_type, NP); PS_ZERO_FIELD(sim, projectile_x, NP); PS_ZERO_FIELD(sim, projectile_y, NP); PS_ZERO_FIELD(sim, projectile_vx, NP); PS_ZERO_FIELD(sim, projectile_vy, NP);
     PS_ZERO_FIELD(sim, projectile_damage, NP); PS_ZERO_FIELD(sim, projectile_radius, NP); PS_ZERO_FIELD(sim, projectile_ttl, NP); PS_ZERO_FIELD(sim, projectile_pierce, NP);
     PS_ZERO_FIELD(sim, projectile_dense, NP); PS_ZERO_FIELD(sim, projectile_dense_pos, NP);
@@ -311,17 +305,10 @@ static inline void ps_cuda_alloc(PSCudaSim* sim, int num_envs, PSConfig cfg) {
     PS_ZERO_FIELD(sim, episode_score, N); PS_ZERO_FIELD(sim, episode_kills, N); PS_ZERO_FIELD(sim, episode_xp, N);
     PS_ZERO_FIELD(sim, episode_damage_dealt, N); PS_ZERO_FIELD(sim, episode_damage_taken, N); PS_ZERO_FIELD(sim, episode_pickups, N); PS_ZERO_FIELD(sim, episode_levelups, N); PS_ZERO_FIELD(sim, episode_obstacle_hits, N);
     PS_ZERO_FIELD(sim, episode_peak_enemies, N); PS_ZERO_FIELD(sim, episode_peak_projectiles, N); PS_ZERO_FIELD(sim, episode_min_hp, N);
-    PS_ZERO_FIELD(sim, log_perf, N); PS_ZERO_FIELD(sim, log_score, N); PS_ZERO_FIELD(sim, log_episode_return, N);
-    PS_ZERO_FIELD(sim, log_reward_survival, N); PS_ZERO_FIELD(sim, log_reward_damage, N); PS_ZERO_FIELD(sim, log_reward_kill, N);
-    PS_ZERO_FIELD(sim, log_reward_hurt, N); PS_ZERO_FIELD(sim, log_reward_pickup, N); PS_ZERO_FIELD(sim, log_reward_xp, N);
-    PS_ZERO_FIELD(sim, log_reward_levelup, N); PS_ZERO_FIELD(sim, log_reward_obstacle, N); PS_ZERO_FIELD(sim, log_reward_terminal, N);
-    PS_ZERO_FIELD(sim, log_episode_length, N);
-    PS_ZERO_FIELD(sim, log_kills, N); PS_ZERO_FIELD(sim, log_level, N); PS_ZERO_FIELD(sim, log_xp, N); PS_ZERO_FIELD(sim, log_damage_dealt, N); PS_ZERO_FIELD(sim, log_damage_taken, N);
-    PS_ZERO_FIELD(sim, log_pickups, N); PS_ZERO_FIELD(sim, log_levelups, N); PS_ZERO_FIELD(sim, log_obstacle_hits, N); PS_ZERO_FIELD(sim, log_enemies_alive, N);
-    PS_ZERO_FIELD(sim, log_projectiles_alive, N); PS_ZERO_FIELD(sim, log_drops_alive, N); PS_ZERO_FIELD(sim, log_areas_alive, N); PS_ZERO_FIELD(sim, log_weapon_levels, N);
-    PS_ZERO_FIELD(sim, log_wave, N); PS_ZERO_FIELD(sim, log_hp, N); PS_ZERO_FIELD(sim, log_survived, N); PS_ZERO_FIELD(sim, log_n, N);
-    PS_ZERO_FIELD(sim, log_death_0_25, N); PS_ZERO_FIELD(sim, log_death_25_50, N); PS_ZERO_FIELD(sim, log_death_50_75, N); PS_ZERO_FIELD(sim, log_death_75_100, N);
-    PS_ZERO_FIELD(sim, log_success, N); PS_ZERO_FIELD(sim, log_peak_enemies, N); PS_ZERO_FIELD(sim, log_peak_projectiles, N); PS_ZERO_FIELD(sim, log_min_hp, N);
+
+#ifdef PS_CUDA_PROFILE
+    PS_ZERO_FIELD(sim, profile_cycles, N * PS_PROFILE_STAGE_COUNT);
+#endif
 }
 
 #define PS_FREE_FIELD(sim, field) do { if ((sim)->field) { cudaFree((sim)->field); (sim)->field = nullptr; } } while (0)
@@ -340,7 +327,7 @@ static inline void ps_cuda_free(PSCudaSim* sim) {
     PS_FREE_FIELD(sim, player_facing_left); PS_FREE_FIELD(sim, speed_bonus); PS_FREE_FIELD(sim, damage_bonus); PS_FREE_FIELD(sim, cooldown_mult); PS_FREE_FIELD(sim, projectile_speed_bonus);
     PS_FREE_FIELD(sim, magnet_bonus); PS_FREE_FIELD(sim, area_bonus); PS_FREE_FIELD(sim, level); PS_FREE_FIELD(sim, pierce_bonus); PS_FREE_FIELD(sim, pending_upgrade); PS_FREE_FIELD(sim, queued_upgrades); PS_FREE_FIELD(sim, last_boss_tick);
     PS_FREE_FIELD(sim, offered); PS_FREE_FIELD(sim, weapon_cd); PS_FREE_FIELD(sim, weapon_active); PS_FREE_FIELD(sim, weapon_level); PS_FREE_FIELD(sim, orbit_phase); PS_FREE_FIELD(sim, tick); PS_FREE_FIELD(sim, invuln_timer);
-    PS_FREE_FIELD(sim, enemy_active); PS_FREE_FIELD(sim, enemy_type); PS_FREE_FIELD(sim, enemy_shape); PS_FREE_FIELD(sim, enemy_x); PS_FREE_FIELD(sim, enemy_y); PS_FREE_FIELD(sim, enemy_vx); PS_FREE_FIELD(sim, enemy_vy); PS_FREE_FIELD(sim, enemy_hp); PS_FREE_FIELD(sim, enemy_max_hp); PS_FREE_FIELD(sim, enemy_radius); PS_FREE_FIELD(sim, enemy_bound_radius); PS_FREE_FIELD(sim, enemy_half_width); PS_FREE_FIELD(sim, enemy_half_height); PS_FREE_FIELD(sim, enemy_speed); PS_FREE_FIELD(sim, enemy_damage); PS_FREE_FIELD(sim, enemy_next);
+    PS_FREE_FIELD(sim, enemy_active); PS_FREE_FIELD(sim, enemy_type); PS_FREE_FIELD(sim, enemy_shape); PS_FREE_FIELD(sim, enemy_x); PS_FREE_FIELD(sim, enemy_y); PS_FREE_FIELD(sim, enemy_vx); PS_FREE_FIELD(sim, enemy_vy); PS_FREE_FIELD(sim, enemy_hp); PS_FREE_FIELD(sim, enemy_max_hp); PS_FREE_FIELD(sim, enemy_radius); PS_FREE_FIELD(sim, enemy_bound_radius); PS_FREE_FIELD(sim, enemy_half_width); PS_FREE_FIELD(sim, enemy_half_height); PS_FREE_FIELD(sim, enemy_speed); PS_FREE_FIELD(sim, enemy_damage); PS_FREE_FIELD(sim, enemy_next); PS_FREE_FIELD(sim, enemy_dense); PS_FREE_FIELD(sim, enemy_dense_pos);
     PS_FREE_FIELD(sim, projectile_active); PS_FREE_FIELD(sim, projectile_type); PS_FREE_FIELD(sim, projectile_x); PS_FREE_FIELD(sim, projectile_y); PS_FREE_FIELD(sim, projectile_vx); PS_FREE_FIELD(sim, projectile_vy); PS_FREE_FIELD(sim, projectile_damage); PS_FREE_FIELD(sim, projectile_radius); PS_FREE_FIELD(sim, projectile_ttl); PS_FREE_FIELD(sim, projectile_pierce); PS_FREE_FIELD(sim, projectile_dense); PS_FREE_FIELD(sim, projectile_dense_pos);
     PS_FREE_FIELD(sim, drop_active); PS_FREE_FIELD(sim, drop_type); PS_FREE_FIELD(sim, drop_x); PS_FREE_FIELD(sim, drop_y); PS_FREE_FIELD(sim, drop_value); PS_FREE_FIELD(sim, drop_dense); PS_FREE_FIELD(sim, drop_dense_pos);
     PS_FREE_FIELD(sim, area_active); PS_FREE_FIELD(sim, area_type); PS_FREE_FIELD(sim, area_x); PS_FREE_FIELD(sim, area_y); PS_FREE_FIELD(sim, area_radius); PS_FREE_FIELD(sim, area_damage); PS_FREE_FIELD(sim, area_ttl); PS_FREE_FIELD(sim, area_tick_rate); PS_FREE_FIELD(sim, area_tick_timer); PS_FREE_FIELD(sim, area_dense); PS_FREE_FIELD(sim, area_dense_pos);
@@ -350,7 +337,9 @@ static inline void ps_cuda_free(PSCudaSim* sim) {
     PS_FREE_FIELD(sim, nearest_enemy); PS_FREE_FIELD(sim, nearest_enemy_d2);
     PS_FREE_FIELD(sim, enemy_count); PS_FREE_FIELD(sim, projectile_count); PS_FREE_FIELD(sim, drop_count); PS_FREE_FIELD(sim, area_count); PS_FREE_FIELD(sim, moving_obstacle_count); PS_FREE_FIELD(sim, active_ink_count); PS_FREE_FIELD(sim, next_enemy_slot); PS_FREE_FIELD(sim, next_projectile_slot); PS_FREE_FIELD(sim, next_drop_slot); PS_FREE_FIELD(sim, next_area_slot); PS_FREE_FIELD(sim, next_moving_obstacle_slot);
     PS_FREE_FIELD(sim, episode_return); PS_FREE_FIELD(sim, episode_reward_survival); PS_FREE_FIELD(sim, episode_reward_damage); PS_FREE_FIELD(sim, episode_reward_kill); PS_FREE_FIELD(sim, episode_reward_hurt); PS_FREE_FIELD(sim, episode_reward_pickup); PS_FREE_FIELD(sim, episode_reward_xp); PS_FREE_FIELD(sim, episode_reward_levelup); PS_FREE_FIELD(sim, episode_reward_obstacle); PS_FREE_FIELD(sim, episode_reward_terminal); PS_FREE_FIELD(sim, episode_score); PS_FREE_FIELD(sim, episode_kills); PS_FREE_FIELD(sim, episode_xp); PS_FREE_FIELD(sim, episode_damage_dealt); PS_FREE_FIELD(sim, episode_damage_taken); PS_FREE_FIELD(sim, episode_pickups); PS_FREE_FIELD(sim, episode_levelups); PS_FREE_FIELD(sim, episode_obstacle_hits); PS_FREE_FIELD(sim, episode_peak_enemies); PS_FREE_FIELD(sim, episode_peak_projectiles); PS_FREE_FIELD(sim, episode_min_hp);
-    PS_FREE_FIELD(sim, log_perf); PS_FREE_FIELD(sim, log_score); PS_FREE_FIELD(sim, log_episode_return); PS_FREE_FIELD(sim, log_reward_survival); PS_FREE_FIELD(sim, log_reward_damage); PS_FREE_FIELD(sim, log_reward_kill); PS_FREE_FIELD(sim, log_reward_hurt); PS_FREE_FIELD(sim, log_reward_pickup); PS_FREE_FIELD(sim, log_reward_xp); PS_FREE_FIELD(sim, log_reward_levelup); PS_FREE_FIELD(sim, log_reward_obstacle); PS_FREE_FIELD(sim, log_reward_terminal); PS_FREE_FIELD(sim, log_episode_length); PS_FREE_FIELD(sim, log_kills); PS_FREE_FIELD(sim, log_level); PS_FREE_FIELD(sim, log_xp); PS_FREE_FIELD(sim, log_damage_dealt); PS_FREE_FIELD(sim, log_damage_taken); PS_FREE_FIELD(sim, log_pickups); PS_FREE_FIELD(sim, log_levelups); PS_FREE_FIELD(sim, log_obstacle_hits); PS_FREE_FIELD(sim, log_enemies_alive); PS_FREE_FIELD(sim, log_projectiles_alive); PS_FREE_FIELD(sim, log_drops_alive); PS_FREE_FIELD(sim, log_areas_alive); PS_FREE_FIELD(sim, log_weapon_levels); PS_FREE_FIELD(sim, log_wave); PS_FREE_FIELD(sim, log_hp); PS_FREE_FIELD(sim, log_survived); PS_FREE_FIELD(sim, log_n); PS_FREE_FIELD(sim, log_death_0_25); PS_FREE_FIELD(sim, log_death_25_50); PS_FREE_FIELD(sim, log_death_50_75); PS_FREE_FIELD(sim, log_death_75_100); PS_FREE_FIELD(sim, log_success); PS_FREE_FIELD(sim, log_peak_enemies); PS_FREE_FIELD(sim, log_peak_projectiles); PS_FREE_FIELD(sim, log_min_hp);
+#ifdef PS_CUDA_PROFILE
+    PS_FREE_FIELD(sim, profile_cycles);
+#endif
     std::memset(sim, 0, sizeof(*sim));
 }
 
@@ -363,8 +352,6 @@ PS_HD float ps_clampf(float v, float lo, float hi) {
 }
 
 PS_HD float ps_obs_soft_norm(float value, float half_scale) {
-    value = fmaxf(value, 0.0f);
-    half_scale = fmaxf(half_scale, 0.0001f);
     return value / (value + half_scale);
 }
 
@@ -373,6 +360,13 @@ PS_HD float ps_dist2(float ax, float ay, float bx, float by) {
     float dy = ay - by;
     return dx * dx + dy * dy;
 }
+
+#ifdef PS_CUDA_PROFILE
+PS_D void ps_profile_add(const PSCudaSim& sim, int env, int stage,
+        unsigned long long cycles) {
+    sim.profile_cycles[stage * sim.num_envs + env] += cycles;
+}
+#endif
 
 PS_D uint32_t ps_rand_u32(const PSCudaSim& sim, int env) {
     uint32_t x = sim.rng[env] ? sim.rng[env] : 1u;
@@ -388,45 +382,7 @@ PS_D float ps_randf(const PSCudaSim& sim, int env) {
 }
 
 PS_D float ps_action_get(const PSCudaSim& sim, int env, int slot) {
-#if PS_CUDA_ACTION_ENV_MAJOR
     return sim.actions[env * 2 + slot];
-#else
-    return sim.actions[slot * sim.num_envs + env];
-#endif
-}
-
-PS_D void ps_action_set(const PSCudaSim& sim, int env, int slot, float value) {
-#if PS_CUDA_ACTION_ENV_MAJOR
-    sim.actions[env * 2 + slot] = value;
-#else
-    sim.actions[slot * sim.num_envs + env] = value;
-#endif
-}
-
-PS_D int ps_obs_index(const PSCudaSim& sim, int env, int feature) {
-#if PS_CUDA_OBS_ENV_MAJOR
-    return env * PS_OBS_SIZE + feature;
-#else
-    return feature * sim.num_envs + env;
-#endif
-}
-
-PS_D float ps_obs_get(const PSCudaSim& sim, int env, int feature) {
-    return sim.observations[ps_obs_index(sim, env, feature)];
-}
-
-PS_D void ps_obs_set(const PSCudaSim& sim, int env, int feature, float value) {
-    sim.observations[ps_obs_index(sim, env, feature)] = value;
-}
-
-PS_D void ps_obs_add_min1(const PSCudaSim& sim, int env, int feature, float value) {
-    float v = ps_obs_get(sim, env, feature) + value;
-    ps_obs_set(sim, env, feature, v < 1.0f ? v : 1.0f);
-}
-
-PS_D void ps_obs_max(const PSCudaSim& sim, int env, int feature, float value) {
-    float old = ps_obs_get(sim, env, feature);
-    ps_obs_set(sim, env, feature, old > value ? old : value);
 }
 
 PS_D int ps_cell(const PSCudaSim& sim, int env, float x, float y) {
@@ -461,7 +417,7 @@ PS_D float ps_weapon_cooldown_total(const PSCudaSim& sim, int env, int weapon) {
     float cd = sim.cfg.weapon_base_cooldown[weapon]
         + sim.cfg.weapon_cooldown_per_level[weapon] * (float)(level - 1);
     cd *= sim.cooldown_mult[env] * sim.cfg.fire_cooldown
-        / fmaxf(sim.cfg.weapon_base_cooldown[PS_WEAPON_BUBBLE], 1.0f);
+        / sim.cfg.weapon_base_cooldown[PS_WEAPON_BUBBLE];
     return cd;
 }
 
@@ -518,9 +474,7 @@ PS_D int ps_wave_spawn_interval(const PSCudaSim& sim, int env) {
 }
 
 PS_D int ps_find_free_slot(uint8_t* active, int cap, int* cursor, int N, int env) {
-    if (cap <= 0) return -1;
     int start = *cursor;
-    if (start < 0 || start >= cap) start = 0;
     for (int tries = 0; tries < cap; tries++) {
         int i = start + tries;
         if (i >= cap) i -= cap;
@@ -530,7 +484,6 @@ PS_D int ps_find_free_slot(uint8_t* active, int cap, int* cursor, int N, int env
             return i;
         }
     }
-    *cursor = start;
     return -1;
 }
 
@@ -538,7 +491,7 @@ PS_D int ps_find_free_slot(uint8_t* active, int cap, int* cursor, int N, int env
 // Observation encoder
 // -----------------------------------------------------------------------------
 
-PS_D int ps_obs_sector_fast8(float dx, float dy) {
+PS_D int ps_obs_sector(float dx, float dy) {
     if (dy == 0.0f) return dx >= 0.0f ? 0 : 4;
     if (dx == 0.0f) return dy > 0.0f ? 2 : 6;
     if (dx > 0.0f) {
@@ -549,17 +502,6 @@ PS_D int ps_obs_sector_fast8(float dx, float dy) {
     return -dy < -dx ? 4 : 5;
 }
 
-PS_D int ps_obs_sector(float dx, float dy) {
-#if defined(PS_OBS_EXACT_SECTOR) && PS_OBS_EXACT_SECTOR
-    float angle = atan2f(dy, dx);
-    if (angle < 0.0f) angle += 2.0f * PI;
-    int sector = (int)(angle / (2.0f * PI) * PS_SECTORS);
-    return sector >= PS_SECTORS ? PS_SECTORS - 1 : sector;
-#else
-    return ps_obs_sector_fast8(dx, dy);
-#endif
-}
-
 PS_D int ps_obs_ring_d2(float d2, float observe_radius2) {
     if (d2 < observe_radius2 * 0.0225f) return 0;
     if (d2 < observe_radius2 * 0.1444f) return 1;
@@ -567,57 +509,51 @@ PS_D int ps_obs_ring_d2(float d2, float observe_radius2) {
 }
 
 PS_D void ps_compute_observations(const PSCudaSim& sim, int env) {
-    for (int i = 0; i < PS_OBS_SIZE; i++) ps_obs_set(sim, env, i, 0.0f);
+    float* obs = sim.observations + env * PS_OBS_SIZE;
 
     int idx = 0;
     int wave_len = sim.cfg.wave_length_steps;
     int wave = ps_wave_index(sim, env);
     int boss_period = sim.cfg.boss_period_steps;
 
-    ps_obs_set(sim, env, idx++, ps_clampf(sim.hp[env] / fmaxf(sim.max_hp[env], 1.0f), 0.0f, 1.0f));
-    ps_obs_set(sim, env, idx++, ps_obs_soft_norm(sim.hp[env], 4.0f));
-    ps_obs_set(sim, env, idx++, ps_obs_soft_norm(sim.max_hp[env], 8.0f));
-    ps_obs_set(sim, env, idx++, ps_obs_soft_norm((float)sim.level[env], 20.0f));
-    ps_obs_set(sim, env, idx++, ps_clampf(sim.xp[env] / fmaxf(ps_xp_threshold(sim, env), 1.0f), 0.0f, 1.0f));
-    ps_obs_set(sim, env, idx++, (float)(sim.tick[env] % wave_len) / (float)wave_len);
-    ps_obs_set(sim, env, idx++, ps_obs_soft_norm((float)(wave + 1), 12.0f));
-    ps_obs_set(sim, env, idx++, (float)(sim.tick[env] % boss_period) / (float)boss_period);
+    obs[idx++] = ps_clampf(sim.hp[env] / sim.max_hp[env], 0.0f, 1.0f);
+    obs[idx++] = ps_obs_soft_norm(sim.hp[env], 4.0f);
+    obs[idx++] = ps_obs_soft_norm(sim.max_hp[env], 8.0f);
+    obs[idx++] = ps_obs_soft_norm((float)sim.level[env], 20.0f);
+    obs[idx++] = ps_clampf(sim.xp[env] / ps_xp_threshold(sim, env), 0.0f, 1.0f);
+    obs[idx++] = (float)(sim.tick[env] % wave_len) / (float)wave_len;
+    obs[idx++] = ps_obs_soft_norm((float)(wave + 1), 12.0f);
+    obs[idx++] = (float)(sim.tick[env] % boss_period) / (float)boss_period;
 
     int visible_enemies_idx = idx++;
-    int alt_a_idx = idx++;
     int visible_drops_idx = idx++;
-    int alt_b_idx = idx++;
-    if (sim.cfg.observation_version == 6 || sim.cfg.observation_version >= 9) {
-        int bubble = PS_WIDX(sim, PS_WEAPON_BUBBLE, env);
-        ps_obs_set(sim, env, alt_b_idx, 1.0f - ps_clampf(sim.weapon_cd[bubble]
-            / ps_weapon_cooldown_total(sim, env, PS_WEAPON_BUBBLE), 0.0f, 1.0f));
-    }
-    ps_obs_set(sim, env, idx++, sim.pvx[env] / fmaxf(sim.cfg.player_speed * (1.0f + sim.speed_bonus[env]), 0.001f));
-    ps_obs_set(sim, env, idx++, sim.pvy[env] / fmaxf(sim.cfg.player_speed * (1.0f + sim.speed_bonus[env]), 0.001f));
-    ps_obs_set(sim, env, idx++, sim.pending_upgrade[env] ? 1.0f : 0.0f);
-    ps_obs_set(sim, env, idx++, sim.cfg.invuln_steps > 0 ? ps_clampf((float)sim.invuln_timer[env] / (float)sim.cfg.invuln_steps, 0.0f, 1.0f) : 0.0f);
-    ps_obs_set(sim, env, idx++, ps_clampf((float)sim.queued_upgrades[env] / 4.0f, 0.0f, 1.0f));
-    ps_obs_set(sim, env, idx++, ps_obs_soft_norm(sim.speed_bonus[env], 1.0f));
-    ps_obs_set(sim, env, idx++, ps_obs_soft_norm(sim.damage_bonus[env], 1.0f));
-    ps_obs_set(sim, env, idx++, ps_clampf(1.0f - sim.cooldown_mult[env], 0.0f, 1.0f));
-    ps_obs_set(sim, env, idx++, ps_obs_soft_norm(sim.magnet_bonus[env], 1.0f));
-    ps_obs_set(sim, env, idx++, ps_obs_soft_norm(sim.area_bonus[env], 1.0f));
-    ps_obs_set(sim, env, idx++, ps_obs_soft_norm((float)sim.pierce_bonus[env], 4.0f));
-    int lethal_threat_idx = idx++;
-    int alt_c_idx = idx++;
-
+    int bubble_ready_idx = idx++;
+    int bubble = PS_WIDX(sim, PS_WEAPON_BUBBLE, env);
+    obs[bubble_ready_idx] = 1.0f - ps_clampf(sim.weapon_cd[bubble]
+        / ps_weapon_cooldown_total(sim, env, PS_WEAPON_BUBBLE), 0.0f, 1.0f);
+    obs[idx++] = sim.pending_upgrade[env] ? 1.0f : 0.0f;
+    obs[idx++] = sim.cfg.invuln_steps > 0
+        ? ps_clampf((float)sim.invuln_timer[env] / (float)sim.cfg.invuln_steps, 0.0f, 1.0f)
+        : 0.0f;
+    obs[idx++] = ps_clampf((float)sim.queued_upgrades[env] / 4.0f, 0.0f, 1.0f);
+    obs[idx++] = ps_obs_soft_norm(sim.speed_bonus[env], 1.0f);
+    obs[idx++] = ps_obs_soft_norm(sim.damage_bonus[env], 1.0f);
+    obs[idx++] = ps_clampf(1.0f - sim.cooldown_mult[env], 0.0f, 1.0f);
+    obs[idx++] = ps_obs_soft_norm(sim.magnet_bonus[env], 1.0f);
+    obs[idx++] = ps_obs_soft_norm(sim.area_bonus[env], 1.0f);
+    obs[idx++] = ps_obs_soft_norm((float)sim.pierce_bonus[env], 4.0f);
+    int nearest_health_distance_idx = idx++;
     int nearest_xp_dx_idx = idx++;
     int nearest_xp_dy_idx = idx++;
-    int alt_d_idx = idx++;
+    int nearest_xp_distance_idx = idx++;
     int visible_xp_value_idx = idx++;
     int visible_xp_can_level_idx = idx++;
 
     float observe_radius = sim.cfg.arena_size * 0.45f;
     float observe_radius2 = observe_radius * observe_radius;
-    float inv_observe_radius = 1.0f / fmaxf(observe_radius, 0.001f);
-    float inv_enemy_cap = 1.0f / fmaxf((float)sim.cfg.enemy_cap, 1.0f);
-    float inv_projectile_cap = 1.0f / fmaxf((float)sim.cfg.projectile_cap, 1.0f);
-    float inv_drop_cap = 1.0f / fmaxf((float)sim.cfg.drop_cap, 1.0f);
+    float inv_observe_radius = 1.0f / observe_radius;
+    float inv_enemy_cap = 1.0f / (float)sim.cfg.enemy_cap;
+    float inv_drop_cap = 1.0f / (float)sim.cfg.drop_cap;
 
     int boss_base = idx;
     idx += PS_BOSS_FEATURES;
@@ -626,51 +562,36 @@ PS_D void ps_compute_observations(const PSCudaSim& sim, int env) {
     int drop_base = idx;
     idx += PS_SECTORS * PS_RINGS * PS_DROP_CHANNELS;
     int obstacle_base = idx;
-    idx += PS_SECTORS * PS_RINGS * PS_OBSTACLE_CHANNELS;
-    int danger_base = idx;
-    idx += PS_SECTORS * PS_DANGER_CHANNELS;
-    int area_base = idx;
-    idx += PS_SECTORS * PS_AREA_CHANNELS;
-
-    float sector_pressure[PS_SECTORS];
-    float sector_front[PS_SECTORS];
-    float sector_ttc[PS_SECTORS];
-    float sector_obstacle[PS_SECTORS];
+    idx += PS_OBSTACLE_FEATURES;
     float obstacle_bin_nearest_d2[PS_SECTORS * PS_RINGS];
-    for (int s = 0; s < PS_SECTORS; s++) {
-        sector_pressure[s] = 0.0f;
-        sector_front[s] = 0.0f;
-        sector_ttc[s] = 0.0f;
-        sector_obstacle[s] = 0.0f;
-    }
-    for (int i = 0; i < PS_SECTORS * PS_RINGS; i++)
-        obstacle_bin_nearest_d2[i] = 1e30f;
+    for (int i = 0; i < PS_SECTORS * PS_RINGS; i++) obstacle_bin_nearest_d2[i] = 1e30f;
 
     int visible_enemies = 0;
-    int visible_projectiles = 0;
     int visible_drops = 0;
     float nearest_xp_dx = 0.0f;
     float nearest_xp_dy = 0.0f;
     float nearest_xp_d2 = 1e30f;
     float visible_xp_value = 0.0f;
     float nearest_health_d2 = 1e30f;
-    float nearest_health_dx = 0.0f;
-    float nearest_health_dy = 0.0f;
-    float nearest_obstacle_d2 = 1e30f;
-    float nearest_obstacle_radius = 0.0f;
     int nearest_boss = -1;
     int boss_count = 0;
     float nearest_boss_d2 = 1e30f;
-    float lethal_threat = 0.0f;
 
-    for (int i = 0; i < sim.cfg.enemy_cap; i++) {
+#if PS_CUDA_ENEMY_SCAN_MODE == 1
+    for (int k = 0; k < sim.cfg.enemy_cap; k++) {
+        int i = k;
+#else
+    int scan_capacity = sim.enemy_count[env] * 2 >= sim.cfg.enemy_cap;
+    int scan_count = scan_capacity ? sim.cfg.enemy_cap : sim.enemy_count[env];
+    for (int k = 0; k < scan_count; k++) {
+        int i = scan_capacity ? k : sim.enemy_dense[PS_EIDX(sim, k, env)];
+#endif
         int e = PS_EIDX(sim, i, env);
         if (!sim.enemy_active[e]) continue;
 
         float dx = sim.enemy_x[e] - sim.px[env];
         float dy = sim.enemy_y[e] - sim.py[env];
         float d2 = dx * dx + dy * dy;
-
         if (sim.enemy_type[e] & PS_ENEMY_BOSS_FLAG) {
             boss_count++;
             if (d2 < nearest_boss_d2) {
@@ -678,7 +599,6 @@ PS_D void ps_compute_observations(const PSCudaSim& sim, int env) {
                 nearest_boss = i;
             }
         }
-
         if (d2 > observe_radius2) continue;
         float d = sqrtf(d2);
         visible_enemies++;
@@ -686,39 +606,24 @@ PS_D void ps_compute_observations(const PSCudaSim& sim, int env) {
         int ring = ps_obs_ring_d2(d2, observe_radius2);
         int o = enemy_base + (ring * PS_SECTORS + sector) * PS_ENEMY_CHANNELS;
         float proximity = 1.0f - d * inv_observe_radius;
-        float hit_fraction = sim.enemy_damage[e] / fmaxf(sim.hp[env], 0.25f);
-        float lethal_risk = ps_clampf(hit_fraction, 0.0f, 1.0f) * (0.35f + 0.65f * proximity);
-        lethal_threat = fmaxf(lethal_threat, lethal_risk);
-        ps_obs_add_min1(sim, env, o + 0, 0.125f);
-        ps_obs_max(sim, env, o + 1, proximity);
-        ps_obs_max(sim, env, o + 2, sim.enemy_hp[e] / fmaxf(sim.enemy_max_hp[e], 1.0f));
-        ps_obs_max(sim, env, o + 3, sim.enemy_damage[e] / 4.0f);
-
-        float threat = (0.35f + 0.65f * proximity) * ps_clampf(sim.enemy_damage[e] / 4.0f, 0.15f, 1.0f);
-        sector_pressure[sector] = fminf(sector_pressure[sector] + 0.12f * threat, 1.0f);
-        sector_front[sector] = fmaxf(sector_front[sector], proximity);
-        float clearance = fmaxf(d - (sim.enemy_bound_radius[e] + sim.cfg.player_radius), 0.0f);
-        float closing = -(sim.enemy_vx[e] * dx + sim.enemy_vy[e] * dy) / fmaxf(d, 0.001f);
-        float ttc = clearance / fmaxf(closing, 0.001f);
-        sector_ttc[sector] = fmaxf(sector_ttc[sector], 1.0f - ps_clampf(ttc / 180.0f, 0.0f, 1.0f));
+        obs[o + 0] = fminf(obs[o + 0] + 0.125f, 1.0f);
+        obs[o + 1] = fmaxf(obs[o + 1], proximity);
+        obs[o + 2] = fmaxf(obs[o + 2], sim.enemy_hp[e] / sim.enemy_max_hp[e]);
+        obs[o + 3] = fmaxf(obs[o + 3], sim.enemy_damage[e] / 4.0f);
     }
-
-    ps_obs_set(sim, env, lethal_threat_idx, ps_clampf(lethal_threat, 0.0f, 1.0f));
 
     if (nearest_boss >= 0) {
         int e = PS_EIDX(sim, nearest_boss, env);
         float dx = sim.enemy_x[e] - sim.px[env];
         float dy = sim.enemy_y[e] - sim.py[env];
         float d = sqrtf(fmaxf(nearest_boss_d2, 0.0001f));
-        float closing = -(sim.enemy_vx[e] * dx + sim.enemy_vy[e] * dy) / d;
-        ps_obs_set(sim, env, boss_base + PS_BOSS_PRESENT, 1.0f);
-        ps_obs_set(sim, env, boss_base + PS_BOSS_DX, ps_clampf(dx * inv_observe_radius, -1.0f, 1.0f));
-        ps_obs_set(sim, env, boss_base + PS_BOSS_DY, ps_clampf(dy * inv_observe_radius, -1.0f, 1.0f));
-        ps_obs_set(sim, env, boss_base + PS_BOSS_PROXIMITY, 1.0f - ps_clampf(d * inv_observe_radius, 0.0f, 1.0f));
-        ps_obs_set(sim, env, boss_base + PS_BOSS_HP_FRACTION, ps_clampf(sim.enemy_hp[e] / fmaxf(sim.enemy_max_hp[e], 1.0f), 0.0f, 1.0f));
-        ps_obs_set(sim, env, boss_base + PS_BOSS_MAX_HP, ps_obs_soft_norm(sim.enemy_max_hp[e], 96.0f));
-        ps_obs_set(sim, env, boss_base + PS_BOSS_CLOSING_SPEED, ps_clampf(closing / 0.25f, -1.0f, 1.0f));
-        ps_obs_set(sim, env, boss_base + PS_BOSS_COUNT, ps_obs_soft_norm((float)boss_count, 2.0f));
+        obs[boss_base + PS_BOSS_PRESENT] = 1.0f;
+        obs[boss_base + PS_BOSS_DX] = ps_clampf(dx * inv_observe_radius, -1.0f, 1.0f);
+        obs[boss_base + PS_BOSS_DY] = ps_clampf(dy * inv_observe_radius, -1.0f, 1.0f);
+        obs[boss_base + PS_BOSS_PROXIMITY] = 1.0f - ps_clampf(d * inv_observe_radius, 0.0f, 1.0f);
+        obs[boss_base + PS_BOSS_HP_FRACTION] = ps_clampf(sim.enemy_hp[e] / sim.enemy_max_hp[e], 0.0f, 1.0f);
+        obs[boss_base + PS_BOSS_MAX_HP] = ps_obs_soft_norm(sim.enemy_max_hp[e], 96.0f);
+        obs[boss_base + PS_BOSS_COUNT] = ps_obs_soft_norm((float)boss_count, 2.0f);
     }
 
     for (int k = 0; k < sim.drop_count[env]; k++) {
@@ -739,35 +644,31 @@ PS_D void ps_compute_observations(const PSCudaSim& sim, int env) {
             }
         } else if (d2 < nearest_health_d2) {
             nearest_health_d2 = d2;
-            nearest_health_dx = dx;
-            nearest_health_dy = dy;
         }
         int sector = ps_obs_sector(dx, dy);
         int ring = ps_obs_ring_d2(d2, observe_radius2);
         int o = drop_base + (ring * PS_SECTORS + sector) * PS_DROP_CHANNELS;
-        ps_obs_add_min1(sim, env, o + 0, sim.drop_value[d_i] * 0.1f);
-        ps_obs_max(sim, env, o + 1, 1.0f - d * inv_observe_radius);
-        ps_obs_max(sim, env, o + 2, sim.drop_type[d_i] == 1 ? 1.0f : 0.0f);
+        obs[o + 0] = fminf(obs[o + 0] + sim.drop_value[d_i] * 0.1f, 1.0f);
+        obs[o + 1] = fmaxf(obs[o + 1], 1.0f - d * inv_observe_radius);
+        obs[o + 2] = fmaxf(obs[o + 2], sim.drop_type[d_i] == 1 ? 1.0f : 0.0f);
     }
 
     if (nearest_xp_d2 < 1e29f) {
         float nearest_xp_dist = sqrtf(nearest_xp_d2);
-        ps_obs_set(sim, env, nearest_xp_dx_idx, ps_clampf(nearest_xp_dx * inv_observe_radius, -1.0f, 1.0f));
-        ps_obs_set(sim, env, nearest_xp_dy_idx, ps_clampf(nearest_xp_dy * inv_observe_radius, -1.0f, 1.0f));
-        if (sim.cfg.observation_version <= 7 || sim.cfg.observation_version >= 9)
-            ps_obs_set(sim, env, alt_d_idx, 1.0f - ps_clampf(nearest_xp_dist * inv_observe_radius, 0.0f, 1.0f));
+        obs[nearest_xp_dx_idx] = ps_clampf(nearest_xp_dx * inv_observe_radius, -1.0f, 1.0f);
+        obs[nearest_xp_dy_idx] = ps_clampf(nearest_xp_dy * inv_observe_radius, -1.0f, 1.0f);
+        obs[nearest_xp_distance_idx] = 1.0f
+            - ps_clampf(nearest_xp_dist * inv_observe_radius, 0.0f, 1.0f);
     }
     if (nearest_health_d2 < 1e29f) {
         float nearest_health_dist = sqrtf(nearest_health_d2);
-        if (sim.cfg.observation_version >= 7 && sim.cfg.observation_version <= 8) {
-            ps_obs_set(sim, env, alt_a_idx, ps_clampf(nearest_health_dx * inv_observe_radius, -1.0f, 1.0f));
-            ps_obs_set(sim, env, alt_b_idx, ps_clampf(nearest_health_dy * inv_observe_radius, -1.0f, 1.0f));
-        }
-        if (sim.cfg.observation_version <= 7 || sim.cfg.observation_version >= 9)
-            ps_obs_set(sim, env, alt_c_idx, 1.0f - ps_clampf(nearest_health_dist * inv_observe_radius, 0.0f, 1.0f));
+        obs[nearest_health_distance_idx] = 1.0f
+            - ps_clampf(nearest_health_dist * inv_observe_radius, 0.0f, 1.0f);
     }
-    ps_obs_set(sim, env, visible_xp_value_idx, ps_clampf(visible_xp_value / fmaxf(ps_xp_threshold(sim, env), 1.0f), 0.0f, 1.0f));
-    ps_obs_set(sim, env, visible_xp_can_level_idx, visible_xp_value >= fmaxf(ps_xp_threshold(sim, env) - sim.xp[env], 0.0f) ? 1.0f : 0.0f);
+    float xp_threshold = ps_xp_threshold(sim, env);
+    obs[visible_xp_value_idx] = ps_clampf(visible_xp_value / xp_threshold, 0.0f, 1.0f);
+    obs[visible_xp_can_level_idx] = visible_xp_value >= fmaxf(xp_threshold - sim.xp[env], 0.0f)
+        ? 1.0f : 0.0f;
 
     for (int i = 0; i < sim.cfg.obstacle_count; i++) {
         int oi = PS_OIDX(sim, i, env);
@@ -775,111 +676,40 @@ PS_D void ps_compute_observations(const PSCudaSim& sim, int env) {
         float dy = sim.obstacle_y[oi] - sim.py[env];
         float d2 = dx * dx + dy * dy;
         if (d2 > observe_radius2) continue;
-        if (d2 < nearest_obstacle_d2) {
-            nearest_obstacle_d2 = d2;
-            nearest_obstacle_radius = sim.obstacle_radius[oi];
-        }
-        float d = sqrtf(d2);
         int sector = ps_obs_sector(dx, dy);
         int ring = ps_obs_ring_d2(d2, observe_radius2);
         int o = obstacle_base + (ring * PS_SECTORS + sector) * PS_OBSTACLE_CHANNELS;
-        float proximity = 1.0f - d * inv_observe_radius;
         int bin = ring * PS_SECTORS + sector;
-        if (sim.cfg.observation_version == 8) {
-            if (d2 < obstacle_bin_nearest_d2[bin]) {
-                obstacle_bin_nearest_d2[bin] = d2;
-                ps_obs_set(sim, env, o + 0, ps_clampf(dx * inv_observe_radius, -1.0f, 1.0f));
-                ps_obs_set(sim, env, o + 1, ps_clampf(dy * inv_observe_radius, -1.0f, 1.0f));
-            }
-        } else {
-            ps_obs_add_min1(sim, env, o + 0, 0.25f);
-            ps_obs_max(sim, env, o + 1, proximity);
-        }
-        if (sim.cfg.observation_version >= 9
-                && d2 < obstacle_bin_nearest_d2[bin]) {
+        if (d2 < obstacle_bin_nearest_d2[bin]) {
             obstacle_bin_nearest_d2[bin] = d2;
-            int exact = PS_OBS_EXACT_OBSTACLE_BASE + 2 * bin;
-            ps_obs_set(sim, env, exact + 0,
-                ps_clampf(dx * inv_observe_radius, -1.0f, 1.0f));
-            ps_obs_set(sim, env, exact + 1,
-                ps_clampf(dy * inv_observe_radius, -1.0f, 1.0f));
+            obs[o + 0] = ps_clampf(dx * inv_observe_radius, -1.0f, 1.0f);
+            obs[o + 1] = ps_clampf(dy * inv_observe_radius, -1.0f, 1.0f);
         }
-        sector_obstacle[sector] = fminf(sector_obstacle[sector] + 0.30f * proximity, 1.0f);
     }
 
-    if (sim.cfg.observation_version == 8 && nearest_obstacle_d2 < 1e29f) {
-        float center_dist = sqrtf(nearest_obstacle_d2);
-        float clearance = fmaxf(center_dist - nearest_obstacle_radius - sim.cfg.player_radius, 0.0f);
-        ps_obs_set(sim, env, alt_c_idx, ps_clampf(clearance * inv_observe_radius, 0.0f, 1.0f));
-        float obstacle_radius_norm = fmaxf(sim.cfg.obstacle_radius_max, 1.1f);
-        ps_obs_set(sim, env, alt_d_idx, ps_clampf(nearest_obstacle_radius / obstacle_radius_norm, 0.0f, 1.0f));
-    }
-
-    if (sim.cfg.observation_version == 6 || sim.cfg.observation_version >= 9) {
-        for (int k = 0; k < sim.projectile_count[env]; k++) {
-            int i = sim.projectile_dense[PS_PIDX(sim, k, env)];
-            int p = PS_PIDX(sim, i, env);
-            float dx = sim.projectile_x[p] - sim.px[env];
-            float dy = sim.projectile_y[p] - sim.py[env];
-            if (dx * dx + dy * dy <= observe_radius2) visible_projectiles++;
-        }
-        ps_obs_set(sim, env, alt_a_idx,
-            ps_clampf((float)visible_projectiles * inv_projectile_cap, 0.0f, 1.0f));
-    }
-
-    for (int k = 0; k < sim.area_count[env]; k++) {
-        int i = sim.area_dense[PS_AIDX(sim, k, env)];
-        int a = PS_AIDX(sim, i, env);
-        float dx = sim.area_x[a] - sim.px[env];
-        float dy = sim.area_y[a] - sim.py[env];
-        float d2 = dx * dx + dy * dy;
-        float effective_radius = observe_radius + sim.area_radius[a];
-        if (d2 > effective_radius * effective_radius) continue;
-        float d = sqrtf(d2);
-        int sector = ps_obs_sector(dx, dy);
-        int o = area_base + sector * PS_AREA_CHANNELS;
-        float coverage = ps_clampf(sim.area_radius[a] * inv_observe_radius + fmaxf(0.0f, 1.0f - d * inv_observe_radius), 0.0f, 1.0f);
-        ps_obs_max(sim, env, o + 0, coverage);
-        ps_obs_max(sim, env, o + 1, ps_clampf(sim.area_damage[a] / 4.0f, 0.0f, 1.0f));
-        ps_obs_max(sim, env, o + 2, ps_clampf((float)sim.area_ttl[a] / 180.0f, 0.0f, 1.0f));
-    }
-
-    for (int s = 0; s < PS_SECTORS; s++) {
-        int left = (s + PS_SECTORS - 1) % PS_SECTORS;
-        int right = (s + 1) % PS_SECTORS;
-        float neighbor_pressure = 0.5f * (sector_pressure[left] + sector_pressure[right]);
-        float blocked = ps_clampf(sector_pressure[s] + 0.35f * neighbor_pressure + 0.75f * sector_obstacle[s], 0.0f, 1.0f);
-        int o = danger_base + s * PS_DANGER_CHANNELS;
-        ps_obs_set(sim, env, o + 0, ps_clampf(sector_pressure[s], 0.0f, 1.0f));
-        ps_obs_set(sim, env, o + 1, ps_clampf(sector_front[s], 0.0f, 1.0f));
-        ps_obs_set(sim, env, o + 2, ps_clampf(sector_ttc[s], 0.0f, 1.0f));
-        ps_obs_set(sim, env, o + 3, 1.0f - blocked);
-    }
-
-    ps_obs_set(sim, env, visible_enemies_idx, ps_clampf((float)visible_enemies * inv_enemy_cap, 0.0f, 1.0f));
-    ps_obs_set(sim, env, visible_drops_idx, ps_clampf((float)visible_drops * inv_drop_cap, 0.0f, 1.0f));
+    obs[visible_enemies_idx] = ps_clampf((float)visible_enemies * inv_enemy_cap, 0.0f, 1.0f);
+    obs[visible_drops_idx] = ps_clampf((float)visible_drops * inv_drop_cap, 0.0f, 1.0f);
 
     for (int i = 0; i < PS_WEAPON_COUNT; i++) {
-        int level = sim.weapon_level[PS_WIDX(sim, i, env)];
+        int w = PS_WIDX(sim, i, env);
+        int level = sim.weapon_level[w];
         float cd_total = ps_weapon_cooldown_total(sim, env, i);
-        float ready = level > 0 ? 1.0f - ps_clampf(sim.weapon_cd[PS_WIDX(sim, i, env)] / cd_total, 0.0f, 1.0f) : 0.0f;
-        ps_obs_set(sim, env, idx++, (float)level / (float)sim.cfg.weapon_max_level);
-        ps_obs_set(sim, env, idx++, ready);
-        ps_obs_set(sim, env, idx++, ps_clampf(sim.weapon_active[PS_WIDX(sim, i, env)], 0.0f, 1.0f));
-        ps_obs_set(sim, env, idx++, ps_weapon_power(sim, env, i));
+        float ready = level > 0 ? 1.0f - ps_clampf(sim.weapon_cd[w] / cd_total, 0.0f, 1.0f) : 0.0f;
+        obs[idx++] = (float)level / (float)sim.cfg.weapon_max_level;
+        obs[idx++] = ready;
+        obs[idx++] = ps_clampf(sim.weapon_active[w], 0.0f, 1.0f);
+        obs[idx++] = ps_weapon_power(sim, env, i);
     }
 
-    for (int i = 0; i < PS_UPGRADE_SLOTS; i++) {
-        int type = sim.pending_upgrade[env] ? sim.offered[PS_UIDX(sim, i, env)] : -1;
-        ps_obs_set(sim, env, idx++, type >= 0 ? 1.0f : 0.0f);
-        ps_obs_set(sim, env, idx++, type >= 0 ? (float)type / (float)(PS_UPGRADE_COUNT - 1) : 0.0f);
-        ps_obs_set(sim, env, idx++, type >= PS_UPGRADE_BUBBLE && type <= PS_UPGRADE_SONAR ? 1.0f : 0.0f);
-        ps_obs_set(sim, env, idx++, type == PS_UPGRADE_MIGHT || type == PS_UPGRADE_COOLDOWN || type == PS_UPGRADE_AREA ? 1.0f : 0.0f);
-        ps_obs_set(sim, env, idx++, type == PS_UPGRADE_SPEED || type == PS_UPGRADE_MAGNET || type == PS_UPGRADE_PIERCE ? 1.0f : 0.0f);
-        ps_obs_set(sim, env, idx++, type == PS_UPGRADE_HEALTH ? 1.0f : 0.0f);
+    if (sim.pending_upgrade[env]) {
+        for (int i = 0; i < PS_UPGRADE_SLOTS; i++) {
+            int type = sim.offered[PS_UIDX(sim, i, env)];
+            obs[idx + type] = 1.0f;
+            idx += PS_UPGRADE_FEATURES;
+        }
+    } else {
+        idx += PS_UPGRADE_SLOTS * PS_UPGRADE_FEATURES;
     }
-
-    idx += PS_EXACT_OBSTACLE_FEATURES;
 
     int moving_idx[PS_MOVING_OBSTACLE_SLOTS];
     float moving_score[PS_MOVING_OBSTACLE_SLOTS];
@@ -911,13 +741,11 @@ PS_D void ps_compute_observations(const PSCudaSim& sim, int env) {
         int m = PS_MOIDX(sim, i, env);
         float dx = sim.moving_obstacle_x[m] - sim.px[env];
         float dy = sim.moving_obstacle_y[m] - sim.py[env];
-        ps_obs_set(sim, env, o + 0, 1.0f);
-        ps_obs_set(sim, env, o + 1,
-            sim.moving_obstacle_type[m] == PS_MOVING_OBSTACLE_SUBMARINE ? 1.0f : 0.0f);
-        ps_obs_set(sim, env, o + 2, ps_clampf(dx * inv_observe_radius, -1.0f, 1.0f));
-        ps_obs_set(sim, env, o + 3, ps_clampf(dy * inv_observe_radius, -1.0f, 1.0f));
+        obs[o + 0] = 1.0f;
+        obs[o + 1] = sim.moving_obstacle_type[m] == PS_MOVING_OBSTACLE_SUBMARINE ? 1.0f : 0.0f;
+        obs[o + 2] = ps_clampf(dx * inv_observe_radius, -1.0f, 1.0f);
+        obs[o + 3] = ps_clampf(dy * inv_observe_radius, -1.0f, 1.0f);
     }
-    idx += PS_MOVING_OBSTACLE_OBS_FEATURES;
 }
 PS_D int ps_obstacle_position_clear(const PSCudaSim& sim, int env, int count, int skip, float x, float y, float radius) {
     if (ps_dist2(x, y, sim.px[env], sim.py[env])
@@ -1067,73 +895,64 @@ PS_D void ps_clear_entities(const PSCudaSim& sim, int env) {
 }
 
 PS_D void ps_deactivate_enemy(const PSCudaSim& sim, int env, int i) {
-    if (i < 0 || i >= sim.cfg.enemy_cap) return;
     int e = PS_EIDX(sim, i, env);
-    if (!sim.enemy_active[e]) return;
+    int count = sim.enemy_count[env];
+    int pos = sim.enemy_dense_pos[e];
+    int last = sim.enemy_dense[PS_EIDX(sim, count - 1, env)];
+    sim.enemy_dense[PS_EIDX(sim, pos, env)] = last;
+    sim.enemy_dense_pos[PS_EIDX(sim, last, env)] = pos;
+    sim.enemy_dense_pos[e] = -1;
     sim.enemy_active[e] = 0;
-    if (sim.enemy_count[env] > 0) sim.enemy_count[env]--;
+    sim.enemy_count[env] = count - 1;
 }
 
 PS_D void ps_deactivate_projectile(const PSCudaSim& sim, int env, int i) {
-    if (i < 0 || i >= sim.cfg.projectile_cap) return;
     int p = PS_PIDX(sim, i, env);
-    if (!sim.projectile_active[p]) return;
     int count = sim.projectile_count[env];
     int pos = sim.projectile_dense_pos[p];
-    if (count > 0 && pos >= 0 && pos < count) {
-        int last = sim.projectile_dense[PS_PIDX(sim, count - 1, env)];
-        sim.projectile_dense[PS_PIDX(sim, pos, env)] = last;
-        sim.projectile_dense_pos[PS_PIDX(sim, last, env)] = pos;
-    }
+    int last = sim.projectile_dense[PS_PIDX(sim, count - 1, env)];
+    sim.projectile_dense[PS_PIDX(sim, pos, env)] = last;
+    sim.projectile_dense_pos[PS_PIDX(sim, last, env)] = pos;
+    sim.projectile_dense_pos[p] = -1;
     sim.projectile_active[p] = 0;
-    sim.projectile_count[env] = count > 0 ? count - 1 : 0;
+    sim.projectile_count[env] = count - 1;
 }
 
 PS_D void ps_deactivate_drop(const PSCudaSim& sim, int env, int i) {
-    if (i < 0 || i >= sim.cfg.drop_cap) return;
     int d = PS_DIDX(sim, i, env);
-    if (!sim.drop_active[d]) return;
     int count = sim.drop_count[env];
     int pos = sim.drop_dense_pos[d];
-    if (count > 0 && pos >= 0 && pos < count) {
-        int last = sim.drop_dense[PS_DIDX(sim, count - 1, env)];
-        sim.drop_dense[PS_DIDX(sim, pos, env)] = last;
-        sim.drop_dense_pos[PS_DIDX(sim, last, env)] = pos;
-    }
+    int last = sim.drop_dense[PS_DIDX(sim, count - 1, env)];
+    sim.drop_dense[PS_DIDX(sim, pos, env)] = last;
+    sim.drop_dense_pos[PS_DIDX(sim, last, env)] = pos;
+    sim.drop_dense_pos[d] = -1;
     sim.drop_active[d] = 0;
-    sim.drop_count[env] = count > 0 ? count - 1 : 0;
+    sim.drop_count[env] = count - 1;
 }
 
 PS_D void ps_deactivate_area(const PSCudaSim& sim, int env, int i) {
-    if (i < 0 || i >= PS_MAX_AREAS) return;
     int a = PS_AIDX(sim, i, env);
-    if (!sim.area_active[a]) return;
     int count = sim.area_count[env];
     int pos = sim.area_dense_pos[a];
-    if (count > 0 && pos >= 0 && pos < count) {
-        int last = sim.area_dense[PS_AIDX(sim, count - 1, env)];
-        sim.area_dense[PS_AIDX(sim, pos, env)] = last;
-        sim.area_dense_pos[PS_AIDX(sim, last, env)] = pos;
-    }
+    int last = sim.area_dense[PS_AIDX(sim, count - 1, env)];
+    sim.area_dense[PS_AIDX(sim, pos, env)] = last;
+    sim.area_dense_pos[PS_AIDX(sim, last, env)] = pos;
+    sim.area_dense_pos[a] = -1;
     sim.area_active[a] = 0;
-    if (sim.area_type[a] == PS_WEAPON_INK && sim.active_ink_count[env] > 0)
-        sim.active_ink_count[env]--;
-    sim.area_count[env] = count > 0 ? count - 1 : 0;
+    if (sim.area_type[a] == PS_WEAPON_INK) sim.active_ink_count[env]--;
+    sim.area_count[env] = count - 1;
 }
 
 PS_D void ps_deactivate_moving_obstacle(const PSCudaSim& sim, int env, int i) {
-    if (i < 0 || i >= PS_MAX_MOVING_OBSTACLES) return;
     int m = PS_MOIDX(sim, i, env);
-    if (!sim.moving_obstacle_active[m]) return;
     int count = sim.moving_obstacle_count[env];
     int pos = sim.moving_obstacle_dense_pos[m];
-    if (count > 0 && pos >= 0 && pos < count) {
-        int last = sim.moving_obstacle_dense[PS_MOIDX(sim, count - 1, env)];
-        sim.moving_obstacle_dense[PS_MOIDX(sim, pos, env)] = last;
-        sim.moving_obstacle_dense_pos[PS_MOIDX(sim, last, env)] = pos;
-    }
+    int last = sim.moving_obstacle_dense[PS_MOIDX(sim, count - 1, env)];
+    sim.moving_obstacle_dense[PS_MOIDX(sim, pos, env)] = last;
+    sim.moving_obstacle_dense_pos[PS_MOIDX(sim, last, env)] = pos;
+    sim.moving_obstacle_dense_pos[m] = -1;
     sim.moving_obstacle_active[m] = 0;
-    sim.moving_obstacle_count[env] = count > 0 ? count - 1 : 0;
+    sim.moving_obstacle_count[env] = count - 1;
 }
 
 PS_D int ps_spawn_moving_obstacle(const PSCudaSim& sim, int env) {
@@ -1142,7 +961,6 @@ PS_D int ps_spawn_moving_obstacle(const PSCudaSim& sim, int env) {
     int i = ps_find_free_slot(sim.moving_obstacle_active,
         PS_MAX_MOVING_OBSTACLES, &sim.next_moving_obstacle_slot[env],
         sim.num_envs, env);
-    if (i < 0) return 0;
 
     int type = (int)(ps_rand_u32(sim, env) % PS_MOVING_OBSTACLE_TYPE_COUNT);
     float half = 0.5f * sim.cfg.arena_size;
@@ -1264,7 +1082,6 @@ PS_D void ps_apply_upgrade_effect(const PSCudaSim& sim, int env, int upgrade) {
 }
 
 PS_D void ps_apply_upgrade(const PSCudaSim& sim, int env, int choice) {
-    if (!sim.pending_upgrade[env] || choice < 0 || choice >= PS_UPGRADE_SLOTS) return;
     int upgrade = sim.offered[PS_UIDX(sim, choice, env)];
     ps_apply_upgrade_effect(sim, env, upgrade);
     sim.episode_levelups[env] += 1.0f;
@@ -1274,53 +1091,51 @@ PS_D void ps_apply_upgrade(const PSCudaSim& sim, int env, int choice) {
 }
 
 PS_D void ps_add_log(const PSCudaSim& sim, int env, int survived) {
-    float perf = sim.cfg.max_steps > 0
-        ? ps_clampf((float)sim.tick[env] / (float)sim.cfg.max_steps, 0.0f, 1.0f)
-        : 0.0f;
-    sim.log_perf[env] += perf;
-    sim.log_score[env] += sim.episode_score[env];
-    sim.log_episode_return[env] += sim.episode_return[env];
-    sim.log_reward_survival[env] += sim.episode_reward_survival[env];
-    sim.log_reward_damage[env] += sim.episode_reward_damage[env];
-    sim.log_reward_kill[env] += sim.episode_reward_kill[env];
-    sim.log_reward_hurt[env] += sim.episode_reward_hurt[env];
-    sim.log_reward_pickup[env] += sim.episode_reward_pickup[env];
-    sim.log_reward_xp[env] += sim.episode_reward_xp[env];
-    sim.log_reward_levelup[env] += sim.episode_reward_levelup[env];
-    sim.log_reward_obstacle[env] += sim.episode_reward_obstacle[env];
-    sim.log_reward_terminal[env] += sim.episode_reward_terminal[env];
-    sim.log_episode_length[env] += (float)sim.tick[env];
-    sim.log_kills[env] += sim.episode_kills[env];
-    sim.log_level[env] += (float)sim.level[env];
-    sim.log_xp[env] += sim.episode_xp[env];
-    sim.log_damage_dealt[env] += sim.episode_damage_dealt[env];
-    sim.log_damage_taken[env] += sim.episode_damage_taken[env];
-    sim.log_pickups[env] += sim.episode_pickups[env];
-    sim.log_levelups[env] += sim.episode_levelups[env];
-    sim.log_obstacle_hits[env] += sim.episode_obstacle_hits[env];
-    sim.log_enemies_alive[env] += (float)sim.enemy_count[env];
-    sim.log_projectiles_alive[env] += (float)sim.projectile_count[env];
-    sim.log_drops_alive[env] += (float)sim.drop_count[env];
-    sim.log_areas_alive[env] += (float)sim.area_count[env];
+    Log* log = &sim.native_envs[env].log;
+    float perf = ps_clampf((float)sim.tick[env] / (float)sim.cfg.max_steps, 0.0f, 1.0f);
+    log->perf += perf;
+    log->score += sim.episode_score[env];
+    log->episode_return += sim.episode_return[env];
+    log->reward_survival += sim.episode_reward_survival[env];
+    log->reward_damage += sim.episode_reward_damage[env];
+    log->reward_kill += sim.episode_reward_kill[env];
+    log->reward_hurt += sim.episode_reward_hurt[env];
+    log->reward_pickup += sim.episode_reward_pickup[env];
+    log->reward_xp += sim.episode_reward_xp[env];
+    log->reward_levelup += sim.episode_reward_levelup[env];
+    log->reward_obstacle += sim.episode_reward_obstacle[env];
+    log->reward_terminal += sim.episode_reward_terminal[env];
+    log->episode_length += (float)sim.tick[env];
+    log->kills += sim.episode_kills[env];
+    log->level += (float)sim.level[env];
+    log->xp += sim.episode_xp[env];
+    log->damage_dealt += sim.episode_damage_dealt[env];
+    log->damage_taken += sim.episode_damage_taken[env];
+    log->pickups += sim.episode_pickups[env];
+    log->levelups += sim.episode_levelups[env];
+    log->obstacle_hits += sim.episode_obstacle_hits[env];
+    log->enemies_alive += (float)sim.enemy_count[env];
+    log->projectiles_alive += (float)sim.projectile_count[env];
+    log->drops_alive += (float)sim.drop_count[env];
+    log->areas_alive += (float)sim.area_count[env];
     int weapon_levels = 0;
     for (int i = 0; i < PS_WEAPON_COUNT; i++) weapon_levels += sim.weapon_level[PS_WIDX(sim, i, env)];
-    sim.log_weapon_levels[env] += (float)weapon_levels;
-    sim.log_wave[env] += (float)(ps_wave_index(sim, env) + 1);
-    sim.log_hp[env] += fmaxf(sim.hp[env], 0.0f);
-    sim.log_survived[env] += (float)survived;
-    sim.log_n[env] += 1.0f;
-    sim.log_peak_enemies[env] += sim.episode_peak_enemies[env];
-    sim.log_peak_projectiles[env] += sim.episode_peak_projectiles[env];
-    sim.log_min_hp[env] += sim.episode_min_hp[env];
+    log->weapon_levels += (float)weapon_levels;
+    log->wave += (float)(ps_wave_index(sim, env) + 1);
+    log->hp += sim.hp[env];
+    log->survived += (float)survived;
+    log->n += 1.0f;
+    log->peak_enemies += sim.episode_peak_enemies[env];
+    log->peak_projectiles += sim.episode_peak_projectiles[env];
+    log->min_hp += sim.episode_min_hp[env];
     if (survived) {
-        sim.log_success[env] += 1.0f;
+        log->success += 1.0f;
     } else {
-        float progress = sim.cfg.max_steps > 0
-            ? (float)sim.tick[env] / (float)sim.cfg.max_steps : 0.0f;
-        if (progress < 0.25f) sim.log_death_0_25[env] += 1.0f;
-        else if (progress < 0.50f) sim.log_death_25_50[env] += 1.0f;
-        else if (progress < 0.75f) sim.log_death_50_75[env] += 1.0f;
-        else sim.log_death_75_100[env] += 1.0f;
+        float progress = (float)sim.tick[env] / (float)sim.cfg.max_steps;
+        if (progress < 0.25f) log->death_0_25 += 1.0f;
+        else if (progress < 0.50f) log->death_25_50 += 1.0f;
+        else if (progress < 0.75f) log->death_50_75 += 1.0f;
+        else log->death_75_100 += 1.0f;
     }
 }
 
@@ -1430,7 +1245,6 @@ PS_D void ps_enemy_geometry(const PSCudaSim& sim, int kind, int ari_k,
 PS_D int ps_spawn_enemy(const PSCudaSim& sim, int env) {
     if (sim.enemy_count[env] >= sim.cfg.enemy_cap) return 0;
     int slot = ps_find_free_slot(sim.enemy_active, sim.cfg.enemy_cap, &sim.next_enemy_slot[env], sim.num_envs, env);
-    if (slot < 0) return 0;
 
     float x = 0.0f, y = 0.0f;
     ps_pick_spawn_position(sim, env, sim.cfg.enemy_spawn_radius, &x, &y);
@@ -1480,14 +1294,16 @@ PS_D int ps_spawn_enemy(const PSCudaSim& sim, int env) {
     sim.enemy_speed[e] = stats.speed_mult;
     sim.enemy_damage[e] = stats.damage;
     sim.enemy_active[e] = 1;
-    sim.enemy_count[env]++;
+    int pos = sim.enemy_count[env];
+    sim.enemy_dense_pos[e] = pos;
+    sim.enemy_dense[PS_EIDX(sim, pos, env)] = slot;
+    sim.enemy_count[env] = pos + 1;
     return slot + 1;
 }
 
 PS_D void ps_spawn_drop(const PSCudaSim& sim, int env, float x, float y, float value, int type) {
     if (sim.drop_count[env] >= sim.cfg.drop_cap) return;
     int i = ps_find_free_slot(sim.drop_active, sim.cfg.drop_cap, &sim.next_drop_slot[env], sim.num_envs, env);
-    if (i < 0) return;
     ps_push_out_obstacles(sim, env, &x, &y, sim.cfg.drop_spawn_radius, 0);
     int d = PS_DIDX(sim, i, env);
     sim.drop_x[d] = x;
@@ -1503,7 +1319,6 @@ PS_D void ps_spawn_drop(const PSCudaSim& sim, int env, float x, float y, float v
 PS_D void ps_spawn_projectile(const PSCudaSim& sim, int env, int type, float sx, float sy, float tx, float ty, float damage, float radius, float speed, int pierce, int ttl) {
     if (sim.projectile_count[env] >= sim.cfg.projectile_cap) return;
     int i = ps_find_free_slot(sim.projectile_active, sim.cfg.projectile_cap, &sim.next_projectile_slot[env], sim.num_envs, env);
-    if (i < 0) return;
     float dx = tx - sx;
     float dy = ty - sy;
     float dnorm = sqrtf(fmaxf(dx * dx + dy * dy, 0.0001f));
@@ -1526,7 +1341,6 @@ PS_D void ps_spawn_projectile(const PSCudaSim& sim, int env, int type, float sx,
 PS_D void ps_spawn_area(const PSCudaSim& sim, int env, int type, float x, float y, float radius, float damage, int ttl, int tick_rate) {
     if (sim.area_count[env] >= sim.cfg.area_cap) return;
     int i = ps_find_free_slot(sim.area_active, PS_MAX_AREAS, &sim.next_area_slot[env], sim.num_envs, env);
-    if (i < 0) return;
     ps_push_out_obstacles(sim, env, &x, &y, radius, 0);
     int a = PS_AIDX(sim, i, env);
     sim.area_type[a] = (uint8_t)type;
@@ -1551,7 +1365,15 @@ PS_D void ps_rebuild_grid(const PSCudaSim& sim, int env) {
     }
     sim.grid_touched_count[env] = 0;
     sim.aabb_count[env] = 0;
-    for (int i = 0; i < sim.cfg.enemy_cap; i++) {
+#if PS_CUDA_ENEMY_SCAN_MODE == 1
+    for (int k = 0; k < sim.cfg.enemy_cap; k++) {
+        int i = k;
+#else
+    int scan_capacity = sim.enemy_count[env] * 2 >= sim.cfg.enemy_cap;
+    int scan_count = scan_capacity ? sim.cfg.enemy_cap : sim.enemy_count[env];
+    for (int k = 0; k < scan_count; k++) {
+        int i = scan_capacity ? k : sim.enemy_dense[PS_EIDX(sim, k, env)];
+#endif
         int e = PS_EIDX(sim, i, env);
         sim.enemy_next[e] = -1;
         if (!sim.enemy_active[e]) continue;
@@ -1568,6 +1390,16 @@ PS_D void ps_rebuild_grid(const PSCudaSim& sim, int env) {
         sim.enemy_next[e] = sim.grid_head[head_idx];
         sim.grid_head[head_idx] = i;
     }
+}
+
+PS_D int ps_grid_needed(const PSCudaSim& sim, int env) {
+    if (sim.enemy_count[env] <= 0) return 0;
+    if (sim.projectile_count[env] > 0 || sim.active_ink_count[env] > 0) return 1;
+    for (int weapon = 0; weapon < PS_WEAPON_COUNT; weapon++) {
+        int w = PS_WIDX(sim, weapon, env);
+        if (sim.weapon_level[w] > 0 && sim.weapon_cd[w] <= 1.0f) return 1;
+    }
+    return 0;
 }
 
 PS_D int ps_damage_enemy(const PSCudaSim& sim, int env, int eidx, float damage) {
@@ -1614,7 +1446,7 @@ PS_D void ps_wave_spawns(const PSCudaSim& sim, int env) {
     }
 
     int interval = ps_wave_spawn_interval(sim, env);
-    if (interval > 0 && sim.tick[env] % interval == 0 && enemies < sim.cfg.enemy_cap) ps_spawn_enemy(sim, env);
+    if (sim.tick[env] % interval == 0) ps_spawn_enemy(sim, env);
 
     int len = sim.cfg.wave_length_steps;
     int local = sim.tick[env] % len;
@@ -1650,10 +1482,17 @@ PS_D void ps_update_enemies(const PSCudaSim& sim, int env) {
     float player_x = sim.px[env];
     float player_y = sim.py[env];
     float player_radius = sim.cfg.player_radius;
-    int obstacle_stride = sim.cfg.enemy_obstacle_stride;
     sim.nearest_enemy[env] = -1;
     sim.nearest_enemy_d2[env] = 1e30f;
-    for (int i = 0; i < sim.cfg.enemy_cap; i++) {
+#if PS_CUDA_ENEMY_SCAN_MODE == 1
+    for (int k = 0; k < sim.cfg.enemy_cap; k++) {
+        int i = k;
+#else
+    int scan_capacity = sim.enemy_count[env] * 2 >= sim.cfg.enemy_cap;
+    int scan_count = scan_capacity ? sim.cfg.enemy_cap : sim.enemy_count[env];
+    for (int k = 0; k < scan_count; k++) {
+        int i = scan_capacity ? k : sim.enemy_dense[PS_EIDX(sim, k, env)];
+#endif
         int e = PS_EIDX(sim, i, env);
         if (!sim.enemy_active[e]) continue;
         float dx = player_x - sim.enemy_x[e];
@@ -1663,11 +1502,10 @@ PS_D void ps_update_enemies(const PSCudaSim& sim, int env) {
         sim.enemy_vy[e] = dy / d * sim.enemy_speed[e];
         float x = sim.enemy_x[e] + sim.enemy_vx[e];
         float y = sim.enemy_y[e] + sim.enemy_vy[e];
-        if (obstacle_stride <= 1 || ((sim.tick[env] + i) % obstacle_stride) == 0) {
+        if ((sim.tick[env] + i) % sim.cfg.enemy_obstacle_stride == 0)
             ps_push_out_obstacles_shape(sim, env, &x, &y, sim.enemy_shape[e],
                 sim.enemy_radius[e], sim.enemy_half_width[e],
                 sim.enemy_half_height[e], 0);
-        }
         sim.enemy_x[e] = x;
         sim.enemy_y[e] = y;
         float post_dx = sim.enemy_x[e] - player_x;
@@ -1821,7 +1659,15 @@ PS_D int ps_nearest_enemy(const PSCudaSim& sim, int env, float range) {
         if (sim.enemy_active[e] && sim.nearest_enemy_d2[env] < best_d2) return cached;
     }
     int best = -1;
-    for (int i = 0; i < sim.cfg.enemy_cap; i++) {
+#if PS_CUDA_ENEMY_SCAN_MODE == 1
+    for (int k = 0; k < sim.cfg.enemy_cap; k++) {
+        int i = k;
+#else
+    int scan_capacity = sim.enemy_count[env] * 2 >= sim.cfg.enemy_cap;
+    int scan_count = scan_capacity ? sim.cfg.enemy_cap : sim.enemy_count[env];
+    for (int k = 0; k < scan_count; k++) {
+        int i = scan_capacity ? k : sim.enemy_dense[PS_EIDX(sim, k, env)];
+#endif
         int e = PS_EIDX(sim, i, env);
         if (!sim.enemy_active[e]) continue;
         float d2 = ps_dist2(sim.px[env], sim.py[env], sim.enemy_x[e], sim.enemy_y[e]);
@@ -1872,7 +1718,7 @@ PS_D void ps_damage_radius_with_query_pad(const PSCudaSim& sim, int env,
                             dx, dy, sim.enemy_radius[e],
                             sim.enemy_half_width[e], sim.enemy_half_height[e], radius)) {
                         int killed = ps_damage_enemy(sim, env, eidx, damage);
-                        if (!killed && knockback > 0.0f && sim.enemy_active[e]) {
+                        if (!killed && knockback > 0.0f) {
                             float d = sqrtf(fmaxf(d2, 0.0001f));
                             sim.enemy_x[e] += dx / d * knockback;
                             sim.enemy_y[e] += dy / d * knockback;
@@ -1894,7 +1740,7 @@ PS_D void ps_damage_radius_with_query_pad(const PSCudaSim& sim, int env,
                 sim.enemy_radius[e], sim.enemy_half_width[e],
                 sim.enemy_half_height[e], radius)) continue;
         int killed = ps_damage_enemy(sim, env, eidx, damage);
-        if (!killed && knockback > 0.0f && sim.enemy_active[e]) {
+        if (!killed && knockback > 0.0f) {
             float d = sqrtf(fmaxf(d2, 0.0001f));
             sim.enemy_x[e] += dx / d * knockback;
             sim.enemy_y[e] += dy / d * knockback;
@@ -2133,6 +1979,10 @@ PS_D void ps_reset_env(const PSCudaSim& sim, int env, int clear_outputs) {
 }
 
 PS_D void ps_step_env(const PSCudaSim& sim, int env) {
+#ifdef PS_CUDA_PROFILE
+    unsigned long long profile_start = clock64();
+    unsigned long long profile_phase = profile_start;
+#endif
     sim.rewards[env] = sim.cfg.reward_survival;
     sim.episode_reward_survival[env] += sim.cfg.reward_survival;
     sim.terminals[env] = 0.0f;
@@ -2140,10 +1990,9 @@ PS_D void ps_step_env(const PSCudaSim& sim, int env) {
     if (sim.invuln_timer[env] > 0) sim.invuln_timer[env]--;
 
     int upgrade_action = (int)ps_action_get(sim, env, 1);
-    if (sim.pending_upgrade[env] && upgrade_action < PS_UPGRADE_SLOTS) ps_apply_upgrade(sim, env, upgrade_action);
+    if (sim.pending_upgrade[env]) ps_apply_upgrade(sim, env, upgrade_action);
 
     int action = (int)ps_action_get(sim, env, 0);
-    action = action < 0 ? 0 : (action > 8 ? 8 : action);
     float dx = 0.0f;
     float dy = 0.0f;
     switch (action) {
@@ -2179,15 +2028,48 @@ PS_D void ps_step_env(const PSCudaSim& sim, int env) {
     sim.py[env] = py;
     ps_recycle_far_obstacles(sim, env);
     ps_update_moving_obstacles(sim, env);
+#ifdef PS_CUDA_PROFILE
+    unsigned long long profile_now = clock64();
+    ps_profile_add(sim, env, PS_PROFILE_MOVEMENT, profile_now - profile_phase);
+    profile_phase = profile_now;
+#endif
 
     ps_wave_spawns(sim, env);
+#ifdef PS_CUDA_PROFILE
+    profile_now = clock64();
+    ps_profile_add(sim, env, PS_PROFILE_WAVE_SPAWNS, profile_now - profile_phase);
+    profile_phase = profile_now;
+#endif
     ps_update_enemies(sim, env);
-    ps_rebuild_grid(sim, env);
+#ifdef PS_CUDA_PROFILE
+    profile_now = clock64();
+    ps_profile_add(sim, env, PS_PROFILE_ENEMIES, profile_now - profile_phase);
+    profile_phase = profile_now;
+#endif
+    if (ps_grid_needed(sim, env)) ps_rebuild_grid(sim, env);
+#ifdef PS_CUDA_PROFILE
+    profile_now = clock64();
+    ps_profile_add(sim, env, PS_PROFILE_GRID, profile_now - profile_phase);
+    profile_phase = profile_now;
+#endif
     ps_update_weapons(sim, env);
-    if (sim.projectile_count[env] > 0) {
-        ps_update_projectiles(sim, env);
-    }
+#ifdef PS_CUDA_PROFILE
+    profile_now = clock64();
+    ps_profile_add(sim, env, PS_PROFILE_WEAPONS, profile_now - profile_phase);
+    profile_phase = profile_now;
+#endif
+    ps_update_projectiles(sim, env);
+#ifdef PS_CUDA_PROFILE
+    profile_now = clock64();
+    ps_profile_add(sim, env, PS_PROFILE_PROJECTILES, profile_now - profile_phase);
+    profile_phase = profile_now;
+#endif
     ps_update_drops(sim, env);
+#ifdef PS_CUDA_PROFILE
+    profile_now = clock64();
+    ps_profile_add(sim, env, PS_PROFILE_DROPS, profile_now - profile_phase);
+    profile_phase = profile_now;
+#endif
 
     if ((float)sim.enemy_count[env] > sim.episode_peak_enemies[env])
         sim.episode_peak_enemies[env] = (float)sim.enemy_count[env];
@@ -2207,10 +2089,18 @@ PS_D void ps_step_env(const PSCudaSim& sim, int env) {
         sim.terminals[env] = 1.0f;
         ps_add_log(sim, env, survived);
         ps_reset_env(sim, env, 0);  // preserve final reward + terminal flag for wrapper/learner
+#ifdef PS_CUDA_PROFILE
+        ps_profile_add(sim, env, PS_PROFILE_TOTAL, clock64() - profile_start);
+#endif
         return;
     }
 
     ps_compute_observations(sim, env);
+#ifdef PS_CUDA_PROFILE
+    profile_now = clock64();
+    ps_profile_add(sim, env, PS_PROFILE_OBSERVATIONS, profile_now - profile_phase);
+    ps_profile_add(sim, env, PS_PROFILE_TOTAL, profile_now - profile_start);
+#endif
 }
 
 // -----------------------------------------------------------------------------
@@ -2246,33 +2136,10 @@ __global__ void ps_step_range_kernel(PSCudaSim sim, int start, int count) {
     ps_step_env(sim, env);
 }
 
-__global__ void ps_pack_episode_logs_kernel(PSCudaSim sim) {
-    int env = blockIdx.x * blockDim.x + threadIdx.x;
-    if (env >= sim.num_envs) return;
-    Log* record = &sim.native_envs[env].log;
-    if (sim.log_n[env] <= 0.0f) return;
-
-#define PS_PACK_LOG(field) \
-    record->field += sim.log_##field[env]; \
-    sim.log_##field[env] = 0.0f
-    PS_PACK_LOG(perf); PS_PACK_LOG(score); PS_PACK_LOG(episode_return);
-    PS_PACK_LOG(reward_survival); PS_PACK_LOG(reward_damage); PS_PACK_LOG(reward_kill);
-    PS_PACK_LOG(reward_hurt); PS_PACK_LOG(reward_pickup); PS_PACK_LOG(reward_xp);
-    PS_PACK_LOG(reward_levelup); PS_PACK_LOG(reward_obstacle); PS_PACK_LOG(reward_terminal);
-    PS_PACK_LOG(episode_length); PS_PACK_LOG(kills); PS_PACK_LOG(level); PS_PACK_LOG(xp);
-    PS_PACK_LOG(damage_dealt); PS_PACK_LOG(damage_taken); PS_PACK_LOG(pickups);
-    PS_PACK_LOG(levelups); PS_PACK_LOG(obstacle_hits); PS_PACK_LOG(enemies_alive);
-    PS_PACK_LOG(projectiles_alive); PS_PACK_LOG(drops_alive); PS_PACK_LOG(areas_alive);
-    PS_PACK_LOG(weapon_levels); PS_PACK_LOG(wave); PS_PACK_LOG(hp);
-    PS_PACK_LOG(survived); PS_PACK_LOG(n); PS_PACK_LOG(death_0_25);
-    PS_PACK_LOG(death_25_50); PS_PACK_LOG(death_50_75); PS_PACK_LOG(death_75_100);
-    PS_PACK_LOG(success); PS_PACK_LOG(peak_enemies); PS_PACK_LOG(peak_projectiles);
-    PS_PACK_LOG(min_hp);
-#undef PS_PACK_LOG
-}
-
 static inline void ps_cuda_reset_all(PSCudaSim* sim, uint32_t seed, cudaStream_t stream = 0) {
     int blocks = (sim->num_envs + PS_CUDA_BLOCK_SIZE - 1) / PS_CUDA_BLOCK_SIZE;
+    cudaMemsetAsync(sim->observations, 0,
+        (size_t)sim->num_envs * PS_OBS_SIZE * sizeof(float), stream);
     ps_reset_all_kernel<<<blocks, PS_CUDA_BLOCK_SIZE, 0, stream>>>(*sim, seed);
     PS_CUDA_CHECK(cudaGetLastError());
 }
@@ -2286,6 +2153,8 @@ static inline void ps_cuda_step_range(PSCudaSim* sim, int start, int count, cuda
     if (start >= sim->num_envs || count <= 0) return;
     if (start + count > sim->num_envs) count = sim->num_envs - start;
     int blocks = (count + PS_CUDA_BLOCK_SIZE - 1) / PS_CUDA_BLOCK_SIZE;
+    cudaMemsetAsync(sim->observations + (size_t)start * PS_OBS_SIZE, 0,
+        (size_t)count * PS_OBS_SIZE * sizeof(float), stream);
     ps_step_range_kernel<<<blocks, PS_CUDA_BLOCK_SIZE, 0, stream>>>(*sim, start, count);
     PS_CUDA_CHECK(cudaGetLastError());
 }

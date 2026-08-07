@@ -13,6 +13,7 @@ set -e
 #   ./build.sh breakout --profile    # Kernel profiling binary
 #   ./build.sh goofspiel --exploit   # Exact small-game exploitability
 #   ./build.sh goofspiel --exploit-gpu # Batched CUDA exact exploitability
+#   ./build.sh goofspiel --behavior-gpu # Exact policy JSD distances
 #   ./build.sh all                   # Build all envs native and native float32
 
 if [ -z "$1" ]; then
@@ -34,6 +35,7 @@ for arg in "$@"; do
         --profile) MODE=profile ;;
         --exploit) MODE=exploit ;;
         --exploit-gpu) MODE=exploit_gpu ;;
+        --behavior-gpu) MODE=behavior_gpu ;;
         --cpu)   MODE=cpu ;;
         *) echo "Error: unknown argument '$arg'" && exit 1 ;;
     esac
@@ -211,6 +213,18 @@ elif [ "$MODE" = "exploit_gpu" ]; then
         -o goofspiel_exploit_gpu
     echo "Built: ./goofspiel_exploit_gpu"
     exit 0
+elif [ "$MODE" = "behavior_gpu" ]; then
+    if [ "$ENV" != "goofspiel" ]; then
+        echo "Error: --behavior-gpu is only available for goofspiel"
+        exit 1
+    fi
+    CUDA_HOME=${CUDA_HOME:-${CUDA_PATH:-$(dirname "$(dirname "$(which nvcc)")")}}
+    ${CUDA_HOME}/bin/nvcc -O3 --threads 0 -arch=${NVCC_ARCH:-native} -std=c++17 \
+        -I. -Isrc -I$SRC_DIR -Ivendor \
+        "$SRC_DIR/goofspiel_behavior.cu" -L$CUDA_HOME/lib64 -lcublas -lm \
+        -o goofspiel_behavior_gpu
+    echo "Built: ./goofspiel_behavior_gpu"
+    exit 0
 elif [ "$MODE" = "web" ]; then
     mkdir -p "build/web/$ENV"
     echo "Compiling $ENV for web..."
@@ -321,6 +335,9 @@ if [ "$MODE" = "native" ]; then
         -lm -lpthread $OMP_LIB "${STANDALONE_LDFLAGS[@]}" \
         -o puffer
     echo "Built: ./puffer"
+    if [ "$ENV" = "kaggriculture" ]; then
+        bash "$0" "$ENV" --fast
+    fi
 
 elif [ "$MODE" = "profile" ]; then
     echo "Compiling profile binary ($ARCH)..."
