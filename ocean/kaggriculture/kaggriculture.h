@@ -36,6 +36,11 @@
     (1 + KG_POLICY_DIRECT_HANDS + KG_POLICY_OVERFLOW_COHORTS)
 #define KG_POLICY_UNITS KG_POLICY_UNIT_HEADS
 #define OBS_SIZE 1024
+/* The environment stores semantic observations as bytes.  Let the generic
+ * byte->precision transfer normalize them once, before rollout storage and
+ * every encoder/bank sees the data.  This removes a per-bank scale kernel from
+ * the CUDA policy hot path while preserving the public byte ABI. */
+#define PUFFERLIB_OBS_U8_NORMALIZED 1
 
 /* Complete unit commands retain every operation/item. Market commands combine
  * operation, item, and a practical binary quantity. Repeated ordered slots can
@@ -247,13 +252,23 @@ static inline float kag_player_potential(const Env* env, int player_id) {
             * KG_ANIMAL_DEFS[animal].cost * env->reward_animal_value;
     }
     for (int unit = 0; unit < player->unit_count; unit++) {
-        for (int item = 0; item < KG_NUM_PRODUCTS; item++) {
-            assets += player->units[unit].inventory[item]
-                * game->market.prices[item] * env->reward_product_value;
-        }
-        for (int animal = 0; animal < KG_NUM_ANIMALS; animal++) {
-            assets += player->units[unit].inventory[KG_ITEM_GOOSE + animal]
-                * KG_ANIMAL_DEFS[animal].cost * env->reward_animal_value;
+        const KGUnitState* held = &player->units[unit];
+        /* inventory_order is maintained by kg_inventory_add/remove and only
+         * contains nonzero entries.  Avoid touching all twelve item slots for
+         * every hired hand on every reward-potential update. */
+        for (int order = 0; order < held->inventory_order_count; order++) {
+            int item = held->inventory_order[order];
+            int count = held->inventory[item];
+            if (item < KG_NUM_PRODUCTS) {
+                assets += count * game->market.prices[item]
+                    * env->reward_product_value;
+            } else {
+                int animal = item - KG_ITEM_GOOSE;
+                if ((unsigned)animal < KG_NUM_ANIMALS) {
+                    assets += count * KG_ANIMAL_DEFS[animal].cost
+                        * env->reward_animal_value;
+                }
+            }
         }
     }
     for (int word = 0; word < KG_TILE_WORDS; word++) {
@@ -437,7 +452,75 @@ static inline void kag_encode_unit_routes(const KGState* game,
     }
 }
 
-static inline void kag_write_observation(Env* env, int player_id) {
+/* Public farm features are identical in both players' observations.  Build
+ * them once per environment step instead of scanning both 100-tile farms a
+ * second time while writing the opposite private view. */
+typedef struct {
+    int entity[4][13];
+    int state[4][8];
+    int crop_state[KG_NUM_CROPS][6];
+    int animal_state[KG_NUM_ANIMALS][6];
+} KagFarmSummary;
+
+static inline void kag_collect_farm_summary(const KGState* game,
+        const KGPlayer* farm, KagFarmSummary* summary) {
+    memset(summary, 0, sizeof(*summary));
+    for (int tile = 0; tile < KG_MAX_TILES; tile++) {
+        const KGTile* t = &farm->tiles[tile];
+        int x = tile % KG_MAX_BOARD_SIZE;
+        int y = tile / KG_MAX_BOARD_SIZE;
+        int quadrant = (x >= 5) + 2 * (y >= 5);
+        int kind = kag_tile_entity(t);
+        if ((unsigned)kind < 13) summary->entity[quadrant][kind]++;
+        if (t->kind == KG_TILE_PLANT && (unsigned)t->crop < KG_NUM_CROPS) {
+            int age = game->day - t->planted_day;
+            int needs = !t->watered_today;
+            int risk = needs && t->consecutive_unwatered > 0;
+            int harvestable = t->yield_units > 0
+                && age >= KG_CROP_DEFS[t->crop].first_yield_day;
+            int cared = t->fertilized_until_day >= game->day;
+            int* state = summary->state[quadrant];
+            state[0] += age;
+            state[1] += t->yield_units;
+            state[2] += needs;
+            state[3] += risk;
+            state[4] += harvestable;
+            state[5] += cared;
+            int* crop = summary->crop_state[t->crop];
+            crop[0]++;
+            crop[1] += needs;
+            crop[2] += risk;
+            crop[3] += harvestable;
+            crop[4] += t->yield_units;
+            crop[5] += age;
+        } else if (kg_is_animal_tile(t)) {
+            int age = game->day - t->placed_day;
+            int needs = !t->fed_today;
+            int risk = needs && t->consecutive_unfed > 0;
+            int* state = summary->state[quadrant];
+            state[0] += age;
+            state[1] += t->yield_units;
+            state[2] += needs;
+            state[3] += risk;
+            state[4] += t->yield_units > 0;
+            state[5] += t->cared_today;
+            state[6] += t->fertilizer_available;
+            state[7] += t->pending_care_bonus;
+            if ((unsigned)t->animal < KG_NUM_ANIMALS) {
+                int* animal = summary->animal_state[t->animal];
+                animal[0]++;
+                animal[1] += needs;
+                animal[2] += risk;
+                animal[3] += t->yield_units;
+                animal[4] += t->cared_today;
+                animal[5] += t->fertilizer_available;
+            }
+        }
+    }
+}
+
+static inline void kag_write_observation_with_summaries(Env* env, int player_id,
+        const KagFarmSummary summaries[KG_NUM_PLAYERS]) {
     obs_t* out = (obs_t*)env->agents[player_id].observations;
     KGState* game = &env->game_storage;
     KGPlayer* me = &game->players[player_id];
@@ -480,84 +563,29 @@ static inline void kag_write_observation(Env* env, int player_id) {
      * lifecycle state by product/quadrant without forcing the model to decode
      * 200 ordinal cell IDs through one dense matrix. */
     for (int view_player = 0; view_player < KG_NUM_PLAYERS; view_player++) {
-        KGPlayer* farm = view_player == 0 ? me : opponent;
-        int entity[4][13] = {{0}};
-        int state[4][8] = {{0}};
-        int crop_state[KG_NUM_CROPS][6] = {{0}};
-        int animal_state[KG_NUM_ANIMALS][6] = {{0}};
-        for (int tile = 0; tile < KG_MAX_TILES; tile++) {
-            const KGTile* t = &farm->tiles[tile];
-            int x = tile % KG_MAX_BOARD_SIZE;
-            int y = tile / KG_MAX_BOARD_SIZE;
-            int quadrant = (x >= 5) + 2 * (y >= 5);
-            int kind = kag_tile_entity(t);
-            if ((unsigned)kind < 13) entity[quadrant][kind]++;
-            if (t->kind == KG_TILE_PLANT && (unsigned)t->crop < KG_NUM_CROPS) {
-                int age = game->day - t->planted_day;
-                int needs = !t->watered_today;
-                int risk = needs && t->consecutive_unwatered > 0;
-                int harvestable = t->yield_units > 0
-                    && age >= KG_CROP_DEFS[t->crop].first_yield_day;
-                int cared = t->fertilized_until_day >= game->day;
-                state[quadrant][0] += age;
-                state[quadrant][1] += t->yield_units;
-                state[quadrant][2] += needs;
-                state[quadrant][3] += risk;
-                state[quadrant][4] += harvestable;
-                state[quadrant][5] += cared;
-                int* cs = crop_state[t->crop];
-                cs[0]++;
-                cs[1] += needs;
-                cs[2] += risk;
-                cs[3] += harvestable;
-                cs[4] += t->yield_units;
-                cs[5] += age;
-            } else if (kg_is_animal_tile(t)) {
-                int age = game->day - t->placed_day;
-                int needs = !t->fed_today;
-                int risk = needs && t->consecutive_unfed > 0;
-                int animal = t->animal;
-                state[quadrant][0] += age;
-                state[quadrant][1] += t->yield_units;
-                state[quadrant][2] += needs;
-                state[quadrant][3] += risk;
-                state[quadrant][4] += t->yield_units > 0;
-                state[quadrant][5] += t->cared_today;
-                state[quadrant][6] += t->fertilizer_available;
-                state[quadrant][7] += t->pending_care_bonus;
-                if ((unsigned)animal < KG_NUM_ANIMALS) {
-                    int* as = animal_state[animal];
-                    as[0]++;
-                    as[1] += needs;
-                    as[2] += risk;
-                    as[3] += t->yield_units;
-                    as[4] += t->cared_today;
-                    as[5] += t->fertilizer_available;
-                }
-            }
-        }
+        const KagFarmSummary* summary = &summaries[view_player];
         for (int quadrant = 0; quadrant < 4; quadrant++) {
             for (int kind = 0; kind < 13; kind++) {
-                out[k++] = kag_u8_scale(entity[quadrant][kind], 25);
+                out[k++] = kag_u8_scale(summary->entity[quadrant][kind], 25);
             }
-            out[k++] = kag_u8_scale(state[quadrant][0], 25 * 30);
-            out[k++] = kag_u8_scale(state[quadrant][1], 25 * 16);
+            out[k++] = kag_u8_scale(summary->state[quadrant][0], 25 * 30);
+            out[k++] = kag_u8_scale(summary->state[quadrant][1], 25 * 16);
             for (int feature = 2; feature < 7; feature++) {
-                out[k++] = kag_u8_scale(state[quadrant][feature], 25);
+                out[k++] = kag_u8_scale(summary->state[quadrant][feature], 25);
             }
-            out[k++] = kag_u8_scale(state[quadrant][7], 25 * 16);
+            out[k++] = kag_u8_scale(summary->state[quadrant][7], 25 * 16);
         }
         for (int crop = 0; crop < KG_NUM_CROPS; crop++) {
             for (int feature = 0; feature < 4; feature++) {
-                out[k++] = kag_u8_scale(crop_state[crop][feature], 100);
+                out[k++] = kag_u8_scale(summary->crop_state[crop][feature], 100);
             }
-            out[k++] = kag_u8_scale(crop_state[crop][4], 100 * 16);
-            out[k++] = kag_u8_scale(crop_state[crop][5], 100 * 30);
+            out[k++] = kag_u8_scale(summary->crop_state[crop][4], 100 * 16);
+            out[k++] = kag_u8_scale(summary->crop_state[crop][5], 100 * 30);
         }
         for (int animal = 0; animal < KG_NUM_ANIMALS; animal++) {
             for (int feature = 0; feature < 6; feature++) {
                 int scale = feature == 3 ? 100 * 16 : 100;
-                out[k++] = kag_u8_scale(animal_state[animal][feature], scale);
+                out[k++] = kag_u8_scale(summary->animal_state[animal][feature], scale);
             }
         }
     }
@@ -654,6 +682,15 @@ static inline void kag_write_observation(Env* env, int player_id) {
         fprintf(stderr, "kaggriculture observation overflow: %d > %d\n", k, OBS_SIZE);
         abort();
     }
+}
+
+static inline void kag_write_observation(Env* env, int player_id) {
+    KagFarmSummary summaries[KG_NUM_PLAYERS];
+    for (int player = 0; player < KG_NUM_PLAYERS; player++) {
+        kag_collect_farm_summary(&env->game_storage,
+            &env->game_storage.players[player], &summaries[player]);
+    }
+    kag_write_observation_with_summaries(env, player_id, summaries);
 }
 
 typedef struct {
@@ -1321,8 +1358,13 @@ static inline void kag_set_policy_market(Agent* agent, int order,
 }
 
 static void kag_write_all_observations(Env* env) {
+    KagFarmSummary summaries[KG_NUM_PLAYERS];
     for (int player = 0; player < KG_NUM_PLAYERS; player++) {
-        kag_write_observation(env, player);
+        kag_collect_farm_summary(&env->game_storage,
+            &env->game_storage.players[player], &summaries[player]);
+    }
+    for (int player = 0; player < KG_NUM_PLAYERS; player++) {
+        kag_write_observation_with_summaries(env, player, summaries);
         kag_write_mask(env, player);
     }
 }

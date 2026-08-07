@@ -197,7 +197,11 @@ __global__ void cast(precision_t* dst,
         unsigned char* src, int n) {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
     if (idx < n) {
+#ifdef PUFFERLIB_OBS_U8_NORMALIZED
+        dst[idx] = from_float((float)src[idx] * (1.0f / 255.0f));
+#else
         dst[idx] = from_float((float)src[idx]);
+#endif
     }
 }
 

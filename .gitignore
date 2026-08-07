@@ -165,13 +165,28 @@ box2d*/
 
 # Native build/test products
 /puffer
+/bomberman
+/build_cpu
+/cache_data
+/kaggriculture
+/puffer_survivors
+/robocode
+/seethestars
+/submission.tar.gz
+/pufferlib_*.tar.gz
 /ocean/abyss/tests/test_abyss
 /ocean/abyss/tests/test_abyss_san
 /ocean/puffer_survivors/tests/test_cpu
 /ocean/puffer_survivors/tests/test_cpu_san
 /ocean/puffer_survivors/tests/test_cuda
 /ocean/puffer_survivors/tests/bench_cpu
+/ocean/puffer_survivors/tests/bench_cuda
+/ocean/puffer_survivors/tests/bench_cuda_capacity_profile
+/ocean/puffer_survivors/tests/bench_cuda_profile
 /exports/
+
+# Generated visual-editing scratch files.
+/tmp/imagegen/
 
 # Local raw calibration input; compact generated catalogs are versioned.
 /ocean/abyss/data/recorded/frames.jsonl
