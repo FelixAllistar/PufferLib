@@ -965,3 +965,35 @@ Parity is proven adversarially rather than by a few happy paths:
 not on PATH). The GPU sweep (`gpu_env=1`) runs at ~160K SPS with the env step
 down to ~34% of frame time and GPU at 99%; the model/train path is now the
 bottleneck, not the simulator.
+
+## 2026-08-09: GPU reset diversity and selfplay rotation fixes
+
+The CUDA reset kernel was re-deriving `reset_opening_rng` from the per-match
+seed inside a `memset(env, 0)` path, so every full reset replayed the exact
+same opening prefix for each match. The rng now lives in a persistent device
+array (`d_kag_opening_rng`) that is seeded once per match and advanced by both
+the reset kernel and the in-transition auto-reset, so `reset_opening_turns`
+actually samples fresh prefix lengths across episodes on the GPU sim.
+
+GPU selfplay rotation was silently disabled: `PUF_GPU_SELFPLAY=1` skipped the
+assert while the bank counting and rotation loops were CPU-only, so
+`opponent_pool_prob`, PFSP, and `opp_timeout_steps` were no-ops against the
+four fixed league banks. Rotation is now host-driven from per-bank
+completed-episode counters (`d_kag_bank_completed`, incremented on terminal
+transitions and cleared on bank load/timeout), with per-bank env counts taken
+from `bank_layout`. `vec_log_tag` already worked on GPU, so the league payoff
+logging block is enabled there too.
+
+Cheap hot-path reductions: bot/script/public action writers now initialize
+only `hand_count`/`market_count` instead of memsetting the full 3.3 KB
+`KGAction` (only initialized fields are ever read by `kg_step` and the market
+processor), and the observation writer is dense: skipped regions write their
+zeros explicitly and only the final padding tail is memset, cutting the
+per-row pre-zero from 1024 bytes to ~80. Init-time CUDA allocations and the
+`__constant__` config upload now fail loudly with the offending call named.
+
+Still structural and deferred until a build/test cycle is available: splitting
+the serial per-match obs/mask writer into a state kernel plus an
+element-parallel row writer, batching frozen-bank forwards into a grouped
+GEMM, widening the `sample_logits` head cache, and folding the env step kernel
+into the fused rollout cudagraph.

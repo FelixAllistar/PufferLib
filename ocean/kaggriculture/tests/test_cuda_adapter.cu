@@ -52,7 +52,7 @@ __global__ static void adapter_step_kernel(Env* envs, Env* shells,
     if (case_id >= ADAPTER_CASES) return;
     int rows[2] = {2 * case_id, 2 * case_id + 1};
     kag_cuda_transition(&envs[case_id], shells, rows, tapes,
-        decoded + 2 * case_id);
+        decoded + 2 * case_id, nullptr);
 }
 
 static uint32_t adapter_rng(uint32_t* state) {

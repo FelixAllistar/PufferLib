@@ -645,7 +645,8 @@ KG_HD static inline void kag_public_market(const KGState* game, int player_id,
 KG_HD static inline void kag_public_action(const KGState* game, int player_id,
         int profile, KGAction* action) {
     const KGPlayer* farm = &game->players[player_id];
-    memset(action, 0, sizeof(*action));
+    action->hand_count = 0;
+    action->market_count = 0;
     action->farmer = (KGUnitAction){KG_OP_PASS, -1, 1};
     action->hand_count = farm->hand_count;
     for (int hand = 0; hand < action->hand_count; hand++) {

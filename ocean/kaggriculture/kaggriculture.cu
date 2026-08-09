@@ -59,11 +59,23 @@ static KGAction* d_kag_decoded_actions = nullptr;
 static int g_kag_total_agents = 0;
 static int g_kag_num_matches = 0;
 static int g_kag_bound = 0;
+static int g_kag_bank_count = 0;
+static uint32_t* d_kag_opening_rng = nullptr;
+static int* d_kag_bank_completed = nullptr;
 static obs_t* g_kag_observations = nullptr;
 static float* g_kag_actions = nullptr;
 static float* g_kag_rewards = nullptr;
 static float* g_kag_terminals = nullptr;
 static unsigned char* g_kag_masks = nullptr;
+
+static void kag_cuda_check(const char* what) {
+    cudaError_t err = cudaGetLastError();
+    if (err != cudaSuccess) {
+        std::fprintf(stderr, "Kaggriculture CUDA %s failed: %s\n",
+            what, cudaGetErrorString(err));
+        std::exit(1);
+    }
+}
 
 static inline int kag_cuda_grid(int n) {
     return (n + KAG_CUDA_BLOCK - 1) / KAG_CUDA_BLOCK;
@@ -125,7 +137,8 @@ __device__ static void kag_cuda_bot_overrides(Env* env,
             bot = env->bot_opponent;
         }
         if (bot == KAG_BOT_PASS) {
-            memset(&actions[player], 0, sizeof(actions[player]));
+            actions[player].hand_count = 0;
+            actions[player].market_count = 0;
             actions[player].farmer = (KGUnitAction){KG_OP_PASS, -1, 1};
             actions[player].hand_count = game->players[player].hand_count;
             for (int hand = 0; hand < actions[player].hand_count; hand++) {
@@ -171,7 +184,7 @@ __device__ static void kag_cuda_fold_log(Env* shell, Env* match) {
 
 __device__ static void kag_cuda_transition(Env* env, Env* shells,
         const int rows[KG_NUM_PLAYERS], const KGScriptTape* tapes,
-        KGAction* actions) {
+        KGAction* actions, int* bank_completed) {
     KGState* game = &env->game_storage;
     float before_potential[KG_NUM_PLAYERS] = {
         env->potential[0], env->potential[1]};
@@ -303,7 +316,10 @@ __device__ static void kag_cuda_transition(Env* env, Env* shells,
         env->log.specialist_games += 1.0f;
     }
     env->log.n += 1.0f;
-    if (env->tag > 0) env->boundary_reached = 1;
+    if (env->tag > 0) {
+        env->boundary_reached = 1;
+        atomicAdd(&bank_completed[env->tag], 1);
+    }
     shells[rows[model_player]].tag = env->tag;
     kag_cuda_fold_log(&shells[rows[model_player]], env);
 
@@ -318,7 +334,7 @@ __device__ static void kag_cuda_transition(Env* env, Env* shells,
 __global__ static void kag_cuda_reset_kernel(Env* shells, Env* matches,
         const int* rows, obs_t* observations, float* actions,
         float* rewards, float* terminals, unsigned char* masks,
-        const KGScriptTape* tapes, int num_matches) {
+        const KGScriptTape* tapes, int num_matches, uint32_t* opening_rng) {
     int match_id = blockIdx.x * blockDim.x + threadIdx.x;
     if (match_id >= num_matches) return;
     Env* env = &matches[match_id];
@@ -369,8 +385,9 @@ __global__ static void kag_cuda_reset_kernel(Env* shells, Env* matches,
     config.seed = d_kag_cuda_config.base_seed
         ^ 0x9e3779b97f4a7c15ULL * ((uint64_t)match_id + 1ULL);
     kg_init(&env->game_storage, &config);
-    env->reset_opening_rng = (uint32_t)config.seed ^ 0xa511e9b3u;
+    env->reset_opening_rng = opening_rng[match_id];
     kag_reset_with_opening(env, tapes);
+    opening_rng[match_id] = env->reset_opening_rng;
     for (int player = 0; player < KG_NUM_PLAYERS; player++) {
         env->agents[player].rewards[0] = 0.0f;
         env->agents[player].terminals[0] = 0.0f;
@@ -381,12 +398,13 @@ __global__ static void kag_cuda_reset_kernel(Env* shells, Env* matches,
 
 __global__ static void kag_cuda_step_kernel(Env* shells, Env* matches,
         const int* rows, const KGScriptTape* tapes, KGAction* decoded_actions,
-        int num_matches) {
+        int num_matches, uint32_t* opening_rng, int* bank_completed) {
     int match_id = blockIdx.x * blockDim.x + threadIdx.x;
     if (match_id >= num_matches) return;
     int match_rows[2] = {rows[2 * match_id], rows[2 * match_id + 1]};
     kag_cuda_transition(&matches[match_id], shells, match_rows, tapes,
-        decoded_actions + 2 * match_id);
+        decoded_actions + 2 * match_id, bank_completed);
+    opening_rng[match_id] = matches[match_id].reset_opening_rng;
 }
 
 __global__ static void kag_cuda_clear_shells_kernel(Env* shells,
@@ -431,6 +449,7 @@ static void kag_cuda_load_config(Dict* kwargs) {
     h_kag_cuda_config.bot_first = template_env.bot_first;
     cudaMemcpyToSymbol(d_kag_cuda_config, &h_kag_cuda_config,
         sizeof(h_kag_cuda_config));
+    kag_cuda_check("config upload");
 }
 
 static Env* puf_envs_create(int total_agents, Dict* env_kwargs,
@@ -446,6 +465,7 @@ static Env* puf_envs_create(int total_agents, Dict* env_kwargs,
     kag_script_init();
 
     int frozen_banks = (int)dict_get(vec_kwargs, "num_frozen_banks");
+    g_kag_bank_count = frozen_banks;
     float frozen_pct = (float)dict_get(vec_kwargs, "frozen_bank_pct");
     int frozen_matches = frozen_banks > 0
         ? (int)(frozen_pct * g_kag_num_matches) : 0;
@@ -498,6 +518,25 @@ static Env* puf_envs_create(int total_agents, Dict* env_kwargs,
         KG_SCRIPT_COUNT * sizeof(KGScriptTape), cudaMemcpyHostToDevice);
     cudaMalloc((void**)&d_kag_decoded_actions,
         (size_t)2 * g_kag_num_matches * sizeof(KGAction));
+    cudaMalloc((void**)&d_kag_opening_rng,
+        (size_t)g_kag_num_matches * sizeof(uint32_t));
+    cudaMalloc((void**)&d_kag_bank_completed,
+        (size_t)(g_kag_bank_count + 1) * sizeof(int));
+    cudaMemset(d_kag_bank_completed, 0,
+        (size_t)(g_kag_bank_count + 1) * sizeof(int));
+    uint32_t* host_rng = (uint32_t*)std::calloc(
+        (size_t)g_kag_num_matches, sizeof(uint32_t));
+    if (!host_rng) std::abort();
+    for (int match = 0; match < g_kag_num_matches; match++) {
+        uint64_t seed = h_kag_cuda_config.base_seed
+            ^ 0x9e3779b97f4a7c15ULL * ((uint64_t)match + 1ULL);
+        host_rng[match] = (uint32_t)seed ^ 0xa511e9b3u;
+    }
+    cudaMemcpy(d_kag_opening_rng, host_rng,
+        (size_t)g_kag_num_matches * sizeof(uint32_t),
+        cudaMemcpyHostToDevice);
+    std::free(host_rng);
+    kag_cuda_check("device environment allocation");
     std::free(host_shells);
     std::free(host_rows);
     std::free(cursors);
@@ -507,6 +546,10 @@ static Env* puf_envs_create(int total_agents, Dict* env_kwargs,
 static void puf_envs_reset(Env* envs, obs_t* observations, float* rewards,
         float* terminals, int total_agents) {
     if (total_agents != g_kag_total_agents) std::abort();
+    if (d_kag_bank_completed) {
+        cudaMemset(d_kag_bank_completed, 0,
+            (size_t)(g_kag_bank_count + 1) * sizeof(int));
+    }
     cudaMemset(rewards, 0, (size_t)total_agents * sizeof(float));
     cudaMemset(terminals, 0, (size_t)total_agents * sizeof(float));
     if (!g_kag_actions || !g_kag_masks) {
@@ -521,7 +564,8 @@ static void puf_envs_reset(Env* envs, obs_t* observations, float* rewards,
     kag_cuda_reset_kernel<<<kag_cuda_grid(g_kag_num_matches),
         KAG_CUDA_BLOCK>>>(envs, d_kag_matches, d_kag_rows,
             observations, g_kag_actions, rewards, terminals,
-            g_kag_masks, d_kag_tapes, g_kag_num_matches);
+            g_kag_masks, d_kag_tapes, g_kag_num_matches,
+            d_kag_opening_rng);
     g_kag_bound = 1;
 }
 
@@ -541,7 +585,7 @@ static void puf_envs_step(Env* envs, const float* actions,
     kag_cuda_step_kernel<<<kag_cuda_grid(g_kag_num_matches),
         KAG_CUDA_BLOCK, 0, stream>>>(envs, d_kag_matches,
             d_kag_rows, d_kag_tapes, d_kag_decoded_actions,
-            g_kag_num_matches);
+            g_kag_num_matches, d_kag_opening_rng, d_kag_bank_completed);
 }
 
 static void puf_envs_bind_buffers(float* actions, unsigned char* masks) {
@@ -549,19 +593,39 @@ static void puf_envs_bind_buffers(float* actions, unsigned char* masks) {
     g_kag_masks = masks;
 }
 
+/* Per-bank completed-episode counters feed host-side selfplay rotation.
+ * Reads are cheap (a few ints) and only happen on the train-log cadence. */
+static void puf_envs_selfplay_counts(int* out, int num_banks) {
+    if (num_banks > 0 && d_kag_bank_completed) {
+        cudaMemcpy(out, d_kag_bank_completed + 1,
+            (size_t)num_banks * sizeof(int), cudaMemcpyDeviceToHost);
+    }
+}
+
+static void puf_envs_selfplay_clear(int bank) {
+    if (bank > 0 && d_kag_bank_completed) {
+        cudaMemset(d_kag_bank_completed + bank, 0, sizeof(int));
+    }
+}
+
 static void puf_envs_close(Env* envs) {
     if (d_kag_decoded_actions) cudaFree(d_kag_decoded_actions);
     if (d_kag_tapes) cudaFree(d_kag_tapes);
     if (d_kag_rows) cudaFree(d_kag_rows);
     if (d_kag_matches) cudaFree(d_kag_matches);
+    if (d_kag_opening_rng) cudaFree(d_kag_opening_rng);
+    if (d_kag_bank_completed) cudaFree(d_kag_bank_completed);
     cudaFree(envs);
     d_kag_tapes = nullptr;
     d_kag_rows = nullptr;
     d_kag_matches = nullptr;
     d_kag_decoded_actions = nullptr;
+    d_kag_opening_rng = nullptr;
+    d_kag_bank_completed = nullptr;
     g_kag_bound = 0;
     g_kag_total_agents = 0;
     g_kag_num_matches = 0;
+    g_kag_bank_count = 0;
 }
 
 #define PUF_GPU_ENV_BIND_BUFFERS 1

@@ -174,7 +174,8 @@ KG_HD static inline void kag_script_action_from_tapes(const KGState* game,
         int player_id, int profile, KGAction* action,
         const KGScriptTape* tapes) {
     if (!kag_script_profile_valid(profile)) {
-        memset(action, 0, sizeof(*action));
+        action->hand_count = 0;
+        action->market_count = 0;
         action->farmer = (KGUnitAction){KG_OP_PASS, -1, 1};
         action->hand_count = game->players[player_id].hand_count;
         for (int hand = 0; hand < action->hand_count; hand++) {
@@ -187,7 +188,8 @@ KG_HD static inline void kag_script_action_from_tapes(const KGState* game,
     int step = game->step < KG_SCRIPT_FRAMES
         ? game->step : KG_SCRIPT_FRAMES - 1;
     const KGScriptFrame* frame = &tape->frames[step];
-    memset(action, 0, sizeof(*action));
+    action->hand_count = 0;
+    action->market_count = 0;
     action->farmer = kag_script_unpack_unit(frame->farmer);
     action->hand_count = farm->hand_count;
     for (int hand = 0; hand < action->hand_count; hand++) {

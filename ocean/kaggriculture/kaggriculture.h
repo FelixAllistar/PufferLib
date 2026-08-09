@@ -591,7 +591,6 @@ KG_HD static inline void kag_write_observation_with_summaries(Env* env, int play
     KGPlayer* me = &game->players[player_id];
     KGPlayer* opponent = &game->players[1 - player_id];
     int k = 0;
-    memset(out, 0, OBS_SIZE);
 
     out[k++] = kag_u8_scale(me->money, 100000);
     out[k++] = kag_u8_scale(opponent->money, 100000);
@@ -687,7 +686,7 @@ KG_HD static inline void kag_write_observation_with_summaries(Env* env, int play
             }
         }
         if (count == 0) {
-            k += 48;
+            for (int zero = 0; zero < 48; zero++) out[k++] = 0;
         } else {
             int ux = sum_x / count;
             int uy = sum_y / count;
@@ -733,7 +732,7 @@ KG_HD static inline void kag_write_observation_with_summaries(Env* env, int play
             sum_y += unit->y;
         }
         if (count == 0) {
-            k += 3;
+            for (int zero = 0; zero < 3; zero++) out[k++] = 0;
         } else {
             out[k++] = kag_u8_scale(count, 16);
             out[k++] = kag_u8_scale(sum_x / count, 9);
@@ -752,6 +751,9 @@ KG_HD static inline void kag_write_observation_with_summaries(Env* env, int play
         fprintf(stderr, "kaggriculture observation overflow: %d > %d\n", k, OBS_SIZE);
         abort();
 #endif
+    }
+    if (k < OBS_SIZE) {
+        memset(out + k, 0, (size_t)(OBS_SIZE - k) * sizeof(obs_t));
     }
 }
 
@@ -1411,7 +1413,8 @@ static inline KGConfig kag_load_config(Env* env, Dict* kwargs) {
 KG_HD static inline void kag_starter_action(const KGState* game, int player_id,
         KGAction* action) {
     const KGPlayer* player = &game->players[player_id];
-    memset(action, 0, sizeof(*action));
+    action->hand_count = 0;
+    action->market_count = 0;
     action->farmer = (KGUnitAction){KG_OP_PASS, KG_CROP_INVALID, 1};
     action->hand_count = player->hand_count;
     for (int hand = 0; hand < action->hand_count; hand++) {
@@ -1615,7 +1618,8 @@ KG_HD static inline int kag_bot_jobs(const KGState* game, int player_id,
 KG_HD static inline void kag_bot_action(const KGState* game, int player_id,
         int fixed_crop, KGAction* action) {
     const KGPlayer* farm = &game->players[player_id];
-    memset(action, 0, sizeof(*action));
+    action->hand_count = 0;
+    action->market_count = 0;
     action->farmer = (KGUnitAction){KG_OP_PASS, -1, 1};
     action->hand_count = farm->hand_count;
     for (int hand = 0; hand < action->hand_count; hand++) {

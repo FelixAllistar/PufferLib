@@ -4166,10 +4166,8 @@ EvalResult run_eval(Ini* ini, TrainContext* ctx, int mode, int verbose) {
 TrainResult run_train(Ini* ini, TrainContext* ctx) {
     int use_selfplay = puf_ini_get(ini, "selfplay", "enabled");
 #ifdef PUFFER_GPU_ENV
-    // GPU Env has no tag/boundary_reached; selfplay opponent rotation is CPU-only for now.
-#ifndef PUF_GPU_SELFPLAY
-    assert(!use_selfplay && "selfplay not supported with --gpu (PUFFER_GPU_ENV)");
-#endif
+    // GPU selfplay rotation is host-driven from per-bank completed-episode
+    // counters maintained by the environment; tags/boundaries live on device.
 #endif
     if (!use_selfplay) {
         puf_ini_put(ini, "vec.num_frozen_banks", "0");
@@ -4302,6 +4300,14 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
                 selfplay.banks[tag - 1].num_envs++;
             }
         }
+#else
+        /* Each frozen-bank row in the layout belongs to exactly one match, so
+         * the row span is the per-bank match count for rotation gating. */
+        for (int b = 0; b < selfplay.num_banks; b++) {
+            selfplay.banks[b].num_envs =
+                pufferl->vec->bank_layout[b + 1]
+                - pufferl->vec->bank_layout[b];
+        }
 #endif
 
         selfplay_add_checkpoint(&selfplay, initial_opponent);
@@ -4429,7 +4435,6 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
             dict_set(&new_log, "uptime", now - pufferl->start_time);
             dict_set(&new_log, "epoch", (double)pufferl->epoch);
 
-#ifndef PUFFER_GPU_ENV
             if (use_selfplay) {
                 for (int b = 0; b < selfplay.num_banks; b++) {
                     SelfplayBank* bank = &selfplay.banks[b];
@@ -4455,7 +4460,6 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
                     selfplay_write_payoffs(&selfplay);
                 }
             }
-#endif
             vec_log(pufferl->vec, &new_log, 1);
 
             float losses_host[NUM_LOSSES];
@@ -4520,6 +4524,33 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
                     for (int i = 0; i < pufferl->vec->size; i++) {
                         if (envs[i].tag == tag) envs[i].boundary_reached = 0;
                     }
+                }
+            }
+            dict_set(&last_log, "pool/size", selfplay.pool_size);
+            dict_set(&last_log, "pool/external_size", selfplay.external_size);
+            dict_set(&last_log, "pool/num_banks", selfplay.num_banks);
+            dict_set(&last_log, "league/opponents", selfplay.payoff_size);
+        }
+#else
+        if (use_selfplay && !is_eval) {
+            long current_step = pufferl->global_step * pufferl->hypers.world_size;
+            int counts[SELFPLAY_MAX_BANKS] = {0};
+            puf_envs_selfplay_counts(counts, selfplay.num_banks);
+            for (int b = 0; b < selfplay.num_banks; b++) {
+                SelfplayBank* bank = &selfplay.banks[b];
+                if (bank->pending_path[0]) {
+                    if (counts[b] >= bank->num_envs) {
+                        selfplay_load_bank(&selfplay, pufferl, b,
+                            bank->pending_path, current_step);
+                        puf_envs_selfplay_clear(b + 1);
+                        bank->pending_path[0] = 0;
+                    }
+                } else if (selfplay.opp_timeout_steps > 0 &&
+                        current_step - bank->opp_started_step
+                            >= selfplay.opp_timeout_steps) {
+                    snprintf(bank->pending_path, sizeof(bank->pending_path),
+                        "%s", selfplay_sample(&selfplay));
+                    puf_envs_selfplay_clear(b + 1);
                 }
             }
             dict_set(&last_log, "pool/size", selfplay.pool_size);
