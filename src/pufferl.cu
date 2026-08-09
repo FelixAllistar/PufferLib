@@ -2219,6 +2219,41 @@ PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx) {
 #endif
     pufferl->vec = vec;
 
+    /* Minibatch must not exceed the primary (non-frozen) rollout, and epoch
+     * sampling additionally needs primary_batch % minibatch == 0. Frozen-bank
+     * rows shrink the trainable set below total_agents, so snap the sampled
+     * minibatch to the largest multiple of horizon that satisfies the active
+     * constraints. */
+    int primary_agents = pufferl->vec->bank_layout[1] * num_buffers;
+    int primary_batch = primary_agents * hypers.horizon;
+    if (primary_batch > 0) {
+        int mb = hypers.minibatch_size;
+        mb = (mb / hypers.horizon) * hypers.horizon;
+        if (mb < hypers.horizon) mb = hypers.horizon;
+        if (mb > primary_batch) mb = primary_batch;
+        if (hypers.epoch_sampling) {
+            while (mb > hypers.horizon && primary_batch % mb) {
+                mb -= hypers.horizon;
+            }
+        }
+        if (mb != hypers.minibatch_size) {
+            fprintf(stderr, "train.minibatch_size adjusted %d -> %d "
+                "(primary batch %d%s)\n",
+                hypers.minibatch_size, mb, primary_batch,
+                hypers.epoch_sampling ? ", epoch sampling" : "");
+            hypers.minibatch_size = mb;
+            char buf[64];
+            snprintf(buf, sizeof(buf), "%d", mb);
+            puf_ini_put(ini, "train.minibatch_size", buf);
+            pufferl->hypers = hypers;
+        }
+        assert(hypers.minibatch_size <= primary_batch
+            && "minibatch_size exceeds primary-policy rollout size");
+        assert(!hypers.epoch_sampling
+                || primary_batch % hypers.minibatch_size == 0
+            && "epoch sampling requires primary batch divisible by minibatch_size");
+    }
+
     // Vec advantage kernel: 128-bit loads need horizon % ADV_VEC_WIDTH == 0
     // (float: 4, bf16: 8). See puff_advantage in algo.cu.
     assert(hypers.horizon % ADV_VEC_WIDTH == 0
@@ -4811,7 +4846,25 @@ TrainResult launch_train(Ini* ini) {
     int agents = (int)puf_ini_get(ini, "vec", "total_agents");
     int world_size = (int)puf_ini_get(ini, "train", "gpus");
     assert(world_size >= 1 && "train.gpus must be >= 1");
-    assert(horizon > 0 && mb % horizon == 0
+    assert(horizon > 0 && "train.horizon must be positive");
+    /* Rollout buffers are sized for the full agent set, so a sampled
+     * minibatch larger than horizon*total_agents can never run. Snap it down
+     * before the shape asserts; create_pufferl later snaps to the primary
+     * (non-frozen) batch when selfplay shrinks the trainable set. */
+    if (mb % horizon != 0 || mb > (long)horizon * agents) {
+        int max_mb = (int)((long)horizon * agents);
+        mb = (mb / horizon) * horizon;
+        if (mb > max_mb) mb = max_mb;
+        if (mb < horizon) mb = horizon;
+        fprintf(stderr, "train.minibatch_size adjusted %d -> %d "
+            "(horizon=%d agents=%d)\n",
+            (int)puf_ini_get(ini, "train", "minibatch_size"), mb,
+            horizon, agents);
+        char buf[64];
+        snprintf(buf, sizeof(buf), "%d", mb);
+        puf_ini_put(ini, "train.minibatch_size", buf);
+    }
+    assert(mb % horizon == 0
         && "train.minibatch_size must be divisible by train.horizon");
     assert((long)mb <= (long)horizon * agents
         && "train.minibatch_size must be <= train.horizon * vec.total_agents");
