@@ -1,9 +1,10 @@
 #pragma once
 
+#include <limits.h>
+
 #include "pufferenv.h"
-#include "ps_config.h"
+#include "ps_constants.h"
 #include "ps_log.h"
-#include "ps_observation_layout.h"
 #ifndef PUFFER_GPU_ENV
 #include "ps_systems.h"
 #ifndef PS_HEADLESS_BINDING
@@ -291,7 +292,6 @@ static inline PSConfig ps_config_from_kwargs(Dict* kwargs) {
     cfg.moving_obstacle_damage = ps_kwarg(kwargs, "moving_obstacle_damage");
     cfg.free_upgrade = ps_kwarg_int(kwargs, "free_upgrade");
     cfg.free_upgrade_count = ps_kwarg_int(kwargs, "free_upgrade_count");
-    ps_config_validate(&cfg);
     return cfg;
 }
 
@@ -302,7 +302,6 @@ void puf_init(Env* env, Dict* kwargs) {
     env->agents[0].action_mask = NULL;
     env->cfg = ps_config_from_kwargs(kwargs);
     env->show_hitboxes = ps_kwarg_int(kwargs, "show_hitboxes");
-    ps_init(env);
 }
 
 void puf_reset(Env* env) {

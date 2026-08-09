@@ -8,7 +8,6 @@
 #include <string.h>
 
 #include "ps_constants.h"
-#include "ps_config.h"
 #include "ps_log.h"
 
 static inline float ps_clampf(float v, float lo, float hi) {

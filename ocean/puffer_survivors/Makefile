@@ -6,7 +6,7 @@ CPPFLAGS := -I. -I$(ROOT)/src -I$(RAYLIB)/include
 CFLAGS ?= -O2 -std=c17 -Wall -Wextra -Werror
 CUDAFLAGS ?= -O3 --use_fast_math -std=c++17
 
-.PHONY: verify test sanitize cuda-test bench-cpu bench-cuda bench-cuda-profile bench-cuda-capacity-profile clean
+.PHONY: verify test sanitize cuda-test bench-cpu bench-cuda bench-cuda-profile clean
 
 verify: test sanitize cuda-test
 
@@ -36,8 +36,6 @@ bench-cuda: tests/bench_cuda
 
 bench-cuda-profile: tests/bench_cuda_profile
 
-bench-cuda-capacity-profile: tests/bench_cuda_capacity_profile
-
 tests/bench_cuda: tests/bench_cuda.cu $(wildcard ps_*.h) puffer_survivors.h \
 		puffer_survivors.cu cuda/ps_cuda_sim.cu
 	$(NVCC) $(CPPFLAGS) $(CUDAFLAGS) -DPUFFER_GPU_ENV $< -o $@
@@ -46,14 +44,9 @@ tests/bench_cuda_profile: tests/bench_cuda.cu $(wildcard ps_*.h) puffer_survivor
 		puffer_survivors.cu cuda/ps_cuda_sim.cu
 	$(NVCC) $(CPPFLAGS) $(CUDAFLAGS) -DPUFFER_GPU_ENV -DPS_CUDA_PROFILE $< -o $@
 
-tests/bench_cuda_capacity_profile: tests/bench_cuda.cu $(wildcard ps_*.h) puffer_survivors.h \
-		puffer_survivors.cu cuda/ps_cuda_sim.cu
-	$(NVCC) $(CPPFLAGS) $(CUDAFLAGS) -DPUFFER_GPU_ENV -DPS_CUDA_PROFILE \
-		-DPS_CUDA_ENEMY_SCAN_MODE=1 $< -o $@
-
 tests/bench_cpu: tests/bench_cpu.c $(wildcard ps_*.h) puffer_survivors.h
 	$(CC) $(CPPFLAGS) -O3 -march=native -std=c17 -DNDEBUG \
 		-DPS_HEADLESS_BINDING $< -lm -o $@
 
 clean:
-	rm -f puffer_survivors tests/test_cpu tests/test_cpu_san tests/test_cuda tests/bench_cpu tests/bench_cuda tests/bench_cuda_profile tests/bench_cuda_capacity_profile
+	rm -f puffer_survivors tests/test_cpu tests/test_cpu_san tests/test_cuda tests/bench_cpu tests/bench_cuda tests/bench_cuda_profile

@@ -53,7 +53,6 @@ int main(int argc, char** argv) {
         env->num_agents = 1;
         env->rng = (uint32_t)(e + 1);
         env->cfg = cfg;
-        ps_init(env);
         c_reset(env);
     }
 

@@ -80,7 +80,6 @@ int main(void) {
         terminal_env.cfg.reward_pickup = 0.0f;
         terminal_env.cfg.reward_levelup = 0.0f;
         terminal_env.cfg.obstacle_penalty = 0.0f;
-        ps_init(&terminal_env);
         c_reset(&terminal_env);
         c_step(&terminal_env);
         assert(terminal_flags[0] == 1.0f);
@@ -109,7 +108,6 @@ int main(void) {
     env.cfg = test_config_from_ini();
     env.cfg.max_steps = 5000;
     env.cfg.player_health = 1000000.0f;
-    ps_init(&env);
     c_reset(&env);
 
     assert(PS_OBS_SIZE == 321);

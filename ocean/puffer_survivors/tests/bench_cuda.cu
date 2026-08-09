@@ -35,12 +35,12 @@ static void fill_actions(float* actions, int envs) {
     }
 }
 
-static void bind_io(obs_t* observations, float* actions,
+static void bind_io(PSCudaSim* sim, obs_t* observations, float* actions,
         float* rewards, float* terminals) {
-    ps_native_sim->observations = (float*)observations;
-    ps_native_sim->actions = actions;
-    ps_native_sim->rewards = rewards;
-    ps_native_sim->terminals = terminals;
+    sim->observations = (float*)observations;
+    sim->actions = actions;
+    sim->rewards = rewards;
+    sim->terminals = terminals;
 }
 
 // Fill the already-allocated pools with a stable synthetic worst-case state.
@@ -170,13 +170,13 @@ __global__ static void seed_stress_kernel(PSCudaSim sim,
     }
 }
 
-static void seed_stress_state(int num_envs, bool churn) {
+static void seed_stress_state(PSCudaSim* sim, int num_envs, bool churn) {
     int blocks = (num_envs + PS_CUDA_BLOCK_SIZE - 1) / PS_CUDA_BLOCK_SIZE;
-    seed_stress_kernel<<<blocks, PS_CUDA_BLOCK_SIZE>>>(*ps_native_sim,
-        ps_native_sim->cfg.enemy_cap,
-        ps_native_sim->cfg.projectile_cap,
-        ps_native_sim->cfg.drop_cap,
-        ps_native_sim->cfg.area_cap,
+    seed_stress_kernel<<<blocks, PS_CUDA_BLOCK_SIZE>>>(*sim,
+        sim->cfg.enemy_cap,
+        sim->cfg.projectile_cap,
+        sim->cfg.drop_cap,
+        sim->cfg.area_cap,
         churn ? 1 : 0);
     CUDA_CHECK(cudaGetLastError());
 }
@@ -184,16 +184,17 @@ static void seed_stress_state(int num_envs, bool churn) {
 static float run_pass(Env* envs, int num_envs, int steps, int warmup,
         bool include_wrapper, obs_t* observations, float* actions,
         float* rewards, float* terminals, bool stress, bool churn) {
+    PSCudaSim* sim = ps_cuda_get_sim(envs);
     puf_envs_reset(envs, observations, rewards, terminals, num_envs);
-    bind_io(observations, actions, rewards, terminals);
-    if (stress) seed_stress_state(num_envs, churn);
+    bind_io(sim, observations, actions, rewards, terminals);
+    if (stress) seed_stress_state(sim, num_envs, churn);
 
     for (int i = 0; i < warmup; i++) {
         if (include_wrapper) {
             puf_envs_step(envs, actions, observations, rewards, terminals,
                 0, num_envs, 0);
         } else {
-            ps_cuda_step_range(ps_native_sim, 0, num_envs, 0);
+            ps_cuda_step_range(sim, 0, num_envs, 0);
         }
     }
     CUDA_CHECK(cudaDeviceSynchronize());
@@ -207,7 +208,7 @@ static float run_pass(Env* envs, int num_envs, int steps, int warmup,
             puf_envs_step(envs, actions, observations, rewards, terminals,
                 0, num_envs, 0);
         } else {
-            ps_cuda_step_range(ps_native_sim, 0, num_envs, 0);
+            ps_cuda_step_range(sim, 0, num_envs, 0);
         }
     }
     CUDA_CHECK(cudaEventRecord(end, 0));
@@ -244,6 +245,7 @@ static void print_population_snapshot(const char* label, int step, int envs,
 
 static void trace_populations(Env* envs, int num_envs, int steps,
         obs_t* observations, float* actions, float* rewards, float* terminals) {
+    PSCudaSim* sim = ps_cuda_get_sim(envs);
     int* enemy = (int*)std::malloc(sizeof(int) * (size_t)num_envs);
     int* projectile = (int*)std::malloc(sizeof(int) * (size_t)num_envs);
     int* drop = (int*)std::malloc(sizeof(int) * (size_t)num_envs);
@@ -258,24 +260,24 @@ static void trace_populations(Env* envs, int num_envs, int steps,
     }
 
     puf_envs_reset(envs, observations, rewards, terminals, num_envs);
-    bind_io(observations, actions, rewards, terminals);
+    bind_io(sim, observations, actions, rewards, terminals);
     int interval = steps / 10;
     if (interval < 100) interval = 100;
     for (int step = 1; step <= steps; step++) {
-        ps_cuda_step_range(ps_native_sim, 0, num_envs, 0);
+        ps_cuda_step_range(sim, 0, num_envs, 0);
         if (step % interval != 0 && step != steps) continue;
         CUDA_CHECK(cudaDeviceSynchronize());
-        CUDA_CHECK(cudaMemcpy(enemy, ps_native_sim->enemy_count,
+        CUDA_CHECK(cudaMemcpy(enemy, sim->enemy_count,
             sizeof(int) * (size_t)num_envs, cudaMemcpyDeviceToHost));
-        CUDA_CHECK(cudaMemcpy(projectile, ps_native_sim->projectile_count,
+        CUDA_CHECK(cudaMemcpy(projectile, sim->projectile_count,
             sizeof(int) * (size_t)num_envs, cudaMemcpyDeviceToHost));
-        CUDA_CHECK(cudaMemcpy(drop, ps_native_sim->drop_count,
+        CUDA_CHECK(cudaMemcpy(drop, sim->drop_count,
             sizeof(int) * (size_t)num_envs, cudaMemcpyDeviceToHost));
-        CUDA_CHECK(cudaMemcpy(area, ps_native_sim->area_count,
+        CUDA_CHECK(cudaMemcpy(area, sim->area_count,
             sizeof(int) * (size_t)num_envs, cudaMemcpyDeviceToHost));
-        CUDA_CHECK(cudaMemcpy(ink, ps_native_sim->active_ink_count,
+        CUDA_CHECK(cudaMemcpy(ink, sim->active_ink_count,
             sizeof(int) * (size_t)num_envs, cudaMemcpyDeviceToHost));
-        CUDA_CHECK(cudaMemcpy(moving, ps_native_sim->moving_obstacle_count,
+        CUDA_CHECK(cudaMemcpy(moving, sim->moving_obstacle_count,
             sizeof(int) * (size_t)num_envs, cudaMemcpyDeviceToHost));
         print_population_snapshot("population", step, num_envs,
             enemy, projectile, drop, area, ink, moving);
@@ -289,17 +291,18 @@ static void trace_populations(Env* envs, int num_envs, int steps,
 static void profile_pass(Env* envs, int num_envs, int steps, int warmup,
         obs_t* observations, float* actions, float* rewards, float* terminals,
         bool stress, bool churn) {
+    PSCudaSim* sim = ps_cuda_get_sim(envs);
     puf_envs_reset(envs, observations, rewards, terminals, num_envs);
-    bind_io(observations, actions, rewards, terminals);
-    if (stress) seed_stress_state(num_envs, churn);
+    bind_io(sim, observations, actions, rewards, terminals);
+    if (stress) seed_stress_state(sim, num_envs, churn);
     for (int i = 0; i < warmup; i++) {
-        ps_cuda_step_range(ps_native_sim, 0, num_envs, 0);
+        ps_cuda_step_range(sim, 0, num_envs, 0);
     }
     CUDA_CHECK(cudaDeviceSynchronize());
-    CUDA_CHECK(cudaMemset(ps_native_sim->profile_cycles, 0,
+    CUDA_CHECK(cudaMemset(sim->profile_cycles, 0,
         sizeof(unsigned long long) * (size_t)num_envs * PS_PROFILE_STAGE_COUNT));
     for (int i = 0; i < steps; i++) {
-        ps_cuda_step_range(ps_native_sim, 0, num_envs, 0);
+        ps_cuda_step_range(sim, 0, num_envs, 0);
     }
     CUDA_CHECK(cudaDeviceSynchronize());
 
@@ -309,7 +312,7 @@ static void profile_pass(Env* envs, int num_envs, int steps, int warmup,
         std::fprintf(stderr, "profile allocation failed\n");
         return;
     }
-    CUDA_CHECK(cudaMemcpy(cycles, ps_native_sim->profile_cycles,
+    CUDA_CHECK(cudaMemcpy(cycles, sim->profile_cycles,
         sizeof(unsigned long long) * (size_t)num_envs * PS_PROFILE_STAGE_COUNT,
         cudaMemcpyDeviceToHost));
 

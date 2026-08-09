@@ -17,18 +17,11 @@
 #include <cstring>
 
 #include "../ps_constants.h"
-#include "../ps_config.h"
 #include "../ps_geometry.h"
 #include "../ps_log.h"
-#include "../ps_observation_layout.h"
 
 #ifndef PS_CUDA_BLOCK_SIZE
 #define PS_CUDA_BLOCK_SIZE 256
-#endif
-
-#ifndef PS_CUDA_ENEMY_SCAN_MODE
-// 1 = full capacity, 2 = choose by occupancy.
-#define PS_CUDA_ENEMY_SCAN_MODE 2
 #endif
 
 #define PS_HD __host__ __device__ __forceinline__
@@ -66,6 +59,7 @@ struct PSCudaSim {
     int num_envs;
     PSConfig cfg;
     int owns_io;
+    void* blob;
     Env* native_envs;
 
     // External tensors. Default layout:
@@ -171,10 +165,15 @@ static inline void ps_cuda_check(cudaError_t err, const char* expr, const char* 
 }
 #define PS_CUDA_CHECK(expr) ps_cuda_check((expr), #expr, __FILE__, __LINE__)
 
-#define PS_ALLOC_FIELD(sim, field, count) \
-    PS_CUDA_CHECK(cudaMalloc((void**)&((sim)->field), sizeof(*((sim)->field)) * (size_t)(count)))
-#define PS_ZERO_FIELD(sim, field, count) \
-    PS_CUDA_CHECK(cudaMemset((sim)->field, 0, sizeof(*((sim)->field)) * (size_t)(count)))
+#define PS_BLOB_ACCOUNT(type, count) do { \
+    state_bytes = (state_bytes + sizeof(type) - 1) & ~(sizeof(type) - 1); \
+    state_bytes += sizeof(type) * (size_t)(count); \
+} while (0)
+#define PS_BLOB_FIELD(type, field, count) do { \
+    state_offset = (state_offset + sizeof(type) - 1) & ~(sizeof(type) - 1); \
+    (sim)->field = (type*)((char*)(sim)->blob + state_offset); \
+    state_offset += sizeof(type) * (size_t)(count); \
+} while (0)
 
 static inline void ps_cuda_alloc(PSCudaSim* sim, int num_envs, PSConfig cfg) {
     if (num_envs <= 0) {
@@ -183,163 +182,158 @@ static inline void ps_cuda_alloc(PSCudaSim* sim, int num_envs, PSConfig cfg) {
     }
     std::memset(sim, 0, sizeof(*sim));
     sim->num_envs = num_envs;
-    ps_config_validate(&cfg);
     sim->cfg = cfg;
     sim->owns_io = 1;
 
     const size_t N = (size_t)num_envs;
-    const size_t NE = (size_t)sim->cfg.enemy_cap * N;
-    const size_t NP = (size_t)sim->cfg.projectile_cap * N;
-    const size_t ND = (size_t)sim->cfg.drop_cap * N;
+    const size_t NE = (size_t)cfg.enemy_cap * N;
+    const size_t NP = (size_t)cfg.projectile_cap * N;
+    const size_t ND = (size_t)cfg.drop_cap * N;
     const size_t NA = (size_t)PS_MAX_AREAS * N;
-    const size_t NO = (size_t)(sim->cfg.obstacle_count > 0 ? sim->cfg.obstacle_count : 1) * N;
+    const size_t NO = (size_t)(cfg.obstacle_count > 0 ? cfg.obstacle_count : 1) * N;
     const size_t NMO = (size_t)PS_MAX_MOVING_OBSTACLES * N;
     const size_t NG = (size_t)PS_GRID_CELLS * N;
-    const size_t NGT = (size_t)sim->cfg.enemy_cap * N;
+    const size_t NGT = (size_t)cfg.enemy_cap * N;
 
-    PS_ALLOC_FIELD(sim, observations, N * PS_OBS_SIZE);
-    PS_ALLOC_FIELD(sim, actions, N * 2);
-    PS_ALLOC_FIELD(sim, rewards, N);
-    PS_ALLOC_FIELD(sim, terminals, N);
+    PS_CUDA_CHECK(cudaMalloc((void**)&sim->observations, sizeof(float) * N * PS_OBS_SIZE));
+    PS_CUDA_CHECK(cudaMalloc((void**)&sim->actions, sizeof(float) * N * 2));
+    PS_CUDA_CHECK(cudaMalloc((void**)&sim->rewards, sizeof(float) * N));
+    PS_CUDA_CHECK(cudaMalloc((void**)&sim->terminals, sizeof(float) * N));
 
-    PS_ALLOC_FIELD(sim, rng, N);
-    PS_ALLOC_FIELD(sim, px, N); PS_ALLOC_FIELD(sim, py, N); PS_ALLOC_FIELD(sim, pvx, N); PS_ALLOC_FIELD(sim, pvy, N);
-    PS_ALLOC_FIELD(sim, hp, N); PS_ALLOC_FIELD(sim, max_hp, N); PS_ALLOC_FIELD(sim, xp, N);
-    PS_ALLOC_FIELD(sim, player_facing_left, N);
-    PS_ALLOC_FIELD(sim, speed_bonus, N); PS_ALLOC_FIELD(sim, damage_bonus, N); PS_ALLOC_FIELD(sim, cooldown_mult, N);
-    PS_ALLOC_FIELD(sim, projectile_speed_bonus, N); PS_ALLOC_FIELD(sim, magnet_bonus, N); PS_ALLOC_FIELD(sim, area_bonus, N);
-    PS_ALLOC_FIELD(sim, level, N); PS_ALLOC_FIELD(sim, pierce_bonus, N); PS_ALLOC_FIELD(sim, pending_upgrade, N);
-    PS_ALLOC_FIELD(sim, queued_upgrades, N); PS_ALLOC_FIELD(sim, last_boss_tick, N);
-    PS_ALLOC_FIELD(sim, offered, N * PS_UPGRADE_SLOTS);
-    PS_ALLOC_FIELD(sim, weapon_cd, N * PS_WEAPON_COUNT); PS_ALLOC_FIELD(sim, weapon_active, N * PS_WEAPON_COUNT);
-    PS_ALLOC_FIELD(sim, weapon_level, N * PS_WEAPON_COUNT); PS_ALLOC_FIELD(sim, orbit_phase, N);
-    PS_ALLOC_FIELD(sim, tick, N); PS_ALLOC_FIELD(sim, invuln_timer, N);
-
-    PS_ALLOC_FIELD(sim, enemy_active, NE); PS_ALLOC_FIELD(sim, enemy_type, NE); PS_ALLOC_FIELD(sim, enemy_shape, NE);
-    PS_ALLOC_FIELD(sim, enemy_x, NE); PS_ALLOC_FIELD(sim, enemy_y, NE); PS_ALLOC_FIELD(sim, enemy_vx, NE); PS_ALLOC_FIELD(sim, enemy_vy, NE);
-    PS_ALLOC_FIELD(sim, enemy_hp, NE); PS_ALLOC_FIELD(sim, enemy_max_hp, NE); PS_ALLOC_FIELD(sim, enemy_radius, NE); PS_ALLOC_FIELD(sim, enemy_bound_radius, NE);
-    PS_ALLOC_FIELD(sim, enemy_half_width, NE); PS_ALLOC_FIELD(sim, enemy_half_height, NE);
-    PS_ALLOC_FIELD(sim, enemy_speed, NE); PS_ALLOC_FIELD(sim, enemy_damage, NE); PS_ALLOC_FIELD(sim, enemy_next, NE);
-    PS_ALLOC_FIELD(sim, enemy_dense, NE); PS_ALLOC_FIELD(sim, enemy_dense_pos, NE);
-
-    PS_ALLOC_FIELD(sim, projectile_active, NP); PS_ALLOC_FIELD(sim, projectile_type, NP);
-    PS_ALLOC_FIELD(sim, projectile_x, NP); PS_ALLOC_FIELD(sim, projectile_y, NP); PS_ALLOC_FIELD(sim, projectile_vx, NP); PS_ALLOC_FIELD(sim, projectile_vy, NP);
-    PS_ALLOC_FIELD(sim, projectile_damage, NP); PS_ALLOC_FIELD(sim, projectile_radius, NP);
-    PS_ALLOC_FIELD(sim, projectile_ttl, NP); PS_ALLOC_FIELD(sim, projectile_pierce, NP);
-    PS_ALLOC_FIELD(sim, projectile_dense, NP); PS_ALLOC_FIELD(sim, projectile_dense_pos, NP);
-
-    PS_ALLOC_FIELD(sim, drop_active, ND); PS_ALLOC_FIELD(sim, drop_type, ND);
-    PS_ALLOC_FIELD(sim, drop_x, ND); PS_ALLOC_FIELD(sim, drop_y, ND); PS_ALLOC_FIELD(sim, drop_value, ND);
-    PS_ALLOC_FIELD(sim, drop_dense, ND); PS_ALLOC_FIELD(sim, drop_dense_pos, ND);
-
-    PS_ALLOC_FIELD(sim, area_active, NA); PS_ALLOC_FIELD(sim, area_type, NA);
-    PS_ALLOC_FIELD(sim, area_x, NA); PS_ALLOC_FIELD(sim, area_y, NA); PS_ALLOC_FIELD(sim, area_radius, NA); PS_ALLOC_FIELD(sim, area_damage, NA);
-    PS_ALLOC_FIELD(sim, area_ttl, NA); PS_ALLOC_FIELD(sim, area_tick_rate, NA); PS_ALLOC_FIELD(sim, area_tick_timer, NA);
-    PS_ALLOC_FIELD(sim, area_dense, NA); PS_ALLOC_FIELD(sim, area_dense_pos, NA);
-
-    PS_ALLOC_FIELD(sim, obstacle_type, NO); PS_ALLOC_FIELD(sim, obstacle_x, NO); PS_ALLOC_FIELD(sim, obstacle_y, NO); PS_ALLOC_FIELD(sim, obstacle_radius, NO);
-    PS_ALLOC_FIELD(sim, moving_obstacle_active, NMO); PS_ALLOC_FIELD(sim, moving_obstacle_type, NMO); PS_ALLOC_FIELD(sim, moving_obstacle_shape, NMO);
-    PS_ALLOC_FIELD(sim, moving_obstacle_x, NMO); PS_ALLOC_FIELD(sim, moving_obstacle_y, NMO); PS_ALLOC_FIELD(sim, moving_obstacle_vx, NMO); PS_ALLOC_FIELD(sim, moving_obstacle_vy, NMO);
-    PS_ALLOC_FIELD(sim, moving_obstacle_bound_radius, NMO); PS_ALLOC_FIELD(sim, moving_obstacle_half_width, NMO); PS_ALLOC_FIELD(sim, moving_obstacle_half_height, NMO);
-    PS_ALLOC_FIELD(sim, moving_obstacle_ttl, NMO); PS_ALLOC_FIELD(sim, moving_obstacle_dense, NMO); PS_ALLOC_FIELD(sim, moving_obstacle_dense_pos, NMO);
-    PS_ALLOC_FIELD(sim, grid_head, NG);
-    PS_ALLOC_FIELD(sim, grid_touched, NGT); PS_ALLOC_FIELD(sim, grid_touched_count, N);
-    PS_ALLOC_FIELD(sim, aabb_indices, NGT); PS_ALLOC_FIELD(sim, aabb_count, N);
-
-    PS_ALLOC_FIELD(sim, nearest_enemy, N); PS_ALLOC_FIELD(sim, nearest_enemy_d2, N);
-    PS_ALLOC_FIELD(sim, enemy_count, N); PS_ALLOC_FIELD(sim, projectile_count, N); PS_ALLOC_FIELD(sim, drop_count, N); PS_ALLOC_FIELD(sim, area_count, N); PS_ALLOC_FIELD(sim, moving_obstacle_count, N); PS_ALLOC_FIELD(sim, active_ink_count, N);
-    PS_ALLOC_FIELD(sim, next_enemy_slot, N); PS_ALLOC_FIELD(sim, next_projectile_slot, N); PS_ALLOC_FIELD(sim, next_drop_slot, N); PS_ALLOC_FIELD(sim, next_area_slot, N); PS_ALLOC_FIELD(sim, next_moving_obstacle_slot, N);
-
-    PS_ALLOC_FIELD(sim, episode_return, N);
-    PS_ALLOC_FIELD(sim, episode_reward_survival, N); PS_ALLOC_FIELD(sim, episode_reward_damage, N); PS_ALLOC_FIELD(sim, episode_reward_kill, N);
-    PS_ALLOC_FIELD(sim, episode_reward_hurt, N); PS_ALLOC_FIELD(sim, episode_reward_pickup, N); PS_ALLOC_FIELD(sim, episode_reward_xp, N);
-    PS_ALLOC_FIELD(sim, episode_reward_levelup, N); PS_ALLOC_FIELD(sim, episode_reward_obstacle, N); PS_ALLOC_FIELD(sim, episode_reward_terminal, N);
-    PS_ALLOC_FIELD(sim, episode_score, N); PS_ALLOC_FIELD(sim, episode_kills, N); PS_ALLOC_FIELD(sim, episode_xp, N);
-    PS_ALLOC_FIELD(sim, episode_damage_dealt, N); PS_ALLOC_FIELD(sim, episode_damage_taken, N); PS_ALLOC_FIELD(sim, episode_pickups, N);
-    PS_ALLOC_FIELD(sim, episode_levelups, N); PS_ALLOC_FIELD(sim, episode_obstacle_hits, N);
-    PS_ALLOC_FIELD(sim, episode_peak_enemies, N); PS_ALLOC_FIELD(sim, episode_peak_projectiles, N); PS_ALLOC_FIELD(sim, episode_min_hp, N);
-
+    size_t state_bytes = 0;
+    PS_BLOB_ACCOUNT(uint32_t, N);                       // rng
+    PS_BLOB_ACCOUNT(float, N * 8);                      // px py pvx pvy hp max_hp xp + orbit_phase
+    PS_BLOB_ACCOUNT(int, N * 6);                        // player_facing_left level pierce pending queued last_boss
+    PS_BLOB_ACCOUNT(float, N * 6);                      // speed damage cooldown projectile_speed magnet area
+    PS_BLOB_ACCOUNT(int, N * 9);                        // tick invuln nearest + all pool counts
+    PS_BLOB_ACCOUNT(int, N * 5);                        // next_*_slot cursors
+    PS_BLOB_ACCOUNT(int, N * PS_UPGRADE_SLOTS);         // offered
+    PS_BLOB_ACCOUNT(float, N * PS_WEAPON_COUNT * 2);    // weapon_cd + weapon_active
+    PS_BLOB_ACCOUNT(int, N * PS_WEAPON_COUNT);          // weapon_level
+    PS_BLOB_ACCOUNT(float, N * 22);                     // episode stats + nearest_enemy_d2
+    PS_BLOB_ACCOUNT(int, N * (PS_GRID_CELLS + 2));      // grid_head + grid_touched_count + aabb_count
+    PS_BLOB_ACCOUNT(int, NGT * 2);                      // grid_touched + aabb_indices
 #ifdef PS_CUDA_PROFILE
-    PS_ALLOC_FIELD(sim, profile_cycles, N * PS_PROFILE_STAGE_COUNT);
+    PS_BLOB_ACCOUNT(unsigned long long, N * PS_PROFILE_STAGE_COUNT);
 #endif
 
-    // Zero everything. Reset kernel will fill live state.
-    PS_CUDA_CHECK(cudaMemset(sim->observations, 0, sizeof(float) * N * PS_OBS_SIZE));
-    PS_CUDA_CHECK(cudaMemset(sim->actions, 0, sizeof(float) * N * 2));
-    PS_CUDA_CHECK(cudaMemset(sim->rewards, 0, sizeof(float) * N));
-    PS_CUDA_CHECK(cudaMemset(sim->terminals, 0, sizeof(float) * N));
-    PS_CUDA_CHECK(cudaMemset(sim->rng, 0, sizeof(uint32_t) * N));
-    PS_CUDA_CHECK(cudaMemset(sim->enemy_active, 0, sizeof(uint8_t) * NE));
-    PS_CUDA_CHECK(cudaMemset(sim->projectile_active, 0, sizeof(uint8_t) * NP));
-    PS_CUDA_CHECK(cudaMemset(sim->drop_active, 0, sizeof(uint8_t) * ND));
-    PS_CUDA_CHECK(cudaMemset(sim->area_active, 0, sizeof(uint8_t) * NA));
-    PS_CUDA_CHECK(cudaMemset(sim->moving_obstacle_active, 0, sizeof(uint8_t) * NMO));
-    // Explicitly zero the rest pointer-by-pointer for correctness.
-    PS_ZERO_FIELD(sim, px, N); PS_ZERO_FIELD(sim, py, N); PS_ZERO_FIELD(sim, pvx, N); PS_ZERO_FIELD(sim, pvy, N);
-    PS_ZERO_FIELD(sim, hp, N); PS_ZERO_FIELD(sim, max_hp, N); PS_ZERO_FIELD(sim, xp, N); PS_ZERO_FIELD(sim, player_facing_left, N);
-    PS_ZERO_FIELD(sim, speed_bonus, N); PS_ZERO_FIELD(sim, damage_bonus, N); PS_ZERO_FIELD(sim, cooldown_mult, N); PS_ZERO_FIELD(sim, projectile_speed_bonus, N);
-    PS_ZERO_FIELD(sim, magnet_bonus, N); PS_ZERO_FIELD(sim, area_bonus, N); PS_ZERO_FIELD(sim, level, N); PS_ZERO_FIELD(sim, pierce_bonus, N);
-    PS_ZERO_FIELD(sim, pending_upgrade, N); PS_ZERO_FIELD(sim, queued_upgrades, N); PS_ZERO_FIELD(sim, last_boss_tick, N); PS_ZERO_FIELD(sim, offered, N * PS_UPGRADE_SLOTS);
-    PS_ZERO_FIELD(sim, weapon_cd, N * PS_WEAPON_COUNT); PS_ZERO_FIELD(sim, weapon_active, N * PS_WEAPON_COUNT); PS_ZERO_FIELD(sim, weapon_level, N * PS_WEAPON_COUNT);
-    PS_ZERO_FIELD(sim, orbit_phase, N); PS_ZERO_FIELD(sim, tick, N); PS_ZERO_FIELD(sim, invuln_timer, N);
-    PS_ZERO_FIELD(sim, enemy_type, NE); PS_ZERO_FIELD(sim, enemy_shape, NE); PS_ZERO_FIELD(sim, enemy_x, NE); PS_ZERO_FIELD(sim, enemy_y, NE); PS_ZERO_FIELD(sim, enemy_vx, NE); PS_ZERO_FIELD(sim, enemy_vy, NE);
-    PS_ZERO_FIELD(sim, enemy_hp, NE); PS_ZERO_FIELD(sim, enemy_max_hp, NE); PS_ZERO_FIELD(sim, enemy_radius, NE); PS_ZERO_FIELD(sim, enemy_bound_radius, NE); PS_ZERO_FIELD(sim, enemy_half_width, NE); PS_ZERO_FIELD(sim, enemy_half_height, NE); PS_ZERO_FIELD(sim, enemy_speed, NE); PS_ZERO_FIELD(sim, enemy_damage, NE); PS_ZERO_FIELD(sim, enemy_next, NE); PS_ZERO_FIELD(sim, enemy_dense, NE); PS_ZERO_FIELD(sim, enemy_dense_pos, NE);
-    PS_ZERO_FIELD(sim, projectile_type, NP); PS_ZERO_FIELD(sim, projectile_x, NP); PS_ZERO_FIELD(sim, projectile_y, NP); PS_ZERO_FIELD(sim, projectile_vx, NP); PS_ZERO_FIELD(sim, projectile_vy, NP);
-    PS_ZERO_FIELD(sim, projectile_damage, NP); PS_ZERO_FIELD(sim, projectile_radius, NP); PS_ZERO_FIELD(sim, projectile_ttl, NP); PS_ZERO_FIELD(sim, projectile_pierce, NP);
-    PS_ZERO_FIELD(sim, projectile_dense, NP); PS_ZERO_FIELD(sim, projectile_dense_pos, NP);
-    PS_ZERO_FIELD(sim, drop_type, ND); PS_ZERO_FIELD(sim, drop_x, ND); PS_ZERO_FIELD(sim, drop_y, ND); PS_ZERO_FIELD(sim, drop_value, ND);
-    PS_ZERO_FIELD(sim, drop_dense, ND); PS_ZERO_FIELD(sim, drop_dense_pos, ND);
-    PS_ZERO_FIELD(sim, area_type, NA); PS_ZERO_FIELD(sim, area_x, NA); PS_ZERO_FIELD(sim, area_y, NA); PS_ZERO_FIELD(sim, area_radius, NA); PS_ZERO_FIELD(sim, area_damage, NA);
-    PS_ZERO_FIELD(sim, area_ttl, NA); PS_ZERO_FIELD(sim, area_tick_rate, NA); PS_ZERO_FIELD(sim, area_tick_timer, NA);
-    PS_ZERO_FIELD(sim, area_dense, NA); PS_ZERO_FIELD(sim, area_dense_pos, NA);
-    PS_ZERO_FIELD(sim, obstacle_type, NO); PS_ZERO_FIELD(sim, obstacle_x, NO); PS_ZERO_FIELD(sim, obstacle_y, NO); PS_ZERO_FIELD(sim, obstacle_radius, NO);
-    PS_ZERO_FIELD(sim, moving_obstacle_type, NMO); PS_ZERO_FIELD(sim, moving_obstacle_shape, NMO); PS_ZERO_FIELD(sim, moving_obstacle_x, NMO); PS_ZERO_FIELD(sim, moving_obstacle_y, NMO); PS_ZERO_FIELD(sim, moving_obstacle_vx, NMO); PS_ZERO_FIELD(sim, moving_obstacle_vy, NMO); PS_ZERO_FIELD(sim, moving_obstacle_bound_radius, NMO); PS_ZERO_FIELD(sim, moving_obstacle_half_width, NMO); PS_ZERO_FIELD(sim, moving_obstacle_half_height, NMO); PS_ZERO_FIELD(sim, moving_obstacle_ttl, NMO); PS_ZERO_FIELD(sim, moving_obstacle_dense, NMO); PS_ZERO_FIELD(sim, moving_obstacle_dense_pos, NMO); PS_ZERO_FIELD(sim, grid_head, NG);
-    PS_ZERO_FIELD(sim, grid_touched, NGT); PS_ZERO_FIELD(sim, grid_touched_count, N); PS_ZERO_FIELD(sim, aabb_indices, NGT); PS_ZERO_FIELD(sim, aabb_count, N);
-    PS_ZERO_FIELD(sim, nearest_enemy, N); PS_ZERO_FIELD(sim, nearest_enemy_d2, N);
-    PS_ZERO_FIELD(sim, enemy_count, N); PS_ZERO_FIELD(sim, projectile_count, N); PS_ZERO_FIELD(sim, drop_count, N); PS_ZERO_FIELD(sim, area_count, N); PS_ZERO_FIELD(sim, moving_obstacle_count, N); PS_ZERO_FIELD(sim, active_ink_count, N);
-    PS_ZERO_FIELD(sim, next_enemy_slot, N); PS_ZERO_FIELD(sim, next_projectile_slot, N); PS_ZERO_FIELD(sim, next_drop_slot, N); PS_ZERO_FIELD(sim, next_area_slot, N); PS_ZERO_FIELD(sim, next_moving_obstacle_slot, N);
-    PS_ZERO_FIELD(sim, episode_return, N);
-    PS_ZERO_FIELD(sim, episode_reward_survival, N); PS_ZERO_FIELD(sim, episode_reward_damage, N); PS_ZERO_FIELD(sim, episode_reward_kill, N);
-    PS_ZERO_FIELD(sim, episode_reward_hurt, N); PS_ZERO_FIELD(sim, episode_reward_pickup, N); PS_ZERO_FIELD(sim, episode_reward_xp, N);
-    PS_ZERO_FIELD(sim, episode_reward_levelup, N); PS_ZERO_FIELD(sim, episode_reward_obstacle, N); PS_ZERO_FIELD(sim, episode_reward_terminal, N);
-    PS_ZERO_FIELD(sim, episode_score, N); PS_ZERO_FIELD(sim, episode_kills, N); PS_ZERO_FIELD(sim, episode_xp, N);
-    PS_ZERO_FIELD(sim, episode_damage_dealt, N); PS_ZERO_FIELD(sim, episode_damage_taken, N); PS_ZERO_FIELD(sim, episode_pickups, N); PS_ZERO_FIELD(sim, episode_levelups, N); PS_ZERO_FIELD(sim, episode_obstacle_hits, N);
-    PS_ZERO_FIELD(sim, episode_peak_enemies, N); PS_ZERO_FIELD(sim, episode_peak_projectiles, N); PS_ZERO_FIELD(sim, episode_min_hp, N);
+    // Enemy pool
+    PS_BLOB_ACCOUNT(uint8_t, NE * 3);
+    PS_BLOB_ACCOUNT(float, NE * 12);
+    PS_BLOB_ACCOUNT(int, NE * 3);
+    // Projectile pool
+    PS_BLOB_ACCOUNT(uint8_t, NP * 2);
+    PS_BLOB_ACCOUNT(float, NP * 6);
+    PS_BLOB_ACCOUNT(int, NP * 4);
+    // Drop pool
+    PS_BLOB_ACCOUNT(uint8_t, ND * 2);
+    PS_BLOB_ACCOUNT(float, ND * 3);
+    PS_BLOB_ACCOUNT(int, ND * 2);
+    // Area pool
+    PS_BLOB_ACCOUNT(uint8_t, NA * 2);
+    PS_BLOB_ACCOUNT(float, NA * 4);
+    PS_BLOB_ACCOUNT(int, NA * 5);
+    // Obstacles
+    PS_BLOB_ACCOUNT(uint8_t, NO);
+    PS_BLOB_ACCOUNT(float, NO * 3);
+    // Moving obstacles
+    PS_BLOB_ACCOUNT(uint8_t, NMO * 3);
+    PS_BLOB_ACCOUNT(float, NMO * 7);
+    PS_BLOB_ACCOUNT(int, NMO * 3);
 
+    PS_CUDA_CHECK(cudaMalloc(&sim->blob, state_bytes));
+    size_t state_offset = 0;
+    PS_BLOB_FIELD(uint32_t, rng, N);
+    PS_BLOB_FIELD(float, px, N); PS_BLOB_FIELD(float, py, N);
+    PS_BLOB_FIELD(float, pvx, N); PS_BLOB_FIELD(float, pvy, N);
+    PS_BLOB_FIELD(float, hp, N); PS_BLOB_FIELD(float, max_hp, N);
+    PS_BLOB_FIELD(float, xp, N); PS_BLOB_FIELD(float, orbit_phase, N);
+    PS_BLOB_FIELD(int, player_facing_left, N); PS_BLOB_FIELD(int, level, N);
+    PS_BLOB_FIELD(int, pierce_bonus, N); PS_BLOB_FIELD(int, pending_upgrade, N);
+    PS_BLOB_FIELD(int, queued_upgrades, N); PS_BLOB_FIELD(int, last_boss_tick, N);
+    PS_BLOB_FIELD(float, speed_bonus, N); PS_BLOB_FIELD(float, damage_bonus, N);
+    PS_BLOB_FIELD(float, cooldown_mult, N); PS_BLOB_FIELD(float, projectile_speed_bonus, N);
+    PS_BLOB_FIELD(float, magnet_bonus, N); PS_BLOB_FIELD(float, area_bonus, N);
+    PS_BLOB_FIELD(int, tick, N); PS_BLOB_FIELD(int, invuln_timer, N);
+    PS_BLOB_FIELD(int, nearest_enemy, N);
+    PS_BLOB_FIELD(int, enemy_count, N); PS_BLOB_FIELD(int, projectile_count, N);
+    PS_BLOB_FIELD(int, drop_count, N); PS_BLOB_FIELD(int, area_count, N);
+    PS_BLOB_FIELD(int, moving_obstacle_count, N); PS_BLOB_FIELD(int, active_ink_count, N);
+    PS_BLOB_FIELD(int, next_enemy_slot, N); PS_BLOB_FIELD(int, next_projectile_slot, N);
+    PS_BLOB_FIELD(int, next_drop_slot, N); PS_BLOB_FIELD(int, next_area_slot, N);
+    PS_BLOB_FIELD(int, next_moving_obstacle_slot, N);
+    PS_BLOB_FIELD(int, offered, N * PS_UPGRADE_SLOTS);
+    PS_BLOB_FIELD(float, weapon_cd, N * PS_WEAPON_COUNT);
+    PS_BLOB_FIELD(float, weapon_active, N * PS_WEAPON_COUNT);
+    PS_BLOB_FIELD(int, weapon_level, N * PS_WEAPON_COUNT);
+    PS_BLOB_FIELD(float, episode_return, N);
+    PS_BLOB_FIELD(float, episode_reward_survival, N); PS_BLOB_FIELD(float, episode_reward_damage, N);
+    PS_BLOB_FIELD(float, episode_reward_kill, N); PS_BLOB_FIELD(float, episode_reward_hurt, N);
+    PS_BLOB_FIELD(float, episode_reward_pickup, N); PS_BLOB_FIELD(float, episode_reward_xp, N);
+    PS_BLOB_FIELD(float, episode_reward_levelup, N); PS_BLOB_FIELD(float, episode_reward_obstacle, N);
+    PS_BLOB_FIELD(float, episode_reward_terminal, N); PS_BLOB_FIELD(float, episode_score, N);
+    PS_BLOB_FIELD(float, episode_kills, N); PS_BLOB_FIELD(float, episode_xp, N);
+    PS_BLOB_FIELD(float, episode_damage_dealt, N); PS_BLOB_FIELD(float, episode_damage_taken, N);
+    PS_BLOB_FIELD(float, episode_pickups, N); PS_BLOB_FIELD(float, episode_levelups, N);
+    PS_BLOB_FIELD(float, episode_obstacle_hits, N); PS_BLOB_FIELD(float, episode_peak_enemies, N);
+    PS_BLOB_FIELD(float, episode_peak_projectiles, N); PS_BLOB_FIELD(float, episode_min_hp, N);
+    PS_BLOB_FIELD(float, nearest_enemy_d2, N);
+    PS_BLOB_FIELD(int, grid_head, NG);
+    PS_BLOB_FIELD(int, grid_touched_count, N); PS_BLOB_FIELD(int, aabb_count, N);
+    PS_BLOB_FIELD(int, grid_touched, NGT); PS_BLOB_FIELD(int, aabb_indices, NGT);
 #ifdef PS_CUDA_PROFILE
-    PS_ZERO_FIELD(sim, profile_cycles, N * PS_PROFILE_STAGE_COUNT);
+    PS_BLOB_FIELD(unsigned long long, profile_cycles, N * PS_PROFILE_STAGE_COUNT);
 #endif
+    PS_BLOB_FIELD(uint8_t, enemy_active, NE); PS_BLOB_FIELD(uint8_t, enemy_type, NE);
+    PS_BLOB_FIELD(uint8_t, enemy_shape, NE);
+    PS_BLOB_FIELD(float, enemy_x, NE); PS_BLOB_FIELD(float, enemy_y, NE);
+    PS_BLOB_FIELD(float, enemy_vx, NE); PS_BLOB_FIELD(float, enemy_vy, NE);
+    PS_BLOB_FIELD(float, enemy_hp, NE); PS_BLOB_FIELD(float, enemy_max_hp, NE);
+    PS_BLOB_FIELD(float, enemy_radius, NE); PS_BLOB_FIELD(float, enemy_bound_radius, NE);
+    PS_BLOB_FIELD(float, enemy_half_width, NE); PS_BLOB_FIELD(float, enemy_half_height, NE);
+    PS_BLOB_FIELD(float, enemy_speed, NE); PS_BLOB_FIELD(float, enemy_damage, NE);
+    PS_BLOB_FIELD(int, enemy_next, NE); PS_BLOB_FIELD(int, enemy_dense, NE);
+    PS_BLOB_FIELD(int, enemy_dense_pos, NE);
+    PS_BLOB_FIELD(uint8_t, projectile_active, NP); PS_BLOB_FIELD(uint8_t, projectile_type, NP);
+    PS_BLOB_FIELD(float, projectile_x, NP); PS_BLOB_FIELD(float, projectile_y, NP);
+    PS_BLOB_FIELD(float, projectile_vx, NP); PS_BLOB_FIELD(float, projectile_vy, NP);
+    PS_BLOB_FIELD(float, projectile_damage, NP); PS_BLOB_FIELD(float, projectile_radius, NP);
+    PS_BLOB_FIELD(int, projectile_ttl, NP); PS_BLOB_FIELD(int, projectile_pierce, NP);
+    PS_BLOB_FIELD(int, projectile_dense, NP); PS_BLOB_FIELD(int, projectile_dense_pos, NP);
+    PS_BLOB_FIELD(uint8_t, drop_active, ND); PS_BLOB_FIELD(uint8_t, drop_type, ND);
+    PS_BLOB_FIELD(float, drop_x, ND); PS_BLOB_FIELD(float, drop_y, ND);
+    PS_BLOB_FIELD(float, drop_value, ND);
+    PS_BLOB_FIELD(int, drop_dense, ND); PS_BLOB_FIELD(int, drop_dense_pos, ND);
+    PS_BLOB_FIELD(uint8_t, area_active, NA); PS_BLOB_FIELD(uint8_t, area_type, NA);
+    PS_BLOB_FIELD(float, area_x, NA); PS_BLOB_FIELD(float, area_y, NA);
+    PS_BLOB_FIELD(float, area_radius, NA); PS_BLOB_FIELD(float, area_damage, NA);
+    PS_BLOB_FIELD(int, area_ttl, NA); PS_BLOB_FIELD(int, area_tick_rate, NA);
+    PS_BLOB_FIELD(int, area_tick_timer, NA);
+    PS_BLOB_FIELD(int, area_dense, NA); PS_BLOB_FIELD(int, area_dense_pos, NA);
+    PS_BLOB_FIELD(uint8_t, obstacle_type, NO);
+    PS_BLOB_FIELD(float, obstacle_x, NO); PS_BLOB_FIELD(float, obstacle_y, NO);
+    PS_BLOB_FIELD(float, obstacle_radius, NO);
+    PS_BLOB_FIELD(uint8_t, moving_obstacle_active, NMO);
+    PS_BLOB_FIELD(uint8_t, moving_obstacle_type, NMO);
+    PS_BLOB_FIELD(uint8_t, moving_obstacle_shape, NMO);
+    PS_BLOB_FIELD(float, moving_obstacle_x, NMO); PS_BLOB_FIELD(float, moving_obstacle_y, NMO);
+    PS_BLOB_FIELD(float, moving_obstacle_vx, NMO); PS_BLOB_FIELD(float, moving_obstacle_vy, NMO);
+    PS_BLOB_FIELD(float, moving_obstacle_bound_radius, NMO);
+    PS_BLOB_FIELD(float, moving_obstacle_half_width, NMO);
+    PS_BLOB_FIELD(float, moving_obstacle_half_height, NMO);
+    PS_BLOB_FIELD(int, moving_obstacle_ttl, NMO);
+    PS_BLOB_FIELD(int, moving_obstacle_dense, NMO);
+    PS_BLOB_FIELD(int, moving_obstacle_dense_pos, NMO);
 }
-
-#define PS_FREE_FIELD(sim, field) do { if ((sim)->field) { cudaFree((sim)->field); (sim)->field = nullptr; } } while (0)
 
 static inline void ps_cuda_free(PSCudaSim* sim) {
     if (sim->owns_io) {
-        PS_FREE_FIELD(sim, observations); PS_FREE_FIELD(sim, actions); PS_FREE_FIELD(sim, rewards); PS_FREE_FIELD(sim, terminals);
-    } else {
-        sim->observations = nullptr;
-        sim->actions = nullptr;
-        sim->rewards = nullptr;
-        sim->terminals = nullptr;
+        cudaFree(sim->observations);
+        cudaFree(sim->actions);
+        cudaFree(sim->rewards);
+        cudaFree(sim->terminals);
     }
-    PS_FREE_FIELD(sim, rng);
-    PS_FREE_FIELD(sim, px); PS_FREE_FIELD(sim, py); PS_FREE_FIELD(sim, pvx); PS_FREE_FIELD(sim, pvy); PS_FREE_FIELD(sim, hp); PS_FREE_FIELD(sim, max_hp); PS_FREE_FIELD(sim, xp);
-    PS_FREE_FIELD(sim, player_facing_left); PS_FREE_FIELD(sim, speed_bonus); PS_FREE_FIELD(sim, damage_bonus); PS_FREE_FIELD(sim, cooldown_mult); PS_FREE_FIELD(sim, projectile_speed_bonus);
-    PS_FREE_FIELD(sim, magnet_bonus); PS_FREE_FIELD(sim, area_bonus); PS_FREE_FIELD(sim, level); PS_FREE_FIELD(sim, pierce_bonus); PS_FREE_FIELD(sim, pending_upgrade); PS_FREE_FIELD(sim, queued_upgrades); PS_FREE_FIELD(sim, last_boss_tick);
-    PS_FREE_FIELD(sim, offered); PS_FREE_FIELD(sim, weapon_cd); PS_FREE_FIELD(sim, weapon_active); PS_FREE_FIELD(sim, weapon_level); PS_FREE_FIELD(sim, orbit_phase); PS_FREE_FIELD(sim, tick); PS_FREE_FIELD(sim, invuln_timer);
-    PS_FREE_FIELD(sim, enemy_active); PS_FREE_FIELD(sim, enemy_type); PS_FREE_FIELD(sim, enemy_shape); PS_FREE_FIELD(sim, enemy_x); PS_FREE_FIELD(sim, enemy_y); PS_FREE_FIELD(sim, enemy_vx); PS_FREE_FIELD(sim, enemy_vy); PS_FREE_FIELD(sim, enemy_hp); PS_FREE_FIELD(sim, enemy_max_hp); PS_FREE_FIELD(sim, enemy_radius); PS_FREE_FIELD(sim, enemy_bound_radius); PS_FREE_FIELD(sim, enemy_half_width); PS_FREE_FIELD(sim, enemy_half_height); PS_FREE_FIELD(sim, enemy_speed); PS_FREE_FIELD(sim, enemy_damage); PS_FREE_FIELD(sim, enemy_next); PS_FREE_FIELD(sim, enemy_dense); PS_FREE_FIELD(sim, enemy_dense_pos);
-    PS_FREE_FIELD(sim, projectile_active); PS_FREE_FIELD(sim, projectile_type); PS_FREE_FIELD(sim, projectile_x); PS_FREE_FIELD(sim, projectile_y); PS_FREE_FIELD(sim, projectile_vx); PS_FREE_FIELD(sim, projectile_vy); PS_FREE_FIELD(sim, projectile_damage); PS_FREE_FIELD(sim, projectile_radius); PS_FREE_FIELD(sim, projectile_ttl); PS_FREE_FIELD(sim, projectile_pierce); PS_FREE_FIELD(sim, projectile_dense); PS_FREE_FIELD(sim, projectile_dense_pos);
-    PS_FREE_FIELD(sim, drop_active); PS_FREE_FIELD(sim, drop_type); PS_FREE_FIELD(sim, drop_x); PS_FREE_FIELD(sim, drop_y); PS_FREE_FIELD(sim, drop_value); PS_FREE_FIELD(sim, drop_dense); PS_FREE_FIELD(sim, drop_dense_pos);
-    PS_FREE_FIELD(sim, area_active); PS_FREE_FIELD(sim, area_type); PS_FREE_FIELD(sim, area_x); PS_FREE_FIELD(sim, area_y); PS_FREE_FIELD(sim, area_radius); PS_FREE_FIELD(sim, area_damage); PS_FREE_FIELD(sim, area_ttl); PS_FREE_FIELD(sim, area_tick_rate); PS_FREE_FIELD(sim, area_tick_timer); PS_FREE_FIELD(sim, area_dense); PS_FREE_FIELD(sim, area_dense_pos);
-    PS_FREE_FIELD(sim, obstacle_type); PS_FREE_FIELD(sim, obstacle_x); PS_FREE_FIELD(sim, obstacle_y); PS_FREE_FIELD(sim, obstacle_radius);
-    PS_FREE_FIELD(sim, moving_obstacle_active); PS_FREE_FIELD(sim, moving_obstacle_type); PS_FREE_FIELD(sim, moving_obstacle_shape); PS_FREE_FIELD(sim, moving_obstacle_x); PS_FREE_FIELD(sim, moving_obstacle_y); PS_FREE_FIELD(sim, moving_obstacle_vx); PS_FREE_FIELD(sim, moving_obstacle_vy); PS_FREE_FIELD(sim, moving_obstacle_bound_radius); PS_FREE_FIELD(sim, moving_obstacle_half_width); PS_FREE_FIELD(sim, moving_obstacle_half_height); PS_FREE_FIELD(sim, moving_obstacle_ttl); PS_FREE_FIELD(sim, moving_obstacle_dense); PS_FREE_FIELD(sim, moving_obstacle_dense_pos);
-    PS_FREE_FIELD(sim, grid_head); PS_FREE_FIELD(sim, grid_touched); PS_FREE_FIELD(sim, grid_touched_count); PS_FREE_FIELD(sim, aabb_indices); PS_FREE_FIELD(sim, aabb_count);
-    PS_FREE_FIELD(sim, nearest_enemy); PS_FREE_FIELD(sim, nearest_enemy_d2);
-    PS_FREE_FIELD(sim, enemy_count); PS_FREE_FIELD(sim, projectile_count); PS_FREE_FIELD(sim, drop_count); PS_FREE_FIELD(sim, area_count); PS_FREE_FIELD(sim, moving_obstacle_count); PS_FREE_FIELD(sim, active_ink_count); PS_FREE_FIELD(sim, next_enemy_slot); PS_FREE_FIELD(sim, next_projectile_slot); PS_FREE_FIELD(sim, next_drop_slot); PS_FREE_FIELD(sim, next_area_slot); PS_FREE_FIELD(sim, next_moving_obstacle_slot);
-    PS_FREE_FIELD(sim, episode_return); PS_FREE_FIELD(sim, episode_reward_survival); PS_FREE_FIELD(sim, episode_reward_damage); PS_FREE_FIELD(sim, episode_reward_kill); PS_FREE_FIELD(sim, episode_reward_hurt); PS_FREE_FIELD(sim, episode_reward_pickup); PS_FREE_FIELD(sim, episode_reward_xp); PS_FREE_FIELD(sim, episode_reward_levelup); PS_FREE_FIELD(sim, episode_reward_obstacle); PS_FREE_FIELD(sim, episode_reward_terminal); PS_FREE_FIELD(sim, episode_score); PS_FREE_FIELD(sim, episode_kills); PS_FREE_FIELD(sim, episode_xp); PS_FREE_FIELD(sim, episode_damage_dealt); PS_FREE_FIELD(sim, episode_damage_taken); PS_FREE_FIELD(sim, episode_pickups); PS_FREE_FIELD(sim, episode_levelups); PS_FREE_FIELD(sim, episode_obstacle_hits); PS_FREE_FIELD(sim, episode_peak_enemies); PS_FREE_FIELD(sim, episode_peak_projectiles); PS_FREE_FIELD(sim, episode_min_hp);
-#ifdef PS_CUDA_PROFILE
-    PS_FREE_FIELD(sim, profile_cycles);
-#endif
+    if (sim->blob) cudaFree(sim->blob);
     std::memset(sim, 0, sizeof(*sim));
 }
 
@@ -417,7 +411,7 @@ PS_D float ps_weapon_cooldown_total(const PSCudaSim& sim, int env, int weapon) {
     float cd = sim.cfg.weapon_base_cooldown[weapon]
         + sim.cfg.weapon_cooldown_per_level[weapon] * (float)(level - 1);
     cd *= sim.cooldown_mult[env] * sim.cfg.fire_cooldown
-        / sim.cfg.weapon_base_cooldown[PS_WEAPON_BUBBLE];
+        / fmaxf(sim.cfg.weapon_base_cooldown[PS_WEAPON_BUBBLE], 1.0f);
     return cd;
 }
 
@@ -577,15 +571,10 @@ PS_D void ps_compute_observations(const PSCudaSim& sim, int env) {
     int boss_count = 0;
     float nearest_boss_d2 = 1e30f;
 
-#if PS_CUDA_ENEMY_SCAN_MODE == 1
-    for (int k = 0; k < sim.cfg.enemy_cap; k++) {
-        int i = k;
-#else
     int scan_capacity = sim.enemy_count[env] * 2 >= sim.cfg.enemy_cap;
     int scan_count = scan_capacity ? sim.cfg.enemy_cap : sim.enemy_count[env];
     for (int k = 0; k < scan_count; k++) {
         int i = scan_capacity ? k : sim.enemy_dense[PS_EIDX(sim, k, env)];
-#endif
         int e = PS_EIDX(sim, i, env);
         if (!sim.enemy_active[e]) continue;
 
@@ -1365,15 +1354,10 @@ PS_D void ps_rebuild_grid(const PSCudaSim& sim, int env) {
     }
     sim.grid_touched_count[env] = 0;
     sim.aabb_count[env] = 0;
-#if PS_CUDA_ENEMY_SCAN_MODE == 1
-    for (int k = 0; k < sim.cfg.enemy_cap; k++) {
-        int i = k;
-#else
     int scan_capacity = sim.enemy_count[env] * 2 >= sim.cfg.enemy_cap;
     int scan_count = scan_capacity ? sim.cfg.enemy_cap : sim.enemy_count[env];
     for (int k = 0; k < scan_count; k++) {
         int i = scan_capacity ? k : sim.enemy_dense[PS_EIDX(sim, k, env)];
-#endif
         int e = PS_EIDX(sim, i, env);
         sim.enemy_next[e] = -1;
         if (!sim.enemy_active[e]) continue;
@@ -1484,15 +1468,10 @@ PS_D void ps_update_enemies(const PSCudaSim& sim, int env) {
     float player_radius = sim.cfg.player_radius;
     sim.nearest_enemy[env] = -1;
     sim.nearest_enemy_d2[env] = 1e30f;
-#if PS_CUDA_ENEMY_SCAN_MODE == 1
-    for (int k = 0; k < sim.cfg.enemy_cap; k++) {
-        int i = k;
-#else
     int scan_capacity = sim.enemy_count[env] * 2 >= sim.cfg.enemy_cap;
     int scan_count = scan_capacity ? sim.cfg.enemy_cap : sim.enemy_count[env];
     for (int k = 0; k < scan_count; k++) {
         int i = scan_capacity ? k : sim.enemy_dense[PS_EIDX(sim, k, env)];
-#endif
         int e = PS_EIDX(sim, i, env);
         if (!sim.enemy_active[e]) continue;
         float dx = player_x - sim.enemy_x[e];
@@ -1618,11 +1597,6 @@ PS_D void ps_update_drops(const PSCudaSim& sim, int env) {
         float dx = sim.px[env] - sim.drop_x[d];
         float dy = sim.py[env] - sim.drop_y[d];
         float dist2 = dx * dx + dy * dy;
-        if (dist2 < magnet * magnet) {
-            float dist = sqrtf(fmaxf(dist2, 0.0001f));
-            sim.drop_x[d] += dx / dist * sim.cfg.pickup_magnet_speed;
-            sim.drop_y[d] += dy / dist * sim.cfg.pickup_magnet_speed;
-        }
         if (dist2 < sim.cfg.pickup_radius * sim.cfg.pickup_radius) {
             sim.rewards[env] += sim.cfg.reward_pickup;
             sim.episode_reward_pickup[env] += sim.cfg.reward_pickup;
@@ -1638,6 +1612,11 @@ PS_D void ps_update_drops(const PSCudaSim& sim, int env) {
             sim.episode_pickups[env] += 1.0f;
             ps_deactivate_drop(sim, env, i);
             continue;
+        }
+        if (dist2 < magnet * magnet) {
+            float dist = sqrtf(fmaxf(dist2, 0.0001f));
+            sim.drop_x[d] += dx / dist * sim.cfg.pickup_magnet_speed;
+            sim.drop_y[d] += dy / dist * sim.cfg.pickup_magnet_speed;
         }
         k++;
     }
@@ -1659,15 +1638,10 @@ PS_D int ps_nearest_enemy(const PSCudaSim& sim, int env, float range) {
         if (sim.enemy_active[e] && sim.nearest_enemy_d2[env] < best_d2) return cached;
     }
     int best = -1;
-#if PS_CUDA_ENEMY_SCAN_MODE == 1
-    for (int k = 0; k < sim.cfg.enemy_cap; k++) {
-        int i = k;
-#else
     int scan_capacity = sim.enemy_count[env] * 2 >= sim.cfg.enemy_cap;
     int scan_count = scan_capacity ? sim.cfg.enemy_cap : sim.enemy_count[env];
     for (int k = 0; k < scan_count; k++) {
         int i = scan_capacity ? k : sim.enemy_dense[PS_EIDX(sim, k, env)];
-#endif
         int e = PS_EIDX(sim, i, env);
         if (!sim.enemy_active[e]) continue;
         float d2 = ps_dist2(sim.px[env], sim.py[env], sim.enemy_x[e], sim.enemy_y[e]);
@@ -1990,22 +1964,18 @@ PS_D void ps_step_env(const PSCudaSim& sim, int env) {
     if (sim.invuln_timer[env] > 0) sim.invuln_timer[env]--;
 
     int upgrade_action = (int)ps_action_get(sim, env, 1);
-    if (sim.pending_upgrade[env]) ps_apply_upgrade(sim, env, upgrade_action);
+    if (sim.pending_upgrade[env])
+        ps_apply_upgrade(sim, env, (int)((unsigned)upgrade_action % PS_UPGRADE_SLOTS));
 
     int action = (int)ps_action_get(sim, env, 0);
-    float dx = 0.0f;
-    float dy = 0.0f;
-    switch (action) {
-        case 1: dy = -1.0f; break;
-        case 2: dy = 1.0f; break;
-        case 3: dx = -1.0f; break;
-        case 4: dx = 1.0f; break;
-        case 5: dx = -0.70710678f; dy = -0.70710678f; break;
-        case 6: dx = 0.70710678f; dy = -0.70710678f; break;
-        case 7: dx = -0.70710678f; dy = 0.70710678f; break;
-        case 8: dx = 0.70710678f; dy = 0.70710678f; break;
-        default: break;
-    }
+    action = (int)((unsigned)action % 9u);
+    static const float dirs[9][2] = {
+        {0, 0}, {0, -1}, {0, 1}, {-1, 0}, {1, 0},
+        {-0.70710678f, -0.70710678f}, {0.70710678f, -0.70710678f},
+        {-0.70710678f, 0.70710678f}, {0.70710678f, 0.70710678f},
+    };
+    float dx = dirs[action][0];
+    float dy = dirs[action][1];
     float speed = sim.cfg.player_speed * (1.0f + sim.speed_bonus[env]);
     float target_vx = dx * speed;
     float target_vy = dy * speed;

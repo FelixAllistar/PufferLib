@@ -39,7 +39,6 @@ static const char* PS_ENV_NAME = "puffer_survivors";
 static void ps_fast_record_metrics(PufferSurvivors* env, float frame_dt,
     double update_start, int steps, double sim_accumulator) {
     PSClient* client = ps_client(env);
-    if (client == NULL) return;
     client->fast_frame_ms = frame_dt * 1000.0f;
     client->fast_update_ms = (float)((GetTime() - update_start) * 1000.0);
     client->fast_steps = steps;
@@ -49,7 +48,6 @@ static void ps_fast_record_metrics(PufferSurvivors* env, float frame_dt,
 
 static void ps_fast_sync_render_state(PufferSurvivors* env) {
     PSClient* client = ps_client(env);
-    if (client == NULL) return;
     client->fast_previous_px = env->px;
     client->fast_previous_py = env->py;
     client->fast_interp_init = 1;
@@ -59,7 +57,6 @@ static void ps_fast_sync_render_state(PufferSurvivors* env) {
 
 static void ps_fast_prepare_step(PufferSurvivors* env) {
     PSClient* client = ps_client(env);
-    if (client == NULL) return;
     client->fast_previous_px = env->px;
     client->fast_previous_py = env->py;
     client->fast_interp_init = 1;
@@ -119,7 +116,7 @@ static int read_upgrade_input(int* selection) {
 
 static void ps_fast_set_upgrade_selection(PufferSurvivors* env, int selection) {
     PSClient* client = ps_client(env);
-    if (client != NULL) client->fast_upgrade_selection = selection;
+    client->fast_upgrade_selection = selection;
 }
 
 static int ps_has_suffix(const char* s, const char* suffix) {
@@ -331,7 +328,6 @@ int main(int argc, char** argv) {
     env.agents[0].policy = 0;
 
     ps_apply_env_config(&env);
-    ps_init(&env);
     c_reset(&env);
     c_render(&env);
     ps_fast_sync_render_state(&env);

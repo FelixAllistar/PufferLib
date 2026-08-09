@@ -2,7 +2,7 @@
 
 #include <math.h>
 
-#include "ps_config.h"
+#include "ps_constants.h"
 
 // The storage adapters are intentionally different: CPU uses an AoS state and
 // CUDA uses SoA device arrays. These small, side-effect-free geometry helpers

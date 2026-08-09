@@ -1,7 +1,6 @@
 #pragma once
 
 #include "ps_content.h"
-#include "ps_observation_layout.h"
 
 static inline int ps_obs_sector(float dx, float dy) {
     if (dy == 0.0f) return dx >= 0.0f ? 0 : 4;

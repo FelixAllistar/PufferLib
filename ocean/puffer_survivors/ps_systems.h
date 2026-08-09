@@ -3,10 +3,6 @@
 #include "ps_observation.h"
 #include "ps_geometry.h"
 
-static inline void ps_init(PufferSurvivors* env) {
-    ps_config_validate(&env->cfg);
-}
-
 static inline int ps_obstacle_position_clear(PufferSurvivors* env, int count, int skip, float x, float y, float radius) {
     if (ps_dist2(x, y, env->px, env->py)
             < env->cfg.obstacle_player_spawn_clearance
@@ -1240,7 +1236,8 @@ static inline void c_step(PufferSurvivors* env) {
     if (env->invuln_timer > 0) env->invuln_timer--;
 
     int upgrade_action = (int)env->agents[0].actions[1];
-    if (env->pending_upgrade) ps_apply_upgrade(env, upgrade_action);
+    if (env->pending_upgrade)
+        ps_apply_upgrade(env, (int)((unsigned)upgrade_action % PS_UPGRADE_SLOTS));
 
     static const float dirs[9][2] = {
         {0, 0}, {0, -1}, {0, 1}, {-1, 0}, {1, 0},
@@ -1248,6 +1245,7 @@ static inline void c_step(PufferSurvivors* env) {
         {-0.70710678f, 0.70710678f}, {0.70710678f, 0.70710678f},
     };
     int action = (int)env->agents[0].actions[0];
+    action = (int)((unsigned)action % 9u);
     float speed = env->cfg.player_speed * (1.0f + env->speed_bonus);
     float target_vx = dirs[action][0] * speed;
     float target_vy = dirs[action][1] * speed;

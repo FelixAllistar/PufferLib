@@ -86,7 +86,7 @@ static inline Vector2 ps_screen(PufferSurvivors* env, float x, float y, float sc
     float camera_y = env->py;
 #ifdef PS_FAST_RENDER
     PSClient* client = (PSClient*)env->client;
-    if (client != NULL && client->fast_interp_init) {
+    if (client->fast_interp_init) {
         float alpha = ps_clampf(client->fast_render_alpha, 0.0f, 1.0f);
         camera_x = client->fast_previous_px + (env->px - client->fast_previous_px) * alpha;
         camera_y = client->fast_previous_py + (env->py - client->fast_previous_py) * alpha;
@@ -120,16 +120,16 @@ static inline float ps_angle_lerp(float current, float target, float t) {
 
 static inline void ps_draw_sprite_ex_tinted(PufferSurvivors* env, int sprite, float x, float y, float radius, float visual_scale, float rotation, int flip_x, Color fallback, Color tint) {
     PSClient* client = ps_client(env);
-    int w = client != NULL && client->render_w > 0 ? client->render_w : GetScreenWidth();
-    int h = client != NULL && client->render_h > 0 ? client->render_h : GetScreenHeight();
-    float scale = client != NULL && client->render_scale > 0.0f
+    int w = client->render_w > 0 ? client->render_w : GetScreenWidth();
+    int h = client->render_h > 0 ? client->render_h : GetScreenHeight();
+    float scale = client->render_scale > 0.0f
         ? client->render_scale
         : fminf((float)w, (float)h) / env->cfg.arena_size;
     Vector2 p = ps_screen(env, x, y, scale, w, h);
     float size = radius * visual_scale * scale;
     if (p.x + size < 0.0f || p.x - size > (float)w || p.y + size < 0.0f || p.y - size > (float)h) return;
 
-    if (client != NULL && client->loaded && sprite >= 0 && sprite < 16) {
+    if (client->loaded && sprite >= 0 && sprite < 16) {
         Rectangle src = client->sprite_src[sprite];
         if (flip_x) src.width = -src.width;
         Rectangle dst = {p.x, p.y, size, size};
@@ -145,7 +145,7 @@ static inline void ps_draw_sprite_ex(PufferSurvivors* env, int sprite, float x, 
 
 static inline void ps_draw_sprite_screen(PufferSurvivors* env, int sprite, float x, float y, float size, int flip_x, Color fallback) {
     PSClient* client = ps_client(env);
-    if (client != NULL && client->loaded && sprite >= 0 && sprite < 16) {
+    if (client->loaded && sprite >= 0 && sprite < 16) {
         Rectangle src = client->sprite_src[sprite];
         if (flip_x) src.width = -src.width;
         Rectangle dst = {x, y, size, size};
@@ -226,7 +226,7 @@ static inline Image ps_make_fast_ink_image(void) {
 
 static inline void ps_draw_fast_ink(PufferSurvivors* env, Vector2 p, float r, float pulse) {
     PSClient* client = ps_client(env);
-    if (client != NULL && client->fast_ink_loaded) {
+    if (client->fast_ink_loaded) {
         float size = r * (1.96f + 0.10f * pulse);
         Rectangle src = {0.0f, 0.0f, (float)client->fast_ink.width, (float)client->fast_ink.height};
         Rectangle dst = {p.x, p.y, size, size};
@@ -241,8 +241,6 @@ static inline void ps_draw_fast_ink(PufferSurvivors* env, Vector2 p, float r, fl
 
 static inline void ps_fast_update_hit_effect(PufferSurvivors* env) {
     PSClient* client = ps_client(env);
-    if (client == NULL) return;
-
     float frame_dt = GetFrameTime();
     if (frame_dt <= 0.0f || frame_dt > 0.10f) frame_dt = 1.0f / 60.0f;
     if (env->invuln_timer > client->fast_last_invuln_timer) {
@@ -258,7 +256,7 @@ static inline void ps_fast_update_hit_effect(PufferSurvivors* env) {
 
 static inline void ps_draw_fast_hit_effect(PufferSurvivors* env, float scale, int w, int h) {
     PSClient* client = ps_client(env);
-    if (client == NULL || client->fast_hit_time <= 0.0f) return;
+    if (client->fast_hit_time <= 0.0f) return;
 
     const float lifetime = 0.22f;
     float remaining = ps_clampf(client->fast_hit_time / lifetime, 0.0f, 1.0f);
@@ -291,16 +289,16 @@ static inline Texture2D ps_load_fast_background_texture(const char* primary, con
 static inline void ps_draw_fast_obstacle_debris(PufferSurvivors* env, int variant,
     float x, float y, float radius, float visual_scale, float rotation, Color fallback) {
     PSClient* client = ps_client(env);
-    int w = client != NULL && client->render_w > 0 ? client->render_w : GetScreenWidth();
-    int h = client != NULL && client->render_h > 0 ? client->render_h : GetScreenHeight();
-    float scale = client != NULL && client->render_scale > 0.0f
+    int w = client->render_w > 0 ? client->render_w : GetScreenWidth();
+    int h = client->render_h > 0 ? client->render_h : GetScreenHeight();
+    float scale = client->render_scale > 0.0f
         ? client->render_scale
         : fminf((float)w, (float)h) / env->cfg.arena_size;
     Vector2 p = ps_screen(env, x, y, scale, w, h);
     float size = radius * visual_scale * scale;
     if (p.x + size < 0.0f || p.x - size > (float)w || p.y + size < 0.0f || p.y - size > (float)h) return;
 
-    if (client != NULL && client->fast_obstacle_debris_loaded) {
+    if (client->fast_obstacle_debris_loaded) {
         int cell = variant & 3;
         float cell_w = (float)client->fast_obstacle_debris.width * 0.5f;
         float cell_h = (float)client->fast_obstacle_debris.height * 0.5f;
@@ -330,7 +328,7 @@ static inline void ps_draw_fast_background(PufferSurvivors* env, float scale, in
 
     // The large overscan keeps the viewport covered while the layers drift,
     // so this background never exposes a hard edge or a repeated seam.
-    if (client != NULL && client->fast_water_caustics_loaded) {
+    if (client->fast_water_caustics_loaded) {
         float size = viewport * 1.48f;
         float x = ((float)w - size) * 0.5f
             + 24.0f * sinf(now * 0.065f + camera_phase_x)
@@ -368,7 +366,7 @@ static inline void ps_draw_fast_background(PufferSurvivors* env, float scale, in
             (Vector2){0.0f, 0.0f}, 0.0f, (Color){115, 208, 216, 36});
     }
 
-    if (client != NULL && client->fast_water_props_loaded) {
+    if (client->fast_water_props_loaded) {
         float size = viewport * 1.52f;
         float x = ((float)w - size) * 0.5f
             + 68.0f * sinf(now * 0.016f + camera_phase_x * 0.35f + 2.4f);
@@ -382,7 +380,7 @@ static inline void ps_draw_fast_background(PufferSurvivors* env, float scale, in
             (Vector2){0.0f, 0.0f}, 0.0f, (Color){220, 225, 204, 132});
     }
 
-    if (client != NULL && client->fast_water_silhouettes_loaded) {
+    if (client->fast_water_silhouettes_loaded) {
         float size = viewport * 1.70f;
         float x = ((float)w - size) * 0.5f
             + 52.0f * sinf(now * 0.024f + camera_phase_x * 0.55f + 0.4f);
@@ -522,7 +520,7 @@ static inline void ps_draw_projectile(PufferSurvivors* env, int i, float scale, 
     if (p.x + r < 0.0f || p.x - r > (float)w || p.y + r < 0.0f || p.y - r > (float)h) return;
 
     PSClient* client = ps_client(env);
-    if (client == NULL || client->render_quality >= 2) {
+    if (client->render_quality >= 2) {
         Vector2 tail = {p.x - env->projectiles.vx[i] * scale * 2.5f, p.y - env->projectiles.vy[i] * scale * 2.5f};
         DrawLineEx(tail, p, fmaxf(2.0f, r * 0.35f), (Color){115, 231, 255, 105});
         DrawCircleLines((int)p.x, (int)p.y, r * 1.25f, (Color){115, 231, 255, 80});
@@ -623,11 +621,11 @@ static inline void ps_draw_moving_obstacle(PufferSurvivors* env, int i,
         width * 0.48f, height * 0.30f, (Color){0, 42, 52, 90});
     PSClient* client = ps_client(env);
     Texture2D texture = env->moving_obstacles.type[i] == PS_MOVING_OBSTACLE_ANCHOR
-        ? (client != NULL ? client->moving_anchor : (Texture2D){0})
-        : (client != NULL ? client->moving_submarine : (Texture2D){0});
+        ? client->moving_anchor
+        : client->moving_submarine;
     int loaded = env->moving_obstacles.type[i] == PS_MOVING_OBSTACLE_ANCHOR
-        ? (client != NULL && client->moving_anchor_loaded)
-        : (client != NULL && client->moving_submarine_loaded);
+        ? client->moving_anchor_loaded
+        : client->moving_submarine_loaded;
     float rotation = env->moving_obstacles.type[i] == PS_MOVING_OBSTACLE_ANCHOR
         ? 7.0f * sinf((float)env->tick * 0.035f + (float)i)
         : (env->moving_obstacles.vx[i] < 0.0f ? 180.0f : 0.0f);
@@ -686,8 +684,6 @@ static inline const char* ps_move_action_name(int action) {
 
 static inline void ps_update_action_debug(PufferSurvivors* env) {
     PSClient* client = ps_client(env);
-    if (client == NULL) return;
-
     int action = (int)env->agents[0].actions[0];
     double now = GetTime();
     if (!client->action_debug_init) {
@@ -714,7 +710,7 @@ static inline void ps_update_action_debug(PufferSurvivors* env) {
 
 static inline void ps_draw_action_debug(PufferSurvivors* env, int sw) {
     PSClient* client = ps_client(env);
-    if (client == NULL || !client->action_debug_init) return;
+    if (!client->action_debug_init) return;
 
     int action = (int)env->agents[0].actions[0];
     int upgrade = (int)env->agents[0].actions[1];
@@ -796,7 +792,7 @@ static inline void ps_draw_upgrade_cards(PufferSurvivors* env, int sw, int sh) {
     float y = (float)sh * 0.5f - card_h * 0.42f;
 #ifdef PS_FAST_RENDER
     PSClient* client = ps_client(env);
-    int selected_slot = client != NULL ? client->fast_upgrade_selection : 0;
+    int selected_slot = client->fast_upgrade_selection;
     selected_slot = selected_slot < 0 ? 0 : (selected_slot >= PS_UPGRADE_SLOTS ? PS_UPGRADE_SLOTS - 1 : selected_slot);
 #endif
 
@@ -854,8 +850,6 @@ static inline void ps_draw_upgrade_cards(PufferSurvivors* env, int sw, int sh) {
 #ifdef PS_FAST_RENDER
 static inline void ps_draw_fast_metrics(PufferSurvivors* env, int sw, int sh) {
     PSClient* client = ps_client(env);
-    if (client == NULL) return;
-
     int oil_count = 0;
     for (int k = 0; k < env->area_count; k++) {
         int i = env->areas.dense[k];
@@ -983,11 +977,9 @@ static inline void c_render(PufferSurvivors* env) {
     int sh = GetScreenHeight();
     float scale = fminf((float)sw, (float)sh) / env->cfg.arena_size;
     PSClient* render_client = ps_client(env);
-    if (render_client != NULL) {
-        render_client->render_w = sw;
-        render_client->render_h = sh;
-        render_client->render_scale = scale;
-    }
+    render_client->render_w = sw;
+    render_client->render_h = sh;
+    render_client->render_scale = scale;
     ps_draw_water(env, scale, sw, sh);
 
     for (int i = 0; i < env->cfg.obstacle_count; i++) {
@@ -1008,7 +1000,7 @@ static inline void c_render(PufferSurvivors* env) {
         const float obstacle_visual_scale = 2.85f;
 #endif
 #ifdef PS_FAST_RENDER
-        if (render_client != NULL && render_client->fast_obstacle_debris_loaded) {
+        if (render_client->fast_obstacle_debris_loaded) {
             float debris_rotation = (float)((i * 37) % 26 - 13);
             ps_draw_fast_obstacle_debris(env, i % 4,
                 env->obstacles.x[i], env->obstacles.y[i],
@@ -1035,7 +1027,7 @@ static inline void c_render(PufferSurvivors* env) {
         int i = env->drops.dense[k];
         Vector2 p = ps_screen(env, env->drops.x[i], env->drops.y[i], scale, sw, sh);
         float pulse = 0.75f + 0.25f * sinf((float)env->tick * 0.14f + (float)i);
-        int high_fx = render_client == NULL || render_client->render_quality >= 2;
+        int high_fx = render_client->render_quality >= 2;
         if (env->drops.type[i] == 1) {
             if (high_fx) DrawCircleV(p, 18.0f * pulse, (Color){64, 255, 147, 62});
             ps_draw_sprite_ex(env, PS_SPRITE_HEALTH, env->drops.x[i], env->drops.y[i], 0.34f, 3.0f, 0.0f, 0, RED);
@@ -1089,32 +1081,30 @@ static inline void c_render(PufferSurvivors* env) {
     }
 
     PSClient* client = ps_client(env);
-    if (client != NULL) {
-        float dx = env->px - client->player_visual_x;
-        float dy = env->py - client->player_visual_y;
-        if (!client->player_visual_init || dx * dx + dy * dy > 25.0f) {
-            client->player_visual_init = 1;
-            client->player_visual_x = env->px;
-            client->player_visual_y = env->py;
-            client->player_visual_angle = ps_sprite_facing_degrees(env->pvx, env->pvy, env->player_facing_left, 88.0f);
+    float dx = env->px - client->player_visual_x;
+    float dy = env->py - client->player_visual_y;
+    if (!client->player_visual_init || dx * dx + dy * dy > 25.0f) {
+        client->player_visual_init = 1;
+        client->player_visual_x = env->px;
+        client->player_visual_y = env->py;
+        client->player_visual_angle = ps_sprite_facing_degrees(env->pvx, env->pvy, env->player_facing_left, 88.0f);
+        client->player_visual_flip = env->player_facing_left;
+    } else {
+        client->player_visual_x += (env->px - client->player_visual_x) * 0.38f;
+        client->player_visual_y += (env->py - client->player_visual_y) * 0.38f;
+        float target_angle = ps_sprite_facing_degrees(env->pvx, env->pvy, env->player_facing_left, 88.0f);
+        client->player_visual_angle = ps_angle_lerp(client->player_visual_angle, target_angle, 0.22f);
+        if (fabsf(env->pvx) > 0.015f) {
             client->player_visual_flip = env->player_facing_left;
-        } else {
-            client->player_visual_x += (env->px - client->player_visual_x) * 0.38f;
-            client->player_visual_y += (env->py - client->player_visual_y) * 0.38f;
-            float target_angle = ps_sprite_facing_degrees(env->pvx, env->pvy, env->player_facing_left, 88.0f);
-            client->player_visual_angle = ps_angle_lerp(client->player_visual_angle, target_angle, 0.22f);
-            if (fabsf(env->pvx) > 0.015f) {
-                client->player_visual_flip = env->player_facing_left;
-            }
         }
     }
 
-    float draw_px = client != NULL && client->player_visual_init ? client->player_visual_x : env->px;
-    float draw_py = client != NULL && client->player_visual_init ? client->player_visual_y : env->py;
-    float draw_angle = client != NULL && client->player_visual_init
+    float draw_px = client->player_visual_init ? client->player_visual_x : env->px;
+    float draw_py = client->player_visual_init ? client->player_visual_y : env->py;
+    float draw_angle = client->player_visual_init
         ? client->player_visual_angle
         : ps_sprite_facing_degrees(env->pvx, env->pvy, env->player_facing_left, 88.0f);
-    int draw_flip = client != NULL && client->player_visual_init ? client->player_visual_flip : env->player_facing_left;
+    int draw_flip = client->player_visual_init ? client->player_visual_flip : env->player_facing_left;
     // Keep the player's art-to-hitbox proportion stable when player_radius is
     // tuned in the shared gameplay config. 0.66 is the current art footprint
     // for the default 0.42 world-space collision radius.
@@ -1129,7 +1119,7 @@ static inline void c_render(PufferSurvivors* env) {
 #ifdef PS_FAST_RENDER
     ps_draw_fast_hit_effect(env, scale, sw, sh);
     Color player_tint = WHITE;
-    if (client != NULL && client->fast_hit_time > 0.0f) {
+    if (client->fast_hit_time > 0.0f) {
         float flash = ps_clampf(client->fast_hit_time / 0.13f, 0.0f, 1.0f);
         unsigned char channel = (unsigned char)(150.0f + 105.0f * (1.0f - flash));
         player_tint = (Color){255, channel, channel, 255};
@@ -1157,11 +1147,9 @@ static inline void c_render(PufferSurvivors* env) {
     ps_draw_action_debug(env, sw);
     ps_draw_upgrade_cards(env, sw, sh);
     if (env->show_hitboxes) DrawText("HITBOXES", sw - 132, 20, 20, GOLD);
-    if (render_client != NULL) DrawText(TextFormat("Q: FX %d", render_client->render_quality), sw - 132, 44, 16, (Color){180, 210, 220, 180});
+    DrawText(TextFormat("Q: FX %d", render_client->render_quality), sw - 132, 44, 16, (Color){180, 210, 220, 180});
 #ifdef PS_FAST_RENDER
-    if (render_client != NULL) {
-        render_client->fast_render_ms = (float)((GetTime() - fast_draw_start) * 1000.0);
-    }
+    render_client->fast_render_ms = (float)((GetTime() - fast_draw_start) * 1000.0);
     ps_draw_fast_metrics(env, sw, sh);
 #endif
 

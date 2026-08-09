@@ -7,7 +7,12 @@
 
 #include "cuda/ps_cuda_sim.cu"
 
-static PSCudaSim* ps_native_sim = nullptr;
+struct PSNativeVec {
+    Env* envs;
+    PSCudaSim* sim;
+};
+
+static PSNativeVec ps_native_vecs[8];
 
 static void ps_native_bind_io(PSCudaSim* sim, obs_t* observations,
         float* actions, float* rewards, float* terminals) {
@@ -24,50 +29,74 @@ static void ps_native_bind_io(PSCudaSim* sim, obs_t* observations,
     sim->terminals = terminals;
 }
 
-static Env* puf_envs_create(int total_agents, Dict* env_kwargs) {
-    if (ps_native_sim != nullptr) {
-        fprintf(stderr, "Puffer Survivors supports one native GPU VecEnv per process\n");
-        exit(1);
+static PSCudaSim* ps_native_find(Env* envs) {
+    for (int i = 0; i < 8; i++) {
+        if (ps_native_vecs[i].envs == envs) return ps_native_vecs[i].sim;
     }
+    return nullptr;
+}
 
-    ps_native_sim = (PSCudaSim*)calloc(1, sizeof(PSCudaSim));
-    ps_cuda_alloc(ps_native_sim, total_agents, ps_config_from_kwargs(env_kwargs));
+static void ps_native_register(Env* envs, PSCudaSim* sim) {
+    for (int i = 0; i < 8; i++) {
+        if (ps_native_vecs[i].envs == nullptr) {
+            ps_native_vecs[i].envs = envs;
+            ps_native_vecs[i].sim = sim;
+            return;
+        }
+    }
+    exit(1);
+}
+
+static void ps_native_unregister(Env* envs) {
+    for (int i = 0; i < 8; i++) {
+        if (ps_native_vecs[i].envs == envs) {
+            ps_native_vecs[i].envs = nullptr;
+            ps_native_vecs[i].sim = nullptr;
+            return;
+        }
+    }
+}
+
+PSCudaSim* ps_cuda_get_sim(Env* envs) {
+    return ps_native_find(envs);
+}
+
+static Env* puf_envs_create(int total_agents, Dict* env_kwargs) {
+    PSCudaSim* sim = (PSCudaSim*)calloc(1, sizeof(PSCudaSim));
+    ps_cuda_alloc(sim, total_agents, ps_config_from_kwargs(env_kwargs));
 
     Env* envs = nullptr;
     cudaMalloc((void**)&envs, (size_t)total_agents * sizeof(Env));
     cudaMemset(envs, 0, (size_t)total_agents * sizeof(Env));
-    ps_native_sim->native_envs = envs;
+    sim->native_envs = envs;
+    ps_native_register(envs, sim);
     return envs;
 }
 
 static void puf_envs_reset(Env* envs, obs_t* observations, float* rewards,
         float* terminals, int total_agents) {
-    (void)envs;
-    if (ps_native_sim == nullptr || ps_native_sim->num_envs != total_agents) {
-        fprintf(stderr, "Puffer Survivors native GPU reset received the wrong VecEnv\n");
-        exit(1);
-    }
-    ps_native_bind_io(ps_native_sim, observations, nullptr, rewards, terminals);
-    ps_cuda_reset_all(ps_native_sim, 1u);
+    (void)total_agents;
+    PSCudaSim* sim = ps_native_find(envs);
+    ps_native_bind_io(sim, observations, nullptr, rewards, terminals);
+    ps_cuda_reset_all(sim, 1u);
 }
 
 static void puf_envs_step(Env* envs, const float* actions, obs_t* observations,
         float* rewards, float* terminals, int start, int count, cudaStream_t stream) {
-    (void)envs;
-    ps_native_sim->observations = (float*)observations;
-    ps_native_sim->actions = (float*)actions;
-    ps_native_sim->rewards = rewards;
-    ps_native_sim->terminals = terminals;
-    ps_cuda_step_range(ps_native_sim, start, count, stream);
+    PSCudaSim* sim = ps_native_find(envs);
+    sim->observations = (float*)observations;
+    sim->actions = (float*)actions;
+    sim->rewards = rewards;
+    sim->terminals = terminals;
+    ps_cuda_step_range(sim, start, count, stream);
 }
 
 static void puf_envs_close(Env* envs) {
-    if (ps_native_sim != nullptr) {
-        ps_cuda_free(ps_native_sim);
-        free(ps_native_sim);
-        ps_native_sim = nullptr;
-    }
+    PSCudaSim* sim = ps_native_find(envs);
+    ps_cuda_free(sim);
+    free(sim);
     cudaFree(envs);
+    ps_native_unregister(envs);
 }
 
 #endif

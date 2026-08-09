@@ -116,13 +116,7 @@ allocating entities during the run:
 The normal CUDA build uses an occupancy-aware enemy scan: it walks the dense
 active list while the pool is sparse, then scans the fixed capacity once the
 pool is at least half full. This keeps low-population waves cheap while
-preserving coalesced SoA reads after late-game deaths and respawns. The
-capacity-only A/B build is available as:
-
-```bash
-make -C ocean/puffer_survivors NVCC=/usr/local/cuda/bin/nvcc bench-cuda-capacity-profile
-./ocean/puffer_survivors/tests/bench_cuda_capacity_profile 5120 1000 100 1 --stress-churn
-```
+preserving coalesced SoA reads after late-game deaths and respawns.
 
 The normal simulator has no profiler fields or device-clock work; they are
 compiled only into `bench-cuda-profile`.
