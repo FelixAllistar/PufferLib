@@ -1,6 +1,8 @@
 #pragma once
 
-#include "ps_defs.h"
+#include "pufferenv.h"
+#include "ps_constants.h"
+#include "ps_log.h"
 
 typedef struct {
     uint8_t active[PS_MAX_ENEMIES];
@@ -157,25 +159,3 @@ struct Env {
 };
 
 typedef Env PufferSurvivors;
-
-static inline uint32_t ps_rand_u32(PufferSurvivors* env) {
-    uint32_t x = env->rng ? env->rng : 1u;
-    x ^= x << 13;
-    x ^= x >> 17;
-    x ^= x << 5;
-    env->rng = x ? x : 1u;
-    return env->rng;
-}
-
-static inline float ps_randf(PufferSurvivors* env) {
-    return (float)(ps_rand_u32(env) & 0x00ffffffu) / 16777216.0f;
-}
-
-static inline int ps_cell(PufferSurvivors* env, float x, float y) {
-    float half = 0.5f * env->cfg.arena_size;
-    int gx = (int)((((x - env->px) + half) / env->cfg.arena_size) * (float)PS_GRID_W);
-    int gy = (int)((((y - env->py) + half) / env->cfg.arena_size) * (float)PS_GRID_H);
-    gx = gx < 0 ? 0 : (gx >= PS_GRID_W ? PS_GRID_W - 1 : gx);
-    gy = gy < 0 ? 0 : (gy >= PS_GRID_H ? PS_GRID_H - 1 : gy);
-    return gy * PS_GRID_W + gx;
-}

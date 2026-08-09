@@ -6,7 +6,8 @@
 #include "ps_constants.h"
 #include "ps_log.h"
 #ifndef PUFFER_GPU_ENV
-#include "ps_systems.h"
+#include "ps_state.h"
+#include "ps_sim.h"
 #ifndef PS_HEADLESS_BINDING
 #include "ps_render.h"
 #endif
@@ -302,6 +303,14 @@ void puf_init(Env* env, Dict* kwargs) {
     env->agents[0].action_mask = NULL;
     env->cfg = ps_config_from_kwargs(kwargs);
     env->show_hitboxes = ps_kwarg_int(kwargs, "show_hitboxes");
+}
+
+void c_reset(PufferSurvivors* env) {
+    ps_reset_env(env, 0);
+}
+
+void c_step(PufferSurvivors* env) {
+    ps_step_env(env, 0);
 }
 
 void puf_reset(Env* env) {

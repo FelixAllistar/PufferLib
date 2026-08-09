@@ -1,6 +1,7 @@
 #pragma once
 
-#include "ps_systems.h"
+#include "ps_content.h"
+#include "ps_sim.h"
 #include "raylib.h"
 #include <string.h>
 
@@ -653,13 +654,13 @@ static inline void ps_draw_hud(PufferSurvivors* env) {
     DrawRectangleLines(12, 12, 372, 170, (Color){117, 230, 244, 90});
     DrawText(TextFormat("Puffer Survivors  HP %.0f/%.0f", env->hp, env->max_hp), 24, 24, 18, RAYWHITE);
     ps_draw_bar(24, 49, 200, 12, env->max_hp > 0.0f ? env->hp / env->max_hp : 0.0f, (Color){95, 230, 130, 255}, (Color){58, 18, 28, 210});
-    ps_draw_bar(24, 68, 200, 9, ps_xp_threshold(env) > 0.0f ? env->xp / ps_xp_threshold(env) : 0.0f, (Color){70, 210, 255, 255}, (Color){8, 39, 58, 210});
-    DrawText(TextFormat("LV %d  Wave %d  Kills %.0f", env->level, ps_wave_index(env) + 1, env->episode_kills), 24, 88, 17, SKYBLUE);
+    ps_draw_bar(24, 68, 200, 9, ps_xp_threshold(env, 0) > 0.0f ? env->xp / ps_xp_threshold(env, 0) : 0.0f, (Color){70, 210, 255, 255}, (Color){8, 39, 58, 210});
+    DrawText(TextFormat("LV %d  Wave %d  Kills %.0f", env->level, ps_wave_index(env, 0) + 1, env->episode_kills), 24, 88, 17, SKYBLUE);
     DrawText(TextFormat("Score %.1f  Damage %.1f", env->episode_score, env->episode_damage_dealt), 24, 111, 17, RAYWHITE);
 
     const char* labels[PS_WEAPON_COUNT] = {"Bub", "Whirl", "Orb", "Oil", "Sonar"};
     for (int i = 0; i < PS_WEAPON_COUNT; i++) {
-        float pct = env->weapon_level[i] > 0 ? 1.0f - ps_clampf(env->weapon_cd[i] / ps_weapon_cooldown_total(env, i), 0.0f, 1.0f) : 0.0f;
+        float pct = env->weapon_level[i] > 0 ? 1.0f - ps_clampf(env->weapon_cd[i] / ps_weapon_cooldown_total(env, 0, i), 0.0f, 1.0f) : 0.0f;
         float x = 24.0f + (float)i * 68.0f;
         DrawText(TextFormat("%s %d", labels[i], env->weapon_level[i]), (int)x, 135, 12, env->weapon_level[i] > 0 ? RAYWHITE : GRAY);
         ps_draw_bar(x, 151.0f, 52.0f, 7.0f, pct, (Color){255, 222, 89, 255}, (Color){24, 38, 48, 210});

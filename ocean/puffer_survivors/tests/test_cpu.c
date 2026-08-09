@@ -118,8 +118,8 @@ int main(void) {
         5.3f, 0.0f, 0.0f, 4.65f, 4.65f, 0.5f));
 
     // Explicit boss slot: exact relative coordinates plus boss-specific state.
-    ps_clear_entities(&env);
-    int boss_slot = ps_spawn_enemy(&env) - 1;
+    ps_clear_entities(&env, 0);
+    int boss_slot = ps_spawn_enemy(&env, 0) - 1;
     assert(boss_slot >= 0);
     env.enemies.type[boss_slot] = PS_ENEMY_BOSS_FLAG;
     env.enemies.x[boss_slot] = env.px + 5.0f;
@@ -128,17 +128,17 @@ int main(void) {
     env.enemies.vy[boss_slot] = 0.0f;
     env.enemies.hp[boss_slot] = 50.0f;
     env.enemies.max_hp[boss_slot] = 100.0f;
-    ps_compute_observations(&env);
+    ps_compute_observations(&env, 0);
     assert(observations[PS_OBS_BOSS_BASE + PS_BOSS_PRESENT] == 1.0f);
     assert(observations[PS_OBS_BOSS_BASE + PS_BOSS_DX] > 0.0f);
     assert(observations[PS_OBS_BOSS_BASE + PS_BOSS_DY] < 0.0f);
     assert(fabsf(observations[PS_OBS_BOSS_BASE + PS_BOSS_HP_FRACTION] - 0.5f) < 1e-5f);
     env.enemies.shape[boss_slot] = PS_SHAPE_AABB;
-    ps_rebuild_grid(&env);
-    ps_rebuild_grid(&env);
+    ps_rebuild_grid(&env, 0);
+    ps_rebuild_grid(&env, 0);
     assert(env.aabb_count == 1);
-    ps_clear_entities(&env);
-    ps_compute_observations(&env);
+    ps_clear_entities(&env, 0);
+    ps_compute_observations(&env, 0);
     assert(observations[PS_OBS_BOSS_BASE + PS_BOSS_PRESENT] == 0.0f);
 
     // Each obstacle bin contains the nearest obstacle's exact relative dx/dy.
@@ -149,7 +149,7 @@ int main(void) {
     env.obstacles.x[1] = env.px - 8.0f;
     env.obstacles.y[1] = env.py - 2.0f;
     env.obstacles.radius[1] = 0.9f;
-    ps_compute_observations(&env);
+    ps_compute_observations(&env, 0);
     float observe_radius = env.cfg.arena_size * 0.45f;
     int sector = ps_obs_sector(3.0f, 1.0f);
     int ring = ps_obs_ring_d2(10.0f, observe_radius * observe_radius);
@@ -163,7 +163,7 @@ int main(void) {
     env.offered[0] = PS_UPGRADE_BUBBLE;
     env.offered[1] = PS_UPGRADE_AREA;
     env.offered[2] = PS_UPGRADE_PIERCE;
-    ps_compute_observations(&env);
+    ps_compute_observations(&env, 0);
     for (int slot = 0; slot < PS_UPGRADE_SLOTS; slot++) {
         int selected = env.offered[slot];
         for (int type = 0; type < PS_UPGRADE_COUNT; type++) {
@@ -172,7 +172,7 @@ int main(void) {
         }
     }
     env.pending_upgrade = 0;
-    ps_compute_observations(&env);
+    ps_compute_observations(&env, 0);
     for (int i = 0; i < PS_UPGRADE_SLOTS * PS_UPGRADE_FEATURES; i++)
         assert(observations[PS_OBS_UPGRADE_BASE + i] == 0.0f);
 

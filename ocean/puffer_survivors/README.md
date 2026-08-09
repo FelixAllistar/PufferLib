@@ -96,30 +96,14 @@ including the diagnostic copies in the timed result:
 ./ocean/puffer_survivors/tests/bench_cuda 5120 8000 500 1 --stats
 ```
 
-For per-stage device timing, build the opt-in profiler variant:
-
-```bash
-make -C ocean/puffer_survivors NVCC=/usr/local/cuda/bin/nvcc bench-cuda-profile
-./ocean/puffer_survivors/tests/bench_cuda_profile 5120 2000 200 1 --stats
-```
-
-It reports average and worst-environment microseconds for movement, wave
-spawning, enemy movement, grid rebuild, weapons, projectiles, drops, and
-observations. `--stress` fills the existing pools with stable generated data
-at their configured capacities, which isolates saturated hot paths without
-allocating entities during the run:
-
-```bash
-./ocean/puffer_survivors/tests/bench_cuda_profile 5120 500 50 1 --stress
-```
+`--stress` fills the existing pools with stable generated data at their
+configured capacities, which isolates saturated hot paths without allocating
+entities during the run.
 
 The normal CUDA build uses an occupancy-aware enemy scan: it walks the dense
 active list while the pool is sparse, then scans the fixed capacity once the
 pool is at least half full. This keeps low-population waves cheap while
 preserving coalesced SoA reads after late-game deaths and respawns.
-
-The normal simulator has no profiler fields or device-clock work; they are
-compiled only into `bench-cuda-profile`.
 
 For end-to-end PPO timing, run a short isolated job with `base.profile=1`.
 The dashboard's `eval_env`, `eval_model`, `eval_copy`, `train_model`, and
@@ -133,9 +117,11 @@ the rollout and training ranges.
 ```text
 puffer_survivors.h       native 5c ABI, config mapping, and logging
 puffer_survivors.cu      native GPU ABI
-ps_*.h                   shared CPU simulation, config, content, observations, renderer
+ps_sim.h                 shared CPU/CUDA gameplay and observation simulation
+ps_state.h               CPU-only environment state
+ps_content.h             upgrade display text
 ps_geometry.h            shared CPU/CUDA circle/AABB collision primitives
-cuda/ps_cuda_sim.cu      internal CUDA SoA mechanics
+cuda/ps_cuda_sim.cu      CUDA SoA allocation, kernels, and GPU ABI glue
 tests/                   CPU invariants and native CUDA ABI smoke test
 ```
 
