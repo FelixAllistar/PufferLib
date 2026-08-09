@@ -9,29 +9,31 @@ if (($#)) && [[ $1 =~ ^(iterate|analyze|runs)$ ]]; then
     shift
 fi
 
-kag_games=50
-kag_confirm_games=500
-kag_jobs=4
-kag_range=0:100:16
+kag_games=10
+kag_confirm_games=50
+kag_jobs=1
+kag_gpu_agents=${KAG_GPU_AGENTS:-64}
+kag_range=0:100:12
+kag_shortlist=4
+kag_prescreen_games=4
 kag_run=
 kag_run_explicit=0
 kag_output=
 kag_reuse=
-kag_max_admit=4
+kag_max_admit=2
 kag_min_weight=0.01
-kag_max_league=24
-kag_jsd_steps=1440
-kag_profile_games=20
+kag_max_league=4
+kag_jsd_steps=720
+kag_jsd_seeds=2
+kag_profile_games=0
 kag_quality_gap=0.15
 kag_meta_share=0.70
 kag_diversity_share=0.25
 kag_exploration_share=0.05
-kag_fixed=pass,rules
-kag_stage=6
-kag_preunlocked_land=0
-kag_league=saved/kaggriculture_league_v5
+kag_fixed=none
+kag_league=saved/kaggriculture_league_v6
 kag_config=config/kaggriculture.ini
-kag_archive_root=saved/kaggriculture_league_v5_archive
+kag_archive_root=saved/kaggriculture_league_v6_archive
 
 kag_usage() {
     printf '%s\n' \
@@ -44,22 +46,24 @@ kag_usage() {
         "" \
         "Options:" \
         "  --run DIRECTORY     Candidate run (default newest non-sweep run)" \
-        "  --games N           Games per pairing, balanced by seat (default 50)" \
-        "  --confirm-games N   Games for the screened support set (default 500; 0 disables)" \
-        "  --jobs N            Parallel native pairings (default 4)" \
-        "  --range A:B:N       Sample N stages from A through B percent (default 0:100:16)" \
+        "  --games N           Games per shortlisted pairing, balanced by seat (default 10)" \
+        "  --confirm-games N   Games for the screened support set (default 50; 0 disables)" \
+        "  --jobs N            Legacy/fixed evaluator processes (default 1; matrix eval is persistent)" \
+        "  --gpu-agents N      CUDA agents per evaluator (default 64)" \
+        "  --range A:B:N       Coarse sample N stages from A through B percent (default 0:100:12)" \
+        "  --shortlist N       Local peaks retained for the full matrix (default 4)" \
+        "  --prescreen-games N Games/candidate against each active league member (default 4)" \
         "  --output PREFIX     Result prefix under logs/kaggriculture" \
         "  --reuse PREFIX      Reuse an existing screen instead of evaluating again" \
-        "  --max-admit N       Maximum new support policies admitted (default 4)" \
+        "  --max-admit N       Maximum new support policies admitted (default 2)" \
         "  --min-weight X      Minimum solved mass for admission (default 0.01)" \
-        "  --max-league N      Prune lowest-mass members above N (default 24)" \
-        "  --jsd-steps N       Shared-state behavior probe steps (default 1440)" \
-        "  --profile-games N   Bench behavior profile games per active policy (default 20; 0 disables)" \
+        "  --max-league N      Prune lowest-mass members above N (default 4)" \
+        "  --jsd-steps N       Shared-state behavior probe steps per seed (default 720)" \
+        "  --jsd-seeds N       Independent probe seeds, each a full trajectory (default 2)" \
+        "  --profile-games N   GPU behavior profile games per active policy (default 0)" \
         "  --quality-gap X     Max score gap for diversity candidates (default 0.15)" \
-        "  --fixed LIST        Fixed eval sides (default pass,rules; none disables)" \
-        "  --stage N           Evaluator curriculum stage 1..6 (default 6)" \
-        "  --preunlocked-land 0|1|2  Normal, paid 50-tile, or NE-only drill" \
-        "  --league DIRECTORY  Active league directory (default saved/kaggriculture_league_v5)" \
+        "  --fixed LIST        Optional fixed eval sides (default none)" \
+        "  --league DIRECTORY  Active four-policy league (default saved/kaggriculture_league_v6)" \
         "  --config FILE       INI updated by iterate (default config/kaggriculture.ini)" \
         "  --archive DIRECTORY League snapshot root" \
         "  -h, --help          Show this help"
@@ -71,18 +75,20 @@ while (($#)); do
         --games) kag_games=$2; shift 2 ;;
         --confirm-games) kag_confirm_games=$2; shift 2 ;;
         --jobs) kag_jobs=$2; shift 2 ;;
+        --gpu-agents) kag_gpu_agents=$2; shift 2 ;;
         --range) kag_range=$2; shift 2 ;;
+        --shortlist) kag_shortlist=$2; shift 2 ;;
+        --prescreen-games) kag_prescreen_games=$2; shift 2 ;;
         --output) kag_output=$2; shift 2 ;;
         --reuse) kag_reuse=$2; shift 2 ;;
         --max-admit) kag_max_admit=$2; shift 2 ;;
         --min-weight) kag_min_weight=$2; shift 2 ;;
         --max-league) kag_max_league=$2; shift 2 ;;
         --jsd-steps) kag_jsd_steps=$2; shift 2 ;;
+        --jsd-seeds) kag_jsd_seeds=$2; shift 2 ;;
         --profile-games) kag_profile_games=$2; shift 2 ;;
         --quality-gap) kag_quality_gap=$2; shift 2 ;;
         --fixed) kag_fixed=$2; shift 2 ;;
-        --stage) kag_stage=$2; shift 2 ;;
-        --preunlocked-land) kag_preunlocked_land=$2; shift 2 ;;
         --league) kag_league=$2; shift 2 ;;
         --config) kag_config=$2; shift 2 ;;
         --archive) kag_archive_root=$2; shift 2 ;;
@@ -129,21 +135,36 @@ fi
 
 [[ $kag_games =~ ^[0-9]+$ ]] && ((kag_games >= 2 && kag_games % 2 == 0)) \
     || { printf '%s\n' '--games must be an even integer of at least 2' >&2; exit 2; }
-[[ $kag_stage =~ ^[1-6]$ ]] \
-    || { printf '%s\n' '--stage must be an integer from 1 through 6' >&2; exit 2; }
-[[ $kag_preunlocked_land =~ ^[012]$ ]] \
-    || { printf '%s\n' '--preunlocked-land must be 0, 1, or 2' >&2; exit 2; }
 [[ $kag_confirm_games =~ ^[0-9]+$ ]] \
     && ((kag_confirm_games == 0 || (kag_confirm_games >= 2 && kag_confirm_games % 2 == 0))) \
     || { printf '%s\n' '--confirm-games must be zero or an even integer of at least 2' >&2; exit 2; }
 [[ $kag_jobs =~ ^[0-9]+$ ]] && ((kag_jobs >= 1)) \
     || { printf '%s\n' '--jobs must be a positive integer' >&2; exit 2; }
+[[ $kag_gpu_agents =~ ^[0-9]+$ ]] && ((kag_gpu_agents >= 4)) \
+    || { printf '%s\n' '--gpu-agents must be at least 4' >&2; exit 2; }
+[[ $kag_shortlist =~ ^[0-9]+$ ]] && ((kag_shortlist >= 1 && kag_shortlist <= 4)) \
+    || { printf '%s\n' '--shortlist must be an integer from 1 through 4' >&2; exit 2; }
+[[ $kag_prescreen_games =~ ^[0-9]+$ ]] \
+    && ((kag_prescreen_games >= 2 && kag_prescreen_games % 2 == 0)) \
+    || { printf '%s\n' '--prescreen-games must be an even integer of at least 2' >&2; exit 2; }
+if ! [[ $kag_range =~ ^([0-9]+):([0-9]+):([0-9]+)$ ]]; then
+    printf '%s\n' '--range must have the form START_PERCENT:END_PERCENT:COUNT' >&2
+    exit 2
+fi
+kag_range_start=${BASH_REMATCH[1]}
+kag_range_end=${BASH_REMATCH[2]}
+kag_range_count=${BASH_REMATCH[3]}
+((kag_range_start <= kag_range_end && kag_range_end <= 100 && kag_range_count >= 2)) \
+    || { printf '%s\n' '--range requires 0 <= START <= END <= 100 and COUNT >= 2' >&2; exit 2; }
 [[ $kag_max_admit =~ ^[0-9]+$ ]] \
     || { printf '%s\n' '--max-admit must be a nonnegative integer' >&2; exit 2; }
-[[ $kag_max_league =~ ^[0-9]+$ ]] && ((kag_max_league >= 2)) \
-    || { printf '%s\n' '--max-league must be at least 2' >&2; exit 2; }
+[[ $kag_max_league =~ ^[0-9]+$ ]] \
+    && ((kag_max_league >= 2 && kag_max_league <= 4)) \
+    || { printf '%s\n' '--max-league must be an integer from 2 through 4' >&2; exit 2; }
 [[ $kag_jsd_steps =~ ^[0-9]+$ ]] && ((kag_jsd_steps >= 720)) \
     || { printf '%s\n' '--jsd-steps must be at least 720' >&2; exit 2; }
+[[ $kag_jsd_seeds =~ ^[0-9]+$ ]] && ((kag_jsd_seeds >= 1 && kag_jsd_seeds <= 32)) \
+    || { printf '%s\n' '--jsd-seeds must be an integer from 1 through 32' >&2; exit 2; }
 [[ $kag_profile_games =~ ^[0-9]+$ ]] \
     && ((kag_profile_games == 0 || (kag_profile_games >= 2 && kag_profile_games % 2 == 0))) \
     || { printf '%s\n' '--profile-games must be zero or an even integer of at least 2' >&2; exit 2; }
@@ -175,8 +196,24 @@ if [[ ! -f $kag_config ]]; then
     exit 1
 fi
 
-mapfile -t kag_run_files < <(find "$kag_run" -maxdepth 1 -type f \
+kag_reference_checkpoint=$(find "$kag_league" -maxdepth 1 -type f \
+    -name '*.bin' -print -quit)
+if [[ -z $kag_reference_checkpoint ]]; then
+    printf 'No active checkpoints in %s\n' "$kag_league" >&2
+    exit 1
+fi
+kag_reference_bytes=$(stat -c %s "$kag_reference_checkpoint")
+mapfile -t kag_run_files_all < <(find "$kag_run" -maxdepth 1 -type f \
     -regextype posix-extended -regex '.*/[0-9]{16}\.bin' -print | sort)
+kag_run_files=()
+for kag_path in "${kag_run_files_all[@]}"; do
+    [[ $(stat -c %s "$kag_path") == "$kag_reference_bytes" ]] \
+        && kag_run_files+=("$kag_path")
+done
+if ((${#kag_run_files[@]} != ${#kag_run_files_all[@]})); then
+    printf 'Ignoring %d architecture-incompatible checkpoints in %s\n' \
+        "$(( ${#kag_run_files_all[@]} - ${#kag_run_files[@]} ))" "$kag_run"
+fi
 if ((${#kag_run_files[@]} < 2)); then
     printf 'Need at least two checkpoints in %s\n' "$kag_run" >&2
     exit 1
@@ -197,11 +234,128 @@ printf 'PSRO %s: run=%s checkpoints=%d through %.2fM range=%s games=%d\n' \
     "$(awk -v n="$kag_last_step" 'BEGIN {print n/1000000}')" "$kag_range" "$kag_games"
 
 if [[ -z $kag_reuse ]]; then
+    if [[ ! -x ./puffer || src/pufferl.cu -nt ./puffer \
+            || ocean/kaggriculture/kaggriculture.c -nt ./puffer ]]; then
+        CUDA_HOME="${CUDA_HOME:-/usr/local/cuda}" bash build.sh kaggriculture
+    fi
+
+    kag_coarse_manifest="${kag_output}_coarse_manifest.tsv"
+    kag_opponent_manifest="${kag_output}_active_manifest.tsv"
+    kag_prescreen_raw="${kag_output}_prescreen_raw.tsv"
+    kag_prescreen_ranking="${kag_output}_prescreen_ranking.tsv"
+    printf 'id\tpolicy\tcheckpoint\n' > "$kag_coarse_manifest"
+    declare -A kag_coarse_seen=()
+    kag_coarse_count=0
+    kag_coarse_first=$(((kag_range_start * (${#kag_run_files[@]} - 1) + 50) / 100))
+    kag_coarse_last=$(((kag_range_end * (${#kag_run_files[@]} - 1) + 50) / 100))
+    for ((kag_pick=0; kag_pick<kag_range_count; kag_pick++)); do
+        kag_idx=$((kag_coarse_first + kag_pick * (kag_coarse_last - kag_coarse_first) / (kag_range_count - 1)))
+        kag_path=${kag_run_files[kag_idx]}
+        [[ -n ${kag_coarse_seen["$kag_path"]+x} ]] && continue
+        kag_coarse_seen["$kag_path"]=1
+        kag_step_name=${kag_path##*/}
+        kag_step=$((10#${kag_step_name%.bin}))
+        kag_policy=$(awk -v n="$kag_step" -v run="$kag_run_id" \
+            'BEGIN {printf "%s@%.2fM", run, n/1000000}')
+        printf '%d\t%s\t%s\n' "$kag_coarse_count" "$kag_policy" "$kag_path" \
+            >> "$kag_coarse_manifest"
+        kag_coarse_count=$((kag_coarse_count + 1))
+    done
+
+    printf 'id\tpolicy\tweight\tcheckpoint\n' > "$kag_opponent_manifest"
+    kag_active_paths=()
+    while IFS= read -r kag_path; do
+        kag_policy=${kag_path##*/}
+        kag_policy=${kag_policy%.bin}
+        kag_weight=1
+        if [[ -f $kag_league/manifest.tsv ]]; then
+            kag_manifest_weight=$(awk -F '\t' -v policy="$kag_policy" \
+                'NR>1 && $1==policy {print $3; exit}' \
+                "$kag_league/manifest.tsv")
+            [[ -z $kag_manifest_weight ]] || kag_weight=$kag_manifest_weight
+        fi
+        printf '%d\t%s\t%s\t%s\n' "${#kag_active_paths[@]}" "$kag_policy" \
+            "$kag_weight" "$kag_path" \
+            >> "$kag_opponent_manifest"
+        kag_active_paths+=("$kag_path")
+    done < <(find "$kag_league" -maxdepth 1 -type f -name '*.bin' -print | sort)
+    if ((${#kag_active_paths[@]} < 2 || ${#kag_active_paths[@]} > 4)); then
+        printf 'Fast PSRO requires 2..4 active league policies; found %d in %s\n' \
+            "${#kag_active_paths[@]}" "$kag_league" >&2
+        exit 1
+    fi
+
+    printf 'Coarse screen: candidates=%d active=%d games=%d each\n' \
+        "$kag_coarse_count" "${#kag_active_paths[@]}" "$kag_prescreen_games"
+    ./puffer league kaggriculture \
+        league.mode=screen \
+        "league.candidate_manifest=$kag_coarse_manifest" \
+        "league.opponent_manifest=$kag_opponent_manifest" \
+        "league.output=$kag_prescreen_raw" \
+        "league.games=$kag_prescreen_games" \
+        base.seed=6100
+
+    kag_prescreen_scores="$kag_tmp/prescreen_scores.tsv"
+    awk -F '\t' -v count="$kag_coarse_count" '
+        NR==FNR {
+            if (FNR>1) weight[$1]=$3
+            next
+        }
+        {sum[$1]+=$3*weight[$2]; mass[$1]+=weight[$2]}
+        END {
+            for (i=0; i<count; i++) score[i]=mass[i] ? sum[i]/mass[i] : 0
+            for (i=0; i<count; i++) {
+                left=(i==0 || score[i]>=score[i-1])
+                right=(i==count-1 || score[i]>=score[i+1])
+                printf "%d\t%.9f\t%d\n", i,score[i],left&&right
+            }
+        }
+    ' "$kag_opponent_manifest" "$kag_prescreen_raw" \
+        > "$kag_prescreen_scores"
+    {
+        printf 'rank\tpolicy\tmean_score\tlocal_peak\tcheckpoint\n'
+        sort -t$'\t' -k2,2gr "$kag_prescreen_scores" | while IFS=$'\t' \
+                read -r kag_id kag_score kag_peak; do
+            IFS=$'\t' read -r _ kag_policy kag_path \
+                < <(awk -F '\t' -v id="$kag_id" 'NR>1 && $1==id {print; exit}' \
+                    "$kag_coarse_manifest")
+            printf '%s\t%s\t%s\t%s\n' "$kag_policy" "$kag_score" "$kag_peak" "$kag_path"
+        done | awk -F '\t' 'BEGIN{OFS="\t"} {print NR,$0}'
+    } > "$kag_prescreen_ranking"
+
+    kag_selected_ids=()
+    declare -A kag_selected_id=()
+    while IFS=$'\t' read -r kag_id _; do
+        ((${#kag_selected_ids[@]} < kag_shortlist)) || break
+        kag_selected_ids+=("$kag_id")
+        kag_selected_id["$kag_id"]=1
+    done < <(awk -F '\t' '$3==1 {print $1"\t"$2}' "$kag_prescreen_scores" \
+        | sort -t$'\t' -k2,2gr)
+    while IFS=$'\t' read -r kag_id _; do
+        ((${#kag_selected_ids[@]} < kag_shortlist)) || break
+        [[ -n ${kag_selected_id["$kag_id"]+x} ]] && continue
+        kag_selected_ids+=("$kag_id")
+        kag_selected_id["$kag_id"]=1
+    done < <(sort -t$'\t' -k2,2gr "$kag_prescreen_scores")
+
+    kag_selected_paths=()
+    printf '%s\n' 'Shortlisted checkpoint peaks:'
+    for kag_id in "${kag_selected_ids[@]}"; do
+        IFS=$'\t' read -r _ kag_policy kag_path \
+            < <(awk -F '\t' -v id="$kag_id" 'NR>1 && $1==id {print; exit}' \
+                "$kag_coarse_manifest")
+        kag_selected_paths+=("$kag_path")
+        kag_score=$(awk -F '\t' -v id="$kag_id" '$1==id {print $2}' \
+            "$kag_prescreen_scores")
+        printf '  %s score=%s\n' "$kag_policy" "$kag_score"
+    done
+
     ./ocean/kaggriculture/eval_population.sh \
-        --games "$kag_games" --jobs "$kag_jobs" --fixed "$kag_fixed" \
-        --stage "$kag_stage" \
-        --preunlocked-land "$kag_preunlocked_land" \
-        --range "$kag_range" --output "$kag_output" "$kag_league" "$kag_run"
+        --games "$kag_games" --jobs "$kag_jobs" --gpu-agents "$kag_gpu_agents" \
+        --fixed "$kag_fixed" \
+        --cache "$kag_league/payoffs.tsv" \
+        --focal-count "${#kag_selected_paths[@]}" \
+        --output "$kag_output" "${kag_selected_paths[@]}" "$kag_league"
 else
     for kag_required in manifest matrix ranking fixed; do
         [[ -f ${kag_output}_${kag_required}.tsv ]] || {
@@ -217,7 +371,7 @@ if [[ ! -x $kag_solver || ocean/kaggriculture/metagame.c -nt $kag_solver ]]; the
     make -C ocean/kaggriculture metagame
 fi
 if [[ ! -x ./kaggriculture || ocean/kaggriculture/kaggriculture.c -nt ./kaggriculture ]]; then
-    bash build.sh kaggriculture --fast
+    CUDA_HOME="${CUDA_HOME:-/usr/local/cuda}" bash build.sh kaggriculture --fast
 fi
 kag_print_meta() {
     local kag_label=$1 kag_path=$2
@@ -243,9 +397,9 @@ while IFS=$'\t' read -r _ kag_policy kag_path; do
     [[ $kag_policy == policy ]] && continue
     kag_jsd_specs+=("${kag_policy}=${kag_path}")
 done < "${kag_output}_manifest.tsv"
-printf 'Probing masked recurrent behavior JSD: policies=%d steps=%d\n' \
-    "${#kag_jsd_specs[@]}" "$kag_jsd_steps"
-KAG_STAGE="$kag_stage" KAG_PREUNLOCKED_LAND="$kag_preunlocked_land" \
+printf 'Probing masked recurrent behavior JSD: policies=%d steps=%d seeds=%d\n' \
+    "${#kag_jsd_specs[@]}" "$kag_jsd_steps" "$kag_jsd_seeds"
+KAG_JSD_SEEDS="$kag_jsd_seeds" \
     ./kaggriculture jsd "$kag_jsd_steps" \
     "${kag_jsd_specs[@]}" > "$kag_behavior_jsd"
 "$kag_solver" diversity "${kag_output}_matrix.tsv" "$kag_behavior_jsd" \
@@ -331,8 +485,7 @@ if ((kag_confirm_games)); then
     printf 'Confirming %d support policies with %d games/pair\n' \
         "${#kag_support_paths[@]}" "$kag_confirm_games"
     ./ocean/kaggriculture/eval_population.sh --games "$kag_confirm_games" \
-        --jobs "$kag_jobs" --fixed none --stage "$kag_stage" \
-        --preunlocked-land "$kag_preunlocked_land" \
+        --jobs "$kag_jobs" --gpu-agents "$kag_gpu_agents" --fixed none \
         --output "$kag_confirm_output" \
         "${kag_support_paths[@]}"
     kag_meta="${kag_output}_metagame.tsv"
@@ -402,12 +555,14 @@ mkdir -p "${kag_archive%/*}"
 cp -a "$kag_league" "$kag_archive"
 printf 'Archived previous league at %s\n' "$kag_archive"
 
-declare -A kag_policy_label=() kag_policy_role=()
+declare -A kag_policy_label=() kag_policy_role=() kag_policy_pinned=()
 if [[ -f $kag_league/manifest.tsv ]]; then
     while IFS=$'\t' read -r kag_policy kag_role _; do
         [[ $kag_policy == policy ]] && continue
         if [[ $kag_role == *divers* || $kag_role == *econom* ]]; then
             kag_policy_role["$kag_policy"]=diversity
+        elif [[ $kag_role == champion ]]; then
+            kag_policy_pinned["$kag_policy"]=1
         fi
     done < "$kag_league/manifest.tsv"
 fi
@@ -495,8 +650,33 @@ kag_allocate_weights() {
         }
     '
 }
+kag_weighted_all="$kag_tmp/weighted_all.tsv"
 kag_allocate_weights < "$kag_active_raw" | sort -t$'\t' -k4,4gr \
-    | sed -n "1,${kag_max_league}p" > "$kag_keep"
+    > "$kag_weighted_all"
+sed -n "1,${kag_max_league}p" "$kag_weighted_all" > "$kag_keep"
+kag_pinned_file="$kag_tmp/pinned.tsv"
+: > "$kag_pinned_file"
+for kag_policy in "${!kag_policy_pinned[@]}"; do
+    printf '%s\n' "$kag_policy" >> "$kag_pinned_file"
+done
+for kag_policy in "${!kag_policy_pinned[@]}"; do
+    awk -F '\t' -v policy="$kag_policy" '$1==policy {found=1} END {exit !found}' \
+        "$kag_keep" && continue
+    kag_remove=$(awk -F '\t' '
+        NR==FNR {pinned[$1]=1; next}
+        !pinned[$1] {candidate=$1}
+        END {print candidate}
+    ' "$kag_pinned_file" "$kag_keep")
+    [[ -n $kag_remove ]] || continue
+    kag_keep_tmp="$kag_tmp/keep_replace.tsv"
+    awk -F '\t' -v remove="$kag_remove" '$1!=remove' "$kag_keep" \
+        > "$kag_keep_tmp"
+    awk -F '\t' -v policy="$kag_policy" '$1==policy' "$kag_weighted_all" \
+        >> "$kag_keep_tmp"
+    mv "$kag_keep_tmp" "$kag_keep"
+    printf 'Pinned champion %s replaced %s in active league\n' \
+        "$kag_policy" "$kag_remove"
+done
 
 declare -A kag_keep_policy=()
 while IFS=$'\t' read -r kag_policy _; do kag_keep_policy["$kag_policy"]=1; done < "$kag_keep"
@@ -510,21 +690,41 @@ for kag_path in "$kag_league"/*.bin; do
 done
 
 kag_weights="$kag_tmp/weights.tsv"
-cut -f1-3 "$kag_keep" | kag_allocate_weights > "$kag_weights"
+cut -f1-3 "$kag_keep" | kag_allocate_weights \
+    | sort -t$'\t' -k4,4gr > "$kag_weights"
 
 kag_manifest_tmp=$(mktemp "$kag_league/.manifest.XXXXXX")
 {
     printf 'policy\trole\tbase_weight\tsource\n'
     while IFS=$'\t' read -r kag_policy kag_role _ kag_weight; do
+        if [[ -n ${kag_policy_pinned["$kag_policy"]+x} ]]; then
+            kag_role=champion
+        fi
         printf '%s\t%s\t%s\t%s/%s.bin\n' \
             "$kag_policy" "$kag_role" "$kag_weight" "$kag_league" "$kag_policy"
     done < "$kag_weights"
 } > "$kag_manifest_tmp"
 mv "$kag_manifest_tmp" "$kag_league/manifest.tsv"
 
+kag_league_ini_tmp=$(mktemp "$kag_league/.league.XXXXXX")
+{
+    printf '[league]\nmax_active = %d\n\n' "$kag_max_league"
+    while IFS=$'\t' read -r kag_policy kag_role _ kag_weight; do
+        if [[ -n ${kag_policy_pinned["$kag_policy"]+x} ]]; then
+            kag_role=champion
+        fi
+        printf '[policy.%s]\n' "$kag_policy"
+        printf "path = '%s/%s.bin'\n" "$kag_league" "$kag_policy"
+        printf "role = '%s'\n" "$kag_role"
+        printf 'train_weight = %s\n' "$kag_weight"
+        printf 'enabled = 1\n\n'
+    done < "$kag_weights"
+} > "$kag_league_ini_tmp"
+mv "$kag_league_ini_tmp" "$kag_league/league.ini"
+
 kag_pool=$(awk -F '\t' -v root="$kag_league" \
     'BEGIN {ORS=""} {sep = NR > 1 ? "," : ""; printf "%s%s/%s.bin", sep, root, $1}' "$kag_weights")
-kag_learner_active=$kag_learner_source
+kag_learner_active=
 if [[ -n $kag_learner_source && -f $kag_learner_source ]]; then
     for kag_path in "$kag_league"/*.bin; do
         if cmp -s "$kag_learner_source" "$kag_path"; then
@@ -533,17 +733,28 @@ if [[ -n $kag_learner_source && -f $kag_learner_source ]]; then
         fi
     done
 fi
+if [[ -z $kag_learner_active ]]; then
+    # A quality-gated candidate can be admitted and then lose the four-policy
+    # prune. Never resume from that rejected branch: continue from the
+    # highest-weight policy that actually survived in the active league.
+    kag_fallback_policy=$(awk -F '\t' 'NR==1 {print $1}' "$kag_weights")
+    kag_learner_active="$kag_league/$kag_fallback_policy.bin"
+    printf 'Candidate learner was not retained; using active policy %s\n' \
+        "$kag_fallback_policy"
+fi
 kag_config_dir=${kag_config%/*}
 [[ $kag_config_dir == "$kag_config" ]] && kag_config_dir=.
 kag_config_tmp=$(mktemp "$kag_config_dir/.kaggriculture.XXXXXX")
-awk -v pool="$kag_pool" -v learner="$kag_learner_active" '
+awk -v league="$kag_league/league.ini" -v learner="$kag_learner_active" '
     /^load_model_path =/ && learner != "" {
         printf "load_model_path = \047%s\047\n", learner; found=1; next
     }
-    /^opponent_pool =/ {printf "opponent_pool = \047%s\047\n", pool; next}
-    # Solved role weights remain in manifest.tsv for metagame evaluation. They
-    # are intentionally not training probabilities: hard PFSP must begin from
-    # a uniform base so an unbeatable meta policy cannot starve the curriculum.
+    /^opponent_pool =/ {print "opponent_pool = \047None\047"; next}
+    /^opponent_league =/ {
+        printf "opponent_league = \047%s\047\n", league; next
+    }
+    # Per-policy base weights now live in league.ini; PFSP multiplies them by
+    # the online matchup priority instead of discarding the solved allocation.
     /^opponent_pool_weights =/ {print "opponent_pool_weights = \047None\047"; next}
     {print}
 ' "$kag_config" > "$kag_config_tmp"
@@ -561,9 +772,8 @@ if [[ -n $kag_learner_active ]]; then
 fi
 
 if ((kag_profile_games)); then
-    ./ocean/kaggriculture/profile_population.sh \
-        --games "$kag_profile_games" --jobs "$kag_jobs" \
-        --stage "$kag_stage" --preunlocked-land "$kag_preunlocked_land" \
+    ./ocean/kaggriculture/profile_population_gpu.sh \
+        --games "$kag_profile_games" --jobs "$kag_jobs" --gpu-agents "$kag_gpu_agents" \
         --output "${kag_output}_profile" "$kag_league"
 fi
 

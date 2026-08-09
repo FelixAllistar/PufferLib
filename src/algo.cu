@@ -1548,6 +1548,102 @@ __device__ __forceinline__ void ppo_discrete_head(
     *out_logp = act_logit - logsumexp;
 }
 
+__device__ __forceinline__ bool puf_mask_bit(
+        const unsigned char* __restrict__ mask, int mask_base, int action) {
+    return (mask[mask_base + (action >> 3)] & (1u << (action & 7))) != 0;
+}
+
+// Masked logsumexp over one discrete head's legal actions. Returns -inf when
+// every action is masked, so callers can gate on a nonzero legal count.
+__device__ __forceinline__ float puf_masked_logsumexp(
+        const precision_t* __restrict__ logits, int logits_base,
+        int logits_offset, int A,
+        const unsigned char* __restrict__ mask, int mask_base) {
+    float max_logit = -INFINITY;
+    float sum = 0.0f;
+    for (int a = 0; a < A; ++a) {
+        float l = load_logit_masked_bit(logits, logits_base, logits_offset, a,
+            mask, mask_base);
+        if (l > max_logit) {
+            sum *= __expf(max_logit - l);
+            max_logit = l;
+        }
+        sum += __expf(l - max_logit);
+    }
+    return sum == 0.0f ? -INFINITY : max_logit + __logf(sum);
+}
+
+__device__ __forceinline__ float puf_masked_prob(
+        const precision_t* __restrict__ logits, int logits_base,
+        int logits_offset, int A, int action,
+        const unsigned char* __restrict__ mask, int mask_base) {
+    if (!puf_mask_bit(mask, mask_base, logits_offset + action)) return 0.0f;
+    float l = load_logit_masked_bit(logits, logits_base, logits_offset,
+        action, mask, mask_base);
+    float lse = puf_masked_logsumexp(logits, logits_base, logits_offset, A,
+        mask, mask_base);
+    return __expf(l - lse);
+}
+
+__device__ __forceinline__ int puf_head_offset(
+        const int* __restrict__ act_sizes, int head) {
+    int offset = 0;
+    for (int h = 0; h < head; h++) offset += act_sizes[h];
+    return offset;
+}
+
+/* Probability that the EMA magnet reaches this head. Flat action spaces
+ * return 1 (every head is always reached). Conditional STOP chains weight
+ * deeper slots by the magnet's continuation probabilities, so unreachable
+ * tail logits contribute nothing to the exact magnet KL objective. This is
+ * the generalized hook: the tree shape arrives through the same env-provided
+ * PUFFER_CONDITIONAL_* constants used by puf_action_head_active. */
+__device__ __forceinline__ float puf_head_reach_weight(
+        const precision_t* __restrict__ magnet_logits, int logits_base,
+        int head, const unsigned char* __restrict__ mask, int mask_base,
+        const int* __restrict__ act_sizes, int num_atns) {
+#ifdef PUFFER_CONDITIONAL_MARKET_QUEUE
+    (void)num_atns;
+    if (head < PUFFER_CONDITIONAL_PREFIX_HEADS) return 1.0f;
+    int relative = head - PUFFER_CONDITIONAL_PREFIX_HEADS;
+    int slot = relative / PUFFER_CONDITIONAL_HEADS_PER_SLOT;
+    int node = relative % PUFFER_CONDITIONAL_HEADS_PER_SLOT;
+    float reach = 1.0f;
+    for (int prev = 0; prev < slot; prev++) {
+        int cont_head = PUFFER_CONDITIONAL_PREFIX_HEADS
+            + PUFFER_CONDITIONAL_HEADS_PER_SLOT * prev;
+        int cont_offset = puf_head_offset(act_sizes, cont_head);
+        reach *= puf_masked_prob(magnet_logits, logits_base, cont_offset,
+            2, PUFFER_CONDITIONAL_CONTINUE, mask, mask_base);
+        if (reach <= 0.0f) return 0.0f;
+    }
+    if (node == 0) return reach;
+    int cont_head = PUFFER_CONDITIONAL_PREFIX_HEADS
+        + PUFFER_CONDITIONAL_HEADS_PER_SLOT * slot;
+    int cont_offset = puf_head_offset(act_sizes, cont_head);
+    reach *= puf_masked_prob(magnet_logits, logits_base, cont_offset,
+        2, PUFFER_CONDITIONAL_CONTINUE, mask, mask_base);
+    if (reach <= 0.0f) return 0.0f;
+    if (node == 1) return reach;
+    int command_head = cont_head + 1;
+    int command_offset = puf_head_offset(act_sizes, command_head);
+    int command_A = act_sizes[command_head];
+    float quant = 0.0f;
+    float lse = puf_masked_logsumexp(magnet_logits, logits_base,
+        command_offset, command_A, mask, mask_base);
+    for (int id = 0; id < PUFFER_CONDITIONAL_QUANTITY_COMMANDS; id++) {
+        float l = load_logit_masked_bit(magnet_logits, logits_base,
+            command_offset, id, mask, mask_base);
+        quant += __expf(l - lse);
+    }
+    return reach * quant;
+#else
+    (void)magnet_logits; (void)logits_base; (void)head; (void)mask;
+    (void)mask_base; (void)act_sizes; (void)num_atns;
+    return 1.0f;
+#endif
+}
+
 __device__ __forceinline__ void ppo_continuous_head(
         float mean, float log_std, float action,
         float* out_logp, float* out_entropy) {
@@ -1631,8 +1727,10 @@ __global__ void ppo_loss_compute(
     // Discrete-only: per-head arrays needed across forward + backward
     float head_logsumexp[MAX_ATN_HEADS];
     float head_entropy[MAX_ATN_HEADS];
+    float head_reach[MAX_ATN_HEADS];
     int head_act[MAX_ATN_HEADS];
     bool head_active[MAX_ATN_HEADS];
+    bool head_legal[MAX_ATN_HEADS];
 
     // Discrete always registers mb_action_mask; continuous never uses this arm.
     int mask_base = nt * ((a.A_total + 7) / 8);
@@ -1646,7 +1744,19 @@ __global__ void ppo_loss_compute(
                 nt * a.num_atns, h);
             head_active[h] = active;
             head_act[h] = act;
-            if (!active) {
+            head_reach[h] = a.emag_kl_coef > 0.0f
+                ? puf_head_reach_weight(a.magnet_logits, logits_base, h,
+                    a.action_mask, mask_base, a.act_sizes, a.num_atns)
+                : 0.0f;
+            head_legal[h] = false;
+            for (int action = 0; action < A; action++) {
+                if (puf_mask_bit(a.action_mask, mask_base,
+                        logits_offset + action)) {
+                    head_legal[h] = true;
+                    break;
+                }
+            }
+            if (!head_legal[h]) {
                 head_logsumexp[h] = 0.0f;
                 head_entropy[h] = 0.0f;
                 logits_offset += A;
@@ -1657,8 +1767,10 @@ __global__ void ppo_loss_compute(
                               a.action_mask, mask_base, &lse, &ent, &lp);
             head_logsumexp[h] = lse;
             head_entropy[h] = ent;
-            total_log_prob += lp;
-            total_entropy += ent;
+            if (active) {
+                total_log_prob += lp;
+                total_entropy += ent;
+            }
             logits_offset += A;
         }
     } else {
@@ -1697,7 +1809,7 @@ __global__ void ppo_loss_compute(
         int logits_offset = 0;
         for (int h = 0; h < a.num_atns; ++h) {
             int A = a.act_sizes[h];
-            if (!head_active[h]) {
+            if (!head_legal[h]) {
                 for (int j = 0; j < A; j++) {
                     a.grad_logits[grad_logits_base + logits_offset + j] = 0.0f;
                 }
@@ -1707,8 +1819,9 @@ __global__ void ppo_loss_compute(
             int act = head_act[h];
             float logsumexp = head_logsumexp[h];
             float ent = head_entropy[h];
+            float reach = head_reach[h];
             float magnet_logsumexp = 0.0f;
-            if (a.emag_kl_coef > 0.0f) {
+            if (reach > 0.0f) {
                 float magnet_max = -INFINITY;
                 float magnet_sum = 0.0f;
                 for (int j = 0; j < A; j++) {
@@ -1730,17 +1843,22 @@ __global__ void ppo_loss_compute(
                 float p = __expf(logp);
                 float magnet_logp = 0.0f;
                 float q = 0.0f;
-                if (a.emag_kl_coef > 0.0f) {
+                if (reach > 0.0f) {
                     float ml = load_logit_masked_bit(a.magnet_logits, logits_base,
                         logits_offset, j, a.action_mask, mask_base);
                     magnet_logp = ml - magnet_logsumexp;
                     q = __expf(magnet_logp);
-                    emag_kl += q * (magnet_logp - logp);
+                    emag_kl += reach * q * (magnet_logp - logp);
                 }
-                float d_logit = (j == act) ? d_new_logp : 0.0f;
-                d_logit -= p * d_new_logp;
-                d_logit += d_entropy_term * p * (-ent - logp);
-                d_logit += dL * a.emag_kl_coef * (p - q);
+                float d_logit = 0.0f;
+                if (head_active[h]) {
+                    d_logit = (j == act) ? d_new_logp : 0.0f;
+                    d_logit -= p * d_new_logp;
+                    d_logit += d_entropy_term * p * (-ent - logp);
+                }
+                if (reach > 0.0f) {
+                    d_logit += dL * a.emag_kl_coef * reach * (p - q);
+                }
                 a.grad_logits[grad_logits_base + logits_offset + j] = d_logit;
             }
             logits_offset += A;

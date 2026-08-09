@@ -73,26 +73,15 @@ static void kag_bind_demo(Env* env, obs_t* observations, float* actions,
 
 static void kag_init_demo(Env* env, obs_t* observations, float* actions,
         float* rewards, float* terminals, unsigned char* action_masks,
-        int headed) {
+        int headed, uint64_t seed) {
     KGConfig config;
     memset(env, 0, sizeof(*env));
     kg_config_default(&config);
-    config.seed = 42;
-    env->rng = 42;
+    config.seed = seed;
+    env->rng = (unsigned int)seed;
     env->render_enabled = headed;
-    env->curriculum_stage = 4;
     env->policy_market_slots = KG_POLICY_MARKET_SLOTS;
     env->policy_max_hands = KG_MAX_HANDS;
-    const char* stage_text = getenv("KAG_STAGE");
-    if (stage_text && stage_text[0]) {
-        char* end = NULL;
-        long stage = strtol(stage_text, &end, 10);
-        if (!end || *end || stage < 1 || stage > 6) {
-            fprintf(stderr, "KAG_STAGE must be an integer from 1 through 6\n");
-            exit(2);
-        }
-        env->curriculum_stage = (int)stage;
-    }
     const char* market_slots_text = getenv("KAG_POLICY_MARKET_SLOTS");
     if (market_slots_text && market_slots_text[0]) {
         char* end = NULL;
@@ -114,15 +103,6 @@ static void kag_init_demo(Env* env, obs_t* observations, float* actions,
             exit(2);
         }
         env->policy_max_hands = (int)hands;
-    }
-    const char* land_text = getenv("KAG_PREUNLOCKED_LAND");
-    if (land_text && land_text[0]) {
-        if (strcmp(land_text, "0") && strcmp(land_text, "1")
-                && strcmp(land_text, "2")) {
-            fprintf(stderr, "KAG_PREUNLOCKED_LAND must be 0, 1, or 2\n");
-            exit(2);
-        }
-        env->curriculum_preunlocked_land = land_text[0] - '0';
     }
     env->reward_potential_scale = 0.0001f;
     env->reward_win = 1.0f;
@@ -391,6 +371,11 @@ static int kag_parse_side(KagSide* side, const char* spec) {
         side->script_profile = KG_SCRIPT_HAMBURGER;
         return 1;
     }
+    if (!strcmp(spec, "top")) {
+        side->kind = KAG_SIDE_SCRIPT;
+        side->script_profile = KG_SCRIPT_TOP;
+        return 1;
+    }
     if (!strcmp(spec, "fields")) {
         side->kind = KAG_SIDE_ADAPTIVE;
         side->script_profile = KAG_ADAPTIVE_FIELDS;
@@ -631,8 +616,6 @@ static void kag_usage(const char* exe) {
     printf("  %s bench [steps] [SIDE_A] [SIDE_B]\n", exe);
     printf("  %s jsd [steps] LABEL=MODEL.bin [LABEL=MODEL.bin ...]\n", exe);
     printf("Sides: latest, MODEL.bin, rules, wheat, carrot, melon, frontier, night, v20, moon, hamburger, fields, scenario, soil, kaito, shield, frontier12, pulse, structured, triad, random, pass\n");
-    printf("Set KAG_STAGE=1..6 to select the evaluator curriculum (default 4).\n");
-    printf("Set KAG_PREUNLOCKED_LAND=1 for paid 50-tile management, 2 for the NE drill.\n");
     printf("  rules: adaptive prices/demand, visible supply, hands, land, liquidation\n");
     printf("One side is mirrored: '%s watch latest' plays latest vs itself.\n", exe);
 }
@@ -641,9 +624,42 @@ static double kag_kl_term(double probability, double mixture) {
     return probability > 0.0 ? probability * log(probability / mixture) : 0.0;
 }
 
+/* Probability that this policy's market queue reaches a head, from its own
+ * masked softmax probabilities. Unit heads are always reached; deeper slots
+ * are weighted by the policy's continuation probabilities. */
+static float kag_probe_reach(const float* probs, int head) {
+    if (head < KG_POLICY_MARKET_HEAD_OFFSET) return 1.0f;
+    int relative = head - KG_POLICY_MARKET_HEAD_OFFSET;
+    int slot = relative / PUFFER_CONDITIONAL_HEADS_PER_SLOT;
+    int node = relative % PUFFER_CONDITIONAL_HEADS_PER_SLOT;
+    float reach = 1.0f;
+    for (int prev = 0; prev < slot; prev++) {
+        int cont_head = KG_POLICY_MARKET_HEAD_OFFSET + 3 * prev;
+        int off = 0;
+        for (int h = 0; h < cont_head; h++) off += KG_ACTION_SIZES[h];
+        reach *= probs[off + 1];
+        if (reach == 0.0f) return 0.0f;
+    }
+    if (node == 0) return reach;
+    int cont_head = KG_POLICY_MARKET_HEAD_OFFSET + 3 * slot;
+    int off = 0;
+    for (int h = 0; h < cont_head; h++) off += KG_ACTION_SIZES[h];
+    reach *= probs[off + 1];
+    if (reach == 0.0f) return 0.0f;
+    if (node == 1) return reach;
+    int command_head = cont_head + 1;
+    int coff = 0;
+    for (int h = 0; h < command_head; h++) coff += KG_ACTION_SIZES[h];
+    float quant = 0.0f;
+    for (int id = 0; id < KG_POLICY_MARKET_QUANTITY_COMMANDS; id++) {
+        quant += probs[coff + id];
+    }
+    return reach * quant;
+}
+
 static int kag_behavior_jsd(int argc, char** argv) {
     int arg = 2;
-    int steps = 7200;
+    int steps = 720;
     if (arg < argc && strspn(argv[arg], "0123456789") == strlen(argv[arg])) {
         steps = atoi(argv[arg++]);
     }
@@ -652,14 +668,26 @@ static int kag_behavior_jsd(int argc, char** argv) {
         fprintf(stderr, "jsd requires positive steps and 2..64 LABEL=MODEL checkpoints\n");
         return 2;
     }
+    int seeds = 1;
+    const char* seeds_text = getenv("KAG_JSD_SEEDS");
+    if (seeds_text && seeds_text[0]) {
+        seeds = atoi(seeds_text);
+        if (seeds < 1 || seeds > 32) {
+            fprintf(stderr, "KAG_JSD_SEEDS must be an integer from 1 through 32\n");
+            return 2;
+        }
+    }
 
     KagSide* models = (KagSide*)calloc((size_t)count, sizeof(KagSide));
     char (*labels)[256] = calloc((size_t)count, sizeof(*labels));
     double* sums = (double*)calloc((size_t)count * count, sizeof(double));
-    uint64_t* samples = (uint64_t*)calloc((size_t)count * count, sizeof(uint64_t));
+    double* samples = (double*)calloc((size_t)count * count, sizeof(double));
     float* probabilities = (float*)calloc(
         (size_t)count * KG_POLICY_ACTION_MASK_SIZE, sizeof(float));
-    if (!models || !labels || !sums || !samples || !probabilities) return 1;
+    float* reach = (float*)calloc((size_t)count * NUM_ATNS, sizeof(float));
+    if (!models || !labels || !sums || !samples || !probabilities || !reach) {
+        return 1;
+    }
 
     kag_quiet_load = 1;
     for (int i = 0; i < count; i++) {
@@ -675,82 +703,99 @@ static int kag_behavior_jsd(int argc, char** argv) {
         if (!kag_load_model_side(&models[i], equals + 1)) return 1;
     }
 
-    Env env;
-    obs_t observations[KG_NUM_PLAYERS * OBS_SIZE] = {0};
-    float actions[KG_NUM_PLAYERS * NUM_ATNS] = {0};
-    float rewards[KG_NUM_PLAYERS] = {0};
-    float terminals[KG_NUM_PLAYERS] = {0};
-    unsigned char masks[KG_NUM_PLAYERS * KG_POLICY_ACTION_MASK_SIZE] = {0};
-    kag_init_demo(&env, observations, actions, rewards, terminals, masks, 0);
+    for (int s = 0; s < seeds; s++) {
+        uint64_t seed = 42 + 1000003u * (uint64_t)s;
+        Env env;
+        obs_t observations[KG_NUM_PLAYERS * OBS_SIZE] = {0};
+        float actions[KG_NUM_PLAYERS * NUM_ATNS] = {0};
+        float rewards[KG_NUM_PLAYERS] = {0};
+        float terminals[KG_NUM_PLAYERS] = {0};
+        unsigned char masks[KG_NUM_PLAYERS * KG_POLICY_ACTION_MASK_SIZE] = {0};
+        kag_init_demo(&env, observations, actions, rewards, terminals,
+            masks, 0, seed);
 
-    for (int step = 0; step < steps; step++) {
-        Agent* probe = &env.agents[0];
-        const unsigned char* mask = probe->action_mask;
-        for (int i = 0; i < count; i++) {
-            const float* logits = kag_model_forward(&models[i], probe);
+        for (int step = 0; step < steps; step++) {
+            Agent* probe = &env.agents[0];
+            const unsigned char* mask = probe->action_mask;
+            for (int i = 0; i < count; i++) {
+                const float* logits = kag_model_forward(&models[i], probe);
+                int offset = 0;
+                for (int head = 0; head < NUM_ATNS; head++) {
+                    int size = KG_ACTION_SIZES[head];
+                    float maximum = -INFINITY;
+                    for (int action = 0; action < size; action++) {
+                        if (mask[offset + action]) {
+                            maximum = fmaxf(maximum, logits[offset + action]);
+                        }
+                    }
+                    float total = 0.0f;
+                    for (int action = 0; action < size; action++) {
+                        float value = mask[offset + action]
+                            ? expf(logits[offset + action] - maximum) : 0.0f;
+                        probabilities[(size_t)i * KG_POLICY_ACTION_MASK_SIZE
+                            + offset + action] = value;
+                        total += value;
+                    }
+                    if (total > 0.0f) {
+                        for (int action = 0; action < size; action++) {
+                            probabilities[(size_t)i * KG_POLICY_ACTION_MASK_SIZE
+                                + offset + action] /= total;
+                        }
+                    }
+                    offset += size;
+                }
+                for (int head = 0; head < NUM_ATNS; head++) {
+                    reach[(size_t)i * NUM_ATNS + head] = kag_probe_reach(
+                        probabilities + (size_t)i * KG_POLICY_ACTION_MASK_SIZE,
+                        head);
+                }
+            }
+
             int offset = 0;
             for (int head = 0; head < NUM_ATNS; head++) {
                 int size = KG_ACTION_SIZES[head];
-                float maximum = -INFINITY;
+                int legal = 0;
                 for (int action = 0; action < size; action++) {
-                    if (mask[offset + action]) {
-                        maximum = fmaxf(maximum, logits[offset + action]);
-                    }
+                    legal += mask[offset + action] != 0;
                 }
-                float total = 0.0f;
-                for (int action = 0; action < size; action++) {
-                    float value = mask[offset + action]
-                        ? expf(logits[offset + action] - maximum) : 0.0f;
-                    probabilities[(size_t)i * KG_POLICY_ACTION_MASK_SIZE
-                        + offset + action] = value;
-                    total += value;
-                }
-                if (total > 0.0f) {
-                    for (int action = 0; action < size; action++) {
-                        probabilities[(size_t)i * KG_POLICY_ACTION_MASK_SIZE
-                            + offset + action] /= total;
+                if (legal > 1) {
+                    for (int a = 0; a < count; a++) {
+                        for (int b = a + 1; b < count; b++) {
+                            double weight = (double)reach[
+                                (size_t)a * NUM_ATNS + head]
+                                * reach[(size_t)b * NUM_ATNS + head];
+                            if (weight <= 0.0) continue;
+                            double jsd = 0.0;
+                            for (int action = 0; action < size; action++) {
+                                if (!mask[offset + action]) continue;
+                                double p = probabilities[(size_t)a
+                                    * KG_POLICY_ACTION_MASK_SIZE
+                                    + offset + action];
+                                double q = probabilities[(size_t)b
+                                    * KG_POLICY_ACTION_MASK_SIZE
+                                    + offset + action];
+                                double m = 0.5 * (p + q);
+                                jsd += 0.5 * (kag_kl_term(p, m)
+                                    + kag_kl_term(q, m));
+                            }
+                            sums[a * count + b] += weight * jsd;
+                            samples[a * count + b] += weight;
+                        }
                     }
                 }
                 offset += size;
             }
-        }
 
-        int offset = 0;
-        for (int head = 0; head < NUM_ATNS; head++) {
-            int size = KG_ACTION_SIZES[head];
-            int legal = 0;
-            for (int action = 0; action < size; action++) {
-                legal += mask[offset + action] != 0;
+            env.demo_bots[0] = KAG_BOT_MIXED;
+            env.demo_bots[1] = KAG_BOT_MIXED;
+            kag_clear_policy_actions(&env.agents[0]);
+            kag_clear_policy_actions(&env.agents[1]);
+            puf_step(&env);
+            if (terminals[0]) {
+                for (int i = 0; i < count; i++) kag_reset_net(models[i].net);
             }
-            if (legal > 1) {
-                for (int a = 0; a < count; a++) {
-                    for (int b = a + 1; b < count; b++) {
-                        double jsd = 0.0;
-                        for (int action = 0; action < size; action++) {
-                            if (!mask[offset + action]) continue;
-                            double p = probabilities[(size_t)a
-                                * KG_POLICY_ACTION_MASK_SIZE + offset + action];
-                            double q = probabilities[(size_t)b
-                                * KG_POLICY_ACTION_MASK_SIZE + offset + action];
-                            double m = 0.5 * (p + q);
-                            jsd += 0.5 * (kag_kl_term(p, m) + kag_kl_term(q, m));
-                        }
-                        sums[a * count + b] += jsd;
-                        samples[a * count + b]++;
-                    }
-                }
-            }
-            offset += size;
         }
-
-        env.demo_bots[0] = KAG_BOT_MIXED;
-        env.demo_bots[1] = KAG_BOT_MIXED;
-        kag_clear_policy_actions(&env.agents[0]);
-        kag_clear_policy_actions(&env.agents[1]);
-        puf_step(&env);
-        if (terminals[0]) {
-            for (int i = 0; i < count; i++) kag_reset_net(models[i].net);
-        }
+        puf_close(&env);
     }
 
     printf("policy");
@@ -768,13 +813,13 @@ static int kag_behavior_jsd(int argc, char** argv) {
         putchar('\n');
     }
 
-    puf_close(&env);
     for (int i = 0; i < count; i++) kag_free_side(&models[i]);
     free(probabilities);
     free(samples);
     free(sums);
     free(labels);
     free(models);
+    free(reach);
     return 0;
 }
 
@@ -807,7 +852,8 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    kag_init_demo(&env, observations, actions, rewards, terminals, masks, !headless);
+    kag_init_demo(&env, observations, actions, rewards, terminals,
+        masks, !headless, 42);
     env.render_names[0] = spec0;
     env.render_names[1] = spec1;
     printf("Kaggriculture: %s vs %s\n", spec0, spec1);

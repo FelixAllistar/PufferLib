@@ -1,6 +1,21 @@
 #!/bin/bash
 set -e
 
+# CUDA packages commonly install under /usr/local/cuda without adding nvcc to
+# non-login WSL shells. Resolve that installation explicitly instead of letting
+# dirname("" ) collapse to ./bin/nvcc when `command -v nvcc` is empty.
+if [ -z "${CUDA_HOME:-}" ]; then
+    CUDA_HOME="${CUDA_PATH:-}"
+fi
+if [ -z "$CUDA_HOME" ]; then
+    NVCC_PATH="$(command -v nvcc 2>/dev/null || true)"
+    if [ -n "$NVCC_PATH" ]; then
+        CUDA_HOME="$(dirname "$(dirname "$NVCC_PATH")")"
+    elif [ -x /usr/local/cuda/bin/nvcc ]; then
+        CUDA_HOME=/usr/local/cuda
+    fi
+fi
+
 # Usage:
 #   ./build.sh breakout              # Full native train/eval binary (CPU envs)
 #   ./build.sh breakout --gpu        # GPU env path (Env* on device; requires ocean/ENV/ENV.cu)

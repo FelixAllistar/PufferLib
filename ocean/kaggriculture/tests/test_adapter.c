@@ -283,46 +283,7 @@ static void assert_move_onto_locked(void) {
     assert(kg_unit_can_move_to(farm, 9, 9, config.board_size));
 }
 
-static void assert_curriculum_stage_one(void) {
-    Env env = {0};
-    KGConfig config;
-    obs_t observations[KG_NUM_PLAYERS * OBS_SIZE] = {0};
-    float actions[KG_NUM_PLAYERS * NUM_ATNS] = {0};
-    float rewards[KG_NUM_PLAYERS] = {0};
-    float terminals[KG_NUM_PLAYERS] = {0};
-    unsigned char masks[KG_NUM_PLAYERS * KG_POLICY_ACTION_MASK_SIZE] = {0};
-    kg_config_default(&config);
-    env.curriculum_stage = 1;
-    env.reward_seed_value = 0.95f;
-    env.reward_product_value = 0.95f;
-    env.reward_crop_value = 1.0f;
-    env.reward_animal_value = 0.95f;
-    env.reward_land_value = 1.0f;
-    env.reward_neglect_discount = 0.5f;
-    env.reward_liquidation_days = 6.0f;
-    kg_init(&env.game_storage, &config);
-    for (int player = 0; player < KG_NUM_PLAYERS; player++) {
-        env.agents[player].observations = observations + player * OBS_SIZE;
-        env.agents[player].actions = actions + player * NUM_ATNS;
-        env.agents[player].rewards = rewards + player;
-        env.agents[player].terminals = terminals + player;
-        env.agents[player].action_mask = masks
-            + player * KG_POLICY_ACTION_MASK_SIZE;
-    }
-    puf_reset(&env);
-    const KGTile* tile = &env.game_storage.players[0].tiles[kg_tile_index(4, 4)];
-    assert(tile->kind == KG_TILE_PLANT);
-    assert(tile->consecutive_unwatered == 1);
-    assert(masks[KG_U_PASS] == 1);
-    assert(masks[KG_U_SINGLE] == 1);
-    kag_set_policy_unit(&env.agents[0], 0, KG_OP_WATER, -1, 1);
-    puf_step(&env);
-    tile = &env.game_storage.players[0].tiles[kg_tile_index(4, 4)];
-    assert(tile->watered_today == 1);
-    assert(rewards[0] > 0.09f);
-}
-
-static void assert_bot_curriculum(void) {
+static void assert_rules_bots(void) {
     int scores[KG_NUM_CROPS + 1];
     for (int variant = 0; variant <= KG_NUM_CROPS; variant++) {
         KGConfig config;
@@ -339,7 +300,7 @@ static void assert_bot_curriculum(void) {
         }
         scores[variant] = game.players[0].money;
     }
-    printf("curriculum bots vs pass: mixed=%d wheat=%d carrot=%d tomato=%d "
+    printf("rules bots vs pass: mixed=%d wheat=%d carrot=%d tomato=%d "
         "strawberry=%d melon=%d\n", scores[0], scores[1], scores[2],
         scores[3], scores[4], scores[5]);
     for (int variant = 0; variant <= KG_NUM_CROPS; variant++) {
@@ -441,8 +402,7 @@ int main(void) {
     assert_compact_market_order();
     assert_policy_ablation_limits();
     assert_move_onto_locked();
-    assert_curriculum_stage_one();
-    assert_bot_curriculum();
+    assert_rules_bots();
     assert_native_tapes();
     assert_native_public_profiles();
     Env env = {0};

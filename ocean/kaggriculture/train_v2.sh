@@ -56,7 +56,6 @@ echo "Kaggriculture v2 phase 1: five-day wheat maintenance (${phase1_steps} step
 ./puffer train kaggriculture \
     "${arch_overrides[@]}" \
     selfplay.enabled=0 \
-    env.curriculum_stage=1 \
     env.episode_steps=120 \
     env.weed_spawn_chance=0 \
     train.ent_coef=0.01 \
@@ -73,7 +72,6 @@ echo "Kaggriculture v2 phase 2: fixed-seed crop scheduling (${phase2_steps} step
     base.load_model_path="$archive/phase1_wheat.bin" \
     selfplay.enabled=1 \
     selfplay.opponent_pool="$archive/phase1_wheat.bin" \
-    env.curriculum_stage=2 \
     env.episode_steps=360 \
     env.bot_opponent_fraction=0.25 \
     train.ent_coef=0.006 \
@@ -89,7 +87,6 @@ echo "Kaggriculture v2 phase 3: one-quadrant crop economy (${phase3_steps} steps
     base.load_model_path="$archive/phase2_scheduling.bin" \
     selfplay.enabled=1 \
     selfplay.opponent_pool="$archive/phase1_wheat.bin,$archive/phase2_scheduling.bin" \
-    env.curriculum_stage=3 \
     env.episode_steps=360 \
     env.bot_opponent_fraction=0.5 \
     train.ent_coef=0.004 \
@@ -105,7 +102,6 @@ echo "Kaggriculture v2 phase 3b: full-season crop economy (${phase3_long_steps} 
     base.load_model_path="$archive/phase3_economy.bin" \
     selfplay.enabled=1 \
     selfplay.opponent_pool="$archive/phase2_scheduling.bin,$archive/phase3_economy.bin" \
-    env.curriculum_stage=4 \
     env.episode_steps=720 \
     env.bot_opponent_fraction=0.5 \
     train.ent_coef=0.004 \
@@ -125,7 +121,6 @@ echo "Kaggriculture v2 phase 4: gated crop land purchases (${phase4_steps} steps
     base.load_model_path="$archive/phase3_land_seed.bin" \
     selfplay.enabled=1 \
     selfplay.opponent_pool="$archive/phase3_economy.bin,$archive/phase3_long_season.bin" \
-    env.curriculum_stage=5 \
     env.episode_steps=720 \
     env.bot_opponent_fraction=0.75 \
     train.ent_coef=0.003 \
@@ -145,7 +140,6 @@ echo "Kaggriculture v2 phase 5: gated unrestricted game (${phase5_steps} steps)"
     base.load_model_path="$archive/phase4_full_seed.bin" \
     selfplay.enabled=1 \
     selfplay.opponent_pool="$archive/phase3_long_season.bin,$archive/phase4_crop_land.bin" \
-    env.curriculum_stage=6 \
     env.episode_steps=720 \
     env.bot_opponent_fraction=0.75 \
     train.ent_coef=0.0003 \

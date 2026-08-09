@@ -6,8 +6,6 @@ cd "$(dirname "$0")/../.."
 kag_games=20
 kag_jobs=4
 kag_output=logs/kaggriculture/policy_profile
-kag_stage=4
-kag_preunlocked_land=0
 kag_inputs=()
 
 kag_usage() {
@@ -21,8 +19,6 @@ kag_usage() {
         "  --games N          Even total games per policy (default 20)" \
         "  --jobs N           Parallel policy profiles (default 4)" \
         "  --output PREFIX    Output TSV (default logs/kaggriculture/policy_profile)" \
-        "  --stage N          Evaluator curriculum stage 1..6 (default 4)" \
-        "  --preunlocked-land 0|1|2  Normal, paid 50-tile, or NE-only drill" \
         "" \
         "If no input is given, saved/kaggriculture_league_v3 is profiled." \
         "A league manifest is joined automatically for role and meta weight." \
@@ -36,8 +32,6 @@ while (($#)); do
         --games) kag_games=$2; shift 2 ;;
         --jobs) kag_jobs=$2; shift 2 ;;
         --output) kag_output=$2; shift 2 ;;
-        --stage) kag_stage=$2; shift 2 ;;
-        --preunlocked-land) kag_preunlocked_land=$2; shift 2 ;;
         -h|--help) kag_usage; exit 0 ;;
         --*) printf 'Unknown option: %s\n' "$1" >&2; kag_usage >&2; exit 2 ;;
         *) kag_inputs+=("$1"); shift ;;
@@ -48,10 +42,6 @@ done
     || { printf '%s\n' '--games must be an even integer of at least 2' >&2; exit 2; }
 [[ $kag_jobs =~ ^[0-9]+$ ]] && ((kag_jobs >= 1)) \
     || { printf '%s\n' '--jobs must be a positive integer' >&2; exit 2; }
-[[ $kag_stage =~ ^[1-6]$ ]] \
-    || { printf '%s\n' '--stage must be an integer from 1 through 6' >&2; exit 2; }
-[[ $kag_preunlocked_land =~ ^[012]$ ]] \
-    || { printf '%s\n' '--preunlocked-land must be 0, 1, or 2' >&2; exit 2; }
 [[ -x ./kaggriculture ]] \
     || { printf '%s\n' 'Build the native evaluator first: bash build.sh kaggriculture --fast' >&2; exit 1; }
 
@@ -138,11 +128,9 @@ kag_parse_summary() {
 kag_profile_one() {
     local kag_label=$1 kag_path=${kag_paths["$1"]}
     local kag_forward kag_reverse kag_fstats kag_rstats kag_fsummary kag_rsummary
-    kag_forward=$(KAG_STAGE="$kag_stage" \
-        KAG_PREUNLOCKED_LAND="$kag_preunlocked_land" ./kaggriculture bench \
+    kag_forward=$(./kaggriculture bench \
         "$kag_steps" "$kag_path" rules 2>&1)
-    kag_reverse=$(KAG_STAGE="$kag_stage" \
-        KAG_PREUNLOCKED_LAND="$kag_preunlocked_land" ./kaggriculture bench \
+    kag_reverse=$(./kaggriculture bench \
         "$kag_steps" rules "$kag_path" 2>&1)
     kag_fstats=$(kag_parse_action "$kag_forward" P0 "$kag_path")
     kag_rstats=$(kag_parse_action "$kag_reverse" P1 "$kag_path")

@@ -735,3 +735,233 @@ and PSRO experiments. The next baseline restores the coherent v3 continuation
 tuple (`lr=0.0002`, `horizon=16`, `ent=0.003`, EMAg `0.03/0.001`, economic
 potential `0.000772047148`, outcome `0.375989795`) while keeping only the
 one-slot/eight-hand structural ablation and corrected simulator as new factors.
+## 2026-08-07: byte normalization moved into the generic transfer
+
+The Kaggriculture CUDA encoder used to run `kaggriculture_scale_bytes` (a
+1/255 scale kernel) on every policy bank's input during forward, with a
+dedicated `scaled_input` scratch tensor per bank. The generic byte-to-bf16
+transfer in `src/pufferl.cu` now performs that same `byte * (1/255)` once,
+when the shared observation buffer is copied into the rollout buffer.
+Kaggriculture enables it with `PUFFERLIB_OBS_U8_NORMALIZED` in
+`kaggriculture.h`; the core change is a four-line `#ifdef` around that one
+cast kernel and no other environment defines the macro, so non-Kaggriculture
+builds compile the original `dst = (float)src` line. The env-local scale
+kernel and its scratch tensor are deleted and the encoder weight gradient
+uses the already-normalized `saved_input`, so training math is unchanged.
+
+This was a shared-scale win (one scale per step instead of one per bank) but
+required a compile-time hook in core, which the project generally avoids.
+Measured impact on SPS was within run-to-run noise, so it was kept only as a
+small cleanliness/per-bank-launch saving. The revert path is to restore a
+scale kernel in `kaggriculture.cu` and drop the macro.
+
+## 2026-08-07: env hot-path profile shows observation encoding, not the sim
+
+`bench_hotpath` plus targeted timers on a busy farm (9 units, ~34 plants)
+show where the CPU env time actually goes per two-player step:
+
+| Component | Cost |
+|---|---|
+| `kg_step(PASS)` | 0.01 us |
+| `kag_write_mask` | 0.17 us |
+| `kag_bot_action` (rules) | 0.93 us |
+| `kag_write_all_observations` | 17.9 us |
+| full `puf_step` (no bot) | ~21 us |
+
+Observation encoding is roughly 85% of the env step, and route encoding is
+roughly half of that: 8.7 us of the 17.9 us comes from
+`kag_encode_unit_routes`, which scans all 100 tiles once per unit head (12
+heads per player) for the nearest maintain/harvest/empty/weed target.
+`kag_collect_farm_summary` is only ~1 us and the market-mask writer is free.
+The core game step itself is nearly free, so "the sim is slow" is not the
+problem: the adapter's O(unit_heads x board) observation writer is.
+
+Implications for a GPU environment port: a CUDA port would mostly be moving
+this encoder (plus the ~1-3 us real step, market, and bot logic) onto the
+GPU. The cheaper first move is to make the encoder O(board + units): compute
+a Manhattan distance transform per route class once per farm per step and
+let each unit/cohort do O(1) lookups, which should cut obs cost from ~18 us
+to roughly 5-7 us on a busy farm. Only if env still dominates after that is
+a full GPU port worth its complexity (one-warp-per-game serial market
+processing, bot ports, parity, and new sync points).
+
+## 2026-08-07: route fields now use per-farm distance transforms
+
+The route bytes (`maintain/harvest/empty/weed/shed` nearest targets) were
+rebuilt as four Manhattan distance transforms per farm per observation write.
+`kag_build_route_table` seeds each source cell with its absolute coordinate
+and a distance byte, runs the standard forward/backward two-pass relaxation,
+and `kag_encode_unit_routes` does O(1) per-unit lookups. Tie-breaking compares
+the stored source tile index, which reproduces the old first-tile-in-scan-order
+choice byte-for-byte; route bytes are unchanged and existing checkpoints stay
+valid. `puf_step` still writes one table set per player; tables are not yet
+cached across the two players' observation writes.
+
+Measured on the busy hot-path farm (9 units, ~34 plants), `kag_write_observation`
+dropped from 22.39 us to 6.39 us, `write_all_obs+masks` from 22.52 us to
+12.48 us, and `puf_step(+rules bot)` from 28.36 us to 14.90 us. The Python
+parity suite still passes (randomized 160-frame, animal CARE/fertilizer,
+documented edges, and the 48-frame fixed-seed suite), and the CUDA
+`./kaggriculture` binary rebuilds cleanly.
+
+## 2026-08-08: exact magnet KL, reach-aware JSD, and faster probes
+
+The EMAg KL penalty is now the exact conditional-tree objective. The PPO
+kernel computes a per-head magnet reach weight (flat envs return 1; the
+Kaggriculture market chain multiplies the magnet's STOP/CONTINUE softmax
+probabilities, and quantity heads additionally weight by the magnet's
+probability of choosing a quantitative command) and uses it for both the KL
+value and its gradient. KL and gradients now also flow into heads the magnet
+reaches but the rollout did not, which the old rollout-reachability
+approximation omitted. The generalized hook lives in `src/algo.cu`
+(`puf_head_reach_weight`) behind the same `PUFFER_CONDITIONAL_*` constants
+already used by `puf_action_head_active`; other environments keep a flat
+reach of one and are bit-identical.
+
+The JSD probe now compares heads by executed-policy reachability instead of
+raw head space. Each policy's own masked softmax supplies its continuation
+probabilities, and a pairwise head contribution is weighted by the product of
+the two policies' reach probabilities, so unreachable market tail logits stop
+inflating the matrix. `KAG_JSD_SEEDS` (1-32) runs the probe over independent
+deterministic seeds instead of replaying one seed-42 trajectory, and the
+default probe length is one full 720-step episode per seed.
+
+PSRO defaults moved to `--jsd-steps 720` and `--jsd-seeds 2`: the same wall
+time as the old 1440-step single-seed probe now covers two distinct
+trajectories, and the reach weighting removes tail noise on top. Exact EMAg
+was smoke-tested with a 160-epoch, 61.4K-step training run: finite losses,
+healthy entropy, and no NaN. The temporary smoke run, its log, and two empty
+payoff dirs were removed afterward so the running PSRO pipeline still sees
+its own newest run.
+
+## 2026-08-09: GPU-native league evaluation
+
+`eval_population.sh` now uses the CUDA `puffer match` path by default. Each
+model pair is evaluated in both seats, with the two results combined into the
+same payoff, money, and matrix TSVs consumed by the existing metagame solver.
+Fixed `pass` and `rules` opponents use the CUDA `eval_bot` path. `--cpu`
+remains as an explicit compatibility fallback, but PSRO no longer uses it.
+
+The matcher emits a machine-readable `match_result` line containing games,
+win rate, draw rate, and both final money values. Match batching no longer
+collapses small requested game counts to an invalid one-buffer layout; the
+configured evaluator batch may intentionally overshoot the requested count so
+the GPU stays full. Pair seeds are offset by policy indices so separate
+matchups do not all reuse one deterministic trajectory.
+
+`profile_population_gpu.sh` replaces the old bench-only PSRO profile. It
+records win/money, water/neglect, plants/animals/weeds, and market activity
+from native `eval_bot` JSON without adding counters to the training hot path.
+
+The default Kaggriculture config now uses 64 eval agents for short dashboard
+and self-play-panel checks; the old zero/8192 defaults made a 10- or 50-game
+check silently launch a much larger resident batch. `eval_v4_parallel.sh`
+and the population/PSRO scripts expose the batch explicitly through
+`KAG_GPU_AGENTS`/`--gpu-agents` (64 is the current safe default). The model
+forward pass is CUDA-backed, while Kaggriculture's state transition and
+observation writer remain CPU-native (`vec.gpu_env=0`); this is not a claim of
+a CUDA simulator port. Because the environment is vectorized, a requested
+short check is a lower bound on completed episodes; the raw `match_result`
+line reports the actual count, and the GPU profile TSV calls this
+`games_completed`.
+
+Named `pass`/`rules` match opponents now activate the Kaggriculture bot lane
+instead of being interpreted as a missing frozen model. Eval logs distinguish
+`mirror_fraction`, `rules_fraction`, and the new `pass_fraction`, so a fixed
+bot check cannot masquerade as mirror self-play. Fixed-opponent population rows
+also run the model once in each seat (`env.bot_first=0/1`) and average the
+model-perspective result; model-vs-model rows were already seat-balanced.
+
+## 2026-08-09: compact persistent league and incremental PSRO
+
+The process-per-pair population evaluator was the real PSRO bottleneck. A
+26-policy screen meant 325 unordered pairs, two seat directions, and 650 CUDA
+process/model initializations. Small `--games` values were also silently
+overshot by the resident evaluation batch. That design is retired for compact
+populations.
+
+`./puffer league kaggriculture` now creates one vector batch, keeps up to eight
+frozen opponents resident, alternates learner seat within each opponent tag,
+and reloads only the learner/opponent weight buffers between waves. It records
+exactly the requested even game count for every tag. This is persistent CUDA
+policy inference over the native CPU simulator; it is not a CUDA simulator
+port or a grouped-GEMM fusion of different networks.
+
+The active V6 league is capped at four policies. Its standalone `league.ini`
+contains one `[policy.NAME]` section per checkpoint with `path`, `role`,
+`train_weight`, and `enabled`. Training reads these weights natively and PFSP
+multiplies them by online matchup priority. The unlimited archive remains on
+disk but is no longer loaded into every training/evaluation process.
+
+PSRO now uses a coarse-to-fine search rather than pretending a non-monotonic
+training trajectory can be binary-searched. Twelve evenly spaced checkpoints
+are screened against the four active policies using the league's configured
+base weights, the best four local peaks enter the full matrix, and at most two
+are admitted. Active-active payoff rows are cached by checkpoint SHA-256 plus
+the evaluator binaries/stage/reset context, so later iterations evaluate only
+candidate-led pairs without reusing rows across rules or curriculum changes.
+The first cache fill is a complete matrix; subsequent iterations reuse the six
+active-tail rows. Architecture-incompatible files inside a reused run directory
+are ignored before screening. The manifest's champion is pinned through the
+four-policy prune; all other policies remain replaceable.
+
+Default PSRO cost is now 12 coarse candidates, four shortlisted candidates,
+10 games per screen-matrix pair, and 50-game confirmation. Fixed-bot profiling
+is opt-in. A smoke iteration including compilation completed in under a minute
+on the development machine, versus more than an hour for the old 26-policy
+process farm. The normal commands are:
+
+```bash
+./ocean/kaggriculture/psro.sh analyze --run checkpoints/kaggriculture/RUN
+./ocean/kaggriculture/psro.sh iterate --run checkpoints/kaggriculture/RUN
+./puffer train kaggriculture
+```
+
+Sweep bounds were widened to contain the actual configured defaults (including
+LR, horizon, and EMAg tau), and the generic sweep error now names an offending
+key/value instead of only asserting.
+### Land-expansion ablation against the top hybrid (2026-08-09)
+
+`BUY_LAND` remains present in the learned policy's market command head and is
+masked legal at the exact $1k/$2k/$4k prices. The top hybrid almost never uses
+its older day-4/day-9 heuristic because its animal opening spends below the
+heuristic's $1.5k/$3k cash thresholds.
+
+A seat-balanced 1,000-game native ablation made land purchasing continuous,
+cash-reserved, capacity-gated, and protected from market-queue crowding. The
+first version averaged 2.05 expansions and lost every game to the unchanged
+hybrid (money 13,032 vs 22,672). Restricting it to exactly one expansion still
+won only 22.5% (20,082 vs 22,376); raising the retained cash reserve to $4k
+won 19.2% (20,151 vs 22,643). These variants were reverted. With the present
+planner and market balance, buying space causes excess seed/hand expense and
+sell-pressure faster than it produces profit. Future land work should be a
+separate diversity/oracle branch with demand-aware production caps, not a
+change that weakens the champion opponent.
+
+## 2026-08-09: GPU-resident Kaggriculture simulator
+
+The Kaggriculture environment is now a full CUDA port (`kaggriculture.cu`),
+not just a CUDA policy over the CPU simulator. `vec.gpu_env=1` keeps the
+`Env` array device-resident: reset, scripted-opening execution, the
+state transition, observation/action-mask writers, reward computation, bot
+lanes, and the top-bot tape path all run on device. The policy encoder
+(`kaggriculture_encoder.cu`) is included after the generic policy types exist,
+so the env hooks and encoder stay separate translation fragments.
+
+Parity is proven adversarially rather than by a few happy paths:
+
+- `test_cuda_core.cu`: 32 configs x 720 exact turns of random+hostile action
+  fuzzing (weed spawn 0%/100%, $0/$500/$3000+ starts, shed capacity 1/7/100,
+  market-order limits 1..10, town intervals swept) with byte-exact `KGState`
+  comparison after every turn. PASS.
+- `test_cuda_adapter.cu`: 12 adversarial modes x 1440 turns over the full
+  policy adapter (state, boundary, observation, action mask, reward,
+  terminal, potential, episode return, and all log fields), covering every
+  scripted/adaptive bot, opening-mask and reset-opening handoffs, reward
+  shaping on/off, and bot-seat swap. PASS.
+
+`make cuda-core cuda-adapter` builds both with the local CUDA 12.6 toolchain
+(`build.sh` already falls back to `/usr/local/cuda/bin/nvcc` when `nvcc` is
+not on PATH). The GPU sweep (`gpu_env=1`) runs at ~160K SPS with the env step
+down to ~34% of frame time and GPU at 99%; the model/train path is now the
+bottleneck, not the simulator.

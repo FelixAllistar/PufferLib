@@ -1075,7 +1075,9 @@ static void* vec_thread_main(void* arg) {
 // PUFFER_GPU_ENV: Env* is device (Log first member). CPU: Env* is host.
 #ifdef PUFFER_GPU_ENV
 // Sum envs[i].log into out[NF]; optional clear. Requires Env.log addressable as Log.
-__global__ void puf_log_reduce_kernel(Env* envs, float* out, int num_envs, int clear) {
+#define PUF_LOG_REDUCE_THREADS 128
+__global__ void puf_log_reduce_kernel(Env* envs, float* out, int num_envs,
+        int clear, int tag_filter) {
     constexpr int NF = (int)(sizeof(Log) / sizeof(float));
     extern __shared__ float sh[];
     int tid = threadIdx.x;
@@ -1085,12 +1087,13 @@ __global__ void puf_log_reduce_kernel(Env* envs, float* out, int num_envs, int c
     }
     for (int i = tid; i < num_envs; i += blockDim.x) {
         float* el = (float*)&envs[i].log;
-        if (envs[i].log.n != 0.0f) {
+        int selected = tag_filter < 0 || envs[i].tag == tag_filter;
+        if (selected && envs[i].log.n != 0.0f) {
             for (int j = 0; j < NF; j++) {
                 local[j] += el[j];
             }
         }
-        if (clear) {
+        if (clear && selected) {
             for (int j = 0; j < NF; j++) {
                 el[j] = 0.0f;
             }
@@ -1123,8 +1126,9 @@ void vec_log(VecEnv* vec, Dict* out, int clear) {
 
 #ifdef PUFFER_GPU_ENV
     constexpr int NF = (int)(sizeof(Log) / sizeof(float));
-    puf_log_reduce_kernel<<<1, 256, NF * 256 * sizeof(float)>>>(
-        vec->envs, vec->gpu_log, vec->total_agents, clear);
+    puf_log_reduce_kernel<<<1, PUF_LOG_REDUCE_THREADS,
+        NF * PUF_LOG_REDUCE_THREADS * sizeof(float)>>>(
+        vec->envs, vec->gpu_log, vec->total_agents, clear, -1);
     cudaMemcpy(&aggregate, vec->gpu_log, sizeof(Log), cudaMemcpyDeviceToHost);
 #else
     Env* envs = vec->envs;
@@ -1161,17 +1165,24 @@ void vec_log(VecEnv* vec, Dict* out, int clear) {
     dict_clear(&env_out);
 }
 
-#ifndef PUFFER_GPU_ENV
 void vec_log_tag(VecEnv* vec, int tag, Dict* out) {
     Log aggregate = {0};
     int num_keys = (int)(sizeof(Log) / sizeof(float));
     float* acc = (float*)&aggregate;
+#ifdef PUFFER_GPU_ENV
+    constexpr int NF = (int)(sizeof(Log) / sizeof(float));
+    puf_log_reduce_kernel<<<1, PUF_LOG_REDUCE_THREADS,
+        NF * PUF_LOG_REDUCE_THREADS * sizeof(float)>>>(
+        vec->envs, vec->gpu_log, vec->total_agents, 0, tag);
+    cudaMemcpy(&aggregate, vec->gpu_log, sizeof(Log), cudaMemcpyDeviceToHost);
+#else
     for (int i = 0; i < vec->size; i++) {
         Env* env = &vec->envs[i];
         if (env->tag != tag || env->log.n == 0.0f) continue;
         float* log = (float*)&env->log;
         for (int j = 0; j < num_keys; j++) acc[j] += log[j];
     }
+#endif
 
     float n = aggregate.n;
     if (n > 0.0f) {
@@ -1180,7 +1191,6 @@ void vec_log_tag(VecEnv* vec, int tag, Dict* out) {
     }
     dict_set(out, "n", n);
 }
-#endif
 
 // Zero advantages on frozen-bank rows so prio_replay never samples them. Frozen
 // rollout rows hold actions/logprobs from the frozen policy; training the
@@ -2016,10 +2026,37 @@ PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx) {
     vec->size = total_agents;
     vec->buffer_env_starts[0] = 0;
     vec->buffer_env_counts[0] = total_agents;
+#ifdef PUF_GPU_ENV_BANK_LAYOUT
+    assert(num_buffers == 1
+        && "GPU match environments currently require vec.num_buffers=1");
+    assert(total_agents % 2 == 0
+        && "GPU two-player match environments require an even total_agents");
+    int gpu_matches = total_agents / 2;
+    float frozen_pct = (float)dict_get(&vec_kwargs, "frozen_bank_pct");
+    int frozen_matches = frozen_banks > 0
+        ? (int)(frozen_pct * gpu_matches) : 0;
+    if (frozen_matches < 0) frozen_matches = 0;
+    if (frozen_matches > gpu_matches) frozen_matches = gpu_matches;
+    int primary_count = 2 * (gpu_matches - frozen_matches) + frozen_matches;
+    vec->bank_layout[0] = 0;
+    vec->bank_layout[1] = primary_count;
+    int assigned = 0;
+    for (int bank = 0; bank < frozen_banks; bank++) {
+        int count = frozen_matches / frozen_banks
+            + (bank < frozen_matches % frozen_banks ? 1 : 0);
+        assigned += count;
+        vec->bank_layout[bank + 2] = primary_count + assigned;
+    }
+    assert(vec->bank_layout[vec->num_banks] == total_agents
+        && "GPU bank layout does not cover every agent");
+    vec->envs = puf_envs_create(total_agents, env_kwargs,
+        &vec_kwargs, vec->bank_layout);
+#else
     vec->envs = puf_envs_create(total_agents, env_kwargs);
-    vec->gpu_log = (float*)xcuda(sizeof(Log));
     vec->bank_layout[0] = 0;
     vec->bank_layout[vec->num_banks] = vec->agents_per_buffer;
+#endif
+    vec->gpu_log = (float*)xcuda(sizeof(Log));
 #else
     int num_envs = 0;
 #ifdef MY_VEC_INIT
@@ -2037,6 +2074,24 @@ PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx) {
         num_envs++;
     }
     envs = (Env*)realloc(envs, num_envs * sizeof(Env));
+
+    /* Population evaluation assigns policy zero to alternating seats within
+     * every frozen-bank group. Agent.policy is already the environment-facing
+     * bank selector, so this stays generic and requires no game-specific
+     * action remapping. */
+    int seat_balance = (int)dict_get(&vec_kwargs, "seat_balance");
+    if (seat_balance) {
+        assert(frozen_banks > 0 && "vec.seat_balance requires frozen banks");
+        for (int i = 0; i < num_envs; i++) {
+            assert(envs[i].num_agents == 2
+                && "vec.seat_balance requires two-agent environments");
+            if ((i / frozen_banks) & 1) {
+                int policy = envs[i].agents[0].policy;
+                envs[i].agents[0].policy = envs[i].agents[1].policy;
+                envs[i].agents[1].policy = policy;
+            }
+        }
+    }
 
     int buf = 0;
     int buf_agents = 0;
@@ -2085,6 +2140,9 @@ PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx) {
     pufferl->env.action_mask.data = (unsigned char*)xcuda(mask_bytes);
     vec->gpu_action_mask = pufferl->env.action_mask.data;
     cudaMemcpy(vec->gpu_action_mask, vec->action_mask, mask_bytes, cudaMemcpyHostToDevice);
+#ifdef PUF_GPU_ENV_BIND_BUFFERS
+    puf_envs_bind_buffers(vec->gpu_actions, vec->gpu_action_mask);
+#endif
 #ifndef PUFFER_GPU_ENV
     for (int buf = 0; buf < num_buffers; buf++) {
             int buf_start = buf * vec->agents_per_buffer;
@@ -2970,6 +3028,18 @@ typedef struct {
 
 EvalResult run_eval(Ini* ini, TrainContext* ctx, int mode, int verbose);
 
+#define LEAGUE_EVAL_MAX_POLICIES 64
+
+typedef struct {
+    char name[256];
+    char path[4096];
+} LeagueEvalPolicy;
+
+typedef struct {
+    LeagueEvalPolicy items[LEAGUE_EVAL_MAX_POLICIES];
+    int size;
+} LeagueEvalList;
+
 #define SELFPLAY_MAX_BANKS 8
 #define SELFPLAY_PATH_MAX 4096
 #define SELFPLAY_MEMORY_BOOTSTRAP "<fresh-policy>"
@@ -3046,14 +3116,21 @@ void selfplay_add_checkpoint(Selfplay* sp, const char* path) {
     snprintf(sp->pool[sp->pool_size++], sizeof(sp->pool[0]), "%s", path);
 }
 
-void selfplay_add_external(Selfplay* sp, const char* path) {
+int selfplay_add_external(Selfplay* sp, const char* path) {
     selfplay_payoff(sp, path);
     for (int i = 0; i < sp->external_size; i++) {
-        if (strcmp(sp->external[i], path) == 0) return;
+        if (strcmp(sp->external[i], path) == 0) return i;
     }
+    int index = sp->external_size;
     sp->external = (char (*)[SELFPLAY_PATH_MAX])realloc(sp->external,
         (size_t)(sp->external_size + 1) * sizeof(*sp->external));
     snprintf(sp->external[sp->external_size++], sizeof(sp->external[0]), "%s", path);
+    if (sp->external_weights) {
+        sp->external_weights = (float*)realloc(sp->external_weights,
+            (size_t)sp->external_size * sizeof(float));
+        sp->external_weights[index] = 1.0f;
+    }
+    return index;
 }
 
 void selfplay_add_external_list(Selfplay* sp, const char* paths) {
@@ -3067,6 +3144,55 @@ void selfplay_add_external_list(Selfplay* sp, const char* paths) {
         path = next;
     }
     free(list);
+}
+
+void selfplay_add_external_league(Selfplay* sp, const char* path) {
+    if (!path[0] || strcmp(path, "None") == 0) return;
+    Ini league = {0};
+    puf_ini_load_file(&league, path);
+    int added = 0;
+    for (int i = 0; i < league.num_sections; i++) {
+        Dict* policy = &league.sections[i];
+        if (strncmp(policy->name, "policy.", 7) != 0) continue;
+        DictItem* enabled = dict_find(policy, "enabled");
+        if (enabled && enabled->value == 0.0) continue;
+        DictItem* checkpoint = dict_find(policy, "path");
+        DictItem* weight_item = dict_find(policy, "train_weight");
+        if (!checkpoint || !checkpoint->str || !checkpoint->str[0]) {
+            fprintf(stderr, "%s: [%s] requires path\n", path, policy->name);
+            exit(1);
+        }
+        float weight = weight_item ? (float)weight_item->value : 1.0f;
+        if (weight < 0.0f) {
+            fprintf(stderr, "%s: [%s] train_weight must be nonnegative\n",
+                path, policy->name);
+            exit(1);
+        }
+        int index = selfplay_add_external(sp, checkpoint->str);
+        if (!sp->external_weights) {
+            sp->external_weights = (float*)malloc(
+                (size_t)sp->external_size * sizeof(float));
+            for (int j = 0; j < sp->external_size; j++) {
+                sp->external_weights[j] = 1.0f;
+            }
+        }
+        sp->external_weights[index] = weight;
+        added++;
+    }
+    puf_ini_free(&league);
+    if (!added) {
+        fprintf(stderr, "selfplay league %s has no enabled [policy.NAME] sections\n",
+            path);
+        exit(1);
+    }
+    float total = 0.0f;
+    for (int i = 0; i < sp->external_size; i++) {
+        total += sp->external_weights[i];
+    }
+    if (total <= 0.0f) {
+        fprintf(stderr, "selfplay league %s has zero total train_weight\n", path);
+        exit(1);
+    }
 }
 
 static void selfplay_validate_external(Selfplay* sp, size_t expected_bytes) {
@@ -3089,6 +3215,7 @@ static void selfplay_validate_external(Selfplay* sp, size_t expected_bytes) {
 
 void selfplay_set_external_weights(Selfplay* sp, const char* values) {
     if (!values[0] || strcmp(values, "None") == 0) return;
+    free(sp->external_weights);
     sp->external_weights = (float*)calloc((size_t)sp->external_size, sizeof(float));
     char* list = strdup(values);
     char* value = list;
@@ -3390,8 +3517,12 @@ void run_sweep(Ini* ini, const char* exe_path) {
                 for (int j = 0; j < space->num; j++) {
                     float val = (float)puf_ini_get(ini, params[j].section, params[j].key);
                     float norm = space_normalize(&space->spaces[j], val);
-                    assert(isfinite(norm) && norm >= -1.0f && norm <= 1.0f
-                        && "default sweep value outside its sweep range");
+                    if (!isfinite(norm) || norm < -1.0f || norm > 1.0f) {
+                        fprintf(stderr, "default %s.%s=%.9g is outside its "
+                            "declared sweep range\n", params[j].section,
+                            params[j].key, val);
+                        exit(1);
+                    }
                     sample[j] = norm;
                 }
             } else {
@@ -3528,6 +3659,284 @@ void run_sweep(Ini* ini, const char* exe_path) {
     sweep_space_destroy(space);
 }
 
+static void league_eval_load_manifest(const char* path, LeagueEvalList* list) {
+    FILE* fp = fopen(path, "r");
+    if (!fp) {
+        fprintf(stderr, "could not open league manifest %s: %s\n",
+            path, strerror(errno));
+        exit(1);
+    }
+
+    char* line = NULL;
+    size_t cap = 0;
+    int lineno = 0;
+    while (getline(&line, &cap, fp) >= 0) {
+        lineno++;
+        char* text = puf_ini_trim(line);
+        if (!text[0] || text[0] == '#') continue;
+
+        char* fields[16];
+        int nfields = 0;
+        char* save = NULL;
+        for (char* field = strtok_r(text, "\t", &save);
+                field && nfields < 16;
+                field = strtok_r(NULL, "\t", &save)) {
+            fields[nfields++] = puf_ini_trim(field);
+        }
+        if (nfields < 2) {
+            fprintf(stderr, "%s:%d: expected a tab-separated policy and checkpoint\n",
+                path, lineno);
+            exit(1);
+        }
+
+        char* last = fields[nfields - 1];
+        if (strcmp(last, "checkpoint") == 0 || strcmp(last, "source") == 0
+                || strcmp(last, "path") == 0) {
+            continue;
+        }
+        const char* name = fields[0];
+        if (nfields >= 3) {
+            char* end = NULL;
+            strtol(fields[0], &end, 10);
+            if (end && !*end) name = fields[1];
+        }
+        if (list->size == LEAGUE_EVAL_MAX_POLICIES) {
+            fprintf(stderr, "%s contains more than %d policies\n",
+                path, LEAGUE_EVAL_MAX_POLICIES);
+            exit(1);
+        }
+        if (access(last, R_OK) != 0) {
+            fprintf(stderr, "%s:%d: checkpoint %s is not readable: %s\n",
+                path, lineno, last, strerror(errno));
+            exit(1);
+        }
+        LeagueEvalPolicy* policy = &list->items[list->size++];
+        snprintf(policy->name, sizeof(policy->name), "%s", name);
+        snprintf(policy->path, sizeof(policy->path), "%s", last);
+    }
+    free(line);
+    fclose(fp);
+    if (!list->size) {
+        fprintf(stderr, "league manifest %s contains no policies\n", path);
+        exit(1);
+    }
+}
+
+static void league_eval_put_optional(Ini* ini, const char* section,
+        const char* key, const char* value) {
+    Dict* dict = puf_ini_section(ini, section, 0);
+    if (dict_find(dict, key)) puf_ini_set(dict, key, value);
+}
+
+static void league_eval_reset(PuffeRL* pufferl) {
+    VecEnv* vec = pufferl->vec;
+#ifdef PUFFER_GPU_ENV
+    puf_envs_reset(vec->envs, vec->gpu_observations, vec->gpu_rewards,
+        vec->gpu_terminals, vec->total_agents);
+#else
+    for (int buf = 0; buf < vec->buffers; buf++) {
+        while (__atomic_load_n(&vec->worker_state[buf], __ATOMIC_SEQ_CST)
+                != BUF_WAITING) {
+        }
+    }
+
+    #pragma omp parallel for schedule(static) num_threads(vec->num_workers)
+    for (int i = 0; i < vec->size; i++) {
+        vec->envs[i].log = (Log){0};
+        vec->envs[i].boundary_reached = 0;
+        puf_reset(&vec->envs[i]);
+    }
+    memset(vec->accum, 0,
+        (size_t)vec->buffers * NUM_VEC_PROF * sizeof(float));
+
+    size_t obs_bytes = (size_t)vec->total_agents * OBS_SIZE * sizeof(obs_t);
+    size_t mask_bytes = (size_t)vec->total_agents * vec->action_mask_size;
+    cudaMemcpy(vec->gpu_observations, vec->observations,
+        obs_bytes, cudaMemcpyHostToDevice);
+    cudaMemset(vec->gpu_rewards, 0,
+        (size_t)vec->total_agents * sizeof(float));
+    cudaMemset(vec->gpu_terminals, 0,
+        (size_t)vec->total_agents * sizeof(float));
+    cudaMemcpy(vec->gpu_action_mask, vec->action_mask,
+        mask_bytes, cudaMemcpyHostToDevice);
+#endif
+
+    for (int buf = 0; buf < vec->buffers; buf++) {
+        PrecisionTensor state = pufferl->buffer_states[buf];
+        cudaMemset(state.data, 0,
+            (size_t)numel(state.shape) * sizeof(precision_t));
+        for (int bank = 0; bank < pufferl->num_frozen_banks; bank++) {
+            state = pufferl->frozen_banks[bank].buffer_states[buf];
+            cudaMemset(state.data, 0,
+                (size_t)numel(state.shape) * sizeof(precision_t));
+        }
+        int agents = vec->agents_per_buffer;
+        rng_init<<<grid_size(agents), BLOCK_SIZE>>>(
+            pufferl->rng_states[buf], pufferl->seed + buf, agents);
+    }
+    cudaDeviceSynchronize();
+    pufferl->global_step = 0;
+}
+
+static void league_eval_episode(PuffeRL* pufferl, int games, Dict* logs) {
+    league_eval_reset(pufferl);
+    for (;;) {
+        rollouts(pufferl);
+        int complete = 1;
+        for (int bank = 0; bank < pufferl->num_frozen_banks; bank++) {
+            dict_clear(&logs[bank]);
+            vec_log_tag(pufferl->vec, bank + 1, &logs[bank]);
+            if ((int)dict_get(&logs[bank], "n") < games) complete = 0;
+        }
+        if (complete) return;
+    }
+}
+
+static void run_league_eval(Ini* ini, TrainContext* ctx) {
+    const char* mode = puf_ini_get_str(ini, "league", "mode");
+    int matrix = strcmp(mode, "matrix") == 0;
+    int screen = strcmp(mode, "screen") == 0;
+    if (!matrix && !screen) {
+        fprintf(stderr, "league.mode must be matrix or screen\n");
+        exit(1);
+    }
+
+    LeagueEvalList policies = {0};
+    LeagueEvalList candidates = {0};
+    LeagueEvalList opponents = {0};
+    if (matrix) {
+        league_eval_load_manifest(
+            puf_ini_get_str(ini, "league", "policy_manifest"), &policies);
+        if (policies.size < 2 || policies.size > SELFPLAY_MAX_BANKS + 1) {
+            fprintf(stderr, "matrix league evaluation requires 2..%d policies; got %d\n",
+                SELFPLAY_MAX_BANKS + 1, policies.size);
+            exit(1);
+        }
+    } else {
+        league_eval_load_manifest(
+            puf_ini_get_str(ini, "league", "candidate_manifest"), &candidates);
+        league_eval_load_manifest(
+            puf_ini_get_str(ini, "league", "opponent_manifest"), &opponents);
+        if (opponents.size > SELFPLAY_MAX_BANKS) {
+            fprintf(stderr, "screen league evaluation supports at most %d opponents; got %d\n",
+                SELFPLAY_MAX_BANKS, opponents.size);
+            exit(1);
+        }
+    }
+
+    int games = puf_ini_get_int(ini, "league", "games");
+    if (games < 2 || games % 2) {
+        fprintf(stderr, "league.games must be a positive even integer of at least 2\n");
+        exit(1);
+    }
+    int banks = matrix ? policies.size - 1 : opponents.size;
+    int total_agents = 2 * banks * games;
+    char number[64];
+    snprintf(number, sizeof(number), "%d", total_agents);
+    puf_ini_put(ini, "vec.total_agents", number);
+    puf_ini_put(ini, "vec.num_buffers", "1");
+    snprintf(number, sizeof(number), "%d", banks);
+    puf_ini_put(ini, "vec.num_frozen_banks", number);
+    puf_ini_put(ini, "vec.frozen_bank_pct", "1");
+    puf_ini_put(ini, "vec.seat_balance", "1");
+    snprintf(number, sizeof(number), "%d",
+        puf_ini_get_int(ini, "policy", "hidden_size"));
+    puf_ini_put(ini, "vec.frozen_bank_hidden_size", number);
+    snprintf(number, sizeof(number), "%d",
+        puf_ini_get_int(ini, "policy", "num_layers"));
+    puf_ini_put(ini, "vec.frozen_bank_num_layers", number);
+    puf_ini_put(ini, "selfplay.enabled", "0");
+    puf_ini_put(ini, "base.async", "0");
+    puf_ini_put(ini, "base.reset_every_horizon", "0");
+    snprintf(number, sizeof(number), "%d", ADV_VEC_WIDTH);
+    puf_ini_put(ini, "train.horizon", number);
+    puf_ini_put(ini, "env.dr", "0");
+    puf_ini_put(ini, "env.num_agents", "2");
+    puf_ini_put(ini, "env.num_bots", "0");
+    league_eval_put_optional(ini, "env", "bot_opponent_fraction", "0");
+    league_eval_put_optional(ini, "env", "bot_rules_fraction", "0");
+
+    const char* output_path = puf_ini_get_str(ini, "league", "output");
+    if (!output_path[0] || strcmp(output_path, "None") == 0) {
+        fprintf(stderr, "league.output is required\n");
+        exit(1);
+    }
+    FILE* output = fopen(output_path, "w");
+    if (!output) {
+        fprintf(stderr, "could not open league output %s: %s\n",
+            output_path, strerror(errno));
+        exit(1);
+    }
+
+    PuffeRL* pufferl = create_pufferl(ini, ctx);
+    Dict logs[SELFPLAY_MAX_BANKS] = {0};
+    if (matrix) {
+        int waves = puf_ini_get_int(ini, "league", "focal_count");
+        if (!waves) waves = policies.size - 1;
+        if (waves < 1 || waves >= policies.size) {
+            fprintf(stderr, "league.focal_count must be zero or in [1, %d]\n",
+                policies.size - 1);
+            exit(1);
+        }
+        int pairs = waves * (2 * policies.size - waves - 1) / 2;
+        printf("Native league matrix: policies=%d pairs=%d games=%d banks=%d\n",
+            policies.size, pairs, games, banks);
+        for (int i = 0; i < waves; i++) {
+            puf_load_weights_into(pufferl->master_weights, pufferl->param_puf,
+                pufferl->default_stream, policies.items[i].path);
+            pufferl_sync_loaded_policy(pufferl);
+            int active = policies.size - i - 1;
+            for (int bank = 0; bank < banks; bank++) {
+                int opponent = i + 1 + (bank < active ? bank : 0);
+                pufferl_load_frozen_bank(pufferl, bank,
+                    policies.items[opponent].path);
+            }
+            league_eval_episode(pufferl, games, logs);
+            for (int bank = 0; bank < active; bank++) {
+                int j = i + bank + 1;
+                fprintf(output, "%d\t%d\t%.9g\t%.9g\t%.9g\t%.9g\t%d\n",
+                    i, j,
+                    dict_get(&logs[bank], "slot_0_score"),
+                    dict_get(&logs[bank], "draw_rate"),
+                    dict_get(&logs[bank], "score"),
+                    dict_get(&logs[bank], "opponent_score"),
+                    (int)dict_get(&logs[bank], "n"));
+            }
+            fflush(output);
+            printf("  wave=%d/%d learner=%s opponents=%d\n",
+                i + 1, waves, policies.items[i].name, active);
+        }
+    } else {
+        printf("Native league screen: candidates=%d opponents=%d games=%d\n",
+            candidates.size, opponents.size, games);
+        for (int bank = 0; bank < banks; bank++) {
+            pufferl_load_frozen_bank(pufferl, bank, opponents.items[bank].path);
+        }
+        for (int i = 0; i < candidates.size; i++) {
+            puf_load_weights_into(pufferl->master_weights, pufferl->param_puf,
+                pufferl->default_stream, candidates.items[i].path);
+            pufferl_sync_loaded_policy(pufferl);
+            league_eval_episode(pufferl, games, logs);
+            for (int bank = 0; bank < banks; bank++) {
+                fprintf(output, "%d\t%d\t%.9g\t%.9g\t%.9g\t%.9g\t%d\n",
+                    i, bank,
+                    dict_get(&logs[bank], "slot_0_score"),
+                    dict_get(&logs[bank], "draw_rate"),
+                    dict_get(&logs[bank], "score"),
+                    dict_get(&logs[bank], "opponent_score"),
+                    (int)dict_get(&logs[bank], "n"));
+            }
+            fflush(output);
+            printf("  candidate=%d/%d policy=%s\n",
+                i + 1, candidates.size, candidates.items[i].name);
+        }
+    }
+    for (int bank = 0; bank < banks; bank++) dict_clear(&logs[bank]);
+    fclose(output);
+    close_pufferl(pufferl);
+    printf("Wrote %s\n", output_path);
+}
+
 EvalResult run_eval(Ini* ini, TrainContext* ctx, int mode, int verbose) {
     int render = mode == EVAL_RENDER;
     int match = mode == EVAL_MATCH;
@@ -3559,16 +3968,33 @@ EvalResult run_eval(Ini* ini, TrainContext* ctx, int mode, int verbose) {
             if (eval_agents > num_games && num_games >= 1024) {
                 eval_agents = num_games;
             }
-        } else if (eval_agents > num_games) {
+        } else if (eval_agents > num_games && num_games >= 1024) {
             eval_agents = num_games;
         }
         eval_agents += (-eval_agents) % (match ? 4 : 2);
 
         char agents_buf[64];
         snprintf(agents_buf, sizeof(agents_buf), "%ld", eval_agents);
-        puf_ini_put(ini, "vec.num_buffers", "2");
+        // Two-player CPU environments need an even number of agents per
+        // buffer. A one-buffer tail makes exact short fixed-bot evaluations
+        // possible (for example 25 games = 50 agents) without padding games.
+#ifdef PUF_GPU_ENV_BANK_LAYOUT
+        /* Match-resident GPU environments own one physical batch. Splitting
+         * policy buffers would desynchronize the match-to-bank row map. */
+        puf_ini_put(ini, "vec.num_buffers", "1");
+#else
+        puf_ini_put(ini, "vec.num_buffers",
+            eval_agents % 4 == 0 ? "2" : "1");
+#endif
         puf_ini_put(ini, "vec.total_agents", agents_buf);
     }
+    const char* match_enemy_spec = match
+        ? puf_ini_get_str(ini, "base", "load_enemy_model_path") : NULL;
+    int match_enemy_pass = match_enemy_spec
+        && strcmp(match_enemy_spec, "pass") == 0;
+    int match_enemy_rules = match_enemy_spec
+        && strcmp(match_enemy_spec, "rules") == 0;
+    int match_enemy_bot = match_enemy_pass || match_enemy_rules;
     if (match) {
         // Match opponents may use a different policy architecture.
         int enemy_hidden = (int)puf_ini_get(ini, "base", "enemy_hidden_size");
@@ -3578,18 +4004,28 @@ EvalResult run_eval(Ini* ini, TrainContext* ctx, int mode, int verbose) {
         char hidden_buf[32], layers_buf[32];
         snprintf(hidden_buf, sizeof(hidden_buf), "%d", enemy_hidden);
         snprintf(layers_buf, sizeof(layers_buf), "%d", enemy_layers);
-        puf_ini_put(ini, "vec.num_frozen_banks", "1");
-        puf_ini_put(ini, "vec.frozen_bank_pct", "1");
+        puf_ini_put(ini, "vec.num_frozen_banks", match_enemy_bot ? "0" : "1");
+        puf_ini_put(ini, "vec.frozen_bank_pct", match_enemy_bot ? "0" : "1");
         puf_ini_put(ini, "vec.frozen_bank_hidden_size", hidden_buf);
         puf_ini_put(ini, "vec.frozen_bank_num_layers", layers_buf);
         puf_ini_put(ini, "selfplay.enabled", "0");
         puf_ini_put(ini, "env.dr", "0");
-        puf_ini_put(ini, "env.num_agents", "2");
-        puf_ini_put(ini, "env.num_bots", "0");
-        // Environment-specific scripted curricula must not replace either
-        // policy during a requested model-vs-model match.
-        puf_ini_put(ini, "env.bot_opponent_fraction", "0");
-        puf_ini_put(ini, "env.bot_rules_fraction", "0");
+        puf_ini_put(ini, "env.num_agents", match_enemy_bot ? "1" : "2");
+        puf_ini_put(ini, "env.num_bots", match_enemy_bot ? "1" : "0");
+        if (match_enemy_bot) {
+            puf_ini_put(ini, "env.bot_opponent_fraction", "1");
+            puf_ini_put(ini, "env.bot_pass_fraction",
+                match_enemy_pass ? "1" : "0");
+            puf_ini_put(ini, "env.bot_rules_fraction",
+                match_enemy_rules ? "1" : "0");
+            puf_ini_put(ini, "env.bot_script_fraction", "0");
+            puf_ini_put(ini, "env.bot_adaptive_fraction", "0");
+        } else {
+            // Environment-specific scripted curricula must not replace either
+            // policy during a requested model-vs-model match.
+            puf_ini_put(ini, "env.bot_opponent_fraction", "0");
+            puf_ini_put(ini, "env.bot_rules_fraction", "0");
+        }
     }
     puf_ini_put(ini, "base.reset_every_horizon", "0");
     char eval_horizon[16];
@@ -3602,15 +4038,15 @@ EvalResult run_eval(Ini* ini, TrainContext* ctx, int mode, int verbose) {
         char b_path_buf[4096];
         const char* a_path = puf_checkpoint_path_key(ini,
             "load_model_path", a_path_buf, sizeof(a_path_buf));
-        const char* b_path = puf_checkpoint_path_key(ini,
+        const char* b_path = match_enemy_bot ? NULL : puf_checkpoint_path_key(ini,
             "load_enemy_model_path", b_path_buf, sizeof(b_path_buf));
-        if (!a_path || !b_path) {
+        if (!a_path || (!match_enemy_bot && !b_path)) {
             fprintf(stderr, "match requires base.load_model_path and base.load_enemy_model_path\n");
             exit(1);
         }
         puf_load_weights_into(pufferl->master_weights,
             pufferl->param_puf, pufferl->default_stream, a_path);
-        pufferl_load_frozen_bank(pufferl, 0, b_path);
+        if (!match_enemy_bot) pufferl_load_frozen_bank(pufferl, 0, b_path);
     } else {
         char resolved_path[4096];
         const char* load_path = puf_checkpoint_path_key(ini,
@@ -3714,6 +4150,9 @@ EvalResult run_eval(Ini* ini, TrainContext* ctx, int mode, int verbose) {
     }
     if (!render && verbose) {
         if (match) {
+            printf("match_result games=%d score=%.9g draw=%.9g money=%.9g opponent_money=%.9g\n",
+                result.games, result.score, result.draw, result.money,
+                result.opponent_money);
             printf("\rgames=%d/%ld  A=%.3f  B=%.3f  draw=%.3f\n",
                 result.games, num_games, result.score, 1.0f - result.score, result.draw);
         } else {
@@ -3728,7 +4167,9 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
     int use_selfplay = puf_ini_get(ini, "selfplay", "enabled");
 #ifdef PUFFER_GPU_ENV
     // GPU Env has no tag/boundary_reached; selfplay opponent rotation is CPU-only for now.
+#ifndef PUF_GPU_SELFPLAY
     assert(!use_selfplay && "selfplay not supported with --gpu (PUFFER_GPU_ENV)");
+#endif
 #endif
     if (!use_selfplay) {
         puf_ini_put(ini, "vec.num_frozen_banks", "0");
@@ -3840,6 +4281,8 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
             "%s/payoffs.tsv", checkpoint_dir);
         selfplay_add_external_list(&selfplay,
             puf_ini_get_str(ini, "selfplay", "opponent_pool"));
+        selfplay_add_external_league(&selfplay,
+            puf_ini_get_str(ini, "selfplay", "opponent_league"));
         char enemy_resolved[4096];
         const char* enemy_path = puf_checkpoint_path_key(ini,
             "load_enemy_model_path", enemy_resolved, sizeof(enemy_resolved));
@@ -3868,8 +4311,11 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
             selfplay.num_banks, selfplay.external_prob, pfsp_mode,
             selfplay.pfsp_alpha, selfplay.pfsp_uniform_mix);
         for (int b = 0; b < selfplay.num_banks; b++) {
+            const char* initial_path = selfplay.external_prob > 0.0f
+                    && selfplay.external_size >= selfplay.num_banks
+                ? selfplay.external[b] : selfplay_sample(&selfplay);
             selfplay_load_bank(&selfplay, pufferl, b,
-                selfplay_sample(&selfplay), current_step);
+                initial_path, current_step);
         }
         if (ctx->artifact_owner) selfplay_write_payoffs(&selfplay);
     }
@@ -4404,7 +4850,7 @@ int main(int argc, char** argv) {
     setbuf(stdout, NULL);
     setbuf(stderr, NULL);
     if (argc < 3) {
-        fprintf(stderr, "usage: %s train|eval|eval_bot|match|sweep ENV [section.key=value ...]\n", argv[0]);
+        fprintf(stderr, "usage: %s train|eval|eval_bot|match|league|sweep ENV [section.key=value ...]\n", argv[0]);
         exit(1);
     }
 
@@ -4430,6 +4876,8 @@ int main(int argc, char** argv) {
         run_eval(&ini, &ctx, EVAL_SCORE, 1);
     } else if (strcmp(mode, "match") == 0) {
         run_eval(&ini, &ctx, EVAL_MATCH, 1);
+    } else if (strcmp(mode, "league") == 0) {
+        run_league_eval(&ini, &ctx);
     } else {
         fprintf(stderr, "unknown mode: %s\n", mode);
         exit(1);

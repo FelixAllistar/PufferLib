@@ -21,13 +21,12 @@ Usage:
   population_v2.sh promote land [CROP_CHECKPOINT]
   population_v2.sh promote full LAND_CHECKPOINT
 
-The wrapper fixes architecture, curriculum, opponent league, and run identity.
-PSRO defaults to the latest run launched by this wrapper for that stage.
+The wrapper fixes architecture, opponent league, and run identity.
+PSRO defaults to the latest run launched by this wrapper for that mode.
 EOF
     exit 2
 }
 
-mode_stage() { case "$1" in crop) printf 4;; drill|acreage|land) printf 5;; full) printf 6;; *) usage;; esac; }
 mode_league() {
     case "$1" in
         crop) printf %s "$crop_league";; drill|acreage|land) printf %s "$land_league";;
@@ -44,7 +43,6 @@ mode_default_steps() { case "$1" in crop) printf 75000000;; drill) printf 200000
 mode_entropy() { case "$1" in crop) printf 0.002;; drill|acreage|land|full) printf 0.003;; *) usage;; esac; }
 mode_bot_fraction() { case "$1" in crop) printf 0.50;; drill|acreage|land|full) printf 0.75;; *) usage;; esac; }
 mode_land_value() { case "$1" in crop|drill) printf 1.0;; acreage|land|full) printf 0.25;; *) usage;; esac; }
-mode_preunlocked_land() { case "$1" in drill) printf 2;; acreage) printf 1;; crop|land|full) printf 0;; *) usage;; esac; }
 
 league_pool() {
     local league=$1 path pool=
@@ -138,13 +136,12 @@ promote() {
 train_mode() {
     local mode=$1 steps=${2:-} checkpoint=${3:-}
     setup_all
-    local stage league pool entropy bot_fraction land_value preunlocked run_id
-    stage=$(mode_stage "$mode"); league=$(mode_league "$mode")
+    local league pool entropy bot_fraction land_value run_id
+    league=$(mode_league "$mode")
     steps=${steps:-$(mode_default_steps "$mode")}
     checkpoint=${checkpoint:-$(mode_default_checkpoint "$mode")}
     entropy=$(mode_entropy "$mode"); bot_fraction=$(mode_bot_fraction "$mode")
     land_value=$(mode_land_value "$mode")
-    preunlocked=$(mode_preunlocked_land "$mode")
     [[ $steps =~ ^[0-9]+$ && $steps -gt 0 ]] || usage
     [[ -f $checkpoint ]] || { printf 'Missing %s seed: %s\n' "$mode" "$checkpoint" >&2; exit 1; }
     [[ -d $league ]] || { printf 'Missing league: %s\n' "$league" >&2; exit 1; }
@@ -159,10 +156,9 @@ train_mode() {
         selfplay.enabled=1 "selfplay.opponent_pool=$pool" \
         selfplay.opponent_pool_prob=0.75 selfplay.snapshot_interval=5000000 \
         selfplay.eval_pool_size=8 selfplay.eval_games=100 \
-        "env.curriculum_stage=$stage" env.episode_steps=720 \
+        env.episode_steps=720 \
         "env.bot_opponent_fraction=$bot_fraction" \
         "env.reward_land_value=$land_value" \
-        "env.curriculum_preunlocked_land=$preunlocked" \
         train.learning_rate=0.0002 "train.ent_coef=$entropy" \
         "train.total_timesteps=$steps"
 }
@@ -175,34 +171,31 @@ resolve_run() {
 }
 
 eval_mode() {
-    local mode=$1 run stage league output preunlocked
-    run=$(resolve_run "$mode" "${2:-}"); stage=$(mode_stage "$mode"); league=$(mode_league "$mode")
-    output="logs/kaggriculture/${run##*/}_stage${stage}_confirm"
-    preunlocked=$(mode_preunlocked_land "$mode")
+    local mode=$1 run league output
+    run=$(resolve_run "$mode" "${2:-}"); league=$(mode_league "$mode")
+    output="logs/kaggriculture/${run##*/}_${mode}_confirm"
     exec ./ocean/kaggriculture/eval_population.sh --games 100 --jobs 4 \
-        --fixed rules --stage "$stage" --preunlocked-land "$preunlocked" \
+        --fixed rules \
         --range 0:100:12 --output "$output" "$league" "$run"
 }
 
 psro_mode() {
-    local mode=$1 run stage league preunlocked
-    run=$(resolve_run "$mode" "${2:-}"); stage=$(mode_stage "$mode"); league=$(mode_league "$mode")
-    preunlocked=$(mode_preunlocked_land "$mode")
-    exec ./ocean/kaggriculture/psro.sh iterate --run "$run" --stage "$stage" \
-        --preunlocked-land "$preunlocked" \
+    local mode=$1 run league
+    run=$(resolve_run "$mode" "${2:-}"); league=$(mode_league "$mode")
+    exec ./ocean/kaggriculture/psro.sh iterate --run "$run" \
         --league "$league" --archive "saved/kaggriculture_league_v2_${mode}_archive" \
         --config config/kaggriculture.ini
 }
 
 status() {
-    printf 'mode\tstage\tleague\tpolicies\tlatest_run\n'
-    local mode stage league count latest marker
+    printf 'mode\tleague\tpolicies\tlatest_run\n'
+    local mode league count latest marker
     for mode in crop drill acreage land full; do
-        stage=$(mode_stage "$mode"); league=$(mode_league "$mode"); count=0
+        league=$(mode_league "$mode"); count=0
         [[ -d $league ]] && count=$(find "$league" -maxdepth 1 -type f -name '*.bin' | wc -l)
         marker="$state_root/latest_${mode}_run.txt"; latest=-
         [[ -f $marker ]] && read -r latest < "$marker"
-        printf '%s\t%s\t%s\t%s\t%s\n' "$mode" "$stage" "$league" "$count" "$latest"
+        printf '%s\t%s\t%s\t%s\n' "$mode" "$league" "$count" "$latest"
     done
 }
 

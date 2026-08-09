@@ -13,6 +13,19 @@
 
 #include <stdint.h>
 
+/* The rule core is compiled by both a normal C compiler and NVCC.  Keep the
+ * public state/action ABI plain C while allowing the exact same transition
+ * functions to run on the host and device. */
+#if defined(__CUDACC__)
+#define KG_HD __host__ __device__
+#define KG_DEVICE __device__
+#define KG_CONSTANT __constant__
+#else
+#define KG_HD
+#define KG_DEVICE
+#define KG_CONSTANT
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -215,13 +228,13 @@ typedef struct KGState {
     uint32_t planting_day_deaths[KG_NUM_PLAYERS];
 } KGState;
 
-void kg_config_default(KGConfig* config);
+KG_HD void kg_config_default(KGConfig* config);
 KGState* kg_create(const KGConfig* config);
-void kg_init(KGState* state, const KGConfig* config);
+KG_HD void kg_init(KGState* state, const KGConfig* config);
 void kg_destroy(KGState* state);
-void kg_reset(KGState* state);
-void kg_step(KGState* state, const KGAction actions[KG_NUM_PLAYERS]);
-int kg_done(const KGState* state);
+KG_HD void kg_reset(KGState* state);
+KG_HD void kg_step(KGState* state, const KGAction actions[KG_NUM_PLAYERS]);
+KG_HD int kg_done(const KGState* state);
 const char* kg_snapshot_json(const KGState* state);
 void kg_free_string(const char* value);
 

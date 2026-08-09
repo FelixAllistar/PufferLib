@@ -21,15 +21,15 @@ typedef struct {
     int arg;
 } KGPublicJob;
 
-static inline KGUnitAction* kag_public_unit_action(KGAction* action, int unit) {
+KG_HD static inline KGUnitAction* kag_public_unit_action(KGAction* action, int unit) {
     return unit == 0 ? &action->farmer : &action->hands[unit - 1];
 }
 
-static inline int kag_public_land_count(const KGPlayer* farm) {
-    return __builtin_popcount((unsigned)farm->unlocked_mask);
+KG_HD static inline int kag_public_land_count(const KGPlayer* farm) {
+    return kag_popcount((unsigned)farm->unlocked_mask);
 }
 
-static inline int kag_public_stock(const KGPlayer* farm, int item) {
+KG_HD static inline int kag_public_stock(const KGPlayer* farm, int item) {
     int total = item >= 0 && item < KG_NUM_ITEMS ? farm->shed[item] : 0;
     if (item < 0 || item >= KG_NUM_ITEMS) return total;
     for (int unit = 0; unit < farm->unit_count; unit++) {
@@ -38,7 +38,7 @@ static inline int kag_public_stock(const KGPlayer* farm, int item) {
     return total;
 }
 
-static inline int kag_public_placed_animals(const KGPlayer* farm, int animal) {
+KG_HD static inline int kag_public_placed_animals(const KGPlayer* farm, int animal) {
     int count = 0;
     for (int tile_id = 0; tile_id < KG_MAX_TILES; tile_id++) {
         const KGTile* tile = &farm->tiles[tile_id];
@@ -47,16 +47,16 @@ static inline int kag_public_placed_animals(const KGPlayer* farm, int animal) {
     return count;
 }
 
-static inline int kag_public_total_animals(const KGPlayer* farm, int animal) {
+KG_HD static inline int kag_public_total_animals(const KGPlayer* farm, int animal) {
     return kag_public_placed_animals(farm, animal)
         + kag_public_stock(farm, KG_ITEM_GOOSE + animal);
 }
 
-static inline int kag_public_unlocked(const KGPlayer* farm, int x, int y) {
+KG_HD static inline int kag_public_unlocked(const KGPlayer* farm, int x, int y) {
     return (farm->unlocked_mask & kg_quadrant(x, y, KG_OBS_BOARD)) != 0;
 }
 
-static inline void kag_public_add_job(KGPublicJob jobs[KG_PUBLIC_MAX_JOBS],
+KG_HD static inline void kag_public_add_job(KGPublicJob jobs[KG_PUBLIC_MAX_JOBS],
         int* count, int x, int y, int priority, int op, int arg) {
     if (*count >= KG_PUBLIC_MAX_JOBS) return;
     jobs[*count] = (KGPublicJob){x, y, priority, op, arg};
@@ -66,21 +66,24 @@ static inline void kag_public_add_job(KGPublicJob jobs[KG_PUBLIC_MAX_JOBS],
 /* The layouts intentionally form the same compact L-shaped opening used by
  * the public economic agents.  Later slots are spread into NE and SW after
  * those quadrants are actually purchased. */
-static inline void kag_public_structure_position(int slot, int* x, int* y) {
-    static const uint8_t positions[][2] = {
-        {0, 0}, {1, 0}, {0, 1}, {1, 1},
-        {5, 0}, {6, 0}, {5, 1}, {6, 1}, {7, 0}, {7, 1},
-        {0, 5}, {1, 5}, {0, 6}, {1, 6}, {2, 5},
-    };
+KG_HD static inline void kag_public_structure_position(int slot, int* x, int* y) {
     if (slot < 0) slot = 0;
-    if (slot >= (int)(sizeof(positions) / sizeof(positions[0]))) {
-        slot = (int)(sizeof(positions) / sizeof(positions[0])) - 1;
+    if (slot >= 15) slot = 14;
+    if (slot < 4) {
+        *x = slot & 1;
+        *y = slot >> 1;
+    } else if (slot < 10) {
+        int local = slot - 4;
+        *x = local < 4 ? 5 + (local & 1) : 7;
+        *y = local < 4 ? local / 2 : local - 4;
+    } else {
+        int local = slot - 10;
+        *x = local == 4 ? 2 : local & 1;
+        *y = 5 + (local >= 2 && local < 4);
     }
-    *x = positions[slot][0];
-    *y = positions[slot][1];
 }
 
-static inline int kag_public_animal_target(const KGState* game,
+KG_HD static inline int kag_public_animal_target(const KGState* game,
         const KGPlayer* farm, int profile) {
     int day = game->day;
     int placed = 0;
@@ -100,7 +103,7 @@ static inline int kag_public_animal_target(const KGState* game,
     return target;
 }
 
-static inline int kag_public_structure_limit(const KGState* game,
+KG_HD static inline int kag_public_structure_limit(const KGState* game,
         const KGPlayer* farm, int profile) {
     int target = kag_public_animal_target(game, farm, profile);
     if (profile == KAG_ADAPTIVE_HARVEST_PULSE) {
@@ -112,7 +115,7 @@ static inline int kag_public_structure_limit(const KGState* game,
     return target > 15 ? 15 : target;
 }
 
-static inline int kag_public_structure_animal(int profile, int slot) {
+KG_HD static inline int kag_public_structure_animal(int profile, int slot) {
     if (profile == KAG_ADAPTIVE_HARVEST_PULSE) return KG_GOOSE;
     if (profile == KAG_ADAPTIVE_TRIAD) {
         return slot == 2 ? KG_SHEEP : KG_COW;
@@ -123,7 +126,7 @@ static inline int kag_public_structure_animal(int profile, int slot) {
     return KG_COW;
 }
 
-static inline int kag_public_reserved_slot(int profile, int x, int y) {
+KG_HD static inline int kag_public_reserved_slot(int profile, int x, int y) {
     (void)profile;
     for (int slot = 0; slot < 15; slot++) {
         int sx;
@@ -136,7 +139,7 @@ static inline int kag_public_reserved_slot(int profile, int x, int y) {
     return -1;
 }
 
-static inline int kag_public_crop_for(const KGState* game, int profile,
+KG_HD static inline int kag_public_crop_for(const KGState* game, int profile,
         int x, int y, int local, const int rank[KG_NUM_CROPS]) {
     if (profile == KAG_ADAPTIVE_STRUCTURED) {
         int quadrant = kg_quadrant(x, y, KG_OBS_BOARD);
@@ -172,7 +175,7 @@ static inline int kag_public_crop_for(const KGState* game, int profile,
     return rank[local % 3];
 }
 
-static inline int kag_public_crop_target(const KGState* game,
+KG_HD static inline int kag_public_crop_target(const KGState* game,
         const KGPlayer* farm, int profile, int structure_limit) {
     (void)profile;
     int land = kag_public_land_count(farm);
@@ -186,7 +189,7 @@ static inline int kag_public_crop_target(const KGState* game,
     return target;
 }
 
-static inline int kag_public_job_count(const KGState* game, int player_id,
+KG_HD static inline int kag_public_job_count(const KGState* game, int player_id,
         int profile, KGPublicJob jobs[KG_PUBLIC_MAX_JOBS],
         int seed_need[KG_NUM_CROPS]) {
     const KGPlayer* farm = &game->players[player_id];
@@ -369,12 +372,12 @@ static inline int kag_public_job_count(const KGState* game, int player_id,
     return count;
 }
 
-static inline int kag_public_route(const KGPlayer* farm,
+KG_HD static inline int kag_public_route(const KGPlayer* farm,
         const KGUnitState* unit, int tx, int ty) {
     return kag_bot_route(farm, unit, tx, ty);
 }
 
-static inline void kag_public_assign_jobs(const KGState* game,
+KG_HD static inline void kag_public_assign_jobs(const KGState* game,
         const KGPlayer* farm, KGPublicJob jobs[KG_PUBLIC_MAX_JOBS],
         int job_count, KGAction* action) {
     (void)game;
@@ -392,8 +395,8 @@ static inline void kag_public_assign_jobs(const KGState* game,
                         || state->inventory[candidate->arg] <= 0)) {
                 continue;
             }
-            int distance = abs((int)state->x - candidate->x)
-                + abs((int)state->y - candidate->y);
+            int distance = kag_abs((int)state->x - candidate->x)
+                + kag_abs((int)state->y - candidate->y);
             int score = candidate->priority * 64 + distance;
             if (score < best_score) {
                 best = job;
@@ -414,7 +417,7 @@ static inline void kag_public_assign_jobs(const KGState* game,
     }
 }
 
-static inline void kag_public_local_maintenance(const KGState* game,
+KG_HD static inline void kag_public_local_maintenance(const KGState* game,
         const KGPlayer* farm, int profile, KGAction* action) {
     for (int unit = 0; unit < farm->unit_count; unit++) {
         const KGUnitState* state = &farm->units[unit];
@@ -443,18 +446,32 @@ static inline void kag_public_local_maintenance(const KGState* game,
     }
 }
 
-static inline int kag_public_add_order(KGAction* action, int limit,
+KG_HD static inline int kag_public_add_order(KGAction* action, int limit,
         int op, int item, int n) {
     if (n <= 0 || action->market_count >= limit) return 0;
     action->market[action->market_count++] = (KGMarketOrder){op, item, n};
     return 1;
 }
 
-static inline int kag_public_sell_cap(int limit) {
+KG_HD static inline int kag_public_sell_cap(int limit) {
     return limit > 5 ? limit - 5 : limit;
 }
 
-static inline void kag_public_market(const KGState* game, int player_id,
+KG_HD static inline int kag_public_sell_item(int index) {
+    switch (index) {
+        case 0: return KG_ITEM_MELON;
+        case 1: return KG_ITEM_STRAWBERRY;
+        case 2: return KG_ITEM_MILK;
+        case 3: return KG_ITEM_WOOL;
+        case 4: return KG_ITEM_EGG;
+        case 5: return KG_ITEM_TOMATO;
+        case 6: return KG_ITEM_CARROT;
+        case 7: return KG_ITEM_WHEAT;
+        default: return KG_ITEM_FERTILIZER;
+    }
+}
+
+KG_HD static inline void kag_public_market(const KGState* game, int player_id,
         int profile, const int seed_need[KG_NUM_CROPS], KGAction* action) {
     const KGPlayer* farm = &game->players[player_id];
     int limit = game->config.max_market_orders_per_turn;
@@ -465,15 +482,10 @@ static inline void kag_public_market(const KGState* game, int player_id,
         animals += kag_public_total_animals(farm, animal);
     }
 
-    static const int sell_order[KG_NUM_PRODUCTS] = {
-        KG_ITEM_MELON, KG_ITEM_STRAWBERRY, KG_ITEM_MILK, KG_ITEM_WOOL,
-        KG_ITEM_EGG, KG_ITEM_TOMATO, KG_ITEM_CARROT, KG_ITEM_WHEAT,
-        KG_ITEM_FERTILIZER,
-    };
     int sell_count = 0;
     for (int index = 0; index < KG_NUM_PRODUCTS
             && sell_count < kag_public_sell_cap(limit); index++) {
-        int item = sell_order[index];
+        int item = kag_public_sell_item(index);
         int amount = farm->shed[item];
         if (item == KG_ITEM_WHEAT) {
             int keep = animals * 2 + 3;
@@ -512,11 +524,11 @@ static inline void kag_public_market(const KGState* game, int player_id,
             buy_land = game->day == 8 || game->day == 15;
         }
     }
-    static const int land_prices[3] = {1000, 2000, 4000};
+    int land_price = extra == 0 ? 1000 : extra == 1 ? 2000 : 4000;
     if (buy_land && extra >= 0 && extra < 3
-            && money >= land_prices[extra] + 500) {
+            && money >= land_price + 500) {
         if (kag_public_add_order(action, limit, KG_MARKET_BUY_LAND, -1, 1)) {
-            money -= land_prices[extra];
+            money -= land_price;
             land++;
         }
     }
@@ -630,7 +642,7 @@ static inline void kag_public_market(const KGState* game, int player_id,
     (void)land;
 }
 
-static inline void kag_public_action(const KGState* game, int player_id,
+KG_HD static inline void kag_public_action(const KGState* game, int player_id,
         int profile, KGAction* action) {
     const KGPlayer* farm = &game->players[player_id];
     memset(action, 0, sizeof(*action));

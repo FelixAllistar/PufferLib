@@ -23,6 +23,7 @@ enum {
     KG_SCRIPT_V20,
     KG_SCRIPT_MOON,
     KG_SCRIPT_HAMBURGER,
+    KG_SCRIPT_TOP,
     KG_SCRIPT_COUNT,
 };
 
@@ -140,6 +141,8 @@ static inline void kag_script_init(void) {
         &kag_script_tapes[KG_SCRIPT_MOON], raw);
     ok &= kag_script_decode(KG_TAPE_HAMBURGER_B64,
         &kag_script_tapes[KG_SCRIPT_HAMBURGER], raw);
+    ok &= kag_script_decode(KG_TAPE_TOP_B64,
+        &kag_script_tapes[KG_SCRIPT_TOP], raw);
     if (!ok) {
         fprintf(stderr, "Kaggriculture native tape decode failed\n");
         abort();
@@ -147,7 +150,7 @@ static inline void kag_script_init(void) {
     kag_script_tapes_ready = 1;
 }
 
-static inline KGUnitAction kag_script_unpack_unit(uint16_t packed) {
+KG_HD static inline KGUnitAction kag_script_unpack_unit(uint16_t packed) {
     return (KGUnitAction){
         (int)(packed & 31),
         (int)((packed >> 5) & 15) - 1,
@@ -155,7 +158,7 @@ static inline KGUnitAction kag_script_unpack_unit(uint16_t packed) {
     };
 }
 
-static inline KGMarketOrder kag_script_unpack_market(uint16_t packed) {
+KG_HD static inline KGMarketOrder kag_script_unpack_market(uint16_t packed) {
     return (KGMarketOrder){
         (int)(packed & 7),
         (int)((packed >> 3) & 15) - 1,
@@ -163,13 +166,13 @@ static inline KGMarketOrder kag_script_unpack_market(uint16_t packed) {
     };
 }
 
-static inline int kag_script_profile_valid(int profile) {
+KG_HD static inline int kag_script_profile_valid(int profile) {
     return (unsigned)profile < KG_SCRIPT_COUNT;
 }
 
-static inline void kag_script_action(const KGState* game, int player_id,
-        int profile, KGAction* action) {
-    kag_script_init();
+KG_HD static inline void kag_script_action_from_tapes(const KGState* game,
+        int player_id, int profile, KGAction* action,
+        const KGScriptTape* tapes) {
     if (!kag_script_profile_valid(profile)) {
         memset(action, 0, sizeof(*action));
         action->farmer = (KGUnitAction){KG_OP_PASS, -1, 1};
@@ -180,7 +183,7 @@ static inline void kag_script_action(const KGState* game, int player_id,
         return;
     }
     const KGPlayer* farm = &game->players[player_id];
-    const KGScriptTape* tape = &kag_script_tapes[profile];
+    const KGScriptTape* tape = &tapes[profile];
     int step = game->step < KG_SCRIPT_FRAMES
         ? game->step : KG_SCRIPT_FRAMES - 1;
     const KGScriptFrame* frame = &tape->frames[step];
@@ -205,7 +208,14 @@ static inline void kag_script_action(const KGState* game, int player_id,
     }
 }
 
-static inline KGUnitAction* kag_script_unit_action(KGAction* action, int unit) {
+static inline void kag_script_action(const KGState* game, int player_id,
+        int profile, KGAction* action) {
+    kag_script_init();
+    kag_script_action_from_tapes(game, player_id, profile, action,
+        kag_script_tapes);
+}
+
+KG_HD static inline KGUnitAction* kag_script_unit_action(KGAction* action, int unit) {
     return unit == 0 ? &action->farmer : &action->hands[unit - 1];
 }
 
@@ -215,7 +225,7 @@ static inline KGUnitAction* kag_script_unit_action(KGAction* action, int unit) {
  * weeds, an unwatered plant, or an animal about to miss its daily basic need.
  * They do not rewrite routing, market ordering, or crop selection.
  */
-static inline void kag_script_repair(const KGState* game, int player_id,
+KG_HD static inline void kag_script_repair(const KGState* game, int player_id,
         int profile, KGAction* action) {
     if (profile == KG_SCRIPT_FRONTIER) return;
     const KGPlayer* farm = &game->players[player_id];
@@ -259,6 +269,7 @@ static inline const char* kag_script_name(int profile) {
         case KG_SCRIPT_V20: return "v20";
         case KG_SCRIPT_MOON: return "moon";
         case KG_SCRIPT_HAMBURGER: return "hamburger";
+        case KG_SCRIPT_TOP: return "top";
         default: return "script";
     }
 }

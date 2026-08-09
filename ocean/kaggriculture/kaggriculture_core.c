@@ -61,7 +61,7 @@ static const char* const KG_PRODUCT_NAMES[KG_NUM_PRODUCTS] = {
     "EGG", "MILK", "WOOL", "FERTILIZER",
 };
 
-static const KGCropDef KG_CROP_DEFS[KG_NUM_CROPS] = {
+static const KGCropDef KG_CROP_DEFS_HOST[KG_NUM_CROPS] = {
     {10, 2, 4, 0, 6, 0},
     {20, 2, 3, 0, 4, 0},
     {50, 8, 8, 1, 4, 1},
@@ -69,14 +69,14 @@ static const KGCropDef KG_CROP_DEFS[KG_NUM_CROPS] = {
     {80, 10, 12, 0, 6, 0},
 };
 
-static const KGAnimalDef KG_ANIMAL_DEFS[KG_NUM_ANIMALS] = {
+static const KGAnimalDef KG_ANIMAL_DEFS_HOST[KG_NUM_ANIMALS] = {
     {300, KG_TILE_COOP, 4, 1, 4, KG_ITEM_EGG},
     {400, KG_TILE_PASTURE, 8, 2, 6, KG_ITEM_MILK},
     {500, KG_TILE_PASTURE, 6, 3, 6, KG_ITEM_WOOL},
 };
 
 /* Mirrors MARKET_PARAMS in the pinned Kaggle interpreter. */
-static const KGMarketDef KG_MARKET_DEFS[KG_NUM_PRODUCTS] = {
+static const KGMarketDef KG_MARKET_DEFS_HOST[KG_NUM_PRODUCTS] = {
     {25, 10000, 400, KG_FUNC_SQRT, 0.80, KG_FUNC_LOG, 0.20},
     {35, 10000, 450, KG_FUNC_LOG, 0.20, KG_FUNC_SQRT, 0.70},
     {60, 10000, 200, KG_FUNC_LINEAR, 0.40, KG_FUNC_SQRT, 0.60},
@@ -89,21 +89,108 @@ static const KGMarketDef KG_MARKET_DEFS[KG_NUM_PRODUCTS] = {
 };
 
 static const char* const KG_SHOP_NAMES[KG_MAX_SHOPS] = {
-    "BAKERY", "PIZZA_SHOP", "BRUNCH_SPOT", "YARN_STORE",
-    "ICE_CREAM_SHOP", "PET_CAFE", "SMOOTHIE_SHOP", "FARMERS_MARKET",
+    /* Alphabetical sorted(SHOPS) order, matching Python's rng.choice. */
+    "BAKERY", "BRUNCH_SPOT", "FARMERS_MARKET", "ICE_CREAM_SHOP",
+    "PET_CAFE", "PIZZA_SHOP", "SMOOTHIE_SHOP", "YARN_STORE",
 };
 
 static const int KG_SHOP_PRODUCTS[KG_MAX_SHOPS][KG_NUM_PRODUCTS] = {
     {KG_ITEM_EGG, KG_ITEM_WHEAT, -1, -1, -1, -1, -1, -1, -1},
-    {KG_ITEM_MILK, KG_ITEM_TOMATO, KG_ITEM_WHEAT, -1, -1, -1, -1, -1, -1},
     {KG_ITEM_EGG, KG_ITEM_WHEAT, KG_ITEM_STRAWBERRY, -1, -1, -1, -1, -1, -1},
-    {KG_ITEM_WOOL, -1, -1, -1, -1, -1, -1, -1, -1},
-    {KG_ITEM_STRAWBERRY, KG_ITEM_MILK, KG_ITEM_WHEAT, -1, -1, -1, -1, -1, -1},
-    {KG_ITEM_CARROT, -1, -1, -1, -1, -1, -1, -1, -1},
-    {KG_ITEM_STRAWBERRY, KG_ITEM_MILK, -1, -1, -1, -1, -1, -1, -1},
     {KG_ITEM_WHEAT, KG_ITEM_CARROT, KG_ITEM_TOMATO, KG_ITEM_STRAWBERRY,
         -1, -1, -1, -1, -1},
+    {KG_ITEM_STRAWBERRY, KG_ITEM_MILK, KG_ITEM_WHEAT, -1, -1, -1, -1, -1, -1},
+    {KG_ITEM_CARROT, -1, -1, -1, -1, -1, -1, -1, -1},
+    {KG_ITEM_MILK, KG_ITEM_TOMATO, KG_ITEM_WHEAT, -1, -1, -1, -1, -1, -1},
+    {KG_ITEM_STRAWBERRY, KG_ITEM_MILK, -1, -1, -1, -1, -1, -1, -1},
+    {KG_ITEM_WOOL, -1, -1, -1, -1, -1, -1, -1, -1},
 };
+
+#ifdef __CUDACC__
+/* Namespace-scope C data is host-only under NVCC unless explicitly marked.
+ * These small immutable mirrors are initialized into device constant memory
+ * by the CUDA loader; accessors below select the correct address space in
+ * each half of a __host__ __device__ compilation. */
+static KG_DEVICE KG_CONSTANT KGCropDef KG_CROP_DEFS_DEVICE[KG_NUM_CROPS] = {
+    {10, 2, 4, 0, 6, 0},
+    {20, 2, 3, 0, 4, 0},
+    {50, 8, 8, 1, 4, 1},
+    {100, 10, 10, 2, 4, 1},
+    {80, 10, 12, 0, 6, 0},
+};
+static KG_DEVICE KG_CONSTANT KGAnimalDef KG_ANIMAL_DEFS_DEVICE[KG_NUM_ANIMALS] = {
+    {300, KG_TILE_COOP, 4, 1, 4, KG_ITEM_EGG},
+    {400, KG_TILE_PASTURE, 8, 2, 6, KG_ITEM_MILK},
+    {500, KG_TILE_PASTURE, 6, 3, 6, KG_ITEM_WOOL},
+};
+static KG_DEVICE KG_CONSTANT KGMarketDef KG_MARKET_DEFS_DEVICE[KG_NUM_PRODUCTS] = {
+    {25, 10000, 400, KG_FUNC_SQRT, 0.80, KG_FUNC_LOG, 0.20},
+    {35, 10000, 450, KG_FUNC_LOG, 0.20, KG_FUNC_SQRT, 0.70},
+    {60, 10000, 200, KG_FUNC_LINEAR, 0.40, KG_FUNC_SQRT, 0.60},
+    {120, 10000, 100, KG_FUNC_SQRT, 0.70, KG_FUNC_LINEAR, 1.60},
+    {250, 10000, 300, KG_FUNC_LOG, 0.20, KG_FUNC_SQ, 3.60},
+    {50, 10000, 332, KG_FUNC_LINEAR, 0.40, KG_FUNC_LOG, 0.20},
+    {160, 10000, 122, KG_FUNC_SQRT, 0.60, KG_FUNC_LINEAR, 1.60},
+    {200, 10000, 105, KG_FUNC_LOG, 0.20, KG_FUNC_SQ, 3.20},
+    {100, 10000, 200, KG_FUNC_LINEAR, 0.40, KG_FUNC_LINEAR, 0.40},
+};
+static KG_DEVICE KG_CONSTANT int
+KG_SHOP_PRODUCTS_DEVICE[KG_MAX_SHOPS][KG_NUM_PRODUCTS] = {
+    {KG_ITEM_EGG, KG_ITEM_WHEAT, -1, -1, -1, -1, -1, -1, -1},
+    {KG_ITEM_EGG, KG_ITEM_WHEAT, KG_ITEM_STRAWBERRY, -1, -1, -1, -1, -1, -1},
+    {KG_ITEM_WHEAT, KG_ITEM_CARROT, KG_ITEM_TOMATO, KG_ITEM_STRAWBERRY,
+        -1, -1, -1, -1, -1},
+    {KG_ITEM_STRAWBERRY, KG_ITEM_MILK, KG_ITEM_WHEAT, -1, -1, -1, -1, -1, -1},
+    {KG_ITEM_CARROT, -1, -1, -1, -1, -1, -1, -1, -1},
+    {KG_ITEM_MILK, KG_ITEM_TOMATO, KG_ITEM_WHEAT, -1, -1, -1, -1, -1, -1},
+    {KG_ITEM_STRAWBERRY, KG_ITEM_MILK, -1, -1, -1, -1, -1, -1, -1},
+    {KG_ITEM_WOOL, -1, -1, -1, -1, -1, -1, -1, -1},
+};
+#endif
+
+KG_HD static inline const KGCropDef* kg_crop_defs(void) {
+#ifdef __CUDA_ARCH__
+    return KG_CROP_DEFS_DEVICE;
+#else
+    return KG_CROP_DEFS_HOST;
+#endif
+}
+
+KG_HD static inline const KGAnimalDef* kg_animal_defs(void) {
+#ifdef __CUDA_ARCH__
+    return KG_ANIMAL_DEFS_DEVICE;
+#else
+    return KG_ANIMAL_DEFS_HOST;
+#endif
+}
+
+KG_HD static inline const KGMarketDef* kg_market_defs(void) {
+#ifdef __CUDA_ARCH__
+    return KG_MARKET_DEFS_DEVICE;
+#else
+    return KG_MARKET_DEFS_HOST;
+#endif
+}
+
+KG_HD static inline int kg_shop_product(int shop, int index) {
+#ifdef __CUDA_ARCH__
+    return KG_SHOP_PRODUCTS_DEVICE[shop][index];
+#else
+    return KG_SHOP_PRODUCTS[shop][index];
+#endif
+}
+
+#define KG_CROP_DEFS (kg_crop_defs())
+#define KG_ANIMAL_DEFS (kg_animal_defs())
+#define KG_MARKET_DEFS (kg_market_defs())
+
+KG_HD static inline int kg_ctz64(uint64_t value) {
+#ifdef __CUDA_ARCH__
+    return __ffsll((long long)value) - 1;
+#else
+    return __builtin_ctzll(value);
+#endif
+}
 
 /* Python's random.Random uses MT19937.  This is the small subset needed by
  * Kaggriculture's deterministic daily weed/shop stream. */
@@ -112,7 +199,7 @@ typedef struct {
     int index;
 } KGPythonRandom;
 
-static void kg_mt_seed_array(KGPythonRandom* r, const uint32_t* key, int key_len) {
+KG_HD static void kg_mt_seed_array(KGPythonRandom* r, const uint32_t* key, int key_len) {
     int i = 1;
     int j = 0;
     int k;
@@ -148,7 +235,7 @@ static void kg_mt_seed_array(KGPythonRandom* r, const uint32_t* key, int key_len
     r->index = 624;
 }
 
-static void kg_random_seed(KGPythonRandom* r, uint64_t seed) {
+KG_HD static void kg_random_seed(KGPythonRandom* r, uint64_t seed) {
     uint32_t key[2];
     key[0] = (uint32_t)seed;
     key[1] = (uint32_t)(seed >> 32);
@@ -156,21 +243,23 @@ static void kg_random_seed(KGPythonRandom* r, uint64_t seed) {
     kg_mt_seed_array(r, key, key[1] ? 2 : 1);
 }
 
-static uint32_t kg_random_uint32(KGPythonRandom* r) {
-    static const uint32_t mag01[2] = {0U, 0x9908b0dfU};
+KG_HD static uint32_t kg_random_uint32(KGPythonRandom* r) {
     uint32_t y;
     int kk;
     if (r->index >= 624) {
         for (kk = 0; kk < 624 - 397; kk++) {
             y = (r->mt[kk] & 0x80000000U) | (r->mt[kk + 1] & 0x7fffffffU);
-            r->mt[kk] = r->mt[kk + 397] ^ (y >> 1) ^ mag01[y & 1U];
+            r->mt[kk] = r->mt[kk + 397] ^ (y >> 1)
+                ^ ((y & 1U) ? 0x9908b0dfU : 0U);
         }
         for (; kk < 623; kk++) {
             y = (r->mt[kk] & 0x80000000U) | (r->mt[kk + 1] & 0x7fffffffU);
-            r->mt[kk] = r->mt[kk + (397 - 624)] ^ (y >> 1) ^ mag01[y & 1U];
+            r->mt[kk] = r->mt[kk + (397 - 624)] ^ (y >> 1)
+                ^ ((y & 1U) ? 0x9908b0dfU : 0U);
         }
         y = (r->mt[623] & 0x80000000U) | (r->mt[0] & 0x7fffffffU);
-        r->mt[623] = r->mt[396] ^ (y >> 1) ^ mag01[y & 1U];
+        r->mt[623] = r->mt[396] ^ (y >> 1)
+            ^ ((y & 1U) ? 0x9908b0dfU : 0U);
         r->index = 0;
     }
     y = r->mt[r->index++];
@@ -181,13 +270,13 @@ static uint32_t kg_random_uint32(KGPythonRandom* r) {
     return y;
 }
 
-static double kg_random_double(KGPythonRandom* r) {
+KG_HD static double kg_random_double(KGPythonRandom* r) {
     uint32_t a = kg_random_uint32(r) >> 5;
     uint32_t b = kg_random_uint32(r) >> 6;
     return ((double)a * 67108864.0 + (double)b) / 9007199254740992.0;
 }
 
-static int kg_random_below(KGPythonRandom* r, int n) {
+KG_HD static int kg_random_below(KGPythonRandom* r, int n) {
     unsigned int k = 0;
     uint32_t value;
     int x = n;
@@ -204,7 +293,7 @@ static int kg_random_below(KGPythonRandom* r, int n) {
     return (int)value;
 }
 
-static int kg_quadrant(int x, int y, int board_size) {
+KG_HD static int kg_quadrant(int x, int y, int board_size) {
     int half = board_size / 2;
     if (y < half) {
         return x < half ? 1 : 2; /* NW, NE */
@@ -212,11 +301,11 @@ static int kg_quadrant(int x, int y, int board_size) {
     return x < half ? 4 : 8; /* SW, SE */
 }
 
-static int kg_tile_index(int x, int y) {
+KG_HD static int kg_tile_index(int x, int y) {
     return y * KG_MAX_BOARD_SIZE + x;
 }
 
-static int kg_shed_access_count(int board_size, KGPosition out[4]) {
+KG_HD static int kg_shed_access_count(int board_size, KGPosition out[4]) {
     int half = board_size / 2;
     out[0] = (KGPosition){(uint8_t)(half - 1), (uint8_t)(half - 1)};
     out[1] = (KGPosition){(uint8_t)half, (uint8_t)(half - 1)};
@@ -225,7 +314,7 @@ static int kg_shed_access_count(int board_size, KGPosition out[4]) {
     return 4;
 }
 
-static int kg_is_shed_adjacent(const KGPosition* pos, int board_size) {
+KG_HD static int kg_is_shed_adjacent(const KGPosition* pos, int board_size) {
     KGPosition access[4];
     int i;
     kg_shed_access_count(board_size, access);
@@ -237,7 +326,7 @@ static int kg_is_shed_adjacent(const KGPosition* pos, int board_size) {
     return 0;
 }
 
-static KGPosition kg_default_spawn(int board_size) {
+KG_HD static KGPosition kg_default_spawn(int board_size) {
     KGPosition access[4];
     int i;
     kg_shed_access_count(board_size, access);
@@ -249,7 +338,7 @@ static KGPosition kg_default_spawn(int board_size) {
     return (KGPosition){0, 0};
 }
 
-static void kg_clear_tile_data(KGTile* tile, int kind) {
+KG_HD static void kg_clear_tile_data(KGTile* tile, int kind) {
     memset(tile, 0, sizeof(*tile));
     tile->kind = kind;
     tile->crop = KG_CROP_INVALID;
@@ -258,7 +347,7 @@ static void kg_clear_tile_data(KGTile* tile, int kind) {
     tile->fertilized_until_day = -1;
 }
 
-static inline void kg_set_tile_bits(KGPlayer* player, int index, int kind) {
+KG_HD static inline void kg_set_tile_bits(KGPlayer* player, int index, int kind) {
     uint64_t bit = 1ULL << (index & 63);
     uint64_t* word = &player->plant_bits[index >> 6];
     uint64_t* animal_word = &player->animal_bits[index >> 6];
@@ -268,17 +357,17 @@ static inline void kg_set_tile_bits(KGPlayer* player, int index, int kind) {
     if (kind == KG_TILE_COOP || kind == KG_TILE_PASTURE) *animal_word |= bit;
 }
 
-static void kg_set_player_tile(KGPlayer* player, int index, int kind) {
+KG_HD static void kg_set_player_tile(KGPlayer* player, int index, int kind) {
     kg_clear_tile_data(&player->tiles[index], kind);
     kg_set_tile_bits(player, index, kind);
 }
 
-static int kg_is_animal_tile(const KGTile* tile) {
+KG_HD static int kg_is_animal_tile(const KGTile* tile) {
     return tile->animal >= 0 && tile->animal < KG_NUM_ANIMALS
         && (tile->kind == KG_TILE_COOP || tile->kind == KG_TILE_PASTURE);
 }
 
-static int kg_shed_total(const KGPlayer* player) {
+KG_HD static int kg_shed_total(const KGPlayer* player) {
     int total = 0;
     int i;
     for (i = 0; i < KG_NUM_ITEMS; i++) {
@@ -287,7 +376,7 @@ static int kg_shed_total(const KGPlayer* player) {
     return total;
 }
 
-static void kg_inventory_add(KGUnitState* unit, int item, int n) {
+KG_HD static void kg_inventory_add(KGUnitState* unit, int item, int n) {
     int i;
     if (item < 0 || item >= KG_NUM_ITEMS || n <= 0) {
         return;
@@ -305,7 +394,7 @@ static void kg_inventory_add(KGUnitState* unit, int item, int n) {
     unit->inventory[item] += n;
 }
 
-static int kg_inventory_take(KGUnitState* unit, int item, int n) {
+KG_HD static int kg_inventory_take(KGUnitState* unit, int item, int n) {
     int i;
     if (item < 0 || item >= KG_NUM_ITEMS || n <= 0 || unit->inventory[item] < n) {
         return 0;
@@ -314,9 +403,11 @@ static int kg_inventory_take(KGUnitState* unit, int item, int n) {
     if (unit->inventory[item] == 0) {
         for (i = 0; i < unit->inventory_order_count; i++) {
             if (unit->inventory_order[i] == item) {
-                memmove(&unit->inventory_order[i], &unit->inventory_order[i + 1],
-                    (size_t)(unit->inventory_order_count - i - 1)
-                        * sizeof(unit->inventory_order[0]));
+                /* A tiny explicit shift is both faster here (at most twelve
+                 * bytes) and has identical semantics under C and CUDA. */
+                for (int j = i + 1; j < unit->inventory_order_count; j++) {
+                    unit->inventory_order[j - 1] = unit->inventory_order[j];
+                }
                 unit->inventory_order_count--;
                 break;
             }
@@ -325,7 +416,7 @@ static int kg_inventory_take(KGUnitState* unit, int item, int n) {
     return 1;
 }
 
-static void kg_sync_public_positions(KGPlayer* player) {
+KG_HD static void kg_sync_public_positions(KGPlayer* player) {
     int i;
     player->farmer.x = player->units[0].x;
     player->farmer.y = player->units[0].y;
@@ -335,7 +426,7 @@ static void kg_sync_public_positions(KGPlayer* player) {
     }
 }
 
-static void kg_set_unit_position(KGPlayer* player, int idx, int x, int y) {
+KG_HD static void kg_set_unit_position(KGPlayer* player, int idx, int x, int y) {
     player->units[idx].x = x;
     player->units[idx].y = y;
     /* Keep the public mirror in O(1). The old implementation recopied every
@@ -350,20 +441,20 @@ static void kg_set_unit_position(KGPlayer* player, int idx, int x, int y) {
     }
 }
 
-static KGPosition kg_unit_position(const KGPlayer* player, int idx) {
+KG_HD static KGPosition kg_unit_position(const KGPlayer* player, int idx) {
     return (KGPosition){player->units[idx].x, player->units[idx].y};
 }
 
-static int kg_crop_product(int crop) {
+KG_HD static int kg_crop_product(int crop) {
     return crop >= 0 && crop < KG_NUM_CROPS ? crop : KG_ITEM_INVALID;
 }
 
-static int kg_animal_product(int animal) {
+KG_HD static int kg_animal_product(int animal) {
     return animal >= 0 && animal < KG_NUM_ANIMALS
         ? KG_ANIMAL_DEFS[animal].product : KG_ITEM_INVALID;
 }
 
-static void kg_new_plant(KGPlayer* player, int index, int crop, int day,
+KG_HD static void kg_new_plant(KGPlayer* player, int index, int crop, int day,
         int turns_per_day) {
     KGTile* tile = &player->tiles[index];
     const KGCropDef* def = &KG_CROP_DEFS[crop];
@@ -378,7 +469,7 @@ static void kg_new_plant(KGPlayer* player, int index, int crop, int day,
         : (day + def->max_yield_day + 1) * turns_per_day;
 }
 
-static void kg_new_animal(KGPlayer* player, int index, int animal, int day) {
+KG_HD static void kg_new_animal(KGPlayer* player, int index, int animal, int day) {
     KGTile* tile = &player->tiles[index];
     kg_set_player_tile(player, index, KG_ANIMAL_DEFS[animal].structure);
     tile->kind = KG_ANIMAL_DEFS[animal].structure;
@@ -392,7 +483,7 @@ static void kg_new_animal(KGPlayer* player, int index, int animal, int day) {
     tile->pending_care_bonus = 0;
 }
 
-static double kg_shape(int func, double x) {
+KG_HD static double kg_shape(int func, double x) {
     if (x < 0.0) {
         x = 0.0;
     }
@@ -405,7 +496,7 @@ static double kg_shape(int func, double x) {
     }
 }
 
-static int kg_round_even(double value) {
+KG_HD static int kg_round_even(double value) {
     double lower;
     double fraction;
     if (value <= 0.0) {
@@ -422,7 +513,7 @@ static int kg_round_even(double value) {
     return ((int)lower & 1) ? (int)lower + 1 : (int)lower;
 }
 
-static int kg_market_price(int product, int inventory) {
+KG_HD static int kg_market_price(int product, int inventory) {
     const KGMarketDef* def = &KG_MARKET_DEFS[product];
     double price;
     if (inventory < def->i0) {
@@ -436,14 +527,14 @@ static int kg_market_price(int product, int inventory) {
     return price < 1 ? 1 : price;
 }
 
-static void kg_refresh_prices(KGState* state) {
+KG_HD static void kg_refresh_prices(KGState* state) {
     int i;
     for (i = 0; i < KG_NUM_PRODUCTS; i++) {
         state->market.prices[i] = kg_market_price(i, state->market.inventory[i]);
     }
 }
 
-void kg_config_default(KGConfig* config) {
+KG_HD void kg_config_default(KGConfig* config) {
     memset(config, 0, sizeof(*config));
     config->episode_steps = 720;
     config->board_size = 10;
@@ -454,12 +545,12 @@ void kg_config_default(KGConfig* config) {
     config->weed_spawn_chance = 0.005;
     config->town_shop_unlock_interval = 3;
     config->town_shop_sell_interval = 4;
-    config->town_center_sell_interval = 12;
+    config->town_center_sell_interval = 24;
     config->farm_hand_cost_mult = 1;
     config->seed = 0;
 }
 
-static void kg_normalize_config(KGConfig* config) {
+KG_HD static void kg_normalize_config(KGConfig* config) {
     if (config->episode_steps < 1) config->episode_steps = 1;
     if (config->board_size < 4) config->board_size = 4;
     if (config->board_size > KG_MAX_BOARD_SIZE) config->board_size = KG_MAX_BOARD_SIZE;
@@ -477,7 +568,7 @@ static void kg_normalize_config(KGConfig* config) {
     if (config->farm_hand_cost_mult < 0) config->farm_hand_cost_mult = 0;
 }
 
-void kg_reset(KGState* state) {
+KG_HD void kg_reset(KGState* state) {
     int player_id;
     int x;
     int y;
@@ -527,7 +618,7 @@ void kg_reset(KGState* state) {
     }
 }
 
-void kg_init(KGState* state, const KGConfig* config) {
+KG_HD void kg_init(KGState* state, const KGConfig* config) {
     if (state == NULL) return;
     memset(state, 0, sizeof(*state));
     kg_config_default(&state->config);
@@ -549,11 +640,11 @@ void kg_destroy(KGState* state) {
     free(state);
 }
 
-int kg_done(const KGState* state) {
+KG_HD int kg_done(const KGState* state) {
     return state != NULL && state->done;
 }
 
-static int kg_fib(int n) {
+KG_HD static int kg_fib(int n) {
     int a = 1;
     int b = 1;
     int i;
@@ -566,14 +657,14 @@ static int kg_fib(int n) {
     return a;
 }
 
-static int kg_hire_cost(int n, int multiplier) {
+KG_HD static int kg_hire_cost(int n, int multiplier) {
     int fib = kg_fib(n);
     if (multiplier <= 0) return 0;
     if (fib > INT_MAX / multiplier) return INT_MAX;
     return fib * multiplier;
 }
 
-static KGPosition kg_spawn_hand(const KGPlayer* player, int board_size) {
+KG_HD static KGPosition kg_spawn_hand(const KGPlayer* player, int board_size) {
     KGPosition access[4];
     int occupants[4] = {0, 0, 0, 0};
     int i;
@@ -598,7 +689,7 @@ static KGPosition kg_spawn_hand(const KGPlayer* player, int board_size) {
     }
 }
 
-static void kg_do_hire(KGState* state, KGPlayer* player) {
+KG_HD static void kg_do_hire(KGState* state, KGPlayer* player) {
     KGPosition spawn;
     if (player->money < kg_hire_cost(player->hires_today, state->config.farm_hand_cost_mult)) {
         return;
@@ -617,7 +708,7 @@ static void kg_do_hire(KGState* state, KGPlayer* player) {
     kg_sync_public_positions(player);
 }
 
-static void kg_do_buy_land(KGState* state, KGPlayer* player) {
+KG_HD static void kg_do_buy_land(KGState* state, KGPlayer* player) {
     static const int prices[3] = {1000, 2000, 4000};
     static const int quadrants[3] = {2, 4, 8};
     int extra = __builtin_popcount((unsigned int)player->unlocked_mask) - 1;
@@ -642,7 +733,7 @@ static void kg_do_buy_land(KGState* state, KGPlayer* player) {
 /* kaggle-environments 1.32.3+: movement is bounds-only. Hands may spawn on
  * locked shed-access tiles; blocking LOCKED movement stranded them. Tile
  * operations still no-op on LOCKED (checked after the move switch). */
-static int kg_unit_can_move_to(const KGPlayer* player, int x, int y, int board_size) {
+KG_HD static int kg_unit_can_move_to(const KGPlayer* player, int x, int y, int board_size) {
     (void)player;
     if (x < 0 || y < 0 || x >= board_size || y >= board_size) {
         return 0;
@@ -650,7 +741,7 @@ static int kg_unit_can_move_to(const KGPlayer* player, int x, int y, int board_s
     return 1;
 }
 
-static void kg_drop_inventory(KGState* state, KGPlayer* player, KGUnitState* unit) {
+KG_HD static void kg_drop_inventory(KGState* state, KGPlayer* player, KGUnitState* unit) {
     int i;
     int item;
     int count;
@@ -673,7 +764,7 @@ static void kg_drop_inventory(KGState* state, KGPlayer* player, KGUnitState* uni
     unit->inventory_order_count = 0;
 }
 
-static void kg_apply_unit_action(KGState* state, KGPlayer* player, int idx,
+KG_HD static void kg_apply_unit_action(KGState* state, KGPlayer* player, int idx,
         const KGUnitAction* action) {
     KGUnitState* unit;
     KGPosition pos;
@@ -710,10 +801,6 @@ static void kg_apply_unit_action(KGState* state, KGPlayer* player, int idx,
             break;
     }
 
-    if (tile->kind == KG_TILE_LOCKED) {
-        return;
-    }
-
     if (action->op == KG_OP_DROP) {
         int i;
         if (!kg_is_shed_adjacent(&pos, state->config.board_size)) {
@@ -746,6 +833,10 @@ static void kg_apply_unit_action(KGState* state, KGPlayer* player, int idx,
         if (n <= 0) return;
         player->shed[item] -= n;
         kg_inventory_add(unit, item, n);
+        return;
+    }
+
+    if (tile->kind == KG_TILE_LOCKED) {
         return;
     }
 
@@ -877,13 +968,13 @@ static void kg_apply_unit_action(KGState* state, KGPlayer* player, int idx,
     }
 }
 
-static void kg_daily_refresh_plants(KGState* state, KGPlayer* player, int current_day) {
+KG_HD static void kg_daily_refresh_plants(KGState* state, KGPlayer* player, int current_day) {
     int next_day = current_day + 1;
     int player_id = (int)(player - state->players);
     for (int word = 0; word < KG_TILE_WORDS; word++) {
         uint64_t bits = player->plant_bits[word];
         while (bits != 0) {
-            int index = word * 64 + __builtin_ctzll(bits);
+            int index = word * 64 + kg_ctz64(bits);
             int x = index % KG_MAX_BOARD_SIZE;
             int y = index / KG_MAX_BOARD_SIZE;
             KGTile* tile;
@@ -927,12 +1018,12 @@ static void kg_daily_refresh_plants(KGState* state, KGPlayer* player, int curren
     }
 }
 
-static void kg_daily_refresh_animals(KGState* state, KGPlayer* player, int day) {
+KG_HD static void kg_daily_refresh_animals(KGState* state, KGPlayer* player, int day) {
     int next_day = day + 1;
     for (int word = 0; word < KG_TILE_WORDS; word++) {
         uint64_t bits = player->animal_bits[word];
         while (bits != 0) {
-            int index = word * 64 + __builtin_ctzll(bits);
+            int index = word * 64 + kg_ctz64(bits);
             int x = index % KG_MAX_BOARD_SIZE;
             int y = index / KG_MAX_BOARD_SIZE;
             KGTile* tile;
@@ -969,11 +1060,11 @@ static void kg_daily_refresh_animals(KGState* state, KGPlayer* player, int day) 
     }
 }
 
-static void kg_decay_plants(KGState* state, KGPlayer* player, int step) {
+KG_HD static void kg_decay_plants(KGState* state, KGPlayer* player, int step) {
     for (int word = 0; word < KG_TILE_WORDS; word++) {
         uint64_t bits = player->plant_bits[word];
         while (bits != 0) {
-            int index = word * 64 + __builtin_ctzll(bits);
+            int index = word * 64 + kg_ctz64(bits);
             int x = index % KG_MAX_BOARD_SIZE;
             int y = index / KG_MAX_BOARD_SIZE;
             KGTile* tile;
@@ -991,7 +1082,7 @@ static void kg_decay_plants(KGState* state, KGPlayer* player, int step) {
     }
 }
 
-static void kg_spawn_weeds(KGState* state, KGPlayer* player, KGPythonRandom* rng) {
+KG_HD static void kg_spawn_weeds(KGState* state, KGPlayer* player, KGPythonRandom* rng) {
     int x;
     int y;
     for (y = 0; y < state->config.board_size; y++) {
@@ -1007,39 +1098,7 @@ static void kg_spawn_weeds(KGState* state, KGPlayer* player, KGPythonRandom* rng
     }
 }
 
-static int kg_shop_is_unlocked(const KGState* state, int shop) {
-    int i;
-    for (i = 0; i < state->shop_count; i++) {
-        if (state->unlocked_shops[i] == shop) return 1;
-    }
-    return 0;
-}
-
-static int kg_sorted_remaining_shop(const KGState* state, int ordinal) {
-    int remaining[KG_MAX_SHOPS];
-    int count = 0;
-    int shop;
-    int i;
-    for (shop = 0; shop < KG_MAX_SHOPS; shop++) {
-        if (!kg_shop_is_unlocked(state, shop)) {
-            remaining[count++] = shop;
-        }
-    }
-    /* Sort the numeric IDs by the Python sorted(dict.keys()) order. */
-    for (i = 0; i < count; i++) {
-        int j;
-        for (j = i + 1; j < count; j++) {
-            if (strcmp(KG_SHOP_NAMES[remaining[j]], KG_SHOP_NAMES[remaining[i]]) < 0) {
-                int tmp = remaining[i];
-                remaining[i] = remaining[j];
-                remaining[j] = tmp;
-            }
-        }
-    }
-    return count > 0 ? remaining[ordinal % count] : -1;
-}
-
-static void kg_end_of_day(KGState* state, int current_day) {
+KG_HD static void kg_end_of_day(KGState* state, int current_day) {
     KGPythonRandom rng;
     int player_id;
     uint64_t day_seed = state->config.seed * 1000003ULL ^ (uint64_t)current_day;
@@ -1068,17 +1127,13 @@ static void kg_end_of_day(KGState* state, int current_day) {
         int next_day = current_day + 1;
         if (next_day > 0 && next_day % state->config.town_shop_unlock_interval == 0
                 && state->shop_count < KG_MAX_SHOPS) {
-            int remaining = KG_MAX_SHOPS - state->shop_count;
-            int ordinal = kg_random_below(&rng, remaining);
-            int shop = kg_sorted_remaining_shop(state, ordinal);
-            if (shop >= 0) {
-                state->unlocked_shops[state->shop_count++] = shop;
-            }
+            int shop = kg_random_below(&rng, KG_MAX_SHOPS);
+            state->unlocked_shops[state->shop_count++] = shop;
         }
     }
 }
 
-static int kg_quote_valid(int op, int item) {
+KG_HD static int kg_quote_valid(int op, int item) {
     if (op == KG_MARKET_SELL) return item >= 0 && item < KG_NUM_PRODUCTS;
     if (op == KG_MARKET_BUY_PRODUCT) return item == KG_ITEM_WHEAT || item == KG_ITEM_FERTILIZER;
     if (op == KG_MARKET_BUY_SEED) return item >= 0 && item < KG_NUM_CROPS;
@@ -1086,7 +1141,7 @@ static int kg_quote_valid(int op, int item) {
     return 0;
 }
 
-static int kg_commit_unit(KGState* state, int player_id, int op, int item, int price) {
+KG_HD static int kg_commit_unit(KGState* state, int player_id, int op, int item, int price) {
     KGPlayer* player = &state->players[player_id];
     if (op == KG_MARKET_SELL) {
         if (player->shed[item] <= 0) return 0;
@@ -1096,7 +1151,8 @@ static int kg_commit_unit(KGState* state, int player_id, int op, int item, int p
         return 1;
     }
     if (op == KG_MARKET_BUY_PRODUCT) {
-        if (player->money < price) return 0;
+        if (player->money < price
+                || kg_shed_total(player) >= state->config.shed_capacity) return 0;
         player->money -= price;
         player->shed[item]++;
         state->market.inventory[item]--;
@@ -1109,7 +1165,8 @@ static int kg_commit_unit(KGState* state, int player_id, int op, int item, int p
         return 1;
     }
     if (op == KG_MARKET_BUY_ANIMAL) {
-        if (player->money < price) return 0;
+        if (player->money < price
+                || kg_shed_total(player) >= state->config.shed_capacity) return 0;
         player->money -= price;
         player->shed[item]++;
         return 1;
@@ -1117,7 +1174,7 @@ static int kg_commit_unit(KGState* state, int player_id, int op, int item, int p
     return 0;
 }
 
-static void kg_process_market(KGState* state, const KGAction actions[KG_NUM_PLAYERS]) {
+KG_HD static void kg_process_market(KGState* state, const KGAction actions[KG_NUM_PLAYERS]) {
     int max_orders = state->config.max_market_orders_per_turn;
     int max_len = 0;
     int i;
@@ -1182,7 +1239,7 @@ static void kg_process_market(KGState* state, const KGAction actions[KG_NUM_PLAY
     }
 }
 
-static void kg_town_consume(KGState* state, int step) {
+KG_HD static void kg_town_consume(KGState* state, int step) {
     int shop;
     int j;
     int market_changed = 0;
@@ -1190,26 +1247,24 @@ static void kg_town_consume(KGState* state, int step) {
         for (shop = 0; shop < state->shop_count; shop++) {
             int id = state->unlocked_shops[shop];
             int products = 0;
-            while (products < KG_NUM_PRODUCTS && KG_SHOP_PRODUCTS[id][products] >= 0) products++;
+            while (products < KG_NUM_PRODUCTS && kg_shop_product(id, products) >= 0) products++;
             int multiplier = products == 1 ? 2 : 1;
             for (j = 0; j < products; j++) {
-                state->market.inventory[KG_SHOP_PRODUCTS[id][j]] -= multiplier;
+                state->market.inventory[kg_shop_product(id, j)] -= multiplier;
             }
             market_changed = 1;
         }
     }
     if (step % state->config.town_center_sell_interval == 0) {
-        int day = step / state->config.turns_per_day;
-        int multiplier = day >= 20 ? 4 : day >= 10 ? 2 : 1;
         for (j = 0; j < KG_NUM_PRODUCTS - 1; j++) {
-            state->market.inventory[j] -= multiplier;
+            state->market.inventory[j] -= 1;
         }
         market_changed = 1;
     }
     if (market_changed) kg_refresh_prices(state);
 }
 
-static void kg_validate_plant_atomic(const KGAction* action, const KGPlayer* player,
+KG_HD static void kg_validate_plant_atomic(const KGAction* action, const KGPlayer* player,
         int blocked[KG_NUM_CROPS]) {
     int demand[KG_NUM_CROPS] = {0, 0, 0, 0, 0};
     int i;
@@ -1229,7 +1284,7 @@ static void kg_validate_plant_atomic(const KGAction* action, const KGPlayer* pla
     }
 }
 
-void kg_step(KGState* state, const KGAction actions[KG_NUM_PLAYERS]) {
+KG_HD void kg_step(KGState* state, const KGAction actions[KG_NUM_PLAYERS]) {
     int player_id;
     int old_step;
     int old_day;

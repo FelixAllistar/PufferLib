@@ -100,7 +100,6 @@ printf 'Starting %s sweep: checkpoint=%s steps=%s runs=%s panel=%s\n' \
 
 ./puffer sweep kaggriculture \
     "base.load_model_path=$checkpoint" \
-    "env.curriculum_stage=4" \
     "env.episode_steps=720" \
     "env.bot_opponent_fraction=0.75" \
     "selfplay.opponent_pool=$panel" \

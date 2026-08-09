@@ -5,6 +5,8 @@ cd "$(dirname "$0")/../.."
 
 kag_games=50
 kag_jobs=4
+kag_gpu=1
+kag_gpu_agents=${KAG_GPU_AGENTS:-64}
 kag_output=logs/kaggriculture/population
 kag_final_only=0
 kag_sample_run=0
@@ -13,8 +15,8 @@ kag_range=
 kag_latest_run=0
 kag_include_emag=0
 kag_fixed=pass,rules
-kag_stage=4
-kag_preunlocked_land=0
+kag_cache=
+kag_focal_count=0
 kag_inputs=()
 
 kag_usage() {
@@ -24,10 +26,12 @@ kag_usage() {
         "Options:" \
         "  --games N          Total games per pairing, split across both seats (default 50)" \
         "  --jobs N           Parallel pairings (default 4)" \
+        "  --cpu              Use the legacy native C bench instead of CUDA" \
+        "  --gpu-agents N     CUDA evaluation agents per matcher (default 64)" \
         "  --output PREFIX    Output prefix (default logs/kaggriculture/population)" \
         "  --fixed LIST       Comma-separated fixed sides (default pass,rules; use none to disable)" \
-        "  --stage N          Evaluator curriculum stage 1..6 (default 4)" \
-        "  --preunlocked-land 0|1|2  Normal, paid 50-tile, or NE-only drill" \
+        "  --cache FILE       Reuse/write payoff rows keyed by checkpoint hash" \
+        "  --focal-count N    Evaluate only pairs led by the first N policies when the cached tail is complete" \
         "  --final-only       Keep only the lexically last raw checkpoint in each run directory" \
         "  --sample-run N     Evenly sample at most N numeric checkpoints per run directory" \
         "  --percentages LIST Select numeric checkpoints nearest comma-separated percentages" \
@@ -47,10 +51,12 @@ while (($#)); do
     case "$1" in
         --games) kag_games=$2; shift 2 ;;
         --jobs) kag_jobs=$2; shift 2 ;;
+        --cpu) kag_gpu=0; shift ;;
+        --gpu-agents) kag_gpu_agents=$2; shift 2 ;;
         --output) kag_output=$2; shift 2 ;;
         --fixed) kag_fixed=$2; shift 2 ;;
-        --stage) kag_stage=$2; shift 2 ;;
-        --preunlocked-land) kag_preunlocked_land=$2; shift 2 ;;
+        --cache) kag_cache=$2; shift 2 ;;
+        --focal-count) kag_focal_count=$2; shift 2 ;;
         --final-only) kag_final_only=1; shift ;;
         --sample-run) kag_sample_run=$2; shift 2 ;;
         --percentages) kag_percentages=$2; shift 2 ;;
@@ -67,20 +73,20 @@ if ! [[ $kag_games =~ ^[0-9]+$ ]] || ((kag_games < 2 || kag_games % 2)); then
     printf '%s\n' '--games must be a positive even integer of at least 2' >&2
     exit 2
 fi
-if ! [[ $kag_stage =~ ^[1-6]$ ]]; then
-    printf '%s\n' '--stage must be an integer from 1 through 6' >&2
-    exit 2
-fi
-if ! [[ $kag_preunlocked_land =~ ^[012]$ ]]; then
-    printf '%s\n' '--preunlocked-land must be 0, 1, or 2' >&2
-    exit 2
-fi
 if ! [[ $kag_jobs =~ ^[0-9]+$ ]] || ((kag_jobs < 1)); then
     printf '%s\n' '--jobs must be a positive integer' >&2
     exit 2
 fi
+if ! [[ $kag_gpu_agents =~ ^[0-9]+$ ]] || ((kag_gpu_agents < 4)); then
+    printf '%s\n' '--gpu-agents must be an integer of at least 4' >&2
+    exit 2
+fi
 if ! [[ $kag_sample_run =~ ^[0-9]+$ ]]; then
     printf '%s\n' '--sample-run must be a nonnegative integer' >&2
+    exit 2
+fi
+if ! [[ $kag_focal_count =~ ^[0-9]+$ ]]; then
+    printf '%s\n' '--focal-count must be a nonnegative integer' >&2
     exit 2
 fi
 if [[ -n $kag_percentages ]]; then
@@ -114,7 +120,7 @@ if ((kag_selector_count > 1)); then
     exit 2
 fi
 if [[ ! -x ./kaggriculture ]]; then
-    printf '%s\n' 'Build the native evaluator first: bash build.sh kaggriculture --fast' >&2
+    printf '%s\n' 'Build the native evaluator first: CUDA_HOME=/usr/local/cuda bash build.sh kaggriculture --fast' >&2
     exit 1
 fi
 if ((${#kag_inputs[@]} == 0)); then
@@ -273,7 +279,15 @@ if ((kag_count > 32)); then
 fi
 
 kag_names=()
+kag_hashes=()
 declare -A kag_seen_name=()
+# A payoff is reusable only under the same simulator/evaluator build and reset
+# configuration. Prefixing policy hashes with that context keeps the cache
+# incremental without silently carrying results across simulator changes.
+kag_eval_context=$({
+    sha256sum ./puffer ./kaggriculture
+    printf 'gpu=%d\n' "$kag_gpu"
+} | sha256sum | cut -d' ' -f1)
 for kag_path in "${kag_paths[@]}"; do
     kag_base=${kag_path##*/}
     kag_base=${kag_base%.emag}
@@ -293,7 +307,13 @@ for kag_path in "${kag_paths[@]}"; do
     fi
     kag_seen_name["$kag_name"]=1
     kag_names+=("$kag_name")
+    kag_hashes+=("$kag_eval_context:$(sha256sum "$kag_path" | cut -d' ' -f1)")
 done
+
+if ((kag_focal_count >= kag_count)); then
+    printf '%s\n' '--focal-count must be smaller than the policy count' >&2
+    exit 2
+fi
 
 mkdir -p "$(dirname "$kag_output")"
 kag_manifest="${kag_output}_manifest.tsv"
@@ -311,6 +331,37 @@ for ((kag_i=0; kag_i<kag_count; kag_i++)); do
     printf '%d\t%s\t%s\n' "$kag_i" "${kag_names[kag_i]}" \
         "${kag_paths[kag_i]}" >> "$kag_manifest"
 done
+
+declare -A kag_cached_row=()
+if ((kag_focal_count)); then
+    if [[ -f $kag_cache ]]; then
+        while IFS=$'\t' read -r kag_ha kag_hb kag_cs kag_cd kag_cma kag_cmb \
+                kag_cgames; do
+            [[ $kag_ha == hash_a ]] && continue
+            [[ $kag_cgames =~ ^[0-9]+$ ]] && ((kag_cgames >= kag_games)) \
+                || continue
+            kag_cached_row["$kag_ha,$kag_hb"]="$kag_cs"$'\t'"$kag_cd"$'\t'"$kag_cma"$'\t'"$kag_cmb"$'\t'"$kag_cgames"
+            kag_reverse_score=$(awk -v x="$kag_cs" 'BEGIN {printf "%.9g", 1-x}')
+            kag_cached_row["$kag_hb,$kag_ha"]="$kag_reverse_score"$'\t'"$kag_cd"$'\t'"$kag_cmb"$'\t'"$kag_cma"$'\t'"$kag_cgames"
+        done < "$kag_cache"
+    fi
+    kag_cache_complete=1
+    for ((kag_i=kag_focal_count; kag_i<kag_count; kag_i++)); do
+        for ((kag_j=kag_i+1; kag_j<kag_count; kag_j++)); do
+            if [[ -z ${kag_cached_row["${kag_hashes[kag_i]},${kag_hashes[kag_j]}"]+x} ]]; then
+                kag_cache_complete=0
+            fi
+        done
+    done
+    if ((! kag_cache_complete)); then
+        printf '%s\n' 'Cached tail is incomplete; evaluating the full matrix once'
+        kag_focal_count=0
+    else
+        printf 'Reusing %d cached tail pairs from %s\n' \
+            "$(((kag_count-kag_focal_count)*(kag_count-kag_focal_count-1)/2))" \
+            "$kag_cache"
+    fi
+fi
 
 kag_games_per_seat=$((kag_games / 2))
 kag_steps=$((kag_games_per_seat * 720))
@@ -333,18 +384,152 @@ kag_parse_summary() {
     }'
 }
 
+kag_parse_match() {
+    awk '/match_result / {
+        for (i = 1; i <= NF; i++) {
+            if ($i ~ /^score=/) {score=$i; sub(/^score=/, "", score)}
+            if ($i ~ /^draw=/) {draw=$i; sub(/^draw=/, "", draw)}
+            if ($i ~ /^money=/) {money=$i; sub(/^money=/, "", money)}
+            if ($i ~ /^opponent_money=/) {
+                opp=$i; sub(/^opponent_money=/, "", opp)
+            }
+        }
+        if (score != "" && draw != "" && money != "" && opp != "") {
+            print score, draw, money, opp
+            exit
+        }
+    }'
+}
+
+kag_json_value() {
+    local kag_text=$1 kag_key=$2
+    printf '%s\n' "$kag_text" \
+        | grep -o '"'"$kag_key"'"[:][0-9.eE+-]*' \
+        | tail -n 1 | cut -d: -f2
+}
+
+kag_run_fixed_gpu() {
+    local kag_i=$1 kag_side=$2 kag_a=$3 kag_result=$4
+    local kag_output_text kag_reverse_text
+    local kag_score kag_draw kag_money kag_fixed_money
+    local kag_reverse_score kag_reverse_draw kag_reverse_money kag_reverse_fixed_money
+    local kag_pass=0 kag_rules=0 kag_seed_offset=0
+    local kag_exact_agents=$((2 * kag_games_per_seat))
+    if [[ $kag_side == pass ]]; then kag_pass=1; fi
+    if [[ $kag_side == rules ]]; then kag_rules=1; kag_seed_offset=1; fi
+    if ! kag_output_text=$(./puffer eval_bot kaggriculture \
+            "base.eval_episodes=$kag_games_per_seat" \
+            "base.eval_agents=$kag_exact_agents" \
+            "base.seed=$((8000 + kag_i * 17 + kag_seed_offset))" \
+            "base.load_model_path=$kag_a" \
+            "env.bot_opponent_fraction=1" \
+            "env.bot_pass_fraction=$kag_pass" \
+            "env.bot_rules_fraction=$kag_rules" \
+            "env.bot_script_fraction=0" \
+            "env.bot_adaptive_fraction=0" \
+            env.bot_first=0 \
+            selfplay.enabled=0 train.total_timesteps=0 2>&1); then
+        printf '%s\n' "$kag_output_text" > "${kag_result}.error"
+        return 1
+    fi
+    if ! kag_reverse_text=$(./puffer eval_bot kaggriculture \
+            "base.eval_episodes=$kag_games_per_seat" \
+            "base.eval_agents=$kag_exact_agents" \
+            "base.seed=$((9000 + kag_i * 17 + kag_seed_offset))" \
+            "base.load_model_path=$kag_a" \
+            "env.bot_opponent_fraction=1" \
+            "env.bot_pass_fraction=$kag_pass" \
+            "env.bot_rules_fraction=$kag_rules" \
+            "env.bot_script_fraction=0" \
+            "env.bot_adaptive_fraction=0" \
+            env.bot_first=1 \
+            selfplay.enabled=0 train.total_timesteps=0 2>&1); then
+        printf '%s\n%s\n' "$kag_output_text" "$kag_reverse_text" \
+            > "${kag_result}.error"
+        return 1
+    fi
+    kag_score=$(kag_json_value "$kag_output_text" 'env/perf')
+    kag_draw=$(kag_json_value "$kag_output_text" 'env/draw_rate')
+    kag_money=$(kag_json_value "$kag_output_text" 'env/score')
+    kag_fixed_money=$(kag_json_value "$kag_output_text" 'env/opponent_score')
+    kag_reverse_score=$(kag_json_value "$kag_reverse_text" 'env/perf')
+    kag_reverse_draw=$(kag_json_value "$kag_reverse_text" 'env/draw_rate')
+    kag_reverse_money=$(kag_json_value "$kag_reverse_text" 'env/score')
+    kag_reverse_fixed_money=$(kag_json_value "$kag_reverse_text" 'env/opponent_score')
+    if [[ -z $kag_score || -z $kag_draw || -z $kag_money || -z $kag_fixed_money \
+            || -z $kag_reverse_score || -z $kag_reverse_draw \
+            || -z $kag_reverse_money || -z $kag_reverse_fixed_money ]]; then
+        printf '%s\n%s\n' "$kag_output_text" "$kag_reverse_text" \
+            > "${kag_result}.error"
+        return 1
+    fi
+    read -r kag_score kag_draw kag_money kag_fixed_money < <(awk \
+        -v a="$kag_score" -v b="$kag_reverse_score" \
+        -v da="$kag_draw" -v db="$kag_reverse_draw" \
+        -v m="$kag_money" -v mr="$kag_reverse_money" \
+        -v f="$kag_fixed_money" -v fr="$kag_reverse_fixed_money" \
+        'BEGIN {printf "%.6f %.6f %.3f %.3f\n", (a+b)/2, (da+db)/2, (m+mr)/2, (f+fr)/2}')
+    printf '%s\t%s\t%s\t%s\t%s\t%s\n' "$kag_i" "$kag_side" \
+        "$kag_score" "$kag_draw" "$kag_money" "$kag_fixed_money" \
+        > "$kag_result"
+}
+
+kag_run_gpu_pair() {
+    local kag_i=$1 kag_j=$2 kag_a=$3 kag_b=$4 kag_result=$5
+    local kag_forward kag_reverse kag_sf kag_df kag_af kag_bf
+    local kag_sr kag_dr kag_br kag_ar kag_score kag_draw kag_money_a kag_money_b
+    if ! kag_forward=$(./puffer match kaggriculture \
+            "base.num_games=$kag_games_per_seat" \
+            "base.eval_agents=$kag_gpu_agents" \
+            "base.seed=$((7000 + kag_i * 257 + kag_j * 3))" \
+            "base.load_model_path=$kag_a" \
+            "base.load_enemy_model_path=$kag_b" \
+            selfplay.enabled=0 train.total_timesteps=0 2>&1); then
+        printf '%s\n' "$kag_forward" > "${kag_result}.error"
+        return 1
+    fi
+    if ! kag_reverse=$(./puffer match kaggriculture \
+            "base.num_games=$kag_games_per_seat" \
+            "base.eval_agents=$kag_gpu_agents" \
+            "base.seed=$((7001 + kag_i * 257 + kag_j * 3))" \
+            "base.load_model_path=$kag_b" \
+            "base.load_enemy_model_path=$kag_a" \
+            selfplay.enabled=0 train.total_timesteps=0 2>&1); then
+        printf '%s\n' "$kag_reverse" > "${kag_result}.error"
+        return 1
+    fi
+    read -r kag_sf kag_df kag_af kag_bf < <(printf '%s\n' "$kag_forward" | kag_parse_match)
+    read -r kag_sr kag_dr kag_br kag_ar < <(printf '%s\n' "$kag_reverse" | kag_parse_match)
+    if [[ -z ${kag_sf:-} || -z ${kag_sr:-} ]]; then
+        printf '%s\n%s\n' "$kag_forward" "$kag_reverse" > "${kag_result}.error"
+        return 1
+    fi
+    read -r kag_score kag_draw kag_money_a kag_money_b < <(awk \
+        -v sf="$kag_sf" -v sr="$kag_sr" -v df="$kag_df" -v dr="$kag_dr" \
+        -v af="$kag_af" -v ar="$kag_ar" -v bf="$kag_bf" -v br="$kag_br" \
+        'BEGIN {printf "%.6f %.6f %.3f %.3f\n", (sf+1-sr)/2, (df+dr)/2, (af+ar)/2, (bf+br)/2}')
+    printf '%s\t%s\t%s\t%s\t%s\t%s\n' "$kag_i" "$kag_j" "$kag_score" \
+        "$kag_draw" "$kag_money_a" "$kag_money_b" > "$kag_result"
+}
+
 kag_run_pair() {
     local kag_i=$1 kag_j=$2 kag_a=$3 kag_b=$4 kag_result=$5
     local kag_forward kag_reverse kag_sf kag_df kag_af kag_bf
     local kag_sr kag_dr kag_br kag_ar kag_score kag_draw kag_money_a kag_money_b
-    if ! kag_forward=$(KAG_STAGE="$kag_stage" \
-            KAG_PREUNLOCKED_LAND="$kag_preunlocked_land" ./kaggriculture bench \
+    if ((kag_gpu)); then
+        if [[ $kag_j =~ ^(pass|rules)$ ]]; then
+            kag_run_fixed_gpu "$kag_i" "$kag_j" "$kag_a" "$kag_result"
+        else
+            kag_run_gpu_pair "$kag_i" "$kag_j" "$kag_a" "$kag_b" "$kag_result"
+        fi
+        return $?
+    fi
+    if ! kag_forward=$(./kaggriculture bench \
             "$kag_steps" "$kag_a" "$kag_b" 2>&1); then
         printf '%s\n' "$kag_forward" > "${kag_result}.error"
         return 1
     fi
-    if ! kag_reverse=$(KAG_STAGE="$kag_stage" \
-            KAG_PREUNLOCKED_LAND="$kag_preunlocked_land" ./kaggriculture bench \
+    if ! kag_reverse=$(./kaggriculture bench \
             "$kag_steps" "$kag_b" "$kag_a" 2>&1); then
         printf '%s\n' "$kag_reverse" > "${kag_result}.error"
         return 1
@@ -363,23 +548,49 @@ kag_run_pair() {
         "$kag_draw" "$kag_money_a" "$kag_money_b" > "$kag_result"
 }
 
+kag_jobs_active=0
 kag_wait_slot() {
-    local kag_active
-    while :; do
-        kag_active=$(jobs -rp | wc -l)
-        ((kag_active < kag_jobs)) && return
+    while ((kag_jobs_active >= kag_jobs)); do
         wait -n || true
+        kag_jobs_active=$((kag_jobs_active - 1))
     done
 }
 
-for ((kag_i=0; kag_i<kag_count; kag_i++)); do
-    for ((kag_j=kag_i+1; kag_j<kag_count; kag_j++)); do
-        kag_wait_slot
-        kag_run_pair "$kag_i" "$kag_j" "${kag_paths[kag_i]}" \
-            "${kag_paths[kag_j]}" "$kag_tmp/p_${kag_i}_${kag_j}.tsv" &
+if ((kag_gpu && kag_count <= 9)); then
+    printf 'Using one persistent CUDA process with resident opponent banks\n'
+    if ! ./puffer league kaggriculture \
+            "league.mode=matrix" \
+            "league.policy_manifest=$kag_manifest" \
+            "league.output=$kag_tmp/p_native.tsv" \
+            "league.games=$kag_games" \
+            "league.focal_count=$kag_focal_count" \
+            "base.seed=7000"; then
+        printf '%s\n' 'Native persistent league evaluation failed' >&2
+        exit 1
+    fi
+else
+    for ((kag_i=0; kag_i<kag_count; kag_i++)); do
+        for ((kag_j=kag_i+1; kag_j<kag_count; kag_j++)); do
+            kag_wait_slot
+            kag_run_pair "$kag_i" "$kag_j" "${kag_paths[kag_i]}" \
+                "${kag_paths[kag_j]}" "$kag_tmp/p_${kag_i}_${kag_j}.tsv" &
+            kag_jobs_active=$((kag_jobs_active + 1))
+        done
     done
-done
-wait
+    wait
+    kag_jobs_active=0
+fi
+
+if ((kag_focal_count)); then
+    : > "$kag_tmp/p_cached.tsv"
+    for ((kag_i=kag_focal_count; kag_i<kag_count; kag_i++)); do
+        for ((kag_j=kag_i+1; kag_j<kag_count; kag_j++)); do
+            printf '%d\t%d\t%s\n' "$kag_i" "$kag_j" \
+                "${kag_cached_row["${kag_hashes[kag_i]},${kag_hashes[kag_j]}"]}" \
+                >> "$kag_tmp/p_cached.tsv"
+        done
+    done
+fi
 
 if find "$kag_tmp" -name '*.error' -print -quit | grep -q .; then
     printf '%s\n' 'At least one matchup failed:' >&2
@@ -397,7 +608,16 @@ for ((kag_i=0; kag_i<kag_count; kag_i++)); do
     kag_money["$kag_i,$kag_i"]=0.000
 done
 printf 'a\tb\tscore_a\tdraw\tmoney_a\tmoney_b\n' > "$kag_matches"
-while IFS=$'\t' read -r kag_i kag_j kag_score kag_draw kag_money_a kag_money_b; do
+if [[ -n $kag_cache ]]; then
+    kag_cache_dir=${kag_cache%/*}
+    [[ $kag_cache_dir == "$kag_cache" ]] && kag_cache_dir=.
+    mkdir -p "$kag_cache_dir"
+    kag_cache_tmp=$(mktemp "${kag_cache}.XXXXXX")
+    printf 'hash_a\thash_b\tscore_a\tdraw\tmoney_a\tmoney_b\tgames\n' \
+        > "$kag_cache_tmp"
+fi
+while IFS=$'\t' read -r kag_i kag_j kag_score kag_draw kag_money_a kag_money_b \
+        kag_actual_games; do
     kag_reverse_score=$(awk -v x="$kag_score" 'BEGIN {printf "%.6f", 1-x}')
     kag_payoff["$kag_i,$kag_j"]=$kag_score
     kag_payoff["$kag_j,$kag_i"]=$kag_reverse_score
@@ -408,7 +628,17 @@ while IFS=$'\t' read -r kag_i kag_j kag_score kag_draw kag_money_a kag_money_b; 
     printf '%s\t%s\t%s\t%s\t%s\t%s\n' "${kag_names[kag_i]}" \
         "${kag_names[kag_j]}" "$kag_score" "$kag_draw" "$kag_money_a" \
         "$kag_money_b" >> "$kag_matches"
+    if [[ -n $kag_cache ]]; then
+        [[ $kag_actual_games =~ ^[0-9]+$ ]] || kag_actual_games=$kag_games
+        printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+            "${kag_hashes[kag_i]}" "${kag_hashes[kag_j]}" "$kag_score" \
+            "$kag_draw" "$kag_money_a" "$kag_money_b" "$kag_actual_games" \
+            >> "$kag_cache_tmp"
+    fi
 done < <(sort -t$'\t' -k1,1n -k2,2n "$kag_tmp"/p_*.tsv)
+if [[ -n $kag_cache ]]; then
+    mv "$kag_cache_tmp" "$kag_cache"
+fi
 
 {
     printf 'policy'
@@ -553,9 +783,11 @@ if [[ $kag_fixed != none && -n $kag_fixed ]]; then
             kag_wait_slot
             kag_run_pair "$kag_i" "$kag_side" "${kag_paths[kag_i]}" "$kag_side" \
                 "$kag_tmp/f_${kag_i}_${kag_side}.tsv" &
+            kag_jobs_active=$((kag_jobs_active + 1))
         done
     done
     wait
+    kag_jobs_active=0
     if find "$kag_tmp" -name 'f_*.error' -print -quit | grep -q .; then
         printf '%s\n' 'At least one fixed-opponent matchup failed' >&2
         exit 1

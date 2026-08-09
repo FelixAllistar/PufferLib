@@ -25,9 +25,9 @@ void puf_normal_init(PrecisionTensor* dst, float std, ulong seed, cudaStream_t s
 #define PUFFER_MINIMAL
 #include "../ocean/minimal/minimal.cu"
 #endif
-#if __has_include("../ocean/kaggriculture/kaggriculture.cu")
+#if __has_include("../ocean/kaggriculture/kaggriculture_encoder.cu")
 #define PUFFER_KAGGRICULTURE
-#include "../ocean/kaggriculture/kaggriculture.cu"
+#include "../ocean/kaggriculture/kaggriculture_encoder.cu"
 #endif
 #ifdef PUFFER_NETHACK
 #include "../ocean/nethack/nethack.cu"

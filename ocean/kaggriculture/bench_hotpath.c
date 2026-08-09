@@ -55,7 +55,6 @@ int main(void) {
     kg_config_default(&config);
     env.num_agents = KG_NUM_PLAYERS;
     env.rng = 1;
-    env.curriculum_stage = 6;
     env.reward_potential_scale = 0.001f;
     env.reward_win = 0.5f;
     env.reward_seed_value = 1.0f;

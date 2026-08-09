@@ -19,7 +19,6 @@ run_train() {
     ./puffer train kaggriculture \
         policy.hidden_size=32 policy.num_layers=2 \
         vec.frozen_bank_hidden_size=32 vec.frozen_bank_num_layers=2 \
-        env.curriculum_stage=6 env.curriculum_preunlocked_land=0 \
         env.bot_opponent_fraction=0.75 \
         selfplay.enabled=1 selfplay.pfsp_mode=variance \
         selfplay.pfsp_uniform_mix=0.10 \

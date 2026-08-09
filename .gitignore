@@ -201,3 +201,7 @@ pufferlib/ocean/impulse_wars/benchmark/
 # Data
 resources/drive/data/*
 resources/drive/binaries/*
+
+# Kaggriculture top-replay analysis samples (large, not for VCS)
+ocean/kaggriculture/replays/*.json
+ocean/kaggriculture/replays/*.tsv
