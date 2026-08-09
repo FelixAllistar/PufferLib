@@ -265,7 +265,7 @@ static void ps_apply_env_config(Env* env) {
     puf_ini_load_env(&ini, PS_ENV_NAME, 0, NULL);
     Dict* env_kwargs = puf_ini_section(&ini, "env", 0);
     env->cfg = ps_config_from_kwargs(env_kwargs);
-    env->show_hitboxes = (int)ps_kwarg(env_kwargs, "show_hitboxes");
+    env->show_hitboxes = (int)dict_get(env_kwargs, "show_hitboxes");
     puf_ini_free(&ini);
 }
 
@@ -355,14 +355,7 @@ int main(int argc, char** argv) {
 
         int pending_at_frame_start = env.pending_upgrade;
 
-        if (watch_mode) {
-            // Policy drives every sim step, including upgrade picks.
-            // No human freeze — matches train-time action cadence.
-            if (env.pending_upgrade) {
-                // Still advance at fixed dt; policy chooses the card.
-                // (one-shot upgrade action consumed inside the step loop)
-            }
-        } else {
+        if (!watch_mode) {
             int movement_mask = read_move_held_mask();
             if (movement_lock_active && movement_mask != movement_lock_mask) {
                 // A release or a new held-key combination is an intentional

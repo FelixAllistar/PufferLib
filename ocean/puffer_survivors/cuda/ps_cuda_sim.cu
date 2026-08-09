@@ -147,10 +147,6 @@ static inline void ps_cuda_check(cudaError_t err, const char* expr, const char* 
 } while (0)
 
 static inline void ps_cuda_alloc(PSCudaSim* sim, int num_envs, PSConfig cfg) {
-    if (num_envs <= 0) {
-        std::fprintf(stderr, "num_envs must be positive\n");
-        std::abort();
-    }
     std::memset(sim, 0, sizeof(*sim));
     sim->num_envs = num_envs;
     sim->cfg = cfg;
@@ -300,31 +296,6 @@ static inline void ps_cuda_free(PSCudaSim* sim) {
     std::memset(sim, 0, sizeof(*sim));
 }
 
-PS_SIM_FN void ps_clear_entities(PSSim* sim, int env) {
-    for (int i = 0; i < sim->cfg.enemy_cap; i++) {
-        PS_ENEMY(sim, env, i, active) = 0;
-        PS_ENEMY(sim, env, i, next) = -1;
-    }
-    for (int i = 0; i < sim->cfg.projectile_cap; i++) PS_PROJECTILE(sim, env, i, active) = 0;
-    for (int i = 0; i < sim->cfg.drop_cap; i++) PS_DROP(sim, env, i, active) = 0;
-    for (int i = 0; i < PS_MAX_AREAS; i++) PS_AREA(sim, env, i, active) = 0;
-    for (int i = 0; i < PS_MAX_MOVING_OBSTACLES; i++) PS_MOVING(sim, env, i, active) = 0;
-    for (int i = 0; i < PS_GRID_CELLS; i++) PS_GRID(sim, env, i) = -1;
-    PS_P(sim, env, grid_touched_count) = 0;
-    PS_P(sim, env, aabb_count) = 0;
-    PS_P(sim, env, enemy_count) = 0;
-    PS_P(sim, env, projectile_count) = 0;
-    PS_P(sim, env, drop_count) = 0;
-    PS_P(sim, env, area_count) = 0;
-    PS_P(sim, env, moving_obstacle_count) = 0;
-    PS_P(sim, env, active_ink_count) = 0;
-    PS_P(sim, env, next_enemy_slot) = 0;
-    PS_P(sim, env, next_projectile_slot) = 0;
-    PS_P(sim, env, next_drop_slot) = 0;
-    PS_P(sim, env, next_area_slot) = 0;
-    PS_P(sim, env, next_moving_obstacle_slot) = 0;
-}
-
 // -----------------------------------------------------------------------------
 // Kernels and host launchers
 // -----------------------------------------------------------------------------
@@ -366,13 +337,6 @@ static inline void ps_cuda_reset_all(PSCudaSim* sim, uint32_t seed, cudaStream_t
 }
 
 static inline void ps_cuda_step_range(PSCudaSim* sim, int start, int count, cudaStream_t stream = 0) {
-    if (count <= 0) return;
-    if (start < 0) {
-        count += start;
-        start = 0;
-    }
-    if (start >= sim->num_envs || count <= 0) return;
-    if (start + count > sim->num_envs) count = sim->num_envs - start;
     int blocks = (count + PS_CUDA_BLOCK_SIZE - 1) / PS_CUDA_BLOCK_SIZE;
     cudaMemsetAsync(sim->observations + (size_t)start * PS_OBS_SIZE, 0,
         (size_t)count * PS_OBS_SIZE * sizeof(float), stream);

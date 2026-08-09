@@ -2,10 +2,6 @@
 
 #include "ps_constants.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 struct Log {
     float perf;
     float score;
@@ -46,7 +42,3 @@ struct Log {
     float peak_projectiles;
     float min_hp;
 };
-
-#ifdef __cplusplus
-}
-#endif

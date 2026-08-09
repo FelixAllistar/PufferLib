@@ -1,13 +1,44 @@
 #pragma once
 
-#include "ps_content.h"
-#include "ps_sim.h"
-#include "raylib.h"
 #include <string.h>
+#include "raylib.h"
+#include "ps_sim.h"
 
-#ifndef PS_RENDER_QUALITY_DEFAULT
-#define PS_RENDER_QUALITY_DEFAULT 2
-#endif
+static inline const char* ps_upgrade_name(int type) {
+    switch (type) {
+        case PS_UPGRADE_BUBBLE: return "Bubble";
+        case PS_UPGRADE_WHIRLPOOL: return "Whirlpool";
+        case PS_UPGRADE_ORBIT: return "Orbit";
+        case PS_UPGRADE_INK: return "Poison Oil";
+        case PS_UPGRADE_SONAR: return "Sonar";
+        case PS_UPGRADE_SPEED: return "Speed";
+        case PS_UPGRADE_MAGNET: return "Magnet";
+        case PS_UPGRADE_HEALTH: return "Health";
+        case PS_UPGRADE_MIGHT: return "Might";
+        case PS_UPGRADE_COOLDOWN: return "Cooldown";
+        case PS_UPGRADE_AREA: return "Area";
+        case PS_UPGRADE_PIERCE: return "Pierce";
+        default: return "-";
+    }
+}
+
+static inline const char* ps_upgrade_description(int type) {
+    switch (type) {
+        case PS_UPGRADE_BUBBLE: return "Faster bubbles\nthat pop harder.";
+        case PS_UPGRADE_WHIRLPOOL: return "Bigger burst\nand knockback.";
+        case PS_UPGRADE_ORBIT: return "More pearls for\nclose defense.";
+        case PS_UPGRADE_INK: return "Poison pools and\na longer trail.";
+        case PS_UPGRADE_SONAR: return "Huge pulse when\nswarmed.";
+        case PS_UPGRADE_SPEED: return "Move faster out\nof danger.";
+        case PS_UPGRADE_MAGNET: return "Pull XP and hearts\nfrom farther away.";
+        case PS_UPGRADE_HEALTH: return "Gain max HP and\nheal now.";
+        case PS_UPGRADE_MIGHT: return "All weapons deal\nmore damage.";
+        case PS_UPGRADE_COOLDOWN: return "Weapons fire\nmore often.";
+        case PS_UPGRADE_AREA: return "Larger hitboxes\nand pools.";
+        case PS_UPGRADE_PIERCE: return "Bubbles pierce\nmore enemies.";
+        default: return "Upgrade your survival odds.";
+    }
+}
 
 typedef struct {
     Texture2D sprites;
@@ -30,7 +61,6 @@ typedef struct {
     int render_w;
     int render_h;
     float render_scale;
-    int render_quality;
 #ifdef PS_FAST_RENDER
     Texture2D fast_ink;
     int fast_ink_loaded;
@@ -96,6 +126,28 @@ static inline Vector2 ps_screen(PufferSurvivors* env, float x, float y, float sc
     return (Vector2){w * 0.5f + (x - camera_x) * scale, h * 0.5f + (y - camera_y) * scale};
 }
 
+// Cull in world space before the screen transform so dense populations don't
+// pay for sprite/overlay setup just to be rejected offscreen.
+static inline int ps_cull(PufferSurvivors* env, float x, float y, float radius, float scale, int w, int h) {
+#ifdef PS_FAST_RENDER
+    PSClient* client = (PSClient*)env->client;
+    float camera_x = env->px;
+    float camera_y = env->py;
+    if (client->fast_interp_init) {
+        float alpha = ps_clampf(client->fast_render_alpha, 0.0f, 1.0f);
+        camera_x = client->fast_previous_px + (env->px - client->fast_previous_px) * alpha;
+        camera_y = client->fast_previous_py + (env->py - client->fast_previous_py) * alpha;
+    }
+#else
+    float camera_x = env->px;
+    float camera_y = env->py;
+#endif
+    float sx = (x - camera_x) * scale;
+    float sy = (y - camera_y) * scale;
+    float r = radius * scale;
+    return sx + r < 0.0f || sx - r > (float)w || sy + r < 0.0f || sy - r > (float)h;
+}
+
 static inline PSClient* ps_client(PufferSurvivors* env) {
     return (PSClient*)env->client;
 }
@@ -123,9 +175,10 @@ static inline void ps_draw_sprite_ex_tinted(PufferSurvivors* env, int sprite, fl
     PSClient* client = ps_client(env);
     int w = client->render_w > 0 ? client->render_w : GetScreenWidth();
     int h = client->render_h > 0 ? client->render_h : GetScreenHeight();
+    float view = fminf((float)w, (float)h) * 1.25f;
     float scale = client->render_scale > 0.0f
         ? client->render_scale
-        : fminf((float)w, (float)h) / env->cfg.arena_size;
+        : view / env->cfg.arena_size;
     Vector2 p = ps_screen(env, x, y, scale, w, h);
     float size = radius * visual_scale * scale;
     if (p.x + size < 0.0f || p.x - size > (float)w || p.y + size < 0.0f || p.y - size > (float)h) return;
@@ -281,20 +334,15 @@ static inline void ps_draw_fast_hit_effect(PufferSurvivors* env, float scale, in
     }
 }
 
-static inline Texture2D ps_load_fast_background_texture(const char* primary, const char* fallback) {
-    if (FileExists(primary)) return LoadTexture(primary);
-    if (FileExists(fallback)) return LoadTexture(fallback);
-    return (Texture2D){0};
-}
-
 static inline void ps_draw_fast_obstacle_debris(PufferSurvivors* env, int variant,
     float x, float y, float radius, float visual_scale, float rotation, Color fallback) {
     PSClient* client = ps_client(env);
     int w = client->render_w > 0 ? client->render_w : GetScreenWidth();
     int h = client->render_h > 0 ? client->render_h : GetScreenHeight();
+    float view = fminf((float)w, (float)h) * 1.25f;
     float scale = client->render_scale > 0.0f
         ? client->render_scale
-        : fminf((float)w, (float)h) / env->cfg.arena_size;
+        : view / env->cfg.arena_size;
     Vector2 p = ps_screen(env, x, y, scale, w, h);
     float size = radius * visual_scale * scale;
     if (p.x + size < 0.0f || p.x - size > (float)w || p.y + size < 0.0f || p.y - size > (float)h) return;
@@ -520,12 +568,9 @@ static inline void ps_draw_projectile(PufferSurvivors* env, int i, float scale, 
     float r = env->projectiles.radius[i] * scale;
     if (p.x + r < 0.0f || p.x - r > (float)w || p.y + r < 0.0f || p.y - r > (float)h) return;
 
-    PSClient* client = ps_client(env);
-    if (client->render_quality >= 2) {
-        Vector2 tail = {p.x - env->projectiles.vx[i] * scale * 2.5f, p.y - env->projectiles.vy[i] * scale * 2.5f};
-        DrawLineEx(tail, p, fmaxf(2.0f, r * 0.35f), (Color){115, 231, 255, 105});
-        DrawCircleLines((int)p.x, (int)p.y, r * 1.25f, (Color){115, 231, 255, 80});
-    }
+    Vector2 tail = {p.x - env->projectiles.vx[i] * scale * 2.5f, p.y - env->projectiles.vy[i] * scale * 2.5f};
+    DrawLineEx(tail, p, fmaxf(2.0f, r * 0.35f), (Color){115, 231, 255, 105});
+    DrawCircleLines((int)p.x, (int)p.y, r * 1.25f, (Color){115, 231, 255, 80});
     float travel_angle = atan2f(env->projectiles.vy[i], env->projectiles.vx[i]) * 57.2958f;
     // The atlas bubble points left (large bubble at the leading edge), so its
     // zero-rotation forward vector is 180 degrees.
@@ -899,16 +944,16 @@ static inline void c_render(PufferSurvivors* env) {
         client->fast_ink_loaded = client->fast_ink.id != 0;
         UnloadImage(fast_ink_image);
         if (client->fast_ink_loaded) SetTextureFilter(client->fast_ink, TEXTURE_FILTER_BILINEAR);
-        client->fast_water_caustics = ps_load_fast_background_texture(
+        client->fast_water_caustics = ps_load_project_texture(
             "resources/puffer_survivors/fast_water_caustics_bright.png",
             "../../resources/puffer_survivors/fast_water_caustics_bright.png");
-        client->fast_water_silhouettes = ps_load_fast_background_texture(
+        client->fast_water_silhouettes = ps_load_project_texture(
             "resources/puffer_survivors/fast_water_silhouettes_bright.png",
             "../../resources/puffer_survivors/fast_water_silhouettes_bright.png");
-        client->fast_water_props = ps_load_fast_background_texture(
+        client->fast_water_props = ps_load_project_texture(
             "resources/puffer_survivors/fast_water_props.png",
             "../../resources/puffer_survivors/fast_water_props.png");
-        client->fast_obstacle_debris = ps_load_fast_background_texture(
+        client->fast_obstacle_debris = ps_load_project_texture(
             "resources/puffer_survivors/fast_obstacle_debris.png",
             "../../resources/puffer_survivors/fast_obstacle_debris.png");
         client->fast_water_caustics_loaded = client->fast_water_caustics.id != 0;
@@ -958,14 +1003,10 @@ static inline void c_render(PufferSurvivors* env) {
                 }
             }
         }
-        ps_client(env)->render_quality = PS_RENDER_QUALITY_DEFAULT;
     }
 
     if (IsKeyDown(KEY_ESCAPE)) exit(0);
     if (IsKeyPressed(KEY_H)) env->show_hitboxes = !env->show_hitboxes;
-    if (IsKeyPressed(KEY_Q) && ps_client(env) != NULL) {
-        ps_client(env)->render_quality = (ps_client(env)->render_quality + 1) % 3;
-    }
 
     BeginDrawing();
 #ifdef PS_FAST_RENDER
@@ -976,7 +1017,7 @@ static inline void c_render(PufferSurvivors* env) {
 
     int sw = GetScreenWidth();
     int sh = GetScreenHeight();
-    float scale = fminf((float)sw, (float)sh) / env->cfg.arena_size;
+    float scale = fminf((float)sw, (float)sh) * 1.25f / env->cfg.arena_size;
     PSClient* render_client = ps_client(env);
     render_client->render_w = sw;
     render_client->render_h = sh;
@@ -1021,16 +1062,21 @@ static inline void c_render(PufferSurvivors* env) {
     }
 
     for (int k = 0; k < env->moving_obstacle_count; k++) {
-        ps_draw_moving_obstacle(env, env->moving_obstacles.dense[k], scale, sw, sh);
+        int i = env->moving_obstacles.dense[k];
+        float extent = fmaxf(env->moving_obstacles.half_width[i],
+            env->moving_obstacles.half_height[i]) * 2.0f;
+        if (!ps_cull(env, env->moving_obstacles.x[i], env->moving_obstacles.y[i],
+                extent, scale, sw, sh))
+            ps_draw_moving_obstacle(env, i, scale, sw, sh);
     }
 
     for (int k = 0; k < env->drop_count; k++) {
         int i = env->drops.dense[k];
+        if (ps_cull(env, env->drops.x[i], env->drops.y[i], 1.0f, scale, sw, sh)) continue;
         Vector2 p = ps_screen(env, env->drops.x[i], env->drops.y[i], scale, sw, sh);
         float pulse = 0.75f + 0.25f * sinf((float)env->tick * 0.14f + (float)i);
-        int high_fx = render_client->render_quality >= 2;
         if (env->drops.type[i] == 1) {
-            if (high_fx) DrawCircleV(p, 18.0f * pulse, (Color){64, 255, 147, 62});
+            DrawCircleV(p, 18.0f * pulse, (Color){64, 255, 147, 62});
             ps_draw_sprite_ex(env, PS_SPRITE_HEALTH, env->drops.x[i], env->drops.y[i], 0.34f, 3.0f, 0.0f, 0, RED);
         } else {
             // XP is small and cyan, which disappears into the bright water.
@@ -1049,13 +1095,18 @@ static inline void c_render(PufferSurvivors* env) {
     }
 
     for (int k = 0; k < env->area_count; k++) {
-        ps_draw_area(env, env->areas.dense[k], scale, sw, sh);
+        int i = env->areas.dense[k];
+        if (!ps_cull(env, env->areas.x[i], env->areas.y[i],
+                env->areas.radius[i], scale, sw, sh))
+            ps_draw_area(env, i, scale, sw, sh);
     }
 
     ps_draw_weapon_orbits(env, scale, sw, sh);
 
     for (int k = 0; k < env->projectile_count; k++) {
         int i = env->projectiles.dense[k];
+        if (ps_cull(env, env->projectiles.x[i], env->projectiles.y[i],
+                env->projectiles.radius[i], scale, sw, sh)) continue;
         ps_draw_projectile(env, i, scale, sw, sh);
         if (env->show_hitboxes) {
             Vector2 p = ps_screen(env, env->projectiles.x[i], env->projectiles.y[i], scale, sw, sh);
@@ -1065,6 +1116,14 @@ static inline void c_render(PufferSurvivors* env) {
 
     for (int k = 0; k < env->enemy_count; k++) {
         int i = env->enemies.dense[k];
+        uint8_t type = env->enemies.type[i];
+        int kind = type & PS_ENEMY_KIND_MASK;
+        float visual_scale = (type & PS_ENEMY_BOSS_FLAG) ? 3.2f
+            : ((type & PS_ENEMY_ELITE_FLAG) ? 3.1f
+            : (kind == 1 ? 3.85f : (kind == 2 ? 3.5f : 3.35f)));
+        float visual_radius = env->enemies.radius[i] * visual_scale;
+        if (ps_cull(env, env->enemies.x[i], env->enemies.y[i],
+                visual_radius, scale, sw, sh)) continue;
         ps_draw_enemy(env, i, scale, sw, sh);
         if (env->show_hitboxes) {
             Vector2 p = ps_screen(env, env->enemies.x[i], env->enemies.y[i], scale, sw, sh);
@@ -1148,7 +1207,6 @@ static inline void c_render(PufferSurvivors* env) {
     ps_draw_action_debug(env, sw);
     ps_draw_upgrade_cards(env, sw, sh);
     if (env->show_hitboxes) DrawText("HITBOXES", sw - 132, 20, 20, GOLD);
-    DrawText(TextFormat("Q: FX %d", render_client->render_quality), sw - 132, 44, 16, (Color){180, 210, 220, 180});
 #ifdef PS_FAST_RENDER
     render_client->fast_render_ms = (float)((GetTime() - fast_draw_start) * 1000.0);
     ps_draw_fast_metrics(env, sw, sh);

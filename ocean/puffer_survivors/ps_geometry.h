@@ -4,9 +4,10 @@
 
 #include "ps_constants.h"
 
-// The storage adapters are intentionally different: CPU uses an AoS state and
-// CUDA uses SoA device arrays. These small, side-effect-free geometry helpers
-// are the common collision rules both adapters call.
+// CPU packs one environment's state in a single Env struct (AoS across envs);
+// CUDA spreads each field across environments (SoA) so one warp touches
+// contiguous memory. ps_sim.h hides that difference; these geometry helpers
+// are the shared collision rules both backends call.
 #ifdef __CUDACC__
 #define PS_GEOMETRY_FN static __host__ __device__ __forceinline__
 #else
@@ -22,9 +23,6 @@ PS_GEOMETRY_FN int ps_geometry_circle_overlaps(float dx, float dy, float radius)
 PS_GEOMETRY_FN float ps_geometry_clamp(float value, float lo, float hi) {
     return value < lo ? lo : (value > hi ? hi : value);
 }
-
-PS_GEOMETRY_FN int ps_geometry_push_out(float* x, float* y,
-        float obstacle_x, float obstacle_y, float radius);
 
 // dx/dy are the circle center relative to the shape center. The shape is
 // either a circle with radius or an axis-aligned box with half extents.
@@ -46,6 +44,20 @@ PS_GEOMETRY_FN float ps_geometry_shape_bound_radius(int shape,
         float radius, float half_width, float half_height) {
     if (shape == PS_SHAPE_CIRCLE) return radius;
     return sqrtf(half_width * half_width + half_height * half_height);
+}
+
+PS_GEOMETRY_FN int ps_geometry_push_out(float* x, float* y,
+        float obstacle_x, float obstacle_y, float radius) {
+    float dx = *x - obstacle_x;
+    float dy = *y - obstacle_y;
+    if (!ps_geometry_circle_overlaps(dx, dy, radius)) return 0;
+
+    float d2 = dx * dx + dy * dy;
+    float d = sqrtf(fmaxf(d2, 0.0001f));
+    float push = radius - d;
+    *x += dx / d * push;
+    *y += dy / d * push;
+    return 1;
 }
 
 // Push a circle obstacle out of a circle/AABB-shaped entity. This is used for
@@ -88,20 +100,6 @@ PS_GEOMETRY_FN int ps_geometry_push_out_shape_circle(float* x, float* y,
     } else {
         *y += rel_y >= 0.0f ? -push_y : push_y;
     }
-    return 1;
-}
-
-PS_GEOMETRY_FN int ps_geometry_push_out(float* x, float* y,
-        float obstacle_x, float obstacle_y, float radius) {
-    float dx = *x - obstacle_x;
-    float dy = *y - obstacle_y;
-    if (!ps_geometry_circle_overlaps(dx, dy, radius)) return 0;
-
-    float d2 = dx * dx + dy * dy;
-    float d = sqrtf(fmaxf(d2, 0.0001f));
-    float push = radius - d;
-    *x += dx / d * push;
-    *y += dy / d * push;
     return 1;
 }
 

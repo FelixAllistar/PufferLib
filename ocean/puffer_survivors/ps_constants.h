@@ -95,10 +95,6 @@ typedef enum {
     PS_UPGRADE_COUNT = PS_UPGRADE_FEATURES,
 } PSUpgradeId;
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 typedef struct {
     float hp;
     float speed_mult;
@@ -324,18 +320,6 @@ enum {
 };
 
 enum {
-    PS_PLAYER_VISIBLE_ENEMIES = 8,
-    PS_PLAYER_VISIBLE_DROPS = 9,
-    PS_PLAYER_BUBBLE_READY = 10,
-    PS_PLAYER_NEAREST_HEALTH_DISTANCE = 20,
-    PS_PLAYER_NEAREST_XP_DX = 21,
-    PS_PLAYER_NEAREST_XP_DY = 22,
-    PS_PLAYER_NEAREST_XP_DISTANCE = 23,
-    PS_PLAYER_VISIBLE_XP_VALUE = 24,
-    PS_PLAYER_XP_CAN_LEVEL = 25,
-};
-
-enum {
     PS_BOSS_PRESENT = 0,
     PS_BOSS_DX = 1,
     PS_BOSS_DY = 2,
@@ -345,14 +329,10 @@ enum {
     PS_BOSS_COUNT = 6,
 };
 
-#ifdef __cplusplus
-}
-#endif
-
 #if defined(__cplusplus)
-static_assert(PS_OBS_END == PS_OBS_SIZE, "Observation layout does not match PS_OBS_SIZE");
-static_assert(PS_OBS_SIZE == 321, "Unexpected Puffer Survivors observation size");
+#define PS_STATIC_ASSERT static_assert
 #else
-_Static_assert(PS_OBS_END == PS_OBS_SIZE, "Observation layout does not match PS_OBS_SIZE");
-_Static_assert(PS_OBS_SIZE == 321, "Unexpected Puffer Survivors observation size");
+#define PS_STATIC_ASSERT _Static_assert
 #endif
+PS_STATIC_ASSERT(PS_OBS_END == PS_OBS_SIZE, "Observation layout does not match PS_OBS_SIZE");
+PS_STATIC_ASSERT(PS_OBS_SIZE == 321, "Unexpected Puffer Survivors observation size");

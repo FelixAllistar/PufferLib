@@ -119,7 +119,6 @@ puffer_survivors.h       native 5c ABI, config mapping, and logging
 puffer_survivors.cu      native GPU ABI
 ps_sim.h                 shared CPU/CUDA gameplay and observation simulation
 ps_state.h               CPU-only environment state
-ps_content.h             upgrade display text
 ps_geometry.h            shared CPU/CUDA circle/AABB collision primitives
 cuda/ps_cuda_sim.cu      CUDA SoA allocation, kernels, and GPU ABI glue
 tests/                   CPU invariants and native CUDA ABI smoke test

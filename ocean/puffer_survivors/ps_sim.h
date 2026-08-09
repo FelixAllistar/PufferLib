@@ -2,8 +2,10 @@
 
 #include <math.h>
 #include <stdint.h>
+#ifdef PS_DEBUG_COUNTS
 #include <stdio.h>
 #include <stdlib.h>
+#endif
 #include <string.h>
 
 #include "ps_constants.h"
@@ -87,8 +89,6 @@
 #define PS_DENSE(sim, env, ptr, i) PS_AT(sim, env, ptr, i)
 #define PS_DENSE_POS(sim, env, ptr, i) PS_AT(sim, env, ptr, i)
 
-PS_SIM_FN void ps_clear_entities(PSSim* sim, int env);
-
 PS_SIM_FN float ps_clampf(float v, float lo, float hi) {
     return v < lo ? lo : (v > hi ? hi : v);
 }
@@ -100,7 +100,6 @@ PS_SIM_FN float ps_dist2(float ax, float ay, float bx, float by) {
 }
 
 PS_SIM_FN uint32_t ps_rand_u32(PSSim* sim, int env) {
-    (void)sim;
     (void)env;
     uint32_t x = PS_P(sim, env, rng) ? PS_P(sim, env, rng) : 1u;
     x ^= x << 13;
@@ -111,13 +110,10 @@ PS_SIM_FN uint32_t ps_rand_u32(PSSim* sim, int env) {
 }
 
 PS_SIM_FN float ps_randf(PSSim* sim, int env) {
-    (void)sim;
-    (void)env;
     return (float)(ps_rand_u32(sim, env) & 0x00ffffffu) / 16777216.0f;
 }
 
 PS_SIM_FN int ps_cell(PSSim* sim, int env, float x, float y) {
-    (void)sim;
     (void)env;
     float half = 0.5f * sim->cfg.arena_size;
     int gx = (int)((((x - PS_P(sim, env, px)) + half) / sim->cfg.arena_size) * (float)PS_GRID_W);
@@ -129,7 +125,6 @@ PS_SIM_FN int ps_cell(PSSim* sim, int env, float x, float y) {
 
 #ifndef __CUDACC__
 PS_SIM_FN void ps_clear_entities(PSSim* sim, int env) {
-    (void)sim;
     (void)env;
     memset(&sim->enemies, 0, sizeof(sim->enemies));
     memset(&sim->projectiles, 0, sizeof(sim->projectiles));
@@ -159,22 +154,44 @@ PS_SIM_FN void ps_clear_entities(PSSim* sim, int env) {
     PS_P(sim, env, grid_touched_count) = 0;
     PS_P(sim, env, aabb_count) = 0;
 }
+#else
+PS_SIM_FN void ps_clear_entities(PSSim* sim, int env) {
+    for (int i = 0; i < sim->cfg.enemy_cap; i++) {
+        PS_ENEMY(sim, env, i, active) = 0;
+        PS_ENEMY(sim, env, i, next) = -1;
+    }
+    for (int i = 0; i < sim->cfg.projectile_cap; i++) PS_PROJECTILE(sim, env, i, active) = 0;
+    for (int i = 0; i < sim->cfg.drop_cap; i++) PS_DROP(sim, env, i, active) = 0;
+    for (int i = 0; i < PS_MAX_AREAS; i++) PS_AREA(sim, env, i, active) = 0;
+    for (int i = 0; i < PS_MAX_MOVING_OBSTACLES; i++) PS_MOVING(sim, env, i, active) = 0;
+    for (int i = 0; i < PS_GRID_CELLS; i++) PS_GRID(sim, env, i) = -1;
+    PS_P(sim, env, grid_touched_count) = 0;
+    PS_P(sim, env, aabb_count) = 0;
+    PS_P(sim, env, enemy_count) = 0;
+    PS_P(sim, env, projectile_count) = 0;
+    PS_P(sim, env, drop_count) = 0;
+    PS_P(sim, env, area_count) = 0;
+    PS_P(sim, env, moving_obstacle_count) = 0;
+    PS_P(sim, env, active_ink_count) = 0;
+    PS_P(sim, env, next_enemy_slot) = 0;
+    PS_P(sim, env, next_projectile_slot) = 0;
+    PS_P(sim, env, next_drop_slot) = 0;
+    PS_P(sim, env, next_area_slot) = 0;
+    PS_P(sim, env, next_moving_obstacle_slot) = 0;
+}
 #endif
 PS_SIM_FN float ps_xp_threshold(PSSim* sim, int env) {
-    (void)sim;
     (void)env;
     return sim->cfg.xp_threshold_base
         + sim->cfg.xp_threshold_per_level * (float)(PS_P(sim, env, level) - 1);
 }
 
 PS_SIM_FN int ps_wave_index(PSSim* sim, int env) {
-    (void)sim;
     (void)env;
     return PS_P(sim, env, tick) / sim->cfg.wave_length_steps;
 }
 
 PS_SIM_FN float ps_episode_progress(PSSim* sim, int env) {
-    (void)sim;
     (void)env;
     float max_steps = (float)sim->cfg.max_steps;
     float normal_steps = (float)sim->cfg.wave_length_steps
@@ -184,7 +201,6 @@ PS_SIM_FN float ps_episode_progress(PSSim* sim, int env) {
 }
 
 PS_SIM_FN float ps_weapon_cooldown_total(PSSim* sim, int env, int weapon) {
-    (void)sim;
     (void)env;
     int level = PS_W(sim, env, weapon, weapon_level);
     if (level <= 0) return 1.0f;
@@ -196,7 +212,6 @@ PS_SIM_FN float ps_weapon_cooldown_total(PSSim* sim, int env, int weapon) {
 }
 
 PS_SIM_FN float ps_weapon_power(PSSim* sim, int env, int weapon) {
-    (void)sim;
     (void)env;
     int level = PS_W(sim, env, weapon, weapon_level);
     if (level <= 0) return 0.0f;
@@ -207,7 +222,6 @@ PS_SIM_FN float ps_weapon_power(PSSim* sim, int env, int weapon) {
 }
 
 PS_SIM_FN float ps_weapon_damage(PSSim* sim, int env, int weapon, int level, int first_level_zero) {
-    (void)sim;
     (void)env;
     float level_delta = (float)(first_level_zero ? level - 1 : level);
     return (sim->cfg.weapon_base_damage[weapon]
@@ -216,17 +230,14 @@ PS_SIM_FN float ps_weapon_damage(PSSim* sim, int env, int weapon, int level, int
 }
 
 PS_SIM_FN int ps_upgrade_available(PSSim* sim, int env, int type) {
-    (void)sim;
     (void)env;
-    if (type >= PS_UPGRADE_BUBBLE && type <= PS_UPGRADE_SONAR) {
+    if (type < PS_WEAPON_COUNT) {
         return PS_W(sim, env, type, weapon_level) < sim->cfg.weapon_max_level;
     }
     return type >= 0 && type < PS_UPGRADE_COUNT;
 }
 
 PS_SIM_FN int ps_wave_minimum(PSSim* sim, int env) {
-    (void)sim;
-    (void)env;
     int wave = ps_wave_index(sim, env);
     int base = wave < PS_WAVE_TABLE_COUNT
         ? sim->cfg.wave_minimum[wave]
@@ -243,8 +254,6 @@ PS_SIM_FN int ps_wave_minimum(PSSim* sim, int env) {
 }
 
 PS_SIM_FN int ps_wave_spawn_interval(PSSim* sim, int env) {
-    (void)sim;
-    (void)env;
     int wave = ps_wave_index(sim, env);
     int base = wave < PS_WAVE_TABLE_COUNT
         ? sim->cfg.wave_interval[wave]
@@ -284,8 +293,6 @@ PS_SIM_FN float ps_obs_soft_norm(float value, float half_scale) {
 }
 
 PS_SIM_FN void ps_compute_observations(PSSim* sim, int env) {
-    (void)sim;
-    (void)env;
     float* obs = (float*)PS_OBS(sim, env);
     memset(obs, 0, PS_OBS_SIZE * sizeof(float));
 
@@ -521,7 +528,6 @@ PS_SIM_FN void ps_compute_observations(PSSim* sim, int env) {
     }
 }
 PS_SIM_FN int ps_obstacle_position_clear(PSSim* sim, int env, int count, int skip, float x, float y, float radius) {
-    (void)sim;
     (void)env;
     if (ps_dist2(x, y, PS_P(sim, env, px), PS_P(sim, env, py))
             < sim->cfg.obstacle_player_spawn_clearance
@@ -537,7 +543,6 @@ PS_SIM_FN int ps_obstacle_position_clear(PSSim* sim, int env, int count, int ski
 }
 
 PS_SIM_FN int ps_overlaps_obstacle(PSSim* sim, int env, float x, float y, float radius, float padding) {
-    (void)sim;
     (void)env;
     for (int i = 0; i < sim->cfg.obstacle_count; i++) {
         float min_dist = radius + PS_OBSTACLE(sim, env, i, radius) + padding;
@@ -549,7 +554,6 @@ PS_SIM_FN int ps_overlaps_obstacle(PSSim* sim, int env, float x, float y, float 
 }
 
 PS_SIM_FN void ps_push_out_obstacles(PSSim* sim, int env, float* x, float* y, float radius, int penalize) {
-    (void)sim;
     (void)env;
     for (int i = 0; i < sim->cfg.obstacle_count; i++) {
         int pushed = ps_geometry_push_out_shape_circle(x, y, PS_SHAPE_CIRCLE,
@@ -566,7 +570,6 @@ PS_SIM_FN void ps_push_out_obstacles(PSSim* sim, int env, float* x, float* y, fl
 PS_SIM_FN void ps_push_out_obstacles_shape(PSSim* sim, int env,
         float* x, float* y, int shape, float radius, float half_width,
         float half_height, int penalize) {
-    (void)sim;
     (void)env;
     for (int i = 0; i < sim->cfg.obstacle_count; i++) {
         int pushed = ps_geometry_push_out_shape_circle(x, y, shape, radius,
@@ -581,8 +584,6 @@ PS_SIM_FN void ps_push_out_obstacles_shape(PSSim* sim, int env,
 }
 
 PS_SIM_FN void ps_spawn_obstacles(PSSim* sim, int env) {
-    (void)sim;
-    (void)env;
     float half = 0.5f * sim->cfg.arena_size;
     for (int i = 0; i < sim->cfg.obstacle_count; i++) {
         PS_OBSTACLE(sim, env, i, radius) = sim->cfg.obstacle_radius_min
@@ -616,8 +617,6 @@ PS_SIM_FN void ps_spawn_obstacles(PSSim* sim, int env) {
 }
 
 PS_SIM_FN void ps_recycle_obstacle(PSSim* sim, int env, int idx) {
-    (void)sim;
-    (void)env;
     float half = 0.5f * sim->cfg.arena_size;
     for (int tries = 0; tries < 64; tries++) {
         float angle = ps_randf(sim, env) * 2.0f * PI;
@@ -635,103 +634,12 @@ PS_SIM_FN void ps_recycle_obstacle(PSSim* sim, int env, int idx) {
 }
 
 PS_SIM_FN void ps_recycle_far_obstacles(PSSim* sim, int env) {
-    (void)sim;
-    (void)env;
     float recycle_radius = sim->cfg.arena_size * sim->cfg.obstacle_recycle_radius_ratio;
     float recycle2 = recycle_radius * recycle_radius;
     for (int i = 0; i < sim->cfg.obstacle_count; i++) {
         if (ps_dist2(PS_OBSTACLE(sim, env, i, x), PS_OBSTACLE(sim, env, i, y), PS_P(sim, env, px), PS_P(sim, env, py)) > recycle2) {
             ps_recycle_obstacle(sim, env, i);
         }
-    }
-}
-
-PS_SIM_FN int ps_find_free_slot(PSSim* sim, int env, uint8_t* active, int cap, int* cursor);
-PS_SIM_FN void ps_dense_add(PSSim* sim, int env, int* dense, int* dense_pos, int* count, int slot);
-PS_SIM_FN void ps_deactivate_moving_obstacle(PSSim* sim, int env, int i);
-
-PS_SIM_FN int ps_spawn_moving_obstacle(PSSim* sim, int env) {
-    (void)sim;
-    (void)env;
-    if (sim->cfg.moving_obstacle_cap <= 0
-            || PS_P(sim, env, moving_obstacle_count) >= sim->cfg.moving_obstacle_cap) return 0;
-    int i = ps_find_free_slot(sim, env, PS_MOVING_ACTIVE(sim, env),
-        PS_MAX_MOVING_OBSTACLES, &PS_P(sim, env, next_moving_obstacle_slot));
-
-    int type = (int)(ps_rand_u32(sim, env) % PS_MOVING_OBSTACLE_TYPE_COUNT);
-    float half = 0.5f * sim->cfg.arena_size;
-    float margin = sim->cfg.moving_obstacle_spawn_margin;
-    float hw = sim->cfg.moving_obstacle_half_width[type];
-    float hh = sim->cfg.moving_obstacle_half_height[type];
-    float speed = sim->cfg.moving_obstacle_speed[type];
-    PS_MOVING(sim, env, i, type) = (uint8_t)type;
-    PS_MOVING(sim, env, i, shape) = PS_SHAPE_AABB;
-    PS_MOVING(sim, env, i, half_width) = hw;
-    PS_MOVING(sim, env, i, half_height) = hh;
-    PS_MOVING(sim, env, i, bound_radius) = ps_geometry_shape_bound_radius(
-        PS_SHAPE_AABB, 0.0f, hw, hh);
-    PS_MOVING(sim, env, i, ttl) = sim->cfg.moving_obstacle_ttl;
-    if (type == PS_MOVING_OBSTACLE_ANCHOR) {
-        PS_MOVING(sim, env, i, x) = PS_P(sim, env, px)
-            + (ps_randf(sim, env) * 2.0f - 1.0f) * half * 0.72f;
-        PS_MOVING(sim, env, i, y) = PS_P(sim, env, py) - half - margin - hh;
-        PS_MOVING(sim, env, i, vx) = 0.0f;
-        PS_MOVING(sim, env, i, vy) = speed;
-    } else {
-        int from_left = (int)(ps_rand_u32(sim, env) & 1u) == 0;
-        PS_MOVING(sim, env, i, x) = PS_P(sim, env, px)
-            + (from_left ? -1.0f : 1.0f) * (half + margin + hw);
-        PS_MOVING(sim, env, i, y) = PS_P(sim, env, py)
-            + (ps_randf(sim, env) * 2.0f - 1.0f) * half * 0.72f;
-        PS_MOVING(sim, env, i, vx) = (from_left ? 1.0f : -1.0f) * speed;
-        PS_MOVING(sim, env, i, vy) = 0.0f;
-    }
-    PS_MOVING(sim, env, i, active) = 1;
-    ps_dense_add(sim, env, PS_MOVING_DENSE(sim, env),
-        PS_MOVING_DENSE_POS(sim, env), &PS_P(sim, env, moving_obstacle_count), i);
-    return 1;
-}
-
-PS_SIM_FN void ps_update_moving_obstacles(PSSim* sim, int env) {
-    (void)sim;
-    (void)env;
-    int wave = ps_wave_index(sim, env);
-    if (wave >= sim->cfg.moving_obstacle_start_wave
-            && PS_P(sim, env, tick) % sim->cfg.moving_obstacle_spawn_interval == 0) {
-        ps_spawn_moving_obstacle(sim, env);
-    }
-
-    float half = 0.5f * sim->cfg.arena_size;
-    float cleanup = half + sim->cfg.moving_obstacle_spawn_margin + half;
-    float cleanup2 = cleanup * cleanup;
-    int k = 0;
-    while (k < PS_P(sim, env, moving_obstacle_count)) {
-        int i = PS_MOVING(sim, env, k, dense);
-        PS_MOVING(sim, env, i, x) += PS_MOVING(sim, env, i, vx);
-        PS_MOVING(sim, env, i, y) += PS_MOVING(sim, env, i, vy);
-        PS_MOVING(sim, env, i, ttl)--;
-        float dx = PS_P(sim, env, px) - PS_MOVING(sim, env, i, x);
-        float dy = PS_P(sim, env, py) - PS_MOVING(sim, env, i, y);
-        int outside = dx * dx + dy * dy > cleanup2;
-        if (PS_MOVING(sim, env, i, ttl) <= 0 || outside) {
-            ps_deactivate_moving_obstacle(sim, env, i);
-            continue;
-        }
-        if (PS_P(sim, env, invuln_timer) <= 0 && sim->cfg.moving_obstacle_damage > 0.0f
-                && ps_geometry_shape_overlaps_circle(
-                    PS_MOVING(sim, env, i, shape),
-                    dx, dy, PS_MOVING(sim, env, i, bound_radius),
-                    PS_MOVING(sim, env, i, half_width),
-                    PS_MOVING(sim, env, i, half_height),
-                    sim->cfg.player_radius)) {
-            float damage = fmaxf(1.0f, ceilf(sim->cfg.moving_obstacle_damage));
-            PS_P(sim, env, hp) -= damage;
-            PS_REWARD(sim, env) += sim->cfg.reward_hurt * damage;
-            PS_P(sim, env, episode_reward_hurt) += sim->cfg.reward_hurt * damage;
-            PS_P(sim, env, episode_damage_taken) += damage;
-            PS_P(sim, env, invuln_timer) = sim->cfg.invuln_steps;
-        }
-        k++;
     }
 }
 
@@ -774,46 +682,116 @@ PS_SIM_FN void ps_dense_remove(PSSim* sim, int env, int* dense, int* dense_pos, 
     *count = last_pos;
 }
 
-PS_SIM_FN void ps_deactivate_enemy(PSSim* sim, int env, int i) {
-    (void)sim;
-    (void)env;
-    PS_ENEMY(sim, env, i, active) = 0;
-    ps_dense_remove(sim, env, PS_ENEMY_DENSE(sim, env), PS_ENEMY_DENSE_POS(sim, env), &PS_P(sim, env, enemy_count), i);
-}
-
-PS_SIM_FN void ps_deactivate_projectile(PSSim* sim, int env, int i) {
-    (void)sim;
-    (void)env;
-    PS_PROJECTILE(sim, env, i, active) = 0;
-    ps_dense_remove(sim, env, PS_PROJECTILE_DENSE(sim, env), PS_PROJECTILE_DENSE_POS(sim, env), &PS_P(sim, env, projectile_count), i);
-}
-
-PS_SIM_FN void ps_deactivate_drop(PSSim* sim, int env, int i) {
-    (void)sim;
-    (void)env;
-    PS_DROP(sim, env, i, active) = 0;
-    ps_dense_remove(sim, env, PS_DROP_DENSE(sim, env), PS_DROP_DENSE_POS(sim, env), &PS_P(sim, env, drop_count), i);
-}
-
-PS_SIM_FN void ps_deactivate_area(PSSim* sim, int env, int i) {
-    (void)sim;
-    (void)env;
-    PS_AREA(sim, env, i, active) = 0;
-    if (PS_AREA(sim, env, i, type) == PS_WEAPON_INK) PS_P(sim, env, active_ink_count)--;
-    ps_dense_remove(sim, env, PS_AREA_DENSE(sim, env), PS_AREA_DENSE_POS(sim, env), &PS_P(sim, env, area_count), i);
-}
-
 PS_SIM_FN void ps_deactivate_moving_obstacle(PSSim* sim, int env, int i) {
-    (void)sim;
-    (void)env;
     PS_MOVING(sim, env, i, active) = 0;
     ps_dense_remove(sim, env, PS_MOVING_DENSE(sim, env),
         PS_MOVING_DENSE_POS(sim, env), &PS_P(sim, env, moving_obstacle_count), i);
 }
 
+PS_SIM_FN int ps_spawn_moving_obstacle(PSSim* sim, int env) {
+    if (sim->cfg.moving_obstacle_cap <= 0
+            || PS_P(sim, env, moving_obstacle_count) >= sim->cfg.moving_obstacle_cap) return 0;
+    int i = ps_find_free_slot(sim, env, PS_MOVING_ACTIVE(sim, env),
+        PS_MAX_MOVING_OBSTACLES, &PS_P(sim, env, next_moving_obstacle_slot));
+
+    int type = (int)(ps_rand_u32(sim, env) % PS_MOVING_OBSTACLE_TYPE_COUNT);
+    float half = 0.5f * sim->cfg.arena_size;
+    float margin = sim->cfg.moving_obstacle_spawn_margin;
+    float hw = sim->cfg.moving_obstacle_half_width[type];
+    float hh = sim->cfg.moving_obstacle_half_height[type];
+    float speed = sim->cfg.moving_obstacle_speed[type];
+    PS_MOVING(sim, env, i, type) = (uint8_t)type;
+    PS_MOVING(sim, env, i, shape) = PS_SHAPE_AABB;
+    PS_MOVING(sim, env, i, half_width) = hw;
+    PS_MOVING(sim, env, i, half_height) = hh;
+    PS_MOVING(sim, env, i, bound_radius) = ps_geometry_shape_bound_radius(
+        PS_SHAPE_AABB, 0.0f, hw, hh);
+    PS_MOVING(sim, env, i, ttl) = sim->cfg.moving_obstacle_ttl;
+    if (type == PS_MOVING_OBSTACLE_ANCHOR) {
+        PS_MOVING(sim, env, i, x) = PS_P(sim, env, px)
+            + (ps_randf(sim, env) * 2.0f - 1.0f) * half * 0.72f;
+        PS_MOVING(sim, env, i, y) = PS_P(sim, env, py) - half - margin - hh;
+        PS_MOVING(sim, env, i, vx) = 0.0f;
+        PS_MOVING(sim, env, i, vy) = speed;
+    } else {
+        int from_left = (int)(ps_rand_u32(sim, env) & 1u) == 0;
+        PS_MOVING(sim, env, i, x) = PS_P(sim, env, px)
+            + (from_left ? -1.0f : 1.0f) * (half + margin + hw);
+        PS_MOVING(sim, env, i, y) = PS_P(sim, env, py)
+            + (ps_randf(sim, env) * 2.0f - 1.0f) * half * 0.72f;
+        PS_MOVING(sim, env, i, vx) = (from_left ? 1.0f : -1.0f) * speed;
+        PS_MOVING(sim, env, i, vy) = 0.0f;
+    }
+    PS_MOVING(sim, env, i, active) = 1;
+    ps_dense_add(sim, env, PS_MOVING_DENSE(sim, env),
+        PS_MOVING_DENSE_POS(sim, env), &PS_P(sim, env, moving_obstacle_count), i);
+    return 1;
+}
+
+PS_SIM_FN void ps_update_moving_obstacles(PSSim* sim, int env) {
+    int wave = ps_wave_index(sim, env);
+    if (wave >= sim->cfg.moving_obstacle_start_wave
+            && PS_P(sim, env, tick) % sim->cfg.moving_obstacle_spawn_interval == 0) {
+        ps_spawn_moving_obstacle(sim, env);
+    }
+
+    float half = 0.5f * sim->cfg.arena_size;
+    float cleanup = half + sim->cfg.moving_obstacle_spawn_margin + half;
+    float cleanup2 = cleanup * cleanup;
+    int k = 0;
+    while (k < PS_P(sim, env, moving_obstacle_count)) {
+        int i = PS_MOVING(sim, env, k, dense);
+        PS_MOVING(sim, env, i, x) += PS_MOVING(sim, env, i, vx);
+        PS_MOVING(sim, env, i, y) += PS_MOVING(sim, env, i, vy);
+        PS_MOVING(sim, env, i, ttl)--;
+        float dx = PS_P(sim, env, px) - PS_MOVING(sim, env, i, x);
+        float dy = PS_P(sim, env, py) - PS_MOVING(sim, env, i, y);
+        int outside = dx * dx + dy * dy > cleanup2;
+        if (PS_MOVING(sim, env, i, ttl) <= 0 || outside) {
+            ps_deactivate_moving_obstacle(sim, env, i);
+            continue;
+        }
+        if (PS_P(sim, env, invuln_timer) <= 0 && sim->cfg.moving_obstacle_damage > 0.0f
+                && ps_geometry_shape_overlaps_circle(
+                    PS_MOVING(sim, env, i, shape),
+                    dx, dy, PS_MOVING(sim, env, i, bound_radius),
+                    PS_MOVING(sim, env, i, half_width),
+                    PS_MOVING(sim, env, i, half_height),
+                    sim->cfg.player_radius)) {
+            float damage = fmaxf(1.0f, ceilf(sim->cfg.moving_obstacle_damage));
+            PS_P(sim, env, hp) -= damage;
+            PS_REWARD(sim, env) += sim->cfg.reward_hurt * damage;
+            PS_P(sim, env, episode_reward_hurt) += sim->cfg.reward_hurt * damage;
+            PS_P(sim, env, episode_damage_taken) += damage;
+            PS_P(sim, env, invuln_timer) = sim->cfg.invuln_steps;
+        }
+        k++;
+    }
+}
+
+PS_SIM_FN void ps_deactivate_enemy(PSSim* sim, int env, int i) {
+    PS_ENEMY(sim, env, i, active) = 0;
+    ps_dense_remove(sim, env, PS_ENEMY_DENSE(sim, env), PS_ENEMY_DENSE_POS(sim, env), &PS_P(sim, env, enemy_count), i);
+}
+
+PS_SIM_FN void ps_deactivate_projectile(PSSim* sim, int env, int i) {
+    PS_PROJECTILE(sim, env, i, active) = 0;
+    ps_dense_remove(sim, env, PS_PROJECTILE_DENSE(sim, env), PS_PROJECTILE_DENSE_POS(sim, env), &PS_P(sim, env, projectile_count), i);
+}
+
+PS_SIM_FN void ps_deactivate_drop(PSSim* sim, int env, int i) {
+    PS_DROP(sim, env, i, active) = 0;
+    ps_dense_remove(sim, env, PS_DROP_DENSE(sim, env), PS_DROP_DENSE_POS(sim, env), &PS_P(sim, env, drop_count), i);
+}
+
+PS_SIM_FN void ps_deactivate_area(PSSim* sim, int env, int i) {
+    PS_AREA(sim, env, i, active) = 0;
+    if (PS_AREA(sim, env, i, type) == PS_WEAPON_INK) PS_P(sim, env, active_ink_count)--;
+    ps_dense_remove(sim, env, PS_AREA_DENSE(sim, env), PS_AREA_DENSE_POS(sim, env), &PS_P(sim, env, area_count), i);
+}
+
 #ifdef PS_DEBUG_COUNTS
 PS_SIM_FN void ps_verify_counts(PSSim* sim, int env) {
-    (void)sim;
     (void)env;
     int enemies = 0;
     int projectiles = 0;
@@ -855,8 +833,6 @@ PS_SIM_FN void ps_verify_counts(PSSim* sim, int env) {
 #endif
 
 PS_SIM_FN void ps_offer_upgrades(PSSim* sim, int env) {
-    (void)sim;
-    (void)env;
     if (PS_P(sim, env, pending_upgrade)) return;
     PS_P(sim, env, pending_upgrade) = 1;
     for (int i = 0; i < PS_UPGRADE_SLOTS; i++) {
@@ -875,9 +851,8 @@ PS_SIM_FN void ps_offer_upgrades(PSSim* sim, int env) {
 }
 
 PS_SIM_FN void ps_apply_upgrade_effect(PSSim* sim, int env, int upgrade) {
-    switch (upgrade) {
-    (void)sim;
     (void)env;
+    switch (upgrade) {
         case PS_UPGRADE_BUBBLE:
         case PS_UPGRADE_WHIRLPOOL:
         case PS_UPGRADE_ORBIT:
@@ -900,8 +875,6 @@ PS_SIM_FN void ps_apply_upgrade_effect(PSSim* sim, int env, int upgrade) {
 }
 
 PS_SIM_FN void ps_apply_upgrade(PSSim* sim, int env, int choice) {
-    (void)sim;
-    (void)env;
     int upgrade = PS_W(sim, env, choice, offered);
     ps_apply_upgrade_effect(sim, env, upgrade);
     PS_P(sim, env, episode_levelups) += 1.0f;
@@ -911,8 +884,6 @@ PS_SIM_FN void ps_apply_upgrade(PSSim* sim, int env, int choice) {
 }
 
 PS_SIM_FN void ps_add_log(PSSim* sim, int env, int survived) {
-    (void)sim;
-    (void)env;
     float perf = ps_clampf((float)PS_P(sim, env, tick) / (float)sim->cfg.max_steps, 0.0f, 1.0f);
     PS_LOG(sim, env).perf += perf;
     PS_LOG(sim, env).score += PS_P(sim, env, episode_score);
@@ -961,8 +932,6 @@ PS_SIM_FN void ps_add_log(PSSim* sim, int env, int survived) {
 }
 
 PS_SIM_FN int ps_pick_spawn_side(PSSim* sim, int env) {
-    (void)sim;
-    (void)env;
     float m2 = PS_P(sim, env, pvx) * PS_P(sim, env, pvx) + PS_P(sim, env, pvy) * PS_P(sim, env, pvy);
     if (m2 > 0.0001f && ps_randf(sim, env) < sim->cfg.spawn_velocity_bias_probability) {
         if (fabsf(PS_P(sim, env, pvx)) > fabsf(PS_P(sim, env, pvy))) return PS_P(sim, env, pvx) > 0.0f ? 1 : 0;
@@ -972,8 +941,6 @@ PS_SIM_FN int ps_pick_spawn_side(PSSim* sim, int env) {
 }
 
 PS_SIM_FN void ps_pick_spawn_position(PSSim* sim, int env, float radius, float* x, float* y) {
-    (void)sim;
-    (void)env;
     float half = 0.5f * sim->cfg.arena_size;
     float edge = half + radius + sim->cfg.enemy_spawn_edge_margin;
     float along = (ps_randf(sim, env) * 2.0f - 1.0f) * half * sim->cfg.enemy_spawn_along_ratio;
@@ -995,8 +962,6 @@ PS_SIM_FN void ps_pick_spawn_position(PSSim* sim, int env, float radius, float* 
 
 PS_SIM_FN PSEnemyDef ps_enemy_stats(PSSim* sim, int env, int* kind_out,
         float* radius_out, int elite, int boss, int ari_k) {
-    (void)sim;
-    (void)env;
     int wave = ps_wave_index(sim, env);
     float progress = ps_episode_progress(sim, env);
     int kind = 0;
@@ -1062,7 +1027,6 @@ PS_SIM_FN PSEnemyDef ps_enemy_stats(PSSim* sim, int env, int* kind_out,
 PS_SIM_FN void ps_enemy_geometry(PSSim* sim, int env, int kind, int ari_k,
         float radius, int* shape, float* half_width, float* half_height,
         float* bound_radius) {
-    (void)sim;
     (void)env;
     *shape = ari_k ? sim->cfg.ari_k_shape : sim->cfg.enemy_shape[kind];
     *half_width = ari_k ? sim->cfg.ari_k_half_width : sim->cfg.enemy_half_width[kind];
@@ -1072,8 +1036,6 @@ PS_SIM_FN void ps_enemy_geometry(PSSim* sim, int env, int kind, int ari_k,
 }
 
 PS_SIM_FN int ps_spawn_enemy(PSSim* sim, int env) {
-    (void)sim;
-    (void)env;
     if (PS_P(sim, env, enemy_count) >= sim->cfg.enemy_cap) return 0;
 
     int slot = ps_find_free_slot(sim, env, PS_ENEMY_ACTIVE(sim, env), sim->cfg.enemy_cap, &PS_P(sim, env, next_enemy_slot));
@@ -1129,8 +1091,6 @@ PS_SIM_FN int ps_spawn_enemy(PSSim* sim, int env) {
 }
 
 PS_SIM_FN void ps_spawn_drop(PSSim* sim, int env, float x, float y, float value, int type) {
-    (void)sim;
-    (void)env;
     if (PS_P(sim, env, drop_count) >= sim->cfg.drop_cap) return;
 
     int i = ps_find_free_slot(sim, env, PS_DROP_ACTIVE(sim, env), sim->cfg.drop_cap, &PS_P(sim, env, next_drop_slot));
@@ -1145,8 +1105,6 @@ PS_SIM_FN void ps_spawn_drop(PSSim* sim, int env, float x, float y, float value,
 }
 
 PS_SIM_FN void ps_spawn_projectile(PSSim* sim, int env, int type, float sx, float sy, float tx, float ty, float damage, float radius, float speed, int pierce, int ttl) {
-    (void)sim;
-    (void)env;
     if (PS_P(sim, env, projectile_count) >= sim->cfg.projectile_cap) return;
 
     int i = ps_find_free_slot(sim, env, PS_PROJECTILE_ACTIVE(sim, env), sim->cfg.projectile_cap, &PS_P(sim, env, next_projectile_slot));
@@ -1168,8 +1126,6 @@ PS_SIM_FN void ps_spawn_projectile(PSSim* sim, int env, int type, float sx, floa
 }
 
 PS_SIM_FN void ps_spawn_area(PSSim* sim, int env, int type, float x, float y, float radius, float damage, int ttl, int tick_rate) {
-    (void)sim;
-    (void)env;
     if (PS_P(sim, env, area_count) >= sim->cfg.area_cap) return;
 
     int i = ps_find_free_slot(sim, env, PS_AREA_ACTIVE(sim, env), PS_MAX_AREAS, &PS_P(sim, env, next_area_slot));
@@ -1189,8 +1145,6 @@ PS_SIM_FN void ps_spawn_area(PSSim* sim, int env, int type, float x, float y, fl
 }
 
 PS_SIM_FN void ps_rebuild_grid(PSSim* sim, int env) {
-    (void)sim;
-    (void)env;
     for (int i = 0; i < PS_P(sim, env, grid_touched_count); i++) {
         PS_GRID(sim, env, PS_GRID_TOUCHED(sim, env, i)) = -1;
     }
@@ -1206,7 +1160,7 @@ PS_SIM_FN void ps_rebuild_grid(PSSim* sim, int env) {
             PS_AABB(sim, env, PS_P(sim, env, aabb_count)++) = i;
         }
         int cell = ps_cell(sim, env, PS_ENEMY(sim, env, i, x), PS_ENEMY(sim, env, i, y));
-        if (PS_GRID(sim, env, cell) == -1 && PS_P(sim, env, grid_touched_count) < PS_MAX_ENEMIES) {
+        if (PS_GRID(sim, env, cell) == -1) {
             PS_GRID_TOUCHED(sim, env, PS_P(sim, env, grid_touched_count)++) = cell;
         }
         PS_ENEMY(sim, env, i, next) = PS_GRID(sim, env, cell);
@@ -1215,7 +1169,6 @@ PS_SIM_FN void ps_rebuild_grid(PSSim* sim, int env) {
 }
 
 PS_SIM_FN int ps_grid_needed(PSSim* sim, int env) {
-    (void)sim;
     (void)env;
     if (PS_P(sim, env, enemy_count) <= 0) return 0;
     if (PS_P(sim, env, projectile_count) > 0 || PS_P(sim, env, active_ink_count) > 0) return 1;
@@ -1227,8 +1180,6 @@ PS_SIM_FN int ps_grid_needed(PSSim* sim, int env) {
 }
 
 PS_SIM_FN int ps_damage_enemy(PSSim* sim, int env, int eidx, float damage) {
-    (void)sim;
-    (void)env;
     if (!PS_ENEMY(sim, env, eidx, active) || damage <= 0.0f) return 0;
     PS_ENEMY(sim, env, eidx, hp) -= damage;
     PS_REWARD(sim, env) += sim->cfg.reward_damage * damage;
@@ -1262,8 +1213,6 @@ PS_SIM_FN int ps_damage_enemy(PSSim* sim, int env, int eidx, float damage) {
 }
 
 PS_SIM_FN void ps_wave_spawns(PSSim* sim, int env) {
-    (void)sim;
-    (void)env;
     int enemies = PS_P(sim, env, enemy_count);
     int target = ps_wave_minimum(sim, env);
     int burst = 0;
@@ -1303,8 +1252,6 @@ PS_SIM_FN void ps_wave_spawns(PSSim* sim, int env) {
 }
 
 PS_SIM_FN void ps_update_enemies(PSSim* sim, int env) {
-    (void)sim;
-    (void)env;
     float half = 0.5f * sim->cfg.arena_size;
     float far2 = (half * sim->cfg.enemy_recycle_radius_ratio)
         * (half * sim->cfg.enemy_recycle_radius_ratio);
@@ -1357,8 +1304,6 @@ PS_SIM_FN void ps_update_enemies(PSSim* sim, int env) {
 }
 
 PS_SIM_FN void ps_update_projectiles(PSSim* sim, int env) {
-    (void)sim;
-    (void)env;
     float half = 0.5f * sim->cfg.arena_size;
     int k = 0;
     while (k < PS_P(sim, env, projectile_count)) {
@@ -1428,8 +1373,6 @@ PS_SIM_FN void ps_update_projectiles(PSSim* sim, int env) {
 }
 
 PS_SIM_FN void ps_update_drops(PSSim* sim, int env) {
-    (void)sim;
-    (void)env;
     float magnet = sim->cfg.magnet_radius * (1.0f + PS_P(sim, env, magnet_bonus));
     float magnet2 = magnet * magnet;
     float pickup2 = sim->cfg.pickup_radius * sim->cfg.pickup_radius;
@@ -1475,7 +1418,6 @@ PS_SIM_FN void ps_update_drops(PSSim* sim, int env) {
 }
 
 PS_SIM_FN int ps_nearest_enemy(PSSim* sim, int env, float range) {
-    (void)sim;
     (void)env;
     float best_d2 = range * range;
     int cached = PS_P(sim, env, nearest_enemy);
@@ -1500,8 +1442,6 @@ PS_SIM_FN int ps_nearest_enemy(PSSim* sim, int env, float range) {
 PS_SIM_FN void ps_damage_radius_with_query_pad(PSSim* sim, int env,
         float x, float y, float radius, float damage, float knockback,
         float query_pad) {
-    (void)sim;
-    (void)env;
     if (knockback > 0.0f) {
         PS_P(sim, env, nearest_enemy) = -1;
         PS_P(sim, env, nearest_enemy_d2) = 1e30f;
@@ -1571,14 +1511,10 @@ PS_SIM_FN void ps_damage_radius_with_query_pad(PSSim* sim, int env,
 
 PS_SIM_FN void ps_damage_radius(PSSim* sim, int env, float x, float y,
         float radius, float damage, float knockback) {
-    (void)sim;
-    (void)env;
     ps_damage_radius_with_query_pad(sim, env, x, y, radius, damage, knockback, 1.50f);
 }
 
 PS_SIM_FN void ps_update_areas(PSSim* sim, int env) {
-    (void)sim;
-    (void)env;
     int k = 0;
     while (k < PS_P(sim, env, area_count)) {
         int i = PS_AREA(sim, env, k, dense);
@@ -1603,8 +1539,6 @@ PS_SIM_FN void ps_update_areas(PSSim* sim, int env) {
 }
 
 PS_SIM_FN void ps_cast_bubble(PSSim* sim, int env, int level) {
-    (void)sim;
-    (void)env;
     int target = ps_nearest_enemy(sim, env,
         sim->cfg.bubble_target_range + sim->cfg.bubble_target_area_range * PS_P(sim, env, area_bonus));
     if (target < 0) return;
@@ -1624,8 +1558,6 @@ PS_SIM_FN void ps_cast_bubble(PSSim* sim, int env, int level) {
 }
 
 PS_SIM_FN void ps_cast_whirlpool(PSSim* sim, int env, int level) {
-    (void)sim;
-    (void)env;
     float radius = ps_geometry_weapon_radius(&sim->cfg, PS_WEAPON_WHIRLPOOL, level - 1)
         * (1.0f + PS_P(sim, env, area_bonus));
     float damage = ps_weapon_damage(sim, env, PS_WEAPON_WHIRLPOOL, level, 0);
@@ -1636,8 +1568,6 @@ PS_SIM_FN void ps_cast_whirlpool(PSSim* sim, int env, int level) {
 }
 
 PS_SIM_FN void ps_cast_orbit(PSSim* sim, int env, int level) {
-    (void)sim;
-    (void)env;
     int count = 1 + level / 2;
     float orbit_r = (sim->cfg.weapon_orbit_distance
         + sim->cfg.weapon_orbit_distance_per_level * (float)level)
@@ -1654,8 +1584,6 @@ PS_SIM_FN void ps_cast_orbit(PSSim* sim, int env, int level) {
 }
 
 PS_SIM_FN void ps_cast_ink(PSSim* sim, int env, int level) {
-    (void)sim;
-    (void)env;
     int target = ps_nearest_enemy(sim, env, sim->cfg.arena_size * sim->cfg.ink_target_range_ratio);
     if (target < 0) return;
     int pools = 1 + level / 3;
@@ -1676,8 +1604,6 @@ PS_SIM_FN void ps_cast_ink(PSSim* sim, int env, int level) {
 }
 
 PS_SIM_FN void ps_update_poison_oil_trail(PSSim* sim, int env, int level) {
-    (void)sim;
-    (void)env;
     if (level <= 0) return;
     float speed2 = PS_P(sim, env, pvx) * PS_P(sim, env, pvx) + PS_P(sim, env, pvy) * PS_P(sim, env, pvy);
     if (speed2 < sim->cfg.ink_trail_min_speed2) return;
@@ -1711,8 +1637,6 @@ PS_SIM_FN void ps_update_poison_oil_trail(PSSim* sim, int env, int level) {
 }
 
 PS_SIM_FN void ps_cast_sonar(PSSim* sim, int env, int level) {
-    (void)sim;
-    (void)env;
     float radius = ps_geometry_weapon_radius(&sim->cfg, PS_WEAPON_SONAR, level)
         * (1.0f + PS_P(sim, env, area_bonus));
     float damage = ps_weapon_damage(sim, env, PS_WEAPON_SONAR, level, 0);
@@ -1723,8 +1647,6 @@ PS_SIM_FN void ps_cast_sonar(PSSim* sim, int env, int level) {
 }
 
 PS_SIM_FN void ps_update_weapons(PSSim* sim, int env) {
-    (void)sim;
-    (void)env;
     for (int i = 0; i < PS_WEAPON_COUNT; i++) {
         PS_W(sim, env, i, weapon_active) *= sim->cfg.weapon_active_decay;
         if (PS_W(sim, env, i, weapon_cd) > 0.0f) PS_W(sim, env, i, weapon_cd) -= 1.0f;
@@ -1750,8 +1672,6 @@ PS_SIM_FN void ps_update_weapons(PSSim* sim, int env) {
 }
 
 PS_SIM_FN void ps_reset_core(PSSim* sim, int env, int clear_outputs) {
-    (void)sim;
-    (void)env;
     if (clear_outputs) {
         PS_REWARD(sim, env) = 0.0f;
         PS_TERMINAL(sim, env) = 0.0f;
@@ -1815,14 +1735,10 @@ PS_SIM_FN void ps_reset_core(PSSim* sim, int env, int clear_outputs) {
 }
 
 PS_SIM_FN void ps_reset_env(PSSim* sim, int env) {
-    (void)sim;
-    (void)env;
     ps_reset_core(sim, env, 1);
 }
 
 PS_SIM_FN void ps_step_env(PSSim* sim, int env) {
-    (void)sim;
-    (void)env;
     PS_REWARD(sim, env) = sim->cfg.reward_survival;
     PS_P(sim, env, episode_reward_survival) += sim->cfg.reward_survival;
     PS_TERMINAL(sim, env) = 0.0f;
