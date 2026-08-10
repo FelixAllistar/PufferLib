@@ -150,6 +150,12 @@ int main(int argc, char** argv) {
 
     uint64_t seed = 42;
     policy_init_weights(&policy, weights, &seed, 0);
+    cudaError_t init_w_err = cudaGetLastError();
+    if (init_w_err != cudaSuccess) {
+        fprintf(stderr, "policy_init_weights failed: %s\n",
+            cudaGetErrorString(init_w_err));
+        return 1;
+    }
     Muon muon = {};
     muon_init(&muon, &params, 0.9, &acts);
     float lr = bc_lr;
