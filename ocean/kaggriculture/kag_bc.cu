@@ -242,6 +242,12 @@ int main(int argc, char** argv) {
         PrecisionTensor dec_out = policy_forward_train(&policy, weights,
             train_acts, obs_t, state, terminals, 0);
         PrecisionTensor dec_flat = *puf_squeeze(&dec_out, 0);
+        cudaError_t fwd_err = cudaGetLastError();
+        if (fwd_err != cudaSuccess) {
+            fprintf(stderr, "forward failed: %s\n",
+                cudaGetErrorString(fwd_err));
+            return 1;
+        }
         kag_bc_loss_kernel<<<grid_size(bc_steps), BLOCK_SIZE, 0, 0>>>(
             dec_flat.data, d_expert, d_mask, grad_logits, loss_acc,
             act_sizes_puf.data, bc_steps, A_total, num_atns, mask_stride);
