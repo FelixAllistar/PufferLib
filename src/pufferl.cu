@@ -5035,6 +5035,12 @@ static int run_bc(Ini* ini) {
             pufferl->weights, pufferl->train_activations,
             obs_t, state, terminals, pufferl->default_stream);
         PrecisionTensor dec_flat = *puf_squeeze(&dec_out, 0);
+        cudaPointerAttributes dec_attr = {};
+        cudaPointerGetAttributes(&dec_attr, dec_flat.data);
+        if (ep == 0) {
+            fprintf(stderr, "BC dec: data=%p type=%d device=%d\n",
+                dec_flat.data, (int)dec_attr.type, dec_attr.device);
+        }
         bc_loss_kernel<<<grid_size(bc_cells), BLOCK_SIZE, 0,
             pufferl->default_stream>>>(
             dec_flat.data, d_expert, d_mask, grad_logits, loss_acc, debug_out,
