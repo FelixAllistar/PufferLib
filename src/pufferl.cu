@@ -4898,11 +4898,11 @@ static int run_bc(Ini* ini) {
     int obs_size = OBS_SIZE;
     int num_atns = NUM_ATNS;
     int packed_stride = (pufferl->vec->action_mask_size + 7) / 8;
-    obs_t* obs_data = (obs_t*)xcalloc((size_t)bc_steps * obs_size);
+    obs_t* obs_data = (obs_t*)xcalloc((size_t)bc_batch * obs_size);
     float* expert_data = (float*)xcalloc(
-        (size_t)bc_steps * num_atns * sizeof(float));
+        (size_t)bc_batch * num_atns * sizeof(float));
     unsigned char* mask_data = (unsigned char*)xcalloc(
-        (size_t)bc_steps * packed_stride);
+        (size_t)bc_batch * packed_stride);
     if (!obs_data || !expert_data || !mask_data) return 1;
 
     for (int t = 0; t < bc_steps && !env.game_storage.done; t++) {
@@ -4957,21 +4957,21 @@ static int run_bc(Ini* ini) {
 
     // Upload expert dataset to device.
     precision_t* d_obs = (precision_t*)xcuda(
-        (size_t)bc_steps * obs_size * sizeof(precision_t));
+        (size_t)bc_batch * obs_size * sizeof(precision_t));
     float* d_expert = (float*)xcuda(
-        (size_t)bc_steps * num_atns * sizeof(float));
+        (size_t)bc_batch * num_atns * sizeof(float));
     unsigned char* d_mask = (unsigned char*)xcuda(
-        (size_t)bc_steps * packed_stride);
-    obs_t* d_obs_raw = (obs_t*)xcuda((size_t)bc_steps * obs_size);
-    cudaMemcpy(d_obs_raw, obs_data, (size_t)bc_steps * obs_size,
+        (size_t)bc_batch * packed_stride);
+    obs_t* d_obs_raw = (obs_t*)xcuda((size_t)bc_batch * obs_size);
+    cudaMemcpy(d_obs_raw, obs_data, (size_t)bc_batch * obs_size,
         cudaMemcpyHostToDevice);
     cast<<<grid_size(bc_steps * obs_size), BLOCK_SIZE, 0,
-        pufferl->default_stream>>>(d_obs, d_obs_raw, bc_steps * obs_size);
+        pufferl->default_stream>>>(d_obs, d_obs_raw, bc_batch * obs_size);
     cudaMemcpy(d_expert, expert_data,
-        (size_t)bc_steps * num_atns * sizeof(float),
+        (size_t)bc_batch * num_atns * sizeof(float),
         cudaMemcpyHostToDevice);
     cudaMemcpy(d_mask, mask_data,
-        (size_t)bc_steps * packed_stride,
+        (size_t)bc_batch * packed_stride,
         cudaMemcpyHostToDevice);
     free(obs_data); free(expert_data); free(mask_data);
 
@@ -4979,7 +4979,7 @@ static int run_bc(Ini* ini) {
     int A_total = pufferl->vec->action_mask_size;
     int mask_stride = (A_total + 7) / 8;
     float* grad_logits = (float*)xcuda(
-        (size_t)bc_steps * A_total * sizeof(float));
+        (size_t)bc_batch * A_total * sizeof(float));
     float* loss_acc = (float*)xcuda(sizeof(float));
     pufferl->muon.lr_puf = {};  // reset, set below
     float lr = bc_lr;
@@ -4988,13 +4988,14 @@ static int run_bc(Ini* ini) {
 
     // Reuse the train activation buffers sized for B=bc_steps, T=1.
     PrecisionTensor obs_t = {.data = d_obs,
-        .shape = {bc_steps, 1, obs_size}};
+        .shape = {bc_batch, 1, obs_size}};
     PrecisionTensor state = pufferl->buffer_states[0];
     PrecisionTensor terminals = {};
 
     for (int ep = 0; ep < bc_epochs; ep++) {
         cudaMemsetAsync(grad_logits, 0,
-            (size_t)bc_steps * A_total * sizeof(float), pufferl->default_stream);
+            (size_t)bc_batch * A_total * sizeof(float),
+            pufferl->default_stream);
         cudaMemsetAsync(loss_acc, 0, sizeof(float), pufferl->default_stream);
         cudaMemsetAsync(state.data, 0, numel(state.shape) * sizeof(precision_t),
             pufferl->default_stream);
