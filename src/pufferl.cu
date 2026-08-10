@@ -5000,6 +5000,7 @@ static int run_bc(Ini* ini) {
     float* grad_logits = (float*)xcuda(
         (size_t)bc_cells * A_total * sizeof(float));
     float* loss_acc = (float*)xcuda(sizeof(float));
+    float* debug_out = (float*)xcuda((size_t)bc_cells * sizeof(float));
     pufferl->muon.lr_puf = {};  // reset, set below
     float lr = bc_lr;
     cudaMemcpy(pufferl->muon.lr_puf.data, &lr, sizeof(float),
@@ -5030,7 +5031,7 @@ static int run_bc(Ini* ini) {
         PrecisionTensor dec_flat = *puf_squeeze(&dec_out, 0);
         bc_loss_kernel<<<grid_size(bc_cells), BLOCK_SIZE, 0,
             pufferl->default_stream>>>(
-            dec_flat.data, d_expert, d_mask, grad_logits, loss_acc,
+            dec_flat.data, d_expert, d_mask, grad_logits, loss_acc, debug_out,
             pufferl->act_sizes_puf.data, bc_cells, A_total, num_atns,
             mask_stride);
         // Forward the gradient through the network; value/logstd empty.
@@ -5045,7 +5046,11 @@ static int run_bc(Ini* ini) {
         if ((ep + 1) % 200 == 0) {
             float loss = 0.0f;
             cudaMemcpy(&loss, loss_acc, sizeof(float), cudaMemcpyDeviceToHost);
-            printf("BC epoch %d loss=%.4f\n", ep + 1, loss / bc_steps);
+            float dbg[4];
+            cudaMemcpy(dbg, debug_out, 4 * sizeof(float),
+                cudaMemcpyDeviceToHost);
+            printf("BC epoch %d loss=%.4f dbg=%g,%g,%g,%g\n", ep + 1,
+                loss / bc_steps, dbg[0], dbg[1], dbg[2], dbg[3]);
         }
     }
 
@@ -5060,6 +5065,7 @@ static int run_bc(Ini* ini) {
     cudaFree(d_obs); cudaFree(d_expert); cudaFree(d_mask);
     cudaFree(d_obs_raw);
     cudaFree(grad_logits); cudaFree(loss_acc);
+    cudaFree(debug_out);
     cudaFree(terminals.data);
     for (int player = 0; player < KG_NUM_PLAYERS; player++) {
         free(env.agents[player].observations);

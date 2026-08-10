@@ -1567,6 +1567,7 @@ __global__ void bc_loss_kernel(
         const unsigned char* __restrict__ mask,   // (B, packed) bits
         float* __restrict__ grad_logits,          // (B, A_total)
         float* __restrict__ loss_acc,             // scalar
+        float* __restrict__ debug_out,            // (B) per-cell loss
         const int* __restrict__ act_sizes,
         int B, int A_total, int num_atns, int mask_stride) {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
@@ -1614,6 +1615,7 @@ __global__ void bc_loss_kernel(
         offset += A;
     }
     if (loss_acc) atomicAdd(loss_acc, loss);
+    if (debug_out) debug_out[idx] = loss;
 }
 
 // Masked logsumexp over one discrete head's legal actions. Returns -inf when
