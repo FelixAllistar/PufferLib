@@ -4849,6 +4849,7 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
 // that can later regularize self-play via the EMAg KL term.
 static int run_bc(Ini* ini) {
     TrainContext ctx = {.world_size = 1, .artifact_owner = 1};
+    PuffeRL* pufferl = create_pufferl(ini, &ctx);
     int bc_steps = (int)puf_ini_get(ini, "bc", "steps");
     int bc_profile = (int)puf_ini_get(ini, "bc", "profile");
     int bc_epochs = (int)puf_ini_get(ini, "bc", "epochs");
@@ -4856,30 +4857,6 @@ static int run_bc(Ini* ini) {
     if (bc_steps <= 0 || bc_steps > 720) bc_steps = 26;
     if (bc_epochs <= 0) bc_epochs = 2000;
     if (bc_lr <= 0.0f) bc_lr = 0.0003f;
-    /* The policy buffers are sized by vec.total_agents; BC uses one rollout
-     * row per tape step, so size the vec to bc_steps (padded to even for the
-     * two-player GPU env). */
-    /* BC packs tape steps into (B, TT) with TT = policy horizon = 8 so the
-     * train activation layout matches. Padded cells carry expert_action = -1
-     * and are skipped by the BC loss. */
-    int bc_horizon = 8;
-    int bc_batch = (bc_steps + bc_horizon - 1) / bc_horizon;
-    int bc_cells = bc_batch * bc_horizon;
-    char num_buf[64];
-    snprintf(num_buf, sizeof(num_buf), "%d", bc_batch);
-    puf_ini_put(ini, "vec.total_agents", num_buf);
-    puf_ini_put(ini, "vec.num_buffers", "1");
-    puf_ini_put(ini, "vec.num_frozen_banks", "0");
-    puf_ini_put(ini, "vec.frozen_bank_pct", "0");
-    puf_ini_put(ini, "selfplay.enabled", "0");
-    snprintf(num_buf, sizeof(num_buf), "%d", bc_cells);
-    puf_ini_put(ini, "train.minibatch_size", num_buf);
-    puf_ini_put(ini, "train.horizon", "8");
-    fprintf(stderr, "BC cfg: agents=%d minibatch=%d horizon=%d\n",
-        (int)puf_ini_get(ini, "vec", "total_agents"),
-        (int)puf_ini_get(ini, "train", "minibatch_size"),
-        (int)puf_ini_get(ini, "train", "horizon"));
-    PuffeRL* pufferl = create_pufferl(ini, &ctx);
 
     printf("BC: profile=%d steps=%d epochs=%d lr=%g\n",
         bc_profile, bc_steps, bc_epochs, bc_lr);
@@ -4888,25 +4865,16 @@ static int run_bc(Ini* ini) {
     Env env = {};
     env.rng = 0;
     puf_init(&env, puf_ini_section(ini, "env", 0));
-    for (int player = 0; player < KG_NUM_PLAYERS; player++) {
-        env.agents[player].observations = (obs_t*)xcalloc(OBS_SIZE);
-        env.agents[player].actions = (float*)xcalloc(
-            (size_t)NUM_ATNS * sizeof(float));
-        env.agents[player].rewards = (float*)xcalloc(sizeof(float));
-        env.agents[player].terminals = (float*)xcalloc(sizeof(float));
-        env.agents[player].action_mask = (unsigned char*)xcalloc(
-            (size_t)pufferl->vec->action_mask_size);
-    }
     puf_reset(&env);
 
     int obs_size = OBS_SIZE;
     int num_atns = NUM_ATNS;
     int packed_stride = (pufferl->vec->action_mask_size + 7) / 8;
-    obs_t* obs_data = (obs_t*)xcalloc((size_t)bc_cells * obs_size);
+    obs_t* obs_data = (obs_t*)xcalloc((size_t)bc_steps * obs_size);
     float* expert_data = (float*)xcalloc(
-        (size_t)bc_cells * num_atns * sizeof(float));
+        (size_t)bc_steps * num_atns * sizeof(float));
     unsigned char* mask_data = (unsigned char*)xcalloc(
-        (size_t)bc_cells * packed_stride);
+        (size_t)bc_steps * packed_stride);
     if (!obs_data || !expert_data || !mask_data) return 1;
 
     for (int t = 0; t < bc_steps && !env.game_storage.done; t++) {
@@ -4952,65 +4920,33 @@ static int run_bc(Ini* ini) {
         kg_step(&env.game_storage, actions);
         kag_write_all_observations_from_tapes(&env, kag_script_tapes);
     }
-    /* Padded cells: mark expert actions invalid so the BC kernel skips them. */
-    for (int t = bc_steps; t < bc_cells; t++) {
-        for (int h = 0; h < num_atns; h++) {
-            expert_data[(size_t)t * num_atns + h] = -1.0f;
-        }
-    }
-    int valid_cells = 0;
-    for (int t = 0; t < bc_cells; t++) {
-        int valid = 1;
-        for (int h = 0; h < num_atns; h++) {
-            if ((int)expert_data[(size_t)t * num_atns + h] < 0) valid = 0;
-        }
-        valid_cells += valid;
-    }
-    fprintf(stderr, "BC expert: %d/%d valid cells; head0 t0=%g t1=%g t25=%g\n",
-        valid_cells, bc_cells,
-        expert_data[0], expert_data[num_atns],
-        expert_data[25 * num_atns]);
-    int mask_bits = 0;
-    for (int t = 0; t < bc_steps; t++) {
-        for (int byte = 0; byte < packed_stride; byte++) {
-            mask_bits += __builtin_popcount(mask_data[(size_t)t * packed_stride + byte]);
-        }
-    }
-    fprintf(stderr, "BC mask: %d bits over %d steps\n", mask_bits, bc_steps);
 
     // Upload expert dataset to device.
     precision_t* d_obs = (precision_t*)xcuda(
-        (size_t)bc_cells * obs_size * sizeof(precision_t));
+        (size_t)bc_steps * obs_size * sizeof(precision_t));
     float* d_expert = (float*)xcuda(
-        (size_t)bc_cells * num_atns * sizeof(float));
+        (size_t)bc_steps * num_atns * sizeof(float));
     unsigned char* d_mask = (unsigned char*)xcuda(
-        (size_t)bc_cells * packed_stride);
-    obs_t* d_obs_raw = (obs_t*)xcuda((size_t)bc_cells * obs_size);
-    cudaMemcpy(d_obs_raw, obs_data, (size_t)bc_cells * obs_size,
+        (size_t)bc_steps * packed_stride);
+    obs_t* d_obs_raw = (obs_t*)xcuda((size_t)bc_steps * obs_size);
+    cudaMemcpy(d_obs_raw, obs_data, (size_t)bc_steps * obs_size,
         cudaMemcpyHostToDevice);
-    cast<<<grid_size(bc_cells * obs_size), BLOCK_SIZE, 0,
-        pufferl->default_stream>>>(d_obs, d_obs_raw, bc_cells * obs_size);
+    cast<<<grid_size(bc_steps * obs_size), BLOCK_SIZE, 0,
+        pufferl->default_stream>>>(d_obs, d_obs_raw, bc_steps * obs_size);
     cudaMemcpy(d_expert, expert_data,
-        (size_t)bc_cells * num_atns * sizeof(float),
+        (size_t)bc_steps * num_atns * sizeof(float),
         cudaMemcpyHostToDevice);
     cudaMemcpy(d_mask, mask_data,
-        (size_t)bc_cells * packed_stride,
+        (size_t)bc_steps * packed_stride,
         cudaMemcpyHostToDevice);
     free(obs_data); free(expert_data); free(mask_data);
 
     // BC loop: forward, cross-entropy, backward, muon step.
     int A_total = pufferl->vec->action_mask_size;
     int mask_stride = (A_total + 7) / 8;
-    int num_atns_puf = (int)numel(pufferl->act_sizes_puf.shape);
-    int head0_size = 0;
-    cudaMemcpy(&head0_size, pufferl->act_sizes_puf.data, sizeof(int),
-        cudaMemcpyDeviceToHost);
-    fprintf(stderr, "BC heads: num_atns=%d A_total=%d head0=%d\n",
-        num_atns_puf, A_total, head0_size);
     float* grad_logits = (float*)xcuda(
-        (size_t)bc_cells * A_total * sizeof(float));
+        (size_t)bc_steps * A_total * sizeof(float));
     float* loss_acc = (float*)xcuda(sizeof(float));
-    float* debug_out = (float*)xcuda((size_t)bc_cells * sizeof(float));
     pufferl->muon.lr_puf = {};  // reset, set below
     float lr = bc_lr;
     cudaMemcpy(pufferl->muon.lr_puf.data, &lr, sizeof(float),
@@ -5018,60 +4954,31 @@ static int run_bc(Ini* ini) {
 
     // Reuse the train activation buffers sized for B=bc_steps, T=1.
     PrecisionTensor obs_t = {.data = d_obs,
-        .shape = {bc_batch, bc_horizon, obs_size}};
+        .shape = {bc_steps, 1, obs_size}};
     PrecisionTensor state = pufferl->buffer_states[0];
-    PrecisionTensor terminals = {.data = (precision_t*)xcuda(
-        (size_t)bc_cells * sizeof(precision_t)),
-        .shape = {bc_batch, bc_horizon}};
-    fprintf(stderr, "BC shapes: obs=(%ld,%ld,%ld) state=(%ld,%ld,%ld) cells=%d\n",
-        (long)obs_t.shape[0], (long)obs_t.shape[1], (long)obs_t.shape[2],
-        (long)state.shape[0], (long)state.shape[1], (long)state.shape[2],
-        bc_cells);
+    PrecisionTensor terminals = {};
 
     for (int ep = 0; ep < bc_epochs; ep++) {
         cudaMemsetAsync(grad_logits, 0,
-            (size_t)bc_cells * A_total * sizeof(float),
-            pufferl->default_stream);
+            (size_t)bc_steps * A_total * sizeof(float), pufferl->default_stream);
         cudaMemsetAsync(loss_acc, 0, sizeof(float), pufferl->default_stream);
         cudaMemsetAsync(state.data, 0, numel(state.shape) * sizeof(precision_t),
             pufferl->default_stream);
         PrecisionTensor dec_out = policy_forward_train(&pufferl->policy,
             pufferl->weights, pufferl->train_activations,
             obs_t, state, terminals, pufferl->default_stream);
-        PrecisionTensor dec_flat = *puf_squeeze(&dec_out, 0);
-        cudaPointerAttributes dec_attr = {};
-        cudaPointerGetAttributes(&dec_attr, dec_flat.data);
-        if (ep == 0) {
-            fprintf(stderr, "BC dec: data=%p type=%d device=%d\n",
-                dec_flat.data, (int)dec_attr.type, dec_attr.device);
-            cudaPointerAttributes as_attr = {};
-            cudaPointerGetAttributes(&as_attr, pufferl->act_sizes_puf.data);
-            fprintf(stderr, "BC act_sizes: %p type=%d device=%d\n",
-                pufferl->act_sizes_puf.data, (int)as_attr.type,
-                as_attr.device);
-            fprintf(stderr, "BC launch: cells=%d A=%d N=%d M=%d grid=%d\n",
-                bc_cells, A_total, num_atns, mask_stride,
-                grid_size(bc_cells));
-        }
-        if (ep == 0) {
-            bc_smoke_kernel<<<1, 256, 0, 0>>>(debug_out, bc_cells);
-            fprintf(stderr, "BC smoke: %s\n",
-                cudaGetErrorString(cudaGetLastError()));
-            cudaDeviceSynchronize();
-        }
-        bc_loss_kernel<<<1, 256, 0, 0>>>(
-            dec_flat.data, d_expert, d_mask, grad_logits, loss_acc, debug_out,
-            pufferl->act_sizes_puf.data, bc_cells, A_total, num_atns,
+        (void)dec_out;
+        // policy_forward_train returns (B, T, fused_cols); squeeze T=1 for the
+        // BC kernel which expects (B, fused_cols).
+        PrecisionTensor dec_flat = *puf_squeeze(&dec_out, 1);
+        bc_loss_kernel<<<grid_size(bc_steps), BLOCK_SIZE, 0,
+            pufferl->default_stream>>>(
+            dec_flat.data, d_expert, d_mask, grad_logits, loss_acc,
+            pufferl->act_sizes_puf.data, bc_steps, A_total, num_atns,
             mask_stride);
-        cudaError_t bc_err = cudaGetLastError();
-        if (bc_err != cudaSuccess) {
-            fprintf(stderr, "BC kernel launch failed: %s\n",
-                cudaGetErrorString(bc_err));
-            return 1;
-        }
         // Forward the gradient through the network; value/logstd empty.
         FloatTensor grad_logits_t = {.data = grad_logits,
-            .shape = {bc_batch, bc_horizon, A_total}};
+            .shape = {bc_steps, 1, A_total}};
         policy_backward(&pufferl->policy, pufferl->weights,
             pufferl->train_activations, grad_logits_t, FloatTensor(),
             FloatTensor(), pufferl->default_stream);
@@ -5081,11 +4988,7 @@ static int run_bc(Ini* ini) {
         if ((ep + 1) % 200 == 0) {
             float loss = 0.0f;
             cudaMemcpy(&loss, loss_acc, sizeof(float), cudaMemcpyDeviceToHost);
-            float dbg[4];
-            cudaMemcpy(dbg, debug_out, 4 * sizeof(float),
-                cudaMemcpyDeviceToHost);
-            printf("BC epoch %d loss=%.4f dbg=%g,%g,%g,%g\n", ep + 1,
-                loss / bc_steps, dbg[0], dbg[1], dbg[2], dbg[3]);
+            printf("BC epoch %d loss=%.4f\n", ep + 1, loss / bc_steps);
         }
     }
 
@@ -5100,15 +5003,6 @@ static int run_bc(Ini* ini) {
     cudaFree(d_obs); cudaFree(d_expert); cudaFree(d_mask);
     cudaFree(d_obs_raw);
     cudaFree(grad_logits); cudaFree(loss_acc);
-    cudaFree(debug_out);
-    cudaFree(terminals.data);
-    for (int player = 0; player < KG_NUM_PLAYERS; player++) {
-        free(env.agents[player].observations);
-        free(env.agents[player].actions);
-        free(env.agents[player].rewards);
-        free(env.agents[player].terminals);
-        free(env.agents[player].action_mask);
-    }
     close_pufferl(pufferl);
     return 0;
 }
