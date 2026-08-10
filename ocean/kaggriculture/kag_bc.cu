@@ -153,6 +153,8 @@ int main(int argc, char** argv) {
     create_allocator_or_die("params", &params);
     create_allocator_or_die("grads", &grads);
     create_allocator_or_die("acts", &acts);
+    cudaError_t alloc_err = cudaGetLastError();
+    fprintf(stderr, "after allocs: %s\n", cudaGetErrorString(alloc_err));
 
     FloatTensor master_weights = {
         .data = (float*)params.mem, .shape = {params.total_elems}};
@@ -268,6 +270,8 @@ int main(int argc, char** argv) {
         (size_t)bc_steps * NUM_ATNS * sizeof(float), cudaMemcpyHostToDevice);
     cudaMemcpy(d_mask, host_mask, (size_t)bc_steps * packed_stride,
         cudaMemcpyHostToDevice);
+    cudaError_t up_err = cudaGetLastError();
+    fprintf(stderr, "after upload: %s\n", cudaGetErrorString(up_err));
 
     PrecisionTensor obs_t = {.data = d_obs,
         .shape = {bc_steps, 1, OBS_SIZE}};
