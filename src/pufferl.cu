@@ -4954,6 +4954,18 @@ static int run_bc(Ini* ini) {
             expert_data[(size_t)t * num_atns + h] = -1.0f;
         }
     }
+    int valid_cells = 0;
+    for (int t = 0; t < bc_cells; t++) {
+        int valid = 1;
+        for (int h = 0; h < num_atns; h++) {
+            if ((int)expert_data[(size_t)t * num_atns + h] < 0) valid = 0;
+        }
+        valid_cells += valid;
+    }
+    fprintf(stderr, "BC expert: %d/%d valid cells; head0 t0=%g t1=%g t25=%g\n",
+        valid_cells, bc_cells,
+        expert_data[0], expert_data[num_atns],
+        expert_data[25 * num_atns]);
 
     // Upload expert dataset to device.
     precision_t* d_obs = (precision_t*)xcuda(
