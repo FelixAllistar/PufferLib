@@ -68,6 +68,31 @@ reviewed. Verify every supported rule family against it with:
 ocean/goofspiel/tests/test_exploit_gpu.sh MODEL HIDDEN_SIZE NUM_LAYERS
 ```
 
+## GPU-resident environment
+
+`goofspiel.cu` implements the `puf_envs_*` adapter so the environment itself
+runs on device (mirrors `puffer_survivors.cu`/`kaggriculture.cu`). The core
+state machine and observation writer are shared with the CPU path; a parity
+fuzz test drives both over the same action stream and compares state, obs,
+mask, reward, terminal, and log bytes:
+
+```bash
+make -C ocean/goofspiel cuda-adapter
+```
+
+The observation/action ABI is compile-time: `GS_NUM_CARDS=4` (default) keeps
+the legacy checkpoint layout byte-identical, while `GS_NUM_CARDS=13` builds a
+larger obs/action layout for 13-card training:
+
+```bash
+GS_NUM_CARDS=13 ./build.sh goofspiel --gpu
+```
+
+The exact exploitability solver remains 4-card and is compiled into the GPU
+trainer (`GS_EXPLOIT_NO_MAIN`) so checkpoint scoring and env stepping share one
+binary. A 65,536-agent environment bench runs ~115M agent-steps/sec on the
+5070 Ti.
+
 Across 2-4 cards, shortened episodes, fixed prize orders, carry ties, and
 point-difference returns, measured CPU/CUDA absolute error is below `6e-8`.
 The CPU uniform-policy fixtures above are the transitive check against
