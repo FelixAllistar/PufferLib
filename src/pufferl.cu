@@ -5045,6 +5045,9 @@ static int run_bc(Ini* ini) {
             fprintf(stderr, "BC act_sizes: %p type=%d device=%d\n",
                 pufferl->act_sizes_puf.data, (int)as_attr.type,
                 as_attr.device);
+            fprintf(stderr, "BC launch: cells=%d A=%d N=%d M=%d grid=%d\n",
+                bc_cells, A_total, num_atns, mask_stride,
+                grid_size(bc_cells));
         }
         bc_loss_kernel<<<grid_size(bc_cells), BLOCK_SIZE, 0, 0>>>(
             dec_flat.data, d_expert, d_mask, grad_logits, loss_acc, debug_out,
