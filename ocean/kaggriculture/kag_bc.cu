@@ -101,6 +101,12 @@ int main(int argc, char** argv) {
         bc_steps, bc_profile, bc_epochs, bc_lr, hidden, layers);
 
     cublas_init_handle();
+    cudaError_t init_err = cudaGetLastError();
+    if (init_err != cudaSuccess) {
+        fprintf(stderr, "cublas init failed: %s\n",
+            cudaGetErrorString(init_err));
+        return 1;
+    }
 
     // Build the policy. OBS_SIZE / NUM_ATNS come from the env header.
     int input_size = OBS_SIZE;
@@ -251,6 +257,16 @@ int main(int argc, char** argv) {
             fprintf(stderr, "forward failed: %s\n",
                 cudaGetErrorString(fwd_err));
             return 1;
+        }
+        if (ep == 0) {
+            cudaPointerAttributes da = {};
+            cudaPointerGetAttributes(&da, dec_flat.data);
+            fprintf(stderr, "dec_flat: data=%p type=%d dev=%d\n",
+                dec_flat.data, (int)da.type, da.device);
+            cudaPointerAttributes oa = {};
+            cudaPointerGetAttributes(&oa, obs_t.data);
+            fprintf(stderr, "obs_t: data=%p type=%d dev=%d\n",
+                obs_t.data, (int)oa.type, oa.device);
         }
         kag_bc_loss_kernel<<<grid_size(bc_steps), BLOCK_SIZE, 0, 0>>>(
             dec_flat.data, d_expert, d_mask, grad_logits, loss_acc,
