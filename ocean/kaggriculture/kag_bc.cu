@@ -4,7 +4,7 @@
 // Usage: ./kag_bc [bc.steps=N] [bc.profile=4] [bc.epochs=N] [bc.lr=X]
 //        [policy.hidden_size=N] [policy.num_layers=N] [bc.output=path]
 
-#include "../kaggriculture.h"
+#include "kaggriculture.h"
 #include "ini.h"
 #include "puffercpu.h"
 
