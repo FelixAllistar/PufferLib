@@ -4875,6 +4875,7 @@ static int run_bc(Ini* ini) {
     puf_ini_put(ini, "selfplay.enabled", "0");
     snprintf(num_buf, sizeof(num_buf), "%d", bc_batch);
     puf_ini_put(ini, "train.minibatch_size", num_buf);
+    puf_ini_put(ini, "train.horizon", "8");
     PuffeRL* pufferl = create_pufferl(ini, &ctx);
 
     printf("BC: profile=%d steps=%d epochs=%d lr=%g\n",
