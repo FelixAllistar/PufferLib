@@ -158,8 +158,8 @@ int main(int argc, char** argv) {
         cudaMemcpyHostToDevice);
 
     uint64_t seed = 42;
-    policy_init_weights(&policy, weights, &seed, bc_stream);
-    cudaStreamSynchronize(bc_stream);
+    policy_init_weights(&policy, weights, &seed, 0);
+    cudaDeviceSynchronize();
     cudaError_t init_w_err = cudaGetLastError();
     if (init_w_err != cudaSuccess) {
         fprintf(stderr, "policy_init_weights failed: %s\n",
