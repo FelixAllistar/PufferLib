@@ -111,6 +111,17 @@ the compiled ABI (`4` default, `13` for the 13-card build). Example:
 ./puffer train goofspiel vec.num_buffers=1 vec.gpu_env=1
 ```
 
+## Encoder / observation experiments (open)
+
+Two observation encoders exist (`env.open_spiel_obs=0` compact vs `=1`
+OpenSpiel-style score/prize/hand one-hots), both `uint8_t` into the linear
+encoder. Which layout helps the MinGRU most at 5/13 cards is untested. Future
+experiments: compare compact vs OpenSpiel obs under identical hypers at
+5 cards, then at 13 cards; test egocentric vs absolute player ordering;
+test whether one-hotting the revealed prize sequence (instead of a scalar
+current-prize) improves value accuracy. Pick the winner by verified
+exploitability + cross-play win rate, not training SPS alone.
+
 The exact exploitability solver remains 4-card and is compiled into the GPU
 trainer (`GS_EXPLOIT_NO_MAIN`) so checkpoint scoring and env stepping share one
 binary. A 65,536-agent environment bench runs ~115M agent-steps/sec on the

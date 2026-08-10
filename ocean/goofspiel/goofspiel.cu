@@ -57,6 +57,11 @@ static inline int gs_cuda_grid(int n) {
     return (n + GS_CUDA_BLOCK - 1) / GS_CUDA_BLOCK;
 }
 
+static void gs_fail(const char* what) {
+    std::fprintf(stderr, "Goofspiel GPU %s\n", what);
+    std::exit(1);
+}
+
 /* Mirror the CPU log accumulation exactly (player-0 perspective). */
 __device__ static void gs_cuda_log_game(Env* env, const float* returns) {
     int max_score = -1;
@@ -216,16 +221,11 @@ static void gs_cuda_load_config(Dict* kwargs) {
 static Env* puf_envs_create(int total_agents, Dict* env_kwargs,
         Dict* vec_kwargs, int* bank_layout) {
     if (total_agents < 2 || total_agents % 2) {
-        std::fprintf(stderr,
-            "Goofspiel GPU requires an even vec.total_agents >= 2\n");
-        std::exit(1);
+        gs_fail("requires an even vec.total_agents >= 2");
     }
     if ((int)dict_get(env_kwargs, "exact_exploiter")) {
-        std::fprintf(stderr,
-            "Goofspiel GPU env does not support env.exact_exploiter yet; "
-            "the exact response pool is a CPU-env feature. Set "
-            "env.exact_exploiter=0 for gpu_env=1.\n");
-        std::exit(1);
+        gs_fail("does not support env.exact_exploiter yet; "
+            "use gpu_env=0 for the exact response pool");
     }
     g_gs_total_agents = total_agents;
     g_gs_num_matches = total_agents / 2;
@@ -264,9 +264,7 @@ static Env* puf_envs_create(int total_agents, Dict* env_kwargs,
     }
     for (int bank = 0; bank <= frozen_banks; bank++) {
         if (cursors[bank] != bank_layout[bank + 1]) {
-            std::fprintf(stderr,
-                "Goofspiel GPU bank mapping mismatch at %d\n", bank);
-            std::exit(1);
+            gs_fail("bank mapping mismatch");
         }
     }
 
@@ -302,8 +300,7 @@ static void puf_envs_reset(Env* envs, obs_t* observations, float* rewards,
     cudaMemset(rewards, 0, (size_t)total_agents * sizeof(float));
     cudaMemset(terminals, 0, (size_t)total_agents * sizeof(float));
     if (!g_gs_actions || !g_gs_masks) {
-        std::fprintf(stderr, "Goofspiel GPU buffers were not bound\n");
-        std::exit(1);
+        gs_fail("buffers were not bound");
     }
     g_gs_observations = observations;
     g_gs_rewards = rewards;
@@ -321,14 +318,12 @@ static void puf_envs_step(Env* envs, const float* actions,
         obs_t* observations, float* rewards, float* terminals,
         int start, int count, cudaStream_t stream) {
     if (start != 0 || count != g_gs_total_agents) {
-        std::fprintf(stderr, "Goofspiel GPU requires full-batch stepping\n");
-        std::exit(1);
+        gs_fail("requires full-batch stepping");
     }
     if (!g_gs_bound || actions != g_gs_actions
             || observations != g_gs_observations
             || rewards != g_gs_rewards || terminals != g_gs_terminals) {
-        std::fprintf(stderr, "Goofspiel GPU buffer binding changed\n");
-        std::exit(1);
+        gs_fail("buffer binding changed");
     }
     gs_cuda_step_kernel<<<gs_cuda_grid(g_gs_num_matches),
         GS_CUDA_BLOCK, 0, stream>>>(envs, d_gs_matches, d_gs_rows,
