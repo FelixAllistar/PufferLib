@@ -6,7 +6,6 @@
 
 #include "kaggriculture.h"
 #include "ini.h"
-#include "puffercpu.h"
 
 #include <cublas_v2.h>
 #include <cuda_runtime.h>
@@ -18,6 +17,7 @@
 #include <time.h>
 
 // ---- Minimal policy plumbing (mirrors the puffer train path) ----
+#include "../../src/pufferl_preamble.h"
 #include "../../src/algo.cu"
 
 // Same semantics as the sampler: skip heads whose expert action is invalid or
