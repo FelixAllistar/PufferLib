@@ -187,6 +187,7 @@ struct Env {
     float reward_crop_value;
     float reward_animal_value;
     float reward_land_value;
+    float reward_margin_scale;
     float reward_neglect_discount;
     float reward_liquidation_days;
     float reward_productive_action;
@@ -1955,6 +1956,8 @@ void puf_init(Env* env, Dict* kwargs) {
     env->reward_crop_value = (float)dict_get(kwargs, "reward_crop_value");
     env->reward_animal_value = (float)dict_get(kwargs, "reward_animal_value");
     env->reward_land_value = (float)dict_get(kwargs, "reward_land_value");
+    env->reward_margin_scale = (float)dict_get(kwargs,
+        "reward_margin_scale");
     env->reward_neglect_discount = (float)dict_get(
         kwargs, "reward_neglect_discount");
     env->reward_liquidation_days = (float)dict_get(
@@ -2132,10 +2135,29 @@ void puf_step(Env* env) {
         float win0 = p0 > p1 ? 1.0f : (p0 == p1 ? 0.5f : 0.0f);
         float model_win = model_player == 0 ? win0 : 1.0f - win0;
         float outcome = (2.0f * win0 - 1.0f) * env->reward_win;
+        /* Margin-aware term: reward proportional to the money gap so a close
+         * loss is preferred to a blowout. Normalized by starting money so the
+         * scale is comparable across configs. */
+        int model_money = model_player == 0 ? p0 : p1;
+        int opp_money = model_player == 0 ? p1 : p0;
+        float margin = (float)(model_money - opp_money)
+            / (float)game->config.starting_money;
+        float margin_term = env->reward_margin_scale * margin;
         env->agents[0].rewards[0] += outcome;
         env->agents[1].rewards[0] -= outcome;
         env->episode_returns[0] += outcome;
         env->episode_returns[1] -= outcome;
+        if (model_player == 0) {
+            env->agents[0].rewards[0] += margin_term;
+            env->agents[1].rewards[0] -= margin_term;
+            env->episode_returns[0] += margin_term;
+            env->episode_returns[1] -= margin_term;
+        } else {
+            env->agents[0].rewards[0] -= margin_term;
+            env->agents[1].rewards[0] += margin_term;
+            env->episode_returns[0] -= margin_term;
+            env->episode_returns[1] += margin_term;
+        }
         if (abs(p0 - game->config.starting_money) <= 2) {
             env->agents[0].rewards[0] -= env->reward_inactivity;
             env->episode_returns[0] -= env->reward_inactivity;
