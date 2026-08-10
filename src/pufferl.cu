@@ -5001,8 +5001,11 @@ static int run_bc(Ini* ini) {
     int head0_size = 0;
     cudaMemcpy(&head0_size, pufferl->act_sizes_puf.data, sizeof(int),
         cudaMemcpyDeviceToHost);
-    fprintf(stderr, "BC heads: num_atns=%d A_total=%d head0=%d\n",
-        num_atns_puf, A_total, head0_size);
+    fprintf(stderr, "BC heads: num_atns=%d A_total=%d head0=%d ptr=%p "
+        "dec=%p expert=%p mask=%p grad=%p\n",
+        num_atns_puf, A_total, head0_size,
+        (void*)pufferl->act_sizes_puf.data, (void*)d_obs, (void*)d_expert,
+        (void*)d_mask, (void*)grad_logits);
     float* grad_logits = (float*)xcuda(
         (size_t)bc_cells * A_total * sizeof(float));
     float* loss_acc = (float*)xcuda(sizeof(float));
