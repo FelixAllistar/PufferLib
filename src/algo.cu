@@ -1453,6 +1453,8 @@ struct PPOKernelArgs {
     const precision_t* values_pred;
     const float* adv_mean;
     const float* adv_var;
+    const float* ret_mean;
+    const float* ret_var;
     const int* act_sizes;
     const unsigned char* action_mask; // (N, T, ceil(A_total/8)); packed bits
     int num_atns;
@@ -1476,8 +1478,10 @@ void register_ppo_buffers(PPOBuffersPuf& bufs, Allocator* alloc, int N, int T, i
         .grad_logits = {.shape = {N, T, A_total}},
         .grad_values = {.shape = {N, T, 1}},
         .grad_logstd = {.shape = {N, T, A_total}},
-        // [0]=var, [1]=mean, [2..)= partials (sums then sumsq, up to 1024 each)
-        .adv_scratch = {.shape = {2 + 2 * 1024}},
+        // Two moment blocks: [0]=adv var, [1]=adv mean, [2..)=adv partials;
+        // second block (offset 2+2*1024) holds return moments for the
+        // variance-normalized value loss.
+        .adv_scratch = {.shape = {2 * (2 + 2 * 1024)}},
         .ent_coef = {.shape = {1}},
         .ppo_partials = {.shape = {ppo_grid * LOSS_N}},
     };
@@ -1693,27 +1697,39 @@ __global__ void ppo_loss_compute(
     float adv_std = sqrtf(float(a.adv_var[0]));
     float adv_normalized = (adv - float(a.adv_mean[0])) / (adv_std + 1e-8f);
 
+    /* Value loss is variance-normalized: predictions and targets are scaled by
+     * 1/sqrt(ret_var) so both the loss and the vf_clip operate in unit scale.
+     * Raw returns grow as the policy earns more money; without this the value
+     * gradient scales with cash and corrupts the shared decoder row. */
+    /* Returns are money-scale (thousands), so a variance floor of 1.0 keeps
+     * the normalization stable even when an early batch is near-constant. */
+    float ret_std_inv = 1.0f / sqrtf(fmaxf(float(a.ret_var[0]), 1.0f));
+    float val_pred_n = val_pred * ret_std_inv;
+    float val_n = val * ret_std_inv;
+    float ret_n = ret * ret_std_inv;
+
     float dL = inv_NT;
     float ent_coef = *a.ent_coef;
     float d_entropy_term = dL * (-ent_coef);
 
     // Value loss (forward) + value gradient (backward)
 
-    float v_error = val_pred - val;
-    float v_clipped = val + fmaxf(-a.vf_clip_coef, fminf(a.vf_clip_coef, v_error));
-    float v_loss_unclipped = (val_pred - ret) * (val_pred - ret);
-    float v_loss_clipped = (v_clipped - ret) * (v_clipped - ret);
+    float v_error_n = val_pred_n - val_n;
+    float v_clipped_n = val_n + fmaxf(-a.vf_clip_coef,
+        fminf(a.vf_clip_coef, v_error_n));
+    float v_loss_unclipped = (val_pred_n - ret_n) * (val_pred_n - ret_n);
+    float v_loss_clipped = (v_clipped_n - ret_n) * (v_clipped_n - ret_n);
     float v_loss = 0.5f * fmaxf(v_loss_unclipped, v_loss_clipped);
 
     // Value gradient
     bool use_clipped_vf = (v_loss_clipped > v_loss_unclipped);
     float d_val_pred = 0.0f;
     if (use_clipped_vf) {
-        if (v_error >= -a.vf_clip_coef && v_error <= a.vf_clip_coef) {
-            d_val_pred = v_clipped - ret;
+        if (v_error_n >= -a.vf_clip_coef && v_error_n <= a.vf_clip_coef) {
+            d_val_pred = (v_clipped_n - ret_n) * ret_std_inv;
         }
     } else {
-        d_val_pred = val_pred - ret;
+        d_val_pred = (val_pred_n - ret_n) * ret_std_inv;
     }
     a.grad_values_pred[nt] = dL * a.vf_coef * d_val_pred;
 
@@ -2031,6 +2047,18 @@ void ppo_loss_fwd_bwd(
     ppo_adv_finalize<<<1, PPO_VM_THREADS, 0, stream>>>(
         adv_partials, adv_var, adv_mean, adv_blocks, adv_n);
 
+    float* ret_block = adv_var + 2 + 2 * PPO_VM_MAX_BLOCKS;
+    float* ret_var = ret_block;
+    float* ret_mean = ret_var + 1;
+    float* ret_partials = ret_var + 2;
+    int ret_n = (int)numel(graph.mb_returns.shape);
+    int ret_blocks = (ret_n + PPO_VM_THREADS - 1) / PPO_VM_THREADS;
+    ret_blocks = min(ret_blocks, PPO_VM_MAX_BLOCKS);
+    ppo_adv_moments<<<ret_blocks, PPO_VM_THREADS, 0, stream>>>(
+        graph.mb_returns.data, ret_partials, ret_n);
+    ppo_adv_finalize<<<1, PPO_VM_THREADS, 0, stream>>>(
+        ret_partials, ret_var, ret_mean, ret_blocks, ret_n);
+
     int ppo_grid = (total + PPO_THREADS - 1) / PPO_THREADS;
 
     PPOGraphArgs graph_args = {
@@ -2056,6 +2084,8 @@ void ppo_loss_fwd_bwd(
         .values_pred = dec_out.data + A_total,
         .adv_mean = adv_mean,
         .adv_var = adv_var,
+        .ret_mean = ret_mean,
+        .ret_var = ret_var,
         .act_sizes = act_sizes.data,
         .action_mask = graph.mb_action_mask.data,
         .num_atns = (int)numel(act_sizes.shape),
