@@ -85,7 +85,7 @@ GS_OBS_HD static inline void gs_observe_open_spiel(const GSConfig* cfg,
     for (int view = 0; view < cfg->num_players; view++) {
         int player = observer + view;
         if (player >= cfg->num_players) player -= cfg->num_players;
-        uint16_t hand = state->hands[player];
+        uint32_t hand = state->hands[player];
         if (cfg->information == GS_INFO_HIDDEN_BIDS && player != observer) {
             hand = 0;
         }
@@ -108,7 +108,7 @@ GS_OBS_HD static inline void gs_observe_player(const GSConfig* cfg,
 
     for (int view = 0; view < cfg->num_players; view++) {
         int player = gs_view_player(cfg, observer, view);
-        uint16_t hand = state->hands[player];
+        uint32_t hand = state->hands[player];
         if (cfg->information == GS_INFO_HIDDEN_BIDS && player != observer) {
             hand = 0;
         }

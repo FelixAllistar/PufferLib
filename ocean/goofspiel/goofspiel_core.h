@@ -4,7 +4,8 @@
 #include <string.h>
 
 #define GS_MAX_PLAYERS 2
-#define GS_MAX_CARDS 4
+#define GS_MAX_CARDS 4          /* fixed 4-card checkpoint/obs layout */
+#define GS_MAX_CARDS_EXT 13     /* runtime max for larger training variants */
 
 enum {
     GS_PRIZES_RANDOM = 0,
@@ -33,8 +34,8 @@ enum {
 };
 
 typedef struct {
-    uint16_t full_hand;
-    uint16_t total_points;
+    uint32_t full_hand;
+    uint32_t total_points;
     uint8_t num_players;
     uint8_t num_cards;
     uint8_t num_turns;
@@ -48,10 +49,10 @@ typedef struct {
 } GSConfig;
 
 typedef struct {
-    uint16_t hands[GS_MAX_PLAYERS];
-    uint16_t remaining_prizes;
+    uint32_t hands[GS_MAX_PLAYERS];
+    uint32_t remaining_prizes;
     uint8_t scores[GS_MAX_PLAYERS];
-    uint8_t prizes[GS_MAX_CARDS];
+    uint8_t prizes[GS_MAX_CARDS_EXT];
     uint8_t last_bids[GS_MAX_PLAYERS];
     uint8_t round;
     uint8_t pot;
@@ -60,13 +61,13 @@ typedef struct {
 } GSState;
 
 typedef struct {
-    uint8_t bids[GS_MAX_CARDS][GS_MAX_PLAYERS];
-    uint8_t winners[GS_MAX_CARDS];
+    uint8_t bids[GS_MAX_CARDS_EXT][GS_MAX_PLAYERS];
+    uint8_t winners[GS_MAX_CARDS_EXT];
 } GSHistory;
 
 static inline int gs_config_valid(const GSConfig* cfg) {
     return cfg->num_players >= 2 && cfg->num_players <= GS_MAX_PLAYERS
-        && cfg->num_cards >= 2 && cfg->num_cards <= GS_MAX_CARDS
+        && cfg->num_cards >= 2 && cfg->num_cards <= GS_MAX_CARDS_EXT
         && cfg->num_turns >= 1 && cfg->num_turns <= cfg->num_cards
         && cfg->prize_order <= GS_PRIZES_DESCENDING
         && cfg->information <= GS_INFO_HIDDEN_BIDS
@@ -141,7 +142,7 @@ static inline void gs_reset(GSState* state, GSHistory* history,
     state->remaining_prizes = cfg->full_hand;
     state->last_winner = GS_NO_WINNER;
     gs_shuffle_prizes(state, cfg, rng);
-    state->remaining_prizes &= (uint16_t)~(1u << state->prizes[0]);
+    state->remaining_prizes &= ~(1u << state->prizes[0]);
 }
 
 static inline void gs_resolve_round(GSState* state, GSHistory* history,
@@ -153,7 +154,7 @@ static inline void gs_resolve_round(GSState* state, GSHistory* history,
 
     for (int p = 0; p < cfg->num_players; p++) {
         int bid = bids[p];
-        state->hands[p] &= (uint16_t)~(1u << bid);
+        state->hands[p] &= ~(1u << bid);
         state->last_bids[p] = (uint8_t)bid;
         history->bids[round][p] = (uint8_t)(bid + 1);
         if (bid > high_bid) {
@@ -184,7 +185,7 @@ static inline void gs_resolve_round(GSState* state, GSHistory* history,
     state->round++;
     if (state->round < cfg->num_turns) {
         int next_prize = state->prizes[state->round];
-        state->remaining_prizes &= (uint16_t)~(1u << next_prize);
+        state->remaining_prizes &= ~(1u << next_prize);
     }
 }
 
@@ -199,7 +200,7 @@ static inline int gs_step(GSState* state, GSHistory* history,
             && state->round == cfg->num_turns - 1) {
         uint8_t forced[GS_MAX_PLAYERS];
         for (int p = 0; p < cfg->num_players; p++) {
-            forced[p] = (uint8_t)__builtin_ctz((unsigned int)state->hands[p]);
+            forced[p] = (uint8_t)__builtin_ctz(state->hands[p]);
         }
         gs_resolve_round(state, history, cfg, forced);
     }

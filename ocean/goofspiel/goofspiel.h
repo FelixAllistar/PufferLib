@@ -81,8 +81,8 @@ static inline GSConfig gs_load_config(Dict* kwargs) {
     cfg.auto_forced_last = (uint8_t)gs_kw(kwargs, "auto_forced_last");
     cfg.open_spiel_obs = (uint8_t)gs_kw(kwargs, "open_spiel_obs");
     if (cfg.num_cards <= GS_MAX_CARDS) {
-        cfg.full_hand = (uint16_t)((1u << cfg.num_cards) - 1u);
-        cfg.total_points = (uint16_t)(cfg.num_cards * (cfg.num_cards + 1) / 2);
+        cfg.full_hand = (1u << cfg.num_cards) - 1u;
+        cfg.total_points = cfg.num_cards * (cfg.num_cards + 1) / 2;
     }
     return cfg;
 }
@@ -330,8 +330,8 @@ void puf_step(Env* env) {
         int hand_size = env->cfg.num_cards - env->state.round;
         int prize_choices = env->cfg.prize_order == GS_PRIZES_RANDOM
             ? env->cfg.num_cards - env->state.round - 1 : 1;
-        uint16_t below_response = (uint16_t)((1u << bids[1]) - 1u);
-        uint16_t below_opponent = (uint16_t)((1u << bids[0]) - 1u);
+        uint32_t below_response = (1u << bids[1]) - 1u;
+        uint32_t below_opponent = (1u << bids[0]) - 1u;
         int response_rank = __builtin_popcount(
             (unsigned int)(env->state.hands[1] & below_response));
         int opponent_rank = __builtin_popcount(
@@ -339,7 +339,7 @@ void puf_step(Env* env) {
         int prize_rank = 0;
         if (env->cfg.prize_order == GS_PRIZES_RANDOM) {
             int next_prize = env->state.prizes[env->state.round + 1];
-            uint16_t below_prize = (uint16_t)((1u << next_prize) - 1u);
+            uint32_t below_prize = (1u << next_prize) - 1u;
             prize_rank = __builtin_popcount((unsigned int)(
                 env->state.remaining_prizes & below_prize));
         }
