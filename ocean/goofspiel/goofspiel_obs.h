@@ -25,8 +25,8 @@
 #ifndef GS_NUM_CARDS
 #define GS_NUM_CARDS GS_MAX_CARDS
 #endif
-#if GS_NUM_CARDS != 4 && GS_NUM_CARDS != 13
-#error "GS_NUM_CARDS must be 4 or 13"
+#if GS_NUM_CARDS < 1 || GS_NUM_CARDS > GS_MAX_CARDS_EXT
+#error "GS_NUM_CARDS must be in [1, GS_MAX_CARDS_EXT]"
 #endif
 
 #define OBS_SIZE GS_OPEN_SPIEL_OBS_SIZE

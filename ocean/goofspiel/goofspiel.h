@@ -180,7 +180,7 @@ static inline float gs_sweep_score(const char* checkpoint, Ini* ini) {
     return gs_sweep_best;
 }
 
-#if GS_NUM_CARDS == 4
+#if GS_NUM_CARDS <= GS_EXACT_MAX_CARDS
 #define PUF_SWEEP_SCORE(checkpoint, ini) gs_sweep_score(checkpoint, ini)
 #else
 #define PUF_SWEEP_SCORE(checkpoint, ini) 0.0f
@@ -400,7 +400,7 @@ void puf_step(Env* env) {
 }
 
 #ifdef __CUDACC__
-#if GS_NUM_CARDS == 4
+#if GS_NUM_CARDS <= GS_EXACT_MAX_CARDS
 static inline void gs_exact_save(const char* checkpoint) {
     gs_exact_pool_save(checkpoint, gs_exact_tables, gs_exact_count,
         gs_exact_history, gs_exact_seen);
@@ -466,7 +466,8 @@ static inline void gs_checkpoint_hook(const char* checkpoint, Ini* ini) {
 #endif
 #endif
 
-#if defined(__CUDACC__) && defined(PUFFERLIB_BUILD_MAIN) && GS_NUM_CARDS == 4
+#if defined(__CUDACC__) && defined(PUFFERLIB_BUILD_MAIN) \
+    && GS_NUM_CARDS <= GS_EXACT_MAX_CARDS
 #define GS_EXPLOIT_NO_MAIN
 #include "goofspiel_exploit.cu"
 #endif

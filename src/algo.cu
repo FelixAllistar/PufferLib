@@ -14,6 +14,9 @@
 #define CUBLAS_GEMM_ALGO CUBLAS_GEMM_DEFAULT
 #endif
 
+__device__ __forceinline__ bool puf_mask_bit(
+        const unsigned char* __restrict__ mask, int mask_base, int action);
+
 thread_local cublasHandle_t g_cublas_handle = nullptr;
 thread_local void* g_cublas_workspace = nullptr;
 // Side-stream dW (mm_tn) overlaps dX (mm_nn) on main during linear bwd.
@@ -1609,6 +1612,9 @@ __device__ __forceinline__ void ppo_discrete_head(
     *out_entropy = ent;
     *out_logp = act_logit - logsumexp;
 }
+
+__device__ __forceinline__ bool puf_mask_bit(
+        const unsigned char* __restrict__ mask, int mask_base, int action);
 
 __device__ __forceinline__ bool puf_mask_bit(
         const unsigned char* __restrict__ mask, int mask_base, int action) {
