@@ -49,7 +49,7 @@ bc: | $(BUILD)
 		-I$(ROOT) -I$(ROOT)/src -I$(ROOT)/vendor \
 		-I$(ROOT)/raylib-5.5_linux_amd64/include \
 		kag_bc.cu $(ROOT)/raylib-5.5_linux_amd64/lib/libraylib.a \
-		-lGL -lm -lpthread -lcudart -lcublas -o $(BUILD)/kag_bc
+		-lGL -lm -lpthread -lcudart -lcublas -lcurand -o $(BUILD)/kag_bc
 	$(BUILD)/kag_bc bc.steps=26 bc.epochs=200
 
 bench: $(LIB)
