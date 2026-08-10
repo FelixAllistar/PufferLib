@@ -4875,6 +4875,10 @@ static int run_bc(Ini* ini) {
     snprintf(num_buf, sizeof(num_buf), "%d", bc_cells);
     puf_ini_put(ini, "train.minibatch_size", num_buf);
     puf_ini_put(ini, "train.horizon", "8");
+    fprintf(stderr, "BC cfg: agents=%d minibatch=%d horizon=%d\n",
+        (int)puf_ini_get(ini, "vec", "total_agents"),
+        (int)puf_ini_get(ini, "train", "minibatch_size"),
+        (int)puf_ini_get(ini, "train", "horizon"));
     PuffeRL* pufferl = create_pufferl(ini, &ctx);
 
     printf("BC: profile=%d steps=%d epochs=%d lr=%g\n",
