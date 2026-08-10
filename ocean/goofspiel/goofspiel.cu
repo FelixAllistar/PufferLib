@@ -220,6 +220,13 @@ static Env* puf_envs_create(int total_agents, Dict* env_kwargs,
             "Goofspiel GPU requires an even vec.total_agents >= 2\n");
         std::exit(1);
     }
+    if ((int)dict_get(env_kwargs, "exact_exploiter")) {
+        std::fprintf(stderr,
+            "Goofspiel GPU env does not support env.exact_exploiter yet; "
+            "the exact response pool is a CPU-env feature. Set "
+            "env.exact_exploiter=0 for gpu_env=1.\n");
+        std::exit(1);
+    }
     g_gs_total_agents = total_agents;
     g_gs_num_matches = total_agents / 2;
     gs_cuda_load_config(env_kwargs);
