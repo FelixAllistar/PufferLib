@@ -1465,6 +1465,64 @@ struct PPOKernelArgs {
     bool is_continuous;
 };
 
+// Behavioral-cloning kernel: minimize -log pi(a_expert | obs) over the fused
+// decoder logits. Expert actions are per-head discrete ids (stored as float).
+// Inactive conditional heads (market STOP chain) contribute no loss, matching
+// the sampler's own probability decomposition.
+__global__ void bc_loss_kernel(
+        const precision_t* __restrict__ logits,   // (B, fused_cols)
+        const precision_t* __restrict__ expert,   // (B, num_atns)
+        const unsigned char* __restrict__ mask,   // (B, A_total) unpacked
+        float* __restrict__ grad_logits,          // (B, A_total)
+        float* __restrict__ loss_acc,             // scalar
+        const int* __restrict__ act_sizes,
+        int B, int A_total, int num_atns, int mask_stride) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx >= B) return;
+    int logits_base = idx * (A_total + 1);
+    int mask_base = idx * mask_stride;
+    int offset = 0;
+    float loss = 0.0f;
+    for (int h = 0; h < num_atns; h++) {
+        int A = act_sizes[h];
+        int expert_action = (int)to_float(expert[idx * num_atns + h]);
+        if (expert_action < 0 || expert_action >= A) {
+            offset += A;
+            continue;
+        }
+        // Log-sum-exp over legal actions, then negative log-likelihood of the
+        // expert action. Gradient is (p(a) - 1_{a==expert}) in logit space.
+        float max_val = -INFINITY;
+        for (int a = 0; a < A; a++) {
+            if (puf_mask_bit(mask, mask_base, offset + a)) {
+                float l = to_float(logits[logits_base + offset + a]);
+                max_val = fmaxf(max_val, l);
+            }
+        }
+        if (max_val == -INFINITY) {
+            offset += A;
+            continue;
+        }
+        float sum_exp = 0.0f;
+        for (int a = 0; a < A; a++) {
+            if (puf_mask_bit(mask, mask_base, offset + a)) {
+                sum_exp += __expf(to_float(logits[logits_base + offset + a]) - max_val);
+            }
+        }
+        float logsumexp = max_val + __logf(sum_exp);
+        float expert_logit = to_float(logits[logits_base + offset + expert_action]);
+        loss += logsumexp - expert_logit;
+        for (int a = 0; a < A; a++) {
+            if (!puf_mask_bit(mask, mask_base, offset + a)) continue;
+            float p = __expf(to_float(logits[logits_base + offset + a]) - logsumexp);
+            grad_logits[idx * A_total + offset + a] =
+                (a == expert_action) ? (p - 1.0f) : p;
+        }
+        offset += A;
+    }
+    if (loss_acc) atomicAdd(loss_acc, loss);
+}
+
 struct PPOBuffersPuf {
     FloatTensor grad_logits, grad_values, grad_logstd, adv_scratch;
     FloatTensor ent_coef;

@@ -4843,6 +4843,156 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
     return result;
 }
 
+// Behavioral cloning mode: ./puffer bc kaggriculture [section.key=value ...]
+// Plays the selected script tape for bc_steps, collects (obs, expert action)
+// pairs, then minimizes -log pi(a_expert | obs). Saves an anchor checkpoint
+// that can later regularize self-play via the EMAg KL term.
+static int run_bc(Ini* ini) {
+    TrainContext ctx = {.world_size = 1, .artifact_owner = 1};
+    PuffeRL* pufferl = create_pufferl(ini, &ctx);
+    int bc_steps = (int)puf_ini_get(ini, "bc", "steps");
+    int bc_profile = (int)puf_ini_get(ini, "bc", "profile");
+    int bc_epochs = (int)puf_ini_get(ini, "bc", "epochs");
+    float bc_lr = (float)puf_ini_get(ini, "bc", "learning_rate");
+    if (bc_steps <= 0 || bc_steps > 720) bc_steps = 26;
+    if (bc_epochs <= 0) bc_epochs = 2000;
+    if (bc_lr <= 0.0f) bc_lr = 0.0003f;
+
+    printf("BC: profile=%d steps=%d epochs=%d lr=%g\n",
+        bc_profile, bc_steps, bc_epochs, bc_lr);
+
+    // Play the tape on a single CPU env and record (obs, expert actions).
+    Env env = {};
+    env.rng = 0;
+    puf_init(&env, puf_ini_section(ini, "env", 0));
+    puf_reset(&env);
+
+    int obs_size = OBS_SIZE;
+    int num_atns = NUM_ATNS;
+    obs_t* obs_data = (obs_t*)xcalloc((size_t)bc_steps * obs_size);
+    float* expert_data = (float*)xcalloc(
+        (size_t)bc_steps * num_atns * sizeof(float));
+    unsigned char* mask_data = (unsigned char*)xcalloc(
+        (size_t)bc_steps * pufferl->vec->action_mask_size);
+    if (!obs_data || !expert_data || !mask_data) return 1;
+
+    for (int t = 0; t < bc_steps && !env.game_storage.done; t++) {
+        // Expert actions from the tape for player 0 (the learner).
+        KGAction expert = {};
+        kag_script_action_from_tapes(&env.game_storage, 0,
+            bc_profile, &expert, kag_script_tapes);
+        kag_script_repair(&env.game_storage, 0, bc_profile, &expert);
+        kag_clear_policy_actions(&env.agents[0]);
+        kag_set_policy_unit(&env.agents[0], 0,
+            expert.farmer.op, expert.farmer.arg, expert.farmer.n);
+        for (int h = 0; h < expert.hand_count && h < KG_POLICY_DIRECT_HANDS; h++) {
+            kag_set_policy_unit(&env.agents[0], h + 1,
+                expert.hands[h].op, expert.hands[h].arg, expert.hands[h].n);
+        }
+        for (int o = 0; o < expert.market_count && o < KG_POLICY_MARKET_SLOTS; o++) {
+            kag_set_policy_market(&env.agents[0], o,
+                expert.market[o].op, expert.market[o].item, expert.market[o].n);
+        }
+        memcpy(obs_data + (size_t)t * obs_size,
+            env.agents[0].observations, obs_size);
+        memcpy(expert_data + (size_t)t * num_atns,
+            env.agents[0].actions, num_atns * sizeof(float));
+        memcpy(mask_data + (size_t)t * pufferl->vec->action_mask_size,
+            env.agents[0].action_mask, pufferl->vec->action_mask_size);
+        // Step the env with the expert actions so the next obs is on-policy.
+        KGAction actions[KG_NUM_PLAYERS] = {expert, {}};
+        actions[1].farmer = (KGUnitAction){KG_OP_PASS, -1, 1};
+        actions[1].hand_count = env.game_storage.players[1].hand_count;
+        for (int h = 0; h < actions[1].hand_count; h++) {
+            actions[1].hands[h] = (KGUnitAction){KG_OP_PASS, -1, 1};
+        }
+        kg_step(&env.game_storage, actions);
+        kag_write_all_observations_from_tapes(&env, kag_script_tapes);
+    }
+
+    // Upload expert dataset to device.
+    obs_t* d_obs = (obs_t*)xcuda((size_t)bc_steps * obs_size);
+    float* d_expert = (float*)xcuda((size_t)bc_steps * num_atns * sizeof(float));
+    unsigned char* d_mask = (unsigned char*)xcuda(
+        (size_t)bc_steps * pufferl->vec->action_mask_size);
+    cudaMemcpy(d_obs, obs_data, (size_t)bc_steps * obs_size,
+        cudaMemcpyHostToDevice);
+    cudaMemcpy(d_expert, expert_data,
+        (size_t)bc_steps * num_atns * sizeof(float), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_mask, mask_data,
+        (size_t)bc_steps * pufferl->vec->action_mask_size,
+        cudaMemcpyHostToDevice);
+    free(obs_data); free(expert_data); free(mask_data);
+
+    // BC loop: forward, cross-entropy, backward, muon step.
+    int A_total = pufferl->vec->action_mask_size;
+    int mask_stride = A_total;
+    float* grad_logits = (float*)xcuda(
+        (size_t)bc_steps * A_total * sizeof(float));
+    float* loss_acc = (float*)xcuda(sizeof(float));
+    pufferl->muon.lr_puf = {};  // reset, set below
+    float lr = bc_lr;
+    cudaMemcpy(pufferl->muon.lr_puf.data, &lr, sizeof(float),
+        cudaMemcpyHostToDevice);
+
+    // Reuse the train activation buffers sized for B=bc_steps, T=1.
+    PrecisionTensor obs_t = {.data = (precision_t*)d_obs,
+        .shape = {bc_steps, 1, obs_size}};
+    PrecisionTensor state = pufferl->buffer_states[0];
+    PrecisionTensor terminals = {};
+    PrecisionTensor dec = policy_forward_train(&pufferl->policy,
+        pufferl->weights, pufferl->train_activations,
+        obs_t, state, terminals, pufferl->default_stream);
+    (void)dec;
+
+    for (int ep = 0; ep < bc_epochs; ep++) {
+        cudaMemsetAsync(grad_logits, 0,
+            (size_t)bc_steps * A_total * sizeof(float), pufferl->default_stream);
+        cudaMemsetAsync(loss_acc, 0, sizeof(float), pufferl->default_stream);
+        cudaMemsetAsync(state.data, 0, numel(state.shape) * sizeof(precision_t),
+            pufferl->default_stream);
+        PrecisionTensor dec_out = policy_forward_train(&pufferl->policy,
+            pufferl->weights, pufferl->train_activations,
+            obs_t, state, terminals, pufferl->default_stream);
+        (void)dec_out;
+        // policy_forward_train returns (B, T, fused_cols); squeeze T=1 for the
+        // BC kernel which expects (B, fused_cols).
+        PrecisionTensor dec_flat = *puf_squeeze(&dec_out, 1);
+        bc_loss_kernel<<<grid_size(bc_steps), BLOCK_SIZE, 0,
+            pufferl->default_stream>>>(
+            dec_flat.data, d_expert, d_mask, grad_logits, loss_acc,
+            pufferl->act_sizes_puf.data, bc_steps, A_total, num_atns,
+            mask_stride);
+        // Forward the gradient through the network; value/logstd empty.
+        FloatTensor grad_logits_t = {.data = grad_logits,
+            .shape = {bc_steps, 1, A_total}};
+        policy_backward(&pufferl->policy, pufferl->weights,
+            pufferl->train_activations, grad_logits_t, FloatTensor(),
+            FloatTensor(), pufferl->default_stream);
+        muon_step(&pufferl->muon, pufferl->master_weights, pufferl->grad_puf,
+            pufferl->hypers.max_grad_norm, pufferl->default_stream);
+        cudaDeviceSynchronize();
+        if ((ep + 1) % 200 == 0) {
+            float loss = 0.0f;
+            cudaMemcpy(&loss, loss_acc, sizeof(float), cudaMemcpyDeviceToHost);
+            printf("BC epoch %d loss=%.4f\n", ep + 1, loss / bc_steps);
+        }
+    }
+
+    // Save the anchor.
+    char out[4096];
+    const char* out_path = puf_ini_get_str(ini, "bc", "output");
+    snprintf(out, sizeof(out), "%s", out_path && out_path[0]
+        ? out_path : "saved/kaggriculture_bc_anchor.bin");
+    puf_save_weights(pufferl, out);
+    printf("BC anchor saved to %s\n", out);
+
+    cudaFree(d_obs); cudaFree(d_expert); cudaFree(d_mask);
+    cudaFree(grad_logits); cudaFree(loss_acc);
+    close_pufferl(pufferl);
+    return 0;
+}
+
 // Fork DP workers before CUDA initialization. Sweep trials occupy contiguous GPU
 // blocks; rank 0 owns the last GPU and writes TrainResult to base.result_fd.
 TrainResult launch_train(Ini* ini) {
@@ -4948,7 +5098,9 @@ int main(int argc, char** argv) {
     puf_ini_load_env(&ini, argv[2], argc - 3, argv + 3);
     TrainContext ctx = {.world_size = 1, .artifact_owner = 1};
 
-    if (strcmp(mode, "train") == 0) {
+    if (strcmp(mode, "bc") == 0) {
+        run_bc(&ini);
+    } else if (strcmp(mode, "train") == 0) {
         launch_train(&ini);
     } else if (strcmp(mode, "sweep") == 0) {
         run_sweep(&ini, argv[0]);
