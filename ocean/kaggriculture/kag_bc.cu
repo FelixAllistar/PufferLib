@@ -152,6 +152,7 @@ int main(int argc, char** argv) {
 
     uint64_t seed = 42;
     policy_init_weights(&policy, weights, &seed, bc_stream);
+    cudaStreamSynchronize(bc_stream);
     cudaError_t init_w_err = cudaGetLastError();
     if (init_w_err != cudaSuccess) {
         fprintf(stderr, "policy_init_weights failed: %s\n",
@@ -239,6 +240,13 @@ int main(int argc, char** argv) {
         cudaMemcpyHostToDevice);
     cast<<<grid_size(bc_steps * OBS_SIZE), BLOCK_SIZE, 0, bc_stream>>>(
         d_obs, d_obs_raw, bc_steps * OBS_SIZE);
+    cudaStreamSynchronize(bc_stream);
+    init_w_err = cudaGetLastError();
+    if (init_w_err != cudaSuccess) {
+        fprintf(stderr, "obs cast failed: %s\n",
+            cudaGetErrorString(init_w_err));
+        return 1;
+    }
     cudaMemcpy(d_expert, host_expert,
         (size_t)bc_steps * NUM_ATNS * sizeof(float), cudaMemcpyHostToDevice);
     cudaMemcpy(d_mask, host_mask, (size_t)bc_steps * packed_stride,
