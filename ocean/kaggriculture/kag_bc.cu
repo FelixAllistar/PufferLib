@@ -101,6 +101,8 @@ int main(int argc, char** argv) {
         bc_steps, bc_profile, bc_epochs, bc_lr, hidden, layers);
 
     cublas_init_handle();
+    cudaStream_t bc_stream;
+    cudaStreamCreate(&bc_stream);
     cudaError_t init_err = cudaGetLastError();
     if (init_err != cudaSuccess) {
         fprintf(stderr, "cublas init failed: %s\n",
@@ -149,7 +151,7 @@ int main(int argc, char** argv) {
         cudaMemcpyHostToDevice);
 
     uint64_t seed = 42;
-    policy_init_weights(&policy, weights, &seed, 0);
+    policy_init_weights(&policy, weights, &seed, bc_stream);
     cudaError_t init_w_err = cudaGetLastError();
     if (init_w_err != cudaSuccess) {
         fprintf(stderr, "policy_init_weights failed: %s\n",
@@ -235,7 +237,7 @@ int main(int argc, char** argv) {
     float* loss_acc = (float*)xcuda(sizeof(float));
     cudaMemcpy(d_obs_raw, host_obs, (size_t)bc_steps * OBS_SIZE,
         cudaMemcpyHostToDevice);
-    cast<<<grid_size(bc_steps * OBS_SIZE), BLOCK_SIZE, 0, 0>>>(
+    cast<<<grid_size(bc_steps * OBS_SIZE), BLOCK_SIZE, 0, bc_stream>>>(
         d_obs, d_obs_raw, bc_steps * OBS_SIZE);
     cudaMemcpy(d_expert, host_expert,
         (size_t)bc_steps * NUM_ATNS * sizeof(float), cudaMemcpyHostToDevice);
@@ -251,12 +253,12 @@ int main(int argc, char** argv) {
 
     for (int ep = 0; ep < bc_epochs; ep++) {
         cudaMemsetAsync(grad_logits, 0,
-            (size_t)bc_steps * A_total * sizeof(float), 0);
-        cudaMemsetAsync(loss_acc, 0, sizeof(float), 0);
+            (size_t)bc_steps * A_total * sizeof(float), bc_stream);
+        cudaMemsetAsync(loss_acc, 0, sizeof(float), bc_stream);
         cudaMemsetAsync(state.data, 0,
-            numel(state.shape) * sizeof(precision_t), 0);
+            numel(state.shape) * sizeof(precision_t), bc_stream);
         PrecisionTensor dec_out = policy_forward_train(&policy, weights,
-            train_acts, obs_t, state, terminals, 0);
+            train_acts, obs_t, state, terminals, bc_stream);
         PrecisionTensor dec_flat = *puf_squeeze(&dec_out, 0);
         cudaError_t fwd_err = cudaGetLastError();
         if (fwd_err != cudaSuccess) {
@@ -274,7 +276,7 @@ int main(int argc, char** argv) {
             fprintf(stderr, "obs_t: data=%p type=%d dev=%d\n",
                 obs_t.data, (int)oa.type, oa.device);
         }
-        kag_bc_loss_kernel<<<grid_size(bc_steps), BLOCK_SIZE, 0, 0>>>(
+        kag_bc_loss_kernel<<<grid_size(bc_steps), BLOCK_SIZE, 0, bc_stream>>>(
             dec_flat.data, d_expert, d_mask, grad_logits, loss_acc,
             act_sizes_puf.data, bc_steps, A_total, num_atns, mask_stride);
         cudaError_t err = cudaGetLastError();
@@ -286,8 +288,8 @@ int main(int argc, char** argv) {
         FloatTensor grad_logits_t = {.data = grad_logits,
             .shape = {bc_steps, 1, A_total}};
         policy_backward(&policy, weights, train_acts, grad_logits_t,
-            FloatTensor(), FloatTensor(), 0);
-        muon_step(&muon, master_weights, grad_puf, 0.5f, 0);
+            FloatTensor(), FloatTensor(), bc_stream);
+        muon_step(&muon, master_weights, grad_puf, 0.5f, bc_stream);
         cudaDeviceSynchronize();
         if ((ep + 1) % 200 == 0) {
             float loss = 0.0f;
