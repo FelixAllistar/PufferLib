@@ -16,6 +16,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <vector>
 
 #include "goofspiel.h"
 
@@ -27,6 +28,10 @@ typedef struct {
     GSConfig game;
     uint64_t base_seed;
     int exact_enabled;
+    int exact_banks;
+    int exact_history;
+    float exact_current_prob;
+    int exact_count;
 } GSCudaConfig;
 
 static GSCudaConfig h_gs_cuda_config;
@@ -38,11 +43,20 @@ static int g_gs_num_matches = 0;
 static int g_gs_bank_count = 0;
 static int g_gs_bound = 0;
 static int* d_gs_bank_completed = nullptr;
+static int g_gs_gpu_env_active = 0;
 static float* g_gs_actions = nullptr;
 static unsigned char* g_gs_masks = nullptr;
 static obs_t* g_gs_observations = nullptr;
 static float* g_gs_rewards = nullptr;
 static float* g_gs_terminals = nullptr;
+static __device__ uint8_t* d_gs_exact_actions = nullptr;
+static __device__ uint64_t* d_gs_exact_offsets = nullptr;
+static __device__ uint64_t* d_gs_exact_counts = nullptr;
+static __device__ int* d_gs_exact_decisions = nullptr;
+static uint8_t* h_gs_exact_actions = nullptr;
+static uint64_t* h_gs_exact_offsets = nullptr;
+static uint64_t* h_gs_exact_counts = nullptr;
+static int* h_gs_exact_decisions = nullptr;
 
 static void gs_cuda_check(const char* what) {
     cudaError_t err = cudaGetLastError();
@@ -103,6 +117,19 @@ __device__ static void gs_cuda_reset_state(Env* env) {
     gs_reset(&env->state, &env->history, &env->cfg, &env->rng);
     gs_write_masks(env);
     gs_observe(env);
+    env->exact_depth = 0;
+    env->exact_table = 0;
+    env->exact_node = 0;
+    if (d_gs_cuda_config.exact_enabled) {
+        uint32_t exact_draw = gs_mix32(env->rng ^ 0x85ebca6bu);
+        env->exact_table = d_gs_cuda_config.exact_count <= 1
+            || (double)exact_draw / 4294967296.0
+                < d_gs_cuda_config.exact_current_prob
+            ? 0 : 1 + (int)(exact_draw
+                % (uint32_t)(d_gs_cuda_config.exact_count - 1));
+        env->exact_node = env->cfg.prize_order == GS_PRIZES_RANDOM
+            ? env->state.prizes[0] : 0;
+    }
 }
 
 __device__ static void gs_cuda_transition(Env* env, Env* shells,
@@ -113,11 +140,56 @@ __device__ static void gs_cuda_transition(Env* env, Env* shells,
         env->agents[p].rewards[0] = 0.0f;
         env->agents[p].terminals[0] = 0.0f;
     }
+    int exact = d_gs_cuda_config.exact_enabled && env->tag > 0
+        && env->tag <= d_gs_cuda_config.exact_banks
+        && env->exact_table >= 0 && env->exact_table < d_gs_cuda_config.exact_count
+        && env->exact_depth < d_gs_exact_decisions[env->exact_table];
+    if (exact) {
+        int depth = env->exact_depth;
+        int table = env->exact_table;
+        uint64_t node = env->exact_node;
+        uint64_t count = d_gs_exact_counts[
+            (uint64_t)table * GS_EXACT_LEVELS + depth];
+        if (node >= count) {
+            node = 0; /* clamp out-of-range; should not happen */
+        }
+        uint64_t offset = d_gs_exact_offsets[
+            (uint64_t)table * GS_EXACT_LEVELS + depth];
+        bids[1] = d_gs_exact_actions[offset + node];
+    }
     for (int p = 0; p < env->num_agents; p++) {
         env->agents[p].action_mask[bids[p]] = 0;
     }
 
+    uint64_t next_exact_node = 0;
+    if (exact && env->exact_depth + 1 < d_gs_exact_decisions[env->exact_table]) {
+        int hand_size = env->cfg.num_cards - env->state.round;
+        int prize_choices = env->cfg.prize_order == GS_PRIZES_RANDOM
+            ? env->cfg.num_cards - env->state.round - 1 : 1;
+        uint32_t below_response = (1u << bids[1]) - 1u;
+        uint32_t below_opponent = (1u << bids[0]) - 1u;
+        int response_rank = __builtin_popcount(
+            (unsigned int)(env->state.hands[1] & below_response));
+        int opponent_rank = __builtin_popcount(
+            (unsigned int)(env->state.hands[0] & below_opponent));
+        int prize_rank = 0;
+        if (env->cfg.prize_order == GS_PRIZES_RANDOM) {
+            int next_prize = env->state.prizes[env->state.round + 1];
+            uint32_t below_prize = (1u << next_prize) - 1u;
+            prize_rank = __builtin_popcount((unsigned int)(
+                env->state.remaining_prizes & below_prize));
+        }
+        int stride = hand_size * hand_size * prize_choices;
+        next_exact_node = env->exact_node * stride
+            + response_rank * hand_size * prize_choices
+            + opponent_rank * prize_choices + prize_rank;
+    }
+
     if (!gs_step(&env->state, &env->history, &env->cfg, bids)) {
+        if (exact) {
+            env->exact_node = next_exact_node;
+            env->exact_depth++;
+        }
         gs_observe(env);
         return;
     }
@@ -213,19 +285,87 @@ static void gs_cuda_load_config(Dict* kwargs) {
     h_gs_cuda_config.base_seed = (uint64_t)dict_get(kwargs, "seed");
     h_gs_cuda_config.exact_enabled =
         (int)dict_get(kwargs, "exact_exploiter");
+    h_gs_cuda_config.exact_banks =
+        (int)dict_get(kwargs, "exact_exploiter_banks");
+    h_gs_cuda_config.exact_history =
+        (int)dict_get(kwargs, "exact_exploiter_history");
+    h_gs_cuda_config.exact_current_prob =
+        (float)dict_get(kwargs, "exact_exploiter_current_prob");
+    h_gs_cuda_config.exact_count = 0;
     cudaMemcpyToSymbol(d_gs_cuda_config, &h_gs_cuda_config,
         sizeof(h_gs_cuda_config));
     gs_cuda_check("config upload");
+}
+
+/* Upload a host exact-response pool into the flat device tables used by the
+ * step kernel. Called from the checkpoint hook after gs_cuda_pool_response. */
+void gs_gpu_exact_upload(const GSExactTable* tables, int count) {
+    if (!g_gs_gpu_env_active) return;
+    if (count < 0 || count > GS_EXACT_POOL_MAX) gs_fail("invalid exact count");
+    h_gs_cuda_config.exact_count = count;
+    cudaMemcpyToSymbol(d_gs_cuda_config, &h_gs_cuda_config,
+        sizeof(h_gs_cuda_config));
+    gs_cuda_check("exact config upload");
+    if (!count) return;
+
+    uint64_t offsets[GS_EXACT_POOL_MAX * GS_EXACT_LEVELS] = {0};
+    uint64_t counts[GS_EXACT_POOL_MAX * GS_EXACT_LEVELS] = {0};
+    int decisions[GS_EXACT_POOL_MAX] = {0};
+    uint64_t total = 0;
+    for (int t = 0; t < count; t++) {
+        decisions[t] = tables[t].decisions;
+        for (int d = 0; d < tables[t].decisions; d++) {
+            offsets[(size_t)t * GS_EXACT_LEVELS + d] = total;
+            counts[(size_t)t * GS_EXACT_LEVELS + d] = tables[t].counts[d];
+            total += tables[t].counts[d];
+        }
+    }
+    std::vector<uint8_t> flat(total);
+    size_t cursor = 0;
+    for (int t = 0; t < count; t++)
+        for (int d = 0; d < tables[t].decisions; d++) {
+            std::memcpy(&flat[cursor], tables[t].actions[d],
+                tables[t].counts[d]);
+            cursor += tables[t].counts[d];
+        }
+    uint8_t* d_actions = nullptr;
+    uint64_t* d_offsets = nullptr;
+    uint64_t* d_counts = nullptr;
+    int* d_decisions = nullptr;
+    if (h_gs_exact_actions) cudaFree(h_gs_exact_actions);
+    if (h_gs_exact_offsets) cudaFree(h_gs_exact_offsets);
+    if (h_gs_exact_counts) cudaFree(h_gs_exact_counts);
+    if (h_gs_exact_decisions) cudaFree(h_gs_exact_decisions);
+    cudaMalloc(&d_actions, total ? total : 1);
+    cudaMalloc(&d_offsets,
+        (size_t)GS_EXACT_POOL_MAX * GS_EXACT_LEVELS * sizeof(uint64_t));
+    cudaMalloc(&d_counts,
+        (size_t)GS_EXACT_POOL_MAX * GS_EXACT_LEVELS * sizeof(uint64_t));
+    cudaMalloc(&d_decisions, (size_t)GS_EXACT_POOL_MAX * sizeof(int));
+    if (total) cudaMemcpy(d_actions, flat.data(), total,
+        cudaMemcpyHostToDevice);
+    cudaMemcpy(d_offsets, offsets, sizeof(offsets),
+        cudaMemcpyHostToDevice);
+    cudaMemcpy(d_counts, counts, sizeof(counts),
+        cudaMemcpyHostToDevice);
+    cudaMemcpy(d_decisions, decisions, sizeof(decisions),
+        cudaMemcpyHostToDevice);
+    cudaMemcpyToSymbol(d_gs_exact_actions, &d_actions, sizeof(d_actions));
+    cudaMemcpyToSymbol(d_gs_exact_offsets, &d_offsets, sizeof(d_offsets));
+    cudaMemcpyToSymbol(d_gs_exact_counts, &d_counts, sizeof(d_counts));
+    cudaMemcpyToSymbol(d_gs_exact_decisions, &d_decisions,
+        sizeof(d_decisions));
+    h_gs_exact_actions = d_actions;
+    h_gs_exact_offsets = d_offsets;
+    h_gs_exact_counts = d_counts;
+    h_gs_exact_decisions = d_decisions;
+    gs_cuda_check("exact table upload");
 }
 
 static Env* puf_envs_create(int total_agents, Dict* env_kwargs,
         Dict* vec_kwargs, int* bank_layout) {
     if (total_agents < 2 || total_agents % 2) {
         gs_fail("requires an even vec.total_agents >= 2");
-    }
-    if ((int)dict_get(env_kwargs, "exact_exploiter")) {
-        gs_fail("does not support env.exact_exploiter yet; "
-            "use gpu_env=0 for the exact response pool");
     }
     g_gs_total_agents = total_agents;
     g_gs_num_matches = total_agents / 2;

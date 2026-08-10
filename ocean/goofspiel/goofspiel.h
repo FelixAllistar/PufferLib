@@ -16,6 +16,10 @@ typedef uint8_t obs_t;
 
 #include "goofspiel_exploit.h"
 
+#ifdef __CUDACC__
+void gs_gpu_exact_upload(const GSExactTable* tables, int count);
+#endif
+
 #ifndef GS_ENV_HD
 #ifdef __CUDACC__
 #define GS_ENV_HD __host__ __device__
@@ -446,6 +450,7 @@ static inline void gs_checkpoint_hook(const char* checkpoint, Ini* ini) {
     double exploitability = gs_cuda_pool_response(checkpoint, ini,
         gs_exact_tables, &gs_exact_count, gs_exact_history, &gs_exact_seen,
         &nodes, &milliseconds);
+    gs_gpu_exact_upload(gs_exact_tables, gs_exact_count);
     gs_exact_save(checkpoint);
     printf("Exact response: exploitability=%.9f pool=%d/%d seen=%llu nodes=%llu milliseconds=%.3f\n",
         exploitability, gs_exact_count, gs_exact_history,
