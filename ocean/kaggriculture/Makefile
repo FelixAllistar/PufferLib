@@ -4,7 +4,7 @@ BUILD := build
 LIB := $(BUILD)/libkaggriculture.so
 CFLAGS ?= -O3 -std=c17 -Wall -Wextra -Werror -fPIC
 
-.PHONY: all lib parity top-bot-parity cuda-core cuda-adapter bench hotpath adapter eval metagame native-test test clean
+.PHONY: all lib parity top-bot-parity cuda-core cuda-adapter bc bench hotpath adapter eval metagame native-test test clean
 
 all: lib
 
@@ -42,6 +42,15 @@ cuda-adapter: | $(BUILD)
 		$(ROOT)/raylib-5.5_linux_amd64/lib/libraylib.a \
 		-lGL -lm -lpthread -o $(BUILD)/test_cuda_adapter
 	$(BUILD)/test_cuda_adapter
+
+bc: | $(BUILD)
+	$${CUDA_HOME:-$${CUDA_PATH:-/usr/local/cuda}}/bin/nvcc \
+		-O2 --threads 0 -arch=$${NVCC_ARCH:-native} -std=c++17 \
+		-I$(ROOT) -I$(ROOT)/src -I$(ROOT)/vendor \
+		-I$(ROOT)/raylib-5.5_linux_amd64/include \
+		kag_bc.cu $(ROOT)/raylib-5.5_linux_amd64/lib/libraylib.a \
+		-lGL -lm -lpthread -lcudart -lcublas -o $(BUILD)/kag_bc
+	$(BUILD)/kag_bc bc.steps=26 bc.epochs=200
 
 bench: $(LIB)
 	$(ROOT)/../.venv/bin/python parity.py --lib $(LIB) --bench
