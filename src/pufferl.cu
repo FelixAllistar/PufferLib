@@ -4865,6 +4865,15 @@ static int run_bc(Ini* ini) {
     Env env = {};
     env.rng = 0;
     puf_init(&env, puf_ini_section(ini, "env", 0));
+    for (int player = 0; player < KG_NUM_PLAYERS; player++) {
+        env.agents[player].observations = (obs_t*)xcalloc(OBS_SIZE);
+        env.agents[player].actions = (float*)xcalloc(
+            (size_t)NUM_ATNS * sizeof(float));
+        env.agents[player].rewards = (float*)xcalloc(sizeof(float));
+        env.agents[player].terminals = (float*)xcalloc(sizeof(float));
+        env.agents[player].action_mask = (unsigned char*)xcalloc(
+            (size_t)pufferl->vec->action_mask_size);
+    }
     puf_reset(&env);
 
     int obs_size = OBS_SIZE;
@@ -5003,6 +5012,13 @@ static int run_bc(Ini* ini) {
     cudaFree(d_obs); cudaFree(d_expert); cudaFree(d_mask);
     cudaFree(d_obs_raw);
     cudaFree(grad_logits); cudaFree(loss_acc);
+    for (int player = 0; player < KG_NUM_PLAYERS; player++) {
+        free(env.agents[player].observations);
+        free(env.agents[player].actions);
+        free(env.agents[player].rewards);
+        free(env.agents[player].terminals);
+        free(env.agents[player].action_mask);
+    }
     close_pufferl(pufferl);
     return 0;
 }
