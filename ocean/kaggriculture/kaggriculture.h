@@ -1847,6 +1847,11 @@ KG_HD static inline float kag_productive_action_credit(const KGState* game,
             case KG_OP_DROP:
                 credit += 0.10f;
                 break;
+            case KG_OP_PLANT:
+            case KG_OP_BUILD_COOP:
+            case KG_OP_BUILD_PASTURE:
+                credit += 1.0f;
+                break;
             case KG_OP_WATER:
             case KG_OP_HARVEST:
             case KG_OP_FERTILIZE:
@@ -1857,7 +1862,7 @@ KG_HD static inline float kag_productive_action_credit(const KGState* game,
                 break;
             case KG_OP_PLACE:
             case KG_OP_DIG:
-                credit += 0.25f;
+                credit += 1.0f;
                 break;
             default:
                 break;
