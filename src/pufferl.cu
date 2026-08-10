@@ -4993,6 +4993,10 @@ static int run_bc(Ini* ini) {
     PrecisionTensor state = pufferl->buffer_states[0];
     PrecisionTensor terminals = {.data = (precision_t*)xcuda(
         (size_t)bc_batch * sizeof(precision_t)), .shape = {bc_batch}};
+    fprintf(stderr, "BC shapes: obs=(%ld,%ld,%ld) state=(%ld,%ld,%ld) batch=%d\n",
+        (long)obs_t.shape[0], (long)obs_t.shape[1], (long)obs_t.shape[2],
+        (long)state.shape[0], (long)state.shape[1], (long)state.shape[2],
+        bc_batch);
 
     for (int ep = 0; ep < bc_epochs; ep++) {
         cudaMemsetAsync(grad_logits, 0,
