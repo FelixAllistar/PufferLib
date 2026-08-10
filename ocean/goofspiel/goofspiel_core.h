@@ -3,6 +3,12 @@
 #include <stdint.h>
 #include <string.h>
 
+#ifdef __CUDACC__
+#define GS_HD __host__ __device__
+#else
+#define GS_HD
+#endif
+
 #define GS_MAX_PLAYERS 2
 #define GS_MAX_CARDS 4          /* fixed 4-card checkpoint/obs layout */
 #define GS_MAX_CARDS_EXT 13     /* runtime max for larger training variants */
@@ -65,7 +71,7 @@ typedef struct {
     uint8_t winners[GS_MAX_CARDS_EXT];
 } GSHistory;
 
-static inline int gs_config_valid(const GSConfig* cfg) {
+GS_HD static inline int gs_config_valid(const GSConfig* cfg) {
     return cfg->num_players >= 2 && cfg->num_players <= GS_MAX_PLAYERS
         && cfg->num_cards >= 2 && cfg->num_cards <= GS_MAX_CARDS_EXT
         && cfg->num_turns >= 1 && cfg->num_turns <= cfg->num_cards
@@ -75,7 +81,7 @@ static inline int gs_config_valid(const GSConfig* cfg) {
         && cfg->tie_rule <= GS_TIE_CARRY;
 }
 
-static inline uint32_t gs_mix32(uint32_t x) {
+GS_HD static inline uint32_t gs_mix32(uint32_t x) {
     x ^= x >> 16;
     x *= 0x7feb352du;
     x ^= x >> 15;
@@ -84,7 +90,7 @@ static inline uint32_t gs_mix32(uint32_t x) {
     return x | 1u;
 }
 
-static inline uint32_t gs_random(uint32_t* rng) {
+GS_HD static inline uint32_t gs_random(uint32_t* rng) {
     uint32_t x = *rng;
     x ^= x << 13;
     x ^= x >> 17;
@@ -95,7 +101,7 @@ static inline uint32_t gs_random(uint32_t* rng) {
 
 // Lemire's bounded mapping. The rejection branch occurs only while shuffling
 // at reset and keeps every prize permutation exactly equiprobable.
-static inline uint32_t gs_random_bounded(uint32_t* rng, uint32_t bound) {
+GS_HD static inline uint32_t gs_random_bounded(uint32_t* rng, uint32_t bound) {
     uint32_t x = gs_random(rng);
     uint64_t product = (uint64_t)x * bound;
     uint32_t low = (uint32_t)product;
@@ -110,7 +116,15 @@ static inline uint32_t gs_random_bounded(uint32_t* rng, uint32_t bound) {
     return (uint32_t)(product >> 32);
 }
 
-static inline void gs_shuffle_prizes(GSState* state, const GSConfig* cfg,
+GS_HD static inline int gs_ctz(uint32_t mask) {
+#if defined(__CUDA_ARCH__)
+    return __ffs((int)mask) - 1;
+#else
+    return __builtin_ctz(mask);
+#endif
+}
+
+GS_HD static inline void gs_shuffle_prizes(GSState* state, const GSConfig* cfg,
         uint32_t* rng) {
     for (int i = 0; i < cfg->num_cards; i++) {
         state->prizes[i] = (uint8_t)i;
@@ -130,7 +144,7 @@ static inline void gs_shuffle_prizes(GSState* state, const GSConfig* cfg,
     }
 }
 
-static inline void gs_reset(GSState* state, GSHistory* history,
+GS_HD static inline void gs_reset(GSState* state, GSHistory* history,
         const GSConfig* cfg, uint32_t* rng) {
     memset(state, 0, sizeof(*state));
     memset(history, 0, sizeof(*history));
@@ -145,7 +159,7 @@ static inline void gs_reset(GSState* state, GSHistory* history,
     state->remaining_prizes &= ~(1u << state->prizes[0]);
 }
 
-static inline void gs_resolve_round(GSState* state, GSHistory* history,
+GS_HD static inline void gs_resolve_round(GSState* state, GSHistory* history,
         const GSConfig* cfg, const uint8_t* bids) {
     int round = state->round;
     int high_bid = -1;
@@ -192,7 +206,7 @@ static inline void gs_resolve_round(GSState* state, GSHistory* history,
 // Returns one when the game is terminal. The final forced card is resolved in
 // the same call because it contains no decision and should not consume policy
 // inference.
-static inline int gs_step(GSState* state, GSHistory* history,
+GS_HD static inline int gs_step(GSState* state, GSHistory* history,
         const GSConfig* cfg, const uint8_t* bids) {
     gs_resolve_round(state, history, cfg, bids);
 
@@ -200,7 +214,7 @@ static inline int gs_step(GSState* state, GSHistory* history,
             && state->round == cfg->num_turns - 1) {
         uint8_t forced[GS_MAX_PLAYERS];
         for (int p = 0; p < cfg->num_players; p++) {
-            forced[p] = (uint8_t)__builtin_ctz(state->hands[p]);
+            forced[p] = (uint8_t)gs_ctz(state->hands[p]);
         }
         gs_resolve_round(state, history, cfg, forced);
     }
@@ -217,7 +231,7 @@ static inline int gs_step(GSState* state, GSHistory* history,
 
 // Exact OpenSpiel-compatible terminal utilities. Puffer normalization is kept
 // in the adapter so the game core remains an exact rules reference.
-static inline void gs_returns(const GSState* state, const GSConfig* cfg,
+GS_HD static inline void gs_returns(const GSState* state, const GSConfig* cfg,
         float* returns) {
     if (cfg->return_type == GS_RETURN_TOTAL_POINTS) {
         for (int p = 0; p < cfg->num_players; p++) {
@@ -259,7 +273,7 @@ static inline void gs_returns(const GSState* state, const GSConfig* cfg,
     }
 }
 
-static inline int gs_points_revealed(const GSState* state) {
+GS_HD static inline int gs_points_revealed(const GSState* state) {
     int points = 0;
     for (int r = 0; r < state->round; r++) {
         points += state->prizes[r] + 1;

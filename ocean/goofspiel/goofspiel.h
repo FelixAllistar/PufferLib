@@ -16,8 +16,16 @@ typedef uint8_t obs_t;
 
 #include "goofspiel_exploit.h"
 
+#ifndef GS_ENV_HD
+#ifdef __CUDACC__
+#define GS_ENV_HD __host__ __device__
+#else
+#define GS_ENV_HD
+#endif
+#endif
+
 #define NUM_ATNS 1
-#define ACT_SIZES {GS_MAX_CARDS}
+#define ACT_SIZES {GS_NUM_CARDS}
 
 struct Log {
     float perf;
@@ -80,10 +88,8 @@ static inline GSConfig gs_load_config(Dict* kwargs) {
     cfg.tie_rule = (uint8_t)gs_kw(kwargs, "tie_rule");
     cfg.auto_forced_last = (uint8_t)gs_kw(kwargs, "auto_forced_last");
     cfg.open_spiel_obs = (uint8_t)gs_kw(kwargs, "open_spiel_obs");
-    if (cfg.num_cards <= GS_MAX_CARDS) {
-        cfg.full_hand = (1u << cfg.num_cards) - 1u;
-        cfg.total_points = cfg.num_cards * (cfg.num_cards + 1) / 2;
-    }
+    cfg.full_hand = (1u << cfg.num_cards) - 1u;
+    cfg.total_points = cfg.num_cards * (cfg.num_cards + 1) / 2;
     return cfg;
 }
 
@@ -165,17 +171,17 @@ static inline float gs_sweep_score(const char* checkpoint, Ini* ini) {
 
 #define PUF_SWEEP_SCORE(checkpoint, ini) gs_sweep_score(checkpoint, ini)
 
-static inline void gs_observe(Env* env) {
+GS_ENV_HD static inline void gs_observe(Env* env) {
     for (int observer = 0; observer < env->cfg.num_players; observer++) {
         gs_observe_player(&env->cfg, &env->state, observer,
             (obs_t*)env->agents[observer].observations);
     }
 }
 
-static inline void gs_write_masks(Env* env) {
+GS_ENV_HD static inline void gs_write_masks(Env* env) {
     for (int p = 0; p < env->cfg.num_players; p++) {
         unsigned char* mask = env->agents[p].action_mask;
-        memset(mask, 0, GS_MAX_CARDS);
+        memset(mask, 0, GS_NUM_CARDS);
         memset(mask, 1, env->cfg.num_cards);
     }
 }

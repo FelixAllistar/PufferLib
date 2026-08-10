@@ -328,6 +328,10 @@ if ! grep -q 'typedef[[:space:]].*obs_t' "$ENV_HEADER" 2>/dev/null; then
 fi
 
 ENV_COMPILE_FLAGS=(-DENV_HEADER=\"$ENV_HEADER\")
+# Goofspiel compile-time ABI: 4-card (default) or 13-card training layout.
+if [ "$ENV" = "goofspiel" ]; then
+    ENV_COMPILE_FLAGS+=(-DGS_NUM_CARDS=${GS_NUM_CARDS:-4})
+fi
 # GPU env is compile-time exclusive (not a runtime dual path with CPU workers).
 if [ "$USE_GPU_ENV" = "1" ]; then
     GPU_ENV_HEADER="$SRC_DIR/$ENV.cu"

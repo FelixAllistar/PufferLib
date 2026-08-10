@@ -6,19 +6,29 @@
 #include <string.h>
 
 #define GS_O_HANDS 0
-#define GS_O_REMAINING (GS_O_HANDS + GS_MAX_PLAYERS * GS_MAX_CARDS)
-#define GS_O_SCORES (GS_O_REMAINING + GS_MAX_CARDS)
+#define GS_O_REMAINING (GS_O_HANDS + GS_MAX_PLAYERS * GS_NUM_CARDS)
+#define GS_O_SCORES (GS_O_REMAINING + GS_NUM_CARDS)
 #define GS_O_CURRENT_PRIZE (GS_O_SCORES + 2 * GS_MAX_PLAYERS)
 #define GS_O_POT (GS_O_CURRENT_PRIZE + 1)
 #define GS_O_ROUND (GS_O_POT + 2)
 #define GS_O_LAST_WINNER (GS_O_ROUND + 1)
 #define GS_O_ACTIVE_PLAYERS (GS_O_LAST_WINNER + GS_MAX_PLAYERS + 1)
 #define GS_O_SELF (GS_O_ACTIVE_PLAYERS + GS_MAX_PLAYERS)
-#define GS_COMPACT_OBS_SIZE (GS_O_SELF + GS_MAX_PLAYERS)
-#define GS_MAX_POINTS (GS_MAX_CARDS * (GS_MAX_CARDS + 1) / 2)
+#define GS_COMPACT_OBS_SIZE (GS_O_SELF + GS_NUM_CARDS)
+#define GS_MAX_POINTS (GS_NUM_CARDS * (GS_NUM_CARDS + 1) / 2)
 #define GS_OPEN_SPIEL_OBS_SIZE (GS_MAX_PLAYERS * (GS_MAX_POINTS + 1) \
-    + GS_MAX_CARDS * GS_MAX_CARDS \
-    + GS_MAX_PLAYERS * GS_MAX_CARDS + GS_MAX_PLAYERS)
+    + GS_NUM_CARDS * GS_NUM_CARDS \
+    + GS_MAX_PLAYERS * GS_NUM_CARDS + GS_MAX_PLAYERS)
+
+/* Compile-time ABI selector. Default is the legacy 4-card layout; define
+ * GS_NUM_CARDS=13 to build the larger observation/action ABI for training. */
+#ifndef GS_NUM_CARDS
+#define GS_NUM_CARDS GS_MAX_CARDS
+#endif
+#if GS_NUM_CARDS != 4 && GS_NUM_CARDS != 13
+#error "GS_NUM_CARDS must be 4 or 13"
+#endif
+
 #define OBS_SIZE GS_OPEN_SPIEL_OBS_SIZE
 
 #ifndef GS_OBS_T_DEFINED
@@ -113,7 +123,7 @@ GS_OBS_HD static inline void gs_observe_player(const GSConfig* cfg,
             hand = 0;
         }
         for (int card = 0; card < cfg->num_cards; card++) {
-            obs[GS_O_HANDS + view * GS_MAX_CARDS + card]
+            obs[GS_O_HANDS + view * GS_NUM_CARDS + card]
                 = (obs_t)((hand >> card) & 1u);
         }
 
