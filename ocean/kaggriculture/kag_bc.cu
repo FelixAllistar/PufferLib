@@ -103,6 +103,13 @@ int main(int argc, char** argv) {
     cublas_init_handle();
     cudaStream_t bc_stream;
     cudaStreamCreate(&bc_stream);
+    cudaError_t stream_err = cudaGetLastError();
+    fprintf(stderr, "stream create: %s\n", cudaGetErrorString(stream_err));
+    float* dbg_buf = (float*)xcuda(64);
+    cudaMemsetAsync(dbg_buf, 0, 64, bc_stream);
+    cudaStreamSynchronize(bc_stream);
+    fprintf(stderr, "stream memset: %s\n",
+        cudaGetErrorString(cudaGetLastError()));
     cudaError_t init_err = cudaGetLastError();
     if (init_err != cudaSuccess) {
         fprintf(stderr, "cublas init failed: %s\n",
