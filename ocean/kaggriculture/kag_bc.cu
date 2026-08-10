@@ -113,6 +113,10 @@ int main(int argc, char** argv) {
     }
     Policy policy = build_policy("kaggriculture", input_size, hidden,
         layers, act_n + 1, false, 1);
+    fprintf(stderr, "policy: enc in=%d out=%d dec out=%d net hidden=%d layers=%d\n",
+        policy.encoder.in_dim, policy.encoder.out_dim,
+        policy.decoder.output_dim, policy.network.hidden,
+        policy.network.num_layers);
 
     Allocator params = {0}, acts = {0}, grads = {0};
     PolicyWeights weights = policy_weights_create(&policy, &params);
