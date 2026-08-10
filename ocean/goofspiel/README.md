@@ -88,6 +88,14 @@ larger obs/action layout for 13-card training:
 GS_NUM_CARDS=13 ./build.sh goofspiel --gpu
 ```
 
+GPU-runtime config notes: the GPU env requires `vec.num_buffers=1` (the
+two-player bank layout is single-buffer) and `vec.action_mask_size` equal to
+the compiled ABI (`4` default, `13` for the 13-card build). Example:
+
+```bash
+./puffer train goofspiel vec.num_buffers=1 vec.gpu_env=1
+```
+
 The exact exploitability solver remains 4-card and is compiled into the GPU
 trainer (`GS_EXPLOIT_NO_MAIN`) so checkpoint scoring and env stepping share one
 binary. A 65,536-agent environment bench runs ~115M agent-steps/sec on the
