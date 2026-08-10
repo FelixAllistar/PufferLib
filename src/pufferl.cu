@@ -4997,6 +4997,12 @@ static int run_bc(Ini* ini) {
     // BC loop: forward, cross-entropy, backward, muon step.
     int A_total = pufferl->vec->action_mask_size;
     int mask_stride = (A_total + 7) / 8;
+    int num_atns_puf = (int)numel(pufferl->act_sizes_puf.shape);
+    int head0_size = 0;
+    cudaMemcpy(&head0_size, pufferl->act_sizes_puf.data, sizeof(int),
+        cudaMemcpyDeviceToHost);
+    fprintf(stderr, "BC heads: num_atns=%d A_total=%d head0=%d\n",
+        num_atns_puf, A_total, head0_size);
     float* grad_logits = (float*)xcuda(
         (size_t)bc_cells * A_total * sizeof(float));
     float* loss_acc = (float*)xcuda(sizeof(float));
