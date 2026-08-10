@@ -2135,6 +2135,17 @@ void puf_step(Env* env) {
             + productive_credit[player] * env->reward_productive_action;
         reward -= (game->neglect_deaths[player]
             - before_neglect_deaths[player]) * env->reward_neglect_death;
+        /* Dense relative shaping: reward the change in this player's lead
+         * over the opponent. The opponent's potential delta is exogenous to
+         * this player, but including it flips the value target from absolute
+         * cash to relative position, so a losing-but-closing player gets
+         * positive credit instead of uniformly negative advantages. */
+        int other = 1 - player;
+        float lead_delta = (env->potential[player]
+                - before_potential[player])
+            - (env->potential[other] - before_potential[other]);
+        reward += lead_delta * env->reward_margin_scale
+            / (float)game->config.starting_money;
         env->agents[player].rewards[0] = reward;
         env->episode_returns[player] += reward;
     }
