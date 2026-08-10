@@ -4988,9 +4988,8 @@ static int run_bc(Ini* ini) {
 
     // Reuse the train activation buffers sized for B=bc_steps, T=1.
     PrecisionTensor obs_t = {.data = d_obs,
-        .shape = {bc_batch, 1, obs_size}};
+        .shape = {bc_batch, obs_size}};
     PrecisionTensor state = pufferl->buffer_states[0];
-    PrecisionTensor terminals = {};
 
     for (int ep = 0; ep < bc_epochs; ep++) {
         cudaMemsetAsync(grad_logits, 0,
@@ -4999,13 +4998,9 @@ static int run_bc(Ini* ini) {
         cudaMemsetAsync(loss_acc, 0, sizeof(float), pufferl->default_stream);
         cudaMemsetAsync(state.data, 0, numel(state.shape) * sizeof(precision_t),
             pufferl->default_stream);
-        PrecisionTensor dec_out = policy_forward_train(&pufferl->policy,
-            pufferl->weights, pufferl->train_activations,
-            obs_t, state, terminals, pufferl->default_stream);
-        (void)dec_out;
-        // policy_forward_train returns (B, T, fused_cols); squeeze T=1 for the
-        // BC kernel which expects (B, fused_cols).
-        PrecisionTensor dec_flat = *puf_squeeze(&dec_out, 1);
+        PrecisionTensor dec_flat = policy_forward(&pufferl->policy,
+            pufferl->weights, pufferl->buffer_activations[0],
+            obs_t, state, pufferl->default_stream);
         bc_loss_kernel<<<grid_size(bc_steps), BLOCK_SIZE, 0,
             pufferl->default_stream>>>(
             dec_flat.data, d_expert, d_mask, grad_logits, loss_acc,
@@ -5015,7 +5010,7 @@ static int run_bc(Ini* ini) {
         FloatTensor grad_logits_t = {.data = grad_logits,
             .shape = {bc_steps, 1, A_total}};
         policy_backward(&pufferl->policy, pufferl->weights,
-            pufferl->train_activations, grad_logits_t, FloatTensor(),
+            pufferl->buffer_activations[0], grad_logits_t, FloatTensor(),
             FloatTensor(), pufferl->default_stream);
         muon_step(&pufferl->muon, pufferl->master_weights, pufferl->grad_puf,
             pufferl->hypers.max_grad_norm, pufferl->default_stream);
