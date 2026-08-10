@@ -5041,8 +5041,7 @@ static int run_bc(Ini* ini) {
             fprintf(stderr, "BC dec: data=%p type=%d device=%d\n",
                 dec_flat.data, (int)dec_attr.type, dec_attr.device);
         }
-        bc_loss_kernel<<<grid_size(bc_cells), BLOCK_SIZE, 0,
-            pufferl->default_stream>>>(
+        bc_loss_kernel<<<grid_size(bc_cells), BLOCK_SIZE, 0, 0>>>(
             dec_flat.data, d_expert, d_mask, grad_logits, loss_acc, debug_out,
             pufferl->act_sizes_puf.data, bc_cells, A_total, num_atns,
             mask_stride);
