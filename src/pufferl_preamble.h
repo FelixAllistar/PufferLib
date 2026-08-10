@@ -18,6 +18,7 @@ constexpr cublasComputeType_t CUBLAS_COMPUTE_PRECISION = CUBLAS_COMPUTE_32F;
 #endif
 
 #include <curand_kernel.h>
+#include <cassert>
 
 #define PUF_MAX_DIMS 8
 #define BLOCK_SIZE 256
