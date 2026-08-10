@@ -1471,7 +1471,7 @@ struct PPOKernelArgs {
 // the sampler's own probability decomposition.
 __global__ void bc_loss_kernel(
         const precision_t* __restrict__ logits,   // (B, fused_cols)
-        const precision_t* __restrict__ expert,   // (B, num_atns)
+        const float* __restrict__ expert,         // (B, num_atns) discrete ids
         const unsigned char* __restrict__ mask,   // (B, A_total) unpacked
         float* __restrict__ grad_logits,          // (B, A_total)
         float* __restrict__ loss_acc,             // scalar
@@ -1485,7 +1485,7 @@ __global__ void bc_loss_kernel(
     float loss = 0.0f;
     for (int h = 0; h < num_atns; h++) {
         int A = act_sizes[h];
-        int expert_action = (int)to_float(expert[idx * num_atns + h]);
+        int expert_action = (int)expert[idx * num_atns + h];
         if (expert_action < 0 || expert_action >= A) {
             offset += A;
             continue;

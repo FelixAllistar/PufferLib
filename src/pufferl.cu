@@ -4869,11 +4869,12 @@ static int run_bc(Ini* ini) {
 
     int obs_size = OBS_SIZE;
     int num_atns = NUM_ATNS;
+    int packed_stride = (pufferl->vec->action_mask_size + 7) / 8;
     obs_t* obs_data = (obs_t*)xcalloc((size_t)bc_steps * obs_size);
     float* expert_data = (float*)xcalloc(
         (size_t)bc_steps * num_atns * sizeof(float));
     unsigned char* mask_data = (unsigned char*)xcalloc(
-        (size_t)bc_steps * pufferl->vec->action_mask_size);
+        (size_t)bc_steps * packed_stride);
     if (!obs_data || !expert_data || !mask_data) return 1;
 
     for (int t = 0; t < bc_steps && !env.game_storage.done; t++) {
@@ -4897,8 +4898,18 @@ static int run_bc(Ini* ini) {
             env.agents[0].observations, obs_size);
         memcpy(expert_data + (size_t)t * num_atns,
             env.agents[0].actions, num_atns * sizeof(float));
-        memcpy(mask_data + (size_t)t * pufferl->vec->action_mask_size,
-            env.agents[0].action_mask, pufferl->vec->action_mask_size);
+        int mask_stride = pufferl->vec->action_mask_size;
+        for (int byte = 0; byte < packed_stride; byte++) {
+            unsigned char bits = 0;
+            for (int bit = 0; bit < 8; bit++) {
+                int action = byte * 8 + bit;
+                if (action < mask_stride
+                        && env.agents[0].action_mask[action]) {
+                    bits |= (unsigned char)(1u << bit);
+                }
+            }
+            mask_data[(size_t)t * packed_stride + byte] = bits;
+        }
         // Step the env with the expert actions so the next obs is on-policy.
         KGAction actions[KG_NUM_PLAYERS] = {expert, {}};
         actions[1].farmer = (KGUnitAction){KG_OP_PASS, -1, 1};
@@ -4911,22 +4922,28 @@ static int run_bc(Ini* ini) {
     }
 
     // Upload expert dataset to device.
-    obs_t* d_obs = (obs_t*)xcuda((size_t)bc_steps * obs_size);
-    float* d_expert = (float*)xcuda((size_t)bc_steps * num_atns * sizeof(float));
+    precision_t* d_obs = (precision_t*)xcuda(
+        (size_t)bc_steps * obs_size * sizeof(precision_t));
+    float* d_expert = (float*)xcuda(
+        (size_t)bc_steps * num_atns * sizeof(float));
     unsigned char* d_mask = (unsigned char*)xcuda(
-        (size_t)bc_steps * pufferl->vec->action_mask_size);
-    cudaMemcpy(d_obs, obs_data, (size_t)bc_steps * obs_size,
+        (size_t)bc_steps * packed_stride);
+    obs_t* d_obs_raw = (obs_t*)xcuda((size_t)bc_steps * obs_size);
+    cudaMemcpy(d_obs_raw, obs_data, (size_t)bc_steps * obs_size,
         cudaMemcpyHostToDevice);
+    cast<<<grid_size(bc_steps * obs_size), BLOCK_SIZE, 0,
+        pufferl->default_stream>>>(d_obs, d_obs_raw, bc_steps * obs_size);
     cudaMemcpy(d_expert, expert_data,
-        (size_t)bc_steps * num_atns * sizeof(float), cudaMemcpyHostToDevice);
+        (size_t)bc_steps * num_atns * sizeof(float),
+        cudaMemcpyHostToDevice);
     cudaMemcpy(d_mask, mask_data,
-        (size_t)bc_steps * pufferl->vec->action_mask_size,
+        (size_t)bc_steps * packed_stride,
         cudaMemcpyHostToDevice);
     free(obs_data); free(expert_data); free(mask_data);
 
     // BC loop: forward, cross-entropy, backward, muon step.
     int A_total = pufferl->vec->action_mask_size;
-    int mask_stride = A_total;
+    int mask_stride = (A_total + 7) / 8;
     float* grad_logits = (float*)xcuda(
         (size_t)bc_steps * A_total * sizeof(float));
     float* loss_acc = (float*)xcuda(sizeof(float));
@@ -4936,14 +4953,10 @@ static int run_bc(Ini* ini) {
         cudaMemcpyHostToDevice);
 
     // Reuse the train activation buffers sized for B=bc_steps, T=1.
-    PrecisionTensor obs_t = {.data = (precision_t*)d_obs,
+    PrecisionTensor obs_t = {.data = d_obs,
         .shape = {bc_steps, 1, obs_size}};
     PrecisionTensor state = pufferl->buffer_states[0];
     PrecisionTensor terminals = {};
-    PrecisionTensor dec = policy_forward_train(&pufferl->policy,
-        pufferl->weights, pufferl->train_activations,
-        obs_t, state, terminals, pufferl->default_stream);
-    (void)dec;
 
     for (int ep = 0; ep < bc_epochs; ep++) {
         cudaMemsetAsync(grad_logits, 0,
@@ -4988,6 +5001,7 @@ static int run_bc(Ini* ini) {
     printf("BC anchor saved to %s\n", out);
 
     cudaFree(d_obs); cudaFree(d_expert); cudaFree(d_mask);
+    cudaFree(d_obs_raw);
     cudaFree(grad_logits); cudaFree(loss_acc);
     close_pufferl(pufferl);
     return 0;
