@@ -5040,6 +5040,11 @@ static int run_bc(Ini* ini) {
         if (ep == 0) {
             fprintf(stderr, "BC dec: data=%p type=%d device=%d\n",
                 dec_flat.data, (int)dec_attr.type, dec_attr.device);
+            cudaPointerAttributes as_attr = {};
+            cudaPointerGetAttributes(&as_attr, pufferl->act_sizes_puf.data);
+            fprintf(stderr, "BC act_sizes: %p type=%d device=%d\n",
+                pufferl->act_sizes_puf.data, (int)as_attr.type,
+                as_attr.device);
         }
         bc_loss_kernel<<<grid_size(bc_cells), BLOCK_SIZE, 0, 0>>>(
             dec_flat.data, d_expert, d_mask, grad_logits, loss_acc, debug_out,
