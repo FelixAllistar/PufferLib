@@ -2138,7 +2138,6 @@ void puf_step(Env* env) {
         /* Margin-aware term: reward proportional to the money gap so a close
          * loss is preferred to a blowout. Normalized by starting money so the
          * scale is comparable across configs. */
-        int model_money = model_player == 0 ? p0 : p1;
         int opp_money = model_player == 0 ? p1 : p0;
         float margin = (float)(model_money - opp_money)
             / (float)game->config.starting_money;
