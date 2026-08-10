@@ -257,6 +257,7 @@ int main(int argc, char** argv) {
     float* loss_acc = (float*)xcuda(sizeof(float));
     cudaMemcpy(d_obs_raw, host_obs, (size_t)bc_steps * OBS_SIZE,
         cudaMemcpyHostToDevice);
+    cudaDeviceSynchronize();
     cast<<<grid_size(bc_steps * OBS_SIZE), BLOCK_SIZE, 0, bc_stream>>>(
         d_obs, d_obs_raw, bc_steps * OBS_SIZE);
     cudaStreamSynchronize(bc_stream);
