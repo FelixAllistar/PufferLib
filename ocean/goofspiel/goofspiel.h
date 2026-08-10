@@ -88,6 +88,13 @@ static inline GSConfig gs_load_config(Dict* kwargs) {
     cfg.tie_rule = (uint8_t)gs_kw(kwargs, "tie_rule");
     cfg.auto_forced_last = (uint8_t)gs_kw(kwargs, "auto_forced_last");
     cfg.open_spiel_obs = (uint8_t)gs_kw(kwargs, "open_spiel_obs");
+    if (cfg.num_cards != GS_NUM_CARDS) {
+        fprintf(stderr,
+            "goofspiel env.num_cards=%d does not match compiled ABI "
+            "GS_NUM_CARDS=%d (rebuild with GS_NUM_CARDS=%d for this config)\n",
+            cfg.num_cards, GS_NUM_CARDS, cfg.num_cards);
+        exit(1);
+    }
     cfg.full_hand = (1u << cfg.num_cards) - 1u;
     cfg.total_points = cfg.num_cards * (cfg.num_cards + 1) / 2;
     return cfg;
@@ -169,7 +176,11 @@ static inline float gs_sweep_score(const char* checkpoint, Ini* ini) {
     return gs_sweep_best;
 }
 
+#if GS_NUM_CARDS == 4
 #define PUF_SWEEP_SCORE(checkpoint, ini) gs_sweep_score(checkpoint, ini)
+#else
+#define PUF_SWEEP_SCORE(checkpoint, ini) 0.0f
+#endif
 
 GS_ENV_HD static inline void gs_observe(Env* env) {
     for (int observer = 0; observer < env->cfg.num_players; observer++) {
@@ -385,6 +396,7 @@ void puf_step(Env* env) {
 }
 
 #ifdef __CUDACC__
+#if GS_NUM_CARDS == 4
 static inline void gs_exact_save(const char* checkpoint) {
     gs_exact_pool_save(checkpoint, gs_exact_tables, gs_exact_count,
         gs_exact_history, gs_exact_seen);
@@ -441,9 +453,15 @@ static inline void gs_checkpoint_hook(const char* checkpoint, Ini* ini) {
         (unsigned long long)nodes, milliseconds);
 }
 #define PUF_CHECKPOINT_HOOK(checkpoint, ini) gs_checkpoint_hook(checkpoint, ini)
+#else
+/* The exact solver is 4-card-only. In a 13-card ABI build, disable the
+ * solver-backed sweep/checkpoint hooks rather than abort on every save. */
+#define PUF_SWEEP_SCORE(checkpoint, ini) 0.0f
+#define PUF_CHECKPOINT_HOOK(checkpoint, ini) ((void)0)
+#endif
 #endif
 
-#if defined(__CUDACC__) && defined(PUFFERLIB_BUILD_MAIN)
+#if defined(__CUDACC__) && defined(PUFFERLIB_BUILD_MAIN) && GS_NUM_CARDS == 4
 #define GS_EXPLOIT_NO_MAIN
 #include "goofspiel_exploit.cu"
 #endif
