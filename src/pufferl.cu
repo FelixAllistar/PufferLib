@@ -4044,22 +4044,24 @@ EvalResult run_eval(Ini* ini, TrainContext* ctx, int mode, int verbose) {
         puf_ini_put(ini, "vec.frozen_bank_hidden_size", hidden_buf);
         puf_ini_put(ini, "vec.frozen_bank_num_layers", layers_buf);
         puf_ini_put(ini, "selfplay.enabled", "0");
-        puf_ini_put(ini, "env.dr", "0");
-        puf_ini_put(ini, "env.num_agents", match_enemy_bot ? "1" : "2");
-        puf_ini_put(ini, "env.num_bots", match_enemy_bot ? "1" : "0");
+        league_eval_put_optional(ini, "env", "dr", "0");
+        league_eval_put_optional(ini, "env", "num_agents",
+            match_enemy_bot ? "1" : "2");
+        league_eval_put_optional(ini, "env", "num_bots",
+            match_enemy_bot ? "1" : "0");
         if (match_enemy_bot) {
-            puf_ini_put(ini, "env.bot_opponent_fraction", "1");
-            puf_ini_put(ini, "env.bot_pass_fraction",
+            league_eval_put_optional(ini, "env", "bot_opponent_fraction", "1");
+            league_eval_put_optional(ini, "env", "bot_pass_fraction",
                 match_enemy_pass ? "1" : "0");
-            puf_ini_put(ini, "env.bot_rules_fraction",
+            league_eval_put_optional(ini, "env", "bot_rules_fraction",
                 match_enemy_rules ? "1" : "0");
-            puf_ini_put(ini, "env.bot_script_fraction", "0");
-            puf_ini_put(ini, "env.bot_adaptive_fraction", "0");
+            league_eval_put_optional(ini, "env", "bot_script_fraction", "0");
+            league_eval_put_optional(ini, "env", "bot_adaptive_fraction", "0");
         } else {
             // Environment-specific scripted curricula must not replace either
             // policy during a requested model-vs-model match.
-            puf_ini_put(ini, "env.bot_opponent_fraction", "0");
-            puf_ini_put(ini, "env.bot_rules_fraction", "0");
+            league_eval_put_optional(ini, "env", "bot_opponent_fraction", "0");
+            league_eval_put_optional(ini, "env", "bot_rules_fraction", "0");
         }
     }
     puf_ini_put(ini, "base.reset_every_horizon", "0");
@@ -4123,7 +4125,10 @@ EvalResult run_eval(Ini* ini, TrainContext* ctx, int mode, int verbose) {
             result.score = (float)dict_get(&log, "env/slot_0_score");
             result.draw = (float)dict_get(&log, "env/draw_rate");
             result.money = (float)dict_get(&log, "env/score");
-            result.opponent_money = (float)dict_get(&log, "env/opponent_score");
+            DictItem* opp = dict_find(&log, "env/opponent_score");
+            result.opponent_money = opp
+                ? (float)opp->value
+                : (float)dict_get(&log, "env/slot_1_score");
             result.games = (int)n;
             break;
         }
@@ -4952,9 +4957,9 @@ int main(int argc, char** argv) {
             puf_ini_put(&ini, "vec.num_frozen_banks", "0");
             puf_ini_put(&ini, "vec.frozen_bank_pct", "0");
             puf_ini_put(&ini, "selfplay.enabled", "0");
-            puf_ini_put(&ini, "env.dr", "0");
-            puf_ini_put(&ini, "env.num_agents", "1");
-            puf_ini_put(&ini, "env.num_bots", "1");
+            league_eval_put_optional(&ini, "env", "dr", "0");
+            league_eval_put_optional(&ini, "env", "num_agents", "1");
+            league_eval_put_optional(&ini, "env", "num_bots", "1");
         }
         // Headless score eval (use a separate interactive path if you need render).
         run_eval(&ini, &ctx, EVAL_SCORE, 1);
