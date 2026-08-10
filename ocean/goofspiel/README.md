@@ -51,6 +51,12 @@ Uniform-policy NashConv fixtures match OpenSpiel exactly:
 | 3 | 1.3333333333333333 |
 | 4 | 1.4930555555555556 |
 
+The exact solver now caps at 5 cards (`GS_EXACT_MAX_CARDS`). Ascending-order
+5-card uniform exploitability is verified exactly against an independent brute
+force (0.816666667). Random-order 5-card has a known residual: the first-prize=4
+root value differs by 1/720 (native 0.801527778 vs independent 0.801805556),
+which does not affect 4-card or fixed-order results.
+
 The best-response recursion is a compact native adaptation of OpenSpiel's
 Apache-2.0 `tabular_best_response_mdp` algorithm. No OpenSpiel code or runtime
 dependency is included.
