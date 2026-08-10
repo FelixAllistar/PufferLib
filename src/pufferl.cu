@@ -5049,6 +5049,12 @@ static int run_bc(Ini* ini) {
                 bc_cells, A_total, num_atns, mask_stride,
                 grid_size(bc_cells));
         }
+        if (ep == 0) {
+            bc_smoke_kernel<<<1, 256, 0, 0>>>(debug_out, bc_cells);
+            fprintf(stderr, "BC smoke: %s\n",
+                cudaGetErrorString(cudaGetLastError()));
+            cudaDeviceSynchronize();
+        }
         bc_loss_kernel<<<1, 256, 0, 0>>>(
             dec_flat.data, d_expert, d_mask, grad_logits, loss_acc, debug_out,
             pufferl->act_sizes_puf.data, bc_cells, A_total, num_atns,

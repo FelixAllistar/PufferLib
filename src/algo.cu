@@ -1622,6 +1622,11 @@ __global__ void bc_loss_kernel(
     if (debug_out) debug_out[idx] = (float)heads_done * 1000.0f + heads_skipped;
 }
 
+__global__ void bc_smoke_kernel(float* out, int B) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx < B) out[idx] = 42.0f;
+}
+
 // Masked logsumexp over one discrete head's legal actions. Returns -inf when
 // every action is masked, so callers can gate on a nonzero legal count.
 __device__ __forceinline__ float puf_masked_logsumexp(
