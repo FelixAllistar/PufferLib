@@ -1640,14 +1640,6 @@ static void master_weights_setup(FloatTensor* mw, PrecisionTensor* param,
     }
 }
 
-void create_allocator_or_die(const char* name, Allocator* alloc) {
-    cudaError_t err = alloc_create(alloc);
-    if (err != cudaSuccess) {
-        fprintf(stderr, "create_pufferl: alloc_create(%s) failed for %ld bytes: %s\n",
-            name, alloc->total_bytes, cudaGetErrorString(err));
-        exit(1);
-    }
-}
 
 double wall_clock() {
     struct timespec ts;

@@ -17,6 +17,8 @@ constexpr cublasComputeType_t CUBLAS_COMPUTE_PRECISION = CUBLAS_COMPUTE_32F;
 #define from_float(x) __float2bfloat16(x)
 #endif
 
+#include <curand_kernel.h>
+
 #define PUF_MAX_DIMS 8
 #define BLOCK_SIZE 256
 int grid_size(int N) {
@@ -261,6 +263,15 @@ static void* xpin(size_t n) {
     assert(cudaHostAlloc(&p, n, cudaHostAllocPortable) == cudaSuccess
         && "cudaHostAlloc failed");
     return p;
+}
+
+void create_allocator_or_die(const char* name, Allocator* alloc) {
+    cudaError_t err = alloc_create(alloc);
+    if (err != cudaSuccess) {
+        fprintf(stderr, "create_pufferl: alloc_create(%s) failed for %ld bytes: %s\n",
+            name, alloc->total_bytes, cudaGetErrorString(err));
+        exit(1);
+    }
 }
 
 // Policy / optim / GEMM / encoders / weight init.
