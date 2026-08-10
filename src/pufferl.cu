@@ -5040,6 +5040,12 @@ static int run_bc(Ini* ini) {
             dec_flat.data, d_expert, d_mask, grad_logits, loss_acc, debug_out,
             pufferl->act_sizes_puf.data, bc_cells, A_total, num_atns,
             mask_stride);
+        cudaError_t bc_err = cudaGetLastError();
+        if (bc_err != cudaSuccess) {
+            fprintf(stderr, "BC kernel launch failed: %s\n",
+                cudaGetErrorString(bc_err));
+            return 1;
+        }
         // Forward the gradient through the network; value/logstd empty.
         FloatTensor grad_logits_t = {.data = grad_logits,
             .shape = {bc_batch, bc_horizon, A_total}};
