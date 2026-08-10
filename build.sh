@@ -108,17 +108,29 @@ download() {
     esac
 }
 
-RAYLIB_URL="https://github.com/raysan5/raylib/releases/download/5.5"
-if [ "$MODE" = "web" ]; then
-    RAYLIB_NAME='raylib-5.5_webassembly'
-    download "$RAYLIB_NAME" "$RAYLIB_URL/$RAYLIB_NAME.zip"
+# Headless mode drops the raylib demo and OpenMP/GL dependencies; the native
+# GPU train/eval binary never references them. Set HEADLESS=1 for boxes that
+# only run training (e.g. rented GPU instances).
+if [ "${HEADLESS:-0}" = "1" ]; then
+    RAYLIB_NAME=''
+    RAYLIB_A=''
+    INCLUDES=(-I./src -I./vendor)
+    LINK_ARCHIVES=()
+    OMP_LIB=''
+    STANDALONE_LDFLAGS=()
 else
-    download "$RAYLIB_NAME" "$RAYLIB_URL/$RAYLIB_NAME.tar.gz"
-fi
+    RAYLIB_URL="https://github.com/raysan5/raylib/releases/download/5.5"
+    if [ "$MODE" = "web" ]; then
+        RAYLIB_NAME='raylib-5.5_webassembly'
+        download "$RAYLIB_NAME" "$RAYLIB_URL/$RAYLIB_NAME.zip"
+    else
+        download "$RAYLIB_NAME" "$RAYLIB_URL/$RAYLIB_NAME.tar.gz"
+    fi
 
-RAYLIB_A="$RAYLIB_NAME/lib/libraylib.a"
-INCLUDES=(-I./$RAYLIB_NAME/include -I./src -I./vendor)
-LINK_ARCHIVES=("$RAYLIB_A")
+    RAYLIB_A="$RAYLIB_NAME/lib/libraylib.a"
+    INCLUDES=(-I./$RAYLIB_NAME/include -I./src -I./vendor)
+    LINK_ARCHIVES=("$RAYLIB_A")
+fi
 EXTRA_SRC=""
 EXTRA_LDFLAGS=()
 EXTRA_CFLAGS=()
@@ -330,27 +342,32 @@ MODE=${MODE:-native}
 
 if [ "$MODE" = "native" ]; then
     echo "Compiling native train/eval binary ($ARCH)..."
+    OMP_FLAG=()
+    if [ "${HEADLESS:-0}" != "1" ]; then
+        OMP_FLAG=(-Xcompiler=-fopenmp)
+    fi
     $NVCC $NVCC_OPT -arch=$ARCH -std=c++17 \
         -I. -Isrc -I$SRC_DIR -Ivendor \
         "${INCLUDES[@]}" \
-        -I$CUDA_HOME/include -I$CUDA_HOME/include/cccl $NCCL_IFLAG -I$RAYLIB_NAME/include \
+        -I$CUDA_HOME/include -I$CUDA_HOME/include/cccl $NCCL_IFLAG \
+        ${RAYLIB_NAME:+-I./$RAYLIB_NAME/include} \
 	    "${ENV_COMPILE_FLAGS[@]}" \
 	    -DENV_NAME=$ENV \
 	    -DPUFFER_ENV_NAME=\"$ENV\" \
 	    -DPUFFERLIB_BUILD_MAIN \
 	    -Xcompiler=-DPLATFORM_DESKTOP \
-	    -Xcompiler=-fopenmp \
+	    "${OMP_FLAG[@]}" \
 	    "${EXTRA_CFLAGS[@]}" \
 	    $PRECISION \
 	    src/pufferl.cu \
-        "$RAYLIB_A" \
+        ${RAYLIB_A:+"$RAYLIB_A"} \
         -L$CUDA_HOME/lib64 $NCCL_LFLAG \
         "${EXTRA_LDFLAGS[@]}" \
         -lcudart -lnccl -lnvidia-ml -lcublas -lcusolver -lcurand \
         -lm -lpthread $OMP_LIB "${STANDALONE_LDFLAGS[@]}" \
         -o puffer
     echo "Built: ./puffer"
-    if [ "$ENV" = "kaggriculture" ]; then
+    if [ "$ENV" = "kaggriculture" ] && [ "${HEADLESS:-0}" != "1" ]; then
         bash "$0" "$ENV" --fast
     fi
 
