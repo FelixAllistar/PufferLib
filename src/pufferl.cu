@@ -4849,7 +4849,6 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
 // that can later regularize self-play via the EMAg KL term.
 static int run_bc(Ini* ini) {
     TrainContext ctx = {.world_size = 1, .artifact_owner = 1};
-    PuffeRL* pufferl = create_pufferl(ini, &ctx);
     int bc_steps = (int)puf_ini_get(ini, "bc", "steps");
     int bc_profile = (int)puf_ini_get(ini, "bc", "profile");
     int bc_epochs = (int)puf_ini_get(ini, "bc", "epochs");
@@ -4857,6 +4856,26 @@ static int run_bc(Ini* ini) {
     if (bc_steps <= 0 || bc_steps > 720) bc_steps = 26;
     if (bc_epochs <= 0) bc_epochs = 2000;
     if (bc_lr <= 0.0f) bc_lr = 0.0003f;
+    /* The policy buffers are sized by vec.total_agents; BC uses one rollout
+     * row per tape step, so size the vec to bc_steps (padded to even for the
+     * two-player GPU env). */
+    /* Pad the BC batch to a multiple of the horizon (8) so the train
+     * activation layout (minibatch_segments * horizon) matches. Padded rows
+     * carry expert_action = -1 and are skipped by the BC loss. */
+    int bc_horizon = (int)puf_ini_get(ini, "train", "horizon");
+    if (bc_horizon < 8) bc_horizon = 8;
+    int bc_batch = ((bc_steps + bc_horizon - 1) / bc_horizon) * bc_horizon;
+    if (bc_batch & 1) bc_batch++;
+    char num_buf[64];
+    snprintf(num_buf, sizeof(num_buf), "%d", bc_batch);
+    puf_ini_put(ini, "vec.total_agents", num_buf);
+    puf_ini_put(ini, "vec.num_buffers", "1");
+    puf_ini_put(ini, "vec.num_frozen_banks", "0");
+    puf_ini_put(ini, "vec.frozen_bank_pct", "0");
+    puf_ini_put(ini, "selfplay.enabled", "0");
+    snprintf(num_buf, sizeof(num_buf), "%d", bc_batch);
+    puf_ini_put(ini, "train.minibatch_size", num_buf);
+    PuffeRL* pufferl = create_pufferl(ini, &ctx);
 
     printf("BC: profile=%d steps=%d epochs=%d lr=%g\n",
         bc_profile, bc_steps, bc_epochs, bc_lr);
@@ -4928,6 +4947,12 @@ static int run_bc(Ini* ini) {
         }
         kg_step(&env.game_storage, actions);
         kag_write_all_observations_from_tapes(&env, kag_script_tapes);
+    }
+    /* Padded rows: mark expert actions invalid so the BC kernel skips them. */
+    for (int t = bc_steps; t < bc_batch; t++) {
+        for (int h = 0; h < num_atns; h++) {
+            expert_data[(size_t)t * num_atns + h] = -1.0f;
+        }
     }
 
     // Upload expert dataset to device.
