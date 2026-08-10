@@ -4966,6 +4966,13 @@ static int run_bc(Ini* ini) {
         valid_cells, bc_cells,
         expert_data[0], expert_data[num_atns],
         expert_data[25 * num_atns]);
+    int mask_bits = 0;
+    for (int t = 0; t < bc_steps; t++) {
+        for (int byte = 0; byte < packed_stride; byte++) {
+            mask_bits += __builtin_popcount(mask_data[(size_t)t * packed_stride + byte]);
+        }
+    }
+    fprintf(stderr, "BC mask: %d bits over %d steps\n", mask_bits, bc_steps);
 
     // Upload expert dataset to device.
     precision_t* d_obs = (precision_t*)xcuda(
