@@ -188,6 +188,7 @@ struct Env {
     float reward_animal_value;
     float reward_land_value;
     float reward_margin_scale;
+    float reward_inactivity_threshold;
     float reward_neglect_discount;
     float reward_liquidation_days;
     float reward_productive_action;
@@ -1958,6 +1959,8 @@ void puf_init(Env* env, Dict* kwargs) {
     env->reward_land_value = (float)dict_get(kwargs, "reward_land_value");
     env->reward_margin_scale = (float)dict_get(kwargs,
         "reward_margin_scale");
+    env->reward_inactivity_threshold = (float)dict_get(kwargs,
+        "reward_inactivity_threshold");
     env->reward_neglect_discount = (float)dict_get(
         kwargs, "reward_neglect_discount");
     env->reward_liquidation_days = (float)dict_get(
@@ -2157,11 +2160,13 @@ void puf_step(Env* env) {
             env->episode_returns[0] -= margin_term;
             env->episode_returns[1] += margin_term;
         }
-        if (abs(p0 - game->config.starting_money) <= 2) {
+        if (abs(p0 - game->config.starting_money)
+                <= env->reward_inactivity_threshold) {
             env->agents[0].rewards[0] -= env->reward_inactivity;
             env->episode_returns[0] -= env->reward_inactivity;
         }
-        if (abs(p1 - game->config.starting_money) <= 2) {
+        if (abs(p1 - game->config.starting_money)
+                <= env->reward_inactivity_threshold) {
             env->agents[1].rewards[0] -= env->reward_inactivity;
             env->episode_returns[1] -= env->reward_inactivity;
         }
@@ -2169,7 +2174,8 @@ void puf_step(Env* env) {
         env->agents[1].terminals[0] = 1.0f;
         env->log.perf += model_win;
         env->log.score += (float)model_money;
-        env->log.sweep_score += abs(model_money - game->config.starting_money) <= 2
+        env->log.sweep_score += abs(model_money - game->config.starting_money)
+                <= env->reward_inactivity_threshold
             ? -3000.0f : (float)model_money;
         env->log.opponent_score += (float)opponent_money;
         env->log.episode_return += env->episode_returns[model_player];

@@ -37,6 +37,7 @@ typedef struct {
     float reward_animal_value;
     float reward_land_value;
     float reward_margin_scale;
+    float reward_inactivity_threshold;
     float reward_neglect_discount;
     float reward_liquidation_days;
     float reward_productive_action;
@@ -354,6 +355,8 @@ __global__ static void kag_cuda_reset_kernel(Env* shells, Env* matches,
     env->reward_animal_value = d_kag_cuda_config.reward_animal_value;
     env->reward_land_value = d_kag_cuda_config.reward_land_value;
     env->reward_margin_scale = d_kag_cuda_config.reward_margin_scale;
+    env->reward_inactivity_threshold =
+        d_kag_cuda_config.reward_inactivity_threshold;
     env->reward_neglect_discount = d_kag_cuda_config.reward_neglect_discount;
     env->reward_liquidation_days = d_kag_cuda_config.reward_liquidation_days;
     env->reward_productive_action = d_kag_cuda_config.reward_productive_action;
@@ -438,6 +441,8 @@ static void kag_cuda_load_config(Dict* kwargs) {
     h_kag_cuda_config.reward_animal_value = template_env.reward_animal_value;
     h_kag_cuda_config.reward_land_value = template_env.reward_land_value;
     h_kag_cuda_config.reward_margin_scale = template_env.reward_margin_scale;
+    h_kag_cuda_config.reward_inactivity_threshold =
+        template_env.reward_inactivity_threshold;
     h_kag_cuda_config.reward_neglect_discount = template_env.reward_neglect_discount;
     h_kag_cuda_config.reward_liquidation_days = template_env.reward_liquidation_days;
     h_kag_cuda_config.reward_productive_action = template_env.reward_productive_action;
