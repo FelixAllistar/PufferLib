@@ -410,19 +410,7 @@ int main(int argc, char** argv) {
                 cudaGetErrorString(bw_err));
             return 1;
         }
-        long grad_off = 0;
-        for (int r = 0; r < params.num_regs; r++) {
-            long ne = numel(params.regs[r].shape);
-            if (ne > 0) {
-                precision_t* gr = *(precision_t**)grads.regs[r].data_ptr;
-                cast<<<grid_size((int)ne), BLOCK_SIZE, 0, bc_stream>>>(
-                    grad_float + grad_off, gr, (int)ne);
-            }
-            grad_off += ne;
-        }
-        kag_bc_sgd<<<grid_size((int)params.total_elems), BLOCK_SIZE, 0,
-            bc_stream>>>(master_weights.data, grad_float, lr,
-            (int)params.total_elems);
+        (void)grad_float; (void)lr;
         cudaDeviceSynchronize();
         if ((ep + 1) % 50 == 0) {
             float loss = 0.0f;
