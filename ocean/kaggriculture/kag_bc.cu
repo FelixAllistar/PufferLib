@@ -400,6 +400,19 @@ static int bc_train(Ini* ini) {
             PrecisionTensor dec_out = policy_forward_train(&policy, weights,
                 train_acts, obs_t, state, terminals, bc_stream);
             PrecisionTensor dec_flat = *puf_squeeze(&dec_out, 0);
+            if (start == 0) {
+                DecoderActivations* da = (DecoderActivations*)train_acts.decoder;
+                float sv[4];
+                cudaMemcpy(sv, da->saved_input.data, 4 * sizeof(float),
+                    cudaMemcpyDeviceToHost);
+                fprintf(stderr, "decoder saved_input[0..3]=%g,%g,%g,%g\n",
+                    sv[0], sv[1], sv[2], sv[3]);
+                EncoderActivations* ea = (EncoderActivations*)train_acts.encoder;
+                cudaMemcpy(sv, ea->saved_input.data, 4 * sizeof(float),
+                    cudaMemcpyDeviceToHost);
+                fprintf(stderr, "encoder saved_input[0..3]=%g,%g,%g,%g\n",
+                    sv[0], sv[1], sv[2], sv[3]);
+            }
             kag_bc_loss_kernel<<<1, 256, 0, bc_stream>>>(
                 dec_flat.data, d_expert, d_mask, grad_logits, loss_acc,
                 act_sizes_puf.data, batch, A_total, num_atns, packed_stride);
