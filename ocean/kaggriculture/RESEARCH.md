@@ -1161,6 +1161,15 @@ Branch I: continue ExpH with reset range focused tighter on the care window
 (t40-100) or a longer run, to push the trend further. Also candidate: combine
 the animal reset with the animal BC magnet (ExpG/H had no magnet).
 
+## 2026-08-11: Exp I - magnet with reset does not help
+
+Exp I: ExpH + animal magnet (emag 0.01) + reset t<=80, 40M run. Peaked 7,351
+vs top, below ExpH's 7,748. The magnet consistently reduces vs-top across
+ExpF2/ExpI; reset-opening alone is the productive lever. ExpH stays champion.
+
+Exp J (running): ExpH + 60M more, same reset t<=60, no magnet. Tests whether
+longer continuation of the reset recipe keeps climbing past ~7.7k.
+
 ## 2026-08-09: GPU reset diversity and selfplay rotation fixes
 
 The CUDA reset kernel was re-deriving `reset_opening_rng` from the per-match
