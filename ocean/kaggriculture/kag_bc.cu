@@ -171,11 +171,11 @@ static Env bc_make_env(Ini* ini, uint32_t rng) {
 static int bc_gen(Ini* ini) {
     int games = (int)puf_ini_get(ini, "bc", "games");
     int profile = (int)puf_ini_get(ini, "bc", "bot");
-    int seed = (int)puf_ini_get(ini, "bc", "seed");
+    int bc_seed = (int)puf_ini_get(ini, "bc", "seed");
     const char* data_path = puf_ini_get_str(ini, "bc", "data");
     if (games <= 0) games = 50;
     if (!data_path || !data_path[0]) data_path = "saved/kaggriculture_bc_data.bin";
-    bc_rng_state = (uint32_t)seed * 2654435761u + 1u;
+    bc_rng_state = (uint32_t)bc_seed * 2654435761u + 1u;
 
     int mask_size = KG_POLICY_ACTION_MASK_SIZE;
     int packed_stride = (mask_size + 7) / 8;
