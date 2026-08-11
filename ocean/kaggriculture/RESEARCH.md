@@ -1302,3 +1302,15 @@ Negative results worth keeping: magnets (BC anchors) consistently reduced
 vs-top; deeper reset (t<=140) and 256-wide warm-start both failed; the recipe
 plateaus around 9.0k. The animal loop still does not emerge strongly in eval,
 which is the remaining frontier.
+
+## 2026-08-11: Kaggle submission
+
+Packed ExpL@73M as `pufferlib_expL_9005.tar.gz` (main.py + 128-wide
+kaggriculture_v4.bin), verified the submission adapter loads 128x2 and produces
+valid actions, submitted from the local venv. Public score: **600.0** (previous
+best 513.1 top-bot clone). Confirms the 9k-vs-top native eval transfers to the
+real leaderboard.
+
+Exp P (running): ExpL + `env.reward_productive_action=0.05` (credits
+water/harvest/feed/care/collect at 1.0 each) to test whether directly rewarding
+animal maintenance makes the loop emerge, reset t<=80, 100% top lane.
