@@ -1208,6 +1208,26 @@ Branch L: continue ExpK another 80-100M (reset t<=60, 75% top lane) and/or
 try 100% top lane. Also consider a longer reset range now that the base is
 strong.
 
+## 2026-08-11: Exp L - new champion (100% top lane)
+
+Exp L: ExpK + 80M with reset t<=80 and 100% top lane, no magnet. Promoted
+`kag_expL_anim_top/0000000073400320.bin` (73M) to
+`saved/kaggriculture_hall_of_fame/expL_anim_top_73m.bin`.
+
+100-game results:
+- vs top hybrid: 9,005 (ExpK 8,750, ExpJ 8,080, prior champion 6,871).
+- vs ExpK both seats: 13,995/12,832 vs 12,482/13,635 - ExpL net wins.
+- Trajectory: 63M=8,748, 68M=9,001, 73M=9,005, 80M=8,963 - plateaued ~9.0k.
+
+The 100% top lane + reset t<=80 recipe topped out around 9.0k vs top, +31%
+over the original champion. The marginal gain from ExpK (8,750 -> 9,005) was
+smaller than prior jumps, suggesting the recipe is nearing its ceiling.
+
+Branch M: try a genuinely different direction rather than more continuation:
+- higher model capacity (256-wide) with the reset recipe,
+- a reset that starts AFTER the opening (t100+) where the economy is mature,
+- or revisit the animal loop with the reset (t80) + a small animal reward.
+
 ## 2026-08-09: GPU reset diversity and selfplay rotation fixes
 
 The CUDA reset kernel was re-deriving `reset_opening_rng` from the per-match
