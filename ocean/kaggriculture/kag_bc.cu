@@ -154,6 +154,8 @@ int main(int argc, char** argv) {
     fprintf(stderr, "pools: params_elems=%ld grads_elems=%ld acts_bytes=%ld\n",
         (long)params.total_elems, (long)grads.total_elems,
         (long)acts.total_bytes);
+    fprintf(stderr, "pool bytes: params_bytes=%ld grads_bytes=%ld\n",
+        (long)params.total_bytes, (long)grads.total_bytes);
 
     FloatTensor master_weights = {
         .data = (float*)params.mem, .shape = {params.total_elems}};
