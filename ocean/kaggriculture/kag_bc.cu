@@ -354,7 +354,7 @@ int main(int argc, char** argv) {
             fprintf(stderr, "obs_t: data=%p type=%d dev=%d\n",
                 obs_t.data, (int)oa.type, oa.device);
         }
-        kag_bc_loss_kernel<<<grid_size(bc_steps), BLOCK_SIZE, 0, bc_stream>>>(
+        kag_bc_loss_kernel<<<1, 256, 0, bc_stream>>>(
             dec_flat.data, d_expert, d_mask, grad_logits, loss_acc,
             debug_out, act_sizes_puf.data, bc_steps, A_total, num_atns,
             mask_stride);
