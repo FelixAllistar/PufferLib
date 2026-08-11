@@ -394,25 +394,42 @@ int main(int argc, char** argv) {
             (size_t)params.total_elems * sizeof(float));
         float* host_grad = (float*)calloc((size_t)params.total_elems,
             sizeof(float));
-        cudaMemcpy(host_master, master_weights.data,
+        cudaError_t hm_err = cudaMemcpy(host_master, master_weights.data,
             (size_t)params.total_elems * sizeof(float),
             cudaMemcpyDeviceToHost);
+        if (hm_err != cudaSuccess) {
+            fprintf(stderr, "host master copy failed: %s\n",
+                cudaGetErrorString(hm_err));
+            return 1;
+        }
         long grad_off = 0;
         for (int r = 0; r < params.num_regs; r++) {
             long ne = numel(params.regs[r].shape);
             if (ne > 0) {
                 precision_t* gr = *(precision_t**)grads.regs[r].data_ptr;
-                cudaMemcpy(host_grad + grad_off, gr,
+                cudaError_t hg_err = cudaMemcpy(host_grad + grad_off, gr,
                     (size_t)ne * sizeof(precision_t), cudaMemcpyDeviceToHost);
+                if (hg_err != cudaSuccess) {
+                    fprintf(stderr, "host grad copy failed: %s\n",
+                        cudaGetErrorString(hg_err));
+                    return 1;
+                }
             }
             grad_off += ne;
         }
         for (long i = 0; i < params.total_elems; i++) {
             host_master[i] -= lr * host_grad[i];
         }
-        cudaMemcpy(master_weights.data, host_master,
+        cudaError_t mh_err = cudaMemcpy(master_weights.data, host_master,
             (size_t)params.total_elems * sizeof(float),
             cudaMemcpyHostToDevice);
+        if (mh_err != cudaSuccess) {
+            fprintf(stderr, "host master writeback failed: %s\n",
+                cudaGetErrorString(mh_err));
+            return 1;
+        }
+        fprintf(stderr, "master[0]=%g grad[0]=%g\n",
+            host_master[0], host_grad[0]);
         free(host_master);
         free(host_grad);
         cudaDeviceSynchronize();
