@@ -425,11 +425,14 @@ int main(int argc, char** argv) {
                 return 1;
             }
         }
+        fprintf(stderr, "chunked master D2H done\n");
         long grad_off = 0;
         for (int r = 0; r < params.num_regs; r++) {
             long ne = numel(params.regs[r].shape);
             if (ne > 0) {
                 precision_t* gr = *(precision_t**)grads.regs[r].data_ptr;
+                fprintf(stderr, "grad reg %d off=%ld ne=%ld gr=%p\n",
+                    r, grad_off, ne, (void*)gr);
                 cudaError_t hg_err = cudaMemcpy(host_grad + grad_off, gr,
                     (size_t)ne * sizeof(precision_t), cudaMemcpyDeviceToHost);
                 if (hg_err != cudaSuccess) {
@@ -440,9 +443,11 @@ int main(int argc, char** argv) {
             }
             grad_off += ne;
         }
+        fprintf(stderr, "grad D2H done\n");
         for (long i = 0; i < params.total_elems; i++) {
             host_master[i] -= lr * host_grad[i];
         }
+        fprintf(stderr, "host loop done\n");
         cudaError_t mh_err = cudaMemcpy(master_weights.data, host_master,
             (size_t)params.total_elems * sizeof(float),
             cudaMemcpyHostToDevice);
