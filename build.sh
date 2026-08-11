@@ -371,10 +371,6 @@ MODE=${MODE:-native}
 
 if [ "$MODE" = "native" ]; then
     echo "Compiling native train/eval binary ($ARCH)..."
-    NATIVE_OUT="puffer"
-    if [ "$ENV" = "goofspiel" ] && [ -n "${GS_NUM_CARDS:-}" ]; then
-        NATIVE_OUT="puffer_gs${GS_NUM_CARDS}"
-    fi
     OMP_FLAG=()
     if [ "${HEADLESS:-0}" != "1" ]; then
         OMP_FLAG=(-Xcompiler=-fopenmp)
@@ -398,8 +394,8 @@ if [ "$MODE" = "native" ]; then
         "${EXTRA_LDFLAGS[@]}" \
         -lcudart -lnccl -lnvidia-ml -lcublas -lcusolver -lcurand \
         -lm -lpthread $OMP_LIB "${STANDALONE_LDFLAGS[@]}" \
-        -o "$NATIVE_OUT"
-    echo "Built: ./$NATIVE_OUT"
+        -o puffer
+    echo "Built: ./puffer"
     if [ "$ENV" = "kaggriculture" ] && [ "${HEADLESS:-0}" != "1" ]; then
         bash "$0" "$ENV" --fast
     fi
