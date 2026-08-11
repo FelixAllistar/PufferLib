@@ -397,9 +397,16 @@ int main(int argc, char** argv) {
         cudaMemcpy(&gv, g0, sizeof(float), cudaMemcpyDeviceToHost);
         fprintf(stderr, "grad[0]=%g\n", gv);
         cudaFree(g0);
-        kag_bc_sgd<<<grid_size(params.total_elems), BLOCK_SIZE, 0,
-            bc_stream>>>(master_weights.data, grad_puf.data, lr,
-            (int)params.total_elems);
+        long offset = 0;
+        for (int r = 0; r < params.num_regs; r++) {
+            long ne = numel(params.regs[r].shape);
+            if (ne > 0) {
+                kag_bc_sgd<<<grid_size((int)ne), BLOCK_SIZE, 0,
+                    bc_stream>>>(master_weights.data + offset,
+                    grad_puf.data + offset, lr, (int)ne);
+            }
+            offset += ne;
+        }
         cudaDeviceSynchronize();
         if ((ep + 1) % 200 == 0) {
             float loss = 0.0f;
