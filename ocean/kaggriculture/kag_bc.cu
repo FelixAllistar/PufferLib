@@ -410,19 +410,32 @@ int main(int argc, char** argv) {
                 cudaGetErrorString(bw_err));
             return 1;
         }
+        // Host-side SGD: pull the per-reg bf16 grads, subtract on CPU.
+        float* host_master = (float*)malloc(
+            (size_t)params.total_elems * sizeof(float));
+        float* host_grad = (float*)calloc((size_t)params.total_elems,
+            sizeof(float));
+        cudaMemcpy(host_master, master_weights.data,
+            (size_t)params.total_elems * sizeof(float),
+            cudaMemcpyDeviceToHost);
         long grad_off = 0;
         for (int r = 0; r < params.num_regs; r++) {
             long ne = numel(params.regs[r].shape);
             if (ne > 0) {
                 precision_t* gr = *(precision_t**)grads.regs[r].data_ptr;
-                cast<<<grid_size((int)ne), BLOCK_SIZE, 0, bc_stream>>>(
-                    grad_float + grad_off, gr, (int)ne);
+                cudaMemcpy(host_grad + grad_off, gr,
+                    (size_t)ne * sizeof(precision_t), cudaMemcpyDeviceToHost);
             }
             grad_off += ne;
         }
-        kag_bc_sgd<<<grid_size((int)params.total_elems), BLOCK_SIZE, 0,
-            bc_stream>>>(master_weights.data, grad_float, lr,
-            (int)params.total_elems);
+        for (long i = 0; i < params.total_elems; i++) {
+            host_master[i] -= lr * host_grad[i];
+        }
+        cudaMemcpy(master_weights.data, host_master,
+            (size_t)params.total_elems * sizeof(float),
+            cudaMemcpyHostToDevice);
+        free(host_master);
+        free(host_grad);
         cudaDeviceSynchronize();
         if ((ep + 1) % 50 == 0) {
             float loss = 0.0f;
