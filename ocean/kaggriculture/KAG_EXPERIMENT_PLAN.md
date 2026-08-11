@@ -4,7 +4,7 @@ This is the execution graph for repairing the GPU training path and improving
 the standing champion. A branch is promoted only from a both-seat evaluation
 against the same native `top` opponent and the current champion.
 
-## Standing baseline
+## Historical baseline (superseded by B4 below)
 
 - Champion: `saved/kaggriculture_hall_of_fame/expL_anim_top_73m.bin`
 - Architecture: 128 hidden, 2 MinGRU layers
@@ -197,3 +197,36 @@ The Kaggle-ready C2 archive is
 - Productive-action bonuses invite action/order spam.
 - Short terminal games change the objective unless treated as bootstrapped
   rollout cuts rather than environment terminations.
+
+## B4: faithful compact-action BC and prefix-frozen KL
+
+Later audit invalidated the C1/C2 promotion claim. The recurrent BC generator
+had labeled compact actions while stepping richer teacher actions, and native
+screening sampled rather than evaluating the deterministic exported policy.
+The Kaggle result (~405 for C2) is consistent with that failure.
+
+The repaired graph is:
+
+```text
+rich top action -> compact heads -> decode representable action -> step
+  -> 26-step recurrent BC -> deterministic opening gate
+  -> 96-step perturbed recovery BC -> deterministic recovery gate
+  -> PPO from clone + frozen KL only through t~=96
+  -> diverse bot and learned-policy opponents
+```
+
+Authoritative artifacts:
+
+- `saved/kaggriculture_bc_v2/opening_anchor.bin`: four-animal opening in both
+  seats.
+- `saved/kaggriculture_bc_v2/top_clone.bin`: four animals and 9+ feeds through
+  96 decisions in both seats.
+- `ocean/kaggriculture/bc_pipeline.sh`: regenerates both datasets/models.
+- `ocean/kaggriculture/train_bc_ppo.sh`: no strategic mask/reset curriculum
+  and no per-action/inactivity/neglect bonus.
+- `ocean/kaggriculture/package_model.sh`: deterministic full-game package
+  smoke before producing a Kaggle archive.
+
+Do not rank a learned policy as champion from sampled dashboard scores.
+Promotion requires deterministic both-seat fixed panels, head-to-head games,
+and successful package gates.

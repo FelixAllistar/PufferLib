@@ -61,8 +61,9 @@ __device__ __forceinline__ bool kag_bc_head_active(
 }
 
 /* Cross-entropy on conditionally reached expert heads. Padded rows use an
- * expert action of -1. stats = raw loss, active heads, correct heads, exact
- * rows. Gradients are normalized by the number of real sequence rows. */
+ * expert action of -1. Each four-float stats group is raw loss, active heads,
+ * correct heads, exact rows: all/opening/post-opening. Opening rows may carry
+ * extra optimization weight without contaminating the reported accuracies. */
 __global__ void kag_bc_loss_kernel(
         const precision_t* __restrict__ logits,   // (B, fused_cols)
         const float* __restrict__ expert,         // (B, num_atns)
@@ -70,8 +71,9 @@ __global__ void kag_bc_loss_kernel(
         float* __restrict__ grad_logits,          // (B, A_total)
         float* __restrict__ stats,                // 4 floats
         const int* __restrict__ act_sizes,
-        int rows, int valid_rows, int A_total, int num_atns,
-        int mask_stride) {
+        int rows, float valid_weight, int A_total, int num_atns,
+        int mask_stride, int sequence_steps, int opening_steps,
+        float opening_weight) {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
     if (idx >= rows || (int)expert[idx * num_atns] < 0) return;
     int logits_base = idx * (A_total + 1);
@@ -81,6 +83,8 @@ __global__ void kag_bc_loss_kernel(
     int active = 0;
     int correct = 0;
     int exact = 1;
+    int opening = idx % sequence_steps < opening_steps;
+    float row_weight = opening ? opening_weight : 1.0f;
     for (int h = 0; h < num_atns; h++) {
         int A = act_sizes[h];
         int expert_action = (int)expert[idx * num_atns + h];
@@ -129,7 +133,7 @@ __global__ void kag_bc_loss_kernel(
                 to_float(logits[logits_base + offset + a]) - logsumexp);
             grad_logits[idx * A_total + offset + a] =
                 ((a == expert_action) ? (p - 1.0f) : p)
-                    / (float)valid_rows;
+                    * row_weight / valid_weight;
         }
         offset += A;
     }
@@ -138,6 +142,11 @@ __global__ void kag_bc_loss_kernel(
         atomicAdd(stats + 1, (float)active);
         atomicAdd(stats + 2, (float)correct);
         atomicAdd(stats + 3, exact ? 1.0f : 0.0f);
+        int group = opening ? 4 : 8;
+        atomicAdd(stats + group, loss);
+        atomicAdd(stats + group + 1, (float)active);
+        atomicAdd(stats + group + 2, (float)correct);
+        atomicAdd(stats + group + 3, exact ? 1.0f : 0.0f);
     }
 }
 
@@ -149,6 +158,29 @@ static uint32_t bc_rand(void) {
     x ^= x << 5;
     bc_rng_state = x;
     return x;
+}
+
+static void bc_perturb_action(const KGState* game, int player,
+        KGAction* action) {
+    const KGPlayer* farm = &game->players[player];
+    int unit = farm->unit_count > 0
+        ? (int)(bc_rand() % (uint32_t)farm->unit_count) : 0;
+    KGUnitAction* command = unit == 0
+        ? &action->farmer : &action->hands[unit - 1];
+    int candidates[5], count = 0;
+    for (int op = KG_OP_NORTH; op <= KG_OP_PASS; op++) {
+        KGPolicyUnitSpec spec = {op, -1, 1};
+        if (kag_unit_action_legal(game, farm, unit, spec)) {
+            candidates[count++] = op;
+        }
+    }
+    if (count > 0) {
+        *command = (KGUnitAction){
+            candidates[bc_rand() % (uint32_t)count], -1, 1};
+    }
+    /* Sometimes remove the economic bundle too. The next observation is then
+     * an off-demonstration state for which the expert supplies a recovery. */
+    if ((bc_rand() & 3u) == 0) action->market_count = 0;
 }
 
 // Pick the bot action for a player. profile 1 = top hybrid (tape opening then
@@ -181,27 +213,27 @@ static void bc_bot_action(const KGState* game, int player, int profile,
 }
 
 // Encode a KGAction into policy action-heads on the agent.
-static void bc_set_expert(Env* env, const KGAction* expert) {
-    kag_clear_policy_actions(&env->agents[0]);
-    kag_set_policy_unit(&env->agents[0], 0,
+static void bc_set_expert(Env* env, int player, const KGAction* expert) {
+    kag_clear_policy_actions(&env->agents[player]);
+    kag_set_policy_unit(&env->agents[player], 0,
         expert->farmer.op, expert->farmer.arg, expert->farmer.n);
     for (int h = 0; h < expert->hand_count && h < KG_POLICY_DIRECT_HANDS; h++) {
-        kag_set_policy_unit(&env->agents[0], h + 1,
+        kag_set_policy_unit(&env->agents[player], h + 1,
             expert->hands[h].op, expert->hands[h].arg, expert->hands[h].n);
     }
     for (int o = 0; o < expert->market_count && o < KG_POLICY_MARKET_SLOTS; o++) {
-        kag_set_policy_market(&env->agents[0], o,
+        kag_set_policy_market(&env->agents[player], o,
             expert->market[o].op, expert->market[o].item, expert->market[o].n);
     }
 }
 
-static void bc_pack_mask(Env* env, unsigned char* out, int mask_size,
+static void bc_pack_mask(Env* env, int player, unsigned char* out, int mask_size,
         int packed_stride) {
     for (int byte = 0; byte < packed_stride; byte++) {
         unsigned char bits = 0;
         for (int bit = 0; bit < 8; bit++) {
             int action = byte * 8 + bit;
-            if (action < mask_size && env->agents[0].action_mask[action]) {
+            if (action < mask_size && env->agents[player].action_mask[action]) {
                 bits |= (unsigned char)(1u << bit);
             }
         }
@@ -231,6 +263,8 @@ static int bc_gen(Ini* ini) {
     int requested_steps = (int)puf_ini_get(ini, "bc", "steps");
     int profile = (int)puf_ini_get(ini, "bc", "bot");
     int opp = (int)puf_ini_get(ini, "bc", "opponent");
+    int configured_seat = (int)puf_ini_get(ini, "bc", "seat");
+    float rollout_noise = (float)puf_ini_get(ini, "bc", "rollout_noise");
     int bc_seed = (int)puf_ini_get(ini, "bc", "seed");
     const char* data_path = puf_ini_get_str(ini, "bc", "data");
     if (games <= 0) games = 50;
@@ -254,20 +288,51 @@ static int bc_gen(Ini* ini) {
 
     size_t count = 0;
     int sequence_steps = requested_steps;
+    int end_animals = 0;
     for (int g = 0; g < games; g++) {
         Env env = bc_make_env(ini, (uint32_t)g);
+        int learner = configured_seat < 0 ? (int)(bc_rand() & 1u)
+            : configured_seat;
+        if (learner < 0 || learner >= KG_NUM_PLAYERS) {
+            fprintf(stderr, "bc.seat must be -1, 0, or 1\n");
+            return 1;
+        }
+        int game_opp = opp < 0 ? (int)(bc_rand() % 5u) : opp;
         int steps = 0;
         while (!env.game_storage.done && steps < sequence_steps) {
             KGAction a0 = {}, a1 = {};
-            bc_bot_action(&env.game_storage, 0, profile, &a0);
-            bc_bot_action(&env.game_storage, 1, opp, &a1);
-            bc_set_expert(&env, &a0);
-            memcpy(obs + count * row_obs, env.agents[0].observations, row_obs);
-            memcpy(expert + count * row_expert, env.agents[0].actions,
+            bc_bot_action(&env.game_storage, learner, profile,
+                learner == 0 ? &a0 : &a1);
+            bc_bot_action(&env.game_storage, 1 - learner, game_opp,
+                learner == 0 ? &a1 : &a0);
+            KGAction* learner_action = learner == 0 ? &a0 : &a1;
+            kag_compact_animal_repair(&env.game_storage, learner,
+                learner_action);
+            bc_set_expert(&env, learner, learner_action);
+            memcpy(obs + count * row_obs,
+                env.agents[learner].observations, row_obs);
+            memcpy(expert + count * row_expert,
+                env.agents[learner].actions,
                 row_expert * sizeof(float));
-            bc_pack_mask(&env, mask + count * row_mask, mask_size,
+            bc_pack_mask(&env, learner, mask + count * row_mask, mask_size,
                 packed_stride);
             count++;
+            /* Labels live in the compact policy action space. Advance with
+             * that label decoded back into a game action—not the richer bot
+             * command—so recurrent training never observes an impossible
+             * transition (for example teacher quantity 12 labeled as bucket
+             * 10, or PICKUP 1 represented by the policy's PICKUP ALL). */
+            KGAction projected = {};
+            kag_decode_action(&projected, &env.agents[learner],
+                &env.game_storage, learner);
+            *learner_action = projected;
+            if (rollout_noise > 0.0f) {
+                uint32_t cutoff = (uint32_t)(rollout_noise * 16777216.0f);
+                if ((bc_rand() >> 8) < cutoff) {
+                    bc_perturb_action(&env.game_storage, learner,
+                        learner_action);
+                }
+            }
             KGAction pair[KG_NUM_PLAYERS] = {a0, a1};
             kg_step(&env.game_storage, pair);
             kag_write_all_observations_from_tapes(&env, kag_script_tapes);
@@ -284,6 +349,10 @@ static int bc_gen(Ini* ini) {
                 "BC game %d ended at %d before requested prefix %d\n",
                 g, steps, sequence_steps);
             return 1;
+        }
+        for (int word = 0; word < KG_TILE_WORDS; word++) {
+            end_animals += __builtin_popcountll(
+                env.game_storage.players[learner].animal_bits[word]);
         }
         for (int p = 0; p < KG_NUM_PLAYERS; p++) {
             free(env.agents[p].observations);
@@ -313,6 +382,8 @@ static int bc_gen(Ini* ini) {
     printf("BC dataset written: %s (%zu steps, %.1f MB)\n", data_path,
         count, (double)(count * (row_obs + row_expert * 4 + row_mask))
             / 1048576.0);
+    printf("BC oracle end animals: %.3f/game\n",
+        (float)end_animals / (float)games);
     free(obs); free(expert); free(mask);
     return 0;
 }
@@ -331,6 +402,8 @@ static int bc_train(Ini* ini) {
     int zero_reset_source = (int)puf_ini_get(
         ini, "bc", "zero_reset_source");
     float anchor_l2 = (float)puf_ini_get(ini, "bc", "anchor_l2");
+    int opening_steps = (int)puf_ini_get(ini, "bc", "opening_steps");
+    float opening_weight = (float)puf_ini_get(ini, "bc", "opening_weight");
     /* Zero is an intentional conversion-only pass (for example, zeroing a
      * newly assigned observation column in a legacy checkpoint). */
     if (bc_epochs < 0) bc_epochs = 2000;
@@ -338,6 +411,8 @@ static int bc_train(Ini* ini) {
     if (hidden <= 0) hidden = 128;
     if (layers <= 0) layers = 2;
     if (batch <= 0) batch = 32;
+    if (opening_steps <= 0) opening_steps = 26;
+    if (opening_weight <= 0.0f) opening_weight = 1.0f;
     bc_rng_state = (uint32_t)bc_seed * 2654435761u + 1u;
     if (!data_path || !data_path[0]) {
         fprintf(stderr, "bc.data is required for train mode\n");
@@ -359,6 +434,7 @@ static int bc_train(Ini* ini) {
         row_expert = header.row_expert, row_mask = header.row_mask;
     int games = (int)header.games;
     int sequence_steps = (int)header.steps;
+    if (opening_steps > sequence_steps) opening_steps = sequence_steps;
     if (games < 2 || sequence_steps < 1
             || count != (uint32_t)(games * sequence_steps)
             || row_obs != OBS_SIZE || row_expert != NUM_ATNS
@@ -387,9 +463,10 @@ static int bc_train(Ini* ini) {
         return 1;
     }
     printf("BC train: %d games x %d steps (%d train/%d validation), "
-        "batch=%d epochs=%d lr=%g hidden=%d layers=%d init=%s\n",
+        "batch=%d epochs=%d lr=%g hidden=%d layers=%d "
+        "opening=%d weight=%g init=%s\n",
         games, sequence_steps, train_games, validation_games, batch,
-        bc_epochs, bc_lr, hidden, layers,
+        bc_epochs, bc_lr, hidden, layers, opening_steps, opening_weight,
         load_path && load_path[0] && strcmp(load_path, "None")
             ? load_path : "random");
 
@@ -489,7 +566,7 @@ static int bc_train(Ini* ini) {
     float* grad_logits = (float*)xcuda(
         (size_t)batch_rows * act_n * sizeof(float));
     float* grad_value = (float*)xcuda((size_t)batch_rows * sizeof(float));
-    float* stats_acc = (float*)xcuda(4 * sizeof(float));
+    float* stats_acc = (float*)xcuda(12 * sizeof(float));
 
     PrecisionTensor obs_t = {.data = d_obs,
         .shape = {batch, sequence_steps, OBS_SIZE}};
@@ -517,7 +594,7 @@ static int bc_train(Ini* ini) {
     if (report_interval <= 0) report_interval = 25;
 
     auto run_chunk = [&](int order_start, int B, bool update,
-            float host_stats[4]) -> bool {
+            float host_stats[12]) -> bool {
         memset(h_obs_chunk, 0, (size_t)batch_rows * OBS_SIZE);
         memset(h_mask_chunk, 0, (size_t)batch_rows * packed_stride);
         for (int row = 0; row < batch_rows; row++) {
@@ -553,7 +630,7 @@ static int bc_train(Ini* ini) {
             (size_t)batch_rows * A_total * sizeof(float), bc_stream);
         cudaMemsetAsync(grad_value, 0,
             (size_t)batch_rows * sizeof(float), bc_stream);
-        cudaMemsetAsync(stats_acc, 0, 4 * sizeof(float), bc_stream);
+        cudaMemsetAsync(stats_acc, 0, 12 * sizeof(float), bc_stream);
         cudaMemsetAsync(state.data, 0,
             numel(state.shape) * sizeof(precision_t), bc_stream);
         cudaMemsetAsync(terminals.data, 0,
@@ -561,11 +638,13 @@ static int bc_train(Ini* ini) {
         PrecisionTensor dec_out = policy_forward_train(&policy, weights,
             train_acts, obs_t, state, terminals, bc_stream);
         PrecisionTensor dec_flat = *puf_squeeze(&dec_out, 0);
-        int valid_rows = B * sequence_steps;
+        float valid_weight = (float)B * (
+            opening_steps * opening_weight + sequence_steps - opening_steps);
         kag_bc_loss_kernel<<<grid_size(batch_rows), BLOCK_SIZE, 0,
             bc_stream>>>(dec_flat.data, d_expert, d_mask, grad_logits,
-            stats_acc, act_sizes_puf.data, batch_rows, valid_rows,
-            A_total, num_atns, packed_stride);
+            stats_acc, act_sizes_puf.data, batch_rows, valid_weight,
+            A_total, num_atns, packed_stride, sequence_steps, opening_steps,
+            opening_weight);
         if (cudaGetLastError() != cudaSuccess) return false;
         if (update) {
             FloatTensor grad_logits_t = {.data = grad_logits,
@@ -576,7 +655,7 @@ static int bc_train(Ini* ini) {
                 FloatTensor(), grad_value_t, bc_stream);
         }
         if (cudaStreamSynchronize(bc_stream) != cudaSuccess) return false;
-        cudaMemcpy(host_stats, stats_acc, 4 * sizeof(float),
+        cudaMemcpy(host_stats, stats_acc, 12 * sizeof(float),
             cudaMemcpyDeviceToHost);
         if (!update) return true;
 
@@ -616,36 +695,40 @@ static int bc_train(Ini* ini) {
             int j = (int)(bc_rand() % (uint32_t)(i + 1));
             uint32_t tmp = order[i]; order[i] = order[j]; order[j] = tmp;
         }
-        float train_stats[4] = {0};
+        float train_stats[12] = {0};
         int train_rows = 0;
         for (int start = 0; start < train_games; start += batch) {
             int B = train_games - start < batch ? train_games - start : batch;
-            float chunk[4];
+            float chunk[12];
             if (!run_chunk(start, B, true, chunk)) {
                 fprintf(stderr, "BC train chunk %d failed: %s\n", start,
                     cudaGetErrorString(cudaGetLastError()));
                 return 1;
             }
-            for (int i = 0; i < 4; i++) train_stats[i] += chunk[i];
+            for (int i = 0; i < 12; i++) train_stats[i] += chunk[i];
             train_rows += B * sequence_steps;
         }
         if (ep == 0 || (ep + 1) % report_interval == 0
                 || ep + 1 == bc_epochs) {
-            float val_stats[4] = {0};
+            float val_stats[12] = {0};
             int val_rows = 0;
             for (int start = train_games; start < games; start += batch) {
                 int B = games - start < batch ? games - start : batch;
-                float chunk[4];
+                float chunk[12];
                 if (!run_chunk(start, B, false, chunk)) {
                     fprintf(stderr, "BC validation chunk %d failed\n", start);
                     return 1;
                 }
-                for (int i = 0; i < 4; i++) val_stats[i] += chunk[i];
+                for (int i = 0; i < 12; i++) val_stats[i] += chunk[i];
                 val_rows += B * sequence_steps;
             }
+            int val_open_rows = validation_games * opening_steps;
+            int val_post_rows = val_rows - val_open_rows;
             printf("BC epoch %d train_loss=%.5f train_head=%.4f "
                 "train_exact=%.4f val_loss=%.5f val_head=%.4f "
-                "val_exact=%.4f\n", ep + 1,
+                "val_exact=%.4f val_open_loss=%.5f val_open_head=%.4f "
+                "val_open_exact=%.4f val_post_loss=%.5f "
+                "val_post_head=%.4f val_post_exact=%.4f\n", ep + 1,
                 train_stats[0] / (float)train_rows,
                 train_stats[1] > 0.0f
                     ? train_stats[2] / train_stats[1] : 0.0f,
@@ -653,7 +736,13 @@ static int bc_train(Ini* ini) {
                 val_stats[0] / (float)val_rows,
                 val_stats[1] > 0.0f
                     ? val_stats[2] / val_stats[1] : 0.0f,
-                val_stats[3] / (float)val_rows);
+                val_stats[3] / (float)val_rows,
+                val_open_rows ? val_stats[4] / (float)val_open_rows : 0.0f,
+                val_stats[5] > 0.0f ? val_stats[6] / val_stats[5] : 0.0f,
+                val_open_rows ? val_stats[7] / (float)val_open_rows : 0.0f,
+                val_post_rows ? val_stats[8] / (float)val_post_rows : 0.0f,
+                val_stats[9] > 0.0f ? val_stats[10] / val_stats[9] : 0.0f,
+                val_post_rows ? val_stats[11] / (float)val_post_rows : 0.0f);
         }
     }
 

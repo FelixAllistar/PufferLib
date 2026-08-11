@@ -221,6 +221,62 @@ KG_HD static inline KGUnitAction* kag_script_unit_action(KGAction* action, int u
     return unit == 0 ? &action->farmer : &action->hands[unit - 1];
 }
 
+/* Repair only the information lost while projecting a rich scripted command
+ * into the compact policy ABI. PICKUP has no quantity head, so PICKUP 1 may
+ * collect several animals. This helper is deliberately not part of the live
+ * scripted bot: the unprojected tape already has exact quantities and must
+ * remain byte-for-byte comparable with its Python export. */
+KG_HD static inline void kag_compact_animal_repair(const KGState* game,
+        int player_id, KGAction* action) {
+    const KGPlayer* farm = &game->players[player_id];
+    uint64_t claimed_structures[KG_TILE_WORDS] = {0};
+    for (int unit = 0; unit < farm->unit_count; unit++) {
+        const KGUnitState* unit_state = &farm->units[unit];
+        int held_animal = -1;
+        for (int animal = 0; animal < KG_NUM_ANIMALS; animal++) {
+            if (unit_state->inventory[KG_ITEM_GOOSE + animal] > 0) {
+                held_animal = animal;
+                break;
+            }
+        }
+        if (held_animal < 0) continue;
+        int structure = KG_ANIMAL_DEFS[held_animal].structure;
+        int best = -1;
+        int best_distance = 0x7fffffff;
+        for (int candidate = 0; candidate < KG_MAX_TILES; candidate++) {
+            const KGTile* destination = &farm->tiles[candidate];
+            if (destination->kind != structure
+                    || destination->animal != KG_ANIMAL_INVALID
+                    || (claimed_structures[candidate >> 6]
+                        & (1ULL << (candidate & 63)))) continue;
+            int tx = candidate % KG_MAX_BOARD_SIZE;
+            int ty = candidate / KG_MAX_BOARD_SIZE;
+            int dx = (int)unit_state->x - tx;
+            int dy = (int)unit_state->y - ty;
+            int distance = (dx < 0 ? -dx : dx) + (dy < 0 ? -dy : dy);
+            if (distance < best_distance) {
+                best = candidate;
+                best_distance = distance;
+            }
+        }
+        if (best < 0) continue;
+        claimed_structures[best >> 6] |= 1ULL << (best & 63);
+        int tx = best % KG_MAX_BOARD_SIZE;
+        int ty = best / KG_MAX_BOARD_SIZE;
+        KGUnitAction* command = kag_script_unit_action(action, unit);
+        if (unit_state->x == tx && unit_state->y == ty) {
+            *command = (KGUnitAction){KG_OP_PLACE,
+                KG_ITEM_GOOSE + held_animal, 1};
+        } else if (unit_state->x != tx) {
+            *command = (KGUnitAction){unit_state->x < tx
+                ? KG_OP_EAST : KG_OP_WEST, -1, 1};
+        } else {
+            *command = (KGUnitAction){unit_state->y < ty
+                ? KG_OP_SOUTH : KG_OP_NORTH, -1, 1};
+        }
+    }
+}
+
 /*
  * These are intentionally narrow recovery overrides. They only fire when a
  * tape has drifted onto a state that the public replay did not contain:

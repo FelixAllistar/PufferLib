@@ -45,6 +45,7 @@
  * every encoder/bank sees the data.  This removes a per-bank scale kernel from
  * the CUDA policy hot path while preserving the public byte ABI. */
 #define PUFFERLIB_OBS_U8_NORMALIZED 1
+#define PUFFER_EPISODE_PROGRESS_OBS_INDEX 3
 
 /* Complete unit commands retain every operation/item. Market commands combine
  * operation, item, and a practical binary quantity. Repeated ordered slots can
@@ -1609,15 +1610,17 @@ KG_HD static inline int kag_bot_jobs(const KGState* game, int player_id,
         if (!kg_is_animal_tile(tile)) continue;
         uint8_t x = (uint8_t)(tile_id % KG_MAX_BOARD_SIZE);
         uint8_t y = (uint8_t)(tile_id / KG_MAX_BOARD_SIZE);
-        if (tile->fertilizer_available) {
-            jobs[count++] = (KagBotJob){x, y, 0,
-                KG_OP_COLLECT_FERTILIZER, -1};
-        } else if (tile->yield_units > 0) {
-            jobs[count++] = (KagBotJob){x, y, 0, KG_OP_HARVEST, -1};
-        } else if (!tile->fed_today) {
+        /* Feeding is the only deadline: two missed day refreshes destroy the
+         * animal. Harvest, fertilizer, and care can safely wait behind it. */
+        if (!tile->fed_today) {
             jobs[count++] = (KagBotJob){x, y, 0, KG_OP_FEED, -1};
+        } else if (tile->yield_units > 0) {
+            jobs[count++] = (KagBotJob){x, y, 1, KG_OP_HARVEST, -1};
+        } else if (tile->fertilizer_available) {
+            jobs[count++] = (KagBotJob){x, y, 1,
+                KG_OP_COLLECT_FERTILIZER, -1};
         } else if (!tile->cared_today) {
-            jobs[count++] = (KagBotJob){x, y, 0, KG_OP_CARE, -1};
+            jobs[count++] = (KagBotJob){x, y, 2, KG_OP_CARE, -1};
         }
     }
     int slot = 0;
@@ -1681,9 +1684,33 @@ KG_HD static inline void kag_bot_action(const KGState* game, int player_id,
     int seed_need[KG_NUM_CROPS];
     int job_count = kag_bot_jobs(game, player_id, farm, fixed_crop,
         jobs, seed_need);
+    int unfed_animals = 0;
+    for (int tile = 0; tile < KG_MAX_TILES; tile++) {
+        if (kg_is_animal_tile(&farm->tiles[tile])
+                && !farm->tiles[tile].fed_today) unfed_animals++;
+    }
+    int wheat_pickup_assigned = 0;
     uint64_t claimed[KG_TILE_WORDS] = {0};
     for (int worker = 0; worker < farm->unit_count; worker++) {
         const KGUnitState* unit = &farm->units[worker];
+        KGUnitAction* command = worker == 0
+            ? &action->farmer : &action->hands[worker - 1];
+        /* Daily inventory is dropped at the shed. Reacquire feed before
+         * routing to animals; otherwise FEED is an endless silent no-op. */
+        if (unfed_animals > 0 && unit->inventory[KG_ITEM_WHEAT] == 0
+                && !wheat_pickup_assigned && farm->shed[KG_ITEM_WHEAT] > 0) {
+            KGPosition pos = {unit->x, unit->y};
+            if (kg_is_shed_adjacent(&pos, game->config.board_size)) {
+                int n = farm->shed[KG_ITEM_WHEAT] < unfed_animals
+                    ? farm->shed[KG_ITEM_WHEAT] : unfed_animals;
+                *command = (KGUnitAction){KG_OP_PICKUP, KG_ITEM_WHEAT, n};
+            } else {
+                *command = (KGUnitAction){
+                    kag_bot_route(farm, unit, 4, 4), -1, 1};
+            }
+            wheat_pickup_assigned = 1;
+            continue;
+        }
         int best = -1;
         int best_score = 0x7fffffff;
         for (int job = 0; job < job_count; job++) {
@@ -1699,8 +1726,6 @@ KG_HD static inline void kag_bot_action(const KGState* game, int player_id,
         if (best < 0) continue;
         claimed[best >> 6] |= 1ULL << (best & 63);
         const KagBotJob* job = &jobs[best];
-        KGUnitAction* command = worker == 0
-            ? &action->farmer : &action->hands[worker - 1];
         if (unit->x == job->x && unit->y == job->y) {
             *command = (KGUnitAction){job->op, job->arg, 1};
         } else {
@@ -1712,13 +1737,28 @@ KG_HD static inline void kag_bot_action(const KGState* game, int player_id,
     int limit = game->config.max_market_orders_per_turn;
     for (int product = 0; product < KG_NUM_PRODUCTS
             && action->market_count < limit; product++) {
-        if (farm->shed[product] > 0) {
+        int sell_count = farm->shed[product];
+        if (product == KG_ITEM_WHEAT && unfed_animals > 0) {
+            sell_count -= unfed_animals;
+        }
+        if (sell_count > 0) {
             action->market[action->market_count++] =
-                (KGMarketOrder){KG_MARKET_SELL, product, farm->shed[product]};
+                (KGMarketOrder){KG_MARKET_SELL, product, sell_count};
         }
     }
     if (game->day >= 28) return;
     int land = kag_popcount((unsigned)farm->unlocked_mask);
+    int carried_wheat = 0;
+    for (int unit = 0; unit < farm->unit_count; unit++) {
+        carried_wheat += farm->units[unit].inventory[KG_ITEM_WHEAT];
+    }
+    int missing_feed = unfed_animals
+        - farm->shed[KG_ITEM_WHEAT] - carried_wheat;
+    if (missing_feed > 0 && action->market_count < limit) {
+        action->market[action->market_count++] =
+            (KGMarketOrder){KG_MARKET_BUY_PRODUCT, KG_ITEM_WHEAT,
+                missing_feed};
+    }
     if (fixed_crop < 0 && (game->day == 4 || game->day == 9) && land < 3
             && farm->money >= (land == 1 ? 1500 : 3000)
             && action->market_count < limit) {

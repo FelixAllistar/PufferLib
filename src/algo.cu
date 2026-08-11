@@ -1460,11 +1460,12 @@ struct PPOKernelArgs {
     const float* ret_var;
     const int* act_sizes;
     const unsigned char* action_mask; // (N, T, ceil(A_total/8)); packed bits
+    const precision_t* observations;
     int num_atns;
     float clip_coef, vf_clip_coef, vf_coef;
-    float emag_kl_coef;
+    float emag_kl_coef, emag_cutoff;
     const float* ent_coef;  // device ptr — host by-value bakes into CUDA graphs
-    int T_seq, A_total, N;
+    int T_seq, A_total, obs_size, N;
     bool is_continuous;
 };
 
@@ -1803,6 +1804,14 @@ __global__ void ppo_loss_compute(
     float total_log_prob = 0.0f;
     total_entropy = 0.0f;
     emag_kl = 0.0f;
+    float emag_weight = 1.0f;
+#ifdef PUFFER_EPISODE_PROGRESS_OBS_INDEX
+    if (a.emag_cutoff < 1.0f) {
+        float progress = to_float(a.observations[
+            nt * a.obs_size + PUFFER_EPISODE_PROGRESS_OBS_INDEX]);
+        emag_weight = progress <= a.emag_cutoff ? 1.0f : 0.0f;
+    }
+#endif
 
     // Discrete-only: per-head arrays needed across forward + backward
     float head_logsumexp[MAX_ATN_HEADS];
@@ -1928,7 +1937,8 @@ __global__ void ppo_loss_compute(
                         logits_offset, j, a.action_mask, mask_base);
                     magnet_logp = ml - magnet_logsumexp;
                     q = __expf(magnet_logp);
-                    emag_kl += reach * q * (magnet_logp - logp);
+                    emag_kl += emag_weight * reach * q
+                        * (magnet_logp - logp);
                 }
                 float d_logit = 0.0f;
                 if (head_active[h]) {
@@ -1937,7 +1947,8 @@ __global__ void ppo_loss_compute(
                     d_logit += d_entropy_term * p * (-ent - logp);
                 }
                 if (reach > 0.0f) {
-                    d_logit += dL * a.emag_kl_coef * reach * (p - q);
+                    d_logit += dL * a.emag_kl_coef * emag_weight
+                        * reach * (p - q);
                 }
                 a.grad_logits[grad_logits_base + logits_offset + j] = d_logit;
             }
@@ -1958,14 +1969,15 @@ __global__ void ppo_loss_compute(
             float magnet_var = __expf(2.0f * magnet_log_std);
             float mean_diff = mean - magnet_mean;
             if (a.emag_kl_coef > 0.0f) {
-                emag_kl += log_std - magnet_log_std
-                    + (magnet_var + mean_diff * mean_diff) / (2.0f * var) - 0.5f;
+                emag_kl += emag_weight * (log_std - magnet_log_std
+                    + (magnet_var + mean_diff * mean_diff) / (2.0f * var)
+                    - 0.5f);
             }
 
             a.grad_logits[grad_logits_base + h] = d_new_logp * diff / var
-                + dL * a.emag_kl_coef * mean_diff / var;
+                + dL * a.emag_kl_coef * emag_weight * mean_diff / var;
             a.grad_logstd[nt * a.num_atns + h] = d_new_logp * (diff * diff / var - 1.0f)
-                + d_entropy_term + dL * a.emag_kl_coef
+                + d_entropy_term + dL * a.emag_kl_coef * emag_weight
                 * (1.0f - (magnet_var + mean_diff * mean_diff) / var);
         }
     }
@@ -2093,7 +2105,7 @@ void ppo_loss_fwd_bwd(
         TrainGraph& graph,
         IntTensor& act_sizes, FloatTensor& losses_acc,
         float clip_coef, float vf_clip_coef, float vf_coef, const float* ent_coef,
-        float emag_kl_coef,
+        float emag_kl_coef, float emag_cutoff,
         PPOBuffersPuf& bufs, bool is_continuous,
         cudaStream_t stream) {
     int N = dec_out.shape[0], T = dec_out.shape[1], fused_cols = dec_out.shape[2];
@@ -2152,11 +2164,14 @@ void ppo_loss_fwd_bwd(
         .ret_var = ret_var,
         .act_sizes = act_sizes.data,
         .action_mask = graph.mb_action_mask.data,
+        .observations = graph.mb_obs.data,
         .num_atns = (int)numel(act_sizes.shape),
         .clip_coef = clip_coef, .vf_clip_coef = vf_clip_coef,
         .vf_coef = vf_coef, .emag_kl_coef = emag_kl_coef,
+        .emag_cutoff = emag_cutoff,
         .ent_coef = ent_coef,
-        .T_seq = T, .A_total = A_total, .N = N,
+        .T_seq = T, .A_total = A_total,
+        .obs_size = (int)graph.mb_obs.shape[2], .N = N,
         .is_continuous = is_continuous,
     };
 

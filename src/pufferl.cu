@@ -325,6 +325,7 @@ typedef struct {
     float ent_coef;
     float emag_kl_coef;
     float emag_tau;
+    float emag_cutoff;
     float min_ent_coef_ratio;
     bool anneal_ent_coef;
     float gamma;
@@ -339,6 +340,9 @@ typedef struct {
     // true when base.cudagraphs >= 0: first real rollout/train use captures.
     bool cudagraphs;
     bool profile;
+    // Greedy legal argmax for evaluation/export parity. Training rollouts keep
+    // this false and continue sampling from the policy distribution.
+    bool deterministic_actions;
     int rank;
     int world_size;
     int gpu_id;
@@ -641,7 +645,8 @@ __global__ void sample_logits(
         precision_t* value_out,               // (B,)
         curandStatePhilox4_32_10_t* rng_states,
         const unsigned char* action_mask,     // (B, A_total); unpacked live mask
-        int mask_stride) {
+        int mask_stride,
+        bool deterministic) {
     int B = dec_out.shape[0];
     int fused_cols = dec_out.shape[1];
     int num_atns = numel(act_sizes_puf.shape);
@@ -664,7 +669,7 @@ __global__ void sample_logits(
             float mean = safe_continuous_mean(logits, logits_base + h);
             float log_std = safe_continuous_logstd(logstd, h);
             float std = expf(log_std);
-            float action = finite_or_clamp(
+            float action = deterministic ? mean : finite_or_clamp(
                 mean + std * curand_normal(&state), -1.0e6f, 1.0e6f);
             // Round-trip so logprob matches stored precision_t action (bf16).
             precision_t stored_p = from_float(action);
@@ -703,16 +708,31 @@ __global__ void sample_logits(
             }
             float logsumexp = max_val + logf(sum_exp);
 
-            float rand_val = curand_uniform(&state);
-            float cumsum = 0.0f;
-            int sampled = A - 1;
-            for (int a = 0; a < A; a++) {
-                float l = use_cache ? cache[a] : load_logit_masked_byte(
-                    logits, logits_base, logits_offset, a, action_mask, mask_base);
-                cumsum += expf(l - logsumexp);
-                if (rand_val < cumsum) {
-                    sampled = a;
-                    break;
+            int sampled = 0;
+            if (deterministic) {
+                float best = -INFINITY;
+                for (int a = 0; a < A; a++) {
+                    float l = use_cache ? cache[a] : load_logit_masked_byte(
+                        logits, logits_base, logits_offset, a,
+                        action_mask, mask_base);
+                    if (l > best) {
+                        best = l;
+                        sampled = a;
+                    }
+                }
+            } else {
+                float rand_val = curand_uniform(&state);
+                float cumsum = 0.0f;
+                sampled = A - 1;
+                for (int a = 0; a < A; a++) {
+                    float l = use_cache ? cache[a] : load_logit_masked_byte(
+                        logits, logits_base, logits_offset, a,
+                        action_mask, mask_base);
+                    cumsum += expf(l - logsumexp);
+                    if (rand_val < cumsum) {
+                        sampled = a;
+                        break;
+                    }
                 }
             }
 
@@ -926,7 +946,8 @@ void pufferl_forward(PuffeRL* pufferl, int buf, int t, cudaStream_t stream) {
             dec_puf, p_logstd, pufferl->act_sizes_puf,
             act_b.data, lp_b.data, val_b.data,
             pufferl->rng_states[buf] + bank_off,
-            env.action_mask.data + (long)sub_start * mask_stride, mask_stride);
+            env.action_mask.data + (long)sub_start * mask_stride, mask_stride,
+            hypers.deterministic_actions);
 
         cast<<<grid_size(numel(act_b.shape)), BLOCK_SIZE, 0, stream>>>(
                 env.actions.data + (long)sub_start * act_cols,
@@ -1598,7 +1619,7 @@ void train_impl(PuffeRL& pufferl, RolloutBuf* src_arg) {
                 pufferl.act_sizes_puf, pufferl.losses_puf,
                 hypers.clip_coef, hypers.vf_clip_coef, hypers.vf_coef,
                 pufferl.ppo_bufs_puf.ent_coef.data,
-                hypers.emag_kl_coef,
+                hypers.emag_kl_coef, hypers.emag_cutoff,
                 pufferl.ppo_bufs_puf, pufferl.is_continuous, stream);
 
             FloatTensor grad_logits_puf = pufferl.ppo_bufs_puf.grad_logits;
@@ -1935,6 +1956,7 @@ PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx) {
         .ent_coef = puf_ini_get_float(ini, "train", "ent_coef"),
         .emag_kl_coef = puf_ini_get_float(ini, "train", "emag_kl_coef"),
         .emag_tau = puf_ini_get_float(ini, "train", "emag_tau"),
+        .emag_cutoff = puf_ini_get_float(ini, "train", "emag_cutoff"),
         .min_ent_coef_ratio = puf_ini_get_float(ini, "train", "min_ent_coef_ratio"),
         .anneal_ent_coef = puf_ini_get_int(ini, "train", "anneal_ent_coef") != 0,
         .gamma = puf_ini_get_float(ini, "train", "gamma"),
@@ -1949,6 +1971,8 @@ PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx) {
         .reset_every_horizon = puf_ini_get_int(ini, "base", "reset_every_horizon") != 0,
         .cudagraphs = puf_ini_get(ini, "base", "cudagraphs") >= 0,
         .profile = puf_ini_get_int(ini, "base", "profile") != 0,
+        .deterministic_actions = puf_ini_get_int(
+            ini, "base", "eval_deterministic") != 0,
         .rank = ctx->rank,
         .world_size = ctx->world_size,
         .gpu_id = ctx->gpu_id,
@@ -2307,6 +2331,8 @@ PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx) {
     if (hypers.emag_kl_coef > 0.0f) {
         assert(hypers.emag_tau >= 0.0f && hypers.emag_tau <= 1.0f
             && "train.emag_tau must be in [0, 1] (0 freezes the reference)");
+        assert(hypers.emag_cutoff >= 0.0f && hypers.emag_cutoff <= 1.0f
+            && "train.emag_cutoff must be in [0, 1]");
         pufferl->magnet_weights = policy_weights_create(
             &pufferl->policy, &pufferl->magnet_params_alloc);
         pufferl->magnet_activations = policy_reg_train(
@@ -3828,6 +3854,9 @@ static void league_eval_episode(PuffeRL* pufferl, int games, Dict* logs) {
 }
 
 static void run_league_eval(Ini* ini, TrainContext* ctx) {
+    // League promotion must score the same masked-argmax policy that is
+    // exported to competition, rather than a stochastic rollout variant.
+    puf_ini_put(ini, "base.eval_deterministic", "1");
     const char* mode = puf_ini_get_str(ini, "league", "mode");
     int matrix = strcmp(mode, "matrix") == 0;
     int screen = strcmp(mode, "screen") == 0;
@@ -3976,6 +4005,9 @@ EvalResult run_eval(Ini* ini, TrainContext* ctx, int mode, int verbose) {
     int render = mode == EVAL_RENDER;
     int match = mode == EVAL_MATCH;
     EvalResult result = {0};
+    // Submission exports use masked argmax. Native evaluation must evaluate
+    // that same policy, not a stochastic sampler that will never run online.
+    puf_ini_put(ini, "base.eval_deterministic", "1");
     long num_games = puf_ini_get(ini, "base", "num_games");
     if (!num_games) {
         num_games = puf_ini_get(ini, "base", "eval_episodes");

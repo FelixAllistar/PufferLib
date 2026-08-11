@@ -12,6 +12,11 @@ goof*
 # hipified cuda extensions dir [HIP/ROCM]
 pufferlib/extensions/hip/
 *.py
+# Kaggriculture competition adapters are source, not generated Python glue.
+!ocean/kaggriculture/submission/main.py
+!ocean/kaggriculture/submission/top_bot/main.py
+!ocean/kaggriculture/submission/test_top_bot_parity.py
+!ocean/kaggriculture/submission/test_model_export.py
 # Raylib
 raylib_wasm/
 
