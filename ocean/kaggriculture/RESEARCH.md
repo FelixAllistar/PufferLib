@@ -1170,6 +1170,25 @@ ExpF2/ExpI; reset-opening alone is the productive lever. ExpH stays champion.
 Exp J (running): ExpH + 60M more, same reset t<=60, no magnet. Tests whether
 longer continuation of the reset recipe keeps climbing past ~7.7k.
 
+## 2026-08-11: Exp J - new champion (60M reset continuation)
+
+Exp J: ExpH + 60M more, reset t<=60, no magnet. Promoted
+`kag_expJ_anim_long/0000000059768832.bin` (final, 60M) to
+`saved/kaggriculture_hall_of_fame/expJ_animreset_60m.bin`.
+
+100-game results:
+- vs top hybrid: 8,080 (ExpH 7,748, ExpG 7,580, prior champion 6,871).
+- vs ExpH both seats: 14,835/12,563 vs 11,982/14,490 - ExpJ net wins clearly.
+- Trajectory: 37M=7,887, 42M=7,798, 58M=7,999, 60M=8,080 - still climbing.
+
+The reset-opening continuation is the strongest recipe: each longer run from
+the previous champion with reset t<=60 has improved vs-top. ExpJ is +17% over
+the original sweep15 champion.
+
+Branch K: continue ExpJ another 60-100M with reset t<=60 to see if the curve
+keeps rising, and/or raise the top-lane fraction (0.5 -> 0.75) now that the
+crop base is strong.
+
 ## 2026-08-09: GPU reset diversity and selfplay rotation fixes
 
 The CUDA reset kernel was re-deriving `reset_opening_rng` from the per-match
