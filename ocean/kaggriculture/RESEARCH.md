@@ -1330,3 +1330,19 @@ t21+, per reset verification).
 
 Exp Q (running): ExpL + reset range [60,80] (always mature animals), no
 productive reward, 100% top lane.
+
+## 2026-08-11: Exp Q - reset range mixed, no animal loop
+
+Exp Q (ExpL + reset range [60,80], 50M): peaked 8,772 vs top (below ExpL's
+9,005) but beats ExpL head-to-head (14,362 vs 12,543, 0.63 win). Animal stats:
+still zero place/feed/care even with guaranteed animal wake states.
+
+Conclusion: waking into an animal economy does not teach the policy to
+maintain it; it falls back to the crop economy. The reset range trades vs-top
+money for mirror strength without producing the animal loop.
+
+The animal production loop has resisted every attempt (magnets, productive
+reward, reset ranges, adaptive-bot data). The champion remains ExpL@73M
+(9,005 vs top; 600.0 Kaggle public). This is the standing best; further
+progress likely needs a different architectural or reward formulation than
+the knobs tried so far.
