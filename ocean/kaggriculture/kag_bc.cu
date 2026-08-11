@@ -398,13 +398,6 @@ int main(int argc, char** argv) {
                 cudaGetErrorString(bw_err));
             return 1;
         }
-        float* g0 = (float*)xcuda(sizeof(float));
-        kag_bc_sgd<<<1, 1, 0, bc_stream>>>(g0, grad_puf.data, 0.0f, 1);
-        cudaStreamSynchronize(bc_stream);
-        float gv = 0.0f;
-        cudaMemcpy(&gv, g0, sizeof(float), cudaMemcpyDeviceToHost);
-        fprintf(stderr, "grad[0]=%g\n", gv);
-        cudaFree(g0);
         long grad_off = 0;
         for (int r = 0; r < params.num_regs; r++) {
             long ne = numel(params.regs[r].shape);
