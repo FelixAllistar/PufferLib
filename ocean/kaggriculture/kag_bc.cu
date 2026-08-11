@@ -226,6 +226,21 @@ int main(int argc, char** argv) {
         kg_step(&env.game_storage, actions);
         kag_write_all_observations_from_tapes(&env, kag_script_tapes);
     }
+    int valid_cells = 0, mask_bits = 0;
+    for (int t = 0; t < bc_steps; t++) {
+        int valid = 1;
+        for (int h = 0; h < num_atns; h++) {
+            if ((int)host_expert[(size_t)t * NUM_ATNS + h] < 0) valid = 0;
+        }
+        valid_cells += valid;
+        for (int byte = 0; byte < packed_stride; byte++) {
+            mask_bits += __builtin_popcount(
+                host_mask[(size_t)t * packed_stride + byte]);
+        }
+    }
+    fprintf(stderr, "BC data: %d/%d valid cells, %d mask bits, head0=%g\n",
+        valid_cells, bc_steps, mask_bits,
+        bc_steps > 0 ? host_expert[0] : -1.0f);
 
     // Upload.
     precision_t* d_obs = (precision_t*)xcuda(
