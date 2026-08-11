@@ -77,11 +77,6 @@ __global__ void kag_bc_loss_kernel(
     if (loss_acc) atomicAdd(loss_acc, loss);
 }
 
-__global__ void kag_bc_smoke(float* out, int n) {
-    int i = blockIdx.x * blockDim.x + threadIdx.x;
-    if (i < n) out[i] = 1.0f;
-}
-
 int main(int argc, char** argv) {
     Ini ini = {0};
     puf_ini_load_env(&ini, "kaggriculture", argc - 1, argv + 1);
@@ -108,17 +103,6 @@ int main(int argc, char** argv) {
     cublas_init_handle();
     cudaStream_t bc_stream;
     cudaStreamCreate(&bc_stream);
-    cudaError_t stream_err = cudaGetLastError();
-    fprintf(stderr, "stream create: %s\n", cudaGetErrorString(stream_err));
-    float* dbg_buf = (float*)xcuda(64);
-    cudaMemsetAsync(dbg_buf, 0, 64, bc_stream);
-    cudaStreamSynchronize(bc_stream);
-    fprintf(stderr, "stream memset: %s\n",
-        cudaGetErrorString(cudaGetLastError()));
-    kag_bc_smoke<<<1, 256, 0, bc_stream>>>(dbg_buf, 64);
-    cudaStreamSynchronize(bc_stream);
-    fprintf(stderr, "smoke kernel: %s\n",
-        cudaGetErrorString(cudaGetLastError()));
     cudaError_t init_err = cudaGetLastError();
     if (init_err != cudaSuccess) {
         fprintf(stderr, "cublas init failed: %s\n",
