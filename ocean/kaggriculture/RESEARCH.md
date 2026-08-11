@@ -1097,6 +1097,27 @@ All three still lack the animal production loop. Next lever is structural,
 not more warm-start continuation: the animal-anchor at low emag, or a
 mixed-dataset BC anchor (crop + animal bots) trained at high capacity.
 
+## 2026-08-11: Exp F2 and the champion verification
+
+ExpF@5M (50% top lane, peaked at 5M of a 30M run) promoted to
+`saved/kaggriculture_hall_of_fame/expF_peak_5m.bin`. Verified at 100 games/side
+vs top hybrid: 7,485 — the current best (prior champion 6,871, ExpD@20M 7,102).
+
+ExpF2 (ExpF@5M + animal anchor at emag 0.005, 50% top lane, 20M): final 7,309,
+mid checkpoints 7,246-7,373 — does not beat ExpF@5M. Animal actions still ~0
+in eval (place=1, care=2, collect=0 even at 100 games; the 1-game line showed
+build 2,057 but that's a 1-game artifact).
+
+Consistent finding across every run: no policy ever develops the animal
+place/feed/care/harvest production loop. The warm-start + magnet recipe tops
+out around $7.5k vs top. Structural gap is real.
+
+Branch: 256-wide animal anchor (more capacity) was attempted but the trainer
+died silently (OOM or pkill collision). If retried, use a bounded dataset and
+foreground run. Alternative structural lever: explicit animal-loop reward
+shaping or an opening/reset that starts with animals placed, so PPO must learn
+the maintenance loop rather than discover it from a crop base.
+
 ## 2026-08-09: GPU reset diversity and selfplay rotation fixes
 
 The CUDA reset kernel was re-deriving `reset_opening_rng` from the per-match
