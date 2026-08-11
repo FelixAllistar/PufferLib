@@ -997,6 +997,49 @@ anchor as the frozen KL magnet (paper Step 2), moderate emag_kl_coef, mixed
 opponent lane to avoid the bankruptcy collapse, then evaluate against the top
 hybrid and the champion.
 
+## 2026-08-11: Exp A beats the prior champion
+
+Exp A: PPO from `sweep15_h128_14256` (prior champion) with the top300 BC anchor
+as frozen magnet. LR 5e-5, ent 0.0005, vf_coef 0.02, vf_clip 0.1,
+emag_kl_coef 0.01, 25% top hybrid / 75% rules econ lane, 4096 agents x 64,
+120M steps. Promoted to `saved/kaggriculture_hall_of_fame/expA_champ_magnet_120m.bin`.
+
+Results (bench vs top hybrid, 2000 games):
+
+- ExpA final: avg money 7,576 vs 30,702 top (prior champion was 4,718).
+- ExpA vs prior champion head-to-head: 14,001 vs 11,645 (ExpA wins).
+- Trajectory vs top: 52M=5,453, 78M=7,290, 104M=6,244, 120M=7,576 (final best).
+
+Key behavior change vs the old champion: much higher order volume (sell 1,369,
+hire 393, buy 305 vs champion's sell 1,160/hire 283/buy 278). Still no animal
+place/feed/care loop.
+
+Branch B (next): continuation from ExpA with a NEW anchor trained on the
+adaptive structured bot (KAG_ADAPTIVE_STRUCTURED=7), which maintains a real
+animal economy. The magnet should pull the policy toward feed/care/harvest/
+collect and animal placement, adding the missing production loop on top of
+ExpA's strong crop economy.
+
+## 2026-08-11: Exp B (animal anchor) - mixed result
+
+Exp B: PPO continuation from ExpA champion with the animal-economy anchor
+(adaptive structured, 287.6k-step dataset, CE 0.0179) as magnet,
+emag_kl_coef 0.02, ent 0.001, 150M steps, 25% top lane.
+
+- vs top hybrid: 6,990 (ExpA was 7,576) - slightly worse.
+- vs ExpA head-to-head: 13,579 vs 11,138 - ExpB WINS the direct match.
+- Still no animal place/feed/care actions in eval.
+
+Interpretation: the animal anchor pull added strategic diversity that beats
+ExpA in the mirror, but emag_kl_coef 0.02 was too strong against the top
+hybrid (lower vs-top money). The animal loop still did not emerge. Two
+follow-ups: (a) lower emag with the animal anchor to keep the head-to-head
+edge without losing vs-top, and (b) a longer plain continuation of ExpA with
+the original crop anchor, which was still improving at 120M.
+
+Exp C (next): continue ExpA champion with the crop anchor magnet (the config
+that produced the best vs-top result), 200M more steps.
+
 ## 2026-08-09: GPU reset diversity and selfplay rotation fixes
 
 The CUDA reset kernel was re-deriving `reset_opening_rng` from the per-match
