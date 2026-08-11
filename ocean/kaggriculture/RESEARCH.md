@@ -1273,3 +1273,32 @@ the serial per-match obs/mask writer into a state kernel plus an
 element-parallel row writer, batching frozen-bank forwards into a grouped
 GEMM, widening the `sample_logits` head cache, and folding the env step kernel
 into the fused rollout cudagraph.
+
+## 2026-08-11: Goal reached - champion progression and final standings
+
+Exp O (ExpL + 100M, same recipe): peaked 8,751 vs top, below ExpL's 9,005.
+The recipe is confirmed plateaued at ~9.0k.
+
+Final champion ladder (100-game vs top hybrid, both-seat verified):
+
+| stage | policy | vs-top money |
+|---|---|---:|
+| prior champion | sweep15_h128_14256 | 6,871 |
+| ExpA | champ+magnet 120M | 7,102 |
+| ExpF@5M | 50% top lane peak | 7,485 |
+| ExpG@20M | animal reset t<=40 | 7,580 |
+| ExpH@37M | reset t<=60 | 7,748 |
+| ExpJ@60M | reset continuation | 8,080 |
+| ExpK@80M | 75% top lane | 8,750 |
+| ExpL@73M | 100% top lane, reset t<=80 | 9,005 |
+
+ExpL@73M (saved/kaggriculture_hall_of_fame/expL_anim_top_73m.bin) is the
+champion: +31% over the original, beats every predecessor in both-seat
+head-to-head. The recipe is: continue from the previous champion, 100% top
+hybrid lane, reset_opening_turns=80 (wake into the animal-opening economy),
+LR 5e-5, ent 0.001, vf_coef 0.02, no magnet, ~70M steps per stage.
+
+Negative results worth keeping: magnets (BC anchors) consistently reduced
+vs-top; deeper reset (t<=140) and 256-wide warm-start both failed; the recipe
+plateaus around 9.0k. The animal loop still does not emerge strongly in eval,
+which is the remaining frontier.
