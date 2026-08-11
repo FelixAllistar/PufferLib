@@ -318,6 +318,11 @@ static int bc_train(Ini* ini) {
     uint64_t seed = 42;
     policy_init_weights(&policy, weights, &seed, 0);
     cudaDeviceSynchronize();
+    // Seed the float master from the initialized bf16 params, then keep the
+    // master as the trainable copy (bf16 params are refreshed each iteration).
+    cast<<<grid_size((int)params.total_elems), BLOCK_SIZE, 0, 0>>>(
+        master_weights.data, param_puf, (int)params.total_elems);
+    cudaDeviceSynchronize();
 
     int packed_stride = (mask_size + 7) / 8;
     int A_total = act_n;
@@ -348,8 +353,8 @@ static int bc_train(Ini* ini) {
     for (uint32_t i = 0; i < count; i++) order[i] = i;
     float* host_grad = (float*)malloc(
         (size_t)params.total_elems * sizeof(float));
-    precision_t* host_param_bf = (precision_t*)malloc(
-        (size_t)params.total_elems * sizeof(precision_t));
+    float* host_master = (float*)malloc(
+        (size_t)params.total_elems * sizeof(float));
 
     for (int ep = 0; ep < bc_epochs; ep++) {
         // Fisher-Yates shuffle.
@@ -426,9 +431,9 @@ static int bc_train(Ini* ini) {
             epoch_loss += chunk_loss;
             epoch_steps += B;
 
-            // Host-side SGD over the bf16 params using per-reg grads.
-            cudaMemcpy(host_param_bf, param_puf,
-                (size_t)params.total_elems * sizeof(precision_t),
+            // Host-side SGD on the float master using per-reg bf16 grads.
+            cudaMemcpy(host_master, master_weights.data,
+                (size_t)params.total_elems * sizeof(float),
                 cudaMemcpyDeviceToHost);
             long grad_off = 0;
             for (int r = 0; r < params.num_regs; r++) {
@@ -442,13 +447,16 @@ static int bc_train(Ini* ini) {
                 grad_off += ne;
             }
             for (long i = 0; i < params.total_elems; i++) {
-                host_param_bf[i] = __float2bfloat16(
-                    __bfloat162float(host_param_bf[i])
-                    - bc_lr * host_grad[i]);
+                host_master[i] -= bc_lr * host_grad[i];
             }
-            cudaMemcpy(param_puf, host_param_bf,
-                (size_t)params.total_elems * sizeof(precision_t),
+            cudaMemcpy(master_weights.data, host_master,
+                (size_t)params.total_elems * sizeof(float),
                 cudaMemcpyHostToDevice);
+            // Refresh bf16 inference params from the updated float master.
+            cast<<<grid_size((int)params.total_elems), BLOCK_SIZE, 0,
+                bc_stream>>>(param_puf, master_weights.data,
+                (int)params.total_elems);
+            cudaDeviceSynchronize();
         }
         if ((ep + 1) % 50 == 0) {
             printf("BC epoch %d loss=%.4f\n", ep + 1,
@@ -456,9 +464,6 @@ static int bc_train(Ini* ini) {
         }
     }
 
-    cast<<<grid_size((int)params.total_elems), BLOCK_SIZE, 0, 0>>>(
-        master_weights.data, param_puf, (int)params.total_elems);
-    cudaDeviceSynchronize();
     int64_t nbytes = numel(master_weights.shape) * sizeof(float);
     float* host = (float*)malloc((size_t)nbytes);
     cudaMemcpy(host, master_weights.data, nbytes, cudaMemcpyDeviceToHost);
@@ -470,7 +475,7 @@ static int bc_train(Ini* ini) {
     printf("BC anchor saved to %s (%lld bytes)\n", out_path,
         (long long)nbytes);
     free(order); free(obs); free(expert); free(mask);
-    free(host_grad); free(host_param_bf);
+    free(host_grad); free(host_master);
     free(h_obs_chunk); free(h_expert_chunk); free(h_mask_chunk);
     return 0;
 }
