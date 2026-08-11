@@ -84,9 +84,9 @@ __global__ void kag_bc_loss_kernel(
 
 // Plain SGD on the flat master weights: wb -= lr * grad.
 __global__ void kag_bc_sgd(float* __restrict__ wb,
-        const precision_t* __restrict__ grad, float lr, int n) {
+        const float* __restrict__ grad, float lr, int n) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
-    if (i < n) wb[i] -= lr * to_float(grad[i]);
+    if (i < n) wb[i] -= lr * grad[i];
 }
 
 int main(int argc, char** argv) {
@@ -280,6 +280,8 @@ int main(int argc, char** argv) {
     float* grad_value = (float*)xcuda((size_t)bc_steps * sizeof(float));
     float* loss_acc = (float*)xcuda(sizeof(float));
     float* debug_out = (float*)xcuda((size_t)bc_steps * sizeof(float));
+    float* grad_float = (float*)xcuda(
+        (size_t)params.total_elems * sizeof(float));
     cudaMemcpy(d_obs_raw, host_obs, (size_t)bc_steps * OBS_SIZE,
         cudaMemcpyHostToDevice);
     cudaDeviceSynchronize();
@@ -403,15 +405,19 @@ int main(int argc, char** argv) {
         cudaMemcpy(&gv, g0, sizeof(float), cudaMemcpyDeviceToHost);
         fprintf(stderr, "grad[0]=%g\n", gv);
         cudaFree(g0);
+        long grad_off = 0;
         for (int r = 0; r < params.num_regs; r++) {
             long ne = numel(params.regs[r].shape);
             if (ne > 0) {
-                float* wb = *(float**)params.regs[r].data_ptr;
                 precision_t* gr = *(precision_t**)grads.regs[r].data_ptr;
-                kag_bc_sgd<<<grid_size((int)ne), BLOCK_SIZE, 0,
-                    bc_stream>>>(wb, gr, lr, (int)ne);
+                cast<<<grid_size((int)ne), BLOCK_SIZE, 0, bc_stream>>>(
+                    grad_float + grad_off, gr, (int)ne);
             }
+            grad_off += ne;
         }
+        kag_bc_sgd<<<grid_size((int)params.total_elems), BLOCK_SIZE, 0,
+            bc_stream>>>(master_weights.data, grad_float, lr,
+            (int)params.total_elems);
         cudaDeviceSynchronize();
         if ((ep + 1) % 200 == 0) {
             float loss = 0.0f;
