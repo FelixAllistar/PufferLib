@@ -4241,8 +4241,18 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
         printf("Loaded weights from %s\n", load_path);
         if (pufferl->hypers.emag_kl_coef > 0.0f) {
             char magnet_path[8192];
-            snprintf(magnet_path, sizeof(magnet_path), "%s.emag", load_path);
-            if (access(magnet_path, R_OK) == 0) {
+            const char* explicit_magnet = puf_ini_get_str(ini,
+                "selfplay", "magnet_path");
+            if (explicit_magnet && explicit_magnet[0]
+                    && strcmp(explicit_magnet, "None") != 0) {
+                snprintf(magnet_path, sizeof(magnet_path), "%s",
+                    explicit_magnet);
+            } else {
+                snprintf(magnet_path, sizeof(magnet_path), "%s.emag", load_path);
+            }
+            if (access(magnet_path, R_OK) == 0
+                    && !(explicit_magnet && explicit_magnet[0]
+                        && strcmp(explicit_magnet, "None") == 0)) {
                 puf_load_weights_into(pufferl->magnet_master_weights,
                     pufferl->magnet_param_puf, pufferl->default_stream,
                     magnet_path);
