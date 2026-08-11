@@ -497,6 +497,13 @@ static int bc_train(Ini* ini) {
                 long ne = numel(params.regs[r].shape);
                 if (ne > 0) {
                     precision_t* gr = *(precision_t**)grads.regs[r].data_ptr;
+                    if (start == 0 && r < 4) {
+                        float gv[4];
+                        cudaMemcpy(gv, gr, 4 * sizeof(float),
+                            cudaMemcpyDeviceToHost);
+                        fprintf(stderr, "grads reg%d ne=%ld first=%g,%g,%g,%g\n",
+                            r, ne, gv[0], gv[1], gv[2], gv[3]);
+                    }
                     cudaMemcpy(host_grad + grad_off, gr,
                         (size_t)ne * sizeof(precision_t),
                         cudaMemcpyDeviceToHost);
