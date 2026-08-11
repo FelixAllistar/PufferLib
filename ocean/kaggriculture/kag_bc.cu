@@ -163,6 +163,9 @@ int main(int argc, char** argv) {
         params.mem, grads.mem, acts.mem);
     fprintf(stderr, "grad_puf.data=%p master.data=%p\n",
         grad_puf.data, master_weights.data);
+    fprintf(stderr, "ranges: params [%p,%p) grads [%p,%p)\n",
+        params.mem, (char*)params.mem + params.total_elems * 4,
+        grads.mem, (char*)grads.mem + grads.total_elems * 2);
     int act_sizes[42];
     {
         int tmp[] = ACT_SIZES;
