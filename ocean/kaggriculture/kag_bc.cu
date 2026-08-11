@@ -157,14 +157,16 @@ int main(int argc, char** argv) {
     fprintf(stderr, "pool bytes: params_bytes=%ld grads_bytes=%ld\n",
         (long)params.total_bytes, (long)grads.total_bytes);
 
+    // Params pool holds bf16 working weights. Float master is a separate
+    // mirror (pufferl's master_weights_setup pattern) used only for saving.
+    precision_t* param_puf = (precision_t*)params.mem;
     FloatTensor master_weights = {
-        .data = (float*)params.mem, .shape = {params.total_elems}};
-    PrecisionTensor grad_puf = {
-        .data = (precision_t*)grads.mem, .shape = {grads.total_elems}};
+        .data = (float*)xcuda((size_t)params.total_elems * sizeof(float)),
+        .shape = {params.total_elems}};
     fprintf(stderr, "pools ptr: params=%p grads=%p acts=%p\n",
         params.mem, grads.mem, acts.mem);
-    fprintf(stderr, "grad_puf.data=%p master.data=%p\n",
-        grad_puf.data, master_weights.data);
+    fprintf(stderr, "param_puf=%p master=%p\n",
+        (void*)param_puf, (void*)master_weights.data);
     fprintf(stderr, "ranges: params [%p,%p) grads [%p,%p)\n",
         params.mem, (char*)params.mem + params.total_elems * 4,
         grads.mem, (char*)grads.mem + grads.total_elems * 2);
@@ -397,44 +399,21 @@ int main(int argc, char** argv) {
                 cudaGetErrorString(sync_err));
             return 1;
         }
+        // Host-side SGD on the bf16 working params.
         float* host_master = (float*)malloc(
             (size_t)params.total_elems * sizeof(float));
         float* host_grad = (float*)calloc((size_t)params.total_elems,
             sizeof(float));
-        fprintf(stderr, "D2H size=%lld elems=%lld host=%p\n",
-            (long long)((size_t)params.total_elems * sizeof(float)),
-            (long long)params.total_elems, (void*)host_master);
-        cudaPointerAttributes pa = {};
-        cudaPointerGetAttributes(&pa, master_weights.data);
-        fprintf(stderr, "master ptr type=%d dev=%d addr=%p\n",
-            (int)pa.type, pa.device, master_weights.data);
-        float tiny = 0.0f;
-        cudaError_t tiny_err = cudaMemcpy(&tiny, master_weights.data,
-            sizeof(float), cudaMemcpyDeviceToHost);
-        fprintf(stderr, "tiny D2H: %s val=%g\n",
-            cudaGetErrorString(tiny_err), tiny);
-        int hm_chunks = 16;
-        size_t hm_per = ((size_t)params.total_elems * sizeof(float))
-            / hm_chunks;
-        for (int c = 0; c < hm_chunks; c++) {
-            cudaError_t hm_err = cudaMemcpy(
-                (char*)host_master + c * hm_per,
-                (char*)master_weights.data + c * hm_per, hm_per,
-                cudaMemcpyDeviceToHost);
-            if (hm_err != cudaSuccess) {
-                fprintf(stderr, "host master chunk %d copy failed: %s\n",
-                    c, cudaGetErrorString(hm_err));
-                return 1;
-            }
-        }
-        fprintf(stderr, "chunked master D2H done\n");
+        precision_t* host_param = (precision_t*)malloc(
+            (size_t)params.total_elems * sizeof(precision_t));
+        cudaMemcpy(host_param, param_puf,
+            (size_t)params.total_elems * sizeof(precision_t),
+            cudaMemcpyDeviceToHost);
         long grad_off = 0;
         for (int r = 0; r < params.num_regs; r++) {
             long ne = numel(params.regs[r].shape);
             if (ne > 0) {
                 precision_t* gr = *(precision_t**)grads.regs[r].data_ptr;
-                fprintf(stderr, "grad reg %d off=%ld ne=%ld gr=%p\n",
-                    r, grad_off, ne, (void*)gr);
                 cudaError_t hg_err = cudaMemcpy(host_grad + grad_off, gr,
                     (size_t)ne * sizeof(precision_t), cudaMemcpyDeviceToHost);
                 if (hg_err != cudaSuccess) {
@@ -445,23 +424,21 @@ int main(int argc, char** argv) {
             }
             grad_off += ne;
         }
-        fprintf(stderr, "grad D2H done\n");
         for (long i = 0; i < params.total_elems; i++) {
-            host_master[i] -= lr * host_grad[i];
+            float v = __bfloat162float(host_param[i]) - lr * host_grad[i];
+            host_param[i] = __float2bfloat16(v);
         }
-        fprintf(stderr, "host loop done\n");
-        cudaError_t mh_err = cudaMemcpy(master_weights.data, host_master,
-            (size_t)params.total_elems * sizeof(float),
+        cudaError_t mh_err = cudaMemcpy(param_puf, host_param,
+            (size_t)params.total_elems * sizeof(precision_t),
             cudaMemcpyHostToDevice);
         if (mh_err != cudaSuccess) {
             fprintf(stderr, "host master writeback failed: %s\n",
                 cudaGetErrorString(mh_err));
             return 1;
         }
-        fprintf(stderr, "master[0]=%g grad[0]=%g\n",
-            host_master[0], host_grad[0]);
         free(host_master);
         free(host_grad);
+        free(host_param);
         cudaDeviceSynchronize();
         if ((ep + 1) % 50 == 0) {
             float loss = 0.0f;
@@ -473,6 +450,9 @@ int main(int argc, char** argv) {
     // Save master weights in the same flat float format as the train path.
     int64_t nbytes = numel(master_weights.shape) * sizeof(float);
     float* host = (float*)malloc((size_t)nbytes);
+    cast<<<grid_size((int)params.total_elems), BLOCK_SIZE, 0, 0>>>(
+        master_weights.data, param_puf, (int)params.total_elems);
+    cudaDeviceSynchronize();
     cudaMemcpy(host, master_weights.data, nbytes, cudaMemcpyDeviceToHost);
     FILE* fp = fopen(out_path, "wb");
     if (!fp) { perror(out_path); return 1; }
