@@ -37,6 +37,7 @@ __global__ void kag_bc_loss_kernel(
     int mask_base = idx * mask_stride;
     int offset = 0;
     float loss = 0.0f;
+    int heads_done = 0;
     for (int h = 0; h < num_atns; h++) {
         int A = act_sizes[h];
         int expert_action = (int)expert[idx * num_atns + h];
@@ -55,6 +56,7 @@ __global__ void kag_bc_loss_kernel(
             offset += A;
             continue;
         }
+        heads_done++;
         float sum_exp = 0.0f;
         for (int a = 0; a < A; a++) {
             if (puf_mask_bit(mask, mask_base, offset + a)) {
@@ -76,7 +78,7 @@ __global__ void kag_bc_loss_kernel(
         offset += A;
     }
     if (loss_acc) atomicAdd(loss_acc, loss);
-    if (debug_out) debug_out[idx] = loss;
+    if (debug_out) debug_out[idx] = loss + 1000.0f * heads_done;
 }
 
 int main(int argc, char** argv) {
