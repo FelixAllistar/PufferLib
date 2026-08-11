@@ -177,6 +177,7 @@ struct Env {
     int policy_max_hands;
     int opening_turns;
     int reset_opening_turns;
+    int reset_opening_min;
     uint32_t reset_opening_rng;
     const char* render_names[KG_NUM_PLAYERS];
     float episode_returns[KG_NUM_PLAYERS];
@@ -1374,8 +1375,11 @@ KG_HD static inline void kag_reset_with_opening(Env* env,
         limit = game->config.episode_steps - 1;
     }
     if (limit >= KG_SCRIPT_FRAMES) limit = KG_SCRIPT_FRAMES - 1;
-    int prefix = (int)(kag_reset_opening_random(env)
-        % (uint32_t)(limit + 1));
+    int min_prefix = env->reset_opening_min;
+    if (min_prefix < 0) min_prefix = 0;
+    if (min_prefix > limit) min_prefix = limit;
+    int prefix = min_prefix + (int)(kag_reset_opening_random(env)
+        % (uint32_t)(limit - min_prefix + 1));
     for (int step = 0; step < prefix; step++) {
         KGAction actions[KG_NUM_PLAYERS];
         for (int player = 0; player < KG_NUM_PLAYERS; player++) {
@@ -1935,6 +1939,7 @@ void puf_init(Env* env, Dict* kwargs) {
     env->opening_turns = (int)dict_get(kwargs, "opening_turns");
     env->reset_opening_turns = (int)dict_get(kwargs,
         "reset_opening_turns");
+    env->reset_opening_min = (int)dict_get(kwargs, "reset_opening_min");
     if (env->policy_market_slots < 1
             || env->policy_market_slots > KG_POLICY_MARKET_SLOTS) {
         fprintf(stderr, "policy_market_slots must be in [1, %d]\n",

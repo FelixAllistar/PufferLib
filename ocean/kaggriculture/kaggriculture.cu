@@ -29,6 +29,7 @@ typedef struct {
     int policy_max_hands;
     int opening_turns;
     int reset_opening_turns;
+    int reset_opening_min;
     float reward_potential_scale;
     float reward_win;
     float reward_seed_value;
@@ -347,6 +348,7 @@ __global__ static void kag_cuda_reset_kernel(Env* shells, Env* matches,
     env->policy_max_hands = d_kag_cuda_config.policy_max_hands;
     env->opening_turns = d_kag_cuda_config.opening_turns;
     env->reset_opening_turns = d_kag_cuda_config.reset_opening_turns;
+    env->reset_opening_min = d_kag_cuda_config.reset_opening_min;
     env->reward_potential_scale = d_kag_cuda_config.reward_potential_scale;
     env->reward_win = d_kag_cuda_config.reward_win;
     env->reward_seed_value = d_kag_cuda_config.reward_seed_value;
@@ -433,6 +435,7 @@ static void kag_cuda_load_config(Dict* kwargs) {
     h_kag_cuda_config.policy_max_hands = template_env.policy_max_hands;
     h_kag_cuda_config.opening_turns = template_env.opening_turns;
     h_kag_cuda_config.reset_opening_turns = template_env.reset_opening_turns;
+    h_kag_cuda_config.reset_opening_min = template_env.reset_opening_min;
     h_kag_cuda_config.reward_potential_scale = template_env.reward_potential_scale;
     h_kag_cuda_config.reward_win = template_env.reward_win;
     h_kag_cuda_config.reward_seed_value = template_env.reward_seed_value;
