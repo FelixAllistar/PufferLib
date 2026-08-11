@@ -1056,6 +1056,30 @@ the vs-top curve keeps climbing. Branch options after: (a) harder lane (50%
 top) to sharpen the actual target, (b) animal anchor at low emag (0.005) to
 add the missing production loop, (c) higher LR from the current champion.
 
+## 2026-08-11: Exp D peak checkpoint is the new champion
+
+Exp D (ExpC + 250M, same config) did NOT keep climbing to the end: final 250M
+checkpoint scored 7,884 vs top and LOST to ExpC head-to-head (10,046 vs
+18,834). But the trajectory peaked early: the 20M checkpoint hit 10,050 vs top.
+
+Promoted `kag_expD_champ_cont/0000000020971520.bin` (20M) to
+`saved/kaggriculture_hall_of_fame/expD_peak_20m.bin`.
+
+ExpD@20M results:
+- vs top hybrid: 9,484 (prior champion 4,718, ExpA 7,576, ExpC 7,766,
+  ExpD-final 7,884).
+- vs ExpC: 13,399 vs 9,114; reverse seat 13,041 vs 12,810 (ExpD@20M wins both).
+- vs ExpD-final: 13,182 vs 12,026 (wins).
+
+Pattern: warm-start continuation improves sharply in the first ~20M then
+decays, matching the "final is not best" PSRO lesson. Short finetune spikes
+are the productive regime.
+
+Exp E (next): short continuation of ExpD@20M (20-30M) to see if the spike
+pattern repeats and produces another step up. If it decays again, the
+checkpoint-mining approach (screen mid checkpoints after each short run) is
+the reliable promotion path.
+
 ## 2026-08-09: GPU reset diversity and selfplay rotation fixes
 
 The CUDA reset kernel was re-deriving `reset_opening_rng` from the per-match
