@@ -166,6 +166,12 @@ int main(int argc, char** argv) {
     fprintf(stderr, "ranges: params [%p,%p) grads [%p,%p)\n",
         params.mem, (char*)params.mem + params.total_elems * 4,
         grads.mem, (char*)grads.mem + grads.total_elems * 2);
+    for (int r = 0; r < params.num_regs && r < 8; r++) {
+        fprintf(stderr, "reg%d params=%p ne=%ld grads=%p\n",
+            r, *(void**)params.regs[r].data_ptr,
+            (long)numel(params.regs[r].shape),
+            r < grads.num_regs ? *(void**)grads.regs[r].data_ptr : nullptr);
+    }
     int act_sizes[42];
     {
         int tmp[] = ACT_SIZES;
