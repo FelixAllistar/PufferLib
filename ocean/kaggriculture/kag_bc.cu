@@ -159,6 +159,8 @@ int main(int argc, char** argv) {
         .data = (float*)params.mem, .shape = {params.total_elems}};
     PrecisionTensor grad_puf = {
         .data = (precision_t*)grads.mem, .shape = {grads.total_elems}};
+    fprintf(stderr, "pools ptr: params=%p grads=%p acts=%p\n",
+        params.mem, grads.mem, acts.mem);
     int act_sizes[42];
     {
         int tmp[] = ACT_SIZES;
