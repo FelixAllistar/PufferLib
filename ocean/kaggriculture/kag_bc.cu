@@ -411,13 +411,19 @@ int main(int argc, char** argv) {
             sizeof(float), cudaMemcpyDeviceToHost);
         fprintf(stderr, "tiny D2H: %s val=%g\n",
             cudaGetErrorString(tiny_err), tiny);
-        cudaError_t hm_err = cudaMemcpy(host_master, master_weights.data,
-            (size_t)params.total_elems * sizeof(float),
-            cudaMemcpyDeviceToHost);
-        if (hm_err != cudaSuccess) {
-            fprintf(stderr, "host master copy failed: %s\n",
-                cudaGetErrorString(hm_err));
-            return 1;
+        int hm_chunks = 16;
+        size_t hm_per = ((size_t)params.total_elems * sizeof(float))
+            / hm_chunks;
+        for (int c = 0; c < hm_chunks; c++) {
+            cudaError_t hm_err = cudaMemcpy(
+                (char*)host_master + c * hm_per,
+                (char*)master_weights.data + c * hm_per, hm_per,
+                cudaMemcpyDeviceToHost);
+            if (hm_err != cudaSuccess) {
+                fprintf(stderr, "host master chunk %d copy failed: %s\n",
+                    c, cudaGetErrorString(hm_err));
+                return 1;
+            }
         }
         long grad_off = 0;
         for (int r = 0; r < params.num_regs; r++) {
