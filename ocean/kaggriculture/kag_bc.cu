@@ -161,6 +161,8 @@ int main(int argc, char** argv) {
         .data = (precision_t*)grads.mem, .shape = {grads.total_elems}};
     fprintf(stderr, "pools ptr: params=%p grads=%p acts=%p\n",
         params.mem, grads.mem, acts.mem);
+    fprintf(stderr, "grad_puf.data=%p master.data=%p\n",
+        grad_puf.data, master_weights.data);
     int act_sizes[42];
     {
         int tmp[] = ACT_SIZES;
