@@ -386,6 +386,16 @@ int main(int argc, char** argv) {
                 cudaGetErrorString(err));
             return 1;
         }
+        if (ep == 0) {
+            cudaStreamSynchronize(bc_stream);
+            float dbg0[4];
+            cudaError_t sync_err = cudaGetLastError();
+            cudaError_t cp_err = cudaMemcpy(dbg0, debug_out,
+                4 * sizeof(float), cudaMemcpyDeviceToHost);
+            fprintf(stderr, "post-BC sync=%s copy=%s dbg=%g,%g,%g,%g\n",
+                cudaGetErrorString(sync_err), cudaGetErrorString(cp_err),
+                dbg0[0], dbg0[1], dbg0[2], dbg0[3]);
+        }
         FloatTensor grad_logits_t = {.data = grad_logits,
             .shape = {bc_steps, 1, A_total}};
         FloatTensor grad_value_t = {.data = grad_value,
