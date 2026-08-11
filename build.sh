@@ -32,16 +32,22 @@ fi
 #   ./build.sh all                   # Build all envs native and native float32
 
 if [ -z "$1" ]; then
-    echo "Usage: ./build.sh ENV_NAME [--gpu] [--float] [--debug] [--local|--fast|--web|--profile|--cpu]"
+    echo "Usage: ./build.sh ENV_NAME [--gpu] [--cards N] [--float] [--debug] [--local|--fast|--web|--profile|--cpu]"
     exit 1
 fi
 ENV=$1
 shift
 
 USE_GPU_ENV=0
-for arg in "$@"; do
+BUILD_CARDS=0
+args=("$@")
+i=0
+while [ $i -lt ${#args[@]} ]; do
+    arg="${args[$i]}"
     case $arg in
         --gpu) USE_GPU_ENV=1 ;;
+        --cards) BUILD_CARDS=1; i=$((i+1)); GS_NUM_CARDS="${args[$i]:-}" ;;
+        --cards=*) BUILD_CARDS=1; GS_NUM_CARDS="${arg#--cards=}" ;;
         --float) PRECISION="-DPRECISION_FLOAT" ;;
         --debug) DEBUG=1 ;;
         --local) MODE=local ;;
@@ -54,7 +60,26 @@ for arg in "$@"; do
         --cpu)   MODE=cpu ;;
         *) echo "Error: unknown argument '$arg'" && exit 1 ;;
     esac
+    i=$((i+1))
 done
+
+if [ "$BUILD_CARDS" = "1" ] && [ -z "${GS_NUM_CARDS:-}" ]; then
+    echo "Error: --cards requires a value, e.g. --cards 13 or --cards=13" >&2
+    exit 1
+fi
+if [ -n "${GS_NUM_CARDS:-}" ]; then
+    case "$GS_NUM_CARDS" in
+        ''|*[!0-9]*) echo "Error: --cards must be an integer, got '$GS_NUM_CARDS'" >&2; exit 1 ;;
+    esac
+    if [ "$GS_NUM_CARDS" -lt 1 ] || [ "$GS_NUM_CARDS" -gt 13 ]; then
+        echo "Error: --cards must be 1..13, got $GS_NUM_CARDS" >&2
+        exit 1
+    fi
+    if [ "$ENV" != "goofspiel" ]; then
+        echo "Error: --cards is only valid for goofspiel" >&2
+        exit 1
+    fi
+fi
 
 if [ "$ENV" = "all" ]; then
     FAILED=""
@@ -346,6 +371,10 @@ MODE=${MODE:-native}
 
 if [ "$MODE" = "native" ]; then
     echo "Compiling native train/eval binary ($ARCH)..."
+    NATIVE_OUT="puffer"
+    if [ "$ENV" = "goofspiel" ] && [ -n "${GS_NUM_CARDS:-}" ]; then
+        NATIVE_OUT="puffer_gs${GS_NUM_CARDS}"
+    fi
     OMP_FLAG=()
     if [ "${HEADLESS:-0}" != "1" ]; then
         OMP_FLAG=(-Xcompiler=-fopenmp)
@@ -369,8 +398,8 @@ if [ "$MODE" = "native" ]; then
         "${EXTRA_LDFLAGS[@]}" \
         -lcudart -lnccl -lnvidia-ml -lcublas -lcusolver -lcurand \
         -lm -lpthread $OMP_LIB "${STANDALONE_LDFLAGS[@]}" \
-        -o puffer
-    echo "Built: ./puffer"
+        -o "$NATIVE_OUT"
+    echo "Built: ./$NATIVE_OUT"
     if [ "$ENV" = "kaggriculture" ] && [ "${HEADLESS:-0}" != "1" ]; then
         bash "$0" "$ENV" --fast
     fi
