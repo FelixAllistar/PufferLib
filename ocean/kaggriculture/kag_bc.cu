@@ -426,7 +426,57 @@ static int bc_train(Ini* ini) {
             cudaMemcpy(&chunk_loss, loss_acc, sizeof(float),
                 cudaMemcpyDeviceToHost);
             if (start == 0) {
-                fprintf(stderr, "first chunk loss=%g\n", chunk_loss);
+                // Apply the update, then re-evaluate the same chunk to verify
+                // the SGD direction decreases loss.
+                float loss_before = chunk_loss;
+                cudaMemcpy(host_master, master_weights.data,
+                    (size_t)params.total_elems * sizeof(float),
+                    cudaMemcpyDeviceToHost);
+                long go = 0;
+                for (int r = 0; r < params.num_regs; r++) {
+                    long ne = numel(params.regs[r].shape);
+                    if (ne > 0) {
+                        precision_t* gr = *(precision_t**)grads.regs[r].data_ptr;
+                        cudaMemcpy(host_grad + go, gr,
+                            (size_t)ne * sizeof(precision_t),
+                            cudaMemcpyDeviceToHost);
+                    }
+                    go += ne;
+                }
+                double gsum = 0.0, gsum2 = 0.0;
+                for (long i = 0; i < params.total_elems; i++) {
+                    gsum += host_grad[i];
+                    gsum2 += host_grad[i] * host_grad[i];
+                    host_master[i] -= bc_lr * host_grad[i];
+                }
+                cudaMemcpy(master_weights.data, host_master,
+                    (size_t)params.total_elems * sizeof(float),
+                    cudaMemcpyHostToDevice);
+                cast<<<grid_size((int)params.total_elems), BLOCK_SIZE, 0,
+                    bc_stream>>>(param_puf, master_weights.data,
+                    (int)params.total_elems);
+                cudaDeviceSynchronize();
+                PrecisionTensor dec2 = policy_forward_train(&policy, weights,
+                    train_acts, obs_t, state, terminals, bc_stream);
+                PrecisionTensor dec2f = *puf_squeeze(&dec2, 0);
+                cudaMemsetAsync(loss_acc, 0, sizeof(float), bc_stream);
+                kag_bc_loss_kernel<<<1, 256, 0, bc_stream>>>(
+                    dec2f.data, d_expert, d_mask, grad_logits, loss_acc,
+                    act_sizes_puf.data, batch, A_total, num_atns,
+                    packed_stride);
+                cudaDeviceSynchronize();
+                float loss_after = 0.0f;
+                cudaMemcpy(&loss_after, loss_acc, sizeof(float),
+                    cudaMemcpyDeviceToHost);
+                fprintf(stderr, "first chunk loss=%g -> %g grad=%g/%g\n",
+                    loss_before, loss_after, gsum, sqrt(gsum2));
+                // Re-run backward so the pooled grads stay fresh for the real
+                // per-chunk SGD below (this was a dry-run update).
+                cudaMemsetAsync(grad_logits, 0,
+                    (size_t)batch * A_total * sizeof(float), bc_stream);
+                policy_backward(&policy, weights, train_acts, grad_logits_t,
+                    FloatTensor(), grad_value_t, bc_stream);
+                cudaDeviceSynchronize();
             }
             epoch_loss += chunk_loss;
             epoch_steps += B;
