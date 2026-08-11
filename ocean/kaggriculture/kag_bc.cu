@@ -351,8 +351,8 @@ static int bc_train(Ini* ini) {
     // Index shuffle for dataset order variation per epoch.
     uint32_t* order = (uint32_t*)malloc((size_t)count * sizeof(uint32_t));
     for (uint32_t i = 0; i < count; i++) order[i] = i;
-    float* host_grad = (float*)malloc(
-        (size_t)params.total_elems * sizeof(float));
+    precision_t* host_grad_bf = (precision_t*)malloc(
+        (size_t)params.total_elems * sizeof(precision_t));
     float* host_master = (float*)malloc(
         (size_t)params.total_elems * sizeof(float));
 
@@ -469,7 +469,7 @@ static int bc_train(Ini* ini) {
                     long ne = numel(params.regs[r].shape);
                     if (ne > 0) {
                         precision_t* gr = *(precision_t**)grads.regs[r].data_ptr;
-                        cudaMemcpy(host_grad + go, gr,
+                        cudaMemcpy(host_grad_bf + go, gr,
                             (size_t)ne * sizeof(precision_t),
                             cudaMemcpyDeviceToHost);
                     }
@@ -477,9 +477,10 @@ static int bc_train(Ini* ini) {
                 }
                 double gsum = 0.0, gsum2 = 0.0;
                 for (long i = 0; i < params.total_elems; i++) {
-                    gsum += host_grad[i];
-                    gsum2 += host_grad[i] * host_grad[i];
-                    host_master[i] -= bc_lr * host_grad[i];
+                    float g = __bfloat162float(host_grad_bf[i]);
+                    gsum += g;
+                    gsum2 += g * g;
+                    host_master[i] -= bc_lr * g;
                 }
                 cudaMemcpy(master_weights.data, host_master,
                     (size_t)params.total_elems * sizeof(float),
@@ -529,14 +530,14 @@ static int bc_train(Ini* ini) {
                         fprintf(stderr, "grads reg%d ne=%ld first=%g,%g,%g,%g\n",
                             r, ne, gv[0], gv[1], gv[2], gv[3]);
                     }
-                    cudaMemcpy(host_grad + grad_off, gr,
+                    cudaMemcpy(host_grad_bf + grad_off, gr,
                         (size_t)ne * sizeof(precision_t),
                         cudaMemcpyDeviceToHost);
                 }
                 grad_off += ne;
             }
             for (long i = 0; i < params.total_elems; i++) {
-                host_master[i] -= bc_lr * host_grad[i];
+                host_master[i] -= bc_lr * __bfloat162float(host_grad_bf[i]);
             }
             cudaMemcpy(master_weights.data, host_master,
                 (size_t)params.total_elems * sizeof(float),
@@ -564,7 +565,7 @@ static int bc_train(Ini* ini) {
     printf("BC anchor saved to %s (%lld bytes)\n", out_path,
         (long long)nbytes);
     free(order); free(obs); free(expert); free(mask);
-    free(host_grad); free(host_master);
+    free(host_grad_bf); free(host_master);
     free(h_obs_chunk); free(h_expert_chunk); free(h_mask_chunk);
     return 0;
 }
