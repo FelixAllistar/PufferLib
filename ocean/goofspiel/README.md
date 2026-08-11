@@ -229,3 +229,39 @@ A single moving exact response plateaued at `0.492943`, while a uniform
 the latest response and the historical reservoir reached `0.058412` after a
 200M-step continuation. This keeps current exploitability pressure strong
 without forgetting older counters.
+
+## Nontransitivity hunt: negative result (2026-08-11)
+
+Goal: find nontransitive-but-low-exploitability behavior (rock-paper-scissors
+style A>B>C>A cycles) in Goofspiel. The full toolchain was verified first:
+exact exploitability (4- and 5-card fixtures match independent brute force),
+behavioral JSD (`goofspiel_behavior_gpu`), full payoff matrices via
+`puffer match` (now env-agnostic), and a 30-checkpoint cycle scan.
+
+Populations tested, all 2-player:
+
+| Cards | Training | Draw rate | Strongest edge | Cycles |
+|---|---:|---:|---:|---:|
+| 4 | 8M uniform (16 seeds) | ~50% | 0.51 | none |
+| 4 | 8M heterogeneous (8 seeds) | ~40% | 0.51 | none |
+| 4 | 50M heterogeneous (8 seeds) | ~60% | 0.51 | none |
+| 4 | hidden-info (6 seeds) | ~45% | 0.52 | none |
+| 5 | 20M heterogeneous (8 seeds) | ~10-20% | 0.51 | none |
+| 13 | 5M heterogeneous (8 seeds) | ~1.5% | 0.53 | none |
+
+Heterogeneous = different hypers (entropy/LR/gamma/replay), prize orders
+(random/ascending/descending), and one hidden-info seed per family, so the
+policies are behaviorally distinct (JSD up to 0.28). The 30-checkpoint 4-card
+matrix (435 pairs, both seats, 500 games) found zero cycles even at a 0.51
+threshold; the best 3-cycle product was 0.127, indistinguishable from chance.
+
+Conclusion: Goofspiel is transitive under selfplay at every card count. Bigger
+games make outcomes decisive (draws 50% -> 1.5%) and widen the strongest-vs-
+weakest edge (0.51 -> 0.53), but the strength ordering stays monotonic. This
+matches the game's structure: a single "bid well" skill axis with no
+rock-paper-scissors countering. Nontransitive RL behavior needs a game with
+multiple countering strategy types (e.g. Kaggriculture's crop/animal/econ
+metagame), not more room on one axis. 3-player Goofspiel would change the
+question (coalition/kingmaking dynamics, ill-defined 3p Nash, no exact
+solver) and requires a `GS_MAX_PLAYERS` refactor of the adapter and selfplay
+semantics, so it was not attempted.
