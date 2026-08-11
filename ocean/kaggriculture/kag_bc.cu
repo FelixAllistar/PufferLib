@@ -237,6 +237,7 @@ int main(int argc, char** argv) {
     obs_t* d_obs_raw = (obs_t*)xcuda((size_t)bc_steps * OBS_SIZE);
     float* grad_logits = (float*)xcuda(
         (size_t)bc_steps * act_n * sizeof(float));
+    float* grad_value = (float*)xcuda((size_t)bc_steps * sizeof(float));
     float* loss_acc = (float*)xcuda(sizeof(float));
     cudaMemcpy(d_obs_raw, host_obs, (size_t)bc_steps * OBS_SIZE,
         cudaMemcpyHostToDevice);
@@ -328,8 +329,10 @@ int main(int argc, char** argv) {
         }
         FloatTensor grad_logits_t = {.data = grad_logits,
             .shape = {bc_steps, 1, A_total}};
+        FloatTensor grad_value_t = {.data = grad_value,
+            .shape = {bc_steps, 1}};
         policy_backward(&policy, weights, train_acts, grad_logits_t,
-            FloatTensor(), FloatTensor(), bc_stream);
+            FloatTensor(), grad_value_t, bc_stream);
         muon_step(&muon, master_weights, grad_puf, 0.5f, bc_stream);
         cudaDeviceSynchronize();
         if ((ep + 1) % 200 == 0) {
