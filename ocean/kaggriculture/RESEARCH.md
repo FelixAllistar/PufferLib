@@ -1228,6 +1228,20 @@ Branch M: try a genuinely different direction rather than more continuation:
 - a reset that starts AFTER the opening (t100+) where the economy is mature,
 - or revisit the animal loop with the reset (t80) + a small animal reward.
 
+## 2026-08-11: Exp M/N negatives - recipe ceiling
+
+Exp M (mature reset t<=140 from ExpL, 60M): peaked 8,633 vs top, below
+ExpL's 9,005. Deeper reset hurt; t<=80 is the sweet spot.
+
+Exp N (256-wide from ExpL, 60M): failed to start - the 128-wide ExpL checkpoint
+cannot load into a 256-wide arch (needs a matching 256 anchor, which the BC
+trainer could not produce). Warm-starting a bigger model is blocked on capacity
+matching.
+
+The t<=80 + 100% top lane recipe appears to plateau around 9.0k. Exp O
+(running): ExpL + 100M continuation of the same recipe to test if more steps
+break through, since ExpK->ExpL gained even at 80M.
+
 ## 2026-08-09: GPU reset diversity and selfplay rotation fixes
 
 The CUDA reset kernel was re-deriving `reset_opening_rng` from the per-match
