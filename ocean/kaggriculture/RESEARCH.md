@@ -1040,6 +1040,22 @@ the original crop anchor, which was still improving at 120M.
 Exp C (next): continue ExpA champion with the crop anchor magnet (the config
 that produced the best vs-top result), 200M more steps.
 
+## 2026-08-11: Exp C new champion (320M total)
+
+Exp C: ExpA champion + 200M more with the crop anchor magnet (same config:
+LR 5e-5, ent 0.0005, emag_kl 0.01, 25% top lane). Promoted to
+`saved/kaggriculture_hall_of_fame/expC_champ_320m.bin`.
+
+- vs top hybrid: 7,766 (ExpA 7,576; prior champion 4,718).
+- vs ExpA head-to-head: 13,306 vs 12,369 (ExpC wins).
+- First hints of animal behavior in eval: animal_place=1, care=2,
+  fert_collect=1 (still negligible, but non-zero for the first time).
+
+Exp D (running): continue ExpC another 250M with the same recipe to see if
+the vs-top curve keeps climbing. Branch options after: (a) harder lane (50%
+top) to sharpen the actual target, (b) animal anchor at low emag (0.005) to
+add the missing production loop, (c) higher LR from the current champion.
+
 ## 2026-08-09: GPU reset diversity and selfplay rotation fixes
 
 The CUDA reset kernel was re-deriving `reset_opening_rng` from the per-match
