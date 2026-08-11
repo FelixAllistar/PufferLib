@@ -82,6 +82,13 @@ __global__ void kag_bc_loss_kernel(
     if (debug_out) debug_out[idx] = loss + 1000.0f * heads_done;
 }
 
+// Plain SGD on the flat master weights: wb -= lr * grad.
+__global__ void kag_bc_sgd(float* __restrict__ wb,
+        const precision_t* __restrict__ grad, float lr, int n) {
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i < n) wb[i] -= lr * to_float(grad[i]);
+}
+
 int main(int argc, char** argv) {
     Ini ini = {0};
     puf_ini_load_env(&ini, "kaggriculture", argc - 1, argv + 1);
@@ -139,8 +146,6 @@ int main(int argc, char** argv) {
     alloc_register(&acts, &act_sizes_puf);
     PrecisionTensor state = {.shape = {layers, bc_steps, hidden}};
     alloc_register(&acts, &state);
-    Muon muon = {};
-    muon_init(&muon, &params, 0.9, &acts);
     create_allocator_or_die("params", &params);
     create_allocator_or_die("grads", &grads);
     create_allocator_or_die("acts", &acts);
@@ -172,7 +177,6 @@ int main(int argc, char** argv) {
         return 1;
     }
     float lr = bc_lr;
-    cudaMemcpy(muon.lr_puf.data, &lr, sizeof(float), cudaMemcpyHostToDevice);
 
     // Play the tape on a CPU env and record (obs, expert action, mask).
     Env env = {};
@@ -373,7 +377,9 @@ int main(int argc, char** argv) {
             .shape = {bc_steps, 1}};
         policy_backward(&policy, weights, train_acts, grad_logits_t,
             FloatTensor(), grad_value_t, bc_stream);
-        muon_step(&muon, master_weights, grad_puf, 0.5f, bc_stream);
+        kag_bc_sgd<<<grid_size(params.total_elems), BLOCK_SIZE, 0,
+            bc_stream>>>(master_weights.data, grad_puf.data, lr,
+            (int)params.total_elems);
         cudaDeviceSynchronize();
         if ((ep + 1) % 200 == 0) {
             float loss = 0.0f;
