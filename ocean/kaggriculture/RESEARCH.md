@@ -1189,6 +1189,25 @@ Branch K: continue ExpJ another 60-100M with reset t<=60 to see if the curve
 keeps rising, and/or raise the top-lane fraction (0.5 -> 0.75) now that the
 crop base is strong.
 
+## 2026-08-11: Exp K - new champion (75% top lane)
+
+Exp K: ExpJ + 80M with reset t<=60 and 75% top lane (harder), no magnet.
+Promoted `kag_expK_anim_next/0000000079953920.bin` (final, 80M) to
+`saved/kaggriculture_hall_of_fame/expK_animreset_80m.bin`.
+
+100-game results:
+- vs top hybrid: 8,750 (ExpJ 8,080, prior champion 6,871).
+- vs ExpJ both seats: 15,664/11,073 vs 11,183/15,760 - ExpK net wins.
+- Trajectory: 63M=8,588, 79M=8,734, 80M=8,750 - still climbing at the end.
+
+The recipe is now established: continue from the previous champion with
+reset t<=60 and a top-heavy lane. Each iteration gains ~600-700 vs-top money.
+ExpK is +27% over the original champion.
+
+Branch L: continue ExpK another 80-100M (reset t<=60, 75% top lane) and/or
+try 100% top lane. Also consider a longer reset range now that the base is
+strong.
+
 ## 2026-08-09: GPU reset diversity and selfplay rotation fixes
 
 The CUDA reset kernel was re-deriving `reset_opening_rng` from the per-match
