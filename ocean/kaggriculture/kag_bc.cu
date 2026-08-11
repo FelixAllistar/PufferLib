@@ -172,6 +172,7 @@ static Env bc_make_env(Ini* ini, uint32_t rng) {
 static int bc_gen(Ini* ini) {
     int games = (int)puf_ini_get(ini, "bc", "games");
     int profile = (int)puf_ini_get(ini, "bc", "bot");
+    int opp = (int)puf_ini_get(ini, "bc", "opponent");
     int bc_seed = (int)puf_ini_get(ini, "bc", "seed");
     const char* data_path = puf_ini_get_str(ini, "bc", "data");
     if (games <= 0) games = 50;
@@ -196,7 +197,7 @@ static int bc_gen(Ini* ini) {
         while (!env.game_storage.done && steps < 720) {
             KGAction a0 = {}, a1 = {};
             bc_bot_action(&env.game_storage, 0, profile, &a0);
-            bc_bot_action(&env.game_storage, 1, profile, &a1);
+            bc_bot_action(&env.game_storage, 1, opp, &a1);
             bc_set_expert(&env, &a0);
             memcpy(obs + count * row_obs, env.agents[0].observations, row_obs);
             memcpy(expert + count * row_expert, env.agents[0].actions,
