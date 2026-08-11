@@ -150,6 +150,8 @@ int main(int argc, char** argv) {
     alloc_register(&acts, &act_sizes_puf);
     PrecisionTensor state = {.shape = {layers, bc_steps, hidden}};
     alloc_register(&acts, &state);
+    Muon muon = {};
+    muon_init(&muon, &params, 0.9, &acts);
     create_allocator_or_die("params", &params);
     create_allocator_or_die("grads", &grads);
     create_allocator_or_die("acts", &acts);
@@ -169,17 +171,14 @@ int main(int argc, char** argv) {
         cudaMemcpyHostToDevice);
 
     uint64_t seed = 42;
-    // Zeroed params from the allocator are fine for a smoke test; init is
-    // disabled to isolate whether curand init corrupts the context.
-    (void)seed;
+    policy_init_weights(&policy, weights, &seed, 0);
+    cudaDeviceSynchronize();
     cudaError_t init_w_err = cudaGetLastError();
     if (init_w_err != cudaSuccess) {
         fprintf(stderr, "policy_init_weights failed: %s\n",
             cudaGetErrorString(init_w_err));
         return 1;
     }
-    Muon muon = {};
-    muon_init(&muon, &params, 0.9, &acts);
     float lr = bc_lr;
     cudaMemcpy(muon.lr_puf.data, &lr, sizeof(float), cudaMemcpyHostToDevice);
 
