@@ -403,6 +403,13 @@ static int bc_train(Ini* ini) {
             kag_bc_loss_kernel<<<1, 256, 0, bc_stream>>>(
                 dec_flat.data, d_expert, d_mask, grad_logits, loss_acc,
                 act_sizes_puf.data, batch, A_total, num_atns, packed_stride);
+            if (start == 0) {
+                float gl[6];
+                cudaMemcpy(gl, grad_logits, 6 * sizeof(float),
+                    cudaMemcpyDeviceToHost);
+                fprintf(stderr, "grad_logits[0..5]=%g,%g,%g,%g,%g,%g\n",
+                    gl[0], gl[1], gl[2], gl[3], gl[4], gl[5]);
+            }
             cudaError_t ker_err = cudaGetLastError();
             if (ker_err != cudaSuccess) {
                 fprintf(stderr, "chunk %u kernel launch: %s\n", start,
