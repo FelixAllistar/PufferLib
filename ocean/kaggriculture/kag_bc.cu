@@ -401,29 +401,9 @@ static int bc_train(Ini* ini) {
             PrecisionTensor dec_out = policy_forward_train(&policy, weights,
                 train_acts, obs_t, state, terminals, bc_stream);
             PrecisionTensor dec_flat = *puf_squeeze(&dec_out, 0);
-            if (start == 0) {
-                DecoderActivations* da = (DecoderActivations*)train_acts.decoder;
-                float sv[4];
-                cudaMemcpy(sv, da->saved_input.data, 4 * sizeof(float),
-                    cudaMemcpyDeviceToHost);
-                fprintf(stderr, "decoder saved_input[0..3]=%g,%g,%g,%g\n",
-                    sv[0], sv[1], sv[2], sv[3]);
-                EncoderActivations* ea = (EncoderActivations*)train_acts.encoder;
-                cudaMemcpy(sv, ea->saved_input.data, 4 * sizeof(float),
-                    cudaMemcpyDeviceToHost);
-                fprintf(stderr, "encoder saved_input[0..3]=%g,%g,%g,%g\n",
-                    sv[0], sv[1], sv[2], sv[3]);
-            }
             kag_bc_loss_kernel<<<1, 256, 0, bc_stream>>>(
                 dec_flat.data, d_expert, d_mask, grad_logits, loss_acc,
                 act_sizes_puf.data, batch, A_total, num_atns, packed_stride);
-            if (start == 0) {
-                float gl[6];
-                cudaMemcpy(gl, grad_logits, 6 * sizeof(float),
-                    cudaMemcpyDeviceToHost);
-                fprintf(stderr, "grad_logits[0..5]=%g,%g,%g,%g,%g,%g\n",
-                    gl[0], gl[1], gl[2], gl[3], gl[4], gl[5]);
-            }
             cudaError_t ker_err = cudaGetLastError();
             if (ker_err != cudaSuccess) {
                 fprintf(stderr, "chunk %u kernel launch: %s\n", start,
@@ -437,18 +417,6 @@ static int bc_train(Ini* ini) {
             policy_backward(&policy, weights, train_acts, grad_logits_t,
                 FloatTensor(), grad_value_t, bc_stream);
             cudaDeviceSynchronize();
-            if (start == 0) {
-                DecoderActivations* da = (DecoderActivations*)train_acts.decoder;
-                EncoderActivations* ea = (EncoderActivations*)train_acts.encoder;
-                float go[4];
-                cudaMemcpy(go, ea->wgrad_scratch.data, 4 * sizeof(float),
-                    cudaMemcpyDeviceToHost);
-                fprintf(stderr, "enc wgrad ptr=%p val=%g,%g,%g,%g\n",
-                    (void*)ea->wgrad_scratch.data,
-                    go[0], go[1], go[2], go[3]);
-                fprintf(stderr, "grads reg0 ptr=%p\n",
-                    (void*)(*(precision_t**)grads.regs[0].data_ptr));
-            }
             cudaError_t sync_err = cudaGetLastError();
             if (sync_err != cudaSuccess) {
                 fprintf(stderr, "chunk %u sync: %s\n", start,
@@ -470,13 +438,6 @@ static int bc_train(Ini* ini) {
                 long ne = numel(params.regs[r].shape);
                 if (ne > 0) {
                     precision_t* gr = *(precision_t**)grads.regs[r].data_ptr;
-                    if (start == 0 && r < 4) {
-                        float gv[4];
-                        cudaMemcpy(gv, gr, 4 * sizeof(float),
-                            cudaMemcpyDeviceToHost);
-                        fprintf(stderr, "grads reg%d ne=%ld first=%g,%g,%g,%g\n",
-                            r, ne, gv[0], gv[1], gv[2], gv[3]);
-                    }
                     cudaMemcpy(host_grad_bf + grad_off, gr,
                         (size_t)ne * sizeof(precision_t),
                         cudaMemcpyDeviceToHost);
