@@ -1314,3 +1314,19 @@ real leaderboard.
 Exp P (running): ExpL + `env.reward_productive_action=0.05` (credits
 water/harvest/feed/care/collect at 1.0 each) to test whether directly rewarding
 animal maintenance makes the loop emerge, reset t<=80, 100% top lane.
+
+## 2026-08-11: Exp P negative; reset range knob
+
+Exp P (ExpL + productive-action reward 0.05, 50M): final 5,685 vs top (much
+worse than ExpL's 9,005). It did produce more animal actions (place=11,
+care=9, collect=6) but also spammed orders (3.91/turn, 240k sells) and
+overbuilt, losing money. Loses to ExpL 9,247 vs 13,231. Productive reward is
+not the answer - it rewards any action spam.
+
+Added `env.reset_opening_min` (default 0): the reset now samples uniformly in
+[min, N] instead of [0, N]. This lets an experiment guarantee the policy wakes
+with the animal economy already present (animals appear by t11, mature herd by
+t21+, per reset verification).
+
+Exp Q (running): ExpL + reset range [60,80] (always mature animals), no
+productive reward, 100% top lane.
