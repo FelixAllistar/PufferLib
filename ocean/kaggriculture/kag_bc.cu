@@ -45,7 +45,8 @@ __global__ void kag_bc_loss_kernel(
     for (int h = 0; h < num_atns; h++) {
         int A = act_sizes[h];
         int expert_action = (int)expert[idx * num_atns + h];
-        if (expert_action < 0 || expert_action >= A) {
+        if (expert_action < 0 || expert_action >= A
+                || !puf_mask_bit(mask, mask_base, offset + expert_action)) {
             offset += A;
             continue;
         }
@@ -76,11 +77,11 @@ __global__ void kag_bc_loss_kernel(
             float p = __expf(
                 to_float(logits[logits_base + offset + a]) - logsumexp);
             grad_logits[idx * A_total + offset + a] =
-                (a == expert_action) ? (p - 1.0f) : p;
+                ((a == expert_action) ? (p - 1.0f) : p) / (float)B;
         }
         offset += A;
     }
-    if (loss_acc) atomicAdd(loss_acc, loss);
+    if (loss_acc) atomicAdd(loss_acc, loss / (float)B);
 }
 
 static uint32_t bc_rng_state;
