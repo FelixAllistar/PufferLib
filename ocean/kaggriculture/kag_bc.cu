@@ -399,6 +399,10 @@ int main(int argc, char** argv) {
             (size_t)params.total_elems * sizeof(float));
         float* host_grad = (float*)calloc((size_t)params.total_elems,
             sizeof(float));
+        cudaPointerAttributes pa = {};
+        cudaPointerGetAttributes(&pa, master_weights.data);
+        fprintf(stderr, "master ptr type=%d dev=%d addr=%p\n",
+            (int)pa.type, pa.device, master_weights.data);
         cudaError_t hm_err = cudaMemcpy(host_master, master_weights.data,
             (size_t)params.total_elems * sizeof(float),
             cudaMemcpyDeviceToHost);
