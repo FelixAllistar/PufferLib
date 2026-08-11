@@ -1080,6 +1080,23 @@ pattern repeats and produces another step up. If it decays again, the
 checkpoint-mining approach (screen mid checkpoints after each short run) is
 the reliable promotion path.
 
+## 2026-08-11: eval methodology correction
+
+`kaggriculture bench N` steps N total frames, so `bench 2000` was only ~2.7
+games. Early "9,484" and "11,300" claims were 2-game noise. Correct protocol:
+`bench 72000` = 100 games/side.
+
+Corrected 100-game vs-top results:
+- prior champion sweep15: 6,871
+- ExpD@20M: 7,102
+- ExpF@5M (50% top lane, 30M run peaked at 5M): 7,485
+
+Head-to-head ExpF@5M vs ExpD@20M (100 games both seats): 12,321/11,424 vs
+11,267/12,417 — essentially tied; ExpF's vs-top edge is modest but real.
+All three still lack the animal production loop. Next lever is structural,
+not more warm-start continuation: the animal-anchor at low emag, or a
+mixed-dataset BC anchor (crop + animal bots) trained at high capacity.
+
 ## 2026-08-09: GPU reset diversity and selfplay rotation fixes
 
 The CUDA reset kernel was re-deriving `reset_opening_rng` from the per-match
