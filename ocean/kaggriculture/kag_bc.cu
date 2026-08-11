@@ -411,6 +411,7 @@ int main(int argc, char** argv) {
             return 1;
         }
         // Host-side SGD: pull the per-reg bf16 grads, subtract on CPU.
+        cudaDeviceSynchronize();
         float* host_master = (float*)malloc(
             (size_t)params.total_elems * sizeof(float));
         float* host_grad = (float*)calloc((size_t)params.total_elems,
