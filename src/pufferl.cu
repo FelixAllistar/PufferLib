@@ -4239,20 +4239,27 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
         puf_load_weights_into(pufferl->master_weights, pufferl->param_puf,
             pufferl->default_stream, load_path);
         printf("Loaded weights from %s\n", load_path);
-        if (pufferl->hypers.emag_kl_coef > 0.0f) {
-            char magnet_path[8192];
-            const char* explicit_magnet = puf_ini_get_str(ini,
-                "selfplay", "magnet_path");
-            if (explicit_magnet && explicit_magnet[0]
-                    && strcmp(explicit_magnet, "None") != 0) {
-                snprintf(magnet_path, sizeof(magnet_path), "%s",
-                    explicit_magnet);
+    }
+    if (pufferl->hypers.emag_kl_coef > 0.0f) {
+        char magnet_path[8192];
+        const char* explicit_magnet = puf_ini_get_str(ini,
+            "selfplay", "magnet_path");
+        if (explicit_magnet && explicit_magnet[0]
+                && strcmp(explicit_magnet, "None") != 0) {
+            snprintf(magnet_path, sizeof(magnet_path), "%s",
+                explicit_magnet);
+            if (access(magnet_path, R_OK) == 0) {
+                puf_load_weights_into(pufferl->magnet_master_weights,
+                    pufferl->magnet_param_puf, pufferl->default_stream,
+                    magnet_path);
+                printf("Loaded EMA magnet from %s\n", magnet_path);
             } else {
-                snprintf(magnet_path, sizeof(magnet_path), "%s.emag", load_path);
+                fprintf(stderr, "magnet_path %s not found\n", magnet_path);
+                exit(1);
             }
-            if (access(magnet_path, R_OK) == 0
-                    && !(explicit_magnet && explicit_magnet[0]
-                        && strcmp(explicit_magnet, "None") == 0)) {
+        } else if (load_path) {
+            snprintf(magnet_path, sizeof(magnet_path), "%s.emag", load_path);
+            if (access(magnet_path, R_OK) == 0) {
                 puf_load_weights_into(pufferl->magnet_master_weights,
                     pufferl->magnet_param_puf, pufferl->default_stream,
                     magnet_path);
@@ -4271,10 +4278,10 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
                 printf("Initialized EMA magnet from loaded policy\n");
             }
         }
-#ifdef PUF_LOAD_HOOK
-        PUF_LOAD_HOOK(load_path, ini);
-#endif
     }
+#ifdef PUF_LOAD_HOOK
+    if (load_path) PUF_LOAD_HOOK(load_path, ini);
+#endif
     // Keep the rollout actor identical to the loaded learner before any
     // self-play bootstrap or first rollout.  This is a no-op apart from the
     // stream fence when async collection is disabled.
