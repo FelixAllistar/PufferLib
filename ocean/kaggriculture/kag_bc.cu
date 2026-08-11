@@ -403,6 +403,11 @@ int main(int argc, char** argv) {
         cudaPointerGetAttributes(&pa, master_weights.data);
         fprintf(stderr, "master ptr type=%d dev=%d addr=%p\n",
             (int)pa.type, pa.device, master_weights.data);
+        float tiny = 0.0f;
+        cudaError_t tiny_err = cudaMemcpy(&tiny, master_weights.data,
+            sizeof(float), cudaMemcpyDeviceToHost);
+        fprintf(stderr, "tiny D2H: %s val=%g\n",
+            cudaGetErrorString(tiny_err), tiny);
         cudaError_t hm_err = cudaMemcpy(host_master, master_weights.data,
             (size_t)params.total_elems * sizeof(float),
             cudaMemcpyDeviceToHost);
