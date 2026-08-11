@@ -28,6 +28,7 @@ __global__ void kag_bc_loss_kernel(
         const unsigned char* __restrict__ mask,   // (B, packed) bits
         float* __restrict__ grad_logits,          // (B, A_total)
         float* __restrict__ loss_acc,             // scalar
+        float* __restrict__ debug_out,            // (B) per-cell loss
         const int* __restrict__ act_sizes,
         int B, int A_total, int num_atns, int mask_stride) {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
@@ -75,6 +76,7 @@ __global__ void kag_bc_loss_kernel(
         offset += A;
     }
     if (loss_acc) atomicAdd(loss_acc, loss);
+    if (debug_out) debug_out[idx] = loss;
 }
 
 int main(int argc, char** argv) {
@@ -254,6 +256,7 @@ int main(int argc, char** argv) {
         (size_t)bc_steps * act_n * sizeof(float));
     float* grad_value = (float*)xcuda((size_t)bc_steps * sizeof(float));
     float* loss_acc = (float*)xcuda(sizeof(float));
+    float* debug_out = (float*)xcuda((size_t)bc_steps * sizeof(float));
     cudaMemcpy(d_obs_raw, host_obs, (size_t)bc_steps * OBS_SIZE,
         cudaMemcpyHostToDevice);
     cudaDeviceSynchronize();
@@ -335,7 +338,8 @@ int main(int argc, char** argv) {
         }
         kag_bc_loss_kernel<<<grid_size(bc_steps), BLOCK_SIZE, 0, bc_stream>>>(
             dec_flat.data, d_expert, d_mask, grad_logits, loss_acc,
-            act_sizes_puf.data, bc_steps, A_total, num_atns, mask_stride);
+            debug_out, act_sizes_puf.data, bc_steps, A_total, num_atns,
+            mask_stride);
         cudaError_t err = cudaGetLastError();
         if (err != cudaSuccess) {
             fprintf(stderr, "BC kernel launch failed: %s\n",
@@ -353,7 +357,11 @@ int main(int argc, char** argv) {
         if ((ep + 1) % 200 == 0) {
             float loss = 0.0f;
             cudaMemcpy(&loss, loss_acc, sizeof(float), cudaMemcpyDeviceToHost);
-            printf("BC epoch %d loss=%.4f\n", ep + 1, loss / bc_steps);
+            float dbg[4];
+            cudaMemcpy(dbg, debug_out, 4 * sizeof(float),
+                cudaMemcpyDeviceToHost);
+            printf("BC epoch %d loss=%.4f dbg=%g,%g,%g,%g\n", ep + 1,
+                loss / bc_steps, dbg[0], dbg[1], dbg[2], dbg[3]);
         }
     }
 
