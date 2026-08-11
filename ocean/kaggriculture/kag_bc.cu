@@ -245,14 +245,14 @@ static int bc_train(Ini* ini) {
     int hidden = (int)puf_ini_get(ini, "policy", "hidden_size");
     int layers = (int)puf_ini_get(ini, "policy", "num_layers");
     int batch = (int)puf_ini_get(ini, "bc", "batch");
-    int seed = (int)puf_ini_get(ini, "bc", "seed");
+    int bc_seed = (int)puf_ini_get(ini, "bc", "seed");
     const char* out_path = puf_ini_get_str(ini, "bc", "output");
     if (bc_epochs <= 0) bc_epochs = 2000;
     if (bc_lr <= 0.0f) bc_lr = 0.00005f;
     if (hidden <= 0) hidden = 128;
     if (layers <= 0) layers = 2;
     if (batch <= 0) batch = 128;
-    bc_rng_state = (uint32_t)seed * 2654435761u + 1u;
+    bc_rng_state = (uint32_t)bc_seed * 2654435761u + 1u;
     if (!data_path || !data_path[0]) {
         fprintf(stderr, "bc.data is required for train mode\n");
         return 1;
