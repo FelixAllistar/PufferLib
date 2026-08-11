@@ -43,13 +43,19 @@ cuda-adapter: | $(BUILD)
 		-lGL -lm -lpthread -o $(BUILD)/test_cuda_adapter
 	$(BUILD)/test_cuda_adapter
 
-bc: | $(BUILD)
+$(BUILD)/kag_bc: kag_bc.cu kaggriculture.h kaggriculture_core.h \
+		kaggriculture_core.c kaggriculture_bots.h \
+		kaggriculture_public_bots.h kaggriculture_tape_data.h \
+		$(ROOT)/src/pufferenv.h $(ROOT)/src/ini.h \
+		$(ROOT)/src/pufferl_preamble.h $(ROOT)/src/algo.cu | $(BUILD)
 	$${CUDA_HOME:-$${CUDA_PATH:-/usr/local/cuda}}/bin/nvcc \
 		-O2 --threads 0 -arch=$${NVCC_ARCH:-native} -std=c++17 \
 		-I$(ROOT) -I$(ROOT)/src -I$(ROOT)/vendor \
 		-I$(ROOT)/raylib-5.5_linux_amd64/include \
 		kag_bc.cu $(ROOT)/raylib-5.5_linux_amd64/lib/libraylib.a \
 		-lGL -lm -lpthread -lcudart -lcublas -lcurand -o $(BUILD)/kag_bc
+
+bc: $(BUILD)/kag_bc
 	$(BUILD)/kag_bc bc.steps=26 bc.epochs=200
 
 bench: $(LIB)

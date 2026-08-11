@@ -36,6 +36,10 @@
     (1 + KG_POLICY_DIRECT_HANDS + KG_POLICY_OVERFLOW_COHORTS)
 #define KG_POLICY_UNITS KG_POLICY_UNIT_HEADS
 #define OBS_SIZE 1024
+/* First byte after the stable semantic payload. Existing checkpoints keep the
+ * same 1024-byte ABI; warm starts must zero this previously-unused encoder
+ * column before reset-source observations are enabled. */
+#define KAG_OBS_RESET_SOURCE_INDEX 942
 /* The environment stores semantic observations as bytes.  Let the generic
  * byte->precision transfer normalize them once, before rollout storage and
  * every encoder/bank sees the data.  This removes a per-bank scale kernel from
@@ -143,6 +147,7 @@ struct Log {
     float adaptive_pulse_games;
     float adaptive_structured_games;
     float adaptive_triad_games;
+    float reset_games;
     float n;
     /* Episode action/terminal diagnostics. These stay out of the reward and
      * are averaged by vec_log like the existing score fields. */
@@ -178,6 +183,7 @@ struct Env {
     int opening_turns;
     int reset_opening_turns;
     int reset_opening_min;
+    int reset_source;
     uint32_t reset_opening_rng;
     const char* render_names[KG_NUM_PLAYERS];
     float episode_returns[KG_NUM_PLAYERS];
@@ -190,6 +196,7 @@ struct Env {
     float reward_land_value;
     float reward_margin_scale;
     float reward_inactivity_threshold;
+    float reset_opening_prob;
     float reward_neglect_discount;
     float reward_liquidation_days;
     float reward_productive_action;
@@ -749,6 +756,16 @@ KG_HD static inline void kag_write_observation_with_summaries(Env* env, int play
     for (int item = 0; item < KG_NUM_PRODUCTS; item++) {
         out[k++] = kag_u8_scale(game->market.prices[item], 1000);
     }
+    /* DAGS source bit: root episodes are 0, data/reset starts are 255. */
+#ifndef __CUDA_ARCH__
+    if (k != KAG_OBS_RESET_SOURCE_INDEX) {
+        fprintf(stderr,
+            "kaggriculture reset-source observation moved: %d != %d\n",
+            k, KAG_OBS_RESET_SOURCE_INDEX);
+        abort();
+    }
+#endif
+    out[k++] = env->reset_source ? 255 : 0;
     if (k > OBS_SIZE) {
 #ifndef __CUDA_ARCH__
         fprintf(stderr, "kaggriculture observation overflow: %d > %d\n", k, OBS_SIZE);
@@ -1362,15 +1379,22 @@ KG_HD static inline uint32_t kag_reset_opening_random(Env* env) {
     return x;
 }
 
-/* Reset-state sampling executes genuine simultaneous game turns. PPO sees no
- * fake rewards or forced actions: it simply wakes up at a uniformly sampled
- * point in the canonical opening, including the normal turn-zero state. */
+/* Reset-state sampling executes genuine simultaneous game turns. The explicit
+ * mixture probability keeps root starts independent of the sampled prefix
+ * range, matching the DAGS start-distribution construction. */
 KG_HD static inline void kag_reset_with_opening(Env* env,
         const KGScriptTape* tapes) {
     KGState* game = &env->game_storage;
     kg_reset(game);
+    env->reset_source = 0;
     int limit = env->reset_opening_turns;
-    if (limit <= 0) return;
+    if (limit <= 0 || env->reset_opening_prob <= 0.0f) return;
+    if (env->reset_opening_prob < 1.0f) {
+        uint32_t draw = kag_reset_opening_random(env) >> 8;
+        uint32_t cutoff = (uint32_t)(env->reset_opening_prob * 16777216.0f);
+        if (draw >= cutoff) return;
+    }
+    env->reset_source = 1;
     if (limit >= game->config.episode_steps) {
         limit = game->config.episode_steps - 1;
     }
@@ -1575,6 +1599,27 @@ KG_HD static inline int kag_bot_jobs(const KGState* game, int player_id,
     int crop_rank[KG_NUM_CROPS];
     kag_bot_crop_rank(game, player_id, crop_rank);
     int count = 0;
+    /* The exported top continuation prioritizes every occupied animal tile
+     * before crop work. Keep this as a separate row-major pass so job order,
+     * worker tie-breaking, and therefore the entire trajectory match the
+     * Python oracle exactly. One animal job replaces that tile's crop job, so
+     * the fixed KG_MAX_TILES capacity remains sufficient. */
+    for (int tile_id = 0; tile_id < KG_MAX_TILES; tile_id++) {
+        const KGTile* tile = &farm->tiles[tile_id];
+        if (!kg_is_animal_tile(tile)) continue;
+        uint8_t x = (uint8_t)(tile_id % KG_MAX_BOARD_SIZE);
+        uint8_t y = (uint8_t)(tile_id / KG_MAX_BOARD_SIZE);
+        if (tile->fertilizer_available) {
+            jobs[count++] = (KagBotJob){x, y, 0,
+                KG_OP_COLLECT_FERTILIZER, -1};
+        } else if (tile->yield_units > 0) {
+            jobs[count++] = (KagBotJob){x, y, 0, KG_OP_HARVEST, -1};
+        } else if (!tile->fed_today) {
+            jobs[count++] = (KagBotJob){x, y, 0, KG_OP_FEED, -1};
+        } else if (!tile->cared_today) {
+            jobs[count++] = (KagBotJob){x, y, 0, KG_OP_CARE, -1};
+        }
+    }
     int slot = 0;
     for (int tile_id = 0; tile_id < KG_MAX_TILES; tile_id++) {
         const KGTile* tile = &farm->tiles[tile_id];
@@ -1940,6 +1985,8 @@ void puf_init(Env* env, Dict* kwargs) {
     env->reset_opening_turns = (int)dict_get(kwargs,
         "reset_opening_turns");
     env->reset_opening_min = (int)dict_get(kwargs, "reset_opening_min");
+    env->reset_opening_prob = (float)dict_get(kwargs,
+        "reset_opening_prob");
     if (env->policy_market_slots < 1
             || env->policy_market_slots > KG_POLICY_MARKET_SLOTS) {
         fprintf(stderr, "policy_market_slots must be in [1, %d]\n",
@@ -1956,6 +2003,11 @@ void puf_init(Env* env, Dict* kwargs) {
         fprintf(stderr,
             "opening_turns and reset_opening_turns must be in [0, %d]\n",
             KG_SCRIPT_FRAMES - 1);
+        exit(1);
+    }
+    if (env->reset_opening_prob < 0.0f
+            || env->reset_opening_prob > 1.0f) {
+        fprintf(stderr, "reset_opening_prob must be in [0, 1]\n");
         exit(1);
     }
     env->episode_returns[0] = 0.0f;
@@ -2262,6 +2314,7 @@ void puf_step(Env* env) {
             env->log.specialist_games += 1.0f;
         }
         env->log.n += 1.0f;
+        env->log.reset_games += env->reset_source ? 1.0f : 0.0f;
         if (env->tag > 0) env->boundary_reached = 1;
 
         /* Auto-reset while preserving the completed transition's reward and
@@ -2509,6 +2562,7 @@ void puf_log(Log* log, Dict* out) {
     dict_set(out, "adaptive_structured_fraction",
         log->adaptive_structured_games);
     dict_set(out, "adaptive_triad_fraction", log->adaptive_triad_games);
+    dict_set(out, "reset_fraction", log->reset_games);
     dict_set(out, "market_orders", log->market_orders);
     dict_set(out, "orders_per_turn", log->episode_length > 0.0f
         ? log->market_orders / log->episode_length : 0.0f);

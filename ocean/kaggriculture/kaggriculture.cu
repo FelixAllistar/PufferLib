@@ -30,6 +30,7 @@ typedef struct {
     int opening_turns;
     int reset_opening_turns;
     int reset_opening_min;
+    float reset_opening_prob;
     float reward_potential_scale;
     float reward_win;
     float reward_seed_value;
@@ -236,23 +237,39 @@ __device__ static void kag_cuda_transition(Env* env, Env* shells,
         : money[0] == money[1] ? 0.5f : 0.0f;
     float model_win = model_player == 0 ? win0 : 1.0f - win0;
     float outcome = (2.0f * win0 - 1.0f) * env->reward_win;
+    int model_money = money[model_player];
+    int opponent_money = money[1 - model_player];
+    float margin = (float)(model_money - opponent_money)
+        / (float)game->config.starting_money;
+    float margin_term = env->reward_margin_scale * margin;
     env->agents[0].rewards[0] += outcome;
     env->agents[1].rewards[0] -= outcome;
     env->episode_returns[0] += outcome;
     env->episode_returns[1] -= outcome;
+    if (model_player == 0) {
+        env->agents[0].rewards[0] += margin_term;
+        env->agents[1].rewards[0] -= margin_term;
+        env->episode_returns[0] += margin_term;
+        env->episode_returns[1] -= margin_term;
+    } else {
+        env->agents[0].rewards[0] -= margin_term;
+        env->agents[1].rewards[0] += margin_term;
+        env->episode_returns[0] -= margin_term;
+        env->episode_returns[1] += margin_term;
+    }
     for (int player = 0; player < KG_NUM_PLAYERS; player++) {
-        if (kag_abs(money[player] - game->config.starting_money) <= 2) {
+        if (kag_abs(money[player] - game->config.starting_money)
+                <= env->reward_inactivity_threshold) {
             env->agents[player].rewards[0] -= env->reward_inactivity;
             env->episode_returns[player] -= env->reward_inactivity;
         }
         env->agents[player].terminals[0] = 1.0f;
     }
 
-    int model_money = money[model_player];
-    int opponent_money = money[1 - model_player];
     env->log.perf += model_win;
     env->log.score += (float)model_money;
-    env->log.sweep_score += kag_abs(model_money - game->config.starting_money) <= 2
+    env->log.sweep_score += kag_abs(model_money - game->config.starting_money)
+            <= env->reward_inactivity_threshold
         ? -3000.0f : (float)model_money;
     env->log.opponent_score += (float)opponent_money;
     env->log.episode_return += env->episode_returns[model_player];
@@ -319,6 +336,7 @@ __device__ static void kag_cuda_transition(Env* env, Env* shells,
         env->log.specialist_games += 1.0f;
     }
     env->log.n += 1.0f;
+    env->log.reset_games += env->reset_source ? 1.0f : 0.0f;
     if (env->tag > 0) {
         env->boundary_reached = 1;
         atomicAdd(&bank_completed[env->tag], 1);
@@ -349,6 +367,7 @@ __global__ static void kag_cuda_reset_kernel(Env* shells, Env* matches,
     env->opening_turns = d_kag_cuda_config.opening_turns;
     env->reset_opening_turns = d_kag_cuda_config.reset_opening_turns;
     env->reset_opening_min = d_kag_cuda_config.reset_opening_min;
+    env->reset_opening_prob = d_kag_cuda_config.reset_opening_prob;
     env->reward_potential_scale = d_kag_cuda_config.reward_potential_scale;
     env->reward_win = d_kag_cuda_config.reward_win;
     env->reward_seed_value = d_kag_cuda_config.reward_seed_value;
@@ -436,6 +455,7 @@ static void kag_cuda_load_config(Dict* kwargs) {
     h_kag_cuda_config.opening_turns = template_env.opening_turns;
     h_kag_cuda_config.reset_opening_turns = template_env.reset_opening_turns;
     h_kag_cuda_config.reset_opening_min = template_env.reset_opening_min;
+    h_kag_cuda_config.reset_opening_prob = template_env.reset_opening_prob;
     h_kag_cuda_config.reward_potential_scale = template_env.reward_potential_scale;
     h_kag_cuda_config.reward_win = template_env.reward_win;
     h_kag_cuda_config.reward_seed_value = template_env.reward_seed_value;

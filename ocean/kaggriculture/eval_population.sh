@@ -18,6 +18,8 @@ kag_fixed=pass,rules
 kag_cache=
 kag_focal_count=0
 kag_inputs=()
+kag_fixed_seed_a=${KAG_FIXED_SEED_A:-8000}
+kag_fixed_seed_b=${KAG_FIXED_SEED_B:-9000}
 
 kag_usage() {
     printf '%s\n' \
@@ -29,7 +31,7 @@ kag_usage() {
         "  --cpu              Use the legacy native C bench instead of CUDA" \
         "  --gpu-agents N     CUDA evaluation agents per matcher (default 64)" \
         "  --output PREFIX    Output prefix (default logs/kaggriculture/population)" \
-        "  --fixed LIST       Comma-separated fixed sides (default pass,rules; use none to disable)" \
+        "  --fixed LIST       Comma-separated fixed sides (pass,rules,top; default pass,rules)" \
         "  --cache FILE       Reuse/write payoff rows keyed by checkpoint hash" \
         "  --focal-count N    Evaluate only pairs led by the first N policies when the cached tail is complete" \
         "  --final-only       Keep only the lexically last raw checkpoint in each run directory" \
@@ -79,6 +81,10 @@ if ! [[ $kag_jobs =~ ^[0-9]+$ ]] || ((kag_jobs < 1)); then
 fi
 if ! [[ $kag_gpu_agents =~ ^[0-9]+$ ]] || ((kag_gpu_agents < 4)); then
     printf '%s\n' '--gpu-agents must be an integer of at least 4' >&2
+    exit 2
+fi
+if ! [[ $kag_fixed_seed_a =~ ^[0-9]+$ && $kag_fixed_seed_b =~ ^[0-9]+$ ]]; then
+    printf '%s\n' 'KAG_FIXED_SEED_A/B must be nonnegative integers' >&2
     exit 2
 fi
 if ! [[ $kag_sample_run =~ ^[0-9]+$ ]]; then
@@ -413,18 +419,23 @@ kag_run_fixed_gpu() {
     local kag_output_text kag_reverse_text
     local kag_score kag_draw kag_money kag_fixed_money
     local kag_reverse_score kag_reverse_draw kag_reverse_money kag_reverse_fixed_money
-    local kag_pass=0 kag_rules=0 kag_seed_offset=0
+    local kag_pass=0 kag_rules=0 kag_top=0 kag_seed_offset=0
     local kag_exact_agents=$((2 * kag_games_per_seat))
     if [[ $kag_side == pass ]]; then kag_pass=1; fi
     if [[ $kag_side == rules ]]; then kag_rules=1; kag_seed_offset=1; fi
+    if [[ $kag_side == top ]]; then kag_top=1; kag_seed_offset=2; fi
+    # Common random numbers: every policy faces the exact same fixed-opponent
+    # worlds. Policy-index-dependent seeds add comparison noise and can reverse
+    # close promotion decisions.
     if ! kag_output_text=$(./puffer eval_bot kaggriculture \
             "base.eval_episodes=$kag_games_per_seat" \
             "base.eval_agents=$kag_exact_agents" \
-            "base.seed=$((8000 + kag_i * 17 + kag_seed_offset))" \
+            "base.seed=$((kag_fixed_seed_a + kag_seed_offset))" \
             "base.load_model_path=$kag_a" \
             "env.bot_opponent_fraction=1" \
             "env.bot_pass_fraction=$kag_pass" \
             "env.bot_rules_fraction=$kag_rules" \
+            "env.bot_top_fraction=$kag_top" \
             "env.bot_script_fraction=0" \
             "env.bot_adaptive_fraction=0" \
             env.bot_first=0 \
@@ -435,11 +446,12 @@ kag_run_fixed_gpu() {
     if ! kag_reverse_text=$(./puffer eval_bot kaggriculture \
             "base.eval_episodes=$kag_games_per_seat" \
             "base.eval_agents=$kag_exact_agents" \
-            "base.seed=$((9000 + kag_i * 17 + kag_seed_offset))" \
+            "base.seed=$((kag_fixed_seed_b + kag_seed_offset))" \
             "base.load_model_path=$kag_a" \
             "env.bot_opponent_fraction=1" \
             "env.bot_pass_fraction=$kag_pass" \
             "env.bot_rules_fraction=$kag_rules" \
+            "env.bot_top_fraction=$kag_top" \
             "env.bot_script_fraction=0" \
             "env.bot_adaptive_fraction=0" \
             env.bot_first=1 \
@@ -517,7 +529,7 @@ kag_run_pair() {
     local kag_forward kag_reverse kag_sf kag_df kag_af kag_bf
     local kag_sr kag_dr kag_br kag_ar kag_score kag_draw kag_money_a kag_money_b
     if ((kag_gpu)); then
-        if [[ $kag_j =~ ^(pass|rules)$ ]]; then
+        if [[ $kag_j =~ ^(pass|rules|top)$ ]]; then
             kag_run_fixed_gpu "$kag_i" "$kag_j" "$kag_a" "$kag_result"
         else
             kag_run_gpu_pair "$kag_i" "$kag_j" "$kag_a" "$kag_b" "$kag_result"

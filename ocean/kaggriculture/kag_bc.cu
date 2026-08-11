@@ -1,8 +1,8 @@
 // Standalone behavioral-cloning trainer for Kaggriculture.
 // Two modes:
-//   gen   - run bc.games seeded games where both players use a strong bot
+//   gen   - run bc.games seeded prefixes where both players use a strong bot
 //           (bc.bot: 0=rules econ, 1=top hybrid, 2=adaptive structured,
-//           3=adaptive harvest-pulse, 4=frontier tape) and write every step's
+//           3=adaptive harvest-pulse, 4=frontier tape) and write bc.steps of
 //           (obs, expert action-heads, packed mask) to bc.data.
 //   train - load bc.data and minimize -log pi(a_expert | obs) over the whole
 //           dataset with mini-batch SGD on the same MinGRU policy as training.
@@ -25,36 +25,84 @@
 #include "../../src/algo.cu"
 
 #define KAG_BC_MAGIC 0x4b414742u  // "KAGB"
-#define KAG_BC_VERSION 1u
+#define KAG_BC_VERSION 2u
 
-// Cross-entropy on the expert action heads; invalid/padded rows contribute 0.
+typedef struct {
+    uint32_t magic;
+    uint32_t version;
+    uint32_t count;
+    uint32_t row_obs;
+    uint32_t row_expert;
+    uint32_t row_mask;
+    uint32_t games;
+    uint32_t steps;
+} KagBCHeader;
+
+__device__ __forceinline__ bool kag_bc_head_active(
+        const float* actions, int action_base, int head) {
+    if (head < PUFFER_CONDITIONAL_PREFIX_HEADS) return true;
+    int relative = head - PUFFER_CONDITIONAL_PREFIX_HEADS;
+    int slot = relative / PUFFER_CONDITIONAL_HEADS_PER_SLOT;
+    int node = relative % PUFFER_CONDITIONAL_HEADS_PER_SLOT;
+    for (int previous = 0; previous < slot; previous++) {
+        int continue_head = PUFFER_CONDITIONAL_PREFIX_HEADS
+            + PUFFER_CONDITIONAL_HEADS_PER_SLOT * previous;
+        if ((int)actions[action_base + continue_head]
+                != PUFFER_CONDITIONAL_CONTINUE) return false;
+    }
+    if (node == 0) return true;
+    int continue_head = PUFFER_CONDITIONAL_PREFIX_HEADS
+        + PUFFER_CONDITIONAL_HEADS_PER_SLOT * slot;
+    if ((int)actions[action_base + continue_head]
+            != PUFFER_CONDITIONAL_CONTINUE) return false;
+    if (node == 1) return true;
+    return (int)actions[action_base + continue_head + 1]
+        < PUFFER_CONDITIONAL_QUANTITY_COMMANDS;
+}
+
+/* Cross-entropy on conditionally reached expert heads. Padded rows use an
+ * expert action of -1. stats = raw loss, active heads, correct heads, exact
+ * rows. Gradients are normalized by the number of real sequence rows. */
 __global__ void kag_bc_loss_kernel(
         const precision_t* __restrict__ logits,   // (B, fused_cols)
         const float* __restrict__ expert,         // (B, num_atns)
         const unsigned char* __restrict__ mask,   // (B, packed) bits
         float* __restrict__ grad_logits,          // (B, A_total)
-        float* __restrict__ loss_acc,             // scalar
+        float* __restrict__ stats,                // 4 floats
         const int* __restrict__ act_sizes,
-        int B, int A_total, int num_atns, int mask_stride) {
+        int rows, int valid_rows, int A_total, int num_atns,
+        int mask_stride) {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    if (idx >= B) return;
+    if (idx >= rows || (int)expert[idx * num_atns] < 0) return;
     int logits_base = idx * (A_total + 1);
     int mask_base = idx * mask_stride;
     int offset = 0;
     float loss = 0.0f;
+    int active = 0;
+    int correct = 0;
+    int exact = 1;
     for (int h = 0; h < num_atns; h++) {
         int A = act_sizes[h];
         int expert_action = (int)expert[idx * num_atns + h];
+        if (!kag_bc_head_active(expert, idx * num_atns, h)) {
+            offset += A;
+            continue;
+        }
         if (expert_action < 0 || expert_action >= A
                 || !puf_mask_bit(mask, mask_base, offset + expert_action)) {
+            exact = 0;
             offset += A;
             continue;
         }
         float max_val = -INFINITY;
+        int prediction = 0;
         for (int a = 0; a < A; a++) {
             if (puf_mask_bit(mask, mask_base, offset + a)) {
                 float l = to_float(logits[logits_base + offset + a]);
-                max_val = fmaxf(max_val, l);
+                if (l > max_val) {
+                    max_val = l;
+                    prediction = a;
+                }
             }
         }
         if (max_val == -INFINITY) {
@@ -72,16 +120,25 @@ __global__ void kag_bc_loss_kernel(
         float expert_logit = to_float(
             logits[logits_base + offset + expert_action]);
         loss += logsumexp - expert_logit;
+        active++;
+        if (prediction == expert_action) correct++;
+        else exact = 0;
         for (int a = 0; a < A; a++) {
             if (!puf_mask_bit(mask, mask_base, offset + a)) continue;
             float p = __expf(
                 to_float(logits[logits_base + offset + a]) - logsumexp);
             grad_logits[idx * A_total + offset + a] =
-                ((a == expert_action) ? (p - 1.0f) : p) / (float)B;
+                ((a == expert_action) ? (p - 1.0f) : p)
+                    / (float)valid_rows;
         }
         offset += A;
     }
-    if (loss_acc) atomicAdd(loss_acc, loss / (float)B);
+    if (stats) {
+        atomicAdd(stats, loss);
+        atomicAdd(stats + 1, (float)active);
+        atomicAdd(stats + 2, (float)correct);
+        atomicAdd(stats + 3, exact ? 1.0f : 0.0f);
+    }
 }
 
 static uint32_t bc_rng_state;
@@ -171,11 +228,16 @@ static Env bc_make_env(Ini* ini, uint32_t rng) {
 // ---- Mode 1: generate a dataset file ----
 static int bc_gen(Ini* ini) {
     int games = (int)puf_ini_get(ini, "bc", "games");
+    int requested_steps = (int)puf_ini_get(ini, "bc", "steps");
     int profile = (int)puf_ini_get(ini, "bc", "bot");
     int opp = (int)puf_ini_get(ini, "bc", "opponent");
     int bc_seed = (int)puf_ini_get(ini, "bc", "seed");
     const char* data_path = puf_ini_get_str(ini, "bc", "data");
     if (games <= 0) games = 50;
+    if (requested_steps <= 0 || requested_steps > 720) {
+        fprintf(stderr, "bc.steps must be in [1, 720]\n");
+        return 1;
+    }
     if (!data_path || !data_path[0]) data_path = "saved/kaggriculture_bc_data.bin";
     bc_rng_state = (uint32_t)bc_seed * 2654435761u + 1u;
 
@@ -184,17 +246,18 @@ static int bc_gen(Ini* ini) {
     size_t row_obs = OBS_SIZE;
     size_t row_expert = NUM_ATNS;
     size_t row_mask = packed_stride;
-    size_t cap = (size_t)games * 720;
+    size_t cap = (size_t)games * (size_t)requested_steps;
     obs_t* obs = (obs_t*)malloc(cap * row_obs);
     float* expert = (float*)malloc(cap * row_expert * sizeof(float));
     unsigned char* mask = (unsigned char*)malloc(cap * row_mask);
     if (!obs || !expert || !mask) { perror("malloc"); return 1; }
 
     size_t count = 0;
+    int sequence_steps = requested_steps;
     for (int g = 0; g < games; g++) {
         Env env = bc_make_env(ini, (uint32_t)g);
         int steps = 0;
-        while (!env.game_storage.done && steps < 720) {
+        while (!env.game_storage.done && steps < sequence_steps) {
             KGAction a0 = {}, a1 = {};
             bc_bot_action(&env.game_storage, 0, profile, &a0);
             bc_bot_action(&env.game_storage, 1, opp, &a1);
@@ -208,6 +271,19 @@ static int bc_gen(Ini* ini) {
             KGAction pair[KG_NUM_PLAYERS] = {a0, a1};
             kg_step(&env.game_storage, pair);
             kag_write_all_observations_from_tapes(&env, kag_script_tapes);
+            steps++;
+        }
+        /* A nominal 720-turn Kaggle episode exposes 719 decision observations:
+         * the final core transition is terminal and has no next action. Infer
+         * that exact recurrent length once, then require every game to match. */
+        if (g == 0 && env.game_storage.done && steps < sequence_steps) {
+            sequence_steps = steps;
+        }
+        if (steps != sequence_steps) {
+            fprintf(stderr,
+                "BC game %d ended at %d before requested prefix %d\n",
+                g, steps, sequence_steps);
+            return 1;
         }
         for (int p = 0; p < KG_NUM_PLAYERS; p++) {
             free(env.agents[p].observations);
@@ -224,11 +300,12 @@ static int bc_gen(Ini* ini) {
 
     FILE* fp = fopen(data_path, "wb");
     if (!fp) { perror(data_path); return 1; }
-    uint32_t header[6] = {
+    KagBCHeader header = {
         KAG_BC_MAGIC, KAG_BC_VERSION, (uint32_t)count,
         (uint32_t)row_obs, (uint32_t)row_expert, (uint32_t)row_mask,
+        (uint32_t)games, (uint32_t)sequence_steps,
     };
-    fwrite(header, sizeof(uint32_t), 6, fp);
+    fwrite(&header, sizeof(header), 1, fp);
     fwrite(obs, 1, count * row_obs, fp);
     fwrite(expert, sizeof(float), count * row_expert, fp);
     fwrite(mask, 1, count * row_mask, fp);
@@ -249,11 +326,18 @@ static int bc_train(Ini* ini) {
     int batch = (int)puf_ini_get(ini, "bc", "batch");
     int bc_seed = (int)puf_ini_get(ini, "bc", "seed");
     const char* out_path = puf_ini_get_str(ini, "bc", "output");
-    if (bc_epochs <= 0) bc_epochs = 2000;
+    const char* load_path = puf_ini_get_str(ini, "bc", "load_model_path");
+    int validation_games = (int)puf_ini_get(ini, "bc", "validation_games");
+    int zero_reset_source = (int)puf_ini_get(
+        ini, "bc", "zero_reset_source");
+    float anchor_l2 = (float)puf_ini_get(ini, "bc", "anchor_l2");
+    /* Zero is an intentional conversion-only pass (for example, zeroing a
+     * newly assigned observation column in a legacy checkpoint). */
+    if (bc_epochs < 0) bc_epochs = 2000;
     if (bc_lr <= 0.0f) bc_lr = 0.00005f;
     if (hidden <= 0) hidden = 128;
     if (layers <= 0) layers = 2;
-    if (batch <= 0) batch = 128;
+    if (batch <= 0) batch = 32;
     bc_rng_state = (uint32_t)bc_seed * 2654435761u + 1u;
     if (!data_path || !data_path[0]) {
         fprintf(stderr, "bc.data is required for train mode\n");
@@ -263,24 +347,51 @@ static int bc_train(Ini* ini) {
 
     FILE* fp = fopen(data_path, "rb");
     if (!fp) { perror(data_path); return 1; }
-    uint32_t header[6];
-    if (fread(header, sizeof(uint32_t), 6, fp) != 6
-            || header[0] != KAG_BC_MAGIC || header[1] != KAG_BC_VERSION) {
-        fprintf(stderr, "bad dataset header\n");
+    KagBCHeader header;
+    if (fread(&header, sizeof(header), 1, fp) != 1
+            || header.magic != KAG_BC_MAGIC
+            || header.version != KAG_BC_VERSION) {
+        fprintf(stderr,
+            "bad or legacy BC dataset header; regenerate with bc.mode=gen\n");
         return 1;
     }
-    uint32_t count = header[2], row_obs = header[3],
-        row_expert = header[4], row_mask = header[5];
+    uint32_t count = header.count, row_obs = header.row_obs,
+        row_expert = header.row_expert, row_mask = header.row_mask;
+    int games = (int)header.games;
+    int sequence_steps = (int)header.steps;
+    if (games < 2 || sequence_steps < 1
+            || count != (uint32_t)(games * sequence_steps)
+            || row_obs != OBS_SIZE || row_expert != NUM_ATNS
+            || row_mask != (KG_POLICY_ACTION_MASK_SIZE + 7) / 8) {
+        fprintf(stderr, "invalid BC v2 dimensions\n");
+        return 1;
+    }
+    if (validation_games <= 0) validation_games = games / 5;
+    if (validation_games < 1) validation_games = 1;
+    if (validation_games >= games) validation_games = games - 1;
+    int train_games = games - validation_games;
+    if (batch > train_games) batch = train_games;
     obs_t* obs = (obs_t*)malloc((size_t)count * row_obs);
     float* expert = (float*)malloc((size_t)count * row_expert * sizeof(float));
     unsigned char* mask = (unsigned char*)malloc((size_t)count * row_mask);
     if (!obs || !expert || !mask) { perror("malloc"); return 1; }
-    fread(obs, 1, (size_t)count * row_obs, fp);
-    fread(expert, sizeof(float), (size_t)count * row_expert, fp);
-    fread(mask, 1, (size_t)count * row_mask, fp);
+    bool read_ok = fread(obs, 1, (size_t)count * row_obs, fp)
+            == (size_t)count * row_obs
+        && fread(expert, sizeof(float), (size_t)count * row_expert, fp)
+            == (size_t)count * row_expert
+        && fread(mask, 1, (size_t)count * row_mask, fp)
+            == (size_t)count * row_mask;
     fclose(fp);
-    printf("BC train: %u steps, batch=%d epochs=%d lr=%g hidden=%d layers=%d\n",
-        count, batch, bc_epochs, bc_lr, hidden, layers);
+    if (!read_ok) {
+        fprintf(stderr, "truncated BC dataset: %s\n", data_path);
+        return 1;
+    }
+    printf("BC train: %d games x %d steps (%d train/%d validation), "
+        "batch=%d epochs=%d lr=%g hidden=%d layers=%d init=%s\n",
+        games, sequence_steps, train_games, validation_games, batch,
+        bc_epochs, bc_lr, hidden, layers,
+        load_path && load_path[0] && strcmp(load_path, "None")
+            ? load_path : "random");
 
     cublas_init_handle();
     cudaStream_t bc_stream;
@@ -293,12 +404,13 @@ static int bc_train(Ini* ini) {
         for (int i = 0; i < num_atns; i++) act_n += act_sizes[i];
     }
     Policy policy = build_policy("kaggriculture", OBS_SIZE, hidden,
-        layers, act_n, false, 1);
+        layers, act_n, false, sequence_steps);
 
     Allocator params = {0}, acts = {0}, grads = {0};
     PolicyWeights weights = policy_weights_create(&policy, &params);
+    int batch_rows = batch * sequence_steps;
     PolicyActivations train_acts = policy_reg_train(&policy, weights,
-        &acts, &grads, batch);
+        &acts, &grads, batch_rows);
     IntTensor act_sizes_puf = {.shape = {num_atns}};
     alloc_register(&acts, &act_sizes_puf);
     PrecisionTensor state = {.shape = {layers, batch, hidden}};
@@ -310,7 +422,7 @@ static int bc_train(Ini* ini) {
     FloatTensor master_weights = {
         .data = (float*)xcuda((size_t)params.total_elems * sizeof(float)),
         .shape = {params.total_elems}};
-    int act_sizes[42];
+    int act_sizes[NUM_ATNS];
     {
         int tmp[] = ACT_SIZES;
         memcpy(act_sizes, tmp, sizeof(act_sizes));
@@ -320,39 +432,79 @@ static int bc_train(Ini* ini) {
     uint64_t seed = 42;
     policy_init_weights(&policy, weights, &seed, 0);
     cudaDeviceSynchronize();
-    // Seed the float master from the initialized bf16 params, then keep the
-    // master as the trainable copy (bf16 params are refreshed each iteration).
+    /* Seed the float master from initialized bf16 params, then optionally
+     * replace it with a compatible PPO checkpoint. */
     cast<<<grid_size((int)params.total_elems), BLOCK_SIZE, 0, 0>>>(
         master_weights.data, param_puf, (int)params.total_elems);
     cudaDeviceSynchronize();
+    float* host_anchor = (float*)malloc(
+        (size_t)params.total_elems * sizeof(float));
+    if (!host_anchor) { perror("malloc"); return 1; }
+    if (load_path && load_path[0] && strcmp(load_path, "None")) {
+        FILE* load = fopen(load_path, "rb");
+        if (!load) { perror(load_path); return 1; }
+        if (fseek(load, 0, SEEK_END) != 0
+                || ftell(load) != (long)(params.total_elems * sizeof(float))
+                || fseek(load, 0, SEEK_SET) != 0
+                || fread(host_anchor, sizeof(float),
+                    (size_t)params.total_elems, load)
+                    != (size_t)params.total_elems) {
+            fprintf(stderr, "incompatible BC initialization checkpoint: %s\n",
+                load_path);
+            fclose(load);
+            return 1;
+        }
+        fclose(load);
+    } else {
+        cudaMemcpy(host_anchor, master_weights.data,
+            (size_t)params.total_elems * sizeof(float),
+            cudaMemcpyDeviceToHost);
+    }
+    if (zero_reset_source) {
+        for (int h = 0; h < hidden; h++) {
+            host_anchor[(size_t)h * OBS_SIZE
+                + KAG_OBS_RESET_SOURCE_INDEX] = 0.0f;
+        }
+    }
+    cudaMemcpy(master_weights.data, host_anchor,
+        (size_t)params.total_elems * sizeof(float), cudaMemcpyHostToDevice);
+    cast<<<grid_size((int)params.total_elems), BLOCK_SIZE, 0, bc_stream>>>(
+        param_puf, master_weights.data, (int)params.total_elems);
+    cudaStreamSynchronize(bc_stream);
 
     int packed_stride = (mask_size + 7) / 8;
     int A_total = act_n;
     precision_t* d_obs = (precision_t*)xcuda(
-        (size_t)batch * OBS_SIZE * sizeof(precision_t));
-    obs_t* h_obs_chunk = (obs_t*)malloc((size_t)batch * OBS_SIZE);
+        (size_t)batch_rows * OBS_SIZE * sizeof(precision_t));
+    obs_t* h_obs_chunk = (obs_t*)malloc((size_t)batch_rows * OBS_SIZE);
     float* h_expert_chunk = (float*)malloc(
-        (size_t)batch * NUM_ATNS * sizeof(float));
+        (size_t)batch_rows * NUM_ATNS * sizeof(float));
     unsigned char* h_mask_chunk = (unsigned char*)malloc(
-        (size_t)batch * packed_stride);
-    obs_t* d_obs_raw = (obs_t*)xcuda((size_t)batch * OBS_SIZE);
+        (size_t)batch_rows * packed_stride);
+    obs_t* d_obs_raw = (obs_t*)xcuda((size_t)batch_rows * OBS_SIZE);
     float* d_expert = (float*)xcuda(
-        (size_t)batch * NUM_ATNS * sizeof(float));
+        (size_t)batch_rows * NUM_ATNS * sizeof(float));
     unsigned char* d_mask = (unsigned char*)xcuda(
-        (size_t)batch * packed_stride);
+        (size_t)batch_rows * packed_stride);
     float* grad_logits = (float*)xcuda(
-        (size_t)batch * act_n * sizeof(float));
-    float* grad_value = (float*)xcuda((size_t)batch * sizeof(float));
-    float* loss_acc = (float*)xcuda(sizeof(float));
+        (size_t)batch_rows * act_n * sizeof(float));
+    float* grad_value = (float*)xcuda((size_t)batch_rows * sizeof(float));
+    float* stats_acc = (float*)xcuda(4 * sizeof(float));
 
     PrecisionTensor obs_t = {.data = d_obs,
-        .shape = {batch, 1, OBS_SIZE}};
+        .shape = {batch, sequence_steps, OBS_SIZE}};
     PrecisionTensor terminals = {.data = (precision_t*)xcuda(
-        (size_t)batch * sizeof(precision_t)), .shape = {batch}};
+        (size_t)batch_rows * sizeof(precision_t)),
+        .shape = {batch, sequence_steps}};
 
-    // Index shuffle for dataset order variation per epoch.
-    uint32_t* order = (uint32_t*)malloc((size_t)count * sizeof(uint32_t));
-    for (uint32_t i = 0; i < count; i++) order[i] = i;
+    /* Shuffle once before splitting so validation is held out by episode, then
+     * reshuffle only the training prefix each epoch. */
+    uint32_t* order = (uint32_t*)malloc((size_t)games * sizeof(uint32_t));
+    for (int i = 0; i < games; i++) order[i] = (uint32_t)i;
+    for (int i = games - 1; i > 0; i--) {
+        int j = (int)(bc_rand() % (uint32_t)(i + 1));
+        uint32_t tmp = order[i]; order[i] = order[j]; order[j] = tmp;
+    }
     precision_t* host_grad_bf = (precision_t*)malloc(
         (size_t)params.total_elems * sizeof(precision_t));
     float* host_master = (float*)malloc(
@@ -361,111 +513,147 @@ static int bc_train(Ini* ini) {
         sizeof(float));
     float mom = (float)puf_ini_get(ini, "bc", "momentum");
     if (mom <= 0.0f || mom >= 1.0f) mom = 0.9f;
+    int report_interval = (int)puf_ini_get(ini, "bc", "report_interval");
+    if (report_interval <= 0) report_interval = 25;
 
-    for (int ep = 0; ep < bc_epochs; ep++) {
-        // Fisher-Yates shuffle.
-        for (uint32_t i = count - 1; i > 0; i--) {
-            uint32_t j = (uint32_t)(bc_rand() % (i + 1));
-            uint32_t tmp = order[i]; order[i] = order[j]; order[j] = tmp;
+    auto run_chunk = [&](int order_start, int B, bool update,
+            float host_stats[4]) -> bool {
+        memset(h_obs_chunk, 0, (size_t)batch_rows * OBS_SIZE);
+        memset(h_mask_chunk, 0, (size_t)batch_rows * packed_stride);
+        for (int row = 0; row < batch_rows; row++) {
+            for (int h = 0; h < NUM_ATNS; h++) {
+                h_expert_chunk[(size_t)row * NUM_ATNS + h] = -1.0f;
+            }
         }
-        float epoch_loss = 0.0f;
-        int epoch_steps = 0;
-        for (uint32_t start = 0; start < count; start += (uint32_t)batch) {
-            int B = (int)((count - start) < (uint32_t)batch
-                ? (count - start) : (uint32_t)batch);
-            // Fill a padded batch (invalid expert = -1 on the tail).
-            for (int i = 0; i < B; i++) {
-                uint32_t row = order[start + i];
-                memcpy(h_obs_chunk + (size_t)i * OBS_SIZE,
-                    obs + (size_t)row * OBS_SIZE, OBS_SIZE);
-                memcpy(h_expert_chunk + (size_t)i * NUM_ATNS,
-                    expert + (size_t)row * NUM_ATNS,
+        for (int sequence = 0; sequence < B; sequence++) {
+            uint32_t game = order[order_start + sequence];
+            for (int t = 0; t < sequence_steps; t++) {
+                size_t source = (size_t)game * sequence_steps + t;
+                size_t dest = (size_t)sequence * sequence_steps + t;
+                memcpy(h_obs_chunk + dest * OBS_SIZE,
+                    obs + source * OBS_SIZE, OBS_SIZE);
+                memcpy(h_expert_chunk + dest * NUM_ATNS,
+                    expert + source * NUM_ATNS,
                     NUM_ATNS * sizeof(float));
-                memcpy(h_mask_chunk + (size_t)i * packed_stride,
-                    mask + (size_t)row * packed_stride, packed_stride);
+                memcpy(h_mask_chunk + dest * packed_stride,
+                    mask + source * packed_stride, packed_stride);
             }
-            for (int i = B; i < batch; i++) {
-                for (int h = 0; h < NUM_ATNS; h++) {
-                    h_expert_chunk[(size_t)i * NUM_ATNS + h] = -1.0f;
-                }
-            }
-            cudaMemcpy(d_obs_raw, h_obs_chunk, (size_t)batch * OBS_SIZE,
-                cudaMemcpyHostToDevice);
-            cudaMemcpy(d_expert, h_expert_chunk,
-                (size_t)batch * NUM_ATNS * sizeof(float),
-                cudaMemcpyHostToDevice);
-            cudaMemcpy(d_mask, h_mask_chunk, (size_t)batch * packed_stride,
-                cudaMemcpyHostToDevice);
-            cast<<<grid_size(batch * OBS_SIZE), BLOCK_SIZE, 0, bc_stream>>>(
-                d_obs, d_obs_raw, batch * OBS_SIZE);
-            cudaMemsetAsync(grad_logits, 0,
-                (size_t)batch * A_total * sizeof(float), bc_stream);
-            cudaMemsetAsync(loss_acc, 0, sizeof(float), bc_stream);
-            cudaMemsetAsync(state.data, 0,
-                numel(state.shape) * sizeof(precision_t), bc_stream);
-            PrecisionTensor dec_out = policy_forward_train(&policy, weights,
-                train_acts, obs_t, state, terminals, bc_stream);
-            PrecisionTensor dec_flat = *puf_squeeze(&dec_out, 0);
-            kag_bc_loss_kernel<<<1, 256, 0, bc_stream>>>(
-                dec_flat.data, d_expert, d_mask, grad_logits, loss_acc,
-                act_sizes_puf.data, batch, A_total, num_atns, packed_stride);
-            cudaError_t ker_err = cudaGetLastError();
-            if (ker_err != cudaSuccess) {
-                fprintf(stderr, "chunk %u kernel launch: %s\n", start,
-                    cudaGetErrorString(ker_err));
-                return 1;
-            }
+        }
+        cudaMemcpyAsync(d_obs_raw, h_obs_chunk,
+            (size_t)batch_rows * OBS_SIZE, cudaMemcpyHostToDevice, bc_stream);
+        cudaMemcpyAsync(d_expert, h_expert_chunk,
+            (size_t)batch_rows * NUM_ATNS * sizeof(float),
+            cudaMemcpyHostToDevice, bc_stream);
+        cudaMemcpyAsync(d_mask, h_mask_chunk,
+            (size_t)batch_rows * packed_stride,
+            cudaMemcpyHostToDevice, bc_stream);
+        cast<<<grid_size(batch_rows * OBS_SIZE), BLOCK_SIZE, 0, bc_stream>>>(
+            d_obs, d_obs_raw, batch_rows * OBS_SIZE);
+        cudaMemsetAsync(grad_logits, 0,
+            (size_t)batch_rows * A_total * sizeof(float), bc_stream);
+        cudaMemsetAsync(grad_value, 0,
+            (size_t)batch_rows * sizeof(float), bc_stream);
+        cudaMemsetAsync(stats_acc, 0, 4 * sizeof(float), bc_stream);
+        cudaMemsetAsync(state.data, 0,
+            numel(state.shape) * sizeof(precision_t), bc_stream);
+        cudaMemsetAsync(terminals.data, 0,
+            numel(terminals.shape) * sizeof(precision_t), bc_stream);
+        PrecisionTensor dec_out = policy_forward_train(&policy, weights,
+            train_acts, obs_t, state, terminals, bc_stream);
+        PrecisionTensor dec_flat = *puf_squeeze(&dec_out, 0);
+        int valid_rows = B * sequence_steps;
+        kag_bc_loss_kernel<<<grid_size(batch_rows), BLOCK_SIZE, 0,
+            bc_stream>>>(dec_flat.data, d_expert, d_mask, grad_logits,
+            stats_acc, act_sizes_puf.data, batch_rows, valid_rows,
+            A_total, num_atns, packed_stride);
+        if (cudaGetLastError() != cudaSuccess) return false;
+        if (update) {
             FloatTensor grad_logits_t = {.data = grad_logits,
-                .shape = {batch, 1, A_total}};
+                .shape = {batch, sequence_steps, A_total}};
             FloatTensor grad_value_t = {.data = grad_value,
-                .shape = {batch, 1}};
+                .shape = {batch, sequence_steps}};
             policy_backward(&policy, weights, train_acts, grad_logits_t,
                 FloatTensor(), grad_value_t, bc_stream);
-            cudaDeviceSynchronize();
-            cudaError_t sync_err = cudaGetLastError();
-            if (sync_err != cudaSuccess) {
-                fprintf(stderr, "chunk %u sync: %s\n", start,
-                    cudaGetErrorString(sync_err));
+        }
+        if (cudaStreamSynchronize(bc_stream) != cudaSuccess) return false;
+        cudaMemcpy(host_stats, stats_acc, 4 * sizeof(float),
+            cudaMemcpyDeviceToHost);
+        if (!update) return true;
+
+        cudaMemcpy(host_master, master_weights.data,
+            (size_t)params.total_elems * sizeof(float),
+            cudaMemcpyDeviceToHost);
+        long grad_off = 0;
+        for (int r = 0; r < params.num_regs; r++) {
+            long ne = numel(params.regs[r].shape);
+            if (ne > 0) {
+                precision_t* gr = *(precision_t**)grads.regs[r].data_ptr;
+                cudaMemcpy(host_grad_bf + grad_off, gr,
+                    (size_t)ne * sizeof(precision_t),
+                    cudaMemcpyDeviceToHost);
+            }
+            grad_off += ne;
+        }
+        for (long i = 0; i < params.total_elems; i++) {
+            float g = __bfloat162float(host_grad_bf[i]);
+            if (anchor_l2 > 0.0f) {
+                g += anchor_l2 * (host_master[i] - host_anchor[i]);
+            }
+            host_mom[i] = mom * host_mom[i] + g;
+            host_master[i] -= bc_lr * host_mom[i];
+        }
+        cudaMemcpyAsync(master_weights.data, host_master,
+            (size_t)params.total_elems * sizeof(float),
+            cudaMemcpyHostToDevice, bc_stream);
+        cast<<<grid_size((int)params.total_elems), BLOCK_SIZE, 0,
+            bc_stream>>>(param_puf, master_weights.data,
+            (int)params.total_elems);
+        return cudaStreamSynchronize(bc_stream) == cudaSuccess;
+    };
+
+    for (int ep = 0; ep < bc_epochs; ep++) {
+        for (int i = train_games - 1; i > 0; i--) {
+            int j = (int)(bc_rand() % (uint32_t)(i + 1));
+            uint32_t tmp = order[i]; order[i] = order[j]; order[j] = tmp;
+        }
+        float train_stats[4] = {0};
+        int train_rows = 0;
+        for (int start = 0; start < train_games; start += batch) {
+            int B = train_games - start < batch ? train_games - start : batch;
+            float chunk[4];
+            if (!run_chunk(start, B, true, chunk)) {
+                fprintf(stderr, "BC train chunk %d failed: %s\n", start,
+                    cudaGetErrorString(cudaGetLastError()));
                 return 1;
             }
-            float chunk_loss = 0.0f;
-            cudaMemcpy(&chunk_loss, loss_acc, sizeof(float),
-                cudaMemcpyDeviceToHost);
-            epoch_loss += chunk_loss;
-            epoch_steps += B;
-
-            // Host-side SGD on the float master using per-reg bf16 grads.
-            cudaMemcpy(host_master, master_weights.data,
-                (size_t)params.total_elems * sizeof(float),
-                cudaMemcpyDeviceToHost);
-            long grad_off = 0;
-            for (int r = 0; r < params.num_regs; r++) {
-                long ne = numel(params.regs[r].shape);
-                if (ne > 0) {
-                    precision_t* gr = *(precision_t**)grads.regs[r].data_ptr;
-                    cudaMemcpy(host_grad_bf + grad_off, gr,
-                        (size_t)ne * sizeof(precision_t),
-                        cudaMemcpyDeviceToHost);
-                }
-                grad_off += ne;
-            }
-            for (long i = 0; i < params.total_elems; i++) {
-                float g = __bfloat162float(host_grad_bf[i]);
-                host_mom[i] = mom * host_mom[i] + g;
-                host_master[i] -= bc_lr * host_mom[i];
-            }
-            cudaMemcpy(master_weights.data, host_master,
-                (size_t)params.total_elems * sizeof(float),
-                cudaMemcpyHostToDevice);
-            // Refresh bf16 inference params from the updated float master.
-            cast<<<grid_size((int)params.total_elems), BLOCK_SIZE, 0,
-                bc_stream>>>(param_puf, master_weights.data,
-                (int)params.total_elems);
-            cudaDeviceSynchronize();
+            for (int i = 0; i < 4; i++) train_stats[i] += chunk[i];
+            train_rows += B * sequence_steps;
         }
-        if ((ep + 1) % 50 == 0) {
-            printf("BC epoch %d loss=%.4f\n", ep + 1,
-                epoch_loss / (epoch_steps > 0 ? epoch_steps : 1));
+        if (ep == 0 || (ep + 1) % report_interval == 0
+                || ep + 1 == bc_epochs) {
+            float val_stats[4] = {0};
+            int val_rows = 0;
+            for (int start = train_games; start < games; start += batch) {
+                int B = games - start < batch ? games - start : batch;
+                float chunk[4];
+                if (!run_chunk(start, B, false, chunk)) {
+                    fprintf(stderr, "BC validation chunk %d failed\n", start);
+                    return 1;
+                }
+                for (int i = 0; i < 4; i++) val_stats[i] += chunk[i];
+                val_rows += B * sequence_steps;
+            }
+            printf("BC epoch %d train_loss=%.5f train_head=%.4f "
+                "train_exact=%.4f val_loss=%.5f val_head=%.4f "
+                "val_exact=%.4f\n", ep + 1,
+                train_stats[0] / (float)train_rows,
+                train_stats[1] > 0.0f
+                    ? train_stats[2] / train_stats[1] : 0.0f,
+                train_stats[3] / (float)train_rows,
+                val_stats[0] / (float)val_rows,
+                val_stats[1] > 0.0f
+                    ? val_stats[2] / val_stats[1] : 0.0f,
+                val_stats[3] / (float)val_rows);
         }
     }
 

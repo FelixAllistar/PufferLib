@@ -14,6 +14,7 @@ enum KagSideKind {
     KAG_SIDE_PASS,
     KAG_SIDE_SCRIPT,
     KAG_SIDE_ADAPTIVE,
+    KAG_SIDE_HYBRID,
 };
 
 enum KagStat {
@@ -50,6 +51,7 @@ typedef struct {
     int kind;
     int crop;
     int script_profile;
+    int hybrid_turns;
     char path[4096];
     Weights* weights;
     PufferNet* net;
@@ -331,6 +333,20 @@ static int kag_load_model_side(KagSide* side, const char* spec) {
 
 static int kag_parse_side(KagSide* side, const char* spec) {
     memset(side, 0, sizeof(*side));
+    if (!strncmp(spec, "hybrid", 6)) {
+        char* end = NULL;
+        long turns = strtol(spec + 6, &end, 10);
+        if (end == spec + 6 || !end || *end != ':' || turns < 1
+                || turns >= 720 || !end[1]) {
+            fprintf(stderr,
+                "hybrid side must be hybridT:MODEL.bin with 1 <= T < 720\n");
+            return 0;
+        }
+        side->kind = KAG_SIDE_HYBRID;
+        side->script_profile = KG_SCRIPT_TOP;
+        side->hybrid_turns = (int)turns;
+        return kag_load_model_side(side, end + 1);
+    }
     if (!strcmp(spec, "rules") || !strcmp(spec, "starter")) {
         side->kind = KAG_SIDE_RULES;
         side->crop = KG_CROP_INVALID;
@@ -575,20 +591,27 @@ static void kag_track_native_action(KagSide* side, const Env* env, int player,
 static void kag_side_action(KagSide* side, Env* env, int player) {
     env->demo_bots[player] = KAG_BOT_NONE;
     if (side->kind == KAG_SIDE_MODEL) kag_model_action(side, env, player);
+    else if (side->kind == KAG_SIDE_HYBRID
+            && env->game_storage.step >= side->hybrid_turns) {
+        kag_model_action(side, env, player);
+    }
     else if (side->kind == KAG_SIDE_RULES) {
         env->demo_bots[player] = KAG_BOT_MIXED;
         kag_clear_policy_actions(&env->agents[player]);
     } else if (side->kind == KAG_SIDE_CROP) {
         env->demo_bots[player] = KAG_BOT_CROP_BASE + side->crop;
         kag_clear_policy_actions(&env->agents[player]);
-    } else if (side->kind == KAG_SIDE_SCRIPT) {
-        env->demo_bots[player] = KAG_BOT_SCRIPT_BASE + side->script_profile;
+    } else if (side->kind == KAG_SIDE_SCRIPT
+            || side->kind == KAG_SIDE_HYBRID) {
+        int profile = side->kind == KAG_SIDE_HYBRID
+            ? KG_SCRIPT_TOP : side->script_profile;
+        env->demo_bots[player] = KAG_BOT_SCRIPT_BASE + profile;
         kag_clear_policy_actions(&env->agents[player]);
         KGAction preview;
         kag_script_action(&env->game_storage, player,
-            side->script_profile, &preview);
+            profile, &preview);
         kag_script_repair(&env->game_storage, player,
-            side->script_profile, &preview);
+            profile, &preview);
         kag_track_native_action(side, env, player, &preview);
     } else if (side->kind == KAG_SIDE_ADAPTIVE) {
         env->demo_bots[player] = KAG_BOT_ADAPTIVE_BASE + side->script_profile;
@@ -615,7 +638,7 @@ static void kag_usage(const char* exe) {
     printf("  %s watch [SIDE_A] [SIDE_B]\n", exe);
     printf("  %s bench [steps] [SIDE_A] [SIDE_B]\n", exe);
     printf("  %s jsd [steps] LABEL=MODEL.bin [LABEL=MODEL.bin ...]\n", exe);
-    printf("Sides: latest, MODEL.bin, rules, wheat, carrot, melon, frontier, night, v20, moon, hamburger, fields, scenario, soil, kaito, shield, frontier12, pulse, structured, triad, random, pass\n");
+    printf("Sides: latest, MODEL.bin, hybridT:MODEL.bin, rules, wheat, carrot, melon, frontier, night, v20, moon, hamburger, fields, scenario, soil, kaito, shield, frontier12, pulse, structured, triad, random, pass\n");
     printf("  rules: adaptive prices/demand, visible supply, hands, land, liquidation\n");
     printf("One side is mirrored: '%s watch latest' plays latest vs itself.\n", exe);
 }

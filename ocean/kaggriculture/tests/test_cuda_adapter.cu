@@ -47,12 +47,12 @@ __global__ static void adapter_bind_kernel(Env* envs, Env* shells,
 }
 
 __global__ static void adapter_step_kernel(Env* envs, Env* shells,
-        const KGScriptTape* tapes, KGAction* decoded) {
+        const KGScriptTape* tapes, KGAction* decoded, int* bank_completed) {
     int case_id = blockIdx.x * blockDim.x + threadIdx.x;
     if (case_id >= ADAPTER_CASES) return;
     int rows[2] = {2 * case_id, 2 * case_id + 1};
     kag_cuda_transition(&envs[case_id], shells, rows, tapes,
-        decoded + 2 * case_id, nullptr);
+        decoded + 2 * case_id, bank_completed);
 }
 
 static uint32_t adapter_rng(uint32_t* state) {
@@ -90,6 +90,8 @@ static void configure_case(Env* env, int case_id, obs_t* observations,
     env->opening_turns = case_id == 0 ? 10 : case_id == 7 ? 26 : 0;
     env->reset_opening_turns = case_id == 1 ? 20
         : case_id == 8 ? 26 : 0;
+    env->reset_opening_prob = case_id == 1 ? 0.5f
+        : case_id == 8 ? 1.0f : 0.0f;
     env->reward_potential_scale = 0.000772047148f;
     env->reward_win = 0.375989795f;
     env->reward_seed_value = 0.01f;
@@ -97,6 +99,8 @@ static void configure_case(Env* env, int case_id, obs_t* observations,
     env->reward_crop_value = 1.0f;
     env->reward_animal_value = 0.95f;
     env->reward_land_value = 1.0f;
+    env->reward_margin_scale = 0.37f;
+    env->reward_inactivity_threshold = case_id == 0 ? 200.0f : 137.0f;
     env->reward_neglect_discount = 0.5f;
     env->reward_liquidation_days = 6.0f;
     env->reward_productive_action = case_id & 1 ? 0.0002f : 0.0f;
@@ -137,7 +141,7 @@ static void configure_case(Env* env, int case_id, obs_t* observations,
     KGConfig config;
     kg_config_default(&config);
     config.seed = 0xfedcba987654321ULL + (uint64_t)case_id * 1000003ULL;
-    config.episode_steps = 31 + 7 * case_id;
+    config.episode_steps = case_id == 0 ? 1 : 31 + 7 * case_id;
     config.starting_money = case_id % 4 == 0 ? 500 : 3000 + 97 * case_id;
     config.max_market_orders_per_turn = 1 + case_id % KG_MAX_MARKET_ORDERS;
     config.shed_capacity = case_id % 4 == 0 ? 1
@@ -148,6 +152,10 @@ static void configure_case(Env* env, int case_id, obs_t* observations,
     config.town_shop_sell_interval = 1 + case_id % 7;
     config.town_center_sell_interval = 1 + case_id % 29;
     kg_init(&env->game_storage, &config);
+    /* A deterministic terminal case catches both reward regressions that the
+     * randomized suite previously missed: nonzero relative-money margin and
+     * an inactivity threshold wider than the CUDA path's old hardcoded $2. */
+    if (case_id == 0) env->game_storage.players[0].money += 123;
     env->reset_opening_rng = (uint32_t)config.seed ^ 0xa511e9b3u;
     kag_reset_with_opening(env, kag_script_tapes);
     for (int player = 0; player < 2; player++) {
@@ -234,6 +242,7 @@ int main(void) {
     unsigned char* d_masks = nullptr;
     KGScriptTape* d_tapes = nullptr;
     KGAction* d_decoded = nullptr;
+    int* d_bank_completed = nullptr;
     CUDA_OK(cudaMalloc((void**)&d_envs, ADAPTER_CASES * sizeof(Env)));
     CUDA_OK(cudaMalloc((void**)&d_shells, ADAPTER_ROWS * sizeof(Env)));
     CUDA_OK(cudaMalloc((void**)&d_obs,
@@ -247,6 +256,10 @@ int main(void) {
     CUDA_OK(cudaMalloc((void**)&d_tapes, KG_SCRIPT_COUNT * sizeof(KGScriptTape)));
     CUDA_OK(cudaMalloc((void**)&d_decoded,
         2 * ADAPTER_CASES * sizeof(KGAction)));
+    CUDA_OK(cudaMalloc((void**)&d_bank_completed,
+        (ADAPTER_CASES + 1) * sizeof(int)));
+    CUDA_OK(cudaMemset(d_bank_completed, 0,
+        (ADAPTER_CASES + 1) * sizeof(int)));
     CUDA_OK(cudaMemcpy(d_envs, cpu, ADAPTER_CASES * sizeof(Env),
         cudaMemcpyHostToDevice));
     CUDA_OK(cudaMemset(d_shells, 0, ADAPTER_ROWS * sizeof(Env)));
@@ -259,16 +272,22 @@ int main(void) {
 
     for (int step = 0; step < ADAPTER_STEPS; step++) {
         for (int i = 0; i < ADAPTER_CASES; i++) {
-            random_policy_actions(cpu_actions
-                + (size_t)(2 * i) * NUM_ATNS, &rng[i]);
-            random_policy_actions(cpu_actions
-                + (size_t)(2 * i + 1) * NUM_ATNS, &rng[i]);
+            if (i == 0) {
+                std::memset(cpu_actions + (size_t)(2 * i) * NUM_ATNS, 0,
+                    2 * NUM_ATNS * sizeof(float));
+            } else {
+                random_policy_actions(cpu_actions
+                    + (size_t)(2 * i) * NUM_ATNS, &rng[i]);
+                random_policy_actions(cpu_actions
+                    + (size_t)(2 * i + 1) * NUM_ATNS, &rng[i]);
+            }
             puf_step(&cpu[i]);
         }
         CUDA_OK(cudaMemcpy(d_actions, cpu_actions,
             (size_t)ADAPTER_ROWS * NUM_ATNS * sizeof(float),
             cudaMemcpyHostToDevice));
-        adapter_step_kernel<<<1, 32>>>(d_envs, d_shells, d_tapes, d_decoded);
+        adapter_step_kernel<<<1, 32>>>(d_envs, d_shells, d_tapes, d_decoded,
+            d_bank_completed);
         CUDA_OK(cudaGetLastError());
         CUDA_OK(cudaDeviceSynchronize());
         CUDA_OK(cudaMemcpy(gpu, d_envs, ADAPTER_CASES * sizeof(Env),
@@ -326,6 +345,27 @@ int main(void) {
         }
     }
 
+    if (!(cpu[1].log.reset_games > 0.0f
+            && cpu[1].log.reset_games < cpu[1].log.n)) {
+        std::fprintf(stderr,
+            "reset mixture case failed: reset=%g episodes=%g\n",
+            cpu[1].log.reset_games, cpu[1].log.n);
+        return 1;
+    }
+    if (cpu[8].log.n <= 0.0f
+            || cpu[8].log.reset_games != cpu[8].log.n) {
+        std::fprintf(stderr,
+            "reset-only case failed: reset=%g episodes=%g\n",
+            cpu[8].log.reset_games, cpu[8].log.n);
+        return 1;
+    }
+    if (cpu[0].log.reset_games != 0.0f) {
+        std::fprintf(stderr, "root-only case unexpectedly reset: %g\n",
+            cpu[0].log.reset_games);
+        return 1;
+    }
+
+    CUDA_OK(cudaFree(d_bank_completed));
     CUDA_OK(cudaFree(d_decoded));
     CUDA_OK(cudaFree(d_tapes));
     CUDA_OK(cudaFree(d_masks));

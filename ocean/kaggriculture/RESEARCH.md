@@ -1346,3 +1346,177 @@ reward, reset ranges, adaptive-bot data). The champion remains ExpL@73M
 (9,005 vs top; 600.0 Kaggle public). This is the standing best; further
 progress likely needs a different architectural or reward formulation than
 the knobs tried so far.
+
+## 2026-08-11: Correctness/DAG restart and exact-opening diagnostic
+
+Preserved the Vast experiment INIs and hall-of-fame artifacts locally before
+changing the training path. The CUDA terminal transition had diverged from
+CPU: it ignored `reward_margin_scale` and used a hardcoded $2 inactivity
+window instead of `reward_inactivity_threshold`. Both are repaired. A targeted
+one-turn terminal case was added to the randomized adapter test. CPU and CUDA
+now match state, observations, masks, rewards, terminals, resets, and logs for
+12 adversarial configurations over 1,440 turns each.
+
+Reset sampling now has an explicit `reset_opening_prob`, independent of the
+prefix range, and observation byte 942 identifies root (0) versus prefix-reset
+(255) starts without changing the 1,024-byte ABI. Old checkpoints must zero
+that formerly-unused encoder column before enabling the source bit.
+
+D0 tested the opening-bottleneck hypothesis with an exact native
+`hybrid26:model` side. This bypasses the policy queue encoding and executes the
+real top script through turn 26, then hands the unchanged recurrent policy a
+zero hidden state. Against the same top bot and seed regime (100 games/seat):
+
+| control | player 0 money | player 1 money | both-seat mean |
+|---|---:|---:|---:|
+| ExpL | 9,005 | 7,254 | 8,130 |
+| exact top opening -> ExpL | 9,095 | 2,010 | 5,553 |
+
+The exact opening materially hurts rather than helping. ExpL's learned
+continuation does not compose with the top farm/economy state, especially in
+seat 1. The experiment graph therefore keeps BC as a small, gated branch and
+does not assume that opening imitation is the mainline solution.
+
+The repaired recurrent BC path then provided a useful negative result. It
+trained contiguous 26-step episodes, zeroed hidden state only at sequence
+boundaries, ignored unreachable conditional heads, held out complete games,
+and initialized from ExpL. As held-out exact-row accuracy increased, fixed-top
+performance monotonically worsened:
+
+| BC epochs | held-out exact row | top money (100 games) |
+|---:|---:|---:|
+| 0 (ExpL) | - | 7,805 |
+| 10 | 0.000 | 5,792 |
+| 50 | 0.423 | 5,365 |
+| 200 | 0.885 | 2,831 |
+
+BC is no longer silently failing; it successfully imitates a continuation
+that is strategically incompatible with the champion. This branch is
+rejected rather than used as an EMAg magnet.
+
+R0 used the DAGS-style distribution specified in the experiment plan: 50%
+real roots and 50% native top-prefix states from turns 10-80, explicit source
+bit, full episodes, fixed top opponent, and no EMAg. The 5.24M checkpoint made
+a transient common-seed root gain ($8,523 vs sanitized ExpL $7,973 over 100
+games), then every later checkpoint declined to roughly $7.2k. A 500-game
+confirmation shrank the gain to $8,134 vs $8,049 and the candidate lost ExpL
+head-to-head 48%-52%. It is not promoted. The next controlled branch disables
+the newly functional margin/inactivity terms, because the historical ExpL
+recipe was unknowingly trained while CUDA ignored those configured knobs.
+
+R1 disabled those two newly functional terminal terms. It still peaked at the
+first 5.24M checkpoint and the common-seed gain was smaller ($8,206), so the
+parity repair was not the cause of collapse. E0 then changed only EMAg
+(`coef=0.01`, `tau=0.001`) relative to R0. It delayed/stabilized the decay and
+peaked at 20.97M, but a 500-game panel scored ExpL $8,049, R0 $8,134, and EMAg
+$7,991. EMAg also ranked last head-to-head. The implementation behaves as a
+stability regularizer, not a source of better behavior in this branch.
+
+## 2026-08-11: Full recurrent BC creates champion C1
+
+The critical distinction was opening-only versus complete-trajectory
+imitation. A nominal 720-turn game exposes 719 decision observations, so the
+generator now infers and records that exact recurrent sequence length. A new
+dataset contains 200 top-vs-top games (143,800 rows). The repaired trainer
+keeps each 719-step episode contiguous, masks conditional tails, and holds out
+40 complete games.
+
+Warm-starting ExpL and training for only 25 BC epochs produced
+`saved/kaggriculture_hall_of_fame/expR_fullbc_top_e25.bin`:
+
+| policy | top money (500 games) | head-to-head mean score |
+|---|---:|---:|
+| ExpL sanitized | 8,049 | 0.504 |
+| full BC, 25 epochs | **9,226** | 0.496 |
+
+The candidate improves fixed-top money by 14.6% without a catastrophic
+head-to-head regression and therefore clears the C1 gate. The supervised
+curve is sharply non-monotone: 50 epochs scored $8,553 and 100 epochs $6,874
+on the 200-game screen even as held-out imitation accuracy kept rising. This
+is direct evidence that exact imitation is not the objective; a small amount
+of top behavior repairs ExpL, while too much erases its useful deviations.
+
+Core EMAg now permits `emag_tau=0`, meaning the separately loaded magnet is a
+truly frozen conditional KL reference. Positive tau retains the prior moving
+EMA behavior. The next controlled branch used C1 as that frozen teacher during
+low-LR root-only PPO.
+
+## 2026-08-11: EMAg rejection and champion C2
+
+The frozen-reference PPO follow-up peaked at 10.49M on its 200-game screen,
+but failed the independent 500-game gate: $9,088 against top versus C1's
+$9,226, with a 50/50 direct match. It is rejected. This agrees with the
+matched moving-EMAg experiment: EMAg can slow policy collapse, but neither a
+moving reference nor a frozen C1 reference improved the confirmed endpoint
+under this PPO recipe.
+
+The full recurrent-BC dose curve was refined at 15, 20, 25, 30, and 35 epochs.
+The common 200-game fixed-top scores were $9,274, $9,362, $9,411, $9,221, and
+$9,337 respectively. Held-out exact-row accuracy rose monotonically from
+4.1% to 7.1%, again proving that imitation accuracy is not the control metric.
+
+Twelve independent 25-epoch BC basins then varied only the episode-level
+split/shuffle seed. Seed 303 screened best and survived two fresh confirmation
+blocks:
+
+| confirmation | C1 top money | seed-303 top money | seed-303 direct win | direct money (C1/C2) |
+|---|---:|---:|---:|---:|
+| 1,000 games | 9,284 | **9,353** | 51.4% | 13,013 / **13,138** |
+| 2,000 games | 9,208 | **9,345** | 49.95% | 13,045 / **13,103** |
+
+The combined direct win rate is 50.43%; the fixed-top and direct-money gains
+repeat in both blocks. This is a modest specialist improvement rather than a
+new strategic regime, but it clears the promotion gate and becomes C2:
+
+`saved/kaggriculture_hall_of_fame/expS_fullbc_seed303_e25.bin`
+
+The evaluation harness was repaired during this gate. Fixed-opponent panels
+now use common random numbers across candidates and accept fresh confirmation
+blocks through `KAG_FIXED_SEED_A` and `KAG_FIXED_SEED_B`. The old policy-index
+seed offset injected unnecessary variance into fixed-bot comparisons.
+
+## 2026-08-11: top-oracle parity repair and final valid ranking
+
+The closeout `top-bot-parity` target exposed a separate opponent-port bug at
+turn 26. `submission/top_bot/main.py` prioritizes occupied animal tiles in
+row-major order (collect fertilizer, harvest product, feed, then care) before
+crop jobs. Native `kag_bot_action` had no animal-job pass, so it selected a
+crop route instead. This also explained why the supposedly animal-oriented
+teacher stopped exhibiting animal maintenance after its scripted opening.
+
+The exact animal pass and tie order are now in native C. The exported Python
+and native bot match all 719 decisions and resulting official states for seeds
+7, 42, and 707. The BC Makefile target now depends on every included simulator,
+bot, and training header; before this fix a header-only bot change could leave
+a stale `kag_bc` binary marked up to date.
+
+Because this changes the fixed opponent, all earlier fixed-top dollar values
+are historical. The repaired common-seed 1,000-game panel is:
+
+| policy | fixed-top money | win rate |
+|---|---:|---:|
+| ExpL | 20,121 | 89.0% |
+| C1 (`expR`) | 21,593 | 98.6% |
+| C2 (`expS`) | **21,814** | **98.7%** |
+
+C2 beats C1 head-to-head 53.5%, with $13,311 versus $12,749. This is the valid
+final promotion result against the oracle-exact target.
+
+ExpL still narrowly beats C2 directly (51.6%), which is useful evidence rather
+than a failed promotion: the population is non-transitive. C2 is the strongest
+fixed-top specialist, C1 is its immediate parent, and ExpL remains a distinct
+counterstrategy. Preserve all three in the hall of fame.
+
+To test animal transfer directly, a new 200-game/143,800-row dataset was
+generated from repaired top-vs-top play. Starting at C2, 1/3/5/10 recurrent BC
+epochs scored $21,587/$21,154/$20,830/$20,254 against top, versus C2's $21,694
+on the same 500-game block. One epoch already lost C2 44%-56%; degradation was
+monotone. The corrected animal bot should be used as an opponent, not cloned.
+
+C2 is packaged for Kaggle as
+`ocean/kaggriculture/submission/pufferlib_expS_fullbc_seed303_e25.tar.gz`.
+The archive contains root-level `main.py` plus the exact C2 weights; its model
+SHA-256 is `533285bf3518f8865e966e2223b8c2118363e4893a2d67b66563fbe3704fae0a`.
+An isolated extraction/import and a complete 719-decision official-environment
+game completed with both agents in `DONE` state (C2 finished with $27,830
+against the built-in random opponent for seed 707).

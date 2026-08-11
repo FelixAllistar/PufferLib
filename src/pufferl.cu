@@ -1646,7 +1646,7 @@ void train_impl(PuffeRL& pufferl, RolloutBuf* src_arg) {
             graph.mb_newvalue.data, num_idx, value_row);
 
         int completed_epochs = (mb + 1) * hypers.minibatch_size / batch_size;
-        if (hypers.emag_kl_coef > 0.0f
+        if (hypers.emag_kl_coef > 0.0f && hypers.emag_tau > 0.0f
                 && completed_epochs > completed_emag_epochs) {
             update_emag(pufferl, hypers.emag_tau, train_stream);
             completed_emag_epochs = completed_epochs;
@@ -1654,7 +1654,7 @@ void train_impl(PuffeRL& pufferl, RolloutBuf* src_arg) {
         cudaEventRecord(pufferl.profile.events[4], train_stream);  // end forward
     }
 
-    if (hypers.emag_kl_coef > 0.0f) {
+    if (hypers.emag_kl_coef > 0.0f && hypers.emag_tau > 0.0f) {
         float replay_epochs = (float)total_minibatches
             * hypers.minibatch_size / batch_size;
         float partial_epoch = replay_epochs - completed_emag_epochs;
@@ -2305,8 +2305,8 @@ PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx) {
     // Buffers for weights, grads, and activations
     pufferl->weights = policy_weights_create(&pufferl->policy, params);
     if (hypers.emag_kl_coef > 0.0f) {
-        assert(hypers.emag_tau > 0.0f && hypers.emag_tau <= 1.0f
-            && "train.emag_tau must be in (0, 1]");
+        assert(hypers.emag_tau >= 0.0f && hypers.emag_tau <= 1.0f
+            && "train.emag_tau must be in [0, 1] (0 freezes the reference)");
         pufferl->magnet_weights = policy_weights_create(
             &pufferl->policy, &pufferl->magnet_params_alloc);
         pufferl->magnet_activations = policy_reg_train(
