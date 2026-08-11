@@ -33,6 +33,7 @@ __global__ void kag_bc_loss_kernel(
         int B, int A_total, int num_atns, int mask_stride) {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
     if (idx >= B) return;
+    if (debug_out) debug_out[idx] = 9999.0f;  // sentinel: kernel ran
     int logits_base = idx * (A_total + 1);
     int mask_base = idx * mask_stride;
     int offset = 0;
