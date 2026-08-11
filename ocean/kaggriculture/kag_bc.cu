@@ -320,6 +320,21 @@ int main(int argc, char** argv) {
             return 1;
         }
         PrecisionTensor dec_flat = dec_out;
+        if (ep == 0) {
+            int dev_sizes[4];
+            cudaMemcpy(dev_sizes, act_sizes_puf.data, 4 * sizeof(int),
+                cudaMemcpyDeviceToHost);
+            unsigned char dev_mask[8];
+            cudaMemcpy(dev_mask, d_mask, 8, cudaMemcpyDeviceToHost);
+            float dev_logits[4];
+            cudaMemcpy(dev_logits, dec_flat.data, 4 * sizeof(float),
+                cudaMemcpyDeviceToHost);
+            fprintf(stderr, "BC dev: sizes=%d,%d,%d,%d mask=%02x,%02x,%02x "
+                "logits=%g,%g,%g,%g\n",
+                dev_sizes[0], dev_sizes[1], dev_sizes[2], dev_sizes[3],
+                dev_mask[0], dev_mask[1], dev_mask[2], dev_logits[0],
+                dev_logits[1], dev_logits[2], dev_logits[3]);
+        }
         cudaError_t fwd_err = cudaGetLastError();
         if (fwd_err != cudaSuccess) {
             fprintf(stderr, "forward failed: %s\n",
