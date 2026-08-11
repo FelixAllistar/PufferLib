@@ -399,6 +399,9 @@ int main(int argc, char** argv) {
             (size_t)params.total_elems * sizeof(float));
         float* host_grad = (float*)calloc((size_t)params.total_elems,
             sizeof(float));
+        fprintf(stderr, "D2H size=%lld elems=%lld host=%p\n",
+            (long long)((size_t)params.total_elems * sizeof(float)),
+            (long long)params.total_elems, (void*)host_master);
         cudaPointerAttributes pa = {};
         cudaPointerGetAttributes(&pa, master_weights.data);
         fprintf(stderr, "master ptr type=%d dev=%d addr=%p\n",
