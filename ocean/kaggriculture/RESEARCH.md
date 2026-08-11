@@ -1139,6 +1139,28 @@ Branch H: continue ExpG@20M with a longer/harder run (more top lane, or a
 reset range focused on t40-100 where animals need daily care) to push the
 animal loop further and break past ~7.6k.
 
+## 2026-08-11: Exp H - deeper animal reset, new champion
+
+Exp H: ExpG@20M + `env.reset_opening_turns=60` (wake points through the
+animal care window), 40M run, 50% top lane. Promoted
+`kag_expH_animreset2/0000000036700160.bin` (37M) to
+`saved/kaggriculture_hall_of_fame/expH_animreset_37m.bin`.
+
+100-game results:
+- vs top hybrid: 7,748 (ExpG 7,580, ExpF 7,485, prior champion 6,871).
+- vs ExpG both seats: 13,064/14,048 vs 13,428/12,592 - ExpH net wins.
+
+Reset-opening verification: the top script does place animals (t11: 2, t21+:
+4 animals, 6 structures, money 22) and `kag_reset_with_opening` reproduces
+this at reset (checked rng draws: t48 -> 4 animals). ExpG/H genuinely wake the
+policy into an animal economy. Animal actions remain rare in eval (place=2,
+fertilize=14 over 100 games) but the reset lane shifts behavior and the vs-top
+number keeps rising.
+
+Branch I: continue ExpH with reset range focused tighter on the care window
+(t40-100) or a longer run, to push the trend further. Also candidate: combine
+the animal reset with the animal BC magnet (ExpG/H had no magnet).
+
 ## 2026-08-09: GPU reset diversity and selfplay rotation fixes
 
 The CUDA reset kernel was re-deriving `reset_opening_rng` from the per-match
