@@ -37,9 +37,268 @@
 // Project
 #include "ini.h"
 
+// To investigate: 32f compute? Need to check bf16
+#ifdef PRECISION_FLOAT
+typedef float precision_t;
+constexpr bool USE_BF16 = false;
+constexpr cudaDataType_t CUBLAS_PRECISION = CUDA_R_32F;
+constexpr cublasComputeType_t CUBLAS_COMPUTE_PRECISION = CUBLAS_COMPUTE_32F;
+#define NCCL_PRECISION ncclFloat
+#define to_float(x) (x)
+#define from_float(x) (x)
+#else
+typedef __nv_bfloat16 precision_t;
+constexpr bool USE_BF16 = true;
+constexpr cudaDataType_t CUBLAS_PRECISION = CUDA_R_16BF;
+constexpr cublasComputeType_t CUBLAS_COMPUTE_PRECISION = CUBLAS_COMPUTE_32F;
+#define NCCL_PRECISION ncclBfloat16
+#define to_float(x) __bfloat162float(x)
+#define from_float(x) __float2bfloat16(x)
+#endif
 
-// Shared preamble: tensors, allocator, precision, cast, env include.
-#include "pufferl_preamble.h"
+#define PUF_MAX_DIMS 8
+#define BLOCK_SIZE 256
+int grid_size(int N) {
+    return (N + BLOCK_SIZE - 1) / BLOCK_SIZE;
+}
+
+// Compile-time env: build.sh passes -DENV_HEADER="ocean/<env>/<env>.h".
+// GPU mode: -DPUFFER_GPU_ENV and -DGPU_ENV_HEADER=...cu (exclusive, not dual runtime).
+#include ENV_HEADER
+#ifdef PUFFER_GPU_ENV
+#ifndef GPU_ENV_HEADER
+#error "PUFFER_GPU_ENV requires GPU_ENV_HEADER (build with --gpu)"
+#endif
+#include GPU_ENV_HEADER
+#endif
+
+typedef struct {
+    float* data;
+    int64_t shape[PUF_MAX_DIMS];
+} FloatTensor;
+
+typedef struct {
+    unsigned char* data;
+    int64_t shape[PUF_MAX_DIMS];
+} ByteTensor;
+
+typedef struct {
+    long* data;
+    int64_t shape[PUF_MAX_DIMS];
+} LongTensor;
+
+typedef struct {
+    int* data;
+    int64_t shape[PUF_MAX_DIMS];
+} IntTensor;
+
+typedef struct {
+    precision_t* data;
+    int64_t shape[PUF_MAX_DIMS];
+} PrecisionTensor;
+
+__host__ __device__ int ndim(int64_t* shape) {
+    int n = 0;
+    while (n < PUF_MAX_DIMS && shape[n] != 0) {
+        n++;
+    }
+    return n;
+}
+
+__host__ __device__ int64_t numel(int64_t* shape) {
+    int64_t n = 1;
+    for (int i = 0; i < PUF_MAX_DIMS && shape[i] != 0; i++) {
+        n *= shape[i];
+    }
+    return n;
+}
+
+int64_t batch_size(int64_t* shape) {
+    int n = ndim(shape);
+    int64_t b = 1;
+    for (int i = 0; i < n - 2; i++) {
+        b *= shape[i];
+    }
+    return b;
+}
+
+void puf_squeeze_shape(int64_t* shape, int dim) {
+    int n = ndim(shape);
+    shape[dim] *= shape[dim + 1];
+    for (int i = dim + 1; i < n - 1; i++) {
+        shape[i] = shape[i + 1];
+    }
+    shape[n - 1] = 0;
+}
+
+PrecisionTensor* puf_squeeze(PrecisionTensor* t, int dim) {
+    puf_squeeze_shape(t->shape, dim);
+    return t;
+}
+
+FloatTensor* puf_squeeze(FloatTensor* t, int dim) {
+    puf_squeeze_shape(t->shape, dim);
+    return t;
+}
+
+PrecisionTensor* puf_unsqueeze(PrecisionTensor* t, int dim, int64_t d0, int64_t d1) {
+    int n = ndim(t->shape);
+    assert(n + 1 <= PUF_MAX_DIMS);
+    assert(t->shape[dim] == d0 * d1);
+    for (int i = n; i > dim; i--) {
+        t->shape[i] = t->shape[i - 1];
+    }
+    t->shape[dim] = d0;
+    t->shape[dim + 1] = d1;
+    return t;
+}
+
+void puf_copy(PrecisionTensor* dst, PrecisionTensor* src, cudaStream_t stream) {
+    assert(numel(dst->shape) == numel(src->shape) && "puf_copy: size mismatch");
+    cudaMemcpyAsync(dst->data, src->data,
+        numel(dst->shape) * sizeof(precision_t),
+        cudaMemcpyDeviceToDevice, stream);
+}
+
+__global__ void cast(precision_t* dst,
+        float* src, int n) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx < n) {
+        dst[idx] = from_float(src[idx]);
+    }
+}
+
+__global__ void ema_weights(float* magnet, const float* weights,
+        float tau, int n) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx < n) magnet[idx] += tau * (weights[idx] - magnet[idx]);
+}
+
+#ifndef PRECISION_FLOAT
+// Identity overload so obs→rollout cast arm typechecks when obs_t is bf16.
+__global__ void cast(precision_t* dst,
+        precision_t* src, int n) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx < n) {
+        dst[idx] = src[idx];
+    }
+}
+
+__global__ void cast(float* dst,
+        precision_t* src, int n) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx < n) {
+        dst[idx] = to_float(src[idx]);
+    }
+}
+#endif
+
+__global__ void cast(precision_t* dst,
+        unsigned char* src, int n) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx < n) {
+#ifdef PUFFERLIB_OBS_U8_NORMALIZED
+        dst[idx] = from_float((float)src[idx] * (1.0f / 255.0f));
+#else
+        dst[idx] = from_float((float)src[idx]);
+#endif
+    }
+}
+
+__global__ void cast(unsigned char* dst,
+        precision_t* src, int n) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx < n) {
+        dst[idx] = to_float(src[idx]);
+    }
+}
+
+// Fused rew+term cast (two tiny launches were launch-bound).
+__global__ void cast_rew_term(
+        precision_t* __restrict__ rew_dst, const float* __restrict__ rew_src,
+        precision_t* __restrict__ term_dst, const float* __restrict__ term_src,
+        int n) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx < n) {
+        rew_dst[idx] = from_float(rew_src[idx]);
+        term_dst[idx] = from_float(term_src[idx]);
+    }
+}
+
+struct AllocEntry {
+    void** data_ptr;    // address of the tensor's data field
+    int64_t* shape;     // pointer to the tensor's shape array
+    int elem_size;      // sizeof element type
+};
+
+struct Allocator {
+    AllocEntry* regs = nullptr;
+    int num_regs = 0;
+    void* mem = nullptr;
+    long total_elems = 0;
+    long total_bytes = 0;
+};
+
+void alloc_register_impl(Allocator* alloc, void** data_ptr, int64_t* shape, int elem_size) {
+    alloc->regs = (AllocEntry*)realloc(alloc->regs, (alloc->num_regs + 1) * sizeof(AllocEntry));
+    alloc->regs[alloc->num_regs++] = {data_ptr, shape, elem_size};
+    int64_t n = numel(shape);
+    alloc->total_elems += n;
+    alloc->total_bytes = (alloc->total_bytes + 15) & ~15;
+    alloc->total_bytes += n * elem_size;
+}
+void alloc_register(Allocator* a, PrecisionTensor* t) {
+    alloc_register_impl(a, (void**)&t->data, t->shape, sizeof(precision_t));
+}
+void alloc_register(Allocator* a, FloatTensor* t) {
+    alloc_register_impl(a, (void**)&t->data, t->shape, sizeof(float));
+}
+void alloc_register(Allocator* a, LongTensor* t) {
+    alloc_register_impl(a, (void**)&t->data, t->shape, sizeof(long));
+}
+void alloc_register(Allocator* a, IntTensor* t) {
+    alloc_register_impl(a, (void**)&t->data, t->shape, sizeof(int));
+}
+void alloc_register(Allocator* a, ByteTensor* t) {
+    alloc_register_impl(a, (void**)&t->data, t->shape, sizeof(unsigned char));
+}
+
+cudaError_t alloc_create(Allocator* alloc) {
+    if (alloc->total_bytes == 0) {
+        return cudaSuccess;
+    }
+    cudaError_t err = cudaMalloc(&alloc->mem, alloc->total_bytes);
+    if (err != cudaSuccess) {
+        return err;
+    }
+    cudaMemset(alloc->mem, 0, alloc->total_bytes);
+    long offset = 0;
+    for (int i = 0; i < alloc->num_regs; i++) {
+        offset = (offset + 15) & ~15;
+        *alloc->regs[i].data_ptr = (char*)alloc->mem + offset;
+        offset += numel(alloc->regs[i].shape) * alloc->regs[i].elem_size;
+    }
+    return cudaSuccess;
+}
+
+// Process-lifetime allocs: no free on exit (OS reclaims). OOM → assert.
+static void* xcalloc(size_t n) {
+    void* p = calloc(1, n);
+    assert(p && "oom");
+    return p;
+}
+static void* xcuda(size_t n) {
+    void* p = nullptr;
+    assert(cudaMalloc(&p, n) == cudaSuccess && "cudaMalloc failed");
+    cudaMemset(p, 0, n);
+    return p;
+}
+static void* xpin(size_t n) {
+    void* p = nullptr;
+    assert(cudaHostAlloc(&p, n, cudaHostAllocPortable) == cudaSuccess
+        && "cudaHostAlloc failed");
+    return p;
+}
 
 // Policy / optim / GEMM / encoders / weight init.
 // Needs tensors, Allocator, batch_size/ndim, grid_size, cast, CUBLAS_PRECISION*.
@@ -1640,6 +1899,14 @@ static void master_weights_setup(FloatTensor* mw, PrecisionTensor* param,
     }
 }
 
+void create_allocator_or_die(const char* name, Allocator* alloc) {
+    cudaError_t err = alloc_create(alloc);
+    if (err != cudaSuccess) {
+        fprintf(stderr, "create_pufferl: alloc_create(%s) failed for %ld bytes: %s\n",
+            name, alloc->total_bytes, cudaGetErrorString(err));
+        exit(1);
+    }
+}
 
 double wall_clock() {
     struct timespec ts;
@@ -3777,24 +4044,22 @@ EvalResult run_eval(Ini* ini, TrainContext* ctx, int mode, int verbose) {
         puf_ini_put(ini, "vec.frozen_bank_hidden_size", hidden_buf);
         puf_ini_put(ini, "vec.frozen_bank_num_layers", layers_buf);
         puf_ini_put(ini, "selfplay.enabled", "0");
-        league_eval_put_optional(ini, "env", "dr", "0");
-        league_eval_put_optional(ini, "env", "num_agents",
-            match_enemy_bot ? "1" : "2");
-        league_eval_put_optional(ini, "env", "num_bots",
-            match_enemy_bot ? "1" : "0");
+        puf_ini_put(ini, "env.dr", "0");
+        puf_ini_put(ini, "env.num_agents", match_enemy_bot ? "1" : "2");
+        puf_ini_put(ini, "env.num_bots", match_enemy_bot ? "1" : "0");
         if (match_enemy_bot) {
-            league_eval_put_optional(ini, "env", "bot_opponent_fraction", "1");
-            league_eval_put_optional(ini, "env", "bot_pass_fraction",
+            puf_ini_put(ini, "env.bot_opponent_fraction", "1");
+            puf_ini_put(ini, "env.bot_pass_fraction",
                 match_enemy_pass ? "1" : "0");
-            league_eval_put_optional(ini, "env", "bot_rules_fraction",
+            puf_ini_put(ini, "env.bot_rules_fraction",
                 match_enemy_rules ? "1" : "0");
-            league_eval_put_optional(ini, "env", "bot_script_fraction", "0");
-            league_eval_put_optional(ini, "env", "bot_adaptive_fraction", "0");
+            puf_ini_put(ini, "env.bot_script_fraction", "0");
+            puf_ini_put(ini, "env.bot_adaptive_fraction", "0");
         } else {
             // Environment-specific scripted curricula must not replace either
             // policy during a requested model-vs-model match.
-            league_eval_put_optional(ini, "env", "bot_opponent_fraction", "0");
-            league_eval_put_optional(ini, "env", "bot_rules_fraction", "0");
+            puf_ini_put(ini, "env.bot_opponent_fraction", "0");
+            puf_ini_put(ini, "env.bot_rules_fraction", "0");
         }
     }
     puf_ini_put(ini, "base.reset_every_horizon", "0");
@@ -3858,10 +4123,7 @@ EvalResult run_eval(Ini* ini, TrainContext* ctx, int mode, int verbose) {
             result.score = (float)dict_get(&log, "env/slot_0_score");
             result.draw = (float)dict_get(&log, "env/draw_rate");
             result.money = (float)dict_get(&log, "env/score");
-            DictItem* opp = dict_find(&log, "env/opponent_score");
-            result.opponent_money = opp
-                ? (float)opp->value
-                : (float)dict_get(&log, "env/slot_1_score");
+            result.opponent_money = (float)dict_get(&log, "env/opponent_score");
             result.games = (int)n;
             break;
         }
@@ -4576,171 +4838,6 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
     return result;
 }
 
-// Behavioral cloning mode: ./puffer bc kaggriculture [section.key=value ...]
-// Plays the selected script tape for bc_steps, collects (obs, expert action)
-// pairs, then minimizes -log pi(a_expert | obs). Saves an anchor checkpoint
-// that can later regularize self-play via the EMAg KL term.
-#if defined(KG_NUM_PLAYERS)
-static int run_bc(Ini* ini) {
-    TrainContext ctx = {.world_size = 1, .artifact_owner = 1};
-    PuffeRL* pufferl = create_pufferl(ini, &ctx);
-    int bc_steps = (int)puf_ini_get(ini, "bc", "steps");
-    int bc_profile = (int)puf_ini_get(ini, "bc", "profile");
-    int bc_epochs = (int)puf_ini_get(ini, "bc", "epochs");
-    float bc_lr = (float)puf_ini_get(ini, "bc", "learning_rate");
-    if (bc_steps <= 0 || bc_steps > 720) bc_steps = 26;
-    if (bc_epochs <= 0) bc_epochs = 2000;
-    if (bc_lr <= 0.0f) bc_lr = 0.0003f;
-
-    printf("BC: profile=%d steps=%d epochs=%d lr=%g\n",
-        bc_profile, bc_steps, bc_epochs, bc_lr);
-
-    // Play the tape on a single CPU env and record (obs, expert actions).
-    Env env = {};
-    env.rng = 0;
-    puf_init(&env, puf_ini_section(ini, "env", 0));
-    puf_reset(&env);
-
-    int obs_size = OBS_SIZE;
-    int num_atns = NUM_ATNS;
-    int packed_stride = (pufferl->vec->action_mask_size + 7) / 8;
-    obs_t* obs_data = (obs_t*)xcalloc((size_t)bc_steps * obs_size);
-    float* expert_data = (float*)xcalloc(
-        (size_t)bc_steps * num_atns * sizeof(float));
-    unsigned char* mask_data = (unsigned char*)xcalloc(
-        (size_t)bc_steps * packed_stride);
-    if (!obs_data || !expert_data || !mask_data) return 1;
-
-    for (int t = 0; t < bc_steps && !env.game_storage.done; t++) {
-        // Expert actions from the tape for player 0 (the learner).
-        KGAction expert = {};
-        kag_script_action_from_tapes(&env.game_storage, 0,
-            bc_profile, &expert, kag_script_tapes);
-        kag_script_repair(&env.game_storage, 0, bc_profile, &expert);
-        kag_clear_policy_actions(&env.agents[0]);
-        kag_set_policy_unit(&env.agents[0], 0,
-            expert.farmer.op, expert.farmer.arg, expert.farmer.n);
-        for (int h = 0; h < expert.hand_count && h < KG_POLICY_DIRECT_HANDS; h++) {
-            kag_set_policy_unit(&env.agents[0], h + 1,
-                expert.hands[h].op, expert.hands[h].arg, expert.hands[h].n);
-        }
-        for (int o = 0; o < expert.market_count && o < KG_POLICY_MARKET_SLOTS; o++) {
-            kag_set_policy_market(&env.agents[0], o,
-                expert.market[o].op, expert.market[o].item, expert.market[o].n);
-        }
-        memcpy(obs_data + (size_t)t * obs_size,
-            env.agents[0].observations, obs_size);
-        memcpy(expert_data + (size_t)t * num_atns,
-            env.agents[0].actions, num_atns * sizeof(float));
-        int mask_stride = pufferl->vec->action_mask_size;
-        for (int byte = 0; byte < packed_stride; byte++) {
-            unsigned char bits = 0;
-            for (int bit = 0; bit < 8; bit++) {
-                int action = byte * 8 + bit;
-                if (action < mask_stride
-                        && env.agents[0].action_mask[action]) {
-                    bits |= (unsigned char)(1u << bit);
-                }
-            }
-            mask_data[(size_t)t * packed_stride + byte] = bits;
-        }
-        // Step the env with the expert actions so the next obs is on-policy.
-        KGAction actions[KG_NUM_PLAYERS] = {expert, {}};
-        actions[1].farmer = (KGUnitAction){KG_OP_PASS, -1, 1};
-        actions[1].hand_count = env.game_storage.players[1].hand_count;
-        for (int h = 0; h < actions[1].hand_count; h++) {
-            actions[1].hands[h] = (KGUnitAction){KG_OP_PASS, -1, 1};
-        }
-        kg_step(&env.game_storage, actions);
-        kag_write_all_observations_from_tapes(&env, kag_script_tapes);
-    }
-
-    // Upload expert dataset to device.
-    precision_t* d_obs = (precision_t*)xcuda(
-        (size_t)bc_steps * obs_size * sizeof(precision_t));
-    float* d_expert = (float*)xcuda(
-        (size_t)bc_steps * num_atns * sizeof(float));
-    unsigned char* d_mask = (unsigned char*)xcuda(
-        (size_t)bc_steps * packed_stride);
-    obs_t* d_obs_raw = (obs_t*)xcuda((size_t)bc_steps * obs_size);
-    cudaMemcpy(d_obs_raw, obs_data, (size_t)bc_steps * obs_size,
-        cudaMemcpyHostToDevice);
-    cast<<<grid_size(bc_steps * obs_size), BLOCK_SIZE, 0,
-        pufferl->default_stream>>>(d_obs, d_obs_raw, bc_steps * obs_size);
-    cudaMemcpy(d_expert, expert_data,
-        (size_t)bc_steps * num_atns * sizeof(float),
-        cudaMemcpyHostToDevice);
-    cudaMemcpy(d_mask, mask_data,
-        (size_t)bc_steps * packed_stride,
-        cudaMemcpyHostToDevice);
-    free(obs_data); free(expert_data); free(mask_data);
-
-    // BC loop: forward, cross-entropy, backward, muon step.
-    int A_total = pufferl->vec->action_mask_size;
-    int mask_stride = (A_total + 7) / 8;
-    float* grad_logits = (float*)xcuda(
-        (size_t)bc_steps * A_total * sizeof(float));
-    float* loss_acc = (float*)xcuda(sizeof(float));
-    pufferl->muon.lr_puf = {};  // reset, set below
-    float lr = bc_lr;
-    cudaMemcpy(pufferl->muon.lr_puf.data, &lr, sizeof(float),
-        cudaMemcpyHostToDevice);
-
-    // Reuse the train activation buffers sized for B=bc_steps, T=1.
-    PrecisionTensor obs_t = {.data = d_obs,
-        .shape = {bc_steps, 1, obs_size}};
-    PrecisionTensor state = pufferl->buffer_states[0];
-    PrecisionTensor terminals = {};
-
-    for (int ep = 0; ep < bc_epochs; ep++) {
-        cudaMemsetAsync(grad_logits, 0,
-            (size_t)bc_steps * A_total * sizeof(float), pufferl->default_stream);
-        cudaMemsetAsync(loss_acc, 0, sizeof(float), pufferl->default_stream);
-        cudaMemsetAsync(state.data, 0, numel(state.shape) * sizeof(precision_t),
-            pufferl->default_stream);
-        PrecisionTensor dec_out = policy_forward_train(&pufferl->policy,
-            pufferl->weights, pufferl->train_activations,
-            obs_t, state, terminals, pufferl->default_stream);
-        (void)dec_out;
-        // policy_forward_train returns (B, T, fused_cols); squeeze T=1 for the
-        // BC kernel which expects (B, fused_cols).
-        PrecisionTensor dec_flat = *puf_squeeze(&dec_out, 1);
-        bc_loss_kernel<<<grid_size(bc_steps), BLOCK_SIZE, 0,
-            pufferl->default_stream>>>(
-            dec_flat.data, d_expert, d_mask, grad_logits, loss_acc,
-            pufferl->act_sizes_puf.data, bc_steps, A_total, num_atns,
-            mask_stride);
-        // Forward the gradient through the network; value/logstd empty.
-        FloatTensor grad_logits_t = {.data = grad_logits,
-            .shape = {bc_steps, 1, A_total}};
-        policy_backward(&pufferl->policy, pufferl->weights,
-            pufferl->train_activations, grad_logits_t, FloatTensor(),
-            FloatTensor(), pufferl->default_stream);
-        muon_step(&pufferl->muon, pufferl->master_weights, pufferl->grad_puf,
-            pufferl->hypers.max_grad_norm, pufferl->default_stream);
-        cudaDeviceSynchronize();
-        if ((ep + 1) % 200 == 0) {
-            float loss = 0.0f;
-            cudaMemcpy(&loss, loss_acc, sizeof(float), cudaMemcpyDeviceToHost);
-            printf("BC epoch %d loss=%.4f\n", ep + 1, loss / bc_steps);
-        }
-    }
-
-    // Save the anchor.
-    char out[4096];
-    const char* out_path = puf_ini_get_str(ini, "bc", "output");
-    snprintf(out, sizeof(out), "%s", out_path && out_path[0]
-        ? out_path : "saved/kaggriculture_bc_anchor.bin");
-    puf_save_weights(pufferl, out);
-    printf("BC anchor saved to %s\n", out);
-
-    cudaFree(d_obs); cudaFree(d_expert); cudaFree(d_mask);
-    cudaFree(d_obs_raw);
-    cudaFree(grad_logits); cudaFree(loss_acc);
-    close_pufferl(pufferl);
-    return 0;
-#endif
-
 // Fork DP workers before CUDA initialization. Sweep trials occupy contiguous GPU
 // blocks; rank 0 owns the last GPU and writes TrainResult to base.result_fd.
 TrainResult launch_train(Ini* ini) {
@@ -4846,14 +4943,7 @@ int main(int argc, char** argv) {
     puf_ini_load_env(&ini, argv[2], argc - 3, argv + 3);
     TrainContext ctx = {.world_size = 1, .artifact_owner = 1};
 
-    if (strcmp(mode, "bc") == 0) {
-#if defined(KG_NUM_PLAYERS)
-        run_bc(&ini);
-#else
-        fprintf(stderr, "bc mode requires the kaggriculture env\n");
-        exit(1);
-#endif
-    } else if (strcmp(mode, "train") == 0) {
+    if (strcmp(mode, "train") == 0) {
         launch_train(&ini);
     } else if (strcmp(mode, "sweep") == 0) {
         run_sweep(&ini, argv[0]);
@@ -4862,9 +4952,9 @@ int main(int argc, char** argv) {
             puf_ini_put(&ini, "vec.num_frozen_banks", "0");
             puf_ini_put(&ini, "vec.frozen_bank_pct", "0");
             puf_ini_put(&ini, "selfplay.enabled", "0");
-            league_eval_put_optional(&ini, "env", "dr", "0");
-            league_eval_put_optional(&ini, "env", "num_agents", "1");
-            league_eval_put_optional(&ini, "env", "num_bots", "1");
+            puf_ini_put(&ini, "env.dr", "0");
+            puf_ini_put(&ini, "env.num_agents", "1");
+            puf_ini_put(&ini, "env.num_bots", "1");
         }
         // Headless score eval (use a separate interactive path if you need render).
         run_eval(&ini, &ctx, EVAL_SCORE, 1);
