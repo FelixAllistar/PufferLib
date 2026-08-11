@@ -381,6 +381,19 @@ int main(int argc, char** argv) {
             .shape = {bc_steps, 1}};
         policy_backward(&policy, weights, train_acts, grad_logits_t,
             FloatTensor(), grad_value_t, bc_stream);
+        cudaError_t bw_err = cudaGetLastError();
+        if (bw_err != cudaSuccess) {
+            fprintf(stderr, "backward failed: %s\n",
+                cudaGetErrorString(bw_err));
+            return 1;
+        }
+        float* g0 = (float*)xcuda(sizeof(float));
+        kag_bc_sgd<<<1, 1, 0, bc_stream>>>(g0, grad_puf.data, 0.0f, 1);
+        cudaStreamSynchronize(bc_stream);
+        float gv = 0.0f;
+        cudaMemcpy(&gv, g0, sizeof(float), cudaMemcpyDeviceToHost);
+        fprintf(stderr, "grad[0]=%g\n", gv);
+        cudaFree(g0);
         kag_bc_sgd<<<grid_size(params.total_elems), BLOCK_SIZE, 0,
             bc_stream>>>(master_weights.data, grad_puf.data, lr,
             (int)params.total_elems);
