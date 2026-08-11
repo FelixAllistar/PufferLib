@@ -1520,3 +1520,91 @@ SHA-256 is `533285bf3518f8865e966e2223b8c2118363e4893a2d67b66563fbe3704fae0a`.
 An isolated extraction/import and a complete 719-decision official-environment
 game completed with both agents in `DONE` state (C2 finished with $27,830
 against the built-in random opponent for seed 707).
+
+## 2026-08-11: correction — faithful projected BC and package parity
+
+The C1/C2 promotion narrative immediately above is retained as experiment
+history, but its strategic conclusion is invalid. Two independent defects
+made those results look stronger than the policy that Kaggle actually ran:
+
+1. BC stored the compact policy label but advanced the recurrent trajectory
+   with the richer scripted action. Examples include teacher quantities 12
+   and `PICKUP 1`, while the policy can represent only quantity 10 and
+   `PICKUP ALL`. The model therefore saw impossible action-to-next-state
+   transitions.
+2. Native evaluation sampled actions while the intended competition policy is
+   deterministic masked argmax. The close fixed-bot rankings did not prove
+   deterministic exported behavior. C2's public score (~405) confirms it was
+   not a new champion; ExpL (~497 in the shown table) and the scripted top bot
+   (~519) remained stronger there.
+
+The generator now encodes the expert into policy heads, decodes those heads
+back into a game action, and advances with exactly that representable action.
+Because compact `PICKUP` has no quantity head, a projection-only recovery
+layer routes surplus held animals to compatible structures. It is deliberately
+not applied to the rich scripted opponent, whose quantities are already exact.
+
+The corrected recurrent artifacts and deterministic closed-loop gates are:
+
+| phase | data/model | gate in both seats |
+|---|---|---|
+| exact opening | 400 x 26; `opening_anchor.bin` | 4 animals, 2 animal buys, 5 placements |
+| recovery | 400 x 96 with 5% rollout perturbation; `top_clone.bin` | 4 animals, 9+ feeds |
+
+Both live under `saved/kaggriculture_bc_v2`. The earlier 719-step imitation
+attempt remains a useful negative result: post-opening held-out head accuracy
+was only 68.3%, and the closed-loop full-season model lost its herd and
+finished around $942. The 96-step clone is an opening/recovery teacher, not a
+complete agent. Frozen KL must stop after that prefix rather than anchor its
+untrained late-game behavior.
+
+Core EMAg now supports `train.emag_cutoff`. Kaggriculture exposes normalized
+episode progress at observation byte 3, so `emag_cutoff=0.134` applies the
+frozen teacher through approximately decision 96 and gives PPO freedom
+afterward. Conditional market KL uses the magnet's analytical reach
+probabilities; unreachable tail heads no longer count based on the sampled
+rollout path.
+
+Export parity is now explicit. Across seeds 7 and 42, both seats, and
+pass/mirror opponents, every one of the Python adapter's 1,024 observation
+bytes and 838 legality-mask bits matches native C for complete official games.
+That gate found and repaired stale locked-tile movement, shop-bit ordering,
+and player-1 farm-summary ordering. Deterministic Python inference reproduces
+the native opening and recovery gates.
+
+The next controlled experiment is prefix-frozen-KL PPO from `top_clone.bin`:
+no strategic action mask, no reset-state curriculum, and no productive-action,
+inactivity, or neglect-event bonus. Half the games use a bot population (35%
+top overall plus varied public/rules bots); half use the four-policy V6 learned
+league. Economic potential deltas plus terminal outcome/margin remain the
+value-learning signal instead of per-action reward hacks.
+
+## 2026-08-11: DAGS paper and benchmark-env direction
+
+`dags.html` (Lanier/Monette/Baldi/Fox, arXiv 2605.14379) proposes
+Data-Augmented Game Starts: reset self-play episodes to intermediate states
+sampled from offline gameplay instead of always starting at the root, so
+exploration focuses on strategically relevant subgames. Their baselines are
+PPO-Uniform and PPO-EMAg (our `emag_kl_coef`/`emag_tau` setup), and they prove
+start-state augmentation can bias the equilibrium in imperfect-information
+games, with the fix being a task-identifying observation flag (f=0 root vs
+f=1 data-start). Their benchmark wraps Kuhn/Goofspiel in a gridworld control
+task (travel 10/20) so exploitability stays analytically computable by
+reducing the control policy to a base-game policy.
+
+Relevance to us: it confirms our Goofspiel negative result (plain Goofspiel
+has no exploration problem), validates our EMAg solver as state-of-the-art,
+and its reset idea maps to the Kaggriculture opening-reset experiments. The
+reset idea is noted for later, not primary focus.
+
+Joseph (pufferlib) wants a non-selfplay benchmark: offline-solvable by exact
+math, linearly scalable difficulty, and action-spacey enough that training is
+actually hard. That led to **TrianglePath** (`ocean/trianglepath`): a random
+weighted triangle of height H, agent walks apex to base choosing LEFT/RIGHT,
+collects visited cells. Exact backward-DP oracle is O(H^2) (2^(H-1) paths),
+regret = optimal - agent is the metric, and H is the only difficulty knob
+(everything else fixed at compile time, max H=64). Greedy local choice fails
+(e.g. 5 / 9 4 / 1 1 100), so PPO must learn long-horizon value estimation.
+Status: env, CPU adapter, GPU adapter, DP solver, CPU oracle test (passes vs
+brute force H=2..10) and CPU/GPU parity test written; GPU parity + training
+regret-vs-H curve pending (sweep is using the GPU).
