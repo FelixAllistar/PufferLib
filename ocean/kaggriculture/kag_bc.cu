@@ -424,14 +424,10 @@ int main(int argc, char** argv) {
             bc_stream>>>(master_weights.data, grad_float, lr,
             (int)params.total_elems);
         cudaDeviceSynchronize();
-        if ((ep + 1) % 200 == 0) {
+        if ((ep + 1) % 50 == 0) {
             float loss = 0.0f;
             cudaMemcpy(&loss, loss_acc, sizeof(float), cudaMemcpyDeviceToHost);
-            float dbg[4];
-            cudaMemcpy(dbg, debug_out, 4 * sizeof(float),
-                cudaMemcpyDeviceToHost);
-            printf("BC epoch %d loss=%.4f dbg=%g,%g,%g,%g\n", ep + 1,
-                loss / bc_steps, dbg[0], dbg[1], dbg[2], dbg[3]);
+            printf("BC epoch %d loss=%.4f\n", ep + 1, loss / bc_steps);
         }
     }
 
