@@ -398,6 +398,12 @@ static int bc_train(Ini* ini) {
             kag_bc_loss_kernel<<<1, 256, 0, bc_stream>>>(
                 dec_flat.data, d_expert, d_mask, grad_logits, loss_acc,
                 act_sizes_puf.data, batch, A_total, num_atns, packed_stride);
+            cudaError_t ker_err = cudaGetLastError();
+            if (ker_err != cudaSuccess) {
+                fprintf(stderr, "chunk %u kernel launch: %s\n", start,
+                    cudaGetErrorString(ker_err));
+                return 1;
+            }
             FloatTensor grad_logits_t = {.data = grad_logits,
                 .shape = {batch, 1, A_total}};
             FloatTensor grad_value_t = {.data = grad_value,
@@ -405,9 +411,18 @@ static int bc_train(Ini* ini) {
             policy_backward(&policy, weights, train_acts, grad_logits_t,
                 FloatTensor(), grad_value_t, bc_stream);
             cudaDeviceSynchronize();
+            cudaError_t sync_err = cudaGetLastError();
+            if (sync_err != cudaSuccess) {
+                fprintf(stderr, "chunk %u sync: %s\n", start,
+                    cudaGetErrorString(sync_err));
+                return 1;
+            }
             float chunk_loss = 0.0f;
             cudaMemcpy(&chunk_loss, loss_acc, sizeof(float),
                 cudaMemcpyDeviceToHost);
+            if (start == 0) {
+                fprintf(stderr, "first chunk loss=%g\n", chunk_loss);
+            }
             epoch_loss += chunk_loss;
             epoch_steps += B;
 
