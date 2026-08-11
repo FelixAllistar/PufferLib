@@ -389,7 +389,12 @@ int main(int argc, char** argv) {
             return 1;
         }
         // Host-side SGD: pull the per-reg bf16 grads, subtract on CPU.
-        cudaDeviceSynchronize();
+        cudaError_t sync_err = cudaDeviceSynchronize();
+        if (sync_err != cudaSuccess) {
+            fprintf(stderr, "post-backward sync failed: %s\n",
+                cudaGetErrorString(sync_err));
+            return 1;
+        }
         float* host_master = (float*)malloc(
             (size_t)params.total_elems * sizeof(float));
         float* host_grad = (float*)calloc((size_t)params.total_elems,
