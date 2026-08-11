@@ -133,10 +133,6 @@ int main(int argc, char** argv) {
     }
     Policy policy = build_policy("kaggriculture", input_size, hidden,
         layers, act_n, false, 1);
-    fprintf(stderr, "policy: enc in=%d out=%d dec out=%d net hidden=%d layers=%d\n",
-        policy.encoder.in_dim, policy.encoder.out_dim,
-        policy.decoder.output_dim, policy.network.hidden,
-        policy.network.num_layers);
 
     Allocator params = {0}, acts = {0}, grads = {0};
     PolicyWeights weights = policy_weights_create(&policy, &params);
@@ -150,12 +146,6 @@ int main(int argc, char** argv) {
     create_allocator_or_die("grads", &grads);
     create_allocator_or_die("acts", &acts);
     cudaError_t alloc_err = cudaGetLastError();
-    fprintf(stderr, "after allocs: %s\n", cudaGetErrorString(alloc_err));
-    fprintf(stderr, "pools: params_elems=%ld grads_elems=%ld acts_bytes=%ld\n",
-        (long)params.total_elems, (long)grads.total_elems,
-        (long)acts.total_bytes);
-    fprintf(stderr, "pool bytes: params_bytes=%ld grads_bytes=%ld\n",
-        (long)params.total_bytes, (long)grads.total_bytes);
 
     // Params pool holds bf16 working weights. Float master is a separate
     // mirror (pufferl's master_weights_setup pattern) used only for saving.
@@ -163,19 +153,6 @@ int main(int argc, char** argv) {
     FloatTensor master_weights = {
         .data = (float*)xcuda((size_t)params.total_elems * sizeof(float)),
         .shape = {params.total_elems}};
-    fprintf(stderr, "pools ptr: params=%p grads=%p acts=%p\n",
-        params.mem, grads.mem, acts.mem);
-    fprintf(stderr, "param_puf=%p master=%p\n",
-        (void*)param_puf, (void*)master_weights.data);
-    fprintf(stderr, "ranges: params [%p,%p) grads [%p,%p)\n",
-        params.mem, (char*)params.mem + params.total_elems * 4,
-        grads.mem, (char*)grads.mem + grads.total_elems * 2);
-    for (int r = 0; r < params.num_regs && r < 8; r++) {
-        fprintf(stderr, "reg%d params=%p ne=%ld grads=%p\n",
-            r, *(void**)params.regs[r].data_ptr,
-            (long)numel(params.regs[r].shape),
-            r < grads.num_regs ? *(void**)grads.regs[r].data_ptr : nullptr);
-    }
     int act_sizes[42];
     {
         int tmp[] = ACT_SIZES;
@@ -255,21 +232,6 @@ int main(int argc, char** argv) {
         kg_step(&env.game_storage, actions);
         kag_write_all_observations_from_tapes(&env, kag_script_tapes);
     }
-    int valid_cells = 0, mask_bits = 0;
-    for (int t = 0; t < bc_steps; t++) {
-        int valid = 1;
-        for (int h = 0; h < num_atns; h++) {
-            if ((int)host_expert[(size_t)t * NUM_ATNS + h] < 0) valid = 0;
-        }
-        valid_cells += valid;
-        for (int byte = 0; byte < packed_stride; byte++) {
-            mask_bits += __builtin_popcount(
-                host_mask[(size_t)t * packed_stride + byte]);
-        }
-    }
-    fprintf(stderr, "BC data: %d/%d valid cells, %d mask bits, head0=%g\n",
-        valid_cells, bc_steps, mask_bits,
-        bc_steps > 0 ? host_expert[0] : -1.0f);
 
     // Upload.
     precision_t* d_obs = (precision_t*)xcuda(
@@ -284,10 +246,6 @@ int main(int argc, char** argv) {
     float* grad_value = (float*)xcuda((size_t)bc_steps * sizeof(float));
     float* loss_acc = (float*)xcuda(sizeof(float));
     float* debug_out = (float*)xcuda((size_t)bc_steps * sizeof(float));
-    float* grad_float = (float*)xcuda(
-        (size_t)params.total_elems * sizeof(float));
-    fprintf(stderr, "grad_float=%p bytes=%ld\n",
-        (void*)grad_float, (long)params.total_elems * 4);
     cudaMemcpy(d_obs_raw, host_obs, (size_t)bc_steps * OBS_SIZE,
         cudaMemcpyHostToDevice);
     cudaDeviceSynchronize();
@@ -305,7 +263,6 @@ int main(int argc, char** argv) {
     cudaMemcpy(d_mask, host_mask, (size_t)bc_steps * packed_stride,
         cudaMemcpyHostToDevice);
     cudaError_t up_err = cudaGetLastError();
-    fprintf(stderr, "after upload: %s\n", cudaGetErrorString(up_err));
 
     PrecisionTensor obs_t = {.data = d_obs,
         .shape = {bc_steps, 1, OBS_SIZE}};
@@ -329,37 +286,6 @@ int main(int argc, char** argv) {
                 cudaGetErrorString(e3));
             return 1;
         }
-        if (ep == 0) {
-            int dev_sizes[4];
-            cudaMemcpy(dev_sizes, act_sizes_puf.data, 4 * sizeof(int),
-                cudaMemcpyDeviceToHost);
-            unsigned char dev_mask[8];
-            cudaMemcpy(dev_mask, d_mask, 8, cudaMemcpyDeviceToHost);
-            float dev_logits[4];
-            cudaMemcpy(dev_logits, dec_flat.data, 4 * sizeof(float),
-                cudaMemcpyDeviceToHost);
-            fprintf(stderr, "BC dev: sizes=%d,%d,%d,%d mask=%02x,%02x,%02x "
-                "logits=%g,%g,%g,%g\n",
-                dev_sizes[0], dev_sizes[1], dev_sizes[2], dev_sizes[3],
-                dev_mask[0], dev_mask[1], dev_mask[2], dev_logits[0],
-                dev_logits[1], dev_logits[2], dev_logits[3]);
-        }
-        cudaError_t fwd_err = cudaGetLastError();
-        if (fwd_err != cudaSuccess) {
-            fprintf(stderr, "forward failed: %s\n",
-                cudaGetErrorString(fwd_err));
-            return 1;
-        }
-        if (ep == 0) {
-            cudaPointerAttributes da = {};
-            cudaPointerGetAttributes(&da, dec_flat.data);
-            fprintf(stderr, "dec_flat: data=%p type=%d dev=%d\n",
-                dec_flat.data, (int)da.type, da.device);
-            cudaPointerAttributes oa = {};
-            cudaPointerGetAttributes(&oa, obs_t.data);
-            fprintf(stderr, "obs_t: data=%p type=%d dev=%d\n",
-                obs_t.data, (int)oa.type, oa.device);
-        }
         kag_bc_loss_kernel<<<1, 256, 0, bc_stream>>>(
             dec_flat.data, d_expert, d_mask, grad_logits, loss_acc,
             debug_out, act_sizes_puf.data, bc_steps, A_total, num_atns,
@@ -369,16 +295,6 @@ int main(int argc, char** argv) {
             fprintf(stderr, "BC kernel launch failed: %s\n",
                 cudaGetErrorString(err));
             return 1;
-        }
-        if (ep == 0) {
-            cudaStreamSynchronize(bc_stream);
-            float dbg0[4];
-            cudaError_t sync_err = cudaGetLastError();
-            cudaError_t cp_err = cudaMemcpy(dbg0, debug_out,
-                4 * sizeof(float), cudaMemcpyDeviceToHost);
-            fprintf(stderr, "post-BC sync=%s copy=%s dbg=%g,%g,%g,%g\n",
-                cudaGetErrorString(sync_err), cudaGetErrorString(cp_err),
-                dbg0[0], dbg0[1], dbg0[2], dbg0[3]);
         }
         FloatTensor grad_logits_t = {.data = grad_logits,
             .shape = {bc_steps, 1, A_total}};
@@ -400,8 +316,6 @@ int main(int argc, char** argv) {
             return 1;
         }
         // Host-side SGD on the bf16 working params.
-        float* host_master = (float*)malloc(
-            (size_t)params.total_elems * sizeof(float));
         float* host_grad = (float*)calloc((size_t)params.total_elems,
             sizeof(float));
         precision_t* host_param = (precision_t*)malloc(
@@ -436,7 +350,6 @@ int main(int argc, char** argv) {
                 cudaGetErrorString(mh_err));
             return 1;
         }
-        free(host_master);
         free(host_grad);
         free(host_param);
         cudaDeviceSynchronize();
