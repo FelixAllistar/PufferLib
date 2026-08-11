@@ -356,6 +356,10 @@ static int bc_train(Ini* ini) {
         (size_t)params.total_elems * sizeof(precision_t));
     float* host_master = (float*)malloc(
         (size_t)params.total_elems * sizeof(float));
+    float* host_mom = (float*)calloc((size_t)params.total_elems,
+        sizeof(float));
+    float mom = (float)puf_ini_get(ini, "bc", "momentum");
+    if (mom <= 0.0f || mom >= 1.0f) mom = 0.9f;
 
     for (int ep = 0; ep < bc_epochs; ep++) {
         // Fisher-Yates shuffle.
@@ -445,7 +449,9 @@ static int bc_train(Ini* ini) {
                 grad_off += ne;
             }
             for (long i = 0; i < params.total_elems; i++) {
-                host_master[i] -= bc_lr * __bfloat162float(host_grad_bf[i]);
+                float g = __bfloat162float(host_grad_bf[i]);
+                host_mom[i] = mom * host_mom[i] + g;
+                host_master[i] -= bc_lr * host_mom[i];
             }
             cudaMemcpy(master_weights.data, host_master,
                 (size_t)params.total_elems * sizeof(float),
@@ -473,7 +479,7 @@ static int bc_train(Ini* ini) {
     printf("BC anchor saved to %s (%lld bytes)\n", out_path,
         (long long)nbytes);
     free(order); free(obs); free(expert); free(mask);
-    free(host_grad_bf); free(host_master);
+    free(host_grad_bf); free(host_master); free(host_mom);
     free(h_obs_chunk); free(h_expert_chunk); free(h_mask_chunk);
     return 0;
 }
