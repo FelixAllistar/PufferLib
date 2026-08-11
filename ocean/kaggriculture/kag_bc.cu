@@ -438,16 +438,15 @@ static int bc_train(Ini* ini) {
             cudaDeviceSynchronize();
             if (start == 0) {
                 DecoderActivations* da = (DecoderActivations*)train_acts.decoder;
-                float go[4];
-                cudaMemcpy(go, da->grad_out.data, 4 * sizeof(float),
-                    cudaMemcpyDeviceToHost);
-                fprintf(stderr, "decoder grad_out[0..3]=%g,%g,%g,%g\n",
-                    go[0], go[1], go[2], go[3]);
                 EncoderActivations* ea = (EncoderActivations*)train_acts.encoder;
+                float go[4];
                 cudaMemcpy(go, ea->wgrad_scratch.data, 4 * sizeof(float),
                     cudaMemcpyDeviceToHost);
-                fprintf(stderr, "encoder wgrad[0..3]=%g,%g,%g,%g\n",
+                fprintf(stderr, "enc wgrad ptr=%p val=%g,%g,%g,%g\n",
+                    (void*)ea->wgrad_scratch.data,
                     go[0], go[1], go[2], go[3]);
+                fprintf(stderr, "grads reg0 ptr=%p\n",
+                    (void*)(*(precision_t**)grads.regs[0].data_ptr));
             }
             cudaError_t sync_err = cudaGetLastError();
             if (sync_err != cudaSuccess) {
