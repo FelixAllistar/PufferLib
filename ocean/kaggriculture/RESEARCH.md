@@ -966,6 +966,37 @@ not on PATH). The GPU sweep (`gpu_env=1`) runs at ~160K SPS with the env step
 down to ~34% of frame time and GPU at 99%; the model/train path is now the
 bottleneck, not the simulator.
 
+## 2026-08-11: BC pipeline and champion-against-anchor plan
+
+Added a standalone CUDA behavioral-cloning pipeline (`ocean/kaggriculture/kag_bc.cu`):
+
+- `bc.mode=gen` runs seeded self-play/mirror games with a chosen bot and writes
+  every step's (obs, expert action-heads, packed mask) to a binary dataset.
+- `bc.mode=train` loads the dataset and minimizes masked cross-entropy over the
+  policy's fused decoder with host-side SGD (float master + bf16 refresh,
+  momentum, per-reg grads). Output is a standard flat checkpoint usable as
+  `base.load_model_path` or as a frozen EMAg magnet via `selfplay.magnet_path`.
+
+Baseline vs the top hybrid (bench, model P0):
+
+- Prior champion `sweep15_h128_14256`: avg money 4,718 vs 28,512 top. Still the
+  best model.
+- BC anchor (300 games of top-vs-top mirror, 128-wide, CE 0.0077): 0 vs 32,933
+  top. It overbuilds pastures and buys seeds but never places/feeds animals, so
+  it goes bankrupt.
+- PPO finetune of the anchor (50M steps, anchor as magnet): 0 vs 33,372 top.
+
+Root cause of the missing animal loop in the data: `KG_SCRIPT_TOP`'s t>=26 path
+delegates to `kag_bot_action` (crop economy only); the animal actions seen in
+bench "top" are just the t<26 tape opening. Full animal-maintenance bots are the
+adaptive profiles (`KAG_ADAPTIVE_STRUCTURED`=7 via `bc.bot=2`, HARVEST_PULSE=6
+via `bc.bot=3`, and FIELDS/KAITO which build+place+buy animals).
+
+Branch being tried next: PPO warm-started from the prior champion with the BC
+anchor as the frozen KL magnet (paper Step 2), moderate emag_kl_coef, mixed
+opponent lane to avoid the bankruptcy collapse, then evaluate against the top
+hybrid and the champion.
+
 ## 2026-08-09: GPU reset diversity and selfplay rotation fixes
 
 The CUDA reset kernel was re-deriving `reset_opening_rng` from the per-match
