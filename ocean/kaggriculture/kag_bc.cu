@@ -125,7 +125,7 @@ int main(int argc, char** argv) {
         for (int i = 0; i < num_atns; i++) act_n += act_sizes[i];
     }
     Policy policy = build_policy("kaggriculture", input_size, hidden,
-        layers, act_n + 1, false, 1);
+        layers, act_n, false, 1);
     fprintf(stderr, "policy: enc in=%d out=%d dec out=%d net hidden=%d layers=%d\n",
         policy.encoder.in_dim, policy.encoder.out_dim,
         policy.decoder.output_dim, policy.network.hidden,
