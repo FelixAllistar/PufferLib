@@ -286,9 +286,37 @@ int main(int argc, char** argv) {
         cudaMemsetAsync(loss_acc, 0, sizeof(float), bc_stream);
         cudaMemsetAsync(state.data, 0,
             numel(state.shape) * sizeof(precision_t), bc_stream);
-        PrecisionTensor dec_out = policy_forward_train(&policy, weights,
-            train_acts, obs_t, state, terminals, bc_stream);
-        PrecisionTensor dec_flat = *puf_squeeze(&dec_out, 0);
+        PrecisionTensor enc_in = obs_t;
+        puf_squeeze(&enc_in, 0);
+        PrecisionTensor enc_out = policy.encoder.forward(weights.encoder,
+            train_acts.encoder, enc_in, bc_stream);
+        cudaError_t e1 = cudaGetLastError();
+        if (e1 != cudaSuccess) {
+            fprintf(stderr, "encoder forward failed: %s\n",
+                cudaGetErrorString(e1));
+            return 1;
+        }
+        PrecisionTensor net_in = enc_out;
+        puf_unsqueeze(&net_in, 0, bc_steps, 1);
+        PrecisionTensor net_out = policy.network.forward_train(weights.network,
+            net_in, state, terminals, train_acts.network, bc_stream);
+        cudaError_t e2 = cudaGetLastError();
+        if (e2 != cudaSuccess) {
+            fprintf(stderr, "network forward failed: %s\n",
+                cudaGetErrorString(e2));
+            return 1;
+        }
+        PrecisionTensor dec_in = net_out;
+        puf_squeeze(&dec_in, 0);
+        PrecisionTensor dec_out = policy.decoder.forward(weights.decoder,
+            train_acts.decoder, dec_in, bc_stream);
+        cudaError_t e3 = cudaGetLastError();
+        if (e3 != cudaSuccess) {
+            fprintf(stderr, "decoder forward failed: %s\n",
+                cudaGetErrorString(e3));
+            return 1;
+        }
+        PrecisionTensor dec_flat = dec_out;
         cudaError_t fwd_err = cudaGetLastError();
         if (fwd_err != cudaSuccess) {
             fprintf(stderr, "forward failed: %s\n",
