@@ -1118,6 +1118,27 @@ foreground run. Alternative structural lever: explicit animal-loop reward
 shaping or an opening/reset that starts with animals placed, so PPO must learn
 the maintenance loop rather than discover it from a crop base.
 
+## 2026-08-11: Exp G - animal-opening reset is the new champion
+
+Exp G: ExpF@5M + `env.reset_opening_turns=40` (uniformly wakes the policy at a
+real point in the top opening, including the animal placement and care loop),
+no magnet, ent 0.001, 50% top lane, 30M run. Promoted
+`kag_expG_animreset/0000000020971520.bin` (20M) to
+`saved/kaggriculture_hall_of_fame/expG_animreset_20m.bin`.
+
+100-game results:
+- vs top hybrid: 7,580 (ExpF@5M 7,485, prior champion 6,871).
+- vs ExpF@5M both seats: 11,071/13,635 vs 14,272/11,387 - ExpG average wins
+  and is the first policy with real animal maintenance in eval (care=3,
+  place=2, fertilize=17 over 100 games; tiny but non-zero).
+
+The reset-opening lever works: waking PPO mid-animal-economy shifts behavior
+toward the maintenance loop the pure warm-start recipe never found.
+
+Branch H: continue ExpG@20M with a longer/harder run (more top lane, or a
+reset range focused on t40-100 where animals need daily care) to push the
+animal loop further and break past ~7.6k.
+
 ## 2026-08-09: GPU reset diversity and selfplay rotation fixes
 
 The CUDA reset kernel was re-deriving `reset_opening_rng` from the per-match
