@@ -163,8 +163,6 @@ int main(int argc, char** argv) {
         params.mem, grads.mem, acts.mem);
     fprintf(stderr, "grad_puf.data=%p master.data=%p\n",
         grad_puf.data, master_weights.data);
-    fprintf(stderr, "grad_float=%p bytes=%ld\n",
-        (void*)grad_float, (long)params.total_elems * 4);
     fprintf(stderr, "ranges: params [%p,%p) grads [%p,%p)\n",
         params.mem, (char*)params.mem + params.total_elems * 4,
         grads.mem, (char*)grads.mem + grads.total_elems * 2);
@@ -284,6 +282,8 @@ int main(int argc, char** argv) {
     float* debug_out = (float*)xcuda((size_t)bc_steps * sizeof(float));
     float* grad_float = (float*)xcuda(
         (size_t)params.total_elems * sizeof(float));
+    fprintf(stderr, "grad_float=%p bytes=%ld\n",
+        (void*)grad_float, (long)params.total_elems * 4);
     cudaMemcpy(d_obs_raw, host_obs, (size_t)bc_steps * OBS_SIZE,
         cudaMemcpyHostToDevice);
     cudaDeviceSynchronize();
