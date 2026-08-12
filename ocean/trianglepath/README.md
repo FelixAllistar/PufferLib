@@ -15,6 +15,11 @@ learn long-horizon value estimation (greedy local choice fails).
 - The agent collects the value of every cell it visits (apex through bottom).
 - Episode ends at the bottom row. Score = collected sum.
 
+`env.reward_mode=1` (default) emits one terminal reward equal to
+`score / (height * cell_max)`. The DP oracle is used only for evaluation.
+`reward_mode=0` retains dense per-cell rewards and `reward_mode=2` uses
+`score / optimal` as ablations.
+
 ## Exact oracle
 
 Backward DP over the triangle:
@@ -70,7 +75,7 @@ oracle stays trivial, giving a linearly-scalable difficulty dial.
 
 ```bash
 make -C ocean/trianglepath test          # GPU parity (requires nvcc)
-gcc -O2 -I. ocean/trianglepath/tests/test_dp.c -lm -o /tmp/tp_dp && /tmp/tp_dp
+gcc -O2 -I. -Isrc ocean/trianglepath/tests/test_dp.c -lm -o /tmp/tp_dp && /tmp/tp_dp
 ./build.sh trianglepath --gpu            # native train/eval binary
 ./puffer train trianglepath
 ```

@@ -24,6 +24,7 @@ typedef struct {
     int cell_min;
     int cell_max;
     uint32_t base_seed;
+    int reward_mode;
 } TPCudaConfig;
 
 static TPCudaConfig h_tp_config;
@@ -106,11 +107,16 @@ __global__ static void tp_observe_kernel(TPSim sim) {
     for (int row = 0; row < d_tp_config.height; row++) {
         for (int col = 0; col <= row; col++) {
             obs[row * (row + 1) / 2 + col] =
-                cells[row * (row + 1) / 2 + col];
+                (obs_t)(d_tp_config.cell_max == d_tp_config.cell_min ? 255
+                    : 1 + (cells[row * (row + 1) / 2 + col]
+                        - d_tp_config.cell_min) * 254
+                        / (d_tp_config.cell_max - d_tp_config.cell_min));
         }
     }
-    obs[TP_MAX_CELLS] = (obs_t)sim.row[i];
-    obs[TP_MAX_CELLS + 1] = (obs_t)sim.col[i];
+    obs[TP_MAX_CELLS] =
+        (obs_t)(sim.row[i] * 255 / (d_tp_config.height - 1));
+    obs[TP_MAX_CELLS + 1] =
+        (obs_t)(sim.col[i] * 255 / (d_tp_config.height - 1));
 }
 
 __global__ static void tp_step_kernel(TPSim sim, Env* envs,
@@ -122,9 +128,10 @@ __global__ static void tp_step_kernel(TPSim sim, Env* envs,
         int cell = sim.row[i] * (sim.row[i] + 1) / 2 + sim.col[i];
         int prev = sim.total[i];
         sim.total[i] += cells[cell];
-        sim.rewards[i] = (float)(sim.total[i] - prev);
+        sim.rewards[i] = d_tp_config.reward_mode == TP_REWARD_DENSE
+            ? (float)(sim.total[i] - prev) : 0.0f;
         int action = (int)actions[i];
-        if (action == TP_RIGHT && sim.col[i] < sim.row[i]) sim.col[i]++;
+        if (action == TP_RIGHT) sim.col[i]++;
         sim.row[i]++;
         if (sim.row[i] >= d_tp_config.height - 1) {
             int last = sim.row[i] * (sim.row[i] + 1) / 2 + sim.col[i];
@@ -134,6 +141,15 @@ __global__ static void tp_step_kernel(TPSim sim, Env* envs,
             sim.done[i] = 1;
             sim.terminals[i] = 1.0f;
             int optimal = tp_solve_value_cells(cells, d_tp_config.height);
+            if (d_tp_config.reward_mode == TP_REWARD_TERMINAL_SCORE) {
+                int max_total = d_tp_config.height * d_tp_config.cell_max;
+                sim.rewards[i] = max_total > 0
+                    ? (float)sim.total[i] / (float)max_total : 0.0f;
+            } else if (d_tp_config.reward_mode
+                    == TP_REWARD_TERMINAL_OPTIMALITY) {
+                sim.rewards[i] = optimal > 0
+                    ? (float)sim.total[i] / (float)optimal : 0.0f;
+            }
             envs[i].log.score += (float)sim.total[i];
             envs[i].log.optimal += (float)optimal;
             envs[i].log.regret += (float)(optimal - sim.total[i]);
@@ -181,10 +197,12 @@ static void puf_envs_step(Env* envs, const float* actions,
 
 static Env* puf_envs_create(int total_agents, Dict* env_kwargs) {
     g_sim.count = total_agents;
-    h_tp_config.height = (int)dict_get(env_kwargs, "height");
-    h_tp_config.cell_min = (int)dict_get(env_kwargs, "cell_min");
-    h_tp_config.cell_max = (int)dict_get(env_kwargs, "cell_max");
-    h_tp_config.base_seed = (uint32_t)dict_get(env_kwargs, "seed");
+    TPConfig cfg = tp_load_config(env_kwargs);
+    h_tp_config.height = cfg.height;
+    h_tp_config.cell_min = cfg.cell_min;
+    h_tp_config.cell_max = cfg.cell_max;
+    h_tp_config.base_seed = cfg.seed;
+    h_tp_config.reward_mode = cfg.reward_mode;
     cudaMemcpyToSymbol(d_tp_config, &h_tp_config, sizeof(h_tp_config));
     cudaMalloc(&g_sim.cells,
         (size_t)total_agents * TP_MAX_CELLS * sizeof(obs_t));

@@ -39,6 +39,7 @@ static void fail_bytes(const char* field, int env, int step,
     const unsigned char* b = (const unsigned char*)actual;
     size_t offset = 0;
     while (offset < size && a[offset] == b[offset]) offset++;
+    if (offset == size) return;
     std::fprintf(stderr,
         "GPU adapter mismatch field=%s env=%d step=%d offset=%zu/%zu "
         "cpu=%u gpu=%u\n", field, env, step, offset, size,
@@ -64,6 +65,7 @@ int main(void) {
     dict_set(&kwargs, "cell_min", 1);
     dict_set(&kwargs, "cell_max", 9);
     dict_set(&kwargs, "seed", 42);
+    dict_set(&kwargs, "reward_mode", TP_REWARD_TERMINAL_SCORE);
 
     Env* cpu = (Env*)std::calloc(TEST_ENVS, sizeof(Env));
     obs_t* cpu_obs = (obs_t*)std::calloc(TEST_ENVS * OBS_SIZE, sizeof(obs_t));
@@ -95,7 +97,7 @@ int main(void) {
     obs_t* gpu_obs = (obs_t*)std::calloc(TEST_ENVS * OBS_SIZE, sizeof(obs_t));
     float* gpu_rewards = (float*)std::calloc(TEST_ENVS, sizeof(float));
     float* gpu_terms = (float*)std::calloc(TEST_ENVS, sizeof(float));
-    Log* gpu_logs = (Log*)std::calloc(TEST_ENVS, sizeof(Log));
+    Env* gpu_logs = (Env*)std::calloc(TEST_ENVS, sizeof(Env));
 
     uint32_t rng = 0x12345678u;
     for (int step = 0; step < TEST_STEPS; step++) {
@@ -118,22 +120,13 @@ int main(void) {
             TEST_ENVS * sizeof(Env), cudaMemcpyDeviceToHost));
 
         for (int e = 0; e < TEST_ENVS; e++) {
-            fail_bytes("state.cells", e, step, cpu[e].state.cells,
-                gpu_obs + (size_t)e * OBS_SIZE, TP_MAX_CELLS);
-            if (cpu[e].state.row != (int)gpu_obs[(size_t)e * OBS_SIZE + TP_MAX_CELLS]
-                    || cpu[e].state.col != (int)gpu_obs[(size_t)e * OBS_SIZE + TP_MAX_CELLS + 1]) {
-                std::fprintf(stderr,
-                    "GPU adapter mismatch field=pos env=%d step=%d "
-                    "cpu=(%d,%d) gpu=(%d,%d)\n", e, step,
-                    cpu[e].state.row, cpu[e].state.col,
-                    (int)gpu_obs[(size_t)e * OBS_SIZE + TP_MAX_CELLS],
-                    (int)gpu_obs[(size_t)e * OBS_SIZE + TP_MAX_CELLS + 1]);
-                std::exit(1);
-            }
+            fail_bytes("observation", e, step,
+                cpu_obs + (size_t)e * OBS_SIZE,
+                gpu_obs + (size_t)e * OBS_SIZE, OBS_SIZE);
             compare_float("reward", e, step, cpu_rewards[e], gpu_rewards[e]);
             compare_float("terminal", e, step, cpu_terms[e], gpu_terms[e]);
             const float* cl = (const float*)&cpu[e].log;
-            const float* gl = (const float*)&gpu_logs[e];
+            const float* gl = (const float*)&gpu_logs[e].log;
             for (size_t f = 0; f < sizeof(Log) / sizeof(float); f++) {
                 compare_float("log", e, step, cl[f], gl[f]);
             }
@@ -142,5 +135,19 @@ int main(void) {
 
     std::printf("TrianglePath GPU adapter: PASS (%d envs x %d steps; "
         "cells/pos/reward/terminal exact)\n", TEST_ENVS, TEST_STEPS);
+    puf_envs_close(gpu_envs);
+    CUDA_OK(cudaFree(d_actions));
+    CUDA_OK(cudaFree(d_rewards));
+    CUDA_OK(cudaFree(d_terms));
+    CUDA_OK(cudaFree(d_obs));
+    std::free(cpu);
+    std::free(cpu_obs);
+    std::free(cpu_actions);
+    std::free(cpu_rewards);
+    std::free(cpu_terms);
+    std::free(gpu_obs);
+    std::free(gpu_rewards);
+    std::free(gpu_terms);
+    std::free(gpu_logs);
     return 0;
 }

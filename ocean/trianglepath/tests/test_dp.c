@@ -60,7 +60,24 @@ static void test_optimal_path(int height, int seed) {
     printf("height=%d seed=%d optimal path %d ok\n", height, seed, walked);
 }
 
+static void test_right_child_from_edge(void) {
+    TPConfig cfg = {4, 1, 9, 1, TP_REWARD_DENSE};
+    TPState state = {0};
+    for (int i = 0; i < 10; i++) state.cells[i] = 1;
+    state.cells[tp_cell_index(1, 1)] = 9;
+    state.cells[tp_cell_index(2, 2)] = 9;
+    state.cells[tp_cell_index(3, 3)] = 9;
+    tp_step(&state, &cfg, TP_RIGHT);
+    assert(state.row == 1 && state.col == 1);
+    tp_step(&state, &cfg, TP_RIGHT);
+    assert(state.row == 2 && state.col == 2);
+    tp_step(&state, &cfg, TP_RIGHT);
+    assert(state.done && state.row == 3 && state.col == 3);
+    assert(state.total == 28);
+}
+
 int main(void) {
+    test_right_child_from_edge();
     for (int h = 2; h <= 10; h++) {
         for (int seed = 1; seed <= 8; seed++) {
             test_dp_matches_brute(h, seed);

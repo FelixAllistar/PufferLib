@@ -1,0 +1,1029 @@
+<!DOCTYPE html>
+<!-- saved from url=(0035)https://arxiv.org/html/2605.14379v1 -->
+<html lang="en" data-theme="dark" data-reading-mode="enabled"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><style data-merge-styles="true"></style>
+
+<title>Data-Augmented Game Starts for Accelerating Self-Play Exploration in Imperfect Information Games</title>
+<!--Generated on Thu May 14 04:38:30 2026 by LaTeXML (version 0.8.8) http://dlmf.nist.gov/LaTeXML/.-->
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<link rel="stylesheet" href="./Data-Augmented Game Starts for Accelerating Self-Play Exploration in Imperfect Information Games_files/arxiv-html-papers-20260131.css" type="text/css">
+<script src="./Data-Augmented Game Starts for Accelerating Self-Play Exploration in Imperfect Information Games_files/arxiv-html-papers-20260131.js.download"></script>
+<script>
+  // Restore the saved color scheme preference, or
+  // enact the browser preference if "automatic", 
+  // without expecting DOM load to have completed.
+  //
+  // Also restore any saved readingmode and ToC display preferences.
+  function initializeReadingPreferences() {
+    let saved_theme = localStorage.getItem("ar5iv_theme") || "automatic";
+    if (saved_theme === "automatic") {
+      if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+        saved_theme = "dark";
+      }
+    }
+    if (saved_theme == "dark") {
+      document.documentElement.setAttribute("data-theme", "dark");
+    } else {
+      document.documentElement.setAttribute("data-theme", "light");
+    }
+
+    const tocDisplay = localStorage.getItem('arxiv_html_paper_toc_display');
+    if (tocDisplay) {
+      document.documentElement.setAttribute("data-toc-display", tocDisplay);
+    }
+    const readingMode = localStorage.getItem('arxiv_html_paper_reading_mode');
+    if (readingMode) {
+      document.documentElement.setAttribute("data-reading-mode", readingMode);
+    }
+    // Pre-apply spinout-banner dismissal here, before the banner paints, so it
+    // never flashes in only to be hidden later by the deferred arxiv-header.js.
+    // Key matches arxiv-header.js: "arxiv-banner-dismissed:" + data-banner-name.
+    if (localStorage.getItem('arxiv-banner-dismissed:spinout-nonprofit')) {
+      document.documentElement.setAttribute("data-banner-dismissed", "");
+    }
+  }
+  // Run as soon as JS starts, to minimize repainting
+  initializeReadingPreferences();
+</script>
+<link rel="apple-touch-icon" sizes="180x180" href="https://arxiv.org/static/browse/0.3.4/images/icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://arxiv.org/static/browse/0.3.4/images/icons/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="https://arxiv.org/static/browse/0.3.4/images/icons/favicon-16x16.png">
+<link rel="manifest" href="https://arxiv.org/static/browse/0.3.4/images/icons/site.webmanifest">
+<link rel="mask-icon" href="https://arxiv.org/static/browse/0.3.4/images/icons/safari-pinned-tab.svg" color="#5bbad5">
+<link rel="stylesheet" type="text/css" media="screen" href="./Data-Augmented Game Starts for Accelerating Self-Play Exploration in Imperfect Information Games_files/utz6mli.css"><link rel="stylesheet" type="text/css" media="screen" href="./Data-Augmented Game Starts for Accelerating Self-Play Exploration in Imperfect Information Games_files/arxiv-header-footer.css"><style>
+  /* Banner pre-dismissal (set above before paint -> no flash-then-hide) and
+     reading-mode chrome hiding. */
+  html[data-banner-dismissed] .ds-announcement { display: none; }
+  html[data-reading-mode="enabled"] .ds-announcement,
+  html[data-reading-mode="enabled"] .ds-site-footer { display: none; }
+  /* Keep the announcement text dark on the Open-Blue band in both colour themes
+     (otherwise it inherits the paper's warm-wash text in dark mode and washes out). */
+  .ds-announcement-text { color: var(--arxiv-ink, #1c1a17); }
+</style>
+<script defer="" src="./Data-Augmented Game Starts for Accelerating Self-Play Exploration in Imperfect Information Games_files/arxiv-header.js.download"></script>
+</head>
+<body>
+<dialog id="modal-form" aria-labelledby="modal-title" closedby="any">
+  <form id="modal-form-content" method="dialog" enctype="multipart/form-data">
+    <header class="modal-header">
+      <h5 id="modal-title" class="modal-title">Report GitHub Issue</h5>
+      <button type="submit" formnovalidate="" class="modal-close" aria-label="Close">×</button>
+    </header>
+
+    <div class="modal-body">
+      <label for="form_title">Title:</label>
+      <input class="form-control" id="form_title" name="form_title" required="" placeholder="Enter title">
+
+      <p id="selectedTextModalDescription" hidden="">Content selection saved. Describe the issue below:</p>
+
+      <label for="description">Description:</label>
+      <textarea class="form-control" id="description" name="description" required="" maxlength="500" placeholder="500 characters maximum"></textarea>
+    </div>
+
+    <footer class="modal-footer">
+      <button type="submit" value="internal-report" class="sr-only modal-submit">Submit without GitHub</button>
+      <button type="submit" value="github-report" class="modal-submit">Submit in GitHub</button>
+    </footer>
+  </form>
+</dialog><div class="ds-announcement" id="announcement-banner" role="region" aria-label="Announcement" data-banner-name="spinout-nonprofit">
+    <img class="ds-announcement-glyph" src="./Data-Augmented Game Starts for Accelerating Self-Play Exploration in Imperfect Information Games_files/smileybones-small.svg" alt="" aria-hidden="true">
+    <span class="ds-announcement-text">arXiv is now an independent nonprofit!</span>
+    <a class="ds-announcement-link" href="https://info.arxiv.org/about">Learn more</a>
+    <button type="button" class="ds-announcement-close" aria-label="Dismiss announcement">×</button>
+  </div>
+
+<header class="arxiv-html-header">
+  <div class="html-header-logo">
+    <a href="https://arxiv.org/"><img alt="arXiv logo" class="logo desktop-only" width="100" src="./Data-Augmented Game Starts for Accelerating Self-Play Exploration in Imperfect Information Games_files/arxiv-logo-primary-light.svg">
+      <span class="sr-only">Back to arXiv</span>
+    </a>
+  </div>
+  <!--TOC, dark mode, links-->
+  <nav class="html-header-nav">
+    <a class="header-button hover-effect desktop-only" href="https://info.arxiv.org/about/accessible_HTML.html" target="_blank">Why HTML?</a>
+    <a class="header-button" title="Report an Issue" href="https://arxiv.org/html/2605.14379v1#" onclick="event.preventDefault(); showModalForm();">
+      <svg role="presentation" class="mobile-only toggle-icon" aria-hidden="true" height="1.25rem" viewBox="0 0 640 640">
+        <path d="M224 160C224 107 267 64 320 64C373 64 416 107 416 160L416 163.6C416 179.3 403.3 192 387.6 192L252.5 192C236.8 192 224.1 179.3 224.1 163.6L224.1 160zM569.6 172.8C580.2 186.9 577.3 207 563.2 217.6L465.4 290.9C470.7 299.8 474.7 309.6 477.2 320L576 320C593.7 320 608 334.3 608 352C608 369.7 593.7 384 576 384L480 384L480 416C480 418.6 479.9 421.3 479.8 423.9L563.2 486.4C577.3 497 580.2 517.1 569.6 531.2C559 545.3 538.9 548.2 524.8 537.6L461.7 490.3C438.5 534.5 395.2 566.5 344 574.2L344 344C344 330.7 333.3 320 320 320C306.7 320 296 330.7 296 344L296 574.2C244.8 566.5 201.5 534.5 178.3 490.3L115.2 537.6C101.1 548.2 81 545.3 70.4 531.2C59.8 517.1 62.7 497 76.8 486.4L160.2 423.9C160.1 421.3 160 418.7 160 416L160 384L64 384C46.3 384 32 369.7 32 352C32 334.3 46.3 320 64 320L162.8 320C165.3 309.6 169.3 299.8 174.6 290.9L76.8 217.6C62.7 207 59.8 186.9 70.4 172.8C81 158.7 101.1 155.8 115.2 166.4L224 248C236.3 242.9 249.8 240 264 240L376 240C390.2 240 403.7 242.8 416 248L524.8 166.4C538.9 155.8 559 158.7 569.6 172.8z"></path>
+      </svg>
+      <span class="desktop-only">Report Issue</span></a>
+    <!--back to abstract-->
+    <a class="header-button" title="Back to abstract page" aria-label="Back to abstract page" href="https://arxiv.org/abs/2605.14379v1">
+      <svg class="mobile-only toggle-icon" role="presentation" height="1.25rem" viewBox="0 0 512 512" fill="#ffffff" aria-hidden="true">
+        <path d="M502.6 278.6c12.5-12.5 12.5-32.8 0-45.3l-128-128c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L402.7 224 192 224c-17.7 0-32 14.3-32 32s14.3 32 32 32l210.7 0-73.4 73.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0l128-128zM160 96c17.7 0 32-14.3 32-32s-14.3-32-32-32L96 32C43 32 0 75 0 128L0 384c0 53 43 96 96 96l64 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l-64 0c-17.7 0-32-14.3-32-32l0-256c0-17.7 14.3-32 32-32l64 0z">
+        </path>
+      </svg>
+      <span class="desktop-only">Back to Abstract</span>
+    </a>
+    <!-- PDF download link -->
+    <a class="header-button" title="Download PDF" href="https://arxiv.org/pdf/2605.14379v1" target="_blank">
+      <svg class="mobile-only toggle-icon" role="presentation" height="1.25rem" viewBox="0 0 576 542">
+        <path d="M208 48L96 48c-8.8 0-16 7.2-16 16l0 384c0 8.8 7.2 16 16 16l80 0 0 48-80 0c-35.3 0-64-28.7-64-64L32 64C32 28.7 60.7 0 96 0L229.5 0c17 0 33.3 6.7 45.3 18.7L397.3 141.3c12 12 18.7 28.3 18.7 45.3l0 149.5-48 0 0-128-88 0c-39.8 0-72-32.2-72-72l0-88zM348.1 160L256 67.9 256 136c0 13.3 10.7 24 24 24l68.1 0zM240 380l32 0c33.1 0 60 26.9 60 60s-26.9 60-60 60l-12 0 0 28c0 11-9 20-20 20s-20-9-20-20l0-128c0-11 9-20 20-20zm32 80c11 0 20-9 20-20s-9-20-20-20l-12 0 0 40 12 0zm96-80l32 0c28.7 0 52 23.3 52 52l0 64c0 28.7-23.3 52-52 52l-32 0c-11 0-20-9-20-20l0-128c0-11 9-20 20-20zm32 128c6.6 0 12-5.4 12-12l0-64c0-6.6-5.4-12-12-12l-12 0 0 88 12 0zm76-108c0-11 9-20 20-20l48 0c11 0 20 9 20 20s-9 20-20 20l-28 0 0 24 28 0c11 0 20 9 20 20s-9 20-20 20l-28 0 0 44c0 11-9 20-20 20s-20-9-20-20l0-128z"></path>
+      </svg>
+      <span class="desktop-only">Download PDF</span></a>
+    <!-- navigational table of contents toggle -->
+    <a class="header-button toggle-icon" href="javascript:toggleNavTOC();" title="Toggle navigation" aria-label="Toggle navigation">
+      <svg height="1.25rem" role="presentation" viewBox="0 0 512 512">
+        <path d="M40 48C26.7 48 16 58.7 16 72v48c0 13.3 10.7 24 24 24H88c13.3 0 24-10.7 24-24V72c0-13.3-10.7-24-24-24H40zM192 64c-17.7 0-32 14.3-32 32s14.3 32 32 32H480c17.7 0 32-14.3 32-32s-14.3-32-32-32H192zm0 160c-17.7 0-32 14.3-32 32s14.3 32 32 32H480c17.7 0 32-14.3 32-32s-14.3-32-32-32H192zm0 160c-17.7 0-32 14.3-32 32s14.3 32 32 32H480c17.7 0 32-14.3 32-32s-14.3-32-32-32H192zM16 232v48c0 13.3 10.7 24 24 24H88c13.3 0 24-10.7 24-24V232c0-13.3-10.7-24-24-24H40c-13.3 0-24 10.7-24 24zM40 368c-13.3 0-24 10.7-24 24v48c0 13.3 10.7 24 24 24H88c13.3 0 24-10.7 24-24V392c0-13.3-10.7-24-24-24H40z">
+        </path>
+      </svg>
+    </a>
+    <!--- collapsable header / reading mode toggle -->
+    <a class="header-button toggle-icon" href="javascript:toggleReadingMode();" title="Disable reading mode, show header and footer">
+      <svg role="presentation" height="1.25rem" viewBox="0 0 448 512"><!--!Font Awesome Free v7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.-->
+        <path d="M32 32C14.3 32 0 46.3 0 64l0 96c0 17.7 14.3 32 32 32s32-14.3 32-32l0-64 64 0c17.7 0 32-14.3 32-32s-14.3-32-32-32L32 32zM64 352c0-17.7-14.3-32-32-32S0 334.3 0 352l0 96c0 17.7 14.3 32 32 32l96 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l-64 0 0-64zM320 32c-17.7 0-32 14.3-32 32s14.3 32 32 32l64 0 0 64c0 17.7 14.3 32 32 32s32-14.3 32-32l0-96c0-17.7-14.3-32-32-32l-96 0zM448 352c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 64-64 0c-17.7 0-32 14.3-32 32s14.3 32 32 32l96 0c17.7 0 32-14.3 32-32l0-96z"></path>
+      </svg>
+    </a>
+    <!--- colored theme toggle -->
+    <button type="button" class="header-button color-tog" onclick="toggleColorScheme();" title="Toggle dark/light mode" aria-label="Toggle color scheme">
+      <span class="toggle-icon automatic-tog" aria-hidden="true">
+        <svg role="presentation" height="1.25rem" viewBox="0 0 24 24">
+          <path d="m14.3 16-.7-2h-3.2l-.7 2H7.8L11 7h2l3.2 9h-1.9M20 8.69V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12 20 8.69m-9.15 3.96h2.3L12 9l-1.15 3.65Z">
+          </path>
+        </svg>
+      </span>
+      <span class="toggle-icon light-tog" aria-hidden="true">
+        <svg role="presentation" height="1.25rem" viewBox="0 0 24 24">
+          <path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12 20 8.69Z">
+          </path>
+        </svg>
+      </span>
+      <span class="toggle-icon dark-tog" aria-hidden="true">
+        <svg role="presentation" height="1.25rem" viewBox="0 0 24 24">
+          <path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12c0-2.42-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12 20 8.69Z">
+          </path>
+        </svg>
+      </span>
+    </button>
+  </nav>
+</header><nav class="ltx_page_navbar">
+<nav class="ltx_TOC">
+<ol class="ltx_toclist">
+<li class="ltx_tocentry ltx_tocentry_abstract"><a href="https://arxiv.org/html/2605.14379v1#abstract1" title="In Data-Augmented Game Starts for Accelerating Self-Play Exploration in Imperfect Information Games" class="ltx_ref"><span class="ltx_text ltx_ref_title">Abstract</span></a></li>
+<li class="ltx_tocentry ltx_tocentry_section"><a href="https://arxiv.org/html/2605.14379v1#S1" title="In Data-Augmented Game Starts for Accelerating Self-Play Exploration in Imperfect Information Games" class="ltx_ref"><span class="ltx_text ltx_ref_title"><span class="ltx_tag ltx_tag_ref">1 </span>Introduction</span></a></li>
+<li class="ltx_tocentry ltx_tocentry_section">
+<a href="https://arxiv.org/html/2605.14379v1#S2" title="In Data-Augmented Game Starts for Accelerating Self-Play Exploration in Imperfect Information Games" class="ltx_ref"><span class="ltx_text ltx_ref_title"><span class="ltx_tag ltx_tag_ref">2 </span>Related Work</span></a>
+<ol class="ltx_toclist ltx_toclist_section">
+<li class="ltx_tocentry ltx_tocentry_subsection"><a href="https://arxiv.org/html/2605.14379v1#S2.SS1" title="In 2 Related Work ‣ Data-Augmented Game Starts for Accelerating Self-Play Exploration in Imperfect Information Games" class="ltx_ref"><span class="ltx_text ltx_ref_title"><span class="ltx_tag ltx_tag_ref">2.1 </span>Competitive Game Solving</span></a></li>
+<li class="ltx_tocentry ltx_tocentry_subsection"><a href="https://arxiv.org/html/2605.14379v1#S2.SS2" title="In 2 Related Work ‣ Data-Augmented Game Starts for Accelerating Self-Play Exploration in Imperfect Information Games" class="ltx_ref"><span class="ltx_text ltx_ref_title"><span class="ltx_tag ltx_tag_ref">2.2 </span>State resets and curriculum learning for exploration</span></a></li>
+</ol>
+</li>
+<li class="ltx_tocentry ltx_tocentry_section"><a href="https://arxiv.org/html/2605.14379v1#S3" title="In Data-Augmented Game Starts for Accelerating Self-Play Exploration in Imperfect Information Games" class="ltx_ref"><span class="ltx_text ltx_ref_title"><span class="ltx_tag ltx_tag_ref">3 </span>Preliminaries</span></a></li>
+<li class="ltx_tocentry ltx_tocentry_section">
+<a href="https://arxiv.org/html/2605.14379v1#S4" title="In Data-Augmented Game Starts for Accelerating Self-Play Exploration in Imperfect Information Games" class="ltx_ref"><span class="ltx_text ltx_ref_title"><span class="ltx_tag ltx_tag_ref">4 </span>Data-Augmented Game Starts (DAGS)</span></a>
+<ol class="ltx_toclist ltx_toclist_section">
+<li class="ltx_tocentry ltx_tocentry_subsection"><a href="https://arxiv.org/html/2605.14379v1#S4.SS1" title="In 4 Data-Augmented Game Starts (DAGS) ‣ Data-Augmented Game Starts for Accelerating Self-Play Exploration in Imperfect Information Games" class="ltx_ref"><span class="ltx_text ltx_ref_title"><span class="ltx_tag ltx_tag_ref">4.1 </span>Offline state dataset</span></a></li>
+<li class="ltx_tocentry ltx_tocentry_subsection"><a href="https://arxiv.org/html/2605.14379v1#S4.SS2" title="In 4 Data-Augmented Game Starts (DAGS) ‣ Data-Augmented Game Starts for Accelerating Self-Play Exploration in Imperfect Information Games" class="ltx_ref"><span class="ltx_text ltx_ref_title"><span class="ltx_tag ltx_tag_ref">4.2 </span>Augmented initial-state distribution</span></a></li>
+<li class="ltx_tocentry ltx_tocentry_subsection"><a href="https://arxiv.org/html/2605.14379v1#S4.SS3" title="In 4 Data-Augmented Game Starts (DAGS) ‣ Data-Augmented Game Starts for Accelerating Self-Play Exploration in Imperfect Information Games" class="ltx_ref"><span class="ltx_text ltx_ref_title"><span class="ltx_tag ltx_tag_ref">4.3 </span>Self-play training with DAGS</span></a></li>
+</ol>
+</li>
+<li class="ltx_tocentry ltx_tocentry_section">
+<a href="https://arxiv.org/html/2605.14379v1#S5" title="In Data-Augmented Game Starts for Accelerating Self-Play Exploration in Imperfect Information Games" class="ltx_ref"><span class="ltx_text ltx_ref_title"><span class="ltx_tag ltx_tag_ref">5 </span>Benchmarking Exploration in Large Games</span></a>
+<ol class="ltx_toclist ltx_toclist_section">
+<li class="ltx_tocentry ltx_tocentry_subsection"><a href="https://arxiv.org/html/2605.14379v1#S5.SS1" title="In 5 Benchmarking Exploration in Large Games ‣ Data-Augmented Game Starts for Accelerating Self-Play Exploration in Imperfect Information Games" class="ltx_ref"><span class="ltx_text ltx_ref_title"><span class="ltx_tag ltx_tag_ref">5.1 </span>Forfeit (FF) Transformation</span></a></li>
+<li class="ltx_tocentry ltx_tocentry_subsection"><a href="https://arxiv.org/html/2605.14379v1#S5.SS2" title="In 5 Benchmarking Exploration in Large Games ‣ Data-Augmented Game Starts for Accelerating Self-Play Exploration in Imperfect Information Games" class="ltx_ref"><span class="ltx_text ltx_ref_title"><span class="ltx_tag ltx_tag_ref">5.2 </span>Control Game Transformation</span></a></li>
+</ol>
+</li>
+<li class="ltx_tocentry ltx_tocentry_section">
+<a href="https://arxiv.org/html/2605.14379v1#S6" title="In Data-Augmented Game Starts for Accelerating Self-Play Exploration in Imperfect Information Games" class="ltx_ref"><span class="ltx_text ltx_ref_title"><span class="ltx_tag ltx_tag_ref">6 </span>Experiments</span></a>
+<ol class="ltx_toclist ltx_toclist_section">
+<li class="ltx_tocentry ltx_tocentry_subsection"><a href="https://arxiv.org/html/2605.14379v1#S6.SS1" title="In 6 Experiments ‣ Data-Augmented Game Starts for Accelerating Self-Play Exploration in Imperfect Information Games" class="ltx_ref"><span class="ltx_text ltx_ref_title"><span class="ltx_tag ltx_tag_ref">6.1 </span>DAGS Improves Scaling in Kuhn and Goofspiel</span></a></li>
+<li class="ltx_tocentry ltx_tocentry_subsection"><a href="https://arxiv.org/html/2605.14379v1#S6.SS2" title="In 6 Experiments ‣ Data-Augmented Game Starts for Accelerating Self-Play Exploration in Imperfect Information Games" class="ltx_ref"><span class="ltx_text ltx_ref_title"><span class="ltx_tag ltx_tag_ref">6.2 </span>Equilibrium Bias and Mitigation in the Counterexample Game</span></a></li>
+</ol>
+</li>
+<li class="ltx_tocentry ltx_tocentry_section"><a href="https://arxiv.org/html/2605.14379v1#S7" title="In Data-Augmented Game Starts for Accelerating Self-Play Exploration in Imperfect Information Games" class="ltx_ref"><span class="ltx_text ltx_ref_title"><span class="ltx_tag ltx_tag_ref">7 </span>Conclusion and Future Work</span></a></li>
+<li class="ltx_tocentry ltx_tocentry_bibliography"><a href="https://arxiv.org/html/2605.14379v1#bib" title="In Data-Augmented Game Starts for Accelerating Self-Play Exploration in Imperfect Information Games" class="ltx_ref"><span class="ltx_text ltx_ref_title">References</span></a></li>
+<li class="ltx_tocentry ltx_tocentry_appendix"><a href="https://arxiv.org/html/2605.14379v1#A1" title="In Data-Augmented Game Starts for Accelerating Self-Play Exploration in Imperfect Information Games" class="ltx_ref"><span class="ltx_text ltx_ref_title"><span class="ltx_tag ltx_tag_ref">A </span>Hyperparameter and Training Details</span></a></li>
+<li class="ltx_tocentry ltx_tocentry_appendix"><a href="https://arxiv.org/html/2605.14379v1#A2" title="In Data-Augmented Game Starts for Accelerating Self-Play Exploration in Imperfect Information Games" class="ltx_ref"><span class="ltx_text ltx_ref_title"><span class="ltx_tag ltx_tag_ref">B </span>PPO Regularization Details</span></a></li>
+<li class="ltx_tocentry ltx_tocentry_appendix"><a href="https://arxiv.org/html/2605.14379v1#A3" title="In Data-Augmented Game Starts for Accelerating Self-Play Exploration in Imperfect Information Games" class="ltx_ref"><span class="ltx_text ltx_ref_title"><span class="ltx_tag ltx_tag_ref">C </span>Equilibrium Bias Analysis</span></a></li>
+<li class="ltx_tocentry ltx_tocentry_appendix"><a href="https://arxiv.org/html/2605.14379v1#A4" title="In Data-Augmented Game Starts for Accelerating Self-Play Exploration in Imperfect Information Games" class="ltx_ref"><span class="ltx_text ltx_ref_title"><span class="ltx_tag ltx_tag_ref">D </span>Environment and Benchmark Details</span></a></li>
+</ol></nav>
+</nav>
+<div class="ltx_page_main">
+<div id="infobox" class="infobox">
+  <a id="license-tr" href="https://info.arxiv.org/help/license/index.html#licenses-available">
+    License: CC BY 4.0
+  </a>
+  <div id="watermark-tr">
+arXiv:2605.14379v1 [cs.LG] 14 May 2026</div>
+</div><div class="ltx_page_content">
+<article class="ltx_document ltx_authors_1line">
+<div id="id3" class="ltx_titlepage">
+<div id="id3.3" class="ltx_logical-block ltx_minipage ltx_align_top" style="width:397.5pt;">
+<div id="id3.3.p1" class="ltx_para">
+<p id="id3.3.p1.1" class="ltx_p ltx_align_center"><span id="id3.3.p1.1.1" class="ltx_text ltx_font_bold" style="font-size:173%;">Data-Augmented Game Starts for Accelerating 
+<br class="ltx_break">Self-Play Exploration in Imperfect Information Games</span></p>
+<p id="id3.3.p1.2" class="ltx_p ltx_minipage ltx_align_center ltx_align_middle" style="width:377.6pt;"><span id="id3.3.p1.2.1" class="ltx_text ltx_font_bold" style="font-size:120%;">JB Lanier,
+Nathan Monette, Pierre Baldi, Roy Fox</span></p>
+<p id="id3.3.p1.3" class="ltx_p ltx_align_center"><span id="id3.3.p1.3.1" class="ltx_text ltx_font_bold">Keywords:</span> Multi-Agent Reinforcement Learning, Imperfect Information Games</p>
+</div>
+<div id="id1.1.1.p1" class="ltx_para ltx_noindent ltx_align_center">
+<span class="ltx_inline-block"><svg id="id1.1.1.p1.pic1" class="ltx_picture" height="327.11" overflow="visible" version="1.1" viewBox="0 0 550 327.11" width="550"><g style="--ltx-stroke-color:#000000;--ltx-fill-color:#000000;" transform="translate(0,327.11) matrix(1 0 0 -1 0 0)" fill="#000000" stroke="#000000" stroke-width="0.4pt"><g style="--ltx-fill-color:#F1F4F7;" fill="#F1F4F7" fill-opacity="1.0"><path style="stroke:none" d="M 0 7.87 L 0 319.24 C 0 323.59 3.53 327.11 7.87 327.11 L 542.13 327.11 C 546.47 327.11 550 323.59 550 319.24 L 550 7.87 C 550 3.53 546.47 0 542.13 0 L 7.87 0 C 3.53 0 0 3.53 0 7.87 Z"></path></g><g style="--ltx-fill-color:#F1F4F7;" fill="#F1F4F7" fill-opacity="1.0"><path style="stroke:none" d="M 0.83 8.7 L 0.83 318.41 C 0.83 322.76 4.36 326.28 8.7 326.28 L 541.3 326.28 C 545.64 326.28 549.17 322.76 549.17 318.41 L 549.17 8.7 C 549.17 4.36 545.64 0.83 541.3 0.83 L 8.7 0.83 C 4.36 0.83 0.83 4.36 0.83 8.7 Z"></path></g><g fill-opacity="1.0" transform="matrix(1.0 0.0 0.0 1.0 14.67 16.93)"><foreignobject style="--ltx-fg-color:#000000;--ltx-fo-width:37.63em;--ltx-fo-height:21.39em;--ltx-fo-depth:0.19em;" width="520.67" height="298.64" transform="matrix(1 0 0 -1 0 295.95)" overflow="visible" color="#000000"><span class="ltx_foreignobject_container"><span class="ltx_foreignobject_content">
+<span id="id1.1.1.p1.pic1.1.1.1.1.1" class="ltx_inline-block ltx_minipage" style="width:37.63em;">
+<span id="id1.1.1.p1.pic1.1.1.1.1.1.1" class="ltx_block ltx_align_bottom">
+<span id="id1.1.1.p1.pic1.1.1.1.1.1.1.1" class="ltx_p ltx_align_center"><span id="id1.1.1.p1.pic1.1.1.1.1.1.1.1.1" class="ltx_text ltx_font_bold" style="font-size:144%;">Summary</span></span>
+<span id="id1.1.1.p1.pic1.1.1.1.1.1.1.2" class="ltx_p">Finding approximate equilibria for large-scale imperfect-information competitive games such as StarCraft, Dota, and CounterStrike remains computationally infeasible due to sparse rewards and challenging exploration over long horizons. We propose Data-Augmented Game Starts (DAGS), a starting-state sampling strategy for two-player zero-sum (2p0s) games that initializes reinforcement learning episodes at intermediate states drawn from offline gameplay data. Our key assumption is that demonstrations from skilled humans provide good coverage of high-level strategies relevant to equilibrium play, allowing agents to explore strategically relevant subgames without first needing to learn policies that reach them.</span>
+<span id="id1.1.1.p1.pic1.1.1.1.1.1.1.3" class="ltx_p">We evaluate DAGS using synthetic datasets and analytically tractable, long-horizon control variants of two-player Kuhn Poker, Goofspiel, and a counterexample game designed to penalize biased beliefs over hidden information. Under fixed computational budgets, DAGS enables regularized policy gradient methods to solve games with significantly more challenging exploration. We show that augmenting starting state distributions when solving imperfect information games can lead to biased equilibria, and we provide a straightforward mitigation in the form of multi-task observation flags.</span>
+</span>
+</span></span></span></foreignobject></g></g></svg></span>
+</div>
+<div id="id2.2.2.p2" class="ltx_para ltx_noindent ltx_align_center">
+<span class="ltx_inline-block"><svg id="id2.2.2.p2.pic1" class="ltx_picture" height="295.18" overflow="visible" version="1.1" viewBox="0 0 550 295.18" width="550"><g style="--ltx-stroke-color:#000000;--ltx-fill-color:#000000;" transform="translate(0,295.18) matrix(1 0 0 -1 0 0)" fill="#000000" stroke="#000000" stroke-width="0.4pt"><g style="--ltx-fill-color:#F1F4F7;" fill="#F1F4F7" fill-opacity="1.0"><path style="stroke:none" d="M 0 7.87 L 0 287.3 C 0 291.65 3.53 295.18 7.87 295.18 L 542.13 295.18 C 546.47 295.18 550 291.65 550 287.3 L 550 7.87 C 550 3.53 546.47 0 542.13 0 L 7.87 0 C 3.53 0 0 3.53 0 7.87 Z"></path></g><g style="--ltx-fill-color:#F1F4F7;" fill="#F1F4F7" fill-opacity="1.0"><path style="stroke:none" d="M 0.83 8.7 L 0.83 286.47 C 0.83 290.82 4.36 294.35 8.7 294.35 L 541.3 294.35 C 545.64 294.35 549.17 290.82 549.17 286.47 L 549.17 8.7 C 549.17 4.36 545.64 0.83 541.3 0.83 L 8.7 0.83 C 4.36 0.83 0.83 4.36 0.83 8.7 Z"></path></g><g fill-opacity="1.0" transform="matrix(1.0 0.0 0.0 1.0 14.67 249.39)"><foreignobject style="--ltx-fg-color:#000000;--ltx-fo-width:37.63em;--ltx-fo-height:2.28em;--ltx-fo-depth:16.99em;" width="520.67" height="266.7" transform="matrix(1 0 0 -1 0 31.55)" overflow="visible" color="#000000"><span class="ltx_foreignobject_container"><span class="ltx_foreignobject_content">
+<span id="id2.2.2.p2.pic1.1.1.1.1.1" class="ltx_inline-block ltx_minipage" style="width:37.63em;">
+<span id="id2.2.2.p2.pic1.1.1.1.1.1.1" class="ltx_block ltx_align_bottom">
+<span id="id2.2.2.p2.pic1.1.1.1.1.1.1.1" class="ltx_p ltx_align_center"><span id="id2.2.2.p2.pic1.1.1.1.1.1.1.1.1" class="ltx_text ltx_font_bold" style="font-size:144%;">Contribution(s)</span></span>
+<span id="S0.I1" class="ltx_enumerate">
+<span id="S0.I1.i1" class="ltx_item" style="list-style-type:none;"><span class="ltx_tag ltx_tag_item">1.</span> 
+<span id="S0.I1.i1.p1" class="ltx_para ltx_noindent">
+<span id="S0.I1.i1.p1.1" class="ltx_p">We provide a new benchmark for 2p0s games with long horizons and exploration challenges with fast analytic exploitability calculations.
+
+<br class="ltx_break"><span id="S0.I1.i1.p1.1.1" class="ltx_text ltx_font_bold">Context:</span> 
+Previous work in imperfect information games <cite class="ltx_cite ltx_citemacro_citep">(<span class="ltx_ref ltx_missing_citation ltx_ref_self">rudolph2025reevaluatingpolicygradientmethods</span>; <span class="ltx_ref ltx_missing_citation ltx_ref_self">sokota2023a</span>)</cite> use environments that are easy to compute optimality, but which have little or no elements of exploration with sparse rewards.</span>
+</span></span>
+<span id="S0.I1.i2" class="ltx_item" style="list-style-type:none;"><span class="ltx_tag ltx_tag_item">2.</span> 
+<span id="S0.I1.i2.p1" class="ltx_para ltx_noindent">
+<span id="S0.I1.i2.p1.1" class="ltx_p">We show that DAGS can enable regularized policy gradient algorithms to reach low exploitability in games with significantly larger exploration challenges under a fixed computational budget.
+
+<br class="ltx_break"><span id="S0.I1.i2.p1.1.1" class="ltx_text ltx_font_bold">Context:</span> 
+To achieve good performance, we use a baseline solver that regularizes toward an exponential moving average of the policy.</span>
+</span></span>
+<span id="S0.I1.i3" class="ltx_item" style="list-style-type:none;"><span class="ltx_tag ltx_tag_item">3.</span> 
+<span id="S0.I1.i3.p1" class="ltx_para ltx_noindent">
+<span id="S0.I1.i3.p1.1" class="ltx_p">We demonstrate that training with DAGS can bias the learned equilibrium in imperfect-information games, and we provide a mitigation to this bias problem.
+
+<br class="ltx_break"><span id="S0.I1.i3.p1.1.1" class="ltx_text ltx_font_bold">Context:</span> Prior related work does not consider imperfect information games, the setting where this issue arises.</span>
+</span></span>
+</span>
+</span>
+</span></span></span></foreignobject></g></g></svg></span>
+</div>
+</div>
+</div>
+<div id="abstract1" class="ltx_abstract">
+<h6 class="ltx_title ltx_title_abstract">Abstract</h6>
+<p class="ltx_p">Finding approximate equilibria for large-scale imperfect-information competitive games such as StarCraft, Dota, and CounterStrike remains computationally infeasible due to sparse rewards and challenging exploration over long horizons. In this paper, we propose a multi-agent starting-state sampling strategy designed to substantially accelerate online exploration in regularized policy-gradient game methods for two-player zero-sum (2p0s) games. Motivated by an assumption that offline demonstrations from skilled humans can provide good coverage of high-level strategies relevant to equilibrium play, we propose the initialization of reinforcement learning data collection at intermediate states sampled from offline data to facilitate exploration of strategically relevant subgames. Referring to this method as Data-Augmented Game Starts (DAGS), we perform experiments using synthetic datasets and analytically tractable, long-horizon control variants of two-player Kuhn Poker, Goofspiel, and a counterexample game designed to penalize biased beliefs over hidden information.
+Under fixed computational budgets, DAGS enables regularized policy gradient methods to achieve lower exploitability in games with significantly more challenging exploration. We show that augmenting starting state distributions when solving imperfect information games can lead to biased equilibria, and we provide a straightforward mitigation to this in the form of multi-task observation flags. Finally, we release a new set of benchmark environments that drastically increase exploration challenges and state counts in existing OpenSpiel games while keeping exploitability measurements analytically tractable.</p>
+</div>
+<section id="S1" class="ltx_section">
+<h2 class="ltx_title ltx_title_section">
+<span class="ltx_tag ltx_tag_section">1 </span>Introduction</h2>
+
+<div id="S1.p1" class="ltx_para ltx_noindent">
+<p id="S1.p1.1" class="ltx_p">Deep reinforcement learning (RL) has achieved remarkable success in large-scale imperfect-information competitive games, surpassing human professionals in StarCraft <cite class="ltx_cite ltx_citemacro_citep">(<span class="ltx_ref ltx_missing_citation ltx_ref_self">Vinyals2019StarCraft</span>)</cite>, Dota <cite class="ltx_cite ltx_citemacro_citep">(<span class="ltx_ref ltx_missing_citation ltx_ref_self">Berner2019Dota2W</span>)</cite>, and Poker <cite class="ltx_cite ltx_citemacro_citep">(<span class="ltx_ref ltx_missing_citation ltx_ref_self">brown2020poker</span>)</cite>. However, these successes require massive computational resources and time, rendering large-scale game solving impractical for most practitioners. One key factor underlying this high computational cost is the difficulty of exploration in environments with sparse rewards, long decision horizons, and complex hidden-state dynamics. Especially in video games, traditional methods may spend enormous amounts of computation repeatedly exploring long sequences of coordinated intricate actions, even though strategically interesting decisions may often occur only at specific junctures.</p>
+</div>
+<div id="S1.p2" class="ltx_para ltx_noindent">
+<p id="S1.p2.1" class="ltx_p">A widely-adopted approach to mitigate exploration
+difficulty is initializing RL policies with behavioral cloning (BC) from
+human demonstrations <cite class="ltx_cite ltx_citemacro_citep">(<span class="ltx_ref ltx_missing_citation ltx_ref_self">silver2016mastering</span>; <span class="ltx_ref ltx_missing_citation ltx_ref_self">Vinyals2019StarCraft</span>)</cite>.
+While effective for bootstrapping basic competence, BC depends on having
+enough state-action demonstrations to learn the necessary skills from
+which self-play can extrapolate. An alternative use of the same offline data is to reset
+training episodes to intermediate states visited in demonstrations,
+leveraging the data for <span id="S1.p2.1.1" class="ltx_text ltx_font_italic">state coverage</span> rather than
+<span id="S1.p2.1.2" class="ltx_text ltx_font_italic">policy initialization</span>. This approach needs only a set of visited states rather than full state-action trajectories, which may be available in a broader class of domains. Furthermore, it requires only that the dataset
+contains states from which self-play can discover important skills, making it more likely to be viable when collected demonstrations are too few or in an incomplete format for effective behavioral cloning.</p>
+</div>
+<div id="S1.p3" class="ltx_para ltx_noindent">
+<p id="S1.p3.1" class="ltx_p">Single-agent RL has made substantial gains in sample efficiency by leveraging offline demonstrations more actively through intermediate-state resets, beginning online episodes from informative, intermediate states recorded in demonstrations rather than always restarting from initial conditions <cite class="ltx_cite ltx_citemacro_citep">(<span class="ltx_ref ltx_missing_citation ltx_ref_self">tao2024reverseforwardcurriculumlearning</span>)</cite>. Motivated by this success, we propose extending intermediate-state resets to multi-agent competitive settings for the purpose of accelerating equilibrium convergence in large-scale, imperfect-information games.</p>
+</div>
+<div id="S1.p4" class="ltx_para ltx_noindent">
+<p id="S1.p4.1" class="ltx_p">We focus on games that intuitively decompose into a small number of recurring high-level strategic choices separated by long, highly coordinated control segments. In such games (e.g. real-time strategy games like StarCraft and first-person shooters like CounterStrike), the horizon and state spaces are enormous, but the effective set of distinct coarse strategic options that players employ is comparatively small. This makes it plausible to collect human gameplay that reaches a broad range of strategically relevant subgames, providing a rich set of starting states from which self-play can efficiently discover equilibrium strategies.</p>
+</div>
+<figure id="S1.F1" class="ltx_figure"><img src="./Data-Augmented Game Starts for Accelerating Self-Play Exploration in Imperfect Information Games_files/x1.png" id="S1.F1.g1" class="ltx_graphics ltx_centering ltx_img_landscape" width="830" height="261" alt="Refer to caption">
+<figcaption class="ltx_caption ltx_centering"><span class="ltx_tag ltx_tag_figure"><span id="S1.F1.12.6.1" class="ltx_text" style="font-size:90%;">Figure 1</span>: </span><span id="S1.F1.10.5" class="ltx_text" style="font-size:90%;">Overview of DAGS. Given a two-player zero-sum game with initial-state distribution <math id="S1.F1.6.1.m1" class="ltx_Math" alttext="d_{0}" display="inline" intent=":literal"><semantics><msub><mi>d</mi><mn>0</mn></msub><annotation encoding="application/x-tex">d_{0}</annotation></semantics></math> and an offline dataset of states <math id="S1.F1.7.2.m2" class="ltx_Math" alttext="\mathcal{D}" display="inline" intent=":literal"><semantics><mi class="ltx_font_mathcaligraphic">𝒟</mi><annotation encoding="application/x-tex">\mathcal{D}</annotation></semantics></math> collected from proficient gameplay, DAGS produces an augmented initial-state distribution <math id="S1.F1.8.3.m3" class="ltx_Math" alttext="\tilde{d}^{\beta}_{0}=(1-\beta)\,d_{0}+\beta\,d_{\mathcal{D}}" display="inline" intent=":literal"><semantics><mrow><msubsup><mover accent="true"><mi>d</mi><mo>~</mo></mover><mn>0</mn><mi>β</mi></msubsup><mo>=</mo><mrow><mrow><mrow><mo stretchy="false">(</mo><mrow><mn>1</mn><mo>−</mo><mi>β</mi></mrow><mo stretchy="false">)</mo></mrow><mo lspace="0.170em" rspace="0em">​</mo><msub><mi>d</mi><mn>0</mn></msub></mrow><mo>+</mo><mrow><mi>β</mi><mo lspace="0.170em" rspace="0em">​</mo><msub><mi>d</mi><mi class="ltx_font_mathcaligraphic">𝒟</mi></msub></mrow></mrow></mrow><annotation encoding="application/x-tex">\tilde{d}^{\beta}_{0}=(1-\beta)\,d_{0}+\beta\,d_{\mathcal{D}}</annotation></semantics></math> that includes intermediate states from <math id="S1.F1.9.4.m4" class="ltx_Math" alttext="\mathcal{D}" display="inline" intent=":literal"><semantics><mi class="ltx_font_mathcaligraphic">𝒟</mi><annotation encoding="application/x-tex">\mathcal{D}</annotation></semantics></math>. Episodes sampled from <math id="S1.F1.10.5.m5" class="ltx_Math" alttext="\tilde{d}^{\beta}_{0}" display="inline" intent=":literal"><semantics><msubsup><mover accent="true"><mi>d</mi><mo>~</mo></mover><mn>0</mn><mi>β</mi></msubsup><annotation encoding="application/x-tex">\tilde{d}^{\beta}_{0}</annotation></semantics></math> are used for self-play training with regularized policy gradient methods. By starting episodes from strategically relevant intermediate states, DAGS reduces the cost of coordinated exploration and enables agents to converge to low-exploitability play in games that are otherwise too large to solve within a limited compute budget.</span></figcaption>
+</figure>
+<div id="S1.p5" class="ltx_para ltx_noindent">
+<p id="S1.p5.1" class="ltx_p">Our proposed method, Data-Augmented Game Starts (DAGS), incorporates multi-agent intermediate-state resets into online RL training. DAGS randomly initializes episodes from global states sampled along offline trajectories generated by proficient play that doesn’t need to be strategically optimal (such as typical human gameplay). Our main data requirement is that these offline states provide broad coverage of strategically distinct game situations. By resetting into such states, training can concentrate exploration on resolving high-level strategic interactions rather than learning or relearning the long coordinated action sequences needed to reach them from the initial state, leading to faster convergence toward low-exploitability play.</p>
+</div>
+<div id="S1.p6" class="ltx_para ltx_noindent">
+<p id="S1.p6.1" class="ltx_p">Evaluating equilibrium convergence in large-scale games is difficult due to the computational infeasibility of exact exploitability calculations. To measure learning performance in larger games, we also introduce a set of analytically tractable benchmarks that extend standard OpenSpiel two-player zero-sum games, such as Kuhn Poker and Goofspiel, with complex gridworld control subtasks. In these benchmarks, agents must navigate to specific locations to execute their intended inner-game actions, significantly amplifying the exploration challenge. Crucially, policies learned in these gridworld-extended benchmarks can be cheaply analytically reduced to equivalent policies in their simpler original inner-game counterparts, thus enabling exact exploitability calculations despite large state spaces and episode lengths.</p>
+</div>
+<div id="S1.p7" class="ltx_para ltx_noindent">
+<p id="S1.p7.1" class="ltx_p">Using these novel benchmarks and synthetic offline data, we empirically demonstrate that DAGS significantly extends the exploration scale of imperfect information games that can be solved within fixed computational budgets using regularized Proximal Policy Optimization (PPO) self-play <cite class="ltx_cite ltx_citemacro_citep">(<span class="ltx_ref ltx_missing_citation ltx_ref_self">rudolph2025reevaluatingpolicygradientmethods</span>)</cite>.</p>
+</div>
+<div id="S1.p8" class="ltx_para ltx_noindent">
+<p id="S1.p8.1" class="ltx_p">However, modifying the starting-state distribution in imperfect-information games can, in principle, distort agents’ beliefs over private information and furthermore change a game’s equilibria. We provide a counterexample game illustrating this risk, as well as a straightforward mitigation to the issue. By employing multi-task learning and jointly solving the original game alongside the easier DAGS version of the game, with an in-observation flag for the identity of the game, this equilibrium bias issue can be significantly reduced.</p>
+</div>
+<div id="S1.p9" class="ltx_para ltx_noindent">
+<p id="S1.p9.1" class="ltx_p">In summary, our contributions are as follows:</p>
+<ul id="S1.I1" class="ltx_itemize">
+<li id="S1.I1.i1" class="ltx_item" style="list-style-type:none;">
+<span class="ltx_tag ltx_tag_item">•</span> 
+<div id="S1.I1.i1.p1" class="ltx_para">
+<p id="S1.I1.i1.p1.1" class="ltx_p">We provide a new set of benchmark games for two-player zero-sum settings with long horizons and exploration challenges, designed so that exploitability can be computed analytically.<span id="footnote1" class="ltx_note ltx_role_footnote"><sup class="ltx_note_mark">1</sup><span class="ltx_note_outer"><span class="ltx_note_content"><sup class="ltx_note_mark">1</sup><span class="ltx_tag ltx_tag_note">1</span>Code and environments will be released in a future revision.</span></span></span></p>
+</div>
+</li>
+<li id="S1.I1.i2" class="ltx_item" style="list-style-type:none;">
+<span class="ltx_tag ltx_tag_item">•</span> 
+<div id="S1.I1.i2.p1" class="ltx_para">
+<p id="S1.I1.i2.p1.1" class="ltx_p">We show that DAGS enables regularized policy gradient algorithms to solve games with significantly larger exploration challenges under a fixed computational budget.</p>
+</div>
+</li>
+<li id="S1.I1.i3" class="ltx_item" style="list-style-type:none;">
+<span class="ltx_tag ltx_tag_item">•</span> 
+<div id="S1.I1.i3.p1" class="ltx_para">
+<p id="S1.I1.i3.p1.1" class="ltx_p">We demonstrate that training with DAGS can bias the learned equilibrium in imperfect-information games, and we provide a mitigation to this bias problem.</p>
+</div>
+</li>
+</ul>
+</div>
+</section>
+<section id="S2" class="ltx_section">
+<h2 class="ltx_title ltx_title_section">
+<span class="ltx_tag ltx_tag_section">2 </span>Related Work</h2>
+
+<section id="S2.SS1" class="ltx_subsection">
+<h3 class="ltx_title ltx_title_subsection">
+<span class="ltx_tag ltx_tag_subsection">2.1 </span>Competitive Game Solving</h3>
+
+<div id="S2.SS1.p1" class="ltx_para ltx_noindent">
+<p id="S2.SS1.p1.1" class="ltx_p">Deep reinforcement learning has achieved landmark results in large-scale competitive games, including Go <cite class="ltx_cite ltx_citemacro_citep">(<span class="ltx_ref ltx_missing_citation ltx_ref_self">silver2016mastering</span>)</cite>, StarCraft <cite class="ltx_cite ltx_citemacro_citep">(<span class="ltx_ref ltx_missing_citation ltx_ref_self">Vinyals2019StarCraft</span>)</cite>, Dota <cite class="ltx_cite ltx_citemacro_citep">(<span class="ltx_ref ltx_missing_citation ltx_ref_self">Berner2019Dota2W</span>)</cite>, Poker <cite class="ltx_cite ltx_citemacro_citep">(<span class="ltx_ref ltx_missing_citation ltx_ref_self">brown2018libratus</span>)</cite>, and Stratego <cite class="ltx_cite ltx_citemacro_citep">(<span class="ltx_ref ltx_missing_citation ltx_ref_self">perolat2022mastering</span>; <span class="ltx_ref ltx_missing_citation ltx_ref_self">sokota2025stratego</span>)</cite>. However, these successes generally have come at the cost of massive computational resources. We focus on reducing the computational cost of solving games that combine long-horizon coordinated control with strategic decision-making under partial observability, a structure common in first-person shooters (e.g., CounterStrike) and real-time strategy games (e.g., StarCraft). In such games, state spaces are enormous and episodes are long, yet the space of high-level strategic decisions is comparatively small. Much of the exploration difficulty lies in reaching strategically relevant states rather than in resolving the strategic interactions themselves. We aim to reduce this cost in model-free self-play by leveraging gameplay data from proficient players to initialize exploration from the states that they naturally visit.</p>
+</div>
+<div id="S2.SS1.p2" class="ltx_para ltx_noindent">
+<p id="S2.SS1.p2.1" class="ltx_p">Core approaches to two-player zero-sum imperfect-information game solving include population-based methods such as fictitious play <cite class="ltx_cite ltx_citemacro_citep">(<span class="ltx_ref ltx_missing_citation ltx_ref_self">brown:fp1951</span>)</cite>, NFSP <cite class="ltx_cite ltx_citemacro_citep">(<span class="ltx_ref ltx_missing_citation ltx_ref_self">heinrich2016deepreinforcementlearningselfplay</span>)</cite>, PSRO <cite class="ltx_cite ltx_citemacro_citep">(<span class="ltx_ref ltx_missing_citation ltx_ref_self">lanctot2017psro</span>; <span class="ltx_ref ltx_missing_citation ltx_ref_self">mcaleer2020pipeline</span>; <span class="ltx_ref ltx_missing_citation ltx_ref_self">mcaleer2021xdo</span>; <span class="ltx_ref ltx_missing_citation ltx_ref_self">mcaleer2024sppsro</span>)</cite>, NeuPL <cite class="ltx_cite ltx_citemacro_citep">(<span class="ltx_ref ltx_missing_citation ltx_ref_self">liu2022neupl</span>)</cite>; regret-minimization methods such as DREAM <cite class="ltx_cite ltx_citemacro_citep">(<span class="ltx_ref ltx_missing_citation ltx_ref_self">steinberger2020dream</span>)</cite> and ESCHER <cite class="ltx_cite ltx_citemacro_citep">(<span class="ltx_ref ltx_missing_citation ltx_ref_self">mcaleerescher</span>)</cite>; and regularized policy-gradient methods including NeuRD <cite class="ltx_cite ltx_citemacro_citep">(<span class="ltx_ref ltx_missing_citation ltx_ref_self">omidshafiei2020neurd</span>)</cite>, R-NaD <cite class="ltx_cite ltx_citemacro_citep">(<span class="ltx_ref ltx_missing_citation ltx_ref_self">perolat2022mastering</span>)</cite>, and magnetic mirror descent <cite class="ltx_cite ltx_citemacro_citep">(<span class="ltx_ref ltx_missing_citation ltx_ref_self">sokota2023a</span>; <span class="ltx_ref ltx_missing_citation ltx_ref_self">rudolph2025reevaluatingpolicygradientmethods</span>)</cite>. While our approach, augmenting the starting-state distribution, is in principle compatible with any of these families, we focus on its interaction with regularized policy gradients.</p>
+</div>
+<div id="S2.SS1.p3" class="ltx_para ltx_noindent">
+<p id="S2.SS1.p3.1" class="ltx_p">In particular, <cite class="ltx_cite ltx_citemacro_citet"><span class="ltx_ref ltx_missing_citation ltx_ref_self">sokota2023a</span></cite> show that policy gradients with strong entropy regularization toward a uniform “magnet” policy converge to quantal-response equilibria, and that this can be implemented as a modification to PPO self-play <cite class="ltx_cite ltx_citemacro_citep">(<span class="ltx_ref ltx_missing_citation ltx_ref_self">rudolph2025reevaluatingpolicygradientmethods</span>)</cite>. Concurrent work by <cite class="ltx_cite ltx_citemacro_citet"><span class="ltx_ref ltx_missing_citation ltx_ref_self">maidment2026emagnet</span></cite> extends the moving-magnet concept from <cite class="ltx_cite ltx_citemacro_citet"><span class="ltx_ref ltx_missing_citation ltx_ref_self">sokota2023a</span></cite> to deep RL and PPO by regularizing the current policy via KL divergence toward a parameter-space exponential moving average of itself, rather than toward the uniform distribution. This yields lower exploitability across several benchmark games compared to uniform regularization. We use both uniform-magnet regularization <cite class="ltx_cite ltx_citemacro_citep">(<span class="ltx_ref ltx_missing_citation ltx_ref_self">rudolph2025reevaluatingpolicygradientmethods</span>)</cite> and EMA-magnet (EMAg) regularization <cite class="ltx_cite ltx_citemacro_citep">(<span class="ltx_ref ltx_missing_citation ltx_ref_self">maidment2026emagnet</span>)</cite> as our baseline PPO-based two-player zero-sum game solvers on which we investigate DAGS.</p>
+</div>
+</section>
+<section id="S2.SS2" class="ltx_subsection">
+<h3 class="ltx_title ltx_title_subsection">
+<span class="ltx_tag ltx_tag_subsection">2.2 </span>State resets and curriculum learning for exploration</h3>
+
+<div id="S2.SS2.p1" class="ltx_para ltx_noindent">
+<p id="S2.SS2.p1.1" class="ltx_p">Manipulating starting-state distributions is a proven technique for improving exploration in single-agent reinforcement learning <cite class="ltx_cite ltx_citemacro_citep">(<span class="ltx_ref ltx_missing_citation ltx_ref_self">narvekar2020curriculumlearningreinforcementlearning</span>)</cite>. DAGS extends a simple variant of intermediate-state resets, sampling human-visited states from offline data as episode starts, to two-player zero-sum imperfect-information games. In this setting, modifying the start distribution introduces a unique challenge: it can bias the learned equilibrium. We offer a straightforward mitigation via multi-task learning.</p>
+</div>
+<div id="S2.SS2.p2" class="ltx_para ltx_noindent">
+<p id="S2.SS2.p2.1" class="ltx_p">In single-agent RL, Reverse Curriculum Generation <cite class="ltx_cite ltx_citemacro_citep">(<span class="ltx_ref ltx_missing_citation ltx_ref_self">florensa2017reverse</span>)</cite> generates starts near goal states and progressively expands to harder starting regions, requiring no demonstrations. <cite class="ltx_cite ltx_citemacro_citet"><span class="ltx_ref ltx_missing_citation ltx_ref_self">salimans2018learning</span></cite> show that resetting episodes to states drawn from a single demonstration reduces exploration complexity from exponential to quadratic, an approach whose core mechanism, resetting to offline trajectory states, is shared by DAGS. Backplay <cite class="ltx_cite ltx_citemacro_citep">(<span class="ltx_ref ltx_missing_citation ltx_ref_self">resnick2018backplay</span>)</cite> schedules demonstration-based resets backward over training. Go-Explore <cite class="ltx_cite ltx_citemacro_citep">(<span class="ltx_ref ltx_missing_citation ltx_ref_self">ecoffet2021goexplorenewapproachhardexploration</span>)</cite> maintains an archive of discovered states and resets to them for continued exploration in hard-exploration Atari domains. More recently, JSRL <cite class="ltx_cite ltx_citemacro_citep">(<span class="ltx_ref ltx_missing_citation ltx_ref_self">Ikechukwu2023jumpstart</span>)</cite> uses a guide policy to create an explicit curriculum of starting states, and RFCL <cite class="ltx_cite ltx_citemacro_citep">(<span class="ltx_ref ltx_missing_citation ltx_ref_self">tao2024reverseforwardcurriculumlearning</span>)</cite> combines reverse and forward scheduling along demonstrations for extreme sample efficiency.</p>
+</div>
+<div id="S2.SS2.p3" class="ltx_para ltx_noindent">
+<p id="S2.SS2.p3.1" class="ltx_p">Our approach is most closely related to <cite class="ltx_cite ltx_citemacro_citet"><span class="ltx_ref ltx_missing_citation ltx_ref_self">salimans2018learning</span></cite>, which uses a core mechanism identical to ours, resetting episodes to states drawn from offline trajectory data, in the single-agent setting. DAGS extends this to two-player zero-sum self-play with a deliberately simple curriculum design (uniform sampling with a mixing parameter <math id="S2.SS2.p3.1.m1" class="ltx_Math" alttext="\beta" display="inline" intent=":literal"><semantics><mi>β</mi><annotation encoding="application/x-tex">\beta</annotation></semantics></math>). A primary focus and novel contribution of this work is in demonstrating and mitigating the belief bias that start-state augmentation can introduce in imperfect-information games. The only data requirement for DAGS is offline gameplay states that reach hard-to-discover regions of the game tree, rather than near-strategically-optimal demonstrations.</p>
+</div>
+</section>
+</section>
+<section id="S3" class="ltx_section">
+<h2 class="ltx_title ltx_title_section">
+<span class="ltx_tag ltx_tag_section">3 </span>Preliminaries</h2>
+
+<div id="S3.p1" class="ltx_para ltx_noindent">
+<p id="S3.p1.16" class="ltx_p">We model our environments as two-player zero-sum partially observable stochastic games (2p0s POSGs) with finite horizon. A 2p0s POSG is a tuple</p>
+<table id="S3.Ex1" class="ltx_equation ltx_eqn_table">
+
+<tbody><tr class="ltx_equation ltx_eqn_row ltx_align_baseline">
+<td class="ltx_eqn_cell ltx_eqn_center_padleft"></td>
+<td class="ltx_eqn_cell ltx_align_center"><math id="S3.Ex1.m1" class="ltx_Math" alttext="\mathcal{G}=(N,S,A,O,T,\Omega,r,\gamma,d_{0})," display="block" intent=":literal"><semantics><mrow><mrow><mi class="ltx_font_mathcaligraphic">𝒢</mi><mo>=</mo><mrow><mo stretchy="false">(</mo><mi>N</mi><mo>,</mo><mi>S</mi><mo>,</mo><mi>A</mi><mo>,</mo><mi>O</mi><mo>,</mo><mi>T</mi><mo>,</mo><mi mathvariant="normal">Ω</mi><mo>,</mo><mi>r</mi><mo>,</mo><mi>γ</mi><mo>,</mo><msub><mi>d</mi><mn>0</mn></msub><mo stretchy="false">)</mo></mrow></mrow><mo>,</mo></mrow><annotation encoding="application/x-tex">\mathcal{G}=(N,S,A,O,T,\Omega,r,\gamma,d_{0}),</annotation></semantics></math></td>
+<td class="ltx_eqn_cell ltx_eqn_center_padright"></td>
+</tr></tbody>
+</table>
+<p id="S3.p1.15" class="ltx_p">where <math id="S3.p1.1.m1" class="ltx_Math" alttext="N=\{1,2\}" display="inline" intent=":literal"><semantics><mrow><mi>N</mi><mo>=</mo><mrow><mo stretchy="false">{</mo><mn>1</mn><mo>,</mo><mn>2</mn><mo stretchy="false">}</mo></mrow></mrow><annotation encoding="application/x-tex">N=\{1,2\}</annotation></semantics></math> is the set of players, <math id="S3.p1.2.m2" class="ltx_Math" alttext="S" display="inline" intent=":literal"><semantics><mi>S</mi><annotation encoding="application/x-tex">S</annotation></semantics></math> is the state space, <math id="S3.p1.3.m3" class="ltx_Math" alttext="A=A_{1}\times A_{2}" display="inline" intent=":literal"><semantics><mrow><mi>A</mi><mo>=</mo><mrow><msub><mi>A</mi><mn>1</mn></msub><mo lspace="0.222em" rspace="0.222em">×</mo><msub><mi>A</mi><mn>2</mn></msub></mrow></mrow><annotation encoding="application/x-tex">A=A_{1}\times A_{2}</annotation></semantics></math> is the joint action space, <math id="S3.p1.4.m4" class="ltx_Math" alttext="O=O_{1}\times O_{2}" display="inline" intent=":literal"><semantics><mrow><mi>O</mi><mo>=</mo><mrow><msub><mi>O</mi><mn>1</mn></msub><mo lspace="0.222em" rspace="0.222em">×</mo><msub><mi>O</mi><mn>2</mn></msub></mrow></mrow><annotation encoding="application/x-tex">O=O_{1}\times O_{2}</annotation></semantics></math> is the joint observation space, <math id="S3.p1.5.m5" class="ltx_Math" alttext="T" display="inline" intent=":literal"><semantics><mi>T</mi><annotation encoding="application/x-tex">T</annotation></semantics></math> is the transition kernel, <math id="S3.p1.6.m6" class="ltx_Math" alttext="\Omega" display="inline" intent=":literal"><semantics><mi mathvariant="normal">Ω</mi><annotation encoding="application/x-tex">\Omega</annotation></semantics></math> is the observation function, <math id="S3.p1.7.m7" class="ltx_Math" alttext="r=(r_{1},r_{2})" display="inline" intent=":literal"><semantics><mrow><mi>r</mi><mo>=</mo><mrow><mo stretchy="false">(</mo><msub><mi>r</mi><mn>1</mn></msub><mo>,</mo><msub><mi>r</mi><mn>2</mn></msub><mo stretchy="false">)</mo></mrow></mrow><annotation encoding="application/x-tex">r=(r_{1},r_{2})</annotation></semantics></math> are the per-player rewards with <math id="S3.p1.8.m8" class="ltx_Math" alttext="r_{1}=-r_{2}" display="inline" intent=":literal"><semantics><mrow><msub><mi>r</mi><mn>1</mn></msub><mo>=</mo><mrow><mo>−</mo><msub><mi>r</mi><mn>2</mn></msub></mrow></mrow><annotation encoding="application/x-tex">r_{1}=-r_{2}</annotation></semantics></math>, <math id="S3.p1.9.m9" class="ltx_Math" alttext="\gamma\in[0,1)" display="inline" intent=":literal"><semantics><mrow><mi>γ</mi><mo>∈</mo><mrow><mo stretchy="false">[</mo><mn>0</mn><mo>,</mo><mn>1</mn><mo stretchy="false">)</mo></mrow></mrow><annotation encoding="application/x-tex">\gamma\in[0,1)</annotation></semantics></math> is the discount factor, and <math id="S3.p1.10.m10" class="ltx_Math" alttext="d_{0}" display="inline" intent=":literal"><semantics><msub><mi>d</mi><mn>0</mn></msub><annotation encoding="application/x-tex">d_{0}</annotation></semantics></math> is the initial-state distribution. Each player <math id="S3.p1.11.m11" class="ltx_Math" alttext="i" display="inline" intent=":literal"><semantics><mi>i</mi><annotation encoding="application/x-tex">i</annotation></semantics></math> follows a stochastic policy <math id="S3.p1.12.m12" class="ltx_Math" alttext="\pi_{i}(a\mid o)" display="inline" intent=":literal"><semantics><mrow><msub><mi>π</mi><mi>i</mi></msub><mo lspace="0em" rspace="0em">​</mo><mrow><mo stretchy="false">(</mo><mrow><mi>a</mi><mo>∣</mo><mi>o</mi></mrow><mo stretchy="false">)</mo></mrow></mrow><annotation encoding="application/x-tex">\pi_{i}(a\mid o)</annotation></semantics></math> mapping observations to action distributions, and a joint policy <math id="S3.p1.13.m13" class="ltx_Math" alttext="\pi=(\pi_{1},\pi_{2})" display="inline" intent=":literal"><semantics><mrow><mi>π</mi><mo>=</mo><mrow><mo stretchy="false">(</mo><msub><mi>π</mi><mn>1</mn></msub><mo>,</mo><msub><mi>π</mi><mn>2</mn></msub><mo stretchy="false">)</mo></mrow></mrow><annotation encoding="application/x-tex">\pi=(\pi_{1},\pi_{2})</annotation></semantics></math> together with <math id="S3.p1.14.m14" class="ltx_Math" alttext="d_{0}" display="inline" intent=":literal"><semantics><msub><mi>d</mi><mn>0</mn></msub><annotation encoding="application/x-tex">d_{0}</annotation></semantics></math> and <math id="S3.p1.15.m15" class="ltx_Math" alttext="T" display="inline" intent=":literal"><semantics><mi>T</mi><annotation encoding="application/x-tex">T</annotation></semantics></math> induces a distribution over trajectories and returns. We evaluate learned policies using <em id="S3.p1.15.1" class="ltx_emph ltx_font_italic">exploitability</em>, defined as the average value gain a worst-case best-response opponent can obtain against the current joint policy. Exploitability is zero if and only if the joint policy is a Nash equilibrium.</p>
+</div>
+<div id="S3.p2" class="ltx_para ltx_noindent">
+<p id="S3.p2.1" class="ltx_p">We build on two regularized PPO self-play solvers. PPO-Uniform <cite class="ltx_cite ltx_citemacro_citep">(<span class="ltx_ref ltx_missing_citation ltx_ref_self">rudolph2025reevaluatingpolicygradientmethods</span>)</cite> regularizes toward a uniform “magnet” policy, and PPO-EMAg <cite class="ltx_cite ltx_citemacro_citep">(<span class="ltx_ref ltx_missing_citation ltx_ref_self">maidment2026emagnet</span>)</cite> regularizes toward an exponential moving average of the policy parameters. We represent the policy with a neural network <math id="S3.p2.1.m1" class="ltx_Math" alttext="\pi_{\theta}" display="inline" intent=":literal"><semantics><msub><mi>π</mi><mi>θ</mi></msub><annotation encoding="application/x-tex">\pi_{\theta}</annotation></semantics></math> and use a shared parameterization for both players in symmetric self-play, with the observation encoding player identity.</p>
+</div>
+</section>
+<section id="S4" class="ltx_section">
+<h2 class="ltx_title ltx_title_section">
+<span class="ltx_tag ltx_tag_section">4 </span>Data-Augmented Game Starts (DAGS)</h2>
+
+<div id="S4.p1" class="ltx_para ltx_noindent">
+<p id="S4.p1.1" class="ltx_p">DAGS augments self-play training with intermediate-state resets drawn from offline trajectories. We first define the offline state dataset and the augmented initial-state distribution, then describe how DAGS integrates into regularized PPO self-play.</p>
+</div>
+<section id="S4.SS1" class="ltx_subsection">
+<h3 class="ltx_title ltx_title_subsection">
+<span class="ltx_tag ltx_tag_subsection">4.1 </span>Offline state dataset</h3>
+
+<div id="S4.SS1.p1" class="ltx_para ltx_noindent">
+<p id="S4.SS1.p1.7" class="ltx_p">We assume access to an offline dataset of global states
+<math id="S4.SS1.p1.1.m1" class="ltx_Math" alttext="\mathcal{D}=\{s_{m}\}_{m=1}^{M}" display="inline" intent=":literal"><semantics><mrow><mi class="ltx_font_mathcaligraphic">𝒟</mi><mo>=</mo><msubsup><mrow><mo stretchy="false">{</mo><msub><mi>s</mi><mi>m</mi></msub><mo stretchy="false">}</mo></mrow><mrow><mi>m</mi><mo>=</mo><mn>1</mn></mrow><mi>M</mi></msubsup></mrow><annotation encoding="application/x-tex">\mathcal{D}=\{s_{m}\}_{m=1}^{M}</annotation></semantics></math>
+collected from trajectories generated by a behavioral policy
+<math id="S4.SS1.p1.2.m2" class="ltx_Math" alttext="\hat{\pi}=(\hat{\pi}_{1},\hat{\pi}_{2})" display="inline" intent=":literal"><semantics><mrow><mover accent="true"><mi>π</mi><mo>^</mo></mover><mo>=</mo><mrow><mo stretchy="false">(</mo><msub><mover accent="true"><mi>π</mi><mo>^</mo></mover><mn>1</mn></msub><mo>,</mo><msub><mover accent="true"><mi>π</mi><mo>^</mo></mover><mn>2</mn></msub><mo stretchy="false">)</mo></mrow></mrow><annotation encoding="application/x-tex">\hat{\pi}=(\hat{\pi}_{1},\hat{\pi}_{2})</annotation></semantics></math>.
+Formally, these states are sampled from the state visitation distribution of <math id="S4.SS1.p1.3.m3" class="ltx_Math" alttext="\hat{\pi}" display="inline" intent=":literal"><semantics><mover accent="true"><mi>π</mi><mo>^</mo></mover><annotation encoding="application/x-tex">\hat{\pi}</annotation></semantics></math> in the underlying POSG,
+<math id="S4.SS1.p1.4.m4" class="ltx_Math" alttext="s_{m}\sim d_{\hat{\pi}}," display="inline" intent=":literal"><semantics><mrow><mrow><msub><mi>s</mi><mi>m</mi></msub><mo>∼</mo><msub><mi>d</mi><mover accent="true"><mi>π</mi><mo>^</mo></mover></msub></mrow><mo>,</mo></mrow><annotation encoding="application/x-tex">s_{m}\sim d_{\hat{\pi}},</annotation></semantics></math>
+where <math id="S4.SS1.p1.5.m5" class="ltx_Math" alttext="d_{\hat{\pi}}" display="inline" intent=":literal"><semantics><msub><mi>d</mi><mover accent="true"><mi>π</mi><mo>^</mo></mover></msub><annotation encoding="application/x-tex">d_{\hat{\pi}}</annotation></semantics></math> denotes the state visitation distribution induced by <math id="S4.SS1.p1.6.m6" class="ltx_Math" alttext="(d_{0},\hat{\pi})" display="inline" intent=":literal"><semantics><mrow><mo stretchy="false">(</mo><msub><mi>d</mi><mn>0</mn></msub><mo>,</mo><mover accent="true"><mi>π</mi><mo>^</mo></mover><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">(d_{0},\hat{\pi})</annotation></semantics></math>. In practice, <math id="S4.SS1.p1.7.m7" class="ltx_Math" alttext="\hat{\pi}" display="inline" intent=":literal"><semantics><mover accent="true"><mi>π</mi><mo>^</mo></mover><annotation encoding="application/x-tex">\hat{\pi}</annotation></semantics></math> is chosen to be competent in the control aspects of the game (e.g., executing basic game mechanics like movement and aiming), but not necessarily strategically near equilibrium. This reflects realistic settings where human or scripted gameplay is available that exhibits high control skill but suboptimal strategy.</p>
+</div>
+<div id="S4.SS1.p2" class="ltx_para ltx_noindent">
+<p id="S4.SS1.p2.6" class="ltx_p">Each entry <math id="S4.SS1.p2.1.m1" class="ltx_Math" alttext="s_{m}" display="inline" intent=":literal"><semantics><msub><mi>s</mi><mi>m</mi></msub><annotation encoding="application/x-tex">s_{m}</annotation></semantics></math> in <math id="S4.SS1.p2.2.m2" class="ltx_Math" alttext="\mathcal{D}" display="inline" intent=":literal"><semantics><mi class="ltx_font_mathcaligraphic">𝒟</mi><annotation encoding="application/x-tex">\mathcal{D}</annotation></semantics></math> is a full environment state in the POSG, including all hidden information and simulator variables. When we reset to <math id="S4.SS1.p2.3.m3" class="ltx_Math" alttext="s_{m}" display="inline" intent=":literal"><semantics><msub><mi>s</mi><mi>m</mi></msub><annotation encoding="application/x-tex">s_{m}</annotation></semantics></math> during training, each player <math id="S4.SS1.p2.4.m4" class="ltx_Math" alttext="i" display="inline" intent=":literal"><semantics><mi>i</mi><annotation encoding="application/x-tex">i</annotation></semantics></math> observes only their own observation <math id="S4.SS1.p2.5.m5" class="ltx_Math" alttext="o^{i}=\Omega(s_{m},i)" display="inline" intent=":literal"><semantics><mrow><msup><mi>o</mi><mi>i</mi></msup><mo>=</mo><mrow><mi mathvariant="normal">Ω</mi><mo lspace="0em" rspace="0em">​</mo><mrow><mo stretchy="false">(</mo><msub><mi>s</mi><mi>m</mi></msub><mo>,</mo><mi>i</mi><mo stretchy="false">)</mo></mrow></mrow></mrow><annotation encoding="application/x-tex">o^{i}=\Omega(s_{m},i)</annotation></semantics></math>, and the environment continues to evolve according to the original transition dynamics <math id="S4.SS1.p2.6.m6" class="ltx_Math" alttext="T" display="inline" intent=":literal"><semantics><mi>T</mi><annotation encoding="application/x-tex">T</annotation></semantics></math>. Thus DAGS modifies only the starting-state distribution while preserving the game’s information structure and dynamics.</p>
+</div>
+</section>
+<section id="S4.SS2" class="ltx_subsection">
+<h3 class="ltx_title ltx_title_subsection">
+<span class="ltx_tag ltx_tag_subsection">4.2 </span>Augmented initial-state distribution</h3>
+
+<div id="S4.SS2.p1" class="ltx_para ltx_noindent">
+<p id="S4.SS2.p1.1" class="ltx_p">DAGS defines an augmented initial-state distribution <math id="S4.SS2.p1.1.m1" class="ltx_Math" alttext="\tilde{d}_{0}" display="inline" intent=":literal"><semantics><msub><mover accent="true"><mi>d</mi><mo>~</mo></mover><mn>0</mn></msub><annotation encoding="application/x-tex">\tilde{d}_{0}</annotation></semantics></math> that places probability mass on both the root states and offline states. We write</p>
+<table id="S4.E1" class="ltx_equation ltx_eqn_table">
+
+<tbody><tr class="ltx_equation ltx_eqn_row ltx_align_baseline">
+<td class="ltx_eqn_cell ltx_eqn_center_padleft"></td>
+<td class="ltx_eqn_cell ltx_align_center"><math id="S4.E1.m1" class="ltx_Math" alttext="\tilde{d}_{0}^{\beta}=(1-\beta)\,d_{0}+\beta\,d_{\mathcal{D}},\qquad\beta\in[0,1]," display="block" intent=":literal"><semantics><mrow><mrow><mrow><msubsup><mover accent="true"><mi>d</mi><mo>~</mo></mover><mn>0</mn><mi>β</mi></msubsup><mo>=</mo><mrow><mrow><mrow><mo stretchy="false">(</mo><mrow><mn>1</mn><mo>−</mo><mi>β</mi></mrow><mo stretchy="false">)</mo></mrow><mo lspace="0.170em" rspace="0em">​</mo><msub><mi>d</mi><mn>0</mn></msub></mrow><mo>+</mo><mrow><mi>β</mi><mo lspace="0.170em" rspace="0em">​</mo><msub><mi>d</mi><mi class="ltx_font_mathcaligraphic">𝒟</mi></msub></mrow></mrow></mrow><mo rspace="2.167em">,</mo><mrow><mi>β</mi><mo>∈</mo><mrow><mo stretchy="false">[</mo><mn>0</mn><mo>,</mo><mn>1</mn><mo stretchy="false">]</mo></mrow></mrow></mrow><mo>,</mo></mrow><annotation encoding="application/x-tex">\tilde{d}_{0}^{\beta}=(1-\beta)\,d_{0}+\beta\,d_{\mathcal{D}},\qquad\beta\in[0,1],</annotation></semantics></math></td>
+<td class="ltx_eqn_cell ltx_eqn_center_padright"></td>
+<td rowspan="1" class="ltx_eqn_cell ltx_eqn_eqno ltx_align_middle ltx_align_right"><span class="ltx_tag ltx_tag_equation ltx_align_right">(1)</span></td>
+</tr></tbody>
+</table>
+<p id="S4.SS2.p1.8" class="ltx_p">where <math id="S4.SS2.p1.2.m1" class="ltx_Math" alttext="d_{\mathcal{D}}" display="inline" intent=":literal"><semantics><msub><mi>d</mi><mi class="ltx_font_mathcaligraphic">𝒟</mi></msub><annotation encoding="application/x-tex">d_{\mathcal{D}}</annotation></semantics></math> is a uniform distribution over <math id="S4.SS2.p1.3.m2" class="ltx_Math" alttext="\mathcal{D}" display="inline" intent=":literal"><semantics><mi class="ltx_font_mathcaligraphic">𝒟</mi><annotation encoding="application/x-tex">\mathcal{D}</annotation></semantics></math>,
+<math id="S4.SS2.p1.4.m3" class="ltx_Math" alttext="d_{\mathcal{D}}(s)=\frac{1}{M}\sum_{m=1}^{M}\mathbf{1}\{s=s_{m}\}." display="inline" intent=":literal"><semantics><mrow><mrow><mrow><msub><mi>d</mi><mi class="ltx_font_mathcaligraphic">𝒟</mi></msub><mo lspace="0em" rspace="0em">​</mo><mrow><mo stretchy="false">(</mo><mi>s</mi><mo stretchy="false">)</mo></mrow></mrow><mo>=</mo><mrow><mfrac><mn>1</mn><mi>M</mi></mfrac><mo lspace="0em" rspace="0em">​</mo><mrow><msubsup><mo>∑</mo><mrow><mi>m</mi><mo>=</mo><mn>1</mn></mrow><mi>M</mi></msubsup><mrow><mn>𝟏</mn><mo lspace="0em" rspace="0em">​</mo><mrow><mo stretchy="false">{</mo><mrow><mi>s</mi><mo>=</mo><msub><mi>s</mi><mi>m</mi></msub></mrow><mo stretchy="false">}</mo></mrow></mrow></mrow></mrow></mrow><mo lspace="0em">.</mo></mrow><annotation encoding="application/x-tex">d_{\mathcal{D}}(s)=\frac{1}{M}\sum_{m=1}^{M}\mathbf{1}\{s=s_{m}\}.</annotation></semantics></math>
+The mixture coefficient <math id="S4.SS2.p1.5.m4" class="ltx_Math" alttext="\beta" display="inline" intent=":literal"><semantics><mi>β</mi><annotation encoding="application/x-tex">\beta</annotation></semantics></math> controls the fraction of episodes that begin from offline states. The special case <math id="S4.SS2.p1.6.m5" class="ltx_Math" alttext="\beta=0" display="inline" intent=":literal"><semantics><mrow><mi>β</mi><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\beta=0</annotation></semantics></math> recovers standard root-start self-play, while <math id="S4.SS2.p1.7.m6" class="ltx_Math" alttext="\beta=1" display="inline" intent=":literal"><semantics><mrow><mi>β</mi><mo>=</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">\beta=1</annotation></semantics></math> corresponds to always starting from offline states. We leave more sophisticated choices of <math id="S4.SS2.p1.8.m7" class="ltx_Math" alttext="d_{\mathcal{D}}" display="inline" intent=":literal"><semantics><msub><mi>d</mi><mi class="ltx_font_mathcaligraphic">𝒟</mi></msub><annotation encoding="application/x-tex">d_{\mathcal{D}}</annotation></semantics></math> to future work, focusing here on analyzing the effects of state resets in this basic form and the equilibrium bias they introduce in imperfect-information games.</p>
+</div>
+<div id="S4.SS2.p2" class="ltx_para ltx_noindent">
+<p id="S4.SS2.p2.4" class="ltx_p">Training with DAGS can be viewed as solving an <em id="S4.SS2.p2.4.1" class="ltx_emph ltx_font_italic">augmented game</em> in which the only change is that episodes start from <math id="S4.SS2.p2.1.m1" class="ltx_Math" alttext="\tilde{d}_{0}^{\beta}" display="inline" intent=":literal"><semantics><msubsup><mover accent="true"><mi>d</mi><mo>~</mo></mover><mn>0</mn><mi>β</mi></msubsup><annotation encoding="application/x-tex">\tilde{d}_{0}^{\beta}</annotation></semantics></math> instead of <math id="S4.SS2.p2.2.m2" class="ltx_Math" alttext="d_{0}" display="inline" intent=":literal"><semantics><msub><mi>d</mi><mn>0</mn></msub><annotation encoding="application/x-tex">d_{0}</annotation></semantics></math>. From a reinforcement-learning perspective, this directs exploration toward strategically relevant subgames discoverable from dataset states that are hard to reach by naive exploration from the root. From a game-theoretic perspective, however, replacing <math id="S4.SS2.p2.3.m3" class="ltx_Math" alttext="d_{0}" display="inline" intent=":literal"><semantics><msub><mi>d</mi><mn>0</mn></msub><annotation encoding="application/x-tex">d_{0}</annotation></semantics></math> with <math id="S4.SS2.p2.4.m4" class="ltx_Math" alttext="\tilde{d}_{0}^{\beta}" display="inline" intent=":literal"><semantics><msubsup><mover accent="true"><mi>d</mi><mo>~</mo></mover><mn>0</mn><mi>β</mi></msubsup><annotation encoding="application/x-tex">\tilde{d}_{0}^{\beta}</annotation></semantics></math> in an imperfect-information game can alter beliefs over hidden information and shift the game’s equilibrium (Appendix&nbsp;<a href="https://arxiv.org/html/2605.14379v1#A3" title="Appendix C Equilibrium Bias Analysis ‣ Data-Augmented Game Starts for Accelerating Self-Play Exploration in Imperfect Information Games" class="ltx_ref"><span class="ltx_text ltx_ref_tag">C</span></a>).</p>
+</div>
+<div id="S4.SS2.p3" class="ltx_para ltx_noindent">
+<p id="S4.SS2.p3.6" class="ltx_p">To mitigate this equilibrium bias, we leverage multi-task learning with a task identification flag in the observation. The augmented starting distribution produces both root-start episodes (sampled from <math id="S4.SS2.p3.1.m1" class="ltx_Math" alttext="d_{0}" display="inline" intent=":literal"><semantics><msub><mi>d</mi><mn>0</mn></msub><annotation encoding="application/x-tex">d_{0}</annotation></semantics></math>) and dataset-start episodes (sampled from <math id="S4.SS2.p3.2.m2" class="ltx_Math" alttext="d_{\mathcal{D}}" display="inline" intent=":literal"><semantics><msub><mi>d</mi><mi class="ltx_font_mathcaligraphic">𝒟</mi></msub><annotation encoding="application/x-tex">d_{\mathcal{D}}</annotation></semantics></math>). We append a binary flag (<math id="S4.SS2.p3.3.m3" class="ltx_Math" alttext="f=0" display="inline" intent=":literal"><semantics><mrow><mi>f</mi><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">f=0</annotation></semantics></math> for root-start, <math id="S4.SS2.p3.4.m4" class="ltx_Math" alttext="f=1" display="inline" intent=":literal"><semantics><mrow><mi>f</mi><mo>=</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">f=1</annotation></semantics></math> for dataset-start) to each player’s observation indicating which source the episode was drawn from. This conditions the policy so that dataset-start episodes benefit from DAGS-augmented exploration while root-start episodes learn an unbiased policy for the original game (Appendix&nbsp;<a href="https://arxiv.org/html/2605.14379v1#A3" title="Appendix C Equilibrium Bias Analysis ‣ Data-Augmented Game Starts for Accelerating Self-Play Exploration in Imperfect Information Games" class="ltx_ref"><span class="ltx_text ltx_ref_tag">C</span></a>), benefiting from transfer learning through shared network parameters. At evaluation time, we use only the <math id="S4.SS2.p3.5.m5" class="ltx_Math" alttext="f=0" display="inline" intent=":literal"><semantics><mrow><mi>f</mi><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">f=0</annotation></semantics></math> task to recover play under the original starting-state distribution. In the special case <math id="S4.SS2.p3.6.m6" class="ltx_Math" alttext="\beta=1" display="inline" intent=":literal"><semantics><mrow><mi>β</mi><mo>=</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">\beta=1</annotation></semantics></math>, where no root-start episodes are generated during training, we evaluate with the flag set to dataset-start.</p>
+</div>
+</section>
+<section id="S4.SS3" class="ltx_subsection">
+<h3 class="ltx_title ltx_title_subsection">
+<span class="ltx_tag ltx_tag_subsection">4.3 </span>Self-play training with DAGS</h3>
+
+<div id="S4.SS3.p1" class="ltx_para ltx_noindent">
+<p id="S4.SS3.p1.1" class="ltx_p">We summarize the complete DAGS training procedure in Algorithm&nbsp;<a href="https://arxiv.org/html/2605.14379v1#alg1" title="Algorithm 1 ‣ 4.3 Self-play training with DAGS ‣ 4 Data-Augmented Game Starts (DAGS) ‣ Data-Augmented Game Starts for Accelerating Self-Play Exploration in Imperfect Information Games" class="ltx_ref"><span class="ltx_text ltx_ref_tag">1</span></a>. Collected trajectories are used for regularized PPO self-play updates (see Appendix&nbsp;<a href="https://arxiv.org/html/2605.14379v1#A2" title="Appendix B PPO Regularization Details ‣ Data-Augmented Game Starts for Accelerating Self-Play Exploration in Imperfect Information Games" class="ltx_ref"><span class="ltx_text ltx_ref_tag">B</span></a> for details).</p>
+</div>
+<figure id="alg1" class="ltx_float ltx_float_algorithm ltx_framed ltx_framed_top">
+<figcaption class="ltx_caption"><span class="ltx_tag ltx_tag_float"><span id="alg1.2.1.1" class="ltx_text ltx_font_bold">Algorithm 1</span> </span> Data-Augmented Game Starts (DAGS) with PPO self-play</figcaption>
+<div id="alg1.3" class="ltx_listing ltx_listing">
+<div id="alg1.l1" class="ltx_listingline">
+<span class="ltx_tag ltx_tag_listingline"><span id="alg1.l1.1.1.1" class="ltx_text" style="font-size:80%;">1:</span></span>POSG <math id="alg1.l1.m1" class="ltx_Math" alttext="\mathcal{G}" display="inline" intent=":literal"><semantics><mi class="ltx_font_mathcaligraphic">𝒢</mi><annotation encoding="application/x-tex">\mathcal{G}</annotation></semantics></math> with initial distribution <math id="alg1.l1.m2" class="ltx_Math" alttext="d_{0}" display="inline" intent=":literal"><semantics><msub><mi>d</mi><mn>0</mn></msub><annotation encoding="application/x-tex">d_{0}</annotation></semantics></math>, offline dataset <math id="alg1.l1.m3" class="ltx_Math" alttext="\mathcal{D}" display="inline" intent=":literal"><semantics><mi class="ltx_font_mathcaligraphic">𝒟</mi><annotation encoding="application/x-tex">\mathcal{D}</annotation></semantics></math>,
+mixture parameter <math id="alg1.l1.m4" class="ltx_Math" alttext="\beta\in[0,1]" display="inline" intent=":literal"><semantics><mrow><mi>β</mi><mo>∈</mo><mrow><mo stretchy="false">[</mo><mn>0</mn><mo>,</mo><mn>1</mn><mo stretchy="false">]</mo></mrow></mrow><annotation encoding="application/x-tex">\beta\in[0,1]</annotation></semantics></math>, joint policy <math id="alg1.l1.m5" class="ltx_Math" alttext="\pi_{\theta}=(\pi_{\theta_{1}},\pi_{\theta_{2}})" display="inline" intent=":literal"><semantics><mrow><msub><mi>π</mi><mi>θ</mi></msub><mo>=</mo><mrow><mo stretchy="false">(</mo><msub><mi>π</mi><msub><mi>θ</mi><mn>1</mn></msub></msub><mo>,</mo><msub><mi>π</mi><msub><mi>θ</mi><mn>2</mn></msub></msub><mo stretchy="false">)</mo></mrow></mrow><annotation encoding="application/x-tex">\pi_{\theta}=(\pi_{\theta_{1}},\pi_{\theta_{2}})</annotation></semantics></math>, PPO hyperparameters
+
+</div>
+<div id="alg1.l2" class="ltx_listingline">
+<span class="ltx_tag ltx_tag_listingline"><span id="alg1.l2.1.1.1" class="ltx_text" style="font-size:80%;">2:</span></span><span id="alg1.l2.2" class="ltx_text ltx_font_bold">while</span> not converged <span id="alg1.l2.3" class="ltx_text ltx_font_bold">do</span>
+
+</div>
+<div id="alg1.l3" class="ltx_listingline">
+<span class="ltx_tag ltx_tag_listingline"><span id="alg1.l3.1.1.1" class="ltx_text" style="font-size:80%;">3:</span></span>  Initialize empty trajectory buffer <math id="alg1.l3.m1" class="ltx_Math" alttext="\mathcal{T}" display="inline" intent=":literal"><semantics><mi class="ltx_font_mathcaligraphic">𝒯</mi><annotation encoding="application/x-tex">\mathcal{T}</annotation></semantics></math>
+
+</div>
+<div id="alg1.l4" class="ltx_listingline">
+<span class="ltx_tag ltx_tag_listingline"><span id="alg1.l4.1.1.1" class="ltx_text" style="font-size:80%;">4:</span></span>  <span id="alg1.l4.2" class="ltx_text ltx_font_bold">for</span> episode <math id="alg1.l4.m1" class="ltx_Math" alttext="=1,\dots,K" display="inline" intent=":literal"><semantics><mrow><mi></mi><mo>=</mo><mrow><mn>1</mn><mo>,</mo><mi mathvariant="normal">…</mi><mo>,</mo><mi>K</mi></mrow></mrow><annotation encoding="application/x-tex">=1,\dots,K</annotation></semantics></math> <span id="alg1.l4.3" class="ltx_text ltx_font_bold">do</span>
+
+</div>
+<div id="alg1.l5" class="ltx_listingline">
+<span class="ltx_tag ltx_tag_listingline"><span id="alg1.l5.1.1.1" class="ltx_text" style="font-size:80%;">5:</span></span>   With probability <math id="alg1.l5.m1" class="ltx_Math" alttext="\beta" display="inline" intent=":literal"><semantics><mi>β</mi><annotation encoding="application/x-tex">\beta</annotation></semantics></math>:
+
+</div>
+<div id="alg1.l6" class="ltx_listingline">
+<span class="ltx_tag ltx_tag_listingline"><span id="alg1.l6.2.1.1" class="ltx_text" style="font-size:80%;">6:</span></span>    Sample initial state <math id="alg1.l6.m1" class="ltx_Math" alttext="s_{0}" display="inline" intent=":literal"><semantics><msub><mi>s</mi><mn>0</mn></msub><annotation encoding="application/x-tex">s_{0}</annotation></semantics></math> from <math id="alg1.l6.m2" class="ltx_Math" alttext="\mathcal{D}" display="inline" intent=":literal"><semantics><mi class="ltx_font_mathcaligraphic">𝒟</mi><annotation encoding="application/x-tex">\mathcal{D}</annotation></semantics></math>; set <math id="alg1.l6.m3" class="ltx_Math" alttext="f\leftarrow 1" display="inline" intent=":literal"><semantics><mrow><mi>f</mi><mo stretchy="false">←</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">f\leftarrow 1</annotation></semantics></math> <span id="alg1.l6.1" class="ltx_text" style="float:right;"><math id="alg1.l6.1.m1" class="ltx_Math" alttext="\triangleright" display="inline" intent=":literal"><semantics><mo>⊳</mo><annotation encoding="application/x-tex">\triangleright</annotation></semantics></math> DAGS reset
+</span>
+</div>
+<div id="alg1.l7" class="ltx_listingline">
+<span class="ltx_tag ltx_tag_listingline"><span id="alg1.l7.1.1.1" class="ltx_text" style="font-size:80%;">7:</span></span>   Otherwise:
+
+</div>
+<div id="alg1.l8" class="ltx_listingline">
+<span class="ltx_tag ltx_tag_listingline"><span id="alg1.l8.2.1.1" class="ltx_text" style="font-size:80%;">8:</span></span>    Sample initial state <math id="alg1.l8.m1" class="ltx_Math" alttext="s_{0}\sim d_{0}" display="inline" intent=":literal"><semantics><mrow><msub><mi>s</mi><mn>0</mn></msub><mo>∼</mo><msub><mi>d</mi><mn>0</mn></msub></mrow><annotation encoding="application/x-tex">s_{0}\sim d_{0}</annotation></semantics></math>; set <math id="alg1.l8.m2" class="ltx_Math" alttext="f\leftarrow 0" display="inline" intent=":literal"><semantics><mrow><mi>f</mi><mo stretchy="false">←</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">f\leftarrow 0</annotation></semantics></math> <span id="alg1.l8.1" class="ltx_text" style="float:right;"><math id="alg1.l8.1.m1" class="ltx_Math" alttext="\triangleright" display="inline" intent=":literal"><semantics><mo>⊳</mo><annotation encoding="application/x-tex">\triangleright</annotation></semantics></math> root start
+</span>
+</div>
+<div id="alg1.l9" class="ltx_listingline">
+<span class="ltx_tag ltx_tag_listingline"><span id="alg1.l9.1.1.1" class="ltx_text" style="font-size:80%;">9:</span></span>   Roll out self-play episode from <math id="alg1.l9.m1" class="ltx_Math" alttext="s_{0}" display="inline" intent=":literal"><semantics><msub><mi>s</mi><mn>0</mn></msub><annotation encoding="application/x-tex">s_{0}</annotation></semantics></math> using joint policy <math id="alg1.l9.m2" class="ltx_math_unparsed" alttext="\pi_{\theta}(\cdot\mid o,f)" display="inline" intent=":literal"><semantics><mrow><msub><mi>π</mi><mi>θ</mi></msub><mrow><mo stretchy="false">(</mo><mo lspace="0em" rspace="0em">⋅</mo><mo lspace="0em" rspace="0.167em">∣</mo><mi>o</mi><mo>,</mo><mi>f</mi><mo stretchy="false">)</mo></mrow></mrow><annotation encoding="application/x-tex">\pi_{\theta}(\cdot\mid o,f)</annotation></semantics></math>
+
+</div>
+<div id="alg1.l10" class="ltx_listingline">
+<span class="ltx_tag ltx_tag_listingline"><span id="alg1.l10.1.1.1" class="ltx_text" style="font-size:80%;">10:</span></span>   Add the resulting trajectory data to <math id="alg1.l10.m1" class="ltx_Math" alttext="\mathcal{T}" display="inline" intent=":literal"><semantics><mi class="ltx_font_mathcaligraphic">𝒯</mi><annotation encoding="application/x-tex">\mathcal{T}</annotation></semantics></math>
+  
+</div>
+<div id="alg1.l11" class="ltx_listingline">
+<span class="ltx_tag ltx_tag_listingline"><span id="alg1.l11.1.1.1" class="ltx_text" style="font-size:80%;">11:</span></span>  <math id="alg1.l11.m1" class="ltx_Math" alttext="\theta\leftarrow\textsc{PPO Updates}(\theta,\mathcal{T})" display="inline" intent=":literal"><semantics><mrow><mi>θ</mi><mo stretchy="false">←</mo><mrow><mtext class="ltx_font_smallcaps">PPO Updates</mtext><mo lspace="0em" rspace="0em">​</mo><mrow><mo stretchy="false">(</mo><mi>θ</mi><mo>,</mo><mi class="ltx_font_mathcaligraphic">𝒯</mi><mo stretchy="false">)</mo></mrow></mrow></mrow><annotation encoding="application/x-tex">\theta\leftarrow\textsc{PPO Updates}(\theta,\mathcal{T})</annotation></semantics></math>
+
+</div>
+</div>
+</figure>
+<div id="S4.SS3.p2" class="ltx_para ltx_noindent">
+<p id="S4.SS3.p2.1" class="ltx_p">DAGS offloads the burden of exploring long coordinated control sequences into the offline data collection phase, allowing online self-play to start directly from states where hard-to-find strategically important transitions can be more easily discovered. In the following sections, we introduce analytically tractable benchmarks to evaluate this approach (Section&nbsp;<a href="https://arxiv.org/html/2605.14379v1#S5" title="5 Benchmarking Exploration in Large Games ‣ Data-Augmented Game Starts for Accelerating Self-Play Exploration in Imperfect Information Games" class="ltx_ref"><span class="ltx_text ltx_ref_tag">5</span></a>) and show empirically that DAGS leads to substantially lower exploitability under fixed computational budgets.</p>
+</div>
+</section>
+</section>
+<section id="S5" class="ltx_section">
+<h2 class="ltx_title ltx_title_section">
+<span class="ltx_tag ltx_tag_section">5 </span>Benchmarking Exploration in Large Games</h2>
+
+<div id="S5.p1" class="ltx_para ltx_noindent">
+<p id="S5.p1.1" class="ltx_p">To study methods like DAGS in a controlled but challenging setting, we construct a family of benchmark games by applying two successive transformations to analytically tractable two-player zero-sum games from OpenSpiel <cite class="ltx_cite ltx_citemacro_citep">(<span class="ltx_ref ltx_missing_citation ltx_ref_self">lanctot2020openspielframeworkreinforcementlearning</span>)</cite>. In this paper, we apply these transformations to Kuhn Poker and Goofspiel, as well as a custom counterexample game designed to expose equilibrium bias from start-state augmentation. The first transformation is to add a forfeit action to every decision node. Then, we replace each decision with a multi-step gridworld navigation task whose outcome determines the base-game action taken. The resulting games have long horizons and large state spaces but remain analytically reducible to their base game, enabling exact exploitability measurement.</p>
+</div>
+<section id="S5.SS1" class="ltx_subsection">
+<h3 class="ltx_title ltx_title_subsection">
+<span class="ltx_tag ltx_tag_subsection">5.1 </span>Forfeit (FF) Transformation</h3>
+
+<div id="S5.SS1.p1" class="ltx_para ltx_noindent">
+<p id="S5.SS1.p1.3" class="ltx_p">Given a base two-player zero-sum game with utilities bounded in <math id="S5.SS1.p1.1.m1" class="ltx_Math" alttext="[u_{\min},u_{\max}]" display="inline" intent=":literal"><semantics><mrow><mo stretchy="false">[</mo><msub><mi>u</mi><mi>min</mi></msub><mo>,</mo><msub><mi>u</mi><mi>max</mi></msub><mo stretchy="false">]</mo></mrow><annotation encoding="application/x-tex">[u_{\min},u_{\max}]</annotation></semantics></math>, we augment every decision state with an additional forfeit action. If a player forfeits, the episode terminates immediately. The forfeiting player receives <math id="S5.SS1.p1.2.m2" class="ltx_Math" alttext="u_{\min}-1" display="inline" intent=":literal"><semantics><mrow><msub><mi>u</mi><mi>min</mi></msub><mo>−</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">u_{\min}-1</annotation></semantics></math> and the opponent receives <math id="S5.SS1.p1.3.m3" class="ltx_Math" alttext="-(u_{\min}-1)" display="inline" intent=":literal"><semantics><mrow><mo>−</mo><mrow><mo stretchy="false">(</mo><mrow><msub><mi>u</mi><mi>min</mi></msub><mo>−</mo><mn>1</mn></mrow><mo stretchy="false">)</mo></mrow></mrow><annotation encoding="application/x-tex">-(u_{\min}-1)</annotation></semantics></math>. If both players forfeit simultaneously, player 1 is treated as the forfeiting player. This makes forfeiting strictly worse than any base-game outcome, modeling the consequence of failing to execute a required control task as a strictly dominated strategy.</p>
+</div>
+</section>
+<section id="S5.SS2" class="ltx_subsection">
+<h3 class="ltx_title ltx_title_subsection">
+<span class="ltx_tag ltx_tag_subsection">5.2 </span>Control Game Transformation</h3>
+
+<div id="S5.SS2.p1" class="ltx_para ltx_noindent">
+<p id="S5.SS2.p1.1" class="ltx_p">Given a base game augmented with forfeit actions, we replace each decision with a gridworld navigation problem. At each decision point, the acting player is placed at a fixed starting position on a <math id="S5.SS2.p1.1.m1" class="ltx_Math" alttext="G\times G" display="inline" intent=":literal"><semantics><mrow><mi>G</mi><mo lspace="0.222em" rspace="0.222em">×</mo><mi>G</mi></mrow><annotation encoding="application/x-tex">G\times G</annotation></semantics></math> grid containing one designated action square for each available base-game action, with all action squares placed equidistant from the start. The player observes their grid position, the time remaining, and the base-game information state, and navigates for a fixed number of steps. Their final position determines the base-game action taken; if they are not on an action square when time expires, the forfeit action is selected instead.</p>
+</div>
+<div id="S5.SS2.p2" class="ltx_para ltx_noindent">
+<p id="S5.SS2.p2.1" class="ltx_p">Crucially, agents act independently during navigation and do not interact with or observe the opponent while selecting their action. Control-game policies are therefore analytically reducible to base (FF) game policies, i.e., the base game with added forfeit actions, enabling exact exploitability calculation even in games with significantly larger horizons.</p>
+</div>
+<div id="S5.SS2.p3" class="ltx_para ltx_noindent">
+<p id="S5.SS2.p3.1" class="ltx_p">To compute exploitability, we evaluate the control policy over all grid states and timer values for each base-game information state and compute the induced probability of terminating on each action square or forfeiting. These probabilities define an equivalent mixed strategy over base-game actions plus forfeit, from which we compute exact exploitability in the base game. The cost of this reduction is proportional to the number of information states, grid cells, and timer steps, and is orders of magnitude smaller than the cost of self-play training in the configurations we test. In the following section, we instantiate these benchmarks at varying grid sizes to strain exploration and evaluate DAGS.</p>
+</div>
+</section>
+</section>
+<section id="S6" class="ltx_section">
+<h2 class="ltx_title ltx_title_section">
+<span class="ltx_tag ltx_tag_section">6 </span>Experiments</h2>
+
+<div id="S6.p1" class="ltx_para ltx_noindent">
+<p id="S6.p1.1" class="ltx_p">We evaluate whether DAGS accelerates equilibrium convergence as exploration difficulty increases, and whether the equilibrium bias identified in Section&nbsp;<a href="https://arxiv.org/html/2605.14379v1#S4" title="4 Data-Augmented Game Starts (DAGS) ‣ Data-Augmented Game Starts for Accelerating Self-Play Exploration in Imperfect Information Games" class="ltx_ref"><span class="ltx_text ltx_ref_tag">4</span></a> manifests empirically. Our testbed consists of two established benchmark games, Kuhn poker and 4-card Goofspiel, together with a counterexample game that we constructed to create a clear instance of equilibrium bias and to demonstrate that our proposed mitigation is effective (Figure&nbsp;<a href="https://arxiv.org/html/2605.14379v1#S6.F3" title="Figure 3 ‣ 6.1 DAGS Improves Scaling in Kuhn and Goofspiel ‣ 6 Experiments ‣ Data-Augmented Game Starts for Accelerating Self-Play Exploration in Imperfect Information Games" class="ltx_ref"><span class="ltx_text ltx_ref_tag">3</span></a>).</p>
+</div>
+<div id="S6.p2" class="ltx_para ltx_noindent">
+<p id="S6.p2.1" class="ltx_p">Each game is tested in three variations. The <span id="S6.p2.1.1" class="ltx_text ltx_font_bold">Base (FF)</span> variant augments the original game only with a forfeit action. It has no control difficulty and is strategically equivalent to the control variants. It serves as an empirical lower bound on achievable exploitability. In the <span id="S6.p2.1.2" class="ltx_text ltx_font_bold">Control Travel&nbsp;10</span> and <span id="S6.p2.1.3" class="ltx_text ltx_font_bold">Control Travel&nbsp;20</span> variants, each non-forfeit base-game action requires the agent to first navigate a gridworld to the action’s location, with a time limit equal to the required travel distance (10 and 20 respectively) that leaves zero room for error. These variants preserve the strategic structure of the base games while adding substantial exploration difficulty.</p>
+</div>
+<div id="S6.p3" class="ltx_para ltx_noindent">
+<p id="S6.p3.1" class="ltx_p">For each environment, we generate an offline dataset of 1000 games using a hard-coded policy that selects base-game actions uniformly at random and executes the correct control navigation. Because the behavioural policy is suboptimal, the dataset provides state coverage but does not constitute a low-exploitability policy.</p>
+</div>
+<div id="S6.p4" class="ltx_para ltx_noindent">
+<p id="S6.p4.2" class="ltx_p">We compare two self-play methods:
+<span id="S6.p4.2.1" class="ltx_text ltx_font_bold">PPO-Uniform</span>, which uses entropy regularization toward a uniform magnet&nbsp;<cite class="ltx_cite ltx_citemacro_citep">(<span class="ltx_ref ltx_missing_citation ltx_ref_self">rudolph2025reevaluatingpolicygradientmethods</span>)</cite>, and
+<span id="S6.p4.2.2" class="ltx_text ltx_font_bold">PPO-EMAg</span>, which uses KL regularization toward an exponential moving average of policy parameters&nbsp;<cite class="ltx_cite ltx_citemacro_citep">(<span class="ltx_ref ltx_missing_citation ltx_ref_self">maidment2026emagnet</span>)</cite>.
+Base PPO hyperparameters follow <cite class="ltx_cite ltx_citemacro_citet"><span class="ltx_ref ltx_missing_citation ltx_ref_self">rudolph2025reevaluatingpolicygradientmethods</span></cite>.
+Throughout, <math id="S6.p4.1.m1" class="ltx_Math" alttext="\beta=0" display="inline" intent=":literal"><semantics><mrow><mi>β</mi><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\beta=0</annotation></semantics></math> corresponds to standard self-play from the root (no DAGS) and serves as our baseline.
+For each combination of method, environment, variation, and <math id="S6.p4.2.m2" class="ltx_Math" alttext="\beta" display="inline" intent=":literal"><semantics><mi>β</mi><annotation encoding="application/x-tex">\beta</annotation></semantics></math>, we sweep over regularization hyperparameters and select the best configuration. Full sweep details are provided in Appendix&nbsp;<a href="https://arxiv.org/html/2605.14379v1#A1" title="Appendix A Hyperparameter and Training Details ‣ Data-Augmented Game Starts for Accelerating Self-Play Exploration in Imperfect Information Games" class="ltx_ref"><span class="ltx_text ltx_ref_tag">A</span></a>.</p>
+</div>
+<section id="S6.SS1" class="ltx_subsection">
+<h3 class="ltx_title ltx_title_subsection">
+<span class="ltx_tag ltx_tag_subsection">6.1 </span>DAGS Improves Scaling in Kuhn and Goofspiel</h3>
+
+<figure id="S6.F2" class="ltx_figure"><img src="./Data-Augmented Game Starts for Accelerating Self-Play Exploration in Imperfect Information Games_files/x2.png" id="S6.F2.g1" class="ltx_graphics ltx_centering ltx_img_landscape" width="830" height="441" alt="Refer to caption">
+<figcaption class="ltx_caption ltx_centering"><span class="ltx_tag ltx_tag_figure"><span id="S6.F2.8.4.1" class="ltx_text" style="font-size:90%;">Figure 2</span>: </span><span id="S6.F2.6.3" class="ltx_text" style="font-size:90%;">Exploitability over training for Kuhn poker and 4-card Goofspiel across game variations and <math id="S6.F2.4.1.m1" class="ltx_Math" alttext="\beta" display="inline" intent=":literal"><semantics><mi>β</mi><annotation encoding="application/x-tex">\beta</annotation></semantics></math> values, using both PPO-Uniform and PPO-EMAg. DAGS (<math id="S6.F2.5.2.m2" class="ltx_Math" alttext="\beta&gt;0" display="inline" intent=":literal"><semantics><mrow><mi>β</mi><mo>&gt;</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\beta&gt;0</annotation></semantics></math>) increasingly outperforms standard self-play (<math id="S6.F2.6.3.m3" class="ltx_Math" alttext="\beta=0" display="inline" intent=":literal"><semantics><mrow><mi>β</mi><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\beta=0</annotation></semantics></math>) as exploration difficulty grows.</span></figcaption>
+</figure>
+<div id="S6.SS1.p1" class="ltx_para ltx_noindent">
+<p id="S6.SS1.p1.1" class="ltx_p">We first investigate how DAGS performs on Kuhn Poker and Goofspiel as exploration difficulty increases, starting with the base (FF) version of each game, then increasing difficulty in the Control Travel&nbsp;10 variant and again in Control Travel&nbsp;20 (Figure&nbsp;<a href="https://arxiv.org/html/2605.14379v1#S6.F2" title="Figure 2 ‣ 6.1 DAGS Improves Scaling in Kuhn and Goofspiel ‣ 6 Experiments ‣ Data-Augmented Game Starts for Accelerating Self-Play Exploration in Imperfect Information Games" class="ltx_ref"><span class="ltx_text ltx_ref_tag">2</span></a>).</p>
+</div>
+<div id="S6.SS1.p2" class="ltx_para ltx_noindent">
+<p id="S6.SS1.p2.9" class="ltx_p">In the base (FF) variants, all methods and <math id="S6.SS1.p2.1.m1" class="ltx_Math" alttext="\beta" display="inline" intent=":literal"><semantics><mi>β</mi><annotation encoding="application/x-tex">\beta</annotation></semantics></math> values converge to similarly low exploitability, confirming that exploration is not a bottleneck in these games. However, as exploration complexity increases in the gridworld Control variants, both games show the same pattern: the gap between DAGS and the <math id="S6.SS1.p2.2.m2" class="ltx_Math" alttext="\beta=0" display="inline" intent=":literal"><semantics><mrow><mi>β</mi><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\beta=0</annotation></semantics></math> baseline widens, as standard self-play fails to discover how to navigate to certain action squares within the time limit, effectively forfeiting at those decision nodes. DAGS, by contrast, initializes episodes at states where agents can immediately discover how to perform these navigation tasks, maintaining lower exploitability. The effect is especially pronounced in Goofspiel. At Travel&nbsp;10, the Goofspiel standard self-play stalls at an exploitability of <math id="S6.SS1.p2.3.m3" class="ltx_Math" alttext="{\sim}4" display="inline" intent=":literal"><semantics><mrow><mi></mi><mo>∼</mo><mn>4</mn></mrow><annotation encoding="application/x-tex">{\sim}4</annotation></semantics></math>-<math id="S6.SS1.p2.4.m4" class="ltx_Math" alttext="6" display="inline" intent=":literal"><semantics><mn>6</mn><annotation encoding="application/x-tex">6</annotation></semantics></math>, while DAGS variants converge to substantially lower values. At Travel&nbsp;20, standard self-play fails entirely; Goofspiel with <math id="S6.SS1.p2.5.m5" class="ltx_Math" alttext="\beta=0" display="inline" intent=":literal"><semantics><mrow><mi>β</mi><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\beta=0</annotation></semantics></math> plateaus at <math id="S6.SS1.p2.6.m6" class="ltx_Math" alttext="{\sim}6.0" display="inline" intent=":literal"><semantics><mrow><mi></mi><mo>∼</mo><mn>6.0</mn></mrow><annotation encoding="application/x-tex">{\sim}6.0</annotation></semantics></math>, representing no meaningful learning, while DAGS continues to converge in both games. In Goofspiel, <math id="S6.SS1.p2.7.m7" class="ltx_Math" alttext="\beta=1" display="inline" intent=":literal"><semantics><mrow><mi>β</mi><mo>=</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">\beta=1</annotation></semantics></math> outperforms <math id="S6.SS1.p2.8.m8" class="ltx_Math" alttext="\beta=0.5" display="inline" intent=":literal"><semantics><mrow><mi>β</mi><mo>=</mo><mn>0.5</mn></mrow><annotation encoding="application/x-tex">\beta=0.5</annotation></semantics></math>, likely because root-start episodes in high-difficulty control variants are largely uninformative (the agent forfeits), so <math id="S6.SS1.p2.9.m9" class="ltx_Math" alttext="\beta=0.5" display="inline" intent=":literal"><semantics><mrow><mi>β</mi><mo>=</mo><mn>0.5</mn></mrow><annotation encoding="application/x-tex">\beta=0.5</annotation></semantics></math> effectively wastes half its training compute on episodes that provide a less useful learning signal.</p>
+</div>
+<div id="S6.SS1.p3" class="ltx_para ltx_noindent">
+<p id="S6.SS1.p3.1" class="ltx_p">Interestingly, despite the theoretical possibility of equilibrium bias (Section&nbsp;<a href="https://arxiv.org/html/2605.14379v1#S4" title="4 Data-Augmented Game Starts (DAGS) ‣ Data-Augmented Game Starts for Accelerating Self-Play Exploration in Imperfect Information Games" class="ltx_ref"><span class="ltx_text ltx_ref_tag">4</span></a>), we see little evidence of this in either game. All <math id="S6.SS1.p3.1.m1" class="ltx_Math" alttext="\beta" display="inline" intent=":literal"><semantics><mi>β</mi><annotation encoding="application/x-tex">\beta</annotation></semantics></math> values converge to similar exploitability in the base variants, and since control-game policies can be reduced to base-game policies, this absence of bias carries over to the control variants as well. To understand when bias does arise, we turn to a purpose-built counterexample designed to elicit it.</p>
+</div>
+<figure id="S6.F3" class="ltx_figure"><img src="./Data-Augmented Game Starts for Accelerating Self-Play Exploration in Imperfect Information Games_files/x3.png" id="S6.F3.g1" class="ltx_graphics ltx_centering ltx_img_landscape" width="581" height="222" alt="Refer to caption">
+<figcaption class="ltx_caption ltx_centering"><span class="ltx_tag ltx_tag_figure"><span id="S6.F3.18.9.1" class="ltx_text" style="font-size:90%;">Figure 3</span>: </span><span id="S6.F3.16.8" class="ltx_text" style="font-size:90%;">The counterexample game, a two-player zero-sum game whose NE changes when DAGS with <math id="S6.F3.9.1.m1" class="ltx_Math" alttext="\beta=1" display="inline" intent=":literal"><semantics><mrow><mi>β</mi><mo>=</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">\beta=1</annotation></semantics></math> augments the initial state distribution using states from a strategically uniform behavioral policy (Appendix&nbsp;<a href="https://arxiv.org/html/2605.14379v1#A4" title="Appendix D Environment and Benchmark Details ‣ Data-Augmented Game Starts for Accelerating Self-Play Exploration in Imperfect Information Games" class="ltx_ref"><span class="ltx_text ltx_ref_tag">D</span></a>). The grey box is a single information state that appears identical to player 2. In the original game (left), <math id="S6.F3.10.2.m2" class="ltx_Math" alttext="p_{2}" display="inline" intent=":literal"><semantics><msub><mi>p</mi><mn>2</mn></msub><annotation encoding="application/x-tex">p_{2}</annotation></semantics></math>’s posterior over <math id="S6.F3.11.3.m3" class="ltx_Math" alttext="p_{1}" display="inline" intent=":literal"><semantics><msub><mi>p</mi><mn>1</mn></msub><annotation encoding="application/x-tex">p_{1}</annotation></semantics></math>’s action depends entirely on <math id="S6.F3.12.4.m4" class="ltx_Math" alttext="p_{1}" display="inline" intent=":literal"><semantics><msub><mi>p</mi><mn>1</mn></msub><annotation encoding="application/x-tex">p_{1}</annotation></semantics></math>’s strategy. With <math id="S6.F3.13.5.m5" class="ltx_Math" alttext="\beta=1" display="inline" intent=":literal"><semantics><mrow><mi>β</mi><mo>=</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">\beta=1</annotation></semantics></math> (right), the chance node resets directly to <math id="S6.F3.14.6.m6" class="ltx_Math" alttext="p_{2}" display="inline" intent=":literal"><semantics><msub><mi>p</mi><mn>2</mn></msub><annotation encoding="application/x-tex">p_{2}</annotation></semantics></math>’s decision nodes with equal probability regardless of <math id="S6.F3.15.7.m7" class="ltx_Math" alttext="p_{1}" display="inline" intent=":literal"><semantics><msub><mi>p</mi><mn>1</mn></msub><annotation encoding="application/x-tex">p_{1}</annotation></semantics></math>’s action, biasing <math id="S6.F3.16.8.m8" class="ltx_Math" alttext="p_{2}" display="inline" intent=":literal"><semantics><msub><mi>p</mi><mn>2</mn></msub><annotation encoding="application/x-tex">p_{2}</annotation></semantics></math>’s belief of the game state.</span></figcaption>
+</figure>
+</section>
+<section id="S6.SS2" class="ltx_subsection">
+<h3 class="ltx_title ltx_title_subsection">
+<span class="ltx_tag ltx_tag_subsection">6.2 </span>Equilibrium Bias and Mitigation in the Counterexample Game</h3>
+
+<figure id="S6.F4" class="ltx_figure"><img src="./Data-Augmented Game Starts for Accelerating Self-Play Exploration in Imperfect Information Games_files/x4.png" id="S6.F4.g1" class="ltx_graphics ltx_centering ltx_img_landscape" width="581" height="272" alt="Refer to caption">
+<figcaption class="ltx_caption ltx_centering"><span class="ltx_tag ltx_tag_figure"><span id="S6.F4.8.4.1" class="ltx_text" style="font-size:90%;">Figure 4</span>: </span><span id="S6.F4.6.3" class="ltx_text" style="font-size:90%;">Exploitability over training for the counterexample game across Base (FF) and Control Travel 20 variants. <math id="S6.F4.4.1.m1" class="ltx_Math" alttext="\beta=1" display="inline" intent=":literal"><semantics><mrow><mi>β</mi><mo>=</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">\beta=1</annotation></semantics></math> induces equilibrium bias (high exploitability) even in the base game. <math id="S6.F4.5.2.m2" class="ltx_Math" alttext="\beta=0" display="inline" intent=":literal"><semantics><mrow><mi>β</mi><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\beta=0</annotation></semantics></math> avoids bias but fails to explore in the control variant. <math id="S6.F4.6.3.m3" class="ltx_Math" alttext="\beta=0.5" display="inline" intent=":literal"><semantics><mrow><mi>β</mi><mo>=</mo><mn>0.5</mn></mrow><annotation encoding="application/x-tex">\beta=0.5</annotation></semantics></math> with a task-identifying observation flag achieves effective exploration while mitigating the equilibrium bias.</span></figcaption>
+</figure>
+<div id="S6.SS2.p1" class="ltx_para ltx_noindent">
+<p id="S6.SS2.p1.4" class="ltx_p">In the counterexample game (Figure&nbsp;<a href="https://arxiv.org/html/2605.14379v1#S6.F3" title="Figure 3 ‣ 6.1 DAGS Improves Scaling in Kuhn and Goofspiel ‣ 6 Experiments ‣ Data-Augmented Game Starts for Accelerating Self-Play Exploration in Imperfect Information Games" class="ltx_ref"><span class="ltx_text ltx_ref_tag">3</span></a>), augmenting the start-state distribution alters beliefs over private information and shifts the equilibrium. Figure&nbsp;<a href="https://arxiv.org/html/2605.14379v1#S6.F4" title="Figure 4 ‣ 6.2 Equilibrium Bias and Mitigation in the Counterexample Game ‣ 6 Experiments ‣ Data-Augmented Game Starts for Accelerating Self-Play Exploration in Imperfect Information Games" class="ltx_ref"><span class="ltx_text ltx_ref_tag">4</span></a> shows results for the Base (FF) and Control Travel&nbsp;20 variants.
+In the base game, standard self-play (<math id="S6.SS2.p1.1.m1" class="ltx_Math" alttext="\beta=0" display="inline" intent=":literal"><semantics><mrow><mi>β</mi><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\beta=0</annotation></semantics></math>) converges to near-zero exploitability with both methods, and <math id="S6.SS2.p1.2.m2" class="ltx_Math" alttext="\beta=0.5" display="inline" intent=":literal"><semantics><mrow><mi>β</mi><mo>=</mo><mn>0.5</mn></mrow><annotation encoding="application/x-tex">\beta=0.5</annotation></semantics></math> also converges well. However, <math id="S6.SS2.p1.3.m3" class="ltx_Math" alttext="\beta=1" display="inline" intent=":literal"><semantics><mrow><mi>β</mi><mo>=</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">\beta=1</annotation></semantics></math> performs poorly. Exploitability settles above <math id="S6.SS2.p1.4.m4" class="ltx_Math" alttext="0.7" display="inline" intent=":literal"><semantics><mn>0.7</mn><annotation encoding="application/x-tex">0.7</annotation></semantics></math>, confirming that the augmented start-state distribution distorts beliefs over hidden information and shifts the equilibrium away from the original game’s NE. Since the base game provides an empirical lower bound on achievable exploitability, this bias necessarily persists in the control variant. In Control Travel&nbsp;20, the tradeoff between exploration benefit and equilibrium bias becomes apparent.</p>
+</div>
+<div id="S6.SS2.p2" class="ltx_para ltx_noindent">
+<p id="S6.SS2.p2.9" class="ltx_p">Without DAGS, exploitability remains very high. With <math id="S6.SS2.p2.1.m1" class="ltx_Math" alttext="\beta=1" display="inline" intent=":literal"><semantics><mrow><mi>β</mi><mo>=</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">\beta=1</annotation></semantics></math>, agents explore effectively but converge to the biased equilibrium. Setting <math id="S6.SS2.p2.2.m2" class="ltx_Math" alttext="\beta=0.5" display="inline" intent=":literal"><semantics><mrow><mi>β</mi><mo>=</mo><mn>0.5</mn></mrow><annotation encoding="application/x-tex">\beta=0.5</annotation></semantics></math> provides a middle ground. A task-identifying observation flag (Section&nbsp;<a href="https://arxiv.org/html/2605.14379v1#S4" title="4 Data-Augmented Game Starts (DAGS) ‣ Data-Augmented Game Starts for Accelerating Self-Play Exploration in Imperfect Information Games" class="ltx_ref"><span class="ltx_text ltx_ref_tag">4</span></a>) partitions the policy into an <math id="S6.SS2.p2.3.m3" class="ltx_Math" alttext="f=1" display="inline" intent=":literal"><semantics><mrow><mi>f</mi><mo>=</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">f=1</annotation></semantics></math> task that benefits from DAGS-augmented exploration and an <math id="S6.SS2.p2.4.m4" class="ltx_Math" alttext="f=0" display="inline" intent=":literal"><semantics><mrow><mi>f</mi><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">f=0</annotation></semantics></math> task that learns an unbiased policy under the original starting distribution. The <math id="S6.SS2.p2.5.m5" class="ltx_Math" alttext="f=0" display="inline" intent=":literal"><semantics><mrow><mi>f</mi><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">f=0</annotation></semantics></math> branch benefits from multi-task transfer through shared representations learned on the easier <math id="S6.SS2.p2.6.m6" class="ltx_Math" alttext="f=1" display="inline" intent=":literal"><semantics><mrow><mi>f</mi><mo>=</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">f=1</annotation></semantics></math> task. At evaluation, setting <math id="S6.SS2.p2.7.m7" class="ltx_Math" alttext="f=0" display="inline" intent=":literal"><semantics><mrow><mi>f</mi><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">f=0</annotation></semantics></math> recovers unbiased play, whereas <math id="S6.SS2.p2.8.m8" class="ltx_Math" alttext="\beta=1" display="inline" intent=":literal"><semantics><mrow><mi>β</mi><mo>=</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">\beta=1</annotation></semantics></math> must evaluate with <math id="S6.SS2.p2.9.m9" class="ltx_Math" alttext="f=1" display="inline" intent=":literal"><semantics><mrow><mi>f</mi><mo>=</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">f=1</annotation></semantics></math> since no root-start episodes were seen during training.</p>
+</div>
+<div id="S6.SS2.p3" class="ltx_para ltx_noindent">
+<p id="S6.SS2.p3.1" class="ltx_p">These results demonstrate that when DAGS introduces equilibrium bias, training with intermediate <math id="S6.SS2.p3.1.m1" class="ltx_Math" alttext="\beta" display="inline" intent=":literal"><semantics><mi>β</mi><annotation encoding="application/x-tex">\beta</annotation></semantics></math> and a task-identifying observation flag mitigates the bias while still leveraging augmented exploration.</p>
+</div>
+</section>
+</section>
+<section id="S7" class="ltx_section">
+<h2 class="ltx_title ltx_title_section">
+<span class="ltx_tag ltx_tag_section">7 </span>Conclusion and Future Work</h2>
+
+<div id="S7.p1" class="ltx_para ltx_noindent">
+<p id="S7.p1.1" class="ltx_p">We present Data-Augmented Game Starts (DAGS), a starting-state sampling strategy that initializes self-play episodes at intermediate states drawn from offline gameplay data, leveraging demonstrations for state coverage rather than policy initialization. To evaluate DAGS in a controlled setting, we introduce analytically reducible benchmark games that wrap standard two-player zero-sum games with gridworld control tasks, greatly increasing horizon and exploration difficulty while preserving tractable exploitability computation. Empirically, DAGS outperforms standard self-play in control variants of Kuhn poker, 4-card Goofspiel, and a counterexample game designed to expose equilibrium bias, enabling regularized policy gradient methods to solve games with significantly larger exploration challenges under fixed computational budgets. We also show that augmenting starting-state distributions in imperfect-information games can bias the learned equilibrium, and we provide a straightforward mitigation through multi-task training with observation flags that recovers unbiased play in the counterexample game.</p>
+</div>
+<div id="S7.p2" class="ltx_para ltx_noindent">
+<p id="S7.p2.1" class="ltx_p">Our gridworld benchmarks use simple mechanics by design to preserve analytical reducibility. In this setting, warm-starting RL with BC may also be effective from limited data since the observation-action mapping is relatively straightforward to clone. In domains with complex, context-dependent mechanics (e.g., fighting games or first-person shooters), we expect DAGS’s advantage over BC-based initialization to grow as demonstrations become scarcer, since BC needs substantially more data to learn useful behavior while DAGS requires only that the dataset reach states from which important strategies can be discovered. We see applying DAGS to complex games where exact exploitability is not tractable as promising future work.</p>
+</div>
+<section id="A0.SS0.SSSx1" class="ltx_subsubsection">
+<h4 class="ltx_title ltx_title_subsubsection">Acknowledgments</h4>
+
+<div id="A0.SS0.SSSx1.p1" class="ltx_para ltx_noindent">
+<p id="A0.SS0.SSSx1.p1.1" class="ltx_p">Author Lanier was supported by a Hasso Plattner Foundation Fellowship. This work was also funded in part by NSF Award 232178 and BSF Grant 2024079.</p>
+</div>
+</section>
+</section>
+<section id="bib" class="ltx_bibliography">
+<h2 class="ltx_title ltx_title_bibliography">References</h2>
+
+<ul id="bib.L1" class="ltx_biblist">
+</ul>
+</section>
+<div class="ltx_pagination ltx_role_newpage"></div>
+<div id="id6" class="ltx_logical-block">
+<div id="id6.p1" class="ltx_para">
+<p id="id6.p1.1" class="ltx_p ltx_align_center"><span id="id6.p1.1.1" class="ltx_text ltx_font_bold" style="font-size:173%;">Supplementary Materials
+<br class="ltx_break"></span></p>
+<p id="id6.p1.2" class="ltx_p ltx_align_center"><em id="id6.p1.2.1" class="ltx_emph ltx_font_italic">The following content was not necessarily subject to peer review.</em></p>
+</div>
+</div>
+<div id="p1" class="ltx_para ltx_noindent">
+<p id="p1.1" class="ltx_p"><span id="p1.1.1" class="ltx_text ltx_inline-block" style="width:433.6pt;"><span class="ltx_rule" style="width:397.5pt;height:0.4pt;--ltx-bg-color:black;display:inline-block;">&nbsp;</span></span></p>
+</div>
+<section id="A1" class="ltx_appendix">
+<h2 class="ltx_title ltx_title_appendix">
+<span class="ltx_tag ltx_tag_appendix">Appendix A </span>Hyperparameter and Training Details</h2>
+
+<div id="A1.p1" class="ltx_para ltx_noindent">
+<p id="A1.p1.1" class="ltx_p">Table&nbsp;<a href="https://arxiv.org/html/2605.14379v1#A1.T1" title="Table 1 ‣ Appendix A Hyperparameter and Training Details ‣ Data-Augmented Game Starts for Accelerating Self-Play Exploration in Imperfect Information Games" class="ltx_ref"><span class="ltx_text ltx_ref_tag">1</span></a> lists the base PPO hyperparameters used across all experiments. Table&nbsp;<a href="https://arxiv.org/html/2605.14379v1#A1.T2" title="Table 2 ‣ Appendix A Hyperparameter and Training Details ‣ Data-Augmented Game Starts for Accelerating Self-Play Exploration in Imperfect Information Games" class="ltx_ref"><span class="ltx_text ltx_ref_tag">2</span></a> lists the hyperparameters swept for each method.</p>
+</div>
+<figure id="A1.T1" class="ltx_table">
+<figcaption class="ltx_caption ltx_centering"><span class="ltx_tag ltx_tag_table"><span id="A1.T1.15.1.1" class="ltx_text" style="font-size:90%;">Table 1</span>: </span><span id="A1.T1.16.2" class="ltx_text" style="font-size:90%;">Base PPO hyperparameters (shared across all methods and environments).</span></figcaption>
+<table id="A1.T1.13" class="ltx_tabular ltx_centering ltx_guessed_headers ltx_align_middle">
+<thead class="ltx_thead">
+<tr id="A1.T1.13.14.1" class="ltx_tr">
+<th id="A1.T1.13.14.1.1" class="ltx_td ltx_align_left ltx_th ltx_th_column ltx_th_row ltx_border_tt">Hyperparameter</th>
+<th id="A1.T1.13.14.1.2" class="ltx_td ltx_align_left ltx_th ltx_th_column ltx_border_tt">Value</th>
+</tr>
+</thead>
+<tbody class="ltx_tbody">
+<tr id="A1.T1.1.1" class="ltx_tr">
+<th id="A1.T1.1.1.2" class="ltx_td ltx_align_left ltx_th ltx_th_row ltx_border_t">Learning rate</th>
+<td id="A1.T1.1.1.1" class="ltx_td ltx_align_left ltx_border_t"><math id="A1.T1.1.1.1.m1" class="ltx_Math" alttext="2.5\times 10^{-4}" display="inline" intent=":literal"><semantics><mrow><mn>2.5</mn><mo lspace="0.222em" rspace="0.222em">×</mo><msup><mn>10</mn><mrow><mo>−</mo><mn>4</mn></mrow></msup></mrow><annotation encoding="application/x-tex">2.5\times 10^{-4}</annotation></semantics></math></td>
+</tr>
+<tr id="A1.T1.3.3" class="ltx_tr">
+<th id="A1.T1.2.2.1" class="ltx_td ltx_align_left ltx_th ltx_th_row">Clip ratio (<math id="A1.T1.2.2.1.m1" class="ltx_Math" alttext="\epsilon" display="inline" intent=":literal"><semantics><mi>ϵ</mi><annotation encoding="application/x-tex">\epsilon</annotation></semantics></math>)</th>
+<td id="A1.T1.3.3.2" class="ltx_td ltx_align_left"><math id="A1.T1.3.3.2.m1" class="ltx_Math" alttext="0.1" display="inline" intent=":literal"><semantics><mn>0.1</mn><annotation encoding="application/x-tex">0.1</annotation></semantics></math></td>
+</tr>
+<tr id="A1.T1.4.4" class="ltx_tr">
+<th id="A1.T1.4.4.2" class="ltx_td ltx_align_left ltx_th ltx_th_row">PPO epochs per update</th>
+<td id="A1.T1.4.4.1" class="ltx_td ltx_align_left"><math id="A1.T1.4.4.1.m1" class="ltx_Math" alttext="4" display="inline" intent=":literal"><semantics><mn>4</mn><annotation encoding="application/x-tex">4</annotation></semantics></math></td>
+</tr>
+<tr id="A1.T1.6.6" class="ltx_tr">
+<th id="A1.T1.5.5.1" class="ltx_td ltx_align_left ltx_th ltx_th_row">Batch size (num_envs <math id="A1.T1.5.5.1.m1" class="ltx_Math" alttext="\times" display="inline" intent=":literal"><semantics><mo>×</mo><annotation encoding="application/x-tex">\times</annotation></semantics></math> num_steps)</th>
+<td id="A1.T1.6.6.2" class="ltx_td ltx_align_left"><math id="A1.T1.6.6.2.m1" class="ltx_Math" alttext="8\times 128=1024" display="inline" intent=":literal"><semantics><mrow><mrow><mn>8</mn><mo lspace="0.222em" rspace="0.222em">×</mo><mn>128</mn></mrow><mo>=</mo><mn>1024</mn></mrow><annotation encoding="application/x-tex">8\times 128=1024</annotation></semantics></math></td>
+</tr>
+<tr id="A1.T1.8.8" class="ltx_tr">
+<th id="A1.T1.7.7.1" class="ltx_td ltx_align_left ltx_th ltx_th_row">GAE <math id="A1.T1.7.7.1.m1" class="ltx_Math" alttext="\lambda" display="inline" intent=":literal"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>
+</th>
+<td id="A1.T1.8.8.2" class="ltx_td ltx_align_left"><math id="A1.T1.8.8.2.m1" class="ltx_Math" alttext="0.95" display="inline" intent=":literal"><semantics><mn>0.95</mn><annotation encoding="application/x-tex">0.95</annotation></semantics></math></td>
+</tr>
+<tr id="A1.T1.10.10" class="ltx_tr">
+<th id="A1.T1.9.9.1" class="ltx_td ltx_align_left ltx_th ltx_th_row">Discount <math id="A1.T1.9.9.1.m1" class="ltx_Math" alttext="\gamma" display="inline" intent=":literal"><semantics><mi>γ</mi><annotation encoding="application/x-tex">\gamma</annotation></semantics></math>
+</th>
+<td id="A1.T1.10.10.2" class="ltx_td ltx_align_left"><math id="A1.T1.10.10.2.m1" class="ltx_Math" alttext="1.0" display="inline" intent=":literal"><semantics><mn>1.0</mn><annotation encoding="application/x-tex">1.0</annotation></semantics></math></td>
+</tr>
+<tr id="A1.T1.11.11" class="ltx_tr">
+<th id="A1.T1.11.11.2" class="ltx_td ltx_align_left ltx_th ltx_th_row">Value function coefficient</th>
+<td id="A1.T1.11.11.1" class="ltx_td ltx_align_left"><math id="A1.T1.11.11.1.m1" class="ltx_Math" alttext="0.5" display="inline" intent=":literal"><semantics><mn>0.5</mn><annotation encoding="application/x-tex">0.5</annotation></semantics></math></td>
+</tr>
+<tr id="A1.T1.12.12" class="ltx_tr">
+<th id="A1.T1.12.12.2" class="ltx_td ltx_align_left ltx_th ltx_th_row">Max gradient norm</th>
+<td id="A1.T1.12.12.1" class="ltx_td ltx_align_left"><math id="A1.T1.12.12.1.m1" class="ltx_Math" alttext="0.5" display="inline" intent=":literal"><semantics><mn>0.5</mn><annotation encoding="application/x-tex">0.5</annotation></semantics></math></td>
+</tr>
+<tr id="A1.T1.13.13" class="ltx_tr">
+<th id="A1.T1.13.13.2" class="ltx_td ltx_align_left ltx_th ltx_th_row ltx_border_bb">Total training steps</th>
+<td id="A1.T1.13.13.1" class="ltx_td ltx_align_left ltx_border_bb"><math id="A1.T1.13.13.1.m1" class="ltx_Math" alttext="16\times 10^{6}" display="inline" intent=":literal"><semantics><mrow><mn>16</mn><mo lspace="0.222em" rspace="0.222em">×</mo><msup><mn>10</mn><mn>6</mn></msup></mrow><annotation encoding="application/x-tex">16\times 10^{6}</annotation></semantics></math></td>
+</tr>
+</tbody>
+</table>
+</figure>
+<figure id="A1.T2" class="ltx_table">
+<figcaption class="ltx_caption ltx_centering"><span class="ltx_tag ltx_tag_table"><span id="A1.T2.6.2.1" class="ltx_text" style="font-size:90%;">Table 2</span>: </span><span id="A1.T2.2.1" class="ltx_text" style="font-size:90%;">Hyperparameters swept for each method. For each combination of environment, game variation, and <math id="A1.T2.2.1.m1" class="ltx_Math" alttext="\beta" display="inline" intent=":literal"><semantics><mi>β</mi><annotation encoding="application/x-tex">\beta</annotation></semantics></math>, we select the configuration with the lowest final exploitability. PPO-EMAg used Bayesian optimization (200 trials) and PPO-Uniform used a grid search (56 combinations).</span></figcaption>
+<table id="A1.T2.4" class="ltx_tabular ltx_centering ltx_align_middle">
+<tbody class="ltx_tbody">
+<tr id="A1.T2.4.3.1" class="ltx_tr">
+<td id="A1.T2.4.3.1.1" class="ltx_td ltx_align_left ltx_border_tt"><span id="A1.T2.4.3.1.1.1" class="ltx_text" style="font-size:90%;">Method</span></td>
+<td id="A1.T2.4.3.1.2" class="ltx_td ltx_align_left ltx_border_tt"><span id="A1.T2.4.3.1.2.1" class="ltx_text" style="font-size:90%;">Hyperparameter</span></td>
+<td id="A1.T2.4.3.1.3" class="ltx_td ltx_align_justify ltx_align_top ltx_border_tt">
+<span id="A1.T2.4.3.1.3.1" class="ltx_inline-block ltx_align_top">
+<span id="A1.T2.4.3.1.3.1.1" class="ltx_p" style="width:176.4pt;"><span id="A1.T2.4.3.1.3.1.1.1" class="ltx_text" style="font-size:90%;">Values swept</span></span>
+</span>
+</td>
+</tr>
+<tr id="A1.T2.4.4.2" class="ltx_tr">
+<td id="A1.T2.4.4.2.1" class="ltx_td ltx_align_left ltx_border_t"><span id="A1.T2.4.4.2.1.1" class="ltx_text" style="font-size:90%;">PPO-Uniform</span></td>
+<td id="A1.T2.4.4.2.2" class="ltx_td ltx_align_left ltx_border_t"><span id="A1.T2.4.4.2.2.1" class="ltx_text" style="font-size:90%;">Entropy coefficient</span></td>
+<td id="A1.T2.4.4.2.3" class="ltx_td ltx_align_justify ltx_align_top ltx_border_t">
+<span id="A1.T2.4.4.2.3.1" class="ltx_inline-block ltx_align_top">
+<span id="A1.T2.4.4.2.3.1.1" class="ltx_p" style="width:176.4pt;"><span id="A1.T2.4.4.2.3.1.1.1" class="ltx_text" style="font-size:90%;">{0, 0.001, 0.01, 0.02, 0.05, 0.1, 0.25, 0.5, 1, 2, 4, 8, 16, 32}</span></span>
+</span>
+</td>
+</tr>
+<tr id="A1.T2.4.5.3" class="ltx_tr">
+<td id="A1.T2.4.5.3.1" class="ltx_td ltx_align_left"><span id="A1.T2.4.5.3.1.1" class="ltx_text" style="font-size:90%;">PPO-Uniform</span></td>
+<td id="A1.T2.4.5.3.2" class="ltx_td ltx_align_left"><span id="A1.T2.4.5.3.2.1" class="ltx_text" style="font-size:90%;">Anneal entropy</span></td>
+<td id="A1.T2.4.5.3.3" class="ltx_td ltx_align_justify ltx_align_top">
+<span id="A1.T2.4.5.3.3.1" class="ltx_inline-block ltx_align_top">
+<span id="A1.T2.4.5.3.3.1.1" class="ltx_p" style="width:176.4pt;"><span id="A1.T2.4.5.3.3.1.1.1" class="ltx_text" style="font-size:90%;">{True, False}</span></span>
+</span>
+</td>
+</tr>
+<tr id="A1.T2.4.6.4" class="ltx_tr">
+<td id="A1.T2.4.6.4.1" class="ltx_td ltx_align_left"><span id="A1.T2.4.6.4.1.1" class="ltx_text" style="font-size:90%;">PPO-Uniform</span></td>
+<td id="A1.T2.4.6.4.2" class="ltx_td ltx_align_left"><span id="A1.T2.4.6.4.2.1" class="ltx_text" style="font-size:90%;">Anneal learning rate</span></td>
+<td id="A1.T2.4.6.4.3" class="ltx_td ltx_align_justify ltx_align_top">
+<span id="A1.T2.4.6.4.3.1" class="ltx_inline-block ltx_align_top">
+<span id="A1.T2.4.6.4.3.1.1" class="ltx_p" style="width:176.4pt;"><span id="A1.T2.4.6.4.3.1.1.1" class="ltx_text" style="font-size:90%;">{True, False}</span></span>
+</span>
+</td>
+</tr>
+<tr id="A1.T2.3.1" class="ltx_tr">
+<td id="A1.T2.3.1.2" class="ltx_td ltx_align_left ltx_border_t"><span id="A1.T2.3.1.2.1" class="ltx_text" style="font-size:90%;">PPO-EMAg</span></td>
+<td id="A1.T2.3.1.1" class="ltx_td ltx_align_left ltx_border_t">
+<span id="A1.T2.3.1.1.1" class="ltx_text" style="font-size:90%;">KL coefficient (</span><math id="A1.T2.3.1.1.m1" class="ltx_Math" alttext="\lambda_{\mathrm{KL}}" display="inline" intent=":literal"><semantics><msub><mi mathsize="0.900em">λ</mi><mi mathsize="0.900em">KL</mi></msub><annotation encoding="application/x-tex">\lambda_{\mathrm{KL}}</annotation></semantics></math><span id="A1.T2.3.1.1.2" class="ltx_text" style="font-size:90%;">)</span>
+</td>
+<td id="A1.T2.3.1.3" class="ltx_td ltx_align_justify ltx_align_top ltx_border_t">
+<span id="A1.T2.3.1.3.1" class="ltx_inline-block ltx_align_top">
+<span id="A1.T2.3.1.3.1.1" class="ltx_p" style="width:176.4pt;"><span id="A1.T2.3.1.3.1.1.1" class="ltx_text" style="font-size:90%;">{0.05, 0.1, 0.25, 0.5, 1, 2, 4, 8, 16, 32}</span></span>
+</span>
+</td>
+</tr>
+<tr id="A1.T2.4.2" class="ltx_tr">
+<td id="A1.T2.4.2.2" class="ltx_td ltx_align_left"><span id="A1.T2.4.2.2.1" class="ltx_text" style="font-size:90%;">PPO-EMAg</span></td>
+<td id="A1.T2.4.2.1" class="ltx_td ltx_align_left">
+<span id="A1.T2.4.2.1.1" class="ltx_text" style="font-size:90%;">EMA step size (</span><math id="A1.T2.4.2.1.m1" class="ltx_Math" alttext="\tau" display="inline" intent=":literal"><semantics><mi mathsize="0.900em">τ</mi><annotation encoding="application/x-tex">\tau</annotation></semantics></math><span id="A1.T2.4.2.1.2" class="ltx_text" style="font-size:90%;">)</span>
+</td>
+<td id="A1.T2.4.2.3" class="ltx_td ltx_align_justify ltx_align_top">
+<span id="A1.T2.4.2.3.1" class="ltx_inline-block ltx_align_top">
+<span id="A1.T2.4.2.3.1.1" class="ltx_p" style="width:176.4pt;"><span id="A1.T2.4.2.3.1.1.1" class="ltx_text" style="font-size:90%;">{0.1, 0.05, 0.01, 0.005, 0.001, 0.0005, 0.0001}</span></span>
+</span>
+</td>
+</tr>
+<tr id="A1.T2.4.7.5" class="ltx_tr">
+<td id="A1.T2.4.7.5.1" class="ltx_td ltx_align_left"><span id="A1.T2.4.7.5.1.1" class="ltx_text" style="font-size:90%;">PPO-EMAg</span></td>
+<td id="A1.T2.4.7.5.2" class="ltx_td ltx_align_left"><span id="A1.T2.4.7.5.2.1" class="ltx_text" style="font-size:90%;">Entropy coefficient</span></td>
+<td id="A1.T2.4.7.5.3" class="ltx_td ltx_align_justify ltx_align_top">
+<span id="A1.T2.4.7.5.3.1" class="ltx_inline-block ltx_align_top">
+<span id="A1.T2.4.7.5.3.1.1" class="ltx_p" style="width:176.4pt;"><span id="A1.T2.4.7.5.3.1.1.1" class="ltx_text" style="font-size:90%;">{0, 0.001, 0.01}</span></span>
+</span>
+</td>
+</tr>
+<tr id="A1.T2.4.8.6" class="ltx_tr">
+<td id="A1.T2.4.8.6.1" class="ltx_td ltx_align_left ltx_border_bb"><span id="A1.T2.4.8.6.1.1" class="ltx_text" style="font-size:90%;">PPO-EMAg</span></td>
+<td id="A1.T2.4.8.6.2" class="ltx_td ltx_align_left ltx_border_bb"><span id="A1.T2.4.8.6.2.1" class="ltx_text" style="font-size:90%;">Anneal learning rate</span></td>
+<td id="A1.T2.4.8.6.3" class="ltx_td ltx_align_justify ltx_align_top ltx_border_bb">
+<span id="A1.T2.4.8.6.3.1" class="ltx_inline-block ltx_align_top">
+<span id="A1.T2.4.8.6.3.1.1" class="ltx_p" style="width:176.4pt;"><span id="A1.T2.4.8.6.3.1.1.1" class="ltx_text" style="font-size:90%;">{True, False}</span></span>
+</span>
+</td>
+</tr>
+</tbody>
+</table>
+</figure>
+<div id="A1.p2" class="ltx_para ltx_noindent">
+<p id="A1.p2.1" class="ltx_p"><span id="A1.p2.1.1" class="ltx_text ltx_font_bold">Network architecture.</span>
+Following <cite class="ltx_cite ltx_citemacro_citet"><span class="ltx_ref ltx_missing_citation ltx_ref_self">rudolph2025reevaluatingpolicygradientmethods</span></cite>, both the actor and critic are fully-connected networks with 3 hidden layers of 512 units and Tanh activations. Weights are initialized with orthogonal initialization (output layer standard deviation of 0.01 for the actor and 1.0 for the critic). A single set of parameters is shared across both players in symmetric self-play, with player identity encoded in the observation.</p>
+</div>
+</section>
+<section id="A2" class="ltx_appendix">
+<h2 class="ltx_title ltx_title_appendix">
+<span class="ltx_tag ltx_tag_appendix">Appendix B </span>PPO Regularization Details</h2>
+
+<div id="A2.p1" class="ltx_para ltx_noindent">
+<p id="A2.p1.1" class="ltx_p">Algorithm&nbsp;<a href="https://arxiv.org/html/2605.14379v1#alg1" title="Algorithm 1 ‣ 4.3 Self-play training with DAGS ‣ 4 Data-Augmented Game Starts (DAGS) ‣ Data-Augmented Game Starts for Accelerating Self-Play Exploration in Imperfect Information Games" class="ltx_ref"><span class="ltx_text ltx_ref_tag">1</span></a> abstracts the policy update as <span id="A2.p1.1.1" class="ltx_text ltx_font_smallcaps">PPOUpdates<math id="A2.p1.1.1.m1" class="ltx_Math" alttext="(\theta,\mathcal{T})" display="inline" intent=":literal"><semantics><mrow><mo stretchy="false">(</mo><mi>θ</mi><mo>,</mo><mi class="ltx_font_mathcaligraphic">𝒯</mi><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">(\theta,\mathcal{T})</annotation></semantics></math></span>. We describe the two regularization schemes used in our experiments.</p>
+</div>
+<div id="A2.p2" class="ltx_para ltx_noindent">
+<p id="A2.p2.4" class="ltx_p"><span id="A2.p2.4.1" class="ltx_text ltx_font_bold">PPO-Uniform</span> <cite class="ltx_cite ltx_citemacro_citep">(<span class="ltx_ref ltx_missing_citation ltx_ref_self">rudolph2025reevaluatingpolicygradientmethods</span>)</cite> augments the standard clipped PPO objective with an entropy bonus that regularizes the policy toward the uniform distribution:</p>
+<table id="A2.E2" class="ltx_equation ltx_eqn_table">
+
+<tbody><tr class="ltx_equation ltx_eqn_row ltx_align_baseline">
+<td class="ltx_eqn_cell ltx_eqn_center_padleft"></td>
+<td class="ltx_eqn_cell ltx_align_center"><math id="A2.E2.m1" class="ltx_math_unparsed" alttext="\mathcal{L}_{\text{PPO-Uniform}}(\theta)=\mathcal{L}_{\text{PPO}}(\theta)-\lambda_{H}\,\mathbb{E}_{s\sim\mathcal{T}}\!\bigl[H\bigl(\pi_{\theta}(\cdot\mid s)\bigr)\bigr]," display="block" intent=":literal"><semantics><mrow><msub><mi class="ltx_font_mathcaligraphic">ℒ</mi><mtext>PPO-Uniform</mtext></msub><mrow><mo stretchy="false">(</mo><mi>θ</mi><mo stretchy="false">)</mo></mrow><mo>=</mo><msub><mi class="ltx_font_mathcaligraphic">ℒ</mi><mtext>PPO</mtext></msub><mrow><mo stretchy="false">(</mo><mi>θ</mi><mo stretchy="false">)</mo></mrow><mo>−</mo><msub><mi>λ</mi><mi>H</mi></msub><msub><mi>𝔼</mi><mrow><mi>s</mi><mo>∼</mo><mi class="ltx_font_mathcaligraphic">𝒯</mi></mrow></msub><mrow><mo maxsize="1.200em" minsize="1.200em">[</mo><mi>H</mi><mrow><mo maxsize="1.200em" minsize="1.200em">(</mo><msub><mi>π</mi><mi>θ</mi></msub><mrow><mo stretchy="false">(</mo><mo lspace="0em" rspace="0em">⋅</mo><mo lspace="0em" rspace="0.167em">∣</mo><mi>s</mi><mo stretchy="false">)</mo></mrow><mo maxsize="1.200em" minsize="1.200em">)</mo></mrow><mo maxsize="1.200em" minsize="1.200em">]</mo></mrow><mo>,</mo></mrow><annotation encoding="application/x-tex">\mathcal{L}_{\text{PPO-Uniform}}(\theta)=\mathcal{L}_{\text{PPO}}(\theta)-\lambda_{H}\,\mathbb{E}_{s\sim\mathcal{T}}\!\bigl[H\bigl(\pi_{\theta}(\cdot\mid s)\bigr)\bigr],</annotation></semantics></math></td>
+<td class="ltx_eqn_cell ltx_eqn_center_padright"></td>
+<td rowspan="1" class="ltx_eqn_cell ltx_eqn_eqno ltx_align_middle ltx_align_right"><span class="ltx_tag ltx_tag_equation ltx_align_right">(2)</span></td>
+</tr></tbody>
+</table>
+<p id="A2.p2.3" class="ltx_p">where <math id="A2.p2.1.m1" class="ltx_Math" alttext="\mathcal{L}_{\text{PPO}}(\theta)" display="inline" intent=":literal"><semantics><mrow><msub><mi class="ltx_font_mathcaligraphic">ℒ</mi><mtext>PPO</mtext></msub><mo lspace="0em" rspace="0em">​</mo><mrow><mo stretchy="false">(</mo><mi>θ</mi><mo stretchy="false">)</mo></mrow></mrow><annotation encoding="application/x-tex">\mathcal{L}_{\text{PPO}}(\theta)</annotation></semantics></math> is the standard clipped surrogate objective <cite class="ltx_cite ltx_citemacro_citep">(<span class="ltx_ref ltx_missing_citation ltx_ref_self">schulman2017proximalpolicyoptimizationalgorithms</span>)</cite>, <math id="A2.p2.2.m2" class="ltx_Math" alttext="H(\cdot)" display="inline" intent=":literal"><semantics><mrow><mi>H</mi><mo lspace="0em" rspace="0em">​</mo><mrow><mo stretchy="false">(</mo><mo lspace="0em" rspace="0em">⋅</mo><mo stretchy="false">)</mo></mrow></mrow><annotation encoding="application/x-tex">H(\cdot)</annotation></semantics></math> denotes the entropy, and <math id="A2.p2.3.m3" class="ltx_Math" alttext="\lambda_{H}&gt;0" display="inline" intent=":literal"><semantics><mrow><msub><mi>λ</mi><mi>H</mi></msub><mo>&gt;</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\lambda_{H}&gt;0</annotation></semantics></math> controls the regularization strength. <cite class="ltx_cite ltx_citemacro_citet"><span class="ltx_ref ltx_missing_citation ltx_ref_self">rudolph2025reevaluatingpolicygradientmethods</span></cite> show that this performs similarly to magnetic mirror descent toward a uniform magnet.</p>
+</div>
+<div id="A2.p3" class="ltx_para ltx_noindent">
+<p id="A2.p3.3" class="ltx_p"><span id="A2.p3.3.1" class="ltx_text ltx_font_bold">PPO-EMAg</span> <cite class="ltx_cite ltx_citemacro_citep">(<span class="ltx_ref ltx_missing_citation ltx_ref_self">maidment2026emagnet</span>)</cite> replaces the uniform magnet with an exponential moving average (EMA) of the policy parameters. The objective becomes</p>
+<table id="A2.E3" class="ltx_equation ltx_eqn_table">
+
+<tbody><tr class="ltx_equation ltx_eqn_row ltx_align_baseline">
+<td class="ltx_eqn_cell ltx_eqn_center_padleft"></td>
+<td class="ltx_eqn_cell ltx_align_center"><math id="A2.E3.m1" class="ltx_math_unparsed" alttext="\mathcal{L}_{\text{PPO-EMAg}}(\theta)=\mathcal{L}_{\text{PPO}}(\theta)+\lambda_{\mathrm{KL}}\,\mathbb{E}_{s\sim\mathcal{T}}\!\bigl[D_{\mathrm{KL}}\bigl(\pi_{\theta_{\mathrm{mag}}}(\cdot\mid s)\,\|\,\pi_{\theta}(\cdot\mid s)\bigr)\bigr]," display="block" intent=":literal"><semantics><mrow><msub><mi class="ltx_font_mathcaligraphic">ℒ</mi><mtext>PPO-EMAg</mtext></msub><mrow><mo stretchy="false">(</mo><mi>θ</mi><mo stretchy="false">)</mo></mrow><mo>=</mo><msub><mi class="ltx_font_mathcaligraphic">ℒ</mi><mtext>PPO</mtext></msub><mrow><mo stretchy="false">(</mo><mi>θ</mi><mo stretchy="false">)</mo></mrow><mo>+</mo><msub><mi>λ</mi><mi>KL</mi></msub><msub><mi>𝔼</mi><mrow><mi>s</mi><mo>∼</mo><mi class="ltx_font_mathcaligraphic">𝒯</mi></mrow></msub><mrow><mo maxsize="1.200em" minsize="1.200em">[</mo><msub><mi>D</mi><mi>KL</mi></msub><mrow><mo maxsize="1.200em" minsize="1.200em">(</mo><msub><mi>π</mi><msub><mi>θ</mi><mi>mag</mi></msub></msub><mrow><mo stretchy="false">(</mo><mo lspace="0em" rspace="0em">⋅</mo><mo lspace="0em" rspace="0.167em">∣</mo><mi>s</mi><mo stretchy="false">)</mo></mrow><mo lspace="0.170em" rspace="0.337em">∥</mo><msub><mi>π</mi><mi>θ</mi></msub><mrow><mo stretchy="false">(</mo><mo lspace="0em" rspace="0em">⋅</mo><mo lspace="0em" rspace="0.167em">∣</mo><mi>s</mi><mo stretchy="false">)</mo></mrow><mo maxsize="1.200em" minsize="1.200em">)</mo></mrow><mo maxsize="1.200em" minsize="1.200em">]</mo></mrow><mo>,</mo></mrow><annotation encoding="application/x-tex">\mathcal{L}_{\text{PPO-EMAg}}(\theta)=\mathcal{L}_{\text{PPO}}(\theta)+\lambda_{\mathrm{KL}}\,\mathbb{E}_{s\sim\mathcal{T}}\!\bigl[D_{\mathrm{KL}}\bigl(\pi_{\theta_{\mathrm{mag}}}(\cdot\mid s)\,\|\,\pi_{\theta}(\cdot\mid s)\bigr)\bigr],</annotation></semantics></math></td>
+<td class="ltx_eqn_cell ltx_eqn_center_padright"></td>
+<td rowspan="1" class="ltx_eqn_cell ltx_eqn_eqno ltx_align_middle ltx_align_right"><span class="ltx_tag ltx_tag_equation ltx_align_right">(3)</span></td>
+</tr></tbody>
+</table>
+<p id="A2.p3.1" class="ltx_p">where <math id="A2.p3.1.m1" class="ltx_Math" alttext="\theta_{\mathrm{mag}}" display="inline" intent=":literal"><semantics><msub><mi>θ</mi><mi>mag</mi></msub><annotation encoding="application/x-tex">\theta_{\mathrm{mag}}</annotation></semantics></math> denotes the magnet parameters. After each PPO update step, the magnet is updated as</p>
+<table id="A2.E4" class="ltx_equation ltx_eqn_table">
+
+<tbody><tr class="ltx_equation ltx_eqn_row ltx_align_baseline">
+<td class="ltx_eqn_cell ltx_eqn_center_padleft"></td>
+<td class="ltx_eqn_cell ltx_align_center"><math id="A2.E4.m1" class="ltx_Math" alttext="\theta_{\mathrm{mag}}\leftarrow(1-\tau)\,\theta_{\mathrm{mag}}+\tau\,\theta," display="block" intent=":literal"><semantics><mrow><mrow><msub><mi>θ</mi><mi>mag</mi></msub><mo stretchy="false">←</mo><mrow><mrow><mrow><mo stretchy="false">(</mo><mrow><mn>1</mn><mo>−</mo><mi>τ</mi></mrow><mo stretchy="false">)</mo></mrow><mo lspace="0.170em" rspace="0em">​</mo><msub><mi>θ</mi><mi>mag</mi></msub></mrow><mo>+</mo><mrow><mi>τ</mi><mo lspace="0.170em" rspace="0em">​</mo><mi>θ</mi></mrow></mrow></mrow><mo>,</mo></mrow><annotation encoding="application/x-tex">\theta_{\mathrm{mag}}\leftarrow(1-\tau)\,\theta_{\mathrm{mag}}+\tau\,\theta,</annotation></semantics></math></td>
+<td class="ltx_eqn_cell ltx_eqn_center_padright"></td>
+<td rowspan="1" class="ltx_eqn_cell ltx_eqn_eqno ltx_align_middle ltx_align_right"><span class="ltx_tag ltx_tag_equation ltx_align_right">(4)</span></td>
+</tr></tbody>
+</table>
+<p id="A2.p3.2" class="ltx_p">with step size <math id="A2.p3.2.m1" class="ltx_Math" alttext="\tau\in(0,1]" display="inline" intent=":literal"><semantics><mrow><mi>τ</mi><mo>∈</mo><mrow><mo stretchy="false">(</mo><mn>0</mn><mo>,</mo><mn>1</mn><mo stretchy="false">]</mo></mrow></mrow><annotation encoding="application/x-tex">\tau\in(0,1]</annotation></semantics></math>. This yields lower exploitability than uniform regularization across several benchmark games <cite class="ltx_cite ltx_citemacro_citep">(<span class="ltx_ref ltx_missing_citation ltx_ref_self">maidment2026emagnet</span>)</cite>.</p>
+</div>
+</section>
+<section id="A3" class="ltx_appendix">
+<h2 class="ltx_title ltx_title_appendix">
+<span class="ltx_tag ltx_tag_appendix">Appendix C </span>Equilibrium Bias Analysis</h2>
+
+<div id="A3.p1" class="ltx_para ltx_noindent">
+<p id="A3.p1.1" class="ltx_p">We formalize the observation that augmenting the start-state distribution can shift a game’s Nash equilibrium, and show that conditioning on an episode-source flag with intermediate <math id="A3.p1.1.m1" class="ltx_Math" alttext="\beta" display="inline" intent=":literal"><semantics><mi>β</mi><annotation encoding="application/x-tex">\beta</annotation></semantics></math> recovers the original equilibrium.</p>
+</div>
+<div id="Thmproposition1" class="ltx_theorem ltx_theorem_proposition">
+<h6 class="ltx_title ltx_runin ltx_title_theorem">
+<span class="ltx_tag ltx_tag_theorem"><span id="Thmproposition1.1.1.1" class="ltx_text ltx_font_bold">Proposition 1</span></span><span id="Thmproposition1.2.2" class="ltx_text ltx_font_bold"> </span>(Start-state augmentation can shift the NE)<span id="Thmproposition1.3.3" class="ltx_text ltx_font_bold">.</span>
+</h6>
+<div id="Thmproposition1.p1" class="ltx_para">
+<p id="Thmproposition1.p1.4" class="ltx_p"><span id="Thmproposition1.p1.4.4" class="ltx_text ltx_font_italic">There exist two-player zero-sum POSGs and behavioral policies <math id="Thmproposition1.p1.1.1.m1" class="ltx_Math" alttext="\hat{\pi}" display="inline" intent=":literal"><semantics><mover accent="true"><mi>π</mi><mo>^</mo></mover><annotation encoding="application/x-tex">\hat{\pi}</annotation></semantics></math> such that, for any <math id="Thmproposition1.p1.2.2.m2" class="ltx_Math" alttext="\beta&gt;0" display="inline" intent=":literal"><semantics><mrow><mi>β</mi><mo>&gt;</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\beta&gt;0</annotation></semantics></math>, the set of Nash equilibria of the game played under <math id="Thmproposition1.p1.3.3.m3" class="ltx_Math" alttext="\tilde{d}_{0}^{\beta}=(1-\beta)\,d_{0}+\beta\,d_{\mathcal{D}}" display="inline" intent=":literal"><semantics><mrow><msubsup><mover accent="true"><mi>d</mi><mo>~</mo></mover><mn>0</mn><mi>β</mi></msubsup><mo>=</mo><mrow><mrow><mrow><mo stretchy="false">(</mo><mrow><mn>1</mn><mo>−</mo><mi>β</mi></mrow><mo stretchy="false">)</mo></mrow><mo lspace="0.170em" rspace="0em">​</mo><msub><mi>d</mi><mn>0</mn></msub></mrow><mo>+</mo><mrow><mi>β</mi><mo lspace="0.170em" rspace="0em">​</mo><msub><mi>d</mi><mi class="ltx_font_mathcaligraphic">𝒟</mi></msub></mrow></mrow></mrow><annotation encoding="application/x-tex">\tilde{d}_{0}^{\beta}=(1-\beta)\,d_{0}+\beta\,d_{\mathcal{D}}</annotation></semantics></math> differs from the set of Nash equilibria under <math id="Thmproposition1.p1.4.4.m4" class="ltx_Math" alttext="d_{0}" display="inline" intent=":literal"><semantics><msub><mi>d</mi><mn>0</mn></msub><annotation encoding="application/x-tex">d_{0}</annotation></semantics></math>.</span></p>
+</div>
+</div>
+<div id="A3.3" class="ltx_proof">
+<h6 class="ltx_title ltx_runin ltx_font_italic ltx_title_proof">Proof.</h6>
+<div id="A3.1.p1" class="ltx_para ltx_noindent">
+<p id="A3.1.p1.3" class="ltx_p">We give a constructive proof using the counterexample game in Figure&nbsp;<a href="https://arxiv.org/html/2605.14379v1#S6.F3" title="Figure 3 ‣ 6.1 DAGS Improves Scaling in Kuhn and Goofspiel ‣ 6 Experiments ‣ Data-Augmented Game Starts for Accelerating Self-Play Exploration in Imperfect Information Games" class="ltx_ref"><span class="ltx_text ltx_ref_tag">3</span></a>. Since <math id="A3.1.p1.1.m1" class="ltx_Math" alttext="p_{2}" display="inline" intent=":literal"><semantics><msub><mi>p</mi><mn>2</mn></msub><annotation encoding="application/x-tex">p_{2}</annotation></semantics></math> cannot observe <math id="A3.1.p1.2.m2" class="ltx_Math" alttext="p_{1}" display="inline" intent=":literal"><semantics><msub><mi>p</mi><mn>1</mn></msub><annotation encoding="application/x-tex">p_{1}</annotation></semantics></math>’s action, the game is strategically equivalent to a simultaneous-move matrix game with <math id="A3.1.p1.3.m3" class="ltx_Math" alttext="p_{1}" display="inline" intent=":literal"><semantics><msub><mi>p</mi><mn>1</mn></msub><annotation encoding="application/x-tex">p_{1}</annotation></semantics></math>’s payoff matrix</p>
+<table id="A3.Ex2" class="ltx_equation ltx_eqn_table">
+
+<tbody><tr class="ltx_equation ltx_eqn_row ltx_align_baseline">
+<td class="ltx_eqn_cell ltx_eqn_center_padleft"></td>
+<td class="ltx_eqn_cell ltx_align_center"><math id="A3.Ex2.m1" class="ltx_Math" alttext="A=\begin{pmatrix}-1&amp;1\\
+1&amp;-10\end{pmatrix}," display="block" intent=":literal"><semantics><mrow><mrow><mi>A</mi><mo>=</mo><mrow><mo>(</mo><mtable columnspacing="5pt" displaystyle="true" rowspacing="0pt"><mtr><mtd><mrow><mo>−</mo><mn>1</mn></mrow></mtd><mtd><mn>1</mn></mtd></mtr><mtr><mtd><mn>1</mn></mtd><mtd><mrow><mo>−</mo><mn>10</mn></mrow></mtd></mtr></mtable><mo>)</mo></mrow></mrow><mo>,</mo></mrow><annotation encoding="application/x-tex">A=\begin{pmatrix}-1&amp;1\\
+1&amp;-10\end{pmatrix},</annotation></semantics></math></td>
+<td class="ltx_eqn_cell ltx_eqn_center_padright"></td>
+</tr></tbody>
+</table>
+<p id="A3.1.p1.18" class="ltx_p">where rows correspond to <math id="A3.1.p1.4.m1" class="ltx_Math" alttext="p_{1}" display="inline" intent=":literal"><semantics><msub><mi>p</mi><mn>1</mn></msub><annotation encoding="application/x-tex">p_{1}</annotation></semantics></math>’s actions <math id="A3.1.p1.5.m2" class="ltx_Math" alttext="(a_{1},a_{2})" display="inline" intent=":literal"><semantics><mrow><mo stretchy="false">(</mo><msub><mi>a</mi><mn>1</mn></msub><mo>,</mo><msub><mi>a</mi><mn>2</mn></msub><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">(a_{1},a_{2})</annotation></semantics></math> and columns to <math id="A3.1.p1.6.m3" class="ltx_Math" alttext="p_{2}" display="inline" intent=":literal"><semantics><msub><mi>p</mi><mn>2</mn></msub><annotation encoding="application/x-tex">p_{2}</annotation></semantics></math>’s actions <math id="A3.1.p1.7.m4" class="ltx_Math" alttext="(a_{1},a_{2})" display="inline" intent=":literal"><semantics><mrow><mo stretchy="false">(</mo><msub><mi>a</mi><mn>1</mn></msub><mo>,</mo><msub><mi>a</mi><mn>2</mn></msub><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">(a_{1},a_{2})</annotation></semantics></math>. Let <math id="A3.1.p1.8.m5" class="ltx_Math" alttext="p" display="inline" intent=":literal"><semantics><mi>p</mi><annotation encoding="application/x-tex">p</annotation></semantics></math> denote <math id="A3.1.p1.9.m6" class="ltx_Math" alttext="p_{1}" display="inline" intent=":literal"><semantics><msub><mi>p</mi><mn>1</mn></msub><annotation encoding="application/x-tex">p_{1}</annotation></semantics></math>’s probability of playing <math id="A3.1.p1.10.m7" class="ltx_Math" alttext="a_{1}" display="inline" intent=":literal"><semantics><msub><mi>a</mi><mn>1</mn></msub><annotation encoding="application/x-tex">a_{1}</annotation></semantics></math> and <math id="A3.1.p1.11.m8" class="ltx_Math" alttext="q" display="inline" intent=":literal"><semantics><mi>q</mi><annotation encoding="application/x-tex">q</annotation></semantics></math> denote <math id="A3.1.p1.12.m9" class="ltx_Math" alttext="p_{2}" display="inline" intent=":literal"><semantics><msub><mi>p</mi><mn>2</mn></msub><annotation encoding="application/x-tex">p_{2}</annotation></semantics></math>’s probability of playing <math id="A3.1.p1.13.m10" class="ltx_Math" alttext="a_{1}" display="inline" intent=":literal"><semantics><msub><mi>a</mi><mn>1</mn></msub><annotation encoding="application/x-tex">a_{1}</annotation></semantics></math>, with mixed strategies <math id="A3.1.p1.14.m11" class="ltx_Math" alttext="\mathbf{p}=(p,\;1{-}p)^{\top}" display="inline" intent=":literal"><semantics><mrow><mi>𝐩</mi><mo>=</mo><msup><mrow><mo stretchy="false">(</mo><mi>p</mi><mo>,</mo><mrow><mn> 1</mn><mo>−</mo><mi>p</mi></mrow><mo stretchy="false">)</mo></mrow><mo>⊤</mo></msup></mrow><annotation encoding="application/x-tex">\mathbf{p}=(p,\;1{-}p)^{\top}</annotation></semantics></math> and <math id="A3.1.p1.15.m12" class="ltx_Math" alttext="\mathbf{q}=(q,\;1{-}q)^{\top}" display="inline" intent=":literal"><semantics><mrow><mi>𝐪</mi><mo>=</mo><msup><mrow><mo stretchy="false">(</mo><mi>q</mi><mo>,</mo><mrow><mn> 1</mn><mo>−</mo><mi>q</mi></mrow><mo stretchy="false">)</mo></mrow><mo>⊤</mo></msup></mrow><annotation encoding="application/x-tex">\mathbf{q}=(q,\;1{-}q)^{\top}</annotation></semantics></math>. In the original game, <math id="A3.1.p1.16.m13" class="ltx_Math" alttext="p_{1}" display="inline" intent=":literal"><semantics><msub><mi>p</mi><mn>1</mn></msub><annotation encoding="application/x-tex">p_{1}</annotation></semantics></math> maximizes and <math id="A3.1.p1.17.m14" class="ltx_Math" alttext="p_{2}" display="inline" intent=":literal"><semantics><msub><mi>p</mi><mn>2</mn></msub><annotation encoding="application/x-tex">p_{2}</annotation></semantics></math> minimizes <math id="A3.1.p1.18.m15" class="ltx_Math" alttext="\mathbf{p}^{\top}A\,\mathbf{q}" display="inline" intent=":literal"><semantics><mrow><msup><mi>𝐩</mi><mo>⊤</mo></msup><mo lspace="0em" rspace="0em">​</mo><mi>A</mi><mo lspace="0.170em" rspace="0em">​</mo><mi>𝐪</mi></mrow><annotation encoding="application/x-tex">\mathbf{p}^{\top}A\,\mathbf{q}</annotation></semantics></math>.</p>
+</div>
+<div id="A3.2.p2" class="ltx_para ltx_noindent">
+<p id="A3.2.p2.3" class="ltx_p"><span id="A3.2.p2.3.1" class="ltx_text ltx_font_bold">Original game NE.</span> The unique NE is <math id="A3.2.p2.1.m1" class="ltx_Math" alttext="p=q=\tfrac{11}{13}" display="inline" intent=":literal"><semantics><mrow><mi>p</mi><mo>=</mo><mi>q</mi><mo>=</mo><mfrac><mn>11</mn><mn>13</mn></mfrac></mrow><annotation encoding="application/x-tex">p=q=\tfrac{11}{13}</annotation></semantics></math>, with game value <math id="A3.2.p2.2.m2" class="ltx_Math" alttext="-\tfrac{9}{13}" display="inline" intent=":literal"><semantics><mrow><mo>−</mo><mfrac><mn>9</mn><mn>13</mn></mfrac></mrow><annotation encoding="application/x-tex">-\tfrac{9}{13}</annotation></semantics></math> for <math id="A3.2.p2.3.m3" class="ltx_Math" alttext="p_{1}" display="inline" intent=":literal"><semantics><msub><mi>p</mi><mn>1</mn></msub><annotation encoding="application/x-tex">p_{1}</annotation></semantics></math>. Both players receive equal expected payoff from either action, and no pure-strategy NE exists.</p>
+</div>
+<div id="A3.3.p3" class="ltx_para">
+<p id="A3.3.p3.31" class="ltx_p"><span id="A3.3.p3.31.1" class="ltx_text ltx_font_bold">DAGS breaks this equilibrium.</span> Let <math id="A3.3.p3.1.m1" class="ltx_Math" alttext="\hat{\pi}" display="inline" intent=":literal"><semantics><mover accent="true"><mi>π</mi><mo>^</mo></mover><annotation encoding="application/x-tex">\hat{\pi}</annotation></semantics></math> be uniform over actions. Since every trajectory visits the root and one of <math id="A3.3.p3.2.m2" class="ltx_Math" alttext="p_{2}" display="inline" intent=":literal"><semantics><msub><mi>p</mi><mn>2</mn></msub><annotation encoding="application/x-tex">p_{2}</annotation></semantics></math>’s nodes, <math id="A3.3.p3.3.m3" class="ltx_Math" alttext="d_{\mathcal{D}}" display="inline" intent=":literal"><semantics><msub><mi>d</mi><mi class="ltx_font_mathcaligraphic">𝒟</mi></msub><annotation encoding="application/x-tex">d_{\mathcal{D}}</annotation></semantics></math> places mass <math id="A3.3.p3.4.m4" class="ltx_Math" alttext="\tfrac{1}{2}" display="inline" intent=":literal"><semantics><mfrac><mn>1</mn><mn>2</mn></mfrac><annotation encoding="application/x-tex">\tfrac{1}{2}</annotation></semantics></math> on the root, <math id="A3.3.p3.5.m5" class="ltx_Math" alttext="\tfrac{1}{4}" display="inline" intent=":literal"><semantics><mfrac><mn>1</mn><mn>4</mn></mfrac><annotation encoding="application/x-tex">\tfrac{1}{4}</annotation></semantics></math> on “<math id="A3.3.p3.6.m6" class="ltx_Math" alttext="p_{2}" display="inline" intent=":literal"><semantics><msub><mi>p</mi><mn>2</mn></msub><annotation encoding="application/x-tex">p_{2}</annotation></semantics></math> after <math id="A3.3.p3.7.m7" class="ltx_Math" alttext="a_{1}" display="inline" intent=":literal"><semantics><msub><mi>a</mi><mn>1</mn></msub><annotation encoding="application/x-tex">a_{1}</annotation></semantics></math>”, and <math id="A3.3.p3.8.m8" class="ltx_Math" alttext="\tfrac{1}{4}" display="inline" intent=":literal"><semantics><mfrac><mn>1</mn><mn>4</mn></mfrac><annotation encoding="application/x-tex">\tfrac{1}{4}</annotation></semantics></math> on “<math id="A3.3.p3.9.m9" class="ltx_Math" alttext="p_{2}" display="inline" intent=":literal"><semantics><msub><mi>p</mi><mn>2</mn></msub><annotation encoding="application/x-tex">p_{2}</annotation></semantics></math> after <math id="A3.3.p3.10.m10" class="ltx_Math" alttext="a_{2}" display="inline" intent=":literal"><semantics><msub><mi>a</mi><mn>2</mn></msub><annotation encoding="application/x-tex">a_{2}</annotation></semantics></math>”. Under <math id="A3.3.p3.11.m11" class="ltx_Math" alttext="\tilde{d}_{0}^{\beta}" display="inline" intent=":literal"><semantics><msubsup><mover accent="true"><mi>d</mi><mo>~</mo></mover><mn>0</mn><mi>β</mi></msubsup><annotation encoding="application/x-tex">\tilde{d}_{0}^{\beta}</annotation></semantics></math> with <math id="A3.3.p3.12.m12" class="ltx_Math" alttext="\beta&gt;0" display="inline" intent=":literal"><semantics><mrow><mi>β</mi><mo>&gt;</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\beta&gt;0</annotation></semantics></math>, a fraction of episodes reset directly to <math id="A3.3.p3.13.m13" class="ltx_Math" alttext="p_{2}" display="inline" intent=":literal"><semantics><msub><mi>p</mi><mn>2</mn></msub><annotation encoding="application/x-tex">p_{2}</annotation></semantics></math>’s nodes with equal probability, bypassing <math id="A3.3.p3.14.m14" class="ltx_Math" alttext="p_{1}" display="inline" intent=":literal"><semantics><msub><mi>p</mi><mn>1</mn></msub><annotation encoding="application/x-tex">p_{1}</annotation></semantics></math>. Since <math id="A3.3.p3.15.m15" class="ltx_Math" alttext="p_{2}" display="inline" intent=":literal"><semantics><msub><mi>p</mi><mn>2</mn></msub><annotation encoding="application/x-tex">p_{2}</annotation></semantics></math> cannot distinguish root-start from dataset-start episodes, <math id="A3.3.p3.16.m16" class="ltx_Math" alttext="p_{2}" display="inline" intent=":literal"><semantics><msub><mi>p</mi><mn>2</mn></msub><annotation encoding="application/x-tex">p_{2}</annotation></semantics></math> must use the same strategy in both. In dataset-start episodes, <math id="A3.3.p3.17.m17" class="ltx_Math" alttext="p_{2}" display="inline" intent=":literal"><semantics><msub><mi>p</mi><mn>2</mn></msub><annotation encoding="application/x-tex">p_{2}</annotation></semantics></math> faces each of <math id="A3.3.p3.18.m18" class="ltx_Math" alttext="p_{1}" display="inline" intent=":literal"><semantics><msub><mi>p</mi><mn>1</mn></msub><annotation encoding="application/x-tex">p_{1}</annotation></semantics></math>’s actions with equal probability regardless of <math id="A3.3.p3.19.m19" class="ltx_Math" alttext="p_{1}" display="inline" intent=":literal"><semantics><msub><mi>p</mi><mn>1</mn></msub><annotation encoding="application/x-tex">p_{1}</annotation></semantics></math>’s strategy. Under this uniform distribution (<math id="A3.3.p3.20.m20" class="ltx_Math" alttext="p=\tfrac{1}{2}" display="inline" intent=":literal"><semantics><mrow><mi>p</mi><mo>=</mo><mfrac><mn>1</mn><mn>2</mn></mfrac></mrow><annotation encoding="application/x-tex">p=\tfrac{1}{2}</annotation></semantics></math>), <math id="A3.3.p3.21.m21" class="ltx_Math" alttext="p_{1}" display="inline" intent=":literal"><semantics><msub><mi>p</mi><mn>1</mn></msub><annotation encoding="application/x-tex">p_{1}</annotation></semantics></math>’s expected payoff from <math id="A3.3.p3.22.m22" class="ltx_Math" alttext="p_{2}" display="inline" intent=":literal"><semantics><msub><mi>p</mi><mn>2</mn></msub><annotation encoding="application/x-tex">p_{2}</annotation></semantics></math>’s columns is <math id="A3.3.p3.23.m23" class="ltx_Math" alttext="a_{1}\!:0" display="inline" intent=":literal"><semantics><mrow><msub><mi>a</mi><mn>1</mn></msub><mo lspace="0.108em" rspace="0.278em">:</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">a_{1}\!:0</annotation></semantics></math> versus <math id="A3.3.p3.24.m24" class="ltx_Math" alttext="a_{2}\!:-\tfrac{9}{2}" display="inline" intent=":literal"><semantics><mrow><msub><mi>a</mi><mn>2</mn></msub><mo lspace="0.108em" rspace="0.278em">:</mo><mrow><mo>−</mo><mfrac><mn>9</mn><mn>2</mn></mfrac></mrow></mrow><annotation encoding="application/x-tex">a_{2}\!:-\tfrac{9}{2}</annotation></semantics></math>, so <math id="A3.3.p3.25.m25" class="ltx_Math" alttext="p_{2}" display="inline" intent=":literal"><semantics><msub><mi>p</mi><mn>2</mn></msub><annotation encoding="application/x-tex">p_{2}</annotation></semantics></math> strictly prefers <math id="A3.3.p3.26.m26" class="ltx_Math" alttext="a_{2}" display="inline" intent=":literal"><semantics><msub><mi>a</mi><mn>2</mn></msub><annotation encoding="application/x-tex">a_{2}</annotation></semantics></math>. At the original NE, <math id="A3.3.p3.27.m27" class="ltx_Math" alttext="p_{2}" display="inline" intent=":literal"><semantics><msub><mi>p</mi><mn>2</mn></msub><annotation encoding="application/x-tex">p_{2}</annotation></semantics></math> is exactly indifferent between columns. Mixing in any <math id="A3.3.p3.28.m28" class="ltx_Math" alttext="\beta&gt;0" display="inline" intent=":literal"><semantics><mrow><mi>β</mi><mo>&gt;</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\beta&gt;0</annotation></semantics></math> fraction of dataset-start episodes breaks this indifference in favor of <math id="A3.3.p3.29.m29" class="ltx_Math" alttext="a_{2}" display="inline" intent=":literal"><semantics><msub><mi>a</mi><mn>2</mn></msub><annotation encoding="application/x-tex">a_{2}</annotation></semantics></math>, giving <math id="A3.3.p3.30.m30" class="ltx_Math" alttext="p_{2}" display="inline" intent=":literal"><semantics><msub><mi>p</mi><mn>2</mn></msub><annotation encoding="application/x-tex">p_{2}</annotation></semantics></math> a profitable deviation. Therefore, the original NE is not a NE of the augmented game for any <math id="A3.3.p3.31.m31" class="ltx_Math" alttext="\beta&gt;0" display="inline" intent=":literal"><semantics><mrow><mi>β</mi><mo>&gt;</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\beta&gt;0</annotation></semantics></math>.
+∎</p>
+</div>
+</div>
+<div id="Thmproposition2" class="ltx_theorem ltx_theorem_proposition">
+<h6 class="ltx_title ltx_runin ltx_title_theorem">
+<span class="ltx_tag ltx_tag_theorem"><span id="Thmproposition2.1.1.1" class="ltx_text ltx_font_bold">Proposition 2</span></span><span id="Thmproposition2.2.2" class="ltx_text ltx_font_bold"> </span>(Flag conditioning recovers the original NE)<span id="Thmproposition2.3.3" class="ltx_text ltx_font_bold">.</span>
+</h6>
+<div id="Thmproposition2.p1" class="ltx_para">
+<p id="Thmproposition2.p1.9" class="ltx_p"><span id="Thmproposition2.p1.9.9" class="ltx_text ltx_font_italic">Let <math id="Thmproposition2.p1.1.1.m1" class="ltx_Math" alttext="\beta\in(0,1)" display="inline" intent=":literal"><semantics><mrow><mi>β</mi><mo>∈</mo><mrow><mo stretchy="false">(</mo><mn>0</mn><mo>,</mo><mn>1</mn><mo stretchy="false">)</mo></mrow></mrow><annotation encoding="application/x-tex">\beta\in(0,1)</annotation></semantics></math> and let each player’s policy be conditioned on the binary flag <math id="Thmproposition2.p1.2.2.m2" class="ltx_Math" alttext="f\in\{0,1\}" display="inline" intent=":literal"><semantics><mrow><mi>f</mi><mo>∈</mo><mrow><mo stretchy="false">{</mo><mn>0</mn><mo>,</mo><mn>1</mn><mo stretchy="false">}</mo></mrow></mrow><annotation encoding="application/x-tex">f\in\{0,1\}</annotation></semantics></math>, where <math id="Thmproposition2.p1.3.3.m3" class="ltx_Math" alttext="f=0" display="inline" intent=":literal"><semantics><mrow><mi>f</mi><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">f=0</annotation></semantics></math> for episodes drawn from <math id="Thmproposition2.p1.4.4.m4" class="ltx_Math" alttext="d_{0}" display="inline" intent=":literal"><semantics><msub><mi>d</mi><mn>0</mn></msub><annotation encoding="application/x-tex">d_{0}</annotation></semantics></math> and <math id="Thmproposition2.p1.5.5.m5" class="ltx_Math" alttext="f=1" display="inline" intent=":literal"><semantics><mrow><mi>f</mi><mo>=</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">f=1</annotation></semantics></math> for episodes drawn from <math id="Thmproposition2.p1.6.6.m6" class="ltx_Math" alttext="d_{\mathcal{D}}" display="inline" intent=":literal"><semantics><msub><mi>d</mi><mi class="ltx_font_mathcaligraphic">𝒟</mi></msub><annotation encoding="application/x-tex">d_{\mathcal{D}}</annotation></semantics></math>. If <math id="Thmproposition2.p1.7.7.m7" class="ltx_Math" alttext="(\pi_{1}^{*},\pi_{2}^{*})" display="inline" intent=":literal"><semantics><mrow><mo stretchy="false">(</mo><msubsup><mi>π</mi><mn>1</mn><mo>∗</mo></msubsup><mo>,</mo><msubsup><mi>π</mi><mn>2</mn><mo>∗</mo></msubsup><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">(\pi_{1}^{*},\pi_{2}^{*})</annotation></semantics></math> is a Nash equilibrium of the augmented game with flag-conditioned policies, then the restriction <math id="Thmproposition2.p1.8.8.m8" class="ltx_math_unparsed" alttext="(\pi_{1}^{*}(\cdot\mid\cdot,f\!=\!0),\,\pi_{2}^{*}(\cdot\mid\cdot,f\!=\!0))" display="inline" intent=":literal"><semantics><mrow><mo stretchy="false">(</mo><msubsup><mi>π</mi><mn>1</mn><mo>∗</mo></msubsup><mrow><mo stretchy="false">(</mo><mo lspace="0em" rspace="0em">⋅</mo><mo lspace="0em" rspace="0em">∣</mo><mo lspace="0em" rspace="0em">⋅</mo><mo>,</mo><mi>f</mi><mo lspace="0.108em" rspace="0.108em">=</mo><mn>0</mn><mo stretchy="false">)</mo></mrow><mo rspace="0.337em">,</mo><msubsup><mi>π</mi><mn>2</mn><mo>∗</mo></msubsup><mrow><mo stretchy="false">(</mo><mo lspace="0em" rspace="0em">⋅</mo><mo lspace="0em" rspace="0em">∣</mo><mo lspace="0em" rspace="0em">⋅</mo><mo>,</mo><mi>f</mi><mo lspace="0.108em" rspace="0.108em">=</mo><mn>0</mn><mo stretchy="false">)</mo></mrow><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">(\pi_{1}^{*}(\cdot\mid\cdot,f\!=\!0),\,\pi_{2}^{*}(\cdot\mid\cdot,f\!=\!0))</annotation></semantics></math> is a Nash equilibrium of the original game under <math id="Thmproposition2.p1.9.9.m9" class="ltx_Math" alttext="d_{0}" display="inline" intent=":literal"><semantics><msub><mi>d</mi><mn>0</mn></msub><annotation encoding="application/x-tex">d_{0}</annotation></semantics></math>.</span></p>
+</div>
+</div>
+<div id="A3.4" class="ltx_proof">
+<h6 class="ltx_title ltx_runin ltx_font_italic ltx_title_proof">Proof.</h6>
+<div id="A3.4.p1" class="ltx_para">
+<p id="A3.4.p1.13" class="ltx_p">Since <math id="A3.4.p1.1.m1" class="ltx_Math" alttext="f" display="inline" intent=":literal"><semantics><mi>f</mi><annotation encoding="application/x-tex">f</annotation></semantics></math> is a deterministic function of the episode’s start-state source and is included in every observation, each player’s policy <math id="A3.4.p1.2.m2" class="ltx_math_unparsed" alttext="\pi_{i}(\cdot\mid o,f)" display="inline" intent=":literal"><semantics><mrow><msub><mi>π</mi><mi>i</mi></msub><mrow><mo stretchy="false">(</mo><mo lspace="0em" rspace="0em">⋅</mo><mo lspace="0em" rspace="0.167em">∣</mo><mi>o</mi><mo>,</mo><mi>f</mi><mo stretchy="false">)</mo></mrow></mrow><annotation encoding="application/x-tex">\pi_{i}(\cdot\mid o,f)</annotation></semantics></math> decomposes into two independent tasks, one for <math id="A3.4.p1.3.m3" class="ltx_Math" alttext="f=0" display="inline" intent=":literal"><semantics><mrow><mi>f</mi><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">f=0</annotation></semantics></math> episodes and one for <math id="A3.4.p1.4.m4" class="ltx_Math" alttext="f=1" display="inline" intent=":literal"><semantics><mrow><mi>f</mi><mo>=</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">f=1</annotation></semantics></math> episodes. The <math id="A3.4.p1.5.m5" class="ltx_Math" alttext="f=0" display="inline" intent=":literal"><semantics><mrow><mi>f</mi><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">f=0</annotation></semantics></math> episodes are drawn from <math id="A3.4.p1.6.m6" class="ltx_Math" alttext="d_{0}" display="inline" intent=":literal"><semantics><msub><mi>d</mi><mn>0</mn></msub><annotation encoding="application/x-tex">d_{0}</annotation></semantics></math> and evolve under the original transition dynamics, so they constitute an instance of the original game. The <math id="A3.4.p1.7.m7" class="ltx_Math" alttext="f=1" display="inline" intent=":literal"><semantics><mrow><mi>f</mi><mo>=</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">f=1</annotation></semantics></math> episodes are drawn from <math id="A3.4.p1.8.m8" class="ltx_Math" alttext="d_{\mathcal{D}}" display="inline" intent=":literal"><semantics><msub><mi>d</mi><mi class="ltx_font_mathcaligraphic">𝒟</mi></msub><annotation encoding="application/x-tex">d_{\mathcal{D}}</annotation></semantics></math> and constitute a separate game under the augmented distribution. Because the flag partitions each player’s policy into disjoint parameters (<math id="A3.4.p1.9.m9" class="ltx_math_unparsed" alttext="\pi_{i}(\cdot\mid\cdot,f\!=\!0)" display="inline" intent=":literal"><semantics><mrow><msub><mi>π</mi><mi>i</mi></msub><mrow><mo stretchy="false">(</mo><mo lspace="0em" rspace="0em">⋅</mo><mo lspace="0em" rspace="0em">∣</mo><mo lspace="0em" rspace="0em">⋅</mo><mo>,</mo><mi>f</mi><mo lspace="0.108em" rspace="0.108em">=</mo><mn>0</mn><mo stretchy="false">)</mo></mrow></mrow><annotation encoding="application/x-tex">\pi_{i}(\cdot\mid\cdot,f\!=\!0)</annotation></semantics></math> and <math id="A3.4.p1.10.m10" class="ltx_math_unparsed" alttext="\pi_{i}(\cdot\mid\cdot,f\!=\!1)" display="inline" intent=":literal"><semantics><mrow><msub><mi>π</mi><mi>i</mi></msub><mrow><mo stretchy="false">(</mo><mo lspace="0em" rspace="0em">⋅</mo><mo lspace="0em" rspace="0em">∣</mo><mo lspace="0em" rspace="0em">⋅</mo><mo>,</mo><mi>f</mi><mo lspace="0.108em" rspace="0.108em">=</mo><mn>1</mn><mo stretchy="false">)</mo></mrow></mrow><annotation encoding="application/x-tex">\pi_{i}(\cdot\mid\cdot,f\!=\!1)</annotation></semantics></math>) that affect disjoint terms in each player’s expected return, a unilateral deviation in one sub-policy cannot affect the other sub-game’s payoff. In particular, the <math id="A3.4.p1.11.m11" class="ltx_Math" alttext="f=0" display="inline" intent=":literal"><semantics><mrow><mi>f</mi><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">f=0</annotation></semantics></math> task is optimized over episodes drawn from <math id="A3.4.p1.12.m12" class="ltx_Math" alttext="d_{0}" display="inline" intent=":literal"><semantics><msub><mi>d</mi><mn>0</mn></msub><annotation encoding="application/x-tex">d_{0}</annotation></semantics></math> alone, and any NE of this sub-problem is a NE of the original game. Therefore, the <math id="A3.4.p1.13.m13" class="ltx_Math" alttext="f=0" display="inline" intent=":literal"><semantics><mrow><mi>f</mi><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">f=0</annotation></semantics></math> restriction of any NE of the flag-conditioned augmented game is a NE of the original game.
+∎</p>
+</div>
+</div>
+<div id="A3.p2" class="ltx_para ltx_noindent">
+<p id="A3.p2.4" class="ltx_p">Proposition&nbsp;<a href="https://arxiv.org/html/2605.14379v1#Thmproposition2" title="Proposition 2 (Flag conditioning recovers the original NE). ‣ Appendix C Equilibrium Bias Analysis ‣ Data-Augmented Game Starts for Accelerating Self-Play Exploration in Imperfect Information Games" class="ltx_ref"><span class="ltx_text ltx_ref_tag">2</span></a> guarantees that the <math id="A3.p2.1.m1" class="ltx_Math" alttext="f\!=\!0" display="inline" intent=":literal"><semantics><mrow><mi>f</mi><mo lspace="0.108em" rspace="0.108em">=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">f\!=\!0</annotation></semantics></math> policy is unbiased in the game-theoretic sense. In practice, the <math id="A3.p2.2.m2" class="ltx_Math" alttext="f\!=\!1" display="inline" intent=":literal"><semantics><mrow><mi>f</mi><mo lspace="0.108em" rspace="0.108em">=</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">f\!=\!1</annotation></semantics></math> task may additionally benefit learning by providing a richer distribution of training states, enabling multi-task transfer of learned representations to the harder <math id="A3.p2.3.m3" class="ltx_Math" alttext="f\!=\!0" display="inline" intent=":literal"><semantics><mrow><mi>f</mi><mo lspace="0.108em" rspace="0.108em">=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">f\!=\!0</annotation></semantics></math> task. Our experiments in Section&nbsp;<a href="https://arxiv.org/html/2605.14379v1#S6.SS2" title="6.2 Equilibrium Bias and Mitigation in the Counterexample Game ‣ 6 Experiments ‣ Data-Augmented Game Starts for Accelerating Self-Play Exploration in Imperfect Information Games" class="ltx_ref"><span class="ltx_text ltx_ref_tag">6.2</span></a> confirm this. Setting <math id="A3.p2.4.m4" class="ltx_Math" alttext="\beta=0.5" display="inline" intent=":literal"><semantics><mrow><mi>β</mi><mo>=</mo><mn>0.5</mn></mrow><annotation encoding="application/x-tex">\beta=0.5</annotation></semantics></math> with flag conditioning recovers low exploitability in the counterexample game while still benefiting from DAGS-augmented exploration in the control variants.</p>
+</div>
+</section>
+<section id="A4" class="ltx_appendix">
+<h2 class="ltx_title ltx_title_appendix">
+<span class="ltx_tag ltx_tag_appendix">Appendix D </span>Environment and Benchmark Details</h2>
+
+<div id="A4.p1" class="ltx_para ltx_noindent">
+<p id="A4.p1.1" class="ltx_p"><span id="A4.p1.1.1" class="ltx_text ltx_font_bold">Base games.</span>
+We use two base games from OpenSpiel <cite class="ltx_cite ltx_citemacro_citep">(<span class="ltx_ref ltx_missing_citation ltx_ref_self">lanctot2020openspielframeworkreinforcementlearning</span>)</cite>: Kuhn poker (3 cards, 2 players) and 4-card Goofspiel (4 cards per suit, 2 players). Both are small enough for exact exploitability computation yet strategically nontrivial.</p>
+</div>
+<div id="A4.p2" class="ltx_para ltx_noindent">
+<p id="A4.p2.2" class="ltx_p"><span id="A4.p2.2.1" class="ltx_text ltx_font_bold">Forfeit transformation.</span>
+As described in Section&nbsp;<a href="https://arxiv.org/html/2605.14379v1#S5.SS1" title="5.1 Forfeit (FF) Transformation ‣ 5 Benchmarking Exploration in Large Games ‣ Data-Augmented Game Starts for Accelerating Self-Play Exploration in Imperfect Information Games" class="ltx_ref"><span class="ltx_text ltx_ref_tag">5.1</span></a>, we augment every decision node with a forfeit action. The forfeit payoff is <math id="A4.p2.1.m1" class="ltx_Math" alttext="u_{\min}-1" display="inline" intent=":literal"><semantics><mrow><msub><mi>u</mi><mi>min</mi></msub><mo>−</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">u_{\min}-1</annotation></semantics></math> for the forfeiting player and <math id="A4.p2.2.m2" class="ltx_Math" alttext="-(u_{\min}-1)" display="inline" intent=":literal"><semantics><mrow><mo>−</mo><mrow><mo stretchy="false">(</mo><mrow><msub><mi>u</mi><mi>min</mi></msub><mo>−</mo><mn>1</mn></mrow><mo stretchy="false">)</mo></mrow></mrow><annotation encoding="application/x-tex">-(u_{\min}-1)</annotation></semantics></math> for the opponent, ensuring forfeiting is strictly dominated by any base-game outcome.</p>
+</div>
+<div id="A4.p3" class="ltx_para ltx_noindent">
+<p id="A4.p3.1" class="ltx_p"><span id="A4.p3.1.1" class="ltx_text ltx_font_bold">Control game transformation.</span>
+At each base-game decision point, the acting player is placed at a fixed starting position on a <math id="A4.p3.1.m1" class="ltx_Math" alttext="G\times G" display="inline" intent=":literal"><semantics><mrow><mi>G</mi><mo lspace="0.222em" rspace="0.222em">×</mo><mi>G</mi></mrow><annotation encoding="application/x-tex">G\times G</annotation></semantics></math> grid. One designated action square is placed for each available non-forfeit base-game action, all at equal Manhattan distance from the start. The player’s observation at each control step consists of:</p>
+<ul id="A4.I1" class="ltx_itemize">
+<li id="A4.I1.i1" class="ltx_item" style="list-style-type:none;">
+<span class="ltx_tag ltx_tag_item">•</span> 
+<div id="A4.I1.i1.p1" class="ltx_para">
+<p id="A4.I1.i1.p1.1" class="ltx_p">Current player’s grid position (row, column)</p>
+</div>
+</li>
+<li id="A4.I1.i2" class="ltx_item" style="list-style-type:none;">
+<span class="ltx_tag ltx_tag_item">•</span> 
+<div id="A4.I1.i2.p1" class="ltx_para">
+<p id="A4.I1.i2.p1.1" class="ltx_p">Time remaining (steps until deadline)</p>
+</div>
+</li>
+<li id="A4.I1.i3" class="ltx_item" style="list-style-type:none;">
+<span class="ltx_tag ltx_tag_item">•</span> 
+<div id="A4.I1.i3.p1" class="ltx_para">
+<p id="A4.I1.i3.p1.1" class="ltx_p">The base-game information state (the same observation the player would receive in the base game)</p>
+</div>
+</li>
+<li id="A4.I1.i4" class="ltx_item" style="list-style-type:none;">
+<span class="ltx_tag ltx_tag_item">•</span> 
+<div id="A4.I1.i4.p1" class="ltx_para">
+<p id="A4.I1.i4.p1.1" class="ltx_p">The episode-source flag <math id="A4.I1.i4.p1.1.m1" class="ltx_Math" alttext="f\in\{0,1\}" display="inline" intent=":literal"><semantics><mrow><mi>f</mi><mo>∈</mo><mrow><mo stretchy="false">{</mo><mn>0</mn><mo>,</mo><mn>1</mn><mo stretchy="false">}</mo></mrow></mrow><annotation encoding="application/x-tex">f\in\{0,1\}</annotation></semantics></math></p>
+</div>
+</li>
+</ul>
+<p id="A4.p3.2" class="ltx_p">Players do not observe the opponent’s grid position during navigation, which allows control-game policies to be analytically reduced to policies in the base game. The grid is empty aside from the action squares (no obstacles or other features). The action space during navigation is <math id="A4.p3.2.m1" class="ltx_Math" alttext="\{\text{up, down, left, right, stay}\}" display="inline" intent=":literal"><semantics><mrow><mo stretchy="false">{</mo><mtext>up, down, left, right, stay</mtext><mo stretchy="false">}</mo></mrow><annotation encoding="application/x-tex">\{\text{up, down, left, right, stay}\}</annotation></semantics></math>. The time limit equals the Manhattan distance from start to the action squares (the “travel distance”), leaving zero room for wasted steps. If the player does not occupy an action square when time expires, the forfeit action is taken.</p>
+</div>
+<div id="A4.p4" class="ltx_para ltx_noindent">
+<p id="A4.p4.1" class="ltx_p"><span id="A4.p4.1.1" class="ltx_text ltx_font_bold">Game variations.</span></p>
+<ul id="A4.I2" class="ltx_itemize">
+<li id="A4.I2.i1" class="ltx_item" style="list-style-type:none;">
+<span class="ltx_tag ltx_tag_item">•</span> 
+<div id="A4.I2.i1.p1" class="ltx_para">
+<p id="A4.I2.i1.p1.1" class="ltx_p"><span id="A4.I2.i1.p1.1.1" class="ltx_text ltx_font_bold">Base (FF):</span> Base game with forfeit actions added and no gridworld navigation. Strategically equivalent to the control variants.</p>
+</div>
+</li>
+<li id="A4.I2.i2" class="ltx_item" style="list-style-type:none;">
+<span class="ltx_tag ltx_tag_item">•</span> 
+<div id="A4.I2.i2.p1" class="ltx_para">
+<p id="A4.I2.i2.p1.2" class="ltx_p"><span id="A4.I2.i2.p1.2.1" class="ltx_text ltx_font_bold">Control Travel&nbsp;10:</span> Grid sized so that the travel distance from start to each non-forfeit action square is 10 steps. Kuhn and counterexample variants use an <math id="A4.I2.i2.p1.1.m1" class="ltx_Math" alttext="11\times 11" display="inline" intent=":literal"><semantics><mrow><mn>11</mn><mo lspace="0.222em" rspace="0.222em">×</mo><mn>11</mn></mrow><annotation encoding="application/x-tex">11\times 11</annotation></semantics></math> grid with 2 action squares and Goofspiel uses a <math id="A4.I2.i2.p1.2.m2" class="ltx_Math" alttext="13\times 13" display="inline" intent=":literal"><semantics><mrow><mn>13</mn><mo lspace="0.222em" rspace="0.222em">×</mo><mn>13</mn></mrow><annotation encoding="application/x-tex">13\times 13</annotation></semantics></math> grid with 4 action squares.</p>
+</div>
+</li>
+<li id="A4.I2.i3" class="ltx_item" style="list-style-type:none;">
+<span class="ltx_tag ltx_tag_item">•</span> 
+<div id="A4.I2.i3.p1" class="ltx_para">
+<p id="A4.I2.i3.p1.2" class="ltx_p"><span id="A4.I2.i3.p1.2.1" class="ltx_text ltx_font_bold">Control Travel&nbsp;20:</span> Travel distance of 20 steps. Kuhn and counterexample variants use a <math id="A4.I2.i3.p1.1.m1" class="ltx_Math" alttext="21\times 21" display="inline" intent=":literal"><semantics><mrow><mn>21</mn><mo lspace="0.222em" rspace="0.222em">×</mo><mn>21</mn></mrow><annotation encoding="application/x-tex">21\times 21</annotation></semantics></math> grid with 2 action squares and Goofspiel uses a <math id="A4.I2.i3.p1.2.m2" class="ltx_Math" alttext="25\times 25" display="inline" intent=":literal"><semantics><mrow><mn>25</mn><mo lspace="0.222em" rspace="0.222em">×</mo><mn>25</mn></mrow><annotation encoding="application/x-tex">25\times 25</annotation></semantics></math> grid with 4 action squares.</p>
+</div>
+</li>
+</ul>
+</div>
+<div id="A4.p5" class="ltx_para ltx_noindent">
+<p id="A4.p5.11" class="ltx_p"><span id="A4.p5.11.1" class="ltx_text ltx_font_bold">Counterexample game.</span>
+The counterexample game (Figure&nbsp;<a href="https://arxiv.org/html/2605.14379v1#S6.F3" title="Figure 3 ‣ 6.1 DAGS Improves Scaling in Kuhn and Goofspiel ‣ 6 Experiments ‣ Data-Augmented Game Starts for Accelerating Self-Play Exploration in Imperfect Information Games" class="ltx_ref"><span class="ltx_text ltx_ref_tag">3</span></a>) is a two-player zero-sum game in which <math id="A4.p5.1.m1" class="ltx_Math" alttext="p_{1}" display="inline" intent=":literal"><semantics><msub><mi>p</mi><mn>1</mn></msub><annotation encoding="application/x-tex">p_{1}</annotation></semantics></math> chooses <math id="A4.p5.2.m2" class="ltx_Math" alttext="a_{1}" display="inline" intent=":literal"><semantics><msub><mi>a</mi><mn>1</mn></msub><annotation encoding="application/x-tex">a_{1}</annotation></semantics></math> or <math id="A4.p5.3.m3" class="ltx_Math" alttext="a_{2}" display="inline" intent=":literal"><semantics><msub><mi>a</mi><mn>2</mn></msub><annotation encoding="application/x-tex">a_{2}</annotation></semantics></math>, after which <math id="A4.p5.4.m4" class="ltx_Math" alttext="p_{2}" display="inline" intent=":literal"><semantics><msub><mi>p</mi><mn>2</mn></msub><annotation encoding="application/x-tex">p_{2}</annotation></semantics></math> chooses <math id="A4.p5.5.m5" class="ltx_Math" alttext="a_{1}" display="inline" intent=":literal"><semantics><msub><mi>a</mi><mn>1</mn></msub><annotation encoding="application/x-tex">a_{1}</annotation></semantics></math> or <math id="A4.p5.6.m6" class="ltx_Math" alttext="a_{2}" display="inline" intent=":literal"><semantics><msub><mi>a</mi><mn>2</mn></msub><annotation encoding="application/x-tex">a_{2}</annotation></semantics></math> without observing <math id="A4.p5.7.m7" class="ltx_Math" alttext="p_{1}" display="inline" intent=":literal"><semantics><msub><mi>p</mi><mn>1</mn></msub><annotation encoding="application/x-tex">p_{1}</annotation></semantics></math>’s action (both of <math id="A4.p5.8.m8" class="ltx_Math" alttext="p_{2}" display="inline" intent=":literal"><semantics><msub><mi>p</mi><mn>2</mn></msub><annotation encoding="application/x-tex">p_{2}</annotation></semantics></math>’s decision nodes form a single information set). The equivalent normal-form payoff matrix for <math id="A4.p5.9.m9" class="ltx_Math" alttext="p_{1}" display="inline" intent=":literal"><semantics><msub><mi>p</mi><mn>1</mn></msub><annotation encoding="application/x-tex">p_{1}</annotation></semantics></math> is given in the proof of Proposition&nbsp;<a href="https://arxiv.org/html/2605.14379v1#Thmproposition1" title="Proposition 1 (Start-state augmentation can shift the NE). ‣ Appendix C Equilibrium Bias Analysis ‣ Data-Augmented Game Starts for Accelerating Self-Play Exploration in Imperfect Information Games" class="ltx_ref"><span class="ltx_text ltx_ref_tag">1</span></a>. This game is designed so that augmenting the starting-state distribution with states from a uniform behavioral policy shifts <math id="A4.p5.10.m10" class="ltx_Math" alttext="p_{2}" display="inline" intent=":literal"><semantics><msub><mi>p</mi><mn>2</mn></msub><annotation encoding="application/x-tex">p_{2}</annotation></semantics></math>’s beliefs over <math id="A4.p5.11.m11" class="ltx_Math" alttext="p_{1}" display="inline" intent=":literal"><semantics><msub><mi>p</mi><mn>1</mn></msub><annotation encoding="application/x-tex">p_{1}</annotation></semantics></math>’s action, changing the equilibrium.</p>
+</div>
+<div id="A4.p6" class="ltx_para ltx_noindent">
+<p id="A4.p6.1" class="ltx_p"><span id="A4.p6.1.1" class="ltx_text ltx_font_bold">Dataset generation.</span>
+For each environment, we generate an offline dataset of 1000 complete episodes. The hard-coded behavioral policy selects base-game actions uniformly at random and executes optimal (shortest-path) navigation in the control gridworld to reach the corresponding action square. This policy is mechanically competent but strategically suboptimal, providing broad state coverage without constituting a low-exploitability strategy.</p>
+</div>
+</section>
+</article>
+</div>
+</div>
+<footer class="arxiv-html-footer">
+  <div class="ltx_page_logo">
+    Experimental support, please
+    <a href="https://arxiv.org/html/2605.14379v1/__stdout.txt" class="ltx_ref" target="_blank" rel="nofollow">view the build logs</a>
+    for errors. Generated by
+    <a href="https://math.nist.gov/~BMiller/LaTeXML/" target="_blank" class="ltx_ref ltx_LaTeXML_logo">
+      <span style="letter-spacing: -0.2em; margin-right: 0.1em;">
+        L
+        <span style="font-size: 70%; position: relative; bottom: 2.2pt;">A</span>
+        T
+        <span style="position: relative; bottom: -0.4ex;">E</span>
+      </span>
+      <span class="ltx_font_smallcaps">xml</span>
+      <img alt="[LOGO]" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAsAAAAOCAYAAAD5YeaVAAAAAXNSR0IArs4c6QAAAAZiS0dEAP8A/wD/oL2nkwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB9wKExQZLWTEaOUAAAAddEVYdENvbW1lbnQAQ3JlYXRlZCB3aXRoIFRoZSBHSU1Q72QlbgAAAdpJREFUKM9tkL+L2nAARz9fPZNCKFapUn8kyI0e4iRHSR1Kb8ng0lJw6FYHFwv2LwhOpcWxTjeUunYqOmqd6hEoRDhtDWdA8ApRYsSUCDHNt5ul13vz4w0vWCgUnnEc975arX6ORqN3VqtVZbfbTQC4uEHANM3jSqXymFI6yWazP2KxWAXAL9zCUa1Wy2tXVxheKA9YNoR8Pt+aTqe4FVVVvz05O6MBhqUIBGk8Hn8HAOVy+T+XLJfLS4ZhTiRJgqIoVBRFIoric47jPnmeB1mW/9rr9ZpSSn3Lsmir1fJZlqWlUonKsvwWwD8ymc/nXwVBeLjf7xEKhdBut9Hr9WgmkyGEkJwsy5eHG5vN5g0AKIoCAEgkEkin0wQAfN9/cXPdheu6P33fBwB4ngcAcByHJpPJl+fn54mD3Gg0NrquXxeLRQAAwzAYj8cwTZPwPH9/sVg8PXweDAauqqr2cDjEer1GJBLBZDJBs9mE4zjwfZ85lAGg2+06hmGgXq+j3+/DsixYlgVN03a9Xu8jgCNCyIegIAgx13Vfd7vdu+FweG8YRkjXdWy329+dTgeSJD3ieZ7RNO0VAXAPwDEAO5VKndi2fWrb9jWl9Esul6PZbDY9Go1OZ7PZ9z/lyuD3OozU2wAAAABJRU5ErkJggg==">
+    </a>.
+  </div>
+  <div class="keyboard-glossary">
+    <h2>Instructions for reporting errors</h2>
+    <p>We are continuing to improve HTML versions of papers, and your feedback helps enhance accessibility and mobile
+      support. To report errors in the HTML that will help us improve conversion and rendering, choose any of the
+      methods listed below:</p>
+    <ul>
+      <li>Click the "Report Issue" <span class="mobile-only">(<svg role="presentation" style="display: inline-block; vertical-align: middle; fill: var(--text-color);" aria-hidden="true" height="1em" viewBox="0 0 640 640">
+            <path d="M224 160C224 107 267 64 320 64C373 64 416 107 416 160L416 163.6C416 179.3 403.3 192 387.6 192L252.5 192C236.8 192 224.1 179.3 224.1 163.6L224.1 160zM569.6 172.8C580.2 186.9 577.3 207 563.2 217.6L465.4 290.9C470.7 299.8 474.7 309.6 477.2 320L576 320C593.7 320 608 334.3 608 352C608 369.7 593.7 384 576 384L480 384L480 416C480 418.6 479.9 421.3 479.8 423.9L563.2 486.4C577.3 497 580.2 517.1 569.6 531.2C559 545.3 538.9 548.2 524.8 537.6L461.7 490.3C438.5 534.5 395.2 566.5 344 574.2L344 344C344 330.7 333.3 320 320 320C306.7 320 296 330.7 296 344L296 574.2C244.8 566.5 201.5 534.5 178.3 490.3L115.2 537.6C101.1 548.2 81 545.3 70.4 531.2C59.8 517.1 62.7 497 76.8 486.4L160.2 423.9C160.1 421.3 160 418.7 160 416L160 384L64 384C46.3 384 32 369.7 32 352C32 334.3 46.3 320 64 320L162.8 320C165.3 309.6 169.3 299.8 174.6 290.9L76.8 217.6C62.7 207 59.8 186.9 70.4 172.8C81 158.7 101.1 155.8 115.2 166.4L224 248C236.3 242.9 249.8 240 264 240L376 240C390.2 240 403.7 242.8 416 248L524.8 166.4C538.9 155.8 559 158.7 569.6 172.8z"></path>
+          </svg>)</span> button, located in the page header.</li>
+    </ul>
+    <p><strong>Tip:</strong> You can select the relevant text first, to include it in your report.</p>
+    <p>Our team has already identified <a class="ltx_ref" href="https://github.com/arXiv/html_feedback/issues" target="_blank">the following issues</a>. We appreciate your time reviewing and reporting rendering errors we
+      may not have found yet. Your efforts will help us improve the HTML versions for all readers, because disability
+      should not be a barrier to accessing research. Thank you for your continued support in championing open access for
+      all.</p>
+    <p>Have a free development cycle? Help support accessibility at arXiv! Our collaborators at LaTeXML maintain a <a class="ltx_ref" href="https://github.com/brucemiller/LaTeXML/wiki/Porting-LaTeX-packages-for-LaTeXML" target="_blank">list of packages that need conversion</a>, and welcome <a class="ltx_ref" href="https://github.com/brucemiller/LaTeXML/issues" target="_blank">developer contributions</a>.</p>
+  </div>
+</footer><footer class="ds-site-footer">
+  <div class="ds-site-footer-grid">
+    <div class="ds-site-footer-main">
+      <div class="ds-site-footer-ack">
+        We gratefully acknowledge support from
+        our <strong>major funders</strong>,
+        <a href="https://info.arxiv.org/about/ourmembers.html"><strong>member institutions</strong></a><span class="ack-member-inline" hidden="">, <strong></strong></span>,
+        and all contributors.
+      </div>
+      <nav class="ds-site-footer-links" aria-label="Site navigation">
+        <a href="https://info.arxiv.org/about">About</a>
+        <span class="ds-site-footer-sep" aria-hidden="true">·</span>
+        <a href="https://info.arxiv.org/help">Help</a>
+        <span class="ds-site-footer-sep" aria-hidden="true">·</span>
+        <a href="https://info.arxiv.org/help/contact.html">Contact</a>
+        <span class="ds-site-footer-sep" aria-hidden="true">·</span>
+        <a href="https://info.arxiv.org/help/subscribe">Subscribe</a>
+        <span class="ds-site-footer-sep" aria-hidden="true">·</span>
+        <a href="https://info.arxiv.org/help/license/index.html">Copyright</a>
+        <span class="ds-site-footer-sep" aria-hidden="true">·</span>
+        <a href="https://info.arxiv.org/help/policies/privacy_policy.html">Privacy</a>
+        <span class="ds-site-footer-sep" aria-hidden="true">·</span>
+        <a href="https://info.arxiv.org/help/web_accessibility.html">Accessibility</a>
+        <span class="ds-site-footer-sep" aria-hidden="true">·</span>
+        <a href="https://status.arxiv.org/" target="_blank" rel="noopener noreferrer">Operational Status<span class="is-sr-only"> (opens in new tab)</span></a>
+      </nav>
+    </div>
+
+    <div class="ds-site-footer-funders" aria-label="Major funders">
+      <div class="ds-site-footer-funders-label">Major funding support from</div>
+      <div class="ds-site-footer-funders-logos">
+        <a class="ds-funder-link" href="https://www.simonsfoundation.org/" target="_blank" rel="noopener noreferrer">
+          <img class="ds-funder-logo" src="./Data-Augmented Game Starts for Accelerating Self-Play Exploration in Imperfect Information Games_files/simons-foundation.png" alt="Simons Foundation">
+        </a>
+        <a class="ds-funder-link" href="https://www.sfi.org.bm/" target="_blank" rel="noopener noreferrer">
+          <img class="ds-funder-logo" src="./Data-Augmented Game Starts for Accelerating Self-Play Exploration in Imperfect Information Games_files/simons-foundation-international.png" alt="Simons Foundation International">
+        </a>
+        <a class="ds-funder-link" href="https://www.schmidtsciences.org/" target="_blank" rel="noopener noreferrer">
+          <img class="ds-funder-logo" src="./Data-Augmented Game Starts for Accelerating Self-Play Exploration in Imperfect Information Games_files/schmidt-sciences.png" alt="Schmidt Sciences">
+        </a>
+      </div>
+    </div>
+  </div>
+</footer><div id="fixed-buttons-container">
+  <a id="disable-reading-mode-btn" class="header-button" href="javascript:toggleReadingMode();" title="Disable reading mode, show header and footer">
+    <svg role="presentation" height="1.25rem" viewBox="0 0 448 512"><!--!Font Awesome Free v7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.-->
+      <path d="M0 96C0 78.3 14.3 64 32 64l384 0c17.7 0 32 14.3 32 32s-14.3 32-32 32L32 128C14.3 128 0 113.7 0 96zM0 256c0-17.7 14.3-32 32-32l384 0c17.7 0 32 14.3 32 32s-14.3 32-32 32L32 288c-17.7 0-32-14.3-32-32zM448 416c0 17.7-14.3 32-32 32L32 448c-17.7 0-32-14.3-32-32s14.3-32 32-32l384 0c17.7 0 32 14.3 32 32z"></path>
+    </svg>
+  </a>
+</div>
+
+</body></html>
