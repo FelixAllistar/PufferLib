@@ -29,6 +29,6 @@ exec ./puffer train kaggriculture \
     env.reward_productive_action=0 env.reward_inactivity=0 \
     env.reward_neglect_death=0 train.emag_tau=0 \
     train.emag_kl_coef=0.01 train.emag_cutoff=0.134 \
-    train.learning_rate=0.0003 \
+    train.learning_rate=0.0007 \
     train.anneal_lr=1 train.min_lr_ratio=0.1 train.ent_coef=0.001 \
-    train.total_timesteps=200000000
+    train.total_timesteps=400000000
