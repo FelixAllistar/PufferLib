@@ -70,8 +70,14 @@ KG_HD static inline void kag_public_structure_position(int slot, int* x, int* y)
     if (slot < 0) slot = 0;
     if (slot >= 15) slot = 14;
     if (slot < 4) {
-        *x = slot & 1;
-        *y = slot >> 1;
+        /* Keep the opening herd adjacent to the shed's NW access tile (4,4).
+         * The first crew only has one unlocked hand, so routing the first
+         * animals to the far corner starves them; a compact L by the shed
+         * avoids the wasted movement the public replay does not have. */
+        static const int nx[4] = {3, 4, 3, 2};
+        static const int ny[4] = {4, 3, 3, 4};
+        *x = nx[slot];
+        *y = ny[slot];
     } else if (slot < 10) {
         int local = slot - 4;
         *x = local < 4 ? 5 + (local & 1) : 7;
@@ -95,6 +101,16 @@ KG_HD static inline int kag_public_animal_target(const KGState* game,
         target = day < 3 ? 1 : day < 10 ? 2 : day < 18 ? 3 : 4;
     } else if (profile == KAG_ADAPTIVE_STRUCTURED) {
         target = day < 7 ? 4 : day < 11 ? 11 : day <= 18 ? 15 : placed;
+    } else if (profile == KAG_ADAPTIVE_THUNDER) {
+        /* THUNDER opens 1 cow + 4 sheep and keeps a cash reserve. The herd
+         * expands to 8 after the first land purchase, then sizes the rest by
+         * realized animal-product prices in the day-10 window. */
+        target = day < 6 ? 5 : day < 10 ? 8 : 12;
+        if (day >= 10 && day <= 18) {
+            if (game->market.prices[KG_ITEM_WOOL] >= 180) target += 2;
+            if (game->market.prices[KG_ITEM_MILK] >= 150) target += 1;
+            if (target > 15) target = 15;
+        }
     } else {
         target = day < 5 ? 2 : day < 12 ? 3 : day < 20 ? 5 : placed;
     }
@@ -119,6 +135,13 @@ KG_HD static inline int kag_public_structure_animal(int profile, int slot) {
     if (profile == KAG_ADAPTIVE_HARVEST_PULSE) return KG_GOOSE;
     if (profile == KAG_ADAPTIVE_TRIAD) {
         return slot == 2 ? KG_SHEEP : KG_COW;
+    }
+    if (profile == KAG_ADAPTIVE_THUNDER) {
+        /* Opening herd is COW, SHEEP, SHEEP, SHEEP, SHEEP; later slots stay
+         * cow-heavy, matching THUNDER's 8-12 cow / 4-10 sheep range. */
+        if (slot == 0) return KG_COW;
+        if (slot <= 4) return KG_SHEEP;
+        return (slot % 4 == 0) ? KG_SHEEP : KG_COW;
     }
     /* Structured Economic's opening herd is COW,COW,COW,SHEEP, then
      * alternates toward a cow-heavy mix as capital compounds. */
@@ -166,6 +189,16 @@ KG_HD static inline int kag_public_crop_for(const KGState* game, int profile,
         }
         return local % 3 == 0 ? KG_CARROT : KG_WHEAT;
     }
+    if (profile == KAG_ADAPTIVE_THUNDER) {
+        /* Six revenue lines but no carrot/tomato: wheat is the feed lane,
+         * melon fills the early premium window, strawberry supplies the
+         * mid-season, and everything reverts to wheat for the day-20 spike. */
+        int bucket = local % 10;
+        if (bucket < 4) return KG_WHEAT;
+        if (game->day < 18 && bucket < 6) return KG_MELON;
+        if (game->day < 22) return KG_STRAWBERRY;
+        return KG_WHEAT;
+    }
     /* Harvest Pulse keeps a wheat/feed lane and fills the profitable opening
      * with melons while their first yield still fits in the season. */
     if (local % 4 == 0) return KG_WHEAT;
@@ -181,6 +214,16 @@ KG_HD static inline int kag_public_crop_target(const KGState* game,
     int land = kag_public_land_count(farm);
     int capacity = land * 25 - structure_limit;
     if (capacity < 2) capacity = 2;
+    if (profile == KAG_ADAPTIVE_THUNDER) {
+        int target = game->day < 4 ? 6
+            : game->day < 7 ? 14
+            : game->day < 11 ? 24
+            : game->day < 20 ? 34 : capacity;
+        /* The documented day-20 wheat replant is a whole-farm refill. */
+        if (game->day >= 20) target = capacity;
+        if (target > capacity) target = capacity;
+        return target;
+    }
     int target = game->day < 3 ? 4
         : game->day < 7 ? 10
         : game->day < 12 ? 16
@@ -659,6 +702,217 @@ KG_HD static inline void kag_public_action(const KGState* game, int player_id,
     kag_public_assign_jobs(game, farm, jobs, job_count, action);
     kag_public_local_maintenance(game, farm, profile, action);
     kag_public_market(game, player_id, profile, seed_need, action);
+}
+
+/* THUNDER THUNDER's price-adaptive portfolio. The opening and land schedule
+ * are fixed; the herd and crop mix are then sized by realized market prices.
+ * This keeps the behavior as a planner (not a replay) so it survives state
+ * drift in competitive self-play. */
+KG_HD static inline int kag_thunder_sell_item(int index) {
+    switch (index) {
+        case 0: return KG_ITEM_FERTILIZER;
+        case 1: return KG_ITEM_WOOL;
+        case 2: return KG_ITEM_MELON;
+        case 3: return KG_ITEM_STRAWBERRY;
+        case 4: return KG_ITEM_MILK;
+        case 5: return KG_ITEM_EGG;
+        case 6: return KG_ITEM_WHEAT;
+        default: return KG_ITEM_CARROT;
+    }
+}
+
+KG_HD static inline void kag_thunder_market(const KGState* game, int player_id,
+        const int seed_need[KG_NUM_CROPS], KGAction* action) {
+    const KGPlayer* farm = &game->players[player_id];
+    int limit = game->config.max_market_orders_per_turn;
+    if (limit > KG_MAX_MARKET_ORDERS) limit = KG_MAX_MARKET_ORDERS;
+    int money = farm->money;
+    int day = game->day;
+
+    /* Modest opening: the wheat feed buffer is bought first (the public
+     * 8c/4s replay buys 14 wheat and then fills the basket from the remainder),
+     * so the first animals do not starve before crops and fertilizer income
+     * come online. */
+    if (day == 0 && farm->hand_count == 0 && farm->hires_today == 0) {
+        kag_public_add_order(action, limit, KG_MARKET_BUY_PRODUCT,
+            KG_ITEM_WHEAT, 14);
+        for (int i = 0; i < 4; i++) {
+            kag_public_add_order(action, limit, KG_MARKET_HIRE, -1, 1);
+        }
+        kag_public_add_order(action, limit, KG_MARKET_BUY_ANIMAL,
+            KG_ITEM_COW, 1);
+        kag_public_add_order(action, limit, KG_MARKET_BUY_ANIMAL,
+            KG_ITEM_SHEEP, 4);
+        kag_public_add_order(action, limit, KG_MARKET_BUY_SEED, KG_MELON, 5);
+        kag_public_add_order(action, limit, KG_MARKET_BUY_SEED, KG_WHEAT, 5);
+        kag_public_add_order(action, limit, KG_MARKET_HIRE, -1, 1);
+        return;
+    }
+
+    int animals = 0;
+    int cows = kag_public_total_animals(farm, KG_COW);
+    int sheep = kag_public_total_animals(farm, KG_SHEEP);
+    for (int animal = 0; animal < KG_NUM_ANIMALS; animal++) {
+        animals += kag_public_total_animals(farm, animal);
+    }
+
+    /* Fertilizer is first-come-first-served; race it, then impact-order the
+     * premium lines, and reserve wheat until the day-24+ endgame dump. */
+    int sell_count = 0;
+    for (int index = 0; index < KG_NUM_PRODUCTS
+            && sell_count < kag_public_sell_cap(limit); index++) {
+        int item = kag_thunder_sell_item(index);
+        int amount = farm->shed[item];
+        if (item == KG_ITEM_WHEAT) {
+            if (day < 23) {
+                amount = 0;
+            } else {
+                amount -= animals * 2 + 3;
+            }
+        } else if (item == KG_ITEM_FERTILIZER) {
+            amount -= 2;
+        }
+        if (amount <= 0) continue;
+        int price = game->market.prices[item];
+        int base = KG_MARKET_DEFS[item].base;
+        if (price <= 1 && day < 28) {
+            amount = amount > 2 ? 2 : amount;
+        } else if (price * 4 < base && amount > 4) {
+            amount = (amount + 1) / 2;
+        }
+        if (!kag_public_add_order(action, limit, KG_MARKET_SELL,
+                item, amount)) {
+            continue;
+        }
+        sell_count++;
+        money += amount * price;
+    }
+
+    int land = kag_public_land_count(farm);
+    int extra = land - 1;
+    int land_price = extra == 0 ? 1000 : extra == 1 ? 2000 : 4000;
+    if (extra < 2 && (day == 6 || day == 10)
+            && money >= land_price + 500) {
+        if (kag_public_add_order(action, limit, KG_MARKET_BUY_LAND, -1, 1)) {
+            money -= land_price;
+            land++;
+        }
+    }
+
+    int target_animals = kag_public_animal_target(game, farm,
+        KAG_ADAPTIVE_THUNDER);
+    int structure_limit = kag_public_structure_limit(game, farm,
+        KAG_ADAPTIVE_THUNDER);
+    int structures = 0;
+    int empty_structures = 0;
+    for (int tile_id = 0; tile_id < KG_MAX_TILES; tile_id++) {
+        const KGTile* tile = &farm->tiles[tile_id];
+        if (tile->kind == KG_TILE_COOP || tile->kind == KG_TILE_PASTURE) {
+            structures++;
+            if (!kg_is_animal_tile(tile)) empty_structures++;
+        }
+    }
+    int potential_structures = structures;
+    for (int slot = 0; slot < structure_limit; slot++) {
+        int x;
+        int y;
+        kag_public_structure_position(slot, &x, &y);
+        if (!kag_public_unlocked(farm, x, y)) continue;
+        const KGTile* tile = &farm->tiles[kg_tile_index(x, y)];
+        if (tile->kind == KG_TILE_EMPTY) potential_structures++;
+    }
+    if (potential_structures > structure_limit) {
+        potential_structures = structure_limit;
+    }
+    int animal_capacity = potential_structures - structures + empty_structures;
+    if (animal_capacity < 0) animal_capacity = 0;
+    int missing = target_animals - animals;
+    if (missing > animal_capacity) missing = animal_capacity;
+    if (missing > 0 && day >= 1 && day <= 18) {
+        int type = KG_COW;
+        if (sheep < 4) {
+            type = KG_SHEEP;
+        } else if (cows >= 12) {
+            type = KG_SHEEP;
+        } else if (sheep < 7 && cows >= 8
+                && game->market.prices[KG_ITEM_WOOL] >= 180) {
+            type = KG_SHEEP;
+        }
+        int item = KG_ITEM_GOOSE + type;
+        int cost = KG_ANIMAL_DEFS[type].cost;
+        int reserve = 350;
+        int affordable = (money - reserve) / cost;
+        if (affordable > missing) affordable = missing;
+        if (affordable > 2) affordable = 2;
+        if (affordable > 0) {
+            kag_public_add_order(action, limit, KG_MARKET_BUY_ANIMAL,
+                item, affordable);
+            money -= affordable * cost;
+        }
+    }
+
+    int wheat = kag_public_stock(farm, KG_ITEM_WHEAT);
+    int wheat_target = animals * 2 + 3;
+    int wheat_missing = wheat_target - wheat;
+    if (wheat_missing > 0 && animals > 0 && action->market_count < limit) {
+        int price = game->market.prices[KG_ITEM_WHEAT];
+        int affordable = price > 0 ? (money - 350) / price : 0;
+        if (affordable < wheat_missing) wheat_missing = affordable;
+        if (wheat_missing > 0) {
+            kag_public_add_order(action, limit, KG_MARKET_BUY_PRODUCT,
+                KG_ITEM_WHEAT, wheat_missing);
+            money -= wheat_missing * price;
+        }
+    }
+
+    for (int crop = 0; crop < KG_NUM_CROPS && action->market_count < limit;
+            crop++) {
+        if (crop == KG_CARROT || crop == KG_TOMATO) continue;
+        int missing_seeds = seed_need[crop] - farm->seeds[crop];
+        int price = KG_CROP_DEFS[crop].seed_cost;
+        int affordable = price > 0 ? (money - 350) / price : 0;
+        if (missing_seeds > affordable) missing_seeds = affordable;
+        if (missing_seeds > 0) {
+            kag_public_add_order(action, limit, KG_MARKET_BUY_SEED,
+                crop, missing_seeds);
+            money -= missing_seeds * price;
+        }
+    }
+
+    int desired_hands = day < 7 ? 4 : day < 10 ? 7 : 14;
+    if (day < 29) {
+        int hires = farm->hand_count;
+        int hires_today = farm->hires_today;
+        while (hires < desired_hands && action->market_count < limit) {
+            int cost = kg_hire_cost(hires_today,
+                game->config.farm_hand_cost_mult);
+            if (money < cost + 350) break;
+            kag_public_add_order(action, limit, KG_MARKET_HIRE, -1, 1);
+            money -= cost;
+            hires++;
+            hires_today++;
+        }
+    }
+    (void)land;
+}
+
+KG_HD static inline void kag_thunder_action(const KGState* game, int player_id,
+        KGAction* action) {
+    const KGPlayer* farm = &game->players[player_id];
+    action->hand_count = 0;
+    action->market_count = 0;
+    action->farmer = (KGUnitAction){KG_OP_PASS, -1, 1};
+    action->hand_count = farm->hand_count;
+    for (int hand = 0; hand < action->hand_count; hand++) {
+        action->hands[hand] = (KGUnitAction){KG_OP_PASS, -1, 1};
+    }
+    KGPublicJob jobs[KG_PUBLIC_MAX_JOBS];
+    int seed_need[KG_NUM_CROPS];
+    int job_count = kag_public_job_count(game, player_id,
+        KAG_ADAPTIVE_THUNDER, jobs, seed_need);
+    kag_public_assign_jobs(game, farm, jobs, job_count, action);
+    kag_public_local_maintenance(game, farm, KAG_ADAPTIVE_THUNDER, action);
+    kag_thunder_market(game, player_id, seed_need, action);
 }
 
 #endif

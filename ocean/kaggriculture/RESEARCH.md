@@ -1608,3 +1608,56 @@ regret = optimal - agent is the metric, and H is the only difficulty knob
 Status: env, CPU adapter, GPU adapter, DP solver, CPU oracle test (passes vs
 brute force H=2..10) and CPU/GPU parity test written; GPU parity + training
 regret-vs-H curve pending (sweep is using the GPU).
+
+## 2026-08-13: reward knob reference and continuous differential
+
+The reward surface is split into three timing classes. Every per-step term is
+the learner's own step delta; every terminal term is one shot. There was no
+continuous own-vs-opponent term until `reward_differential_scale`.
+
+### Per-step (dense shaping)
+
+- `reward_potential_scale`: `(potential_now - potential_before) * scale`.
+  `potential` is cash plus marked-to-market assets (seeds, shed products,
+  carried inventory, planted crops and held yield, animals, purchased land),
+  then written down to pure cash at terminal. The episode sum telescopes to
+  `cash_final - cash_start`, so this is absolute net-worth shaping, not a
+  differential. `asset_scale` ramps assets to zero over the last
+  `reward_liquidation_days` days to avoid a one-step terminal write-off.
+- `reward_productive_action`: counts WATER/HARVEST/FERTILIZE/FEED/CARE/
+  COLLECT_FERTILIZER/PLACE/DIG as 1.0 and PICKUP/DROP as 0.1 per legal action;
+  movement, plant, build, and buy are excluded. Action-credit shaping, not
+  economic value.
+- `reward_neglect_death`: `-(new_neglect_deaths * scale)`.
+
+The asset coefficients inside `potential` are `reward_seed_value`,
+`reward_product_value`, `reward_crop_value`, `reward_animal_value`, and
+`reward_land_value`. They weight the corresponding asset classes, and
+`reward_neglect_discount` multiplies plant/animal value when it is unwatered
+or unfed. These only matter when `reward_potential_scale` is nonzero.
+
+### Terminal (one shot)
+
+- `reward_win`: `+scale` win, `-scale` loss, `0` draw, applied to player 0 and
+  negated to player 1.
+- `reward_margin_scale`: `(model_money - opp_money) / starting_money * scale`,
+  one terminal term. It is a differential, but only at the last step.
+- `reward_inactivity` / `reward_inactivity_threshold`: terminal penalty if
+  final money stays within `threshold` of the starting bank.
+
+### Continuous differential (new)
+
+- `reward_differential_scale`: each step adds
+  `scale * (own_potential_delta - opp_potential_delta)` to player 0 and negates
+  it for player 1. It is zero-sum and the episode sum telescopes to
+  `scale * (my_final - opp_final)`, so pulling ahead continuously pays and
+  falling behind continuously costs. To use a pure differential objective set
+  `reward_potential_scale = 0` and `reward_differential_scale > 0`.
+
+The first useful policy did not come from a task curriculum. It came from
+dense potential shaping (all asset classes valued, `liquidation_days=6`),
+near-undiscounted returns (`gamma ~0.9999`), persistent entropy, the EMAg KL
+anchor toward the BC opening, and a staged opponent mix (75% economy bot plus
+a learned bank seeded with the 216.27M policy). The current config removed the
+BC magnet, zeroed seed/crop value, and shifted to `liquidation_days=0` and
+`land_value=1.5`, which is a meaningfully different shaping prior.

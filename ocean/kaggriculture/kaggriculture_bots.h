@@ -23,6 +23,8 @@ enum {
     KG_SCRIPT_V20,
     KG_SCRIPT_MOON,
     KG_SCRIPT_HAMBURGER,
+    KG_SCRIPT_LUGOVOY,
+    KG_SCRIPT_THUNDER25,
     KG_SCRIPT_TOP,
     KG_SCRIPT_COUNT,
 };
@@ -141,6 +143,10 @@ static inline void kag_script_init(void) {
         &kag_script_tapes[KG_SCRIPT_MOON], raw);
     ok &= kag_script_decode(KG_TAPE_HAMBURGER_B64,
         &kag_script_tapes[KG_SCRIPT_HAMBURGER], raw);
+    ok &= kag_script_decode(KG_TAPE_LUGOVOY_B64,
+        &kag_script_tapes[KG_SCRIPT_LUGOVOY], raw);
+    ok &= kag_script_decode(KG_TAPE_THUNDER25_B64,
+        &kag_script_tapes[KG_SCRIPT_THUNDER25], raw);
     ok &= kag_script_decode(KG_TAPE_TOP_B64,
         &kag_script_tapes[KG_SCRIPT_TOP], raw);
     if (!ok) {
@@ -327,6 +333,8 @@ static inline const char* kag_script_name(int profile) {
         case KG_SCRIPT_V20: return "v20";
         case KG_SCRIPT_MOON: return "moon";
         case KG_SCRIPT_HAMBURGER: return "hamburger";
+        case KG_SCRIPT_LUGOVOY: return "lugovoy";
+        case KG_SCRIPT_THUNDER25: return "thunder25";
         case KG_SCRIPT_TOP: return "top";
         default: return "script";
     }

@@ -145,9 +145,12 @@ struct Log {
     float script_v20_games;
     float script_moon_games;
     float script_hamburger_games;
+    float script_lugovoy_games;
+    float script_thunder_games;
     float adaptive_pulse_games;
     float adaptive_structured_games;
     float adaptive_triad_games;
+    float adaptive_thunder_games;
     float reset_games;
     float n;
     /* Episode action/terminal diagnostics. These stay out of the reward and
@@ -196,6 +199,7 @@ struct Env {
     float reward_animal_value;
     float reward_land_value;
     float reward_margin_scale;
+    float reward_differential_scale;
     float reward_inactivity_threshold;
     float reset_opening_prob;
     float reward_neglect_discount;
@@ -1500,6 +1504,7 @@ enum {
     KAG_ADAPTIVE_HARVEST_PULSE,
     KAG_ADAPTIVE_STRUCTURED,
     KAG_ADAPTIVE_TRIAD,
+    KAG_ADAPTIVE_THUNDER,
     KAG_ADAPTIVE_COUNT,
 };
 
@@ -1812,6 +1817,10 @@ KG_HD static inline void kag_adaptive_filter_market(KGAction* action, int keep_l
  */
 KG_HD static inline void kag_adaptive_action(const KGState* game, int player_id,
         int profile, KGAction* action) {
+    if (profile == KAG_ADAPTIVE_THUNDER) {
+        kag_thunder_action(game, player_id, action);
+        return;
+    }
     if (profile >= KAG_ADAPTIVE_HARVEST_PULSE
             && profile < KAG_ADAPTIVE_COUNT) {
         kag_public_action(game, player_id, profile, action);
@@ -2061,6 +2070,8 @@ void puf_init(Env* env, Dict* kwargs) {
     env->reward_land_value = (float)dict_get(kwargs, "reward_land_value");
     env->reward_margin_scale = (float)dict_get(kwargs,
         "reward_margin_scale");
+    env->reward_differential_scale = (float)dict_get(kwargs,
+        "reward_differential_scale");
     env->reward_inactivity_threshold = (float)dict_get(kwargs,
         "reward_inactivity_threshold");
     env->reward_neglect_discount = (float)dict_get(
@@ -2108,12 +2119,15 @@ void puf_init(Env* env, Dict* kwargs) {
         if (type_value < top_cut) {
             env->bot_opponent = KAG_BOT_SCRIPT_BASE + KG_SCRIPT_TOP;
         } else if (type_value < script_cut) {
+            /* Every non-top tape, including lugovoy and thunder25. */
             env->bot_opponent = KAG_BOT_SCRIPT_BASE
-                + (int)(type_hash % KG_SCRIPT_TOP);
+                + (int)(type_hash % (KG_SCRIPT_COUNT - 1));
         } else if (type_value < rules_cut) {
+            /* The mature planners: pulse, structured, triad, thunder. */
             env->bot_opponent = KAG_BOT_ADAPTIVE_BASE
                 + KAG_ADAPTIVE_HARVEST_PULSE
-                + (int)(type_hash % 3u);
+                + (int)(type_hash
+                    % (KAG_ADAPTIVE_COUNT - KAG_ADAPTIVE_HARVEST_PULSE));
         } else if (type_value < specialist_cut) {
             env->bot_opponent = KAG_BOT_MIXED;
         } else {
@@ -2226,12 +2240,16 @@ void puf_step(Env* env) {
      * terminal cash, avoiding uncontrollable reward noise from scripted rivals. */
     env->potential[0] = done ? (float)p0 : kag_player_potential(env, 0);
     env->potential[1] = done ? (float)p1 : kag_player_potential(env, 1);
+    float differential = ((env->potential[0] - before_potential[0])
+        - (env->potential[1] - before_potential[1]))
+        * env->reward_differential_scale;
     for (int player = 0; player < KG_NUM_PLAYERS; player++) {
         float reward = (env->potential[player] - before_potential[player])
             * env->reward_potential_scale
             + productive_credit[player] * env->reward_productive_action;
         reward -= (game->neglect_deaths[player]
             - before_neglect_deaths[player]) * env->reward_neglect_death;
+        reward += player == 0 ? differential : -differential;
         env->agents[player].rewards[0] = reward;
         env->episode_returns[player] += reward;
     }
@@ -2335,6 +2353,10 @@ void puf_step(Env* env) {
                 env->log.script_moon_games += 1.0f;
             } else if (profile == KG_SCRIPT_HAMBURGER) {
                 env->log.script_hamburger_games += 1.0f;
+            } else if (profile == KG_SCRIPT_LUGOVOY) {
+                env->log.script_lugovoy_games += 1.0f;
+            } else if (profile == KG_SCRIPT_THUNDER25) {
+                env->log.script_thunder_games += 1.0f;
             } else if (profile == KG_SCRIPT_TOP) {
                 env->log.script_top_games += 1.0f;
             }
@@ -2349,6 +2371,8 @@ void puf_step(Env* env) {
                 env->log.adaptive_structured_games += 1.0f;
             } else if (profile == KAG_ADAPTIVE_TRIAD) {
                 env->log.adaptive_triad_games += 1.0f;
+            } else if (profile == KAG_ADAPTIVE_THUNDER) {
+                env->log.adaptive_thunder_games += 1.0f;
             }
         } else {
             env->log.specialist_games += 1.0f;
@@ -2597,11 +2621,15 @@ void puf_log(Log* log, Dict* out) {
     dict_set(out, "script_v20_fraction", log->script_v20_games);
     dict_set(out, "script_moon_fraction", log->script_moon_games);
     dict_set(out, "script_hamburger_fraction", log->script_hamburger_games);
+    dict_set(out, "script_lugovoy_fraction", log->script_lugovoy_games);
+    dict_set(out, "script_thunder_fraction", log->script_thunder_games);
     dict_set(out, "script_top_fraction", log->script_top_games);
     dict_set(out, "adaptive_pulse_fraction", log->adaptive_pulse_games);
     dict_set(out, "adaptive_structured_fraction",
         log->adaptive_structured_games);
     dict_set(out, "adaptive_triad_fraction", log->adaptive_triad_games);
+    dict_set(out, "adaptive_thunder_fraction",
+        log->adaptive_thunder_games);
     dict_set(out, "reset_fraction", log->reset_games);
     dict_set(out, "market_orders", log->market_orders);
     dict_set(out, "orders_per_turn", log->episode_length > 0.0f

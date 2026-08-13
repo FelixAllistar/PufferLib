@@ -550,6 +550,12 @@ while IFS=$'\t' read -r _ kag_policy kag_source; do
         "$kag_policy" "$kag_source" >> "$kag_candidates"
 done < "$kag_meta_manifest"
 
+# The confirm manifest is not weight-sorted; admission below is capped by
+# max_admit, so sort by confirmed meta weight first. Otherwise a capped
+# admission can skip the strongest support policy and fall back to a weaker
+# active league member for the next learner.
+sort -t $'\t' -k2,2gr "$kag_candidates" -o "$kag_candidates"
+
 kag_archive="$kag_archive_root/iteration_$(date +%Y%m%d_%H%M%S)"
 mkdir -p "${kag_archive%/*}"
 cp -a "$kag_league" "$kag_archive"

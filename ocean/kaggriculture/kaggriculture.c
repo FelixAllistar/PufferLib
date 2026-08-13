@@ -387,6 +387,16 @@ static int kag_parse_side(KagSide* side, const char* spec) {
         side->script_profile = KG_SCRIPT_HAMBURGER;
         return 1;
     }
+    if (!strcmp(spec, "lugovoy") || !strcmp(spec, "8c4s")) {
+        side->kind = KAG_SIDE_SCRIPT;
+        side->script_profile = KG_SCRIPT_LUGOVOY;
+        return 1;
+    }
+    if (!strcmp(spec, "thunder25") || !strcmp(spec, "v25")) {
+        side->kind = KAG_SIDE_SCRIPT;
+        side->script_profile = KG_SCRIPT_THUNDER25;
+        return 1;
+    }
     if (!strcmp(spec, "top")) {
         side->kind = KAG_SIDE_SCRIPT;
         side->script_profile = KG_SCRIPT_TOP;
@@ -435,6 +445,11 @@ static int kag_parse_side(KagSide* side, const char* spec) {
     if (!strcmp(spec, "triad") || !strcmp(spec, "adaptive")) {
         side->kind = KAG_SIDE_ADAPTIVE;
         side->script_profile = KAG_ADAPTIVE_TRIAD;
+        return 1;
+    }
+    if (!strcmp(spec, "thunder") || !strcmp(spec, "thunderbot")) {
+        side->kind = KAG_SIDE_ADAPTIVE;
+        side->script_profile = KAG_ADAPTIVE_THUNDER;
         return 1;
     }
     if (!strcmp(spec, "random")) {
@@ -638,7 +653,7 @@ static void kag_usage(const char* exe) {
     printf("  %s watch [SIDE_A] [SIDE_B]\n", exe);
     printf("  %s bench [steps] [SIDE_A] [SIDE_B]\n", exe);
     printf("  %s jsd [steps] LABEL=MODEL.bin [LABEL=MODEL.bin ...]\n", exe);
-    printf("Sides: latest, MODEL.bin, hybridT:MODEL.bin, rules, wheat, carrot, melon, frontier, night, v20, moon, hamburger, fields, scenario, soil, kaito, shield, frontier12, pulse, structured, triad, random, pass\n");
+    printf("Sides: latest, MODEL.bin, hybridT:MODEL.bin, rules, wheat, carrot, melon, frontier, night, v20, moon, hamburger, lugovoy, thunder25, top, fields, scenario, soil, kaito, shield, frontier12, pulse, structured, triad, thunder, random, pass\n");
     printf("  rules: adaptive prices/demand, visible supply, hands, land, liquidation\n");
     printf("One side is mirrored: '%s watch latest' plays latest vs itself.\n", exe);
 }
