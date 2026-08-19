@@ -226,14 +226,6 @@ typedef struct KGState {
     uint32_t watered_plant_days[KG_NUM_PLAYERS];
     uint32_t neglect_deaths[KG_NUM_PLAYERS];
     uint32_t planting_day_deaths[KG_NUM_PLAYERS];
-    /* Realized production is counted when a crop/animal yield is harvested.
-     * Units exclude purchased goods; value is marked at the market price at
-     * harvest, so this is a GDP-like production measure rather than sales
-     * (which would count resale loops). */
-    uint32_t production_units[KG_NUM_PLAYERS];
-    float production_value[KG_NUM_PLAYERS];
-    uint32_t production_product_units[KG_NUM_PLAYERS][KG_NUM_PRODUCTS];
-    float production_product_value[KG_NUM_PLAYERS][KG_NUM_PRODUCTS];
 } KGState;
 
 KG_HD void kg_config_default(KGConfig* config);

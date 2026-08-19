@@ -1,8 +1,7 @@
 // Standalone behavioral-cloning trainer for Kaggriculture.
 // Two modes:
 //   gen   - run bc.games seeded prefixes where both players use a strong bot
-//           (bc.bot: 0=rules econ, 1=top hybrid, 2=adaptive structured,
-//           3=adaptive harvest-pulse, 4=frontier tape) and write bc.steps of
+//           (bc.bot selects the expert profile below) and write bc.steps of
 //           (obs, expert action-heads, packed mask) to bc.data.
 //   train - load bc.data and minimize -log pi(a_expert | obs) over the whole
 //           dataset with mini-batch SGD on the same MinGRU policy as training.
@@ -26,6 +25,24 @@
 
 #define KAG_BC_MAGIC 0x4b414742u  // "KAGB"
 #define KAG_BC_VERSION 2u
+
+// Expert profile IDs. Values 0..4 are kept stable for older scripts; the
+// remaining entries expose the public planner/tape bots added later.
+enum {
+    BC_BOT_RULES = 0,
+    BC_BOT_TOP = 1,
+    BC_BOT_STRUCTURED = 2,
+    BC_BOT_PULSE = 3,
+    BC_BOT_FRONTIER = 4,
+    BC_BOT_TRIAD = 5,
+    BC_BOT_THUNDER = 6,
+    BC_BOT_LUGOVOY = 7,
+    BC_BOT_THUNDER25 = 8,
+    BC_BOT_V20 = 9,
+    BC_BOT_MOON = 10,
+    BC_BOT_HAMBURGER = 11,
+    BC_BOT_COUNT = 12,
+};
 
 typedef struct {
     uint32_t magic;
@@ -183,33 +200,60 @@ static void bc_perturb_action(const KGState* game, int player,
     if ((bc_rand() & 3u) == 0) action->market_count = 0;
 }
 
-// Pick the bot action for a player. profile 1 = top hybrid (tape opening then
-// the rules economy continuation, matching the bench "top" opponent).
+// Pick the bot action for a player. Each profile maps to a native opponent so
+// the clone captures the exact behavior that now runs in the self-play lane.
 static void bc_bot_action(const KGState* game, int player, int profile,
         KGAction* action) {
-    if (profile == 1 && game->step < 26) {
-        kag_script_action(game, player, KG_SCRIPT_TOP, action);
-        kag_script_repair(game, player, KG_SCRIPT_TOP, action);
-        return;
+    switch (profile) {
+        case BC_BOT_TOP:
+            if (game->step < 26) {
+                kag_script_action(game, player, KG_SCRIPT_TOP, action);
+                kag_script_repair(game, player, KG_SCRIPT_TOP, action);
+            } else {
+                kag_bot_action(game, player, -1, action);
+            }
+            return;
+        case BC_BOT_STRUCTURED:
+            kag_adaptive_action(game, player, KAG_ADAPTIVE_STRUCTURED, action);
+            return;
+        case BC_BOT_PULSE:
+            kag_adaptive_action(game, player, KAG_ADAPTIVE_HARVEST_PULSE, action);
+            return;
+        case BC_BOT_TRIAD:
+            kag_adaptive_action(game, player, KAG_ADAPTIVE_TRIAD, action);
+            return;
+        case BC_BOT_THUNDER:
+            kag_adaptive_action(game, player, KAG_ADAPTIVE_THUNDER, action);
+            return;
+        case BC_BOT_FRONTIER:
+            kag_script_action(game, player, KG_SCRIPT_FRONTIER, action);
+            kag_script_repair(game, player, KG_SCRIPT_FRONTIER, action);
+            return;
+        case BC_BOT_V20:
+            kag_script_action(game, player, KG_SCRIPT_V20, action);
+            kag_script_repair(game, player, KG_SCRIPT_V20, action);
+            return;
+        case BC_BOT_MOON:
+            kag_script_action(game, player, KG_SCRIPT_MOON, action);
+            kag_script_repair(game, player, KG_SCRIPT_MOON, action);
+            return;
+        case BC_BOT_HAMBURGER:
+            kag_script_action(game, player, KG_SCRIPT_HAMBURGER, action);
+            kag_script_repair(game, player, KG_SCRIPT_HAMBURGER, action);
+            return;
+        case BC_BOT_LUGOVOY:
+            kag_script_action(game, player, KG_SCRIPT_LUGOVOY, action);
+            kag_script_repair(game, player, KG_SCRIPT_LUGOVOY, action);
+            return;
+        case BC_BOT_THUNDER25:
+            kag_script_action(game, player, KG_SCRIPT_THUNDER25, action);
+            kag_script_repair(game, player, KG_SCRIPT_THUNDER25, action);
+            return;
+        case BC_BOT_RULES:
+        default:
+            kag_bot_action(game, player, -1, action);
+            return;
     }
-    if (profile == 1) {
-        kag_bot_action(game, player, -1, action);
-        return;
-    }
-    if (profile == 2) {
-        kag_adaptive_action(game, player, KAG_ADAPTIVE_STRUCTURED, action);
-        return;
-    }
-    if (profile == 3) {
-        kag_adaptive_action(game, player, KAG_ADAPTIVE_HARVEST_PULSE, action);
-        return;
-    }
-    if (profile == 4) {
-        kag_script_action(game, player, KG_SCRIPT_FRONTIER, action);
-        kag_script_repair(game, player, KG_SCRIPT_FRONTIER, action);
-        return;
-    }
-    kag_bot_action(game, player, -1, action);
 }
 
 // Encode a KGAction into policy action-heads on the agent.
@@ -297,7 +341,7 @@ static int bc_gen(Ini* ini) {
             fprintf(stderr, "bc.seat must be -1, 0, or 1\n");
             return 1;
         }
-        int game_opp = opp < 0 ? (int)(bc_rand() % 5u) : opp;
+        int game_opp = opp < 0 ? (int)(bc_rand() % BC_BOT_COUNT) : opp;
         int steps = 0;
         while (!env.game_storage.done && steps < sequence_steps) {
             KGAction a0 = {}, a1 = {};
@@ -385,6 +429,257 @@ static int bc_gen(Ini* ini) {
     printf("BC oracle end animals: %.3f/game\n",
         (float)end_animals / (float)games);
     free(obs); free(expert); free(mask);
+    return 0;
+}
+
+// On-policy DAgger rollout. The current clone (bc.student) acts in the
+// environment; the expert bot (bc.bot) labels every state the clone reaches.
+// With probability bc.beta the expert's action is executed instead of the
+// clone's, bounding compounding drift while keeping the state distribution
+// close to the clone's.
+static int bc_gen_dagger(Ini* ini) {
+    int games = (int)puf_ini_get(ini, "bc", "games");
+    int requested_steps = (int)puf_ini_get(ini, "bc", "steps");
+    int profile = (int)puf_ini_get(ini, "bc", "bot");
+    int opp = (int)puf_ini_get(ini, "bc", "opponent");
+    int configured_seat = (int)puf_ini_get(ini, "bc", "seat");
+    float beta = (float)puf_ini_get(ini, "bc", "beta");
+    int dagger_batch = (int)puf_ini_get(ini, "bc", "dagger_batch");
+    int bc_seed = (int)puf_ini_get(ini, "bc", "seed");
+    const char* student_path = puf_ini_get_str(ini, "bc", "student");
+    const char* data_path = puf_ini_get_str(ini, "bc", "data");
+    int hidden = (int)puf_ini_get(ini, "policy", "hidden_size");
+    int layers = (int)puf_ini_get(ini, "policy", "num_layers");
+    if (games <= 0) games = 50;
+    if (dagger_batch <= 0) dagger_batch = 16;
+    if (beta < 0.0f) beta = 0.0f;
+    if (beta > 1.0f) beta = 1.0f;
+    if (!student_path || !student_path[0]
+            || strcmp(student_path, "None") == 0) {
+        fprintf(stderr, "bc.student is required for DAgger generation\n");
+        return 1;
+    }
+    if (!data_path || !data_path[0]) data_path = "saved/kaggriculture_bc_data.bin";
+    int episode_steps = (int)puf_ini_get(ini, "env", "episode_steps");
+    int sequence_steps = requested_steps > 0
+        && requested_steps <= episode_steps - 1 ? requested_steps
+        : episode_steps - 1;
+    bc_rng_state = (uint32_t)bc_seed * 2654435761u + 1u;
+
+    int num_atns = NUM_ATNS;
+    int mask_size = KG_POLICY_ACTION_MASK_SIZE;
+    int packed_stride = (mask_size + 7) / 8;
+    int act_n = 0;
+    {
+        int sizes[] = ACT_SIZES;
+        for (int i = 0; i < num_atns; i++) act_n += sizes[i];
+    }
+    int fused_cols = act_n + 1;
+
+    // Reuse the rollout path, not the training path: one decoder row per game
+    // and a carried MinGRU state tensor, exactly like pufferl_forward.
+    Policy policy = build_policy("kaggriculture", OBS_SIZE, hidden,
+        layers, act_n, false, 1);
+    Allocator params = {0}, acts = {0};
+    PolicyWeights weights = policy_weights_create(&policy, &params);
+    PolicyActivations inf_acts = policy_reg_rollout(&policy, weights,
+        &acts, dagger_batch);
+    PrecisionTensor state = {.shape = {layers, dagger_batch, hidden}};
+    alloc_register(&acts, &state);
+    create_allocator_or_die("params", &params);
+    create_allocator_or_die("acts", &acts);
+    precision_t* param_puf = (precision_t*)params.mem;
+    FloatTensor master_weights = {
+        .data = (float*)xcuda((size_t)params.total_elems * sizeof(float)),
+        .shape = {params.total_elems}};
+    uint64_t init_seed = 42;
+    policy_init_weights(&policy, weights, &init_seed, 0);
+    cudaDeviceSynchronize();
+    cast<<<grid_size((int)params.total_elems), BLOCK_SIZE, 0, 0>>>(
+        master_weights.data, param_puf, (int)params.total_elems);
+    cudaDeviceSynchronize();
+    float* host_weights = (float*)malloc(
+        (size_t)params.total_elems * sizeof(float));
+    if (!host_weights) { perror("malloc"); return 1; }
+    FILE* student_file = fopen(student_path, "rb");
+    if (!student_file) { perror(student_path); return 1; }
+    if (fseek(student_file, 0, SEEK_END) != 0
+            || ftell(student_file) != (long)(params.total_elems * sizeof(float))
+            || fseek(student_file, 0, SEEK_SET) != 0
+            || fread(host_weights, sizeof(float),
+                (size_t)params.total_elems, student_file)
+                != (size_t)params.total_elems) {
+        fprintf(stderr, "incompatible DAgger student checkpoint: %s\n",
+            student_path);
+        fclose(student_file);
+        return 1;
+    }
+    fclose(student_file);
+    cudaStream_t stream;
+    cudaStreamCreate(&stream);
+    cudaMemcpyAsync(master_weights.data, host_weights,
+        (size_t)params.total_elems * sizeof(float),
+        cudaMemcpyHostToDevice, stream);
+    cast<<<grid_size((int)params.total_elems), BLOCK_SIZE, 0, stream>>>(
+        param_puf, master_weights.data, (int)params.total_elems);
+    cudaStreamSynchronize(stream);
+
+    obs_t* d_obs_raw = (obs_t*)xcuda((size_t)dagger_batch * OBS_SIZE);
+    precision_t* d_obs = (precision_t*)xcuda(
+        (size_t)dagger_batch * OBS_SIZE * sizeof(precision_t));
+    float* d_logits = (float*)xcuda(
+        (size_t)dagger_batch * fused_cols * sizeof(float));
+    obs_t* h_obs = (obs_t*)malloc((size_t)dagger_batch * OBS_SIZE);
+    float* h_logits = (float*)malloc(
+        (size_t)dagger_batch * fused_cols * sizeof(float));
+    if (!d_obs_raw || !d_obs || !d_logits || !h_obs || !h_logits) {
+        perror("malloc"); return 1;
+    }
+    PrecisionTensor obs_tensor = {.data = d_obs,
+        .shape = {dagger_batch, OBS_SIZE}};
+
+    size_t row_obs = OBS_SIZE;
+    size_t row_expert = NUM_ATNS;
+    size_t row_mask = packed_stride;
+    size_t cap = (size_t)games * (size_t)sequence_steps;
+    obs_t* all_obs = (obs_t*)malloc(cap * row_obs);
+    float* expert = (float*)malloc(cap * row_expert * sizeof(float));
+    unsigned char* mask = (unsigned char*)malloc(cap * row_mask);
+    Env* envs = (Env*)calloc((size_t)dagger_batch, sizeof(Env));
+    int* learner_seat = (int*)malloc((size_t)dagger_batch * sizeof(int));
+    int* game_opp = (int*)malloc((size_t)dagger_batch * sizeof(int));
+    if (!all_obs || !expert || !mask || !envs || !learner_seat || !game_opp) {
+        perror("malloc"); return 1;
+    }
+
+    size_t count = 0;
+    for (int batch_start = 0; batch_start < games;
+            batch_start += dagger_batch) {
+        int B = games - batch_start < dagger_batch
+            ? games - batch_start : dagger_batch;
+        for (int b = 0; b < B; b++) {
+            envs[b] = bc_make_env(ini, (uint32_t)(batch_start + b));
+            learner_seat[b] = configured_seat < 0
+                ? (int)(bc_rand() & 1u) : configured_seat;
+            if (learner_seat[b] < 0 || learner_seat[b] >= KG_NUM_PLAYERS) {
+                fprintf(stderr, "bc.seat must be -1, 0, or 1\n");
+                return 1;
+            }
+            game_opp[b] = opp < 0 ? (int)(bc_rand() % BC_BOT_COUNT) : opp;
+        }
+        cudaMemsetAsync(state.data, 0,
+            numel(state.shape) * sizeof(precision_t), stream);
+        for (int t = 0; t < sequence_steps; t++) {
+            for (int b = 0; b < B; b++) {
+                memcpy(h_obs + b * OBS_SIZE,
+                    envs[b].agents[learner_seat[b]].observations, OBS_SIZE);
+            }
+            cudaMemcpyAsync(d_obs_raw, h_obs,
+                (size_t)B * OBS_SIZE, cudaMemcpyHostToDevice, stream);
+            cast<<<grid_size(B * OBS_SIZE), BLOCK_SIZE, 0, stream>>>(
+                d_obs, d_obs_raw, B * OBS_SIZE);
+            PrecisionTensor dec = policy_forward(&policy, weights, inf_acts,
+                obs_tensor, state, stream);
+            cast<<<grid_size(B * fused_cols), BLOCK_SIZE, 0, stream>>>(
+                d_logits, dec.data, B * fused_cols);
+            cudaMemcpyAsync(h_logits, d_logits,
+                (size_t)B * fused_cols * sizeof(float),
+                cudaMemcpyDeviceToHost, stream);
+            cudaStreamSynchronize(stream);
+
+            for (int b = 0; b < B; b++) {
+                int learner = learner_seat[b];
+                Env* env = &envs[b];
+                /* Greedy student decode from the live semantic mask. Market
+                 * tails beyond a STOP are ignored later by kag_decode_action. */
+                int offset = 0;
+                for (int h = 0; h < NUM_ATNS; h++) {
+                    int A = KG_ACTION_SIZES[h];
+                    float best = -INFINITY;
+                    int best_a = 0;
+                    for (int a = 0; a < A; a++) {
+                        if (env->agents[learner].action_mask[offset + a]) {
+                            float l = h_logits[(size_t)b * fused_cols
+                                + offset + a];
+                            if (l > best) { best = l; best_a = a; }
+                        }
+                    }
+                    env->agents[learner].actions[h] = (float)best_a;
+                    offset += A;
+                }
+                KGAction student_act = {};
+                kag_decode_action(&student_act, &env->agents[learner],
+                    &env->game_storage, learner);
+
+                KGAction expert_act = {};
+                bc_bot_action(&env->game_storage, learner, profile,
+                    &expert_act);
+                kag_compact_animal_repair(&env->game_storage, learner,
+                    &expert_act);
+                bc_set_expert(env, learner, &expert_act);
+
+                memcpy(all_obs + count * row_obs,
+                    env->agents[learner].observations, row_obs);
+                memcpy(expert + count * row_expert,
+                    env->agents[learner].actions,
+                    row_expert * sizeof(float));
+                bc_pack_mask(env, learner, mask + count * row_mask, mask_size,
+                    packed_stride);
+                count++;
+
+                KGAction step_act = {};
+                if (beta > 0.0f
+                        && (bc_rand() >> 8) < (uint32_t)(beta * 16777216.0f)) {
+                    kag_decode_action(&step_act, &env->agents[learner],
+                        &env->game_storage, learner);
+                } else {
+                    step_act = student_act;
+                }
+                KGAction opp_act = {};
+                bc_bot_action(&env->game_storage, 1 - learner,
+                    game_opp[b], &opp_act);
+                KGAction pair[KG_NUM_PLAYERS];
+                pair[learner] = step_act;
+                pair[1 - learner] = opp_act;
+                kg_step(&env->game_storage, pair);
+                kag_write_all_observations_from_tapes(env, kag_script_tapes);
+            }
+        }
+        for (int b = 0; b < B; b++) {
+            for (int p = 0; p < KG_NUM_PLAYERS; p++) {
+                free(envs[b].agents[p].observations);
+                free(envs[b].agents[p].actions);
+                free(envs[b].agents[p].rewards);
+                free(envs[b].agents[p].terminals);
+                free(envs[b].agents[p].action_mask);
+            }
+            memset(&envs[b], 0, sizeof(envs[b]));
+        }
+        printf("dagger batch %d/%d total=%zu\n",
+            batch_start / dagger_batch + 1,
+            (games + dagger_batch - 1) / dagger_batch, count);
+    }
+
+    FILE* fp = fopen(data_path, "wb");
+    if (!fp) { perror(data_path); return 1; }
+    KagBCHeader header = {
+        KAG_BC_MAGIC, KAG_BC_VERSION, (uint32_t)count,
+        (uint32_t)row_obs, (uint32_t)row_expert, (uint32_t)row_mask,
+        (uint32_t)games, (uint32_t)sequence_steps,
+    };
+    fwrite(&header, sizeof(header), 1, fp);
+    fwrite(all_obs, 1, count * row_obs, fp);
+    fwrite(expert, sizeof(float), count * row_expert, fp);
+    fwrite(mask, 1, count * row_mask, fp);
+    fclose(fp);
+    printf("DAgger dataset written: %s (%zu steps, %.1f MB)\n", data_path,
+        count, (double)(count * (row_obs + row_expert * 4 + row_mask))
+            / 1048576.0);
+    free(all_obs); free(expert); free(mask); free(envs);
+    free(learner_seat); free(game_opp); free(host_weights);
+    free(h_obs); free(h_logits);
+    cudaFree(d_obs_raw); cudaFree(d_obs); cudaFree(d_logits);
+    cudaStreamDestroy(stream);
     return 0;
 }
 
@@ -769,9 +1064,12 @@ int main(int argc, char** argv) {
     if (mode && strcmp(mode, "gen") == 0) {
         return bc_gen(&ini);
     }
+    if (mode && strcmp(mode, "gen_dagger") == 0) {
+        return bc_gen_dagger(&ini);
+    }
     if (mode && strcmp(mode, "train") == 0) {
         return bc_train(&ini);
     }
-    fprintf(stderr, "usage: kag_bc bc.mode=gen|train ...\n");
+    fprintf(stderr, "usage: kag_bc bc.mode=gen|gen_dagger|train ...\n");
     return 1;
 }

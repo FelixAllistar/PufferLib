@@ -448,12 +448,12 @@ kag_run_fixed_gpu() {
     fi
     kag_score=$(kag_json_value "$kag_output_text" 'env/perf')
     kag_draw=$(kag_json_value "$kag_output_text" 'env/draw_rate')
-    kag_money=$(kag_json_value "$kag_output_text" 'env/money')
-    kag_fixed_money=$(kag_json_value "$kag_output_text" 'env/opponent_money')
+    kag_money=$(kag_json_value "$kag_output_text" 'env/score')
+    kag_fixed_money=$(kag_json_value "$kag_output_text" 'env/opponent_score')
     kag_reverse_score=$(kag_json_value "$kag_reverse_text" 'env/perf')
     kag_reverse_draw=$(kag_json_value "$kag_reverse_text" 'env/draw_rate')
-    kag_reverse_money=$(kag_json_value "$kag_reverse_text" 'env/money')
-    kag_reverse_fixed_money=$(kag_json_value "$kag_reverse_text" 'env/opponent_money')
+    kag_reverse_money=$(kag_json_value "$kag_reverse_text" 'env/score')
+    kag_reverse_fixed_money=$(kag_json_value "$kag_reverse_text" 'env/opponent_score')
     if [[ -z $kag_score || -z $kag_draw || -z $kag_money || -z $kag_fixed_money \
             || -z $kag_reverse_score || -z $kag_reverse_draw \
             || -z $kag_reverse_money || -z $kag_reverse_fixed_money ]]; then

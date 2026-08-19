@@ -2857,13 +2857,6 @@ void puf_dashboard_print(Ini* ini, PuffeRL* p, Dict* log, int epoch) {
     if (!strcmp(env_name, "kaggriculture")) {
         static const char* const rows[][2] = {
             {"score", "opponent_score"},
-            {"money", "opponent_money"},
-            {"gdp", "opponent_gdp"},
-            {"production_units", "opponent_production_units"},
-            {"strawberry_units", "opponent_strawberry_units"},
-            {"strawberry_value", "opponent_strawberry_value"},
-            {"milk_units", "opponent_milk_units"},
-            {"milk_value", "opponent_milk_value"},
             {"win_rate", "draw_rate"},
             {"land_purchases", "productive_extra_tiles"},
             {"water_coverage", "neglect_deaths"},
@@ -3971,8 +3964,8 @@ static void run_league_eval(Ini* ini, TrainContext* ctx) {
                     i, j,
                     dict_get(&logs[bank], "slot_0_score"),
                     dict_get(&logs[bank], "draw_rate"),
-                    dict_get(&logs[bank], "money"),
-                    dict_get(&logs[bank], "opponent_money"),
+                    dict_get(&logs[bank], "score"),
+                    dict_get(&logs[bank], "opponent_score"),
                     (int)dict_get(&logs[bank], "n"));
             }
             fflush(output);
@@ -3995,8 +3988,8 @@ static void run_league_eval(Ini* ini, TrainContext* ctx) {
                     i, bank,
                     dict_get(&logs[bank], "slot_0_score"),
                     dict_get(&logs[bank], "draw_rate"),
-                    dict_get(&logs[bank], "money"),
-                    dict_get(&logs[bank], "opponent_money"),
+                    dict_get(&logs[bank], "score"),
+                    dict_get(&logs[bank], "opponent_score"),
                     (int)dict_get(&logs[bank], "n"));
             }
             fflush(output);
@@ -4160,15 +4153,8 @@ EvalResult run_eval(Ini* ini, TrainContext* ctx, int mode, int verbose) {
             }
             result.score = (float)dict_get(&log, "env/slot_0_score");
             result.draw = (float)dict_get(&log, "env/draw_rate");
-            /* Kaggriculture now exposes cash separately from potential. Keep
-             * generic match mode compatible with environments that still
-             * publish only score/opponent_score. */
-            result.money = (float)(dict_find(&log, "env/money")
-                ? dict_get(&log, "env/money")
-                : dict_get(&log, "env/score"));
-            result.opponent_money = (float)(dict_find(&log, "env/opponent_money")
-                ? dict_get(&log, "env/opponent_money")
-                : dict_get(&log, "env/opponent_score"));
+            result.money = (float)dict_get(&log, "env/score");
+            result.opponent_money = (float)dict_get(&log, "env/opponent_score");
             result.games = (int)n;
             break;
         }

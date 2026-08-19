@@ -58,16 +58,6 @@ $(BUILD)/kag_bc: kag_bc.cu kaggriculture.h kaggriculture_core.h \
 bc: $(BUILD)/kag_bc
 	$(BUILD)/kag_bc bc.steps=26 bc.epochs=200
 
-bench: $(LIB)
-	$(ROOT)/../.venv/bin/python parity.py --lib $(LIB) --bench
-
-hotpath: | $(BUILD)
-	$(CC) -O3 -std=c17 -Wall -Wextra -Werror \
-		-I$(ROOT) -I$(ROOT)/src -I$(ROOT)/vendor -I$(ROOT)/raylib-5.5_linux_amd64/include \
-		bench_hotpath.c $(ROOT)/raylib-5.5_linux_amd64/lib/libraylib.a \
-		-lGL -lm -lpthread -o $(BUILD)/bench_hotpath
-	$(BUILD)/bench_hotpath
-
 adapter: | $(BUILD)
 	$(CC) -O3 -std=c17 -Wall -Wextra -Werror \
 		-I$(ROOT) -I$(ROOT)/src -I$(ROOT)/vendor -I$(ROOT)/raylib-5.5_linux_amd64/include \
@@ -75,16 +65,11 @@ adapter: | $(BUILD)
 		-lGL -lm -lpthread -o $(BUILD)/test_adapter
 	$(BUILD)/test_adapter
 
-eval: | $(BUILD)
-	$(CC) -O3 -std=c17 -Wall -Wextra -Werror \
-		eval.c kaggriculture_core.c -lm -o $(BUILD)/kaggriculture_eval
-	$(BUILD)/kaggriculture_eval --episodes 32
-
 metagame: | $(BUILD)
 	$(CC) -O3 -std=c17 -Wall -Wextra -Werror metagame.c -lm \
 		-o $(BUILD)/kaggriculture_metagame
 
-native-test: adapter eval
+native-test: adapter
 
 test: native-test parity
 

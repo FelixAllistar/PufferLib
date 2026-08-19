@@ -26,7 +26,7 @@ eval_deterministic = 0
 load_enemy_model_path = None
 enemy_hidden_size = 0
 enemy_num_layers = 0
-run_id = '3'
+run_id = '2'
 result_fd = 0
 wandb = 0
 slowly = 0
@@ -34,7 +34,7 @@ eval_epoch_mult = 1
 reset_every_horizon = 0
 
 [vec]
-total_agents = 8192
+total_agents = 4096*2
 num_buffers = 1
 num_threads = 4
 # V4: 12 unit heads plus ten conditional STOP/command/quantity market slots.
@@ -44,11 +44,11 @@ gpu_env = 1
 # policy mirrors. Keeping one bank makes the mixture and memory use explicit.
 num_frozen_banks = 4
 frozen_bank_pct = 0.75
-frozen_bank_hidden_size = 512
+frozen_bank_hidden_size = 256
 frozen_bank_num_layers = 2
 
 [policy]
-hidden_size = 512
+hidden_size = 256
 num_layers = 2
 expansion_factor = 1
 
@@ -115,11 +115,11 @@ reward_potential_scale = 0.000753463246
 # Terminal win bonus: +reward_win to winner, -reward_win to loser. A single
 # terminal step, so capped by the clamp. Low = the dense potential signal
 # matters more than who wins.
-reward_win = 1
+reward_win = 0.163425595
 
 # How much a planted crop's expected yield (max_yield x price) is worth in
 # potential. Makes PLANT immediately valuable.
-reward_crop_value = 0.2
+reward_crop_value = 0.1
 
 # How much a held seed is worth as a fraction of its cost.
 reward_seed_value = 0.164302313
@@ -130,11 +130,11 @@ reward_product_value = 0.782155633
 # How much a placed animal's expected production (max_held x product price)
 # is worth. 1.0 = full value; do not exceed 1 (over-values beyond the real
 # economics and reward-hacks).
-reward_animal_value = .9
+reward_animal_value = 0.1
 
 # How much unlocked land is worth. Small because land is $1000-$7000 and one
 # buy would otherwise blow through the clamp.
-reward_land_value = 0
+reward_land_value = 0.001
 
 # Health multiplier for a neglected asset. Watered/fed today = 1.0; otherwise
 # this fraction of potential. 0.3 = unwatered crop worth 30%, so skipping
@@ -144,7 +144,7 @@ reward_neglect_discount = 0.595858634
 
 # Days before season end over which unsold asset value is written to zero.
 # Forces selling before the deadline.
-reward_liquidation_days = 1
+reward_liquidation_days = 4.85993576
 
 # Bonus for productive unit actions (water, harvest, feed, care). Usually 0;
 # potential deltas already reward these and a direct bonus encourages spam.
@@ -152,7 +152,7 @@ reward_productive_action = 0
 
 # Terminal money-gap term: scaled by (my_final - opp_final)/starting_money.
 # Rewards beating the opponent by more, not just winning.
-reward_margin_scale = 0.990816748
+reward_margin_scale = 0.890816748
 
 # --- Disabled / legacy (explicit zeros) ---
 
@@ -172,7 +172,7 @@ reward_inactivity = 0
 reward_neglect_death = 0
 # 75% PASS / 25% current-policy mirror self-play overall. The bot fraction is
 # intentionally just below 1: exactly 1 forces the bot onto mirror matches too.
-bot_opponent_fraction = 0.7
+bot_opponent_fraction = 0.5
 bot_pass_fraction = .1
 bot_first = 0
 bot_top_fraction = 0.1
@@ -181,7 +181,7 @@ bot_script_fraction = 0.1
 bot_adaptive_fraction = 0.1
 
 [train]
-total_timesteps = 1000000000
+total_timesteps = 5000000000
 # Start high enough to move, then linearly decay to 10% so late PPO updates do
 # not erase the learned opening as violently as a constant learning rate.
 learning_rate = 0.00188
@@ -199,13 +199,13 @@ vf_clip_coef = 0.31161955
 max_grad_norm = 0.750745416
 ent_coef = 0.000334
 # EMAg starts at the loaded policy and follows it with a 0.1 update coefficient.
-emag_kl_coef = 0
-emag_tau = 0
+emag_kl_coef = 0.01
+emag_tau = 0.1
 emag_cutoff = 0.134
 anneal_ent_coef = 0
 momentum = 0.9
-minibatch_size = 4096
-horizon = 128
+minibatch_size = 32768
+horizon = 256
 prio_alpha = 0
 prio_beta0 = 0.6
 epoch_sampling = 1

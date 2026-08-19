@@ -601,12 +601,6 @@ KG_HD void kg_reset(KGState* state) {
     memset(state->neglect_deaths, 0, sizeof(state->neglect_deaths));
     memset(state->planting_day_deaths, 0,
         sizeof(state->planting_day_deaths));
-    memset(state->production_units, 0, sizeof(state->production_units));
-    memset(state->production_value, 0, sizeof(state->production_value));
-    memset(state->production_product_units, 0,
-        sizeof(state->production_product_units));
-    memset(state->production_product_value, 0,
-        sizeof(state->production_product_value));
     for (i = 0; i < KG_NUM_PRODUCTS; i++) {
         state->market.inventory[i] = KG_MARKET_DEFS[i].i0;
         state->market.prices[i] = KG_MARKET_DEFS[i].base;
@@ -791,12 +785,10 @@ KG_HD static void kg_apply_unit_action(KGState* state, KGPlayer* player, int idx
     KGTile* tile;
     int x;
     int y;
-    int player_id;
     if (action == NULL || idx < 0 || idx >= player->unit_count) {
         return;
     }
     unit = &player->units[idx];
-    player_id = (int)(player - state->players);
     pos = kg_unit_position(player, idx);
     x = pos.x;
     y = pos.y;
@@ -899,36 +891,16 @@ KG_HD static void kg_apply_unit_action(KGState* state, KGPlayer* player, int idx
         }
         if (tile->kind == KG_TILE_PLANT) {
             const KGCropDef* crop = &KG_CROP_DEFS[tile->crop];
-            int item;
-            int units;
             if (state->day - tile->planted_day < crop->first_yield_day) {
                 return;
             }
-            item = kg_crop_product(tile->crop);
-            units = tile->yield_units;
-            state->production_units[player_id] += (uint32_t)units;
-            state->production_value[player_id] +=
-                (float)units * state->market.prices[item];
-            state->production_product_units[player_id][item] +=
-                (uint32_t)units;
-            state->production_product_value[player_id][item] +=
-                (float)units * state->market.prices[item];
-            kg_inventory_add(unit, item, units);
+            kg_inventory_add(unit, kg_crop_product(tile->crop), tile->yield_units);
             tile->yield_units = 0;
             if (!crop->ongoing) {
                 kg_set_player_tile(player, kg_tile_index(x, y), KG_TILE_EMPTY);
             }
         } else if (tile->animal >= 0 && tile->animal < KG_NUM_ANIMALS) {
-            int item = kg_animal_product(tile->animal);
-            int units = tile->yield_units;
-            state->production_units[player_id] += (uint32_t)units;
-            state->production_value[player_id] +=
-                (float)units * state->market.prices[item];
-            state->production_product_units[player_id][item] +=
-                (uint32_t)units;
-            state->production_product_value[player_id][item] +=
-                (float)units * state->market.prices[item];
-            kg_inventory_add(unit, item, units);
+            kg_inventory_add(unit, kg_animal_product(tile->animal), tile->yield_units);
             tile->yield_units = 0;
         }
         return;

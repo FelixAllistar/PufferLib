@@ -98,18 +98,11 @@ profile_one() {
     [[ -n $json ]] || { printf 'GPU profile parse failed for %s\n' "$label" >&2; return 1; }
     completed=$(json_value "$json" env/n)
     [[ -n $completed ]] || { printf 'GPU profile missing env/n for %s\n' "$label" >&2; return 1; }
-    printf '%s\t%s\t%s\t%d\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+    printf '%s\t%s\t%s\t%d\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
         "$label" "${kag_roles[$label]:-unassigned}" "${kag_weights[$label]:-0}" \
         "$completed" \
         "$(json_value "$json" env/perf)" "$(json_value "$json" env/draw_rate)" \
-        "$(json_value "$json" env/potential_score)" "$(json_value "$json" env/opponent_potential)" \
-        "$(json_value "$json" env/money)" "$(json_value "$json" env/opponent_money)" \
-        "$(json_value "$json" env/gdp)" "$(json_value "$json" env/opponent_gdp)" \
-        "$(json_value "$json" env/production_units)" "$(json_value "$json" env/opponent_production_units)" \
-        "$(json_value "$json" env/strawberry_units)" "$(json_value "$json" env/opponent_strawberry_units)" \
-        "$(json_value "$json" env/strawberry_value)" "$(json_value "$json" env/opponent_strawberry_value)" \
-        "$(json_value "$json" env/milk_units)" "$(json_value "$json" env/opponent_milk_units)" \
-        "$(json_value "$json" env/milk_value)" "$(json_value "$json" env/opponent_milk_value)" \
+        "$(json_value "$json" env/score)" "$(json_value "$json" env/opponent_score)" \
         "$(json_value "$json" env/water_coverage)" "$(json_value "$json" env/neglect_deaths)" \
         "$(json_value "$json" env/planting_day_deaths)" "$(json_value "$json" env/plants_alive)" \
         "$(json_value "$json" env/animals_alive)" "$(json_value "$json" env/weeds)" \
@@ -119,7 +112,7 @@ profile_one() {
         "$(json_value "$json" env/animal_feed_actions)" \
         "$(json_value "$json" env/animal_care_actions)" \
         "$(json_value "$json" env/animal_harvest_actions)" \
-        "$(json_value "$json" env/fertilizer_collect_actions)" \
+        "$(json_value "$json" env/fertilizer_collect_action)" \
         "$(json_value "$json" env/orders_per_turn)" "$(json_value "$json" env/buy_orders)" \
         "$(json_value "$json" env/sell_orders)" "$(json_value "$json" env/hire_orders)" \
         > "$kag_tmp/$label.tsv"
@@ -137,7 +130,7 @@ done
 wait
 
 {
-    printf 'policy\trole\tbase_weight\tgames_completed\twin_rate\tdraw_rate\tpotential_score\topponent_potential\tmean_money\topponent_money\tgdp\topponent_gdp\tproduction_units\topponent_production_units\tstrawberry_units\topponent_strawberry_units\tstrawberry_value\topponent_strawberry_value\tmilk_units\topponent_milk_units\tmilk_value\topponent_milk_value\twater_coverage\tneglect_deaths\tplanting_day_deaths\tplants_alive\tanimals_alive\tweeds\tland_purchases\tproductive_extra_tiles\tanimal_place_actions\tanimal_feed_actions\tanimal_care_actions\tanimal_harvest_actions\tfertilizer_collect_actions\torders_per_turn\tbuy_orders\tsell_orders\thire_orders\n'
+    printf 'policy\trole\tbase_weight\tgames_completed\twin_rate\tdraw_rate\tmean_money\topponent_money\twater_coverage\tneglect_deaths\tplanting_day_deaths\tplants_alive\tanimals_alive\tweeds\tland_purchases\tproductive_extra_tiles\tanimal_place_actions\tanimal_feed_actions\tanimal_care_actions\tanimal_harvest_actions\tfertilizer_collect_actions\torders_per_turn\tbuy_orders\tsell_orders\thire_orders\n'
     for label in "${kag_order[@]}"; do cat "$kag_tmp/$label.tsv"; done
 } > "${kag_output}.tsv"
 printf 'Wrote %s.tsv\n' "$kag_output"
