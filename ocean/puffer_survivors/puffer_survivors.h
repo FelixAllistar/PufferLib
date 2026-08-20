@@ -35,29 +35,28 @@ static inline void ps_kwarg_int_array(Dict* kwargs, const char* name,
     for (int i = 0; i < count; i++) dst[i] = (int)item->values[i];
 }
 
+static inline int ps_config_cap(int value, int max) {
+    return value < 0 ? 0 : (value > max ? max : value);
+}
+
 static inline PSConfig ps_config_from_kwargs(Dict* kwargs) {
     PSConfig cfg = {0};
     cfg.arena_size = (float)dict_get(kwargs, "arena_size");
     cfg.max_steps = (int)dict_get(kwargs, "max_steps");
     cfg.wave_length_steps = (int)dict_get(kwargs, "wave_length_steps");
-    cfg.enemy_cap = (int)dict_get(kwargs, "enemy_cap");
-    cfg.projectile_cap = (int)dict_get(kwargs, "projectile_cap");
-    cfg.drop_cap = (int)dict_get(kwargs, "drop_cap");
-    cfg.obstacle_count = (int)dict_get(kwargs, "obstacle_count");
-    cfg.area_cap = (int)dict_get(kwargs, "area_cap");
+    cfg.enemy_cap = ps_config_cap((int)dict_get(kwargs, "enemy_cap"), PS_MAX_ENEMIES);
+    cfg.projectile_cap = ps_config_cap((int)dict_get(kwargs, "projectile_cap"), PS_MAX_PROJECTILES);
+    cfg.drop_cap = ps_config_cap((int)dict_get(kwargs, "drop_cap"), PS_MAX_DROPS);
+    cfg.obstacle_count = ps_config_cap((int)dict_get(kwargs, "obstacle_count"), PS_MAX_OBSTACLES);
+    cfg.area_cap = ps_config_cap((int)dict_get(kwargs, "area_cap"), PS_AREA_STORAGE_CAP);
     cfg.player_radius = (float)dict_get(kwargs, "player_radius");
     cfg.enemy_radius[0] = (float)dict_get(kwargs, "enemy_radius_default");
     cfg.enemy_radius[1] = (float)dict_get(kwargs, "enemy_radius_jelly");
     cfg.enemy_radius[2] = (float)dict_get(kwargs, "enemy_radius_urchin");
     cfg.enemy_radius[3] = (float)dict_get(kwargs, "enemy_radius_eel");
-    ps_kwarg_int_array(kwargs, "enemy_shape", cfg.enemy_shape, PS_ENEMY_KIND_COUNT);
-    ps_kwarg_float_array(kwargs, "enemy_half_width", cfg.enemy_half_width, PS_ENEMY_KIND_COUNT);
-    ps_kwarg_float_array(kwargs, "enemy_half_height", cfg.enemy_half_height, PS_ENEMY_KIND_COUNT);
-    cfg.elite_radius_bonus = (float)dict_get(kwargs, "elite_radius_bonus");
-    cfg.elite_min_radius = (float)dict_get(kwargs, "elite_min_radius");
+    cfg.elite_radius = (float)dict_get(kwargs, "elite_radius");
     cfg.boss_radius = (float)dict_get(kwargs, "boss_radius");
     cfg.ari_k_radius = (float)dict_get(kwargs, "ari_k_radius");
-    cfg.ari_k_shape = (int)dict_get(kwargs, "ari_k_shape");
     cfg.ari_k_half_width = (float)dict_get(kwargs, "ari_k_half_width");
     cfg.ari_k_half_height = (float)dict_get(kwargs, "ari_k_half_height");
     cfg.obstacle_radius_min = (float)dict_get(kwargs, "obstacle_radius_min");
@@ -71,11 +70,13 @@ static inline PSConfig ps_config_from_kwargs(Dict* kwargs) {
     cfg.weapon_base_radius[PS_WEAPON_ORBIT] = (float)dict_get(kwargs, "weapon_orbit_radius");
     cfg.weapon_base_radius[PS_WEAPON_INK] = (float)dict_get(kwargs, "weapon_ink_radius");
     cfg.weapon_base_radius[PS_WEAPON_SONAR] = (float)dict_get(kwargs, "weapon_sonar_radius");
+    cfg.weapon_base_radius[PS_WEAPON_SPIKES] = (float)dict_get(kwargs, "weapon_spikes_radius");
     cfg.weapon_radius_per_level[PS_WEAPON_BUBBLE] = (float)dict_get(kwargs, "weapon_bubble_radius_per_level");
     cfg.weapon_radius_per_level[PS_WEAPON_WHIRLPOOL] = (float)dict_get(kwargs, "weapon_whirlpool_radius_per_level");
     cfg.weapon_radius_per_level[PS_WEAPON_ORBIT] = (float)dict_get(kwargs, "weapon_orbit_radius_per_level");
     cfg.weapon_radius_per_level[PS_WEAPON_INK] = (float)dict_get(kwargs, "weapon_ink_radius_per_level");
     cfg.weapon_radius_per_level[PS_WEAPON_SONAR] = (float)dict_get(kwargs, "weapon_sonar_radius_per_level");
+    cfg.weapon_radius_per_level[PS_WEAPON_SPIKES] = (float)dict_get(kwargs, "weapon_spikes_radius_per_level");
     cfg.weapon_orbit_distance = (float)dict_get(kwargs, "weapon_orbit_distance");
     cfg.weapon_orbit_distance_per_level = (float)dict_get(kwargs, "weapon_orbit_distance_per_level");
     cfg.obstacle_player_spawn_clearance = (float)dict_get(kwargs, "obstacle_player_spawn_clearance");
@@ -231,7 +232,13 @@ static inline PSConfig ps_config_from_kwargs(Dict* kwargs) {
     cfg.sonar_knockback = (float)dict_get(kwargs, "sonar_knockback");
     cfg.sonar_ttl = (int)dict_get(kwargs, "sonar_ttl");
     cfg.sonar_tick_rate = (int)dict_get(kwargs, "sonar_tick_rate");
-    cfg.moving_obstacle_cap = (int)dict_get(kwargs, "moving_obstacle_cap");
+    cfg.frost_slow = (float)dict_get(kwargs, "frost_slow");
+    cfg.frost_half_angle = (float)dict_get(kwargs, "frost_half_angle");
+    cfg.frost_range = (float)dict_get(kwargs, "frost_range");
+    cfg.frost_slow_ttl = (int)dict_get(kwargs, "frost_slow_ttl");
+    cfg.spike_speed = (float)dict_get(kwargs, "spike_speed");
+    cfg.spike_range = (float)dict_get(kwargs, "spike_range");
+    cfg.moving_obstacle_cap = ps_config_cap((int)dict_get(kwargs, "moving_obstacle_cap"), PS_MAX_MOVING_OBSTACLES);
     cfg.moving_obstacle_start_wave = (int)dict_get(kwargs, "moving_obstacle_start_wave");
     cfg.moving_obstacle_spawn_interval = (int)dict_get(kwargs, "moving_obstacle_spawn_interval");
     cfg.moving_obstacle_ttl = (int)dict_get(kwargs, "moving_obstacle_ttl");

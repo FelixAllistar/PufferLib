@@ -110,7 +110,7 @@ int main(void) {
     env.cfg.player_health = 1000000.0f;
     c_reset(&env);
 
-    assert(PS_OBS_SIZE == 321);
+    assert(PS_OBS_SIZE == 335);
     assert_finite_observation(observations);
     assert(ps_geometry_shape_overlaps_circle(PS_SHAPE_AABB,
         4.0f, 0.0f, 0.0f, 4.65f, 4.65f, 0.5f));
@@ -158,6 +158,41 @@ int main(void) {
     assert(fabsf(observations[obstacle_slot] - 3.0f / observe_radius) < 1e-5f);
     assert(fabsf(observations[obstacle_slot + 1] - 1.0f / observe_radius) < 1e-5f);
 
+    // Glacier must survive dense swap-removal, and Spikes must emit the
+    // intended radial counts with a range-derived lifetime.
+    int obstacle_count = env.cfg.obstacle_count;
+    env.cfg.obstacle_count = 0;
+    env.area_bonus = 0.0f;
+    for (int level = 1; level <= 4; level++) {
+        ps_clear_entities(&env, 0);
+        ps_cast_spikes(&env, 0, level);
+        assert(env.projectile_count == (4 << (level - 1)));
+        int ttl = (int)ceilf(env.cfg.spike_range / env.cfg.spike_speed);
+        for (int k = 0; k < env.projectile_count; k++)
+            assert(env.projectiles.ttl[env.projectiles.dense[k]] == ttl);
+    }
+    ps_clear_entities(&env, 0);
+    env.nearest_enemy = -1;
+    int glacier_kill = ps_spawn_enemy(&env, 0) - 1;
+    int glacier_survivor = ps_spawn_enemy(&env, 0) - 1;
+    env.enemies.x[glacier_kill] = 2.0f;
+    env.enemies.y[glacier_kill] = 0.0f;
+    env.enemies.hp[glacier_kill] = 0.1f;
+    env.enemies.max_hp[glacier_kill] = 0.1f;
+    env.enemies.x[glacier_survivor] = 3.0f;
+    env.enemies.y[glacier_survivor] = 0.0f;
+    env.enemies.hp[glacier_survivor] = 10.0f;
+    env.enemies.max_hp[glacier_survivor] = 10.0f;
+    ps_cast_glacier(&env, 0, 1);
+    assert(!env.enemies.active[glacier_kill]);
+    assert(env.enemies.active[glacier_survivor]);
+    float glacier_damage = env.cfg.weapon_base_damage[PS_WEAPON_GLACIER]
+        + env.cfg.weapon_damage_per_level[PS_WEAPON_GLACIER];
+    assert(fabsf(env.enemies.hp[glacier_survivor]
+        - (10.0f - glacier_damage)) < 1e-5f);
+    env.cfg.obstacle_count = obstacle_count;
+    c_reset(&env);
+
     // Upgrade cards are exact one-hot IDs, with inactive cards all zero.
     env.pending_upgrade = 1;
     env.offered[0] = PS_UPGRADE_BUBBLE;
@@ -184,7 +219,7 @@ int main(void) {
         assert_dense(env.enemies.active, env.enemies.dense, env.enemies.dense_pos, env.enemy_count, env.cfg.enemy_cap);
         assert_dense(env.projectiles.active, env.projectiles.dense, env.projectiles.dense_pos, env.projectile_count, env.cfg.projectile_cap);
         assert_dense(env.drops.active, env.drops.dense, env.drops.dense_pos, env.drop_count, env.cfg.drop_cap);
-        assert_dense(env.areas.active, env.areas.dense, env.areas.dense_pos, env.area_count, PS_MAX_AREAS);
+        assert_dense(env.areas.active, env.areas.dense, env.areas.dense_pos, env.area_count, PS_AREA_STORAGE_CAP);
         assert_dense(env.moving_obstacles.active, env.moving_obstacles.dense,
             env.moving_obstacles.dense_pos, env.moving_obstacle_count,
             PS_MAX_MOVING_OBSTACLES);

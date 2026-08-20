@@ -8,7 +8,8 @@
 #define PS_MAX_PROJECTILES 512
 #define PS_MAX_DROPS 256
 #define PS_MAX_OBSTACLES 32
-#define PS_MAX_AREAS 48
+// Compile-time backing storage; env.area_cap may be lower, never higher.
+#define PS_AREA_STORAGE_CAP 96
 #define PS_MAX_MOVING_OBSTACLES 8
 #define PS_GRID_W 32
 #define PS_GRID_H 32
@@ -21,12 +22,12 @@
 #define PS_ENEMY_CHANNELS 4
 #define PS_DROP_CHANNELS 3
 #define PS_OBSTACLE_CHANNELS 2
-#define PS_WEAPON_COUNT 5
+#define PS_WEAPON_COUNT 7
 #define PS_ENEMY_KIND_COUNT 4
 #define PS_WAVE_TABLE_COUNT 24
 #define PS_WEAPON_FEATURES (PS_WEAPON_COUNT * 4)
 #define PS_UPGRADE_SLOTS 3
-#define PS_UPGRADE_FEATURES 12
+#define PS_UPGRADE_FEATURES 14
 #define PS_OBSTACLE_FEATURES (PS_SECTORS * PS_RINGS * 2)
 #define PS_MOVING_OBSTACLE_SLOTS 4
 #define PS_MOVING_OBSTACLE_FEATURES 4
@@ -77,6 +78,8 @@ typedef enum {
     PS_WEAPON_ORBIT = 2,
     PS_WEAPON_INK = 3,
     PS_WEAPON_SONAR = 4,
+    PS_WEAPON_GLACIER = 5,
+    PS_WEAPON_SPIKES = 6,
 } PSWeaponId;
 
 typedef enum {
@@ -85,14 +88,16 @@ typedef enum {
     PS_UPGRADE_ORBIT = 2,
     PS_UPGRADE_INK = 3,
     PS_UPGRADE_SONAR = 4,
-    PS_UPGRADE_SPEED = 5,
-    PS_UPGRADE_MAGNET = 6,
-    PS_UPGRADE_HEALTH = 7,
-    PS_UPGRADE_MIGHT = 8,
-    PS_UPGRADE_COOLDOWN = 9,
-    PS_UPGRADE_AREA = 10,
-    PS_UPGRADE_PIERCE = 11,
-    PS_UPGRADE_COUNT = PS_UPGRADE_FEATURES,
+    PS_UPGRADE_GLACIER = 5,
+    PS_UPGRADE_SPIKES = 6,
+    PS_UPGRADE_SPEED = 7,
+    PS_UPGRADE_MAGNET = 8,
+    PS_UPGRADE_HEALTH = 9,
+    PS_UPGRADE_MIGHT = 10,
+    PS_UPGRADE_COOLDOWN = 11,
+    PS_UPGRADE_AREA = 12,
+    PS_UPGRADE_PIERCE = 13,
+    PS_UPGRADE_COUNT = 14,
 } PSUpgradeId;
 
 typedef struct {
@@ -120,14 +125,9 @@ typedef struct {
     // Runtime gameplay geometry. These values come from the [env] INI.
     float player_radius;
     float enemy_radius[PS_ENEMY_KIND_COUNT];
-    int enemy_shape[PS_ENEMY_KIND_COUNT];
-    float enemy_half_width[PS_ENEMY_KIND_COUNT];
-    float enemy_half_height[PS_ENEMY_KIND_COUNT];
-    float elite_radius_bonus;
-    float elite_min_radius;
+    float elite_radius;
     float boss_radius;
     float ari_k_radius;
-    int ari_k_shape;
     float ari_k_half_width;
     float ari_k_half_height;
     float obstacle_radius_min;
@@ -303,6 +303,12 @@ typedef struct {
     float moving_obstacle_half_width[PS_MOVING_OBSTACLE_TYPE_COUNT];
     float moving_obstacle_half_height[PS_MOVING_OBSTACLE_TYPE_COUNT];
     float moving_obstacle_damage;
+    float frost_slow;
+    float frost_half_angle;
+    float frost_range;
+    int frost_slow_ttl;
+    float spike_speed;
+    float spike_range;
     int free_upgrade;
     int free_upgrade_count;
 } PSConfig;
@@ -335,4 +341,4 @@ enum {
 #define PS_STATIC_ASSERT _Static_assert
 #endif
 PS_STATIC_ASSERT(PS_OBS_END == PS_OBS_SIZE, "Observation layout does not match PS_OBS_SIZE");
-PS_STATIC_ASSERT(PS_OBS_SIZE == 321, "Unexpected Puffer Survivors observation size");
+PS_STATIC_ASSERT(PS_OBS_SIZE == 335, "Unexpected Puffer Survivors observation size");

@@ -11,6 +11,8 @@ static inline const char* ps_upgrade_name(int type) {
         case PS_UPGRADE_ORBIT: return "Orbit";
         case PS_UPGRADE_INK: return "Poison Oil";
         case PS_UPGRADE_SONAR: return "Sonar";
+        case PS_UPGRADE_GLACIER: return "Glacier";
+        case PS_UPGRADE_SPIKES: return "Spikes";
         case PS_UPGRADE_SPEED: return "Speed";
         case PS_UPGRADE_MAGNET: return "Magnet";
         case PS_UPGRADE_HEALTH: return "Health";
@@ -29,6 +31,8 @@ static inline const char* ps_upgrade_description(int type) {
         case PS_UPGRADE_ORBIT: return "More pearls for\nclose defense.";
         case PS_UPGRADE_INK: return "Poison pools and\na longer trail.";
         case PS_UPGRADE_SONAR: return "Huge pulse when\nswarmed.";
+        case PS_UPGRADE_GLACIER: return "Cone of cold that\nslows enemies.";
+        case PS_UPGRADE_SPIKES: return "Spikes burst out\nin all directions.";
         case PS_UPGRADE_SPEED: return "Move faster out\nof danger.";
         case PS_UPGRADE_MAGNET: return "Pull XP and hearts\nfrom farther away.";
         case PS_UPGRADE_HEALTH: return "Gain max HP and\nheal now.";
@@ -124,28 +128,6 @@ static inline Vector2 ps_screen(PufferSurvivors* env, float x, float y, float sc
     }
 #endif
     return (Vector2){w * 0.5f + (x - camera_x) * scale, h * 0.5f + (y - camera_y) * scale};
-}
-
-// Cull in world space before the screen transform so dense populations don't
-// pay for sprite/overlay setup just to be rejected offscreen.
-static inline int ps_cull(PufferSurvivors* env, float x, float y, float radius, float scale, int w, int h) {
-#ifdef PS_FAST_RENDER
-    PSClient* client = (PSClient*)env->client;
-    float camera_x = env->px;
-    float camera_y = env->py;
-    if (client->fast_interp_init) {
-        float alpha = ps_clampf(client->fast_render_alpha, 0.0f, 1.0f);
-        camera_x = client->fast_previous_px + (env->px - client->fast_previous_px) * alpha;
-        camera_y = client->fast_previous_py + (env->py - client->fast_previous_py) * alpha;
-    }
-#else
-    float camera_x = env->px;
-    float camera_y = env->py;
-#endif
-    float sx = (x - camera_x) * scale;
-    float sy = (y - camera_y) * scale;
-    float r = radius * scale;
-    return sx + r < 0.0f || sx - r > (float)w || sy + r < 0.0f || sy - r > (float)h;
 }
 
 static inline PSClient* ps_client(PufferSurvivors* env) {
@@ -571,6 +553,20 @@ static inline void ps_draw_projectile(PufferSurvivors* env, int i, float scale, 
     Vector2 tail = {p.x - env->projectiles.vx[i] * scale * 2.5f, p.y - env->projectiles.vy[i] * scale * 2.5f};
     DrawLineEx(tail, p, fmaxf(2.0f, r * 0.35f), (Color){115, 231, 255, 105});
     DrawCircleLines((int)p.x, (int)p.y, r * 1.25f, (Color){115, 231, 255, 80});
+    if (env->projectiles.type[i] == PS_WEAPON_SPIKES) {
+        float inv_speed = 1.0f / sqrtf(env->projectiles.vx[i] * env->projectiles.vx[i]
+            + env->projectiles.vy[i] * env->projectiles.vy[i]);
+        Vector2 dir = {env->projectiles.vx[i] * inv_speed,
+            env->projectiles.vy[i] * inv_speed};
+        Vector2 side = {-dir.y, dir.x};
+        Vector2 tip = {p.x + dir.x * r * 2.0f, p.y + dir.y * r * 2.0f};
+        Vector2 base = {p.x - dir.x * r * 0.8f, p.y - dir.y * r * 0.8f};
+        DrawTriangle(tip,
+            (Vector2){base.x + side.x * r * 0.8f, base.y + side.y * r * 0.8f},
+            (Vector2){base.x - side.x * r * 0.8f, base.y - side.y * r * 0.8f},
+            (Color){255, 223, 120, 255});
+        return;
+    }
     float travel_angle = atan2f(env->projectiles.vy[i], env->projectiles.vx[i]) * 57.2958f;
     // The atlas bubble points left (large bubble at the leading edge), so its
     // zero-rotation forward vector is 180 degrees.
@@ -596,6 +592,19 @@ static inline void ps_draw_weapon_orbits(PufferSurvivors* env, float scale, int 
         DrawCircleV(p, hit_r * scale * 1.15f, (Color){255, 224, 90, 70});
         ps_draw_sprite_ex(env, PS_SPRITE_ORB, x, y, hit_r, 3.2f, 0.0f, 0, GOLD);
     }
+}
+
+static inline void ps_draw_frost_cone(PufferSurvivors* env, float scale, int w, int h) {
+    if (env->weapon_active[PS_WEAPON_GLACIER] <= 0.01f) return;
+    Vector2 origin = ps_screen(env, env->px, env->py, scale, w, h);
+    float range = env->cfg.frost_range * (1.0f + env->area_bonus) * scale;
+    float half = env->cfg.frost_half_angle * 57.2958f;
+    float aim = env->frost_aim * 57.2958f;
+    float alpha = 150.0f * env->weapon_active[PS_WEAPON_GLACIER];
+    DrawCircleSector(origin, range, aim - half, aim + half, 48,
+        (Color){150, 226, 255, (unsigned char)alpha});
+    DrawCircleSectorLines(origin, range, aim - half, aim + half, 48,
+        (Color){210, 245, 255, (unsigned char)(alpha * 0.7f)});
 }
 
 static inline void ps_draw_enemy(PufferSurvivors* env, int i, float scale, int w, int h) {
@@ -695,20 +704,22 @@ static inline void ps_draw_moving_obstacle(PufferSurvivors* env, int i,
 }
 
 static inline void ps_draw_hud(PufferSurvivors* env) {
-    DrawRectangle(12, 12, 372, 170, (Color){0, 0, 0, 168});
-    DrawRectangleLines(12, 12, 372, 170, (Color){117, 230, 244, 90});
+    DrawRectangle(12, 12, 372, 194, (Color){0, 0, 0, 168});
+    DrawRectangleLines(12, 12, 372, 194, (Color){117, 230, 244, 90});
     DrawText(TextFormat("Puffer Survivors  HP %.0f/%.0f", env->hp, env->max_hp), 24, 24, 18, RAYWHITE);
     ps_draw_bar(24, 49, 200, 12, env->max_hp > 0.0f ? env->hp / env->max_hp : 0.0f, (Color){95, 230, 130, 255}, (Color){58, 18, 28, 210});
     ps_draw_bar(24, 68, 200, 9, ps_xp_threshold(env, 0) > 0.0f ? env->xp / ps_xp_threshold(env, 0) : 0.0f, (Color){70, 210, 255, 255}, (Color){8, 39, 58, 210});
     DrawText(TextFormat("LV %d  Wave %d  Kills %.0f", env->level, ps_wave_index(env, 0) + 1, env->episode_kills), 24, 88, 17, SKYBLUE);
     DrawText(TextFormat("Score %.1f  Damage %.1f", env->episode_score, env->episode_damage_dealt), 24, 111, 17, RAYWHITE);
 
-    const char* labels[PS_WEAPON_COUNT] = {"Bub", "Whirl", "Orb", "Oil", "Sonar"};
+    const char* labels[PS_WEAPON_COUNT] = {"Bub", "Whirl", "Orb", "Oil", "Sonar", "Frost", "Spike"};
     for (int i = 0; i < PS_WEAPON_COUNT; i++) {
         float pct = env->weapon_level[i] > 0 ? 1.0f - ps_clampf(env->weapon_cd[i] / ps_weapon_cooldown_total(env, 0, i), 0.0f, 1.0f) : 0.0f;
-        float x = 24.0f + (float)i * 68.0f;
-        DrawText(TextFormat("%s %d", labels[i], env->weapon_level[i]), (int)x, 135, 12, env->weapon_level[i] > 0 ? RAYWHITE : GRAY);
-        ps_draw_bar(x, 151.0f, 52.0f, 7.0f, pct, (Color){255, 222, 89, 255}, (Color){24, 38, 48, 210});
+        int row = i / 4;
+        float x = 24.0f + (float)(i % 4) * 68.0f;
+        float y = 135.0f + (float)row * 22.0f;
+        DrawText(TextFormat("%s %d", labels[i], env->weapon_level[i]), (int)x, (int)y, 12, env->weapon_level[i] > 0 ? RAYWHITE : GRAY);
+        ps_draw_bar(x, y + 16.0f, 52.0f, 7.0f, pct, (Color){255, 222, 89, 255}, (Color){24, 38, 48, 210});
     }
 
 }
@@ -777,6 +788,8 @@ static inline Color ps_upgrade_color(int upgrade) {
         case PS_UPGRADE_ORBIT: return (Color){255, 222, 89, 255};
         case PS_UPGRADE_INK: return (Color){179, 123, 255, 255};
         case PS_UPGRADE_SONAR: return (Color){170, 255, 255, 255};
+        case PS_UPGRADE_GLACIER: return (Color){150, 226, 255, 255};
+        case PS_UPGRADE_SPIKES: return (Color){214, 252, 255, 255};
         case PS_UPGRADE_HEALTH: return (Color){117, 255, 156, 255};
         case PS_UPGRADE_SPEED: return (Color){255, 238, 125, 255};
         default: return RAYWHITE;
@@ -790,6 +803,8 @@ static inline int ps_upgrade_sprite(int upgrade) {
         case PS_UPGRADE_ORBIT: return PS_SPRITE_ORB;
         case PS_UPGRADE_INK: return PS_SPRITE_INK;
         case PS_UPGRADE_SONAR: return PS_SPRITE_SONAR;
+        case PS_UPGRADE_GLACIER: return PS_SPRITE_SONAR;
+        case PS_UPGRADE_SPIKES: return PS_SPRITE_URCHIN;
         case PS_UPGRADE_HEALTH: return PS_SPRITE_HEALTH;
         case PS_UPGRADE_MAGNET: return PS_SPRITE_XP;
         case PS_UPGRADE_AREA: return PS_SPRITE_WHIRL;
@@ -1063,16 +1078,11 @@ static inline void c_render(PufferSurvivors* env) {
 
     for (int k = 0; k < env->moving_obstacle_count; k++) {
         int i = env->moving_obstacles.dense[k];
-        float extent = fmaxf(env->moving_obstacles.half_width[i],
-            env->moving_obstacles.half_height[i]) * 2.0f;
-        if (!ps_cull(env, env->moving_obstacles.x[i], env->moving_obstacles.y[i],
-                extent, scale, sw, sh))
-            ps_draw_moving_obstacle(env, i, scale, sw, sh);
+        ps_draw_moving_obstacle(env, i, scale, sw, sh);
     }
 
     for (int k = 0; k < env->drop_count; k++) {
         int i = env->drops.dense[k];
-        if (ps_cull(env, env->drops.x[i], env->drops.y[i], 1.0f, scale, sw, sh)) continue;
         Vector2 p = ps_screen(env, env->drops.x[i], env->drops.y[i], scale, sw, sh);
         float pulse = 0.75f + 0.25f * sinf((float)env->tick * 0.14f + (float)i);
         if (env->drops.type[i] == 1) {
@@ -1096,17 +1106,14 @@ static inline void c_render(PufferSurvivors* env) {
 
     for (int k = 0; k < env->area_count; k++) {
         int i = env->areas.dense[k];
-        if (!ps_cull(env, env->areas.x[i], env->areas.y[i],
-                env->areas.radius[i], scale, sw, sh))
-            ps_draw_area(env, i, scale, sw, sh);
+        ps_draw_area(env, i, scale, sw, sh);
     }
 
     ps_draw_weapon_orbits(env, scale, sw, sh);
+    ps_draw_frost_cone(env, scale, sw, sh);
 
     for (int k = 0; k < env->projectile_count; k++) {
         int i = env->projectiles.dense[k];
-        if (ps_cull(env, env->projectiles.x[i], env->projectiles.y[i],
-                env->projectiles.radius[i], scale, sw, sh)) continue;
         ps_draw_projectile(env, i, scale, sw, sh);
         if (env->show_hitboxes) {
             Vector2 p = ps_screen(env, env->projectiles.x[i], env->projectiles.y[i], scale, sw, sh);
@@ -1116,14 +1123,6 @@ static inline void c_render(PufferSurvivors* env) {
 
     for (int k = 0; k < env->enemy_count; k++) {
         int i = env->enemies.dense[k];
-        uint8_t type = env->enemies.type[i];
-        int kind = type & PS_ENEMY_KIND_MASK;
-        float visual_scale = (type & PS_ENEMY_BOSS_FLAG) ? 3.2f
-            : ((type & PS_ENEMY_ELITE_FLAG) ? 3.1f
-            : (kind == 1 ? 3.85f : (kind == 2 ? 3.5f : 3.35f)));
-        float visual_radius = env->enemies.radius[i] * visual_scale;
-        if (ps_cull(env, env->enemies.x[i], env->enemies.y[i],
-                visual_radius, scale, sw, sh)) continue;
         ps_draw_enemy(env, i, scale, sw, sh);
         if (env->show_hitboxes) {
             Vector2 p = ps_screen(env, env->enemies.x[i], env->enemies.y[i], scale, sw, sh);

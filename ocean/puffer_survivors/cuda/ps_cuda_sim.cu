@@ -58,6 +58,7 @@ struct PSCudaSim {
     float *weapon_active;  // [PS_WEAPON_COUNT, N]
     int *weapon_level;     // [PS_WEAPON_COUNT, N]
     float *orbit_phase;
+    float *frost_aim;
     int *tick, *invuln_timer;
 
     // Enemy pool [PS_MAX_ENEMIES, N]
@@ -65,6 +66,7 @@ struct PSCudaSim {
     float *enemy_x, *enemy_y, *enemy_vx, *enemy_vy;
     float *enemy_hp, *enemy_max_hp, *enemy_radius, *enemy_bound_radius;
     float *enemy_half_width, *enemy_half_height, *enemy_speed, *enemy_damage;
+    float *enemy_slow;
     int *enemy_next, *enemy_dense, *enemy_dense_pos;
 
     // Projectile pool [PS_MAX_PROJECTILES, N]
@@ -79,7 +81,7 @@ struct PSCudaSim {
     float *drop_x, *drop_y, *drop_value;
     int *drop_dense, *drop_dense_pos;
 
-    // Area pool [PS_MAX_AREAS, N]
+    // Area pool [PS_AREA_STORAGE_CAP, N]
     uint8_t *area_active, *area_type;
     float *area_x, *area_y, *area_radius, *area_damage;
     int *area_ttl, *area_tick_rate, *area_tick_timer;
@@ -156,7 +158,7 @@ static inline void ps_cuda_alloc(PSCudaSim* sim, int num_envs, PSConfig cfg) {
     const size_t NE = (size_t)cfg.enemy_cap * N;
     const size_t NP = (size_t)cfg.projectile_cap * N;
     const size_t ND = (size_t)cfg.drop_cap * N;
-    const size_t NA = (size_t)PS_MAX_AREAS * N;
+    const size_t NA = (size_t)PS_AREA_STORAGE_CAP * N;
     const size_t NO = (size_t)(cfg.obstacle_count > 0 ? cfg.obstacle_count : 1) * N;
     const size_t NMO = (size_t)PS_MAX_MOVING_OBSTACLES * N;
     const size_t NG = (size_t)PS_GRID_CELLS * N;
@@ -169,7 +171,7 @@ static inline void ps_cuda_alloc(PSCudaSim* sim, int num_envs, PSConfig cfg) {
 
     size_t state_bytes = 0;
     PS_BLOB_ACCOUNT(uint32_t, N);                       // rng
-    PS_BLOB_ACCOUNT(float, N * 8);                      // px py pvx pvy hp max_hp xp + orbit_phase
+    PS_BLOB_ACCOUNT(float, N * 9);                      // px py pvx pvy hp max_hp xp + orbit_phase + frost_aim
     PS_BLOB_ACCOUNT(int, N * 6);                        // player_facing_left level pierce pending queued last_boss
     PS_BLOB_ACCOUNT(float, N * 6);                      // speed damage cooldown projectile_speed magnet area
     PS_BLOB_ACCOUNT(int, N * 9);                        // tick invuln nearest + all pool counts
@@ -181,7 +183,7 @@ static inline void ps_cuda_alloc(PSCudaSim* sim, int num_envs, PSConfig cfg) {
     PS_BLOB_ACCOUNT(int, N * (PS_GRID_CELLS + 2));      // grid_head + grid_touched_count + aabb_count
     PS_BLOB_ACCOUNT(int, NGT * 2);                      // grid_touched + aabb_indices
     PS_BLOB_ACCOUNT(uint8_t, NE * 3);
-    PS_BLOB_ACCOUNT(float, NE * 12);
+    PS_BLOB_ACCOUNT(float, NE * 13);
     PS_BLOB_ACCOUNT(int, NE * 3);
     // Projectile pool
     PS_BLOB_ACCOUNT(uint8_t, NP * 2);
@@ -210,6 +212,7 @@ static inline void ps_cuda_alloc(PSCudaSim* sim, int num_envs, PSConfig cfg) {
     PS_BLOB_FIELD(float, pvx, N); PS_BLOB_FIELD(float, pvy, N);
     PS_BLOB_FIELD(float, hp, N); PS_BLOB_FIELD(float, max_hp, N);
     PS_BLOB_FIELD(float, xp, N); PS_BLOB_FIELD(float, orbit_phase, N);
+    PS_BLOB_FIELD(float, frost_aim, N);
     PS_BLOB_FIELD(int, player_facing_left, N); PS_BLOB_FIELD(int, level, N);
     PS_BLOB_FIELD(int, pierce_bonus, N); PS_BLOB_FIELD(int, pending_upgrade, N);
     PS_BLOB_FIELD(int, queued_upgrades, N); PS_BLOB_FIELD(int, last_boss_tick, N);
@@ -251,6 +254,7 @@ static inline void ps_cuda_alloc(PSCudaSim* sim, int num_envs, PSConfig cfg) {
     PS_BLOB_FIELD(float, enemy_radius, NE); PS_BLOB_FIELD(float, enemy_bound_radius, NE);
     PS_BLOB_FIELD(float, enemy_half_width, NE); PS_BLOB_FIELD(float, enemy_half_height, NE);
     PS_BLOB_FIELD(float, enemy_speed, NE); PS_BLOB_FIELD(float, enemy_damage, NE);
+    PS_BLOB_FIELD(float, enemy_slow, NE);
     PS_BLOB_FIELD(int, enemy_next, NE); PS_BLOB_FIELD(int, enemy_dense, NE);
     PS_BLOB_FIELD(int, enemy_dense_pos, NE);
     PS_BLOB_FIELD(uint8_t, projectile_active, NP); PS_BLOB_FIELD(uint8_t, projectile_type, NP);

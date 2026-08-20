@@ -19,6 +19,7 @@ typedef struct {
     float half_height[PS_MAX_ENEMIES];
     float speed[PS_MAX_ENEMIES];
     float damage[PS_MAX_ENEMIES];
+    float slow[PS_MAX_ENEMIES];
     uint8_t shape[PS_MAX_ENEMIES];
     int next[PS_MAX_ENEMIES];
     int dense[PS_MAX_ENEMIES];
@@ -51,17 +52,17 @@ typedef struct {
 } PSDropPool;
 
 typedef struct {
-    uint8_t active[PS_MAX_AREAS];
-    uint8_t type[PS_MAX_AREAS];
-    float x[PS_MAX_AREAS];
-    float y[PS_MAX_AREAS];
-    float radius[PS_MAX_AREAS];
-    float damage[PS_MAX_AREAS];
-    int ttl[PS_MAX_AREAS];
-    int tick_rate[PS_MAX_AREAS];
-    int tick_timer[PS_MAX_AREAS];
-    int dense[PS_MAX_AREAS];
-    int dense_pos[PS_MAX_AREAS];
+    uint8_t active[PS_AREA_STORAGE_CAP];
+    uint8_t type[PS_AREA_STORAGE_CAP];
+    float x[PS_AREA_STORAGE_CAP];
+    float y[PS_AREA_STORAGE_CAP];
+    float radius[PS_AREA_STORAGE_CAP];
+    float damage[PS_AREA_STORAGE_CAP];
+    int ttl[PS_AREA_STORAGE_CAP];
+    int tick_rate[PS_AREA_STORAGE_CAP];
+    int tick_timer[PS_AREA_STORAGE_CAP];
+    int dense[PS_AREA_STORAGE_CAP];
+    int dense_pos[PS_AREA_STORAGE_CAP];
 } PSAreaPool;
 
 typedef struct {
@@ -108,6 +109,7 @@ struct Env {
     float weapon_active[PS_WEAPON_COUNT];
     int weapon_level[PS_WEAPON_COUNT];
     float orbit_phase;
+    float frost_aim;
     int tick, invuln_timer;
 
     PSEnemyPool enemies;

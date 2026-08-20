@@ -162,7 +162,7 @@ PS_SIM_FN void ps_clear_entities(PSSim* sim, int env) {
     }
     for (int i = 0; i < sim->cfg.projectile_cap; i++) PS_PROJECTILE(sim, env, i, active) = 0;
     for (int i = 0; i < sim->cfg.drop_cap; i++) PS_DROP(sim, env, i, active) = 0;
-    for (int i = 0; i < PS_MAX_AREAS; i++) PS_AREA(sim, env, i, active) = 0;
+    for (int i = 0; i < PS_AREA_STORAGE_CAP; i++) PS_AREA(sim, env, i, active) = 0;
     for (int i = 0; i < PS_MAX_MOVING_OBSTACLES; i++) PS_MOVING(sim, env, i, active) = 0;
     for (int i = 0; i < PS_GRID_CELLS; i++) PS_GRID(sim, env, i) = -1;
     PS_P(sim, env, grid_touched_count) = 0;
@@ -810,7 +810,7 @@ PS_SIM_FN void ps_verify_counts(PSSim* sim, int env) {
         drops += PS_DROP(sim, env, i, active) ? 1 : 0;
     }
 
-    for (int i = 0; i < PS_MAX_AREAS; i++) {
+    for (int i = 0; i < PS_AREA_STORAGE_CAP; i++) {
         areas += PS_AREA(sim, env, i, active) ? 1 : 0;
     }
 
@@ -858,6 +858,8 @@ PS_SIM_FN void ps_apply_upgrade_effect(PSSim* sim, int env, int upgrade) {
         case PS_UPGRADE_ORBIT:
         case PS_UPGRADE_INK:
         case PS_UPGRADE_SONAR:
+        case PS_UPGRADE_GLACIER:
+        case PS_UPGRADE_SPIKES:
             if (PS_W(sim, env, upgrade, weapon_level) < sim->cfg.weapon_max_level)
                 PS_W(sim, env, upgrade, weapon_level)++;
             break;
@@ -1000,7 +1002,7 @@ PS_SIM_FN PSEnemyDef ps_enemy_stats(PSSim* sim, int env, int* kind_out,
     if (elite) {
         stats.hp *= sim->cfg.elite_hp_multiplier;
         stats.speed_mult *= sim->cfg.elite_speed_multiplier;
-        radius = fmaxf(radius + sim->cfg.elite_radius_bonus, sim->cfg.elite_min_radius);
+        radius = sim->cfg.elite_radius;
         stats.damage *= sim->cfg.elite_damage_multiplier;
     }
     if (boss) {
@@ -1024,13 +1026,18 @@ PS_SIM_FN PSEnemyDef ps_enemy_stats(PSSim* sim, int env, int* kind_out,
     return stats;
 }
 
-PS_SIM_FN void ps_enemy_geometry(PSSim* sim, int env, int kind, int ari_k,
+PS_SIM_FN void ps_enemy_geometry(PSSim* sim, int env, int ari_k,
         float radius, int* shape, float* half_width, float* half_height,
         float* bound_radius) {
     (void)env;
-    *shape = ari_k ? sim->cfg.ari_k_shape : sim->cfg.enemy_shape[kind];
-    *half_width = ari_k ? sim->cfg.ari_k_half_width : sim->cfg.enemy_half_width[kind];
-    *half_height = ari_k ? sim->cfg.ari_k_half_height : sim->cfg.enemy_half_height[kind];
+    *shape = ari_k ? PS_SHAPE_AABB : PS_SHAPE_CIRCLE;
+    if (!ari_k) {
+        *half_width = radius;
+        *half_height = radius;
+    } else {
+        *half_width = sim->cfg.ari_k_half_width;
+        *half_height = sim->cfg.ari_k_half_height;
+    }
     *bound_radius = ps_geometry_shape_bound_radius(*shape, radius,
         *half_width, *half_height);
 }
@@ -1077,7 +1084,7 @@ PS_SIM_FN int ps_spawn_enemy(PSSim* sim, int env) {
     float half_width = radius;
     float half_height = radius;
     float bound_radius = radius;
-    ps_enemy_geometry(sim, env, kind, ari_k, radius, &shape, &half_width,
+    ps_enemy_geometry(sim, env, ari_k, radius, &shape, &half_width,
         &half_height, &bound_radius);
     PS_ENEMY(sim, env, slot, shape) = (uint8_t)shape;
     PS_ENEMY(sim, env, slot, half_width) = half_width;
@@ -1085,6 +1092,7 @@ PS_SIM_FN int ps_spawn_enemy(PSSim* sim, int env) {
     PS_ENEMY(sim, env, slot, bound_radius) = bound_radius;
     PS_ENEMY(sim, env, slot, speed) = stats.speed_mult;
     PS_ENEMY(sim, env, slot, damage) = stats.damage;
+    PS_ENEMY(sim, env, slot, slow) = 0.0f;
     PS_ENEMY(sim, env, slot, active) = 1;
     ps_dense_add(sim, env, PS_ENEMY_DENSE(sim, env), PS_ENEMY_DENSE_POS(sim, env), &PS_P(sim, env, enemy_count), slot);
     return slot + 1;
@@ -1128,7 +1136,7 @@ PS_SIM_FN void ps_spawn_projectile(PSSim* sim, int env, int type, float sx, floa
 PS_SIM_FN void ps_spawn_area(PSSim* sim, int env, int type, float x, float y, float radius, float damage, int ttl, int tick_rate) {
     if (PS_P(sim, env, area_count) >= sim->cfg.area_cap) return;
 
-    int i = ps_find_free_slot(sim, env, PS_AREA_ACTIVE(sim, env), PS_MAX_AREAS, &PS_P(sim, env, next_area_slot));
+    int i = ps_find_free_slot(sim, env, PS_AREA_ACTIVE(sim, env), PS_AREA_STORAGE_CAP, &PS_P(sim, env, next_area_slot));
 
     ps_push_out_obstacles(sim, env, &x, &y, radius, 0);
     PS_AREA(sim, env, i, type) = (uint8_t)type;
@@ -1268,8 +1276,11 @@ PS_SIM_FN void ps_update_enemies(PSSim* sim, int env) {
         float dx = player_x - PS_ENEMY(sim, env, i, x);
         float dy = player_y - PS_ENEMY(sim, env, i, y);
         float d = sqrtf(fmaxf(dx * dx + dy * dy, 0.0001f));
-        PS_ENEMY(sim, env, i, vx) = dx / d * PS_ENEMY(sim, env, i, speed);
-        PS_ENEMY(sim, env, i, vy) = dy / d * PS_ENEMY(sim, env, i, speed);
+        float spd = PS_ENEMY(sim, env, i, speed);
+        if (PS_ENEMY(sim, env, i, slow) > 0.0f) spd *= (1.0f - sim->cfg.frost_slow);
+        PS_ENEMY(sim, env, i, vx) = dx / d * spd;
+        PS_ENEMY(sim, env, i, vy) = dy / d * spd;
+        if (PS_ENEMY(sim, env, i, slow) > 0.0f) PS_ENEMY(sim, env, i, slow) -= 1.0f;
         PS_ENEMY(sim, env, i, x) += PS_ENEMY(sim, env, i, vx);
         PS_ENEMY(sim, env, i, y) += PS_ENEMY(sim, env, i, vy);
         if ((PS_P(sim, env, tick) + i) % sim->cfg.enemy_obstacle_stride == 0)
@@ -1646,6 +1657,57 @@ PS_SIM_FN void ps_cast_sonar(PSSim* sim, int env, int level) {
     PS_W(sim, env, PS_WEAPON_SONAR, weapon_active) = 1.0f;
 }
 
+PS_SIM_FN void ps_cast_glacier(PSSim* sim, int env, int level) {
+    float range = sim->cfg.frost_range * (1.0f + PS_P(sim, env, area_bonus));
+    int target = ps_nearest_enemy(sim, env, range);
+    if (target < 0) return;
+    float ax = PS_P(sim, env, px), ay = PS_P(sim, env, py);
+    float aim = atan2f(PS_ENEMY(sim, env, target, y) - ay, PS_ENEMY(sim, env, target, x) - ax);
+    float half = sim->cfg.frost_half_angle;
+    float cos_aim = cosf(aim), sin_aim = sinf(aim);
+    float cos_half = cosf(half);
+    float dmg = ps_weapon_damage(sim, env, PS_WEAPON_GLACIER, level, 0);
+    int scan_capacity = PS_P(sim, env, enemy_count) * 2 >= sim->cfg.enemy_cap;
+    int scan_count = scan_capacity ? sim->cfg.enemy_cap : PS_P(sim, env, enemy_count);
+    int k = 0;
+    while (k < (scan_capacity ? scan_count : PS_P(sim, env, enemy_count))) {
+        int i = scan_capacity ? k : PS_ENEMY(sim, env, k, dense);
+        if (!PS_ENEMY(sim, env, i, active)) {
+            k++;
+            continue;
+        }
+        float dx = PS_ENEMY(sim, env, i, x) - ax, dy = PS_ENEMY(sim, env, i, y) - ay;
+        float len2 = dx * dx + dy * dy;
+        if (len2 <= range * range) {
+            float dot = dx * cos_aim + dy * sin_aim;
+            if (dot > 0.0f && dot * dot >= len2 * cos_half * cos_half) {
+                int killed = ps_damage_enemy(sim, env, i, dmg);
+                if (!killed) PS_ENEMY(sim, env, i, slow) = (float)sim->cfg.frost_slow_ttl;
+                if (!scan_capacity && killed) continue;
+            }
+        }
+        k++;
+    }
+    PS_W(sim, env, PS_WEAPON_GLACIER, weapon_active) = 1.0f;
+    PS_P(sim, env, frost_aim) = aim;
+}
+
+PS_SIM_FN void ps_cast_spikes(PSSim* sim, int env, int level) {
+    int n = 4 << (level - 1);
+    float dmg = ps_weapon_damage(sim, env, PS_WEAPON_SPIKES, level, 0);
+    float radius = ps_geometry_weapon_radius(&sim->cfg, PS_WEAPON_SPIKES, level)
+        * (1.0f + PS_P(sim, env, area_bonus));
+    float px = PS_P(sim, env, px), py = PS_P(sim, env, py);
+    for (int i = 0; i < n; i++) {
+        float a = 2.0f * PI * ((float)i / (float)n);
+        ps_spawn_projectile(sim, env, PS_WEAPON_SPIKES, px, py,
+            px + cosf(a) * sim->cfg.spike_range, py + sinf(a) * sim->cfg.spike_range,
+            dmg, radius, sim->cfg.spike_speed, PS_P(sim, env, pierce_bonus) + level / 4,
+            (int)ceilf(sim->cfg.spike_range / sim->cfg.spike_speed));
+    }
+    PS_W(sim, env, PS_WEAPON_SPIKES, weapon_active) = 1.0f;
+}
+
 PS_SIM_FN void ps_update_weapons(PSSim* sim, int env) {
     for (int i = 0; i < PS_WEAPON_COUNT; i++) {
         PS_W(sim, env, i, weapon_active) *= sim->cfg.weapon_active_decay;
@@ -1666,6 +1728,8 @@ PS_SIM_FN void ps_update_weapons(PSSim* sim, int env) {
             case PS_WEAPON_ORBIT: ps_cast_orbit(sim, env, level); break;
             case PS_WEAPON_INK: ps_cast_ink(sim, env, level); break;
             case PS_WEAPON_SONAR: ps_cast_sonar(sim, env, level); break;
+            case PS_WEAPON_GLACIER: ps_cast_glacier(sim, env, level); break;
+            case PS_WEAPON_SPIKES: ps_cast_spikes(sim, env, level); break;
         }
         PS_W(sim, env, weapon, weapon_cd) = ps_weapon_cooldown_total(sim, env, weapon);
     }

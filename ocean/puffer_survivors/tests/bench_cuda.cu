@@ -55,18 +55,19 @@ __device__ static int stress_gcd(int a, int b) {
     return a;
 }
 
-__global__ static void seed_stress_kernel(PSCudaSim* sim,
+__global__ static void seed_stress_kernel(PSCudaSim sim,
         int enemy_capacity, int projectile_count, int drop_count, int area_count,
         int churn) {
     int env = blockIdx.x * blockDim.x + threadIdx.x;
-    if (env >= sim->num_envs) return;
+    if (env >= sim.num_envs) return;
+    PSCudaSim* sp = &sim;
 
     int active_enemies = enemy_capacity;
     if (churn) {
         active_enemies = (enemy_capacity * 3) / 4;
         if (active_enemies < 1 && enemy_capacity > 0) active_enemies = 1;
     }
-    sim->enemy_count[env] = active_enemies;
+    sim.enemy_count[env] = active_enemies;
 
     int stride = 1;
     int offset = 0;
@@ -85,94 +86,93 @@ __global__ static void seed_stress_kernel(PSCudaSim* sim,
         int slot = churn && enemy_capacity > 1
             ? (offset + k * stride) % enemy_capacity
             : k;
-        int e = PS_IDX(sim, slot, env);
+        int e = PS_IDX(sp, slot, env);
         float angle = 0.0245436926f * (float)((k * 97) & 255);
         float radius = 9.0f + 2.0f * (float)(k & 3);
-        sim->enemy_active[e] = 1;
-        sim->enemy_type[e] = (uint8_t)(k & PS_ENEMY_KIND_MASK);
-        sim->enemy_shape[e] = PS_SHAPE_CIRCLE;
-        sim->enemy_x[e] = cosf(angle) * radius;
-        sim->enemy_y[e] = sinf(angle) * radius;
-        sim->enemy_vx[e] = 0.0f;
-        sim->enemy_vy[e] = 0.0f;
-        sim->enemy_hp[e] = 1000000000.0f;
-        sim->enemy_max_hp[e] = 1000000000.0f;
-        sim->enemy_radius[e] = 0.45f;
-        sim->enemy_bound_radius[e] = 0.45f;
-        sim->enemy_half_width[e] = 0.45f;
-        sim->enemy_half_height[e] = 0.45f;
-        sim->enemy_speed[e] = 0.0f;
-        sim->enemy_damage[e] = 0.0f;
-        sim->enemy_next[e] = -1;
-        sim->enemy_dense_pos[e] = k;
-        sim->enemy_dense[PS_IDX(sim, k, env)] = slot;
+        sim.enemy_active[e] = 1;
+        sim.enemy_type[e] = (uint8_t)(k & PS_ENEMY_KIND_MASK);
+        sim.enemy_shape[e] = PS_SHAPE_CIRCLE;
+        sim.enemy_x[e] = cosf(angle) * radius;
+        sim.enemy_y[e] = sinf(angle) * radius;
+        sim.enemy_vx[e] = 0.0f;
+        sim.enemy_vy[e] = 0.0f;
+        sim.enemy_hp[e] = 1000000000.0f;
+        sim.enemy_max_hp[e] = 1000000000.0f;
+        sim.enemy_radius[e] = 0.45f;
+        sim.enemy_bound_radius[e] = 0.45f;
+        sim.enemy_half_width[e] = 0.45f;
+        sim.enemy_half_height[e] = 0.45f;
+        sim.enemy_speed[e] = 0.0f;
+        sim.enemy_damage[e] = 0.0f;
+        sim.enemy_next[e] = -1;
+        sim.enemy_dense_pos[e] = k;
+        sim.enemy_dense[PS_IDX(sp, k, env)] = slot;
     }
 
-    sim->projectile_count[env] = projectile_count;
+    sim.projectile_count[env] = projectile_count;
     for (int i = 0; i < projectile_count; i++) {
-        int p = PS_IDX(sim, i, env);
+        int p = PS_IDX(sp, i, env);
         float angle = 0.0245436926f * (float)((i * 53 + 17) & 255);
-        sim->projectile_active[p] = 1;
-        sim->projectile_type[p] = PS_WEAPON_BUBBLE;
-        sim->projectile_x[p] = cosf(angle) * 18.0f;
-        sim->projectile_y[p] = sinf(angle) * 18.0f;
-        sim->projectile_vx[p] = 0.0f;
-        sim->projectile_vy[p] = 0.0f;
-        sim->projectile_damage[p] = 0.0f;
-        sim->projectile_radius[p] = 0.05f;
-        sim->projectile_ttl[p] = 1000000000;
-        sim->projectile_pierce[p] = 0;
-        sim->projectile_dense_pos[p] = i;
-        sim->projectile_dense[PS_IDX(sim, i, env)] = i;
+        sim.projectile_active[p] = 1;
+        sim.projectile_type[p] = PS_WEAPON_BUBBLE;
+        sim.projectile_x[p] = cosf(angle) * 18.0f;
+        sim.projectile_y[p] = sinf(angle) * 18.0f;
+        sim.projectile_vx[p] = 0.0f;
+        sim.projectile_vy[p] = 0.0f;
+        sim.projectile_damage[p] = 0.0f;
+        sim.projectile_radius[p] = 0.05f;
+        sim.projectile_ttl[p] = 1000000000;
+        sim.projectile_pierce[p] = 0;
+        sim.projectile_dense_pos[p] = i;
+        sim.projectile_dense[PS_IDX(sp, i, env)] = i;
     }
 
-    sim->drop_count[env] = drop_count;
+    sim.drop_count[env] = drop_count;
     for (int i = 0; i < drop_count; i++) {
-        int d = PS_IDX(sim, i, env);
+        int d = PS_IDX(sp, i, env);
         float angle = 0.0245436926f * (float)((i * 71 + 31) & 255);
-        sim->drop_active[d] = 1;
-        sim->drop_type[d] = 0;
-        sim->drop_x[d] = cosf(angle) * 20.0f;
-        sim->drop_y[d] = sinf(angle) * 20.0f;
-        sim->drop_value[d] = 1.0f;
-        sim->drop_dense_pos[d] = i;
-        sim->drop_dense[PS_IDX(sim, i, env)] = i;
+        sim.drop_active[d] = 1;
+        sim.drop_type[d] = 0;
+        sim.drop_x[d] = cosf(angle) * 20.0f;
+        sim.drop_y[d] = sinf(angle) * 20.0f;
+        sim.drop_value[d] = 1.0f;
+        sim.drop_dense_pos[d] = i;
+        sim.drop_dense[PS_IDX(sp, i, env)] = i;
     }
 
-    sim->area_count[env] = area_count;
+    sim.area_count[env] = area_count;
     for (int i = 0; i < area_count; i++) {
-        int a = PS_IDX(sim, i, env);
+        int a = PS_IDX(sp, i, env);
         float angle = 0.0245436926f * (float)((i * 83 + 47) & 255);
-        sim->area_active[a] = 1;
-        sim->area_type[a] = PS_WEAPON_WHIRLPOOL;
-        sim->area_x[a] = cosf(angle) * 20.0f;
-        sim->area_y[a] = sinf(angle) * 20.0f;
-        sim->area_radius[a] = 0.5f;
-        sim->area_damage[a] = 0.0f;
-        sim->area_ttl[a] = 1000000000;
-        sim->area_tick_rate[a] = 1000000000;
-        sim->area_tick_timer[a] = 1000000000;
-        sim->area_dense_pos[a] = i;
-        sim->area_dense[PS_IDX(sim, i, env)] = i;
+        sim.area_active[a] = 1;
+        sim.area_type[a] = PS_WEAPON_WHIRLPOOL;
+        sim.area_x[a] = cosf(angle) * 20.0f;
+        sim.area_y[a] = sinf(angle) * 20.0f;
+        sim.area_radius[a] = 0.5f;
+        sim.area_damage[a] = 0.0f;
+        sim.area_ttl[a] = 1000000000;
+        sim.area_tick_rate[a] = 1000000000;
+        sim.area_tick_timer[a] = 1000000000;
+        sim.area_dense_pos[a] = i;
+        sim.area_dense[PS_IDX(sp, i, env)] = i;
     }
 
-    sim->active_ink_count[env] = 0;
-    sim->moving_obstacle_count[env] = 0;
-    sim->grid_touched_count[env] = 0;
-    sim->aabb_count[env] = 0;
-    sim->nearest_enemy[env] = -1;
-    sim->nearest_enemy_d2[env] = 1e30f;
+    sim.active_ink_count[env] = 0;
+    sim.moving_obstacle_count[env] = 0;
+    sim.grid_touched_count[env] = 0;
+    sim.aabb_count[env] = 0;
+    sim.nearest_enemy[env] = -1;
+    sim.nearest_enemy_d2[env] = 1e30f;
     for (int i = 0; i < PS_WEAPON_COUNT; i++) {
-        int w = PS_IDX(sim, i, env);
-        sim->weapon_level[w] = 0;
-        sim->weapon_cd[w] = 1000000000.0f;
-        sim->weapon_active[w] = 0.0f;
+        int w = PS_IDX(sp, i, env);
+        sim.weapon_level[w] = 0;
+        sim.weapon_cd[w] = 1000000000.0f;
+        sim.weapon_active[w] = 0.0f;
     }
 }
-
 static void seed_stress_state(PSCudaSim* sim, int num_envs, bool churn) {
     int blocks = (num_envs + PS_CUDA_BLOCK_SIZE - 1) / PS_CUDA_BLOCK_SIZE;
-    seed_stress_kernel<<<blocks, PS_CUDA_BLOCK_SIZE>>>(sim,
+    seed_stress_kernel<<<blocks, PS_CUDA_BLOCK_SIZE>>>(*sim,
         sim->cfg.enemy_cap,
         sim->cfg.projectile_cap,
         sim->cfg.drop_cap,
