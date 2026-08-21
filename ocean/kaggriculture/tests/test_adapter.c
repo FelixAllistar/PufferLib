@@ -59,15 +59,9 @@ static void assert_potential_schedule(void) {
     KGConfig config;
     kg_config_default(&config);
     kg_init(&env.game_storage, &config);
-    env.reward_seed_value = 1.0f;
-    env.reward_product_value = 1.0f;
-    env.reward_crop_value = 1.0f;
-    env.reward_animal_value = 1.0f;
-    env.reward_land_value = 1.0f;
-    env.reward_neglect_discount = 0.5f;
-    env.reward_liquidation_days = 6.0f;
     KGPlayer* player = &env.game_storage.players[0];
 
+    /* Buying a seed and buying land exchange cash for equal-cost capital. */
     player->money = 2990;
     player->seeds[KG_WHEAT] = 1;
     assert(fabsf(kag_player_potential(&env, 0) - 3000.0f) < 1e-5f);
@@ -76,16 +70,6 @@ static void assert_potential_schedule(void) {
     player->seeds[KG_WHEAT] = 0;
     player->unlocked_mask = 3;
     assert(fabsf(kag_player_potential(&env, 0) - 3000.0f) < 1e-5f);
-
-    player->money = 2900;
-    player->unlocked_mask = 1;
-    player->shed[KG_ITEM_FERTILIZER] = 1;
-    assert(fabsf(kag_player_potential(&env, 0) - 3000.0f) < 1e-5f);
-    env.game_storage.step = config.episode_steps - 3 * config.turns_per_day;
-    assert(fabsf(kag_player_potential(&env, 0) - 2950.0f) < 1e-5f);
-    env.game_storage.step = config.episode_steps - 1;
-    float expected = 2900.0f + 100.0f / (6.0f * config.turns_per_day);
-    assert(fabsf(kag_player_potential(&env, 0) - expected) < 1e-4f);
 }
 
 static void assert_market_impact_mark(void) {
@@ -98,22 +82,17 @@ static void assert_market_impact_mark(void) {
     game->market.inventory[item] = 10000;
     kg_refresh_prices(game);
 
-    env.reward_market_impact = 0.0f;
-    float spot_mark = kag_product_mark(&env, item, 50.0f, 0.0f);
-    assert(fabsf(spot_mark - 50.0f * game->market.prices[item]) < 1e-5f);
-
-    env.reward_market_impact = 1.0f;
     /* A one-unit liquid inventory remains exactly executable. */
     for (int product = 0; product < KG_NUM_PRODUCTS; product++) {
         game->market.inventory[product] = KG_MARKET_DEFS[product].i0;
         kg_refresh_prices(game);
-        assert(fabsf(kag_product_mark(&env, product, 1.0f, 0.0f)
+        assert(fabsf(kag_product_mark(&env, product, 1.0f)
             - (float)game->market.prices[product]) < 1e-5f);
     }
     game->market.inventory[item] = 10000;
     kg_refresh_prices(game);
-    float impact_mark = kag_product_mark(&env, item, 50.0f, 0.0f);
-    assert(impact_mark < spot_mark);
+    float impact_mark = kag_product_mark(&env, item, 50.0f);
+    assert(impact_mark < 50.0f * game->market.prices[item]);
 
     const int offsets[] = {-200, -10, 0, 200};
     const int piles[] = {2, 17, 128, 2048};
@@ -124,8 +103,7 @@ static void assert_market_impact_mark(void) {
                 int units = piles[pi];
                 game->market.inventory[product] = inventory;
                 kg_refresh_prices(game);
-                float mark = kag_product_mark(&env, product,
-                    (float)units, 0.0f);
+                float mark = kag_product_mark(&env, product, (float)units);
                 double brute = 0.0;
                 for (int unit = 0; unit < units; unit++) {
                     brute += kg_market_price(product, inventory + unit);
@@ -139,7 +117,7 @@ static void assert_market_impact_mark(void) {
                 game->market.inventory[product]++;
                 kg_refresh_prices(game);
                 float remainder = kag_product_mark(&env, product,
-                    (float)(units - 1), 0.0f);
+                    (float)(units - 1));
                 if (quote + remainder + 1.0f < mark) {
                     fprintf(stderr, "mark decomposition product=%d inventory=%d "
                         "units=%d quote=%g remainder=%g mark=%g\n",
@@ -149,15 +127,6 @@ static void assert_market_impact_mark(void) {
             }
         }
 
-        /* Selling one held unit advances inventory and removes one prior unit,
-         * leaving the mark of later projected production unchanged. */
-        game->market.inventory[product] = KG_MARKET_DEFS[product].i0;
-        kg_refresh_prices(game);
-        float future_before = kag_product_mark(&env, product, 20.0f, 10.0f);
-        game->market.inventory[product]++;
-        kg_refresh_prices(game);
-        float future_after = kag_product_mark(&env, product, 20.0f, 9.0f);
-        assert(fabsf(future_before - future_after) < 1e-4f);
     }
 
     /* The steep strawberry curve made the old terminal-marginal mark almost
@@ -165,8 +134,7 @@ static void assert_market_impact_mark(void) {
     game->market.inventory[KG_ITEM_STRAWBERRY] =
         KG_MARKET_DEFS[KG_ITEM_STRAWBERRY].i0;
     kg_refresh_prices(game);
-    float cumulative = kag_product_mark(&env, KG_ITEM_STRAWBERRY,
-        100.0f, 0.0f);
+    float cumulative = kag_product_mark(&env, KG_ITEM_STRAWBERRY, 100.0f);
     float terminal_marginal = 100.0f * kg_market_price(KG_ITEM_STRAWBERRY,
         KG_MARKET_DEFS[KG_ITEM_STRAWBERRY].i0 + 100);
     assert(cumulative > 10.0f * terminal_marginal);
@@ -177,37 +145,38 @@ static void assert_reward_asset_semantics(void) {
     KGConfig config;
     kg_config_default(&config);
     kg_init(&env.game_storage, &config);
-    env.reward_market_impact = 1.0f;
-    env.reward_product_value = 1.0f;
-    env.reward_crop_value = 0.0f;
-    env.reward_animal_value = 1.0f;
-    env.reward_land_value = 1.0f;
-    env.reward_neglect_discount = 1.0f;
-    env.reward_liquidation_days = 6.0f;
     KGPlayer* player = &env.game_storage.players[0];
 
-    /* Liquid yield has the same mark before and after HARVEST, while land is
-     * no longer erased by the generic inventory liquidation schedule. */
-    env.game_storage.step = config.episode_steps - config.turns_per_day;
-    env.game_storage.day = 29;
+    /* Planting preserves seed cost and harvesting preserves product value. */
+    player->money = 3000;
     kg_new_plant(player, 0, KG_WHEAT, 0, config.turns_per_day);
-    player->tiles[0].watered_today = 1;
     player->tiles[0].yield_units = 3;
     float field_value = kag_player_potential(&env, 0);
-    kg_set_player_tile(player, 0, KG_TILE_EMPTY);
+    player->tiles[0].yield_units = 0;
     player->shed[KG_ITEM_WHEAT] = 3;
     float held_value = kag_player_potential(&env, 0);
     assert(fabsf(field_value - held_value) < 1e-3f);
 
     player->shed[KG_ITEM_WHEAT] = 0;
+    kg_set_player_tile(player, 0, KG_TILE_EMPTY);
     player->money = 2000;
     player->unlocked_mask = 3;
     assert(fabsf(kag_player_potential(&env, 0) - 3000.0f) < 1e-3f);
 
-    env.reward_production_scale = 0.02f;
-    assert(fabsf(kag_realized_production_reward(&env, 100.0f, 400.0f)
-        - 0.002f) < 1e-7f);
-    assert(kag_realized_production_reward(&env, 400.0f, 400.0f) == 0.0f);
+    /* Placed and unplaced animals retain purchase cost; feeding/care state is
+     * intentionally not a hand-authored value multiplier. */
+    memset(player->shed, 0, sizeof(player->shed));
+    player->money = 2500;
+    player->unlocked_mask = 1;
+    player->shed[KG_ITEM_COW] = 1;
+    float unplaced = kag_player_potential(&env, 0);
+    player->shed[KG_ITEM_COW] = 0;
+    kg_new_animal(player, 1, KG_COW, 0);
+    float placed = kag_player_potential(&env, 0);
+    assert(fabsf(unplaced - placed) < 1e-3f);
+    player->tiles[1].fed_today = 0;
+    player->tiles[1].cared_today = 0;
+    assert(fabsf(kag_player_potential(&env, 0) - placed) < 1e-3f);
 }
 
 static void assert_masks_match(const Env* env, int player_id) {
@@ -563,15 +532,9 @@ int main(void) {
     assert_native_tapes();
     assert_native_public_profiles();
     Env env = {0};
-    env.reward_potential_scale = 0.0001f;
-    env.reward_win = 1.0f;
-    env.reward_seed_value = 1.0f;
-    env.reward_product_value = 1.0f;
-    env.reward_crop_value = 1.0f;
-    env.reward_animal_value = 1.0f;
-    env.reward_land_value = 1.0f;
-    env.reward_neglect_discount = 0.5f;
-    env.reward_liquidation_days = 6.0f;
+    env.reward_potential_scale = 0.0f;
+    env.reward_potential_gamma = 0.9997f;
+    env.reward_money_scale = 1.0f;
     obs_t observations[KG_NUM_PLAYERS * OBS_SIZE] = {0};
     float actions[KG_NUM_PLAYERS * NUM_ATNS] = {0};
     float rewards[KG_NUM_PLAYERS] = {0};
@@ -614,7 +577,7 @@ int main(void) {
     kag_clear_policy_actions(&env.agents[1]);
     kag_set_policy_market(&env.agents[0], 0, KG_MARKET_HIRE, -1, 1);
     puf_step(&env);
-    assert(rewards[0] < 0.0f);
+    assert(rewards[0] == 0.0f);
     assert(rewards[1] == 0.0f);
     assert(env.game_storage.players[0].hand_count == 1);
     assert_masks_match(&env, 0);
@@ -656,11 +619,8 @@ int main(void) {
     }
     assert(terminal_count == 1);
     assert(env.log.n == 1.0f);
-    float terminal_outcome = env.log.money > env.log.opponent_money ? 1.0f
-        : env.log.money < env.log.opponent_money ? -1.0f : 0.0f;
-    float expected_return = terminal_outcome * env.reward_win
-        + (env.log.money - config.starting_money)
-            * env.reward_potential_scale;
+    float expected_return = (env.log.money - config.starting_money)
+        / config.starting_money;
     assert(fabsf(env.log.episode_return - expected_return) < 1e-5f);
     puf_close(&env);
     printf("Kaggriculture adapter: PASS\n");

@@ -34,22 +34,6 @@ typedef struct {
     float reward_potential_scale;
     float reward_potential_gamma;
     float reward_money_scale;
-    float reward_win;
-    float reward_seed_value;
-    float reward_product_value;
-    float reward_crop_value;
-    float reward_animal_value;
-    float reward_land_value;
-    float reward_market_impact;
-    float reward_margin_scale;
-    float reward_differential_scale;
-    float reward_inactivity_threshold;
-    float reward_neglect_discount;
-    float reward_liquidation_days;
-    float reward_productive_action;
-    float reward_production_scale;
-    float reward_inactivity;
-    float reward_neglect_death;
     float bot_opponent_fraction;
     float bot_pass_fraction;
     float bot_rules_fraction;
@@ -201,11 +185,6 @@ __device__ static void kag_cuda_transition(Env* env, Env* shells,
     KGState* game = &env->game_storage;
     float before_potential[KG_NUM_PLAYERS] = {
         env->potential[0], env->potential[1]};
-    float productive_credit[KG_NUM_PLAYERS] = {0.0f, 0.0f};
-    uint32_t before_neglect[KG_NUM_PLAYERS] = {
-        game->neglect_deaths[0], game->neglect_deaths[1]};
-    float before_production_value[KG_NUM_PLAYERS] = {
-        game->production_value[0], game->production_value[1]};
 
     for (int player = 0; player < KG_NUM_PLAYERS; player++) {
         kag_decode_action(&actions[player], &env->agents[player], game, player);
@@ -213,13 +192,6 @@ __device__ static void kag_cuda_transition(Env* env, Env* shells,
     }
     kag_cuda_bot_overrides(env, actions, tapes);
     kag_log_actions(env, game, actions);
-
-    if (env->reward_productive_action > 0.0f) {
-        for (int player = 0; player < KG_NUM_PLAYERS; player++) {
-            productive_credit[player] = kag_productive_action_credit(
-                game, &game->players[player], &actions[player]);
-        }
-    }
 
     kg_step(game, actions);
     int money[2] = {game->players[0].money, game->players[1].money};
@@ -229,18 +201,9 @@ __device__ static void kag_cuda_transition(Env* env, Env* shells,
     int done = kg_done(game);
     env->potential[0] = done ? (float)money[0] : kag_player_potential(env, 0);
     env->potential[1] = done ? (float)money[1] : kag_player_potential(env, 1);
-    float differential = ((env->potential[0] - before_potential[0])
-        - (env->potential[1] - before_potential[1]))
-        * env->reward_differential_scale;
     for (int player = 0; player < KG_NUM_PLAYERS; player++) {
         float reward = kag_potential_shaping_reward(env,
-                before_potential[player], env->potential[player], done)
-            + productive_credit[player] * env->reward_productive_action;
-        reward += kag_realized_production_reward(env,
-            before_production_value[player], game->production_value[player]);
-        reward -= (game->neglect_deaths[player] - before_neglect[player])
-            * env->reward_neglect_death;
-        reward += player == 0 ? differential : -differential;
+            before_potential[player], env->potential[player], done);
         env->agents[player].rewards[0] = reward;
         env->episode_returns[player] += reward;
     }
@@ -257,39 +220,15 @@ __device__ static void kag_cuda_transition(Env* env, Env* shells,
     float win0 = money[0] > money[1] ? 1.0f
         : money[0] == money[1] ? 0.5f : 0.0f;
     float model_win = model_player == 0 ? win0 : 1.0f - win0;
-    float outcome = (2.0f * win0 - 1.0f) * env->reward_win;
     int model_money = money[model_player];
     int opponent_money = money[1 - model_player];
-    float margin = (float)(model_money - opponent_money)
-        / (float)game->config.starting_money;
-    float margin_term = env->reward_margin_scale * margin;
     float money0_term = kag_terminal_money_reward(env, money[0]);
     float money1_term = kag_terminal_money_reward(env, money[1]);
     env->agents[0].rewards[0] += money0_term;
     env->agents[1].rewards[0] += money1_term;
     env->episode_returns[0] += money0_term;
     env->episode_returns[1] += money1_term;
-    env->agents[0].rewards[0] += outcome;
-    env->agents[1].rewards[0] -= outcome;
-    env->episode_returns[0] += outcome;
-    env->episode_returns[1] -= outcome;
-    if (model_player == 0) {
-        env->agents[0].rewards[0] += margin_term;
-        env->agents[1].rewards[0] -= margin_term;
-        env->episode_returns[0] += margin_term;
-        env->episode_returns[1] -= margin_term;
-    } else {
-        env->agents[0].rewards[0] -= margin_term;
-        env->agents[1].rewards[0] += margin_term;
-        env->episode_returns[0] -= margin_term;
-        env->episode_returns[1] += margin_term;
-    }
     for (int player = 0; player < KG_NUM_PLAYERS; player++) {
-        if (kag_abs(money[player] - game->config.starting_money)
-                <= env->reward_inactivity_threshold) {
-            env->agents[player].rewards[0] -= env->reward_inactivity;
-            env->episode_returns[player] -= env->reward_inactivity;
-        }
         env->agents[player].terminals[0] = 1.0f;
     }
 
@@ -481,24 +420,6 @@ __global__ static void kag_cuda_reset_kernel(Env* shells, Env* matches,
     env->reward_potential_scale = d_kag_cuda_config.reward_potential_scale;
     env->reward_potential_gamma = d_kag_cuda_config.reward_potential_gamma;
     env->reward_money_scale = d_kag_cuda_config.reward_money_scale;
-    env->reward_win = d_kag_cuda_config.reward_win;
-    env->reward_seed_value = d_kag_cuda_config.reward_seed_value;
-    env->reward_product_value = d_kag_cuda_config.reward_product_value;
-    env->reward_crop_value = d_kag_cuda_config.reward_crop_value;
-    env->reward_animal_value = d_kag_cuda_config.reward_animal_value;
-    env->reward_land_value = d_kag_cuda_config.reward_land_value;
-    env->reward_market_impact = d_kag_cuda_config.reward_market_impact;
-    env->reward_margin_scale = d_kag_cuda_config.reward_margin_scale;
-    env->reward_differential_scale =
-        d_kag_cuda_config.reward_differential_scale;
-    env->reward_inactivity_threshold =
-        d_kag_cuda_config.reward_inactivity_threshold;
-    env->reward_neglect_discount = d_kag_cuda_config.reward_neglect_discount;
-    env->reward_liquidation_days = d_kag_cuda_config.reward_liquidation_days;
-    env->reward_productive_action = d_kag_cuda_config.reward_productive_action;
-    env->reward_production_scale = d_kag_cuda_config.reward_production_scale;
-    env->reward_inactivity = d_kag_cuda_config.reward_inactivity;
-    env->reward_neglect_death = d_kag_cuda_config.reward_neglect_death;
     env->bot_opponent_fraction = d_kag_cuda_config.bot_opponent_fraction;
     env->bot_top_fraction = d_kag_cuda_config.bot_top_fraction;
     env->bot_script_fraction = d_kag_cuda_config.bot_script_fraction;
@@ -575,24 +496,6 @@ static void kag_cuda_load_config(Dict* kwargs) {
     h_kag_cuda_config.reward_potential_scale = template_env.reward_potential_scale;
     h_kag_cuda_config.reward_potential_gamma = template_env.reward_potential_gamma;
     h_kag_cuda_config.reward_money_scale = template_env.reward_money_scale;
-    h_kag_cuda_config.reward_win = template_env.reward_win;
-    h_kag_cuda_config.reward_seed_value = template_env.reward_seed_value;
-    h_kag_cuda_config.reward_product_value = template_env.reward_product_value;
-    h_kag_cuda_config.reward_crop_value = template_env.reward_crop_value;
-    h_kag_cuda_config.reward_animal_value = template_env.reward_animal_value;
-    h_kag_cuda_config.reward_land_value = template_env.reward_land_value;
-    h_kag_cuda_config.reward_market_impact = template_env.reward_market_impact;
-    h_kag_cuda_config.reward_margin_scale = template_env.reward_margin_scale;
-    h_kag_cuda_config.reward_differential_scale =
-        template_env.reward_differential_scale;
-    h_kag_cuda_config.reward_inactivity_threshold =
-        template_env.reward_inactivity_threshold;
-    h_kag_cuda_config.reward_neglect_discount = template_env.reward_neglect_discount;
-    h_kag_cuda_config.reward_liquidation_days = template_env.reward_liquidation_days;
-    h_kag_cuda_config.reward_productive_action = template_env.reward_productive_action;
-    h_kag_cuda_config.reward_production_scale = template_env.reward_production_scale;
-    h_kag_cuda_config.reward_inactivity = template_env.reward_inactivity;
-    h_kag_cuda_config.reward_neglect_death = template_env.reward_neglect_death;
     h_kag_cuda_config.bot_opponent_fraction = template_env.bot_opponent_fraction;
     h_kag_cuda_config.bot_pass_fraction = (float)dict_get(kwargs, "bot_pass_fraction");
     h_kag_cuda_config.bot_rules_fraction = (float)dict_get(kwargs, "bot_rules_fraction");

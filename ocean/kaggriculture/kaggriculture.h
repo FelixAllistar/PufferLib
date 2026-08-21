@@ -117,9 +117,10 @@ typedef uint8_t obs_t;
 
 struct Log {
     float perf;
-    /* score/sweep_score are the learner's configured marked potential
-     * (kag_player_potential_full), not cash. Cash and production are logged
-     * separately below so a price-depressed but productive farm is visible. */
+    /* score/sweep_score are accounting net worth: cash plus assets at fixed
+     * cost and products at conservative realizable market value. Cash and
+     * production stay separate so a productive, price-depressed farm remains
+     * visible. */
     float score;
     float sweep_score;
     float opponent_score;
@@ -253,28 +254,7 @@ struct Env {
     float reward_potential_scale;
     float reward_potential_gamma;
     float reward_money_scale;
-    float reward_win;
-    float reward_seed_value;
-    float reward_product_value;
-    float reward_crop_value;
-    float reward_animal_value;
-    float reward_land_value;
-    /* Blend held/future product marks from the current spot price toward a
-     * conservative cumulative liquidation curve.  This prevents a large pile
-     * from being valued as if every unit could sell at the first quote without
-     * pricing every unit at the much lower final quote. */
-    float reward_market_impact;
-    float reward_margin_scale;
-    float reward_differential_scale;
-    float reward_inactivity_threshold;
     float reset_opening_prob;
-    float reward_neglect_discount;
-    float reward_liquidation_days;
-    float reward_productive_action;
-    /* Optional price-weighted credit for successfully realized production. */
-    float reward_production_scale;
-    float reward_inactivity;
-    float reward_neglect_death;
     float potential[KG_NUM_PLAYERS];
     int bot_opponent;
     float bot_opponent_fraction;
@@ -425,83 +405,36 @@ KG_HD static inline double kag_market_liquidation_value(int product,
 }
 
 KG_HD static inline float kag_product_mark(const Env* env, int product,
-        float units, float prior_projected_units) {
+        float units) {
     if (units <= 0.0f) return 0.0f;
     const KGState* game = &env->game_storage;
-    float impact = env->reward_market_impact;
-    if (impact < 0.0f) impact = 0.0f;
-    if (impact > 1.0f) impact = 1.0f;
     float spot = (float)game->market.prices[product];
-    if (impact <= 0.0f) return units * spot;
-    if (units == 1.0f && prior_projected_units == 0.0f) return spot;
+    if (units == 1.0f) return spot;
 
-    double start = (double)game->market.inventory[product]
-        + (double)prior_projected_units;
+    double start = (double)game->market.inventory[product];
     double cumulative = kag_market_liquidation_value(product, start, units);
-    double spot_mark = (double)units * spot;
-    return (float)(spot_mark + impact * (cumulative - spot_mark));
+    return (float)cumulative;
 }
 
-KG_HD static inline float kag_remaining_output_scale(const KGState* game,
-        int days_until_output) {
-    if (days_until_output <= 0) return 1.0f;
-    int remaining_steps = game->config.episode_steps - game->step;
-    if (remaining_steps <= 0) return 0.0f;
-    int wait_steps = days_until_output * game->config.turns_per_day;
-    float scale = (float)remaining_steps / (float)wait_steps;
-    return scale < 1.0f ? scale : 1.0f;
-}
-
-KG_HD static inline int kag_crop_days_until_output(const KGState* game,
-        const KGTile* tile) {
-    const KGCropDef* def = &KG_CROP_DEFS[tile->crop];
-    int age = game->day - tile->planted_day;
-    if (age < def->first_yield_day) return def->first_yield_day - age;
-    if (!def->ongoing || def->interval <= 0) return 0;
-    int elapsed = age - def->first_yield_day;
-    int phase = elapsed % def->interval;
-    return phase == 0 ? def->interval : def->interval - phase;
-}
-
-KG_HD static inline int kag_animal_days_until_output(const KGState* game,
-        const KGTile* tile) {
-    const KGAnimalDef* def = &KG_ANIMAL_DEFS[tile->animal];
-    int age = game->day - tile->placed_day;
-    if (age < def->first_yield_day) return def->first_yield_day - age;
-    int elapsed = age - def->first_yield_day;
-    int phase = elapsed % def->interval;
-    return phase == 0 ? def->interval : def->interval - phase;
-}
-
-KG_HD static inline float kag_player_potential_scaled(const Env* env,
-        int player_id, int apply_liquidation) {
+/* Neutral accounting potential. Buying capital moves value from cash into an
+ * asset at cost; planting/placing/harvesting move it between asset buckets.
+ * Only creating saleable product, changing market realizability, destroying
+ * an asset, or changing cash changes net worth. No future yield is guessed. */
+KG_HD static inline float kag_player_potential(const Env* env, int player_id) {
     const KGState* game = &env->game_storage;
     const KGPlayer* player = &game->players[player_id];
     float value = (float)player->money;
-    float assets = 0.0f;
     float product_units[KG_NUM_PRODUCTS] = {0.0f};
-    float held_product_units[KG_NUM_PRODUCTS] = {0.0f};
-    float future_product_units[KG_NUM_PRODUCTS] = {0.0f};
-    float inventory_scale = 1.0f;
-    if (apply_liquidation) {
-        int liquidation_steps = (int)(env->reward_liquidation_days
-            * game->config.turns_per_day);
-        int remaining_steps = game->config.episode_steps - game->step;
-        if (liquidation_steps > 0 && remaining_steps < liquidation_steps) {
-            inventory_scale = remaining_steps > 0
-                ? (float)remaining_steps / liquidation_steps : 0.0f;
-        }
-    }
+
     for (int crop = 0; crop < KG_NUM_CROPS; crop++) {
-        assets += inventory_scale * player->seeds[crop]
-            * KG_CROP_DEFS[crop].seed_cost * env->reward_seed_value;
+        value += player->seeds[crop] * KG_CROP_DEFS[crop].seed_cost;
     }
     for (int item = 0; item < KG_NUM_PRODUCTS; item++) {
-        held_product_units[item] += (float)player->shed[item];
+        product_units[item] += (float)player->shed[item];
     }
     for (int animal = 0; animal < KG_NUM_ANIMALS; animal++) {
-        assets += inventory_scale * player->shed[KG_ITEM_GOOSE + animal]
-            * KG_ANIMAL_DEFS[animal].cost * env->reward_animal_value;
+        value += player->shed[KG_ITEM_GOOSE + animal]
+            * KG_ANIMAL_DEFS[animal].cost;
     }
     for (int unit = 0; unit < player->unit_count; unit++) {
         const KGUnitState* held = &player->units[unit];
@@ -512,75 +445,26 @@ KG_HD static inline float kag_player_potential_scaled(const Env* env,
             int item = held->inventory_order[order];
             int count = held->inventory[item];
             if (item < KG_NUM_PRODUCTS) {
-                held_product_units[item] += (float)count;
+                product_units[item] += (float)count;
             } else {
                 int animal = item - KG_ITEM_GOOSE;
                 if ((unsigned)animal < KG_NUM_ANIMALS) {
-                    assets += inventory_scale * count
-                        * KG_ANIMAL_DEFS[animal].cost
-                        * env->reward_animal_value;
+                    value += count * KG_ANIMAL_DEFS[animal].cost;
                 }
             }
         }
     }
-    /* Harvestable yield is real product supply even before a unit carries it
-     * to the shed. Aggregate all locations before marking it so one large
-     * inventory receives one coherent market-impact haircut. */
+
+    /* A live crop carries only its spent seed cost. A live animal carries its
+     * purchase cost. Already-created yield is product, whether it remains on a
+     * tile, is carried by a unit, or sits in the shed. */
     for (int word = 0; word < KG_TILE_WORDS; word++) {
         uint64_t plants = player->plant_bits[word];
         while (plants) {
             int tile = word * 64 + kg_ctz64(plants);
             const KGTile* crop_tile = &player->tiles[tile];
-            float health = crop_tile->watered_today
-                ? 1.0f : env->reward_neglect_discount;
-            product_units[crop_tile->crop] +=
-                crop_tile->yield_units * health;
-            plants &= plants - 1;
-        }
-        uint64_t animals = player->animal_bits[word];
-        while (animals) {
-            int tile = word * 64 + kg_ctz64(animals);
-            const KGTile* animal_tile = &player->tiles[tile];
-            int animal = animal_tile->animal;
-            if (animal >= 0) {
-                /* Mirror the crop logic: feeding keeps the herd's value at
-                 * full, skipping a feed devalues it. */
-                float health = animal_tile->fed_today
-                    ? 1.0f : env->reward_neglect_discount;
-                const KGAnimalDef* anim_def = &KG_ANIMAL_DEFS[animal];
-                product_units[anim_def->product] +=
-                    animal_tile->yield_units * health;
-            }
-            animals &= animals - 1;
-        }
-    }
-
-    for (int item = 0; item < KG_NUM_PRODUCTS; item++) {
-        /* Accrued field yield and held product are the same liquid supply.
-         * Scaling them together keeps HARVEST value-neutral near season end. */
-        product_units[item] += held_product_units[item];
-        assets += inventory_scale
-            * kag_product_mark(env, item, product_units[item], 0.0f)
-            * env->reward_product_value;
-    }
-
-    /* Productive fields/animals are capital proxies used for dense credit,
-     * separate from already-realized yield above. Aggregate by product before
-     * marking so this stays O(products), not O(tiles), on the CUDA hot path. */
-    for (int word = 0; word < KG_TILE_WORDS; word++) {
-        uint64_t plants = player->plant_bits[word];
-        while (plants) {
-            int tile = word * 64 + kg_ctz64(plants);
-            const KGTile* crop_tile = &player->tiles[tile];
-            float health = crop_tile->watered_today
-                ? 1.0f : env->reward_neglect_discount;
-            float horizon = apply_liquidation
-                ? kag_remaining_output_scale(game,
-                    kag_crop_days_until_output(game, crop_tile))
-                : 1.0f;
-            float expected = KG_CROP_DEFS[crop_tile->crop].max_yield
-                * health * horizon;
-            future_product_units[crop_tile->crop] += expected;
+            value += KG_CROP_DEFS[crop_tile->crop].seed_cost;
+            product_units[crop_tile->crop] += crop_tile->yield_units;
             plants &= plants - 1;
         }
         uint64_t animals = player->animal_bits[word];
@@ -590,43 +474,25 @@ KG_HD static inline float kag_player_potential_scaled(const Env* env,
             int animal = animal_tile->animal;
             if (animal >= 0) {
                 const KGAnimalDef* anim_def = &KG_ANIMAL_DEFS[animal];
-                float health = animal_tile->fed_today
-                    ? 1.0f : env->reward_neglect_discount;
-                float horizon = apply_liquidation
-                    ? kag_remaining_output_scale(game,
-                        kag_animal_days_until_output(game, animal_tile))
-                    : 1.0f;
-                float expected = anim_def->max_held * health * horizon;
-                future_product_units[anim_def->product] += expected;
+                value += anim_def->cost;
+                product_units[anim_def->product] += animal_tile->yield_units;
             }
             animals &= animals - 1;
         }
     }
+
     for (int item = 0; item < KG_NUM_PRODUCTS; item++) {
-        float weight = item < KG_NUM_CROPS ? env->reward_crop_value
-            : item >= KG_ITEM_EGG && item <= KG_ITEM_WOOL
-                ? env->reward_animal_value : 0.0f;
-        assets += kag_product_mark(env, item, future_product_units[item],
-                product_units[item]) * weight;
+        value += kag_product_mark(env, item, product_units[item]);
     }
+
     int extra_land = kag_popcount((unsigned)player->unlocked_mask) - 1;
     int land_value = extra_land <= 0 ? 0
         : extra_land == 1 ? 1000 : extra_land == 2 ? 3000 : 7000;
-    assets += land_value
-        * env->reward_land_value;
-    return value + assets;
-}
-
-/* Reward shaping uses the liquidation-aware potential above.  Terminal
- * reporting deliberately uses the full mark-to-market value: otherwise a
- * nonzero reward_liquidation_days would write every unsold asset down to zero
- * exactly at the episode boundary and hide the player's actual farm. */
-KG_HD static inline float kag_player_potential(const Env* env, int player_id) {
-    return kag_player_potential_scaled(env, player_id, 1);
+    return value + land_value;
 }
 
 KG_HD static inline float kag_player_potential_full(const Env* env, int player_id) {
-    return kag_player_potential_scaled(env, player_id, 0);
+    return kag_player_potential(env, player_id);
 }
 
 /* Legacy shaping used an undiscounted dollar delta.  When a positive shaping
@@ -652,14 +518,6 @@ KG_HD static inline float kag_terminal_money_reward(const Env* env,
     float starting_money = (float)env->game_storage.config.starting_money;
     return env->reward_money_scale
         * ((float)money - starting_money) / starting_money;
-}
-
-KG_HD static inline float kag_realized_production_reward(const Env* env,
-        float before_value, float after_value) {
-    float starting_money = (float)env->game_storage.config.starting_money;
-    if (starting_money <= 0.0f || after_value <= before_value) return 0.0f;
-    return env->reward_production_scale
-        * (after_value - before_value) / starting_money;
 }
 
 KG_HD static inline uint8_t kag_tile_entity(const KGTile* tile) {
@@ -2244,48 +2102,6 @@ KG_HD static inline void kag_adaptive_action(const KGState* game, int player_id,
     (void)structures;
 }
 
-KG_HD static inline float kag_productive_action_credit(const KGState* game,
-        const KGPlayer* farm, const KGAction* action) {
-    float credit = 0.0f;
-    const KGUnitAction* unit_action = &action->farmer;
-    for (int unit = 0; unit < farm->unit_count; unit++) {
-        if (unit > 0) unit_action = &action->hands[unit - 1];
-        KGPolicyUnitSpec spec = {
-            unit_action->op, unit_action->arg, unit_action->n,
-        };
-        if (!kag_unit_action_legal(game, farm, unit, spec)) continue;
-        switch (spec.op) {
-            case KG_OP_PICKUP:
-            case KG_OP_DROP:
-                credit += 0.10f;
-                break;
-            case KG_OP_PLANT:
-            case KG_OP_BUILD_COOP:
-            case KG_OP_BUILD_PASTURE:
-                credit += 1.0f;
-                break;
-            case KG_OP_WATER:
-            case KG_OP_HARVEST:
-            case KG_OP_FERTILIZE:
-            case KG_OP_FEED:
-            case KG_OP_COLLECT_FERTILIZER:
-            case KG_OP_CARE:
-                credit += 1.0f;
-                break;
-            case KG_OP_PLACE:
-            case KG_OP_DIG:
-                credit += 1.0f;
-                break;
-            default:
-                break;
-        }
-    }
-    for (int order = 0; order < action->market_count; order++) {
-        if (action->market[order].op == KG_MARKET_SELL) credit += 1.0f;
-    }
-    return credit;
-}
-
 /* A hinge opportunity is driven only by randomized town/shop demand. It is
  * present once the no-production inventory deficit crosses the product's
  * hinge throughput, where the 1.32.7 price curve begins accelerating. */
@@ -2406,31 +2222,6 @@ void puf_init(Env* env, Dict* kwargs) {
     env->reward_potential_gamma = (float)dict_get(
         kwargs, "reward_potential_gamma");
     env->reward_money_scale = (float)dict_get(kwargs, "reward_money_scale");
-    env->reward_win = (float)dict_get(kwargs, "reward_win");
-    env->reward_seed_value = (float)dict_get(kwargs, "reward_seed_value");
-    env->reward_product_value = (float)dict_get(kwargs, "reward_product_value");
-    env->reward_crop_value = (float)dict_get(kwargs, "reward_crop_value");
-    env->reward_animal_value = (float)dict_get(kwargs, "reward_animal_value");
-    env->reward_land_value = (float)dict_get(kwargs, "reward_land_value");
-    env->reward_market_impact = (float)dict_get(
-        kwargs, "reward_market_impact");
-    env->reward_margin_scale = (float)dict_get(kwargs,
-        "reward_margin_scale");
-    env->reward_differential_scale = (float)dict_get(kwargs,
-        "reward_differential_scale");
-    env->reward_inactivity_threshold = (float)dict_get(kwargs,
-        "reward_inactivity_threshold");
-    env->reward_neglect_discount = (float)dict_get(
-        kwargs, "reward_neglect_discount");
-    env->reward_liquidation_days = (float)dict_get(
-        kwargs, "reward_liquidation_days");
-    env->reward_productive_action = (float)dict_get(
-        kwargs, "reward_productive_action");
-    env->reward_production_scale = (float)dict_get(
-        kwargs, "reward_production_scale");
-    env->reward_inactivity = (float)dict_get(kwargs, "reward_inactivity");
-    env->reward_neglect_death = (float)dict_get(
-        kwargs, "reward_neglect_death");
     float bot_fraction = (float)dict_get(kwargs, "bot_opponent_fraction");
     float pass_fraction = (float)dict_get(kwargs, "bot_pass_fraction");
     float rules_fraction = (float)dict_get(kwargs, "bot_rules_fraction");
@@ -2511,13 +2302,6 @@ void puf_step(Env* env) {
     float before_potential[KG_NUM_PLAYERS] = {
         env->potential[0], env->potential[1],
     };
-    float productive_credit[KG_NUM_PLAYERS] = {0.0f, 0.0f};
-    uint32_t before_neglect_deaths[KG_NUM_PLAYERS] = {
-        game->neglect_deaths[0], game->neglect_deaths[1],
-    };
-    float before_production_value[KG_NUM_PLAYERS] = {
-        game->production_value[0], game->production_value[1],
-    };
 
     for (int player = 0; player < KG_NUM_PLAYERS; player++) {
         kag_decode_action(&actions[player], &env->agents[player], game, player);
@@ -2570,13 +2354,6 @@ void puf_step(Env* env) {
 
     kag_log_actions(env, game, &actions[0]);
 
-    if (env->reward_productive_action > 0.0f) {
-        for (int player = 0; player < KG_NUM_PLAYERS; player++) {
-            productive_credit[player] = kag_productive_action_credit(
-                game, &game->players[player], &actions[player]);
-        }
-    }
-
     kg_step(game, actions);
     int p0 = game->players[0].money;
     int p1 = game->players[1].money;
@@ -2591,18 +2368,9 @@ void puf_step(Env* env) {
      * terminal cash, avoiding uncontrollable reward noise from scripted rivals. */
     env->potential[0] = done ? (float)p0 : kag_player_potential(env, 0);
     env->potential[1] = done ? (float)p1 : kag_player_potential(env, 1);
-    float differential = ((env->potential[0] - before_potential[0])
-        - (env->potential[1] - before_potential[1]))
-        * env->reward_differential_scale;
     for (int player = 0; player < KG_NUM_PLAYERS; player++) {
         float reward = kag_potential_shaping_reward(env,
-                before_potential[player], env->potential[player], done)
-            + productive_credit[player] * env->reward_productive_action;
-        reward += kag_realized_production_reward(env,
-            before_production_value[player], game->production_value[player]);
-        reward -= (game->neglect_deaths[player]
-            - before_neglect_deaths[player]) * env->reward_neglect_death;
-        reward += player == 0 ? differential : -differential;
+            before_potential[player], env->potential[player], done);
         env->agents[player].rewards[0] = reward;
         env->episode_returns[player] += reward;
     }
@@ -2614,45 +2382,12 @@ void puf_step(Env* env) {
         };
         float win0 = p0 > p1 ? 1.0f : (p0 == p1 ? 0.5f : 0.0f);
         float model_win = model_player == 0 ? win0 : 1.0f - win0;
-        float outcome = (2.0f * win0 - 1.0f) * env->reward_win;
-        /* Margin-aware term: reward proportional to the money gap so a close
-         * loss is preferred to a blowout. Normalized by starting money so the
-         * scale is comparable across configs. */
-        int opp_money = model_player == 0 ? p1 : p0;
-        float margin = (float)(model_money - opp_money)
-            / (float)game->config.starting_money;
-        float margin_term = env->reward_margin_scale * margin;
         float money0_term = kag_terminal_money_reward(env, p0);
         float money1_term = kag_terminal_money_reward(env, p1);
         env->agents[0].rewards[0] += money0_term;
         env->agents[1].rewards[0] += money1_term;
         env->episode_returns[0] += money0_term;
         env->episode_returns[1] += money1_term;
-        env->agents[0].rewards[0] += outcome;
-        env->agents[1].rewards[0] -= outcome;
-        env->episode_returns[0] += outcome;
-        env->episode_returns[1] -= outcome;
-        if (model_player == 0) {
-            env->agents[0].rewards[0] += margin_term;
-            env->agents[1].rewards[0] -= margin_term;
-            env->episode_returns[0] += margin_term;
-            env->episode_returns[1] -= margin_term;
-        } else {
-            env->agents[0].rewards[0] -= margin_term;
-            env->agents[1].rewards[0] += margin_term;
-            env->episode_returns[0] -= margin_term;
-            env->episode_returns[1] += margin_term;
-        }
-        if (abs(p0 - game->config.starting_money)
-                <= env->reward_inactivity_threshold) {
-            env->agents[0].rewards[0] -= env->reward_inactivity;
-            env->episode_returns[0] -= env->reward_inactivity;
-        }
-        if (abs(p1 - game->config.starting_money)
-                <= env->reward_inactivity_threshold) {
-            env->agents[1].rewards[0] -= env->reward_inactivity;
-            env->episode_returns[1] -= env->reward_inactivity;
-        }
         env->agents[0].terminals[0] = 1.0f;
         env->agents[1].terminals[0] = 1.0f;
         env->log.perf += model_win;

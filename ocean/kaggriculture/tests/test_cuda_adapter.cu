@@ -95,22 +95,6 @@ static void configure_case(Env* env, int case_id, obs_t* observations,
     env->reward_potential_scale = 0.000772047148f;
     env->reward_potential_gamma = 0.9993f;
     env->reward_money_scale = 0.13f;
-    env->reward_win = 0.375989795f;
-    env->reward_seed_value = 0.01f;
-    env->reward_product_value = 0.95f;
-    env->reward_crop_value = 1.0f;
-    env->reward_animal_value = 0.95f;
-    env->reward_land_value = 1.0f;
-    env->reward_market_impact = (case_id & 2) ? 1.0f : 0.0f;
-    env->reward_margin_scale = 0.37f;
-    env->reward_inactivity_threshold = case_id == 0 ? 200.0f : 137.0f;
-    env->reward_neglect_discount = 0.5f;
-    env->reward_liquidation_days = 6.0f;
-    env->reward_productive_action = case_id & 1 ? 0.0002f : 0.0f;
-    /* Exercise the optional realized-production reward on half the cases. */
-    env->reward_production_scale = case_id & 1 ? 0.07f : 0.0f;
-    env->reward_inactivity = 3.0f;
-    env->reward_neglect_death = 0.05f;
     env->bot_first = case_id & 1;
     env->bot_opponent_fraction = 1.0f;
     static const int bots[ADAPTER_CASES] = {

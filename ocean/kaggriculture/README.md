@@ -197,20 +197,19 @@ PSRO rewrites the active V4 learner and opponent pool in the config. Subsequent
 responses can continue with `./puffer train kaggriculture`; use a new `base.run_id`
 and seed when starting a separate trajectory.
 
-The V4 config enables one frozen opponent bank, native rules-bot bootstrap,
-conditional-queue EMAg, persistent entropy regularization, and per-player
-telescoping economic potential shaping. Harvestable yield is included in
-potential so watering and animal care receive credit before terminal
-liquidation. Scripted-opponent gains are excluded from the learner's dense
-reward, while terminal win/loss remains zero-sum. Unsold assets are written
-down on the terminal transition, making cumulative shaping equal final cash:
+The current config uses per-player, discount-consistent potential shaping. Its
+potential is deliberately neutral accounting net worth: cash; seeds, live
+crops, live/unplaced animals, and land at cost; and already-created products at
+their conservative cumulative sale value. It does not guess future yield or
+award actions, maintenance, wins, margins, land, animals, or plants directly.
+The potential is forced to zero at terminal, so when `env.reward_potential_gamma`
+equals `train.gamma`, discounted shaping telescopes away and cannot change the
+only true objective: normalized final own cash (`env.reward_money_scale`).
 
 Kaggriculture disables the generic transition reward clamp with
-`train.reward_clip=0`, so terminal cash and margin remain linear at every
-economic scale. `env.reward_market_impact` optionally values held and projected
-output at the conservative marginal quote after the farm's own supply reaches
-the market. At `1`, a large monoculture pile is no longer valued as if every
-unit could sell for the first unit's spot price; `0` restores the legacy mark.
+`train.reward_clip=0`, so better final cash remains better at every scale. A
+large product pile is marked by its cumulative realizable revenue rather than
+pretending every unit can sell at the first unit's quote.
 
 ```bash
 ./puffer train kaggriculture

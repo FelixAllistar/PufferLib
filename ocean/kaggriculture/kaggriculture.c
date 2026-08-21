@@ -106,18 +106,9 @@ static void kag_init_demo(Env* env, obs_t* observations, float* actions,
         }
         env->policy_max_hands = (int)hands;
     }
-    env->reward_potential_scale = 0.0001f;
-    env->reward_potential_gamma = 0.0f;
-    env->reward_money_scale = 0.0f;
-    env->reward_win = 1.0f;
-    env->reward_seed_value = 1.0f;
-    env->reward_product_value = 1.0f;
-    env->reward_crop_value = 1.0f;
-    env->reward_animal_value = 1.0f;
-    env->reward_land_value = 1.0f;
-    env->reward_neglect_discount = 0.5f;
-    env->reward_liquidation_days = 6.0f;
-    env->reward_production_scale = 0.0f;
+    env->reward_potential_scale = 1.0f;
+    env->reward_potential_gamma = 0.9997f;
+    env->reward_money_scale = 1.0f;
     env->num_agents = KG_NUM_PLAYERS;
     kg_init(&env->game_storage, &config);
     kag_bind_demo(env, observations, actions, rewards, terminals, action_masks);

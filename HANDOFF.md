@@ -90,45 +90,25 @@ minibatch_size = 8192
 horizon = 64
 total_timesteps = 1000000000
 
-reward_potential_scale = 0.000453151384
-reward_win = 0.36541456
-reward_seed_value = 0.01
-reward_product_value = 0.95
-reward_crop_value = 1
-reward_animal_value = 0.95
-reward_land_value = 2
-reward_neglect_discount = 0.5
-reward_liquidation_days = 6
-reward_margin_scale = 0.3
+reward_potential_scale = 1
+reward_potential_gamma = 0.99970
+reward_money_scale = 1
 
 opponent_league = saved/kaggriculture_league_v6/league.ini
 opponent_pool_prob = 0.75
 bot_opponent_fraction = 0.5
 ```
 
-## Rewards: what each knob does
+## Rewards: current system
 
-`reward_potential_scale` multiplies the per-step change in economic potential
-(cash + marked assets). This is the dense signal that makes learning tractable.
-
-`reward_win` is the terminal +/- win/loss. `reward_margin_scale` is the terminal
-money-gap term. `reward_differential_scale` is a continuous zero-sum gap term;
-we added it but ruled it out because it was too easy to collapse to "do
-nothing."
-
-Asset weights inside potential:
-
-- `reward_seed_value`, `reward_product_value`, `reward_crop_value`,
-  `reward_animal_value`, `reward_land_value`
-- `reward_neglect_discount` devalues unwatered/unfed assets (0..1 multiplier,
-  not a penalty sign)
-- `reward_liquidation_days` ramps assets to zero near season end
-
-Penalties:
-
-- `reward_neglect_death` (positive = penalty, applied with a minus in code)
-- `reward_inactivity` (terminal penalty near the starting bank)
-- `reward_productive_action` (action-credit shaping, mostly avoided now)
+There are only three settings. `reward_potential_scale` controls dense credit,
+`reward_potential_gamma` must equal `train.gamma`, and `reward_money_scale`
+controls the terminal own-cash objective. Potential is neutral accounting net
+worth: cash; seeds, planted crops, placed/unplaced animals, and purchased land
+at cost; plus already-created product at conservative cumulative sale value.
+It assigns no speculative future yield and no direct action, maintenance,
+neglect, win, margin, inactivity, land, crop, or animal bonus. The old reward
+coefficient system was removed rather than left as another sweep surface.
 
 ## Key hard-won findings
 
