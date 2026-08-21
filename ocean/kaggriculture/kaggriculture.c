@@ -397,6 +397,31 @@ static int kag_parse_side(KagSide* side, const char* spec) {
         side->script_profile = KG_SCRIPT_THUNDER25;
         return 1;
     }
+    if (!strcmp(spec, "k320") || !strcmp(spec, "k320_10c4s")) {
+        side->kind = KAG_SIDE_SCRIPT;
+        side->script_profile = KG_SCRIPT_K320_10C4S;
+        return 1;
+    }
+    if (!strcmp(spec, "k320_yarn") || !strcmp(spec, "k320_6c12s")) {
+        side->kind = KAG_SIDE_SCRIPT;
+        side->script_profile = KG_SCRIPT_K320_YARN;
+        return 1;
+    }
+    if (!strcmp(spec, "e279") || !strcmp(spec, "score_e279")) {
+        side->kind = KAG_SIDE_SCRIPT;
+        side->script_profile = KG_SCRIPT_E279;
+        return 1;
+    }
+    if (!strcmp(spec, "v16") || !strcmp(spec, "premium")) {
+        side->kind = KAG_SIDE_SCRIPT;
+        side->script_profile = KG_SCRIPT_V16;
+        return 1;
+    }
+    if (!strcmp(spec, "c166") || !strcmp(spec, "tie")) {
+        side->kind = KAG_SIDE_SCRIPT;
+        side->script_profile = KG_SCRIPT_C166;
+        return 1;
+    }
     if (!strcmp(spec, "top")) {
         side->kind = KAG_SIDE_SCRIPT;
         side->script_profile = KG_SCRIPT_TOP;
@@ -925,13 +950,20 @@ int main(int argc, char** argv) {
 
     if (headless) {
         double elapsed = (double)(clock() - start) / CLOCKS_PER_SEC;
-        printf("%.0f agent-steps/s, games=%.0f, score=%.3f, draw=%.3f, "
-               "avg_money=(%.0f, %.0f)\n",
+        printf("%.0f agent-steps/s, games=%.0f, potential=%.3f, draw=%.3f, "
+               "avg_money=(%.0f, %.0f), gdp=(%.0f, %.0f), "
+               "strawberry=(%.0f, %.0f), milk=(%.0f, %.0f)\n",
             (double)(frame * KG_NUM_PLAYERS) / elapsed, env.log.n,
             env.log.n ? env.log.perf / env.log.n : 0.0,
             env.log.n ? env.log.draw_rate / env.log.n : 0.0,
-            env.log.n ? env.log.score / env.log.n : 0.0,
-            env.log.n ? env.log.opponent_score / env.log.n : 0.0);
+            env.log.n ? env.log.money / env.log.n : 0.0,
+            env.log.n ? env.log.opponent_money / env.log.n : 0.0,
+            env.log.n ? env.log.gdp / env.log.n : 0.0,
+            env.log.n ? env.log.opponent_gdp / env.log.n : 0.0,
+            env.log.n ? env.log.strawberry_value / env.log.n : 0.0,
+            env.log.n ? env.log.opponent_strawberry_value / env.log.n : 0.0,
+            env.log.n ? env.log.milk_value / env.log.n : 0.0,
+            env.log.n ? env.log.opponent_milk_value / env.log.n : 0.0);
         for (int player = 0; player < KG_NUM_PLAYERS; player++) {
             KagSide* side = &sides[player];
             double units = side->stats[KAG_STAT_UNIT]

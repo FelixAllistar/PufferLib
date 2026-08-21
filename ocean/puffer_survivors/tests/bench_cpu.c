@@ -58,7 +58,7 @@ int main(int argc, char** argv) {
 
     for (int t = 0; t < 250; t++) {
         for (int e = 0; e < num_envs; e++) {
-            actions[(size_t)e * 2] = (float)((t + e) % 9);
+            actions[(size_t)e * 2] = (float)((t + e) % PS_MOVE_ACTION_COUNT);
             actions[(size_t)e * 2 + 1] = (float)((t / 97 + e) % 3);
             c_step(&envs[e]);
         }
@@ -67,7 +67,7 @@ int main(int argc, char** argv) {
     double start = now_seconds();
     for (int t = 0; t < steps; t++) {
         for (int e = 0; e < num_envs; e++) {
-            actions[(size_t)e * 2] = (float)((t + e) % 9);
+            actions[(size_t)e * 2] = (float)((t + e) % PS_MOVE_ACTION_COUNT);
             actions[(size_t)e * 2 + 1] = (float)((t / 97 + e) % 3);
             c_step(&envs[e]);
         }

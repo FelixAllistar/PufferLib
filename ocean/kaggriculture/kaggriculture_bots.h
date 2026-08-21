@@ -7,7 +7,7 @@
  * The public submissions we collected are fixed-action/replay policies with
  * small state-dependent repair layers. Keeping the replay as packed uint16
  * actions gives us the useful behavior without shipping a Python runtime:
- * four tapes are decoded once at process startup and the step path only does
+ * the tapes are decoded once at process startup and the step path only does
  * bounded array reads and copies into KGAction.
  */
 
@@ -25,6 +25,13 @@ enum {
     KG_SCRIPT_HAMBURGER,
     KG_SCRIPT_LUGOVOY,
     KG_SCRIPT_THUNDER25,
+    /* Harvested 2026-08-18 public policies.  Keep TOP last: random script
+     * selection intentionally uses KG_SCRIPT_COUNT - 1 to exclude TOP. */
+    KG_SCRIPT_K320_10C4S,
+    KG_SCRIPT_K320_YARN,
+    KG_SCRIPT_E279,
+    KG_SCRIPT_V16,
+    KG_SCRIPT_C166,
     KG_SCRIPT_TOP,
     KG_SCRIPT_COUNT,
 };
@@ -147,6 +154,16 @@ static inline void kag_script_init(void) {
         &kag_script_tapes[KG_SCRIPT_LUGOVOY], raw);
     ok &= kag_script_decode(KG_TAPE_THUNDER25_B64,
         &kag_script_tapes[KG_SCRIPT_THUNDER25], raw);
+    ok &= kag_script_decode(KGTAPE_K320_10C4S,
+        &kag_script_tapes[KG_SCRIPT_K320_10C4S], raw);
+    ok &= kag_script_decode(KGTAPE_K320_YARN,
+        &kag_script_tapes[KG_SCRIPT_K320_YARN], raw);
+    ok &= kag_script_decode(KGTAPE_E279,
+        &kag_script_tapes[KG_SCRIPT_E279], raw);
+    ok &= kag_script_decode(KGTAPE_V16,
+        &kag_script_tapes[KG_SCRIPT_V16], raw);
+    ok &= kag_script_decode(KGTAPE_C166,
+        &kag_script_tapes[KG_SCRIPT_C166], raw);
     ok &= kag_script_decode(KG_TAPE_TOP_B64,
         &kag_script_tapes[KG_SCRIPT_TOP], raw);
     if (!ok) {
@@ -335,6 +352,11 @@ static inline const char* kag_script_name(int profile) {
         case KG_SCRIPT_HAMBURGER: return "hamburger";
         case KG_SCRIPT_LUGOVOY: return "lugovoy";
         case KG_SCRIPT_THUNDER25: return "thunder25";
+        case KG_SCRIPT_K320_10C4S: return "k320_10c4s";
+        case KG_SCRIPT_K320_YARN: return "k320_yarn";
+        case KG_SCRIPT_E279: return "e279";
+        case KG_SCRIPT_V16: return "v16";
+        case KG_SCRIPT_C166: return "c166";
         case KG_SCRIPT_TOP: return "top";
         default: return "script";
     }

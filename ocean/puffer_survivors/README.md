@@ -43,14 +43,14 @@ architecture (`hidden_size` / `num_layers`) is inferred from the checkpoint
 file size, so a tiny new run is not broken by an unrelated larger model still
 sitting in the tree — `latest` is simply the newest `.bin` by ctime.
 
-Controls: WASD/arrows to move (human), `A`/`D` or left/right to select an
+Controls: WASD/arrows to move (human), Shift to dash, `A`/`D` or left/right to select an
 upgrade, Space to confirm, and `1`/`2`/`3` for direct card choice. `R` restarts,
 `H` toggles hitboxes, `Q` changes FX quality, and Esc quits. Add
 `--deterministic` to `watch` for discrete argmax actions; otherwise watch
 samples the policy. Watch mode auto-resets on death.
 
-The action heads are movement `[9]` and upgrade choice `[3]`. The fixed
-observation schema contains 321 floats: player and boss state, enemy and drop
+The action heads are movement `[10]` and upgrade choice `[3]`; movement action
+9 is Dash. The fixed observation schema contains 337 floats: player and boss state, enemy and drop
 sector/ring summaries, nearest-obstacle relative `dx/dy`, weapon state, three
 one-hot upgrade cards, and four nearest moving-hazard slots. Friendly weapon
 areas and derived danger summaries are intentionally omitted. All

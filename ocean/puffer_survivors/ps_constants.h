@@ -17,7 +17,9 @@
 
 #define PS_SECTORS 8
 #define PS_RINGS 3
-#define PS_PLAYER_FEATURES 26
+#define PS_MOVE_ACTION_COUNT 10
+#define PS_ACTION_DASH 9
+#define PS_PLAYER_FEATURES 28
 #define PS_BOSS_FEATURES 7
 #define PS_ENEMY_CHANNELS 4
 #define PS_DROP_CHANNELS 3
@@ -237,6 +239,11 @@ typedef struct {
     int invuln_steps;
     int enemy_obstacle_stride;
     float movement_smoothing;
+    float dash_speed;
+    int dash_duration;
+    float dash_shrink;
+    float dash_cooldown;
+    float dash_cooldown_per_level;
     float pickup_magnet_speed;
     int weapon_max_level;
     float upgrade_speed_bonus;
@@ -341,4 +348,4 @@ enum {
 #define PS_STATIC_ASSERT _Static_assert
 #endif
 PS_STATIC_ASSERT(PS_OBS_END == PS_OBS_SIZE, "Observation layout does not match PS_OBS_SIZE");
-PS_STATIC_ASSERT(PS_OBS_SIZE == 335, "Unexpected Puffer Survivors observation size");
+PS_STATIC_ASSERT(PS_OBS_SIZE == 337, "Unexpected Puffer Survivors observation size");

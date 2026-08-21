@@ -41,6 +41,7 @@ enum {
     KG_FUNC_SQRT,
     KG_FUNC_LOG,
     KG_FUNC_LOG10,
+    KG_FUNC_HINGE,
 };
 
 static const char* const KG_CROP_NAMES[KG_NUM_CROPS] = {
@@ -78,11 +79,11 @@ static const KGAnimalDef KG_ANIMAL_DEFS_HOST[KG_NUM_ANIMALS] = {
 /* Mirrors MARKET_PARAMS in the pinned Kaggle interpreter. */
 static const KGMarketDef KG_MARKET_DEFS_HOST[KG_NUM_PRODUCTS] = {
     {25, 10000, 400, KG_FUNC_SQRT, 0.80, KG_FUNC_LOG, 0.20},
-    {35, 10000, 450, KG_FUNC_LOG, 0.20, KG_FUNC_SQRT, 0.70},
-    {60, 10000, 200, KG_FUNC_LINEAR, 0.40, KG_FUNC_SQRT, 0.60},
+    {35, 10000, 450, KG_FUNC_HINGE, 1.00, KG_FUNC_SQRT, 0.70},
+    {60, 10000, 200, KG_FUNC_HINGE, 0.40, KG_FUNC_SQRT, 0.60},
     {120, 10000, 100, KG_FUNC_SQRT, 0.70, KG_FUNC_LINEAR, 1.60},
     {250, 10000, 300, KG_FUNC_LOG, 0.20, KG_FUNC_SQ, 3.60},
-    {50, 10000, 332, KG_FUNC_LINEAR, 0.40, KG_FUNC_LOG, 0.20},
+    {50, 10000, 332, KG_FUNC_HINGE, 0.40, KG_FUNC_LOG, 0.20},
     {160, 10000, 122, KG_FUNC_SQRT, 0.60, KG_FUNC_LINEAR, 1.60},
     {200, 10000, 105, KG_FUNC_LOG, 0.20, KG_FUNC_SQ, 3.20},
     {100, 10000, 200, KG_FUNC_LINEAR, 0.40, KG_FUNC_LINEAR, 0.40},
@@ -125,11 +126,11 @@ static KG_DEVICE KG_CONSTANT KGAnimalDef KG_ANIMAL_DEFS_DEVICE[KG_NUM_ANIMALS] =
 };
 static KG_DEVICE KG_CONSTANT KGMarketDef KG_MARKET_DEFS_DEVICE[KG_NUM_PRODUCTS] = {
     {25, 10000, 400, KG_FUNC_SQRT, 0.80, KG_FUNC_LOG, 0.20},
-    {35, 10000, 450, KG_FUNC_LOG, 0.20, KG_FUNC_SQRT, 0.70},
-    {60, 10000, 200, KG_FUNC_LINEAR, 0.40, KG_FUNC_SQRT, 0.60},
+    {35, 10000, 450, KG_FUNC_HINGE, 1.00, KG_FUNC_SQRT, 0.70},
+    {60, 10000, 200, KG_FUNC_HINGE, 0.40, KG_FUNC_SQRT, 0.60},
     {120, 10000, 100, KG_FUNC_SQRT, 0.70, KG_FUNC_LINEAR, 1.60},
     {250, 10000, 300, KG_FUNC_LOG, 0.20, KG_FUNC_SQ, 3.60},
-    {50, 10000, 332, KG_FUNC_LINEAR, 0.40, KG_FUNC_LOG, 0.20},
+    {50, 10000, 332, KG_FUNC_HINGE, 0.40, KG_FUNC_LOG, 0.20},
     {160, 10000, 122, KG_FUNC_SQRT, 0.60, KG_FUNC_LINEAR, 1.60},
     {200, 10000, 105, KG_FUNC_LOG, 0.20, KG_FUNC_SQ, 3.20},
     {100, 10000, 200, KG_FUNC_LINEAR, 0.40, KG_FUNC_LINEAR, 0.40},
@@ -483,7 +484,9 @@ KG_HD static void kg_new_animal(KGPlayer* player, int index, int animal, int day
     tile->pending_care_bonus = 0;
 }
 
-KG_HD static double kg_shape(int func, double x) {
+KG_HD static double kg_shape(int func, double x, double T) {
+    double u;
+    double over;
     if (x < 0.0) {
         x = 0.0;
     }
@@ -492,6 +495,13 @@ KG_HD static double kg_shape(int func, double x) {
         case KG_FUNC_SQRT: return sqrt(x);
         case KG_FUNC_LOG: return log(1.0 + x);
         case KG_FUNC_LOG10: return log10(1.0 + x);
+        case KG_FUNC_HINGE:
+            /* u + 8*max(0, u-1)^2 with u = x/T, matching the interpreter. */
+            if (T <= 0.0) return x;
+            u = x / T;
+            over = u - 1.0;
+            if (over < 0.0) over = 0.0;
+            return u + 8.0 * over * over;
         default: return x;
     }
 }
@@ -517,11 +527,15 @@ KG_HD static int kg_market_price(int product, int inventory) {
     const KGMarketDef* def = &KG_MARKET_DEFS[product];
     double price;
     if (inventory < def->i0) {
-        double amp = def->below_target * def->base / kg_shape(def->below_func, def->throughput);
-        price = def->base + amp * kg_shape(def->below_func, (double)(def->i0 - inventory));
+        double amp = def->below_target * def->base
+            / kg_shape(def->below_func, def->throughput, def->throughput);
+        price = def->base + amp * kg_shape(def->below_func,
+            (double)(def->i0 - inventory), def->throughput);
     } else {
-        double amp = def->above_target * def->base / kg_shape(def->above_func, def->throughput);
-        price = def->base - amp * kg_shape(def->above_func, (double)(inventory - def->i0));
+        double amp = def->above_target * def->base
+            / kg_shape(def->above_func, def->throughput, def->throughput);
+        price = def->base - amp * kg_shape(def->above_func,
+            (double)(inventory - def->i0), def->throughput);
     }
     price = kg_round_even(price);
     return price < 1 ? 1 : price;
@@ -587,6 +601,12 @@ KG_HD void kg_reset(KGState* state) {
     memset(state->neglect_deaths, 0, sizeof(state->neglect_deaths));
     memset(state->planting_day_deaths, 0,
         sizeof(state->planting_day_deaths));
+    memset(state->production_units, 0, sizeof(state->production_units));
+    memset(state->production_value, 0, sizeof(state->production_value));
+    memset(state->production_product_units, 0,
+        sizeof(state->production_product_units));
+    memset(state->production_product_value, 0,
+        sizeof(state->production_product_value));
     for (i = 0; i < KG_NUM_PRODUCTS; i++) {
         state->market.inventory[i] = KG_MARKET_DEFS[i].i0;
         state->market.prices[i] = KG_MARKET_DEFS[i].base;
@@ -771,10 +791,12 @@ KG_HD static void kg_apply_unit_action(KGState* state, KGPlayer* player, int idx
     KGTile* tile;
     int x;
     int y;
+    int player_id;
     if (action == NULL || idx < 0 || idx >= player->unit_count) {
         return;
     }
     unit = &player->units[idx];
+    player_id = (int)(player - state->players);
     pos = kg_unit_position(player, idx);
     x = pos.x;
     y = pos.y;
@@ -877,16 +899,36 @@ KG_HD static void kg_apply_unit_action(KGState* state, KGPlayer* player, int idx
         }
         if (tile->kind == KG_TILE_PLANT) {
             const KGCropDef* crop = &KG_CROP_DEFS[tile->crop];
+            int item;
+            int units;
             if (state->day - tile->planted_day < crop->first_yield_day) {
                 return;
             }
-            kg_inventory_add(unit, kg_crop_product(tile->crop), tile->yield_units);
+            item = kg_crop_product(tile->crop);
+            units = tile->yield_units;
+            state->production_units[player_id] += (uint32_t)units;
+            state->production_value[player_id] +=
+                (float)units * state->market.prices[item];
+            state->production_product_units[player_id][item] +=
+                (uint32_t)units;
+            state->production_product_value[player_id][item] +=
+                (float)units * state->market.prices[item];
+            kg_inventory_add(unit, item, units);
             tile->yield_units = 0;
             if (!crop->ongoing) {
                 kg_set_player_tile(player, kg_tile_index(x, y), KG_TILE_EMPTY);
             }
         } else if (tile->animal >= 0 && tile->animal < KG_NUM_ANIMALS) {
-            kg_inventory_add(unit, kg_animal_product(tile->animal), tile->yield_units);
+            int item = kg_animal_product(tile->animal);
+            int units = tile->yield_units;
+            state->production_units[player_id] += (uint32_t)units;
+            state->production_value[player_id] +=
+                (float)units * state->market.prices[item];
+            state->production_product_units[player_id][item] +=
+                (uint32_t)units;
+            state->production_product_value[player_id][item] +=
+                (float)units * state->market.prices[item];
+            kg_inventory_add(unit, item, units);
             tile->yield_units = 0;
         }
         return;

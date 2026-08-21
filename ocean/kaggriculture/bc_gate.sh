@@ -36,7 +36,7 @@ kag_check() {
     buys=$(kag_value "$out" env/animal_buy_orders)
     places=$(kag_value "$out" env/animal_place_actions)
     feeds=$(kag_value "$out" env/animal_feed_actions)
-    money=$(kag_value "$out" env/score)
+    money=$(kag_value "$out" env/money)
     if [[ -z $animals || -z $buys || -z $places || -z $feeds || -z $money ]]; then
         printf '%s\n' "$out" >&2
         echo "Failed to parse BC gate" >&2

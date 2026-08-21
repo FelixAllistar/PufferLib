@@ -17,6 +17,8 @@ pufferlib/extensions/hip/
 !ocean/kaggriculture/submission/top_bot/main.py
 !ocean/kaggriculture/submission/test_top_bot_parity.py
 !ocean/kaggriculture/submission/test_model_export.py
+!ocean/kaggriculture/harvest_public_agents.py
+!ocean/kaggriculture/merge_bc_datasets.py
 # Raylib
 raylib_wasm/
 

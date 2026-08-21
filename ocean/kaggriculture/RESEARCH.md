@@ -1661,3 +1661,118 @@ anchor toward the BC opening, and a staged opponent mix (75% economy bot plus
 a learned bank seeded with the 216.27M policy). The current config removed the
 BC magnet, zeroed seed/crop value, and shifted to `liquidation_days=0` and
 `land_value=1.5`, which is a meaningfully different shaping prior.
+
+## kag_v8 lineage: authoritative continuation recipe
+
+`kag_v8` (champion `saved/kaggriculture_league_v6/run_kag_v8_0000000399900672.bin`,
+399.90M, published as `pufferlib_kag_v8_399m_v6.tar.gz`) is the current strongest
+lineage. Its training config is committed as `4ef768d1` in
+`config/kaggriculture.ini`; the `run_id` there is `kag_v9` and the base
+`load_model_path` is the BC clone, so continuing v8 means changing exactly two
+lines from that commit.
+
+Do **not** read the recipe from `logs/kaggriculture/kag_v8.ini`'s config
+section: that file was overwritten by the PSRO confirmation match, which sets
+`selfplay.enabled=0`, `total_agents=16`, sparse rewards, and a `load_enemy_model`
+pair. The authoritative training facts are in its `[metrics]` block:
+`env/n=1024` (2048 agents), `pool/num_banks=4`, `epoch=3051` (so
+`2048*64=131072` transitions per rollout), and `SPS=143k`.
+
+Continuation recipe (all else as `4ef768d1`):
+
+- `base.load_model_path = saved/kaggriculture_league_v6/run_kag_v8_0000000399900672.bin`
+  (resumes the learner and seeds the first self-play bank with the champion)
+- `base.run_id = 'kag_v10'` (fresh checkpoint folder; do not reuse `kag_v8`)
+
+Everything below is already in `4ef768d1` and must stay:
+
+- 128-wide, 2-layer policy; 2048 agents; 4 frozen banks; `frozen_bank_pct=.50`
+- `magnet_path = saved/kaggriculture_bc_v2/top_clone.bin` (BC EMAg opening anchor)
+- `opponent_league = saved/kaggriculture_league_v6/league.ini`,
+  `opponent_pool_prob=0.75`
+- rewards: `potential=0.001`, `win=0.5`, `seed=0.01`, `product=0.95`,
+  `crop=1`, `animal=0.95`, `land=2`, `neglect_discount=0.5`,
+  `liquidation_days=6`, `margin=0.3`, `differential=0`, `inactivity=0`,
+  `neglect_death=0`
+- bots: `bot_opponent_fraction=0.5`, `top=0.2`, `rules=0.2`, `script=0.4`,
+  `adaptive=0.6`
+- train: 400M steps, `lr=0.0007`, `ent=0.000577`, `emag_kl=0.01`,
+  `emag_tau=0`, `minibatch=8192`, `horizon=64`
+
+This is the same lineage recipe, not the ExpL reset recipe (which is the older
+600-score submission and uses `lr=5e-5`, no magnet, `reset_opening_turns=80`,
+and 100% top lane).
+
+## 2026-08-14: BC clone regeneration and multi-bot EMAg anchors
+
+The `top_clone.bin` used as the EMAg magnet was generated before the public
+planner structure-orientation fix landed, so it carried the stale corner
+layout. The clone trainer (`kag_bc.cu`) now exposes every native opponent as a
+BC expert profile (`BC_BOT_RULES`..`BC_BOT_HAMBURGER`, `BC_BOT_COUNT=12`) and
+the random opponent lane samples the full set. `clone_bots.sh` generates a
+96-step recurrent clone for any of those profiles; 96 steps matches the EMAg
+cutoff (`emag_cutoff=0.134`), so the anchors only need the opening prefix.
+
+Regenerated anchors (128x2, all gate-verified at argmax):
+
+- `top_clone.bin` via the unchanged two-phase pipeline;
+- `structured_clone.bin`, `thunder_clone.bin`, `triad_clone.bin`,
+  `pulse_clone.bin`, `lugovoy_clone.bin`, `thunder25_clone.bin`.
+
+Important training finding: the planner/tape experts need
+`learning_rate=0.001` and ~1000 epochs from random init. At the old
+`0.0002`/400 schedule the clones were underfit (stochastic mass was correct but
+argmax collapsed to PASS, so `eval_bot` showed 3000 money / 0 animals). At
+`0.001`/1000 the exact-sequence validation accuracy reached ~0.65-0.70 and the
+argmax evaluation reproduces animal placement and market orders.
+
+To use a variety anchor as the EMAg target, change `selfplay.magnet_path` to
+the chosen `*_clone.bin`; `load_model_path` can remain the top clone warm start.
+
+## 2026-08-14: full-game clones and on-policy DAgger
+
+Full-game (720-step) BC from random init collapses at argmax: even 1500 epochs
+reach only ~17% exact-sequence accuracy, and rollout error compounds over 719
+decisions. Warm-starting the full clone from its 96-step opening clone plus
+400 games fixes the opening and yields non-collapsed full-game priors
+(`*_full_clone.bin`), but they are warm starts, not standalone-strong agents.
+
+`kag_bc.cu` now supports `bc.mode=gen_dagger`: the current clone (`bc.student`)
+rolls out, the native expert (`bc.bot`) labels every reached state, and
+`bc.beta` mixes the expert action into the rollout to bound drift.
+`dagger_bot.sh` wraps one round and warm-starts retraining from the student.
+
+Round 1 on thunder regressed: `thunder_full_clone` scored 2194 vs pass, the
+DAgger retrain scored 775. A single round from an already-weak student does not
+recover a complex planner's full-season behavior with this 128-wide MinGRU and
+pure cross-entropy. The 96-step opening remains the tractable BC window; the
+magnet is also only active through `emag_cutoff=0.134` (~96 steps), so a
+longer magnet needs a longer window (for example a 240-step clone with
+`emag_cutoff=0.333`) rather than the full 720-step collapse zone.
+
+## 2026-08-18: potential, cash, and production metrics
+
+The Kaggriculture environment now separates the dashboard/sweep quantities:
+
+- `env/score` and `env/sweep_score` are the learner's terminal
+  `kag_player_potential_full`: cash plus configured marked assets (seeds,
+  inventory, live crops/animals, yield, and land). `env/opponent_score` is the
+  same potential for the other player. `potential_score` and
+  `opponent_potential` are explicit aliases.
+- `env/money` and `env/opponent_money` are terminal cash only. Match and
+  population scripts use these fields for their `mean_money` columns; they no
+  longer mistake potential for cash.
+- `env/gdp` and `env/opponent_gdp` are realized production value. A unit enters
+  GDP when a crop or animal yield is harvested, valued at that turn's market
+  price. Buying and reselling goods is intentionally excluded so a market
+  churn loop cannot inflate GDP.
+- `env/production_units` is the total harvested units. The targeted market
+  diagnostics `strawberry_units`, `strawberry_value`, `milk_units`, and
+  `milk_value` (plus opponent-prefixed counterparts) expose the products most
+  affected by the latest simulator price change.
+
+This makes a low-cash/high-potential or low-price/high-GDP policy diagnosable:
+compare `potential_score`, `money`, and `gdp` together rather than ranking on
+cash alone. The terminal full potential intentionally bypasses the shaping
+liquidation ramp; otherwise `reward_liquidation_days` would erase unsold assets
+at the exact point where the score is reported.

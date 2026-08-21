@@ -117,9 +117,26 @@ typedef uint8_t obs_t;
 
 struct Log {
     float perf;
+    /* score/sweep_score are the learner's configured marked potential
+     * (kag_player_potential_full), not cash. Cash and production are logged
+     * separately below so a price-depressed but productive farm is visible. */
     float score;
     float sweep_score;
     float opponent_score;
+    float money;
+    float opponent_money;
+    float gdp;
+    float opponent_gdp;
+    float production_units;
+    float opponent_production_units;
+    float strawberry_units;
+    float opponent_strawberry_units;
+    float strawberry_value;
+    float opponent_strawberry_value;
+    float milk_units;
+    float opponent_milk_units;
+    float milk_value;
+    float opponent_milk_value;
     float episode_return;
     float episode_length;
     float land_purchases;
@@ -147,6 +164,11 @@ struct Log {
     float script_hamburger_games;
     float script_lugovoy_games;
     float script_thunder_games;
+    float script_k320_10c4s_games;
+    float script_k320_yarn_games;
+    float script_e279_games;
+    float script_v16_games;
+    float script_c166_games;
     float adaptive_pulse_games;
     float adaptive_structured_games;
     float adaptive_triad_games;
@@ -259,18 +281,21 @@ KG_HD static inline int kag_abs(int value) {
     return value < 0 ? -value : value;
 }
 
-KG_HD static inline float kag_player_potential(const Env* env, int player_id) {
+KG_HD static inline float kag_player_potential_scaled(const Env* env,
+        int player_id, int apply_liquidation) {
     const KGState* game = &env->game_storage;
     const KGPlayer* player = &game->players[player_id];
     float value = (float)player->money;
     float assets = 0.0f;
     float asset_scale = 1.0f;
-    int liquidation_steps = (int)(env->reward_liquidation_days
-        * game->config.turns_per_day);
-    int remaining_steps = game->config.episode_steps - game->step;
-    if (liquidation_steps > 0 && remaining_steps < liquidation_steps) {
-        asset_scale = remaining_steps > 0
-            ? (float)remaining_steps / liquidation_steps : 0.0f;
+    if (apply_liquidation) {
+        int liquidation_steps = (int)(env->reward_liquidation_days
+            * game->config.turns_per_day);
+        int remaining_steps = game->config.episode_steps - game->step;
+        if (liquidation_steps > 0 && remaining_steps < liquidation_steps) {
+            asset_scale = remaining_steps > 0
+                ? (float)remaining_steps / liquidation_steps : 0.0f;
+        }
     }
     for (int crop = 0; crop < KG_NUM_CROPS; crop++) {
         assets += player->seeds[crop] * KG_CROP_DEFS[crop].seed_cost
@@ -309,11 +334,21 @@ KG_HD static inline float kag_player_potential(const Env* env, int player_id) {
         while (plants) {
             int tile = word * 64 + kg_ctz64(plants);
             const KGTile* crop_tile = &player->tiles[tile];
-            float health = crop_tile->consecutive_unwatered > 0
-                    && !crop_tile->watered_today
-                ? env->reward_neglect_discount : 1.0f;
-            assets += KG_CROP_DEFS[crop_tile->crop].seed_cost
-                * env->reward_crop_value * health;
+            /* Rewarding only a previous neglect miss makes WATER payoff zero
+             * for an already-healthy plant, which is why the model waters at
+             * ~50% coverage: it has no reason to keep a good plant watered.
+             * Discount on a missed tick instead, so watering today always
+             * carries the value-protection signal. */
+            float health = crop_tile->watered_today
+                ? 1.0f : env->reward_neglect_discount;
+            /* The planted field is worth its eventual output, not its seed
+             * cost. This makes PLANT and WATER move potential immediately
+             * instead of hiding the payout behind the harvest. Neglect still
+             * devalues the field through the health multiplier. */
+            const KGCropDef* plant_def = &KG_CROP_DEFS[crop_tile->crop];
+            int expected = plant_def->max_yield
+                * game->market.prices[crop_tile->crop];
+            assets += (float)expected * env->reward_crop_value * health;
             /* Yield is already real inventory held on the tile. Valuing it
              * gives WATER/CARE their economic credit before HARVEST converts
              * it into carried inventory; the conversion itself stays neutral. */
@@ -328,13 +363,19 @@ KG_HD static inline float kag_player_potential(const Env* env, int player_id) {
             const KGTile* animal_tile = &player->tiles[tile];
             int animal = animal_tile->animal;
             if (animal >= 0) {
-                float health = animal_tile->consecutive_unfed > 0
-                        && !animal_tile->fed_today
-                    ? env->reward_neglect_discount : 1.0f;
-                assets += KG_ANIMAL_DEFS[animal].cost
-                    * env->reward_animal_value * health;
+                /* Mirror the crop logic: feeding keeps the herd's value at
+                 * full, skipping a feed devalues it. */
+                float health = animal_tile->fed_today
+                    ? 1.0f : env->reward_neglect_discount;
+                /* The occupied structure is worth its expected production,
+                 * not its purchase cost. This makes BUILD/PLACE and FEED
+                 * move potential immediately, mirroring the crop change. */
+                const KGAnimalDef* anim_def = &KG_ANIMAL_DEFS[animal];
+                int expected = anim_def->max_held
+                    * game->market.prices[anim_def->product];
+                assets += (float)expected * env->reward_animal_value * health;
                 assets += animal_tile->yield_units
-                    * game->market.prices[KG_ANIMAL_DEFS[animal].product]
+                    * game->market.prices[anim_def->product]
                     * env->reward_product_value * health;
             }
             animals &= animals - 1;
@@ -346,6 +387,18 @@ KG_HD static inline float kag_player_potential(const Env* env, int player_id) {
     assets += land_value
         * env->reward_land_value;
     return value + asset_scale * assets;
+}
+
+/* Reward shaping uses the liquidation-aware potential above.  Terminal
+ * reporting deliberately uses the full mark-to-market value: otherwise a
+ * nonzero reward_liquidation_days would write every unsold asset down to zero
+ * exactly at the episode boundary and hide the player's actual farm. */
+KG_HD static inline float kag_player_potential(const Env* env, int player_id) {
+    return kag_player_potential_scaled(env, player_id, 1);
+}
+
+KG_HD static inline float kag_player_potential_full(const Env* env, int player_id) {
+    return kag_player_potential_scaled(env, player_id, 0);
 }
 
 KG_HD static inline uint8_t kag_tile_entity(const KGTile* tile) {
@@ -2255,6 +2308,10 @@ void puf_step(Env* env) {
     }
 
     if (done) {
+        float terminal_potential[KG_NUM_PLAYERS] = {
+            kag_player_potential_full(env, 0),
+            kag_player_potential_full(env, 1),
+        };
         float win0 = p0 > p1 ? 1.0f : (p0 == p1 ? 0.5f : 0.0f);
         float model_win = model_player == 0 ? win0 : 1.0f - win0;
         float outcome = (2.0f * win0 - 1.0f) * env->reward_win;
@@ -2293,11 +2350,32 @@ void puf_step(Env* env) {
         env->agents[0].terminals[0] = 1.0f;
         env->agents[1].terminals[0] = 1.0f;
         env->log.perf += model_win;
-        env->log.score += (float)model_money;
-        env->log.sweep_score += abs(model_money - game->config.starting_money)
-                <= env->reward_inactivity_threshold
-            ? -3000.0f : (float)model_money;
-        env->log.opponent_score += (float)opponent_money;
+        env->log.score += terminal_potential[model_player];
+        env->log.sweep_score += terminal_potential[model_player];
+        env->log.opponent_score += terminal_potential[1 - model_player];
+        env->log.money += (float)model_money;
+        env->log.opponent_money += (float)opponent_money;
+        env->log.gdp += game->production_value[model_player];
+        env->log.opponent_gdp += game->production_value[1 - model_player];
+        env->log.production_units += game->production_units[model_player];
+        env->log.opponent_production_units +=
+            game->production_units[1 - model_player];
+        env->log.strawberry_units +=
+            game->production_product_units[model_player][KG_ITEM_STRAWBERRY];
+        env->log.opponent_strawberry_units +=
+            game->production_product_units[1 - model_player][KG_ITEM_STRAWBERRY];
+        env->log.strawberry_value +=
+            game->production_product_value[model_player][KG_ITEM_STRAWBERRY];
+        env->log.opponent_strawberry_value +=
+            game->production_product_value[1 - model_player][KG_ITEM_STRAWBERRY];
+        env->log.milk_units +=
+            game->production_product_units[model_player][KG_ITEM_MILK];
+        env->log.opponent_milk_units +=
+            game->production_product_units[1 - model_player][KG_ITEM_MILK];
+        env->log.milk_value +=
+            game->production_product_value[model_player][KG_ITEM_MILK];
+        env->log.opponent_milk_value +=
+            game->production_product_value[1 - model_player][KG_ITEM_MILK];
         env->log.episode_return += env->episode_returns[model_player];
         env->log.episode_length += (float)game->config.episode_steps;
         env->log.land_purchases += (float)(
@@ -2357,6 +2435,16 @@ void puf_step(Env* env) {
                 env->log.script_lugovoy_games += 1.0f;
             } else if (profile == KG_SCRIPT_THUNDER25) {
                 env->log.script_thunder_games += 1.0f;
+            } else if (profile == KG_SCRIPT_K320_10C4S) {
+                env->log.script_k320_10c4s_games += 1.0f;
+            } else if (profile == KG_SCRIPT_K320_YARN) {
+                env->log.script_k320_yarn_games += 1.0f;
+            } else if (profile == KG_SCRIPT_E279) {
+                env->log.script_e279_games += 1.0f;
+            } else if (profile == KG_SCRIPT_V16) {
+                env->log.script_v16_games += 1.0f;
+            } else if (profile == KG_SCRIPT_C166) {
+                env->log.script_c166_games += 1.0f;
             } else if (profile == KG_SCRIPT_TOP) {
                 env->log.script_top_games += 1.0f;
             }
@@ -2593,6 +2681,26 @@ void puf_log(Log* log, Dict* out) {
     dict_set(out, "score", log->score);
     dict_set(out, "sweep_score", log->sweep_score);
     dict_set(out, "opponent_score", log->opponent_score);
+    /* Explicit names make downstream reports self-documenting while keeping
+     * score/sweep_score as the optimizer-compatible potential aliases. */
+    dict_set(out, "potential_score", log->score);
+    dict_set(out, "opponent_potential", log->opponent_score);
+    dict_set(out, "money", log->money);
+    dict_set(out, "opponent_money", log->opponent_money);
+    dict_set(out, "gdp", log->gdp);
+    dict_set(out, "opponent_gdp", log->opponent_gdp);
+    dict_set(out, "production_units", log->production_units);
+    dict_set(out, "opponent_production_units",
+        log->opponent_production_units);
+    dict_set(out, "strawberry_units", log->strawberry_units);
+    dict_set(out, "opponent_strawberry_units", log->opponent_strawberry_units);
+    dict_set(out, "strawberry_value", log->strawberry_value);
+    dict_set(out, "opponent_strawberry_value",
+        log->opponent_strawberry_value);
+    dict_set(out, "milk_units", log->milk_units);
+    dict_set(out, "opponent_milk_units", log->opponent_milk_units);
+    dict_set(out, "milk_value", log->milk_value);
+    dict_set(out, "opponent_milk_value", log->opponent_milk_value);
     dict_set(out, "episode_return", log->episode_return);
     dict_set(out, "episode_length", log->episode_length);
     dict_set(out, "land_purchases", log->land_purchases);
@@ -2623,6 +2731,12 @@ void puf_log(Log* log, Dict* out) {
     dict_set(out, "script_hamburger_fraction", log->script_hamburger_games);
     dict_set(out, "script_lugovoy_fraction", log->script_lugovoy_games);
     dict_set(out, "script_thunder_fraction", log->script_thunder_games);
+    dict_set(out, "script_k320_10c4s_fraction",
+        log->script_k320_10c4s_games);
+    dict_set(out, "script_k320_yarn_fraction", log->script_k320_yarn_games);
+    dict_set(out, "script_e279_fraction", log->script_e279_games);
+    dict_set(out, "script_v16_fraction", log->script_v16_games);
+    dict_set(out, "script_c166_fraction", log->script_c166_games);
     dict_set(out, "script_top_fraction", log->script_top_games);
     dict_set(out, "adaptive_pulse_fraction", log->adaptive_pulse_games);
     dict_set(out, "adaptive_structured_fraction",

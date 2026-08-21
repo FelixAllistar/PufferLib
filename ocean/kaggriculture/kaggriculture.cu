@@ -242,6 +242,10 @@ __device__ static void kag_cuda_transition(Env* env, Env* shells,
         return;
     }
 
+    float terminal_potential[KG_NUM_PLAYERS] = {
+        kag_player_potential_full(env, 0),
+        kag_player_potential_full(env, 1),
+    };
     float win0 = money[0] > money[1] ? 1.0f
         : money[0] == money[1] ? 0.5f : 0.0f;
     float model_win = model_player == 0 ? win0 : 1.0f - win0;
@@ -276,11 +280,32 @@ __device__ static void kag_cuda_transition(Env* env, Env* shells,
     }
 
     env->log.perf += model_win;
-    env->log.score += (float)model_money;
-    env->log.sweep_score += kag_abs(model_money - game->config.starting_money)
-            <= env->reward_inactivity_threshold
-        ? -3000.0f : (float)model_money;
-    env->log.opponent_score += (float)opponent_money;
+    env->log.score += terminal_potential[model_player];
+    env->log.sweep_score += terminal_potential[model_player];
+    env->log.opponent_score += terminal_potential[1 - model_player];
+    env->log.money += (float)model_money;
+    env->log.opponent_money += (float)opponent_money;
+    env->log.gdp += game->production_value[model_player];
+    env->log.opponent_gdp += game->production_value[1 - model_player];
+    env->log.production_units += game->production_units[model_player];
+    env->log.opponent_production_units +=
+        game->production_units[1 - model_player];
+    env->log.strawberry_units +=
+        game->production_product_units[model_player][KG_ITEM_STRAWBERRY];
+    env->log.opponent_strawberry_units +=
+        game->production_product_units[1 - model_player][KG_ITEM_STRAWBERRY];
+    env->log.strawberry_value +=
+        game->production_product_value[model_player][KG_ITEM_STRAWBERRY];
+    env->log.opponent_strawberry_value +=
+        game->production_product_value[1 - model_player][KG_ITEM_STRAWBERRY];
+    env->log.milk_units +=
+        game->production_product_units[model_player][KG_ITEM_MILK];
+    env->log.opponent_milk_units +=
+        game->production_product_units[1 - model_player][KG_ITEM_MILK];
+    env->log.milk_value +=
+        game->production_product_value[model_player][KG_ITEM_MILK];
+    env->log.opponent_milk_value +=
+        game->production_product_value[1 - model_player][KG_ITEM_MILK];
     env->log.episode_return += env->episode_returns[model_player];
     env->log.episode_length += (float)game->config.episode_steps;
     env->log.land_purchases += (float)(kag_popcount(

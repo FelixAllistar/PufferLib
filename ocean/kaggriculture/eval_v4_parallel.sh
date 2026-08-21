@@ -39,8 +39,8 @@ bench_one() {
         2>&1 | grep '"env/perf"' | tail -1)
     local perf score opp
     perf=$(grep -o '"env/perf":[0-9.]*' <<< "$json" | head -1 | cut -d: -f2)
-    score=$(grep -o '"env/score":[0-9.]*' <<< "$json" | head -1 | cut -d: -f2)
-    opp=$(grep -o '"env/opponent_score":[0-9.]*' <<< "$json" | head -1 | cut -d: -f2)
+    score=$(grep -o '"env/money":[0-9.]*' <<< "$json" | head -1 | cut -d: -f2)
+    opp=$(grep -o '"env/opponent_money":[0-9.]*' <<< "$json" | head -1 | cut -d: -f2)
     printf '%s\t%s\t%s\t%s\n' "$checkpoint" "$score" "$opp" "$perf" \
         > "$(dirname "$report")/.tmp_$(basename "$checkpoint").tsv"
 }
@@ -57,7 +57,7 @@ else
 fi
 printf 'Sampling %d of %d checkpoints (%d games, %d jobs)\n' \
     "${#checkpoints[@]}" "${#all[@]}" "$games" "$jobs"
-printf 'checkpoint\tscore\topponent_score\tperf\n' > "$report"
+printf 'checkpoint\tmoney\topponent_money\tperf\n' > "$report"
 for checkpoint in "${checkpoints[@]}"; do
     while (( $(jobs -rp | wc -l) >= jobs )); do wait -n || true; done
     bench_one "$checkpoint" &
@@ -65,7 +65,7 @@ done
 wait
 for f in "$(dirname "$report")"/.tmp_*.tsv; do cat "$f" >> "$report"; rm -f "$f"; done
 
-printf '\nRanked by score (win rate vs mixed bots):\n'
+printf '\nRanked by win rate vs mixed bots:\n'
 awk -F '\t' 'NR > 1 {print $4 "\t" $0}' "$report" \
     | sort -t $'\t' -k1,1nr | head -n 12
 printf 'Wrote %s\n' "$report"

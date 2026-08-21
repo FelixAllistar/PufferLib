@@ -70,12 +70,12 @@ for kag_model in "${kag_models[@]}"; do
 
     kag_fw=$(kag_json "$kag_forward" env/perf)
     kag_fd=$(kag_json "$kag_forward" env/draw_rate)
-    kag_fm=$(kag_json "$kag_forward" env/score)
-    kag_ft=$(kag_json "$kag_forward" env/opponent_score)
+    kag_fm=$(kag_json "$kag_forward" env/money)
+    kag_ft=$(kag_json "$kag_forward" env/opponent_money)
     kag_rw=$(kag_json "$kag_reverse" env/perf)
     kag_rd=$(kag_json "$kag_reverse" env/draw_rate)
-    kag_rm=$(kag_json "$kag_reverse" env/score)
-    kag_rt=$(kag_json "$kag_reverse" env/opponent_score)
+    kag_rm=$(kag_json "$kag_reverse" env/money)
+    kag_rt=$(kag_json "$kag_reverse" env/opponent_money)
     if [[ -z $kag_fw || -z $kag_fd || -z $kag_fm || -z $kag_ft \
             || -z $kag_rw || -z $kag_rd || -z $kag_rm || -z $kag_rt ]]; then
         echo "Failed to parse eval for $kag_model" >&2

@@ -57,13 +57,13 @@ kag_usage() {
         "  --reuse PREFIX      Reuse an existing screen instead of evaluating again" \
         "  --max-admit N       Maximum new support policies admitted (default 2)" \
         "  --min-weight X      Minimum solved mass for admission (default 0.01)" \
-        "  --max-league N      Prune lowest-mass members above N (default 4)" \
+        "  --max-league N      Prune lowest-mass members above N (2..8; default 4)" \
         "  --jsd-steps N       Shared-state behavior probe steps per seed (default 720)" \
         "  --jsd-seeds N       Independent probe seeds, each a full trajectory (default 2)" \
         "  --profile-games N   GPU behavior profile games per active policy (default 0)" \
         "  --quality-gap X     Max score gap for diversity candidates (default 0.15)" \
         "  --fixed LIST        Optional fixed eval sides (default none)" \
-        "  --league DIRECTORY  Active four-policy league (default saved/kaggriculture_league_v6)" \
+        "  --league DIRECTORY  Active league (default saved/kaggriculture_league_v6)" \
         "  --config FILE       INI updated by iterate (default config/kaggriculture.ini)" \
         "  --archive DIRECTORY League snapshot root" \
         "  -h, --help          Show this help"
@@ -159,8 +159,8 @@ kag_range_count=${BASH_REMATCH[3]}
 [[ $kag_max_admit =~ ^[0-9]+$ ]] \
     || { printf '%s\n' '--max-admit must be a nonnegative integer' >&2; exit 2; }
 [[ $kag_max_league =~ ^[0-9]+$ ]] \
-    && ((kag_max_league >= 2 && kag_max_league <= 4)) \
-    || { printf '%s\n' '--max-league must be an integer from 2 through 4' >&2; exit 2; }
+    && ((kag_max_league >= 2 && kag_max_league <= 8)) \
+    || { printf '%s\n' '--max-league must be an integer from 2 through 8' >&2; exit 2; }
 [[ $kag_jsd_steps =~ ^[0-9]+$ ]] && ((kag_jsd_steps >= 720)) \
     || { printf '%s\n' '--jsd-steps must be at least 720' >&2; exit 2; }
 [[ $kag_jsd_seeds =~ ^[0-9]+$ ]] && ((kag_jsd_seeds >= 1 && kag_jsd_seeds <= 32)) \
@@ -740,7 +740,7 @@ if [[ -n $kag_learner_source && -f $kag_learner_source ]]; then
     done
 fi
 if [[ -z $kag_learner_active ]]; then
-    # A quality-gated candidate can be admitted and then lose the four-policy
+    # A quality-gated candidate can be admitted and then lose the active-league
     # prune. Never resume from that rejected branch: continue from the
     # highest-weight policy that actually survived in the active league.
     kag_fallback_policy=$(awk -F '\t' 'NR==1 {print $1}' "$kag_weights")

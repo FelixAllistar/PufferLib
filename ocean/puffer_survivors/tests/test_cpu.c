@@ -110,7 +110,7 @@ int main(void) {
     env.cfg.player_health = 1000000.0f;
     c_reset(&env);
 
-    assert(PS_OBS_SIZE == 335);
+    assert(PS_OBS_SIZE == 337);
     assert_finite_observation(observations);
     assert(ps_geometry_shape_overlaps_circle(PS_SHAPE_AABB,
         4.0f, 0.0f, 0.0f, 4.65f, 4.65f, 0.5f));
@@ -193,6 +193,18 @@ int main(void) {
     env.cfg.obstacle_count = obstacle_count;
     c_reset(&env);
 
+    env.cfg.obstacle_count = 0;
+    c_reset(&env);
+    actions[0] = (float)PS_ACTION_DASH;
+    float dash_start_x = env.px;
+    c_step(&env);
+    assert(env.px > dash_start_x);
+    assert(env.dash_timer == env.cfg.dash_duration - 1);
+    assert(fabsf(env.dash_cd - ps_dash_cooldown_total(&env, 0)) < 1e-5f);
+    assert(env.invuln_timer > 0);
+    env.cfg.obstacle_count = obstacle_count;
+    c_reset(&env);
+
     // Upgrade cards are exact one-hot IDs, with inactive cards all zero.
     env.pending_upgrade = 1;
     env.offered[0] = PS_UPGRADE_BUBBLE;
@@ -212,7 +224,7 @@ int main(void) {
         assert(observations[PS_OBS_UPGRADE_BASE + i] == 0.0f);
 
     for (int t = 0; t < 20000; t++) {
-        actions[0] = (float)((t / 37) % 9);
+        actions[0] = (float)((t / 37) % PS_MOVE_ACTION_COUNT);
         actions[1] = (float)((t / 251) % 3);
         c_step(&env);
         assert_finite_observation(observations);

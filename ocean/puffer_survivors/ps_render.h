@@ -37,7 +37,7 @@ static inline const char* ps_upgrade_description(int type) {
         case PS_UPGRADE_MAGNET: return "Pull XP and hearts\nfrom farther away.";
         case PS_UPGRADE_HEALTH: return "Gain max HP and\nheal now.";
         case PS_UPGRADE_MIGHT: return "All weapons deal\nmore damage.";
-        case PS_UPGRADE_COOLDOWN: return "Weapons fire\nmore often.";
+        case PS_UPGRADE_COOLDOWN: return "Weapons and dash\ncool down faster.";
         case PS_UPGRADE_AREA: return "Larger hitboxes\nand pools.";
         case PS_UPGRADE_PIERCE: return "Bubbles pierce\nmore enemies.";
         default: return "Upgrade your survival odds.";
@@ -735,6 +735,7 @@ static inline const char* ps_move_action_name(int action) {
         case 6: return "up-right";
         case 7: return "down-left";
         case 8: return "down-right";
+        case PS_ACTION_DASH: return "dash";
         default: return "?";
     }
 }
@@ -1168,6 +1169,10 @@ static inline void c_render(PufferSurvivors* env) {
     // tuned in the shared gameplay config. 0.66 is the current art footprint
     // for the default 0.42 world-space collision radius.
     float player_visual_radius = env->cfg.player_radius * (0.66f / 0.42f);
+    float dash_fraction = env->cfg.dash_duration > 0
+        ? ps_clampf((float)env->dash_timer / (float)env->cfg.dash_duration, 0.0f, 1.0f)
+        : 0.0f;
+    player_visual_radius *= 1.0f - env->cfg.dash_shrink * dash_fraction;
 
     Vector2 player = ps_screen(env, draw_px, draw_py, scale, sw, sh);
 #ifndef PS_FAST_RENDER

@@ -134,6 +134,47 @@ static void fail_state(int case_id, int step, const KGState* cpu,
     std::exit(1);
 }
 
+static void check_market_vectors(void) {
+    struct {
+        int item;
+        int inventory;
+        int expected;
+    } cases[] = {
+        {KG_ITEM_CARROT, 10000, 35},
+        {KG_ITEM_CARROT, 9775, 52},
+        {KG_ITEM_CARROT, 9550, 70},
+        {KG_ITEM_CARROT, 9400, 113},
+        {KG_ITEM_CARROT, 9100, 385},
+        {KG_ITEM_TOMATO, 10000, 60},
+        {KG_ITEM_TOMATO, 9900, 72},
+        {KG_ITEM_TOMATO, 9800, 84},
+        {KG_ITEM_TOMATO, 9700, 144},
+        {KG_ITEM_TOMATO, 9500, 552},
+        {KG_ITEM_EGG, 10000, 50},
+        {KG_ITEM_EGG, 9834, 60},
+        {KG_ITEM_EGG, 9668, 70},
+        {KG_ITEM_EGG, 9502, 120},
+        {KG_ITEM_EGG, 9170, 460},
+    };
+    for (const auto& c : cases) {
+        int got = kg_market_price(c.item, c.inventory);
+        if (got != c.expected) {
+            std::fprintf(stderr, "market vector %s inv=%d: got %d expected %d\n",
+                KG_PRODUCT_NAMES[c.item], c.inventory, got, c.expected);
+            std::exit(1);
+        }
+    }
+    KGMarketDef device_defs[KG_NUM_PRODUCTS];
+    CUDA_OK(cudaMemcpyFromSymbol(device_defs, KG_MARKET_DEFS_DEVICE,
+        sizeof(device_defs), 0, cudaMemcpyDeviceToHost));
+    if (std::memcmp(device_defs, KG_MARKET_DEFS_HOST,
+            sizeof(device_defs)) != 0) {
+        std::fprintf(stderr, "host/device market def tables differ\n");
+        std::exit(1);
+    }
+    std::printf("Kaggriculture market hinge vectors: PASS\n");
+}
+
 int main(void) {
     KGConfig* configs = (KGConfig*)std::calloc(TEST_CASES, sizeof(KGConfig));
     KGState* cpu = (KGState*)std::calloc(TEST_CASES, sizeof(KGState));
@@ -204,6 +245,7 @@ int main(void) {
     CUDA_OK(cudaFree(d_actions));
     CUDA_OK(cudaFree(d_states));
     CUDA_OK(cudaFree(d_configs));
+    check_market_vectors();
     std::free(actions);
     std::free(gpu);
     std::free(cpu);

@@ -110,6 +110,8 @@ struct Env {
     int weapon_level[PS_WEAPON_COUNT];
     float orbit_phase;
     float frost_aim;
+    float dash_cd;
+    int dash_timer;
     int tick, invuln_timer;
 
     PSEnemyPool enemies;

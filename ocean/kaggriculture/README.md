@@ -77,7 +77,7 @@ This port lives under `ocean/kaggriculture` because this checkout uses the
 singular `ocean/` environment directory. It contains:
 
 - `reference/kaggriculture.py`: the installed Kaggle interpreter used as the
-  oracle, copied from `kaggle-environments==1.32.2`.
+  oracle, copied from `kaggle-environments==1.32.7`.
 - `kaggriculture_core.c/.h`: a native structured-rule simulator.
 - `kaggriculture.h`: the PufferLib adapter (two agents, compact observations,
   one farmer head, eight direct hand heads, three scalable overflow cohorts,

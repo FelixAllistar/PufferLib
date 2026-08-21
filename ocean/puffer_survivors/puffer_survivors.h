@@ -19,7 +19,7 @@ struct Env {
 
 #define OBS_SIZE PS_OBS_SIZE
 #define NUM_ATNS 2
-#define ACT_SIZES {9, 3}
+#define ACT_SIZES {PS_MOVE_ACTION_COUNT, 3}
 
 typedef float obs_t;
 
@@ -175,6 +175,11 @@ static inline PSConfig ps_config_from_kwargs(Dict* kwargs) {
     cfg.invuln_steps = (int)dict_get(kwargs, "invuln_steps");
     cfg.enemy_obstacle_stride = (int)dict_get(kwargs, "enemy_obstacle_stride");
     cfg.movement_smoothing = (float)dict_get(kwargs, "movement_smoothing");
+    cfg.dash_speed = (float)dict_get(kwargs, "dash_speed");
+    cfg.dash_duration = (int)dict_get(kwargs, "dash_duration");
+    cfg.dash_shrink = (float)dict_get(kwargs, "dash_shrink");
+    cfg.dash_cooldown = (float)dict_get(kwargs, "dash_cooldown");
+    cfg.dash_cooldown_per_level = (float)dict_get(kwargs, "dash_cooldown_per_level");
     cfg.pickup_magnet_speed = (float)dict_get(kwargs, "pickup_magnet_speed");
     cfg.weapon_max_level = (int)dict_get(kwargs, "weapon_max_level");
     cfg.upgrade_speed_bonus = (float)dict_get(kwargs, "upgrade_speed_bonus");

@@ -9,9 +9,13 @@ from pathlib import Path
 from kaggle_environments import make
 
 
-def load_agent(source, model):
+def load_agent(source, model, deterministic=True):
     os.environ["PUFFERLIB_MODEL_PATH"] = str(Path(model).resolve())
-    os.environ["PUFFERLIB_DETERMINISTIC"] = "1"
+    # Keep the historical deterministic default, but make the stochastic
+    # export path testable with the exact same packaged source/model.  The
+    # environment variable is read when main.py is imported, so it must be set
+    # before loading the module.
+    os.environ["PUFFERLIB_DETERMINISTIC"] = "1" if deterministic else "0"
     spec = importlib.util.spec_from_file_location("kag_export", source)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
@@ -61,14 +65,18 @@ def main():
     parser.add_argument("model", type=Path)
     parser.add_argument("--mode", choices=("opening", "recovery", "smoke"),
                         default="smoke")
+    parser.add_argument("--stochastic", action="store_true",
+                        help="sample masked actions instead of masked argmax")
     args = parser.parse_args()
-    module = load_agent(args.source, args.model)
+    module = load_agent(args.source, args.model,
+                        deterministic=not args.stochastic)
     steps = 27 if args.mode == "opening" else 96 if args.mode == "recovery" else 720
     for seed in (7, 42):
         for seat in (0, 1):
             result = run(module, seed, seat, steps)
             animals, feeds, places, buys, money, statuses = result
-            print(f"export mode={args.mode} seed={seed} seat={seat} "
+            policy_mode = "stochastic" if args.stochastic else "deterministic"
+            print(f"export policy={policy_mode} mode={args.mode} seed={seed} seat={seat} "
                   f"animals={animals} feeds={feeds} places={places} "
                   f"animal_buys={buys} money={money:.0f} status={statuses}")
             if args.mode == "opening" and not (

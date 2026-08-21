@@ -211,6 +211,14 @@ PS_SIM_FN float ps_weapon_cooldown_total(PSSim* sim, int env, int weapon) {
     return cd;
 }
 
+PS_SIM_FN float ps_dash_cooldown_total(PSSim* sim, int env) {
+    (void)env;
+    float cd = sim->cfg.dash_cooldown
+        + sim->cfg.dash_cooldown_per_level
+            * (float)(PS_P(sim, env, level) - 1);
+    return fmaxf(1.0f, cd * PS_P(sim, env, cooldown_mult));
+}
+
 PS_SIM_FN float ps_weapon_power(PSSim* sim, int env, int weapon) {
     (void)env;
     int level = PS_W(sim, env, weapon, weapon_level);
@@ -319,6 +327,9 @@ PS_SIM_FN void ps_compute_observations(PSSim* sim, int env) {
         / ps_weapon_cooldown_total(sim, env, PS_WEAPON_BUBBLE), 0.0f, 1.0f);
     obs[idx++] = PS_P(sim, env, pending_upgrade) ? 1.0f : 0.0f;
     obs[idx++] = sim->cfg.invuln_steps > 0 ? ps_clampf((float)PS_P(sim, env, invuln_timer) / (float)sim->cfg.invuln_steps, 0.0f, 1.0f) : 0.0f;
+    obs[idx++] = 1.0f - ps_clampf(PS_P(sim, env, dash_cd)
+        / ps_dash_cooldown_total(sim, env), 0.0f, 1.0f);
+    obs[idx++] = PS_P(sim, env, dash_timer) > 0 ? 1.0f : 0.0f;
     obs[idx++] = ps_clampf((float)PS_P(sim, env, queued_upgrades) / 4.0f, 0.0f, 1.0f);
     obs[idx++] = ps_obs_soft_norm(PS_P(sim, env, speed_bonus), 1.0f);
     obs[idx++] = ps_obs_soft_norm(PS_P(sim, env, damage_bonus), 1.0f);
@@ -1756,6 +1767,8 @@ PS_SIM_FN void ps_reset_core(PSSim* sim, int env, int clear_outputs) {
     PS_P(sim, env, magnet_bonus) = 0.0f;
     PS_P(sim, env, area_bonus) = 0.0f;
     PS_P(sim, env, pierce_bonus) = 0;
+    PS_P(sim, env, dash_cd) = 0.0f;
+    PS_P(sim, env, dash_timer) = 0;
     PS_P(sim, env, pending_upgrade) = 0;
     PS_P(sim, env, queued_upgrades) = 0;
     PS_P(sim, env, last_boss_tick) = -1;
@@ -1808,6 +1821,7 @@ PS_SIM_FN void ps_step_env(PSSim* sim, int env) {
     PS_TERMINAL(sim, env) = 0.0f;
     PS_P(sim, env, tick)++;
     if (PS_P(sim, env, invuln_timer) > 0) PS_P(sim, env, invuln_timer)--;
+    if (PS_P(sim, env, dash_cd) > 0.0f) PS_P(sim, env, dash_cd)--;
 
     int upgrade_action = (int)PS_ACTIONS(sim, env)[1];
     if (PS_P(sim, env, pending_upgrade))
@@ -1819,22 +1833,50 @@ PS_SIM_FN void ps_step_env(PSSim* sim, int env) {
         {-0.70710678f, 0.70710678f}, {0.70710678f, 0.70710678f},
     };
     int action = (int)PS_ACTIONS(sim, env)[0];
-    action = (int)((unsigned)action % 9u);
+    action = (int)((unsigned)action % PS_MOVE_ACTION_COUNT);
     float speed = sim->cfg.player_speed * (1.0f + PS_P(sim, env, speed_bonus));
-    float target_vx = dirs[action][0] * speed;
-    float target_vy = dirs[action][1] * speed;
-    if (target_vx < -0.001f) PS_P(sim, env, player_facing_left) = 1;
-    else if (target_vx > 0.001f) PS_P(sim, env, player_facing_left) = 0;
-    PS_P(sim, env, pvx) += (target_vx - PS_P(sim, env, pvx)) * sim->cfg.movement_smoothing;
-    PS_P(sim, env, pvy) += (target_vy - PS_P(sim, env, pvy)) * sim->cfg.movement_smoothing;
-    float v2 = PS_P(sim, env, pvx) * PS_P(sim, env, pvx) + PS_P(sim, env, pvy) * PS_P(sim, env, pvy);
-    if (v2 > speed * speed) {
-        float inv = speed / sqrtf(v2);
-        PS_P(sim, env, pvx) *= inv;
-        PS_P(sim, env, pvy) *= inv;
+    int dash = action == PS_ACTION_DASH;
+    if (dash && PS_P(sim, env, dash_timer) <= 0 && PS_P(sim, env, dash_cd) <= 0.0f) {
+        float dx = PS_P(sim, env, pvx), dy = PS_P(sim, env, pvy);
+        float d2 = dx * dx + dy * dy;
+        if (d2 > 0.0001f) {
+            float inv = 1.0f / sqrtf(d2);
+            dx *= inv;
+            dy *= inv;
+        } else {
+            dx = PS_P(sim, env, player_facing_left) ? -1.0f : 1.0f;
+            dy = 0.0f;
+        }
+        PS_P(sim, env, pvx) = dx * sim->cfg.dash_speed;
+        PS_P(sim, env, pvy) = dy * sim->cfg.dash_speed;
+        if (dx < -0.001f) PS_P(sim, env, player_facing_left) = 1;
+        else if (dx > 0.001f) PS_P(sim, env, player_facing_left) = 0;
+        PS_P(sim, env, dash_timer) = sim->cfg.dash_duration;
+        PS_P(sim, env, dash_cd) = ps_dash_cooldown_total(sim, env);
+        if (PS_P(sim, env, invuln_timer) < sim->cfg.dash_duration + 1)
+            PS_P(sim, env, invuln_timer) = sim->cfg.dash_duration + 1;
     }
-    PS_P(sim, env, px) += PS_P(sim, env, pvx);
-    PS_P(sim, env, py) += PS_P(sim, env, pvy);
+    if (PS_P(sim, env, dash_timer) > 0) {
+        PS_P(sim, env, px) += PS_P(sim, env, pvx);
+        PS_P(sim, env, py) += PS_P(sim, env, pvy);
+        PS_P(sim, env, dash_timer)--;
+    } else {
+        int move_action = dash ? 0 : action;
+        float target_vx = dirs[move_action][0] * speed;
+        float target_vy = dirs[move_action][1] * speed;
+        if (target_vx < -0.001f) PS_P(sim, env, player_facing_left) = 1;
+        else if (target_vx > 0.001f) PS_P(sim, env, player_facing_left) = 0;
+        PS_P(sim, env, pvx) += (target_vx - PS_P(sim, env, pvx)) * sim->cfg.movement_smoothing;
+        PS_P(sim, env, pvy) += (target_vy - PS_P(sim, env, pvy)) * sim->cfg.movement_smoothing;
+        float v2 = PS_P(sim, env, pvx) * PS_P(sim, env, pvx) + PS_P(sim, env, pvy) * PS_P(sim, env, pvy);
+        if (v2 > speed * speed) {
+            float inv = speed / sqrtf(v2);
+            PS_P(sim, env, pvx) *= inv;
+            PS_P(sim, env, pvy) *= inv;
+        }
+        PS_P(sim, env, px) += PS_P(sim, env, pvx);
+        PS_P(sim, env, py) += PS_P(sim, env, pvy);
+    }
     ps_push_out_obstacles(sim, env, &PS_P(sim, env, px), &PS_P(sim, env, py), sim->cfg.player_radius, 1);
     ps_recycle_far_obstacles(sim, env);
     ps_update_moving_obstacles(sim, env);

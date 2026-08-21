@@ -57,8 +57,8 @@ struct PSCudaSim {
     float *weapon_cd;      // [PS_WEAPON_COUNT, N]
     float *weapon_active;  // [PS_WEAPON_COUNT, N]
     int *weapon_level;     // [PS_WEAPON_COUNT, N]
-    float *orbit_phase;
-    float *frost_aim;
+    float *orbit_phase, *frost_aim, *dash_cd;
+    int *dash_timer;
     int *tick, *invuln_timer;
 
     // Enemy pool [PS_MAX_ENEMIES, N]
@@ -171,8 +171,8 @@ static inline void ps_cuda_alloc(PSCudaSim* sim, int num_envs, PSConfig cfg) {
 
     size_t state_bytes = 0;
     PS_BLOB_ACCOUNT(uint32_t, N);                       // rng
-    PS_BLOB_ACCOUNT(float, N * 9);                      // px py pvx pvy hp max_hp xp + orbit_phase + frost_aim
-    PS_BLOB_ACCOUNT(int, N * 6);                        // player_facing_left level pierce pending queued last_boss
+    PS_BLOB_ACCOUNT(float, N * 10);                     // px py pvx pvy hp max_hp xp + orbit_phase frost_aim dash_cd
+    PS_BLOB_ACCOUNT(int, N * 7);                        // player_facing_left level pierce pending queued last_boss dash_timer
     PS_BLOB_ACCOUNT(float, N * 6);                      // speed damage cooldown projectile_speed magnet area
     PS_BLOB_ACCOUNT(int, N * 9);                        // tick invuln nearest + all pool counts
     PS_BLOB_ACCOUNT(int, N * 5);                        // next_*_slot cursors
@@ -212,10 +212,11 @@ static inline void ps_cuda_alloc(PSCudaSim* sim, int num_envs, PSConfig cfg) {
     PS_BLOB_FIELD(float, pvx, N); PS_BLOB_FIELD(float, pvy, N);
     PS_BLOB_FIELD(float, hp, N); PS_BLOB_FIELD(float, max_hp, N);
     PS_BLOB_FIELD(float, xp, N); PS_BLOB_FIELD(float, orbit_phase, N);
-    PS_BLOB_FIELD(float, frost_aim, N);
+    PS_BLOB_FIELD(float, frost_aim, N); PS_BLOB_FIELD(float, dash_cd, N);
     PS_BLOB_FIELD(int, player_facing_left, N); PS_BLOB_FIELD(int, level, N);
     PS_BLOB_FIELD(int, pierce_bonus, N); PS_BLOB_FIELD(int, pending_upgrade, N);
     PS_BLOB_FIELD(int, queued_upgrades, N); PS_BLOB_FIELD(int, last_boss_tick, N);
+    PS_BLOB_FIELD(int, dash_timer, N);
     PS_BLOB_FIELD(float, speed_bonus, N); PS_BLOB_FIELD(float, damage_bonus, N);
     PS_BLOB_FIELD(float, cooldown_mult, N); PS_BLOB_FIELD(float, projectile_speed_bonus, N);
     PS_BLOB_FIELD(float, magnet_bonus, N); PS_BLOB_FIELD(float, area_bonus, N);

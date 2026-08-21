@@ -35,6 +35,8 @@ int main() {
     dict_set(cfg, "obstacle_penalty", 0.0);
 
     Env* envs = puf_envs_create(1, cfg);
+    PSCudaSim* sim = ps_cuda_get_sim(envs);
+    sim->cfg.obstacle_count = 0;
     obs_t* observations = nullptr;
     float* actions = nullptr;
     float* rewards = nullptr;
@@ -43,11 +45,18 @@ int main() {
     CUDA_CHECK(cudaMalloc((void**)&actions, sizeof(float) * NUM_ATNS));
     CUDA_CHECK(cudaMalloc((void**)&rewards, sizeof(float)));
     CUDA_CHECK(cudaMalloc((void**)&terminals, sizeof(float)));
-    CUDA_CHECK(cudaMemset(actions, 0, sizeof(float) * NUM_ATNS));
+    float dash_actions[NUM_ATNS] = {(float)PS_ACTION_DASH, 0.0f};
+    CUDA_CHECK(cudaMemcpy(actions, dash_actions, sizeof(dash_actions), cudaMemcpyHostToDevice));
 
     puf_envs_reset(envs, observations, rewards, terminals, 1);
     puf_envs_step(envs, actions, observations, rewards, terminals, 0, 1, 0);
     CUDA_CHECK(cudaDeviceSynchronize());
+    float dash_px = 0.0f;
+    int dash_timer = 0;
+    CUDA_CHECK(cudaMemcpy(&dash_px, sim->px, sizeof(float), cudaMemcpyDeviceToHost));
+    CUDA_CHECK(cudaMemcpy(&dash_timer, sim->dash_timer, sizeof(int), cudaMemcpyDeviceToHost));
+    assert(dash_px > 0.0f);
+    assert(dash_timer == sim->cfg.dash_duration - 1);
 
     float reward = 0.0f;
     float terminal = 0.0f;

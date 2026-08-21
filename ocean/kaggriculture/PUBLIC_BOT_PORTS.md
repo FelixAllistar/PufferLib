@@ -135,3 +135,69 @@ Measured (50 games, seat P0):
 
 It beats the two fixed tapes and `top`, and is close to `structured` but still
 loses to `triad`/`rules`. The remaining gap is economic, not mechanical.
+
+## Public-kernel harvest (2026-08-18)
+
+The following public Kaggle kernels were pulled and replayed against
+`kaggle-environments==1.32.7`.  Their raw 720-frame traces are archived under
+`~/puffertank/kaggle_harvest/public_20260818/`, and the native packed tapes are
+included by `kaggriculture_public_extra_tapes.h`.
+
+| Native profile | Source family | What it contributes | Current status |
+| --- | --- | --- | --- |
+| `k320_10c4s` | Rank-your-agent / V20 multi-route | K320 10C4S route | Useful BC diversity; native parity still poor |
+| `k320_yarn` | Rank-your-agent route ladder | 6C12S first/second-yarn route | Useful BC diversity; native parity still poor |
+| `e279` | X544 / 3000-score family | Price-aware adaptive route trace | Useful BC diversity; native parity still poor |
+| `v16` | V16 RC5 premium-market lead | High-care 8C/4S livestock specialist | Native smoke-tested and useful |
+| `c166` | Breaking-the-tie 2883 | High-care livestock specialist with a distinct late trace | Native smoke-tested and useful |
+
+The first rank-your-agent kernel embeds five route tapes, not five independent
+trained neural policies.  Its full private ladder also depends on a reference
+dataset that is not shipped in the pulled notebook.  We therefore forced and
+harvested the five route variants separately, preserving real behavioral
+diversity instead of pretending they were independent checkpoints.
+
+The external Python traces are strong: K320/E279 finish with substantial herd,
+care, feed, water, and harvest activity.  In the current native simulator those
+same tapes finish near-zero money/GDP, which is a parity/layout problem rather
+than evidence that the public policies are bad.  Keep them as BC teachers and
+diversity sources until parity is repaired.  V16/C166 transfer cleanly enough
+to serve as experimental native opponents: in a 10k native benchmark they
+produce roughly 28k GDP and 5.7k milk while maintaining high care/feed rates.
+
+### Clone artifacts
+
+`saved/kaggriculture_public_20260818/` contains 96-step and full-episode
+clones for all five profiles, plus DAgger round 1 for all five and a second
+round for `v16` and `c166`.  The first DAgger round is the primary robust
+candidate; the second round is retained as an exploratory off-distribution
+candidate because its held-out validation did not improve.
+
+Examples:
+
+```bash
+./ocean/kaggriculture/clone_bots.sh v16 c166
+./ocean/kaggriculture/clone_bots_full.sh v16 c166
+./ocean/kaggriculture/dagger_bot.sh v16 1 \
+  saved/kaggriculture_public_20260818/v16_full_clone.bin
+```
+
+Compatible BC binaries can be combined without decoding them:
+
+```bash
+python3 ocean/kaggriculture/merge_bc_datasets.py \
+  saved/kaggriculture_public_20260818/public_livestock_full_data.bin \
+  saved/kaggriculture_public_20260818/v16_full_data.bin \
+  saved/kaggriculture_public_20260818/c166_full_data.bin
+```
+
+The checked-in merger preserves whole-game boundaries and validates the KAGB
+header/dimensions before writing.  The prebuilt livestock and route mixes are
+in the same saved directory.  Treat the route mix as a data source first: its
+public routes share a very strong opening and a naive mixed clone can learn a
+high-confidence no-op continuation even while individual route traces remain
+useful.
+
+The five new profiles are also available to `clone_bots.sh` and
+`dagger_bot.sh`; use K320/E279 for supervised diversity first, and V16/C166
+when a native opponent is required.

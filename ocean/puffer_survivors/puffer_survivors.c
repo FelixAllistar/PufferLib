@@ -12,6 +12,7 @@
  *
  * Controls:
  *   WASD / arrows  move (human play; diagonals supported)
+ *   Shift          dash
  *   A/D / arrows    select upgrade when offered (human)
  *   Space / Enter   confirm selected upgrade (human)
  *   1 / 2 / 3      select and confirm upgrade (numpad works too)
@@ -86,6 +87,10 @@ static float read_move_action(int mask) {
     if (left) return 3.0f;
     if (right) return 4.0f;
     return 0.0f;
+}
+
+static int read_dash_held(void) {
+    return IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT);
 }
 
 static int read_upgrade_direct_pick(void) {
@@ -362,7 +367,8 @@ int main(int argc, char** argv) {
                 // change, so movement may resume immediately after it.
                 movement_lock_active = 0;
             }
-            actions[0] = movement_lock_active ? 0.0f : read_move_action(movement_mask);
+            actions[0] = movement_lock_active ? 0.0f
+                : (read_dash_held() ? (float)PS_ACTION_DASH : read_move_action(movement_mask));
 
             if (env.pending_upgrade) {
                 int picked = read_upgrade_input(&upgrade_selection);
@@ -380,7 +386,8 @@ int main(int argc, char** argv) {
                 // player only needs to release or change the held state once.
                 movement_lock_active = movement_mask != 0;
                 movement_lock_mask = movement_mask;
-                actions[0] = movement_lock_active ? 0.0f : read_move_action(movement_mask);
+                actions[0] = movement_lock_active ? 0.0f
+                    : (read_dash_held() ? (float)PS_ACTION_DASH : read_move_action(movement_mask));
                 // Consume the upgrade immediately instead of waiting for the
                 // next accumulator boundary.
                 sim_accumulator = PS_FAST_SIM_DT;
