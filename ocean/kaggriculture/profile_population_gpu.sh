@@ -98,7 +98,7 @@ profile_one() {
     [[ -n $json ]] || { printf 'GPU profile parse failed for %s\n' "$label" >&2; return 1; }
     completed=$(json_value "$json" env/n)
     [[ -n $completed ]] || { printf 'GPU profile missing env/n for %s\n' "$label" >&2; return 1; }
-    printf '%s\t%s\t%s\t%d\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+    printf '%s\t%s\t%s\t%d\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
         "$label" "${kag_roles[$label]:-unassigned}" "${kag_weights[$label]:-0}" \
         "$completed" \
         "$(json_value "$json" env/perf)" "$(json_value "$json" env/draw_rate)" \
@@ -106,6 +106,46 @@ profile_one() {
         "$(json_value "$json" env/money)" "$(json_value "$json" env/opponent_money)" \
         "$(json_value "$json" env/gdp)" "$(json_value "$json" env/opponent_gdp)" \
         "$(json_value "$json" env/production_units)" "$(json_value "$json" env/opponent_production_units)" \
+        "$(json_value "$json" env/crop_production_units)" \
+        "$(json_value "$json" env/animal_production_units)" \
+        "$(json_value "$json" env/successful_plants)" \
+        "$(json_value "$json" env/successful_animal_places)" \
+        "$(json_value "$json" env/sold_units)" "$(json_value "$json" env/sales_revenue)" \
+        "$(json_value "$json" env/bought_units)" "$(json_value "$json" env/purchase_spend)" \
+        "$(json_value "$json" env/crop_sold_units)" \
+        "$(json_value "$json" env/crop_sales_revenue)" \
+        "$(json_value "$json" env/animal_product_sold_units)" \
+        "$(json_value "$json" env/animal_product_sales_revenue)" \
+        "$(json_value "$json" env/strawberry_sold_units)" \
+        "$(json_value "$json" env/strawberry_sales_revenue)" \
+        "$(json_value "$json" env/milk_sold_units)" \
+        "$(json_value "$json" env/milk_sales_revenue)" \
+        "$(json_value "$json" env/ending_shed_units)" \
+        "$(json_value "$json" env/ending_shed_value)" \
+        "$(json_value "$json" env/carrot_opportunity_fraction)" \
+        "$(json_value "$json" env/carrot_opportunity_no_production_price)" \
+        "$(json_value "$json" env/carrot_opportunity_response)" \
+        "$(json_value "$json" env/carrot_opportunity_production)" \
+        "$(json_value "$json" env/carrot_nonopportunity_production)" \
+        "$(json_value "$json" env/carrot_opportunity_sold_units)" \
+        "$(json_value "$json" env/carrot_opportunity_sales_revenue)" \
+        "$(json_value "$json" env/carrot_opportunity_sale_price)" \
+        "$(json_value "$json" env/tomato_opportunity_fraction)" \
+        "$(json_value "$json" env/tomato_opportunity_no_production_price)" \
+        "$(json_value "$json" env/tomato_opportunity_response)" \
+        "$(json_value "$json" env/tomato_opportunity_production)" \
+        "$(json_value "$json" env/tomato_nonopportunity_production)" \
+        "$(json_value "$json" env/tomato_opportunity_sold_units)" \
+        "$(json_value "$json" env/tomato_opportunity_sales_revenue)" \
+        "$(json_value "$json" env/tomato_opportunity_sale_price)" \
+        "$(json_value "$json" env/egg_opportunity_fraction)" \
+        "$(json_value "$json" env/egg_opportunity_no_production_price)" \
+        "$(json_value "$json" env/egg_opportunity_response)" \
+        "$(json_value "$json" env/egg_opportunity_production)" \
+        "$(json_value "$json" env/egg_nonopportunity_production)" \
+        "$(json_value "$json" env/egg_opportunity_sold_units)" \
+        "$(json_value "$json" env/egg_opportunity_sales_revenue)" \
+        "$(json_value "$json" env/egg_opportunity_sale_price)" \
         "$(json_value "$json" env/strawberry_units)" "$(json_value "$json" env/opponent_strawberry_units)" \
         "$(json_value "$json" env/strawberry_value)" "$(json_value "$json" env/opponent_strawberry_value)" \
         "$(json_value "$json" env/milk_units)" "$(json_value "$json" env/opponent_milk_units)" \
@@ -137,7 +177,7 @@ done
 wait
 
 {
-    printf 'policy\trole\tbase_weight\tgames_completed\twin_rate\tdraw_rate\tpotential_score\topponent_potential\tmean_money\topponent_money\tgdp\topponent_gdp\tproduction_units\topponent_production_units\tstrawberry_units\topponent_strawberry_units\tstrawberry_value\topponent_strawberry_value\tmilk_units\topponent_milk_units\tmilk_value\topponent_milk_value\twater_coverage\tneglect_deaths\tplanting_day_deaths\tplants_alive\tanimals_alive\tweeds\tland_purchases\tproductive_extra_tiles\tanimal_place_actions\tanimal_feed_actions\tanimal_care_actions\tanimal_harvest_actions\tfertilizer_collect_actions\torders_per_turn\tbuy_orders\tsell_orders\thire_orders\n'
+    printf 'policy\trole\tbase_weight\tgames_completed\twin_rate\tdraw_rate\tpotential_score\topponent_potential\tmean_money\topponent_money\tgdp\topponent_gdp\tproduction_units\topponent_production_units\tcrop_production_units\tanimal_production_units\tsuccessful_plants\tsuccessful_animal_places\tsold_units\tsales_revenue\tbought_units\tpurchase_spend\tcrop_sold_units\tcrop_sales_revenue\tanimal_product_sold_units\tanimal_product_sales_revenue\tstrawberry_sold_units\tstrawberry_sales_revenue\tmilk_sold_units\tmilk_sales_revenue\tending_shed_units\tending_shed_value\tcarrot_opportunity_fraction\tcarrot_opportunity_no_production_price\tcarrot_opportunity_response\tcarrot_opportunity_production\tcarrot_nonopportunity_production\tcarrot_opportunity_sold_units\tcarrot_opportunity_sales_revenue\tcarrot_opportunity_sale_price\ttomato_opportunity_fraction\ttomato_opportunity_no_production_price\ttomato_opportunity_response\ttomato_opportunity_production\ttomato_nonopportunity_production\ttomato_opportunity_sold_units\ttomato_opportunity_sales_revenue\ttomato_opportunity_sale_price\tegg_opportunity_fraction\tegg_opportunity_no_production_price\tegg_opportunity_response\tegg_opportunity_production\tegg_nonopportunity_production\tegg_opportunity_sold_units\tegg_opportunity_sales_revenue\tegg_opportunity_sale_price\tstrawberry_units\topponent_strawberry_units\tstrawberry_value\topponent_strawberry_value\tmilk_units\topponent_milk_units\tmilk_value\topponent_milk_value\twater_coverage\tneglect_deaths\tplanting_day_deaths\tplants_alive\tanimals_alive\tweeds\tland_purchases\tproductive_extra_tiles\tanimal_place_actions\tanimal_feed_actions\tanimal_care_actions\tanimal_harvest_actions\tfertilizer_collect_actions\torders_per_turn\tbuy_orders\tsell_orders\thire_orders\n'
     for label in "${kag_order[@]}"; do cat "$kag_tmp/$label.tsv"; done
 } > "${kag_output}.tsv"
 printf 'Wrote %s.tsv\n' "$kag_output"

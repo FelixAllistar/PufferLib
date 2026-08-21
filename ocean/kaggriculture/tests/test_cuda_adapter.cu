@@ -93,6 +93,8 @@ static void configure_case(Env* env, int case_id, obs_t* observations,
     env->reset_opening_prob = case_id == 1 ? 0.5f
         : case_id == 8 ? 1.0f : 0.0f;
     env->reward_potential_scale = 0.000772047148f;
+    env->reward_potential_gamma = 0.9993f;
+    env->reward_money_scale = 0.13f;
     env->reward_win = 0.375989795f;
     env->reward_seed_value = 0.01f;
     env->reward_product_value = 0.95f;

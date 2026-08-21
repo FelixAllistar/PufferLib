@@ -15,14 +15,15 @@ kag_jobs=1
 kag_gpu_agents=${KAG_GPU_AGENTS:-64}
 kag_range=0:100:12
 kag_shortlist=4
-kag_prescreen_games=4
+kag_prescreen_games=20
+kag_prescreen_agents=16384
 kag_run=
 kag_run_explicit=0
 kag_output=
 kag_reuse=
 kag_max_admit=2
 kag_min_weight=0.01
-kag_max_league=4
+kag_max_league=8
 kag_jsd_steps=720
 kag_jsd_seeds=2
 kag_profile_games=0
@@ -52,12 +53,13 @@ kag_usage() {
         "  --gpu-agents N      CUDA agents per evaluator (default 64)" \
         "  --range A:B:N       Coarse sample N stages from A through B percent (default 0:100:12)" \
         "  --shortlist N       Local peaks retained for the full matrix (default 4)" \
-        "  --prescreen-games N Games/candidate against each active league member (default 4)" \
+        "  --prescreen-games N Games/candidate against each active league member (default 20)" \
+        "  --prescreen-agents N Minimum native screen batch; surplus runs unique games (default 4096)" \
         "  --output PREFIX     Result prefix under logs/kaggriculture" \
         "  --reuse PREFIX      Reuse an existing screen instead of evaluating again" \
         "  --max-admit N       Maximum new support policies admitted (default 2)" \
         "  --min-weight X      Minimum solved mass for admission (default 0.01)" \
-        "  --max-league N      Prune lowest-mass members above N (2..8; default 4)" \
+        "  --max-league N      Prune lowest-mass members above N (2..8; default 8)" \
         "  --jsd-steps N       Shared-state behavior probe steps per seed (default 720)" \
         "  --jsd-seeds N       Independent probe seeds, each a full trajectory (default 2)" \
         "  --profile-games N   GPU behavior profile games per active policy (default 0)" \
@@ -79,6 +81,7 @@ while (($#)); do
         --range) kag_range=$2; shift 2 ;;
         --shortlist) kag_shortlist=$2; shift 2 ;;
         --prescreen-games) kag_prescreen_games=$2; shift 2 ;;
+        --prescreen-agents) kag_prescreen_agents=$2; shift 2 ;;
         --output) kag_output=$2; shift 2 ;;
         --reuse) kag_reuse=$2; shift 2 ;;
         --max-admit) kag_max_admit=$2; shift 2 ;;
@@ -147,6 +150,8 @@ fi
 [[ $kag_prescreen_games =~ ^[0-9]+$ ]] \
     && ((kag_prescreen_games >= 2 && kag_prescreen_games % 2 == 0)) \
     || { printf '%s\n' '--prescreen-games must be an even integer of at least 2' >&2; exit 2; }
+[[ $kag_prescreen_agents =~ ^[0-9]+$ ]] && ((kag_prescreen_agents >= 0)) \
+    || { printf '%s\n' '--prescreen-agents must be a nonnegative integer' >&2; exit 2; }
 if ! [[ $kag_range =~ ^([0-9]+):([0-9]+):([0-9]+)$ ]]; then
     printf '%s\n' '--range must have the form START_PERCENT:END_PERCENT:COUNT' >&2
     exit 2
@@ -279,20 +284,22 @@ if [[ -z $kag_reuse ]]; then
             >> "$kag_opponent_manifest"
         kag_active_paths+=("$kag_path")
     done < <(find "$kag_league" -maxdepth 1 -type f -name '*.bin' -print | sort)
-    if ((${#kag_active_paths[@]} < 2 || ${#kag_active_paths[@]} > 4)); then
-        printf 'Fast PSRO requires 2..4 active league policies; found %d in %s\n' \
+    if ((${#kag_active_paths[@]} < 2 || ${#kag_active_paths[@]} > 8)); then
+        printf 'Fast PSRO requires 2..8 active league policies; found %d in %s\n' \
             "${#kag_active_paths[@]}" "$kag_league" >&2
         exit 1
     fi
 
-    printf 'Coarse screen: candidates=%d active=%d games=%d each\n' \
-        "$kag_coarse_count" "${#kag_active_paths[@]}" "$kag_prescreen_games"
+    printf 'Coarse screen: candidates=%d active=%d requested_games=%d min_agents=%d\n' \
+        "$kag_coarse_count" "${#kag_active_paths[@]}" \
+        "$kag_prescreen_games" "$kag_prescreen_agents"
     ./puffer league kaggriculture \
         league.mode=screen \
         "league.candidate_manifest=$kag_coarse_manifest" \
         "league.opponent_manifest=$kag_opponent_manifest" \
         "league.output=$kag_prescreen_raw" \
         "league.games=$kag_prescreen_games" \
+        "league.min_agents=$kag_prescreen_agents" \
         base.seed=6100
 
     kag_prescreen_scores="$kag_tmp/prescreen_scores.tsv"
