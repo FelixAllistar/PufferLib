@@ -53,7 +53,8 @@ MAX_HANDS = 240
 def _infer_arch(float_count):
     """Infer (hidden, layers) from the flat checkpoint size."""
     for layers in range(1, 9):
-        for hidden in (16, 24, 32, 48, 64, 96, 128, 192, 256, 384, 512, 768):
+        for hidden in (16, 24, 32, 48, 64, 96, 128, 192, 256, 384, 512,
+                768, 1024):
             total = hidden * OBS_SIZE + (MASK_SIZE + 1) * hidden
             total += layers * 3 * hidden * hidden
             if total == float_count:
