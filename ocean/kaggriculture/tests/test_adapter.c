@@ -340,7 +340,12 @@ static void assert_native_tapes(void) {
                     assert(command->arg >= KG_ITEM_WHEAT
                         && command->arg <= KG_ITEM_SHEEP);
                 } else {
-                    assert(command->arg == -1);
+                    /* The engine ignores arg for these operations. Some
+                     * captured public tapes preserve the source agent's
+                     * harmless payload (for example FEED with arg=0), so
+                     * validate the packed nibble rather than canonicalizing
+                     * it and breaking tape fidelity. */
+                    assert(command->arg >= -1 && command->arg <= 14);
                 }
             }
             for (int order = 0; order < action.market_count; order++) {
@@ -395,7 +400,31 @@ static void assert_native_public_profiles(void) {
     printf("native public profiles: pulse, structured, triad PASS\n");
 }
 
+static void assert_discounted_economic_reward(void) {
+    Env env = {0};
+    kg_config_default(&env.game_storage.config);
+    env.game_storage.config.starting_money = 3000;
+    env.reward_potential_scale = 0.2f;
+    env.reward_potential_gamma = 0.9997f;
+    env.reward_money_scale = 0.1f;
+
+    float growth = kag_potential_shaping_reward(
+        &env, 3000.0f, 6000.0f, 0);
+    assert(fabsf(growth - 0.2f * 0.9997f) < 1e-6f);
+    float terminal = kag_potential_shaping_reward(
+        &env, 6000.0f, 6000.0f, 1);
+    assert(fabsf(terminal + 0.2f) < 1e-6f);
+    assert(fabsf(kag_terminal_money_reward(&env, 6000) - 0.1f) < 1e-6f);
+
+    env.reward_potential_gamma = 0.0f;
+    env.reward_potential_scale = 0.0001f;
+    float legacy = kag_potential_shaping_reward(
+        &env, 3000.0f, 6000.0f, 0);
+    assert(fabsf(legacy - 0.3f) < 1e-6f);
+}
+
 int main(void) {
+    assert_discounted_economic_reward();
     assert_rule_regressions();
     assert_potential_schedule();
     assert_policy_land_path();
@@ -499,10 +528,10 @@ int main(void) {
     }
     assert(terminal_count == 1);
     assert(env.log.n == 1.0f);
-    float terminal_outcome = env.log.score > env.log.opponent_score ? 1.0f
-        : env.log.score < env.log.opponent_score ? -1.0f : 0.0f;
+    float terminal_outcome = env.log.money > env.log.opponent_money ? 1.0f
+        : env.log.money < env.log.opponent_money ? -1.0f : 0.0f;
     float expected_return = terminal_outcome * env.reward_win
-        + (env.log.score - config.starting_money)
+        + (env.log.money - config.starting_money)
             * env.reward_potential_scale;
     assert(fabsf(env.log.episode_return - expected_return) < 1e-5f);
     puf_close(&env);

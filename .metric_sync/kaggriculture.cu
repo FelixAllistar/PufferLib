@@ -32,8 +32,6 @@ typedef struct {
     int reset_opening_min;
     float reset_opening_prob;
     float reward_potential_scale;
-    float reward_potential_gamma;
-    float reward_money_scale;
     float reward_win;
     float reward_seed_value;
     float reward_product_value;
@@ -229,8 +227,8 @@ __device__ static void kag_cuda_transition(Env* env, Env* shells,
         - (env->potential[1] - before_potential[1]))
         * env->reward_differential_scale;
     for (int player = 0; player < KG_NUM_PLAYERS; player++) {
-        float reward = kag_potential_shaping_reward(env,
-                before_potential[player], env->potential[player], done)
+        float reward = (env->potential[player] - before_potential[player])
+            * env->reward_potential_scale
             + productive_credit[player] * env->reward_productive_action;
         reward -= (game->neglect_deaths[player] - before_neglect[player])
             * env->reward_neglect_death;
@@ -257,12 +255,6 @@ __device__ static void kag_cuda_transition(Env* env, Env* shells,
     float margin = (float)(model_money - opponent_money)
         / (float)game->config.starting_money;
     float margin_term = env->reward_margin_scale * margin;
-    float money0_term = kag_terminal_money_reward(env, money[0]);
-    float money1_term = kag_terminal_money_reward(env, money[1]);
-    env->agents[0].rewards[0] += money0_term;
-    env->agents[1].rewards[0] += money1_term;
-    env->episode_returns[0] += money0_term;
-    env->episode_returns[1] += money1_term;
     env->agents[0].rewards[0] += outcome;
     env->agents[1].rewards[0] -= outcome;
     env->episode_returns[0] += outcome;
@@ -298,64 +290,6 @@ __device__ static void kag_cuda_transition(Env* env, Env* shells,
     env->log.production_units += game->production_units[model_player];
     env->log.opponent_production_units +=
         game->production_units[1 - model_player];
-    env->log.successful_plants += game->planted_crops[model_player];
-    env->log.successful_animal_places += game->placed_animals[model_player];
-    env->log.sold_units += game->sold_units[model_player];
-    env->log.sales_revenue += game->sales_revenue[model_player];
-    env->log.bought_units += game->bought_units[model_player];
-    env->log.purchase_spend += game->purchase_spend[model_player];
-    for (int item = 0; item < KG_NUM_PRODUCTS; item++) {
-        int produced = (int)game->production_product_units[model_player][item];
-        int sold = (int)game->sold_product_units[model_player][item];
-        float revenue = game->sold_product_revenue[model_player][item];
-        env->log.ending_shed_units += game->players[model_player].shed[item];
-        env->log.ending_shed_value += game->players[model_player].shed[item]
-            * game->market.prices[item];
-        if (item <= KG_ITEM_MELON) {
-            env->log.crop_production_units += produced;
-            env->log.crop_sold_units += sold;
-            env->log.crop_sales_revenue += revenue;
-        } else if (item >= KG_ITEM_EGG && item <= KG_ITEM_WOOL) {
-            env->log.animal_production_units += produced;
-            env->log.animal_product_sold_units += sold;
-            env->log.animal_product_sales_revenue += revenue;
-        }
-    }
-    env->log.strawberry_sold_units +=
-        game->sold_product_units[model_player][KG_ITEM_STRAWBERRY];
-    env->log.strawberry_sales_revenue +=
-        game->sold_product_revenue[model_player][KG_ITEM_STRAWBERRY];
-    env->log.milk_sold_units +=
-        game->sold_product_units[model_player][KG_ITEM_MILK];
-    env->log.milk_sales_revenue +=
-        game->sold_product_revenue[model_player][KG_ITEM_MILK];
-    kag_log_hinge_opportunity(game, model_player, KG_ITEM_CARROT,
-        &env->log.carrot_opportunity_fraction,
-        &env->log.carrot_opportunity_no_production_price,
-        &env->log.carrot_opportunity_response,
-        &env->log.carrot_opportunity_production,
-        &env->log.carrot_nonopportunity_production,
-        &env->log.carrot_opportunity_sold_units,
-        &env->log.carrot_opportunity_sales_revenue,
-        &env->log.carrot_opportunity_sale_price);
-    kag_log_hinge_opportunity(game, model_player, KG_ITEM_TOMATO,
-        &env->log.tomato_opportunity_fraction,
-        &env->log.tomato_opportunity_no_production_price,
-        &env->log.tomato_opportunity_response,
-        &env->log.tomato_opportunity_production,
-        &env->log.tomato_nonopportunity_production,
-        &env->log.tomato_opportunity_sold_units,
-        &env->log.tomato_opportunity_sales_revenue,
-        &env->log.tomato_opportunity_sale_price);
-    kag_log_hinge_opportunity(game, model_player, KG_ITEM_EGG,
-        &env->log.egg_opportunity_fraction,
-        &env->log.egg_opportunity_no_production_price,
-        &env->log.egg_opportunity_response,
-        &env->log.egg_opportunity_production,
-        &env->log.egg_nonopportunity_production,
-        &env->log.egg_opportunity_sold_units,
-        &env->log.egg_opportunity_sales_revenue,
-        &env->log.egg_opportunity_sale_price);
     env->log.strawberry_units +=
         game->production_product_units[model_player][KG_ITEM_STRAWBERRY];
     env->log.opponent_strawberry_units +=
@@ -473,8 +407,6 @@ __global__ static void kag_cuda_reset_kernel(Env* shells, Env* matches,
     env->reset_opening_min = d_kag_cuda_config.reset_opening_min;
     env->reset_opening_prob = d_kag_cuda_config.reset_opening_prob;
     env->reward_potential_scale = d_kag_cuda_config.reward_potential_scale;
-    env->reward_potential_gamma = d_kag_cuda_config.reward_potential_gamma;
-    env->reward_money_scale = d_kag_cuda_config.reward_money_scale;
     env->reward_win = d_kag_cuda_config.reward_win;
     env->reward_seed_value = d_kag_cuda_config.reward_seed_value;
     env->reward_product_value = d_kag_cuda_config.reward_product_value;
@@ -565,8 +497,6 @@ static void kag_cuda_load_config(Dict* kwargs) {
     h_kag_cuda_config.reset_opening_min = template_env.reset_opening_min;
     h_kag_cuda_config.reset_opening_prob = template_env.reset_opening_prob;
     h_kag_cuda_config.reward_potential_scale = template_env.reward_potential_scale;
-    h_kag_cuda_config.reward_potential_gamma = template_env.reward_potential_gamma;
-    h_kag_cuda_config.reward_money_scale = template_env.reward_money_scale;
     h_kag_cuda_config.reward_win = template_env.reward_win;
     h_kag_cuda_config.reward_seed_value = template_env.reward_seed_value;
     h_kag_cuda_config.reward_product_value = template_env.reward_product_value;

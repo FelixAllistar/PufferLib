@@ -565,7 +565,7 @@ typedef struct PuffeRL {
     EnvBuf env;
     TrainGraph train_buf;
     PrecisionTensor advantages_puf;  // Pre-allocated for train_impl (B, T)
-    cudaGraphExec_t* fused_rollout_cudagraphs;  // [slots][horizon][num_buffers][mode]; null if !cudagraphs
+    cudaGraphExec_t* fused_rollout_cudagraphs;  // [slots][horizon][num_buffers]; null if !cudagraphs
     cudaGraphExec_t train_cudagraph;  // null until first-use capture
     cudaStream_t* streams;  // per-buffer raw CUDA streams
     cudaStream_t default_stream;  // main-thread stream (captured once at init)
@@ -589,10 +589,6 @@ typedef struct PuffeRL {
     double last_log_time;
     long last_log_step;
     int rollout_write_slot;
-    // Sampling mode for the rollout currently being collected. Training sets
-    // this false even when base.eval_deterministic=1; CPU workers read it
-    // while the main thread owns the rollout boundary.
-    bool rollout_deterministic;
     int async_ready_slot;
     int async_next_slot;
     bool async_bootstrapped;
@@ -833,14 +829,10 @@ ByteTensor puf_slice(ByteTensor& p, int t, int start, int count) {
 __global__ void pack_action_mask(unsigned char* dst,
         const unsigned char* src, int B, int mask_size, int packed_stride);
 
-void pufferl_forward(PuffeRL* pufferl, int buf, int t, cudaStream_t stream,
-        bool deterministic) {
+void pufferl_forward(PuffeRL* pufferl, int buf, int t, cudaStream_t stream) {
     HypersT& hypers = pufferl->hypers;
     int graph_slot = hypers.async ? pufferl->rollout_write_slot : 0;
-    // Sampling mode is part of the captured kernel arguments. Keep separate
-    // graph entries for stochastic training and deterministic evaluation.
-    int graph = ((graph_slot * hypers.horizon + t) * hypers.num_buffers + buf) * 2
-        + (deterministic ? 1 : 0);
+    int graph = (graph_slot * hypers.horizon + t) * hypers.num_buffers + buf;
     profile_begin("fused_rollout", hypers.profile);
 
     if (hypers.cudagraphs && pufferl->fused_rollout_cudagraphs[graph] != nullptr) {
@@ -955,7 +947,7 @@ void pufferl_forward(PuffeRL* pufferl, int buf, int t, cudaStream_t stream,
             act_b.data, lp_b.data, val_b.data,
             pufferl->rng_states[buf] + bank_off,
             env.action_mask.data + (long)sub_start * mask_stride, mask_stride,
-            deterministic);
+            hypers.deterministic_actions);
 
         cast<<<grid_size(numel(act_b.shape)), BLOCK_SIZE, 0, stream>>>(
                 env.actions.data + (long)sub_start * act_cols,
@@ -1028,8 +1020,7 @@ static void* vec_thread_main(void* arg) {
 
         for (int t = 0; t < horizon; t++) {
             cudaEventRecord(model_start, stream);
-            pufferl_forward(pufferl, buf, t, stream,
-                pufferl->rollout_deterministic);
+            pufferl_forward(pufferl, buf, t, stream);
             cudaEventRecord(model_end, stream);
             cudaMemcpyAsync(
                 &vec->actions[agent_start * NUM_ATNS],
@@ -1105,10 +1096,7 @@ static void* vec_thread_main(void* arg) {
 // PUFFER_GPU_ENV: Env* is device (Log first member). CPU: Env* is host.
 #ifdef PUFFER_GPU_ENV
 // Sum envs[i].log into out[NF]; optional clear. Requires Env.log addressable as Log.
-// Keep dynamic shared memory below the default 48 KiB CUDA limit even for
-// environments with large diagnostic Log structs (Kaggriculture is ~110
-// floats). 128 threads silently made the reduction launch fail at ~56 KiB.
-#define PUF_LOG_REDUCE_THREADS 64
+#define PUF_LOG_REDUCE_THREADS 128
 __global__ void puf_log_reduce_kernel(Env* envs, float* out, int num_envs,
         int clear, int tag_filter) {
     constexpr int NF = (int)(sizeof(Log) / sizeof(float));
@@ -1167,19 +1155,7 @@ void vec_log(VecEnv* vec, Dict* out, int clear) {
     puf_log_reduce_kernel<<<1, PUF_LOG_REDUCE_THREADS,
         NF * PUF_LOG_REDUCE_THREADS * sizeof(float)>>>(
         vec->envs, vec->gpu_log, vec->total_agents, clear, -1);
-    cudaError_t log_err = cudaGetLastError();
-    if (log_err != cudaSuccess) {
-        fprintf(stderr, "GPU log reduction launch failed: %s\n",
-            cudaGetErrorString(log_err));
-        exit(1);
-    }
-    log_err = cudaMemcpy(&aggregate, vec->gpu_log, sizeof(Log),
-        cudaMemcpyDeviceToHost);
-    if (log_err != cudaSuccess) {
-        fprintf(stderr, "GPU log reduction copy failed: %s\n",
-            cudaGetErrorString(log_err));
-        exit(1);
-    }
+    cudaMemcpy(&aggregate, vec->gpu_log, sizeof(Log), cudaMemcpyDeviceToHost);
 #else
     Env* envs = vec->envs;
     for (int i = 0; i < vec->size; i++) {
@@ -1224,19 +1200,7 @@ void vec_log_tag(VecEnv* vec, int tag, Dict* out) {
     puf_log_reduce_kernel<<<1, PUF_LOG_REDUCE_THREADS,
         NF * PUF_LOG_REDUCE_THREADS * sizeof(float)>>>(
         vec->envs, vec->gpu_log, vec->total_agents, 0, tag);
-    cudaError_t log_err = cudaGetLastError();
-    if (log_err != cudaSuccess) {
-        fprintf(stderr, "GPU tagged-log reduction launch failed: %s\n",
-            cudaGetErrorString(log_err));
-        exit(1);
-    }
-    log_err = cudaMemcpy(&aggregate, vec->gpu_log, sizeof(Log),
-        cudaMemcpyDeviceToHost);
-    if (log_err != cudaSuccess) {
-        fprintf(stderr, "GPU tagged-log reduction copy failed: %s\n",
-            cudaGetErrorString(log_err));
-        exit(1);
-    }
+    cudaMemcpy(&aggregate, vec->gpu_log, sizeof(Log), cudaMemcpyDeviceToHost);
 #else
     for (int i = 0; i < vec->size; i++) {
         Env* env = &vec->envs[i];
@@ -2538,7 +2502,7 @@ PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx) {
     // CUDA graphs: allocate graph array only; capture on first real use.
     if (hypers.cudagraphs) {
         int rollout_graph_slots = hypers.async ? 2 : 1;
-        pufferl->fused_rollout_cudagraphs = (cudaGraphExec_t*)xcalloc((size_t)rollout_graph_slots * horizon * num_buffers * 2 * sizeof(cudaGraphExec_t));
+        pufferl->fused_rollout_cudagraphs = (cudaGraphExec_t*)xcalloc((size_t)rollout_graph_slots * horizon * num_buffers * sizeof(cudaGraphExec_t));
     }
     pufferl->streams = (cudaStream_t*)xcalloc((size_t)num_buffers * sizeof(cudaStream_t));
     for (int i = 0; i < num_buffers; i++) {
@@ -2896,31 +2860,10 @@ void puf_dashboard_print(Ini* ini, PuffeRL* p, Dict* log, int epoch) {
             {"money", "opponent_money"},
             {"gdp", "opponent_gdp"},
             {"production_units", "opponent_production_units"},
-            {"crop_production_units", "animal_production_units"},
-            {"successful_plants", "successful_animal_places"},
-            {"sold_units", "sales_revenue"},
-            {"bought_units", "purchase_spend"},
-            {"crop_sold_units", "crop_sales_revenue"},
-            {"animal_product_sold_units", "animal_product_sales_revenue"},
             {"strawberry_units", "opponent_strawberry_units"},
             {"strawberry_value", "opponent_strawberry_value"},
-            {"strawberry_sold_units", "strawberry_sales_revenue"},
             {"milk_units", "opponent_milk_units"},
             {"milk_value", "opponent_milk_value"},
-            {"milk_sold_units", "milk_sales_revenue"},
-            {"ending_shed_units", "ending_shed_value"},
-            {"carrot_opportunity_fraction", "carrot_opportunity_no_production_price"},
-            {"carrot_opportunity_response", "carrot_opportunity_production"},
-            {"carrot_nonopportunity_production", "carrot_opportunity_sold_units"},
-            {"carrot_opportunity_sales_revenue", "carrot_opportunity_sale_price"},
-            {"tomato_opportunity_fraction", "tomato_opportunity_no_production_price"},
-            {"tomato_opportunity_response", "tomato_opportunity_production"},
-            {"tomato_nonopportunity_production", "tomato_opportunity_sold_units"},
-            {"tomato_opportunity_sales_revenue", "tomato_opportunity_sale_price"},
-            {"egg_opportunity_fraction", "egg_opportunity_no_production_price"},
-            {"egg_opportunity_response", "egg_opportunity_production"},
-            {"egg_nonopportunity_production", "egg_opportunity_sold_units"},
-            {"egg_opportunity_sales_revenue", "egg_opportunity_sale_price"},
             {"win_rate", "draw_rate"},
             {"land_purchases", "productive_extra_tiles"},
             {"water_coverage", "neglect_deaths"},
@@ -3043,8 +2986,7 @@ void puf_log_history_add(PufLogHistory* history, Dict* log) {
     history->size++;
 }
 
-double rollout_start(PuffeRL* p, int slot, bool deterministic) {
-    p->rollout_deterministic = deterministic;
+double rollout_start(PuffeRL* p, int slot) {
     p->rollout_write_slot = slot;
     if (p->hypers.async) {
         int64_t n = numel(p->param_puf.shape);
@@ -3073,7 +3015,7 @@ double rollout_start(PuffeRL* p, int slot, bool deterministic) {
     int count = p->hypers.total_agents;
     for (int t = 0; t < p->hypers.horizon; t++) {
         cudaEventRecord(p->profile.rollout_gpu_start[t], p->streams[0]);
-        pufferl_forward(p, 0, t, p->streams[0], deterministic);
+        pufferl_forward(p, 0, t, p->streams[0]);
         cudaEventRecord(p->profile.rollout_gpu_end[t], p->streams[0]);
         puf_envs_step(vec->envs, vec->gpu_actions, vec->gpu_observations,
             vec->gpu_rewards, vec->gpu_terminals, 0, count, p->streams[0]);
@@ -3089,12 +3031,7 @@ double rollout_start(PuffeRL* p, int slot, bool deterministic) {
 
 void rollout_finish(PuffeRL* p, double t0) {
 #ifdef PUFFER_GPU_ENV
-    cudaError_t rollout_err = cudaStreamSynchronize(p->streams[0]);
-    if (rollout_err != cudaSuccess) {
-        fprintf(stderr, "GPU rollout failed: %s\n",
-            cudaGetErrorString(rollout_err));
-        exit(1);
-    }
+    cudaStreamSynchronize(p->streams[0]);
     float gpu_ms = 0.0f;
     float env_ms = 0.0f;
     for (int t = 0; t < p->hypers.horizon; t++) {
@@ -3132,8 +3069,8 @@ void rollout_finish(PuffeRL* p, double t0) {
 #endif
 }
 
-void rollouts(PuffeRL* p, bool deterministic) {
-    double t0 = rollout_start(p, 0, deterministic);
+void rollouts(PuffeRL* p) {
+    double t0 = rollout_start(p, 0);
     rollout_finish(p, t0);
     p->global_step += p->hypers.horizon * p->hypers.total_agents;
 }
@@ -3916,31 +3853,13 @@ static void league_eval_reset(PuffeRL* pufferl) {
 
 static void league_eval_episode(PuffeRL* pufferl, int games, Dict* logs) {
     league_eval_reset(pufferl);
-    int rollout_round = 0;
     for (;;) {
-        rollouts(pufferl, pufferl->hypers.deterministic_actions);
-        rollout_round++;
+        rollouts(pufferl);
         int complete = 1;
-        int completed_games[SELFPLAY_MAX_BANKS] = {0};
         for (int bank = 0; bank < pufferl->num_frozen_banks; bank++) {
             dict_clear(&logs[bank]);
             vec_log_tag(pufferl->vec, bank + 1, &logs[bank]);
-            completed_games[bank] = (int)dict_get(&logs[bank], "n");
-            if (completed_games[bank] < games) complete = 0;
-        }
-        if (rollout_round == 1 || rollout_round % 30 == 0 || complete) {
-            printf("  rollout=%d bank_games=", rollout_round);
-            for (int bank = 0; bank < pufferl->num_frozen_banks; bank++) {
-                printf("%s%d", bank ? "," : "", completed_games[bank]);
-            }
-            printf("/%d\n", games);
-            fflush(stdout);
-        }
-        if (rollout_round >= 4096 && !complete) {
-            fprintf(stderr,
-                "league evaluation produced no terminal quota after %d rollouts\n",
-                rollout_round);
-            exit(1);
+            if ((int)dict_get(&logs[bank], "n") < games) complete = 0;
         }
         if (complete) return;
     }
@@ -3978,19 +3897,12 @@ static void run_league_eval(Ini* ini, TrainContext* ctx) {
         }
     }
 
-    int requested_games = puf_ini_get_int(ini, "league", "games");
-    if (requested_games < 2 || requested_games % 2) {
+    int games = puf_ini_get_int(ini, "league", "games");
+    if (games < 2 || games % 2) {
         fprintf(stderr, "league.games must be a positive even integer of at least 2\n");
         exit(1);
     }
     int banks = matrix ? policies.size - 1 : opponents.size;
-    int games = requested_games;
-    int min_agents = screen ? puf_ini_get_int(ini, "league", "min_agents") : 0;
-    if (min_agents > 0) {
-        int min_games = (min_agents + 2 * banks - 1) / (2 * banks);
-        min_games += min_games % 2;
-        if (games < min_games) games = min_games;
-    }
     int total_agents = 2 * banks * games;
     char number[64];
     snprintf(number, sizeof(number), "%d", total_agents);
@@ -4068,10 +3980,8 @@ static void run_league_eval(Ini* ini, TrainContext* ctx) {
                 i + 1, waves, policies.items[i].name, active);
         }
     } else {
-        printf("Native league screen: candidates=%d opponents=%d "
-            "requested_games=%d effective_games=%d agents=%d\n",
-            candidates.size, opponents.size, requested_games, games,
-            total_agents);
+        printf("Native league screen: candidates=%d opponents=%d games=%d\n",
+            candidates.size, opponents.size, games);
         for (int bank = 0; bank < banks; bank++) {
             pufferl_load_frozen_bank(pufferl, bank, opponents.items[bank].path);
         }
@@ -4228,7 +4138,7 @@ EvalResult run_eval(Ini* ini, TrainContext* ctx, int mode, int verbose) {
         if (render) {
             puf_render(&pufferl->vec->envs[0]);
         }
-        rollouts(pufferl, pufferl->hypers.deterministic_actions);
+        rollouts(pufferl);
         Dict log = {0};
         trainer_eval_log(pufferl, &log);
         if (render) {
@@ -4546,9 +4456,7 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
         if (epoch < train_epochs && pufferl->hypers.async) {
             int prefetch_next = epoch + 1 < train_epochs;
             if (!pufferl->async_bootstrapped) {
-                // Training collection must remain stochastic even when
-                // eval_deterministic=1 is requested for later evaluation.
-                double t0 = rollout_start(pufferl, 0, false);
+                double t0 = rollout_start(pufferl, 0);
                 rollout_finish(pufferl, t0);
                 pufferl->async_ready_slot = 0;
                 pufferl->async_next_slot = 1;
@@ -4559,7 +4467,7 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
             int next_slot = pufferl->async_next_slot;
             double t0 = 0.0;
             if (prefetch_next) {
-                t0 = rollout_start(pufferl, next_slot, false);
+                t0 = rollout_start(pufferl, next_slot);
             }
 
             pufferl->global_step += pufferl->hypers.horizon * pufferl->hypers.total_agents;
@@ -4573,9 +4481,7 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
                 pufferl->async_next_slot = ready_slot;
             }
         } else {
-            bool deterministic = epoch >= train_epochs
-                && pufferl->hypers.deterministic_actions;
-            rollouts(pufferl, deterministic);
+            rollouts(pufferl);
             if (epoch < train_epochs) {
                 train_impl(*pufferl, NULL);
             }

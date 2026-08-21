@@ -31,13 +31,12 @@ mkdir -p "$kag_out"
 declare -A kag_profile=(
     [rules]=0 [top]=1 [structured]=2 [pulse]=3 [frontier]=4
     [triad]=5 [thunder]=6 [lugovoy]=7 [thunder25]=8 [v20]=9
-    [moon]=10 [hamburger]=11 [k320_10c4s]=12 [k320_yarn]=13
-    [e279]=14 [v16]=15 [c166]=16
+    [moon]=10 [hamburger]=11
 )
 
 kag_usage() {
     printf 'usage: %s NAME [NAME ...]\n' "$0" >&2
-    printf 'available: rules top structured pulse frontier triad thunder lugovoy thunder25 v20 moon hamburger k320_10c4s k320_yarn e279 v16 c166\n' >&2
+    printf 'available: rules top structured pulse frontier triad thunder lugovoy thunder25 v20 moon hamburger\n' >&2
 }
 
 if (($# == 0)); then

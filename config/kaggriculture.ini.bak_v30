@@ -1,0 +1,375 @@
+[base]
+env_name = kaggriculture
+seed = 707
+async = 0
+cudagraphs = 1
+rank = 0
+world_size = 1
+gpu_id = 0
+gpu_offset = 0
+nccl_id = None
+profile = 0
+# Immutable 96-turn recurrent BC initialization and prefix teacher. Training
+# writes new checkpoints; it never modifies this source file.
+load_model_path = None
+# 2048 agents x 64 steps saves at a 2.62M-step cadence.
+checkpoint_interval = 20
+checkpoint_dir = checkpoints
+log_dir = logs
+eval_episodes = 10
+num_games = 0
+burnin_games = 0
+# Keep short dashboard evaluations small. League scripts override this with
+# their own CUDA batch size; zero would silently expand a 10-game eval to 1024
+# agents in the generic evaluator.
+eval_agents = 16
+load_enemy_model_path = None
+enemy_hidden_size = 0
+enemy_num_layers = 0
+run_id = 'kag_v28'
+result_fd = 0
+wandb = 0
+slowly = 0
+eval_epoch_mult = 1
+reset_every_horizon = 0
+
+[vec]
+total_agents = 2048 
+num_buffers = 1
+num_threads = 4
+# V4: 12 unit heads plus ten conditional STOP/command/quantity market slots.
+action_mask_size = 838
+gpu_env = 1
+# Four resident opponent banks keep all four active league strategies live in
+# the same rollout. 75% frozen matches leaves 25% learner mirrors while giving
+# bots, league members, and rolling history enough samples to matter.
+num_frozen_banks = 4
+frozen_bank_pct = .50
+frozen_bank_hidden_size = 512
+frozen_bank_num_layers = 3
+
+[policy]
+hidden_size = 512
+num_layers = 3
+expansion_factor = 1
+
+[selfplay]
+enabled = 1
+max_size = 64
+seed = 707
+# Preserve rolling lineage diversity in addition to the four-policy external
+# league. Eight 25M-step snapshots cover the most recent 200M steps.
+snapshot_interval = 0
+# Historical snapshots are separate; stable external policies and their base
+# weights come from the V6 league file.
+opponent_pool = 'None'
+opponent_league = 'saved/kaggriculture_league_v6_512/league.ini'
+opponent_pool_weights = 'None'
+# Of the non-bot lane, favor the archived league over this run's fresh
+# snapshots. The latter remain present so adaptation cannot freeze completely.
+opponent_pool_prob = 0.75
+pfsp_mode = 'variance'
+pfsp_alpha = 1
+pfsp_uniform_mix = 0.1
+payoff_ema = 0.1
+opp_timeout_steps = 1000000
+eval_pool_size = 1
+eval_games = 50
+eval_metric = 'margin'
+# A 50-game opponent check does not need an 8192-agent resident batch. The
+# GPU matcher scripts pass their own --gpu-agents value when larger batches are
+# useful.
+eval_agents = 64
+# Optional frozen BC anchor loaded as the EMAg magnet when emag_kl_coef > 0.
+magnet_path = None
+
+[env]
+episode_steps = 720
+board_size = 10
+starting_money = 3000
+max_market_orders_per_turn = 10
+# Full official controls. Smaller values remain available as explicit
+# structural ablations, but normal training does not truncate orders or hires.
+policy_market_slots = 10
+policy_max_hands = 200
+# Optional strategy experiments. Both are off in normal full-game training.
+# opening_turns one-hot masks the learner to the top replay prefix.
+# reset_opening_prob mixes genuine root starts with real prefix reset states.
+# When selected, the prefix is sampled uniformly from [min, turns].
+opening_turns = 0
+reset_opening_turns = 0
+reset_opening_min = 0
+reset_opening_prob = 0
+turns_per_day = 24
+shed_capacity = 100
+weed_spawn_chance = 0.005
+town_shop_unlock_interval = 3
+town_shop_sell_interval = 4
+town_center_sell_interval = 24
+farm_hand_cost_mult = 1
+seed = 707
+# Economic state deltas plus terminal win and money differential. The potential
+# telescopes to terminal cash; there are no bonuses for specific actions.
+reward_potential_scale = 0.000453151384
+reward_win = 0.36541456
+reward_margin_scale = 0.3
+reward_seed_value = 0.01
+reward_product_value = 0.95
+reward_crop_value = 1
+reward_animal_value = 0.95
+reward_land_value = 2
+reward_neglect_discount = 0.5
+reward_liquidation_days = 6
+# Zero-sum continuous score differential. Each step rewards the change in the
+# learner's economic potential minus the opponent's, so pulling ahead pays and
+# falling behind costs; it telescopes to scale * (my_final - opp_final).
+# Set reward_potential_scale=0 for a pure differential objective.
+reward_differential_scale = 0
+reward_inactivity_threshold = 0
+reward_inactivity = 0
+reward_neglect_death = 0.1
+reward_productive_action = 0
+# Bot selection applies inside frozen-bank matches. With 75% frozen matches and
+# a 50% bot fraction this yields 37.5% native bots, 37.5% learned opponents,
+# and 25% current-policy mirrors overall.
+bot_opponent_fraction = 0.5
+bot_pass_fraction = 0
+bot_first = 0.1
+bot_top_fraction = 0.1
+bot_rules_fraction = 0.2
+# Fractions below partition only the non-top remainder of the bot lane.
+bot_script_fraction = 0.1
+bot_adaptive_fraction = 0.6
+
+[train]
+total_timesteps = 10000000000
+# Start high enough to move, then linearly decay to 10% so late PPO updates do
+# not erase the learned opening as violently as a constant learning rate.
+learning_rate = 0.000553896592
+anneal_lr = 0
+min_lr_ratio = 0.1
+gamma = 0.999859989
+gae_lambda = 0.987793684
+# A 64-step recurrent horizon provides frequent PPO updates; the frozen
+# opening teacher supplies the longer structured prefix. One PPO pass is made
+# over each rollout.
+replay_ratio = 1
+clip_coef = 0.158850163
+vf_coef = 0.249999985
+vf_clip_coef = 0.31161955
+max_grad_norm = 0.750745416
+ent_coef = 0.000281835062
+emag_kl_coef = 0.0121208057
+# Frozen BC distribution only through approximately decisions 0..96.
+emag_tau = 0
+emag_cutoff = 0.33
+anneal_ent_coef = 0.1
+momentum = 0.9
+minibatch_size = 8192
+horizon = 64
+prio_alpha = 0
+prio_beta0 = 0.6
+epoch_sampling = 1
+gpus = 1
+
+# Warm-started selfplay/training sweep. Use sweep_selfplay.sh to initialize every
+# trial from one competent checkpoint and rank final policies by seat-balanced
+# money against the same eight-policy external panel.
+[sweep]
+# Sweep selection penalizes policies that finish at the untouched starting bank.
+# Dashboard score remains literal final money.
+metric = margin
+metric_distribution = linear
+goal = maximize
+# 100-run top-bot exploit sweep. 100M steps per trial at ~2.5M SPS is ~40s;
+# keep the cost ceiling above a complete trial so the optimizer doesn't treat
+# useful samples as over-budget.
+max_suggestion_cost = 300
+max_runs = 200
+gpus = 0
+downsample = 1
+use_gpu = True
+prune_pareto = True
+early_stop_quantile = 0.25
+# Safe default is the staged hyper search used by sweep_v2.sh. Reward and
+# selfplay-composition searches are separate experiments; combining all of them
+# creates a sparse, confounded 20+ dimensional sweep. replay_ratio remains 1:
+# repeated passes over stale async rollouts caused destructive KL spikes.
+sweep_only = env.reward_seed_value,env.reward_product_value,env.reward_crop_value,env.reward_animal_value,env.reward_land_value,env.reward_neglect_discount,env.reward_liquidation_days,env.reward_margin_scale
+
+[sweep.train.learning_rate]
+distribution = log_normal
+min = 0.00005
+max = 0.03
+scale = 0.5
+
+[sweep.train.ent_coef]
+distribution = log_normal
+min = 0.0001
+max = 0.12
+scale = auto
+
+[sweep.train.gamma]
+distribution = logit_normal
+min = 0.9995
+max = 0.99999
+scale = auto
+
+[sweep.train.gae_lambda]
+distribution = logit_normal
+min = 0.94
+max = 0.995
+scale = auto
+
+
+[sweep.train.vf_coef]
+distribution = log_normal
+min = 0.25
+max = 2.0
+scale = auto
+
+[sweep.train.vf_clip_coef]
+distribution = log_normal
+min = 0.10
+max = 1.0
+scale = auto
+
+[sweep.train.max_grad_norm]
+distribution = log_normal
+min = 0.25
+max = 1.0
+scale = auto
+
+[sweep.train.emag_kl_coef]
+distribution = log_normal
+min = 0.005
+max = 0.10
+scale = auto
+
+[sweep.train.emag_tau]
+distribution = uniform
+min = 0
+max = 0
+scale = auto
+
+[sweep.env.reward_potential_scale]
+distribution = uniform
+min = 0
+max = 1
+scale = auto
+
+[sweep.env.reward_win]
+distribution = uniform
+min = 0.0
+max = 10.0
+scale = auto
+
+[sweep.env.reward_liquidation_days]
+distribution = int_uniform
+min = 0
+max = 10
+scale = auto
+
+[sweep.env.reward_seed_value]
+distribution = uniform
+min = 0.000
+max = 1.00
+scale = auto
+
+[sweep.env.reward_product_value]
+distribution = uniform
+min = 0.0
+max = 5.00
+scale = auto
+
+[sweep.env.reward_crop_value]
+distribution = uniform
+min = 0.0
+max = 5.20
+scale = auto
+
+[sweep.env.reward_neglect_discount]
+distribution = uniform
+min = 0.0
+max = 5.90
+scale = auto
+
+[sweep.env.reward_animal_value]
+distribution = uniform
+min = 0.0
+max = 10.00
+scale = auto
+
+[sweep.env.reward_land_value]
+distribution = uniform
+min = 0.0
+max = 10.00
+scale = auto
+[sweep.env.reward_margin_scale]
+distribution = uniform
+min = 0.0
+max = 2.0
+scale = auto
+
+
+[sweep.env.reward_productive_action]
+distribution = log_normal
+min = 0.0000
+max = 0.902
+scale = auto
+
+[sweep.env.reward_inactivity]
+distribution = uniform
+min = 1.0
+max = 50.0
+scale = auto
+
+[sweep.env.reward_neglect_death]
+distribution = log_normal
+min = 0.000
+max = 0.9
+scale = auto
+
+[sweep.env.bot_opponent_fraction]
+distribution = uniform
+min = 0
+max = 1.00
+scale = auto
+
+[bc]
+student = None
+beta = 0.25
+dagger_batch = 16
+# Recurrent opening-cloning trainer. bot=1 is the native TOP opening followed
+# by its economy continuation; steps=26 records only the opening prefix.
+mode = train
+steps = 26
+epochs = 2000
+learning_rate = 0.00005
+output = saved/kaggriculture_bc_anchor.bin
+load_model_path = 'saved/kaggriculture_league_v6_512/run_kag_v27_0000000146800640.bin'
+games = 200
+bot = 1
+opponent = 0
+# -1 randomizes the opponent profile per episode and the learner seat. This
+# exposes the clone to different market interference and both order seats.
+seat = -1
+# Probability that dataset generation perturbs one learner unit (and
+# occasionally drops its market bundle) after recording the expert label.
+# Subsequent labels therefore teach recovery from off-demonstration states.
+rollout_noise = 0.10
+seed = 7
+batch = 32
+momentum = 0.9
+validation_games = 40
+report_interval = 25
+anchor_l2 = 0.0
+# The observed high-level opening occupies only 26/719 full-game rows. Give it
+# equal aggregate weight during full-game BC instead of letting continuation
+# behavior drown it out. Opening-only phase clamps this naturally to 26 rows.
+opening_steps = 26
+opening_weight = 27.0
+# Byte 942 was padding in old checkpoints. Zero its encoder column before the
+# DAGS source bit is enabled so a warm start is behavior-preserving at root.
+zero_reset_source = 1
+data = saved/kaggriculture_bc_data.bin

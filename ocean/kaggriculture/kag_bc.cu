@@ -41,12 +41,7 @@ enum {
     BC_BOT_V20 = 9,
     BC_BOT_MOON = 10,
     BC_BOT_HAMBURGER = 11,
-    BC_BOT_K320_10C4S = 12,
-    BC_BOT_K320_YARN = 13,
-    BC_BOT_E279 = 14,
-    BC_BOT_V16 = 15,
-    BC_BOT_C166 = 16,
-    BC_BOT_COUNT = 17,
+    BC_BOT_COUNT = 12,
 };
 
 typedef struct {
@@ -253,26 +248,6 @@ static void bc_bot_action(const KGState* game, int player, int profile,
         case BC_BOT_THUNDER25:
             kag_script_action(game, player, KG_SCRIPT_THUNDER25, action);
             kag_script_repair(game, player, KG_SCRIPT_THUNDER25, action);
-            return;
-        case BC_BOT_K320_10C4S:
-            kag_script_action(game, player, KG_SCRIPT_K320_10C4S, action);
-            kag_script_repair(game, player, KG_SCRIPT_K320_10C4S, action);
-            return;
-        case BC_BOT_K320_YARN:
-            kag_script_action(game, player, KG_SCRIPT_K320_YARN, action);
-            kag_script_repair(game, player, KG_SCRIPT_K320_YARN, action);
-            return;
-        case BC_BOT_E279:
-            kag_script_action(game, player, KG_SCRIPT_E279, action);
-            kag_script_repair(game, player, KG_SCRIPT_E279, action);
-            return;
-        case BC_BOT_V16:
-            kag_script_action(game, player, KG_SCRIPT_V16, action);
-            kag_script_repair(game, player, KG_SCRIPT_V16, action);
-            return;
-        case BC_BOT_C166:
-            kag_script_action(game, player, KG_SCRIPT_C166, action);
-            kag_script_repair(game, player, KG_SCRIPT_C166, action);
             return;
         case BC_BOT_RULES:
         default:

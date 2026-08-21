@@ -607,17 +607,6 @@ KG_HD void kg_reset(KGState* state) {
         sizeof(state->production_product_units));
     memset(state->production_product_value, 0,
         sizeof(state->production_product_value));
-    memset(state->planted_crops, 0, sizeof(state->planted_crops));
-    memset(state->placed_animals, 0, sizeof(state->placed_animals));
-    memset(state->sold_units, 0, sizeof(state->sold_units));
-    memset(state->sales_revenue, 0, sizeof(state->sales_revenue));
-    memset(state->bought_units, 0, sizeof(state->bought_units));
-    memset(state->purchase_spend, 0, sizeof(state->purchase_spend));
-    memset(state->sold_product_units, 0, sizeof(state->sold_product_units));
-    memset(state->sold_product_revenue, 0,
-        sizeof(state->sold_product_revenue));
-    memset(state->exogenous_demand_units, 0,
-        sizeof(state->exogenous_demand_units));
     for (i = 0; i < KG_NUM_PRODUCTS; i++) {
         state->market.inventory[i] = KG_MARKET_DEFS[i].i0;
         state->market.prices[i] = KG_MARKET_DEFS[i].base;
@@ -882,7 +871,6 @@ KG_HD static void kg_apply_unit_action(KGState* state, KGPlayer* player, int idx
         player->seeds[crop]--;
         kg_new_plant(player, kg_tile_index(x, y), crop, state->day,
             state->config.turns_per_day);
-        state->planted_crops[player_id]++;
         return;
     }
 
@@ -980,7 +968,6 @@ KG_HD static void kg_apply_unit_action(KGState* state, KGPlayer* player, int idx
             int animal = item - KG_ITEM_GOOSE;
             if (kg_inventory_take(unit, item, 1)) {
                 kg_new_animal(player, kg_tile_index(x, y), animal, state->day);
-                state->placed_animals[player_id]++;
             }
             return;
         }
@@ -1202,10 +1189,6 @@ KG_HD static int kg_commit_unit(KGState* state, int player_id, int op, int item,
         if (player->shed[item] <= 0) return 0;
         player->shed[item]--;
         player->money += price;
-        state->sold_units[player_id]++;
-        state->sales_revenue[player_id] += (float)price;
-        state->sold_product_units[player_id][item]++;
-        state->sold_product_revenue[player_id][item] += (float)price;
         if (price > 1) state->market.inventory[item]++;
         return 1;
     }
@@ -1214,8 +1197,6 @@ KG_HD static int kg_commit_unit(KGState* state, int player_id, int op, int item,
                 || kg_shed_total(player) >= state->config.shed_capacity) return 0;
         player->money -= price;
         player->shed[item]++;
-        state->bought_units[player_id]++;
-        state->purchase_spend[player_id] += (float)price;
         state->market.inventory[item]--;
         return 1;
     }
@@ -1223,8 +1204,6 @@ KG_HD static int kg_commit_unit(KGState* state, int player_id, int op, int item,
         if (player->money < price) return 0;
         player->money -= price;
         player->seeds[item]++;
-        state->bought_units[player_id]++;
-        state->purchase_spend[player_id] += (float)price;
         return 1;
     }
     if (op == KG_MARKET_BUY_ANIMAL) {
@@ -1232,8 +1211,6 @@ KG_HD static int kg_commit_unit(KGState* state, int player_id, int op, int item,
                 || kg_shed_total(player) >= state->config.shed_capacity) return 0;
         player->money -= price;
         player->shed[item]++;
-        state->bought_units[player_id]++;
-        state->purchase_spend[player_id] += (float)price;
         return 1;
     }
     return 0;
@@ -1315,9 +1292,7 @@ KG_HD static void kg_town_consume(KGState* state, int step) {
             while (products < KG_NUM_PRODUCTS && kg_shop_product(id, products) >= 0) products++;
             int multiplier = products == 1 ? 2 : 1;
             for (j = 0; j < products; j++) {
-                int product = kg_shop_product(id, j);
-                state->market.inventory[product] -= multiplier;
-                state->exogenous_demand_units[product] += (uint32_t)multiplier;
+                state->market.inventory[kg_shop_product(id, j)] -= multiplier;
             }
             market_changed = 1;
         }
@@ -1325,7 +1300,6 @@ KG_HD static void kg_town_consume(KGState* state, int step) {
     if (step % state->config.town_center_sell_interval == 0) {
         for (j = 0; j < KG_NUM_PRODUCTS - 1; j++) {
             state->market.inventory[j] -= 1;
-            state->exogenous_demand_units[j]++;
         }
         market_changed = 1;
     }

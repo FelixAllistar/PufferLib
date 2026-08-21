@@ -234,19 +234,6 @@ typedef struct KGState {
     float production_value[KG_NUM_PLAYERS];
     uint32_t production_product_units[KG_NUM_PLAYERS][KG_NUM_PRODUCTS];
     float production_product_value[KG_NUM_PLAYERS][KG_NUM_PRODUCTS];
-    /* Realized lifecycle and market transactions. Unlike action diagnostics,
-     * these increment only after an operation successfully commits. */
-    uint32_t planted_crops[KG_NUM_PLAYERS];
-    uint32_t placed_animals[KG_NUM_PLAYERS];
-    uint32_t sold_units[KG_NUM_PLAYERS];
-    float sales_revenue[KG_NUM_PLAYERS];
-    uint32_t bought_units[KG_NUM_PLAYERS];
-    float purchase_spend[KG_NUM_PLAYERS];
-    uint32_t sold_product_units[KG_NUM_PLAYERS][KG_NUM_PRODUCTS];
-    float sold_product_revenue[KG_NUM_PLAYERS][KG_NUM_PRODUCTS];
-    /* Demand removed by shops/town independently of either player's trades.
-     * This permits a no-production counterfactual opportunity label. */
-    uint32_t exogenous_demand_units[KG_NUM_PRODUCTS];
 } KGState;
 
 KG_HD void kg_config_default(KGConfig* config);

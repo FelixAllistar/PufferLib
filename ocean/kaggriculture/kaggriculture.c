@@ -107,6 +107,8 @@ static void kag_init_demo(Env* env, obs_t* observations, float* actions,
         env->policy_max_hands = (int)hands;
     }
     env->reward_potential_scale = 0.0001f;
+    env->reward_potential_gamma = 0.0f;
+    env->reward_money_scale = 0.0f;
     env->reward_win = 1.0f;
     env->reward_seed_value = 1.0f;
     env->reward_product_value = 1.0f;

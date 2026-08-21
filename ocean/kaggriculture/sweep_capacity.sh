@@ -8,9 +8,7 @@
 # disabling selfplay (primary_agents == total_agents, a clean power of two) and
 # deriving minibatch as agents * factor, so every point is exactly valid.
 #
-# Ranking is SPS + dashboard potential from a short run. Cash and GDP are
-# recorded beside it so a high-potential, low-cash farm remains diagnosable.
-# Re-validate the winner
+# Ranking is SPS + dashboard money from a short run. Re-validate the winner
 # with selfplay/league enabled before committing to a long run.
 #
 # Usage:
@@ -28,7 +26,7 @@ kag_lr=${LR:-"0.0003 0.00055 0.001"}
 kag_out=logs/kaggriculture/capacity_sweep.tsv
 
 mkdir -p logs/kaggriculture
-[[ -f $kag_out ]] || printf 'run\tagents\tminibatch\tlr\tsps\tpotential\tmoney\tgdp\n' > "$kag_out"
+[[ -f $kag_out ]] || printf 'run\tagents\tminibatch\tlr\tsps\tscore\n' > "$kag_out"
 
 for kag_a in $kag_agents; do
     for kag_mb in $kag_minibatch; do
@@ -64,21 +62,15 @@ for kag_a in $kag_agents; do
             kag_ini="logs/kaggriculture/${kag_run}.ini"
             kag_sps=$(grep '^SPS = ' "$kag_ini" 2>/dev/null | tail -1 | awk '{print $3}') || true
             kag_score=$(grep '^env/score = ' "$kag_ini" 2>/dev/null | tail -1 | awk '{print $3}') || true
-            kag_money=$(grep '^env/money = ' "$kag_ini" 2>/dev/null | tail -1 | awk '{print $3}') || true
-            kag_gdp=$(grep '^env/gdp = ' "$kag_ini" 2>/dev/null | tail -1 | awk '{print $3}') || true
             kag_sps=${kag_sps:-NA}
             kag_score=${kag_score:-NA}
-            kag_money=${kag_money:-NA}
-            kag_gdp=${kag_gdp:-NA}
-            [[ $kag_sps == NA || $kag_score == NA || $kag_money == NA || $kag_gdp == NA ]] && {
-                printf '  INCOMPLETE (sps=%s potential=%s money=%s gdp=%s)\n' \
-                    "$kag_sps" "$kag_score" "$kag_money" "$kag_gdp"
+            [[ $kag_sps == NA || $kag_score == NA ]] && {
+                printf '  INCOMPLETE (sps=%s score=%s)\n' "$kag_sps" "$kag_score"
             }
-            printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+            printf '%s\t%s\t%s\t%s\t%s\t%s\n' \
                 "$kag_run" "$kag_a" "$kag_mb" "$kag_l" \
-                "$kag_sps" "$kag_score" "$kag_money" "$kag_gdp" >> "$kag_out"
-            printf '  sps=%s potential=%s money=%s gdp=%s\n' \
-                "$kag_sps" "$kag_score" "$kag_money" "$kag_gdp"
+                "$kag_sps" "$kag_score" >> "$kag_out"
+            printf '  sps=%s score=%s\n' "$kag_sps" "$kag_score"
         done
     done
 done

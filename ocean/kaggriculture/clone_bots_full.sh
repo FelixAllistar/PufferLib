@@ -17,8 +17,8 @@ cd "$(dirname "$0")/../.."
 
 kag_bc=./ocean/kaggriculture/build/kag_bc
 kag_out=${KAG_BC_OUT_DIR:-saved/kaggriculture_bc_v2}
-kag_games=${KAG_BC_GAMES:-800}
-kag_epochs=${KAG_BC_EPOCHS:-1200}
+kag_games=${KAG_BC_GAMES:-150}
+kag_epochs=${KAG_BC_EPOCHS:-300}
 kag_batch=${KAG_BC_BATCH:-16}
 kag_lr=${KAG_BC_LR:-0.001}
 
@@ -27,13 +27,12 @@ mkdir -p "$kag_out"
 declare -A kag_profile=(
     [rules]=0 [top]=1 [structured]=2 [pulse]=3 [frontier]=4
     [triad]=5 [thunder]=6 [lugovoy]=7 [thunder25]=8 [v20]=9
-    [moon]=10 [hamburger]=11 [k320_10c4s]=12 [k320_yarn]=13
-    [e279]=14 [v16]=15 [c166]=16
+    [moon]=10 [hamburger]=11
 )
 
 kag_usage() {
     printf 'usage: %s NAME [NAME ...]\n' "$0" >&2
-    printf 'available: rules top structured pulse frontier triad thunder lugovoy thunder25 v20 moon hamburger k320_10c4s k320_yarn e279 v16 c166\n' >&2
+    printf 'available: rules top structured pulse frontier triad thunder lugovoy thunder25 v20 moon hamburger\n' >&2
 }
 
 if (($# == 0)); then
@@ -51,17 +50,6 @@ for kag_name in "$@"; do
 
     kag_data="$kag_out/${kag_name}_full_data.bin"
     kag_model="$kag_out/${kag_name}_full_clone.bin"
-    kag_init="$kag_out/${kag_name}_clone.bin"
-    kag_init_arg=
-    if [[ -f $kag_init ]]; then
-        # Warm-start from the opening/recovery clone so the first 96 decisions
-        # are already right and full-game training only has to learn the
-        # mid/late continuation, mirroring the top_clone two-phase recipe.
-        kag_init_arg="bc.load_model_path=$kag_init"
-        kag_init_label=$kag_init
-    else
-        kag_init_label=random
-    fi
 
     printf '== full-game clone %s (profile %s) ==\n' "$kag_name" "$kag_profile_id"
     "$kag_bc" bc.mode=gen bc.games="$kag_games" bc.steps=720 \
@@ -70,9 +58,8 @@ for kag_name in "$@"; do
     "$kag_bc" bc.mode=train bc.data="$kag_data" \
         bc.epochs="$kag_epochs" bc.batch="$kag_batch" \
         bc.learning_rate="$kag_lr" \
-        $kag_init_arg \
         bc.opening_steps=26 bc.opening_weight=1 bc.validation_games=30 \
         bc.zero_reset_source=0 bc.output="$kag_model" \
         policy.hidden_size=128 policy.num_layers=2
-    printf 'full-game clone: %s (init=%s)\n' "$kag_model" "$kag_init_label"
+    printf 'full-game clone: %s\n' "$kag_model"
 done

@@ -129,48 +129,6 @@ struct Log {
     float opponent_gdp;
     float production_units;
     float opponent_production_units;
-    float crop_production_units;
-    float animal_production_units;
-    float successful_plants;
-    float successful_animal_places;
-    float sold_units;
-    float sales_revenue;
-    float bought_units;
-    float purchase_spend;
-    float crop_sold_units;
-    float crop_sales_revenue;
-    float animal_product_sold_units;
-    float animal_product_sales_revenue;
-    float strawberry_sold_units;
-    float strawberry_sales_revenue;
-    float milk_sold_units;
-    float milk_sales_revenue;
-    float ending_shed_units;
-    float ending_shed_value;
-    float carrot_opportunity_fraction;
-    float carrot_opportunity_no_production_price;
-    float carrot_opportunity_response;
-    float carrot_opportunity_production;
-    float carrot_nonopportunity_production;
-    float carrot_opportunity_sold_units;
-    float carrot_opportunity_sales_revenue;
-    float carrot_opportunity_sale_price;
-    float tomato_opportunity_fraction;
-    float tomato_opportunity_no_production_price;
-    float tomato_opportunity_response;
-    float tomato_opportunity_production;
-    float tomato_nonopportunity_production;
-    float tomato_opportunity_sold_units;
-    float tomato_opportunity_sales_revenue;
-    float tomato_opportunity_sale_price;
-    float egg_opportunity_fraction;
-    float egg_opportunity_no_production_price;
-    float egg_opportunity_response;
-    float egg_opportunity_production;
-    float egg_nonopportunity_production;
-    float egg_opportunity_sold_units;
-    float egg_opportunity_sales_revenue;
-    float egg_opportunity_sale_price;
     float strawberry_units;
     float opponent_strawberry_units;
     float strawberry_value;
@@ -251,8 +209,6 @@ struct Env {
     const char* render_names[KG_NUM_PLAYERS];
     float episode_returns[KG_NUM_PLAYERS];
     float reward_potential_scale;
-    float reward_potential_gamma;
-    float reward_money_scale;
     float reward_win;
     float reward_seed_value;
     float reward_product_value;
@@ -438,31 +394,6 @@ KG_HD static inline float kag_player_potential(const Env* env, int player_id) {
 
 KG_HD static inline float kag_player_potential_full(const Env* env, int player_id) {
     return kag_player_potential_scaled(env, player_id, 0);
-}
-
-/* Legacy shaping used an undiscounted dollar delta.  When a positive shaping
- * gamma is configured, use the discount-consistent potential form on
- * a centered, starting-money-normalized potential instead.  Centering keeps
- * the initial state at zero; forcing terminal phi to zero prevents unsold
- * assets or final cash from becoming a second terminal objective. */
-KG_HD static inline float kag_potential_shaping_reward(const Env* env,
-        float before, float after, int done) {
-    if (env->reward_potential_gamma <= 0.0f) {
-        return (after - before) * env->reward_potential_scale;
-    }
-    float starting_money = (float)env->game_storage.config.starting_money;
-    float before_phi = (before - starting_money) / starting_money;
-    float after_phi = done ? 0.0f
-        : (after - starting_money) / starting_money;
-    return (env->reward_potential_gamma * after_phi - before_phi)
-        * env->reward_potential_scale;
-}
-
-KG_HD static inline float kag_terminal_money_reward(const Env* env,
-        int money) {
-    float starting_money = (float)env->game_storage.config.starting_money;
-    return env->reward_money_scale
-        * ((float)money - starting_money) / starting_money;
 }
 
 KG_HD static inline uint8_t kag_tile_entity(const KGTile* tile) {
@@ -2089,33 +2020,6 @@ KG_HD static inline float kag_productive_action_credit(const KGState* game,
     return credit;
 }
 
-/* A hinge opportunity is driven only by randomized town/shop demand. It is
- * present once the no-production inventory deficit crosses the product's
- * hinge throughput, where the 1.32.7 price curve begins accelerating. */
-KG_HD static inline void kag_log_hinge_opportunity(const KGState* game,
-        int player, int item, float* fraction, float* no_production_price,
-        float* response, float* opportunity_production,
-        float* nonopportunity_production, float* opportunity_sold_units,
-        float* opportunity_sales_revenue, float* opportunity_sale_price) {
-    const KGMarketDef* def = &KG_MARKET_DEFS[item];
-    float produced = (float)game->production_product_units[player][item];
-    float sold = (float)game->sold_product_units[player][item];
-    float revenue = game->sold_product_revenue[player][item];
-    int demand = (int)game->exogenous_demand_units[item];
-    int opportunity = demand > def->throughput;
-    if (!opportunity) {
-        *nonopportunity_production += produced;
-        return;
-    }
-    *fraction += 1.0f;
-    *no_production_price += (float)kg_market_price(item, def->i0 - demand);
-    *response += produced > 0.0f ? 1.0f : 0.0f;
-    *opportunity_production += produced;
-    *opportunity_sold_units += sold;
-    *opportunity_sales_revenue += revenue;
-    if (sold > 0.0f) *opportunity_sale_price += revenue / sold;
-}
-
 KG_HD static inline void kag_log_actions(Env* env, const KGState* game,
         const KGAction* action) {
     int player = env->bot_first ? 1 : 0;
@@ -2206,9 +2110,6 @@ void puf_init(Env* env, Dict* kwargs) {
     env->episode_returns[0] = 0.0f;
     env->episode_returns[1] = 0.0f;
     env->reward_potential_scale = (float)dict_get(kwargs, "reward_potential_scale");
-    env->reward_potential_gamma = (float)dict_get(
-        kwargs, "reward_potential_gamma");
-    env->reward_money_scale = (float)dict_get(kwargs, "reward_money_scale");
     env->reward_win = (float)dict_get(kwargs, "reward_win");
     env->reward_seed_value = (float)dict_get(kwargs, "reward_seed_value");
     env->reward_product_value = (float)dict_get(kwargs, "reward_product_value");
@@ -2391,8 +2292,8 @@ void puf_step(Env* env) {
         - (env->potential[1] - before_potential[1]))
         * env->reward_differential_scale;
     for (int player = 0; player < KG_NUM_PLAYERS; player++) {
-        float reward = kag_potential_shaping_reward(env,
-                before_potential[player], env->potential[player], done)
+        float reward = (env->potential[player] - before_potential[player])
+            * env->reward_potential_scale
             + productive_credit[player] * env->reward_productive_action;
         reward -= (game->neglect_deaths[player]
             - before_neglect_deaths[player]) * env->reward_neglect_death;
@@ -2416,12 +2317,6 @@ void puf_step(Env* env) {
         float margin = (float)(model_money - opp_money)
             / (float)game->config.starting_money;
         float margin_term = env->reward_margin_scale * margin;
-        float money0_term = kag_terminal_money_reward(env, p0);
-        float money1_term = kag_terminal_money_reward(env, p1);
-        env->agents[0].rewards[0] += money0_term;
-        env->agents[1].rewards[0] += money1_term;
-        env->episode_returns[0] += money0_term;
-        env->episode_returns[1] += money1_term;
         env->agents[0].rewards[0] += outcome;
         env->agents[1].rewards[0] -= outcome;
         env->episode_returns[0] += outcome;
@@ -2460,64 +2355,6 @@ void puf_step(Env* env) {
         env->log.production_units += game->production_units[model_player];
         env->log.opponent_production_units +=
             game->production_units[1 - model_player];
-        env->log.successful_plants += game->planted_crops[model_player];
-        env->log.successful_animal_places += game->placed_animals[model_player];
-        env->log.sold_units += game->sold_units[model_player];
-        env->log.sales_revenue += game->sales_revenue[model_player];
-        env->log.bought_units += game->bought_units[model_player];
-        env->log.purchase_spend += game->purchase_spend[model_player];
-        for (int item = 0; item < KG_NUM_PRODUCTS; item++) {
-            int produced = (int)game->production_product_units[model_player][item];
-            int sold = (int)game->sold_product_units[model_player][item];
-            float revenue = game->sold_product_revenue[model_player][item];
-            env->log.ending_shed_units += game->players[model_player].shed[item];
-            env->log.ending_shed_value += game->players[model_player].shed[item]
-                * game->market.prices[item];
-            if (item <= KG_ITEM_MELON) {
-                env->log.crop_production_units += produced;
-                env->log.crop_sold_units += sold;
-                env->log.crop_sales_revenue += revenue;
-            } else if (item >= KG_ITEM_EGG && item <= KG_ITEM_WOOL) {
-                env->log.animal_production_units += produced;
-                env->log.animal_product_sold_units += sold;
-                env->log.animal_product_sales_revenue += revenue;
-            }
-        }
-        env->log.strawberry_sold_units +=
-            game->sold_product_units[model_player][KG_ITEM_STRAWBERRY];
-        env->log.strawberry_sales_revenue +=
-            game->sold_product_revenue[model_player][KG_ITEM_STRAWBERRY];
-        env->log.milk_sold_units +=
-            game->sold_product_units[model_player][KG_ITEM_MILK];
-        env->log.milk_sales_revenue +=
-            game->sold_product_revenue[model_player][KG_ITEM_MILK];
-        kag_log_hinge_opportunity(game, model_player, KG_ITEM_CARROT,
-            &env->log.carrot_opportunity_fraction,
-            &env->log.carrot_opportunity_no_production_price,
-            &env->log.carrot_opportunity_response,
-            &env->log.carrot_opportunity_production,
-            &env->log.carrot_nonopportunity_production,
-            &env->log.carrot_opportunity_sold_units,
-            &env->log.carrot_opportunity_sales_revenue,
-            &env->log.carrot_opportunity_sale_price);
-        kag_log_hinge_opportunity(game, model_player, KG_ITEM_TOMATO,
-            &env->log.tomato_opportunity_fraction,
-            &env->log.tomato_opportunity_no_production_price,
-            &env->log.tomato_opportunity_response,
-            &env->log.tomato_opportunity_production,
-            &env->log.tomato_nonopportunity_production,
-            &env->log.tomato_opportunity_sold_units,
-            &env->log.tomato_opportunity_sales_revenue,
-            &env->log.tomato_opportunity_sale_price);
-        kag_log_hinge_opportunity(game, model_player, KG_ITEM_EGG,
-            &env->log.egg_opportunity_fraction,
-            &env->log.egg_opportunity_no_production_price,
-            &env->log.egg_opportunity_response,
-            &env->log.egg_opportunity_production,
-            &env->log.egg_nonopportunity_production,
-            &env->log.egg_opportunity_sold_units,
-            &env->log.egg_opportunity_sales_revenue,
-            &env->log.egg_opportunity_sale_price);
         env->log.strawberry_units +=
             game->production_product_units[model_player][KG_ITEM_STRAWBERRY];
         env->log.opponent_strawberry_units +=
@@ -2840,64 +2677,6 @@ void puf_log(Log* log, Dict* out) {
     dict_set(out, "production_units", log->production_units);
     dict_set(out, "opponent_production_units",
         log->opponent_production_units);
-    dict_set(out, "crop_production_units", log->crop_production_units);
-    dict_set(out, "animal_production_units", log->animal_production_units);
-    dict_set(out, "successful_plants", log->successful_plants);
-    dict_set(out, "successful_animal_places", log->successful_animal_places);
-    dict_set(out, "sold_units", log->sold_units);
-    dict_set(out, "sales_revenue", log->sales_revenue);
-    dict_set(out, "bought_units", log->bought_units);
-    dict_set(out, "purchase_spend", log->purchase_spend);
-    dict_set(out, "crop_sold_units", log->crop_sold_units);
-    dict_set(out, "crop_sales_revenue", log->crop_sales_revenue);
-    dict_set(out, "animal_product_sold_units", log->animal_product_sold_units);
-    dict_set(out, "animal_product_sales_revenue",
-        log->animal_product_sales_revenue);
-    dict_set(out, "strawberry_sold_units", log->strawberry_sold_units);
-    dict_set(out, "strawberry_sales_revenue", log->strawberry_sales_revenue);
-    dict_set(out, "milk_sold_units", log->milk_sold_units);
-    dict_set(out, "milk_sales_revenue", log->milk_sales_revenue);
-    dict_set(out, "ending_shed_units", log->ending_shed_units);
-    dict_set(out, "ending_shed_value", log->ending_shed_value);
-    dict_set(out, "carrot_opportunity_fraction", log->carrot_opportunity_fraction);
-    dict_set(out, "carrot_opportunity_no_production_price",
-        log->carrot_opportunity_no_production_price);
-    dict_set(out, "carrot_opportunity_response", log->carrot_opportunity_response);
-    dict_set(out, "carrot_opportunity_production",
-        log->carrot_opportunity_production);
-    dict_set(out, "carrot_nonopportunity_production",
-        log->carrot_nonopportunity_production);
-    dict_set(out, "carrot_opportunity_sold_units",
-        log->carrot_opportunity_sold_units);
-    dict_set(out, "carrot_opportunity_sales_revenue",
-        log->carrot_opportunity_sales_revenue);
-    dict_set(out, "carrot_opportunity_sale_price",
-        log->carrot_opportunity_sale_price);
-    dict_set(out, "tomato_opportunity_fraction", log->tomato_opportunity_fraction);
-    dict_set(out, "tomato_opportunity_no_production_price",
-        log->tomato_opportunity_no_production_price);
-    dict_set(out, "tomato_opportunity_response", log->tomato_opportunity_response);
-    dict_set(out, "tomato_opportunity_production",
-        log->tomato_opportunity_production);
-    dict_set(out, "tomato_nonopportunity_production",
-        log->tomato_nonopportunity_production);
-    dict_set(out, "tomato_opportunity_sold_units",
-        log->tomato_opportunity_sold_units);
-    dict_set(out, "tomato_opportunity_sales_revenue",
-        log->tomato_opportunity_sales_revenue);
-    dict_set(out, "tomato_opportunity_sale_price",
-        log->tomato_opportunity_sale_price);
-    dict_set(out, "egg_opportunity_fraction", log->egg_opportunity_fraction);
-    dict_set(out, "egg_opportunity_no_production_price",
-        log->egg_opportunity_no_production_price);
-    dict_set(out, "egg_opportunity_response", log->egg_opportunity_response);
-    dict_set(out, "egg_opportunity_production", log->egg_opportunity_production);
-    dict_set(out, "egg_nonopportunity_production",
-        log->egg_nonopportunity_production);
-    dict_set(out, "egg_opportunity_sold_units", log->egg_opportunity_sold_units);
-    dict_set(out, "egg_opportunity_sales_revenue",
-        log->egg_opportunity_sales_revenue);
-    dict_set(out, "egg_opportunity_sale_price", log->egg_opportunity_sale_price);
     dict_set(out, "strawberry_units", log->strawberry_units);
     dict_set(out, "opponent_strawberry_units", log->opponent_strawberry_units);
     dict_set(out, "strawberry_value", log->strawberry_value);
