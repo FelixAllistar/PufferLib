@@ -28,6 +28,7 @@ kag_jsd_steps=720
 kag_jsd_seeds=2
 kag_profile_games=0
 kag_quality_gap=0.15
+kag_eval_deterministic=1
 kag_meta_share=0.70
 kag_diversity_share=0.25
 kag_exploration_share=0.05
@@ -64,6 +65,7 @@ kag_usage() {
         "  --jsd-seeds N       Independent probe seeds, each a full trajectory (default 2)" \
         "  --profile-games N   GPU behavior profile games per active policy (default 0)" \
         "  --quality-gap X     Max score gap for diversity candidates (default 0.15)" \
+        "  --stochastic       Sample masked actions throughout screening/confirmation" \
         "  --fixed LIST        Optional fixed eval sides (default none)" \
         "  --league DIRECTORY  Active league (default saved/kaggriculture_league_v6)" \
         "  --config FILE       INI updated by iterate (default config/kaggriculture.ini)" \
@@ -91,6 +93,7 @@ while (($#)); do
         --jsd-seeds) kag_jsd_seeds=$2; shift 2 ;;
         --profile-games) kag_profile_games=$2; shift 2 ;;
         --quality-gap) kag_quality_gap=$2; shift 2 ;;
+        --stochastic) kag_eval_deterministic=0; shift ;;
         --fixed) kag_fixed=$2; shift 2 ;;
         --league) kag_league=$2; shift 2 ;;
         --config) kag_config=$2; shift 2 ;;
@@ -99,6 +102,8 @@ while (($#)); do
         *) printf 'Unknown argument: %s\n' "$1" >&2; kag_usage >&2; exit 2 ;;
     esac
 done
+kag_eval_mode_args=()
+((kag_eval_deterministic)) || kag_eval_mode_args+=(--stochastic)
 
 kag_latest_run() {
     find checkpoints/kaggriculture -mindepth 2 -maxdepth 2 -type f \
@@ -300,6 +305,7 @@ if [[ -z $kag_reuse ]]; then
         "league.output=$kag_prescreen_raw" \
         "league.games=$kag_prescreen_games" \
         "league.min_agents=$kag_prescreen_agents" \
+        "base.eval_deterministic=$kag_eval_deterministic" \
         base.seed=6100
 
     kag_prescreen_scores="$kag_tmp/prescreen_scores.tsv"
@@ -362,7 +368,8 @@ if [[ -z $kag_reuse ]]; then
         --fixed "$kag_fixed" \
         --cache "$kag_league/payoffs.tsv" \
         --focal-count "${#kag_selected_paths[@]}" \
-        --output "$kag_output" "${kag_selected_paths[@]}" "$kag_league"
+        --output "$kag_output" "${kag_eval_mode_args[@]}" \
+        "${kag_selected_paths[@]}" "$kag_league"
 else
     for kag_required in manifest matrix ranking fixed; do
         [[ -f ${kag_output}_${kag_required}.tsv ]] || {
@@ -493,7 +500,7 @@ if ((kag_confirm_games)); then
         "${#kag_support_paths[@]}" "$kag_confirm_games"
     ./ocean/kaggriculture/eval_population.sh --games "$kag_confirm_games" \
         --jobs "$kag_jobs" --gpu-agents "$kag_gpu_agents" --fixed none \
-        --output "$kag_confirm_output" \
+        --output "$kag_confirm_output" "${kag_eval_mode_args[@]}" \
         "${kag_support_paths[@]}"
     kag_meta="${kag_output}_metagame.tsv"
     "$kag_solver" "${kag_confirm_output}_matrix.tsv" > "$kag_meta"
