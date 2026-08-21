@@ -205,6 +205,13 @@ liquidation. Scripted-opponent gains are excluded from the learner's dense
 reward, while terminal win/loss remains zero-sum. Unsold assets are written
 down on the terminal transition, making cumulative shaping equal final cash:
 
+Kaggriculture disables the generic transition reward clamp with
+`train.reward_clip=0`, so terminal cash and margin remain linear at every
+economic scale. `env.reward_market_impact` optionally values held and projected
+output at the conservative marginal quote after the farm's own supply reaches
+the market. At `1`, a large monoculture pile is no longer valued as if every
+unit could sell for the first unit's spot price; `0` restores the legacy mark.
+
 ```bash
 ./puffer train kaggriculture
 ```

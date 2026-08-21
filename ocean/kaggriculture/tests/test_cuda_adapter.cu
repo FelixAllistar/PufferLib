@@ -101,6 +101,7 @@ static void configure_case(Env* env, int case_id, obs_t* observations,
     env->reward_crop_value = 1.0f;
     env->reward_animal_value = 0.95f;
     env->reward_land_value = 1.0f;
+    env->reward_market_impact = (case_id & 2) ? 1.0f : 0.0f;
     env->reward_margin_scale = 0.37f;
     env->reward_inactivity_threshold = case_id == 0 ? 200.0f : 137.0f;
     env->reward_neglect_discount = 0.5f;

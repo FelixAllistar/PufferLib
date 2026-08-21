@@ -275,7 +275,10 @@ class PuffeRL:
         act = self.actions.transpose(0, 1).contiguous()
         val = self.values.T.contiguous()
         lp = self.logprobs.T.contiguous()
-        rew = self.rewards.T.contiguous().clamp(-1, 1)
+        rew = self.rewards.T.contiguous()
+        reward_clip = config['reward_clip']
+        if reward_clip > 0:
+            rew = rew.clamp(-reward_clip, reward_clip)
         ter = self.terminals.T.contiguous()
 
         P = Profile
@@ -513,4 +516,3 @@ def load_policy(args, vec):
         policy.load_state_dict(state_dict)
 
     return policy
-

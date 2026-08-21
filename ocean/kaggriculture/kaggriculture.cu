@@ -40,6 +40,7 @@ typedef struct {
     float reward_crop_value;
     float reward_animal_value;
     float reward_land_value;
+    float reward_market_impact;
     float reward_margin_scale;
     float reward_differential_scale;
     float reward_inactivity_threshold;
@@ -481,6 +482,7 @@ __global__ static void kag_cuda_reset_kernel(Env* shells, Env* matches,
     env->reward_crop_value = d_kag_cuda_config.reward_crop_value;
     env->reward_animal_value = d_kag_cuda_config.reward_animal_value;
     env->reward_land_value = d_kag_cuda_config.reward_land_value;
+    env->reward_market_impact = d_kag_cuda_config.reward_market_impact;
     env->reward_margin_scale = d_kag_cuda_config.reward_margin_scale;
     env->reward_differential_scale =
         d_kag_cuda_config.reward_differential_scale;
@@ -573,6 +575,7 @@ static void kag_cuda_load_config(Dict* kwargs) {
     h_kag_cuda_config.reward_crop_value = template_env.reward_crop_value;
     h_kag_cuda_config.reward_animal_value = template_env.reward_animal_value;
     h_kag_cuda_config.reward_land_value = template_env.reward_land_value;
+    h_kag_cuda_config.reward_market_impact = template_env.reward_market_impact;
     h_kag_cuda_config.reward_margin_scale = template_env.reward_margin_scale;
     h_kag_cuda_config.reward_differential_scale =
         template_env.reward_differential_scale;

@@ -88,6 +88,33 @@ static void assert_potential_schedule(void) {
     assert(fabsf(kag_player_potential(&env, 0) - expected) < 1e-4f);
 }
 
+static void assert_market_impact_mark(void) {
+    Env env = {0};
+    KGConfig config;
+    kg_config_default(&config);
+    kg_init(&env.game_storage, &config);
+    KGState* game = &env.game_storage;
+    int item = KG_ITEM_WHEAT;
+    game->market.inventory[item] = 10000;
+    kg_refresh_prices(game);
+
+    env.reward_market_impact = 0.0f;
+    float spot_mark = kag_product_mark(&env, item, 50.0f, 0.0f);
+    assert(fabsf(spot_mark - 50.0f * game->market.prices[item]) < 1e-5f);
+
+    env.reward_market_impact = 1.0f;
+    float impact_mark = kag_product_mark(&env, item, 50.0f, 0.0f);
+    assert(impact_mark < spot_mark);
+
+    /* With the whole pile marked at its terminal marginal quote, selling one
+     * unit for the current quote cannot reduce cash + marked inventory. */
+    float sale_quote = (float)game->market.prices[item];
+    game->market.inventory[item]++;
+    kg_refresh_prices(game);
+    float remainder_mark = kag_product_mark(&env, item, 49.0f, 0.0f);
+    assert(sale_quote + remainder_mark >= impact_mark);
+}
+
 static void assert_masks_match(const Env* env, int player_id) {
     const KGState* game = &env->game_storage;
     const KGPlayer* player = &game->players[player_id];
@@ -414,7 +441,11 @@ static void assert_discounted_economic_reward(void) {
     float terminal = kag_potential_shaping_reward(
         &env, 6000.0f, 6000.0f, 1);
     assert(fabsf(terminal + 0.2f) < 1e-6f);
+    /* Discounted shaping telescopes exactly when its gamma matches PPO's:
+     * initial phi is zero and terminal phi is forced back to zero. */
+    assert(fabsf(growth + env.reward_potential_gamma * terminal) < 1e-6f);
     assert(fabsf(kag_terminal_money_reward(&env, 6000) - 0.1f) < 1e-6f);
+    assert(fabsf(kag_terminal_money_reward(&env, 60000) - 1.9f) < 1e-6f);
 
     env.reward_potential_gamma = 0.0f;
     env.reward_potential_scale = 0.0001f;
@@ -427,6 +458,7 @@ int main(void) {
     assert_discounted_economic_reward();
     assert_rule_regressions();
     assert_potential_schedule();
+    assert_market_impact_mark();
     assert_policy_land_path();
     assert_compact_market_order();
     assert_policy_ablation_limits();

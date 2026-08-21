@@ -1776,3 +1776,69 @@ compare `potential_score`, `money`, and `gdp` together rather than ranking on
 cash alone. The terminal full potential intentionally bypasses the shaping
 liquidation ramp; otherwise `reward_liquidation_days` would erase unsold assets
 at the exact point where the score is reported.
+
+## 2026-08-21: uncapped economics and potential-value audit
+
+The generic trainer historically clamped every transition reward to `[-1, 1]`.
+That is now configurable as `train.reward_clip`; positive values retain the
+legacy symmetric clamp and zero disables it. Kaggriculture uses zero. PPO's
+advantages are standardized and the critic loss is return-variance normalized,
+so clipping was deleting economic ordering without being needed to set the
+optimizer scale. In particular, a linear terminal cash reward must continue to
+distinguish $100k, $200k, and larger farms.
+
+The economic objective and the dense heuristic now have deliberately separate
+roles:
+
+- terminal own cash is linear and unbounded through `reward_money_scale`;
+- terminal cash margin and the small win outcome add competitive pressure;
+- GDP remains diagnostic only, because rewarding transaction/production volume
+  directly admits churn and unsold-monoculture exploits;
+- asset math is a potential `Phi(s)`, applied only as
+  `gamma * Phi(next) - Phi(now)` with terminal `Phi=0`.
+
+With `reward_potential_gamma == train.gamma` and no downstream reward clipping,
+the last item is potential-based reward shaping: it telescopes out of the true
+discounted objective. The asset estimate therefore does not need to be a
+perfect appraisal to preserve the optimal cash policy. It only needs to be a
+useful credit-assignment prior. The trainer now rejects a positive shaping
+gamma that differs from `train.gamma`, because a mismatch would make the
+handwritten appraisal part of the objective again.
+
+### Market-impact-aware inventory value
+
+The legacy product mark was `units * current_spot_price`. This can give SELL the
+wrong sign: selling one unit raises market inventory, lowers the quote applied
+to every unsold unit, and can make cash plus marked inventory fall even though
+the sale earned real money. `reward_market_impact` blends that legacy mark
+toward a conservative marginal mark at the price after the farm's own held and
+projected supply reaches the market. With impact `1` and
+`reward_product_value <= 1`, selling a unit cannot be discouraged merely by
+repricing the remaining pile. The same projected-supply stack lowers the dense
+value of oversized monocultures and should improve product diversification.
+
+### Fitting a better potential from strong trajectories
+
+Top-player data should be used for *value regression*, not inverse reward
+learning: the real objective (terminal cash) is already known. The useful
+offline target at state `s_t` is the discounted terminal profit or remaining
+cash return. A practical first model is a small fixed linear/ridge potential
+over state summaries that are cheap in the CUDA environment:
+
+- cash and remaining time;
+- per-product held units and market-impact liquidation value;
+- seeds by crop;
+- live crops by type, age, health, current yield, and remaining production
+  windows;
+- animals by type, health, held yield, and remaining production opportunities;
+- labor, unlocked/productive land, and current market prices/shop demand;
+- time interactions for assets that cannot pay back before the episode ends.
+
+Generate complete trajectories from the strongest public/native bots and
+learned champions, split validation by game seed and policy, fit the future
+cash target, then freeze the fitted coefficients. Applying the learned scalar
+only through `gamma * Phi(next) - Phi(now)` keeps it a shaping prior even when
+its predictions are imperfect. A tiny linear model is preferable for the
+first iteration because it is auditable, monotonic constraints are possible,
+and its per-step GPU cost is negligible. A neural learned potential is only
+worth adding if the held-out value/ranking error materially beats this baseline.

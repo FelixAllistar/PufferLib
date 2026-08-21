@@ -319,6 +319,7 @@ typedef struct {
     float replay_ratio;
     long total_timesteps;
     float max_grad_norm;
+    float reward_clip;
     float clip_coef;
     float vf_clip_coef;
     float vf_coef;
@@ -1478,9 +1479,16 @@ void train_impl(PuffeRL& pufferl, RolloutBuf* src_arg) {
     transpose_102<<<grid_size(T * B * mask_c), BLOCK_SIZE, 0, train_stream>>>(
         rollouts.action_mask.data, src.action_mask.data, T, B, mask_c);
 
-    // We hard-clamp rewards to -1, 1. Our envs are mostly designed to respect this range
-    clamp_precision_kernel<<<grid_size(numel(rollouts.rewards.shape)), BLOCK_SIZE, 0, train_stream>>>(
-        rollouts.rewards.data, -1.0f, 1.0f, numel(rollouts.rewards.shape));
+    // Most legacy environments are authored for [-1, 1], but clipping is
+    // destructive for scale-sensitive objectives such as final cash: once a
+    // terminal reward reaches the cap, strictly better outcomes become
+    // indistinguishable. Policy advantages and critic returns are normalized
+    // downstream, so environments can disable this safely with reward_clip=0.
+    if (hypers.reward_clip > 0.0f) {
+        clamp_precision_kernel<<<grid_size(numel(rollouts.rewards.shape)), BLOCK_SIZE, 0, train_stream>>>(
+            rollouts.rewards.data, -hypers.reward_clip, hypers.reward_clip,
+            numel(rollouts.rewards.shape));
+    }
 
     // Treat rollout data as on-policy for advantage. PPO clipping still uses
     // behavior logprobs captured by the actor snapshot.
@@ -1991,6 +1999,7 @@ PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx) {
         .replay_ratio = puf_ini_get_float(ini, "train", "replay_ratio"),
         .total_timesteps = puf_ini_get_long(ini, "train", "total_timesteps"),
         .max_grad_norm = puf_ini_get_float(ini, "train", "max_grad_norm"),
+        .reward_clip = puf_ini_get_float(ini, "train", "reward_clip"),
         .clip_coef = puf_ini_get_float(ini, "train", "clip_coef"),
         .vf_clip_coef = puf_ini_get_float(ini, "train", "vf_clip_coef"),
         .vf_coef = puf_ini_get_float(ini, "train", "vf_coef"),
@@ -2020,6 +2029,22 @@ PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx) {
         .num_threads = puf_ini_get_int(ini, "vec", "num_threads"),
         .seed = puf_ini_get_int(ini, "base", "seed"),
     };
+
+    /* Discount-consistent potential shaping is policy-invariant only when
+     * its gamma matches the learner's return gamma. Refuse a silent mismatch
+     * for Kaggriculture; it would turn the heuristic asset mark into part of
+     * the objective instead of pure credit assignment. */
+    if (strcmp(PUFFER_ENV_NAME, "kaggriculture") == 0) {
+        float potential_gamma = puf_ini_get_float(
+            ini, "env", "reward_potential_gamma");
+        if (potential_gamma > 0.0f
+                && fabsf(potential_gamma - hypers.gamma) > 1.0e-6f) {
+            fprintf(stderr, "config error: env.reward_potential_gamma=%g "
+                "must equal train.gamma=%g\n",
+                potential_gamma, hypers.gamma);
+            exit(1);
+        }
+    }
 
     Dict vec_kwargs = {0};
     dict_copy(&vec_kwargs, puf_ini_section(ini, "vec", 0));
@@ -2323,6 +2348,8 @@ PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx) {
     // (float: 4, bf16: 8). See puff_advantage in algo.cu.
     assert(hypers.horizon % ADV_VEC_WIDTH == 0
         && "train.horizon must be a multiple of ADV_VEC_WIDTH (4 float / 8 bf16)");
+    assert(hypers.reward_clip >= 0.0f
+        && "train.reward_clip must be nonnegative (0 disables clipping)");
 
     // Profile events: fixed train markers + one block of 3*H rollout events.
     int H = hypers.horizon;

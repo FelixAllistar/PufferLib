@@ -259,6 +259,12 @@ struct Env {
     float reward_crop_value;
     float reward_animal_value;
     float reward_land_value;
+    /* Blend held/future product marks from the current spot price toward the
+     * conservative price after the player's own projected supply is sold.
+     * This prevents a large pile from being valued as if every unit could be
+     * sold at the first unit's quote. 0 preserves the legacy spot mark; 1
+     * uses the fully market-impact-aware marginal mark. */
+    float reward_market_impact;
     float reward_margin_scale;
     float reward_differential_scale;
     float reward_inactivity_threshold;
@@ -320,12 +326,36 @@ KG_HD static inline int kag_abs(int value) {
     return value < 0 ? -value : value;
 }
 
+KG_HD static inline float kag_product_mark(const Env* env, int product,
+        float units, float prior_projected_units) {
+    if (units <= 0.0f) return 0.0f;
+    const KGState* game = &env->game_storage;
+    float impact = env->reward_market_impact;
+    if (impact < 0.0f) impact = 0.0f;
+    if (impact > 1.0f) impact = 1.0f;
+    float spot = (float)game->market.prices[product];
+    if (impact <= 0.0f) return units * spot;
+
+    /* Use the quote after all earlier projected units and this block have
+     * reached the market. This is deliberately conservative rather than an
+     * average-price fantasy. It also gives selling a stable sign: when
+     * product_value <= 1, converting one marked unit to cash cannot become
+     * unattractive merely because the remaining pile was repriced. */
+    int projected_supply = (int)ceilf(prior_projected_units + units);
+    int marginal_inventory = game->market.inventory[product]
+        + projected_supply;
+    float marginal = (float)kg_market_price(product, marginal_inventory);
+    float marked_price = spot + impact * (marginal - spot);
+    return units * marked_price;
+}
+
 KG_HD static inline float kag_player_potential_scaled(const Env* env,
         int player_id, int apply_liquidation) {
     const KGState* game = &env->game_storage;
     const KGPlayer* player = &game->players[player_id];
     float value = (float)player->money;
     float assets = 0.0f;
+    float product_units[KG_NUM_PRODUCTS] = {0.0f};
     float asset_scale = 1.0f;
     if (apply_liquidation) {
         int liquidation_steps = (int)(env->reward_liquidation_days
@@ -341,8 +371,7 @@ KG_HD static inline float kag_player_potential_scaled(const Env* env,
             * env->reward_seed_value;
     }
     for (int item = 0; item < KG_NUM_PRODUCTS; item++) {
-        assets += player->shed[item] * game->market.prices[item]
-            * env->reward_product_value;
+        product_units[item] += (float)player->shed[item];
     }
     for (int animal = 0; animal < KG_NUM_ANIMALS; animal++) {
         assets += player->shed[KG_ITEM_GOOSE + animal]
@@ -357,8 +386,7 @@ KG_HD static inline float kag_player_potential_scaled(const Env* env,
             int item = held->inventory_order[order];
             int count = held->inventory[item];
             if (item < KG_NUM_PRODUCTS) {
-                assets += count * game->market.prices[item]
-                    * env->reward_product_value;
+                product_units[item] += (float)count;
             } else {
                 int animal = item - KG_ITEM_GOOSE;
                 if ((unsigned)animal < KG_NUM_ANIMALS) {
@@ -368,32 +396,18 @@ KG_HD static inline float kag_player_potential_scaled(const Env* env,
             }
         }
     }
+    /* Harvestable yield is real product supply even before a unit carries it
+     * to the shed. Aggregate all locations before marking it so one large
+     * inventory receives one coherent market-impact haircut. */
     for (int word = 0; word < KG_TILE_WORDS; word++) {
         uint64_t plants = player->plant_bits[word];
         while (plants) {
             int tile = word * 64 + kg_ctz64(plants);
             const KGTile* crop_tile = &player->tiles[tile];
-            /* Rewarding only a previous neglect miss makes WATER payoff zero
-             * for an already-healthy plant, which is why the model waters at
-             * ~50% coverage: it has no reason to keep a good plant watered.
-             * Discount on a missed tick instead, so watering today always
-             * carries the value-protection signal. */
             float health = crop_tile->watered_today
                 ? 1.0f : env->reward_neglect_discount;
-            /* The planted field is worth its eventual output, not its seed
-             * cost. This makes PLANT and WATER move potential immediately
-             * instead of hiding the payout behind the harvest. Neglect still
-             * devalues the field through the health multiplier. */
-            const KGCropDef* plant_def = &KG_CROP_DEFS[crop_tile->crop];
-            int expected = plant_def->max_yield
-                * game->market.prices[crop_tile->crop];
-            assets += (float)expected * env->reward_crop_value * health;
-            /* Yield is already real inventory held on the tile. Valuing it
-             * gives WATER/CARE their economic credit before HARVEST converts
-             * it into carried inventory; the conversion itself stays neutral. */
-            assets += crop_tile->yield_units
-                * game->market.prices[crop_tile->crop]
-                * env->reward_product_value * health;
+            product_units[crop_tile->crop] +=
+                crop_tile->yield_units * health;
             plants &= plants - 1;
         }
         uint64_t animals = player->animal_bits[word];
@@ -406,16 +420,52 @@ KG_HD static inline float kag_player_potential_scaled(const Env* env,
                  * full, skipping a feed devalues it. */
                 float health = animal_tile->fed_today
                     ? 1.0f : env->reward_neglect_discount;
-                /* The occupied structure is worth its expected production,
-                 * not its purchase cost. This makes BUILD/PLACE and FEED
-                 * move potential immediately, mirroring the crop change. */
                 const KGAnimalDef* anim_def = &KG_ANIMAL_DEFS[animal];
-                int expected = anim_def->max_held
-                    * game->market.prices[anim_def->product];
-                assets += (float)expected * env->reward_animal_value * health;
-                assets += animal_tile->yield_units
-                    * game->market.prices[anim_def->product]
-                    * env->reward_product_value * health;
+                product_units[anim_def->product] +=
+                    animal_tile->yield_units * health;
+            }
+            animals &= animals - 1;
+        }
+    }
+
+    for (int item = 0; item < KG_NUM_PRODUCTS; item++) {
+        assets += kag_product_mark(env, item, product_units[item], 0.0f)
+            * env->reward_product_value;
+    }
+
+    /* Productive fields/animals are capital proxies used for dense credit,
+     * separate from already-realized yield above. Stack their expected output
+     * behind held supply so a monoculture cannot mark every future unit at the
+     * first unit's spot quote. This remains potential-based shaping, not a
+     * terminal asset objective. */
+    for (int word = 0; word < KG_TILE_WORDS; word++) {
+        uint64_t plants = player->plant_bits[word];
+        while (plants) {
+            int tile = word * 64 + kg_ctz64(plants);
+            const KGTile* crop_tile = &player->tiles[tile];
+            float health = crop_tile->watered_today
+                ? 1.0f : env->reward_neglect_discount;
+            float expected = KG_CROP_DEFS[crop_tile->crop].max_yield * health;
+            assets += kag_product_mark(env, crop_tile->crop, expected,
+                    product_units[crop_tile->crop])
+                * env->reward_crop_value;
+            product_units[crop_tile->crop] += expected;
+            plants &= plants - 1;
+        }
+        uint64_t animals = player->animal_bits[word];
+        while (animals) {
+            int tile = word * 64 + kg_ctz64(animals);
+            const KGTile* animal_tile = &player->tiles[tile];
+            int animal = animal_tile->animal;
+            if (animal >= 0) {
+                const KGAnimalDef* anim_def = &KG_ANIMAL_DEFS[animal];
+                float health = animal_tile->fed_today
+                    ? 1.0f : env->reward_neglect_discount;
+                float expected = anim_def->max_held * health;
+                assets += kag_product_mark(env, anim_def->product, expected,
+                        product_units[anim_def->product])
+                    * env->reward_animal_value;
+                product_units[anim_def->product] += expected;
             }
             animals &= animals - 1;
         }
@@ -2215,6 +2265,8 @@ void puf_init(Env* env, Dict* kwargs) {
     env->reward_crop_value = (float)dict_get(kwargs, "reward_crop_value");
     env->reward_animal_value = (float)dict_get(kwargs, "reward_animal_value");
     env->reward_land_value = (float)dict_get(kwargs, "reward_land_value");
+    env->reward_market_impact = (float)dict_get(
+        kwargs, "reward_market_impact");
     env->reward_margin_scale = (float)dict_get(kwargs,
         "reward_margin_scale");
     env->reward_differential_scale = (float)dict_get(kwargs,
