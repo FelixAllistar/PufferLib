@@ -47,6 +47,7 @@ typedef struct {
     float reward_neglect_discount;
     float reward_liquidation_days;
     float reward_productive_action;
+    float reward_production_scale;
     float reward_inactivity;
     float reward_neglect_death;
     float bot_opponent_fraction;
@@ -203,6 +204,8 @@ __device__ static void kag_cuda_transition(Env* env, Env* shells,
     float productive_credit[KG_NUM_PLAYERS] = {0.0f, 0.0f};
     uint32_t before_neglect[KG_NUM_PLAYERS] = {
         game->neglect_deaths[0], game->neglect_deaths[1]};
+    float before_production_value[KG_NUM_PLAYERS] = {
+        game->production_value[0], game->production_value[1]};
 
     for (int player = 0; player < KG_NUM_PLAYERS; player++) {
         kag_decode_action(&actions[player], &env->agents[player], game, player);
@@ -233,6 +236,8 @@ __device__ static void kag_cuda_transition(Env* env, Env* shells,
         float reward = kag_potential_shaping_reward(env,
                 before_potential[player], env->potential[player], done)
             + productive_credit[player] * env->reward_productive_action;
+        reward += kag_realized_production_reward(env,
+            before_production_value[player], game->production_value[player]);
         reward -= (game->neglect_deaths[player] - before_neglect[player])
             * env->reward_neglect_death;
         reward += player == 0 ? differential : -differential;
@@ -491,6 +496,7 @@ __global__ static void kag_cuda_reset_kernel(Env* shells, Env* matches,
     env->reward_neglect_discount = d_kag_cuda_config.reward_neglect_discount;
     env->reward_liquidation_days = d_kag_cuda_config.reward_liquidation_days;
     env->reward_productive_action = d_kag_cuda_config.reward_productive_action;
+    env->reward_production_scale = d_kag_cuda_config.reward_production_scale;
     env->reward_inactivity = d_kag_cuda_config.reward_inactivity;
     env->reward_neglect_death = d_kag_cuda_config.reward_neglect_death;
     env->bot_opponent_fraction = d_kag_cuda_config.bot_opponent_fraction;
@@ -584,6 +590,7 @@ static void kag_cuda_load_config(Dict* kwargs) {
     h_kag_cuda_config.reward_neglect_discount = template_env.reward_neglect_discount;
     h_kag_cuda_config.reward_liquidation_days = template_env.reward_liquidation_days;
     h_kag_cuda_config.reward_productive_action = template_env.reward_productive_action;
+    h_kag_cuda_config.reward_production_scale = template_env.reward_production_scale;
     h_kag_cuda_config.reward_inactivity = template_env.reward_inactivity;
     h_kag_cuda_config.reward_neglect_death = template_env.reward_neglect_death;
     h_kag_cuda_config.bot_opponent_fraction = template_env.bot_opponent_fraction;

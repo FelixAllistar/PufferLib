@@ -107,6 +107,8 @@ static void configure_case(Env* env, int case_id, obs_t* observations,
     env->reward_neglect_discount = 0.5f;
     env->reward_liquidation_days = 6.0f;
     env->reward_productive_action = case_id & 1 ? 0.0002f : 0.0f;
+    /* Exercise the optional realized-production reward on half the cases. */
+    env->reward_production_scale = case_id & 1 ? 0.07f : 0.0f;
     env->reward_inactivity = 3.0f;
     env->reward_neglect_death = 0.05f;
     env->bot_first = case_id & 1;

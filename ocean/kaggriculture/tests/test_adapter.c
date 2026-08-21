@@ -103,16 +103,111 @@ static void assert_market_impact_mark(void) {
     assert(fabsf(spot_mark - 50.0f * game->market.prices[item]) < 1e-5f);
 
     env.reward_market_impact = 1.0f;
+    /* A one-unit liquid inventory remains exactly executable. */
+    for (int product = 0; product < KG_NUM_PRODUCTS; product++) {
+        game->market.inventory[product] = KG_MARKET_DEFS[product].i0;
+        kg_refresh_prices(game);
+        assert(fabsf(kag_product_mark(&env, product, 1.0f, 0.0f)
+            - (float)game->market.prices[product]) < 1e-5f);
+    }
+    game->market.inventory[item] = 10000;
+    kg_refresh_prices(game);
     float impact_mark = kag_product_mark(&env, item, 50.0f, 0.0f);
     assert(impact_mark < spot_mark);
 
-    /* With the whole pile marked at its terminal marginal quote, selling one
-     * unit for the current quote cannot reduce cash + marked inventory. */
-    float sale_quote = (float)game->market.prices[item];
-    game->market.inventory[item]++;
+    const int offsets[] = {-200, -10, 0, 200};
+    const int piles[] = {2, 17, 128, 2048};
+    for (int product = 0; product < KG_NUM_PRODUCTS; product++) {
+        for (int oi = 0; oi < 4; oi++) {
+            for (int pi = 0; pi < 4; pi++) {
+                int inventory = KG_MARKET_DEFS[product].i0 + offsets[oi];
+                int units = piles[pi];
+                game->market.inventory[product] = inventory;
+                kg_refresh_prices(game);
+                float mark = kag_product_mark(&env, product,
+                    (float)units, 0.0f);
+                double brute = 0.0;
+                for (int unit = 0; unit < units; unit++) {
+                    brute += kg_market_price(product, inventory + unit);
+                }
+                /* The analytic curve is a conservative approximation to the
+                 * exact discrete sequence, never the old final quote times N. */
+                assert(mark >= (float)units - 1e-3f);
+                assert(mark <= (float)brute + 1e-2f);
+
+                float quote = (float)game->market.prices[product];
+                game->market.inventory[product]++;
+                kg_refresh_prices(game);
+                float remainder = kag_product_mark(&env, product,
+                    (float)(units - 1), 0.0f);
+                if (quote + remainder + 1.0f < mark) {
+                    fprintf(stderr, "mark decomposition product=%d inventory=%d "
+                        "units=%d quote=%g remainder=%g mark=%g\n",
+                        product, inventory, units, quote, remainder, mark);
+                    assert(quote + remainder + 1.0f >= mark);
+                }
+            }
+        }
+
+        /* Selling one held unit advances inventory and removes one prior unit,
+         * leaving the mark of later projected production unchanged. */
+        game->market.inventory[product] = KG_MARKET_DEFS[product].i0;
+        kg_refresh_prices(game);
+        float future_before = kag_product_mark(&env, product, 20.0f, 10.0f);
+        game->market.inventory[product]++;
+        kg_refresh_prices(game);
+        float future_after = kag_product_mark(&env, product, 20.0f, 9.0f);
+        assert(fabsf(future_before - future_after) < 1e-4f);
+    }
+
+    /* The steep strawberry curve made the old terminal-marginal mark almost
+     * worthless. Cumulative revenue must retain the valuable early units. */
+    game->market.inventory[KG_ITEM_STRAWBERRY] =
+        KG_MARKET_DEFS[KG_ITEM_STRAWBERRY].i0;
     kg_refresh_prices(game);
-    float remainder_mark = kag_product_mark(&env, item, 49.0f, 0.0f);
-    assert(sale_quote + remainder_mark >= impact_mark);
+    float cumulative = kag_product_mark(&env, KG_ITEM_STRAWBERRY,
+        100.0f, 0.0f);
+    float terminal_marginal = 100.0f * kg_market_price(KG_ITEM_STRAWBERRY,
+        KG_MARKET_DEFS[KG_ITEM_STRAWBERRY].i0 + 100);
+    assert(cumulative > 10.0f * terminal_marginal);
+}
+
+static void assert_reward_asset_semantics(void) {
+    Env env = {0};
+    KGConfig config;
+    kg_config_default(&config);
+    kg_init(&env.game_storage, &config);
+    env.reward_market_impact = 1.0f;
+    env.reward_product_value = 1.0f;
+    env.reward_crop_value = 0.0f;
+    env.reward_animal_value = 1.0f;
+    env.reward_land_value = 1.0f;
+    env.reward_neglect_discount = 1.0f;
+    env.reward_liquidation_days = 6.0f;
+    KGPlayer* player = &env.game_storage.players[0];
+
+    /* Liquid yield has the same mark before and after HARVEST, while land is
+     * no longer erased by the generic inventory liquidation schedule. */
+    env.game_storage.step = config.episode_steps - config.turns_per_day;
+    env.game_storage.day = 29;
+    kg_new_plant(player, 0, KG_WHEAT, 0, config.turns_per_day);
+    player->tiles[0].watered_today = 1;
+    player->tiles[0].yield_units = 3;
+    float field_value = kag_player_potential(&env, 0);
+    kg_set_player_tile(player, 0, KG_TILE_EMPTY);
+    player->shed[KG_ITEM_WHEAT] = 3;
+    float held_value = kag_player_potential(&env, 0);
+    assert(fabsf(field_value - held_value) < 1e-3f);
+
+    player->shed[KG_ITEM_WHEAT] = 0;
+    player->money = 2000;
+    player->unlocked_mask = 3;
+    assert(fabsf(kag_player_potential(&env, 0) - 3000.0f) < 1e-3f);
+
+    env.reward_production_scale = 0.02f;
+    assert(fabsf(kag_realized_production_reward(&env, 100.0f, 400.0f)
+        - 0.002f) < 1e-7f);
+    assert(kag_realized_production_reward(&env, 400.0f, 400.0f) == 0.0f);
 }
 
 static void assert_masks_match(const Env* env, int player_id) {
@@ -459,6 +554,7 @@ int main(void) {
     assert_rule_regressions();
     assert_potential_schedule();
     assert_market_impact_mark();
+    assert_reward_asset_semantics();
     assert_policy_land_path();
     assert_compact_market_order();
     assert_policy_ablation_limits();
