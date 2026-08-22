@@ -428,6 +428,7 @@ def main() -> int:
 
     fit: dict[str, Any] = {
         "schema_version": 1,
+        "input_archives": [path.name for path in paths],
         "accepted_player_trajectories": accepted,
         "distinct_agents": len([name for name in agents if name]),
         "agent_trajectory_counts": dict(agents.most_common()),

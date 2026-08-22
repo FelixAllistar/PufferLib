@@ -268,6 +268,8 @@ ranges alongside the audit JSON. Unplanted seeds and unplaced animals are not
 assigned speculative lifetime output, which prevents inventory hoarding from
 looking like a productive farm. Current market prices enter the value directly,
 so carrot, tomato, and egg become attractive only in their profitable games.
+The audited six-day `1.32.7` fit used for the first experiment is preserved in
+`elite_fits/1.32.7_2026-08-16_2026-08-21.{json,ini,sweep.ini}`.
 
 ### Restartable elite opponent factory
 
