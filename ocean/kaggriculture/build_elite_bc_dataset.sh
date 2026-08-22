@@ -9,6 +9,20 @@ repo_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
 data_root=${KAG_ELITE_DATA_ROOT:-/workspace/elite_replays}
 kaggle_bin=${KAGGLE_BIN:-/root/.local/bin/kaggle}
 keep_shards=${KAG_ELITE_KEEP_SHARDS:-0}
+python_bin=${KAG_ELITE_PYTHON:-}
+
+if [[ -z "$python_bin" ]]; then
+    for candidate in /venv/main/bin/python python3; do
+        if "$candidate" -c 'import numpy' >/dev/null 2>&1; then
+            python_bin=$candidate
+            break
+        fi
+    done
+fi
+if [[ -z "$python_bin" ]]; then
+    echo "no Python interpreter with NumPy found; set KAG_ELITE_PYTHON" >&2
+    exit 1
+fi
 
 if (($#)); then
     slugs=("$@")
@@ -44,7 +58,7 @@ run_shard() {
         return 1
     fi
     echo "IMPORT $archive"
-    python3 "$repo_root/ocean/kaggriculture/import_elite_replays.py" \
+    "$python_bin" "$repo_root/ocean/kaggriculture/import_elite_replays.py" \
         --output "$output" --minimum-version 1.32.7 --players both "$archive"
     # Raw downloads are reproducible and large; keep the compact BC shard and
     # its audit/manifest instead.
@@ -77,7 +91,8 @@ for slug in "${slugs[@]}"; do
     shards+=("$data_root/shards/$slug.bc")
 done
 merged="$data_root/kaggriculture_elite_1.32.7.bc"
-python3 "$repo_root/ocean/kaggriculture/merge_bc_datasets.py" "$merged" "${shards[@]}"
+"$python_bin" "$repo_root/ocean/kaggriculture/merge_bc_datasets.py" \
+    "$merged" "${shards[@]}"
 
 # Preserve trajectory order alongside the merged section-major dataset. This
 # sidecar supplies final-money targets for the future-value fit.
