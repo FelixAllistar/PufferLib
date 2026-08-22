@@ -7,6 +7,7 @@ kag_games=20
 kag_jobs=4
 kag_gpu_agents=${KAG_GPU_AGENTS:-64}
 kag_output=logs/kaggriculture/policy_profile_gpu
+kag_eval_deterministic=0
 kag_inputs=()
 
 usage() {
@@ -16,6 +17,8 @@ usage() {
         "  --jobs N           Concurrent CUDA evaluators (default 4)" \
         "  --gpu-agents N     Agents per evaluator (default 64)" \
         "  --output PREFIX    Output TSV prefix" \
+        "  --deterministic    Use masked argmax actions" \
+        "  --stochastic       Sample masked actions (default)" \
         "The report is GPU-native and records economic/maintenance counters."
 }
 
@@ -25,6 +28,8 @@ while (($#)); do
         --jobs) kag_jobs=$2; shift 2 ;;
         --gpu-agents) kag_gpu_agents=$2; shift 2 ;;
         --output) kag_output=$2; shift 2 ;;
+        --deterministic) kag_eval_deterministic=1; shift ;;
+        --stochastic) kag_eval_deterministic=0; shift ;;
         -h|--help) usage; exit 0 ;;
         --*) printf 'Unknown option: %s\n' "$1" >&2; usage >&2; exit 2 ;;
         *) kag_inputs+=("$1"); shift ;;
@@ -84,10 +89,19 @@ json_value() {
 
 profile_one() {
     local label=$1 path=${kag_paths["$1"]} text json completed
+    local architecture_args=()
+    if [[ $label =~ _([0-9]+)x([0-9]+)_ ]]; then
+        architecture_args+=(
+            "policy.hidden_size=${BASH_REMATCH[1]}"
+            "policy.num_layers=${BASH_REMATCH[2]}"
+        )
+    fi
     if ! text=$(./puffer eval_bot kaggriculture \
             "base.eval_episodes=$((kag_games / 2))" \
             "base.eval_agents=$kag_gpu_agents" \
+            "base.eval_deterministic=$kag_eval_deterministic" \
             "base.load_model_path=$path" \
+            "${architecture_args[@]}" \
             env.bot_opponent_fraction=1 env.bot_pass_fraction=0 \
             env.bot_rules_fraction=1 env.bot_script_fraction=0 \
             env.bot_adaptive_fraction=0 selfplay.enabled=0 \
@@ -102,7 +116,7 @@ profile_one() {
         "$label" "${kag_roles[$label]:-unassigned}" "${kag_weights[$label]:-0}" \
         "$completed" \
         "$(json_value "$json" env/perf)" "$(json_value "$json" env/draw_rate)" \
-        "$(json_value "$json" env/potential_score)" "$(json_value "$json" env/opponent_potential)" \
+        "$(json_value "$json" env/future_value_score)" "$(json_value "$json" env/opponent_future_value_score)" \
         "$(json_value "$json" env/money)" "$(json_value "$json" env/opponent_money)" \
         "$(json_value "$json" env/gdp)" "$(json_value "$json" env/opponent_gdp)" \
         "$(json_value "$json" env/production_units)" "$(json_value "$json" env/opponent_production_units)" \
@@ -177,7 +191,7 @@ done
 wait
 
 {
-    printf 'policy\trole\tbase_weight\tgames_completed\twin_rate\tdraw_rate\tpotential_score\topponent_potential\tmean_money\topponent_money\tgdp\topponent_gdp\tproduction_units\topponent_production_units\tcrop_production_units\tanimal_production_units\tsuccessful_plants\tsuccessful_animal_places\tsold_units\tsales_revenue\tbought_units\tpurchase_spend\tcrop_sold_units\tcrop_sales_revenue\tanimal_product_sold_units\tanimal_product_sales_revenue\tstrawberry_sold_units\tstrawberry_sales_revenue\tmilk_sold_units\tmilk_sales_revenue\tending_shed_units\tending_shed_value\tcarrot_opportunity_fraction\tcarrot_opportunity_no_production_price\tcarrot_opportunity_response\tcarrot_opportunity_production\tcarrot_nonopportunity_production\tcarrot_opportunity_sold_units\tcarrot_opportunity_sales_revenue\tcarrot_opportunity_sale_price\ttomato_opportunity_fraction\ttomato_opportunity_no_production_price\ttomato_opportunity_response\ttomato_opportunity_production\ttomato_nonopportunity_production\ttomato_opportunity_sold_units\ttomato_opportunity_sales_revenue\ttomato_opportunity_sale_price\tegg_opportunity_fraction\tegg_opportunity_no_production_price\tegg_opportunity_response\tegg_opportunity_production\tegg_nonopportunity_production\tegg_opportunity_sold_units\tegg_opportunity_sales_revenue\tegg_opportunity_sale_price\tstrawberry_units\topponent_strawberry_units\tstrawberry_value\topponent_strawberry_value\tmilk_units\topponent_milk_units\tmilk_value\topponent_milk_value\twater_coverage\tneglect_deaths\tplanting_day_deaths\tplants_alive\tanimals_alive\tweeds\tland_purchases\tproductive_extra_tiles\tanimal_place_actions\tanimal_feed_actions\tanimal_care_actions\tanimal_harvest_actions\tfertilizer_collect_actions\torders_per_turn\tbuy_orders\tsell_orders\thire_orders\n'
+    printf 'policy\trole\tbase_weight\tgames_completed\twin_rate\tdraw_rate\tfuture_value_score\topponent_future_value_score\tmean_money\topponent_money\tgdp\topponent_gdp\tproduction_units\topponent_production_units\tcrop_production_units\tanimal_production_units\tsuccessful_plants\tsuccessful_animal_places\tsold_units\tsales_revenue\tbought_units\tpurchase_spend\tcrop_sold_units\tcrop_sales_revenue\tanimal_product_sold_units\tanimal_product_sales_revenue\tstrawberry_sold_units\tstrawberry_sales_revenue\tmilk_sold_units\tmilk_sales_revenue\tending_shed_units\tending_shed_value\tcarrot_opportunity_fraction\tcarrot_opportunity_no_production_price\tcarrot_opportunity_response\tcarrot_opportunity_production\tcarrot_nonopportunity_production\tcarrot_opportunity_sold_units\tcarrot_opportunity_sales_revenue\tcarrot_opportunity_sale_price\ttomato_opportunity_fraction\ttomato_opportunity_no_production_price\ttomato_opportunity_response\ttomato_opportunity_production\ttomato_nonopportunity_production\ttomato_opportunity_sold_units\ttomato_opportunity_sales_revenue\ttomato_opportunity_sale_price\tegg_opportunity_fraction\tegg_opportunity_no_production_price\tegg_opportunity_response\tegg_opportunity_production\tegg_nonopportunity_production\tegg_opportunity_sold_units\tegg_opportunity_sales_revenue\tegg_opportunity_sale_price\tstrawberry_units\topponent_strawberry_units\tstrawberry_value\topponent_strawberry_value\tmilk_units\topponent_milk_units\tmilk_value\topponent_milk_value\twater_coverage\tneglect_deaths\tplanting_day_deaths\tplants_alive\tanimals_alive\tweeds\tland_purchases\tproductive_extra_tiles\tanimal_place_actions\tanimal_feed_actions\tanimal_care_actions\tanimal_harvest_actions\tfertilizer_collect_actions\torders_per_turn\tbuy_orders\tsell_orders\thire_orders\n'
     for label in "${kag_order[@]}"; do cat "$kag_tmp/$label.tsv"; done
 } > "${kag_output}.tsv"
 printf 'Wrote %s.tsv\n' "$kag_output"
