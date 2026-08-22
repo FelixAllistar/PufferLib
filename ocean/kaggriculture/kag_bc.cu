@@ -55,6 +55,8 @@ typedef struct {
     uint32_t steps;
 } KagBCHeader;
 
+#define KAG_BC_STATS 16
+
 __device__ __forceinline__ bool kag_bc_head_active(
         const float* actions, int action_base, int head) {
     if (head < PUFFER_CONDITIONAL_PREFIX_HEADS) return true;
@@ -79,8 +81,9 @@ __device__ __forceinline__ bool kag_bc_head_active(
 
 /* Cross-entropy on conditionally reached expert heads. Padded rows use an
  * expert action of -1. Each four-float stats group is raw loss, active heads,
- * correct heads, exact rows: all/opening/post-opening. Opening rows may carry
- * extra optimization weight without contaminating the reported accuracies. */
+ * correct heads, exact rows: all/opening/post-opening/root. Opening and root
+ * rows may carry extra optimization weight without contaminating the reported
+ * accuracies. */
 __global__ void kag_bc_loss_kernel(
         const precision_t* __restrict__ logits,   // (B, fused_cols)
         const float* __restrict__ expert,         // (B, num_atns)
@@ -90,7 +93,7 @@ __global__ void kag_bc_loss_kernel(
         const int* __restrict__ act_sizes,
         int rows, float valid_weight, int A_total, int num_atns,
         int mask_stride, int sequence_steps, int opening_steps,
-        float opening_weight) {
+        float opening_weight, float root_weight) {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
     if (idx >= rows || (int)expert[idx * num_atns] < 0) return;
     int logits_base = idx * (A_total + 1);
@@ -100,8 +103,11 @@ __global__ void kag_bc_loss_kernel(
     int active = 0;
     int correct = 0;
     int exact = 1;
-    int opening = idx % sequence_steps < opening_steps;
-    float row_weight = opening ? opening_weight : 1.0f;
+    int sequence_step = idx % sequence_steps;
+    int opening = sequence_step < opening_steps;
+    int root = sequence_step == 0;
+    float row_weight = root ? root_weight
+        : (opening ? opening_weight : 1.0f);
     for (int h = 0; h < num_atns; h++) {
         int A = act_sizes[h];
         int expert_action = (int)expert[idx * num_atns + h];
@@ -164,6 +170,12 @@ __global__ void kag_bc_loss_kernel(
         atomicAdd(stats + group + 1, (float)active);
         atomicAdd(stats + group + 2, (float)correct);
         atomicAdd(stats + group + 3, exact ? 1.0f : 0.0f);
+        if (root) {
+            atomicAdd(stats + 12, loss);
+            atomicAdd(stats + 13, (float)active);
+            atomicAdd(stats + 14, (float)correct);
+            atomicAdd(stats + 15, exact ? 1.0f : 0.0f);
+        }
     }
 }
 
@@ -699,6 +711,7 @@ static int bc_train(Ini* ini) {
     float anchor_l2 = (float)puf_ini_get(ini, "bc", "anchor_l2");
     int opening_steps = (int)puf_ini_get(ini, "bc", "opening_steps");
     float opening_weight = (float)puf_ini_get(ini, "bc", "opening_weight");
+    float root_weight = (float)puf_ini_get(ini, "bc", "root_weight");
     /* Zero is an intentional conversion-only pass (for example, zeroing a
      * newly assigned observation column in a legacy checkpoint). */
     if (bc_epochs < 0) bc_epochs = 2000;
@@ -708,6 +721,7 @@ static int bc_train(Ini* ini) {
     if (batch <= 0) batch = 32;
     if (opening_steps <= 0) opening_steps = 26;
     if (opening_weight <= 0.0f) opening_weight = 1.0f;
+    if (root_weight <= 0.0f) root_weight = opening_weight;
     bc_rng_state = (uint32_t)bc_seed * 2654435761u + 1u;
     if (!data_path || !data_path[0]) {
         fprintf(stderr, "bc.data is required for train mode\n");
@@ -759,9 +773,10 @@ static int bc_train(Ini* ini) {
     }
     printf("BC train: %d games x %d steps (%d train/%d validation), "
         "batch=%d epochs=%d lr=%g hidden=%d layers=%d "
-        "opening=%d weight=%g init=%s\n",
+        "opening=%d weight=%g root_weight=%g init=%s\n",
         games, sequence_steps, train_games, validation_games, batch,
         bc_epochs, bc_lr, hidden, layers, opening_steps, opening_weight,
+        root_weight,
         load_path && load_path[0] && strcmp(load_path, "None")
             ? load_path : "random");
 
@@ -861,7 +876,7 @@ static int bc_train(Ini* ini) {
     float* grad_logits = (float*)xcuda(
         (size_t)batch_rows * act_n * sizeof(float));
     float* grad_value = (float*)xcuda((size_t)batch_rows * sizeof(float));
-    float* stats_acc = (float*)xcuda(12 * sizeof(float));
+    float* stats_acc = (float*)xcuda(KAG_BC_STATS * sizeof(float));
 
     PrecisionTensor obs_t = {.data = d_obs,
         .shape = {batch, sequence_steps, OBS_SIZE}};
@@ -889,7 +904,7 @@ static int bc_train(Ini* ini) {
     if (report_interval <= 0) report_interval = 25;
 
     auto run_chunk = [&](int order_start, int B, bool update,
-            float host_stats[12]) -> bool {
+            float host_stats[KAG_BC_STATS]) -> bool {
         memset(h_obs_chunk, 0, (size_t)batch_rows * OBS_SIZE);
         memset(h_mask_chunk, 0, (size_t)batch_rows * packed_stride);
         for (int row = 0; row < batch_rows; row++) {
@@ -925,7 +940,8 @@ static int bc_train(Ini* ini) {
             (size_t)batch_rows * A_total * sizeof(float), bc_stream);
         cudaMemsetAsync(grad_value, 0,
             (size_t)batch_rows * sizeof(float), bc_stream);
-        cudaMemsetAsync(stats_acc, 0, 12 * sizeof(float), bc_stream);
+        cudaMemsetAsync(stats_acc, 0,
+            KAG_BC_STATS * sizeof(float), bc_stream);
         cudaMemsetAsync(state.data, 0,
             numel(state.shape) * sizeof(precision_t), bc_stream);
         cudaMemsetAsync(terminals.data, 0,
@@ -933,13 +949,14 @@ static int bc_train(Ini* ini) {
         PrecisionTensor dec_out = policy_forward_train(&policy, weights,
             train_acts, obs_t, state, terminals, bc_stream);
         PrecisionTensor dec_flat = *puf_squeeze(&dec_out, 0);
-        float valid_weight = (float)B * (
-            opening_steps * opening_weight + sequence_steps - opening_steps);
+        float valid_weight = (float)B * (root_weight
+            + (opening_steps - 1) * opening_weight
+            + sequence_steps - opening_steps);
         kag_bc_loss_kernel<<<grid_size(batch_rows), BLOCK_SIZE, 0,
             bc_stream>>>(dec_flat.data, d_expert, d_mask, grad_logits,
             stats_acc, act_sizes_puf.data, batch_rows, valid_weight,
             A_total, num_atns, packed_stride, sequence_steps, opening_steps,
-            opening_weight);
+            opening_weight, root_weight);
         if (cudaGetLastError() != cudaSuccess) return false;
         if (update) {
             FloatTensor grad_logits_t = {.data = grad_logits,
@@ -950,7 +967,7 @@ static int bc_train(Ini* ini) {
                 FloatTensor(), grad_value_t, bc_stream);
         }
         if (cudaStreamSynchronize(bc_stream) != cudaSuccess) return false;
-        cudaMemcpy(host_stats, stats_acc, 12 * sizeof(float),
+        cudaMemcpy(host_stats, stats_acc, KAG_BC_STATS * sizeof(float),
             cudaMemcpyDeviceToHost);
         if (!update) return true;
 
@@ -990,31 +1007,35 @@ static int bc_train(Ini* ini) {
             int j = (int)(bc_rand() % (uint32_t)(i + 1));
             uint32_t tmp = order[i]; order[i] = order[j]; order[j] = tmp;
         }
-        float train_stats[12] = {0};
+        float train_stats[KAG_BC_STATS] = {0};
         int train_rows = 0;
         for (int start = 0; start < train_games; start += batch) {
             int B = train_games - start < batch ? train_games - start : batch;
-            float chunk[12];
+            float chunk[KAG_BC_STATS];
             if (!run_chunk(start, B, true, chunk)) {
                 fprintf(stderr, "BC train chunk %d failed: %s\n", start,
                     cudaGetErrorString(cudaGetLastError()));
                 return 1;
             }
-            for (int i = 0; i < 12; i++) train_stats[i] += chunk[i];
+            for (int i = 0; i < KAG_BC_STATS; i++) {
+                train_stats[i] += chunk[i];
+            }
             train_rows += B * sequence_steps;
         }
         if (ep == 0 || (ep + 1) % report_interval == 0
                 || ep + 1 == bc_epochs) {
-            float val_stats[12] = {0};
+            float val_stats[KAG_BC_STATS] = {0};
             int val_rows = 0;
             for (int start = train_games; start < games; start += batch) {
                 int B = games - start < batch ? games - start : batch;
-                float chunk[12];
+                float chunk[KAG_BC_STATS];
                 if (!run_chunk(start, B, false, chunk)) {
                     fprintf(stderr, "BC validation chunk %d failed\n", start);
                     return 1;
                 }
-                for (int i = 0; i < 12; i++) val_stats[i] += chunk[i];
+                for (int i = 0; i < KAG_BC_STATS; i++) {
+                    val_stats[i] += chunk[i];
+                }
                 val_rows += B * sequence_steps;
             }
             int val_open_rows = validation_games * opening_steps;
@@ -1022,8 +1043,10 @@ static int bc_train(Ini* ini) {
             printf("BC epoch %d train_loss=%.5f train_head=%.4f "
                 "train_exact=%.4f val_loss=%.5f val_head=%.4f "
                 "val_exact=%.4f val_open_loss=%.5f val_open_head=%.4f "
-                "val_open_exact=%.4f val_post_loss=%.5f "
-                "val_post_head=%.4f val_post_exact=%.4f\n", ep + 1,
+                "val_open_exact=%.4f val_root_loss=%.5f "
+                "val_root_head=%.4f val_root_exact=%.4f "
+                "val_post_loss=%.5f val_post_head=%.4f "
+                "val_post_exact=%.4f\n", ep + 1,
                 train_stats[0] / (float)train_rows,
                 train_stats[1] > 0.0f
                     ? train_stats[2] / train_stats[1] : 0.0f,
@@ -1035,6 +1058,10 @@ static int bc_train(Ini* ini) {
                 val_open_rows ? val_stats[4] / (float)val_open_rows : 0.0f,
                 val_stats[5] > 0.0f ? val_stats[6] / val_stats[5] : 0.0f,
                 val_open_rows ? val_stats[7] / (float)val_open_rows : 0.0f,
+                val_stats[12] / (float)validation_games,
+                val_stats[13] > 0.0f
+                    ? val_stats[14] / val_stats[13] : 0.0f,
+                val_stats[15] / (float)validation_games,
                 val_post_rows ? val_stats[8] / (float)val_post_rows : 0.0f,
                 val_stats[9] > 0.0f ? val_stats[10] / val_stats[9] : 0.0f,
                 val_post_rows ? val_stats[11] / (float)val_post_rows : 0.0f);

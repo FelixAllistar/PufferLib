@@ -171,7 +171,10 @@ python3 ocean/kaggriculture/subset_bc_dataset.py \
 
 The resulting BC file and `.players.tsv` sidecar contain only complete
 720-step trajectories and can be passed directly to `train_elite_bc.sh` via
-`KAG_ELITE_BC_DATA`.
+`KAG_ELITE_BC_DATA`. `KAG_ELITE_BC_OPENING_WEIGHT` weights all configured
+opening rows; `KAG_ELITE_BC_ROOT_WEIGHT` can separately emphasize the first
+decision, where one argmax error otherwise shifts the entire recurrent
+trajectory off demonstration.
 
 The training dashboard uses a Kaggriculture-specific diagnostic view: score,
 opponent money, win/draw rate, expansion/useful extra tiles, watering and
