@@ -90,7 +90,7 @@ minibatch_size = 8192
 horizon = 64
 total_timesteps = 1000000000
 
-reward_potential_scale = 1
+reward_potential_scale = 0.5
 reward_potential_gamma = 0.99970
 reward_money_scale = 1
 
@@ -101,14 +101,21 @@ bot_opponent_fraction = 0.5
 
 ## Rewards: current system
 
-There are only three settings. `reward_potential_scale` controls dense credit,
-`reward_potential_gamma` must equal `train.gamma`, and `reward_money_scale`
-controls the terminal own-cash objective. Potential is neutral accounting net
-worth: cash; seeds, planted crops, placed/unplaced animals, and purchased land
-at cost; plus already-created product at conservative cumulative sale value.
+There are only three settings. `reward_potential_scale` controls both dense
+credit and final realizable-net-worth weight, `reward_potential_gamma` must
+equal `train.gamma`, and `reward_money_scale` adds terminal own cash. Potential
+is neutral accounting net worth: cash; seeds, planted crops, placed/unplaced
+animals, and purchased land at cost; plus already-created product at
+conservative cumulative sale value.
 It assigns no speculative future yield and no direct action, maintenance,
 neglect, win, margin, inactivity, land, crop, or animal bonus. The old reward
 coefficient system was removed rather than left as another sweep surface.
+
+The zero-terminal-potential 1024x2 cold-start ablation failed: it converged to a
+narrow crop/sell loop with no land, animals, or opportunity response and lost
+essentially every deterministic game against the mature 1024 league. Retaining
+terminal potential makes `money + stuff` an actual objective rather than a
+shaping term that algebraically cancels.
 
 ## Key hard-won findings
 
@@ -121,7 +128,7 @@ opponent (league/bots) that creates actual win/loss signal.
 
 ### score, money, and GDP are separate
 
-`env/score` and `env/sweep_score` are terminal `kag_player_potential_full` for
+`env/score` and `env/sweep_score` are terminal `kag_player_potential` for
 the learner; `env/opponent_score` is the opponent's potential. Potential
 includes cash, marked inventory, live crops/animals, yield, and land using the
 configured asset weights. `env/money`/`opponent_money` are cash only.

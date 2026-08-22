@@ -202,9 +202,10 @@ potential is deliberately neutral accounting net worth: cash; seeds, live
 crops, live/unplaced animals, and land at cost; and already-created products at
 their conservative cumulative sale value. It does not guess future yield or
 award actions, maintenance, wins, margins, land, animals, or plants directly.
-The potential is forced to zero at terminal, so when `env.reward_potential_gamma`
-equals `train.gamma`, discounted shaping telescopes away and cannot change the
-only true objective: normalized final own cash (`env.reward_money_scale`).
+The real terminal potential is retained, so when `env.reward_potential_gamma`
+equals `train.gamma`, its dense deltas telescope to final realizable net worth.
+Normalized final own cash (`env.reward_money_scale`) is added separately to
+favor realization over merely holding assets.
 
 Kaggriculture disables the generic transition reward clamp with
 `train.reward_clip=0`, so better final cash remains better at every scale. A
@@ -359,10 +360,9 @@ same matrix and meta-game analysis without admitting or deleting anything.
 Checkpoints from an older observation/action ABI are rejected by exact native
 weight-shape validation instead of being run with misaligned parameters.
 
-The INI exposes separate mark-to-market weights for seeds, products, crops,
-animals, and land. These tune when credit appears; terminal write-down keeps
-the actual objective equal to final cash. A fixed-architecture screening sweep
-runs with:
+The INI exposes one neutral accounting-net-worth weight and one terminal-cash
+weight. Individual seed, product, crop, animal, land, and action coefficients
+were removed. A fixed-architecture screening sweep runs with:
 
 ```bash
 ./puffer sweep kaggriculture train.total_timesteps=20000000

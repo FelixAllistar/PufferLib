@@ -491,24 +491,20 @@ KG_HD static inline float kag_player_potential(const Env* env, int player_id) {
     return value + land_value;
 }
 
-KG_HD static inline float kag_player_potential_full(const Env* env, int player_id) {
-    return kag_player_potential(env, player_id);
-}
-
 /* Legacy shaping used an undiscounted dollar delta.  When a positive shaping
- * gamma is configured, use the discount-consistent potential form on
- * a centered, starting-money-normalized potential instead.  Centering keeps
- * the initial state at zero; forcing terminal phi to zero prevents unsold
- * assets or final cash from becoming a second terminal objective. */
+ * gamma is configured, use the discount-consistent potential form on a
+ * centered, starting-money-normalized potential instead.  Centering keeps the
+ * initial state at zero.  The real terminal potential is retained, so the
+ * discounted episode objective contains final realizable net worth in addition
+ * to the separately weighted terminal-cash term. */
 KG_HD static inline float kag_potential_shaping_reward(const Env* env,
-        float before, float after, int done) {
+        float before, float after) {
     if (env->reward_potential_gamma <= 0.0f) {
         return (after - before) * env->reward_potential_scale;
     }
     float starting_money = (float)env->game_storage.config.starting_money;
     float before_phi = (before - starting_money) / starting_money;
-    float after_phi = done ? 0.0f
-        : (after - starting_money) / starting_money;
+    float after_phi = (after - starting_money) / starting_money;
     return (env->reward_potential_gamma * after_phi - before_phi)
         * env->reward_potential_scale;
 }
@@ -2363,23 +2359,21 @@ void puf_step(Env* env) {
     int model_money = model_player ? p1 : p0;
     int opponent_money = model_player ? p0 : p1;
     int done = kg_done(game);
-    /* Mark assets to market while play continues, then write every unsold asset
-     * down to zero at terminal. Each player's deltas telescope to that player's
-     * terminal cash, avoiding uncontrollable reward noise from scripted rivals. */
-    env->potential[0] = done ? (float)p0 : kag_player_potential(env, 0);
-    env->potential[1] = done ? (float)p1 : kag_player_potential(env, 1);
+    /* Mark assets to their conservative realizable value on every transition,
+     * including the terminal one.  This makes final net worth a real objective;
+     * terminal cash below gives realized proceeds additional weight. */
+    env->potential[0] = kag_player_potential(env, 0);
+    env->potential[1] = kag_player_potential(env, 1);
     for (int player = 0; player < KG_NUM_PLAYERS; player++) {
         float reward = kag_potential_shaping_reward(env,
-            before_potential[player], env->potential[player], done);
+            before_potential[player], env->potential[player]);
         env->agents[player].rewards[0] = reward;
         env->episode_returns[player] += reward;
     }
 
     if (done) {
         float terminal_potential[KG_NUM_PLAYERS] = {
-            kag_player_potential_full(env, 0),
-            kag_player_potential_full(env, 1),
-        };
+            env->potential[0], env->potential[1]};
         float win0 = p0 > p1 ? 1.0f : (p0 == p1 ? 0.5f : 0.0f);
         float model_win = model_player == 0 ? win0 : 1.0f - win0;
         float money0_term = kag_terminal_money_reward(env, p0);

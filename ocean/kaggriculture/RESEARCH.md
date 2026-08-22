@@ -1787,23 +1787,20 @@ so clipping was deleting economic ordering without being needed to set the
 optimizer scale. In particular, a linear terminal cash reward must continue to
 distinguish $100k, $200k, and larger farms.
 
-The economic objective and the dense heuristic now have deliberately separate
-roles:
+The economic objective and dense signal now have deliberately simple roles:
 
 - terminal own cash is linear and unbounded through `reward_money_scale`;
-- terminal cash margin and the small win outcome add competitive pressure;
 - GDP remains diagnostic only, because rewarding transaction/production volume
   directly admits churn and unsold-monoculture exploits;
-- asset math is a potential `Phi(s)`, applied only as
-  `gamma * Phi(next) - Phi(now)` with terminal `Phi=0`.
+- neutral accounting net worth is a potential `Phi(s)`, applied as
+  `gamma * Phi(next) - Phi(now)` with the real terminal `Phi` retained.
 
 With `reward_potential_gamma == train.gamma` and no downstream reward clipping,
-the last item is potential-based reward shaping: it telescopes out of the true
-discounted objective. The asset estimate therefore does not need to be a
-perfect appraisal to preserve the optimal cash policy. It only needs to be a
-useful credit-assignment prior. The trainer now rejects a positive shaping
-gamma that differs from `train.gamma`, because a mismatch would make the
-handwritten appraisal part of the objective again.
+the potential deltas telescope to final realizable net worth. The resulting
+objective is therefore linear final cash plus linear final net worth, rather
+than action bonuses or speculative future yield. The trainer rejects a positive
+potential gamma that differs from `train.gamma` so that this interpretation
+remains exact.
 
 ### Market-impact-aware inventory value
 
@@ -1820,10 +1817,10 @@ value of oversized monocultures and should improve product diversification.
 ### Fitting a better potential from strong trajectories
 
 Top-player data should be used for *value regression*, not inverse reward
-learning: the real objective (terminal cash) is already known. The useful
-offline target at state `s_t` is the discounted terminal profit or remaining
-cash return. A practical first model is a small fixed linear/ridge potential
-over state summaries that are cheap in the CUDA environment:
+learning: the explicit objective is final cash plus conservative final net
+worth. The useful offline target at state `s_t` is its discounted remaining
+return. A practical first model is a small fixed linear/ridge potential over
+state summaries that are cheap in the CUDA environment:
 
 - cash and remaining time;
 - per-product held units and market-impact liquidation value;

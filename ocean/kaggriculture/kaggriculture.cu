@@ -199,11 +199,11 @@ __device__ static void kag_cuda_transition(Env* env, Env* shells,
         ? (env->agents[0].policy == 0 ? 0 : 1)
         : (env->bot_first ? 1 : 0);
     int done = kg_done(game);
-    env->potential[0] = done ? (float)money[0] : kag_player_potential(env, 0);
-    env->potential[1] = done ? (float)money[1] : kag_player_potential(env, 1);
+    env->potential[0] = kag_player_potential(env, 0);
+    env->potential[1] = kag_player_potential(env, 1);
     for (int player = 0; player < KG_NUM_PLAYERS; player++) {
         float reward = kag_potential_shaping_reward(env,
-            before_potential[player], env->potential[player], done);
+            before_potential[player], env->potential[player]);
         env->agents[player].rewards[0] = reward;
         env->episode_returns[player] += reward;
     }
@@ -214,9 +214,7 @@ __device__ static void kag_cuda_transition(Env* env, Env* shells,
     }
 
     float terminal_potential[KG_NUM_PLAYERS] = {
-        kag_player_potential_full(env, 0),
-        kag_player_potential_full(env, 1),
-    };
+        env->potential[0], env->potential[1]};
     float win0 = money[0] > money[1] ? 1.0f
         : money[0] == money[1] ? 0.5f : 0.0f;
     float model_win = model_player == 0 ? win0 : 1.0f - win0;

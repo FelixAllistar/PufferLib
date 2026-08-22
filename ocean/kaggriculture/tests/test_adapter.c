@@ -500,21 +500,22 @@ static void assert_discounted_economic_reward(void) {
     env.reward_money_scale = 0.1f;
 
     float growth = kag_potential_shaping_reward(
-        &env, 3000.0f, 6000.0f, 0);
+        &env, 3000.0f, 6000.0f);
     assert(fabsf(growth - 0.2f * 0.9997f) < 1e-6f);
     float terminal = kag_potential_shaping_reward(
-        &env, 6000.0f, 6000.0f, 1);
-    assert(fabsf(terminal + 0.2f) < 1e-6f);
-    /* Discounted shaping telescopes exactly when its gamma matches PPO's:
-     * initial phi is zero and terminal phi is forced back to zero. */
-    assert(fabsf(growth + env.reward_potential_gamma * terminal) < 1e-6f);
+        &env, 6000.0f, 9000.0f);
+    assert(fabsf(terminal - 0.2f * (2.0f * 0.9997f - 1.0f)) < 1e-6f);
+    /* Discounted shaping telescopes to the retained terminal net worth. */
+    float expected = 0.2f * 2.0f * 0.9997f * 0.9997f;
+    assert(fabsf(growth + env.reward_potential_gamma * terminal - expected)
+        < 1e-6f);
     assert(fabsf(kag_terminal_money_reward(&env, 6000) - 0.1f) < 1e-6f);
     assert(fabsf(kag_terminal_money_reward(&env, 60000) - 1.9f) < 1e-6f);
 
     env.reward_potential_gamma = 0.0f;
     env.reward_potential_scale = 0.0001f;
     float legacy = kag_potential_shaping_reward(
-        &env, 3000.0f, 6000.0f, 0);
+        &env, 3000.0f, 6000.0f);
     assert(fabsf(legacy - 0.3f) < 1e-6f);
 }
 
