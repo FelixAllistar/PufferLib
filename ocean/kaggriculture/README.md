@@ -159,6 +159,20 @@ production remain visible, while opponent private inventory remains absent.
 Market supply is signed deviation from equilibrium. The semantic ABI avoids
 forcing a dense MLP to rediscover categorical meaning from ordinal tile IDs.
 
+Official elite-replay imports retain one manifest row per recurrent player
+trajectory. A mixed-agent clone can average incompatible strategies, so whole
+agent lineages can be sliced without changing section order:
+
+```bash
+python3 ocean/kaggriculture/subset_bc_dataset.py \
+  /workspace/elite_replays/kaggriculture_elite_1.32.7.bc \
+  /workspace/elite_replays/crop_dusta.bc --agent 'Crop Dusta'
+```
+
+The resulting BC file and `.players.tsv` sidecar contain only complete
+720-step trajectories and can be passed directly to `train_elite_bc.sh` via
+`KAG_ELITE_BC_DATA`.
+
 The training dashboard uses a Kaggriculture-specific diagnostic view: score,
 opponent money, win/draw rate, expansion/useful extra tiles, watering and
 neglect, unused seeds/weeds, live plants/animals, market orders per turn,
