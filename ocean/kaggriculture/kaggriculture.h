@@ -4,16 +4,17 @@
  * PufferLib adapter for Kaggriculture.
  *
  * The rule engine is kept in kaggriculture_core.c so it can be differential
- * tested through its structured API. The practical trainer envelope has one
- * farmer head, eight direct farm-hand heads, three overflow cohorts, and
+ * tested through its structured API. The elite trainer envelope has one
+ * farmer head, sixteen independent farm-hand heads, and
  * a conditionally visited ten-slot market tree. Each market slot first chooses
  * STOP/CONTINUE and only a continued slot chooses a command. The CUDA sampler
  * and PPO loss ignore every unvisited command/tail head, so fresh policies do
  * not receive entropy pressure to emit ten random transactions.
- * The direct heads cover the labor range used by strong play; overflow hands
- * remain scalable instead of being dropped. The rule core retains capacity
- * for all 240 hires accepted by a default day, independent of the policy
- * architecture.
+ * A scan of all 1,394 player trajectories in the 2026-08-21 elite dataset
+ * found a maximum of fifteen hands. Sixteen direct heads therefore reproduce
+ * every demonstrated worker action without coupling unrelated hands. The rule
+ * core can still represent more workers, but the learned controller caps HIRE
+ * at its sixteen-hand interface.
  *
  * It is a CPU environment in PufferLib's native trainer, which still lets
  * the CUDA policy execute against many parallel environments.  A GPU-resident
@@ -30,16 +31,16 @@
 #include "kaggriculture_core.h"
 
 #define KG_OBS_BOARD 10
-#define KG_POLICY_DIRECT_HANDS 8
-#define KG_POLICY_OVERFLOW_COHORTS 3
+#define KG_POLICY_DIRECT_HANDS 16
+#define KG_POLICY_OVERFLOW_COHORTS 0
 #define KG_POLICY_UNIT_HEADS \
     (1 + KG_POLICY_DIRECT_HANDS + KG_POLICY_OVERFLOW_COHORTS)
 #define KG_POLICY_UNITS KG_POLICY_UNIT_HEADS
-#define OBS_SIZE 1024
-/* First byte after the stable semantic payload. Existing checkpoints keep the
- * same 1024-byte ABI; warm starts must zero this previously-unused encoder
- * column before reset-source observations are enabled. */
-#define KAG_OBS_RESET_SOURCE_INDEX 942
+#define OBS_SIZE 1280
+/* First byte after the semantic payload. The elite ABI adds five independent
+ * unit views (5 * (48 own + 3 opponent) bytes) to the former 942-byte payload.
+ * Root observations leave this source bit at zero. */
+#define KAG_OBS_RESET_SOURCE_INDEX 1197
 /* The environment stores semantic observations as bytes.  Let the generic
  * byte->precision transfer normalize them once, before rollout storage and
  * every encoder/bank sees the data.  This removes a per-bank scale kernel from
@@ -69,7 +70,8 @@
     (KG_POLICY_MARKET_MASK_OFFSET \
         + KG_POLICY_MARKET_SLOTS * KG_POLICY_MARKET_SLOT_MASK_SIZE)
 #define ACT_SIZES { \
-    44, 44, 44, 44, 44, 44, 44, 44, 44, 44, 44, 44, \
+    44, 44, 44, 44, 44, 44, 44, 44, 44, \
+    44, 44, 44, 44, 44, 44, 44, 44, \
     2, 21, 8, 2, 21, 8, 2, 21, 8, 2, 21, 8, 2, 21, 8, \
     2, 21, 8, 2, 21, 8, 2, 21, 8, 2, 21, 8, 2, 21, 8}
 static const int KG_ACTION_SIZES[NUM_ATNS] = ACT_SIZES;
@@ -81,18 +83,18 @@ static const int KG_ACTION_SIZES[NUM_ATNS] = ACT_SIZES;
 #define PUFFER_CONDITIONAL_STOP 0
 #define PUFFER_CONDITIONAL_CONTINUE 1
 #ifdef __cplusplus
-static_assert(OBS_SIZE == 1024, "Kaggriculture observation ABI changed");
+static_assert(OBS_SIZE == 1280, "Kaggriculture observation ABI changed");
 static_assert(KG_POLICY_MARKET_SLOTS <= KG_MAX_MARKET_ORDERS,
     "market slots exceed core order capacity");
-static_assert(NUM_ATNS == 42, "Kaggriculture action head count changed");
-static_assert(KG_POLICY_ACTION_MASK_SIZE == 838,
+static_assert(NUM_ATNS == 47, "Kaggriculture action head count changed");
+static_assert(KG_POLICY_ACTION_MASK_SIZE == 1058,
     "Kaggriculture action mask ABI changed");
 #else
-_Static_assert(OBS_SIZE == 1024, "Kaggriculture observation ABI changed");
+_Static_assert(OBS_SIZE == 1280, "Kaggriculture observation ABI changed");
 _Static_assert(KG_POLICY_MARKET_SLOTS <= KG_MAX_MARKET_ORDERS,
     "market slots exceed core order capacity");
-_Static_assert(NUM_ATNS == 42, "Kaggriculture action head count changed");
-_Static_assert(KG_POLICY_ACTION_MASK_SIZE == 838,
+_Static_assert(NUM_ATNS == 47, "Kaggriculture action head count changed");
+_Static_assert(KG_POLICY_ACTION_MASK_SIZE == 1058,
     "Kaggriculture action mask ABI changed");
 #endif
 
@@ -1304,8 +1306,10 @@ KG_HD static inline int kag_policy_market_slot_limit(const Env* env) {
 }
 
 KG_HD static inline int kag_policy_hand_limit(const Env* env) {
-    return env->policy_max_hands > 0
-        ? env->policy_max_hands : KG_MAX_HANDS;
+    int configured = env->policy_max_hands > 0
+        ? env->policy_max_hands : KG_POLICY_DIRECT_HANDS;
+    return configured < KG_POLICY_DIRECT_HANDS
+        ? configured : KG_POLICY_DIRECT_HANDS;
 }
 
 KG_HD static inline void kag_write_market_slots(const Env* env,
@@ -1439,11 +1443,11 @@ KG_HD static inline void kag_decode_action(KGAction* action, const Agent* agent,
     action->hand_count = hand_count;
     for (int hand = 0; hand < hand_count; hand++) {
         int unit = hand + 1;
-        int slot = unit <= KG_POLICY_DIRECT_HANDS ? unit
-            : 1 + KG_POLICY_DIRECT_HANDS
-                + (unit - 1 - KG_POLICY_DIRECT_HANDS)
-                    % KG_POLICY_OVERFLOW_COHORTS;
-        action->hands[hand] = kag_decode_unit_action(agent, slot);
+        if (unit <= KG_POLICY_DIRECT_HANDS) {
+            action->hands[hand] = kag_decode_unit_action(agent, unit);
+        } else {
+            action->hands[hand] = (KGUnitAction){KG_OP_PASS, -1, 1};
+        }
     }
     action->market_count = 0;
     int order_limit = game->config.max_market_orders_per_turn;

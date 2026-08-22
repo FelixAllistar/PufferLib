@@ -1839,3 +1839,20 @@ its predictions are imperfect. A tiny linear model is preferable for the
 first iteration because it is auditable, monotonic constraints are possible,
 and its per-step GPU cost is negligible. A neural learned potential is only
 worth adding if the held-out value/ranking error materially beats this baseline.
+
+## 2026-08-21: elite-replay action ABI
+
+The former policy exposed eight hands directly and made all later hands share
+three overflow heads. That interface can execute a coarse strategy, but it
+cannot exactly clone elite turns where hands in the same cohort choose
+different actions. In the complete 2026-08-21 top-episode dataset, 1,394
+player trajectories used at most fifteen farm hands. The elite branch
+therefore uses sixteen independent hand heads plus the farmer head, with no
+shared overflow cohorts.
+
+This changes the policy ABI to 47 heads and 1058 action logits. Five additional
+unit views expand the padded byte observation from 1024 to 1280 bytes. HIRE is
+capped at sixteen hands so every controllable hand always has its own action
+and egocentric observation. Historical 1024/42-head checkpoints remain valid
+for their packaged submissions but are intentionally incompatible with this
+elite branch.

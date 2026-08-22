@@ -2,8 +2,8 @@
 """Convert official Kaggriculture replays into the native BC v2 format.
 
 The converter deliberately uses the submission encoder and action mask.  This
-keeps imported demonstrations on the exact 1024-byte observation ABI and
-838-bit action ABI used by training and submission.  Replays are processed one
+keeps imported demonstrations on the exact observation and action ABIs used by
+training and submission. Replays are processed one
 at a time, so a multi-gigabyte daily archive never needs to be unpacked or held
 in memory.
 
@@ -22,6 +22,7 @@ import gzip
 import importlib.util
 import io
 import json
+import os
 import pathlib
 import struct
 import sys
@@ -45,7 +46,19 @@ def _load_codec():
     if spec is None or spec.loader is None:
         raise RuntimeError(f"cannot import Kaggriculture codec from {path}")
     module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
+    # This tool only needs the codec. A historical bundled model may use an
+    # older observation/action ABI, so explicitly suppress model loading.
+    previous_model_path = os.environ.get("PUFFERLIB_MODEL_PATH")
+    os.environ["PUFFERLIB_MODEL_PATH"] = str(
+        path.with_name("__elite_import_without_model__.bin")
+    )
+    try:
+        spec.loader.exec_module(module)
+    finally:
+        if previous_model_path is None:
+            os.environ.pop("PUFFERLIB_MODEL_PATH", None)
+        else:
+            os.environ["PUFFERLIB_MODEL_PATH"] = previous_model_path
     return module
 
 
@@ -378,6 +391,11 @@ def _build_row(observation: dict[str, Any], action: dict[str, Any]) -> tuple[
 
     farm = observation["farms"][int(observation.get("player", 0))]
     observed_hands = len(farm.get("hands", ()))
+    if observed_hands > DIRECT_HANDS and OVERFLOW_COHORTS == 0:
+        raise ValueError(
+            f"observation has {observed_hands} hands but policy capacity is "
+            f"{DIRECT_HANDS}"
+        )
     demonstrated_hands = action.get("hands", [])
     if not isinstance(demonstrated_hands, list):
         demonstrated_hands = []

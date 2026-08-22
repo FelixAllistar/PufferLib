@@ -1,8 +1,8 @@
 """PufferLib Kaggriculture submission: native MinGRU policy, NumPy runtime.
 
-This is a direct adapter for the semantic 1024-byte observation and conditional
-42-head action tree used by the native C trainer (12 unit + ten 3-head market
-slots).
+This is a direct adapter for the semantic 1280-byte observation and conditional
+47-head action tree used by the native C trainer (17 unit + ten 3-head market
+slots). Each of the sixteen supported farm hands has an independent head.
 The accompanying checkpoint contains only our trained
 PufferLib policy weights.
 """
@@ -34,11 +34,11 @@ MARKET_THROUGHPUT = (400, 450, 200, 100, 300, 332, 122, 105, 200)
 FIRST_YIELD_DAY = (2, 2, 8, 10, 10)
 ANIMAL_STRUCTURE = ("COOP", "PASTURE", "PASTURE")
 
-OBS_SIZE = 1024
+OBS_SIZE = 1280
 HIDDEN_SIZE = 32
 NUM_LAYERS = 2
-DIRECT_HANDS = 8
-OVERFLOW_COHORTS = 3
+DIRECT_HANDS = 16
+OVERFLOW_COHORTS = 0
 UNIT_HEADS = 1 + DIRECT_HANDS + OVERFLOW_COHORTS
 ALL = 0x7FFFFFFF
 MARKET_SLOTS = 10
@@ -47,7 +47,7 @@ MARKET_QUANTITIES = (1, 2, 3, 4, 5, 6, 8, 10)
 HEAD_SIZES = (44,) * UNIT_HEADS + (2, MARKET_COMMANDS, 8) * MARKET_SLOTS
 HEAD_OFFSETS = tuple(np.cumsum((0,) + HEAD_SIZES))
 MASK_SIZE = HEAD_OFFSETS[-1]
-MAX_HANDS = 240
+MAX_HANDS = DIRECT_HANDS
 # encoder + decoder(mask+value) + 2 MinGRU layers
 
 def _infer_arch(float_count):
@@ -244,6 +244,8 @@ def _encode_unit_routes(farm, ux, uy, day):
 def _view_units(view, count):
     if view <= DIRECT_HANDS:
         return [view] if view < count else []
+    if OVERFLOW_COHORTS == 0:
+        return []
     first = 1 + DIRECT_HANDS + view - (1 + DIRECT_HANDS)
     return list(range(first, count, OVERFLOW_COHORTS))
 
@@ -845,11 +847,14 @@ def decode_actions(obs, actions):
         unit = hand + 1
         if unit <= DIRECT_HANDS:
             return unit
+        if OVERFLOW_COHORTS == 0:
+            return None
         return 1 + DIRECT_HANDS + (unit - 1 - DIRECT_HANDS) % OVERFLOW_COHORTS
 
     result = {
         "farmer": _unit_action(int(actions[0])),
-        "hands": [_unit_action(int(actions[hand_slot(hand)]))
+        "hands": [(_unit_action(int(actions[hand_slot(hand)]))
+                   if hand_slot(hand) is not None else ["PASS"])
                   for hand in range(len(hands))],
         "market": [],
     }
@@ -919,14 +924,15 @@ class NativeMinGRU:
 
 
 _CODE_DIR = os.path.dirname(os.path.abspath(sys._getframe().f_code.co_filename))
+_MODEL_OVERRIDE = os.environ.get("PUFFERLIB_MODEL_PATH")
 _MODEL_CANDIDATES = tuple(path for path in (
-    os.environ.get("PUFFERLIB_MODEL_PATH"),
     os.path.join(_CODE_DIR, "kaggriculture_v4.bin"),
     "/kaggle_simulations/agent/kaggriculture_v4.bin",
     os.path.abspath("kaggriculture_v4.bin"),
 ) if path)
-_MODEL_PATH = next((path for path in _MODEL_CANDIDATES if os.path.isfile(path)),
-                   _MODEL_CANDIDATES[0])
+_MODEL_PATH = (_MODEL_OVERRIDE if _MODEL_OVERRIDE is not None else
+               next((path for path in _MODEL_CANDIDATES if os.path.isfile(path)),
+                    _MODEL_CANDIDATES[0]))
 _MODEL = NativeMinGRU(_MODEL_PATH) if os.path.isfile(_MODEL_PATH) else None
 _POLICY_SEED = int(os.environ.get("PUFFERLIB_POLICY_SEED", "97"))
 _DETERMINISTIC = os.environ.get("PUFFERLIB_DETERMINISTIC", "1") != "0"

@@ -80,8 +80,8 @@ singular `ocean/` environment directory. It contains:
   oracle, copied from `kaggle-environments==1.32.7`.
 - `kaggriculture_core.c/.h`: a native structured-rule simulator.
 - `kaggriculture.h`: the PufferLib adapter (two agents, compact observations,
-  one farmer head, eight direct hand heads, three scalable overflow cohorts,
-  and one sparse market head).
+  one farmer head, sixteen independent hand heads, and one sparse market
+  tree).
 - `parity.py`: frame-by-frame differential testing against the official
   Python environment.
 - `eval.c`: a standalone native C evaluator for baseline-vs-baseline matches.
@@ -140,15 +140,16 @@ make -C ocean/kaggriculture eval # native C baseline evaluation
 ```
 
 The trainer uses the complete CPU-resident C environment with the CUDA policy
-path. V4 has 42 conditional heads totaling 838 logits: twelve 44-way unit
-heads, then ten ordered market slots. Each market slot is a path through
+path. The elite-replay ABI has 47 conditional heads totaling 1058 logits:
+seventeen 44-way unit heads (farmer plus sixteen independent hands), then ten
+ordered market slots. Each market slot is a path through
 STOP/CONTINUE (2), command (21), and quantity `{1,2,3,4,5,6,8,10}`. Sampling, PPO log probability,
 entropy, KL, and gradients visit only the selected path. STOP suppresses all
 later slots; HIRE and BUY_LAND suppress quantity. This preserves every official
 ten-order queue and useful bulk quantity without the destructive entropy of ten
 independent flat actions. Historical legality masks remain bit-packed on GPU.
 
-The observation is exactly 1024 bytes (`uint8_t`). Its CUDA encoder normalizes
+The observation is exactly 1280 bytes (`uint8_t`). Its CUDA encoder normalizes
 bytes before one fused dense projection. Public production is represented by
 per-quadrant entity/lifecycle counts and per-product crop/animal summaries;
 private shed/seeds and full controlled-unit inventories are explicit. Every

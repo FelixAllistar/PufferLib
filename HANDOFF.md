@@ -1,6 +1,6 @@
 # Kaggriculture Handoff
 
-Last updated: 2026-08-15. This is the living "what have we done / where are we /
+Last updated: 2026-08-21. This is the living "what have we done / where are we /
 where next" reference for the Kaggriculture effort inside PufferLib.
 
 ## 2026-08-15: kaggle-environments 1.32.7 balance change (landed)
@@ -36,7 +36,7 @@ Layer boundaries:
 
 - `kaggriculture_core.c` / `kaggriculture_core.h` — the rule engine, parity
   tested against the installed `kaggle_environments` interpreter.
-- `kaggriculture.h` — observation encoder, conditional 42-head action tree,
+- `kaggriculture.h` — observation encoder, conditional 47-head action tree,
   action masks, reward computation, native bot orchestration.
 - `kaggriculture.cu` — GPU-resident environment and frozen-bank match path.
 - `kag_bc.cu` — standalone behavioral-cloning / DAgger trainer.
@@ -44,10 +44,11 @@ Layer boundaries:
   `kaggriculture_tape_data.h` — fixed tapes and adaptive planners used as
   self-play opponents and BC experts.
 
-The policy is a MinGRU. Observation is a 1024-byte semantic encoding, action
-space is 42 heads / 838-mask conditional market tree. Checkpoint byte size
-determines architecture at load time (128x2 = 1,347,072 bytes, 512x3 =
-13,252,608 bytes).
+The policy is a MinGRU. The elite-replay branch uses a 1280-byte semantic
+encoding and 47 heads / 1058-mask conditional action tree: farmer, sixteen
+independent hands, and ten conditional market slots. Historical packaged
+submissions retain the old 1024-byte / 42-head ABI; their checkpoints are not
+load-compatible with the elite branch.
 
 ## Current champion
 

@@ -3,6 +3,7 @@
 import ctypes
 import importlib.util
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -22,6 +23,7 @@ spec.loader.exec_module(top_bot)
 
 learned_spec = importlib.util.spec_from_file_location("learned_submission", HERE / "main.py")
 learned_submission = importlib.util.module_from_spec(learned_spec)
+os.environ["PUFFERLIB_MODEL_PATH"] = str(HERE / "__parity_without_model__.bin")
 learned_spec.loader.exec_module(learned_submission)
 
 
