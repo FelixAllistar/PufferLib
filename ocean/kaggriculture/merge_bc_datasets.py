@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
-"""Concatenate compatible Kaggriculture BC v2 datasets.
+"""Merge compatible Kaggriculture BC v2 datasets.
 
 Each input keeps whole games together.  The trainer's validation split is
 therefore still made on game boundaries after the merge, while observations,
 expert heads, and masks remain byte-for-byte unchanged.
+
+BC v2 is section-major, not row-major: all observations precede all expert
+heads, which precede all masks.  The merger must therefore concatenate each
+section across inputs rather than concatenate complete input payloads.
 """
 
 from __future__ import annotations
@@ -33,6 +37,16 @@ def read_header(path: pathlib.Path) -> tuple[int, ...]:
     return values
 
 
+def copy_exact(source, destination, size: int, path: pathlib.Path) -> None:
+    remaining = size
+    while remaining:
+        chunk = source.read(min(8 * 1024 * 1024, remaining))
+        if not chunk:
+            raise ValueError(f"truncated BC payload: {path}")
+        destination.write(chunk)
+        remaining -= len(chunk)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("output", type=pathlib.Path)
@@ -54,36 +68,50 @@ def main() -> int:
     total_steps = total_games * shape[3]
     output = args.output
     output.parent.mkdir(parents=True, exist_ok=True)
-    with tempfile.NamedTemporaryFile(
-        mode="wb", dir=output.parent, prefix=f".{output.name}.", delete=False
-    ) as stream:
-        temporary = pathlib.Path(stream.name)
-        stream.write(
-            HEADER.pack(
-                MAGIC,
-                VERSION,
-                total_steps,
-                shape[0],
-                shape[1],
-                shape[2],
-                total_games,
-                shape[3],
+    temporary = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            mode="wb", dir=output.parent, prefix=f".{output.name}.", delete=False
+        ) as stream:
+            temporary = pathlib.Path(stream.name)
+            stream.write(
+                HEADER.pack(
+                    MAGIC,
+                    VERSION,
+                    total_steps,
+                    shape[0],
+                    shape[1],
+                    shape[2],
+                    total_games,
+                    shape[3],
+                )
             )
-        )
-        for path, header in zip(args.inputs, headers):
-            expected = HEADER.size + header[2] * (header[3] + 4 * header[4] + header[5])
-            if path.stat().st_size != expected:
-                raise ValueError(f"truncated BC payload: {path}")
-            with path.open("rb") as source:
-                source.seek(HEADER.size)
-                remaining = path.stat().st_size - HEADER.size
-                while remaining:
-                    chunk = source.read(min(8 * 1024 * 1024, remaining))
-                    if not chunk:
+            # Write section-major output: observations, experts, then masks.
+            for section in range(3):
+                for path, header in zip(args.inputs, headers):
+                    count, row_obs, row_expert, row_mask = (
+                        header[2], header[3], header[4], header[5]
+                    )
+                    obs_bytes = count * row_obs
+                    expert_bytes = count * row_expert * 4
+                    mask_bytes = count * row_mask
+                    expected = HEADER.size + obs_bytes + expert_bytes + mask_bytes
+                    if path.stat().st_size != expected:
                         raise ValueError(f"truncated BC payload: {path}")
-                    stream.write(chunk)
-                    remaining -= len(chunk)
-    temporary.replace(output)
+                    offsets = (
+                        HEADER.size,
+                        HEADER.size + obs_bytes,
+                        HEADER.size + obs_bytes + expert_bytes,
+                    )
+                    sizes = (obs_bytes, expert_bytes, mask_bytes)
+                    with path.open("rb") as source:
+                        source.seek(offsets[section])
+                        copy_exact(source, stream, sizes[section], path)
+        temporary.replace(output)
+        temporary = None
+    finally:
+        if temporary is not None:
+            temporary.unlink(missing_ok=True)
     print(
         f"merged {len(args.inputs)} datasets: {output} "
         f"({total_games} games, {total_steps} steps)"
