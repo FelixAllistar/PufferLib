@@ -174,7 +174,10 @@ The resulting BC file and `.players.tsv` sidecar contain only complete
 `KAG_ELITE_BC_DATA`. `KAG_ELITE_BC_OPENING_WEIGHT` weights all configured
 opening rows; `KAG_ELITE_BC_ROOT_WEIGHT` can separately emphasize the first
 decision, where one argmax error otherwise shifts the entire recurrent
-trajectory off demonstration.
+trajectory off demonstration. For deterministic clones,
+`KAG_ELITE_BC_OPENING_ARGMAX_COEF` enables a hinge term on opening heads whose
+expert logit is not ahead by `KAG_ELITE_BC_ARGMAX_MARGIN`; both default to zero
+so ordinary cross-entropy behavior is unchanged.
 
 The training dashboard uses a Kaggriculture-specific diagnostic view: score,
 opponent money, win/draw rate, expansion/useful extra tiles, watering and

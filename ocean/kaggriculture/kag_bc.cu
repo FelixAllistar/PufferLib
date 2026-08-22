@@ -94,7 +94,8 @@ __global__ void kag_bc_loss_kernel(
         const int* __restrict__ act_sizes,
         int rows, float valid_weight, int A_total, int num_atns,
         int mask_stride, int sequence_steps, int opening_steps,
-        float opening_weight, float root_weight) {
+        float opening_weight, float root_weight, float argmax_margin,
+        float opening_argmax_coef) {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
     if (idx >= rows || (int)expert[idx * num_atns] < 0) return;
     int logits_base = idx * (A_total + 1);
@@ -125,13 +126,19 @@ __global__ void kag_bc_loss_kernel(
             continue;
         }
         float max_val = -INFINITY;
+        float best_other_val = -INFINITY;
         int prediction = 0;
+        int best_other = -1;
         for (int a = 0; a < A; a++) {
             if (puf_mask_bit(mask, mask_base, offset + a)) {
                 float l = to_float(logits[logits_base + offset + a]);
                 if (l > max_val) {
                     max_val = l;
                     prediction = a;
+                }
+                if (a != expert_action && l > best_other_val) {
+                    best_other_val = l;
+                    best_other = a;
                 }
             }
         }
@@ -166,6 +173,15 @@ __global__ void kag_bc_loss_kernel(
             grad_logits[idx * A_total + offset + a] =
                 ((a == expert_action) ? (p - 1.0f) : p)
                     * row_weight / valid_weight;
+        }
+        if (opening && opening_argmax_coef > 0.0f && best_other >= 0
+                && expert_logit < best_other_val + argmax_margin) {
+            float margin_scale = opening_argmax_coef
+                * row_weight / valid_weight;
+            grad_logits[idx * A_total + offset + expert_action]
+                -= margin_scale;
+            grad_logits[idx * A_total + offset + best_other]
+                += margin_scale;
         }
         offset += A;
     }
@@ -726,6 +742,9 @@ static int bc_train(Ini* ini) {
     float opening_weight = (float)puf_ini_get(ini, "bc", "opening_weight");
     float root_weight = (float)puf_ini_get(ini, "bc", "root_weight");
     int detailed_stats = (int)puf_ini_get(ini, "bc", "detailed_stats");
+    float argmax_margin = (float)puf_ini_get(ini, "bc", "argmax_margin");
+    float opening_argmax_coef = (float)puf_ini_get(
+        ini, "bc", "opening_argmax_coef");
     /* Zero is an intentional conversion-only pass (for example, zeroing a
      * newly assigned observation column in a legacy checkpoint). */
     if (bc_epochs < 0) bc_epochs = 2000;
@@ -736,6 +755,8 @@ static int bc_train(Ini* ini) {
     if (opening_steps <= 0) opening_steps = 26;
     if (opening_weight <= 0.0f) opening_weight = 1.0f;
     if (root_weight <= 0.0f) root_weight = opening_weight;
+    if (argmax_margin < 0.0f) argmax_margin = 0.0f;
+    if (opening_argmax_coef < 0.0f) opening_argmax_coef = 0.0f;
     bc_rng_state = (uint32_t)bc_seed * 2654435761u + 1u;
     if (!data_path || !data_path[0]) {
         fprintf(stderr, "bc.data is required for train mode\n");
@@ -787,10 +808,11 @@ static int bc_train(Ini* ini) {
     }
     printf("BC train: %d games x %d steps (%d train/%d validation), "
         "batch=%d epochs=%d lr=%g hidden=%d layers=%d "
-        "opening=%d weight=%g root_weight=%g init=%s\n",
+        "opening=%d weight=%g root_weight=%g argmax_margin=%g "
+        "opening_argmax_coef=%g init=%s\n",
         games, sequence_steps, train_games, validation_games, batch,
         bc_epochs, bc_lr, hidden, layers, opening_steps, opening_weight,
-        root_weight,
+        root_weight, argmax_margin, opening_argmax_coef,
         load_path && load_path[0] && strcmp(load_path, "None")
             ? load_path : "random");
 
@@ -979,7 +1001,8 @@ static int bc_train(Ini* ini) {
             stats_acc, host_detail ? detail_acc : NULL, act_sizes_puf.data,
             batch_rows, valid_weight,
             A_total, num_atns, packed_stride, sequence_steps, opening_steps,
-            opening_weight, root_weight);
+            opening_weight, root_weight, argmax_margin,
+            opening_argmax_coef);
         if (cudaGetLastError() != cudaSuccess) return false;
         if (update) {
             FloatTensor grad_logits_t = {.data = grad_logits,

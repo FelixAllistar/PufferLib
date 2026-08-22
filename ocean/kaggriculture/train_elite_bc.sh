@@ -15,6 +15,8 @@ validation_games=${KAG_ELITE_BC_VALIDATION_GAMES:-400}
 opening_steps=${KAG_ELITE_BC_OPENING_STEPS:-1}
 opening_weight=${KAG_ELITE_BC_OPENING_WEIGHT:-1}
 root_weight=${KAG_ELITE_BC_ROOT_WEIGHT:-$opening_weight}
+argmax_margin=${KAG_ELITE_BC_ARGMAX_MARGIN:-0}
+opening_argmax_coef=${KAG_ELITE_BC_OPENING_ARGMAX_COEF:-0}
 
 if [[ ! -s "$data" ]]; then
     echo "elite BC dataset not found: $data" >&2
@@ -37,6 +39,8 @@ exec ./ocean/kaggriculture/build/kag_bc \
     bc.opening_steps="$opening_steps" \
     bc.opening_weight="$opening_weight" \
     bc.root_weight="$root_weight" \
+    bc.argmax_margin="$argmax_margin" \
+    bc.opening_argmax_coef="$opening_argmax_coef" \
     bc.anchor_l2=0 \
     bc.zero_reset_source=0 \
     policy.hidden_size=1024 \
