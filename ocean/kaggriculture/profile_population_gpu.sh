@@ -8,6 +8,7 @@ kag_jobs=4
 kag_gpu_agents=${KAG_GPU_AGENTS:-64}
 kag_output=logs/kaggriculture/policy_profile_gpu
 kag_eval_deterministic=0
+kag_opponent=rules
 kag_inputs=()
 
 usage() {
@@ -17,6 +18,7 @@ usage() {
         "  --jobs N           Concurrent CUDA evaluators (default 4)" \
         "  --gpu-agents N     Agents per evaluator (default 64)" \
         "  --output PREFIX    Output TSV prefix" \
+        "  --opponent NAME    Fixed opponent: pass or rules (default rules)" \
         "  --deterministic    Use masked argmax actions" \
         "  --stochastic       Sample masked actions (default)" \
         "The report is GPU-native and records economic/maintenance counters."
@@ -28,6 +30,7 @@ while (($#)); do
         --jobs) kag_jobs=$2; shift 2 ;;
         --gpu-agents) kag_gpu_agents=$2; shift 2 ;;
         --output) kag_output=$2; shift 2 ;;
+        --opponent) kag_opponent=$2; shift 2 ;;
         --deterministic) kag_eval_deterministic=1; shift ;;
         --stochastic) kag_eval_deterministic=0; shift ;;
         -h|--help) usage; exit 0 ;;
@@ -42,6 +45,8 @@ done
     || { printf '%s\n' '--jobs must be >= 1' >&2; exit 2; }
 [[ $kag_gpu_agents =~ ^[0-9]+$ ]] && ((kag_gpu_agents >= 4)) \
     || { printf '%s\n' '--gpu-agents must be >= 4' >&2; exit 2; }
+[[ $kag_opponent == pass || $kag_opponent == rules ]] \
+    || { printf '%s\n' '--opponent must be pass or rules' >&2; exit 2; }
 [[ -x ./puffer ]] || { printf '%s\n' 'Build ./puffer first' >&2; exit 1; }
 if ((${#kag_inputs[@]} == 0)); then
     kag_inputs=(saved/kaggriculture_league_v5)
@@ -90,6 +95,12 @@ json_value() {
 profile_one() {
     local label=$1 path=${kag_paths["$1"]} text json completed
     local architecture_args=()
+    local pass_fraction=0 rules_fraction=0
+    if [[ $kag_opponent == pass ]]; then
+        pass_fraction=1
+    else
+        rules_fraction=1
+    fi
     if [[ $label =~ _([0-9]+)x([0-9]+)_ ]]; then
         architecture_args+=(
             "policy.hidden_size=${BASH_REMATCH[1]}"
@@ -102,8 +113,8 @@ profile_one() {
             "base.eval_deterministic=$kag_eval_deterministic" \
             "base.load_model_path=$path" \
             "${architecture_args[@]}" \
-            env.bot_opponent_fraction=1 env.bot_pass_fraction=0 \
-            env.bot_rules_fraction=1 env.bot_script_fraction=0 \
+            env.bot_opponent_fraction=1 "env.bot_pass_fraction=$pass_fraction" \
+            "env.bot_rules_fraction=$rules_fraction" env.bot_script_fraction=0 \
             env.bot_adaptive_fraction=0 selfplay.enabled=0 \
             train.total_timesteps=0 2>&1); then
         printf 'GPU profile failed for %s\n' "$label" >&2; return 1
