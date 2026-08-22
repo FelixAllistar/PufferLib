@@ -80,6 +80,10 @@ def main() -> int:
     )
     parser.add_argument("--winner-only", action="store_true")
     parser.add_argument("--minimum-final-money", type=float, default=0.0)
+    parser.add_argument(
+        "--prefix-steps", type=int,
+        help="retain only this many leading rows from every trajectory",
+    )
     args = parser.parse_args()
 
     input_path = args.input.resolve()
@@ -93,6 +97,9 @@ def main() -> int:
 
     header = _read_header(input_path)
     _, _, _, row_obs, row_expert, row_mask, games, steps = header
+    output_steps = args.prefix_steps if args.prefix_steps is not None else steps
+    if output_steps < 1 or output_steps > steps:
+        parser.error(f"--prefix-steps must be in [1, {steps}]")
     fields, rows = _read_manifest(manifest_path)
     if len(rows) != games:
         raise ValueError(
@@ -117,7 +124,7 @@ def main() -> int:
     if not selected:
         raise ValueError("selection produced no trajectories")
 
-    count = len(selected) * steps
+    count = len(selected) * output_steps
     section_rows = (row_obs, row_expert * 4, row_mask)
     input_count = games * steps
     section_offsets = (
@@ -136,20 +143,21 @@ def main() -> int:
             destination.write(
                 HEADER.pack(
                     MAGIC, VERSION, count, row_obs, row_expert, row_mask,
-                    len(selected), steps,
+                    len(selected), output_steps,
                 )
             )
             with input_path.open("rb") as source:
                 for section_offset, row_size in zip(
                     section_offsets, section_rows, strict=True
                 ):
-                    trajectory_size = steps * row_size
+                    input_trajectory_size = steps * row_size
+                    output_trajectory_size = output_steps * row_size
                     for game in selected:
                         _copy_trajectory(
                             source,
                             destination,
-                            section_offset + game * trajectory_size,
-                            trajectory_size,
+                            section_offset + game * input_trajectory_size,
+                            output_trajectory_size,
                         )
         temporary.replace(output_path)
         temporary = None
@@ -165,7 +173,10 @@ def main() -> int:
         manifest_temporary = pathlib.Path(stream.name)
         writer = csv.DictWriter(stream, fieldnames=fields, delimiter="\t")
         writer.writeheader()
-        writer.writerows(rows[index] for index in selected)
+        for index in selected:
+            output_row = dict(rows[index])
+            output_row["rows"] = str(output_steps)
+            writer.writerow(output_row)
     manifest_temporary.replace(output_manifest)
 
     money = [float(rows[index]["final_money"]) for index in selected]
@@ -174,6 +185,7 @@ def main() -> int:
         "output": str(output_path),
         "trajectories": len(selected),
         "rows": count,
+        "steps_per_trajectory": output_steps,
         "agents": sorted({rows[index]["agent"] for index in selected}),
         "winner_only": args.winner_only,
         "minimum_final_money": args.minimum_final_money,

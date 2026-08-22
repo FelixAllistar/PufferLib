@@ -167,6 +167,12 @@ agent lineages can be sliced without changing section order:
 python3 ocean/kaggriculture/subset_bc_dataset.py \
   /workspace/elite_replays/kaggriculture_elite_1.32.7.bc \
   /workspace/elite_replays/crop_dusta.bc --agent 'Crop Dusta'
+
+# A coherent opening-only curriculum dataset uses the same section-safe copy.
+python3 ocean/kaggriculture/subset_bc_dataset.py \
+  /workspace/elite_replays/kaggriculture_elite_1.32.7.bc \
+  /workspace/elite_replays/crop_dusta_open26.bc \
+  --agent 'Crop Dusta' --prefix-steps 26
 ```
 
 The resulting BC file and `.players.tsv` sidecar contain only complete
