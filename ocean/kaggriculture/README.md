@@ -271,6 +271,21 @@ so carrot, tomato, and egg become attractive only in their profitable games.
 The audited six-day `1.32.7` fit used for the first experiment is preserved in
 `elite_fits/1.32.7_2026-08-16_2026-08-21.{json,ini,sweep.ini}`.
 
+For a separate outcome diagnostic, `fit_elite_win_model.py` accumulates a
+small public-state ridge fit for both `P(win)` and normalized final-money
+margin. It is intentionally not part of the economic reward and is not
+loaded by the simulator automatically:
+
+```bash
+python ocean/kaggriculture/fit_elite_win_model.py \
+  /workspace/elite_replays/raw/*.zip \
+  --output /workspace/elite_replays/clone_factory/elite_win_model.json
+```
+
+The factory runs this fit beside the economic fit when
+`KAG_CLONE_FIT_WIN=1` (the default). Validate it cross-play before using any
+win estimate as reward shaping.
+
 ### Restartable elite opponent factory
 
 The factory downloads only exact `1.32.7` daily archives, rebuilds the merged

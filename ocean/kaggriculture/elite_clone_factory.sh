@@ -26,6 +26,7 @@ refresh_days=${KAG_CLONE_REFRESH_DAYS:-6}
 probe_days=${KAG_CLONE_PROBE_DAYS:-14}
 exact_version=${KAG_ELITE_EXACT_VERSION:-1.32.7}
 fit_values=${KAG_CLONE_FIT_VALUES:-1}
+fit_win=${KAG_CLONE_FIT_WIN:-1}
 
 mkdir -p "$factory_root/datasets" "$factory_root/logs" "$repo_root/$model_root"
 
@@ -116,6 +117,19 @@ if [[ "$fit_values" == 1 ]]; then
             "${archives[@]}" \
             >"$factory_root/logs/economic_fit.log" 2>&1
         tail -n 30 "$factory_root/logs/economic_fit.log"
+        if [[ "$fit_win" == 1 ]]; then
+            echo "FIT public-state win/margin model from retained archives"
+            "$python_bin" "$repo_root/ocean/kaggriculture/fit_elite_win_model.py" \
+                --output "$factory_root/elite_win_model.json" \
+                --ini-output "$factory_root/elite_win_model.ini" \
+                --minimum-version "$exact_version" \
+                --exact-version "$exact_version" \
+                --steps 720 --stride "${KAG_CLONE_WIN_STRIDE:-8}" \
+                --minimum-final-money 0 \
+                "${archives[@]}" \
+                >"$factory_root/logs/win_fit.log" 2>&1
+            tail -n 30 "$factory_root/logs/win_fit.log"
+        fi
     else
         echo "FIT skipped: no retained replay archives (set KAG_CLONE_REFRESH=1)"
     fi
