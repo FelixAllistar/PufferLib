@@ -165,11 +165,10 @@ int main(void) {
     env.area_bonus = 0.0f;
     for (int level = 1; level <= 4; level++) {
         ps_clear_entities(&env, 0);
+        int count_before = env.projectile_count;
         ps_cast_spikes(&env, 0, level);
-        assert(env.projectile_count == (4 << (level - 1)));
-        int ttl = (int)ceilf(env.cfg.spike_range / env.cfg.spike_speed);
-        for (int k = 0; k < env.projectile_count; k++)
-            assert(env.projectiles.ttl[env.projectiles.dense[k]] == ttl);
+        // spikes now uses instant damage_radius burst (SPS fix), not projectiles
+        assert(env.projectile_count == count_before);
     }
     ps_clear_entities(&env, 0);
     env.nearest_enemy = -1;

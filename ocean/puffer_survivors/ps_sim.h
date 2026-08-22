@@ -1704,17 +1704,29 @@ PS_SIM_FN void ps_cast_glacier(PSSim* sim, int env, int level) {
 }
 
 PS_SIM_FN void ps_cast_spikes(PSSim* sim, int env, int level) {
-    int n = 4 << (level - 1);
+    // 2: replace 4<<(level-1) projectiles (512 at L8) with instant radius burst
+    //    old: 512 proj * 24 tick lifetime = ~12k projectile-updates per cast
+    //    new: 1 central + N ring damage queries (no projectile pool, no 24-tick lifetime)
+    // 4: micro: direct cosf/sinf to position, no ps_spawn_projectile normalize/sqrt,
+    //    no pierce/TTL bookkeeping, no obstacle/projectile grid walk per tick
     float dmg = ps_weapon_damage(sim, env, PS_WEAPON_SPIKES, level, 0);
-    float radius = ps_geometry_weapon_radius(&sim->cfg, PS_WEAPON_SPIKES, level)
+    float hit_r = ps_geometry_weapon_radius(&sim->cfg, PS_WEAPON_SPIKES, level)
         * (1.0f + PS_P(sim, env, area_bonus));
     float px = PS_P(sim, env, px), py = PS_P(sim, env, py);
+    float range = sim->cfg.spike_range;
+    // level scales burst radius rather than projectile count
+    float burst_r = hit_r + range * (0.35f + 0.04f * (float)level);
+    ps_damage_radius(sim, env, px, py, burst_r, dmg, 0.0f);
+    // light ring of hits to keep directional feel without projectile cost
+    // N=8+2*level => L1=10, L8=24 queries vs 512 projectiles
+    int n = 8 + 2 * level;
+    if (n > 24) n = 24;
+    float ring_r = range * 0.55f;
     for (int i = 0; i < n; i++) {
-        float a = 2.0f * PI * ((float)i / (float)n);
-        ps_spawn_projectile(sim, env, PS_WEAPON_SPIKES, px, py,
-            px + cosf(a) * sim->cfg.spike_range, py + sinf(a) * sim->cfg.spike_range,
-            dmg, radius, sim->cfg.spike_speed, PS_P(sim, env, pierce_bonus) + level / 4,
-            (int)ceilf(sim->cfg.spike_range / sim->cfg.spike_speed));
+        float a = 2.0f * PI * (float)i / (float)n;
+        float hx = px + cosf(a) * ring_r;
+        float hy = py + sinf(a) * ring_r;
+        ps_damage_radius_with_query_pad(sim, env, hx, hy, hit_r, dmg * 0.65f, 0.0f, 0.0f);
     }
     PS_W(sim, env, PS_WEAPON_SPIKES, weapon_active) = 1.0f;
 }
