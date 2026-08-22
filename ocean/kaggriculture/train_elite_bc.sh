@@ -12,6 +12,8 @@ output=${KAG_ELITE_BC_OUTPUT:-saved/kaggriculture_elite_bc_1280_1024x2_e${epochs
 init=${KAG_ELITE_BC_INIT:-None}
 batch=${KAG_ELITE_BC_BATCH:-32}
 validation_games=${KAG_ELITE_BC_VALIDATION_GAMES:-400}
+opening_steps=${KAG_ELITE_BC_OPENING_STEPS:-1}
+opening_weight=${KAG_ELITE_BC_OPENING_WEIGHT:-1}
 
 if [[ ! -s "$data" ]]; then
     echo "elite BC dataset not found: $data" >&2
@@ -31,8 +33,8 @@ exec ./ocean/kaggriculture/build/kag_bc \
     bc.batch="$batch" \
     bc.validation_games="$validation_games" \
     bc.report_interval=1 \
-    bc.opening_steps=1 \
-    bc.opening_weight=1 \
+    bc.opening_steps="$opening_steps" \
+    bc.opening_weight="$opening_weight" \
     bc.anchor_l2=0 \
     bc.zero_reset_source=0 \
     policy.hidden_size=1024 \
