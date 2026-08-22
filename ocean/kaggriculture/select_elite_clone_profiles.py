@@ -58,10 +58,13 @@ def percentile_ranks(values: dict[str, float]) -> dict[str, float]:
 
 def profile_name(path: Path) -> str:
     name = path.stem.lower()
-    for mode in ("stoch", "det"):
-        for opponent in ("pass", "rules"):
-            if f"{mode}_{opponent}" in name:
-                return f"{mode}_{opponent}"
+    for opponent in ("pass", "rules"):
+        if (f"stoch_{opponent}" in name
+                or f"stochastic_{opponent}" in name):
+            return f"stoch_{opponent}"
+        if (f"det_{opponent}" in name
+                or f"deterministic_{opponent}" in name):
+            return f"det_{opponent}"
     raise ValueError(f"profile filename must contain mode/opponent: {path}")
 
 
