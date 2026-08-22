@@ -530,7 +530,79 @@ static void assert_discounted_economic_reward(void) {
         < 1e-6f);
 }
 
+static void assert_positive_progress_reward(void) {
+    Env env = {0};
+    kg_config_default(&env.game_storage.config);
+    kg_init(&env.game_storage, &env.game_storage.config);
+    env.reward_progress_scale = 1.0f;
+    env.reward_progress_terminal_money_scale = 0.25f;
+    env.reward_progress_seed_scale = 1.0f;
+    env.reward_progress_crop_scale = 1.0f;
+    env.reward_progress_animal_scale = 1.0f;
+    env.reward_progress_product_scale = 1.0f;
+    env.reward_progress_maintenance_scale = 1.0f;
+    env.reward_progress_land_scale = 1.0f;
+    env.reward_progress_health_ratio = 0.4f;
+    for (int crop = 0; crop < KG_NUM_CROPS; crop++) {
+        env.reward_progress_crop_units[crop] = 4.0f;
+        env.reward_progress_seed_realization[crop] = 0.8f;
+    }
+    for (int animal = 0; animal < KG_NUM_ANIMALS; animal++) {
+        env.reward_progress_animal_units_per_event[animal] = 0.8f;
+        env.reward_progress_animal_realization[animal] = 0.8f;
+    }
+    for (int item = 0; item < KG_NUM_PRODUCTS; item++) {
+        env.reward_progress_product_realization[item] = 0.8f;
+    }
+
+    KGPlayer* player = &env.game_storage.players[0];
+    float initial = kag_player_progress_value(&env, 0);
+    assert(fabsf(initial - 3000.0f) < 1e-5f);
+    env.progress_highwater[0] = initial;
+
+    /* Buying an uncommitted seed cannot masquerade as production. */
+    player->money -= KG_CROP_DEFS[KG_TOMATO].seed_cost;
+    player->seeds[KG_TOMATO] = 1;
+    float held_seed = kag_player_progress_value(&env, 0);
+    assert(held_seed < initial);
+    assert(kag_progress_highwater_reward(&env, 0, held_seed) == 0.0f);
+
+    /* Planting unlocks the empirically expected live-price future output. */
+    player->seeds[KG_TOMATO] = 0;
+    kg_new_plant(player, 0, KG_TOMATO, env.game_storage.day,
+        env.game_storage.config.turns_per_day);
+    float invested = kag_player_progress_value(&env, 0);
+    float first = kag_progress_highwater_reward(&env, 0, invested);
+    assert(first > 0.0f);
+
+    player->units[0].x = 0;
+    player->units[0].y = 0;
+    KGAction maintenance = {0};
+    maintenance.farmer = (KGUnitAction){KG_OP_WATER, -1, 1};
+    assert(kag_maintenance_action_reward(&env, 0, &maintenance) > 0.0f);
+
+    /* Falling below the best state is neutral, and returning to the already
+     * earned value cannot collect the achievement twice. */
+    float highwater = env.progress_highwater[0];
+    assert(kag_progress_highwater_reward(&env, 0, initial) == 0.0f);
+    assert(kag_progress_highwater_reward(&env, 0, highwater) == 0.0f);
+
+    assert(kag_positive_terminal_money_reward(&env, 2000) == 0.0f);
+    assert(kag_positive_terminal_money_reward(&env, 6000) > 0.0f);
+
+    /* The same tomato asset is worth more in a live high-price opportunity;
+     * no crop-specific action bonus is needed. */
+    env.game_storage.market.inventory[KG_ITEM_TOMATO] = 10000;
+    kg_refresh_prices(&env.game_storage);
+    float ordinary = kag_player_progress_value(&env, 0);
+    env.game_storage.market.inventory[KG_ITEM_TOMATO] = 100;
+    kg_refresh_prices(&env.game_storage);
+    float opportunity = kag_player_progress_value(&env, 0);
+    assert(opportunity > ordinary);
+}
+
 int main(void) {
+    assert_positive_progress_reward();
     assert_discounted_economic_reward();
     assert_rule_regressions();
     assert_potential_schedule();

@@ -78,6 +78,10 @@ def main() -> int:
         "--agent", action="append", default=[],
         help="exact agent name to retain; repeat to retain multiple agents",
     )
+    parser.add_argument(
+        "--source", action="append", default=[],
+        help="archive stem to retain; repeat to keep a behavior-stable set",
+    )
     parser.add_argument("--winner-only", action="store_true")
     parser.add_argument("--minimum-final-money", type=float, default=0.0)
     parser.add_argument(
@@ -110,9 +114,13 @@ def main() -> int:
             raise ValueError(f"manifest row {index} has {row['rows']} steps")
 
     allowed_agents = set(args.agent)
+    allowed_sources = set(args.source)
     selected: list[int] = []
     for index, row in enumerate(rows):
         if allowed_agents and row["agent"] not in allowed_agents:
+            continue
+        source = pathlib.Path(row.get("source", "").split(":", 1)[0]).stem
+        if allowed_sources and source not in allowed_sources:
             continue
         if args.winner_only and str(row["winner"]).lower() not in {
             "1", "true", "yes"
@@ -187,6 +195,10 @@ def main() -> int:
         "rows": count,
         "steps_per_trajectory": output_steps,
         "agents": sorted({rows[index]["agent"] for index in selected}),
+        "sources": sorted({
+            pathlib.Path(rows[index].get("source", "").split(":", 1)[0]).stem
+            for index in selected
+        }),
         "winner_only": args.winner_only,
         "minimum_final_money": args.minimum_final_money,
         "final_money_min": min(money),

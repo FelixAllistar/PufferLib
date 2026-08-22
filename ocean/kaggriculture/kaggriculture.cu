@@ -35,6 +35,20 @@ typedef struct {
     float reward_potential_gamma;
     float reward_cash_scale;
     float reward_money_scale;
+    float reward_progress_scale;
+    float reward_progress_terminal_money_scale;
+    float reward_progress_seed_scale;
+    float reward_progress_crop_scale;
+    float reward_progress_animal_scale;
+    float reward_progress_product_scale;
+    float reward_progress_maintenance_scale;
+    float reward_progress_land_scale;
+    float reward_progress_health_ratio;
+    float reward_progress_crop_units[KG_NUM_CROPS];
+    float reward_progress_seed_realization[KG_NUM_CROPS];
+    float reward_progress_animal_units_per_event[KG_NUM_ANIMALS];
+    float reward_progress_animal_realization[KG_NUM_ANIMALS];
+    float reward_progress_product_realization[KG_NUM_PRODUCTS];
     float bot_opponent_fraction;
     float bot_pass_fraction;
     float bot_rules_fraction;
@@ -194,6 +208,11 @@ __device__ static void kag_cuda_transition(Env* env, Env* shells,
         env->agents[player].terminals[0] = 0.0f;
     }
     kag_cuda_bot_overrides(env, actions, tapes);
+    float maintenance_rewards[KG_NUM_PLAYERS];
+    for (int player = 0; player < KG_NUM_PLAYERS; player++) {
+        maintenance_rewards[player] = kag_maintenance_action_reward(
+            env, player, &actions[player]);
+    }
     kag_log_actions(env, game, actions);
 
     kg_step(game, actions);
@@ -209,6 +228,9 @@ __device__ static void kag_cuda_transition(Env* env, Env* shells,
             before_potential[player], env->potential[player]);
         reward += kag_cash_shaping_reward(env,
             before_money[player], money[player]);
+        float progress_value = kag_player_progress_value(env, player);
+        reward += kag_progress_highwater_reward(env, player, progress_value);
+        reward += maintenance_rewards[player];
         env->agents[player].rewards[0] = reward;
         env->episode_returns[player] += reward;
     }
@@ -220,6 +242,8 @@ __device__ static void kag_cuda_transition(Env* env, Env* shells,
 
     float terminal_potential[KG_NUM_PLAYERS] = {
         env->potential[0], env->potential[1]};
+    float terminal_progress[KG_NUM_PLAYERS] = {
+        kag_player_progress_value(env, 0), kag_player_progress_value(env, 1)};
     float win0 = money[0] > money[1] ? 1.0f
         : money[0] == money[1] ? 0.5f : 0.0f;
     float model_win = model_player == 0 ? win0 : 1.0f - win0;
@@ -227,6 +251,8 @@ __device__ static void kag_cuda_transition(Env* env, Env* shells,
     int opponent_money = money[1 - model_player];
     float money0_term = kag_terminal_money_reward(env, money[0]);
     float money1_term = kag_terminal_money_reward(env, money[1]);
+    money0_term += kag_positive_terminal_money_reward(env, money[0]);
+    money1_term += kag_positive_terminal_money_reward(env, money[1]);
     env->agents[0].rewards[0] += money0_term;
     env->agents[1].rewards[0] += money1_term;
     env->episode_returns[0] += money0_term;
@@ -237,8 +263,12 @@ __device__ static void kag_cuda_transition(Env* env, Env* shells,
 
     env->log.perf += model_win;
     env->log.score += terminal_potential[model_player];
-    env->log.sweep_score += terminal_potential[model_player];
+    env->log.sweep_score += env->reward_progress_scale > 0.0f
+        ? terminal_progress[model_player]
+        : terminal_potential[model_player];
     env->log.opponent_score += terminal_potential[1 - model_player];
+    env->log.future_value_score += terminal_progress[model_player];
+    env->log.opponent_future_value_score += terminal_progress[1 - model_player];
     env->log.money += (float)model_money;
     env->log.opponent_money += (float)opponent_money;
     env->log.gdp += game->production_value[model_player];
@@ -401,6 +431,8 @@ __device__ static void kag_cuda_transition(Env* env, Env* shells,
     env->episode_returns[1] = 0.0f;
     env->potential[0] = kag_player_potential(env, 0);
     env->potential[1] = kag_player_potential(env, 1);
+    env->progress_highwater[0] = kag_player_progress_value(env, 0);
+    env->progress_highwater[1] = kag_player_progress_value(env, 1);
     kag_write_all_observations_from_tapes(env, tapes);
 }
 
@@ -424,6 +456,39 @@ __global__ static void kag_cuda_reset_kernel(Env* shells, Env* matches,
     env->reward_potential_gamma = d_kag_cuda_config.reward_potential_gamma;
     env->reward_cash_scale = d_kag_cuda_config.reward_cash_scale;
     env->reward_money_scale = d_kag_cuda_config.reward_money_scale;
+    env->reward_progress_scale = d_kag_cuda_config.reward_progress_scale;
+    env->reward_progress_terminal_money_scale =
+        d_kag_cuda_config.reward_progress_terminal_money_scale;
+    env->reward_progress_seed_scale =
+        d_kag_cuda_config.reward_progress_seed_scale;
+    env->reward_progress_crop_scale =
+        d_kag_cuda_config.reward_progress_crop_scale;
+    env->reward_progress_animal_scale =
+        d_kag_cuda_config.reward_progress_animal_scale;
+    env->reward_progress_product_scale =
+        d_kag_cuda_config.reward_progress_product_scale;
+    env->reward_progress_maintenance_scale =
+        d_kag_cuda_config.reward_progress_maintenance_scale;
+    env->reward_progress_land_scale =
+        d_kag_cuda_config.reward_progress_land_scale;
+    env->reward_progress_health_ratio =
+        d_kag_cuda_config.reward_progress_health_ratio;
+    for (int crop = 0; crop < KG_NUM_CROPS; crop++) {
+        env->reward_progress_crop_units[crop] =
+            d_kag_cuda_config.reward_progress_crop_units[crop];
+        env->reward_progress_seed_realization[crop] =
+            d_kag_cuda_config.reward_progress_seed_realization[crop];
+    }
+    for (int animal = 0; animal < KG_NUM_ANIMALS; animal++) {
+        env->reward_progress_animal_units_per_event[animal] =
+            d_kag_cuda_config.reward_progress_animal_units_per_event[animal];
+        env->reward_progress_animal_realization[animal] =
+            d_kag_cuda_config.reward_progress_animal_realization[animal];
+    }
+    for (int product = 0; product < KG_NUM_PRODUCTS; product++) {
+        env->reward_progress_product_realization[product] =
+            d_kag_cuda_config.reward_progress_product_realization[product];
+    }
     env->bot_opponent_fraction = d_kag_cuda_config.bot_opponent_fraction;
     env->bot_top_fraction = d_kag_cuda_config.bot_top_fraction;
     env->bot_script_fraction = d_kag_cuda_config.bot_script_fraction;
@@ -459,6 +524,8 @@ __global__ static void kag_cuda_reset_kernel(Env* shells, Env* matches,
         env->agents[player].rewards[0] = 0.0f;
         env->agents[player].terminals[0] = 0.0f;
         env->potential[player] = kag_player_potential(env, player);
+        env->progress_highwater[player] =
+            kag_player_progress_value(env, player);
     }
     kag_write_all_observations_from_tapes(env, tapes);
 }
@@ -501,6 +568,39 @@ static void kag_cuda_load_config(Dict* kwargs) {
     h_kag_cuda_config.reward_potential_gamma = template_env.reward_potential_gamma;
     h_kag_cuda_config.reward_cash_scale = template_env.reward_cash_scale;
     h_kag_cuda_config.reward_money_scale = template_env.reward_money_scale;
+    h_kag_cuda_config.reward_progress_scale = template_env.reward_progress_scale;
+    h_kag_cuda_config.reward_progress_terminal_money_scale =
+        template_env.reward_progress_terminal_money_scale;
+    h_kag_cuda_config.reward_progress_seed_scale =
+        template_env.reward_progress_seed_scale;
+    h_kag_cuda_config.reward_progress_crop_scale =
+        template_env.reward_progress_crop_scale;
+    h_kag_cuda_config.reward_progress_animal_scale =
+        template_env.reward_progress_animal_scale;
+    h_kag_cuda_config.reward_progress_product_scale =
+        template_env.reward_progress_product_scale;
+    h_kag_cuda_config.reward_progress_maintenance_scale =
+        template_env.reward_progress_maintenance_scale;
+    h_kag_cuda_config.reward_progress_land_scale =
+        template_env.reward_progress_land_scale;
+    h_kag_cuda_config.reward_progress_health_ratio =
+        template_env.reward_progress_health_ratio;
+    for (int crop = 0; crop < KG_NUM_CROPS; crop++) {
+        h_kag_cuda_config.reward_progress_crop_units[crop] =
+            template_env.reward_progress_crop_units[crop];
+        h_kag_cuda_config.reward_progress_seed_realization[crop] =
+            template_env.reward_progress_seed_realization[crop];
+    }
+    for (int animal = 0; animal < KG_NUM_ANIMALS; animal++) {
+        h_kag_cuda_config.reward_progress_animal_units_per_event[animal] =
+            template_env.reward_progress_animal_units_per_event[animal];
+        h_kag_cuda_config.reward_progress_animal_realization[animal] =
+            template_env.reward_progress_animal_realization[animal];
+    }
+    for (int product = 0; product < KG_NUM_PRODUCTS; product++) {
+        h_kag_cuda_config.reward_progress_product_realization[product] =
+            template_env.reward_progress_product_realization[product];
+    }
     h_kag_cuda_config.bot_opponent_fraction = template_env.bot_opponent_fraction;
     h_kag_cuda_config.bot_pass_fraction = (float)dict_get(kwargs, "bot_pass_fraction");
     h_kag_cuda_config.bot_rules_fraction = (float)dict_get(kwargs, "bot_rules_fraction");

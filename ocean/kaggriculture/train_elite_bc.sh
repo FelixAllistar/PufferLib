@@ -8,7 +8,9 @@ set -euo pipefail
 repo_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
 data=${KAG_ELITE_BC_DATA:-/workspace/elite_replays/kaggriculture_elite_1.32.7.bc}
 epochs=${1:-5}
-output=${KAG_ELITE_BC_OUTPUT:-saved/kaggriculture_elite_bc_1280_1024x2_e${epochs}.bin}
+hidden=${KAG_ELITE_BC_HIDDEN:-1024}
+layers=${KAG_ELITE_BC_LAYERS:-2}
+output=${KAG_ELITE_BC_OUTPUT:-saved/kaggriculture_elite_bc_1280_${hidden}x${layers}_e${epochs}.bin}
 init=${KAG_ELITE_BC_INIT:-None}
 batch=${KAG_ELITE_BC_BATCH:-32}
 validation_games=${KAG_ELITE_BC_VALIDATION_GAMES:-400}
@@ -47,5 +49,5 @@ exec ./ocean/kaggriculture/build/kag_bc \
     bc.detailed_stats="$detailed_stats" \
     bc.anchor_l2=0 \
     bc.zero_reset_source=0 \
-    policy.hidden_size=1024 \
-    policy.num_layers=2
+    policy.hidden_size="$hidden" \
+    policy.num_layers="$layers"

@@ -498,11 +498,15 @@ def _build_row(observation: dict[str, Any], action: dict[str, Any]) -> tuple[
 
 
 def _validate_episode(
-    episode: dict[str, Any], minimum_version: tuple[int, ...], expected_steps: int
+    episode: dict[str, Any], minimum_version: tuple[int, ...], expected_steps: int,
+    exact_version: tuple[int, ...] | None = None,
 ) -> str | None:
     if episode.get("name") != "kaggriculture":
         return "wrong_environment"
-    if _version_tuple(episode.get("module_version", "0")) < minimum_version:
+    module_version = _version_tuple(episode.get("module_version", "0"))
+    if exact_version is not None and module_version != exact_version:
+        return "wrong_module_version"
+    if module_version < minimum_version:
         return "old_module_version"
     configuration = episode.get("configuration", {})
     if int(configuration.get("episodeSteps", expected_steps)) != expected_steps:
@@ -628,6 +632,10 @@ def main() -> int:
     parser.add_argument("--audit-only", action="store_true")
     parser.add_argument("--limit", type=int, default=0, help="accepted episode limit")
     parser.add_argument("--minimum-version", default="1.32.7")
+    parser.add_argument(
+        "--exact-version",
+        help="accept only this exact simulator version (recommended for BC)",
+    )
     parser.add_argument("--steps", type=int, default=EXPECTED_STEPS)
     parser.add_argument("--players", choices=("both", "winner"), default="both")
     parser.add_argument("--min-final-money", type=float, default=0.0)
@@ -661,11 +669,16 @@ def main() -> int:
 
         accepted = 0
         minimum_version = _version_tuple(args.minimum_version)
+        exact_version = (
+            _version_tuple(args.exact_version) if args.exact_version else None
+        )
         for source, episode in _iter_replays(inputs):
             audit.counts["episodes_seen"] += 1
             module_version = str(episode.get("module_version", "unknown"))
             audit.module_versions[module_version] += 1
-            reason = _validate_episode(episode, minimum_version, args.steps)
+            reason = _validate_episode(
+                episode, minimum_version, args.steps, exact_version
+            )
             if reason is not None:
                 audit.skip_reasons[reason] += 1
                 continue

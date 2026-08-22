@@ -1,14 +1,18 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Download recent official top-episode datasets, convert each archive without
-# unpacking it, merge the section-major BC shards, and discard raw archives.
-# The default three days are all Kaggriculture 1.32.7 data.
+# Download official top-episode datasets, convert each archive without
+# unpacking it, and merge the section-major BC shards. BC labels must come
+# from one exact simulator version; a newer patch is not silently mixed in.
 
 repo_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
 data_root=${KAG_ELITE_DATA_ROOT:-/workspace/elite_replays}
 kaggle_bin=${KAGGLE_BIN:-/root/.local/bin/kaggle}
 keep_shards=${KAG_ELITE_KEEP_SHARDS:-0}
+keep_archives=${KAG_ELITE_KEEP_ARCHIVES:-0}
+minimum_version=${KAG_ELITE_MIN_VERSION:-1.32.7}
+exact_version=${KAG_ELITE_EXACT_VERSION:-$minimum_version}
+merged_name=${KAG_ELITE_MERGED_NAME:-kaggriculture_elite_${minimum_version}.bc}
 python_bin=${KAG_ELITE_PYTHON:-}
 
 if [[ -z "$python_bin" ]]; then
@@ -59,11 +63,15 @@ run_shard() {
     fi
     echo "IMPORT $archive"
     "$python_bin" "$repo_root/ocean/kaggriculture/import_elite_replays.py" \
-        --output "$output" --minimum-version 1.32.7 --players both "$archive"
-    # Raw downloads are reproducible and large; keep the compact BC shard and
-    # its audit/manifest instead.
-    rm -f -- "$archive"
-    rmdir "$download_dir" 2>/dev/null || true
+        --output "$output" --minimum-version "$minimum_version" \
+        --exact-version "$exact_version" \
+        --players both "$archive"
+    # Raw downloads are reproducible and large.  Normally discard them after
+    # conversion; the economic fitter can request a temporary retained copy.
+    if [[ "$keep_archives" == 0 ]]; then
+        rm -f -- "$archive"
+        rmdir "$download_dir" 2>/dev/null || true
+    fi
     echo "DONE $output"
 }
 
@@ -90,7 +98,7 @@ shards=()
 for slug in "${slugs[@]}"; do
     shards+=("$data_root/shards/$slug.bc")
 done
-merged="$data_root/kaggriculture_elite_1.32.7.bc"
+merged="$data_root/$merged_name"
 "$python_bin" "$repo_root/ocean/kaggriculture/merge_bc_datasets.py" \
     "$merged" "${shards[@]}"
 

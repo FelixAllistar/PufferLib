@@ -119,13 +119,16 @@ typedef uint8_t obs_t;
 
 struct Log {
     float perf;
-    /* score/sweep_score are accounting net worth: cash plus assets at fixed
-     * cost and products at conservative realizable market value. Cash and
-     * production stay separate so a productive, price-depressed farm remains
-     * visible. */
+    /* score is accounting net worth: cash plus assets at fixed cost and
+     * products at conservative realizable market value. sweep_score switches
+     * to the fitted future-value score when positive progress is enabled.
+     * Cash and production stay separate so a productive, price-depressed farm
+     * remains visible. */
     float score;
     float sweep_score;
     float opponent_score;
+    float future_value_score;
+    float opponent_future_value_score;
     float money;
     float opponent_money;
     float gdp;
@@ -257,8 +260,23 @@ struct Env {
     float reward_potential_gamma;
     float reward_cash_scale;
     float reward_money_scale;
+    float reward_progress_scale;
+    float reward_progress_terminal_money_scale;
+    float reward_progress_seed_scale;
+    float reward_progress_crop_scale;
+    float reward_progress_animal_scale;
+    float reward_progress_product_scale;
+    float reward_progress_maintenance_scale;
+    float reward_progress_land_scale;
+    float reward_progress_health_ratio;
+    float reward_progress_crop_units[KG_NUM_CROPS];
+    float reward_progress_seed_realization[KG_NUM_CROPS];
+    float reward_progress_animal_units_per_event[KG_NUM_ANIMALS];
+    float reward_progress_animal_realization[KG_NUM_ANIMALS];
+    float reward_progress_product_realization[KG_NUM_PRODUCTS];
     float reset_opening_prob;
     float potential[KG_NUM_PLAYERS];
+    float progress_highwater[KG_NUM_PLAYERS];
     int bot_opponent;
     float bot_opponent_fraction;
     int bot_first;
@@ -535,6 +553,234 @@ KG_HD static inline float kag_terminal_money_reward(const Env* env,
     float starting_money = (float)env->game_storage.config.starting_money;
     return env->reward_money_scale
         * ((float)money - starting_money) / starting_money;
+}
+
+/* Number of production events still available to an ongoing crop.  The
+ * fitted crop value is a full-lifetime elite expectation; scaling it by the
+ * remaining event fraction makes late planting and end-game liquidation
+ * visible without assigning any negative reward when time passes. */
+KG_HD static inline int kag_crop_remaining_events(const Env* env,
+        const KGTile* tile) {
+    if (tile->crop < 0 || tile->crop >= KG_NUM_CROPS) return 0;
+    const KGCropDef* def = &KG_CROP_DEFS[tile->crop];
+    if (!def->ongoing || def->interval <= 0) return 0;
+    int remaining = 0;
+    for (int event = 0; event < def->max_yield; event++) {
+        int event_day = tile->planted_day + def->first_yield_day
+            + event * def->interval;
+        if (event_day > env->game_storage.day && event_day < 30) remaining++;
+    }
+    return remaining;
+}
+
+KG_HD static inline int kag_animal_remaining_events(const Env* env,
+        int animal, int placed_day) {
+    if (animal < 0 || animal >= KG_NUM_ANIMALS) return 0;
+    const KGAnimalDef* def = &KG_ANIMAL_DEFS[animal];
+    int remaining = 0;
+    for (int event_day = placed_day + def->first_yield_day;
+            event_day < 30; event_day += def->interval) {
+        if (event_day > env->game_storage.day) remaining++;
+    }
+    return remaining;
+}
+
+/* Elite-valued economic state.  Cash is exact.  Existing product is marked
+ * at conservative cumulative liquidation value, discounted by the empirical
+ * probability that elite players actually realize it. Uncommitted seeds and
+ * animals stay below paid cost; planted crops and placed animals unlock their
+ * empirically realized future output at the live market price. Thus profitable
+ * carrot/tomato/egg situations become valuable without a crop-specific bonus.
+ *
+ * Every basis and coefficient is nonnegative.  The reward below additionally
+ * pays only new high-water achievements, so temporary losses never emit a
+ * negative signal and buy/sell cycles cannot repeatedly earn the same value. */
+KG_HD static inline float kag_player_progress_value(const Env* env,
+        int player_id) {
+    const KGState* game = &env->game_storage;
+    const KGPlayer* player = &game->players[player_id];
+    float product_units[KG_NUM_PRODUCTS] = {0.0f};
+    float value = (float)player->money;
+
+    for (int item = 0; item < KG_NUM_PRODUCTS; item++) {
+        product_units[item] += (float)player->shed[item];
+    }
+    /* Uncommitted inventory stays at a conservative fraction of its paid
+     * cost. Planting/placing is what unlocks fitted future production value;
+     * merely hoarding seeds or animals cannot masquerade as a giant farm. */
+    for (int crop = 0; crop < KG_NUM_CROPS; crop++) {
+        value += env->reward_progress_seed_scale
+            * env->reward_progress_seed_realization[crop]
+            * player->seeds[crop] * KG_CROP_DEFS[crop].seed_cost;
+    }
+    for (int animal = 0; animal < KG_NUM_ANIMALS; animal++) {
+        int count = player->shed[KG_ITEM_GOOSE + animal];
+        value += env->reward_progress_animal_scale
+            * env->reward_progress_animal_realization[animal]
+            * count * KG_ANIMAL_DEFS[animal].cost;
+    }
+    for (int unit = 0; unit < player->unit_count; unit++) {
+        const KGUnitState* held = &player->units[unit];
+        for (int order = 0; order < held->inventory_order_count; order++) {
+            int item = held->inventory_order[order];
+            int count = held->inventory[item];
+            if (item < KG_NUM_PRODUCTS) {
+                product_units[item] += (float)count;
+            } else {
+                int animal = item - KG_ITEM_GOOSE;
+                if ((unsigned)animal < KG_NUM_ANIMALS) {
+                    value += env->reward_progress_animal_scale
+                        * env->reward_progress_animal_realization[animal]
+                        * count * KG_ANIMAL_DEFS[animal].cost;
+                }
+            }
+        }
+    }
+
+    for (int word = 0; word < KG_TILE_WORDS; word++) {
+        uint64_t plants = player->plant_bits[word];
+        while (plants) {
+            int tile_index = word * 64 + kg_ctz64(plants);
+            const KGTile* tile = &player->tiles[tile_index];
+            int crop = tile->crop;
+            float health = tile->watered_today
+                || tile->consecutive_unwatered == 0
+                ? 1.0f : env->reward_progress_health_ratio;
+            float future = 0.0f;
+            const KGCropDef* def = &KG_CROP_DEFS[crop];
+            if (def->ongoing) {
+                future = env->reward_progress_crop_units[crop]
+                    * kag_crop_remaining_events(env, tile)
+                    / (float)def->max_yield;
+            } else {
+                future = env->reward_progress_crop_units[crop]
+                    - (float)tile->yield_units;
+                if (future < 0.0f) future = 0.0f;
+            }
+            product_units[crop] += tile->yield_units
+                + env->reward_progress_crop_scale * health * future;
+            plants &= plants - 1;
+        }
+        uint64_t animals = player->animal_bits[word];
+        while (animals) {
+            int tile_index = word * 64 + kg_ctz64(animals);
+            const KGTile* tile = &player->tiles[tile_index];
+            int animal = tile->animal;
+            if (animal >= 0 && animal < KG_NUM_ANIMALS) {
+                int product = KG_ANIMAL_DEFS[animal].product;
+                float health = tile->fed_today
+                    || tile->consecutive_unfed == 0
+                    ? 1.0f : env->reward_progress_health_ratio;
+                float future = env->reward_progress_animal_units_per_event[animal]
+                    * kag_animal_remaining_events(env, animal, tile->placed_day);
+                product_units[product] += tile->yield_units
+                    + env->reward_progress_animal_scale * health * future;
+            }
+            animals &= animals - 1;
+        }
+    }
+
+    for (int product = 0; product < KG_NUM_PRODUCTS; product++) {
+        value += env->reward_progress_product_scale
+            * env->reward_progress_product_realization[product]
+            * kag_product_mark(env, product, product_units[product]);
+    }
+    int extra_land = kag_popcount((unsigned)player->unlocked_mask) - 1;
+    int land_cost = extra_land <= 0 ? 0
+        : extra_land == 1 ? 1000 : extra_land == 2 ? 3000 : 7000;
+    value += env->reward_progress_land_scale * land_cost;
+    return value;
+}
+
+KG_HD static inline float kag_progress_highwater_reward(Env* env,
+        int player_id, float current_value) {
+    float previous = env->progress_highwater[player_id];
+    if (current_value <= previous) return 0.0f;
+    env->progress_highwater[player_id] = current_value;
+    float starting_money = (float)env->game_storage.config.starting_money;
+    return env->reward_progress_scale
+        * (current_value - previous) / starting_money;
+}
+
+KG_HD static inline float kag_positive_terminal_money_reward(const Env* env,
+        int money) {
+    if (money <= env->game_storage.config.starting_money) return 0.0f;
+    float starting_money = (float)env->game_storage.config.starting_money;
+    return env->reward_progress_terminal_money_scale
+        * ((float)money - starting_money) / starting_money;
+}
+
+/* Positive credit for valid maintenance that preserves fitted future output.
+ * WATER/FEED/CARE are each deduplicated per tile, so sending several hands to
+ * the same asset cannot farm reward. Credit uses the current live product
+ * price and the same empirical realization coefficients as the state value.
+ * It is deliberately separate from the high-water ledger: restoring an asset
+ * after one weak day should still teach the maintenance action even though the
+ * already-earned state milestone cannot be collected twice. */
+KG_HD static inline float kag_maintenance_action_reward(const Env* env,
+        int player_id, const KGAction* action) {
+    if (env->reward_progress_scale == 0.0f
+            || env->reward_progress_maintenance_scale == 0.0f) return 0.0f;
+    const KGState* game = &env->game_storage;
+    const KGPlayer* player = &game->players[player_id];
+    uint64_t watered[KG_TILE_WORDS] = {0};
+    uint64_t fed[KG_TILE_WORDS] = {0};
+    uint64_t cared[KG_TILE_WORDS] = {0};
+    float credit = 0.0f;
+    for (int unit = 0; unit < player->unit_count; unit++) {
+        const KGUnitState* held = &player->units[unit];
+        const KGUnitAction* command = unit == 0
+            ? &action->farmer : &action->hands[unit - 1];
+        int tile_index = (int)held->y * KG_MAX_BOARD_SIZE + held->x;
+        int word = tile_index / 64;
+        uint64_t bit = 1ULL << (tile_index % 64);
+        const KGTile* tile = &player->tiles[tile_index];
+        if (command->op == KG_OP_WATER && tile->kind == KG_TILE_PLANT
+                && !tile->watered_today && !(watered[word] & bit)) {
+            int crop = tile->crop;
+            const KGCropDef* def = &KG_CROP_DEFS[crop];
+            int last_day = tile->planted_day + def->max_yield_day;
+            int days = last_day - game->day + 1;
+            if (days < 1) days = 1;
+            float future = env->reward_progress_crop_units[crop];
+            if (def->ongoing) {
+                future *= kag_crop_remaining_events(env, tile)
+                    / (float)def->max_yield;
+            }
+            credit += env->reward_progress_crop_scale
+                * env->reward_progress_product_scale
+                * env->reward_progress_product_realization[crop]
+                * future * game->market.prices[crop] / days;
+            watered[word] |= bit;
+        } else if (command->op == KG_OP_FEED && kg_is_animal_tile(tile)
+                && !tile->fed_today && held->inventory[KG_ITEM_WHEAT] > 0
+                && !(fed[word] & bit)) {
+            int animal = tile->animal;
+            int product = KG_ANIMAL_DEFS[animal].product;
+            int days = 30 - game->day;
+            if (days < 1) days = 1;
+            float future = env->reward_progress_animal_units_per_event[animal]
+                * kag_animal_remaining_events(
+                    env, animal, tile->placed_day);
+            credit += env->reward_progress_animal_scale
+                * env->reward_progress_product_scale
+                * env->reward_progress_product_realization[product]
+                * future * game->market.prices[product] / days;
+            fed[word] |= bit;
+        } else if (command->op == KG_OP_CARE && kg_is_animal_tile(tile)
+                && !tile->cared_today && !(cared[word] & bit)) {
+            int animal = tile->animal;
+            int product = KG_ANIMAL_DEFS[animal].product;
+            credit += env->reward_progress_animal_scale
+                * env->reward_progress_product_scale
+                * env->reward_progress_product_realization[product]
+                * game->market.prices[product];
+            cared[word] |= bit;
+        }
+    }
+    float starting_money = (float)game->config.starting_money;
+    return env->reward_progress_scale
+        * env->reward_progress_maintenance_scale * credit / starting_money;
 }
 
 KG_HD static inline uint8_t kag_tile_entity(const KGTile* tile) {
@@ -2242,6 +2488,119 @@ void puf_init(Env* env, Dict* kwargs) {
         kwargs, "reward_potential_gamma");
     env->reward_cash_scale = (float)dict_get(kwargs, "reward_cash_scale");
     env->reward_money_scale = (float)dict_get(kwargs, "reward_money_scale");
+    env->reward_progress_scale = (float)dict_get(
+        kwargs, "reward_progress_scale");
+    env->reward_progress_terminal_money_scale = (float)dict_get(
+        kwargs, "reward_progress_terminal_money_scale");
+    env->reward_progress_seed_scale = (float)dict_get(
+        kwargs, "reward_progress_seed_scale");
+    env->reward_progress_crop_scale = (float)dict_get(
+        kwargs, "reward_progress_crop_scale");
+    env->reward_progress_animal_scale = (float)dict_get(
+        kwargs, "reward_progress_animal_scale");
+    env->reward_progress_product_scale = (float)dict_get(
+        kwargs, "reward_progress_product_scale");
+    env->reward_progress_maintenance_scale = (float)dict_get(
+        kwargs, "reward_progress_maintenance_scale");
+    env->reward_progress_land_scale = (float)dict_get(
+        kwargs, "reward_progress_land_scale");
+    env->reward_progress_health_ratio = (float)dict_get(
+        kwargs, "reward_progress_health_ratio");
+    env->reward_progress_crop_units[KG_WHEAT] = (float)dict_get(
+        kwargs, "reward_progress_crop_wheat_units");
+    env->reward_progress_crop_units[KG_CARROT] = (float)dict_get(
+        kwargs, "reward_progress_crop_carrot_units");
+    env->reward_progress_crop_units[KG_TOMATO] = (float)dict_get(
+        kwargs, "reward_progress_crop_tomato_units");
+    env->reward_progress_crop_units[KG_STRAWBERRY] = (float)dict_get(
+        kwargs, "reward_progress_crop_strawberry_units");
+    env->reward_progress_crop_units[KG_MELON] = (float)dict_get(
+        kwargs, "reward_progress_crop_melon_units");
+    env->reward_progress_seed_realization[KG_WHEAT] = (float)dict_get(
+        kwargs, "reward_progress_seed_wheat_realization");
+    env->reward_progress_seed_realization[KG_CARROT] = (float)dict_get(
+        kwargs, "reward_progress_seed_carrot_realization");
+    env->reward_progress_seed_realization[KG_TOMATO] = (float)dict_get(
+        kwargs, "reward_progress_seed_tomato_realization");
+    env->reward_progress_seed_realization[KG_STRAWBERRY] = (float)dict_get(
+        kwargs, "reward_progress_seed_strawberry_realization");
+    env->reward_progress_seed_realization[KG_MELON] = (float)dict_get(
+        kwargs, "reward_progress_seed_melon_realization");
+    env->reward_progress_animal_units_per_event[KG_GOOSE] = (float)dict_get(
+        kwargs, "reward_progress_animal_goose_units_per_event");
+    env->reward_progress_animal_units_per_event[KG_COW] = (float)dict_get(
+        kwargs, "reward_progress_animal_cow_units_per_event");
+    env->reward_progress_animal_units_per_event[KG_SHEEP] = (float)dict_get(
+        kwargs, "reward_progress_animal_sheep_units_per_event");
+    env->reward_progress_animal_realization[KG_GOOSE] = (float)dict_get(
+        kwargs, "reward_progress_animal_goose_realization");
+    env->reward_progress_animal_realization[KG_COW] = (float)dict_get(
+        kwargs, "reward_progress_animal_cow_realization");
+    env->reward_progress_animal_realization[KG_SHEEP] = (float)dict_get(
+        kwargs, "reward_progress_animal_sheep_realization");
+    env->reward_progress_product_realization[KG_ITEM_WHEAT] = (float)dict_get(
+        kwargs, "reward_progress_product_wheat_realization");
+    env->reward_progress_product_realization[KG_ITEM_CARROT] = (float)dict_get(
+        kwargs, "reward_progress_product_carrot_realization");
+    env->reward_progress_product_realization[KG_ITEM_TOMATO] = (float)dict_get(
+        kwargs, "reward_progress_product_tomato_realization");
+    env->reward_progress_product_realization[KG_ITEM_STRAWBERRY] = (float)dict_get(
+        kwargs, "reward_progress_product_strawberry_realization");
+    env->reward_progress_product_realization[KG_ITEM_MELON] = (float)dict_get(
+        kwargs, "reward_progress_product_melon_realization");
+    env->reward_progress_product_realization[KG_ITEM_EGG] = (float)dict_get(
+        kwargs, "reward_progress_product_egg_realization");
+    env->reward_progress_product_realization[KG_ITEM_MILK] = (float)dict_get(
+        kwargs, "reward_progress_product_milk_realization");
+    env->reward_progress_product_realization[KG_ITEM_WOOL] = (float)dict_get(
+        kwargs, "reward_progress_product_wool_realization");
+    env->reward_progress_product_realization[KG_ITEM_FERTILIZER] = (float)dict_get(
+        kwargs, "reward_progress_product_fertilizer_realization");
+    float progress_scales[] = {
+        env->reward_progress_scale,
+        env->reward_progress_terminal_money_scale,
+        env->reward_progress_seed_scale,
+        env->reward_progress_crop_scale,
+        env->reward_progress_animal_scale,
+        env->reward_progress_product_scale,
+        env->reward_progress_maintenance_scale,
+        env->reward_progress_land_scale,
+    };
+    for (int index = 0; index < (int)(sizeof(progress_scales)
+            / sizeof(progress_scales[0])); index++) {
+        if (progress_scales[index] < 0.0f) {
+            fprintf(stderr, "reward_progress coefficients must be nonnegative\n");
+            exit(1);
+        }
+    }
+    if (env->reward_progress_health_ratio < 0.0f
+            || env->reward_progress_health_ratio > 1.0f) {
+        fprintf(stderr, "reward_progress_health_ratio must be in [0, 1]\n");
+        exit(1);
+    }
+    for (int crop = 0; crop < KG_NUM_CROPS; crop++) {
+        if (env->reward_progress_crop_units[crop] < 0.0f
+                || env->reward_progress_seed_realization[crop] < 0.0f
+                || env->reward_progress_seed_realization[crop] > 1.0f) {
+            fprintf(stderr, "invalid crop progress coefficient\n");
+            exit(1);
+        }
+    }
+    for (int animal = 0; animal < KG_NUM_ANIMALS; animal++) {
+        if (env->reward_progress_animal_units_per_event[animal] < 0.0f
+                || env->reward_progress_animal_realization[animal] < 0.0f
+                || env->reward_progress_animal_realization[animal] > 1.0f) {
+            fprintf(stderr, "invalid animal progress coefficient\n");
+            exit(1);
+        }
+    }
+    for (int product = 0; product < KG_NUM_PRODUCTS; product++) {
+        if (env->reward_progress_product_realization[product] < 0.0f
+                || env->reward_progress_product_realization[product] > 1.0f) {
+            fprintf(stderr, "product realization must be in [0, 1]\n");
+            exit(1);
+        }
+    }
     float bot_fraction = (float)dict_get(kwargs, "bot_opponent_fraction");
     float pass_fraction = (float)dict_get(kwargs, "bot_pass_fraction");
     float rules_fraction = (float)dict_get(kwargs, "bot_rules_fraction");
@@ -2312,6 +2671,7 @@ void puf_reset(Env* env) {
         env->agents[player].terminals[0] = 0.0f;
         env->episode_returns[player] = 0.0f;
         env->potential[player] = kag_player_potential(env, player);
+        env->progress_highwater[player] = kag_player_progress_value(env, player);
     }
     kag_write_all_observations(env);
 }
@@ -2375,6 +2735,11 @@ void puf_step(Env* env) {
         }
     }
 
+    float maintenance_rewards[KG_NUM_PLAYERS];
+    for (int player = 0; player < KG_NUM_PLAYERS; player++) {
+        maintenance_rewards[player] = kag_maintenance_action_reward(
+            env, player, &actions[player]);
+    }
     kag_log_actions(env, game, &actions[0]);
 
     kg_step(game, actions);
@@ -2397,6 +2762,9 @@ void puf_step(Env* env) {
         int after_money = player == 0 ? p0 : p1;
         reward += kag_cash_shaping_reward(env,
             before_money[player], after_money);
+        float progress_value = kag_player_progress_value(env, player);
+        reward += kag_progress_highwater_reward(env, player, progress_value);
+        reward += maintenance_rewards[player];
         env->agents[player].rewards[0] = reward;
         env->episode_returns[player] += reward;
     }
@@ -2404,10 +2772,15 @@ void puf_step(Env* env) {
     if (done) {
         float terminal_potential[KG_NUM_PLAYERS] = {
             env->potential[0], env->potential[1]};
+        float terminal_progress[KG_NUM_PLAYERS] = {
+            kag_player_progress_value(env, 0),
+            kag_player_progress_value(env, 1)};
         float win0 = p0 > p1 ? 1.0f : (p0 == p1 ? 0.5f : 0.0f);
         float model_win = model_player == 0 ? win0 : 1.0f - win0;
         float money0_term = kag_terminal_money_reward(env, p0);
         float money1_term = kag_terminal_money_reward(env, p1);
+        money0_term += kag_positive_terminal_money_reward(env, p0);
+        money1_term += kag_positive_terminal_money_reward(env, p1);
         env->agents[0].rewards[0] += money0_term;
         env->agents[1].rewards[0] += money1_term;
         env->episode_returns[0] += money0_term;
@@ -2416,8 +2789,13 @@ void puf_step(Env* env) {
         env->agents[1].terminals[0] = 1.0f;
         env->log.perf += model_win;
         env->log.score += terminal_potential[model_player];
-        env->log.sweep_score += terminal_potential[model_player];
+        env->log.sweep_score += env->reward_progress_scale > 0.0f
+            ? terminal_progress[model_player]
+            : terminal_potential[model_player];
         env->log.opponent_score += terminal_potential[1 - model_player];
+        env->log.future_value_score += terminal_progress[model_player];
+        env->log.opponent_future_value_score +=
+            terminal_progress[1 - model_player];
         env->log.money += (float)model_money;
         env->log.opponent_money += (float)opponent_money;
         env->log.gdp += game->production_value[model_player];
@@ -2798,6 +3176,9 @@ void puf_log(Log* log, Dict* out) {
      * score/sweep_score as the optimizer-compatible potential aliases. */
     dict_set(out, "potential_score", log->score);
     dict_set(out, "opponent_potential", log->opponent_score);
+    dict_set(out, "future_value_score", log->future_value_score);
+    dict_set(out, "opponent_future_value_score",
+        log->opponent_future_value_score);
     dict_set(out, "money", log->money);
     dict_set(out, "opponent_money", log->opponent_money);
     dict_set(out, "gdp", log->gdp);

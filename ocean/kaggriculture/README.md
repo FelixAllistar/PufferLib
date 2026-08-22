@@ -239,6 +239,55 @@ Kaggriculture disables the generic transition reward clamp with
 large product pile is marked by its cumulative realizable revenue rather than
 pretending every unit can sell at the first unit's quote.
 
+### Positive elite future-value reward
+
+`env.reward_progress_scale > 0` enables the alternative nonnegative objective
+used for fresh exploration experiments. Its fitted state value is:
+
+```text
+cash
++ conservative paid cost of uncommitted seeds/animals
++ live-price liquidation value of held products
++ live-price value of empirically expected remaining crop/animal output
++ land at paid cost
+```
+
+The per-step state reward is only the increase above the episode's previous
+high-water value. A decline emits zero, and returning to an already rewarded
+state emits zero, so a buy/sell cycle cannot recollect the same achievement.
+Valid WATER/FEED/CARE actions receive a small, live-price, data-valued credit;
+duplicate hands on one tile are counted once. Terminal cash above the starting
+bank receives an additional positive-only reward. To run this objective alone,
+set `reward_potential_scale`, `reward_cash_scale`, and `reward_money_scale` to
+zero and keep `train.reward_clip=0`.
+
+The item coefficients are measured from exact-version elite replays by
+`fit_elite_economic_values.py`. Aggregate seed/crop/animal/product/maintenance
+scales remain ordinary INI values, and the fitter emits compact built-in sweep
+ranges alongside the audit JSON. Unplanted seeds and unplaced animals are not
+assigned speculative lifetime output, which prevents inventory hoarding from
+looking like a productive farm. Current market prices enter the value directly,
+so carrot, tomato, and egg become attractive only in their profitable games.
+
+### Restartable elite opponent factory
+
+The factory downloads only exact `1.32.7` daily archives, rebuilds the merged
+BC dataset, fits economic coefficients, and creates independent 128x2, 256x2,
+and 512x2 clones:
+
+```bash
+KAG_CLONE_REFRESH=1 ./ocean/kaggriculture/elite_clone_factory.sh
+```
+
+Each clone contains one exact displayed agent name, a minimum number of elite
+trajectories, and at least two source days. Since public replay JSON does not
+provide a submission hash, the planner also compares per-head action-label
+fingerprints across days. Days above `KAG_CLONE_MAX_BEHAVIOR_JSD` are excluded
+instead of silently blending a changed bot. Ryo Hasegawa is mandatory and is
+trained first. The auditable plan, per-player datasets, logs, fitted reward
+files, and model manifest live under `/workspace/elite_replays/clone_factory`;
+trained weights live under `saved/kaggriculture_elite_clones`.
+
 ```bash
 ./puffer train kaggriculture
 ```
