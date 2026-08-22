@@ -94,6 +94,7 @@ static void configure_case(Env* env, int case_id, obs_t* observations,
         : case_id == 8 ? 1.0f : 0.0f;
     env->reward_potential_scale = 0.000772047148f;
     env->reward_potential_gamma = 0.9993f;
+    env->reward_cash_scale = 0.07f;
     env->reward_money_scale = 0.13f;
     env->bot_first = case_id & 1;
     env->bot_opponent_fraction = 1.0f;

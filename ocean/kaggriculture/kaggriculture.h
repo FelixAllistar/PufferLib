@@ -255,6 +255,7 @@ struct Env {
     float episode_returns[KG_NUM_PLAYERS];
     float reward_potential_scale;
     float reward_potential_gamma;
+    float reward_cash_scale;
     float reward_money_scale;
     float reset_opening_prob;
     float potential[KG_NUM_PLAYERS];
@@ -509,6 +510,24 @@ KG_HD static inline float kag_potential_shaping_reward(const Env* env,
     float after_phi = (after - starting_money) / starting_money;
     return (env->reward_potential_gamma * after_phi - before_phi)
         * env->reward_potential_scale;
+}
+
+/* Dense, discount-consistent shaping for the terminal-cash objective. With
+ * cash initially equal to starting_money, its discounted sum telescopes to
+ * normalized final cash (up to one factor of gamma). This supplies local
+ * credit for spending and realizing proceeds without rewarding SELL itself.
+ * reward_money_scale remains an independent terminal bonus. */
+KG_HD static inline float kag_cash_shaping_reward(const Env* env,
+        int before, int after) {
+    if (env->reward_cash_scale == 0.0f) return 0.0f;
+    float starting_money = (float)env->game_storage.config.starting_money;
+    float before_phi = ((float)before - starting_money) / starting_money;
+    float after_phi = ((float)after - starting_money) / starting_money;
+    if (env->reward_potential_gamma <= 0.0f) {
+        return (after_phi - before_phi) * env->reward_cash_scale;
+    }
+    return (env->reward_potential_gamma * after_phi - before_phi)
+        * env->reward_cash_scale;
 }
 
 KG_HD static inline float kag_terminal_money_reward(const Env* env,
@@ -2221,6 +2240,7 @@ void puf_init(Env* env, Dict* kwargs) {
     env->reward_potential_scale = (float)dict_get(kwargs, "reward_potential_scale");
     env->reward_potential_gamma = (float)dict_get(
         kwargs, "reward_potential_gamma");
+    env->reward_cash_scale = (float)dict_get(kwargs, "reward_cash_scale");
     env->reward_money_scale = (float)dict_get(kwargs, "reward_money_scale");
     float bot_fraction = (float)dict_get(kwargs, "bot_opponent_fraction");
     float pass_fraction = (float)dict_get(kwargs, "bot_pass_fraction");
@@ -2302,6 +2322,9 @@ void puf_step(Env* env) {
     float before_potential[KG_NUM_PLAYERS] = {
         env->potential[0], env->potential[1],
     };
+    int before_money[KG_NUM_PLAYERS] = {
+        game->players[0].money, game->players[1].money,
+    };
 
     for (int player = 0; player < KG_NUM_PLAYERS; player++) {
         kag_decode_action(&actions[player], &env->agents[player], game, player);
@@ -2371,6 +2394,9 @@ void puf_step(Env* env) {
     for (int player = 0; player < KG_NUM_PLAYERS; player++) {
         float reward = kag_potential_shaping_reward(env,
             before_potential[player], env->potential[player]);
+        int after_money = player == 0 ? p0 : p1;
+        reward += kag_cash_shaping_reward(env,
+            before_money[player], after_money);
         env->agents[player].rewards[0] = reward;
         env->episode_returns[player] += reward;
     }

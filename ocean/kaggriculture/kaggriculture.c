@@ -108,6 +108,7 @@ static void kag_init_demo(Env* env, obs_t* observations, float* actions,
     }
     env->reward_potential_scale = 1.0f;
     env->reward_potential_gamma = 0.9997f;
+    env->reward_cash_scale = 0.0f;
     env->reward_money_scale = 1.0f;
     env->num_agents = KG_NUM_PLAYERS;
     kg_init(&env->game_storage, &config);

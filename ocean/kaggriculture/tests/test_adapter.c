@@ -497,6 +497,7 @@ static void assert_discounted_economic_reward(void) {
     env.game_storage.config.starting_money = 3000;
     env.reward_potential_scale = 0.2f;
     env.reward_potential_gamma = 0.9997f;
+    env.reward_cash_scale = 0.3f;
     env.reward_money_scale = 0.1f;
 
     float growth = kag_potential_shaping_reward(
@@ -512,11 +513,21 @@ static void assert_discounted_economic_reward(void) {
     assert(fabsf(kag_terminal_money_reward(&env, 6000) - 0.1f) < 1e-6f);
     assert(fabsf(kag_terminal_money_reward(&env, 60000) - 1.9f) < 1e-6f);
 
+    float cash_growth = kag_cash_shaping_reward(&env, 3000, 6000);
+    float cash_terminal = kag_cash_shaping_reward(&env, 6000, 9000);
+    assert(fabsf(cash_growth - 0.3f * 0.9997f) < 1e-6f);
+    float expected_cash = 0.3f * 2.0f * 0.9997f * 0.9997f;
+    assert(fabsf(cash_growth
+            + env.reward_potential_gamma * cash_terminal - expected_cash)
+        < 1e-6f);
+
     env.reward_potential_gamma = 0.0f;
     env.reward_potential_scale = 0.0001f;
     float legacy = kag_potential_shaping_reward(
         &env, 3000.0f, 6000.0f);
     assert(fabsf(legacy - 0.3f) < 1e-6f);
+    assert(fabsf(kag_cash_shaping_reward(&env, 3000, 6000) - 0.3f)
+        < 1e-6f);
 }
 
 int main(void) {
@@ -535,6 +546,7 @@ int main(void) {
     Env env = {0};
     env.reward_potential_scale = 0.0f;
     env.reward_potential_gamma = 0.9997f;
+    env.reward_cash_scale = 0.0f;
     env.reward_money_scale = 1.0f;
     obs_t observations[KG_NUM_PLAYERS * OBS_SIZE] = {0};
     float actions[KG_NUM_PLAYERS * NUM_ATNS] = {0};

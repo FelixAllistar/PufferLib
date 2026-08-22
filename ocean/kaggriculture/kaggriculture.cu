@@ -33,6 +33,7 @@ typedef struct {
     float reset_opening_prob;
     float reward_potential_scale;
     float reward_potential_gamma;
+    float reward_cash_scale;
     float reward_money_scale;
     float bot_opponent_fraction;
     float bot_pass_fraction;
@@ -185,6 +186,8 @@ __device__ static void kag_cuda_transition(Env* env, Env* shells,
     KGState* game = &env->game_storage;
     float before_potential[KG_NUM_PLAYERS] = {
         env->potential[0], env->potential[1]};
+    int before_money[KG_NUM_PLAYERS] = {
+        game->players[0].money, game->players[1].money};
 
     for (int player = 0; player < KG_NUM_PLAYERS; player++) {
         kag_decode_action(&actions[player], &env->agents[player], game, player);
@@ -204,6 +207,8 @@ __device__ static void kag_cuda_transition(Env* env, Env* shells,
     for (int player = 0; player < KG_NUM_PLAYERS; player++) {
         float reward = kag_potential_shaping_reward(env,
             before_potential[player], env->potential[player]);
+        reward += kag_cash_shaping_reward(env,
+            before_money[player], money[player]);
         env->agents[player].rewards[0] = reward;
         env->episode_returns[player] += reward;
     }
@@ -417,6 +422,7 @@ __global__ static void kag_cuda_reset_kernel(Env* shells, Env* matches,
     env->reset_opening_prob = d_kag_cuda_config.reset_opening_prob;
     env->reward_potential_scale = d_kag_cuda_config.reward_potential_scale;
     env->reward_potential_gamma = d_kag_cuda_config.reward_potential_gamma;
+    env->reward_cash_scale = d_kag_cuda_config.reward_cash_scale;
     env->reward_money_scale = d_kag_cuda_config.reward_money_scale;
     env->bot_opponent_fraction = d_kag_cuda_config.bot_opponent_fraction;
     env->bot_top_fraction = d_kag_cuda_config.bot_top_fraction;
@@ -493,6 +499,7 @@ static void kag_cuda_load_config(Dict* kwargs) {
     h_kag_cuda_config.reset_opening_prob = template_env.reset_opening_prob;
     h_kag_cuda_config.reward_potential_scale = template_env.reward_potential_scale;
     h_kag_cuda_config.reward_potential_gamma = template_env.reward_potential_gamma;
+    h_kag_cuda_config.reward_cash_scale = template_env.reward_cash_scale;
     h_kag_cuda_config.reward_money_scale = template_env.reward_money_scale;
     h_kag_cuda_config.bot_opponent_fraction = template_env.bot_opponent_fraction;
     h_kag_cuda_config.bot_pass_fraction = (float)dict_get(kwargs, "bot_pass_fraction");
