@@ -12,7 +12,7 @@ keep_shards=${KAG_ELITE_KEEP_SHARDS:-0}
 python_bin=${KAG_ELITE_PYTHON:-}
 
 if [[ -z "$python_bin" ]]; then
-    for candidate in /venv/main/bin/python python3; do
+    for candidate in /usr/bin/python3 /venv/main/bin/python python3; do
         if "$candidate" -c 'import numpy' >/dev/null 2>&1; then
             python_bin=$candidate
             break
