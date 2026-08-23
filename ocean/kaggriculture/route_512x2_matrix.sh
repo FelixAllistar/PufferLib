@@ -18,7 +18,7 @@ expected_bytes=11081728
 
 [[ -f $league ]] || { printf 'Missing league: %s\n' "$league" >&2; exit 1; }
 mkdir -p logs/kaggriculture
-printf 'variant\trun_id\tsource\tlr\tprogress_scale\tcrop_scale\tanimal_scale\tland_scale\tterminal_cash_scale\tsteps\tcheckpoint\n' > "$manifest"
+printf 'variant\trun_id\tsource\tlr\tprogress_scale\tcrop_scale\tanimal_scale\tland_scale\tterminal_cash_scale\topponents\tsteps\tcheckpoint\n' > "$manifest"
 
 common=(
     base.checkpoint_interval=24
@@ -102,9 +102,23 @@ common=(
 
 run_variant() {
     local variant=$1 source=$2 lr=$3 progress=$4 crop=$5 animal=$6 land=$7 terminal_cash=$8
+    local opponents=${9:-mixed}
     local run_id="route512_${variant}_${stamp}"
     local run_dir="checkpoints/kaggriculture/$run_id"
     local final_checkpoint actual_bytes
+    local bot_fraction=0.333333 pass_fraction=0 rules_fraction=0.25 script_fraction=0.3 adaptive_fraction=0.7
+
+    if [[ $opponents == pass ]]; then
+        # 50% PASS, 25% league, 25% learner mirror overall.
+        bot_fraction=0.666667
+        pass_fraction=1
+        rules_fraction=0
+        script_fraction=0
+        adaptive_fraction=0
+    elif [[ $opponents != mixed ]]; then
+        printf 'Unknown opponent mixture: %s\n' "$opponents" >&2
+        exit 2
+    fi
 
     if [[ $source != None ]]; then
         [[ -f $source ]] || { printf 'Missing source: %s\n' "$source" >&2; exit 1; }
@@ -115,8 +129,8 @@ run_variant() {
         }
     fi
 
-    printf '\nRUN variant=%s source=%s lr=%s progress=%s crop=%s animal=%s land=%s terminal_cash=%s steps=%s\n' \
-        "$variant" "$source" "$lr" "$progress" "$crop" "$animal" "$land" "$terminal_cash" "$steps" | tee -a "$queue_log"
+    printf '\nRUN variant=%s source=%s lr=%s progress=%s crop=%s animal=%s land=%s terminal_cash=%s opponents=%s steps=%s\n' \
+        "$variant" "$source" "$lr" "$progress" "$crop" "$animal" "$land" "$terminal_cash" "$opponents" "$steps" | tee -a "$queue_log"
     ./puffer train kaggriculture "${common[@]}" \
         "base.run_id=$run_id" \
         "base.load_model_path=$source" \
@@ -126,6 +140,11 @@ run_variant() {
         "env.reward_progress_animal_scale=$animal" \
         "env.reward_progress_land_scale=$land" \
         "env.reward_progress_terminal_money_scale=$terminal_cash" \
+        "env.bot_opponent_fraction=$bot_fraction" \
+        "env.bot_pass_fraction=$pass_fraction" \
+        "env.bot_rules_fraction=$rules_fraction" \
+        "env.bot_script_fraction=$script_fraction" \
+        "env.bot_adaptive_fraction=$adaptive_fraction" \
         2>&1 | tee -a "$queue_log"
 
     final_checkpoint=$(find "$run_dir" -maxdepth 1 -type f -regextype posix-extended \
@@ -133,8 +152,8 @@ run_variant() {
     [[ -n $final_checkpoint ]] || { printf 'No checkpoint for %s\n' "$run_id" >&2; exit 1; }
     actual_bytes=$(stat -c %s "$final_checkpoint")
     [[ $actual_bytes == "$expected_bytes" ]] || { printf 'Final architecture mismatch: %s\n' "$final_checkpoint" >&2; exit 1; }
-    printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
-        "$variant" "$run_id" "$source" "$lr" "$progress" "$crop" "$animal" "$land" "$terminal_cash" "$steps" "$final_checkpoint" >> "$manifest"
+    printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+        "$variant" "$run_id" "$source" "$lr" "$progress" "$crop" "$animal" "$land" "$terminal_cash" "$opponents" "$steps" "$final_checkpoint" >> "$manifest"
 }
 
 if [[ $mode == routes ]]; then
@@ -157,6 +176,16 @@ elif [[ $mode == crop_cash ]]; then
     run_variant p050_cash2 "$source" 0.000300 0.50 1.50 0.25 1.00 2.00
     run_variant p100_cash1 "$source" 0.000188 1.00 1.50 0.25 1.00 1.00
     run_variant p100_cash2 "$source" 0.000300 1.00 1.50 0.25 1.00 2.00
+elif [[ $mode == crop_long ]]; then
+    # Confirm the two useful crop/cash tradeoffs for longer, once against the
+    # mixed league and once with a PASS curriculum that makes a viable neutral
+    # production loop easier to establish.
+    source_a=${KAG_CROP_SOURCE_A:?Set KAG_CROP_SOURCE_A}
+    source_b=${KAG_CROP_SOURCE_B:?Set KAG_CROP_SOURCE_B}
+    run_variant p025_cash5_mixed "$source_a" 0.000188 0.25 1.50 0.25 1.00 5.00 mixed
+    run_variant p025_cash5_pass "$source_a" 0.000188 0.25 1.50 0.25 1.00 5.00 pass
+    run_variant p100_cash5_mixed "$source_b" 0.000188 1.00 1.50 0.25 1.00 5.00 mixed
+    run_variant p100_cash5_pass "$source_b" 0.000188 1.00 1.50 0.25 1.00 5.00 pass
 else
     printf 'Unknown KAG_ROUTE_MODE: %s\n' "$mode" >&2
     exit 2
