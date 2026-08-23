@@ -186,6 +186,18 @@ elif [[ $mode == crop_long ]]; then
     run_variant p025_cash5_pass "$source_a" 0.000188 0.25 1.50 0.25 1.00 5.00 pass
     run_variant p100_cash5_mixed "$source_b" 0.000188 1.00 1.50 0.25 1.00 5.00 mixed
     run_variant p100_cash5_pass "$source_b" 0.000188 1.00 1.50 0.25 1.00 5.00 pass
+elif [[ $mode == single ]]; then
+    # Long confirmation of a selected route without duplicating the entire
+    # matrix. All knobs remain explicit and are recorded in the manifest.
+    source=${KAG_SINGLE_SOURCE:?Set KAG_SINGLE_SOURCE}
+    run_variant "${KAG_SINGLE_VARIANT:-selected}" "$source" \
+        "${KAG_SINGLE_LR:-0.000188}" \
+        "${KAG_SINGLE_PROGRESS:-1.0}" \
+        "${KAG_SINGLE_CROP:-1.5}" \
+        "${KAG_SINGLE_ANIMAL:-0.25}" \
+        "${KAG_SINGLE_LAND:-1.0}" \
+        "${KAG_SINGLE_CASH:-5.0}" \
+        "${KAG_SINGLE_OPPONENTS:-mixed}"
 else
     printf 'Unknown KAG_ROUTE_MODE: %s\n' "$mode" >&2
     exit 2
