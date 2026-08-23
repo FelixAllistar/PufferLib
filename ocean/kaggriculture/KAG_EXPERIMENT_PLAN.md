@@ -230,3 +230,109 @@ Authoritative artifacts:
 Do not rank a learned policy as champion from sampled dashboard scores.
 Promotion requires deterministic both-seat fixed panels, head-to-head games,
 and successful package gates.
+
+## S0: replay-state reset bank and reverse economic curriculum
+
+Goal: teach reusable economic operations before asking PPO to discover an
+entire 720-turn strategy. The desired abstraction is conditional value
+maximization (buy, hold, maintain, invest, and sell when their expected value
+is favorable), not a memorized product route.
+
+### State sources and validity
+
+1. Reconstruct official elite episodes by resetting the parity-tested native
+   simulator and stepping both recorded action streams. Save complete native
+   `KGState` snapshots, never observation bytes alone. The latter omit state
+   required to continue a valid game.
+2. Verify every reconstructed snapshot against the corresponding official
+   observations for both seats before admitting it to the state bank.
+3. Retain the recorded next action, player/agent identity, module version,
+   final money, winner, turn, prices, inventory, remaining time, production,
+   maintenance, store, and opportunity metadata.
+4. Add native bot/clone/policy rollouts for recovery coverage. Elite states
+   remain the quality anchor; synthetic states are restricted to explicit
+   counterfactual tests or mutations whose invariants are checked.
+5. Split by complete episode and agent lineage. Never place turns from one
+   episode in both training and validation.
+
+### Scenario taxonomy
+
+Index snapshots into overlapping, product-balanced classes:
+
+- `sell_now`, `hold_for_later`, and `buy_opportunity`;
+- `carrot_opportunity`, `tomato_opportunity`, and `egg_opportunity`;
+- `liquidation_1d`, `liquidation_3d`, and `liquidation_6d`;
+- `maintenance_profitable`, `maintenance_unprofitable`, and `harvest_ready`;
+- `short_investment`, `medium_investment`, and `early_expansion`;
+- `recovery` for neglected assets, weeds, stranded inventory, and damaged
+  openings.
+
+The replay indexer's observable opportunity tag is based on live price versus
+the product's equilibrium price. Once native reconstruction is available, the
+authoritative carrot/tomato/egg demand tag uses the simulator's hidden
+`exogenous_demand_units`, matching the environment metric.
+
+### Reverse curriculum
+
+```text
+immediate sell
+  -> conditional buy/sell
+  -> delayed store/price opportunity
+  -> maintain and harvest existing assets
+  -> short-horizon planting/animal placement
+  -> progressively earlier investment and expansion
+  -> genuine turn-zero games against the diverse league
+```
+
+Use one economic objective throughout. A curriculum reset is a continuing
+state, not an artificial terminal objective. Promote between stages with a
+fixed scenario gate rather than elapsed training steps. When adding a stage,
+retain 20--30% of earlier states to prevent selling/maintenance forgetting.
+The final stage preserves a nonzero root-start fraction and gradually anneals
+the reset fraction rather than switching distributions abruptly.
+
+### Counterfactual and interpretability gates
+
+Build paired states that differ in one controlled fact: one price/demand,
+store availability, remaining days, inventory quantity, product identity, or
+maintenance status. For stochastic and deterministic policies report:
+
+- pre-mask and post-mask action probabilities;
+- action/logit deltas under each counterfactual;
+- observation-group occlusion effects;
+- hidden-state probes for price, inventory, time, profitability, and urgency;
+- recurrent retention after a visible opportunity signal disappears;
+- activation-patching effects between matched high- and low-value states.
+
+Compare at least an elite clone, crop specialist, animal specialist, current
+champion, and current reward-sweep winner. This separates missing perception,
+missing recurrent memory, decoder/action-mask failure, and credit assignment.
+
+### Execution phases
+
+- **S0a (sweep-safe):** specify the versioned index/state formats; implement a
+  streaming, read-only replay classifier; validate it on small fixtures.
+- **S0b:** replay actions through the native core, serialize complete states,
+  and enforce two-seat parity/invariant checks.
+- **S0c:** add a GPU reset-bank sampler and configurable root/stage mixture.
+- **S0d:** add the scenario evaluator and causal probe reports.
+- **S0e:** run the reverse curriculum, then confirm on untouched root games,
+  deterministic/stochastic fixed panels, PSRO, and Kaggle packaging gates.
+
+While an unrelated GPU sweep is active, S0a may run locally. Do not rebuild the
+remote binary, mutate its active config, launch GPU probes, or perform the full
+multi-gigabyte remote extraction until that sweep finishes.
+
+S0a implementation: `index_replay_states.py` streams JSON, JSON.GZ, directory,
+or ZIP replay inputs into a TSV locator index and adjacent audit JSON. Example:
+
+```bash
+python3 ocean/kaggriculture/index_replay_states.py \
+  '/workspace/elite_replays/raw/*.zip' \
+  --output /workspace/elite_replays/state_bank/replay_index.tsv \
+  --only-scenarios --min-version 1.32.7
+```
+
+The v1 index deliberately contains no raw `KGState` bytes and prints that
+warning in its audit. Its rows identify verified source episode/turn/player
+locations for S0b reconstruction.
