@@ -312,8 +312,8 @@ missing recurrent memory, decoder/action-mask failure, and credit assignment.
 
 - **S0a (sweep-safe):** specify the versioned index/state formats; implement a
   streaming, read-only replay classifier; validate it on small fixtures.
-- **S0b:** replay actions through the native core, serialize complete states,
-  and enforce two-seat parity/invariant checks.
+- **S0b (implemented locally):** replay actions through the native core,
+  serialize complete states, and enforce two-seat parity/invariant checks.
 - **S0c:** add a GPU reset-bank sampler and configurable root/stage mixture.
 - **S0d:** add the scenario evaluator and causal probe reports.
 - **S0e:** run the reverse curriculum, then confirm on untouched root games,
@@ -336,3 +336,27 @@ python3 ocean/kaggriculture/index_replay_states.py \
 The v1 index deliberately contains no raw `KGState` bytes and prints that
 warning in its audit. Its rows identify verified source episode/turn/player
 locations for S0b reconstruction.
+
+S0b implementation: `build_replay_state_bank.py` consumes that index and the
+same replay inputs. It replays both recorded seats, parity-checks every native
+frame traversed, serializes one complete native state per selected
+episode/turn, then deserializes and advances a second copy through the next
+recorded joint action. A state is admitted only if both the restored frame and
+the resumed next frame match the official replay. Example (run after the
+active sweep, on the machine holding the replay archive):
+
+```bash
+python3 ocean/kaggriculture/build_replay_state_bank.py \
+  '/workspace/elite_replays/raw/*.zip' \
+  --index /workspace/elite_replays/state_bank/replay_index.tsv \
+  --output /workspace/elite_replays/state_bank/native_states.kgb \
+  --lib ocean/kaggriculture/build/libkaggriculture.so \
+  --min-version 1.32.7
+```
+
+The binary header records the bank format version, native serialization
+version, exact `KGState` byte size, and record count. The adjacent manifest
+retains all S0a rows, both expert actions, offsets, and SHA-256 hashes. Raw
+state bytes are deliberately ABI-bound: a loader must reject a version or
+size mismatch. `make -C ocean/kaggriculture state-bank-test` exercises a real
+official replay and proves frame parity plus serialize/deserialize/resume.

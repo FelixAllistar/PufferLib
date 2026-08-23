@@ -4,7 +4,7 @@ BUILD := build
 LIB := $(BUILD)/libkaggriculture.so
 CFLAGS ?= -O3 -std=c17 -Wall -Wextra -Werror -fPIC
 
-.PHONY: all lib parity top-bot-parity cuda-core cuda-adapter bc bench hotpath adapter eval metagame native-test test clean
+.PHONY: all lib parity state-bank-test top-bot-parity cuda-core cuda-adapter bc bench hotpath adapter eval metagame native-test test clean
 
 all: lib
 
@@ -18,6 +18,10 @@ $(LIB): kaggriculture_core.c kaggriculture_core.h | $(BUILD)
 
 parity: $(LIB)
 	$(ROOT)/../.venv/bin/python parity.py --lib $(LIB)
+
+state-bank-test: $(LIB)
+	$(ROOT)/../.venv/bin/python tests/test_replay_state_index.py
+	$(ROOT)/../.venv/bin/python tests/test_replay_state_bank.py
 
 top-bot-parity: | $(BUILD)
 	$(CC) $(CFLAGS) -shared \

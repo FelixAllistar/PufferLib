@@ -11,6 +11,7 @@
  * and macro-action encodings without changing the rules tested here.
  */
 
+#include <stddef.h>
 #include <stdint.h>
 
 /* The rule core is compiled by both a normal C compiler and NVCC.  Keep the
@@ -47,6 +48,7 @@ extern "C" {
 #define KG_NUM_PRODUCTS 9
 #define KG_NUM_ITEMS (KG_NUM_PRODUCTS + KG_NUM_ANIMALS)
 #define KG_MAX_SHOPS 8
+#define KG_STATE_SERIALIZATION_VERSION 1U
 
 enum KGTileKind {
     KG_TILE_EMPTY = 0,
@@ -256,6 +258,13 @@ void kg_destroy(KGState* state);
 KG_HD void kg_reset(KGState* state);
 KG_HD void kg_step(KGState* state, const KGAction actions[KG_NUM_PLAYERS]);
 KG_HD int kg_done(const KGState* state);
+/* Complete, resumable snapshots for offline reset banks. The payload is the
+ * native POD layout, so consumers must require both this schema version and
+ * the exact serialized size before loading it. */
+size_t kg_state_serialized_size(void);
+uint32_t kg_state_serialization_version(void);
+int kg_state_serialize(const KGState* state, void* output, size_t output_size);
+int kg_state_deserialize(KGState* state, const void* input, size_t input_size);
 const char* kg_snapshot_json(const KGState* state);
 void kg_free_string(const char* value);
 

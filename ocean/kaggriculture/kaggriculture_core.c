@@ -675,6 +675,56 @@ KG_HD int kg_done(const KGState* state) {
     return state != NULL && state->done;
 }
 
+size_t kg_state_serialized_size(void) {
+    return sizeof(KGState);
+}
+
+uint32_t kg_state_serialization_version(void) {
+    return KG_STATE_SERIALIZATION_VERSION;
+}
+
+static int kg_state_snapshot_valid(const KGState* state) {
+    int p;
+    if (state == NULL) return 0;
+    if (state->config.episode_steps < 1 ||
+            state->config.board_size < 1 ||
+            state->config.board_size > KG_MAX_BOARD_SIZE ||
+            state->config.max_market_orders_per_turn < 1 ||
+            state->config.max_market_orders_per_turn > KG_MAX_MARKET_ORDERS ||
+            state->config.turns_per_day < 1 || state->config.shed_capacity < 1)
+        return 0;
+    if (state->step < 0 || state->step > state->config.episode_steps ||
+            state->day != state->step / state->config.turns_per_day ||
+            state->hour != state->step % state->config.turns_per_day ||
+            (state->done != 0 && state->done != 1) ||
+            state->shop_count < 0 || state->shop_count > KG_MAX_SHOPS)
+        return 0;
+    for (p = 0; p < KG_NUM_PLAYERS; p++) {
+        const KGPlayer* player = &state->players[p];
+        if (player->hand_count > KG_MAX_HANDS ||
+                player->unit_count != (uint8_t)(player->hand_count + 1))
+            return 0;
+    }
+    return 1;
+}
+
+int kg_state_serialize(const KGState* state, void* output, size_t output_size) {
+    if (state == NULL || output == NULL || output_size != sizeof(KGState) ||
+            !kg_state_snapshot_valid(state))
+        return 0;
+    memcpy(output, state, sizeof(KGState));
+    return 1;
+}
+
+int kg_state_deserialize(KGState* state, const void* input, size_t input_size) {
+    KGState candidate;
+    if (state == NULL || input == NULL || input_size != sizeof(KGState)) return 0;
+    memcpy(&candidate, input, sizeof(candidate));
+    if (!kg_state_snapshot_valid(&candidate)) return 0;
+    memcpy(state, &candidate, sizeof(candidate));
+    return 1;
+}
+
 KG_HD static int kg_fib(int n) {
     int a = 1;
     int b = 1;
