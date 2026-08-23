@@ -96,6 +96,30 @@ static void configure_case(Env* env, int case_id, obs_t* observations,
     env->reward_potential_gamma = 0.9993f;
     env->reward_cash_scale = 0.07f;
     env->reward_money_scale = 0.13f;
+    env->reward_progress_scale = 0.31f;
+    env->reward_progress_terminal_money_scale = 0.17f;
+    env->reward_progress_win_scale = 0.23f;
+    env->reward_progress_liquidation_days = 3.0f;
+    env->reward_progress_seed_scale = 1.0f;
+    env->reward_progress_crop_scale = 0.8f;
+    env->reward_progress_animal_scale = 0.9f;
+    env->reward_progress_product_scale = 0.7f;
+    env->reward_progress_maintenance_scale = 0.0f;
+    env->reward_progress_land_scale = 1.0f;
+    env->reward_progress_health_ratio = 0.6f;
+    for (int crop = 0; crop < KG_NUM_CROPS; crop++) {
+        env->reward_progress_crop_units[crop] = 3.0f + 0.25f * crop;
+        env->reward_progress_seed_realization[crop] = 1.0f;
+    }
+    for (int animal = 0; animal < KG_NUM_ANIMALS; animal++) {
+        env->reward_progress_animal_units_per_event[animal] =
+            1.0f + 0.5f * animal;
+        env->reward_progress_animal_realization[animal] = 1.0f;
+    }
+    for (int product = 0; product < KG_NUM_PRODUCTS; product++) {
+        env->reward_progress_product_realization[product] =
+            0.6f + 0.02f * product;
+    }
     env->bot_first = case_id & 1;
     env->bot_opponent_fraction = 1.0f;
     static const int bots[ADAPTER_CASES] = {
@@ -150,6 +174,7 @@ static void configure_case(Env* env, int case_id, obs_t* observations,
     kag_reset_with_opening(env, kag_script_tapes);
     for (int player = 0; player < 2; player++) {
         env->potential[player] = kag_player_potential(env, player);
+        env->progress_value[player] = kag_player_progress_value(env, player);
     }
     kag_write_all_observations(env);
 }
@@ -322,6 +347,9 @@ int main(void) {
                     cpu_terminals[row], gpu_terminals[row]);
                 compare_float("potential", i, step,
                     cpu[i].potential[player], gpu[i].potential[player]);
+                compare_float("progress_value", i, step,
+                    cpu[i].progress_value[player],
+                    gpu[i].progress_value[player]);
                 compare_float("episode_return", i, step,
                     cpu[i].episode_returns[player],
                     gpu[i].episode_returns[player]);

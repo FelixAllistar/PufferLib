@@ -262,6 +262,8 @@ struct Env {
     float reward_money_scale;
     float reward_progress_scale;
     float reward_progress_terminal_money_scale;
+    float reward_progress_win_scale;
+    float reward_progress_liquidation_days;
     float reward_progress_seed_scale;
     float reward_progress_crop_scale;
     float reward_progress_animal_scale;
@@ -276,7 +278,7 @@ struct Env {
     float reward_progress_product_realization[KG_NUM_PRODUCTS];
     float reset_opening_prob;
     float potential[KG_NUM_PLAYERS];
-    float progress_highwater[KG_NUM_PLAYERS];
+    float progress_value[KG_NUM_PLAYERS];
     int bot_opponent;
     float bot_opponent_fraction;
     int bot_first;
@@ -555,10 +557,9 @@ KG_HD static inline float kag_terminal_money_reward(const Env* env,
         * ((float)money - starting_money) / starting_money;
 }
 
-/* Number of production events still available to an ongoing crop.  The
- * fitted crop value is a full-lifetime elite expectation; scaling it by the
- * remaining event fraction makes late planting and end-game liquidation
- * visible without assigning any negative reward when time passes. */
+/* Number of production events still available to an ongoing crop. The fitted
+ * crop value is a full-lifetime elite expectation; scaling it by the remaining
+ * event fraction makes late planting and natural time decay visible. */
 KG_HD static inline int kag_crop_remaining_events(const Env* env,
         const KGTile* tile) {
     if (tile->crop < 0 || tile->crop >= KG_NUM_CROPS) return 0;
@@ -585,22 +586,36 @@ KG_HD static inline int kag_animal_remaining_events(const Env* env,
     return remaining;
 }
 
-/* Elite-valued economic state.  Cash is exact.  Existing product is marked
- * at conservative cumulative liquidation value, discounted by the empirical
- * probability that elite players actually realize it. Uncommitted seeds and
- * animals stay below paid cost; planted crops and placed animals unlock their
- * empirically realized future output at the live market price. Thus profitable
- * carrot/tomato/egg situations become valuable without a crop-specific bonus.
+/* The progress potential is an estimate of eventual cash, not a second game
+ * objective. Cash is exact. Existing products are marked at conservative
+ * cumulative liquidation value, while crops and animals carry their fitted
+ * remaining realizable output at live market prices. Uncommitted capital and
+ * land remain at cost so buying them is approximately neutral rather than an
+ * immediate punishment.
  *
- * Every basis and coefficient is nonnegative.  The reward below additionally
- * pays only new high-water achievements, so temporary losses never emit a
- * negative signal and buy/sell cycles cannot repeatedly earn the same value. */
+ * Noncash value tapers to zero near the horizon and is exactly zero at the
+ * terminal state. Discount-consistent changes in this potential therefore
+ * telescope to final cash. The intermediate estimates only provide credit
+ * assignment for investments; they cannot make terminal hoarding optimal. */
+KG_HD static inline float kag_progress_asset_scale(const Env* env) {
+    const KGState* game = &env->game_storage;
+    if (game->done) return 0.0f;
+    int remaining_steps = game->config.episode_steps - game->step;
+    if (remaining_steps <= 0) return 0.0f;
+    int liquidation_steps = (int)(env->reward_progress_liquidation_days
+        * game->config.turns_per_day);
+    if (liquidation_steps <= 0 || remaining_steps >= liquidation_steps) {
+        return 1.0f;
+    }
+    return (float)remaining_steps / (float)liquidation_steps;
+}
+
 KG_HD static inline float kag_player_progress_value(const Env* env,
         int player_id) {
     const KGState* game = &env->game_storage;
     const KGPlayer* player = &game->players[player_id];
     float product_units[KG_NUM_PRODUCTS] = {0.0f};
-    float value = (float)player->money;
+    float assets = 0.0f;
 
     for (int item = 0; item < KG_NUM_PRODUCTS; item++) {
         product_units[item] += (float)player->shed[item];
@@ -609,13 +624,13 @@ KG_HD static inline float kag_player_progress_value(const Env* env,
      * cost. Planting/placing is what unlocks fitted future production value;
      * merely hoarding seeds or animals cannot masquerade as a giant farm. */
     for (int crop = 0; crop < KG_NUM_CROPS; crop++) {
-        value += env->reward_progress_seed_scale
+        assets += env->reward_progress_seed_scale
             * env->reward_progress_seed_realization[crop]
             * player->seeds[crop] * KG_CROP_DEFS[crop].seed_cost;
     }
     for (int animal = 0; animal < KG_NUM_ANIMALS; animal++) {
         int count = player->shed[KG_ITEM_GOOSE + animal];
-        value += env->reward_progress_animal_scale
+        assets += env->reward_progress_animal_scale
             * env->reward_progress_animal_realization[animal]
             * count * KG_ANIMAL_DEFS[animal].cost;
     }
@@ -629,12 +644,20 @@ KG_HD static inline float kag_player_progress_value(const Env* env,
             } else {
                 int animal = item - KG_ITEM_GOOSE;
                 if ((unsigned)animal < KG_NUM_ANIMALS) {
-                    value += env->reward_progress_animal_scale
+                    assets += env->reward_progress_animal_scale
                         * env->reward_progress_animal_realization[animal]
                         * count * KG_ANIMAL_DEFS[animal].cost;
                 }
             }
         }
+    }
+
+    /* Hired hands are one-day productive capital. Their exact cumulative
+     * purchase cost is reconstructible from hires_today, so hiring is neutral
+     * initially and must earn its keep before the hands expire overnight. */
+    for (int hire = 0; hire < player->hires_today; hire++) {
+        assets += (float)kg_hire_cost(hire,
+            game->config.farm_hand_cost_mult);
     }
 
     for (int word = 0; word < KG_TILE_WORDS; word++) {
@@ -681,25 +704,28 @@ KG_HD static inline float kag_player_progress_value(const Env* env,
     }
 
     for (int product = 0; product < KG_NUM_PRODUCTS; product++) {
-        value += env->reward_progress_product_scale
+        assets += env->reward_progress_product_scale
             * env->reward_progress_product_realization[product]
             * kag_product_mark(env, product, product_units[product]);
     }
     int extra_land = kag_popcount((unsigned)player->unlocked_mask) - 1;
     int land_cost = extra_land <= 0 ? 0
         : extra_land == 1 ? 1000 : extra_land == 2 ? 3000 : 7000;
-    value += env->reward_progress_land_scale * land_cost;
-    return value;
+    assets += env->reward_progress_land_scale * land_cost;
+    return (float)player->money + kag_progress_asset_scale(env) * assets;
 }
 
-KG_HD static inline float kag_progress_highwater_reward(Env* env,
-        int player_id, float current_value) {
-    float previous = env->progress_highwater[player_id];
-    if (current_value <= previous) return 0.0f;
-    env->progress_highwater[player_id] = current_value;
+KG_HD static inline float kag_progress_potential_reward(const Env* env,
+        float before, float after) {
+    if (env->reward_progress_scale == 0.0f) return 0.0f;
     float starting_money = (float)env->game_storage.config.starting_money;
+    float before_phi = (before - starting_money) / starting_money;
+    float after_phi = (after - starting_money) / starting_money;
+    if (env->reward_potential_gamma <= 0.0f) {
+        return env->reward_progress_scale * (after_phi - before_phi);
+    }
     return env->reward_progress_scale
-        * (current_value - previous) / starting_money;
+        * (env->reward_potential_gamma * after_phi - before_phi);
 }
 
 KG_HD static inline float kag_positive_terminal_money_reward(const Env* env,
@@ -710,13 +736,19 @@ KG_HD static inline float kag_positive_terminal_money_reward(const Env* env,
         * ((float)money - starting_money) / starting_money;
 }
 
-/* Positive credit for valid maintenance that preserves fitted future output.
+KG_HD static inline float kag_positive_terminal_win_reward(const Env* env,
+        int own_money, int other_money) {
+    if (own_money > other_money) return env->reward_progress_win_scale;
+    if (own_money == other_money) return 0.5f * env->reward_progress_win_scale;
+    return 0.0f;
+}
+
+/* Optional positive credit for valid maintenance that preserves fitted future output.
  * WATER/FEED/CARE are each deduplicated per tile, so sending several hands to
  * the same asset cannot farm reward. Credit uses the current live product
  * price and the same empirical realization coefficients as the state value.
- * It is deliberately separate from the high-water ledger: restoring an asset
- * after one weak day should still teach the maintenance action even though the
- * already-earned state milestone cannot be collected twice. */
+ * It is deliberately separate from the state potential. Normal training keeps
+ * this at zero because restored health already increases that potential. */
 KG_HD static inline float kag_maintenance_action_reward(const Env* env,
         int player_id, const KGAction* action) {
     if (env->reward_progress_scale == 0.0f
@@ -2492,6 +2524,10 @@ void puf_init(Env* env, Dict* kwargs) {
         kwargs, "reward_progress_scale");
     env->reward_progress_terminal_money_scale = (float)dict_get(
         kwargs, "reward_progress_terminal_money_scale");
+    env->reward_progress_win_scale = (float)dict_get(
+        kwargs, "reward_progress_win_scale");
+    env->reward_progress_liquidation_days = (float)dict_get(
+        kwargs, "reward_progress_liquidation_days");
     env->reward_progress_seed_scale = (float)dict_get(
         kwargs, "reward_progress_seed_scale");
     env->reward_progress_crop_scale = (float)dict_get(
@@ -2559,6 +2595,8 @@ void puf_init(Env* env, Dict* kwargs) {
     float progress_scales[] = {
         env->reward_progress_scale,
         env->reward_progress_terminal_money_scale,
+        env->reward_progress_win_scale,
+        env->reward_progress_liquidation_days,
         env->reward_progress_seed_scale,
         env->reward_progress_crop_scale,
         env->reward_progress_animal_scale,
@@ -2671,7 +2709,7 @@ void puf_reset(Env* env) {
         env->agents[player].terminals[0] = 0.0f;
         env->episode_returns[player] = 0.0f;
         env->potential[player] = kag_player_potential(env, player);
-        env->progress_highwater[player] = kag_player_progress_value(env, player);
+        env->progress_value[player] = kag_player_progress_value(env, player);
     }
     kag_write_all_observations(env);
 }
@@ -2684,6 +2722,9 @@ void puf_step(Env* env) {
     };
     int before_money[KG_NUM_PLAYERS] = {
         game->players[0].money, game->players[1].money,
+    };
+    float before_progress[KG_NUM_PLAYERS] = {
+        env->progress_value[0], env->progress_value[1],
     };
 
     for (int player = 0; player < KG_NUM_PLAYERS; player++) {
@@ -2751,9 +2792,9 @@ void puf_step(Env* env) {
     int model_money = model_player ? p1 : p0;
     int opponent_money = model_player ? p0 : p1;
     int done = kg_done(game);
-    /* Mark assets to their conservative realizable value on every transition,
-     * including the terminal one.  This makes final net worth a real objective;
-     * terminal cash below gives realized proceeds additional weight. */
+    /* Update both legacy accounting potential and the future-cash potential.
+     * The latter writes noncash assets to zero at done, so only cash survives
+     * its telescoping discounted return. */
     env->potential[0] = kag_player_potential(env, 0);
     env->potential[1] = kag_player_potential(env, 1);
     for (int player = 0; player < KG_NUM_PLAYERS; player++) {
@@ -2763,7 +2804,9 @@ void puf_step(Env* env) {
         reward += kag_cash_shaping_reward(env,
             before_money[player], after_money);
         float progress_value = kag_player_progress_value(env, player);
-        reward += kag_progress_highwater_reward(env, player, progress_value);
+        reward += kag_progress_potential_reward(env,
+            before_progress[player], progress_value);
+        env->progress_value[player] = progress_value;
         reward += maintenance_rewards[player];
         env->agents[player].rewards[0] = reward;
         env->episode_returns[player] += reward;
@@ -2781,6 +2824,8 @@ void puf_step(Env* env) {
         float money1_term = kag_terminal_money_reward(env, p1);
         money0_term += kag_positive_terminal_money_reward(env, p0);
         money1_term += kag_positive_terminal_money_reward(env, p1);
+        money0_term += kag_positive_terminal_win_reward(env, p0, p1);
+        money1_term += kag_positive_terminal_win_reward(env, p1, p0);
         env->agents[0].rewards[0] += money0_term;
         env->agents[1].rewards[0] += money1_term;
         env->episode_returns[0] += money0_term;
@@ -2967,6 +3012,8 @@ void puf_step(Env* env) {
         env->episode_returns[1] = 0.0f;
         env->potential[0] = kag_player_potential(env, 0);
         env->potential[1] = kag_player_potential(env, 1);
+        env->progress_value[0] = kag_player_progress_value(env, 0);
+        env->progress_value[1] = kag_player_progress_value(env, 1);
         kag_write_all_observations(env);
     } else {
         kag_write_all_observations(env);

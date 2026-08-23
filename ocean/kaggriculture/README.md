@@ -224,49 +224,59 @@ PSRO rewrites the active V4 learner and opponent pool in the config. Subsequent
 responses can continue with `./puffer train kaggriculture`; use a new `base.run_id`
 and seed when starting a separate trajectory.
 
-The current config uses per-player, discount-consistent potential shaping. Its
-potential is deliberately neutral accounting net worth: cash; seeds, live
+The legacy `env.reward_potential_scale` enables per-player,
+discount-consistent accounting shaping. Its potential is cash; seeds, live
 crops, live/unplaced animals, and land at cost; and already-created products at
 their conservative cumulative sale value. It does not guess future yield or
 award actions, maintenance, wins, margins, land, animals, or plants directly.
 The real terminal potential is retained, so when `env.reward_potential_gamma`
 equals `train.gamma`, its dense deltas telescope to final realizable net worth.
-Normalized final own cash (`env.reward_money_scale`) is added separately to
-favor realization over merely holding assets.
+Normalized final own cash (`env.reward_money_scale`) can be added separately.
+The current future-cash experiment disables both legacy terms.
 
 Kaggriculture disables the generic transition reward clamp with
 `train.reward_clip=0`, so better final cash remains better at every scale. A
 large product pile is marked by its cumulative realizable revenue rather than
 pretending every unit can sell at the first unit's quote.
 
-### Positive elite future-value reward
+### Elite future-cash potential
 
-`env.reward_progress_scale > 0` enables the alternative nonnegative objective
-used for fresh exploration experiments. Its fitted state value is:
+`env.reward_progress_scale > 0` enables the fitted, time-aware potential used
+for long-horizon credit assignment. Its state value is:
 
 ```text
 cash
-+ conservative paid cost of uncommitted seeds/animals
++ paid cost of uncommitted seeds/animals, current hired hands, and land
 + live-price liquidation value of held products
 + live-price value of empirically expected remaining crop/animal output
-+ land at paid cost
 ```
 
-The per-step state reward is only the increase above the episode's previous
-high-water value. A decline emits zero, and returning to an already rewarded
-state emits zero, so a buy/sell cycle cannot recollect the same achievement.
-Valid WATER/FEED/CARE actions receive a small, live-price, data-valued credit;
-duplicate hands on one tile are counted once. Terminal cash above the starting
-bank receives an additional positive-only reward. To run this objective alone,
-set `reward_potential_scale`, `reward_cash_scale`, and `reward_money_scale` to
-zero and keep `train.reward_clip=0`.
+Uncommitted capital is carried at cost, so buying it is approximately neutral
+instead of receiving an immediate cash penalty. Planted crops and placed
+animals replace cost basis with their fitted remaining realizable output. The
+entire noncash part linearly tapers to zero during the last
+`reward_progress_liquidation_days` and is exactly zero whenever the game is
+done. This creates selling pressure without rewarding SELL itself.
+
+Each transition receives `gamma * Phi(next) - Phi(now)`, with both potentials
+centered on starting cash and normalized by it. When
+`env.reward_potential_gamma == train.gamma`, the discounted shaping sum
+telescopes: intermediate future-value estimates provide local investment
+credit, while the surviving episode objective is final cash. Consequently,
+destroying value can emit a negative delta; suppressing all negative deltas
+would instead optimize the largest temporary hoard ever reached. A separate
+positive terminal winner bonus is controlled by `reward_progress_win_scale`.
+The optional terminal cash and maintenance bonuses default to zero because
+cash and maintained health are already represented in the potential. To run
+this objective alone, set `reward_potential_scale`, `reward_cash_scale`, and
+`reward_money_scale` to zero and keep `train.reward_clip=0`.
 
 The item coefficients are measured from exact-version elite replays by
 `fit_elite_economic_values.py`. Aggregate seed/crop/animal/product/maintenance
 scales remain ordinary INI values, and the fitter emits compact built-in sweep
-ranges alongside the audit JSON. Unplanted seeds and unplaced animals are not
-assigned speculative lifetime output, which prevents inventory hoarding from
-looking like a productive farm. Current market prices enter the value directly,
+ranges alongside the audit JSON. Unplanted seeds and unplaced animals retain
+only paid cost, not speculative lifetime output, which prevents inventory
+hoarding from looking like a productive farm. Current market prices enter the value directly,
 so carrot, tomato, and egg become attractive only in their profitable games.
 The audited six-day `1.32.7` fit used for the first experiment is preserved in
 `elite_fits/1.32.7_2026-08-16_2026-08-21.{json,ini,sweep.ini}`.

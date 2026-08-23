@@ -37,6 +37,8 @@ typedef struct {
     float reward_money_scale;
     float reward_progress_scale;
     float reward_progress_terminal_money_scale;
+    float reward_progress_win_scale;
+    float reward_progress_liquidation_days;
     float reward_progress_seed_scale;
     float reward_progress_crop_scale;
     float reward_progress_animal_scale;
@@ -202,6 +204,8 @@ __device__ static void kag_cuda_transition(Env* env, Env* shells,
         env->potential[0], env->potential[1]};
     int before_money[KG_NUM_PLAYERS] = {
         game->players[0].money, game->players[1].money};
+    float before_progress[KG_NUM_PLAYERS] = {
+        env->progress_value[0], env->progress_value[1]};
 
     for (int player = 0; player < KG_NUM_PLAYERS; player++) {
         kag_decode_action(&actions[player], &env->agents[player], game, player);
@@ -229,7 +233,9 @@ __device__ static void kag_cuda_transition(Env* env, Env* shells,
         reward += kag_cash_shaping_reward(env,
             before_money[player], money[player]);
         float progress_value = kag_player_progress_value(env, player);
-        reward += kag_progress_highwater_reward(env, player, progress_value);
+        reward += kag_progress_potential_reward(env,
+            before_progress[player], progress_value);
+        env->progress_value[player] = progress_value;
         reward += maintenance_rewards[player];
         env->agents[player].rewards[0] = reward;
         env->episode_returns[player] += reward;
@@ -253,6 +259,8 @@ __device__ static void kag_cuda_transition(Env* env, Env* shells,
     float money1_term = kag_terminal_money_reward(env, money[1]);
     money0_term += kag_positive_terminal_money_reward(env, money[0]);
     money1_term += kag_positive_terminal_money_reward(env, money[1]);
+    money0_term += kag_positive_terminal_win_reward(env, money[0], money[1]);
+    money1_term += kag_positive_terminal_win_reward(env, money[1], money[0]);
     env->agents[0].rewards[0] += money0_term;
     env->agents[1].rewards[0] += money1_term;
     env->episode_returns[0] += money0_term;
@@ -431,8 +439,8 @@ __device__ static void kag_cuda_transition(Env* env, Env* shells,
     env->episode_returns[1] = 0.0f;
     env->potential[0] = kag_player_potential(env, 0);
     env->potential[1] = kag_player_potential(env, 1);
-    env->progress_highwater[0] = kag_player_progress_value(env, 0);
-    env->progress_highwater[1] = kag_player_progress_value(env, 1);
+    env->progress_value[0] = kag_player_progress_value(env, 0);
+    env->progress_value[1] = kag_player_progress_value(env, 1);
     kag_write_all_observations_from_tapes(env, tapes);
 }
 
@@ -459,6 +467,10 @@ __global__ static void kag_cuda_reset_kernel(Env* shells, Env* matches,
     env->reward_progress_scale = d_kag_cuda_config.reward_progress_scale;
     env->reward_progress_terminal_money_scale =
         d_kag_cuda_config.reward_progress_terminal_money_scale;
+    env->reward_progress_win_scale =
+        d_kag_cuda_config.reward_progress_win_scale;
+    env->reward_progress_liquidation_days =
+        d_kag_cuda_config.reward_progress_liquidation_days;
     env->reward_progress_seed_scale =
         d_kag_cuda_config.reward_progress_seed_scale;
     env->reward_progress_crop_scale =
@@ -524,7 +536,7 @@ __global__ static void kag_cuda_reset_kernel(Env* shells, Env* matches,
         env->agents[player].rewards[0] = 0.0f;
         env->agents[player].terminals[0] = 0.0f;
         env->potential[player] = kag_player_potential(env, player);
-        env->progress_highwater[player] =
+        env->progress_value[player] =
             kag_player_progress_value(env, player);
     }
     kag_write_all_observations_from_tapes(env, tapes);
@@ -571,6 +583,10 @@ static void kag_cuda_load_config(Dict* kwargs) {
     h_kag_cuda_config.reward_progress_scale = template_env.reward_progress_scale;
     h_kag_cuda_config.reward_progress_terminal_money_scale =
         template_env.reward_progress_terminal_money_scale;
+    h_kag_cuda_config.reward_progress_win_scale =
+        template_env.reward_progress_win_scale;
+    h_kag_cuda_config.reward_progress_liquidation_days =
+        template_env.reward_progress_liquidation_days;
     h_kag_cuda_config.reward_progress_seed_scale =
         template_env.reward_progress_seed_scale;
     h_kag_cuda_config.reward_progress_crop_scale =

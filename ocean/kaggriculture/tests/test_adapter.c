@@ -530,26 +530,29 @@ static void assert_discounted_economic_reward(void) {
         < 1e-6f);
 }
 
-static void assert_positive_progress_reward(void) {
+static void assert_progress_potential_reward(void) {
     Env env = {0};
     kg_config_default(&env.game_storage.config);
     kg_init(&env.game_storage, &env.game_storage.config);
     env.reward_progress_scale = 1.0f;
-    env.reward_progress_terminal_money_scale = 0.25f;
+    env.reward_potential_gamma = 0.9997f;
+    env.reward_progress_terminal_money_scale = 0.0f;
+    env.reward_progress_win_scale = 1.0f;
+    env.reward_progress_liquidation_days = 6.0f;
     env.reward_progress_seed_scale = 1.0f;
     env.reward_progress_crop_scale = 1.0f;
     env.reward_progress_animal_scale = 1.0f;
     env.reward_progress_product_scale = 1.0f;
-    env.reward_progress_maintenance_scale = 1.0f;
+    env.reward_progress_maintenance_scale = 0.0f;
     env.reward_progress_land_scale = 1.0f;
     env.reward_progress_health_ratio = 0.4f;
     for (int crop = 0; crop < KG_NUM_CROPS; crop++) {
         env.reward_progress_crop_units[crop] = 4.0f;
-        env.reward_progress_seed_realization[crop] = 0.8f;
+        env.reward_progress_seed_realization[crop] = 1.0f;
     }
     for (int animal = 0; animal < KG_NUM_ANIMALS; animal++) {
         env.reward_progress_animal_units_per_event[animal] = 0.8f;
-        env.reward_progress_animal_realization[animal] = 0.8f;
+        env.reward_progress_animal_realization[animal] = 1.0f;
     }
     for (int item = 0; item < KG_NUM_PRODUCTS; item++) {
         env.reward_progress_product_realization[item] = 0.8f;
@@ -558,37 +561,41 @@ static void assert_positive_progress_reward(void) {
     KGPlayer* player = &env.game_storage.players[0];
     float initial = kag_player_progress_value(&env, 0);
     assert(fabsf(initial - 3000.0f) < 1e-5f);
-    env.progress_highwater[0] = initial;
 
-    /* Buying an uncommitted seed cannot masquerade as production. */
+    /* Buying uncommitted capital is a neutral cash-for-cost-basis exchange. */
     player->money -= KG_CROP_DEFS[KG_TOMATO].seed_cost;
     player->seeds[KG_TOMATO] = 1;
     float held_seed = kag_player_progress_value(&env, 0);
-    assert(held_seed < initial);
-    assert(kag_progress_highwater_reward(&env, 0, held_seed) == 0.0f);
+    assert(fabsf(held_seed - initial) < 1e-5f);
+    assert(fabsf(kag_progress_potential_reward(&env, initial, held_seed))
+        < 1e-5f);
+
+    /* Daily labor is another neutral cash-for-capital exchange. */
+    player->seeds[KG_TOMATO] = 0;
+    player->money = 2999;
+    player->hires_today = 1;
+    float hired = kag_player_progress_value(&env, 0);
+    assert(fabsf(hired - initial) < 1e-5f);
+    player->money = 3000 - KG_CROP_DEFS[KG_TOMATO].seed_cost;
+    player->hires_today = 0;
+    player->seeds[KG_TOMATO] = 1;
 
     /* Planting unlocks the empirically expected live-price future output. */
     player->seeds[KG_TOMATO] = 0;
     kg_new_plant(player, 0, KG_TOMATO, env.game_storage.day,
         env.game_storage.config.turns_per_day);
     float invested = kag_player_progress_value(&env, 0);
-    float first = kag_progress_highwater_reward(&env, 0, invested);
+    float first = kag_progress_potential_reward(&env, held_seed, invested);
     assert(first > 0.0f);
 
-    player->units[0].x = 0;
-    player->units[0].y = 0;
-    KGAction maintenance = {0};
-    maintenance.farmer = (KGUnitAction){KG_OP_WATER, -1, 1};
-    assert(kag_maintenance_action_reward(&env, 0, &maintenance) > 0.0f);
-
-    /* Falling below the best state is neutral, and returning to the already
-     * earned value cannot collect the achievement twice. */
-    float highwater = env.progress_highwater[0];
-    assert(kag_progress_highwater_reward(&env, 0, initial) == 0.0f);
-    assert(kag_progress_highwater_reward(&env, 0, highwater) == 0.0f);
+    /* Unlike a high-water objective, losing realizable value is visible. */
+    assert(kag_progress_potential_reward(&env, invested, initial) < 0.0f);
 
     assert(kag_positive_terminal_money_reward(&env, 2000) == 0.0f);
-    assert(kag_positive_terminal_money_reward(&env, 6000) > 0.0f);
+    assert(kag_positive_terminal_money_reward(&env, 6000) == 0.0f);
+    assert(kag_positive_terminal_win_reward(&env, 6000, 5000) == 1.0f);
+    assert(kag_positive_terminal_win_reward(&env, 5000, 6000) == 0.0f);
+    assert(kag_positive_terminal_win_reward(&env, 5000, 5000) == 0.5f);
 
     /* The same tomato asset is worth more in a live high-price opportunity;
      * no crop-specific action bonus is needed. */
@@ -599,10 +606,16 @@ static void assert_positive_progress_reward(void) {
     kg_refresh_prices(&env.game_storage);
     float opportunity = kag_player_progress_value(&env, 0);
     assert(opportunity > ordinary);
+
+    /* At done, every noncash asset is worth exactly zero. */
+    env.game_storage.step = env.game_storage.config.episode_steps - 1;
+    env.game_storage.done = 1;
+    assert(kag_progress_asset_scale(&env) == 0.0f);
+    assert(fabsf(kag_player_progress_value(&env, 0) - player->money) < 1e-5f);
 }
 
 int main(void) {
-    assert_positive_progress_reward();
+    assert_progress_potential_reward();
     assert_discounted_economic_reward();
     assert_rule_regressions();
     assert_potential_schedule();
