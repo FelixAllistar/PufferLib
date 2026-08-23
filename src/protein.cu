@@ -1536,6 +1536,9 @@ typedef struct {
     cudaStream_t stream;
     int suggestion_idx;
     int num_random_samples;
+    float global_random_fraction;
+    float global_random_accumulator;
+    float global_candidate_fraction;
     int suggestions_per_pareto;
     int gp_training_iter;
     int optimizer_reset_frequency;
@@ -1558,7 +1561,9 @@ typedef struct {
     float *centers_buf;
 } ProteinSweep;
 
-ProteinSweep *protein_sweep_create(SweepSpace *space, int num_random_samples, int suggestions_per_pareto,
+ProteinSweep *protein_sweep_create(SweepSpace *space, int num_random_samples,
+                                   float global_random_fraction, float global_candidate_fraction,
+                                   int suggestions_per_pareto,
                                    int gp_training_iter, float gp_learning_rate, int optimizer_reset_frequency,
                                    int gp_max_obs, int infer_batch_size, int use_success_prob, int prune_pareto,
                                    int use_logit, float global_search_scale, float max_suggestion_cost,
@@ -1568,6 +1573,8 @@ ProteinSweep *protein_sweep_create(SweepSpace *space, int num_random_samples, in
     ProteinSweep *sw = (ProteinSweep *)calloc(1, sizeof(ProteinSweep));
     sw->space = space;
     sw->num_random_samples = num_random_samples;
+    sw->global_random_fraction = global_random_fraction;
+    sw->global_candidate_fraction = global_candidate_fraction;
     sw->suggestions_per_pareto = suggestions_per_pareto;
     sw->gp_training_iter = gp_training_iter;
     sw->optimizer_reset_frequency = optimizer_reset_frequency;
@@ -1665,6 +1672,41 @@ static void protein_sobol_fallback(ProteinSweep *sw, float *out, int is_fixed_co
     }
 }
 
+static int protein_sweep_use_global_random(ProteinSweep *sw) {
+    if (sw->suggestion_idx <= sw->num_random_samples)
+        return 1;
+    sw->global_random_accumulator += sw->global_random_fraction;
+    if (sw->global_random_accumulator + PROTEIN_EPSILON < 1.0f)
+        return 0;
+    sw->global_random_accumulator -= 1.0f;
+    return 1;
+}
+
+static void protein_sweep_inject_global_candidates(ProteinSweep *sw, int n_candidates,
+                                                    int is_fixed_cost, float fixed_cost_norm) {
+    int dim = sw->space->num;
+    int n_global = (int)ceilf(sw->global_candidate_fraction * (float)n_candidates);
+    if (n_global <= 0)
+        return;
+    if (n_global > n_candidates)
+        n_global = n_candidates;
+
+    float *global = (float *)malloc((size_t)n_global * dim * sizeof(float));
+    CURAND_CHECK(curandGenerateUniform(sw->sobol, global, (size_t)n_global * dim));
+    int cost_dim = sw->space->cost_idx;
+    for (int i = 0; i < n_global; i++) {
+        for (int d = 0; d < dim; d++)
+            global[(size_t)i * dim + d] = 2.0f * global[(size_t)i * dim + d] - 1.0f;
+        if (is_fixed_cost && cost_dim >= 0)
+            global[(size_t)i * dim + cost_dim] = fixed_cost_norm;
+    }
+    size_t offset = (size_t)(n_candidates - n_global) * dim;
+    CUDA_CHECK(cudaMemcpyAsync(sw->acq->d_candidates + offset, global,
+        (size_t)n_global * dim * sizeof(float), cudaMemcpyHostToDevice, sw->stream));
+    CUDA_CHECK(cudaStreamSynchronize(sw->stream));
+    free(global);
+}
+
 ProteinSweepInfo protein_sweep_suggest(ProteinSweep *sw, float *out, float fixed_cost_norm) {
     ProteinSweepInfo info = {0};
     sw->suggestion_idx++;
@@ -1674,7 +1716,7 @@ ProteinSweepInfo protein_sweep_suggest(ProteinSweep *sw, float *out, float fixed
     int is_fixed_cost = !isnan(fixed_cost_norm);
 
     ProteinObsList *s = &sw->obs->success;
-    if (sw->suggestion_idx <= sw->num_random_samples || s->n == 0) {
+    if (protein_sweep_use_global_random(sw) || s->n == 0) {
         protein_sobol_fallback(sw, out, is_fixed_cost, fixed_cost_norm);
         info.is_random = 1;
         return info;
@@ -1744,6 +1786,7 @@ ProteinSweepInfo protein_sweep_suggest(ProteinSweep *sw, float *out, float fixed
         info.is_random = 1;
         return info;
     }
+    protein_sweep_inject_global_candidates(sw, n_cands, is_fixed_cost, fixed_cost_norm);
 
     float *d_success_prob = NULL;
     if (sw->use_success_prob && s->n > 9 && sw->obs->failure.n > 9) {

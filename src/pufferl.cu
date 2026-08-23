@@ -3522,9 +3522,34 @@ typedef struct {
     int pareto;
     int fd;
     pid_t pid;
+    char run_id[128];
     float* sample;
     TrainResult result;
 } SweepJob;
+
+static double sweep_optional_number(Ini* ini, const char* key, double fallback) {
+    DictItem* item = dict_find(puf_ini_section(ini, "sweep", 0), key);
+    return item ? item->value : fallback;
+}
+
+static void sweep_log_result(FILE* fp, SweepSpace* space, SweepParam* params,
+        const SweepJob* job, int good) {
+    fprintf(fp, "%d\t%s\t%s\t", job->run, job->run_id,
+        good ? "complete" : "failed");
+    if (good) {
+        fprintf(fp, "%.9g\t%.9g\t%.9g", job->result.score,
+            job->result.cost, job->result.steps);
+    } else {
+        fprintf(fp, "nan\tnan\t0");
+    }
+    fprintf(fp, "\t%d\t%d\t%d", job->random, job->gp_obs, job->pareto);
+    for (int p = 0; p < space->num; p++) {
+        float value = space_unnormalize(&space->spaces[p], job->sample[p]);
+        fprintf(fp, "\t%.9g", value);
+    }
+    fputc('\n', fp);
+    fflush(fp);
+}
 
 static int sweep_param_included(const char* path, const char* only) {
     if (!only || !*only) return 1;
@@ -3623,7 +3648,17 @@ void run_sweep(Ini* ini, const char* exe_path) {
     int use_logit = strcmp(metric_dist, "logit") == 0;
     float max_cost = (float)puf_ini_get(ini, "sweep", "max_suggestion_cost");
     float early_stop_quantile = (float)puf_ini_get(ini, "sweep", "early_stop_quantile");
+    int random_samples = (int)sweep_optional_number(ini, "random_samples", 10);
+    float global_random_fraction = (float)sweep_optional_number(
+        ini, "global_random_fraction", 0.0);
+    float global_candidate_fraction = (float)sweep_optional_number(
+        ini, "global_candidate_fraction", 0.0);
     assert(max_runs >= 1 && "sweep.max_runs must be >= 1");
+    assert(random_samples >= 0 && "sweep.random_samples must be >= 0");
+    assert(global_random_fraction >= 0.0f && global_random_fraction <= 1.0f
+        && "sweep.global_random_fraction must be in [0, 1]");
+    assert(global_candidate_fraction >= 0.0f && global_candidate_fraction <= 1.0f
+        && "sweep.global_candidate_fraction must be in [0, 1]");
     assert(downsample >= 1 && downsample <= TRAIN_RESULT_MAX_POINTS
         && "sweep.downsample must be in [1, TRAIN_RESULT_MAX_POINTS]");
     int success_cap = max_runs * downsample * 2;
@@ -3656,10 +3691,33 @@ void run_sweep(Ini* ini, const char* exe_path) {
     int parallel = sweep_gpus / train_gpus;
 
     ProteinSweep* protein = protein_sweep_create(space,
-        10, 256, 50, 0.001f, 50, 750, 4096,
+        random_samples, global_random_fraction, global_candidate_fraction,
+        256, 50, 0.001f, 50, 750, 4096,
         downsample == 1, prune_pareto, use_logit,
         1.0f, max_cost, 0.1f, -0.8f, early_stop_quantile,
         success_cap, 1024, 5, 73ULL);
+
+    const char* log_dir = puf_ini_get_str(ini, "base", "log_dir");
+    const char* env_name = puf_ini_get_str(ini, "base", "env_name");
+    char sweep_log_dir[SELFPLAY_PATH_MAX];
+    snprintf(sweep_log_dir, sizeof(sweep_log_dir), "%s/%s", log_dir, env_name);
+    mkdir_p(sweep_log_dir);
+    char sweep_log_path[SELFPLAY_PATH_MAX];
+    snprintf(sweep_log_path, sizeof(sweep_log_path),
+        "%s/protein_sweep_%ld.tsv", sweep_log_dir,
+        (long)(1000.0 * wall_clock()));
+    FILE* sweep_log = fopen(sweep_log_path, "w");
+    if (!sweep_log) {
+        fprintf(stderr, "could not open sweep log %s: %s\n",
+            sweep_log_path, strerror(errno));
+        exit(1);
+    }
+    fprintf(sweep_log, "run\trun_id\tstatus\tscore\tcost\tsteps\trandom\tgp_obs\tpareto");
+    for (int p = 0; p < space->num; p++)
+        fprintf(sweep_log, "\t%s.%s", params[p].section, params[p].key);
+    fputc('\n', sweep_log);
+    fflush(sweep_log);
+    printf("Protein sweep log: %s\n", sweep_log_path);
 
     float* samples = (float*)calloc((size_t)(parallel + 1) * space->num, sizeof(float));
     float* sample = samples;
@@ -3715,6 +3773,7 @@ void run_sweep(Ini* ini, const char* exe_path) {
             char run_id[128];
             snprintf(run_id, sizeof(run_id), "sweep_%ld_%04d",
                 (long)(1000.0 * wall_clock()), job.run);
+            snprintf(job.run_id, sizeof(job.run_id), "%s", run_id);
             puf_ini_put(ini, "base.run_id", run_id);
 
             // Spawn clean train process (after parent CUDA init for protein).
@@ -3793,6 +3852,7 @@ void run_sweep(Ini* ini, const char* exe_path) {
         job->pid = 0;
         active--;
         int good = ok && WIFEXITED(status) && WEXITSTATUS(status) == 0;
+        sweep_log_result(sweep_log, space, params, job, good);
 
         if (!good) {
             fprintf(stderr, "sweep worker run=%d failed; marking sample bad\n", job->run);
@@ -3818,6 +3878,7 @@ void run_sweep(Ini* ini, const char* exe_path) {
     free(jobs);
     free(samples);
     free(params);
+    fclose(sweep_log);
     protein_sweep_destroy(protein);
     sweep_space_destroy(space);
 }
