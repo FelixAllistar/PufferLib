@@ -10,14 +10,15 @@ cd "$root"
 
 steps=${KAG_ROUTE_STEPS:-100000000}
 stamp=${KAG_ROUTE_STAMP:-$(date +%Y%m%d%H%M%S)}
-league=saved/kaggriculture_league_512x2_elite_v1/league.ini
+mode=${KAG_ROUTE_MODE:-routes}
+league=${KAG_ROUTE_LEAGUE:-saved/kaggriculture_league_512x2_elite_v1/league.ini}
 manifest="logs/kaggriculture/route_512x2_${stamp}.tsv"
 queue_log="logs/kaggriculture/route_512x2_${stamp}.log"
 expected_bytes=11081728
 
 [[ -f $league ]] || { printf 'Missing league: %s\n' "$league" >&2; exit 1; }
 mkdir -p logs/kaggriculture
-printf 'variant\trun_id\tsource\tlr\tcrop_scale\tanimal_scale\tland_scale\tterminal_cash_scale\tsteps\tcheckpoint\n' > "$manifest"
+printf 'variant\trun_id\tsource\tlr\tprogress_scale\tcrop_scale\tanimal_scale\tland_scale\tterminal_cash_scale\tsteps\tcheckpoint\n' > "$manifest"
 
 common=(
     base.checkpoint_interval=24
@@ -44,7 +45,6 @@ common=(
     env.reward_potential_gamma=0.99970
     env.reward_cash_scale=0
     env.reward_money_scale=0
-    env.reward_progress_scale=1
     env.reward_progress_win_scale=1
     env.reward_progress_liquidation_days=6
     env.reward_progress_seed_scale=1
@@ -101,7 +101,7 @@ common=(
 )
 
 run_variant() {
-    local variant=$1 source=$2 lr=$3 crop=$4 animal=$5 land=$6 terminal_cash=$7
+    local variant=$1 source=$2 lr=$3 progress=$4 crop=$5 animal=$6 land=$7 terminal_cash=$8
     local run_id="route512_${variant}_${stamp}"
     local run_dir="checkpoints/kaggriculture/$run_id"
     local final_checkpoint actual_bytes
@@ -115,12 +115,13 @@ run_variant() {
         }
     fi
 
-    printf '\nRUN variant=%s source=%s lr=%s crop=%s animal=%s land=%s terminal_cash=%s steps=%s\n' \
-        "$variant" "$source" "$lr" "$crop" "$animal" "$land" "$terminal_cash" "$steps" | tee -a "$queue_log"
+    printf '\nRUN variant=%s source=%s lr=%s progress=%s crop=%s animal=%s land=%s terminal_cash=%s steps=%s\n' \
+        "$variant" "$source" "$lr" "$progress" "$crop" "$animal" "$land" "$terminal_cash" "$steps" | tee -a "$queue_log"
     ./puffer train kaggriculture "${common[@]}" \
         "base.run_id=$run_id" \
         "base.load_model_path=$source" \
         "train.learning_rate=$lr" \
+        "env.reward_progress_scale=$progress" \
         "env.reward_progress_crop_scale=$crop" \
         "env.reward_progress_animal_scale=$animal" \
         "env.reward_progress_land_scale=$land" \
@@ -132,17 +133,33 @@ run_variant() {
     [[ -n $final_checkpoint ]] || { printf 'No checkpoint for %s\n' "$run_id" >&2; exit 1; }
     actual_bytes=$(stat -c %s "$final_checkpoint")
     [[ $actual_bytes == "$expected_bytes" ]] || { printf 'Final architecture mismatch: %s\n' "$final_checkpoint" >&2; exit 1; }
-    printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
-        "$variant" "$run_id" "$source" "$lr" "$crop" "$animal" "$land" "$terminal_cash" "$steps" "$final_checkpoint" >> "$manifest"
+    printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+        "$variant" "$run_id" "$source" "$lr" "$progress" "$crop" "$animal" "$land" "$terminal_cash" "$steps" "$final_checkpoint" >> "$manifest"
 }
 
-# One continuation preserves the known animal route. The other starts and
-# coefficients deliberately probe crop, land, and balanced routes.
-run_variant animal_anchor saved/kaggriculture_league_512x2_elite_v1/future_cash_49m.bin 0.000188 1.00 1.00 1.00 0.25
-run_variant crop_dusta saved/kaggriculture_league_512x2_elite_v1/clone_crop_dusta.bin 0.000400 1.50 0.50 1.00 0.35
-run_variant peikopon saved/kaggriculture_league_512x2_elite_v1/clone_peikopon.bin 0.000400 1.50 0.25 1.25 0.35
-run_variant ryo_balanced saved/kaggriculture_league_512x2_elite_v1/clone_ryo.bin 0.000300 1.25 0.75 1.00 0.50
-run_variant animal_to_crop saved/kaggriculture_league_512x2_elite_v1/future_cash_49m.bin 0.000300 1.50 0.50 1.00 0.35
-run_variant cold_crop None 0.000400 1.50 0.50 1.00 0.35
+if [[ $mode == routes ]]; then
+    # One continuation preserves the known animal route. The other starts and
+    # coefficients deliberately probe crop, land, and balanced routes.
+    run_variant animal_anchor saved/kaggriculture_league_512x2_elite_v1/future_cash_49m.bin 0.000188 1.00 1.00 1.00 1.00 0.25
+    run_variant crop_dusta saved/kaggriculture_league_512x2_elite_v1/clone_crop_dusta.bin 0.000400 1.00 1.50 0.50 1.00 0.35
+    run_variant peikopon saved/kaggriculture_league_512x2_elite_v1/clone_peikopon.bin 0.000400 1.00 1.50 0.25 1.25 0.35
+    run_variant ryo_balanced saved/kaggriculture_league_512x2_elite_v1/clone_ryo.bin 0.000300 1.00 1.25 0.75 1.00 0.50
+    run_variant animal_to_crop saved/kaggriculture_league_512x2_elite_v1/future_cash_49m.bin 0.000300 1.00 1.50 0.50 1.00 0.35
+    run_variant cold_crop None 0.000400 1.00 1.50 0.50 1.00 0.35
+elif [[ $mode == crop_cash ]]; then
+    # Rehabilitate a crop-active stochastic policy by lowering dense asset
+    # guidance and increasing the positive terminal-cash objective. This is a
+    # compact factorial screen: progress {0.25,0.5,1} x cash {1,2}.
+    source=${KAG_CROP_SOURCE:?Set KAG_CROP_SOURCE to a crop-active 512x2 checkpoint}
+    run_variant p025_cash1 "$source" 0.000188 0.25 1.50 0.25 1.00 1.00
+    run_variant p025_cash2 "$source" 0.000300 0.25 1.50 0.25 1.00 2.00
+    run_variant p050_cash1 "$source" 0.000188 0.50 1.50 0.25 1.00 1.00
+    run_variant p050_cash2 "$source" 0.000300 0.50 1.50 0.25 1.00 2.00
+    run_variant p100_cash1 "$source" 0.000188 1.00 1.50 0.25 1.00 1.00
+    run_variant p100_cash2 "$source" 0.000300 1.00 1.50 0.25 1.00 2.00
+else
+    printf 'Unknown KAG_ROUTE_MODE: %s\n' "$mode" >&2
+    exit 2
+fi
 
 printf '\nROUTE MATRIX COMPLETE manifest=%s\n' "$manifest" | tee -a "$queue_log"
