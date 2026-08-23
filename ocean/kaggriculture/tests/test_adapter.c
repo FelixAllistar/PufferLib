@@ -567,7 +567,7 @@ static void assert_progress_potential_reward(void) {
     player->seeds[KG_TOMATO] = 1;
     float held_seed = kag_player_progress_value(&env, 0);
     assert(fabsf(held_seed - initial) < 1e-5f);
-    assert(fabsf(kag_progress_potential_reward(&env, initial, held_seed))
+    assert(fabsf(kag_progress_potential_reward(&env, initial, held_seed, 0))
         < 1e-5f);
 
     /* Daily labor is another neutral cash-for-capital exchange. */
@@ -585,14 +585,29 @@ static void assert_progress_potential_reward(void) {
     kg_new_plant(player, 0, KG_TOMATO, env.game_storage.day,
         env.game_storage.config.turns_per_day);
     float invested = kag_player_progress_value(&env, 0);
-    float first = kag_progress_potential_reward(&env, held_seed, invested);
+    float first = kag_progress_potential_reward(
+        &env, held_seed, invested, 0);
     assert(first > 0.0f);
 
     /* Unlike a high-water objective, losing realizable value is visible. */
-    assert(kag_progress_potential_reward(&env, invested, initial) < 0.0f);
+    assert(kag_progress_potential_reward(
+        &env, invested, initial, 0) < 0.0f);
 
-    assert(kag_positive_terminal_money_reward(&env, 2000) == 0.0f);
-    assert(kag_positive_terminal_money_reward(&env, 6000) == 0.0f);
+    /* Zero-terminal potential shaping cancels exactly under the matching
+     * discount: phi 0 -> 2 -> terminal 0 contributes no discounted return. */
+    float shaping_up = kag_progress_potential_reward(
+        &env, 3000.0f, 9000.0f, 0);
+    float shaping_writeoff = kag_progress_potential_reward(
+        &env, 9000.0f, 12345.0f, 1);
+    assert(fabsf(shaping_up
+            + env.reward_potential_gamma * shaping_writeoff) < 1e-6f);
+
+    env.reward_progress_terminal_money_scale = 0.25f;
+    assert(fabsf(kag_progress_terminal_money_reward(&env, 2000)
+            - (-0.25f / 3.0f)) < 1e-6f);
+    assert(kag_progress_terminal_money_reward(&env, 3000) == 0.0f);
+    assert(fabsf(kag_progress_terminal_money_reward(&env, 6000) - 0.25f)
+        < 1e-6f);
     assert(kag_positive_terminal_win_reward(&env, 6000, 5000) == 1.0f);
     assert(kag_positive_terminal_win_reward(&env, 5000, 6000) == 0.0f);
     assert(kag_positive_terminal_win_reward(&env, 5000, 5000) == 0.5f);

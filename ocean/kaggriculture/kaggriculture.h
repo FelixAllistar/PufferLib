@@ -593,10 +593,10 @@ KG_HD static inline int kag_animal_remaining_events(const Env* env,
  * land remain at cost so buying them is approximately neutral rather than an
  * immediate punishment.
  *
- * Noncash value tapers to zero near the horizon and is exactly zero at the
- * terminal state. Discount-consistent changes in this potential therefore
- * telescope to final cash. The intermediate estimates only provide credit
- * assignment for investments; they cannot make terminal hoarding optimal. */
+ * Noncash value tapers near the horizon. The shaping function defines the
+ * entire terminal successor potential as zero, so discount-consistent changes
+ * telescope away completely. These estimates only provide credit assignment
+ * for investments; they cannot redefine the terminal cash objective. */
 KG_HD static inline float kag_progress_asset_scale(const Env* env) {
     const KGState* game = &env->game_storage;
     if (game->done) return 0.0f;
@@ -716,11 +716,16 @@ KG_HD static inline float kag_player_progress_value(const Env* env,
 }
 
 KG_HD static inline float kag_progress_potential_reward(const Env* env,
-        float before, float after) {
+        float before, float after, int terminal) {
     if (env->reward_progress_scale == 0.0f) return 0.0f;
     float starting_money = (float)env->game_storage.config.starting_money;
     float before_phi = (before - starting_money) / starting_money;
-    float after_phi = (after - starting_money) / starting_money;
+    /* This estimate is a teaching signal, not part of the game objective.
+     * Define the successor potential as zero on a terminal transition so the
+     * discounted shaping return telescopes away exactly. The final cash
+     * objective is supplied independently below. */
+    float after_phi = terminal
+        ? 0.0f : (after - starting_money) / starting_money;
     if (env->reward_potential_gamma <= 0.0f) {
         return env->reward_progress_scale * (after_phi - before_phi);
     }
@@ -728,9 +733,8 @@ KG_HD static inline float kag_progress_potential_reward(const Env* env,
         * (env->reward_potential_gamma * after_phi - before_phi);
 }
 
-KG_HD static inline float kag_positive_terminal_money_reward(const Env* env,
+KG_HD static inline float kag_progress_terminal_money_reward(const Env* env,
         int money) {
-    if (money <= env->game_storage.config.starting_money) return 0.0f;
     float starting_money = (float)env->game_storage.config.starting_money;
     return env->reward_progress_terminal_money_scale
         * ((float)money - starting_money) / starting_money;
@@ -2792,9 +2796,9 @@ void puf_step(Env* env) {
     int model_money = model_player ? p1 : p0;
     int opponent_money = model_player ? p0 : p1;
     int done = kg_done(game);
-    /* Update both legacy accounting potential and the future-cash potential.
-     * The latter writes noncash assets to zero at done, so only cash survives
-     * its telescoping discounted return. */
+    /* Update both legacy accounting potential and the future-cash estimate.
+     * Progress shaping uses a forced zero successor at done, so the entire
+     * fitted estimate telescopes away and signed terminal cash stands alone. */
     env->potential[0] = kag_player_potential(env, 0);
     env->potential[1] = kag_player_potential(env, 1);
     for (int player = 0; player < KG_NUM_PLAYERS; player++) {
@@ -2805,7 +2809,7 @@ void puf_step(Env* env) {
             before_money[player], after_money);
         float progress_value = kag_player_progress_value(env, player);
         reward += kag_progress_potential_reward(env,
-            before_progress[player], progress_value);
+            before_progress[player], progress_value, done);
         env->progress_value[player] = progress_value;
         reward += maintenance_rewards[player];
         env->agents[player].rewards[0] = reward;
@@ -2822,8 +2826,8 @@ void puf_step(Env* env) {
         float model_win = model_player == 0 ? win0 : 1.0f - win0;
         float money0_term = kag_terminal_money_reward(env, p0);
         float money1_term = kag_terminal_money_reward(env, p1);
-        money0_term += kag_positive_terminal_money_reward(env, p0);
-        money1_term += kag_positive_terminal_money_reward(env, p1);
+        money0_term += kag_progress_terminal_money_reward(env, p0);
+        money1_term += kag_progress_terminal_money_reward(env, p1);
         money0_term += kag_positive_terminal_win_reward(env, p0, p1);
         money1_term += kag_positive_terminal_win_reward(env, p1, p0);
         env->agents[0].rewards[0] += money0_term;

@@ -234,7 +234,7 @@ __device__ static void kag_cuda_transition(Env* env, Env* shells,
             before_money[player], money[player]);
         float progress_value = kag_player_progress_value(env, player);
         reward += kag_progress_potential_reward(env,
-            before_progress[player], progress_value);
+            before_progress[player], progress_value, done);
         env->progress_value[player] = progress_value;
         reward += maintenance_rewards[player];
         env->agents[player].rewards[0] = reward;
@@ -257,8 +257,8 @@ __device__ static void kag_cuda_transition(Env* env, Env* shells,
     int opponent_money = money[1 - model_player];
     float money0_term = kag_terminal_money_reward(env, money[0]);
     float money1_term = kag_terminal_money_reward(env, money[1]);
-    money0_term += kag_positive_terminal_money_reward(env, money[0]);
-    money1_term += kag_positive_terminal_money_reward(env, money[1]);
+    money0_term += kag_progress_terminal_money_reward(env, money[0]);
+    money1_term += kag_progress_terminal_money_reward(env, money[1]);
     money0_term += kag_positive_terminal_win_reward(env, money[0], money[1]);
     money1_term += kag_positive_terminal_win_reward(env, money[1], money[0]);
     env->agents[0].rewards[0] += money0_term;
