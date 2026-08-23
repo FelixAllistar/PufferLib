@@ -15,6 +15,8 @@ kag_latest_run=0
 kag_include_emag=0
 kag_eval_deterministic=1
 kag_fixed=pass,rules
+kag_hidden_size=
+kag_num_layers=
 kag_cache=
 kag_focal_count=0
 kag_inputs=()
@@ -31,6 +33,8 @@ kag_usage() {
         "  --gpu-agents N     CUDA evaluation agents per matcher (default 64)" \
         "  --output PREFIX    Output prefix (default logs/kaggriculture/population)" \
         "  --fixed LIST       Comma-separated fixed sides (pass,rules,top; default pass,rules)" \
+        "  --hidden-size N    Policy hidden size (defaults to config)" \
+        "  --num-layers N     Policy recurrent layers (defaults to config)" \
         "  --cache FILE       Reuse/write payoff rows keyed by checkpoint hash" \
         "  --focal-count N    Evaluate only pairs led by the first N policies when the cached tail is complete" \
         "  --final-only       Keep only the lexically last raw checkpoint in each run directory" \
@@ -56,6 +60,8 @@ while (($#)); do
         --gpu-agents) kag_gpu_agents=$2; shift 2 ;;
         --output) kag_output=$2; shift 2 ;;
         --fixed) kag_fixed=$2; shift 2 ;;
+        --hidden-size) kag_hidden_size=$2; shift 2 ;;
+        --num-layers) kag_num_layers=$2; shift 2 ;;
         --cache) kag_cache=$2; shift 2 ;;
         --focal-count) kag_focal_count=$2; shift 2 ;;
         --final-only) kag_final_only=1; shift ;;
@@ -94,6 +100,22 @@ fi
 if ! [[ $kag_focal_count =~ ^[0-9]+$ ]]; then
     printf '%s\n' '--focal-count must be a nonnegative integer' >&2
     exit 2
+fi
+if [[ -n $kag_hidden_size || -n $kag_num_layers ]]; then
+    if ! [[ $kag_hidden_size =~ ^[1-9][0-9]*$ \
+            && $kag_num_layers =~ ^[1-9][0-9]*$ ]]; then
+        printf '%s\n' '--hidden-size and --num-layers must be provided together as positive integers' >&2
+        exit 2
+    fi
+fi
+kag_arch_args=()
+if [[ -n $kag_hidden_size ]]; then
+    kag_arch_args+=(
+        "policy.hidden_size=$kag_hidden_size"
+        "policy.num_layers=$kag_num_layers"
+        "vec.frozen_bank_hidden_size=$kag_hidden_size"
+        "vec.frozen_bank_num_layers=$kag_num_layers"
+    )
 fi
 if [[ -n $kag_percentages ]]; then
     IFS=',' read -r -a kag_percentage_values <<< "$kag_percentages"
@@ -417,6 +439,7 @@ kag_run_fixed_gpu() {
             "base.seed=$((kag_fixed_seed_a + kag_seed_offset))" \
             "base.load_model_path=$kag_a" \
             "base.eval_deterministic=$kag_eval_deterministic" \
+            "${kag_arch_args[@]}" \
             "env.bot_opponent_fraction=1" \
             "env.bot_pass_fraction=$kag_pass" \
             "env.bot_rules_fraction=$kag_rules" \
@@ -434,6 +457,7 @@ kag_run_fixed_gpu() {
             "base.seed=$((kag_fixed_seed_b + kag_seed_offset))" \
             "base.load_model_path=$kag_a" \
             "base.eval_deterministic=$kag_eval_deterministic" \
+            "${kag_arch_args[@]}" \
             "env.bot_opponent_fraction=1" \
             "env.bot_pass_fraction=$kag_pass" \
             "env.bot_rules_fraction=$kag_rules" \
@@ -483,6 +507,7 @@ kag_run_gpu_pair() {
             "base.load_model_path=$kag_a" \
             "base.load_enemy_model_path=$kag_b" \
             "base.eval_deterministic=$kag_eval_deterministic" \
+            "${kag_arch_args[@]}" \
             selfplay.enabled=0 train.total_timesteps=0 2>&1); then
         printf '%s\n' "$kag_forward" > "${kag_result}.error"
         return 1
@@ -494,6 +519,7 @@ kag_run_gpu_pair() {
             "base.load_model_path=$kag_b" \
             "base.load_enemy_model_path=$kag_a" \
             "base.eval_deterministic=$kag_eval_deterministic" \
+            "${kag_arch_args[@]}" \
             selfplay.enabled=0 train.total_timesteps=0 2>&1); then
         printf '%s\n' "$kag_reverse" > "${kag_result}.error"
         return 1
@@ -541,6 +567,7 @@ if ((kag_count <= 9)); then
             "league.games=$kag_games" \
             "league.focal_count=$kag_focal_count" \
             "base.eval_deterministic=$kag_eval_deterministic" \
+            "${kag_arch_args[@]}" \
             "base.seed=7000"; then
         printf '%s\n' 'Native persistent league evaluation failed' >&2
         exit 1
