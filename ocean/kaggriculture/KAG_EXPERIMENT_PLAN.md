@@ -360,3 +360,18 @@ retains all S0a rows, both expert actions, offsets, and SHA-256 hashes. Raw
 state bytes are deliberately ABI-bound: a loader must reject a version or
 size mismatch. `make -C ocean/kaggriculture state-bank-test` exercises a real
 official replay and proves frame parity plus serialize/deserialize/resume.
+
+S0c adds `env.reset_state_bank` and `env.reset_state_prob`. GPU episodes draw
+one complete verified snapshot from the selected bank with that probability;
+all remaining episodes use the existing root/opening reset path. The state is
+continuing: reward baselines are initialized after loading it and the game runs
+to its genuine day-30 terminal. `select_replay_state_stage.py` makes bounded,
+scenario-balanced indexes while preserving both player rows for every selected
+joint state. For the first sell-only stage:
+
+```bash
+python3 ocean/kaggriculture/select_replay_state_stage.py \
+  --index /workspace/elite_replays/state_bank/replay_index.tsv \
+  --output /workspace/elite_replays/state_bank/sell.tsv \
+  --stage sell --max-states-per-scenario 5000 --min-final-money 10000
+```

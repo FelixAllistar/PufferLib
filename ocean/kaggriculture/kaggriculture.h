@@ -277,6 +277,7 @@ struct Env {
     float reward_progress_animal_realization[KG_NUM_ANIMALS];
     float reward_progress_product_realization[KG_NUM_PRODUCTS];
     float reset_opening_prob;
+    float reset_state_prob;
     float potential[KG_NUM_PLAYERS];
     float progress_value[KG_NUM_PLAYERS];
     int bot_opponent;
@@ -2494,6 +2495,7 @@ void puf_init(Env* env, Dict* kwargs) {
     env->reset_opening_min = (int)dict_get(kwargs, "reset_opening_min");
     env->reset_opening_prob = (float)dict_get(kwargs,
         "reset_opening_prob");
+    env->reset_state_prob = (float)dict_get(kwargs, "reset_state_prob");
     if (env->policy_market_slots < 1
             || env->policy_market_slots > KG_POLICY_MARKET_SLOTS) {
         fprintf(stderr, "policy_market_slots must be in [1, %d]\n",
@@ -2515,6 +2517,10 @@ void puf_init(Env* env, Dict* kwargs) {
     if (env->reset_opening_prob < 0.0f
             || env->reset_opening_prob > 1.0f) {
         fprintf(stderr, "reset_opening_prob must be in [0, 1]\n");
+        exit(1);
+    }
+    if (env->reset_state_prob < 0.0f || env->reset_state_prob > 1.0f) {
+        fprintf(stderr, "reset_state_prob must be in [0, 1]\n");
         exit(1);
     }
     env->episode_returns[0] = 0.0f;

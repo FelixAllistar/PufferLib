@@ -31,6 +31,7 @@ typedef struct {
     int reset_opening_turns;
     int reset_opening_min;
     float reset_opening_prob;
+    float reset_state_prob;
     float reward_potential_scale;
     float reward_potential_gamma;
     float reward_cash_scale;
@@ -71,12 +72,105 @@ static int g_kag_num_matches = 0;
 static int g_kag_bound = 0;
 static int g_kag_bank_count = 0;
 static uint32_t* d_kag_opening_rng = nullptr;
+static KGState* d_kag_reset_states = nullptr;
+static int g_kag_reset_state_count = 0;
 static int* d_kag_bank_completed = nullptr;
 static obs_t* g_kag_observations = nullptr;
 static float* g_kag_actions = nullptr;
 static float* g_kag_rewards = nullptr;
 static float* g_kag_terminals = nullptr;
 static unsigned char* g_kag_masks = nullptr;
+
+static void kag_cuda_check(const char* what);
+
+typedef struct {
+    char magic[8];
+    uint32_t bank_format_version;
+    uint32_t native_state_version;
+    uint32_t native_state_size;
+    uint32_t record_count;
+    uint64_t reserved;
+} KagStateBankHeader;
+
+static_assert(sizeof(KagStateBankHeader) == 32,
+    "Kaggriculture state-bank header ABI changed");
+
+static bool kag_cuda_snapshot_config_compatible(const KGConfig* snapshot,
+        const KGConfig* current) {
+    return snapshot->episode_steps == current->episode_steps
+        && snapshot->board_size == current->board_size
+        && snapshot->starting_money == current->starting_money
+        && snapshot->max_market_orders_per_turn
+            == current->max_market_orders_per_turn
+        && snapshot->turns_per_day == current->turns_per_day
+        && snapshot->shed_capacity == current->shed_capacity
+        && snapshot->weed_spawn_chance == current->weed_spawn_chance
+        && snapshot->town_shop_unlock_interval
+            == current->town_shop_unlock_interval
+        && snapshot->town_shop_sell_interval
+            == current->town_shop_sell_interval
+        && snapshot->town_center_sell_interval
+            == current->town_center_sell_interval
+        && snapshot->farm_hand_cost_mult == current->farm_hand_cost_mult;
+}
+
+static void kag_cuda_load_reset_states(Dict* env_kwargs) {
+    const char* path = dict_get_str(env_kwargs, "reset_state_bank");
+    float probability = (float)dict_get(env_kwargs, "reset_state_prob");
+    if (probability <= 0.0f || std::strcmp(path, "None") == 0) return;
+
+    FILE* stream = std::fopen(path, "rb");
+    if (!stream) {
+        std::perror(path);
+        std::exit(1);
+    }
+    KagStateBankHeader header = {};
+    if (std::fread(&header, sizeof(header), 1, stream) != 1
+            || std::memcmp(header.magic, "KGRSTB1\0", 8) != 0
+            || header.bank_format_version != 1
+            || header.native_state_version != kg_state_serialization_version()
+            || header.native_state_size != sizeof(KGState)
+            || header.record_count == 0 || header.reserved != 0) {
+        std::fprintf(stderr, "Invalid Kaggriculture reset state bank: %s\n", path);
+        std::fclose(stream);
+        std::exit(1);
+    }
+
+    KGState* host = (KGState*)std::calloc(header.record_count, sizeof(KGState));
+    unsigned char* payload = (unsigned char*)std::malloc(sizeof(KGState));
+    if (!host || !payload) std::abort();
+    for (uint32_t i = 0; i < header.record_count; i++) {
+        if (std::fread(payload, sizeof(KGState), 1, stream) != 1
+                || !kg_state_deserialize(&host[i], payload, sizeof(KGState))
+                || !kag_cuda_snapshot_config_compatible(
+                    &host[i].config, &h_kag_cuda_config.game)) {
+            std::fprintf(stderr,
+                "Invalid or incompatible reset state %u in %s\n", i, path);
+            std::free(payload);
+            std::free(host);
+            std::fclose(stream);
+            std::exit(1);
+        }
+    }
+    int trailing = std::fgetc(stream);
+    std::fclose(stream);
+    std::free(payload);
+    if (trailing != EOF) {
+        std::fprintf(stderr, "Trailing bytes in reset state bank: %s\n", path);
+        std::free(host);
+        std::exit(1);
+    }
+    g_kag_reset_state_count = (int)header.record_count;
+    cudaMalloc((void**)&d_kag_reset_states,
+        (size_t)g_kag_reset_state_count * sizeof(KGState));
+    cudaMemcpy(d_kag_reset_states, host,
+        (size_t)g_kag_reset_state_count * sizeof(KGState),
+        cudaMemcpyHostToDevice);
+    kag_cuda_check("reset state-bank upload");
+    std::free(host);
+    std::printf("Loaded %d Kaggriculture replay reset states from %s (prob=%.3f)\n",
+        g_kag_reset_state_count, path, probability);
+}
 
 static void kag_cuda_check(const char* what) {
     cudaError_t err = cudaGetLastError();
@@ -141,6 +235,23 @@ __device__ static void kag_cuda_choose_bot(Env* env, int match_id) {
     }
 }
 
+__device__ static void kag_cuda_reset_episode(Env* env,
+        const KGScriptTape* tapes, const KGState* reset_states,
+        int reset_state_count) {
+    if (reset_state_count > 0 && env->reset_state_prob > 0.0f) {
+        uint32_t draw = kag_reset_opening_random(env) >> 8;
+        uint32_t cutoff = (uint32_t)(env->reset_state_prob * 16777216.0f);
+        if (draw < cutoff) {
+            uint32_t index = kag_reset_opening_random(env)
+                % (uint32_t)reset_state_count;
+            env->game_storage = reset_states[index];
+            env->reset_source = 1;
+            return;
+        }
+    }
+    kag_reset_with_opening(env, tapes);
+}
+
 __device__ static void kag_cuda_bot_overrides(Env* env,
         KGAction actions[KG_NUM_PLAYERS], const KGScriptTape* tapes) {
     KGState* game = &env->game_storage;
@@ -198,7 +309,8 @@ __device__ static void kag_cuda_fold_log(Env* shell, Env* match) {
 
 __device__ static void kag_cuda_transition(Env* env, Env* shells,
         const int rows[KG_NUM_PLAYERS], const KGScriptTape* tapes,
-        KGAction* actions, int* bank_completed) {
+        KGAction* actions, int* bank_completed,
+        const KGState* reset_states, int reset_state_count) {
     KGState* game = &env->game_storage;
     float before_potential[KG_NUM_PLAYERS] = {
         env->potential[0], env->potential[1]};
@@ -434,7 +546,7 @@ __device__ static void kag_cuda_transition(Env* env, Env* shells,
     shells[rows[model_player]].tag = env->tag;
     kag_cuda_fold_log(&shells[rows[model_player]], env);
 
-    kag_reset_with_opening(env, tapes);
+    kag_cuda_reset_episode(env, tapes, reset_states, reset_state_count);
     env->episode_returns[0] = 0.0f;
     env->episode_returns[1] = 0.0f;
     env->potential[0] = kag_player_potential(env, 0);
@@ -447,7 +559,8 @@ __device__ static void kag_cuda_transition(Env* env, Env* shells,
 __global__ static void kag_cuda_reset_kernel(Env* shells, Env* matches,
         const int* rows, obs_t* observations, float* actions,
         float* rewards, float* terminals, unsigned char* masks,
-        const KGScriptTape* tapes, int num_matches, uint32_t* opening_rng) {
+        const KGScriptTape* tapes, int num_matches, uint32_t* opening_rng,
+        const KGState* reset_states, int reset_state_count) {
     int match_id = blockIdx.x * blockDim.x + threadIdx.x;
     if (match_id >= num_matches) return;
     Env* env = &matches[match_id];
@@ -460,6 +573,7 @@ __global__ static void kag_cuda_reset_kernel(Env* shells, Env* matches,
     env->reset_opening_turns = d_kag_cuda_config.reset_opening_turns;
     env->reset_opening_min = d_kag_cuda_config.reset_opening_min;
     env->reset_opening_prob = d_kag_cuda_config.reset_opening_prob;
+    env->reset_state_prob = d_kag_cuda_config.reset_state_prob;
     env->reward_potential_scale = d_kag_cuda_config.reward_potential_scale;
     env->reward_potential_gamma = d_kag_cuda_config.reward_potential_gamma;
     env->reward_cash_scale = d_kag_cuda_config.reward_cash_scale;
@@ -530,7 +644,7 @@ __global__ static void kag_cuda_reset_kernel(Env* shells, Env* matches,
         ^ 0x9e3779b97f4a7c15ULL * ((uint64_t)match_id + 1ULL);
     kg_init(&env->game_storage, &config);
     env->reset_opening_rng = opening_rng[match_id];
-    kag_reset_with_opening(env, tapes);
+    kag_cuda_reset_episode(env, tapes, reset_states, reset_state_count);
     opening_rng[match_id] = env->reset_opening_rng;
     for (int player = 0; player < KG_NUM_PLAYERS; player++) {
         env->agents[player].rewards[0] = 0.0f;
@@ -544,12 +658,14 @@ __global__ static void kag_cuda_reset_kernel(Env* shells, Env* matches,
 
 __global__ static void kag_cuda_step_kernel(Env* shells, Env* matches,
         const int* rows, const KGScriptTape* tapes, KGAction* decoded_actions,
-        int num_matches, uint32_t* opening_rng, int* bank_completed) {
+        int num_matches, uint32_t* opening_rng, int* bank_completed,
+        const KGState* reset_states, int reset_state_count) {
     int match_id = blockIdx.x * blockDim.x + threadIdx.x;
     if (match_id >= num_matches) return;
     int match_rows[2] = {rows[2 * match_id], rows[2 * match_id + 1]};
     kag_cuda_transition(&matches[match_id], shells, match_rows, tapes,
-        decoded_actions + 2 * match_id, bank_completed);
+        decoded_actions + 2 * match_id, bank_completed,
+        reset_states, reset_state_count);
     opening_rng[match_id] = matches[match_id].reset_opening_rng;
 }
 
@@ -576,6 +692,7 @@ static void kag_cuda_load_config(Dict* kwargs) {
     h_kag_cuda_config.reset_opening_turns = template_env.reset_opening_turns;
     h_kag_cuda_config.reset_opening_min = template_env.reset_opening_min;
     h_kag_cuda_config.reset_opening_prob = template_env.reset_opening_prob;
+    h_kag_cuda_config.reset_state_prob = template_env.reset_state_prob;
     h_kag_cuda_config.reward_potential_scale = template_env.reward_potential_scale;
     h_kag_cuda_config.reward_potential_gamma = template_env.reward_potential_gamma;
     h_kag_cuda_config.reward_cash_scale = template_env.reward_cash_scale;
@@ -639,6 +756,7 @@ static Env* puf_envs_create(int total_agents, Dict* env_kwargs,
     g_kag_total_agents = total_agents;
     g_kag_num_matches = total_agents / 2;
     kag_cuda_load_config(env_kwargs);
+    kag_cuda_load_reset_states(env_kwargs);
     kag_script_init();
 
     int frozen_banks = (int)dict_get(vec_kwargs, "num_frozen_banks");
@@ -742,7 +860,8 @@ static void puf_envs_reset(Env* envs, obs_t* observations, float* rewards,
         KAG_CUDA_BLOCK>>>(envs, d_kag_matches, d_kag_rows,
             observations, g_kag_actions, rewards, terminals,
             g_kag_masks, d_kag_tapes, g_kag_num_matches,
-            d_kag_opening_rng);
+            d_kag_opening_rng, d_kag_reset_states,
+            g_kag_reset_state_count);
     g_kag_bound = 1;
 }
 
@@ -762,7 +881,8 @@ static void puf_envs_step(Env* envs, const float* actions,
     kag_cuda_step_kernel<<<kag_cuda_grid(g_kag_num_matches),
         KAG_CUDA_BLOCK, 0, stream>>>(envs, d_kag_matches,
             d_kag_rows, d_kag_tapes, d_kag_decoded_actions,
-            g_kag_num_matches, d_kag_opening_rng, d_kag_bank_completed);
+            g_kag_num_matches, d_kag_opening_rng, d_kag_bank_completed,
+            d_kag_reset_states, g_kag_reset_state_count);
 }
 
 static void puf_envs_bind_buffers(float* actions, unsigned char* masks) {
@@ -791,6 +911,7 @@ static void puf_envs_close(Env* envs) {
     if (d_kag_rows) cudaFree(d_kag_rows);
     if (d_kag_matches) cudaFree(d_kag_matches);
     if (d_kag_opening_rng) cudaFree(d_kag_opening_rng);
+    if (d_kag_reset_states) cudaFree(d_kag_reset_states);
     if (d_kag_bank_completed) cudaFree(d_kag_bank_completed);
     cudaFree(envs);
     d_kag_tapes = nullptr;
@@ -798,11 +919,13 @@ static void puf_envs_close(Env* envs) {
     d_kag_matches = nullptr;
     d_kag_decoded_actions = nullptr;
     d_kag_opening_rng = nullptr;
+    d_kag_reset_states = nullptr;
     d_kag_bank_completed = nullptr;
     g_kag_bound = 0;
     g_kag_total_agents = 0;
     g_kag_num_matches = 0;
     g_kag_bank_count = 0;
+    g_kag_reset_state_count = 0;
 }
 
 #define PUF_GPU_ENV_BIND_BUFFERS 1

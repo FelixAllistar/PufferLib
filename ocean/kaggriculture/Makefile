@@ -21,6 +21,7 @@ parity: $(LIB)
 
 state-bank-test: $(LIB)
 	$(ROOT)/../.venv/bin/python tests/test_replay_state_index.py
+	$(ROOT)/../.venv/bin/python tests/test_replay_state_stage.py
 	$(ROOT)/../.venv/bin/python tests/test_replay_state_bank.py
 
 top-bot-parity: | $(BUILD)
