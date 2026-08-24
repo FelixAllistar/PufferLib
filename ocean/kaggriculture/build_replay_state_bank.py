@@ -111,6 +111,8 @@ def build_bank(args: argparse.Namespace) -> dict[str, Any]:
         path.parent.mkdir(parents=True, exist_ok=True)
 
     found: set[tuple[str, str, int]] = set()
+    incompatible: set[tuple[str, str, int]] = set()
+    incompatible_examples: list[str] = []
     records: list[dict[str, Any]] = []
     counts = collections.Counter()
     skipped = collections.Counter()
@@ -136,48 +138,68 @@ def build_bank(args: argparse.Namespace) -> dict[str, Any]:
                 raise RuntimeError(f"kg_create failed for {source} episode {eid}")
             try:
                 steps = episode["steps"]
-                for turn, frame in enumerate(steps):
-                    assert_parity(lib, state, frame, f"{source} episode={eid} turn={turn}")
-                    counts["parity_frames"] += 1
-                    rows = episode_targets.get(turn)
-                    if rows is not None:
-                        if turn + 1 >= len(steps):
-                            raise AssertionError(f"selected terminal state has no resume action: {eid}:{turn}")
-                        payload = serialize_state(lib, state, state_size)
-                        verify_resume(
-                            lib, cfg, payload, frame, steps[turn + 1],
-                            f"{source} episode={eid} turn={turn}",
-                        )
-                        offset = bank.tell()
-                        bank.write(payload)
-                        next_pair, _ = action_pair(steps[turn + 1])
-                        records.append({
-                            "record_index": len(records),
-                            "byte_offset": offset,
-                            "byte_size": state_size,
-                            "sha256": hashlib.sha256(payload).hexdigest(),
-                            "episode_id": eid,
-                            "source": source,
-                            "module_version": episode.get("module_version", ""),
-                            "seed": (episode.get("info") or {}).get(
-                                "seed", (episode.get("configuration") or {}).get("seed", "")
-                            ),
-                            "turn": turn,
-                            "players": ",".join(sorted({row["player"] for row in rows})),
-                            "state_keys": ",".join(row["state_key"] for row in rows),
-                            "expert_actions": json.dumps(next_pair, separators=(",", ":")),
-                            "index_rows": json.dumps(rows, separators=(",", ":")),
-                        })
-                        found.add((source, eid, turn))
-                        counts["snapshots"] += 1
-                        counts["resume_checks"] += 1
-                    if turn + 1 < len(steps):
-                        _, actions = action_pair(steps[turn + 1])
-                        lib.kg_step(state, actions)
+                episode_payloads: list[tuple[int, bytes, list[dict[str, str]], Any]] = []
+                episode_frames = 0
+                try:
+                    for turn, frame in enumerate(steps):
+                        assert_parity(lib, state, frame, f"{source} episode={eid} turn={turn}")
+                        episode_frames += 1
+                        rows = episode_targets.get(turn)
+                        if rows is not None:
+                            if turn + 1 >= len(steps):
+                                raise AssertionError(
+                                    f"selected terminal state has no resume action: {eid}:{turn}"
+                                )
+                            payload = serialize_state(lib, state, state_size)
+                            verify_resume(
+                                lib, cfg, payload, frame, steps[turn + 1],
+                                f"{source} episode={eid} turn={turn}",
+                            )
+                            next_pair, _ = action_pair(steps[turn + 1])
+                            episode_payloads.append((turn, payload, rows, next_pair))
+                        if turn + 1 < len(steps):
+                            _, actions = action_pair(steps[turn + 1])
+                            lib.kg_step(state, actions)
+                except AssertionError as error:
+                    if not args.skip_incompatible_episodes:
+                        raise
+                    skipped["parity_incompatible_episode"] += 1
+                    incompatible.update((source, eid, turn) for turn in episode_targets)
+                    if len(incompatible_examples) < args.max_incompatible_examples:
+                        incompatible_examples.append(str(error))
+                    continue
+
+                # Commit snapshots only after every frame in the episode has
+                # passed. A late mismatch can therefore never leave an earlier
+                # state from the same incompatible episode in the bank.
+                for turn, payload, rows, next_pair in episode_payloads:
+                    offset = bank.tell()
+                    bank.write(payload)
+                    records.append({
+                        "record_index": len(records),
+                        "byte_offset": offset,
+                        "byte_size": state_size,
+                        "sha256": hashlib.sha256(payload).hexdigest(),
+                        "episode_id": eid,
+                        "source": source,
+                        "module_version": episode.get("module_version", ""),
+                        "seed": (episode.get("info") or {}).get(
+                            "seed", (episode.get("configuration") or {}).get("seed", "")
+                        ),
+                        "turn": turn,
+                        "players": ",".join(sorted({row["player"] for row in rows})),
+                        "state_keys": ",".join(row["state_key"] for row in rows),
+                        "expert_actions": json.dumps(next_pair, separators=(",", ":")),
+                        "index_rows": json.dumps(rows, separators=(",", ":")),
+                    })
+                    found.add((source, eid, turn))
+                    counts["snapshots"] += 1
+                    counts["resume_checks"] += 1
+                counts["parity_frames"] += episode_frames
                 counts["episodes"] += 1
             finally:
                 lib.kg_destroy(state)
-        missing = sorted(set(targets) - found)
+        missing = sorted(set(targets) - found - incompatible)
         if missing:
             preview = ", ".join(f"{source}:{eid}:{turn}" for source, eid, turn in missing[:5])
             raise RuntimeError(f"{len(missing)} indexed states were not reconstructed; first: {preview}")
@@ -200,6 +222,8 @@ def build_bank(args: argparse.Namespace) -> dict[str, Any]:
         "record_count": len(records),
         "counts": dict(sorted(counts.items())),
         "skipped": dict(sorted(skipped.items())),
+        "incompatible_target_count": len(incompatible),
+        "incompatible_examples": incompatible_examples,
         "guarantees": [
             "both official action streams replayed",
             "every traversed native frame matches the official replay",
@@ -220,6 +244,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--summary", help="Output JSON summary (default: OUTPUT.summary.json)")
     parser.add_argument("--lib", default=str(DEFAULT_LIB), help="Native rule-core shared library")
     parser.add_argument("--min-version", default="1.32.0")
+    parser.add_argument(
+        "--skip-incompatible-episodes", action="store_true",
+        help="Discard an entire selected episode if any parity/resume check fails",
+    )
+    parser.add_argument("--max-incompatible-examples", type=int, default=10)
     return parser.parse_args(argv)
 
 
