@@ -335,16 +335,14 @@ __global__ void ps_step_range_kernel(PSCudaSim sim, int start, int count) {
 
 static inline void ps_cuda_reset_all(PSCudaSim* sim, uint32_t seed, cudaStream_t stream = 0) {
     int blocks = (sim->num_envs + PS_CUDA_BLOCK_SIZE - 1) / PS_CUDA_BLOCK_SIZE;
-    cudaMemsetAsync(sim->observations, 0,
-        (size_t)sim->num_envs * PS_OBS_SIZE * sizeof(float), stream);
+    // observations zeroed inside ps_reset_core->ps_compute_observations; redundant Memset removed (~11MB/step)
     ps_reset_all_kernel<<<blocks, PS_CUDA_BLOCK_SIZE, 0, stream>>>(*sim, seed);
     PS_CUDA_CHECK(cudaGetLastError());
 }
 
 static inline void ps_cuda_step_range(PSCudaSim* sim, int start, int count, cudaStream_t stream = 0) {
     int blocks = (count + PS_CUDA_BLOCK_SIZE - 1) / PS_CUDA_BLOCK_SIZE;
-    cudaMemsetAsync(sim->observations + (size_t)start * PS_OBS_SIZE, 0,
-        (size_t)count * PS_OBS_SIZE * sizeof(float), stream);
+    // observations zeroed inside ps_compute_observations; redundant Memset removed
     ps_step_range_kernel<<<blocks, PS_CUDA_BLOCK_SIZE, 0, stream>>>(*sim, start, count);
     PS_CUDA_CHECK(cudaGetLastError());
 }

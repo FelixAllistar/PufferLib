@@ -24,6 +24,7 @@ fi
 #   ./build.sh breakout --debug      # Debug build
 #   ./build.sh breakout --local      # Standalone executable (debug, sanitizers)
 #   ./build.sh breakout --fast       # Standalone executable (optimized)
+#   ./build.sh breakout --tui        # Standalone + TUI capture; pairs with tui/tui_viewer
 #   ./build.sh breakout --web        # Emscripten web build
 #   ./build.sh breakout --profile    # Kernel profiling binary
 #   ./build.sh goofspiel --exploit   # Exact small-game exploitability
@@ -52,6 +53,7 @@ while [ $i -lt ${#args[@]} ]; do
         --debug) DEBUG=1 ;;
         --local) MODE=local ;;
         --fast)  MODE=fast ;;
+        --tui)   MODE=tui ;;
         --web)   MODE=web ;;
         --profile) MODE=profile ;;
         --exploit) MODE=exploit ;;
@@ -205,6 +207,20 @@ elif [ "$ENV" = "nethack" ]; then
                -I./$NLE_DIR/build/_deps/deboost_context-src/include)
     EXTRA_LDFLAGS+=(-L"$NETHACK_LIB_DIR" -lnethack
                     -Xlinker -rpath -Xlinker "$NETHACK_LIB_DIR" -ldl)
+elif [ "$ENV" = "shenaniguns3d" ]; then
+    SRC_DIR="ocean/$ENV"
+    BOX3D_DIR="${BOX3D_DIR:-../box3d}"
+    if [ ! -f "$BOX3D_DIR/build/src/libbox3d.a" ]; then
+        echo "Building box3d from $BOX3D_DIR ..."
+        cmake -S "$BOX3D_DIR" -B "$BOX3D_DIR/build" -DCMAKE_BUILD_TYPE=Release \
+            -DBOX3D_SAMPLES=OFF -DBOX3D_UNIT_TESTS=OFF -DBOX3D_BENCHMARKS=OFF > /dev/null
+        cmake --build "$BOX3D_DIR/build" --target box3d -j8 > /dev/null
+    fi
+    INCLUDES+=(-I"$BOX3D_DIR/include" -I"../pd64")
+    LINK_ARCHIVES+=("$BOX3D_DIR/build/src/libbox3d.a")
+    EXTRA_CFLAGS+=(-DB3_MAX_WORLDS=8192)
+    EXTRA_LDFLAGS+=("$BOX3D_DIR/build/src/libbox3d.a")
+    EXTRA_SRC="../pd64/character.c"
 elif [ -d "ocean/$ENV" ]; then
     SRC_DIR="ocean/$ENV"
 else
@@ -242,6 +258,29 @@ if [ "$MODE" = "local" ] || [ "$MODE" = "fast" ]; then
     echo "Compiling $ENV..."
     ${CC:-clang} "${CLANG_OPT[@]}" "${FLAGS[@]}"
     echo "Built: ./$OUTPUT_NAME"
+    exit 0
+elif [ "$MODE" = "tui" ]; then
+    # Terminal-over-SSH eval: same standalone binary, but c_render/puf_render
+    # also streams framed RGBA (see tui/puffer_tui.h). Pair it with the viewer:
+    #   xvfb-run ./$OUTPUT_NAME | ./tui_viewer --sink=ansi
+    EXTRA_CFLAGS+=(-DPUFFER_TUI_CAPTURE -I./tui)
+    FLAGS=(
+        "${INCLUDES[@]}"
+        "$SRC_FILE" $EXTRA_SRC -o "$OUTPUT_NAME"
+        "${LINK_ARCHIVES[@]}"
+        "${EXTRA_LDFLAGS[@]}"
+        "${STANDALONE_LDFLAGS[@]}"
+        -lm -lpthread -fopenmp
+        -DPLATFORM_DESKTOP
+        "${EXTRA_CFLAGS[@]}"
+    )
+    echo "Compiling $ENV (tui capture)..."
+    ${CC:-clang} "${CLANG_OPT[@]}" "${FLAGS[@]}" || exit 1
+
+    echo "Compiling tui_viewer..."
+    ${CC:-clang} -O2 "${CLANG_WARN[@]}" tui/tui_viewer.c -o tui_viewer -ldl || exit 1
+    echo "Built: ./$OUTPUT_NAME + ./tui_viewer"
+    echo "Run:   xvfb-run -a ./$OUTPUT_NAME | ./tui_viewer --sink=ansi"
     exit 0
 elif [ "$MODE" = "exploit" ]; then
     if [ "$ENV" != "goofspiel" ]; then
@@ -389,6 +428,7 @@ if [ "$MODE" = "native" ]; then
 	    "${EXTRA_CFLAGS[@]}" \
 	    $PRECISION \
 	    src/pufferl.cu \
+        $EXTRA_SRC \
         ${RAYLIB_A:+"$RAYLIB_A"} \
         -L$CUDA_HOME/lib64 $NCCL_LFLAG \
         "${EXTRA_LDFLAGS[@]}" \

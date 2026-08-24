@@ -7,6 +7,11 @@
 #include "raylib.h"
 #include "pufferenv.h"
 
+// TUI-over-SSH capture: no-ops entirely unless built with ./build.sh ... --tui
+#ifdef PUFFER_TUI_CAPTURE
+#include "puffer_tui.h"
+#endif
+
 #define ACT_SIZES {3}
 typedef Env Breakout;
 // Native bf16 train (pufferl defines from_float + precision_t before including
@@ -634,6 +639,11 @@ void puf_render(Breakout* env) {
 
     DrawText(TextFormat("Score: %i", env->score), 10, 10, 20, WHITE);
     DrawText(TextFormat("Balls: %i", env->num_balls), client->width - 80, 10, 20, WHITE);
+
+    // Grab the finished frame before the swap; no-op unless --tui build.
+#ifdef PUFFER_TUI_CAPTURE
+    ptui_capture(env->width, env->height);
+#endif
     EndDrawing();
 
     //PlaySound(client->sound);

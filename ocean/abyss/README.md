@@ -8,6 +8,11 @@ Data sources:
 
 - `data/npc_stats.csv`: original 107-row NPC export.
 - `data/npc_catalog.json`: normalized NPC definitions.
+- `data/spawn_stats_qsna.json`: QSNA/abyssal.space per-tier historical spawn
+  probability tables for all seven tiers and 21 spawn types.
+- `data/npc_types_qsna.json`: QSNA NPC catalog with dogma attributes for the
+  Abyss NPC groups (superset of the T0 catalog, covers T1+ NPCs).
+- `data/spawn_tables_qsna.md`: generated, human-readable spawn tables.
 - `data/recorded/episodes.json`: 28 runs / 84 rooms and initial layouts.
 - `data/recorded/frames.jsonl`: local raw native-vector calibration input (gitignored).
 - `data/trajectory_calibration.json`: robust, speed-bounded pursuit/orbit fits.
@@ -21,6 +26,7 @@ python ocean/abyss/tools/build_npc_catalog.py ocean/abyss/data/npc_stats.csv
 python ocean/abyss/tools/calibrate_trajectories.py
 python ocean/abyss/tools/build_scenario_catalog.py
 python ocean/abyss/tools/build_collider_catalog.py /path/to/registry-live-new-abyss-huge-rocks-detail.txt
+python ocean/abyss/tools/fetch_qsna_spawns.py
 ```
 
 Build the environment with `bash build.sh abyss`. Dark weather, the modern turret hit

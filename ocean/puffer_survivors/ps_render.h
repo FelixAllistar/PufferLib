@@ -89,6 +89,10 @@ typedef struct {
     float fast_hit_x;
     float fast_hit_y;
     int fast_last_invuln_timer;
+    float fast_damage_flash;
+    float fast_shake;
+    float fast_last_damage_dealt;
+    float fast_last_shake_hp;
 #endif
 } PSClient;
 
@@ -107,7 +111,9 @@ static inline void ps_remove_chroma_key(Image* image) {
         Color* p = &pixels[i];
         int magenta_like = p->r > 150 && p->b > 150 && p->g < 170 && abs((int)p->r - (int)p->b) < 90;
         int hot_pink_edge = p->r > 200 && p->b > 140 && p->g < 150;
-        if (magenta_like || hot_pink_edge) {
+        // Some atlas exports have pure black (0,0,0) background for XP/health instead of magenta.
+        int pure_black = p->r < 12 && p->g < 12 && p->b < 12;
+        if (magenta_like || hot_pink_edge || pure_black) {
             p->r = 0;
             p->g = 0;
             p->b = 0;
@@ -121,10 +127,18 @@ static inline Vector2 ps_screen(PufferSurvivors* env, float x, float y, float sc
     float camera_y = env->py;
 #ifdef PS_FAST_RENDER
     PSClient* client = (PSClient*)env->client;
-    if (client->fast_interp_init) {
+    if (client && client->fast_interp_init) {
         float alpha = ps_clampf(client->fast_render_alpha, 0.0f, 1.0f);
         camera_x = client->fast_previous_px + (env->px - client->fast_previous_px) * alpha;
         camera_y = client->fast_previous_py + (env->py - client->fast_previous_py) * alpha;
+    }
+    if (client && client->fast_shake > 0.01f) {
+        float s = client->fast_shake;
+        // Scale-independent shake in world units, not screen pixels, so feels same zoomed
+        float shake_x = sinf((float)GetTime() * 54.0f) * s * 0.22f + sinf((float)GetTime() * 91.0f) * s * 0.08f;
+        float shake_y = cosf((float)GetTime() * 48.0f) * s * 0.22f + cosf((float)GetTime() * 83.0f) * s * 0.08f;
+        camera_x += shake_x;
+        camera_y += shake_y;
     }
 #endif
     return (Vector2){w * 0.5f + (x - camera_x) * scale, h * 0.5f + (y - camera_y) * scale};
@@ -280,13 +294,38 @@ static inline void ps_fast_update_hit_effect(PufferSurvivors* env) {
     float frame_dt = GetFrameTime();
     if (frame_dt <= 0.0f || frame_dt > 0.10f) frame_dt = 1.0f / 60.0f;
     if (env->invuln_timer > client->fast_last_invuln_timer) {
-        client->fast_hit_time = 0.22f;
+        client->fast_hit_time = 0.28f;
         client->fast_hit_x = env->px;
         client->fast_hit_y = env->py;
+        client->fast_shake = 0.18f;
+        client->fast_damage_flash = fmaxf(client->fast_damage_flash, 0.22f);
+    }
+    // Damage dealt flash - cheap global feedback instead of per-enemy numbers
+    if (env->episode_damage_dealt > client->fast_last_damage_dealt + 0.01f) {
+        float dealt = env->episode_damage_dealt - client->fast_last_damage_dealt;
+        client->fast_damage_flash = fminf(0.14f, client->fast_damage_flash + dealt * 0.018f);
+        // Tiny shake on big hits
+        if (dealt > 2.0f) client->fast_shake = fmaxf(client->fast_shake, 0.06f);
+    }
+    // Dash shake
+    if (env->dash_timer == env->cfg.dash_duration - 1) {
+        client->fast_shake = fmaxf(client->fast_shake, 0.09f);
+    }
+    // HP drop shake
+    if (env->hp < client->fast_last_shake_hp - 0.01f) {
+        client->fast_shake = fmaxf(client->fast_shake, 0.14f);
     }
     client->fast_last_invuln_timer = env->invuln_timer;
+    client->fast_last_damage_dealt = env->episode_damage_dealt;
+    client->fast_last_shake_hp = env->hp;
     if (client->fast_hit_time > 0.0f) {
         client->fast_hit_time = fmaxf(0.0f, client->fast_hit_time - frame_dt);
+    }
+    if (client->fast_damage_flash > 0.0f) {
+        client->fast_damage_flash = fmaxf(0.0f, client->fast_damage_flash - frame_dt * 1.8f);
+    }
+    if (client->fast_shake > 0.0f) {
+        client->fast_shake = fmaxf(0.0f, client->fast_shake - frame_dt * 2.8f);
     }
 }
 
@@ -354,89 +393,113 @@ static inline void ps_draw_fast_background(PufferSurvivors* env, float scale, in
 
     float now = (float)GetTime();
     float viewport = fmaxf((float)w, (float)h);
-    float camera_phase_x = env->px * scale * 0.0024f;
-    float camera_phase_y = env->py * scale * 0.0018f;
+    // Scale-independent camera phase: world units only, not screen scale.
+    // Previous scale*0.0024 made sin argument explode when window scaled, causing strobe.
+    float camera_phase_x = env->px * 0.028f;
+    float camera_phase_y = env->py * 0.022f;
+    // True parallax: background moves opposite camera at a fraction of scale.
+    // Each layer gets its own parallax factor for depth without extra textures.
+    float parallax_base_x = -env->px * scale;
+    float parallax_base_y = -env->py * scale;
 
-    // The large overscan keeps the viewport covered while the layers drift,
-    // so this background never exposes a hard edge or a repeated seam.
     if (client->fast_water_caustics_loaded) {
-        float size = viewport * 1.48f;
-        float x = ((float)w - size) * 0.5f
-            + 24.0f * sinf(now * 0.065f + camera_phase_x)
-            + 9.0f * sinf(now * 0.031f + camera_phase_y);
-        float y = ((float)h - size) * 0.5f
-            + 18.0f * sinf(now * 0.052f + camera_phase_y + 1.7f)
-            + 8.0f * sinf(now * 0.027f + camera_phase_x);
+        float size = viewport * 3.0f;
+        float parallax = 0.025f;
+        float x = ((float)w - size) * 0.5f + parallax_base_x * parallax
+            + 14.0f * sinf(now * 0.035f + camera_phase_x)
+            + 5.0f * sinf(now * 0.018f + camera_phase_y);
+        float y = ((float)h - size) * 0.5f + parallax_base_y * parallax
+            + 10.0f * sinf(now * 0.030f + camera_phase_y + 1.7f)
+            + 4.0f * sinf(now * 0.015f + camera_phase_x);
         Rectangle src = {0.0f, 0.0f,
             (float)client->fast_water_caustics.width,
             (float)client->fast_water_caustics.height};
         Rectangle dst = {x, y, size, size};
         DrawTexturePro(client->fast_water_caustics, src, dst,
-            (Vector2){0.0f, 0.0f}, 0.0f, (Color){255, 255, 255, 150});
+            (Vector2){0.0f, 0.0f}, 0.0f, (Color){255, 255, 255, 130});
 
-        // Lift the caustic highlights without flattening the texture into a
-        // solid wash. This is a single cached-texture blend pass, not a
-        // per-pixel CPU effect.
         BeginBlendMode(BLEND_ADDITIVE);
         DrawTexturePro(client->fast_water_caustics, src, dst,
-            (Vector2){0.0f, 0.0f}, 0.0f, (Color){112, 220, 224, 24});
+            (Vector2){0.0f, 0.0f}, 0.0f, (Color){112, 220, 224, 18});
         EndBlendMode();
 
-        // A slower, broader pass creates depth without introducing another
-        // line pattern or per-pixel work.
-        size = viewport * 1.92f;
-        x = ((float)w - size) * 0.5f
-            - 32.0f * sinf(now * 0.022f + camera_phase_x * 0.7f + 0.8f);
-        y = ((float)h - size) * 0.5f
-            + 26.0f * sinf(now * 0.019f + camera_phase_y * 0.6f + 2.1f);
+        size = viewport * 3.0f;
+        parallax = 0.035f;
+        x = ((float)w - size) * 0.5f + parallax_base_x * parallax
+            - 16.0f * sinf(now * 0.014f + camera_phase_x * 0.7f + 0.8f);
+        y = ((float)h - size) * 0.5f + parallax_base_y * parallax
+            + 12.0f * sinf(now * 0.012f + camera_phase_y * 0.6f + 2.1f);
         src = (Rectangle){0.0f, 0.0f,
             (float)client->fast_water_caustics.width,
             (float)client->fast_water_caustics.height};
         dst = (Rectangle){x, y, size, size};
         DrawTexturePro(client->fast_water_caustics, src, dst,
-            (Vector2){0.0f, 0.0f}, 0.0f, (Color){115, 208, 216, 36});
+            (Vector2){0.0f, 0.0f}, 0.0f, (Color){115, 208, 216, 28});
     }
 
     if (client->fast_water_props_loaded) {
-        float size = viewport * 1.52f;
-        float x = ((float)w - size) * 0.5f
-            + 68.0f * sinf(now * 0.016f + camera_phase_x * 0.35f + 2.4f);
-        float y = ((float)h - size) * 0.5f
-            + 54.0f * sinf(now * 0.013f + camera_phase_y * 0.30f + 0.6f);
+        float size = viewport * 3.0f;
+        float parallax = 0.042f;
+        float x = ((float)w - size) * 0.5f + parallax_base_x * parallax
+            + 18.0f * sinf(now * 0.008f + camera_phase_x * 0.25f + 2.4f);
+        float y = ((float)h - size) * 0.5f + parallax_base_y * parallax
+            + 12.0f * sinf(now * 0.007f + camera_phase_y * 0.22f + 0.6f);
         Rectangle src = {0.0f, 0.0f,
             (float)client->fast_water_props.width,
             (float)client->fast_water_props.height};
         Rectangle dst = {x, y, size, size};
         DrawTexturePro(client->fast_water_props, src, dst,
-            (Vector2){0.0f, 0.0f}, 0.0f, (Color){220, 225, 204, 132});
+            (Vector2){0.0f, 0.0f}, 0.0f, (Color){220, 225, 204, 110});
     }
 
     if (client->fast_water_silhouettes_loaded) {
-        float size = viewport * 1.70f;
-        float x = ((float)w - size) * 0.5f
-            + 52.0f * sinf(now * 0.024f + camera_phase_x * 0.55f + 0.4f);
-        float y = ((float)h - size) * 0.5f
-            + 38.0f * sinf(now * 0.018f + camera_phase_y * 0.45f + 1.2f);
+        float size = viewport * 3.0f;
+        float parallax = 0.065f;
+        float x = ((float)w - size) * 0.5f + parallax_base_x * parallax
+            + 18.0f * sinf(now * 0.014f + camera_phase_x * 0.55f + 0.4f);
+        float y = ((float)h - size) * 0.5f + parallax_base_y * parallax
+            + 12.0f * sinf(now * 0.010f + camera_phase_y * 0.45f + 1.2f);
         Rectangle src = {0.0f, 0.0f,
             (float)client->fast_water_silhouettes.width,
             (float)client->fast_water_silhouettes.height};
         Rectangle dst = {x, y, size, size};
         DrawTexturePro(client->fast_water_silhouettes, src, dst,
-            (Vector2){0.0f, 0.0f}, 0.0f, (Color){32, 118, 122, 145});
+            (Vector2){0.0f, 0.0f}, 0.0f, (Color){32, 118, 122, 120});
     }
 
-    // Foreground particulate is intentionally sparse; the generated texture
-    // carries the visual weight now instead of dozens of large primitives.
-    float drift_x = env->px * scale * 0.025f + now * 3.0f;
-    float drift_y = env->py * scale * 0.018f - now * 1.5f;
-    for (int i = 0; i < 24; i++) {
-        float x = fmodf((float)(i * 173 % 997) + drift_x, (float)w + 48.0f) - 24.0f;
-        float y = fmodf((float)(i * 277 % 991) + drift_y, (float)h + 48.0f) - 24.0f;
-        if (x < -24.0f) x += (float)w + 48.0f;
-        if (y < -24.0f) y += (float)h + 48.0f;
-        float r = 1.0f + (float)(i % 3) * 0.6f;
-        DrawCircleV((Vector2){x, y}, r,
-            (Color){138, 226, 224, (unsigned char)(18 + 6 * (i % 3))});
+    // Constant marine snow - 3 depths, always falling, parallax gives volume.
+    // No image gen needed: pure procedural circles with size/alpha/speed tied to depth.
+    {
+        struct { float parallax; float fall; float drift; float size0; int count; unsigned char alpha0; } layers[3] = {
+            {0.04f, 0.45f, 0.6f, 0.70f, 75, 22},
+            {0.12f, 0.95f, 1.2f, 1.05f, 60, 42},
+            {0.24f, 1.65f, 2.0f, 1.55f, 40, 68},
+        };
+        for (int L = 0; L < 3; L++) {
+            float drift_x = parallax_base_x * layers[L].parallax + now * layers[L].drift * 0.7f;
+            float drift_y = parallax_base_y * layers[L].parallax * 0.5f + now * layers[L].fall * 6.0f;
+            for (int i = 0; i < layers[L].count; i++) {
+                // Deterministic hash for position, wobble with time
+                float hx = (float)((i * 173 + L * 997) % 997);
+                float hy = (float)((i * 277 + L * 991) % 991);
+                float wobble_x = sinf(now * (0.4f + L * 0.12f) + i * 1.7f) * (1.2f + L * 0.6f);
+                float wobble_y = cosf(now * (0.3f + L * 0.08f) + i * 2.1f) * 0.6f;
+                float x = fmodf(hx + drift_x + wobble_x, (float)w + 48.0f) - 24.0f;
+                float y = fmodf(hy + drift_y + wobble_y, (float)h + 48.0f) - 24.0f;
+                if (x < -24.0f) x += (float)w + 48.0f;
+                if (y < -24.0f) y += (float)h + 48.0f;
+                float r = layers[L].size0 + (i % 3) * 0.32f;
+                // Far layer more blurred/dim, near more crisp/bright
+                unsigned char a = layers[L].alpha0 + (i % 3) * 8;
+                // Add subtle blue-white variation
+                unsigned char b = 224 + (L * 6) + (i % 3) * 4;
+                DrawCircleV((Vector2){x, y}, r, (Color){138, 226, b, a});
+                // Near layer gets tiny highlight
+                if (L == 2 && (i % 4 == 0)) {
+                    DrawCircleV((Vector2){x + r * 0.22f, y - r * 0.18f}, r * 0.35f, (Color){255, 255, 255, (unsigned char)(a * 0.45f)});
+                }
+            }
+        }
     }
 }
 #endif
@@ -618,6 +681,20 @@ static inline void ps_draw_enemy(PufferSurvivors* env, int i, float scale, int w
         : (kind == 1 ? 3.85f : (kind == 2 ? 3.5f : 3.35f)));
     int flip_x = env->enemies.vx[i] < -0.001f || (fabsf(env->enemies.vx[i]) < 0.001f && env->enemies.x[i] > env->px);
     Vector2 p = ps_screen(env, env->enemies.x[i], env->enemies.y[i], scale, w, h);
+    // Damage flash without per-enemy numbers: global flash with distance falloff so swarm still reads.
+    PSClient* ec = ps_client(env);
+    float dmg_flash = ec ? ec->fast_damage_flash : 0.0f;
+    if (dmg_flash > 0.015f) {
+        float dx = env->enemies.x[i] - env->px;
+        float dy = env->enemies.y[i] - env->py;
+        float d2 = dx*dx + dy*dy;
+        float falloff = 1.0f - ps_clampf(d2 / 144.0f, 0.0f, 1.0f); // 12 world units
+        dmg_flash *= falloff;
+        // Also flash low HP enemies slightly even without recent hit for readability
+        if (env->enemies.hp[i] < env->enemies.max_hp[i] * 0.5f) dmg_flash = fmaxf(dmg_flash, 0.08f * (1.0f - env->enemies.hp[i]/env->enemies.max_hp[i]));
+    } else {
+        dmg_flash = 0.0f;
+    }
     if (ari_k) {
         float width = env->enemies.half_width[i] * scale * 2.0f;
         float height = env->enemies.half_height[i] * scale * 2.0f;
@@ -630,22 +707,41 @@ static inline void ps_draw_enemy(PufferSurvivors* env, int i, float scale, int w
         DrawText("Ari K.", (int)p.x - text_width / 2,
             (int)p.y - font_size / 2, font_size, RAYWHITE);
     } else {
+        Color base = elite ? ORANGE : PINK;
+        if (dmg_flash > 0.01f) {
+            base.r = (unsigned char)ps_clampf(base.r + (255 - base.r) * dmg_flash * 1.15f, 0, 255);
+            base.g = (unsigned char)ps_clampf(base.g + (255 - base.g) * dmg_flash * 1.15f, 0, 255);
+            base.b = (unsigned char)ps_clampf(base.b + (255 - base.b) * dmg_flash * 1.15f, 0, 255);
+        }
+        // Subtle scale punch on hit
+        float punch = 1.0f + dmg_flash * 0.18f;
 #ifdef PS_FAST_RENDER
         if (kind == 1) {
-            // Draw the same sprite slightly enlarged underneath so the edge
-            // follows the jellyfish silhouette instead of becoming a circle.
             ps_draw_sprite_ex_tinted(env, sprite, env->enemies.x[i], env->enemies.y[i],
-                env->enemies.radius[i], visual_scale * 1.10f, 0.0f, flip_x,
+                env->enemies.radius[i], visual_scale * 1.10f * punch, 0.0f, flip_x,
                 (Color){4, 42, 57, 255}, (Color){4, 42, 57, 255});
+            Color inner = (Color){205, 242, 240, 255};
+            if (dmg_flash > 0.01f) {
+                inner.r = (unsigned char)ps_clampf(inner.r + (255 - inner.r) * dmg_flash, 0, 255);
+                inner.g = (unsigned char)ps_clampf(inner.g + (255 - inner.g) * dmg_flash, 0, 255);
+                inner.b = (unsigned char)ps_clampf(inner.b + (255 - inner.b) * dmg_flash, 0, 255);
+            }
             ps_draw_sprite_ex_tinted(env, sprite, env->enemies.x[i], env->enemies.y[i],
-                env->enemies.radius[i], visual_scale, 0.0f, flip_x,
-                PINK, (Color){205, 242, 240, 255});
+                env->enemies.radius[i], visual_scale * punch, 0.0f, flip_x,
+                base, inner);
+            if (dmg_flash > 0.08f) {
+                DrawCircleV(p, env->enemies.radius[i] * scale * (0.9f + dmg_flash * 0.5f), (Color){255, 255, 255, (unsigned char)(dmg_flash * 90)});
+            }
         } else {
-            ps_draw_sprite_ex(env, sprite, env->enemies.x[i], env->enemies.y[i],
-                env->enemies.radius[i], visual_scale, 0.0f, flip_x, elite ? ORANGE : PINK);
+            ps_draw_sprite_ex_tinted(env, sprite, env->enemies.x[i], env->enemies.y[i],
+                env->enemies.radius[i], visual_scale * punch, 0.0f, flip_x,
+                base, (Color){255, 255, 255, 255});
+            if (dmg_flash > 0.08f) {
+                DrawCircleV(p, env->enemies.radius[i] * scale * (0.85f + dmg_flash * 0.4f), (Color){255, 255, 255, (unsigned char)(dmg_flash * 70)});
+            }
         }
 #else
-        ps_draw_sprite_ex(env, sprite, env->enemies.x[i], env->enemies.y[i], env->enemies.radius[i], visual_scale, 0.0f, flip_x, elite ? ORANGE : PINK);
+        ps_draw_sprite_ex_tinted(env, sprite, env->enemies.x[i], env->enemies.y[i], env->enemies.radius[i], visual_scale * punch, 0.0f, flip_x, base, (Color){255, 255, 255, 255});
 #endif
     }
 
@@ -672,8 +768,6 @@ static inline void ps_draw_moving_obstacle(PufferSurvivors* env, int i,
     if (p.x + extent < 0.0f || p.x - extent > (float)w
             || p.y + extent < 0.0f || p.y - extent > (float)h) return;
 
-    DrawEllipse((int)(p.x + 4.0f), (int)(p.y + 6.0f),
-        width * 0.48f, height * 0.30f, (Color){0, 42, 52, 90});
     PSClient* client = ps_client(env);
     Texture2D texture = env->moving_obstacles.type[i] == PS_MOVING_OBSTACLE_ANCHOR
         ? client->moving_anchor
@@ -681,11 +775,17 @@ static inline void ps_draw_moving_obstacle(PufferSurvivors* env, int i,
     int loaded = env->moving_obstacles.type[i] == PS_MOVING_OBSTACLE_ANCHOR
         ? client->moving_anchor_loaded
         : client->moving_submarine_loaded;
-    float rotation = env->moving_obstacles.type[i] == PS_MOVING_OBSTACLE_ANCHOR
-        ? 7.0f * sinf((float)env->tick * 0.035f + (float)i)
-        : (env->moving_obstacles.vx[i] < 0.0f ? 180.0f : 0.0f);
+    float rotation = 0.0f;
+    bool flip_x = false;
+    if (env->moving_obstacles.type[i] == PS_MOVING_OBSTACLE_ANCHOR) {
+        rotation = 7.0f * sinf((float)env->tick * 0.035f + (float)i);
+    } else {
+        // Submarine: flip horizontally when moving left, don't rotate 180 (was upside down from RIGHT)
+        flip_x = env->moving_obstacles.vx[i] < 0.0f;
+    }
     if (loaded) {
         Rectangle src = {0.0f, 0.0f, (float)texture.width, (float)texture.height};
+        if (flip_x) src.width = -src.width;
         Rectangle dst = {p.x, p.y, width, height};
         DrawTexturePro(texture, src, dst,
             (Vector2){width * 0.5f, height * 0.5f}, rotation, WHITE);
@@ -704,24 +804,155 @@ static inline void ps_draw_moving_obstacle(PufferSurvivors* env, int i,
 }
 
 static inline void ps_draw_hud(PufferSurvivors* env) {
-    DrawRectangle(12, 12, 372, 194, (Color){0, 0, 0, 168});
-    DrawRectangleLines(12, 12, 372, 194, (Color){117, 230, 244, 90});
-    DrawText(TextFormat("Puffer Survivors  HP %.0f/%.0f", env->hp, env->max_hp), 24, 24, 18, RAYWHITE);
-    ps_draw_bar(24, 49, 200, 12, env->max_hp > 0.0f ? env->hp / env->max_hp : 0.0f, (Color){95, 230, 130, 255}, (Color){58, 18, 28, 210});
-    ps_draw_bar(24, 68, 200, 9, ps_xp_threshold(env, 0) > 0.0f ? env->xp / ps_xp_threshold(env, 0) : 0.0f, (Color){70, 210, 255, 255}, (Color){8, 39, 58, 210});
-    DrawText(TextFormat("LV %d  Wave %d  Kills %.0f", env->level, ps_wave_index(env, 0) + 1, env->episode_kills), 24, 88, 17, SKYBLUE);
-    DrawText(TextFormat("Score %.1f  Damage %.1f", env->episode_score, env->episode_damage_dealt), 24, 111, 17, RAYWHITE);
+    PSClient* client = ps_client(env);
+    float hp_pct = env->max_hp > 0.0f ? env->hp / env->max_hp : 0.0f;
+    float xp_pct = ps_xp_threshold(env, 0) > 0.0f ? env->xp / ps_xp_threshold(env, 0) : 0.0f;
+    float dash_cd_total = ps_dash_cooldown_total(env, 0);
+    float dash_ready = 1.0f - ps_clampf(env->dash_cd / dash_cd_total, 0.0f, 1.0f);
+    int is_dashing = env->dash_timer > 0;
+    int dash_on_cd = env->dash_cd > 0.0f;
+    float hit_flash = client ? ps_clampf(client->fast_hit_time / 0.22f, 0.0f, 1.0f) : 0.0f;
+
+    int panel_x = 12, panel_y = 12, panel_w = 384, panel_h = 218;
+    // Panel with soft shadow and rounded feel
+    DrawRectangle(panel_x + 3, panel_y + 3, panel_w, panel_h, (Color){0, 0, 0, 60});
+    DrawRectangle(panel_x, panel_y, panel_w, panel_h, (Color){6, 14, 22, 190});
+    DrawRectangleLines(panel_x, panel_y, panel_w, panel_h, (Color){117, 230, 244, 70});
+    DrawRectangleLines(panel_x + 1, panel_y + 1, panel_w - 2, panel_h - 2, (Color){117, 230, 244, 18});
+
+    // Header with level/wave/kills - compact
+    DrawText(TextFormat("LV %d  •  Wave %d  •  Kills %.0f", env->level, ps_wave_index(env, 0) + 1, env->episode_kills), 24, 22, 15, (Color){180, 225, 235, 255});
+    DrawText(TextFormat("Score %.0f", env->episode_score), 24, 40, 13, (Color){160, 200, 210, 200});
+
+    // --- HP BAR - juicy segmented ---
+    int hp_x = 24, hp_y = 58, hp_w = 220, hp_h = 16;
+    // Background
+    DrawRectangle(hp_x, hp_y, hp_w, hp_h, (Color){22, 16, 20, 255});
+    DrawRectangleLines(hp_x, hp_y, hp_w, hp_h, (Color){0, 0, 0, 120});
+    // Damage ghost (recent damage) - subtle red hold
+    float ghost_pct = hp_pct + hit_flash * 0.08f;
+    if (ghost_pct > hp_pct) {
+        DrawRectangle(hp_x + 1, hp_y + 1, (int)((hp_w - 2) * ps_clampf(ghost_pct,0,1)), hp_h - 2, (Color){120, 40, 40, 90});
+    }
+    // Fill color based on HP
+    Color hp_fill = hp_pct > 0.5f ? (Color){78, 220, 120, 255} : hp_pct > 0.25f ? (Color){255, 210, 80, 255} : (Color){255, 80, 80, 255};
+    if (hit_flash > 0.01f) {
+        // Flash white on hit
+        hp_fill.r = (unsigned char)(hp_fill.r + (255 - hp_fill.r) * hit_flash * 0.6f);
+        hp_fill.g = (unsigned char)(hp_fill.g + (255 - hp_fill.g) * hit_flash * 0.6f);
+        hp_fill.b = (unsigned char)(hp_fill.b + (255 - hp_fill.b) * hit_flash * 0.6f);
+    }
+    int hp_fill_w = (int)((hp_w - 2) * ps_clampf(hp_pct, 0, 1));
+    if (hp_fill_w > 0) {
+        DrawRectangle(hp_x + 1, hp_y + 1, hp_fill_w, hp_h - 2, hp_fill);
+        // Top gloss highlight
+        DrawRectangle(hp_x + 1, hp_y + 1, hp_fill_w, 5, (Color){255, 255, 255, 38});
+        // Bottom darker edge
+        DrawRectangle(hp_x + 1, hp_y + hp_h - 4, hp_fill_w, 3, (Color){0, 0, 0, 45});
+    }
+    // Segments per HP point
+    int segs = (int)env->max_hp;
+    if (segs > 1 && segs < 32) {
+        for (int s = 1; s < segs; s++) {
+            int sx = hp_x + (int)((float)s / (float)segs * (float)(hp_w - 2));
+            DrawRectangle(sx, hp_y + 1, 1, hp_h - 2, (Color){0, 0, 0, 90});
+        }
+    }
+    // Low HP pulse
+    if (hp_pct < 0.32f) {
+        float pulse = 0.5f + 0.5f * sinf((float)GetTime() * 7.0f);
+        DrawRectangleLines(hp_x - 1, hp_y - 1, hp_w + 2, hp_h + 2, (Color){255, 60, 60, (unsigned char)(90 + 80 * pulse)});
+    }
+    // HP text centered on bar
+    const char* hp_text = TextFormat("HP %.0f / %.0f", env->hp, env->max_hp);
+    int hp_tw = MeasureText(hp_text, 13);
+    DrawText(hp_text, hp_x + (hp_w - hp_tw)/2, hp_y + 2, 13, (Color){255, 255, 255, 245});
+    // Subtle outer glow when full
+    if (hp_pct > 0.95f) DrawRectangleLines(hp_x - 1, hp_y - 1, hp_w + 2, hp_h + 2, (Color){78, 220, 120, 22});
+
+    // --- STAMINA / DASH BAR ---
+    int stamina_x = 24, stamina_y = 80, stamina_w = 220, stamina_h = 10;
+    DrawRectangle(stamina_x, stamina_y, stamina_w, stamina_h, (Color){18, 28, 38, 255});
+    DrawRectangleLines(stamina_x, stamina_y, stamina_w, stamina_h, (Color){0, 0, 0, 100});
+    Color stamina_fill;
+    float stamina_pct = dash_ready;
+    const char* stamina_label = "DASH";
+    if (is_dashing) {
+        stamina_fill = (Color){255, 255, 255, 255};
+        stamina_pct = 1.0f;
+        stamina_label = "DASHING!";
+    } else if (!dash_on_cd) {
+        // Ready - pulsing cyan/white
+        float pulse = 0.5f + 0.5f * sinf((float)GetTime() * 9.0f);
+        stamina_fill = (Color){90 + (unsigned char)(70 * pulse), 240, 255, 255};
+        stamina_label = "READY";
+    } else {
+        // Recharging - amber to cyan
+        stamina_fill = (Color){100, 210, 255, 255};
+        stamina_label = TextFormat("RECHARGING %.0f%%", stamina_pct * 100.0f);
+    }
+    int stamina_fill_w = (int)((stamina_w - 2) * ps_clampf(stamina_pct, 0, 1));
+    if (stamina_fill_w > 0) {
+        DrawRectangle(stamina_x + 1, stamina_y + 1, stamina_fill_w, stamina_h - 2, stamina_fill);
+        DrawRectangle(stamina_x + 1, stamina_y + 1, stamina_fill_w, 3, (Color){255, 255, 255, 45});
+        if (!dash_on_cd && !is_dashing) {
+            // Ready glow
+            DrawRectangleLines(stamina_x - 1, stamina_y - 1, stamina_w + 2, stamina_h + 2, (Color){90, 240, 255, 55});
+        }
+    }
+    // Stamina notches for feel
+    for (int s = 1; s < 4; s++) {
+        int sx = stamina_x + (int)((float)s / 4.0f * (float)(stamina_w - 2));
+        DrawRectangle(sx, stamina_y + 1, 1, stamina_h - 2, (Color){0, 0, 0, 70});
+    }
+    DrawText(stamina_label, stamina_x + stamina_w + 8, stamina_y - 1, 11, is_dashing ? (Color){255, 255, 255, 255} : dash_on_cd ? (Color){140, 180, 190, 255} : (Color){90, 240, 255, 255});
+
+    // --- XP BAR ---
+    int xp_x = 24, xp_y = 98, xp_w = 220, xp_h = 7;
+    DrawRectangle(xp_x, xp_y, xp_w, xp_h, (Color){16, 32, 46, 255});
+    DrawRectangleLines(xp_x, xp_y, xp_w, xp_h, (Color){0, 0, 0, 80});
+    int xp_fill_w = (int)((xp_w - 2) * ps_clampf(xp_pct, 0, 1));
+    if (xp_fill_w > 0) {
+        DrawRectangle(xp_x + 1, xp_y + 1, xp_fill_w, xp_h - 2, (Color){70, 210, 255, 255});
+        DrawRectangle(xp_x + 1, xp_y + 1, xp_fill_w, 2, (Color){255, 255, 255, 40});
+    }
+    DrawText(TextFormat("XP %.0f%%", xp_pct * 100.0f), xp_x + xp_w + 8, xp_y - 2, 11, (Color){120, 210, 255, 200});
+
+    // Secondary stats row
+    DrawText(TextFormat("DMG %.0f", env->episode_damage_dealt), 24, 114, 12, (Color){200, 210, 215, 180});
 
     const char* labels[PS_WEAPON_COUNT] = {"Bub", "Whirl", "Orb", "Oil", "Sonar", "Frost", "Spike"};
     for (int i = 0; i < PS_WEAPON_COUNT; i++) {
         float pct = env->weapon_level[i] > 0 ? 1.0f - ps_clampf(env->weapon_cd[i] / ps_weapon_cooldown_total(env, 0, i), 0.0f, 1.0f) : 0.0f;
         int row = i / 4;
-        float x = 24.0f + (float)(i % 4) * 68.0f;
-        float y = 135.0f + (float)row * 22.0f;
-        DrawText(TextFormat("%s %d", labels[i], env->weapon_level[i]), (int)x, (int)y, 12, env->weapon_level[i] > 0 ? RAYWHITE : GRAY);
-        ps_draw_bar(x, y + 16.0f, 52.0f, 7.0f, pct, (Color){255, 222, 89, 255}, (Color){24, 38, 48, 210});
+        float x = 24.0f + (float)(i % 4) * 72.0f;
+        float y = 132.0f + (float)row * 26.0f;
+        DrawText(TextFormat("%s %d", labels[i], env->weapon_level[i]), (int)x, (int)y, 11, env->weapon_level[i] > 0 ? (Color){235, 245, 255, 255} : (Color){110, 130, 140, 255});
+        int bx = (int)x, by = (int)(y + 14.0f), bw = 58, bh = 8;
+        DrawRectangle(bx, by, bw, bh, (Color){14, 24, 34, 255});
+        DrawRectangleLines(bx, by, bw, bh, (Color){0, 0, 0, 90});
+        int fill_w = (int)((bw - 2) * ps_clampf(pct, 0, 1));
+        if (fill_w > 0) {
+            Color wc = env->weapon_level[i] > 0 ? (Color){255, 222, 89, 255} : (Color){80, 90, 100, 255};
+            // Flash when ready
+            if (pct > 0.99f && env->weapon_level[i] > 0) {
+                float pulse = 0.5f + 0.5f * sinf((float)GetTime() * 10.0f);
+                wc.r = (unsigned char)(wc.r + (255 - wc.r) * pulse * 0.25f);
+                wc.g = (unsigned char)(wc.g + (255 - wc.g) * pulse * 0.25f);
+            }
+            DrawRectangle(bx + 1, by + 1, fill_w, bh - 2, wc);
+            DrawRectangle(bx + 1, by + 1, fill_w, 2, (Color){255, 255, 255, 35});
+        }
     }
 
+    // Global damage vignette when recently hit
+    if (hit_flash > 0.02f) {
+        float a = hit_flash * hit_flash * 0.22f;
+        DrawRectangle(0, 0, GetScreenWidth(), 6, (Color){255, 60, 60, (unsigned char)(a * 255)});
+        DrawRectangle(0, GetScreenHeight() - 6, GetScreenWidth(), 6, (Color){255, 60, 60, (unsigned char)(a * 255)});
+        DrawRectangle(0, 0, 6, GetScreenHeight(), (Color){255, 60, 60, (unsigned char)(a * 255)});
+        DrawRectangle(GetScreenWidth() - 6, 0, 6, GetScreenHeight(), (Color){255, 60, 60, (unsigned char)(a * 255)});
+    }
 }
 
 static inline const char* ps_move_action_name(int action) {
@@ -978,15 +1209,15 @@ static inline void c_render(PufferSurvivors* env) {
         client->fast_obstacle_debris_loaded = client->fast_obstacle_debris.id != 0;
         if (client->fast_water_caustics_loaded) {
             SetTextureFilter(client->fast_water_caustics, TEXTURE_FILTER_BILINEAR);
-            SetTextureWrap(client->fast_water_caustics, TEXTURE_WRAP_CLAMP);
+            SetTextureWrap(client->fast_water_caustics, TEXTURE_WRAP_REPEAT);
         }
         if (client->fast_water_silhouettes_loaded) {
             SetTextureFilter(client->fast_water_silhouettes, TEXTURE_FILTER_POINT);
-            SetTextureWrap(client->fast_water_silhouettes, TEXTURE_WRAP_CLAMP);
+            SetTextureWrap(client->fast_water_silhouettes, TEXTURE_WRAP_REPEAT);
         }
         if (client->fast_water_props_loaded) {
             SetTextureFilter(client->fast_water_props, TEXTURE_FILTER_POINT);
-            SetTextureWrap(client->fast_water_props, TEXTURE_WRAP_CLAMP);
+            SetTextureWrap(client->fast_water_props, TEXTURE_WRAP_REPEAT);
         }
         if (client->fast_obstacle_debris_loaded) {
             SetTextureFilter(client->fast_obstacle_debris, TEXTURE_FILTER_POINT);
@@ -1042,15 +1273,7 @@ static inline void c_render(PufferSurvivors* env) {
 
     for (int i = 0; i < env->cfg.obstacle_count; i++) {
         Vector2 p = ps_screen(env, env->obstacles.x[i], env->obstacles.y[i], scale, sw, sh);
-#ifdef PS_FAST_RENDER
-        float shadow_w = env->obstacles.radius[i] * scale * 1.20f;
-        float shadow_h = env->obstacles.radius[i] * scale * 0.68f;
-        DrawEllipse((int)(p.x + 4.0f), (int)(p.y + 6.0f),
-            shadow_w, shadow_h, (Color){0, 52, 64, 72});
-#else
-        float shadow_r = env->obstacles.radius[i] * scale * 1.35f;
-        DrawCircleV((Vector2){p.x + 5.0f, p.y + 7.0f}, shadow_r, (Color){0, 0, 0, 70});
-#endif
+        // Shadows removed per feedback - previous soft two-layer still read as dark blobs on bright water, especially ribs/barrel (Image 1).
         int sprite = PS_SPRITE_CORAL + (env->obstacles.type[i] % 3);
 #ifdef PS_FAST_RENDER
         const float obstacle_visual_scale = 3.18f;
@@ -1090,17 +1313,15 @@ static inline void c_render(PufferSurvivors* env) {
             DrawCircleV(p, 18.0f * pulse, (Color){64, 255, 147, 62});
             ps_draw_sprite_ex(env, PS_SPRITE_HEALTH, env->drops.x[i], env->drops.y[i], 0.34f, 3.0f, 0.0f, 0, RED);
         } else {
-            // XP is small and cyan, which disappears into the bright water.
-            // A dark, restrained badge gives it luminance contrast without
-            // adding another bright particle layer.
-            float xp_badge = fmaxf(5.0f, 0.24f * 2.8f * scale * 0.62f);
-            DrawCircleV((Vector2){p.x + 1.0f, p.y + 1.0f}, xp_badge + 1.0f,
-                (Color){3, 18, 25, 180});
-            DrawCircleV(p, xp_badge, (Color){8, 35, 45, 235});
-            DrawCircleLines((int)p.x, (int)p.y, xp_badge,
-                (Color){75, 125, 132, 230});
+            float xp_badge = fmaxf(6.0f, 0.24f * 2.8f * scale * 0.75f);
+            // No black square - soft water glow + tiny shadow, sprite on top with full white (no dark tint).
+            // Previous badge was Color{3,18,25} + {8,35,45} which read as black on bright water.
+            DrawCircleV(p, xp_badge * 1.42f, (Color){8, 58, 77, 26});
+            DrawCircleV(p, xp_badge * 0.92f, (Color){255, 255, 255, 18});
+            DrawEllipse((int)(p.x + 1.0f), (int)(p.y + 2.0f), xp_badge * 1.05f, xp_badge * 0.52f, (Color){6, 22, 30, 28});
+            float wobble = sinf((float)env->tick * 0.14f + (float)i * 1.3f) * 0.06f;
             ps_draw_sprite_ex(env, PS_SPRITE_XP, env->drops.x[i], env->drops.y[i],
-                0.24f, 2.8f, 0.0f, 0, (Color){180, 220, 220, 255});
+                0.24f, 2.9f + wobble, 0.0f, 0, WHITE);
         }
         if (env->show_hitboxes) DrawCircleLines((int)p.x, (int)p.y, env->cfg.pickup_radius * scale, (Color){64, 220, 255, 120});
     }
@@ -1181,6 +1402,14 @@ static inline void c_render(PufferSurvivors* env) {
     }
 #endif
 #ifdef PS_FAST_RENDER
+    // Player contact shadow - drawn before sprite so it stays underneath
+    {
+        float pr = env->cfg.player_radius * scale;
+        float sh_ox = pr * 0.10f;
+        float sh_oy = pr * 0.32f;
+        DrawEllipse((int)(player.x + sh_ox), (int)(player.y + sh_oy), pr * 1.35f, pr * 0.62f, (Color){6, 22, 30, 32});
+        DrawEllipse((int)(player.x + sh_ox * 0.5f), (int)(player.y + sh_oy * 0.7f), pr * 0.92f, pr * 0.42f, (Color){6, 22, 30, 44});
+    }
     ps_draw_fast_hit_effect(env, scale, sw, sh);
     Color player_tint = WHITE;
     if (client->fast_hit_time > 0.0f) {
@@ -1196,17 +1425,60 @@ static inline void c_render(PufferSurvivors* env) {
     float player_bar_w = ps_clampf(2.4f * scale, 36.0f, 68.0f);
     float player_bar_h = ps_clampf(0.22f * scale, 4.0f, 6.0f);
     float player_sprite_half = player_visual_radius * 3.25f * scale * 0.5f;
-    ps_draw_bar(player.x - player_bar_w * 0.5f,
-        player.y - player_sprite_half - 11.0f,
-        player_bar_w, player_bar_h,
+    float hp_y = player.y - player_sprite_half - 11.0f;
+    ps_draw_bar(player.x - player_bar_w * 0.5f, hp_y, player_bar_w, player_bar_h,
         env->max_hp > 0.0f ? env->hp / env->max_hp : 0.0f,
         (Color){95, 230, 130, 255}, (Color){58, 18, 28, 220});
+    // Stamina bar - white, directly under HP, refills for dash
+    {
+        float dash_total = ps_dash_cooldown_total(env, 0);
+        float dash_pct = 1.0f - ps_clampf(env->dash_cd / dash_total, 0.0f, 1.0f);
+        int is_dashing = env->dash_timer > 0;
+        float stamina_y = hp_y + player_bar_h + 3.0f;
+        float stamina_h = 4.0f;
+        // Background
+        DrawRectangle((int)(player.x - player_bar_w * 0.5f), (int)stamina_y, (int)player_bar_w, (int)stamina_h, (Color){14, 22, 30, 190});
+        DrawRectangleLines((int)(player.x - player_bar_w * 0.5f), (int)stamina_y, (int)player_bar_w, (int)stamina_h, (Color){0, 0, 0, 90});
+        int fill_w = (int)((player_bar_w - 2) * ps_clampf(dash_pct, 0, 1));
+        Color stamina_col = is_dashing ? (Color){255, 255, 255, 255} : dash_pct > 0.99f ? (Color){255, 255, 255, 230} : (Color){235, 235, 220, 200};
+        if (fill_w > 0) {
+            DrawRectangle((int)(player.x - player_bar_w * 0.5f) + 1, (int)stamina_y + 1, fill_w, (int)stamina_h - 2, stamina_col);
+            DrawRectangle((int)(player.x - player_bar_w * 0.5f) + 1, (int)stamina_y + 1, fill_w, 1, (Color){255, 255, 255, 80});
+        }
+        if (dash_pct > 0.99f && !is_dashing) {
+            float pulse = 0.5f + 0.5f * sinf((float)GetTime() * 9.0f);
+            DrawRectangleLines((int)(player.x - player_bar_w * 0.5f) - 1, (int)stamina_y - 1, (int)player_bar_w + 2, (int)stamina_h + 2, (Color){255, 255, 255, (unsigned char)(35 + 30 * pulse)});
+        }
+        // Damage flash on stamina bar when hit
+        if (client->fast_hit_time > 0.05f) {
+            float hf = ps_clampf(client->fast_hit_time / 0.28f, 0, 1);
+            DrawRectangleLines((int)(player.x - player_bar_w * 0.5f) - 1, (int)stamina_y - 1, (int)player_bar_w + 2, (int)stamina_h + 2, (Color){255, 80, 80, (unsigned char)(hf * 100)});
+        }
+    }
 #endif
     if (env->show_hitboxes) {
         DrawCircleLines((int)player.x, (int)player.y, env->cfg.player_radius * scale, (Color){105, 255, 168, 230});
         DrawCircleLines((int)player.x, (int)player.y, env->cfg.magnet_radius * (1.0f + env->magnet_bonus) * scale, (Color){64, 220, 255, 80});
     }
 
+    // Damage feedback without numbers: subtle center burst for hits, red wash for taken hits.
+    // Keeps swarm readable (no floating numbers) but still juicy.
+#ifdef PS_FAST_RENDER
+    if (client->fast_damage_flash > 0.015f) {
+        float a = ps_clampf(client->fast_damage_flash * 1.2f, 0, 1);
+        Vector2 center = ps_screen(env, env->px, env->py, scale, sw, sh);
+        float radius = 22.0f + a * 55.0f;
+        DrawCircleV(center, radius, (Color){255, 255, 255, (unsigned char)(a * 10)});
+        DrawCircleLines((int)center.x, (int)center.y, radius, (Color){255, 255, 255, (unsigned char)(a * 28)});
+        DrawCircleLines((int)center.x, (int)center.y, radius * 0.72f, (Color){255, 255, 255, (unsigned char)(a * 18)});
+    }
+    if (client->fast_hit_time > 0.04f) {
+        float hf = ps_clampf(client->fast_hit_time / 0.28f, 0, 1);
+        float wash = hf * hf * 0.14f;
+        DrawRectangle(0, 0, sw, sh, (Color){255, 38, 38, (unsigned char)(wash * 255)});
+        // Vignette pulse already in HUD, this is full-screen hitstop feel
+    }
+#endif
     ps_draw_hud(env);
     ps_draw_action_debug(env, sw);
     ps_draw_upgrade_cards(env, sw, sh);

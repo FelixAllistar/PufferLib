@@ -173,12 +173,16 @@ box2d*/
 # Native build/test products
 /puffer
 /bomberman
+/breakout
 /build_cpu
 /cache_data
 /kaggriculture
 /puffer_survivors
 /robocode
 /seethestars
+/shenaniguns
+/shenaniguns3d
+/tui_viewer
 /submission.tar.gz
 /pufferlib_*.tar.gz
 /ocean/abyss/tests/test_abyss

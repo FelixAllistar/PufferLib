@@ -302,7 +302,14 @@ PS_SIM_FN float ps_obs_soft_norm(float value, float half_scale) {
 
 PS_SIM_FN void ps_compute_observations(PSSim* sim, int env) {
     float* obs = (float*)PS_OBS(sim, env);
-    memset(obs, 0, PS_OBS_SIZE * sizeof(float));
+    for (int i = 0; i < PS_OBS_SIZE; i += 4) {
+        int rem = PS_OBS_SIZE - i;
+        if (rem >= 4) {
+            obs[i] = 0.0f; obs[i+1] = 0.0f; obs[i+2] = 0.0f; obs[i+3] = 0.0f;
+        } else {
+            for (int j = i; j < PS_OBS_SIZE; j++) obs[j] = 0.0f;
+        }
+    }
 
     int idx = 0;
     int wave_len = sim->cfg.wave_length_steps;
@@ -478,14 +485,21 @@ PS_SIM_FN void ps_compute_observations(PSSim* sim, int env) {
     obs[visible_enemies_idx] = ps_clampf((float)visible_enemies * inv_enemy_cap, 0.0f, 1.0f);
     obs[visible_drops_idx] = ps_clampf((float)visible_drops * inv_drop_cap, 0.0f, 1.0f);
 
+    float cd_scale = PS_P(sim, env, cooldown_mult) * sim->cfg.fire_cooldown
+        / fmaxf(sim->cfg.weapon_base_cooldown[PS_WEAPON_BUBBLE], 1.0f);
+    float area = 1.0f + PS_P(sim, env, area_bonus);
+    float might_base = sim->cfg.projectile_damage * (1.0f + PS_P(sim, env, damage_bonus));
+    float inv_max_level = 1.0f / (float)sim->cfg.weapon_max_level;
     for (int i = 0; i < PS_WEAPON_COUNT; i++) {
         int level = PS_W(sim, env, i, weapon_level);
-        float cd_total = ps_weapon_cooldown_total(sim, env, i);
+        float cd_total;
+        if (level <= 0) cd_total = 1.0f;
+        else cd_total = (sim->cfg.weapon_base_cooldown[i] + sim->cfg.weapon_cooldown_per_level[i] * (float)(level - 1)) * cd_scale;
         float ready = level > 0 ? 1.0f - ps_clampf(PS_W(sim, env, i, weapon_cd) / cd_total, 0.0f, 1.0f) : 0.0f;
-        obs[idx++] = (float)level / (float)sim->cfg.weapon_max_level;
+        obs[idx++] = (float)level * inv_max_level;
         obs[idx++] = ready;
         obs[idx++] = ps_clampf(PS_W(sim, env, i, weapon_active), 0.0f, 1.0f);
-        obs[idx++] = ps_weapon_power(sim, env, i);
+        obs[idx++] = level <= 0 ? 0.0f : ps_clampf((float)level * inv_max_level * might_base * area, 0.0f, 3.0f) / 3.0f;
     }
 
     if (PS_P(sim, env, pending_upgrade)) {
@@ -1277,6 +1291,8 @@ PS_SIM_FN void ps_update_enemies(PSSim* sim, int env) {
     float player_x = PS_P(sim, env, px);
     float player_y = PS_P(sim, env, py);
     float player_radius = sim->cfg.player_radius;
+    float frost_slow = sim->cfg.frost_slow;
+    int stride = sim->cfg.enemy_obstacle_stride;
     PS_P(sim, env, nearest_enemy) = -1;
     PS_P(sim, env, nearest_enemy_d2) = 1e30f;
     int scan_capacity = PS_P(sim, env, enemy_count) * 2 >= sim->cfg.enemy_cap;
@@ -1286,15 +1302,21 @@ PS_SIM_FN void ps_update_enemies(PSSim* sim, int env) {
 
         float dx = player_x - PS_ENEMY(sim, env, i, x);
         float dy = player_y - PS_ENEMY(sim, env, i, y);
-        float d = sqrtf(fmaxf(dx * dx + dy * dy, 0.0001f));
+        float d2 = dx * dx + dy * dy;
+#ifdef __CUDACC__
+        float inv_d = rsqrtf(fmaxf(d2, 0.0001f));
+#else
+        float inv_d = 1.0f / sqrtf(fmaxf(d2, 0.0001f));
+#endif
         float spd = PS_ENEMY(sim, env, i, speed);
-        if (PS_ENEMY(sim, env, i, slow) > 0.0f) spd *= (1.0f - sim->cfg.frost_slow);
-        PS_ENEMY(sim, env, i, vx) = dx / d * spd;
-        PS_ENEMY(sim, env, i, vy) = dy / d * spd;
-        if (PS_ENEMY(sim, env, i, slow) > 0.0f) PS_ENEMY(sim, env, i, slow) -= 1.0f;
+        float slow = PS_ENEMY(sim, env, i, slow);
+        spd *= 1.0f - frost_slow * (slow > 0.0f);
+        PS_ENEMY(sim, env, i, vx) = dx * inv_d * spd;
+        PS_ENEMY(sim, env, i, vy) = dy * inv_d * spd;
+        if (slow > 0.0f) PS_ENEMY(sim, env, i, slow) = slow - 1.0f;
         PS_ENEMY(sim, env, i, x) += PS_ENEMY(sim, env, i, vx);
         PS_ENEMY(sim, env, i, y) += PS_ENEMY(sim, env, i, vy);
-        if ((PS_P(sim, env, tick) + i) % sim->cfg.enemy_obstacle_stride == 0)
+        if ((PS_P(sim, env, tick) + i) % stride == 0)
             ps_push_out_obstacles_shape(sim, env, &PS_ENEMY(sim, env, i, x), &PS_ENEMY(sim, env, i, y),
                 PS_ENEMY(sim, env, i, shape), PS_ENEMY(sim, env, i, radius),
                 PS_ENEMY(sim, env, i, half_width), PS_ENEMY(sim, env, i, half_height), 0);
@@ -1327,21 +1349,28 @@ PS_SIM_FN void ps_update_enemies(PSSim* sim, int env) {
 
 PS_SIM_FN void ps_update_projectiles(PSSim* sim, int env) {
     float half = 0.5f * sim->cfg.arena_size;
+    float px = PS_P(sim, env, px);
+    float py = PS_P(sim, env, py);
+    int obs_cnt = sim->cfg.obstacle_count;
     int k = 0;
     while (k < PS_P(sim, env, projectile_count)) {
         int i = PS_PROJECTILE(sim, env, k, dense);
-        PS_PROJECTILE(sim, env, i, x) += PS_PROJECTILE(sim, env, i, vx);
-        PS_PROJECTILE(sim, env, i, y) += PS_PROJECTILE(sim, env, i, vy);
-        PS_PROJECTILE(sim, env, i, ttl)--;
-        if (PS_PROJECTILE(sim, env, i, ttl) <= 0 || fabsf(PS_PROJECTILE(sim, env, i, x) - PS_P(sim, env, px)) > half || fabsf(PS_PROJECTILE(sim, env, i, y) - PS_P(sim, env, py)) > half) {
+        float nx = PS_PROJECTILE(sim, env, i, x) + PS_PROJECTILE(sim, env, i, vx);
+        float ny = PS_PROJECTILE(sim, env, i, y) + PS_PROJECTILE(sim, env, i, vy);
+        PS_PROJECTILE(sim, env, i, x) = nx;
+        PS_PROJECTILE(sim, env, i, y) = ny;
+        int ttl = PS_PROJECTILE(sim, env, i, ttl) - 1;
+        PS_PROJECTILE(sim, env, i, ttl) = ttl;
+        if (ttl <= 0 || fabsf(nx - px) > half || fabsf(ny - py) > half) {
             ps_deactivate_projectile(sim, env, i);
             continue;
         }
         int blocked = 0;
-        for (int o = 0; o < sim->cfg.obstacle_count; o++) {
-            float r = PS_OBSTACLE(sim, env, o, radius) + PS_PROJECTILE(sim, env, i, radius);
-            float dx = PS_PROJECTILE(sim, env, i, x) - PS_OBSTACLE(sim, env, o, x);
-            float dy = PS_PROJECTILE(sim, env, i, y) - PS_OBSTACLE(sim, env, o, y);
+        float pr = PS_PROJECTILE(sim, env, i, radius);
+        for (int o = 0; o < obs_cnt; o++) {
+            float r = PS_OBSTACLE(sim, env, o, radius) + pr;
+            float dx = nx - PS_OBSTACLE(sim, env, o, x);
+            float dy = ny - PS_OBSTACLE(sim, env, o, y);
             if (ps_geometry_circle_overlaps(dx, dy, r)) {
                 blocked = 1;
                 break;
@@ -1704,29 +1733,17 @@ PS_SIM_FN void ps_cast_glacier(PSSim* sim, int env, int level) {
 }
 
 PS_SIM_FN void ps_cast_spikes(PSSim* sim, int env, int level) {
-    // 2: replace 4<<(level-1) projectiles (512 at L8) with instant radius burst
-    //    old: 512 proj * 24 tick lifetime = ~12k projectile-updates per cast
-    //    new: 1 central + N ring damage queries (no projectile pool, no 24-tick lifetime)
-    // 4: micro: direct cosf/sinf to position, no ps_spawn_projectile normalize/sqrt,
-    //    no pierce/TTL bookkeeping, no obstacle/projectile grid walk per tick
+    int n = 4 << (level - 1);
     float dmg = ps_weapon_damage(sim, env, PS_WEAPON_SPIKES, level, 0);
-    float hit_r = ps_geometry_weapon_radius(&sim->cfg, PS_WEAPON_SPIKES, level)
+    float radius = ps_geometry_weapon_radius(&sim->cfg, PS_WEAPON_SPIKES, level)
         * (1.0f + PS_P(sim, env, area_bonus));
     float px = PS_P(sim, env, px), py = PS_P(sim, env, py);
-    float range = sim->cfg.spike_range;
-    // level scales burst radius rather than projectile count
-    float burst_r = hit_r + range * (0.35f + 0.04f * (float)level);
-    ps_damage_radius(sim, env, px, py, burst_r, dmg, 0.0f);
-    // light ring of hits to keep directional feel without projectile cost
-    // N=8+2*level => L1=10, L8=24 queries vs 512 projectiles
-    int n = 8 + 2 * level;
-    if (n > 24) n = 24;
-    float ring_r = range * 0.55f;
     for (int i = 0; i < n; i++) {
-        float a = 2.0f * PI * (float)i / (float)n;
-        float hx = px + cosf(a) * ring_r;
-        float hy = py + sinf(a) * ring_r;
-        ps_damage_radius_with_query_pad(sim, env, hx, hy, hit_r, dmg * 0.65f, 0.0f, 0.0f);
+        float a = 2.0f * PI * ((float)i / (float)n);
+        ps_spawn_projectile(sim, env, PS_WEAPON_SPIKES, px, py,
+            px + cosf(a) * sim->cfg.spike_range, py + sinf(a) * sim->cfg.spike_range,
+            dmg, radius, sim->cfg.spike_speed, PS_P(sim, env, pierce_bonus) + level / 4,
+            (int)ceilf(sim->cfg.spike_range / sim->cfg.spike_speed));
     }
     PS_W(sim, env, PS_WEAPON_SPIKES, weapon_active) = 1.0f;
 }
