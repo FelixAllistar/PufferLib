@@ -79,20 +79,29 @@ def expand_inputs(values: Iterable[str]) -> list[pathlib.Path]:
     return paths
 
 
-def iter_replays(paths: Iterable[pathlib.Path]) -> Iterator[tuple[str, dict[str, Any]]]:
+def iter_replays(
+    paths: Iterable[pathlib.Path], selected_sources: set[str] | None = None,
+) -> Iterator[tuple[str, dict[str, Any]]]:
     for path in paths:
         suffix = path.suffix.lower()
         if suffix == ".zip":
             with zipfile.ZipFile(path) as archive:
                 for name in sorted(archive.namelist()):
                     if name.lower().endswith(".json") and not name.endswith("/"):
+                        source = f"{path}:{name}"
+                        if selected_sources is not None and source not in selected_sources:
+                            continue
                         with archive.open(name) as raw:
                             with io.TextIOWrapper(raw, encoding="utf-8") as stream:
-                                yield f"{path}:{name}", json.load(stream)
+                                yield source, json.load(stream)
         elif suffix == ".gz":
+            if selected_sources is not None and str(path) not in selected_sources:
+                continue
             with gzip.open(path, "rt", encoding="utf-8") as stream:
                 yield str(path), json.load(stream)
         elif suffix == ".json":
+            if selected_sources is not None and str(path) not in selected_sources:
+                continue
             with path.open(encoding="utf-8") as stream:
                 yield str(path), json.load(stream)
 

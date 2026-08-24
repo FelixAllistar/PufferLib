@@ -1,6 +1,9 @@
 import importlib.util
+import json
 from pathlib import Path
+import tempfile
 import unittest
+import zipfile
 
 
 MODULE_PATH = Path(__file__).parents[1] / "index_replay_states.py"
@@ -34,6 +37,18 @@ def observation(*, tomato=60, carrot=35, egg=50, product_units=0, neglected=Fals
 
 
 class ReplayStateIndexTests(unittest.TestCase):
+    def test_iter_replays_decodes_only_selected_zip_members(self):
+        with tempfile.TemporaryDirectory() as directory:
+            archive_path = Path(directory) / "episodes.zip"
+            with zipfile.ZipFile(archive_path, "w") as archive:
+                archive.writestr("keep.json", json.dumps({"id": "keep"}))
+                archive.writestr("skip.json", "not valid json")
+            source = f"{archive_path}:keep.json"
+            self.assertEqual(
+                list(INDEX.iter_replays([archive_path], {source})),
+                [(source, {"id": "keep"})],
+            )
+
     def test_counterfactual_price_changes_only_matching_opportunity(self):
         ordinary, scenarios_a, _, _ = INDEX.classify_state(
             observation(), {"farmer": ["PASS"], "hands": [], "market": []}, 0, 240, 24

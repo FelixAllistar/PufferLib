@@ -101,6 +101,12 @@ def build_bank(args: argparse.Namespace) -> dict[str, Any]:
     if not paths:
         raise SystemExit("no replay inputs found")
     targets = load_targets(pathlib.Path(args.index))
+    targets_by_episode: dict[tuple[str, str], dict[int, list[dict[str, str]]]] = (
+        collections.defaultdict(dict)
+    )
+    for (source, eid, turn), rows in targets.items():
+        targets_by_episode[(source, eid)][turn] = rows
+    selected_sources = {source for source, _ in targets_by_episode}
     lib = load_core(pathlib.Path(args.lib))
     state_size = int(lib.kg_state_serialized_size())
     state_version = int(lib.kg_state_serialization_version())
@@ -120,12 +126,11 @@ def build_bank(args: argparse.Namespace) -> dict[str, Any]:
         bank.write(BANK_HEADER.pack(
             BANK_MAGIC, BANK_FORMAT_VERSION, state_version, state_size, 0, 0
         ))
-        for source, episode in iter_replays(paths):
+        # Stage indexes contain a few thousand states selected from archives with
+        # millions of episodes. Avoid decoding every unselected JSON member.
+        for source, episode in iter_replays(paths, selected_sources):
             eid = episode_id(episode)
-            episode_targets = {
-                turn: rows for (row_source, row_episode, turn), rows in targets.items()
-                if row_source == source and row_episode == eid
-            }
+            episode_targets = targets_by_episode.get((source, eid))
             if not episode_targets:
                 continue
             reason = validate_episode(episode, version_tuple(args.min_version))
