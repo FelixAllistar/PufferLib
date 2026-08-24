@@ -572,6 +572,7 @@ if ((kag_count <= 9)); then
             "league.focal_count=$kag_focal_count" \
             "base.eval_deterministic=$kag_eval_deterministic" \
             "${kag_arch_args[@]}" \
+            env.reset_state_prob=0 env.reset_state_bank=None \
             "base.seed=7000"; then
         printf '%s\n' 'Native persistent league evaluation failed' >&2
         exit 1
