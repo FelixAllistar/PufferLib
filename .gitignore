@@ -220,4 +220,5 @@ ocean/kaggriculture/replays/*.tsv
 # Generated Kaggriculture experiment snapshots and new submission bundles.
 config/kaggriculture.ini.before_*
 config/kaggriculture.ini.failed_*
+config/kaggriculture.ini.pre_*
 ocean/kaggriculture/submission/*.tar.gz
