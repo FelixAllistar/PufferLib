@@ -27,11 +27,12 @@ train_variant() {
     local replay_ratio="$5"
     local learning_rate="$6"
     local entropy="$7"
+    local agents="$8"
     if [[ -d "checkpoints/kaggriculture/$run" ]]; then
         echo "Refusing to overwrite existing run: $run" >&2
         return 1
     fi
-    echo "START $run bank=$(basename "$bank") reset=$reset_prob horizon=$horizon replay=$replay_ratio"
+    echo "START $run bank=$(basename "$bank") reset=$reset_prob horizon=$horizon replay=$replay_ratio agents=$agents"
     ./puffer train kaggriculture \
         base.run_id="$run" \
         base.load_model_path="$SOURCE" \
@@ -39,6 +40,7 @@ train_variant() {
         selfplay.magnet_path="$SOURCE" \
         env.reset_state_bank="$bank" \
         env.reset_state_prob="$reset_prob" \
+        vec.total_agents="$agents" \
         train.total_timesteps="$STEPS" \
         train.horizon="$horizon" \
         train.replay_ratio="$replay_ratio" \
@@ -50,13 +52,13 @@ train_variant() {
 }
 
 # Longer recurrent credit assignment plus two PPO passes.
-train_variant fullbank_s8_h256_rr2_512x2_v1 "$FULL_BANK" 0.15 256 2 0.00012 0.0006
+train_variant fullbank_s8_h256_rr2_a4096_512x2_v1 "$FULL_BANK" 0.15 256 2 0.00012 0.0006 4096
 
 # Spend much more time in verified early/mid elite states, while retaining
 # enough real roots to test whether partial-game skills join into a full loop.
-train_variant fullbank_s8_earlymid40_512x2_v1 "$EARLY_MID_BANK" 0.40 128 1 0.00018 0.0010
+train_variant fullbank_s8_earlymid40_512x2_v1 "$EARLY_MID_BANK" 0.40 128 1 0.00018 0.0010 8192
 
 # Frequent updates and mostly-root play, with only a small replay rehearsal.
-train_variant fullbank_s8_h64_rr2_root95_512x2_v1 "$FULL_BANK" 0.05 64 2 0.00010 0.0005
+train_variant fullbank_s8_h64_rr2_root95_512x2_v1 "$FULL_BANK" 0.05 64 2 0.00010 0.0005 8192
 
 echo "FULLBANK VARIANT SEARCH COMPLETE"
