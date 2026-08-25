@@ -63,6 +63,7 @@ train_stage() {
     fi
     ./puffer train kaggriculture \
         base.run_id="$run" \
+        base.cudagraphs=0 \
         base.load_model_path="$load" \
         selfplay.magnet_path="$load" \
         env.reset_state_bank="$BANK" \
