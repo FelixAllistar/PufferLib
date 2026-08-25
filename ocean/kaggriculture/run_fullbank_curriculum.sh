@@ -43,11 +43,11 @@ evaluate_run() {
     KAG_FIXED_SEED_A="$SEED_A" KAG_FIXED_SEED_B="$SEED_B" \
         ./ocean/kaggriculture/eval_population.sh \
         --games "$GAMES" --gpu-agents "$GPU_AGENTS" --sample-run 8 \
-        --fixed pass,rules --output "$det" "$dir"
+        --fixed pass,rules --output "$det" "$dir" >&2
     KAG_FIXED_SEED_A="$SEED_A" KAG_FIXED_SEED_B="$SEED_B" \
         ./ocean/kaggriculture/eval_population.sh \
         --games "$GAMES" --gpu-agents "$GPU_AGENTS" --sample-run 8 \
-        --fixed pass,rules --stochastic --output "$stoch" "$dir"
+        --fixed pass,rules --stochastic --output "$stoch" "$dir" >&2
     checkpoint_for_policy "$det"
 }
 
@@ -91,4 +91,3 @@ stage6=reset_s6_root_512x2_v1
 train_stage "$stage6" "$source_checkpoint" 0 500000000
 source_checkpoint="$(evaluate_run "$stage6" reset_s6_root_512x2_v1_root)"
 echo "CURRICULUM COMPLETE best=$source_checkpoint"
-
