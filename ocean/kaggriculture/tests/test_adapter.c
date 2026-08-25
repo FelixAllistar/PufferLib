@@ -629,8 +629,29 @@ static void assert_progress_potential_reward(void) {
     assert(fabsf(kag_player_progress_value(&env, 0) - player->money) < 1e-5f);
 }
 
+static void assert_expansion_curriculum_reward(void) {
+    Env env = {0};
+    env.reward_expansion_scale = 10.0f;
+    env.reward_expansion_land_target = 3;
+    env.reward_expansion_plant_target = 50;
+    env.reward_expansion_animal_target = 12;
+
+    assert(kag_expansion_progress(&env, 1, 0, 0) == 0.0f);
+    assert(fabsf(kag_expansion_progress(&env, 3, 50, 12) - 5.0f)
+        < 1e-6f);
+    /* A crop-only farm earns its crop branch but none of the two-point
+     * balanced completion bonus. */
+    assert(fabsf(kag_expansion_progress(&env, 1, 50, 0) - 1.0f)
+        < 1e-6f);
+    /* Three half-complete branches earn 1.5 branch points plus one balanced
+     * point; advancing every branch is deliberately better than specializing. */
+    assert(fabsf(kag_expansion_progress(&env, 2, 25, 6) - 2.5f)
+        < 1e-6f);
+}
+
 int main(void) {
     assert_progress_potential_reward();
+    assert_expansion_curriculum_reward();
     assert_discounted_economic_reward();
     assert_rule_regressions();
     assert_potential_schedule();

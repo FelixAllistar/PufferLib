@@ -271,6 +271,15 @@ struct Env {
     float reward_progress_maintenance_scale;
     float reward_progress_land_scale;
     float reward_progress_health_ratio;
+    /* Optional curriculum objective. Unlike reward_progress, this deliberately
+     * does not telescope away: it pays only for new episode-high live asset
+     * counts before a deadline, with an extra reward for advancing land,
+     * crops, and animals together. Normal economic training keeps it at zero. */
+    float reward_expansion_scale;
+    int reward_expansion_deadline;
+    int reward_expansion_land_target;
+    int reward_expansion_plant_target;
+    int reward_expansion_animal_target;
     float reward_progress_crop_units[KG_NUM_CROPS];
     float reward_progress_seed_realization[KG_NUM_CROPS];
     float reward_progress_animal_units_per_event[KG_NUM_ANIMALS];
@@ -280,6 +289,9 @@ struct Env {
     float reset_state_prob;
     float potential[KG_NUM_PLAYERS];
     float progress_value[KG_NUM_PLAYERS];
+    int expansion_peak_land[KG_NUM_PLAYERS];
+    int expansion_peak_plants[KG_NUM_PLAYERS];
+    int expansion_peak_animals[KG_NUM_PLAYERS];
     int bot_opponent;
     float bot_opponent_fraction;
     int bot_first;
@@ -324,6 +336,14 @@ KG_HD static inline int kag_popcount(unsigned value) {
     return __popc(value);
 #else
     return __builtin_popcount(value);
+#endif
+}
+
+KG_HD static inline int kag_popcount64(uint64_t value) {
+#ifdef __CUDA_ARCH__
+    return __popcll(value);
+#else
+    return __builtin_popcountll(value);
 #endif
 }
 
@@ -746,6 +766,72 @@ KG_HD static inline float kag_positive_terminal_win_reward(const Env* env,
     if (own_money > other_money) return env->reward_progress_win_scale;
     if (own_money == other_money) return 0.5f * env->reward_progress_win_scale;
     return 0.0f;
+}
+
+KG_HD static inline int kag_live_tiles(const KGPlayer* player, int animals) {
+    int count = 0;
+    for (int word = 0; word < KG_TILE_WORDS; word++) {
+        count += kag_popcount64(animals
+            ? player->animal_bits[word] : player->plant_bits[word]);
+    }
+    return count;
+}
+
+KG_HD static inline float kag_expansion_progress(const Env* env,
+        int land, int plants, int animals) {
+    int extra_land_target = env->reward_expansion_land_target - 1;
+    int extra_land = land - 1;
+    if (extra_land < 0) extra_land = 0;
+    float land_fraction = extra_land_target > 0
+        ? (float)extra_land / (float)extra_land_target : 1.0f;
+    float plant_fraction = env->reward_expansion_plant_target > 0
+        ? (float)plants / (float)env->reward_expansion_plant_target : 1.0f;
+    float animal_fraction = env->reward_expansion_animal_target > 0
+        ? (float)animals / (float)env->reward_expansion_animal_target : 1.0f;
+    if (land_fraction > 1.0f) land_fraction = 1.0f;
+    if (plant_fraction > 1.0f) plant_fraction = 1.0f;
+    if (animal_fraction > 1.0f) animal_fraction = 1.0f;
+    float balance = land_fraction < plant_fraction
+        ? land_fraction : plant_fraction;
+    if (animal_fraction < balance) balance = animal_fraction;
+    /* Each branch contributes one point. Two additional points require the
+     * least-developed branch to advance, preventing the easiest monoculture
+     * from consuming the entire curriculum reward. */
+    return land_fraction + plant_fraction + animal_fraction + 2.0f * balance;
+}
+
+KG_HD static inline float kag_expansion_reward(Env* env, int player_id) {
+    if (env->reward_expansion_scale == 0.0f
+            || env->game_storage.step > env->reward_expansion_deadline) {
+        return 0.0f;
+    }
+    const KGPlayer* player = &env->game_storage.players[player_id];
+    float before = kag_expansion_progress(env,
+        env->expansion_peak_land[player_id],
+        env->expansion_peak_plants[player_id],
+        env->expansion_peak_animals[player_id]);
+    int land = kag_popcount((unsigned)player->unlocked_mask);
+    int plants = kag_live_tiles(player, 0);
+    int animals = kag_live_tiles(player, 1);
+    if (land > env->expansion_peak_land[player_id])
+        env->expansion_peak_land[player_id] = land;
+    if (plants > env->expansion_peak_plants[player_id])
+        env->expansion_peak_plants[player_id] = plants;
+    if (animals > env->expansion_peak_animals[player_id])
+        env->expansion_peak_animals[player_id] = animals;
+    float after = kag_expansion_progress(env,
+        env->expansion_peak_land[player_id],
+        env->expansion_peak_plants[player_id],
+        env->expansion_peak_animals[player_id]);
+    return env->reward_expansion_scale * (after - before);
+}
+
+KG_HD static inline void kag_reset_expansion_peaks(Env* env, int player_id) {
+    const KGPlayer* farm = &env->game_storage.players[player_id];
+    env->expansion_peak_land[player_id] = kag_popcount(
+        (unsigned)farm->unlocked_mask);
+    env->expansion_peak_plants[player_id] = kag_live_tiles(farm, 0);
+    env->expansion_peak_animals[player_id] = kag_live_tiles(farm, 1);
 }
 
 /* Optional positive credit for valid maintenance that preserves fitted future output.
@@ -2552,6 +2638,16 @@ void puf_init(Env* env, Dict* kwargs) {
         kwargs, "reward_progress_land_scale");
     env->reward_progress_health_ratio = (float)dict_get(
         kwargs, "reward_progress_health_ratio");
+    env->reward_expansion_scale = (float)dict_get(
+        kwargs, "reward_expansion_scale");
+    env->reward_expansion_deadline = (int)dict_get(
+        kwargs, "reward_expansion_deadline");
+    env->reward_expansion_land_target = (int)dict_get(
+        kwargs, "reward_expansion_land_target");
+    env->reward_expansion_plant_target = (int)dict_get(
+        kwargs, "reward_expansion_plant_target");
+    env->reward_expansion_animal_target = (int)dict_get(
+        kwargs, "reward_expansion_animal_target");
     env->reward_progress_crop_units[KG_WHEAT] = (float)dict_get(
         kwargs, "reward_progress_crop_wheat_units");
     env->reward_progress_crop_units[KG_CARROT] = (float)dict_get(
@@ -2624,6 +2720,17 @@ void puf_init(Env* env, Dict* kwargs) {
     if (env->reward_progress_health_ratio < 0.0f
             || env->reward_progress_health_ratio > 1.0f) {
         fprintf(stderr, "reward_progress_health_ratio must be in [0, 1]\n");
+        exit(1);
+    }
+    if (env->reward_expansion_scale < 0.0f
+            || env->reward_expansion_deadline < 0
+            || env->reward_expansion_land_target < 1
+            || env->reward_expansion_land_target > 4
+            || env->reward_expansion_plant_target < 1
+            || env->reward_expansion_plant_target > KG_MAX_TILES
+            || env->reward_expansion_animal_target < 1
+            || env->reward_expansion_animal_target > KG_MAX_TILES) {
+        fprintf(stderr, "invalid expansion curriculum coefficient\n");
         exit(1);
     }
     for (int crop = 0; crop < KG_NUM_CROPS; crop++) {
@@ -2720,6 +2827,7 @@ void puf_reset(Env* env) {
         env->episode_returns[player] = 0.0f;
         env->potential[player] = kag_player_potential(env, player);
         env->progress_value[player] = kag_player_progress_value(env, player);
+        kag_reset_expansion_peaks(env, player);
     }
     kag_write_all_observations(env);
 }
@@ -2818,6 +2926,7 @@ void puf_step(Env* env) {
             before_progress[player], progress_value, done);
         env->progress_value[player] = progress_value;
         reward += maintenance_rewards[player];
+        reward += kag_expansion_reward(env, player);
         env->agents[player].rewards[0] = reward;
         env->episode_returns[player] += reward;
     }
@@ -3024,6 +3133,8 @@ void puf_step(Env* env) {
         env->potential[1] = kag_player_potential(env, 1);
         env->progress_value[0] = kag_player_progress_value(env, 0);
         env->progress_value[1] = kag_player_progress_value(env, 1);
+        kag_reset_expansion_peaks(env, 0);
+        kag_reset_expansion_peaks(env, 1);
         kag_write_all_observations(env);
     } else {
         kag_write_all_observations(env);
