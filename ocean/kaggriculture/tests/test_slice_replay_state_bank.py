@@ -57,6 +57,51 @@ class ReplayStateBankSliceTests(unittest.TestCase):
                 self.assertEqual(header[4], 1)
                 self.assertEqual(stream.read(), payloads[1])
 
+    def test_slice_filters_turn_window(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = root / "source.kgb"
+            manifest = Path(f"{source}.manifest.tsv")
+            payloads = [bytes([idx]) * 8 for idx in range(3)]
+            with source.open("wb") as stream:
+                stream.write(BANK_HEADER.pack(BANK_MAGIC, BANK_FORMAT_VERSION, 7, 8, 3, 0))
+                for payload in payloads:
+                    stream.write(payload)
+            rows = []
+            for idx, (payload, turn) in enumerate(zip(payloads, (50, 300, 650))):
+                rows.append({
+                    "record_index": idx,
+                    "byte_offset": BANK_HEADER.size + idx * 8,
+                    "byte_size": 8,
+                    "sha256": hashlib.sha256(payload).hexdigest(),
+                    "episode_id": idx,
+                    "source": "fixture",
+                    "module_version": "1.32.7",
+                    "seed": 1,
+                    "turn": turn,
+                    "players": "0,1",
+                    "state_keys": f"{idx}:0,{idx}:1",
+                    "expert_actions": "[]",
+                    "index_rows": json.dumps([{"scenarios": "sell_now"}]),
+                })
+            with manifest.open("w", newline="") as stream:
+                writer = csv.DictWriter(stream, fieldnames=MANIFEST_FIELDS, delimiter="\t")
+                writer.writeheader()
+                writer.writerows(rows)
+
+            output = root / "early_mid.kgb"
+            summary = slice_bank(parse_args([
+                "--bank", str(source), "--output", str(output),
+                "--stage", "full", "--min-turn", "100", "--max-turn", "500",
+            ]))
+            self.assertEqual(summary["record_count"], 1)
+            self.assertEqual(summary["min_turn"], 100)
+            self.assertEqual(summary["max_turn"], 500)
+            with output.open("rb") as stream:
+                header = BANK_HEADER.unpack(stream.read(BANK_HEADER.size))
+                self.assertEqual(header[4], 1)
+                self.assertEqual(stream.read(), payloads[1])
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -36,6 +36,9 @@ def slice_bank(args: argparse.Namespace) -> dict[str, Any]:
     requested.discard("")
     if not requested:
         raise ValueError("at least one scenario is required")
+    if args.min_turn is not None and args.max_turn is not None \
+            and args.min_turn > args.max_turn:
+        raise ValueError("--min-turn must not exceed --max-turn")
 
     with source_manifest.open(encoding="utf-8", newline="") as stream:
         rows = list(csv.DictReader(stream, delimiter="\t"))
@@ -55,6 +58,11 @@ def slice_bank(args: argparse.Namespace) -> dict[str, Any]:
 
         for row in rows:
             if requested.isdisjoint(record_scenarios(row)):
+                continue
+            turn = int(row["turn"])
+            if args.min_turn is not None and turn < args.min_turn:
+                continue
+            if args.max_turn is not None and turn > args.max_turn:
                 continue
             byte_size = int(row["byte_size"])
             if byte_size != state_size:
@@ -91,6 +99,8 @@ def slice_bank(args: argparse.Namespace) -> dict[str, Any]:
         "manifest": str(output_manifest),
         "record_count": len(selected),
         "scenarios": sorted(requested),
+        "min_turn": args.min_turn,
+        "max_turn": args.max_turn,
         "native_state_version": state_version,
         "native_state_size": state_size,
     }
@@ -107,6 +117,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--summary")
     parser.add_argument("--stage", choices=tuple(STAGES), default="full")
     parser.add_argument("--scenarios", help="Comma-separated override for --stage")
+    parser.add_argument("--min-turn", type=int, help="Keep records at or after this turn")
+    parser.add_argument("--max-turn", type=int, help="Keep records at or before this turn")
     return parser.parse_args(argv)
 
 
