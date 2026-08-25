@@ -47,6 +47,11 @@ typedef struct {
     float reward_progress_maintenance_scale;
     float reward_progress_land_scale;
     float reward_progress_health_ratio;
+    float reward_expansion_scale;
+    int reward_expansion_deadline;
+    int reward_expansion_land_target;
+    int reward_expansion_plant_target;
+    int reward_expansion_animal_target;
     float reward_progress_crop_units[KG_NUM_CROPS];
     float reward_progress_seed_realization[KG_NUM_CROPS];
     float reward_progress_animal_units_per_event[KG_NUM_ANIMALS];
@@ -349,6 +354,7 @@ __device__ static void kag_cuda_transition(Env* env, Env* shells,
             before_progress[player], progress_value, done);
         env->progress_value[player] = progress_value;
         reward += maintenance_rewards[player];
+        reward += kag_expansion_reward(env, player);
         env->agents[player].rewards[0] = reward;
         env->episode_returns[player] += reward;
     }
@@ -553,6 +559,8 @@ __device__ static void kag_cuda_transition(Env* env, Env* shells,
     env->potential[1] = kag_player_potential(env, 1);
     env->progress_value[0] = kag_player_progress_value(env, 0);
     env->progress_value[1] = kag_player_progress_value(env, 1);
+    kag_reset_expansion_peaks(env, 0);
+    kag_reset_expansion_peaks(env, 1);
     kag_write_all_observations_from_tapes(env, tapes);
 }
 
@@ -599,6 +607,15 @@ __global__ static void kag_cuda_reset_kernel(Env* shells, Env* matches,
         d_kag_cuda_config.reward_progress_land_scale;
     env->reward_progress_health_ratio =
         d_kag_cuda_config.reward_progress_health_ratio;
+    env->reward_expansion_scale = d_kag_cuda_config.reward_expansion_scale;
+    env->reward_expansion_deadline =
+        d_kag_cuda_config.reward_expansion_deadline;
+    env->reward_expansion_land_target =
+        d_kag_cuda_config.reward_expansion_land_target;
+    env->reward_expansion_plant_target =
+        d_kag_cuda_config.reward_expansion_plant_target;
+    env->reward_expansion_animal_target =
+        d_kag_cuda_config.reward_expansion_animal_target;
     for (int crop = 0; crop < KG_NUM_CROPS; crop++) {
         env->reward_progress_crop_units[crop] =
             d_kag_cuda_config.reward_progress_crop_units[crop];
@@ -652,6 +669,7 @@ __global__ static void kag_cuda_reset_kernel(Env* shells, Env* matches,
         env->potential[player] = kag_player_potential(env, player);
         env->progress_value[player] =
             kag_player_progress_value(env, player);
+        kag_reset_expansion_peaks(env, player);
     }
     kag_write_all_observations_from_tapes(env, tapes);
 }
@@ -718,6 +736,16 @@ static void kag_cuda_load_config(Dict* kwargs) {
         template_env.reward_progress_land_scale;
     h_kag_cuda_config.reward_progress_health_ratio =
         template_env.reward_progress_health_ratio;
+    h_kag_cuda_config.reward_expansion_scale =
+        template_env.reward_expansion_scale;
+    h_kag_cuda_config.reward_expansion_deadline =
+        template_env.reward_expansion_deadline;
+    h_kag_cuda_config.reward_expansion_land_target =
+        template_env.reward_expansion_land_target;
+    h_kag_cuda_config.reward_expansion_plant_target =
+        template_env.reward_expansion_plant_target;
+    h_kag_cuda_config.reward_expansion_animal_target =
+        template_env.reward_expansion_animal_target;
     for (int crop = 0; crop < KG_NUM_CROPS; crop++) {
         h_kag_cuda_config.reward_progress_crop_units[crop] =
             template_env.reward_progress_crop_units[crop];

@@ -107,6 +107,13 @@ static void configure_case(Env* env, int case_id, obs_t* observations,
     env->reward_progress_maintenance_scale = 0.0f;
     env->reward_progress_land_scale = 1.0f;
     env->reward_progress_health_ratio = 0.6f;
+    /* Exercise the non-telescoping curriculum in the CPU/GPU transition
+     * parity suite. Omitting the CUDA reward call or peak reset must now fail. */
+    env->reward_expansion_scale = 0.41f;
+    env->reward_expansion_deadline = 720;
+    env->reward_expansion_land_target = 3;
+    env->reward_expansion_plant_target = 5;
+    env->reward_expansion_animal_target = 2;
     for (int crop = 0; crop < KG_NUM_CROPS; crop++) {
         env->reward_progress_crop_units[crop] = 3.0f + 0.25f * crop;
         env->reward_progress_seed_realization[crop] = 1.0f;
@@ -175,6 +182,7 @@ static void configure_case(Env* env, int case_id, obs_t* observations,
     for (int player = 0; player < 2; player++) {
         env->potential[player] = kag_player_potential(env, player);
         env->progress_value[player] = kag_player_progress_value(env, player);
+        kag_reset_expansion_peaks(env, player);
     }
     kag_write_all_observations(env);
 }
