@@ -71,3 +71,25 @@ Initialize the exploiter from the strongest general checkpoint
 - [ ] Opening KL (C)
 - [ ] Exploiter population
 - [x] Compact weighted league + persistent/incremental PSRO integration
+
+## Tagged mechanics curriculum (2026-08-26)
+
+The replay bank alone is reset augmentation: it supplies valid states but does
+not explain which mechanic should be learned or shorten the credit path. The
+new native curriculum retains the 1280-byte observation and 47-head action ABI
+and constructs short, valid lessons inside the ordinary rule core:
+
+0. sell scarce, held product;
+1. harvest, move product into the shed, and sell;
+2. water/feed, harvest, and sell;
+3. initiate crop/animal production while choosing the high-price option over a
+   mechanically comparable low-price distractor;
+4. ordinary root games.
+
+Each GPU environment graduates independently after a configurable window and
+success threshold. Half of lesson resets rehearse an earlier mastered stage by
+default. Ordinary root probability rises quadratically with the frontier, so
+transfer is tested throughout rather than at one abrupt handoff. Curriculum
+bonuses exist only in the short lessons; root games use the configured normal
+reward. Launch the initial cold-start 512x2 proof with
+`ocean/kaggriculture/run_tagged_curriculum.sh`.

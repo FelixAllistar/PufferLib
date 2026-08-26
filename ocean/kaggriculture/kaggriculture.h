@@ -69,6 +69,14 @@
 #define KG_POLICY_ACTION_MASK_SIZE \
     (KG_POLICY_MARKET_MASK_OFFSET \
         + KG_POLICY_MARKET_SLOTS * KG_POLICY_MARKET_SLOT_MASK_SIZE)
+#define KAG_CURRICULUM_STAGES 5
+enum {
+    KAG_CURRICULUM_SELL = 0,
+    KAG_CURRICULUM_HARVEST = 1,
+    KAG_CURRICULUM_MAINTAIN = 2,
+    KAG_CURRICULUM_PRODUCE = 3,
+    KAG_CURRICULUM_ROOT = 4,
+};
 #define ACT_SIZES { \
     44, 44, 44, 44, 44, 44, 44, 44, 44, \
     44, 44, 44, 44, 44, 44, 44, 44, \
@@ -217,6 +225,12 @@ struct Log {
     float adaptive_triad_games;
     float adaptive_thunder_games;
     float reset_games;
+    float curriculum_games[KAG_CURRICULUM_STAGES];
+    float curriculum_successes[KAG_CURRICULUM_STAGES];
+    float curriculum_crop_games;
+    float curriculum_crop_successes;
+    float curriculum_animal_games;
+    float curriculum_animal_successes;
     float n;
     /* Episode action/terminal diagnostics. These stay out of the reward and
      * are averaged by vec_log like the existing score fields. */
@@ -287,6 +301,21 @@ struct Env {
     float reward_progress_product_realization[KG_NUM_PRODUCTS];
     float reset_opening_prob;
     float reset_state_prob;
+    int curriculum_enabled;
+    int curriculum_window;
+    float curriculum_success_rate;
+    float curriculum_rehearsal_prob;
+    float curriculum_root_prob;
+    float curriculum_reward;
+    int curriculum_level;
+    int curriculum_stage;
+    int curriculum_attempts;
+    int curriculum_success_count;
+    int curriculum_start_step;
+    int curriculum_deadline_step;
+    int curriculum_target_item;
+    int curriculum_branch;
+    int curriculum_action_flags;
     float potential[KG_NUM_PLAYERS];
     float progress_value[KG_NUM_PLAYERS];
     int expansion_peak_land[KG_NUM_PLAYERS];
@@ -1980,6 +2009,234 @@ KG_HD static inline void kag_reset_with_opening(Env* env,
     }
 }
 
+KG_HD static inline int kag_curriculum_player(const Env* env) {
+    if (env->agents[0].policy == 0) return 0;
+    if (env->agents[1].policy == 0) return 1;
+    return env->bot_first ? 1 : 0;
+}
+
+/* A curriculum lesson is a real KGState with the ordinary observation and
+ * action ABI. Only the initial conditions and early terminal condition are
+ * simplified. This avoids the transfer failure caused by alternate action
+ * spaces while giving PPO short, attributable trajectories. */
+KG_HD static inline void kag_curriculum_set_clock(KGState* game, int step) {
+    if (step < 0) step = 0;
+    if (step >= game->config.episode_steps) step = game->config.episode_steps - 1;
+    game->step = step;
+    game->day = step / game->config.turns_per_day;
+    game->hour = step % game->config.turns_per_day;
+    game->done = 0;
+}
+
+KG_HD static inline void kag_curriculum_prepare(Env* env, int stage) {
+    KGState* game = &env->game_storage;
+    int player_id = kag_curriculum_player(env);
+    KGPlayer* player = &game->players[player_id];
+    uint32_t draw = kag_reset_opening_random(env);
+    int animal_branch = (int)(draw & 1u);
+    int target = animal_branch
+        ? KG_ITEM_EGG + (int)((draw >> 1) % KG_NUM_ANIMALS)
+        : (int)((draw >> 1) % KG_NUM_CROPS);
+    int tile_index = kg_tile_index(player->units[0].x, player->units[0].y);
+    env->curriculum_stage = stage;
+    env->curriculum_target_item = target;
+    env->curriculum_branch = animal_branch;
+    env->curriculum_action_flags = 0;
+    env->reset_source = 0;
+
+    if (stage == KAG_CURRICULUM_ROOT) {
+        env->curriculum_start_step = game->step;
+        env->curriculum_deadline_step = game->config.episode_steps;
+        return;
+    }
+
+    /* Make one product conspicuously scarce using the real inventory->price
+     * function. Other products retain their ordinary initial inventories. */
+    game->market.inventory[target] = KG_MARKET_DEFS[target].i0 - 240;
+    kg_refresh_prices(game);
+
+    if (stage == KAG_CURRICULUM_SELL) {
+        kag_curriculum_set_clock(game, 12 * game->config.turns_per_day);
+        player->shed[target] = 2 + (int)((draw >> 8) % 7u);
+        env->curriculum_deadline_step = game->step + 8;
+    } else if (stage == KAG_CURRICULUM_HARVEST) {
+        kag_curriculum_set_clock(game, 12 * game->config.turns_per_day);
+        if (animal_branch) {
+            int animal = target - KG_ITEM_EGG;
+            kg_new_animal(player, tile_index, animal,
+                game->day + 1 - KG_ANIMAL_DEFS[animal].first_yield_day);
+            player->tiles[tile_index].yield_units = 2;
+        } else {
+            int crop = target;
+            kg_new_plant(player, tile_index, crop,
+                game->day - KG_CROP_DEFS[crop].first_yield_day,
+                game->config.turns_per_day);
+            player->tiles[tile_index].yield_units = 2;
+        }
+        env->curriculum_deadline_step = game->step + 12;
+    } else if (stage == KAG_CURRICULUM_MAINTAIN) {
+        kag_curriculum_set_clock(game,
+            12 * game->config.turns_per_day + game->config.turns_per_day - 1);
+        if (animal_branch) {
+            int animal = target - KG_ITEM_EGG;
+            kg_new_animal(player, tile_index, animal,
+                game->day + 1 - KG_ANIMAL_DEFS[animal].first_yield_day);
+            kg_inventory_add(&player->units[0], KG_ITEM_WHEAT, 1);
+        } else {
+            int crop = (draw >> 12) & 1u ? KG_TOMATO : KG_STRAWBERRY;
+            target = crop;
+            env->curriculum_target_item = target;
+            game->market.inventory[target] = KG_MARKET_DEFS[target].i0 - 240;
+            kg_refresh_prices(game);
+            kg_new_plant(player, tile_index, crop,
+                game->day + 1 - KG_CROP_DEFS[crop].first_yield_day,
+                game->config.turns_per_day);
+            player->tiles[tile_index].yield_units = 0;
+        }
+        env->curriculum_deadline_step = game->step + 16;
+    } else {
+        kag_curriculum_set_clock(game, 4 * game->config.turns_per_day);
+        if (animal_branch) {
+            /* Cow and sheep share a pasture, making price-conditioned choice
+             * possible without changing the board or action space. */
+            int animal = (int)((draw >> 12) & 1u) ? KG_COW : KG_SHEEP;
+            target = KG_ANIMAL_DEFS[animal].product;
+            env->curriculum_target_item = target;
+            int distractor = animal == KG_COW ? KG_SHEEP : KG_COW;
+            game->market.inventory[target] = KG_MARKET_DEFS[target].i0 - 240;
+            game->market.inventory[KG_ANIMAL_DEFS[distractor].product] =
+                KG_MARKET_DEFS[KG_ANIMAL_DEFS[distractor].product].i0 + 240;
+            kg_refresh_prices(game);
+            kg_set_player_tile(player, tile_index, KG_TILE_PASTURE);
+            kg_inventory_add(&player->units[0], KG_ITEM_GOOSE + animal, 1);
+            kg_inventory_add(&player->units[0], KG_ITEM_GOOSE + distractor, 1);
+            kg_inventory_add(&player->units[0], KG_ITEM_WHEAT, 1);
+        } else {
+            int distractor = (target + 1
+                + (int)((draw >> 12) % (KG_NUM_CROPS - 1))) % KG_NUM_CROPS;
+            player->seeds[target] = 1;
+            player->seeds[distractor] = 1;
+            game->market.inventory[distractor] =
+                KG_MARKET_DEFS[distractor].i0 + 240;
+            kg_refresh_prices(game);
+        }
+        env->curriculum_deadline_step = game->step + 8;
+    }
+    env->curriculum_start_step = game->step;
+}
+
+KG_HD static inline void kag_curriculum_reset(Env* env,
+        const KGScriptTape* tapes) {
+    if (!env->curriculum_enabled) {
+        env->curriculum_stage = -1;
+        kag_reset_with_opening(env, tapes);
+        return;
+    }
+    kg_reset(&env->game_storage);
+    int frontier = env->curriculum_level;
+    if (frontier < 0) frontier = 0;
+    if (frontier >= KAG_CURRICULUM_ROOT) {
+        kag_curriculum_prepare(env, KAG_CURRICULUM_ROOT);
+        return;
+    }
+    float progress = (float)frontier / (float)KAG_CURRICULUM_ROOT;
+    float root_probability = env->curriculum_root_prob
+        + (1.0f - env->curriculum_root_prob) * progress * progress;
+    uint32_t draw = kag_reset_opening_random(env) >> 8;
+    if (draw < (uint32_t)(root_probability * 16777216.0f)) {
+        kag_curriculum_prepare(env, KAG_CURRICULUM_ROOT);
+        return;
+    }
+    int stage = frontier;
+    draw = kag_reset_opening_random(env) >> 8;
+    if (frontier > 0
+            && draw < (uint32_t)(env->curriculum_rehearsal_prob * 16777216.0f)) {
+        stage = (int)(kag_reset_opening_random(env) % (uint32_t)frontier);
+    }
+    kag_curriculum_prepare(env, stage);
+}
+
+KG_HD static inline void kag_curriculum_note_actions(Env* env,
+        const KGAction actions[KG_NUM_PLAYERS]) {
+    if (env->curriculum_stage < KAG_CURRICULUM_MAINTAIN
+            || env->curriculum_stage > KAG_CURRICULUM_PRODUCE) return;
+    int player = kag_curriculum_player(env);
+    const KGUnitAction* action = &actions[player].farmer;
+    if (action->op == KG_OP_WATER || action->op == KG_OP_FEED
+            || action->op == KG_OP_CARE) {
+        env->curriculum_action_flags |= 1;
+    }
+    if (action->op == KG_OP_PLANT || action->op == KG_OP_PLACE) {
+        env->curriculum_action_flags |= 2;
+    }
+}
+
+KG_HD static inline int kag_curriculum_success(const Env* env) {
+    int stage = env->curriculum_stage;
+    if (stage < 0 || stage >= KAG_CURRICULUM_ROOT) return 0;
+    int player = kag_curriculum_player(env);
+    const KGState* game = &env->game_storage;
+    int target = env->curriculum_target_item;
+    if (stage == KAG_CURRICULUM_SELL) {
+        return game->sold_product_units[player][target] > 0;
+    }
+    if (stage == KAG_CURRICULUM_HARVEST) {
+        return game->production_product_units[player][target] > 0
+            && game->sold_product_units[player][target] > 0;
+    }
+    if (stage == KAG_CURRICULUM_MAINTAIN) {
+        return (env->curriculum_action_flags & 1)
+            && game->production_product_units[player][target] > 0
+            && game->sold_product_units[player][target] > 0;
+    }
+    const KGPlayer* farm = &game->players[player];
+    int tile_index = kg_tile_index(farm->units[0].x, farm->units[0].y);
+    const KGTile* tile = &farm->tiles[tile_index];
+    int chose_target = env->curriculum_branch
+        ? kg_is_animal_tile(tile)
+            && KG_ANIMAL_DEFS[tile->animal].product == target
+        : tile->kind == KG_TILE_PLANT && tile->crop == target;
+    return (env->curriculum_action_flags & 3) == 3 && chose_target;
+}
+
+KG_HD static inline float kag_curriculum_after_step(Env* env, int* success) {
+    *success = kag_curriculum_success(env);
+    if (env->curriculum_stage < 0
+            || env->curriculum_stage >= KAG_CURRICULUM_ROOT) return 0.0f;
+    if (*success || env->game_storage.step >= env->curriculum_deadline_step) {
+        env->game_storage.done = 1;
+    }
+    return *success ? env->curriculum_reward : 0.0f;
+}
+
+KG_HD static inline void kag_curriculum_record(Env* env, int success) {
+    int stage = env->curriculum_stage;
+    if (stage < 0 || stage >= KAG_CURRICULUM_STAGES) return;
+    env->log.curriculum_games[stage] += 1.0f;
+    env->log.curriculum_successes[stage] += success ? 1.0f : 0.0f;
+    if (stage < KAG_CURRICULUM_ROOT) {
+        if (env->curriculum_branch) {
+            env->log.curriculum_animal_games += 1.0f;
+            env->log.curriculum_animal_successes += success ? 1.0f : 0.0f;
+        } else {
+            env->log.curriculum_crop_games += 1.0f;
+            env->log.curriculum_crop_successes += success ? 1.0f : 0.0f;
+        }
+    }
+    if (stage != env->curriculum_level || stage >= KAG_CURRICULUM_ROOT) return;
+    env->curriculum_attempts++;
+    env->curriculum_success_count += success;
+    if (env->curriculum_attempts < env->curriculum_window) return;
+    float rate = (float)env->curriculum_success_count
+        / (float)env->curriculum_attempts;
+    if (rate >= env->curriculum_success_rate
+            && env->curriculum_level < KAG_CURRICULUM_ROOT) {
+        env->curriculum_level++;
+    }
+    env->curriculum_attempts = 0;
+    env->curriculum_success_count = 0;
+}
+
 static inline KGConfig kag_load_config(Env* env, Dict* kwargs) {
     KGConfig config;
     kg_config_default(&config);
@@ -2582,6 +2839,17 @@ void puf_init(Env* env, Dict* kwargs) {
     env->reset_opening_prob = (float)dict_get(kwargs,
         "reset_opening_prob");
     env->reset_state_prob = (float)dict_get(kwargs, "reset_state_prob");
+    env->curriculum_enabled = (int)dict_get(kwargs, "curriculum_enabled");
+    env->curriculum_window = (int)dict_get(kwargs, "curriculum_window");
+    env->curriculum_success_rate = (float)dict_get(
+        kwargs, "curriculum_success_rate");
+    env->curriculum_rehearsal_prob = (float)dict_get(
+        kwargs, "curriculum_rehearsal_prob");
+    env->curriculum_root_prob = (float)dict_get(
+        kwargs, "curriculum_root_prob");
+    env->curriculum_reward = (float)dict_get(kwargs, "curriculum_reward");
+    env->curriculum_level = 0;
+    env->curriculum_stage = -1;
     if (env->policy_market_slots < 1
             || env->policy_market_slots > KG_POLICY_MARKET_SLOTS) {
         fprintf(stderr, "policy_market_slots must be in [1, %d]\n",
@@ -2607,6 +2875,18 @@ void puf_init(Env* env, Dict* kwargs) {
     }
     if (env->reset_state_prob < 0.0f || env->reset_state_prob > 1.0f) {
         fprintf(stderr, "reset_state_prob must be in [0, 1]\n");
+        exit(1);
+    }
+    if ((env->curriculum_enabled != 0 && env->curriculum_enabled != 1)
+            || env->curriculum_window < 1
+            || env->curriculum_success_rate < 0.0f
+            || env->curriculum_success_rate > 1.0f
+            || env->curriculum_rehearsal_prob < 0.0f
+            || env->curriculum_rehearsal_prob > 1.0f
+            || env->curriculum_root_prob < 0.0f
+            || env->curriculum_root_prob > 1.0f
+            || env->curriculum_reward < 0.0f) {
+        fprintf(stderr, "invalid tagged curriculum configuration\n");
         exit(1);
     }
     env->episode_returns[0] = 0.0f;
@@ -2820,7 +3100,7 @@ void puf_init(Env* env, Dict* kwargs) {
 }
 
 void puf_reset(Env* env) {
-    kag_reset_with_opening(env, kag_script_tapes);
+    kag_curriculum_reset(env, kag_script_tapes);
     for (int player = 0; player < KG_NUM_PLAYERS; player++) {
         env->agents[player].rewards[0] = 0.0f;
         env->agents[player].terminals[0] = 0.0f;
@@ -2851,6 +3131,11 @@ void puf_step(Env* env) {
     }
     for (int player = 0; player < KG_NUM_PLAYERS; player++) {
         int bot = env->demo_bots[player];
+        if (env->curriculum_stage >= 0
+                && env->curriculum_stage < KAG_CURRICULUM_ROOT
+                && player != kag_curriculum_player(env)) {
+            bot = KAG_BOT_PASS;
+        }
         if (bot == KAG_BOT_NONE && player == (env->bot_first ? 0 : 1)
                 && (env->tag > 0 || env->bot_opponent_fraction >= 1.0f)) {
             bot = env->bot_opponent;
@@ -2894,6 +3179,8 @@ void puf_step(Env* env) {
         }
     }
 
+    kag_curriculum_note_actions(env, actions);
+
     float maintenance_rewards[KG_NUM_PLAYERS];
     for (int player = 0; player < KG_NUM_PLAYERS; player++) {
         maintenance_rewards[player] = kag_maintenance_action_reward(
@@ -2904,11 +3191,17 @@ void puf_step(Env* env) {
     kg_step(game, actions);
     int p0 = game->players[0].money;
     int p1 = game->players[1].money;
-    int model_player = env->bot_opponent == KAG_BOT_NONE && env->tag > 0
+    int model_player = env->curriculum_stage >= 0
+        && env->curriculum_stage < KAG_CURRICULUM_ROOT
+        ? kag_curriculum_player(env)
+        : env->bot_opponent == KAG_BOT_NONE && env->tag > 0
         ? (env->agents[0].policy == 0 ? 0 : 1)
         : (env->bot_first ? 1 : 0);
     int model_money = model_player ? p1 : p0;
     int opponent_money = model_player ? p0 : p1;
+    int curriculum_success = 0;
+    float curriculum_reward = kag_curriculum_after_step(
+        env, &curriculum_success);
     int done = kg_done(game);
     /* Update both legacy accounting potential and the future-cash estimate.
      * Progress shaping uses a forced zero successor at done, so the entire
@@ -2927,11 +3220,13 @@ void puf_step(Env* env) {
         env->progress_value[player] = progress_value;
         reward += maintenance_rewards[player];
         reward += kag_expansion_reward(env, player);
+        if (player == kag_curriculum_player(env)) reward += curriculum_reward;
         env->agents[player].rewards[0] = reward;
         env->episode_returns[player] += reward;
     }
 
     if (done) {
+        kag_curriculum_record(env, curriculum_success);
         float terminal_potential[KG_NUM_PLAYERS] = {
             env->potential[0], env->potential[1]};
         float terminal_progress[KG_NUM_PLAYERS] = {
@@ -3042,7 +3337,8 @@ void puf_step(Env* env) {
         env->log.opponent_milk_value +=
             game->production_product_value[1 - model_player][KG_ITEM_MILK];
         env->log.episode_return += env->episode_returns[model_player];
-        env->log.episode_length += (float)game->config.episode_steps;
+        env->log.episode_length += (float)(game->step
+            - env->curriculum_start_step);
         env->log.land_purchases += (float)(
             __builtin_popcount((unsigned)game->players[model_player].unlocked_mask) - 1);
         env->log.water_coverage += game->plant_days[model_player] > 0
@@ -3126,7 +3422,7 @@ void puf_step(Env* env) {
 
         /* Auto-reset while preserving the completed transition's reward and
          * terminal flag in PufferLib's externally-owned buffers. */
-        kag_reset_with_opening(env, kag_script_tapes);
+        kag_curriculum_reset(env, kag_script_tapes);
         env->episode_returns[0] = 0.0f;
         env->episode_returns[1] = 0.0f;
         env->potential[0] = kag_player_potential(env, 0);
@@ -3459,6 +3755,40 @@ void puf_log(Log* log, Dict* out) {
     dict_set(out, "adaptive_thunder_fraction",
         log->adaptive_thunder_games);
     dict_set(out, "reset_fraction", log->reset_games);
+    dict_set(out, "curriculum_sell_fraction",
+        log->curriculum_games[KAG_CURRICULUM_SELL]);
+    dict_set(out, "curriculum_sell_success",
+        log->curriculum_games[KAG_CURRICULUM_SELL] > 0.0f
+            ? log->curriculum_successes[KAG_CURRICULUM_SELL]
+                / log->curriculum_games[KAG_CURRICULUM_SELL] : 0.0f);
+    dict_set(out, "curriculum_harvest_fraction",
+        log->curriculum_games[KAG_CURRICULUM_HARVEST]);
+    dict_set(out, "curriculum_harvest_success",
+        log->curriculum_games[KAG_CURRICULUM_HARVEST] > 0.0f
+            ? log->curriculum_successes[KAG_CURRICULUM_HARVEST]
+                / log->curriculum_games[KAG_CURRICULUM_HARVEST] : 0.0f);
+    dict_set(out, "curriculum_maintain_fraction",
+        log->curriculum_games[KAG_CURRICULUM_MAINTAIN]);
+    dict_set(out, "curriculum_maintain_success",
+        log->curriculum_games[KAG_CURRICULUM_MAINTAIN] > 0.0f
+            ? log->curriculum_successes[KAG_CURRICULUM_MAINTAIN]
+                / log->curriculum_games[KAG_CURRICULUM_MAINTAIN] : 0.0f);
+    dict_set(out, "curriculum_produce_fraction",
+        log->curriculum_games[KAG_CURRICULUM_PRODUCE]);
+    dict_set(out, "curriculum_produce_success",
+        log->curriculum_games[KAG_CURRICULUM_PRODUCE] > 0.0f
+            ? log->curriculum_successes[KAG_CURRICULUM_PRODUCE]
+                / log->curriculum_games[KAG_CURRICULUM_PRODUCE] : 0.0f);
+    dict_set(out, "curriculum_root_fraction",
+        log->curriculum_games[KAG_CURRICULUM_ROOT]);
+    dict_set(out, "curriculum_crop_success",
+        log->curriculum_crop_games > 0.0f
+            ? log->curriculum_crop_successes / log->curriculum_crop_games
+            : 0.0f);
+    dict_set(out, "curriculum_animal_success",
+        log->curriculum_animal_games > 0.0f
+            ? log->curriculum_animal_successes / log->curriculum_animal_games
+            : 0.0f);
     dict_set(out, "market_orders", log->market_orders);
     dict_set(out, "orders_per_turn", log->episode_length > 0.0f
         ? log->market_orders / log->episode_length : 0.0f);

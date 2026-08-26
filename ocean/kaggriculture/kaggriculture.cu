@@ -32,6 +32,12 @@ typedef struct {
     int reset_opening_min;
     float reset_opening_prob;
     float reset_state_prob;
+    int curriculum_enabled;
+    int curriculum_window;
+    float curriculum_success_rate;
+    float curriculum_rehearsal_prob;
+    float curriculum_root_prob;
+    float curriculum_reward;
     float reward_potential_scale;
     float reward_potential_gamma;
     float reward_cash_scale;
@@ -243,6 +249,10 @@ __device__ static void kag_cuda_choose_bot(Env* env, int match_id) {
 __device__ static void kag_cuda_reset_episode(Env* env,
         const KGScriptTape* tapes, const KGState* reset_states,
         int reset_state_count) {
+    if (env->curriculum_enabled) {
+        kag_curriculum_reset(env, tapes);
+        return;
+    }
     if (reset_state_count > 0 && env->reset_state_prob > 0.0f) {
         uint32_t draw = kag_reset_opening_random(env) >> 8;
         uint32_t cutoff = (uint32_t)(env->reset_state_prob * 16777216.0f);
@@ -262,6 +272,11 @@ __device__ static void kag_cuda_bot_overrides(Env* env,
     KGState* game = &env->game_storage;
     for (int player = 0; player < KG_NUM_PLAYERS; player++) {
         int bot = env->demo_bots[player];
+        if (env->curriculum_stage >= 0
+                && env->curriculum_stage < KAG_CURRICULUM_ROOT
+                && player != kag_curriculum_player(env)) {
+            bot = KAG_BOT_PASS;
+        }
         if (bot == KAG_BOT_NONE && player == (env->bot_first ? 0 : 1)
                 && (env->tag > 0 || env->bot_opponent_fraction >= 1.0f)) {
             bot = env->bot_opponent;
@@ -329,6 +344,7 @@ __device__ static void kag_cuda_transition(Env* env, Env* shells,
         env->agents[player].terminals[0] = 0.0f;
     }
     kag_cuda_bot_overrides(env, actions, tapes);
+    kag_curriculum_note_actions(env, actions);
     float maintenance_rewards[KG_NUM_PLAYERS];
     for (int player = 0; player < KG_NUM_PLAYERS; player++) {
         maintenance_rewards[player] = kag_maintenance_action_reward(
@@ -338,9 +354,15 @@ __device__ static void kag_cuda_transition(Env* env, Env* shells,
 
     kg_step(game, actions);
     int money[2] = {game->players[0].money, game->players[1].money};
-    int model_player = env->bot_opponent == KAG_BOT_NONE && env->tag > 0
+    int model_player = env->curriculum_stage >= 0
+        && env->curriculum_stage < KAG_CURRICULUM_ROOT
+        ? kag_curriculum_player(env)
+        : env->bot_opponent == KAG_BOT_NONE && env->tag > 0
         ? (env->agents[0].policy == 0 ? 0 : 1)
         : (env->bot_first ? 1 : 0);
+    int curriculum_success = 0;
+    float curriculum_reward = kag_curriculum_after_step(
+        env, &curriculum_success);
     int done = kg_done(game);
     env->potential[0] = kag_player_potential(env, 0);
     env->potential[1] = kag_player_potential(env, 1);
@@ -355,6 +377,7 @@ __device__ static void kag_cuda_transition(Env* env, Env* shells,
         env->progress_value[player] = progress_value;
         reward += maintenance_rewards[player];
         reward += kag_expansion_reward(env, player);
+        if (player == kag_curriculum_player(env)) reward += curriculum_reward;
         env->agents[player].rewards[0] = reward;
         env->episode_returns[player] += reward;
     }
@@ -364,6 +387,7 @@ __device__ static void kag_cuda_transition(Env* env, Env* shells,
         return;
     }
 
+    kag_curriculum_record(env, curriculum_success);
     float terminal_potential[KG_NUM_PLAYERS] = {
         env->potential[0], env->potential[1]};
     float terminal_progress[KG_NUM_PLAYERS] = {
@@ -477,7 +501,8 @@ __device__ static void kag_cuda_transition(Env* env, Env* shells,
     env->log.opponent_milk_value +=
         game->production_product_value[1 - model_player][KG_ITEM_MILK];
     env->log.episode_return += env->episode_returns[model_player];
-    env->log.episode_length += (float)game->config.episode_steps;
+    env->log.episode_length += (float)(game->step
+        - env->curriculum_start_step);
     env->log.land_purchases += (float)(kag_popcount(
         (unsigned)game->players[model_player].unlocked_mask) - 1);
     env->log.water_coverage += game->plant_days[model_player] > 0
@@ -582,6 +607,14 @@ __global__ static void kag_cuda_reset_kernel(Env* shells, Env* matches,
     env->reset_opening_min = d_kag_cuda_config.reset_opening_min;
     env->reset_opening_prob = d_kag_cuda_config.reset_opening_prob;
     env->reset_state_prob = d_kag_cuda_config.reset_state_prob;
+    env->curriculum_enabled = d_kag_cuda_config.curriculum_enabled;
+    env->curriculum_window = d_kag_cuda_config.curriculum_window;
+    env->curriculum_success_rate = d_kag_cuda_config.curriculum_success_rate;
+    env->curriculum_rehearsal_prob =
+        d_kag_cuda_config.curriculum_rehearsal_prob;
+    env->curriculum_root_prob = d_kag_cuda_config.curriculum_root_prob;
+    env->curriculum_reward = d_kag_cuda_config.curriculum_reward;
+    env->curriculum_stage = -1;
     env->reward_potential_scale = d_kag_cuda_config.reward_potential_scale;
     env->reward_potential_gamma = d_kag_cuda_config.reward_potential_gamma;
     env->reward_cash_scale = d_kag_cuda_config.reward_cash_scale;
@@ -711,6 +744,14 @@ static void kag_cuda_load_config(Dict* kwargs) {
     h_kag_cuda_config.reset_opening_min = template_env.reset_opening_min;
     h_kag_cuda_config.reset_opening_prob = template_env.reset_opening_prob;
     h_kag_cuda_config.reset_state_prob = template_env.reset_state_prob;
+    h_kag_cuda_config.curriculum_enabled = template_env.curriculum_enabled;
+    h_kag_cuda_config.curriculum_window = template_env.curriculum_window;
+    h_kag_cuda_config.curriculum_success_rate =
+        template_env.curriculum_success_rate;
+    h_kag_cuda_config.curriculum_rehearsal_prob =
+        template_env.curriculum_rehearsal_prob;
+    h_kag_cuda_config.curriculum_root_prob = template_env.curriculum_root_prob;
+    h_kag_cuda_config.curriculum_reward = template_env.curriculum_reward;
     h_kag_cuda_config.reward_potential_scale = template_env.reward_potential_scale;
     h_kag_cuda_config.reward_potential_gamma = template_env.reward_potential_gamma;
     h_kag_cuda_config.reward_cash_scale = template_env.reward_cash_scale;
