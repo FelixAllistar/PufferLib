@@ -649,9 +649,141 @@ static void assert_expansion_curriculum_reward(void) {
         < 1e-6f);
 }
 
+static void assert_tagged_curriculum_states(void) {
+    Env env = {0};
+    KGConfig config;
+    kg_config_default(&config);
+    kg_init(&env.game_storage, &config);
+    env.agents[0].policy = 0;
+    env.agents[1].policy = 1;
+    env.reset_opening_rng = 707;
+    env.curriculum_reward = 1.0f;
+
+    kag_curriculum_prepare(&env, KAG_CURRICULUM_SELL);
+    int player = kag_curriculum_player(&env);
+    int item = env.curriculum_target_item;
+    assert(env.game_storage.players[player].shed[item] > 0);
+    assert(env.curriculum_deadline_step > env.game_storage.step);
+    assert(!kag_curriculum_success(&env));
+    env.game_storage.sold_product_units[player][item] = 1;
+    assert(kag_curriculum_success(&env));
+    int success = 0;
+    assert(kag_curriculum_after_step(&env, &success) == 1.0f);
+    assert(success && env.game_storage.done);
+
+    kg_reset(&env.game_storage);
+    kag_curriculum_prepare(&env, KAG_CURRICULUM_HARVEST);
+    KGPlayer* farm = &env.game_storage.players[player];
+    int tile = kg_tile_index(farm->units[0].x, farm->units[0].y);
+    assert(farm->tiles[tile].yield_units > 0);
+
+    kg_reset(&env.game_storage);
+    kag_curriculum_prepare(&env, KAG_CURRICULUM_PRODUCE);
+    if (env.curriculum_branch) {
+        assert(farm->units[0].inventory[KG_ITEM_GOOSE
+            + env.curriculum_target_item - KG_ITEM_EGG] == 1);
+    } else {
+        assert(farm->seeds[env.curriculum_target_item] == 1);
+    }
+
+    env.curriculum_level = KAG_CURRICULUM_SELL;
+    env.curriculum_stage = KAG_CURRICULUM_SELL;
+    env.curriculum_window = 2;
+    env.curriculum_success_rate = 0.5f;
+    kag_curriculum_record(&env, 1);
+    kag_curriculum_record(&env, 0);
+    assert(env.curriculum_level == KAG_CURRICULUM_HARVEST);
+}
+
+static void curriculum_step(Env* env, KGAction actions[KG_NUM_PLAYERS]) {
+    kag_curriculum_note_actions(env, actions);
+    kg_step(&env->game_storage, actions);
+}
+
+static void assert_tagged_curriculum_solutions(void) {
+    Env env = {0};
+    KGConfig config;
+    KGAction actions[KG_NUM_PLAYERS];
+    kg_config_default(&config);
+    kg_init(&env.game_storage, &config);
+    env.agents[0].policy = 0;
+    env.agents[1].policy = 1;
+    env.reset_opening_rng = 1707;
+
+    kag_curriculum_prepare(&env, KAG_CURRICULUM_SELL);
+    int player = kag_curriculum_player(&env);
+    int target = env.curriculum_target_item;
+    memset(actions, 0, sizeof(actions));
+    actions[player].market[0] = (KGMarketOrder){KG_MARKET_SELL, target, 1};
+    actions[player].market_count = 1;
+    curriculum_step(&env, actions);
+    assert(kag_curriculum_success(&env));
+
+    kg_reset(&env.game_storage);
+    kag_curriculum_prepare(&env, KAG_CURRICULUM_HARVEST);
+    target = env.curriculum_target_item;
+    memset(actions, 0, sizeof(actions));
+    actions[player].farmer = (KGUnitAction){KG_OP_HARVEST, -1, 1};
+    curriculum_step(&env, actions);
+    memset(actions, 0, sizeof(actions));
+    actions[player].farmer = (KGUnitAction){KG_OP_DROP, -1, 1};
+    curriculum_step(&env, actions);
+    memset(actions, 0, sizeof(actions));
+    actions[player].market[0] = (KGMarketOrder){KG_MARKET_SELL, target, 1};
+    actions[player].market_count = 1;
+    curriculum_step(&env, actions);
+    assert(kag_curriculum_success(&env));
+
+    /* Exercise both causal maintenance branches. Their yield begins at zero
+     * and appears only after the correct end-of-day action. */
+    for (int want_animal = 0; want_animal <= 1; want_animal++) {
+        do {
+            kg_reset(&env.game_storage);
+            kag_curriculum_prepare(&env, KAG_CURRICULUM_MAINTAIN);
+        } while (env.curriculum_branch != want_animal);
+        target = env.curriculum_target_item;
+        memset(actions, 0, sizeof(actions));
+        actions[player].farmer = (KGUnitAction){
+            want_animal ? KG_OP_FEED : KG_OP_WATER, -1, 1};
+        curriculum_step(&env, actions);
+        memset(actions, 0, sizeof(actions));
+        actions[player].farmer = (KGUnitAction){KG_OP_HARVEST, -1, 1};
+        curriculum_step(&env, actions);
+        memset(actions, 0, sizeof(actions));
+        actions[player].farmer = (KGUnitAction){KG_OP_DROP, -1, 1};
+        curriculum_step(&env, actions);
+        memset(actions, 0, sizeof(actions));
+        actions[player].market[0] = (KGMarketOrder){KG_MARKET_SELL, target, 1};
+        actions[player].market_count = 1;
+        curriculum_step(&env, actions);
+        assert(kag_curriculum_success(&env));
+    }
+
+    for (int want_animal = 0; want_animal <= 1; want_animal++) {
+        do {
+            kg_reset(&env.game_storage);
+            kag_curriculum_prepare(&env, KAG_CURRICULUM_PRODUCE);
+        } while (env.curriculum_branch != want_animal);
+        target = env.curriculum_target_item;
+        memset(actions, 0, sizeof(actions));
+        actions[player].farmer = want_animal
+            ? (KGUnitAction){KG_OP_PLACE,
+                KG_ITEM_GOOSE + target - KG_ITEM_EGG, 1}
+            : (KGUnitAction){KG_OP_PLANT, target, 1};
+        curriculum_step(&env, actions);
+        memset(actions, 0, sizeof(actions));
+        actions[player].farmer = (KGUnitAction){
+            want_animal ? KG_OP_FEED : KG_OP_WATER, -1, 1};
+        curriculum_step(&env, actions);
+        assert(kag_curriculum_success(&env));
+    }
+}
+
 int main(void) {
     assert_progress_potential_reward();
     assert_expansion_curriculum_reward();
+    assert_tagged_curriculum_states();
+    assert_tagged_curriculum_solutions();
     assert_discounted_economic_reward();
     assert_rule_regressions();
     assert_potential_schedule();
