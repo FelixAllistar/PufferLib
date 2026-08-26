@@ -85,6 +85,10 @@ def main() -> int:
     parser.add_argument("--winner-only", action="store_true")
     parser.add_argument("--minimum-final-money", type=float, default=0.0)
     parser.add_argument(
+        "--trajectory-file", type=pathlib.Path,
+        help="TSV containing episode_id and player columns to retain",
+    )
+    parser.add_argument(
         "--prefix-steps", type=int,
         help="retain only this many leading rows from every trajectory",
     )
@@ -115,6 +119,19 @@ def main() -> int:
 
     allowed_agents = set(args.agent)
     allowed_sources = set(args.source)
+    allowed_trajectories: set[tuple[str, str]] | None = None
+    if args.trajectory_file is not None:
+        with args.trajectory_file.open(encoding="utf-8", newline="") as stream:
+            selector = csv.DictReader(stream, delimiter="\t")
+            if selector.fieldnames is None or not {
+                "episode_id", "player"
+            }.issubset(selector.fieldnames):
+                raise ValueError(
+                    "--trajectory-file requires episode_id and player columns"
+                )
+            allowed_trajectories = {
+                (str(row["episode_id"]), str(row["player"])) for row in selector
+            }
     selected: list[int] = []
     for index, row in enumerate(rows):
         if allowed_agents and row["agent"] not in allowed_agents:
@@ -127,6 +144,10 @@ def main() -> int:
         }:
             continue
         if float(row["final_money"]) < args.minimum_final_money:
+            continue
+        if allowed_trajectories is not None and (
+            str(row.get("episode_id", "")), str(row.get("player", ""))
+        ) not in allowed_trajectories:
             continue
         selected.append(index)
     if not selected:

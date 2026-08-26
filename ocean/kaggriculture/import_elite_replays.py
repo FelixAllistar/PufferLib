@@ -207,13 +207,26 @@ def _expand_inputs(values: Iterable[str]) -> list[pathlib.Path]:
     return paths
 
 
-def _iter_replays(paths: Iterable[pathlib.Path]) -> Iterator[tuple[str, dict[str, Any]]]:
+def _iter_replays(
+    paths: Iterable[pathlib.Path], agents: set[str] | None = None,
+) -> Iterator[tuple[str, dict[str, Any]]]:
+    # Agent metadata is stored near the start of official replay JSON.  Checking
+    # a small prefix first avoids inflating and decoding every ~30 MB episode
+    # when building a clone for one named submission.
+    agent_needles = (
+        {json.dumps(agent).encode("utf-8") for agent in agents} if agents else set()
+    )
     for path in paths:
         suffix = path.suffix.lower()
         if suffix == ".zip":
             with zipfile.ZipFile(path) as archive:
                 for name in sorted(archive.namelist()):
                     if name.lower().endswith(".json") and not name.endswith("/"):
+                        if agent_needles:
+                            with archive.open(name) as raw:
+                                prefix = raw.read(4096)
+                            if not any(needle in prefix for needle in agent_needles):
+                                continue
                         with archive.open(name) as raw:
                             with io.TextIOWrapper(raw, encoding="utf-8") as stream:
                                 yield f"{path}:{name}", json.load(stream)
@@ -638,6 +651,10 @@ def main() -> int:
     )
     parser.add_argument("--steps", type=int, default=EXPECTED_STEPS)
     parser.add_argument("--players", choices=("both", "winner"), default="both")
+    parser.add_argument(
+        "--agent", action="append", default=[],
+        help="exact agent name to import; repeat to retain multiple agents",
+    )
     parser.add_argument("--min-final-money", type=float, default=0.0)
     args = parser.parse_args()
     if not args.audit_only and args.output is None:
@@ -672,7 +689,8 @@ def main() -> int:
         exact_version = (
             _version_tuple(args.exact_version) if args.exact_version else None
         )
-        for source, episode in _iter_replays(inputs):
+        requested_agents = set(args.agent)
+        for source, episode in _iter_replays(inputs, requested_agents):
             audit.counts["episodes_seen"] += 1
             module_version = str(episode.get("module_version", "unknown"))
             audit.module_versions[module_version] += 1
@@ -683,6 +701,19 @@ def main() -> int:
                 audit.skip_reasons[reason] += 1
                 continue
             players = _selected_players(episode, args.players, args.min_final_money)
+            if requested_agents:
+                info = episode.get("info", {})
+                names = info.get("TeamNames")
+                if not isinstance(names, list) or len(names) != 2:
+                    agents = info.get("Agents", [])
+                    names = [
+                        str(value.get("Name", "")) if isinstance(value, dict) else ""
+                        for value in agents
+                    ]
+                players = [
+                    player for player in players
+                    if player < len(names) and str(names[player]) in requested_agents
+                ]
             if not players:
                 audit.skip_reasons["player_filter"] += 1
                 continue
