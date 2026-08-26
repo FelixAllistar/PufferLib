@@ -85,6 +85,30 @@ static void s3d_watch_arch(int* hidden, int* layers) {
     puf_ini_free(&ini);
 }
 
+static void s3d_load_course_config(Shenanigans3D* env) {
+    Ini ini = { 0 };
+    puf_ini_load_env(&ini, S3D_ENV_NAME, 0, NULL);
+    env->course_mode = puf_ini_get_int(&ini, "env", "course_mode");
+    env->course_difficulty = puf_ini_get_int(&ini, "env", "course_difficulty");
+    puf_ini_free(&ini);
+}
+
+static unsigned int s3d_runtime_seed(void) {
+    return (unsigned int)time(NULL) ^ (unsigned int)clock();
+}
+
+static void s3d_print_course(const char* label, const Shenanigans3D* env) {
+    fprintf(stderr,
+            "course %s doors(z=%.2f/%.2f/%.2f) pit(x=%.2f d=%.2f) "
+            "tunnel(%.2f..%.2f c=%.2f) hole(%.2f..%.2f)\n",
+            label, (double)env->course.doors[0].z,
+            (double)env->course.doors[1].z, (double)env->course.doors[2].z,
+            (double)env->course.jump_x, (double)env->course.pit_depth,
+            (double)env->course.tunnel_start, (double)env->course.tunnel_end,
+            (double)env->course.tunnel_clearance,
+            (double)env->course.hole_start, (double)env->course.hole_end);
+}
+
 static int s3d_expected_policy_floats(int hidden, int layers) {
     int act_sizes[] = ACT_SIZES;
     int atn_sum = 0;
@@ -162,8 +186,9 @@ static void s3d_print_usage(const char* argv0) {
         "  %s play\n"
         "  %s watch [latest|PATH.bin] [--deterministic]\n"
         "  %s --check                  # scripted solvability run\n"
+        "  %s --random-check           # randomized course audit\n"
         "  %s --bench                  # headless steps/sec\n",
-        argv0, argv0, argv0, argv0, argv0);
+        argv0, argv0, argv0, argv0, argv0, argv0);
 }
 
 // ---------------------------------------------------------------------------
@@ -257,6 +282,27 @@ static void performance_test() {
     puf_close(&env);
 }
 
+static void scripted_course_action(Shenanigans3D* env, float* actions) {
+    float fx = feet_x(env);
+    float fz = feet_z(env);
+    float target_z = 0.0f;
+    for (int i = 0; i < COURSE_DOORS; i++) {
+        if (fx < env->course.doors[i].x + 0.5f) {
+            target_z = env->course.doors[i].z;
+            break;
+        }
+    }
+
+    actions[0] = 2.0f;
+    actions[1] = 2.0f;
+    actions[2] = fz < target_z - 0.12f ? 2.0f :
+                 (fz > target_z + 0.12f ? 0.0f : 1.0f);
+    actions[3] = (fx > env->course.jump_x - 0.8f &&
+                  fx < env->course.jump_x + 0.6f) ? 1.0f : 0.0f;
+    actions[4] = (fx > env->course.tunnel_start - 1.0f &&
+                  fx < env->course.tunnel_end + 0.5f) ? 1.0f : 0.0f;
+}
+
 static void scripted_check() {
     Shenanigans3D env = { .max_ticks = 3600, .rng = 7 };
     allocate_env(&env);
@@ -273,12 +319,7 @@ static void scripted_check() {
     puf_reset(&env);
 
     for (int tick = 0; tick < 3600; tick++) {
-        actions[0] = 2.0f;
-        actions[1] = 2.0f;
-        actions[2] = 1.0f;
-        actions[3] = 0.0f;
-        float fx = (float)pd_char_feet_position(&env.ch).x;
-        actions[4] = (fx > 11.5f && fx < 16.5f) ? 1.0f : 0.0f;
+        scripted_course_action(&env, actions);
 
         puf_step(&env);
         if (env.lastGoal && *terminals > 0.5f) {
@@ -292,9 +333,91 @@ static void scripted_check() {
     puf_close(&env);
 }
 
+static void randomized_check() {
+    int passed = 0;
+    const int trials = 32;
+    const int episodes = 3;
+    for (int i = 0; i < trials; i++) {
+        Shenanigans3D env = {
+            .max_ticks = 2400,
+            .rng = (unsigned int)(1000 + i * 97),
+            .course_mode = COURSE_MODE_RANDOM_EVERY_RESET,
+            .course_difficulty = 2,
+        };
+        allocate_env(&env);
+        obs_t observations[OBS_SIZE] = { 0 };
+        float actions[NUM_ATNS] = { 0 };
+        float rewards[1] = { 0 };
+        float terminals[1] = { 0 };
+        env.agents[0].observations = observations;
+        env.agents[0].actions = actions;
+        env.agents[0].rewards = rewards;
+        env.agents[0].terminals = terminals;
+        env.agents[0].action_mask = NULL;
+        env.agents[0].policy = 0;
+        puf_reset(&env);
+
+        bool all_passed = true;
+        bool changed = false;
+        for (int episode = 0; episode < episodes; episode++) {
+            CourseParams before = env.course;
+            bool ended = false;
+            int fail_tick = 0;
+            float fail_x = 0.0f, fail_y = 0.0f, fail_z = 0.0f;
+            for (int tick = 0; tick < env.max_ticks; tick++) {
+                scripted_course_action(&env, actions);
+                fail_tick = tick;
+                fail_x = feet_x(&env);
+                fail_y = feet_y(&env);
+                fail_z = feet_z(&env);
+                puf_step(&env);
+                if (*terminals > 0.5f) {
+                    ended = true;
+                    break;
+                }
+            }
+            if (!ended || !env.lastGoal) {
+                all_passed = false;
+                fprintf(stderr,
+                        "variant %d episode %d failed: pos=(%.2f, %.2f, %.2f) "
+                        "t=%d "
+                        "doors=(x %.2f/%.2f/%.2f z %.2f/%.2f/%.2f) "
+                        "pit=(%.2f d %.2f) "
+                        "tunnel=(%.2f..%.2f c %.2f) "
+                        "hole=(%.2f..%.2f)\n",
+                        i, episode, (double)fail_x, (double)fail_y,
+                        (double)fail_z, fail_tick, (double)env.course.doors[0].x,
+                        (double)env.course.doors[1].x, (double)env.course.doors[2].x,
+                        (double)env.course.doors[0].z, (double)env.course.doors[1].z,
+                        (double)env.course.doors[2].z,
+                        (double)env.course.jump_x, (double)env.course.pit_depth,
+                        (double)env.course.tunnel_start, (double)env.course.tunnel_end,
+                        (double)env.course.tunnel_clearance,
+                        (double)env.course.hole_start, (double)env.course.hole_end);
+                break;
+            }
+            if (episode + 1 < episodes &&
+                memcmp(&before, &env.course, sizeof(CourseParams)) != 0) {
+                changed = true;
+            }
+        }
+        if (all_passed && changed) passed++;
+        puf_close(&env);
+    }
+    printf("randomized-check: %d/%d variants passed %d episodes with reset changes\n",
+           passed, trials, episodes);
+    if (passed != trials) exit(1);
+}
+
 static void demo(PufferNet* net, int deterministic) {
-    Shenanigans3D env = { .max_ticks = 100000, .rng = 1 };
+    unsigned int course_seed = s3d_runtime_seed();
+    Shenanigans3D env = { .max_ticks = 100000, .rng = course_seed };
+    s3d_load_course_config(&env);
     allocate_env(&env);
+    if (env.course_mode >= COURSE_MODE_RANDOM) {
+        fprintf(stderr, "course seed=%u\n", course_seed);
+        s3d_print_course("initial", &env);
+    }
     obs_t observations[OBS_SIZE] = { 0 };
     float actions[NUM_ATNS] = { 0 };
     float rewards[1] = { 0 };
@@ -339,7 +462,11 @@ static void demo(PufferNet* net, int deterministic) {
         }
 
         puf_step(&env);
-        if (*terminals > 0.5f) s3d_reset_mingru(net); // fresh memory next episode
+        if (*terminals > 0.5f) {
+            if (env.course_mode == COURSE_MODE_RANDOM_EVERY_RESET)
+                s3d_print_course("reset", &env);
+            s3d_reset_mingru(net); // fresh memory next episode
+        }
         puf_render(&env);
     }
     puf_close(&env);
@@ -376,6 +503,9 @@ int main(int argc, char** argv) {
             return 0;
         } else if (strcmp(argv[1], "--check") == 0) {
             scripted_check();
+            return 0;
+        } else if (strcmp(argv[1], "--random-check") == 0) {
+            randomized_check();
             return 0;
         } else if (strcmp(argv[1], "help") == 0 || strcmp(argv[1], "-h") == 0 ||
                    strcmp(argv[1], "--help") == 0) {

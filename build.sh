@@ -223,6 +223,17 @@ elif [ "$ENV" = "shenaniguns3d" ]; then
     EXTRA_SRC="../pd64/character.c"
 elif [ -d "ocean/$ENV" ]; then
     SRC_DIR="ocean/$ENV"
+    if [ "$ENV" = "retro" ]; then
+        EXTRA_LDFLAGS+=(-ldl)
+        EXTRA_SRC+=" ocean/retro/nes_emu/*.cpp"
+        INCLUDES+=(-I./ocean/retro/nes_emu -I./ocean/retro)
+        # fast/local standalone uses clang++ for Nes_Emu (retro.c is C++ despite .c)
+        if [ "$MODE" = "fast" ] || [ "$MODE" = "local" ]; then
+            CC="clang++"
+            CLANG_WARN=(-Wall -ferror-limit=3 -Wno-error=return-type)
+            EXTRA_CFLAGS+=(-x c++)
+        fi
+    fi
 else
     echo "Error: environment '$ENV' not found" && exit 1
 fi
@@ -392,6 +403,9 @@ if ! grep -q 'typedef[[:space:]].*obs_t' "$ENV_HEADER" 2>/dev/null; then
 fi
 
 ENV_COMPILE_FLAGS=(-DENV_HEADER=\"$ENV_HEADER\")
+if [ "${KAG_DUMP_ROOT_OBS:-0}" = "1" ]; then
+    ENV_COMPILE_FLAGS+=(-DKAG_DUMP_ROOT_OBS)
+fi
 # Goofspiel compile-time ABI: 4-card (default) or 13-card training layout.
 if [ "$ENV" = "goofspiel" ]; then
     ENV_COMPILE_FLAGS+=(-DGS_NUM_CARDS=${GS_NUM_CARDS:-4})
