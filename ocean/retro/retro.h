@@ -518,26 +518,50 @@ void puf_render(Env* env){
     if(!IsWindowReady()){
         const char* _d=getenv("DISPLAY"); const char* _w=getenv("WAYLAND_DISPLAY");
         if((!_d || !*_d) && (!_w || !*_w)) return;
-        InitWindow(512,480,"PufferLib Retro SMB1");
+        InitWindow(960,600,"PufferLib Retro // Super Mario Bros.");
         if(!IsWindowReady()) return;
         SetTargetFPS(60);
     }
     if(IsKeyDown(KEY_ESCAPE)) exit(0);
     if(!IsWindowReady()) return;
-    BeginDrawing(); ClearBackground(BLACK);
+    const int view_x=24, view_y=72, scale=2;
+    const int view_w=Nes_Emu::image_width*scale;
+    const int view_h=Nes_Emu::image_height*scale;
+    BeginDrawing();
+    ClearBackground((Color){8,13,27,255});
+    DrawRectangle(0,0,960,52,(Color){15,23,42,255});
+    DrawRectangle(0,51,960,1,(Color){47,72,108,255});
+    DrawText("PUFFERLIB  /  SMB1",24,14,22,(Color){236,244,255,255});
+    DrawText("REAL NES ROM",774,18,14,(Color){91,221,190,255});
+    DrawRectangle(view_x-4,view_y-4,view_w+8,view_h+8,(Color){42,61,88,255});
+    DrawRectangle(view_x,view_y,view_w,view_h,(Color){0,0,0,255});
     if(env->emu && env->emu->frame().pixels){
         const auto& fr = env->emu->frame();
         for(int y=0;y<240;y++) for(int x=0;x<256;x++){
             uint8_t pix = fr.pixels[y*256 + x];
-            // simple grayscale from index
-            uint8_t c = pix;
-            DrawPixel(x*2, y*2, (Color){c,c,c,255});
-            DrawPixel(x*2+1, y*2, (Color){c,c,c,255});
-            DrawPixel(x*2, y*2+1, (Color){c,c,c,255});
-            DrawPixel(x*2+1, y*2+1, (Color){c,c,c,255});
+            // Frame pixels are palette slots. Resolve them through QuickNES'
+            // actual NES palette instead of treating the slot as grayscale.
+            int color_index = fr.palette[pix] & (Nes_Emu::color_table_size-1);
+            const Nes_Emu::rgb_t& rgb = Nes_Emu::nes_colors[color_index];
+            Color color=(Color){rgb.red,rgb.green,rgb.blue,255};
+            DrawRectangle(view_x+x*scale,view_y+y*scale,scale,scale,color);
         }
     }
-    DrawText(TextFormat("SMB %d-%d X=%d S=%d C=%d T=%d", env->world, env->stage, env->x_pos, env->score, env->coins, env->time),10,10,16,WHITE);
+    DrawText("ARROWS / WASD move    X / SPACE jump    Z / C run    R reset",view_x,view_y+view_h+14,14,(Color){164,181,207,255});
+
+    const int panel_x=576, panel_y=84, panel_w=344;
+    DrawRectangle(panel_x,panel_y,panel_w,view_h-24,(Color){15,23,42,255});
+    DrawRectangle(panel_x,panel_y,4,view_h-24,(Color){91,221,190,255});
+    DrawText("RUN STATUS",panel_x+24,panel_y+22,16,(Color){91,221,190,255});
+    DrawText(TextFormat("WORLD  %d-%d",env->world,env->stage),panel_x+24,panel_y+68,24,(Color){236,244,255,255});
+    DrawText(TextFormat("X POSITION  %d",env->x_pos),panel_x+24,panel_y+116,17,(Color){184,201,224,255});
+    DrawText(TextFormat("SCORE      %06d",env->score),panel_x+24,panel_y+148,17,(Color){184,201,224,255});
+    DrawText(TextFormat("COINS      %02d",env->coins),panel_x+24,panel_y+180,17,(Color){255,211,91,255});
+    DrawText(TextFormat("TIME       %03d",env->time),panel_x+24,panel_y+212,17,(Color){184,201,224,255});
+    DrawText(TextFormat("FRAME      %d",env->tick),panel_x+24,panel_y+244,17,(Color){184,201,224,255});
+    DrawLine(panel_x+24,panel_y+274,panel_x+panel_w-24,panel_y+274,(Color){47,72,108,255});
+    DrawText("12-action PPO interface",panel_x+24,panel_y+302,15,(Color){137,158,188,255});
+    DrawText("indexed pixels -> color preview",panel_x+24,panel_y+328,15,(Color){137,158,188,255});
     EndDrawing();
 }
 
