@@ -209,6 +209,7 @@ def _expand_inputs(values: Iterable[str]) -> list[pathlib.Path]:
 
 def _iter_replays(
     paths: Iterable[pathlib.Path], agents: set[str] | None = None,
+    episode_ids: set[str] | None = None,
 ) -> Iterator[tuple[str, dict[str, Any]]]:
     # Agent metadata is stored near the start of official replay JSON.  Checking
     # a small prefix first avoids inflating and decoding every ~30 MB episode
@@ -222,6 +223,8 @@ def _iter_replays(
             with zipfile.ZipFile(path) as archive:
                 for name in sorted(archive.namelist()):
                     if name.lower().endswith(".json") and not name.endswith("/"):
+                        if episode_ids is not None and pathlib.Path(name).stem not in episode_ids:
+                            continue
                         if agent_needles:
                             with archive.open(name) as raw:
                                 prefix = raw.read(4096)
@@ -655,6 +658,10 @@ def main() -> int:
         "--agent", action="append", default=[],
         help="exact agent name to import; repeat to retain multiple agents",
     )
+    parser.add_argument(
+        "--trajectory-file", type=pathlib.Path,
+        help="TSV containing episode_id and player columns to import",
+    )
     parser.add_argument("--min-final-money", type=float, default=0.0)
     args = parser.parse_args()
     if not args.audit_only and args.output is None:
@@ -690,7 +697,27 @@ def main() -> int:
             _version_tuple(args.exact_version) if args.exact_version else None
         )
         requested_agents = set(args.agent)
-        for source, episode in _iter_replays(inputs, requested_agents):
+        requested_trajectories: dict[str, set[int]] | None = None
+        if args.trajectory_file is not None:
+            requested_trajectories = collections.defaultdict(set)
+            with args.trajectory_file.open(encoding="utf-8", newline="") as stream:
+                selector = csv.DictReader(stream, delimiter="\t")
+                if selector.fieldnames is None or not {
+                    "episode_id", "player"
+                }.issubset(selector.fieldnames):
+                    raise ValueError(
+                        "--trajectory-file requires episode_id and player columns"
+                    )
+                for row in selector:
+                    requested_trajectories[str(row["episode_id"])].add(
+                        int(row["player"])
+                    )
+            if not requested_trajectories:
+                raise ValueError("--trajectory-file contains no trajectories")
+        for source, episode in _iter_replays(
+            inputs, requested_agents,
+            set(requested_trajectories) if requested_trajectories else None,
+        ):
             audit.counts["episodes_seen"] += 1
             module_version = str(episode.get("module_version", "unknown"))
             audit.module_versions[module_version] += 1
@@ -701,6 +728,14 @@ def main() -> int:
                 audit.skip_reasons[reason] += 1
                 continue
             players = _selected_players(episode, args.players, args.min_final_money)
+            episode_id = str((episode.get("info") or {}).get(
+                "EpisodeId", episode.get("id", "")
+            ))
+            if requested_trajectories is not None:
+                players = [
+                    player for player in players
+                    if player in requested_trajectories.get(episode_id, set())
+                ]
             if requested_agents:
                 info = episode.get("info", {})
                 names = info.get("TeamNames")
