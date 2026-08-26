@@ -1,24 +1,34 @@
-# Retro (Super Mario Bros) — PufferLib Ocean Env
+# Retro (Super Mario Bros) - PufferLib Ocean Env
 
-C + CUDA only. No Python emulation path. Designed to parallelize **thousands** of SMB envs with minimal overhead: egocentric stats + a small collider window (SOA/GPU-friendly).
+C/C++ only. The active training path runs the real `smb1.nes` ROM through one
+independent QuickNES instance per environment. There is no Python emulator path
+and no procedural level substitute.
 
 ## Layout
 
-* `retro.h` — shared spec + **CPU env** (`!PUFFER_GPU_ENV`). Synthetic SMB-lite physics; runs without any ROM or libretro core. If `env.rom_path` points to a valid `.nes`, it is detected (iNES header) and can be parsed by a future level decoder; otherwise procedural levels are used.
-* `retro.cu` — **GPU env** (`-DPUFFER_GPU_ENV`, `ocean/retro/retro.cu` as `GPU_ENV_HEADER`). Native CUDA physics, collider templates uploaded once, per-env mutable tiles in a SoA buffer, coop multi-lane obs write (like `ocean/breakout`).
-* `retro.c` — standalone CPU eval/demo entry (`./build.sh retro --local/fast`).
-* `config/retro.ini` — train defaults (`puffer train retro` / `./puffer retro`).
+* `retro.h` - real-ROM CPU environment and the unchanged PufferLib env ABI. The
+  immutable cartridge is loaded once, QuickNES objects are contiguous in the
+  native vector arena, and the first `frameskip - 1` frames use QuickNES
+  skip-render mode.
+* `retro.c` - standalone CPU eval/demo entry (`./build.sh retro --local/fast`).
+* `config/retro.ini` - train defaults (`puffer train retro`).
+
+The old procedural CUDA prototype is not used. A CUDA port of the complete
+6502 CPU, PPU, APU, mapper, and SMB timing would be a separate emulator and is
+not enabled because replacing it with simplified physics would lose enemies,
+secrets, scrolling behavior, and other ROM logic.
 
 ## Observation
 
 ```
-OBS_SIZE = 16 (ego) + 12*12 (tiles) = 160
+OBS_SIZE = 16 (ego) + 12*12 (pixels) = 160
 ```
 
-* Ego (16 floats): `x,y / level`, `vx,vy`, `on_ground`, `dir`, `powerup`, `coins`, `score`, `tick`, `world`, `level`, `scroll_x`, `mario_offset_in_view`, `has_flag`, `is_dead`.
-* Window (144 tiles): `12×12` collider patch centered on Mario, tiles encoded as `id/9.0` (`EMPTY/SOLID/BRICK/QUESTION/PIPE/ENEMY/COIN/FLAG/...`).
-
-To increase observability, bump `RETRO_WINDOW_W/H` (keeps the coop kernel but widens the lane stride).
+* Ego (16 floats): `x,y`, player state, coins, score, time, world, stage,
+  camera offset, flag, and death state.
+* Window (144 values): a `12x12` framebuffer patch centered around Mario. The
+  active real-ROM path samples QuickNES's indexed framebuffer and converts each
+  value to a normalized float.
 
 ## Actions
 
@@ -32,48 +42,53 @@ Single discrete head `ACT_SIZES {12}`:
 4 RIGHT+A+B       8 DOWN
 ```
 
-Maps to the NES joypad mask (`A/B/Up/Down/Left/Right`). `Start`/`Select` are not in the training set. For full 8-bit joypad control, switch to `NUM_ATNS 8` + `ACT_SIZES {2,2,2,2,2,2,2,2}` and decode the mask bitwise in `puf_step`/`retro_step_kernel`.
+These map to the NES joypad mask (`A/B/Up/Down/Left/Right`). PPO still samples
+one normal discrete action per environment. Start and Select are not in the
+training action set.
 
-## Ultra-fast data loading & SOA notes
+## CPU Throughput Notes
 
-* **Bake colliders at init, not per step.** Host generates `32 × 256×16` byte level banks once in `puf_envs_create`, single `cudaMemcpy` to `d_templates` (~131 KB), single `cudaMalloc` for per-env mutable `d_env_tiles`. No file IO on the step path. Reset is just `level_id = rng % 32` + `memcpy` from template (device-side, lane 0).
-* **SoA outside AoS.** Per-env mutable tiles live in a SoA byte buffer `d_env_tiles[agents * W*H]` so the physics sampling (`retro_sample_tile_device`) is a single coalesced byte load. The `Env` AoS itself stays tiny (~64 B: `Log` first + physics scalars) so 8k envs < 600 KB.
-* **Coop obs write.** Like `breakout.cu`, `RETRO_THREADS_PER_ENV=16` lanes cooperatively store the `16+144` observation floats with adjacent lanes → adjacent 4-byte stores for coalescing. Single-thread AoS stores dominated kernel time in the original breakout port (~80% on a 5090); the coop variant fixes it.
-* **ROM path (optional).** `env.rom_path` (DICT key `rom_path`) is read in `puf_init`/`puf_envs_create`. Valid WSL paths: `/mnt/c/Users/sunde/Downloads/Super Mario Bros. 3 (USA) (Rev 1).nes`. Windows native paths (`C:/Users/sunde/Downloads/...`) are also retried via a WSL translation fallback in the GPU path. Today the header is only validated; the procedural fallback is used. A real SMB level decoder can be dropped in to replace `retro_host_generate_level` / `retro_generate_fallback_level` and the `fread`/mmap stays at the one-time host init (still a single `cudaMemcpyToSymbol`/`cudaMemcpy`).
+* **Shared cartridge.** The ROM is parsed once. Each environment gets
+  independent CPU, PPU, APU, RAM, nametable, sprite, mapper, and save-state
+  data; only immutable cartridge bytes are shared.
+* **Skip intermediate rendering.** With `frameskip = 4`, QuickNES still
+  executes all four complete frames, but only the fourth writes the framebuffer
+  used by the observation. Set `RETRO_FULL_RENDER=1` to render every frame for
+  diagnostics.
+* **Contiguous emulator arena.** Native training constructs the QuickNES
+  objects in one contiguous array. PPO buffers and the `Env` ABI remain
+  unchanged, while emulator state is less scattered in memory.
+* **Thread-local framebuffer binding.** Workers rebind each emulator to their
+  own scratch framebuffer before stepping, avoiding cross-thread pixel races.
 
-### When to bring in libretro
+### Why There Is No CUDA ROM Kernel Yet
 
-You only need libretro proper if you want bit-accurate NES emulation (PPU/APU cycle accuracy, scrolling tricks, enemy AI that depends on sub-pixel timing). For that case:
+The full ROM emulator is stateful and branch-heavy. Moving it to CUDA while
+preserving behavior would require porting the complete 6502/PPU/APU/mapper
+state machine, not just changing `Env` from AoS to SoA. The vendored libretro
+cores remain available for comparison, but the active path directly uses
+QuickNES so each environment is independent and does not serialize through a
+singleton core.
 
-1. Build/get a libretro NES core for Linux (e.g. `fceumm_libretro.so` or `mesen_libretro.so`) — or `quicknes_libretro.dll` on Windows. Place under `ocean/retro/cores/`.
-2. Implement `load_retro_core()`/`run` via `dlopen` + `dlsym` for `retro_init`, `retro_load_game`, `retro_run`, `retro_get_memory_data`, `retro_serialize_size` etc. Call once per `VecEnv` at create time, drive per-env via save-state snapshots per `Env` slot (fastest on GPU: host-serialize one base state + per-env deltas).
-3. Obs then becomes a downsampled framebuffer tile hash → collider window (same `RETRO_TILES` layout) so the policy architecture is unchanged. This preserves the throughput story: the heavy part is still a single bulk copy, not per-step `fread`.
-
-Without that, the current SMB-lite physics trains the same `OBS_SIZE=160` policy and you can swap in real ROM levels later without changing the model.
-
-## Build & run
+## Build and Run
 
 ```bash
-# CPU standalone demo (fast, no CUDA, uses fallback levels)
+# CPU standalone demo
 ./build.sh retro --fast
-./retro              # or ./build/retro depending on flag
+./retro
 
-# CPU native train binary (no GPU kernels, still uses puffercpu eval path)
-./build.sh retro            # produces ./retro (+ ./puffer if MODE=native)
-./puffer train retro        # reads config/retro.ini
-
-# GPU train (recommended: thousands of envs)
-./build.sh retro --gpu              # produces ./puffer (CUDA, PUFFER_GPU_ENV)
-./puffer train retro --vec.total-agents 8192 --vec.gpu-env 1
-
-# With a real ROM (optional, not required):
-./puffer train retro --env.rom_path "/mnt/c/Users/sunde/Downloads/Super Mario Bros. 3 (USA) (Rev 1).nes"
-# Native Windows (not WSL) equivalent:
-# ./puffer train retro --env.rom_path "C:/Users/sunde/Downloads/Super Mario Bros. 3 (USA) (Rev 1).nes"
+# CPU native train binary
+./build.sh retro
+./puffer train retro
 ```
 
-Config overrides are via `DICT` keys on the CLI (`--env.frameskip`, `--env.gravity`, etc.) — see `config/retro.ini`.
+The standalone commands are:
 
-## Folder requested in the prompt
+```bash
+./retro                         # human play
+./retro play                    # human play
+./retro watch latest            # watch newest policy checkpoint
+./retro watch PATH.bin         # watch a specific checkpoint
+```
 
-The prompt asks for `ocean/` inside the PufferTank wrapper; the canonical Ocean envs live at `puffertank/pufferlib/ocean/<env>`. To satisfy both, the env is at `puffertank/pufferlib/ocean/retro/` and a mirror is kept at `puffertank/ocean/retro/` (symlinked or copied).
+Set `DISPLAY=` and `WAYLAND_DISPLAY=` to use the 100-step headless smoke demo.
