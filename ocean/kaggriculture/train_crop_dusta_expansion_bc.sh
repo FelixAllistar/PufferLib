@@ -30,16 +30,8 @@ if [[ ! -s $selection ]]; then
 fi
 
 if [[ ! -s $dataset ]]; then
-    "$python_bin" ocean/kaggriculture/import_elite_replays.py \
-        "$replays" \
-        --output "$dataset" \
-        --manifest "$dataset.players.tsv" \
-        --audit-json "$dataset.audit.json" \
-        --agent "Crop Dusta" \
-        --trajectory-file "$selection" \
-        --exact-version 1.32.7 \
-        --players both \
-        --min-final-money 60000
+    KAG_CROP_DUSTA_PYTHON="$python_bin" \
+        ./ocean/kaggriculture/build_crop_dusta_expansion_dataset.sh
 fi
 
 KAG_ELITE_BC_DATA="$dataset" \
