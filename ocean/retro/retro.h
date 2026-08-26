@@ -1,8 +1,7 @@
 #pragma once
-// Retro / Libretro SMB1 -- 8 worlds * 4 stages = 32 levels. No procgen.
-// Per-Env Nes_Emu instance (QuickNES) for true thousands-parallel without
-// libretro singleton / dlmopen limits. Each Env owns its own Nes_Emu*, pixel
-// buffer and RAM snapshot. Vec OMP scales linearly (no g_mutex).
+// Retro / SMB1 -- 8 worlds * 4 stages = 32 levels. No procgen.
+// Each Env runs its own QuickNES state, while the immutable cartridge is
+// shared. CPU vector workers remain independent and need no core mutex.
 // OBS 160 = 16 ego + 12*12 window sampled from framebuffer around Mario.
 // ACT 12 discrete (RETRO_ACTION_MASKS). C++ (pufferl) path uses Nes_Emu directly;
 // C fallback (if __cplusplus not defined) is stub.
@@ -95,6 +94,7 @@ static const unsigned char RETRO_ACTION_MASKS[RETRO_NUM_ACTIONS] = {
 
 static uint8_t* g_rom_data = NULL;
 static size_t g_rom_size = 0;
+static Nes_Cart g_rom_cart;
 static Nes_State g_initial_state;
 static bool g_initial_state_valid = false;
 static bool g_rom_loaded = false;
@@ -162,6 +162,15 @@ static bool retro_load_rom_global(const char* hint) {
     g_rom_data = (uint8_t*)malloc(sz);
     fread(g_rom_data,1,sz,f); fclose(f);
     g_rom_size = sz;
+    Mem_File_Reader cart_rdr(g_rom_data, (long)g_rom_size);
+    const char* cart_err = g_rom_cart.load_ines(cart_rdr);
+    if (cart_err) {
+        snprintf(g_rom_error,sizeof(g_rom_error),"load cartridge: %s",cart_err);
+        free(g_rom_data);
+        g_rom_data = NULL;
+        g_rom_size = 0;
+        return false;
+    }
     g_rom_loaded = true;
     if (g_verbose) fprintf(stderr,"[retro] rom loaded %s %zu bytes\n", chosen, g_rom_size);
     // build initial state once via temp emu
@@ -169,13 +178,11 @@ static bool retro_load_rom_global(const char* hint) {
         Nes_Emu* tmp = new Nes_Emu();
         uint8_t* pix = retro_thread_pixels();
         tmp->set_pixels(pix + 8*256, 256);
-        Mem_File_Reader rdr(g_rom_data, (long)g_rom_size);
-        const char* err = tmp->load_ines(rdr);
+        const char* err = tmp->set_cart(&g_rom_cart);
         if (err) { snprintf(g_rom_error,sizeof(g_rom_error),"load_ines: %s",err); delete tmp; return false; }
         // tmp->set_sample_rate(0); // no audio - skip to avoid crash
         // skip start screen like gym
         // press START 1 frame then run until time !=0 (like gym _skip_start_screen)
-        auto ram = [&]()->uint8_t* { return tmp->low_mem(); };
         auto read_time = [&]()->int {
             uint8_t* m = tmp->low_mem();
             return (m[0x07F8]%10)*100 + (m[0x07F9]%10)*10 + (m[0x07FA]%10);
@@ -262,6 +269,13 @@ struct Env {
     Nes_Emu* emu;
     uint8_t* pixels;
     bool emu_ok;
+    bool emu_owned;
+    struct RetroVecArena* arena;
+};
+
+struct RetroVecArena {
+    Nes_Emu* emus;
+    int count;
 };
 
 static void retro_sync_from_emu(Env* env){
@@ -348,8 +362,14 @@ static void retro_compute_obs_real(const Env* env, obs_t* obs){
 }
 
 void puf_init(Env* env, Dict* kwargs){
+    Nes_Emu* supplied_emu = env->emu;
+    RetroVecArena* supplied_arena = env->arena;
+    bool supplied_emu_owned = env->emu_owned;
     memset(env,0,sizeof(*env));
     env->num_agents=1; env->agents[0].policy=0;
+    env->emu = supplied_emu;
+    env->arena = supplied_arena;
+    env->emu_owned = supplied_emu_owned;
     DictItem* it;
     it=dict_find(kwargs,"frameskip"); env->frameskip = it? (int)it->value : 4;
     it=dict_find(kwargs,"gravity"); env->gravity = it? (float)it->value : 0.52f;
@@ -370,13 +390,15 @@ void puf_init(Env* env, Dict* kwargs){
         return;
     }
     // per-Env emu
-    env->emu = new Nes_Emu();
+    if(!env->emu){
+        env->emu = new Nes_Emu();
+        env->emu_owned = true;
+    }
     // per-thread pixel buffer to save 65KB*4096
     env->pixels = nullptr;
     uint8_t* pix = retro_thread_pixels();
     env->emu->set_pixels(pix + 8*256, 256);
-    Mem_File_Reader rdr(g_rom_data, (long)g_rom_size);
-    const char* err = env->emu->load_ines(rdr);
+    const char* err = env->emu->set_cart(&g_rom_cart);
     if(err){ fprintf(stderr,"[retro] load_ines failed: %s\n",err); env->emu_ok=false; return; }
     // env->emu->set_sample_rate(0);
     // load initial state
@@ -416,6 +438,11 @@ void puf_reset(Env* env){
 void puf_step(Env* env){
     if(!env->emu_ok || !env->emu){ env->agents[0].rewards[0]=0; env->agents[0].terminals[0]=1; return; }
     env->agents[0].rewards[0]=0; env->agents[0].terminals[0]=0;
+    // puf_init runs on the main thread, while stepping runs on OMP workers.
+    // Rebind the scratch framebuffer here so workers never render into one
+    // shared thread-local buffer.
+    uint8_t* pix = retro_thread_pixels();
+    env->emu->set_pixels(pix + 8*256, 256);
     int act=0; if(env->agents[0].actions) act=(int)env->agents[0].actions[0];
     if(act<0) act=0; if(act>=RETRO_NUM_ACTIONS) act=RETRO_NUM_ACTIONS-1;
     unsigned char mask = RETRO_ACTION_MASKS[act];
@@ -423,15 +450,23 @@ void puf_step(Env* env){
     bool done=false;
     int prev_score=env->score;
     int prev_coins=env->coins;
+    const char* full_render = getenv("RETRO_FULL_RENDER");
     for(int f=0; f<env->frameskip; f++){
         env->tick++;
-        const char* err = env->emu->emulate_frame(mask,0);
+        // PPO only observes after the action's final frame. QuickNES still
+        // advances the complete CPU/PPU/APU state in skip mode, but avoids
+        // writing an intermediate 256x240 framebuffer.
+        const bool draw = (f + 1 == env->frameskip)
+            || (full_render && *full_render && strcmp(full_render,"0") != 0);
+        const char* err = draw
+            ? env->emu->emulate_frame(mask,0)
+            : env->emu->emulate_skip_frame(mask,0);
         (void)err;
         retro_sync_from_emu(env);
         if(smb_is_dying(env->emu)){
             uint8_t* m = env->emu->low_mem();
             if(m) m[0x000E]=0x06;
-            env->emu->emulate_frame(0,0);
+            env->emu->emulate_skip_frame(0,0);
             retro_sync_from_emu(env);
         }
         if(env->tick>4000){ done=true; break; }
@@ -507,13 +542,67 @@ void puf_render(Env* env){
 }
 
 void puf_close(Env* env){
-    if(env->emu){ delete env->emu; env->emu=nullptr; }
+    if(env->emu){
+        if(env->emu_owned) delete env->emu;
+        env->emu=nullptr;
+    }
     if(env->pixels){ free(env->pixels); env->pixels=nullptr; }
     if(env->level_tiles){ free(env->level_tiles); env->level_tiles=nullptr; }
     if(env->entity_tiles){ free(env->entity_tiles); env->entity_tiles=nullptr; }
     if(env->client){ free(env->client); env->client=nullptr; }
     if(IsWindowReady()) CloseWindow();
 }
+
+// The emulator objects are large and are touched in env order on every step.
+// Keep them in one contiguous arena instead of scattering 4096 allocations.
+// The public Env/Agent ABI remains unchanged, so PPO still sees the same buffers.
+#ifdef PUFFERLIB_BUILD_MAIN
+static Env* my_vec_init(int* num_envs_out, int* buffer_env_starts,
+        int* buffer_env_counts, Dict* vec_kwargs, Dict* env_kwargs){
+    int total_agents = (int)dict_get(vec_kwargs,"total_agents");
+    int num_buffers = (int)dict_get(vec_kwargs,"num_buffers");
+    int agents_per_buffer = total_agents / num_buffers;
+    Env* envs = (Env*)calloc((size_t)total_agents,sizeof(Env));
+    RetroVecArena* arena = (RetroVecArena*)calloc(1,sizeof(RetroVecArena));
+    arena->emus = new Nes_Emu[total_agents];
+    arena->count = total_agents;
+
+    int buf=0, buf_agents=0;
+    buffer_env_starts[0]=0;
+    buffer_env_counts[0]=0;
+    for(int i=0;i<total_agents;i++){
+        Env* env=&envs[i];
+        env->rng=(unsigned int)i;
+        env->emu=&arena->emus[i];
+        env->emu_owned=false;
+        env->arena=arena;
+        puf_init(env,env_kwargs);
+        buf_agents += env->num_agents;
+        buffer_env_counts[buf]++;
+        if(buf_agents>=agents_per_buffer && buf<num_buffers-1){
+            buf++;
+            buffer_env_starts[buf]=i+1;
+            buffer_env_counts[buf]=0;
+            buf_agents=0;
+        }
+    }
+    *num_envs_out=total_agents;
+    return envs;
+}
+
+static void my_vec_close(Env* envs){
+    if(!envs) return;
+    RetroVecArena* arena=envs[0].arena;
+    if(arena){
+        delete[] arena->emus;
+        free(arena);
+    }
+    free(envs);
+}
+
+#define MY_VEC_INIT
+#define MY_VEC_CLOSE
+#endif
 
 #else
 // C fallback for standalone compiled as C (should not happen via pufferl)
