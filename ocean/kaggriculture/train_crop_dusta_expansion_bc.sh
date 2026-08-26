@@ -13,12 +13,13 @@ selection=${KAG_CROP_DUSTA_SELECTION:-$factory/crop_dusta_expand200.tsv}
 dataset=${KAG_CROP_DUSTA_DATASET:-$factory/datasets/crop_dusta_expand200_1280.bc}
 model=${KAG_CROP_DUSTA_MODEL:-saved/kaggriculture_crop_dusta_expand200_1280_1024x2_e50.bin}
 epochs=${KAG_CROP_DUSTA_EPOCHS:-50}
+python_bin=${KAG_CROP_DUSTA_PYTHON:-python3}
 
 mkdir -p "$factory/datasets" "$(dirname "$repo_root/$model")"
 cd "$repo_root"
 
 if [[ ! -s $selection ]]; then
-    python ocean/kaggriculture/select_agent_expansion_replays.py \
+    "$python_bin" ocean/kaggriculture/select_agent_expansion_replays.py \
         "$replays" \
         --agent "Crop Dusta" \
         --exact-version 1.32.7 \
@@ -29,7 +30,7 @@ if [[ ! -s $selection ]]; then
 fi
 
 if [[ ! -s $dataset ]]; then
-    python ocean/kaggriculture/import_elite_replays.py \
+    "$python_bin" ocean/kaggriculture/import_elite_replays.py \
         "$replays" \
         --output "$dataset" \
         --manifest "$dataset.players.tsv" \
