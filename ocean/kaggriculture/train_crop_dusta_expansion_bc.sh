@@ -28,16 +28,18 @@ if [[ ! -s $selection ]]; then
         --output "$selection"
 fi
 
-python ocean/kaggriculture/import_elite_replays.py \
-    "$replays" \
-    --output "$dataset" \
-    --manifest "$dataset.players.tsv" \
-    --audit-json "$dataset.audit.json" \
-    --agent "Crop Dusta" \
-    --trajectory-file "$selection" \
-    --exact-version 1.32.7 \
-    --players both \
-    --min-final-money 60000
+if [[ ! -s $dataset ]]; then
+    python ocean/kaggriculture/import_elite_replays.py \
+        "$replays" \
+        --output "$dataset" \
+        --manifest "$dataset.players.tsv" \
+        --audit-json "$dataset.audit.json" \
+        --agent "Crop Dusta" \
+        --trajectory-file "$selection" \
+        --exact-version 1.32.7 \
+        --players both \
+        --min-final-money 60000
+fi
 
 KAG_ELITE_BC_DATA="$dataset" \
 KAG_ELITE_BC_OUTPUT="$model" \
