@@ -698,6 +698,8 @@ static void assert_tagged_curriculum_states(void) {
 static void curriculum_step(Env* env, KGAction actions[KG_NUM_PLAYERS]) {
     kag_curriculum_note_actions(env, actions);
     kg_step(&env->game_storage, actions);
+    int success = 0;
+    (void)kag_curriculum_after_step(env, &success);
 }
 
 static void assert_tagged_curriculum_solutions(void) {
@@ -769,6 +771,90 @@ static void assert_tagged_curriculum_solutions(void) {
         actions[player].farmer = want_animal
             ? (KGUnitAction){KG_OP_PLACE,
                 KG_ITEM_GOOSE + target - KG_ITEM_EGG, 1}
+            : (KGUnitAction){KG_OP_PLANT, target, 1};
+        curriculum_step(&env, actions);
+        memset(actions, 0, sizeof(actions));
+        actions[player].farmer = (KGUnitAction){
+            want_animal ? KG_OP_FEED : KG_OP_WATER, -1, 1};
+        curriculum_step(&env, actions);
+        assert(kag_curriculum_success(&env));
+    }
+
+    /* Acquisition removes the free seed/animal. Both branches must buy the
+     * correct input, put it into production, and maintain it. CASH_LOOP then
+     * continues through harvest, shed drop, and sale. */
+    for (int stage = KAG_CURRICULUM_ACQUIRE;
+            stage <= KAG_CURRICULUM_CASH_LOOP; stage++) {
+        for (int want_animal = 0; want_animal <= 1; want_animal++) {
+            do {
+                kg_reset(&env.game_storage);
+                kag_curriculum_prepare(&env, stage);
+            } while (env.curriculum_branch != want_animal);
+            target = env.curriculum_target_item;
+            int input = want_animal
+                ? KG_ITEM_GOOSE + target - KG_ITEM_EGG : target;
+            memset(actions, 0, sizeof(actions));
+            actions[player].market[0] = (KGMarketOrder){
+                want_animal ? KG_MARKET_BUY_ANIMAL : KG_MARKET_BUY_SEED,
+                input, 1};
+            actions[player].market_count = 1;
+            curriculum_step(&env, actions);
+            if (want_animal) {
+                memset(actions, 0, sizeof(actions));
+                actions[player].farmer = (KGUnitAction){KG_OP_PICKUP, input, 1};
+                curriculum_step(&env, actions);
+            }
+            memset(actions, 0, sizeof(actions));
+            actions[player].farmer = want_animal
+                ? (KGUnitAction){KG_OP_PLACE, input, 1}
+                : (KGUnitAction){KG_OP_PLANT, target, 1};
+            curriculum_step(&env, actions);
+            memset(actions, 0, sizeof(actions));
+            actions[player].farmer = (KGUnitAction){
+                want_animal ? KG_OP_FEED : KG_OP_WATER, -1, 1};
+            curriculum_step(&env, actions);
+            if (stage == KAG_CURRICULUM_ACQUIRE) {
+                assert(kag_curriculum_success(&env));
+                continue;
+            }
+            memset(actions, 0, sizeof(actions));
+            actions[player].farmer = (KGUnitAction){KG_OP_HARVEST, -1, 1};
+            curriculum_step(&env, actions);
+            memset(actions, 0, sizeof(actions));
+            actions[player].farmer = (KGUnitAction){KG_OP_DROP, -1, 1};
+            curriculum_step(&env, actions);
+            memset(actions, 0, sizeof(actions));
+            actions[player].market[0] = (KGMarketOrder){
+                KG_MARKET_SELL, target, 1};
+            actions[player].market_count = 1;
+            curriculum_step(&env, actions);
+            assert(kag_curriculum_success(&env));
+        }
+    }
+
+    /* Expansion begins on genuinely locked land. Buy land and a worker, then
+     * start and maintain the branch on the newly unlocked tile. */
+    for (int want_animal = 0; want_animal <= 1; want_animal++) {
+        do {
+            kg_reset(&env.game_storage);
+            kag_curriculum_prepare(&env, KAG_CURRICULUM_EXPAND);
+        } while (env.curriculum_branch != want_animal);
+        target = env.curriculum_target_item;
+        int input = want_animal
+            ? KG_ITEM_GOOSE + target - KG_ITEM_EGG : target;
+        memset(actions, 0, sizeof(actions));
+        actions[player].market[0] = (KGMarketOrder){KG_MARKET_HIRE, -1, 1};
+        actions[player].market[1] = (KGMarketOrder){KG_MARKET_BUY_LAND, -1, 1};
+        actions[player].market_count = 2;
+        curriculum_step(&env, actions);
+        if (want_animal) {
+            memset(actions, 0, sizeof(actions));
+            actions[player].farmer = (KGUnitAction){KG_OP_BUILD_COOP, -1, 1};
+            curriculum_step(&env, actions);
+        }
+        memset(actions, 0, sizeof(actions));
+        actions[player].farmer = want_animal
+            ? (KGUnitAction){KG_OP_PLACE, input, 1}
             : (KGUnitAction){KG_OP_PLANT, target, 1};
         curriculum_step(&env, actions);
         memset(actions, 0, sizeof(actions));
