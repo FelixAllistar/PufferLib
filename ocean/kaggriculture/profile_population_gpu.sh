@@ -117,6 +117,7 @@ profile_one() {
             "env.bot_rules_fraction=$rules_fraction" env.bot_script_fraction=0 \
             env.bot_adaptive_fraction=0 selfplay.enabled=0 \
             env.reset_state_prob=0 env.reset_state_bank=None \
+            env.curriculum_enabled=0 \
             train.total_timesteps=0 2>&1); then
         printf 'GPU profile failed for %s\n' "$label" >&2; return 1
     fi
