@@ -448,6 +448,7 @@ kag_run_fixed_gpu() {
             "env.bot_adaptive_fraction=0" \
             env.bot_first=0 \
             env.reset_state_prob=0 env.reset_state_bank=None \
+            env.curriculum_enabled=0 \
             selfplay.enabled=0 train.total_timesteps=0 2>&1); then
         printf '%s\n' "$kag_output_text" > "${kag_result}.error"
         return 1
@@ -467,6 +468,7 @@ kag_run_fixed_gpu() {
             "env.bot_adaptive_fraction=0" \
             env.bot_first=1 \
             env.reset_state_prob=0 env.reset_state_bank=None \
+            env.curriculum_enabled=0 \
             selfplay.enabled=0 train.total_timesteps=0 2>&1); then
         printf '%s\n%s\n' "$kag_output_text" "$kag_reverse_text" \
             > "${kag_result}.error"
@@ -511,6 +513,7 @@ kag_run_gpu_pair() {
             "base.eval_deterministic=$kag_eval_deterministic" \
             "${kag_arch_args[@]}" \
             env.reset_state_prob=0 env.reset_state_bank=None \
+            env.curriculum_enabled=0 \
             selfplay.enabled=0 train.total_timesteps=0 2>&1); then
         printf '%s\n' "$kag_forward" > "${kag_result}.error"
         return 1
@@ -524,6 +527,7 @@ kag_run_gpu_pair() {
             "base.eval_deterministic=$kag_eval_deterministic" \
             "${kag_arch_args[@]}" \
             env.reset_state_prob=0 env.reset_state_bank=None \
+            env.curriculum_enabled=0 \
             selfplay.enabled=0 train.total_timesteps=0 2>&1); then
         printf '%s\n' "$kag_reverse" > "${kag_result}.error"
         return 1
@@ -573,6 +577,7 @@ if ((kag_count <= 9)); then
             "base.eval_deterministic=$kag_eval_deterministic" \
             "${kag_arch_args[@]}" \
             env.reset_state_prob=0 env.reset_state_bank=None \
+            env.curriculum_enabled=0 \
             "base.seed=7000"; then
         printf '%s\n' 'Native persistent league evaluation failed' >&2
         exit 1
