@@ -69,13 +69,23 @@
 #define KG_POLICY_ACTION_MASK_SIZE \
     (KG_POLICY_MARKET_MASK_OFFSET \
         + KG_POLICY_MARKET_SLOTS * KG_POLICY_MARKET_SLOT_MASK_SIZE)
-#define KAG_CURRICULUM_STAGES 5
+#define KAG_CURRICULUM_STAGES 8
 enum {
     KAG_CURRICULUM_SELL = 0,
     KAG_CURRICULUM_HARVEST = 1,
     KAG_CURRICULUM_MAINTAIN = 2,
     KAG_CURRICULUM_PRODUCE = 3,
-    KAG_CURRICULUM_ROOT = 4,
+    KAG_CURRICULUM_ACQUIRE = 4,
+    KAG_CURRICULUM_CASH_LOOP = 5,
+    KAG_CURRICULUM_EXPAND = 6,
+    KAG_CURRICULUM_ROOT = 7,
+};
+enum {
+    KAG_CURRICULUM_DID_MAINTAIN = 1,
+    KAG_CURRICULUM_DID_START = 2,
+    KAG_CURRICULUM_DID_ACQUIRE = 4,
+    KAG_CURRICULUM_DID_HIRE = 8,
+    KAG_CURRICULUM_DID_LAND = 16,
 };
 #define ACT_SIZES { \
     44, 44, 44, 44, 44, 44, 44, 44, 44, \
@@ -2094,7 +2104,7 @@ KG_HD static inline void kag_curriculum_prepare(Env* env, int stage) {
             player->tiles[tile_index].yield_units = 0;
         }
         env->curriculum_deadline_step = game->step + 16;
-    } else {
+    } else if (stage == KAG_CURRICULUM_PRODUCE) {
         kag_curriculum_set_clock(game, 4 * game->config.turns_per_day);
         if (animal_branch) {
             /* Cow and sheep share a pasture, making price-conditioned choice
@@ -2121,6 +2131,53 @@ KG_HD static inline void kag_curriculum_prepare(Env* env, int stage) {
             kg_refresh_prices(game);
         }
         env->curriculum_deadline_step = game->step + 8;
+    } else if (stage == KAG_CURRICULUM_ACQUIRE
+            || stage == KAG_CURRICULUM_CASH_LOOP) {
+        /* Remove the free input used by PRODUCE. The learner must issue the
+         * correct market order before it can start the same real mechanic.
+         * CASH_LOOP then keeps the episode alive through harvest and sale. */
+        kag_curriculum_set_clock(game, 4 * game->config.turns_per_day);
+        if (stage == KAG_CURRICULUM_CASH_LOOP) {
+            animal_branch = (int)(draw & 1u);
+            target = animal_branch ? KG_ITEM_EGG : KG_ITEM_WHEAT;
+            env->curriculum_branch = animal_branch;
+            env->curriculum_target_item = target;
+            game->market.inventory[target] = KG_MARKET_DEFS[target].i0 - 240;
+            kg_refresh_prices(game);
+        }
+        if (animal_branch) {
+            int animal = target - KG_ITEM_EGG;
+            kg_set_player_tile(player, tile_index,
+                KG_ANIMAL_DEFS[animal].structure);
+            kg_inventory_add(&player->units[0], KG_ITEM_WHEAT, 2);
+        }
+        env->curriculum_deadline_step = game->step
+            + (stage == KAG_CURRICULUM_CASH_LOOP ? 24 : 12);
+    } else if (stage == KAG_CURRICULUM_EXPAND) {
+        /* Stand on the NE shed-access tile. It is initially locked and becomes
+         * usable after the first real BUY_LAND order. A simultaneous HIRE plus
+         * a subsequent start+maintenance sequence completes the bridge. */
+        int half = game->config.board_size / 2;
+        int x = half;
+        int y = half - 1;
+        tile_index = kg_tile_index(x, y);
+        player->money = 10000;
+        player->units[0].x = (uint8_t)x;
+        player->units[0].y = (uint8_t)y;
+        kg_sync_public_positions(player);
+        target = animal_branch ? KG_ITEM_EGG : KG_ITEM_WHEAT;
+        env->curriculum_target_item = target;
+        game->market.inventory[target] = KG_MARKET_DEFS[target].i0 - 240;
+        kg_refresh_prices(game);
+        if (animal_branch) {
+            int animal = target - KG_ITEM_EGG;
+            kg_inventory_add(&player->units[0], KG_ITEM_GOOSE + animal, 1);
+            kg_inventory_add(&player->units[0], KG_ITEM_WHEAT, 1);
+        } else {
+            player->seeds[target] = 1;
+        }
+        kag_curriculum_set_clock(game, 4 * game->config.turns_per_day);
+        env->curriculum_deadline_step = game->step + 16;
     }
     env->curriculum_start_step = game->step;
 }
@@ -2159,15 +2216,35 @@ KG_HD static inline void kag_curriculum_reset(Env* env,
 KG_HD static inline void kag_curriculum_note_actions(Env* env,
         const KGAction actions[KG_NUM_PLAYERS]) {
     if (env->curriculum_stage < KAG_CURRICULUM_MAINTAIN
-            || env->curriculum_stage > KAG_CURRICULUM_PRODUCE) return;
+            || env->curriculum_stage >= KAG_CURRICULUM_ROOT) return;
     int player = kag_curriculum_player(env);
     const KGUnitAction* action = &actions[player].farmer;
     if (action->op == KG_OP_WATER || action->op == KG_OP_FEED
             || action->op == KG_OP_CARE) {
-        env->curriculum_action_flags |= 1;
+        env->curriculum_action_flags |= KAG_CURRICULUM_DID_MAINTAIN;
     }
     if (action->op == KG_OP_PLANT || action->op == KG_OP_PLACE) {
-        env->curriculum_action_flags |= 2;
+        env->curriculum_action_flags |= KAG_CURRICULUM_DID_START;
+    }
+    int expected_input = env->curriculum_branch
+        ? KG_ITEM_GOOSE + env->curriculum_target_item - KG_ITEM_EGG
+        : env->curriculum_target_item;
+    for (int order = 0; order < actions[player].market_count; order++) {
+        const KGMarketOrder* market = &actions[player].market[order];
+        if ((!env->curriculum_branch
+                    && market->op == KG_MARKET_BUY_SEED
+                    && market->item == expected_input)
+                || (env->curriculum_branch
+                    && market->op == KG_MARKET_BUY_ANIMAL
+                    && market->item == expected_input)) {
+            env->curriculum_action_flags |= KAG_CURRICULUM_DID_ACQUIRE;
+        }
+        if (market->op == KG_MARKET_HIRE) {
+            env->curriculum_action_flags |= KAG_CURRICULUM_DID_HIRE;
+        }
+        if (market->op == KG_MARKET_BUY_LAND) {
+            env->curriculum_action_flags |= KAG_CURRICULUM_DID_LAND;
+        }
     }
 }
 
@@ -2185,7 +2262,7 @@ KG_HD static inline int kag_curriculum_success(const Env* env) {
             && game->sold_product_units[player][target] > 0;
     }
     if (stage == KAG_CURRICULUM_MAINTAIN) {
-        return (env->curriculum_action_flags & 1)
+        return (env->curriculum_action_flags & KAG_CURRICULUM_DID_MAINTAIN)
             && game->production_product_units[player][target] > 0
             && game->sold_product_units[player][target] > 0;
     }
@@ -2196,10 +2273,56 @@ KG_HD static inline int kag_curriculum_success(const Env* env) {
         ? kg_is_animal_tile(tile)
             && KG_ANIMAL_DEFS[tile->animal].product == target
         : tile->kind == KG_TILE_PLANT && tile->crop == target;
-    return (env->curriculum_action_flags & 3) == 3 && chose_target;
+    int start_and_maintain = KAG_CURRICULUM_DID_START
+        | KAG_CURRICULUM_DID_MAINTAIN;
+    if (stage == KAG_CURRICULUM_PRODUCE) {
+        return (env->curriculum_action_flags & start_and_maintain)
+            == start_and_maintain && chose_target;
+    }
+    if (stage == KAG_CURRICULUM_ACQUIRE) {
+        int required = start_and_maintain | KAG_CURRICULUM_DID_ACQUIRE;
+        return (env->curriculum_action_flags & required) == required
+            && chose_target;
+    }
+    if (stage == KAG_CURRICULUM_CASH_LOOP) {
+        int required = start_and_maintain | KAG_CURRICULUM_DID_ACQUIRE;
+        return (env->curriculum_action_flags & required) == required
+            && game->production_product_units[player][target] > 0
+            && game->sold_product_units[player][target] > 0;
+    }
+    int required = start_and_maintain | KAG_CURRICULUM_DID_HIRE
+        | KAG_CURRICULUM_DID_LAND;
+    return (env->curriculum_action_flags & required) == required
+        && farm->unit_count > 1
+        && kag_popcount((unsigned int)farm->unlocked_mask) > 1
+        && chose_target;
 }
 
 KG_HD static inline float kag_curriculum_after_step(Env* env, int* success) {
+    /* CASH_LOOP uses the real buy/start/maintain actions, then compresses the
+     * biological wait after maintenance so PPO can practice the complete
+     * harvest/drop/sell chain in a short trajectory. */
+    if (env->curriculum_stage == KAG_CURRICULUM_CASH_LOOP) {
+        int ready = KAG_CURRICULUM_DID_ACQUIRE | KAG_CURRICULUM_DID_START
+            | KAG_CURRICULUM_DID_MAINTAIN;
+        if ((env->curriculum_action_flags & ready) == ready) {
+            int player = kag_curriculum_player(env);
+            KGPlayer* farm = &env->game_storage.players[player];
+            int tile_index = kg_tile_index(farm->units[0].x,
+                farm->units[0].y);
+            KGTile* tile = &farm->tiles[tile_index];
+            if (env->curriculum_branch && kg_is_animal_tile(tile)) {
+                tile->placed_day = env->game_storage.day
+                    - KG_ANIMAL_DEFS[tile->animal].first_yield_day;
+                tile->yield_units = 2;
+            } else if (!env->curriculum_branch
+                    && tile->kind == KG_TILE_PLANT) {
+                tile->planted_day = env->game_storage.day
+                    - KG_CROP_DEFS[tile->crop].first_yield_day;
+                tile->yield_units = 2;
+            }
+        }
+    }
     *success = kag_curriculum_success(env);
     if (env->curriculum_stage < 0
             || env->curriculum_stage >= KAG_CURRICULUM_ROOT) return 0.0f;
@@ -3779,6 +3902,24 @@ void puf_log(Log* log, Dict* out) {
         log->curriculum_games[KAG_CURRICULUM_PRODUCE] > 0.0f
             ? log->curriculum_successes[KAG_CURRICULUM_PRODUCE]
                 / log->curriculum_games[KAG_CURRICULUM_PRODUCE] : 0.0f);
+    dict_set(out, "curriculum_acquire_fraction",
+        log->curriculum_games[KAG_CURRICULUM_ACQUIRE]);
+    dict_set(out, "curriculum_acquire_success",
+        log->curriculum_games[KAG_CURRICULUM_ACQUIRE] > 0.0f
+            ? log->curriculum_successes[KAG_CURRICULUM_ACQUIRE]
+                / log->curriculum_games[KAG_CURRICULUM_ACQUIRE] : 0.0f);
+    dict_set(out, "curriculum_cash_loop_fraction",
+        log->curriculum_games[KAG_CURRICULUM_CASH_LOOP]);
+    dict_set(out, "curriculum_cash_loop_success",
+        log->curriculum_games[KAG_CURRICULUM_CASH_LOOP] > 0.0f
+            ? log->curriculum_successes[KAG_CURRICULUM_CASH_LOOP]
+                / log->curriculum_games[KAG_CURRICULUM_CASH_LOOP] : 0.0f);
+    dict_set(out, "curriculum_expand_fraction",
+        log->curriculum_games[KAG_CURRICULUM_EXPAND]);
+    dict_set(out, "curriculum_expand_success",
+        log->curriculum_games[KAG_CURRICULUM_EXPAND] > 0.0f
+            ? log->curriculum_successes[KAG_CURRICULUM_EXPAND]
+                / log->curriculum_games[KAG_CURRICULUM_EXPAND] : 0.0f);
     dict_set(out, "curriculum_root_fraction",
         log->curriculum_games[KAG_CURRICULUM_ROOT]);
     dict_set(out, "curriculum_crop_success",

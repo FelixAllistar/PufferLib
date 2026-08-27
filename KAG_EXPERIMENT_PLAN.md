@@ -84,12 +84,17 @@ and constructs short, valid lessons inside the ordinary rule core:
 2. water/feed, harvest, and sell;
 3. initiate crop/animal production while choosing the high-price option over a
    mechanically comparable low-price distractor;
-4. ordinary root games.
+4. acquire the seed/animal from the market before starting production;
+5. complete the buy → produce → maintain → harvest → drop → sell loop;
+6. buy land and hire a worker before starting production on the new plot;
+7. ordinary root games.
 
 Each GPU environment graduates independently after a configurable window and
 success threshold. Half of lesson resets rehearse an earlier mastered stage by
 default. Ordinary root probability rises quadratically with the frontier, so
 transfer is tested throughout rather than at one abrupt handoff. Curriculum
 bonuses exist only in the short lessons; root games use the configured normal
-reward. Launch the initial cold-start 512x2 proof with
+reward. The bridge stages intentionally remove one free prerequisite at a time;
+the final two stages require the complete causal chain rather than merely
+recognizing a pre-seeded state. Launch with
 `ocean/kaggriculture/run_tagged_curriculum.sh`.
