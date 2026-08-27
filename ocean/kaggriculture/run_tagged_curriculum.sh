@@ -34,7 +34,6 @@ fi
     env.reward_potential_scale=0 \
     env.reward_cash_scale=0 \
     env.reward_money_scale=1 \
-    env.reward_win=0 \
     env.reward_progress_scale=0 \
     env.reward_progress_terminal_money_scale=0 \
     env.reward_progress_win_scale=0 \
@@ -45,8 +44,6 @@ fi
     env.reward_progress_product_scale=0 \
     env.reward_progress_land_scale=0 \
     env.reward_progress_maintenance_scale=0 \
-    env.reward_inactivity=0 \
-    env.reward_neglect_death=0 \
     env.reward_expansion_scale=0 \
     policy.hidden_size=512 \
     policy.num_layers=2 \
