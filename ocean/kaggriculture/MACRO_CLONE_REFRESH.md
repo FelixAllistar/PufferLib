@@ -113,6 +113,23 @@ The factory TSV/JSON manifests include source paths, trajectory counts, and
 SHA-256/size metadata. Set `KAG_MACRO_MAX_EPISODES=0` for a full import; a
 full pass is preferred before attempting a 512-wide clone.
 
+For a non-interrupting Vast run, the checked-in queue wrappers detect an
+active `./puffer train kaggriculture` by command shape (so a restarted user
+PID remains protected), wait for the GPU, and train/evaluate both widths:
+
+```bash
+tmux new-session -d -s kag_macro_train_20260903 \
+  '/workspace/PufferLib/ocean/kaggriculture/run_macro_clone_train_queue.sh'
+tmux new-session -d -s kag_macro_eval_128_20260903 \
+  '/workspace/PufferLib/ocean/kaggriculture/run_macro_clone_eval_queue.sh 128'
+tmux new-session -d -s kag_macro_eval_256_20260903 \
+  '/workspace/PufferLib/ocean/kaggriculture/run_macro_clone_eval_queue.sh 256'
+```
+
+The 256 queue waits for the 128 marker so fixed-opponent GPU matchups do not
+overlap. Both evaluation widths use all rows of the already episode/day-held
+out, and write deterministic plus stochastic fixed `pass,rules,top` results.
+
 For a matching historical window, `run_macro_import_batch.sh` accepts
 space-separated exact patterns in `KAG_MACRO_RAW_GLOBS`; this avoids silently
 including older archives merely because a cutoff date is earlier:
