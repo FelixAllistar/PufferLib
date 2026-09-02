@@ -93,7 +93,7 @@ log="$data_root/macro-train-2026-09-03.log"
     KAG_MACRO_TRAIN_UNTIL=2026-08-31 \
     KAG_MACRO_ARTIFACT_SUFFIX=_episode_split \
     KAG_MACRO_EPOCHS=25 KAG_MACRO_MAX_EPISODES=0 \
-        "$repo_root/ocean/kaggriculture/build_macro_clone_factory.sh" \
+        bash "$repo_root/ocean/kaggriculture/build_macro_clone_factory.sh" \
         "Crop Dusta" "Ryo Hasegawa" peikopon tetsuya
     echo "OLD TRAIN START $(date -u +%FT%TZ)"
     KAG_MACRO_CLONE_ROOT="$old_split" \
@@ -101,7 +101,7 @@ log="$data_root/macro-train-2026-09-03.log"
     KAG_MACRO_TRAIN_UNTIL=2026-08-21 \
     KAG_MACRO_ARTIFACT_SUFFIX=_episode_split \
     KAG_MACRO_EPOCHS=25 KAG_MACRO_MAX_EPISODES=0 \
-        "$repo_root/ocean/kaggriculture/build_macro_clone_factory.sh" \
+        bash "$repo_root/ocean/kaggriculture/build_macro_clone_factory.sh" \
         "Crop Dusta" "Ryo Hasegawa" peikopon tetsuya
     echo "TRAIN COMPLETE $(date -u +%FT%TZ)"
 } >"$log" 2>&1
