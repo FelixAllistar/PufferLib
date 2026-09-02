@@ -27,6 +27,7 @@ validation_games=${KAG_MACRO_VALIDATION_GAMES:-20}
 min_512_trajectories=${KAG_MACRO_MIN_512_TRAJECTORIES:-200}
 max_episodes=${KAG_MACRO_MAX_EPISODES:-0}
 newest_first=${KAG_MACRO_NEWEST_FIRST:-1}
+artifact_suffix=${KAG_MACRO_ARTIFACT_SUFFIX:-}
 python_bin=${KAG_ELITE_PYTHON:-}
 
 if [[ -z "$python_bin" ]]; then
@@ -92,7 +93,7 @@ slug = re.sub(r"[^A-Za-z0-9._-]+", "_", value).strip("._-")
 print(slug or "agent")
 PY
 )
-    dataset="$factory_root/datasets/${slug}_cutoff-${cutoff}_v${exact_version}_macro2.bc"
+    dataset="$factory_root/datasets/${slug}_cutoff-${cutoff}_v${exact_version}_macro2${artifact_suffix}.bc"
     audit="$dataset.audit.json"
     players="$dataset.players.tsv"
     if [[ ! -s "$dataset" || ! -s "$audit" || ! -s "$players" ]]; then
@@ -122,7 +123,7 @@ PY
         exit 1
     fi
     for hidden in 128 256; do
-        model="$factory_root/models/${slug}_cutoff-${cutoff}_v${exact_version}_macro2_h${hidden}x2_s${seed}_e${epochs}.bin"
+        model="$factory_root/models/${slug}_cutoff-${cutoff}_v${exact_version}_macro2${artifact_suffix}_h${hidden}x2_s${seed}_e${epochs}.bin"
         log="$factory_root/logs/${slug}_h${hidden}x2.log"
         status=ready
         if [[ "$skip_train" == 1 ]]; then
@@ -155,7 +156,7 @@ PY
     done
     if ((trajectories >= min_512_trajectories)); then
         hidden=512
-        model="$factory_root/models/${slug}_cutoff-${cutoff}_v${exact_version}_macro2_h512x2_s${seed}_e${epochs}.bin"
+        model="$factory_root/models/${slug}_cutoff-${cutoff}_v${exact_version}_macro2${artifact_suffix}_h512x2_s${seed}_e${epochs}.bin"
         log="$factory_root/logs/${slug}_h512x2.log"
         status=ready
         if [[ "$skip_train" == 1 ]]; then
