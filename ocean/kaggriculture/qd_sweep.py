@@ -122,10 +122,22 @@ def sample_parameters(rng: random.Random, family: str, *, global_sample: bool,
         mutation_strength: float = 0.16) -> dict[str, float | int]:
     if global_sample:
         return {name: spec.sample(rng) for name, spec in SPECS.items()}
-    center = _base_center()
-    center.update(FAMILY_CENTERS.get(family, {}))
+    family_center = _base_center()
+    family_center.update(FAMILY_CENTERS.get(family, {}))
+    center = dict(family_center)
     if parent is not None:
-        center.update(parent)
+        center = dict(parent)
+        # Keep useful parent behavior but pull the proposal toward the named
+        # family. Otherwise a crop archive parent silently erases an "animal"
+        # proposal and every family label after bootstrap becomes cosmetic.
+        for name, target in FAMILY_CENTERS.get(family, {}).items():
+            current = float(center.get(name, target))
+            if SPECS[name].mode == "log":
+                center[name] = math.exp(
+                    0.25 * math.log(max(current, SPECS[name].low))
+                    + 0.75 * math.log(max(float(target), SPECS[name].low)))
+            else:
+                center[name] = 0.25 * current + 0.75 * float(target)
     return {
         name: spec.mutate(center.get(name, spec.sample(rng)), rng, mutation_strength)
         for name, spec in SPECS.items()
@@ -152,10 +164,14 @@ def behavior_descriptor(metrics: dict[str, float]) -> dict[str, float | str]:
         "land": land,
         "animal_fraction": animal_fraction,
         "reinvestment": reinvestment,
-        "land_bin": _bin(land, (0.5, 1.5), ("compact", "one_expand", "broad")),
-        "mix_bin": _bin(animal_fraction, (0.15, 0.55), ("crop", "mixed", "animal")),
+        # These cuts are calibrated to the 0..3 extra-land range and observed
+        # production ratios. "dual" means materially using both branches; it
+        # does not pretend a 5% animal share is animal-led.
+        "land_bin": _bin(land, (1.5, 2.75), ("compact", "partial", "full")),
+        "mix_bin": _bin(animal_fraction, (0.005, 0.15),
+                        ("crop_only", "dual", "animal_led")),
         "reinvestment_bin": _bin(
-            reinvestment, (0.25, 0.65), ("cash_heavy", "balanced", "growth_heavy")),
+            reinvestment, (0.50, 0.70), ("cash_heavy", "balanced", "growth_heavy")),
     }
 
 
@@ -399,6 +415,30 @@ def _completed_trials(output: Path) -> set[int]:
     return completed
 
 
+def reindex_archive_from_journal(archive: Archive, journal: Path) -> int:
+    """Rebuild derived niches while retaining every irreversible evaluation."""
+    if not journal.exists():
+        return 0
+    archive.entries.clear()
+    count = 0
+    for line in journal.read_text().splitlines():
+        try:
+            result = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        for record in result.get("records", []):
+            metrics = record.get("metrics", {})
+            descriptor = behavior_descriptor(metrics)
+            record["descriptor"] = descriptor
+            record["niche"] = niche_key(descriptor)
+            record["quality"] = float(metrics.get("env/money", record.get("money", float("-inf"))))
+            record["money"] = record["quality"]
+            archive.consider(record)
+            count += 1
+    archive.save()
+    return count
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path)
@@ -441,14 +481,16 @@ def main(argv: Iterable[str] | None = None) -> int:
         if not args.league.is_file():
             raise FileNotFoundError(f"league manifest not found: {args.league}")
     archive = Archive(args.output / "archive.json")
+    journal = args.output / "trials.jsonl"
+    reindexed = reindex_archive_from_journal(archive, journal)
     completed = _completed_trials(args.output)
     pending = [trial for trial in range(args.trials) if trial not in completed]
     gpus = [gpu.strip() for gpu in args.gpus.split(",") if gpu.strip()]
     if not gpus:
         raise ValueError("--gpus must name at least one GPU")
     print(f"QD archive={args.output} existing_cells={len(archive.entries)} "
-          f"pending_trials={len(pending)} gpus={','.join(gpus)}")
-    journal = args.output / "trials.jsonl"
+          f"reindexed_records={reindexed} pending_trials={len(pending)} "
+          f"gpus={','.join(gpus)}")
     for batch_start in range(0, len(pending), len(gpus)):
         batch_trials = pending[batch_start:batch_start + len(gpus)]
         batch: list[tuple[int, str, dict[str, float | int]]] = []
@@ -458,8 +500,10 @@ def main(argv: Iterable[str] | None = None) -> int:
         for trial in batch_trials:
             rng = random.Random(args.seed + 1_000_003 * trial)
             family = DEFAULT_FAMILIES[trial % len(DEFAULT_FAMILIES)]
-            global_sample = (trial < len(DEFAULT_FAMILIES)
-                             or rng.random() < args.global_fraction)
+            # Bootstrap once from every deliberate family. Subsequent trials
+            # mix global coverage with family-directed archive mutations.
+            global_sample = (trial >= len(DEFAULT_FAMILIES)
+                             and rng.random() < args.global_fraction)
             parents = archive.parents()
             parent = rng.choice(parents) if parents and not global_sample else None
             parameters = sample_parameters(
@@ -474,13 +518,18 @@ def main(argv: Iterable[str] | None = None) -> int:
                 result = future.result()
                 with journal.open("a") as handle:
                     handle.write(json.dumps(result, sort_keys=True) + "\n")
-                admitted = 0
+                new_cells = 0
+                improved_cells = 0
                 for record in result["records"]:
-                    admitted += int(archive.consider(record))
+                    existed = record["niche"] in archive.entries
+                    accepted = archive.consider(record)
+                    new_cells += int(accepted and not existed)
+                    improved_cells += int(accepted and existed)
                 archive.save()
                 best = max((record["money"] for record in result["records"]), default=float("nan"))
                 print(f"trial={result['trial']} family={result['family']} "
-                      f"checkpoints={len(result['records'])} admitted={admitted} best_money={best:.1f}")
+                      f"checkpoints={len(result['records'])} new_cells={new_cells} "
+                      f"improved_cells={improved_cells} best_money={best:.1f}")
     archive.save()
     print(f"QD complete: cells={len(archive.entries)}/27 archive={archive.path}")
     return 0
