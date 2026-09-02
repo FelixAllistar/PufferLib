@@ -632,6 +632,43 @@ def _selected_players(
     return [player for player in players if rewards[player] >= min_final_money]
 
 
+def _identity_players(
+    episode: dict[str, Any], *, display_names: set[str],
+    submission_names: set[str],
+) -> list[int]:
+    """Select seats by exact display and/or submission identity.
+
+    ``TeamNames`` and ``Agents[*].Name`` are independent replay metadata.  A
+    caller that supplies both filters must match both fields on the same seat;
+    this prevents a coincidental name in one field from selecting another
+    player's stream.  Older replays without ``Agents`` use the exact team name
+    as the submission fallback, matching the identity scanner's convention.
+    """
+
+    info = episode.get("info") or {}
+    teams = info.get("TeamNames")
+    if not isinstance(teams, list):
+        teams = []
+    agents = info.get("Agents")
+    if not isinstance(agents, list):
+        agents = []
+    count = max(2, len(teams), len(agents))
+    result = []
+    for player in range(count):
+        display = str(teams[player]) if player < len(teams) else ""
+        submission = ""
+        if player < len(agents) and isinstance(agents[player], dict):
+            submission = str(agents[player].get("Name", ""))
+        if not submission:
+            submission = display
+        if display_names and display not in display_names:
+            continue
+        if submission_names and submission not in submission_names:
+            continue
+        result.append(player)
+    return result
+
+
 def _build_trajectory(
     episode: dict[str, Any], player: int, expected_steps: int,
     macro_mode: str = "primitive",
@@ -752,7 +789,21 @@ def main() -> int:
     )
     parser.add_argument(
         "--agent", action="append", default=[],
-        help="exact agent name to import; repeat to retain multiple agents",
+        help=(
+            "exact TeamNames/display identity to import (legacy alias for "
+            "--display-name); repeat to retain multiple identities"
+        ),
+    )
+    parser.add_argument(
+        "--display-name", action="append", default=[],
+        help="exact TeamNames/display identity; repeat for multiple identities",
+    )
+    parser.add_argument(
+        "--submission-name", action="append", default=[],
+        help=(
+            "exact info.Agents[*].Name submission identity; combine with "
+            "--display-name to require both fields on one seat"
+        ),
     )
     parser.add_argument(
         "--trajectory-file", type=pathlib.Path,
@@ -794,7 +845,11 @@ def main() -> int:
         exact_version = (
             _version_tuple(args.exact_version) if args.exact_version else None
         )
-        requested_agents = set(args.agent)
+        requested_display_names = set(args.agent) | set(args.display_name)
+        requested_submission_names = set(args.submission_name)
+        requested_identity_names = (
+            requested_display_names | requested_submission_names
+        )
         requested_trajectories: dict[str, set[int]] | None = None
         if args.trajectory_file is not None:
             requested_trajectories = collections.defaultdict(set)
@@ -813,7 +868,7 @@ def main() -> int:
             if not requested_trajectories:
                 raise ValueError("--trajectory-file contains no trajectories")
         for source, episode in _iter_replays(
-            inputs, requested_agents,
+            inputs, requested_identity_names,
             set(requested_trajectories) if requested_trajectories else None,
         ):
             audit.counts["episodes_seen"] += 1
@@ -834,19 +889,12 @@ def main() -> int:
                     player for player in players
                     if player in requested_trajectories.get(episode_id, set())
                 ]
-            if requested_agents:
-                info = episode.get("info", {})
-                names = info.get("TeamNames")
-                if not isinstance(names, list) or len(names) != 2:
-                    agents = info.get("Agents", [])
-                    names = [
-                        str(value.get("Name", "")) if isinstance(value, dict) else ""
-                        for value in agents
-                    ]
-                players = [
-                    player for player in players
-                    if player < len(names) and str(names[player]) in requested_agents
-                ]
+            if requested_identity_names:
+                identity_players = set(_identity_players(
+                    episode, display_names=requested_display_names,
+                    submission_names=requested_submission_names,
+                ))
+                players = [player for player in players if player in identity_players]
             if not players:
                 audit.skip_reasons["player_filter"] += 1
                 continue

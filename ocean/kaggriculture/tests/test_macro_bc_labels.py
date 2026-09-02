@@ -15,6 +15,7 @@ KAG_DIR = pathlib.Path(__file__).parents[1]
 sys.path.insert(0, str(KAG_DIR))
 
 import macro_bc_labels as labels
+import import_elite_replays as importer
 import scan_replay_identities as identities
 
 
@@ -160,6 +161,38 @@ class MacroBCLabelTests(unittest.TestCase):
         selected = [row for row in rows if row["agent_name"] == "sub-a"][0]
         self.assertTrue(selected["full_parse"])
         self.assertEqual(selected["episodes"], 1)
+
+    def test_import_identity_filters_match_the_same_exact_seat(self):
+        episode = {
+            "info": {
+                "TeamNames": ["Yuan800", "Yuan800"],
+                "Agents": [{"Name": "sub-a"}, {"Name": "Yuan800"}],
+            }
+        }
+        self.assertEqual(
+            importer._identity_players(
+                episode, display_names={"Yuan800"}, submission_names=set()
+            ),
+            [0, 1],
+        )
+        self.assertEqual(
+            importer._identity_players(
+                episode, display_names=set(), submission_names={"Yuan800"}
+            ),
+            [1],
+        )
+        self.assertEqual(
+            importer._identity_players(
+                episode, display_names={"Yuan800"}, submission_names={"sub-a"}
+            ),
+            [0],
+        )
+        self.assertEqual(
+            importer._identity_players(
+                episode, display_names={"Yuan800"}, submission_names={"missing"}
+            ),
+            [],
+        )
 
 
 if __name__ == "__main__":

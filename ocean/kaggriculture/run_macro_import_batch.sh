@@ -64,7 +64,7 @@ run_agent() {
     local -a args=(
         --output "$dataset" --audit-json "$audit" --manifest "$players"
         --minimum-version "$minimum_version" --exact-version "$exact_version"
-        --players both --macro-mode structured --agent "$agent"
+        --players both --macro-mode structured --display-name "$agent"
     )
     if ((limit > 0)); then
         args+=(--limit "$limit")

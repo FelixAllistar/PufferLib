@@ -53,7 +53,7 @@ Use the importer with an exact simulator version and structured labels:
 ```bash
 python ocean/kaggriculture/import_elite_replays.py \
   --macro-mode structured --exact-version 1.32.7 \
-  --agent Yuan800 --output yuan800_1.32.7_macro2.bc daily.zip
+  --display-name Yuan800 --output yuan800_1.32.7_macro2.bc daily.zip
 ```
 
 `macro_bc_labels.py` translates same-intent primitive evidence. Same-crop
