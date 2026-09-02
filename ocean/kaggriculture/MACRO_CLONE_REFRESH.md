@@ -78,6 +78,20 @@ retaining turn-180 and late maintenance/liquidation slices. Compare models on
 held-out whole episodes or later daily versions; training loss alone does not
 establish a clone improvement.
 
+`split_macro_dataset.py` creates a clean train/holdout pair from an imported
+KAGB file using complete manifest trajectories. It holds out the latest source
+day by default (or an explicit `--holdout-day`), preserves section ordering and
+the mode-2 header, and writes hashes/counts to its report:
+
+```bash
+python ocean/kaggriculture/split_macro_dataset.py full.bc \
+  --train-output train.bc --holdout-output holdout.bc \
+  --report split.json
+```
+
+No episode ID is split across the two outputs, so recurrent-state evaluation
+cannot leak neighboring turns from a held-out replay.
+
 ## Factory
 
 `build_macro_clone_factory.sh` builds exact-agent mode-2 datasets and names
