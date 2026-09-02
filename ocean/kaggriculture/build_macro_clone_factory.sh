@@ -100,7 +100,7 @@ PY
         import_args=(
             --output "$dataset" --audit-json "$audit" --manifest "$players"
             --minimum-version "$minimum_version" --exact-version "$exact_version"
-            --players both --macro-mode structured --agent "$agent"
+            --players both --macro-mode structured --display-name "$agent"
         )
         if ((max_episodes > 0)); then
             import_args+=(--limit "$max_episodes")
