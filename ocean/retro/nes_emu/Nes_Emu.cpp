@@ -133,6 +133,23 @@ const char * Nes_Emu::emulate_skip_frame( int joypad1, int joypad2 )
 	return result;
 }
 
+const char * Nes_Emu::emulate_skip_frame_fast( int joypad1, int joypad2 )
+{
+	if ( sound_buf != &silent_buffer )
+		return emulate_skip_frame( joypad1, joypad2 );
+
+	// The core still runs every CPU cycle and performs all PPU/APU timing work;
+	// this only removes host framebuffer and palette bookkeeping.
+	emu.current_joypad [0] = (joypad1 |= ~0xFF);
+	emu.current_joypad [1] = (joypad2 |= ~0xFF);
+	emu.ppu.host_pixels = NULL;
+	emu.ppu.max_palette_size = 0;
+	emu.emulate_frame();
+	if ( frame_ )
+		frame_->pixels = 0;
+	return 0;
+}
+
 const char * Nes_Emu::emulate_frame( int joypad1, int joypad2 )
 {
 	emu.current_joypad [0] = (joypad1 |= ~0xFF);

@@ -100,6 +100,7 @@ static bool g_initial_state_valid = false;
 static bool g_rom_loaded = false;
 static char g_rom_error[512] = {0};
 static bool g_verbose = true;
+static bool g_full_render = false;
 static __thread uint8_t* t_pixel_buffer = nullptr;
 static inline uint8_t* retro_thread_pixels(){
     if(!t_pixel_buffer){
@@ -162,6 +163,8 @@ static bool retro_load_rom_global(const char* hint) {
     g_rom_data = (uint8_t*)malloc(sz);
     fread(g_rom_data,1,sz,f); fclose(f);
     g_rom_size = sz;
+    const char* full_render = getenv("RETRO_FULL_RENDER");
+    g_full_render = full_render && *full_render && strcmp(full_render,"0") != 0;
     Mem_File_Reader cart_rdr(g_rom_data, (long)g_rom_size);
     const char* cart_err = g_rom_cart.load_ines(cart_rdr);
     if (cart_err) {
@@ -450,23 +453,22 @@ void puf_step(Env* env){
     bool done=false;
     int prev_score=env->score;
     int prev_coins=env->coins;
-    const char* full_render = getenv("RETRO_FULL_RENDER");
     for(int f=0; f<env->frameskip; f++){
         env->tick++;
         // PPO only observes after the action's final frame. QuickNES still
         // advances the complete CPU/PPU/APU state in skip mode, but avoids
         // writing an intermediate 256x240 framebuffer.
         const bool draw = (f + 1 == env->frameskip)
-            || (full_render && *full_render && strcmp(full_render,"0") != 0);
+            || g_full_render;
         const char* err = draw
             ? env->emu->emulate_frame(mask,0)
-            : env->emu->emulate_skip_frame(mask,0);
+            : env->emu->emulate_skip_frame_fast(mask,0);
         (void)err;
         retro_sync_from_emu(env);
         if(smb_is_dying(env->emu)){
             uint8_t* m = env->emu->low_mem();
             if(m) m[0x000E]=0x06;
-            env->emu->emulate_skip_frame(0,0);
+            env->emu->emulate_skip_frame_fast(0,0);
             retro_sync_from_emu(env);
         }
         if(env->tick>4000){ done=true; break; }

@@ -52,6 +52,9 @@ typedef struct {
     int crop;
     int script_profile;
     int hybrid_turns;
+    int macro_mode;
+    int macro_decision_interval;
+    float macro_score_scale;
     char path[4096];
     Weights* weights;
     PufferNet* net;
@@ -75,7 +78,8 @@ static void kag_bind_demo(Env* env, obs_t* observations, float* actions,
 
 static void kag_init_demo(Env* env, obs_t* observations, float* actions,
         float* rewards, float* terminals, unsigned char* action_masks,
-        int headed, uint64_t seed) {
+        int headed, uint64_t seed, int macro_mode,
+        int macro_decision_interval, float macro_score_scale) {
     KGConfig config;
     memset(env, 0, sizeof(*env));
     kg_config_default(&config);
@@ -84,6 +88,11 @@ static void kag_init_demo(Env* env, obs_t* observations, float* actions,
     env->render_enabled = headed;
     env->policy_market_slots = KG_POLICY_MARKET_SLOTS;
     env->policy_max_hands = KG_MAX_HANDS;
+    env->macro_mode = macro_mode;
+    env->macro_decision_interval = macro_decision_interval > 0
+        ? macro_decision_interval : 1;
+    env->macro_score_scale = macro_score_scale > 1.0f
+        ? macro_score_scale : 10000.0f;
     const char* market_slots_text = getenv("KAG_POLICY_MARKET_SLOTS");
     if (market_slots_text && market_slots_text[0]) {
         char* end = NULL;
@@ -271,6 +280,11 @@ static int kag_load_model_side(KagSide* side, const char* spec) {
     hidden = puf_ini_get_int(&ini, "policy", "hidden_size");
     layers = puf_ini_get_int(&ini, "policy", "num_layers");
     int model_mask = puf_ini_get_int(&ini, "vec", "action_mask_size");
+    side->macro_mode = puf_ini_get_int(&ini, "env", "macro_mode");
+    side->macro_decision_interval = puf_ini_get_int(
+        &ini, "env", "macro_decision_interval");
+    side->macro_score_scale = puf_ini_get_float(
+        &ini, "env", "macro_score_scale");
     puf_ini_free(&ini);
     if (model_mask != KG_POLICY_ACTION_MASK_SIZE) {
         fprintf(stderr, "%s uses action mask %d; current Kaggriculture uses %d. "
@@ -322,6 +336,9 @@ static int kag_load_model_side(KagSide* side, const char* spec) {
         action_sizes, NUM_ATNS);
     if (!kag_quiet_load) {
         printf("Loaded %s (hidden=%d layers=%d)\n", side->path, hidden, layers);
+        printf("  action interface: macro_mode=%d interval=%d score_scale=%.6g\n",
+            side->macro_mode, side->macro_decision_interval,
+            side->macro_score_scale);
     }
     return 1;
 }
@@ -769,8 +786,19 @@ static int kag_behavior_jsd(int argc, char** argv) {
         float rewards[KG_NUM_PLAYERS] = {0};
         float terminals[KG_NUM_PLAYERS] = {0};
         unsigned char masks[KG_NUM_PLAYERS * KG_POLICY_ACTION_MASK_SIZE] = {0};
+        int macro_mode = models[0].macro_mode;
+        int macro_interval = models[0].macro_decision_interval;
+        float macro_score_scale = models[0].macro_score_scale;
+        for (int i = 1; i < count; i++) {
+            if (models[i].macro_mode != macro_mode) {
+                fprintf(stderr,
+                    "jsd cannot mix primitive and macro checkpoints (%s mode=%d, %s mode=%d)\n",
+                    labels[0], macro_mode, labels[i], models[i].macro_mode);
+                return 2;
+            }
+        }
         kag_init_demo(&env, observations, actions, rewards, terminals,
-            masks, 0, seed);
+            masks, 0, seed, macro_mode, macro_interval, macro_score_scale);
 
         for (int step = 0; step < steps; step++) {
             Agent* probe = &env.agents[0];
@@ -910,8 +938,31 @@ int main(int argc, char** argv) {
         return 1;
     }
 
+    int macro_mode = 0;
+    int macro_interval = 1;
+    float macro_score_scale = 10000.0f;
+    int model_side = -1;
+    for (int player = 0; player < KG_NUM_PLAYERS; player++) {
+        if (sides[player].kind != KAG_SIDE_MODEL
+                && sides[player].kind != KAG_SIDE_HYBRID) continue;
+        if (model_side >= 0 && sides[player].macro_mode != macro_mode) {
+            fprintf(stderr,
+                "Cannot mix primitive and macro checkpoints in one native match: "
+                "%s uses mode %d, %s uses mode %d.\n",
+                model_side ? spec1 : spec0, macro_mode,
+                player ? spec1 : spec0, sides[player].macro_mode);
+            kag_free_side(&sides[0]);
+            kag_free_side(&sides[1]);
+            return 2;
+        }
+        model_side = player;
+        macro_mode = sides[player].macro_mode;
+        macro_interval = sides[player].macro_decision_interval;
+        macro_score_scale = sides[player].macro_score_scale;
+    }
+
     kag_init_demo(&env, observations, actions, rewards, terminals,
-        masks, !headless, 42);
+        masks, !headless, 42, macro_mode, macro_interval, macro_score_scale);
     env.render_names[0] = spec0;
     env.render_names[1] = spec1;
     printf("Kaggriculture: %s vs %s\n", spec0, spec1);

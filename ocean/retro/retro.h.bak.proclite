@@ -1,0 +1,723 @@
+#pragma once
+// Retro / Libretro SMB env for PufferLib Ocean -- Super Mario Bros. 1.
+// C-only. No Python. CPU VecEnv via pufferlib threaded Vec.
+// Design goal: thousands of parallel SMB1 envs with minimal overhead:
+// collider window + egocentric stats. libretro is CPU, so no --gpu path.
+//
+// Architecture: CPU VecEnv (pufferl threaded, thousands of envs -- like atari).
+// libretro cores are CPU-only (dlopen), so no --gpu/cuda path. Scales via vec.num_threads.
+// Defaults to synthetic SMB1-lite physics; optional rom_path validates iNES header
+// and can be swapped for a real parser without changing OBS/ACT spec.
+//
+// Data loading: no per-step IO. Levels are procgen SMB1-ish templates
+// (ground + pipes/gaps/bricks) seeded per level_id; reset just picks one.
+// ROM is optional. See README.md. Target ROM: Super Mario Bros. (USA).nes (SMB1) --
+// simpler than SMB3, better for first iteration. If you use SMB3, header still validates
+// but level layout stays SMB1-lite until parser is added.
+
+#include <stdlib.h>
+#include <string.h>
+#include <math.h>
+#include <assert.h>
+#include <stdio.h>
+#include <stdbool.h>
+#include "pufferenv.h"
+
+// Allow headless train boxes without raylib: keep render as no-op unless
+// render is requested. pufferenv.h pulls raylib but build.sh defines
+// HEADLESS=1 to drop it.
+#ifdef PUFFER_TUI_CAPTURE
+#include "puffer_tui.h"
+#endif
+
+// Level bank geometry — shared CPU + GPU. Keep outside PUFFER_GPU_ENV guard.
+#define RETRO_MAX_LEVELS 32
+#define RETRO_LEVEL_W 256
+#define RETRO_LEVEL_H 16
+
+// ---- Action / observation spec ----
+// Single discrete head. 12 distilled actions covering the NES joypad
+// combos that matter for platforming. Start/Select are excluded from the
+// training set (mapped internally if needed).
+// If you need full 8-bit joypad control, change to:
+//   #define NUM_ATNS 8
+//   #define ACT_SIZES {2,2,2,2,2,2,2,2}
+// and adjust puf_step action decoding.
+#define NUM_ATNS 1
+#define ACT_SIZES {12}
+#define RETRO_NUM_ACTIONS 12
+
+// Egocentric feature count + local collider window.
+#define RETRO_EGO_SIZE 16
+#define RETRO_WINDOW_W 12
+#define RETRO_WINDOW_H 12
+#define RETRO_TILES (RETRO_WINDOW_W * RETRO_WINDOW_H)
+#define OBS_SIZE (RETRO_EGO_SIZE + RETRO_TILES)
+
+// Window radius useful for centering mario in patch
+#define RETRO_WINDOW_RADIUS_W (RETRO_WINDOW_W/2)
+#define RETRO_WINDOW_RADIUS_H (RETRO_WINDOW_H/2)
+
+// Native bf16 train detection (matching breakout.h)
+#if defined(from_float) && !defined(PRECISION_FLOAT)
+typedef precision_t obs_t;
+#else
+typedef float obs_t;
+#endif
+
+// Log: keep Log as first member of Env for GPU log reduction.
+// Floats only, n last.
+struct Log {
+    float perf;            // 0..1 (flag / distance)
+    float score;           // raw game score mirror
+    float episode_return;  // sum rewards
+    float episode_length;  // ticks
+    float distance;        // max x reached
+    float flag;            // 1 if flagpole
+    float deaths;          // 1 per death
+    float coins;           // coins collected
+    float n;
+};
+
+// Joypad bitmask (NES: A B Select Start Up Down Left Right)
+#define RETRO_BTN_A      (1u<<0)
+#define RETRO_BTN_B      (1u<<1)
+#define RETRO_BTN_SELECT (1u<<2)
+#define RETRO_BTN_START  (1u<<3)
+#define RETRO_BTN_UP     (1u<<4)
+#define RETRO_BTN_DOWN   (1u<<5)
+#define RETRO_BTN_LEFT   (1u<<6)
+#define RETRO_BTN_RIGHT  (1u<<7)
+
+// Canonical action table: action idx -> joypad mask.
+// Keep NOOP at 0 for easy masking.
+static const unsigned char RETRO_ACTION_MASKS[RETRO_NUM_ACTIONS] = {
+    0,                                          // 0 NOOP
+    RETRO_BTN_RIGHT,                            // 1 RIGHT
+    RETRO_BTN_RIGHT | RETRO_BTN_A,              // 2 RIGHT + A (jump)
+    RETRO_BTN_RIGHT | RETRO_BTN_B,              // 3 RIGHT + B (run)
+    RETRO_BTN_RIGHT | RETRO_BTN_A | RETRO_BTN_B,// 4 RIGHT + A + B (run jump)
+    RETRO_BTN_A,                                // 5 A
+    RETRO_BTN_LEFT,                             // 6 LEFT
+    RETRO_BTN_LEFT  | RETRO_BTN_A,              // 7 LEFT + A
+    RETRO_BTN_DOWN,                             // 8 DOWN (pipe entry)
+    RETRO_BTN_B,                                // 9 B only (run in place)
+    RETRO_BTN_UP,                               // 10 UP (debug / pipes)
+    RETRO_BTN_RIGHT | RETRO_BTN_DOWN,           // 11 RIGHT+DOWN (crouch walk)
+};
+
+// Tile encoding for collider window (normalized to 0..1 in obs)
+// Stored as uint8 in constant level banks, converted to float at obs write.
+#define RETRO_TILE_EMPTY    0
+#define RETRO_TILE_SOLID    1
+#define RETRO_TILE_BRICK    2
+#define RETRO_TILE_QUESTION 3
+#define RETRO_TILE_PIPE     4
+#define RETRO_TILE_ENEMY    5
+#define RETRO_TILE_COIN     6
+#define RETRO_TILE_FLAG     7
+#define RETRO_TILE_LAVA     8
+#define RETRO_TILE_CLOUD    9
+
+#ifndef PUFFER_GPU_ENV
+//=========================================================================
+// CPU Env (host) - !PUFFER_GPU_ENV
+//=========================================================================
+
+// Keep client handle opaque for optional libretro dlopen.
+typedef struct RetroCore RetroCore;
+struct RetroCore {
+    void* handle;
+    // Minimal retro API we need if dynamic loading is enabled.
+    // Not linked at compile time; resolved via dlsym.
+    void* (*get_memory_data)(unsigned);
+    size_t (*get_memory_size)(unsigned);
+    void (*run)(void);
+    void (*reset)(void);
+    bool (*load_game)(const void*);
+    void (*unload_game)(void);
+    unsigned (*get_region)(void);
+};
+
+// Optional pixel framebuffer if rendering libretro frames for debugging.
+typedef struct RetroClient {
+    int fb_w, fb_h;
+    unsigned int* fb; // 0RGB1555 or XRGB8888 depending on core
+    RetroCore core;
+} RetroClient;
+
+struct Env {
+    Log log;
+    Agent agents[1];
+    int num_agents;
+    int tag;
+    int boundary_reached;
+    unsigned int rng;
+
+    // Game state (synthetic SMB-lite)
+    float mario_x, mario_y;
+    float mario_vx, mario_vy;
+    int mario_dir;      // -1 left, +1 right
+    int on_ground;
+    int powerup;        // 0 small,1 big,2 fire
+    int coins;
+    int score;
+    int world, level;
+    int tick;
+    int scroll_x;
+    int level_id;
+    int max_scroll;
+    int has_flag;
+    int is_dead;
+    int frameskip;
+    int window_w, window_h;
+
+    // Physics config (from Dict)
+    float gravity;
+    float max_vx;
+    float jump_v;
+    float run_accel;
+    float friction;
+
+    // Level storage: only the active level slice per env if not sharing.
+    // For cache efficiency with thousands of CPU workers, keep this as
+    // per-env. GPU path instead shares a single constant bank.
+    unsigned char* level_tiles; // [RETRO_LEVEL_H * RETRO_LEVEL_W]
+    unsigned char* entity_tiles; // dynamic enemies/items overlay
+    char rom_path[512];
+    RetroClient* client;
+};
+
+void retro_alloc_level(Env* env);
+void retro_free_level(Env* env);
+void retro_generate_fallback_level(unsigned char* tiles, int w, int h, unsigned int seed);
+void retro_compute_obs(const Env* env, obs_t* obs);
+void retro_reset_state(Env* env);
+void retro_step_physics(Env* env, unsigned char joy_mask);
+
+void puf_init(Env* env, Dict* kwargs) {
+    memset(env, 0, sizeof(*env));
+    env->num_agents = 1;
+    env->agents[0].policy = 0;
+    DictItem* seed_it = dict_find(kwargs, "seed");
+    env->rng = (unsigned int)(seed_it && seed_it->value != 0 ? seed_it->value : 1);
+
+    // Dict keys with defaults if missing (allow standalone without ini)
+    DictItem* it;
+    it = dict_find(kwargs, "frameskip");
+    env->frameskip = it ? (int)it->value : 4;
+    it = dict_find(kwargs, "gravity");
+    env->gravity = it ? (float)it->value : 0.52f;
+    it = dict_find(kwargs, "max_vx");
+    env->max_vx = it ? (float)it->value : 2.8f;
+    it = dict_find(kwargs, "jump_v");
+    env->jump_v = it ? (float)it->value : -6.2f;
+    it = dict_find(kwargs, "run_accel");
+    env->run_accel = it ? (float)it->value : 0.22f;
+    it = dict_find(kwargs, "friction");
+    env->friction = it ? (float)it->value : 0.88f;
+
+    // ROM path is optional. If not supplied, synthetic levels are used.
+    // Supported forms:
+    //   C:/Users/sunde/Downloads/Super Mario Bros. 3 (USA) (Rev 1).nes
+    //   /mnt/c/Users/sunde/Downloads/... (WSL)
+    //   ocean/retro/roms/smb.nes (repo-relative)
+    const char* rp = NULL;
+    DictItem* rp_it = dict_find(kwargs, "rom_path");
+    if (rp_it && rp_it->str) rp = rp_it->str;
+    if (rp) {
+        snprintf(env->rom_path, sizeof(env->rom_path), "%s", rp);
+    }
+
+    env->window_w = RETRO_WINDOW_W;
+    env->window_h = RETRO_WINDOW_H;
+    retro_alloc_level(env);
+    // Try to load ROM bytes if path exists; otherwise keep fallback.
+    if (env->rom_path[0] != 0) {
+        FILE* f = fopen(env->rom_path, "rb");
+        if (f) {
+            // For now we just validate the iNES header and keep fallback
+            // level generation. A full ROM parser can be plugged here to
+            // populate level_tiles from actual SMB level data instead of
+            // procedural fallback.
+            unsigned char hdr[16];
+            size_t n = fread(hdr, 1, 16, f);
+            if (n == 16 && hdr[0]=='N' && hdr[1]=='E' && hdr[2]=='S') {
+                // Valid iNES - real parser would go here.
+                // Keeping synthetic for now; logs that ROM was found.
+                fprintf(stderr, "[retro] ROM detected: %s (using synthetic fallback until full parser)\n", env->rom_path);
+            }
+            fclose(f);
+        } else {
+            fprintf(stderr, "[retro] rom_path not found: %s (using synthetic levels)\n", env->rom_path);
+        }
+    }
+    retro_reset_state(env);
+}
+
+void puf_log(Log* log, Dict* out) {
+    dict_set(out, "perf", log->perf);
+    dict_set(out, "score", log->score);
+    dict_set(out, "episode_return", log->episode_return);
+    dict_set(out, "episode_length", log->episode_length);
+    dict_set(out, "distance", log->distance);
+    dict_set(out, "flag", log->flag);
+    dict_set(out, "deaths", log->deaths);
+    dict_set(out, "coins", log->coins);
+}
+
+// Internal helpers ---------------------------------------------------------
+
+void retro_alloc_level(Env* env) {
+    size_t n = (size_t)RETRO_LEVEL_W * RETRO_LEVEL_H;
+    env->level_tiles = (unsigned char*)calloc(n, 1);
+    env->entity_tiles = (unsigned char*)calloc(n, 1);
+    assert(env->level_tiles && env->entity_tiles);
+}
+
+void retro_free_level(Env* env) {
+    free(env->level_tiles);
+    free(env->entity_tiles);
+    env->level_tiles = NULL;
+    env->entity_tiles = NULL;
+}
+
+// Deterministic fallback level: ground row + random platforms/bricks/pipes.
+// Seed derived from level_id so each level is reproducible.
+void retro_generate_fallback_level(unsigned char* tiles, int w, int h, unsigned int seed) {
+    memset(tiles, RETRO_TILE_EMPTY, (size_t)w*h);
+    // ground
+    for (int x=0; x<w; x++) tiles[(h-2)*w + x] = RETRO_TILE_SOLID;
+    for (int x=0; x<w; x++) tiles[(h-1)*w + x] = RETRO_TILE_SOLID;
+    unsigned int rng = seed ? seed : 1;
+    #define RND() (rng = rng*1103515245u + 12345u, (rng>>16)&0x7fffu)
+    // platforms
+    for (int i=0;i<18;i++) {
+        int px = 12 + (RND()% (w-24));
+        int py = 3 + (RND()% (h-6));
+        int pw = 3 + (RND()%5);
+        for (int dx=0; dx<pw; dx++) {
+            int x = px+dx;
+            if (x>=0 && x<w && py>=0 && py<h) tiles[py*w + x] = RETRO_TILE_SOLID;
+        }
+    }
+    // bricks / questions
+    for (int i=0;i<24;i++) {
+        int x = 8 + (RND()% (w-16));
+        int y = 2 + (RND()% (h-5));
+        unsigned char t = (RND()%3==0) ? RETRO_TILE_QUESTION : RETRO_TILE_BRICK;
+        tiles[y*w + x] = t;
+        if ((RND()%4)==0 && y+1 < h) tiles[(y+1)*w + x] = RETRO_TILE_COIN;
+    }
+    // pipes
+    for (int i=0;i<3;i++) {
+        int px = 40 + i*60 + (RND()%10);
+        int ph = 2 + (RND()%3);
+        for (int dy=0; dy<ph; dy++) for (int dx=0; dx<2; dx++) {
+            int x=px+dx, y=h-2 - dy -1;
+            if (x<w && y>=0) tiles[y*w+x]=RETRO_TILE_PIPE;
+        }
+    }
+    // enemies (stored as TILE_ENEMY overlay - treated as hollow for collision)
+    for (int i=0;i<8;i++) {
+        int x = 20 + (RND()% (w-30));
+        int y = h-3;
+        // place on ground if ground exists
+        tiles[y*w + x] = RETRO_TILE_ENEMY;
+    }
+    // flag near end
+    for (int y=2; y<h-2; y++) tiles[y*w + (w-4)] = RETRO_TILE_FLAG;
+    #undef RND
+}
+
+static inline unsigned char retro_sample_tile(const Env* env, int tx, int ty) {
+    if (tx<0 || tx>=RETRO_LEVEL_W || ty<0 || ty>=RETRO_LEVEL_H) return RETRO_TILE_EMPTY;
+    unsigned char t = env->level_tiles[ty*RETRO_LEVEL_W + tx];
+    unsigned char e = env->entity_tiles[ty*RETRO_LEVEL_W + tx];
+    if (e != RETRO_TILE_EMPTY) return e;
+    return t;
+}
+
+static inline int retro_is_solid(unsigned char t) {
+    return t==RETRO_TILE_SOLID || t==RETRO_TILE_BRICK || t==RETRO_TILE_QUESTION || t==RETRO_TILE_PIPE;
+}
+
+void retro_compute_obs(const Env* env, obs_t* obs) {
+    // Ego vector (16 floats)
+    float mx = env->mario_x;
+    float my = env->mario_y;
+    // Normalize by level dimensions / physics scales
+    float o[RETRO_EGO_SIZE];
+    o[0] = mx / (float)RETRO_LEVEL_W;            // x norm
+    o[1] = my / (float)RETRO_LEVEL_H;            // y norm
+    o[2] = env->mario_vx / 4.0f;
+    o[3] = env->mario_vy / 6.0f;
+    o[4] = env->on_ground ? 1.0f : 0.0f;
+    o[5] = env->mario_dir > 0 ? 1.0f : -1.0f;
+    o[6] = (float)env->powerup / 2.0f;
+    o[7] = (float)env->coins / 50.0f;
+    o[8] = fminf((float)env->score / 10000.0f, 1.0f);
+    o[9] = env->tick / 5000.0f;
+    o[10] = (float)env->world;
+    o[11] = (float)env->level;
+    o[12] = env->scroll_x / (float)RETRO_LEVEL_W;
+    o[13] = (mx - env->scroll_x) / 16.0f;        // mario offset within screen
+    o[14] = env->has_flag ? 1.0f : 0.0f;
+    o[15] = env->is_dead ? 1.0f : 0.0f;
+
+    for (int i=0;i<RETRO_EGO_SIZE;i++) {
+        #if defined(from_float) && !defined(PRECISION_FLOAT)
+        obs[i] = from_float(o[i]);
+        #else
+        obs[i] = o[i];
+        #endif
+    }
+    // Collider patch centered on mario (egocentric).
+    // Use integer tile coords: mario_x,y are in tile space (0..W, 0..H).
+    int cx = (int)floorf(mx);
+    int cy = (int)floorf(my);
+    int idx = RETRO_EGO_SIZE;
+    for (int dy=-RETRO_WINDOW_RADIUS_H; dy < RETRO_WINDOW_H-RETRO_WINDOW_RADIUS_H; dy++) {
+        for (int dx=-RETRO_WINDOW_RADIUS_W; dx < RETRO_WINDOW_W-RETRO_WINDOW_RADIUS_W; dx++) {
+            int tx = cx + dx;
+            int ty = cy + dy;
+            unsigned char t = retro_sample_tile(env, tx, ty);
+            // normalize tile id to 0..1
+            float v = t / 9.0f;
+            // mark mario cell specially: invert? keep as-is; agent can infer self position is center.
+            #if defined(from_float) && !defined(PRECISION_FLOAT)
+            obs[idx++] = from_float(v);
+            #else
+            obs[idx++] = v;
+            #endif
+        }
+    }
+    assert(idx == OBS_SIZE);
+}
+
+void retro_reset_state(Env* env) {
+    env->tick = 0;
+    env->scroll_x = 0;
+    env->max_scroll = 0;
+    env->has_flag = 0;
+    env->is_dead = 0;
+    env->coins = 0;
+    env->score = 0;
+    env->world = 1;
+    env->level = 1;
+    env->mario_x = 2.0f;
+    env->mario_y = (float)(RETRO_LEVEL_H - 3) - 0.1f;
+    env->mario_vx = 0;
+    env->mario_vy = 0;
+    env->mario_dir = 1;
+    env->on_ground = 1;
+    env->powerup = 0;
+    // level_id derived from RNG so each episode can sample different level
+    env->level_id = (int)(env->rng % RETRO_MAX_LEVELS);
+    // xorshift
+    env->rng ^= env->rng << 13;
+    env->rng ^= env->rng >> 17;
+    env->rng ^= env->rng << 5;
+    if (env->rng==0) env->rng = 0xA341316Cu;
+    unsigned int seed = (unsigned int)(env->level_id * 0x9e3779b1u + env->rng);
+    retro_generate_fallback_level(env->level_tiles, RETRO_LEVEL_W, RETRO_LEVEL_H, seed);
+    memset(env->entity_tiles, 0, (size_t)RETRO_LEVEL_W*RETRO_LEVEL_H);
+    // Pre-seed some enemy motion in entity_tiles already handled via level gen.
+}
+
+static inline void retro_apply_reward(Env* env, float r) {
+    env->agents[0].rewards[0] += r;
+    env->log.episode_return += r;
+    env->score += (int)(r * 10);
+}
+
+// Minimal SMB-lite physics: axis-separated tile collision, gravity, jump.
+// Fast enough to run millions of steps/sec on CPU as well.
+void retro_step_physics(Env* env, unsigned char joy) {
+    // Decode joypad
+    int right = (joy & RETRO_BTN_RIGHT) != 0;
+    int left  = (joy & RETRO_BTN_LEFT) != 0;
+    int btn_a = (joy & RETRO_BTN_A) != 0;
+    int btn_b = (joy & RETRO_BTN_B) != 0;
+    int down  = (joy & RETRO_BTN_DOWN) != 0;
+
+    float accel = env->run_accel * (btn_b ? 1.6f : 1.0f);
+    float maxvx = env->max_vx * (btn_b ? 1.45f : 1.0f);
+
+    if (right && !left) {
+        env->mario_vx += accel;
+        env->mario_dir = 1;
+    } else if (left && !right) {
+        env->mario_vx -= accel;
+        env->mario_dir = -1;
+    } else {
+        env->mario_vx *= env->friction;
+        if (fabsf(env->mario_vx) < 0.02f) env->mario_vx = 0;
+    }
+    if (env->mario_vx > maxvx) env->mario_vx = maxvx;
+    if (env->mario_vx < -maxvx) env->mario_vx = -maxvx;
+
+    // Jump: only if on ground
+    if (btn_a && env->on_ground) {
+        env->mario_vy = env->jump_v * (btn_b ? 1.1f : 1.0f);
+        env->on_ground = 0;
+    }
+    // Extra gravity if not holding A (short hop)
+    float g = env->gravity;
+    if (!btn_a && env->mario_vy < 0) g *= 1.6f;
+
+    env->mario_vy += g * (1.0f/60.0f) * 60.0f * 0.16f; // scale to ~60fps tick
+    if (env->mario_vy > 6.0f) env->mario_vy = 6.0f;
+
+    // Integrate with simple tile collision (AABB point + 0.8 tile size)
+    // Horizontal
+    float nx = env->mario_x + env->mario_vx * 0.28f;
+    int tx = (int)floorf(nx);
+    // If trying to walk into solid at body height, block.
+    if (retro_is_solid(retro_sample_tile(env, tx, (int)floorf(env->mario_y+0.2f))) ||
+        retro_is_solid(retro_sample_tile(env, tx, (int)floorf(env->mario_y+0.6f)))) {
+        // blocked
+        nx = env->mario_x;
+        env->mario_vx = 0;
+    }
+    env->mario_x = nx;
+    if (env->mario_x < 0.5f) env->mario_x = 0.5f;
+    if (env->mario_x > RETRO_LEVEL_W - 1.5f) env->mario_x = RETRO_LEVEL_W - 1.5f;
+
+    // Vertical
+    float ny = env->mario_y + env->mario_vy * 0.28f;
+    int vy_ty = (int)floorf(ny + 0.8f); // foot
+    int vx_tx = (int)floorf(env->mario_x);
+    unsigned char below = retro_sample_tile(env, vx_tx, vy_ty);
+    unsigned char above = retro_sample_tile(env, vx_tx, (int)floorf(ny));
+    unsigned char head = retro_sample_tile(env, vx_tx, (int)floorf(ny - 0.1f));
+
+    if (env->mario_vy > 0) { // falling
+        if (retro_is_solid(below)) {
+            // land on top of tile
+            env->mario_y = (float)vy_ty - 0.81f;
+            env->mario_vy = 0;
+            env->on_ground = 1;
+        } else {
+            env->mario_y = ny;
+            env->on_ground = 0;
+        }
+    } else if (env->mario_vy < 0) { // jumping up
+        if (retro_is_solid(above) || retro_is_solid(head)) {
+            // hit ceiling / brick
+            int hit_y = (int)floorf(ny);
+            unsigned char hit_tile = retro_sample_tile(env, vx_tx, hit_y);
+            if (hit_tile == RETRO_TILE_BRICK) {
+                // break brick if big
+                if (env->powerup>0) {
+                    env->level_tiles[hit_y*RETRO_LEVEL_W + vx_tx] = RETRO_TILE_EMPTY;
+                    retro_apply_reward(env, 1.0f);
+                } else {
+                    // bump
+                    env->mario_vy = 1.0f;
+                }
+            } else if (hit_tile == RETRO_TILE_QUESTION) {
+                env->level_tiles[hit_y*RETRO_LEVEL_W + vx_tx] = RETRO_TILE_EMPTY;
+                env->coins += 1;
+                retro_apply_reward(env, 0.5f);
+            }
+            env->mario_y = (float)(hit_y + 1) + 0.01f;
+            env->mario_vy = 0;
+        } else {
+            env->mario_y = ny;
+        }
+    } else {
+        // vy==0: check if still on ground
+        unsigned char under = retro_sample_tile(env, vx_tx, (int)floorf(env->mario_y + 0.9f));
+        env->on_ground = retro_is_solid(under);
+        if (!env->on_ground) {
+            // start falling next tick
+        }
+    }
+
+    // Clamp Y
+    if (env->mario_y < 0) { env->mario_y = 0; env->mario_vy=0; }
+    if (env->mario_y > RETRO_LEVEL_H - 1) {
+        // fell into pit -> death
+        env->is_dead = 1;
+    }
+
+    // Scroll follows mario x, simple camera
+    int target_scroll = (int)(env->mario_x - 6);
+    if (target_scroll > env->scroll_x) env->scroll_x = target_scroll;
+    if (env->scroll_x < 0) env->scroll_x = 0;
+    if (env->scroll_x > RETRO_LEVEL_W - 16) env->scroll_x = RETRO_LEVEL_W - 16;
+    if (env->scroll_x > env->max_scroll) env->max_scroll = env->scroll_x;
+
+    // Interactions: coin, enemy, flag, pipe
+    int mtx = (int)floorf(env->mario_x);
+    int mty = (int)floorf(env->mario_y + 0.5f);
+    unsigned char cur = retro_sample_tile(env, mtx, mty);
+    unsigned char cur_feet = retro_sample_tile(env, mtx, (int)floorf(env->mario_y+0.8f));
+    if (cur == RETRO_TILE_COIN || cur_feet == RETRO_TILE_COIN) {
+        int cx = (cur==RETRO_TILE_COIN)? mtx : mtx;
+        int cy = (cur==RETRO_TILE_COIN)? mty : (int)floorf(env->mario_y+0.8f);
+        env->level_tiles[cy*RETRO_LEVEL_W + cx] = RETRO_TILE_EMPTY;
+        env->coins += 1;
+        retro_apply_reward(env, 0.2f);
+    }
+    if (cur == RETRO_TILE_ENEMY || cur_feet == RETRO_TILE_ENEMY) {
+        // Stomp if falling, else die
+        if (env->mario_vy > 0.5f) {
+            int ex = mtx, ey = (cur==RETRO_TILE_ENEMY)? mty : (int)floorf(env->mario_y+0.8f);
+            env->level_tiles[ey*RETRO_LEVEL_W + ex] = RETRO_TILE_EMPTY;
+            env->mario_vy = env->jump_v * 0.6f;
+            retro_apply_reward(env, 1.0f);
+        } else {
+            if (env->powerup>0) {
+                env->powerup--;
+                // flicker invuln could be added
+                env->mario_vy = -2.0f;
+            } else {
+                env->is_dead = 1;
+            }
+        }
+    }
+    if (cur == RETRO_TILE_FLAG || cur_feet == RETRO_TILE_FLAG) {
+        env->has_flag = 1;
+        retro_apply_reward(env, 10.0f);
+        env->agents[0].terminals[0] = 1.0f;
+        // log will be added in puf_step
+        return;
+    }
+    // Pipe entry: if on pipe tile and pressing down
+    if (down && (cur==RETRO_TILE_PIPE || cur_feet==RETRO_TILE_PIPE)) {
+        retro_apply_reward(env, 0.1f);
+        // warp: jump forward a bit
+        env->mario_x += 8.0f;
+        if (env->mario_x > RETRO_LEVEL_W-2) env->mario_x = RETRO_LEVEL_W-2;
+    }
+
+    // Small forward progress reward (distance)
+    float progress = (env->scroll_x - env->max_scroll + (env->mario_vx>0? env->mario_vx*0.01f:0));
+    if (progress>0) retro_apply_reward(env, progress*0.02f);
+
+    if (env->is_dead) {
+        env->agents[0].terminals[0] = 1.0f;
+        env->log.deaths += 1;
+    }
+}
+
+// Public API ---------------------------------------------------------------
+
+void puf_reset(Env* env) {
+    // keep rng advancing
+    env->log = (Log){0};
+    // clear terminal/reward (caller expects zero after reset)
+    retro_reset_state(env);
+    if (env->agents[0].observations) {
+        retro_compute_obs(env, (obs_t*)env->agents[0].observations);
+    }
+}
+
+void puf_step(Env* env) {
+    env->agents[0].rewards[0] = 0.0f;
+    env->agents[0].terminals[0] = 0.0f;
+
+    // Decode action (single discrete head)
+    int act = 0;
+    if (env->agents[0].actions) act = (int)env->agents[0].actions[0];
+    if (act < 0) act = 0;
+    if (act >= RETRO_NUM_ACTIONS) act = RETRO_NUM_ACTIONS-1;
+    unsigned char mask = RETRO_ACTION_MASKS[act];
+
+    for (int f=0; f<env->frameskip; f++) {
+        env->tick++;
+        if (env->agents[0].terminals[0]) break;
+        retro_step_physics(env, mask);
+        // timeout
+        if (env->tick > 5000) {
+            env->agents[0].terminals[0] = 1.0f;
+            break;
+        }
+    }
+
+    // Log on terminal
+    if (env->agents[0].terminals[0]) {
+        env->log.n += 1;
+        env->log.episode_length += env->tick;
+        env->log.episode_return += env->agents[0].rewards[0];
+        env->log.score += env->score;
+        // perf = closeness to flag: max_scroll / level_width, 1 if flagged
+        float prog = env->max_scroll / (float)(RETRO_LEVEL_W - 16);
+        if (prog>1) prog=1;
+        if (env->has_flag) prog=1.0f;
+        env->log.perf += prog;
+        env->log.distance += env->max_scroll;
+        env->log.flag += env->has_flag ? 1:0;
+        env->log.coins += env->coins;
+        // auto-reset for vec semantics (host loop expects env ready after terminal)
+        // but keep rewards/terminals for this step; reset will be called next step
+        // by caller or we provide next obs now.
+        // For PufferLib CPU vec, reset is explicit; we just compute obs and keep terminal.
+    }
+
+    if (env->agents[0].observations) {
+        // If terminal, puf_reset will be called by outer loop; we still produce obs.
+        // To match breakout semantics, we auto-reset on terminal so next step starts fresh.
+        if (env->agents[0].terminals[0]) {
+            Log saved = env->log;
+            // stash log? caller aggregates before reset via puf_log. We must NOT clear log here
+            // if pufferl expects to aggregate after step. Breakout does add_log then c_reset but keeps log accum.
+            // We already added to log; now reset state but preserve log.
+            retro_reset_state(env);
+            env->log = saved;
+            retro_compute_obs(env, (obs_t*)env->agents[0].observations);
+        } else {
+            retro_compute_obs(env, (obs_t*)env->agents[0].observations);
+        }
+    }
+}
+
+void puf_render(Env* env) {
+    if (!IsWindowReady()) {
+        InitWindow(800, 400, "PufferLib Retro SMB-lite");
+        SetTargetFPS(60);
+    }
+    if (IsKeyDown(KEY_ESCAPE)) exit(0);
+    BeginDrawing();
+    ClearBackground((Color){92,148,252,255});
+    // draw tiles around scroll
+    int sx = env->scroll_x;
+    int tile = 16;
+    for (int y=0; y<RETRO_LEVEL_H; y++) for (int x=sx; x < sx+50 && x<RETRO_LEVEL_W; x++) {
+        unsigned char t = retro_sample_tile(env, x, y);
+        if (t==RETRO_TILE_EMPTY) continue;
+        Color c = GRAY;
+        if (t==RETRO_TILE_SOLID) c=(Color){110,70,20,255};
+        else if (t==RETRO_TILE_BRICK) c=(Color){180,40,30,255};
+        else if (t==RETRO_TILE_QUESTION) c=(Color){240,200,60,255};
+        else if (t==RETRO_TILE_PIPE) c=(Color){40,180,40,255};
+        else if (t==RETRO_TILE_ENEMY) c=(Color){200,30,30,255};
+        else if (t==RETRO_TILE_COIN) c=(Color){255,230,80,255};
+        else if (t==RETRO_TILE_FLAG) c=(Color){255,255,255,255};
+        DrawRectangle((x-sx)*tile, y*tile, tile-1, tile-1, c);
+    }
+    // mario
+    DrawRectangle((int)((env->mario_x - sx)*tile), (int)(env->mario_y*tile), tile, tile, (Color){255,0,0,255});
+    DrawText(TextFormat("Score %d  Coins %d  Tick %d  %s", env->score, env->coins, env->tick, env->has_flag?"FLAG!":""), 10, 10, 18, WHITE);
+#ifdef PUFFER_TUI_CAPTURE
+    ptui_capture(800,400);
+#endif
+    EndDrawing();
+}
+
+void puf_close(Env* env) {
+    retro_free_level(env);
+    if (env->client) {
+        if (env->client->fb) free(env->client->fb);
+        if (env->client->core.handle) {
+            // dlclose if we had opened
+        }
+        free(env->client);
+        env->client = NULL;
+    }
+    if (IsWindowReady()) CloseWindow();
+}
+
+#endif // !PUFFER_GPU_ENV

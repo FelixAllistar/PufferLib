@@ -373,20 +373,54 @@ rotates every one million steps. This prevents initially unbeatable policies
 from starving reachable curriculum opponents.
 
 `psro.sh` closes the population-management loop around training. One default
-invocation finds the newest non-sweep run, samples 16 stages by training
+invocation finds the newest non-sweep run, samples 12 stages by training
 percentage, evaluates them with the active league, solves the antisymmetric
 zero-sum meta-game in native C, and measures two complementary novelty signals.
 Payoff JSD compares each policy's win/draw signature against the common opponent
 panel. Behavioral JSD forwards every checkpoint through the same observation
 and action-mask sequences while preserving each model's recurrent state; heads
 with fewer than two legal actions are excluded. Strong meta, economy, and
-greedily diverse candidates are confirmed with 500 games per pairing. PSRO then
-admits up to four, archives the previous league, records the role-weighted
+greedily diverse candidates are confirmed with a larger balanced pairing. PSRO then
+admits up to two, archives the previous league, records the role-weighted
 mixture in the league manifest, and writes the selected pool back to the INI:
 
 ```bash
 ./ocean/kaggriculture/psro.sh
 ```
+
+A run ID and a league ID are sufficient for a new lineage. Bare run IDs resolve
+below `checkpoints/kaggriculture/`; bare league IDs resolve below `saved/`.
+When the league does not exist, `analyze` and `iterate` create it, seed four
+evenly spaced compatible checkpoints from the run, and generate `manifest.tsv`
+and `league.ini`. Mixed-architecture run directories are filtered to the
+architecture of their newest checkpoint. The policy width and layer count are
+recovered from `logs/kaggriculture/RUN_ID.ini`, so editing the main training INI
+for a subsequent experiment does not change the evaluation architecture:
+
+```bash
+./ocean/kaggriculture/psro.sh analyze \
+  --league kag_local_256x2_v1 --run-id local_128x2_probe_v1
+
+./ocean/kaggriculture/psro.sh iterate \
+  --league kag_local_256x2_v1 --run-id local_128x2_probe_v1
+```
+
+`init` performs only the idempotent bootstrap/metadata repair and exits. It is
+useful for inspecting the initial population before paying for an evaluation:
+
+```bash
+./ocean/kaggriculture/psro.sh init \
+  --league kag_local_256x2_v1 --run-id local_128x2_probe_v1
+```
+
+An explicit directory remains valid for either option. Each league now derives
+its own adjacent archive (`LEAGUE_archive`) and its league ID is included in the
+default log prefix, avoiding collisions when one run is analyzed against
+multiple populations. `iterate` also restores the selected policy architecture,
+sets `opponent_pool_prob = 1`, and allocates a fresh
+`RUN_ID_psro_response[_N]` run ID, so its printed training command does not mix
+architectures or overwrite the source trajectory. Use `--league-prob` or
+`--next-run-id` only when a different response setup is intentional.
 
 The default `iterate` path also selects the learner checkpoint automatically:
 it chooses the highest confirmed meta weight among the new run's checkpoints,

@@ -27,6 +27,9 @@ typedef struct {
     uint64_t base_seed;
     int policy_market_slots;
     int policy_max_hands;
+    int macro_mode;
+    int macro_decision_interval;
+    float macro_score_scale;
     int opening_turns;
     int reset_opening_turns;
     int reset_opening_min;
@@ -249,10 +252,21 @@ __device__ static void kag_cuda_choose_bot(Env* env, int match_id) {
 __device__ static void kag_cuda_reset_episode(Env* env,
         const KGScriptTape* tapes, const KGState* reset_states,
         int reset_state_count) {
+    for (int player = 0; player < KG_NUM_PLAYERS; player++) {
+        env->macro_intent[player] = KAG_MACRO_HOLD;
+        env->macro_ticks[player] = 0;
+        env->macro_quantity[player] = 0;
+        env->macro_target[player] = 0;
+    }
     if (env->curriculum_enabled) {
         kag_curriculum_reset(env, tapes);
         return;
     }
+    /* Keep the CUDA reset state identical to puf_step's CPU path.  A
+     * non-curriculum episode must not retain the previous lesson stage;
+     * otherwise kag_curriculum_record() counts every later terminal as the
+     * first curriculum lesson and the adapter log diverges after reset. */
+    env->curriculum_stage = -1;
     if (reset_state_count > 0 && env->reset_state_prob > 0.0f) {
         uint32_t draw = kag_reset_opening_random(env) >> 8;
         uint32_t cutoff = (uint32_t)(env->reset_state_prob * 16777216.0f);
@@ -340,7 +354,12 @@ __device__ static void kag_cuda_transition(Env* env, Env* shells,
         env->progress_value[0], env->progress_value[1]};
 
     for (int player = 0; player < KG_NUM_PLAYERS; player++) {
-        kag_decode_action(&actions[player], &env->agents[player], game, player);
+        if (env->macro_mode) {
+            kag_decode_macro_action(&actions[player], &env->agents[player],
+                game, player, env);
+        } else {
+            kag_decode_action(&actions[player], &env->agents[player], game, player);
+        }
         env->agents[player].terminals[0] = 0.0f;
     }
     kag_cuda_bot_overrides(env, actions, tapes);
@@ -602,6 +621,9 @@ __global__ static void kag_cuda_reset_kernel(Env* shells, Env* matches,
     env->rng = (unsigned)match_id;
     env->policy_market_slots = d_kag_cuda_config.policy_market_slots;
     env->policy_max_hands = d_kag_cuda_config.policy_max_hands;
+    env->macro_mode = d_kag_cuda_config.macro_mode;
+    env->macro_decision_interval = d_kag_cuda_config.macro_decision_interval;
+    env->macro_score_scale = d_kag_cuda_config.macro_score_scale;
     env->opening_turns = d_kag_cuda_config.opening_turns;
     env->reset_opening_turns = d_kag_cuda_config.reset_opening_turns;
     env->reset_opening_min = d_kag_cuda_config.reset_opening_min;
@@ -739,6 +761,10 @@ static void kag_cuda_load_config(Dict* kwargs) {
     h_kag_cuda_config.base_seed = (uint64_t)dict_get(kwargs, "seed");
     h_kag_cuda_config.policy_market_slots = template_env.policy_market_slots;
     h_kag_cuda_config.policy_max_hands = template_env.policy_max_hands;
+    h_kag_cuda_config.macro_mode = template_env.macro_mode;
+    h_kag_cuda_config.macro_decision_interval =
+        template_env.macro_decision_interval;
+    h_kag_cuda_config.macro_score_scale = template_env.macro_score_scale;
     h_kag_cuda_config.opening_turns = template_env.opening_turns;
     h_kag_cuda_config.reset_opening_turns = template_env.reset_opening_turns;
     h_kag_cuda_config.reset_opening_min = template_env.reset_opening_min;

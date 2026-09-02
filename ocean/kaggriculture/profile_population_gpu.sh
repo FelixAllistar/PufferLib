@@ -9,6 +9,8 @@ kag_gpu_agents=${KAG_GPU_AGENTS:-64}
 kag_output=logs/kaggriculture/policy_profile_gpu
 kag_eval_deterministic=0
 kag_opponent=rules
+kag_hidden_size=
+kag_num_layers=
 kag_inputs=()
 
 usage() {
@@ -19,6 +21,8 @@ usage() {
         "  --gpu-agents N     Agents per evaluator (default 64)" \
         "  --output PREFIX    Output TSV prefix" \
         "  --opponent NAME    Fixed opponent: pass or rules (default rules)" \
+        "  --hidden-size N    Policy hidden size (use with --num-layers)" \
+        "  --num-layers N     Policy recurrent layers (use with --hidden-size)" \
         "  --deterministic    Use masked argmax actions" \
         "  --stochastic       Sample masked actions (default)" \
         "The report is GPU-native and records economic/maintenance counters."
@@ -31,6 +35,8 @@ while (($#)); do
         --gpu-agents) kag_gpu_agents=$2; shift 2 ;;
         --output) kag_output=$2; shift 2 ;;
         --opponent) kag_opponent=$2; shift 2 ;;
+        --hidden-size) kag_hidden_size=$2; shift 2 ;;
+        --num-layers) kag_num_layers=$2; shift 2 ;;
         --deterministic) kag_eval_deterministic=1; shift ;;
         --stochastic) kag_eval_deterministic=0; shift ;;
         -h|--help) usage; exit 0 ;;
@@ -47,6 +53,13 @@ done
     || { printf '%s\n' '--gpu-agents must be >= 4' >&2; exit 2; }
 [[ $kag_opponent == pass || $kag_opponent == rules ]] \
     || { printf '%s\n' '--opponent must be pass or rules' >&2; exit 2; }
+if [[ -n $kag_hidden_size || -n $kag_num_layers ]]; then
+    [[ $kag_hidden_size =~ ^[1-9][0-9]*$ \
+        && $kag_num_layers =~ ^[1-9][0-9]*$ ]] || {
+        printf '%s\n' '--hidden-size and --num-layers must be positive integers supplied together' >&2
+        exit 2
+    }
+fi
 [[ -x ./puffer ]] || { printf '%s\n' 'Build ./puffer first' >&2; exit 1; }
 if ((${#kag_inputs[@]} == 0)); then
     kag_inputs=(saved/kaggriculture_league_v5)
@@ -101,7 +114,12 @@ profile_one() {
     else
         rules_fraction=1
     fi
-    if [[ $label =~ _([0-9]+)x([0-9]+)_ ]]; then
+    if [[ -n $kag_hidden_size ]]; then
+        architecture_args+=(
+            "policy.hidden_size=$kag_hidden_size"
+            "policy.num_layers=$kag_num_layers"
+        )
+    elif [[ $label =~ _([0-9]+)x([0-9]+)_ ]]; then
         architecture_args+=(
             "policy.hidden_size=${BASH_REMATCH[1]}"
             "policy.num_layers=${BASH_REMATCH[2]}"

@@ -341,6 +341,7 @@ typedef struct {
     // true when base.cudagraphs >= 0: first real rollout/train use captures.
     bool cudagraphs;
     bool profile;
+    bool ppo_debug;
     // Greedy legal argmax for evaluation/export parity. Training rollouts keep
     // this false and continue sampling from the policy distribution.
     bool deterministic_actions;
@@ -977,7 +978,6 @@ void pufferl_forward(PuffeRL* pufferl, int buf, int t, cudaStream_t stream,
     profile_end(hypers.profile);
 }
 
-
 // --- VecEnv worker threads + lifecycle (after pufferl_forward; needs PuffeRL) ---
 // One arg per buffer thread: trainer + which buffer. vec/horizon come from pufferl.
 typedef struct {
@@ -1445,6 +1445,8 @@ __global__ void clamp_precision_kernel(precision_t* dst, float lo, float hi, int
     }
 }
 
+static void ppo_debug_dump(PuffeRL& p);
+
 void train_impl(PuffeRL& pufferl, RolloutBuf* src_arg) {
     HypersT& hypers = pufferl.hypers;
     RolloutBuf src = src_arg ? *src_arg : pufferl.rollouts;
@@ -1472,8 +1474,6 @@ void train_impl(PuffeRL& pufferl, RolloutBuf* src_arg) {
     transpose_102<<<grid_size(T * B), BLOCK_SIZE, 0, train_stream>>>(
         rollouts.terminals.data, src.terminals.data, T, B, 1);
     transpose_102<<<grid_size(T * B), BLOCK_SIZE, 0, train_stream>>>(
-        rollouts.ratio.data, src.ratio.data, T, B, 1);
-    transpose_102<<<grid_size(T * B), BLOCK_SIZE, 0, train_stream>>>(
         rollouts.values.data, src.values.data, T, B, 1);
     int mask_c = src.action_mask.shape[2];
     transpose_102<<<grid_size(T * B * mask_c), BLOCK_SIZE, 0, train_stream>>>(
@@ -1491,7 +1491,8 @@ void train_impl(PuffeRL& pufferl, RolloutBuf* src_arg) {
     }
 
     // Treat rollout data as on-policy for advantage. PPO clipping still uses
-    // behavior logprobs captured by the actor snapshot.
+    // behavior logprobs captured by the actor snapshot. The ratio buffer does
+    // not need a layout conversion because it is overwritten with ones here.
     fill_precision_kernel<<<grid_size(numel(rollouts.ratio.shape)), BLOCK_SIZE, 0, train_stream>>>(
         rollouts.ratio.data, from_float(1.0f), numel(rollouts.ratio.shape));
 
@@ -1737,6 +1738,10 @@ void train_impl(PuffeRL& pufferl, RolloutBuf* src_arg) {
 
     cudaStreamSynchronize(train_stream);
 
+    if (hypers.ppo_debug) {
+        ppo_debug_dump(pufferl);
+    }
+
     if (total_minibatches > 0) {
         float ms;
         // Pre-loop setup (transpose, advantage, allocs)
@@ -1750,6 +1755,212 @@ void train_impl(PuffeRL& pufferl, RolloutBuf* src_arg) {
         pufferl.profile.accum[PROF_TRAIN_MODEL] += ms * total_minibatches;
     }
     pufferl.epoch += 1;
+}
+
+typedef struct {
+    long count;
+    long nonfinite;
+    long zero;
+    double sum;
+    double sum_sq;
+    float min;
+    float max;
+} PpoDebugStats;
+
+static PpoDebugStats ppo_debug_stats_init(void) {
+    PpoDebugStats stats = {0};
+    stats.min = INFINITY;
+    stats.max = -INFINITY;
+    return stats;
+}
+
+static void ppo_debug_add(PpoDebugStats* stats, float value) {
+    if (!isfinite(value)) {
+        stats->nonfinite++;
+        return;
+    }
+    stats->count++;
+    stats->sum += value;
+    stats->sum_sq += (double)value * value;
+    if (value == 0.0f) stats->zero++;
+    stats->min = fminf(stats->min, value);
+    stats->max = fmaxf(stats->max, value);
+}
+
+static double ppo_debug_mean(const PpoDebugStats& stats) {
+    return stats.count ? stats.sum / stats.count : 0.0;
+}
+
+static double ppo_debug_std(const PpoDebugStats& stats) {
+    if (stats.count < 2) return 0.0;
+    double mean = ppo_debug_mean(stats);
+    double variance = (stats.sum_sq - stats.sum * mean) / (stats.count - 1);
+    return sqrt(fmax(0.0, variance));
+}
+
+static void ppo_debug_copy_precision(precision_t* dst, PrecisionTensor src,
+        size_t count, const char* name) {
+    cudaError_t err = cudaMemcpy(dst, src.data,
+        count * sizeof(precision_t), cudaMemcpyDeviceToHost);
+    if (err != cudaSuccess) {
+        fprintf(stderr, "ppo_debug: copy %s failed: %s\n", name,
+            cudaGetErrorString(err));
+        exit(1);
+    }
+}
+
+static void ppo_debug_copy_float(float* dst, FloatTensor src, size_t count,
+        const char* name) {
+    cudaError_t err = cudaMemcpy(dst, src.data,
+        count * sizeof(float), cudaMemcpyDeviceToHost);
+    if (err != cudaSuccess) {
+        fprintf(stderr, "ppo_debug: copy %s failed: %s\n", name,
+            cudaGetErrorString(err));
+        exit(1);
+    }
+}
+
+static void ppo_debug_dump(PuffeRL& p) {
+    const int agents = (int)p.train_rollouts.rewards.shape[0];
+    const int horizon = (int)p.train_rollouts.rewards.shape[1];
+    const size_t total = (size_t)agents * horizon;
+    const int agents_per_buffer = p.hypers.total_agents / p.hypers.num_buffers;
+    const int primary_per_buffer = p.vec->bank_layout[1];
+
+    precision_t* rewards = (precision_t*)malloc(total * sizeof(precision_t));
+    precision_t* terminals = (precision_t*)malloc(total * sizeof(precision_t));
+    precision_t* values = (precision_t*)malloc(total * sizeof(precision_t));
+    precision_t* advantages = (precision_t*)malloc(total * sizeof(precision_t));
+    precision_t* ratios = (precision_t*)malloc(total * sizeof(precision_t));
+    if (!rewards || !terminals || !values || !advantages || !ratios) {
+        fprintf(stderr, "ppo_debug: host allocation failed\n");
+        exit(1);
+    }
+
+    ppo_debug_copy_precision(rewards, p.train_rollouts.rewards, total, "rewards");
+    ppo_debug_copy_precision(terminals, p.train_rollouts.terminals, total, "terminals");
+    ppo_debug_copy_precision(values, p.train_rollouts.values, total, "values");
+    ppo_debug_copy_precision(advantages, p.advantages_puf, total, "advantages");
+    ppo_debug_copy_precision(ratios, p.train_rollouts.ratio, total, "ratios");
+
+    PpoDebugStats reward_stats = ppo_debug_stats_init();
+    PpoDebugStats terminal_stats = ppo_debug_stats_init();
+    PpoDebugStats value_stats = ppo_debug_stats_init();
+    PpoDebugStats return_stats = ppo_debug_stats_init();
+    PpoDebugStats advantage_stats = ppo_debug_stats_init();
+    PpoDebugStats ratio_stats = ppo_debug_stats_init();
+    long primary_count = 0;
+    long advantage_last_nonzero = 0;
+    float advantage_last_abs_max = 0.0f;
+
+    for (int row = 0; row < agents; row++) {
+        bool primary = (row % agents_per_buffer) < primary_per_buffer;
+        if (!primary) continue;
+        primary_count++;
+        for (int t = 0; t < horizon; t++) {
+            size_t index = (size_t)row * horizon + t;
+            float reward = to_float(rewards[index]);
+            float terminal = to_float(terminals[index]);
+            float value = to_float(values[index]);
+            float advantage = to_float(advantages[index]);
+            float ratio = to_float(ratios[index]);
+            ppo_debug_add(&reward_stats, reward);
+            ppo_debug_add(&terminal_stats, terminal);
+            ppo_debug_add(&value_stats, value);
+            ppo_debug_add(&return_stats, value + advantage);
+            ppo_debug_add(&advantage_stats, advantage);
+            ppo_debug_add(&ratio_stats, ratio);
+            if (t == horizon - 1) {
+                if (advantage != 0.0f) advantage_last_nonzero++;
+                advantage_last_abs_max = fmaxf(advantage_last_abs_max,
+                    fabsf(advantage));
+            }
+        }
+    }
+
+    float losses[NUM_LOSSES] = {0};
+    ppo_debug_copy_float(losses, p.losses_puf, NUM_LOSSES, "losses");
+    float loss_n = losses[LOSS_N];
+    float inv_loss_n = loss_n > 0.0f ? 1.0f / loss_n : 0.0f;
+
+    float raw_grad_norm = 0.0f;
+    ppo_debug_copy_float(&raw_grad_norm, p.muon.grad_norm_puf, 1,
+        "gradient norm");
+
+    PpoDebugStats update_stats = ppo_debug_stats_init();
+    for (int i = 0; i < p.grads_alloc.num_regs; i++) {
+        AllocEntry& entry = p.grads_alloc.regs[i];
+        size_t count = (size_t)numel(entry.shape);
+        precision_t* gradient = (precision_t*)malloc(
+            count * sizeof(precision_t));
+        if (!gradient) {
+            fprintf(stderr, "ppo_debug: gradient allocation failed\n");
+            exit(1);
+        }
+        PrecisionTensor tensor = {
+            .data = (precision_t*)*entry.data_ptr,
+            .shape = {entry.shape[0]},
+        };
+        ppo_debug_copy_precision(gradient, tensor, count, "update");
+        for (size_t j = 0; j < count; j++)
+            ppo_debug_add(&update_stats, to_float(gradient[j]));
+        free(gradient);
+    }
+
+    size_t parameter_count = (size_t)numel(p.master_weights.shape);
+    float* parameters = (float*)malloc(parameter_count * sizeof(float));
+    if (!parameters) {
+        fprintf(stderr, "ppo_debug: parameter allocation failed\n");
+        exit(1);
+    }
+    ppo_debug_copy_float(parameters, p.master_weights, parameter_count,
+        "parameters");
+    PpoDebugStats parameter_stats = ppo_debug_stats_init();
+    for (size_t i = 0; i < parameter_count; i++)
+        ppo_debug_add(&parameter_stats, parameters[i]);
+
+    fprintf(stderr,
+        "ppo_debug epoch=%ld agents=%ld horizon=%d "
+        "reward(mean=%.6g min=%.6g max=%.6g) "
+        "terminal_rate=%.6g value(mean=%.6g std=%.6g) "
+        "return(mean=%.6g std=%.6g) "
+        "adv(mean=%.6g std=%.6g min=%.6g max=%.6g zero=%.6g "
+        "last_abs_max=%.6g last_nonzero=%ld) "
+        "ratio(mean=%.6g std=%.6g min=%.6g max=%.6g nonfinite=%ld) "
+        "loss(n=%.0f pg=%.6g vf=%.6g ent=%.6g total=%.6g old_kl=%.6g "
+        "kl=%.6g clipfrac=%.6g) "
+        "grad(raw=%.6g update=%.6g weight=%.6g) "
+        "layout(params=%d/%ld grads=%d/%ld)\n",
+        p.epoch, primary_count, horizon,
+        ppo_debug_mean(reward_stats), reward_stats.count ? reward_stats.min : 0.0,
+        reward_stats.count ? reward_stats.max : 0.0,
+        terminal_stats.count ? terminal_stats.sum / terminal_stats.count : 0.0,
+        ppo_debug_mean(value_stats), ppo_debug_std(value_stats),
+        ppo_debug_mean(return_stats), ppo_debug_std(return_stats),
+        ppo_debug_mean(advantage_stats), ppo_debug_std(advantage_stats),
+        advantage_stats.count ? advantage_stats.min : 0.0,
+        advantage_stats.count ? advantage_stats.max : 0.0,
+        advantage_stats.count ? (double)advantage_stats.zero / advantage_stats.count : 0.0,
+        (double)advantage_last_abs_max, advantage_last_nonzero,
+        ppo_debug_mean(ratio_stats), ppo_debug_std(ratio_stats),
+        ratio_stats.count ? ratio_stats.min : 0.0,
+        ratio_stats.count ? ratio_stats.max : 0.0, ratio_stats.nonfinite,
+        loss_n, losses[LOSS_PG] * inv_loss_n, losses[LOSS_VF] * inv_loss_n,
+        losses[LOSS_ENT] * inv_loss_n, losses[LOSS_TOTAL] * inv_loss_n,
+        losses[LOSS_OLD_APPROX_KL] * inv_loss_n,
+        losses[LOSS_APPROX_KL] * inv_loss_n,
+        losses[LOSS_CLIPFRAC] * inv_loss_n,
+        (double)raw_grad_norm, sqrt(update_stats.sum_sq),
+        sqrt(parameter_stats.sum_sq), p.params_alloc.num_regs,
+        p.params_alloc.total_elems, p.grads_alloc.num_regs,
+        p.grads_alloc.total_elems);
+
+    free(parameters);
+    free(ratios);
+    free(advantages);
+    free(values);
+    free(terminals);
+    free(rewards);
 }
 
 
@@ -2021,6 +2232,7 @@ PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx) {
         .reset_every_horizon = puf_ini_get_int(ini, "base", "reset_every_horizon") != 0,
         .cudagraphs = puf_ini_get(ini, "base", "cudagraphs") >= 0,
         .profile = puf_ini_get_int(ini, "base", "profile") != 0,
+        .ppo_debug = puf_ini_get_int(ini, "base", "ppo_debug") != 0,
         .deterministic_actions = puf_ini_get_int(
             ini, "base", "eval_deterministic") != 0,
         .rank = ctx->rank,
@@ -2069,6 +2281,16 @@ PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx) {
 
     int total_agents = (int)dict_get(&vec_kwargs, "total_agents");
     int num_buffers = (int)dict_get(&vec_kwargs, "num_buffers");
+#ifdef PUFFER_GPU_ENV
+    // The GPU rollout path owns one stream and advances the complete agent
+    // range on that stream. Splitting the vector would leave the other buffer
+    // ranges stale while the policy still writes a full-batch action tensor.
+    if (num_buffers != 1) {
+        fprintf(stderr, "GPU environments require vec.num_buffers=1 (got %d)\n",
+            num_buffers);
+        exit(1);
+    }
+#endif
     VecEnv* vec = (VecEnv*)calloc(1, sizeof(VecEnv));
     vec->total_agents = total_agents;
     vec->buffers = num_buffers;
@@ -2077,6 +2299,22 @@ PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx) {
     if (vec->num_workers < 1) {
         vec->num_workers = 1;
     }
+#ifndef PUFFER_GPU_ENV
+    // A CPU rollout worker owns an OpenMP team. Do not let the configured
+    // team oversubscribe the host when a config is reused on a smaller box.
+    long online_cpus = sysconf(_SC_NPROCESSORS_ONLN);
+    int max_workers_per_buffer = online_cpus > 0
+        ? (int)(online_cpus / num_buffers) : 0;
+    if (max_workers_per_buffer < 1) {
+        max_workers_per_buffer = 1;
+    }
+    if (vec->num_workers > max_workers_per_buffer) {
+        fprintf(stderr, "vec.num_threads=%d exceeds %ld online CPUs; using %d workers\n",
+            vec->num_workers * num_buffers, online_cpus,
+            max_workers_per_buffer * num_buffers);
+        vec->num_workers = max_workers_per_buffer;
+    }
+#endif
     int frozen_banks = (int)dict_get(&vec_kwargs, "num_frozen_banks");
     int action_mask_size = (int)dict_get(&vec_kwargs, "action_mask_size");
     // Discrete action layout (needed before mask alloc). Continuous dims are size 1.
@@ -2373,10 +2611,13 @@ PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx) {
     int decoder_output_size = is_continuous ? num_action_heads : act_n;
     int train_horizon = hypers.horizon;
     int minibatch_segments = hypers.minibatch_size / train_horizon;
-    int inf_batch = total_agents / num_buffers;
+    // Frozen-bank layouts pass only the primary bank slice to the learner
+    // policy. Match rollout activation/state shapes to that slice rather than
+    // the full buffer, which can contain opponent rows.
+    int inf_batch = pufferl->vec->bank_layout[1];
     int B_TT = minibatch_segments * train_horizon;
     int horizon = hypers.horizon;
-    int batch = total_agents / num_buffers;
+    int batch = inf_batch;
 
     pufferl->policy = build_policy(pufferl->env_name, input_size, hidden_size,
         num_layers, decoder_output_size, is_continuous, hypers.horizon);
@@ -2411,6 +2652,23 @@ PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx) {
         pufferl->actor_weights = policy_weights_create(&pufferl->policy, &pufferl->actor_params_alloc);
     }
     pufferl->train_activations = policy_reg_train(&pufferl->policy, pufferl->weights, acts, grads, B_TT);
+    if (params->num_regs != grads->num_regs
+            || params->total_elems != grads->total_elems) {
+        fprintf(stderr, "parameter/gradient registration mismatch: "
+            "params=%d/%ld grads=%d/%ld\n",
+            params->num_regs, params->total_elems,
+            grads->num_regs, grads->total_elems);
+        exit(1);
+    }
+    for (int i = 0; i < params->num_regs; i++) {
+        AllocEntry& param = params->regs[i];
+        AllocEntry& grad = grads->regs[i];
+        if (numel(param.shape) != numel(grad.shape)
+                || param.elem_size != grad.elem_size) {
+            fprintf(stderr, "parameter/gradient registration %d mismatch\n", i);
+            exit(1);
+        }
+    }
     pufferl->buffer_activations = (PolicyActivations*)xcalloc((size_t)num_buffers * sizeof(PolicyActivations));
     pufferl->buffer_states = (PrecisionTensor*)xcalloc((size_t)num_buffers * sizeof(PrecisionTensor));
     for (int i = 0; i < num_buffers; i++) {
@@ -3158,6 +3416,128 @@ void rollout_finish(PuffeRL* p, double t0) {
     p->profile.accum[PROF_EVAL_COPY] += eval_prof[VEC_COPY] / p->vec->buffers;
 #endif
 }
+
+#ifndef PUFFER_GPU_ENV
+static void trace_print_obs(const char* name, const obs_t* obs) {
+    printf(" %s=", name);
+    for (int i = 0; i < OBS_SIZE; i++) {
+        printf("%s%.9g", i == 0 ? "" : ",", (double)obs[i]);
+    }
+}
+
+static void trace_print_logits(const precision_t* logits, int count) {
+    printf(" logits=");
+    for (int i = 0; i < count; i++) {
+        printf("%s%.9g", i == 0 ? "" : ",", (double)to_float(logits[i]));
+    }
+}
+
+static void trace_print_precision(const char* name, const precision_t* values,
+        int count) {
+    printf(" %s=", name);
+    for (int i = 0; i < count; i++) {
+        printf("%s%.9g", i == 0 ? "" : ",", (double)to_float(values[i]));
+    }
+}
+
+static void trace_print_mask(const unsigned char* mask, int count) {
+    printf(" mask=");
+    for (int i = 0; i < count; i++) {
+        printf("%s%d", i == 0 ? "" : ",", mask[i] != 0);
+    }
+}
+
+// Run the native inference/environment boundary one transition at a time.
+// This intentionally mirrors vec_thread_main, but keeps row zero on the host
+// so its complete transition can be compared with the standalone evaluator.
+void pufferl_trace(PuffeRL* p, int steps) {
+    VecEnv* vec = p->vec;
+    if (vec->buffers != 1 || vec->total_agents != 1 || p->num_frozen_banks != 0) {
+        fprintf(stderr, "trace requires one agent, one buffer, and no frozen banks\n");
+        exit(1);
+    }
+    if (steps < 1 || steps > p->hypers.horizon) {
+        fprintf(stderr, "trace_steps=%d must be in [1, train.horizon=%d]\n",
+            steps, p->hypers.horizon);
+        exit(1);
+    }
+
+    int act_sizes[] = ACT_SIZES;
+    int action_count = 0;
+    for (int i = 0; i < NUM_ATNS; i++) action_count += act_sizes[i];
+    int fused_count = action_count + 1;
+    DecoderActivations* decoder =
+        (DecoderActivations*)p->buffer_activations[0].decoder;
+    if (decoder->out.shape[0] < 1 || decoder->out.shape[1] != fused_count) {
+        fprintf(stderr, "trace decoder shape does not match action contract\n");
+        exit(1);
+    }
+
+    obs_t* before_obs = (obs_t*)malloc((size_t)OBS_SIZE * sizeof(obs_t));
+    float actions[NUM_ATNS];
+    precision_t* logits = (precision_t*)malloc(
+        (size_t)fused_count * sizeof(precision_t));
+    int state_count = p->hypers.num_layers * p->hypers.hidden_size;
+    precision_t* state = (precision_t*)malloc(
+        (size_t)state_count * sizeof(precision_t));
+    if (!before_obs || !logits || !state) {
+        fprintf(stderr, "trace host allocation failed\n");
+        exit(1);
+    }
+
+    cudaStream_t stream = p->streams[0];
+    p->rollout_write_slot = 0;
+    p->rollout_deterministic = true;
+    for (int t = 0; t < steps; t++) {
+        memcpy(before_obs, vec->observations,
+            (size_t)OBS_SIZE * sizeof(obs_t));
+        unsigned char* mask = vec->action_mask;
+
+        pufferl_forward(p, 0, t, stream, true);
+        cudaMemcpyAsync(vec->actions, vec->gpu_actions,
+            NUM_ATNS * sizeof(float), cudaMemcpyDeviceToHost, stream);
+        cudaMemcpyAsync(logits, decoder->out.data,
+            (size_t)fused_count * sizeof(precision_t),
+            cudaMemcpyDeviceToHost, stream);
+        cudaMemcpyAsync(state, p->buffer_states[0].data,
+            (size_t)state_count * sizeof(precision_t),
+            cudaMemcpyDeviceToHost, stream);
+        cudaStreamSynchronize(stream);
+        memcpy(actions, vec->actions, NUM_ATNS * sizeof(float));
+
+        vec->rewards[0] = 0.0f;
+        vec->terminals[0] = 0.0f;
+        puf_step(&vec->envs[0]);
+
+        printf("trace ep=1 t=%d", t);
+        trace_print_obs("obs", before_obs);
+        trace_print_mask(mask, vec->action_mask_size);
+        trace_print_logits(logits, fused_count);
+        printf(" value=%.9g", (double)to_float(logits[fused_count - 1]));
+        trace_print_precision("state", state, state_count);
+        printf(" actions=%.0f,%.0f,%.0f,%.0f,%.0f reward=%.9g terminal=%.0f",
+            (double)actions[0], (double)actions[1], (double)actions[2],
+            (double)actions[3], (double)actions[4], (double)vec->rewards[0],
+            (double)vec->terminals[0]);
+        trace_print_obs("next_obs", vec->observations);
+        putchar('\n');
+
+        cudaMemcpyAsync(p->env.obs.data, vec->observations,
+            (size_t)OBS_SIZE * sizeof(obs_t), cudaMemcpyHostToDevice, stream);
+        cudaMemcpyAsync(p->env.rewards.data, vec->rewards,
+            sizeof(float), cudaMemcpyHostToDevice, stream);
+        cudaMemcpyAsync(p->env.terminals.data, vec->terminals,
+            sizeof(float), cudaMemcpyHostToDevice, stream);
+        cudaMemcpyAsync(p->env.action_mask.data, vec->action_mask,
+            (size_t)vec->action_mask_size * sizeof(unsigned char),
+            cudaMemcpyHostToDevice, stream);
+    }
+    cudaStreamSynchronize(stream);
+    free(state);
+    free(logits);
+    free(before_obs);
+}
+#endif
 
 void rollouts(PuffeRL* p, bool deterministic) {
     double t0 = rollout_start(p, 0, deterministic);
@@ -5016,7 +5396,11 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
 
         for (int k = 0; k < keys.size; k++) {
             const char* key = keys.items[k].key;
-            if (strncmp(key, "loss/", 5) == 0) {
+            // Keep the default compact log, but retain loss diagnostics for
+            // opt-in PPO debugging. They are otherwise visible only in the
+            // live dashboard and disappear from the persisted log.
+            if (strncmp(key, "loss/", 5) == 0
+                    && puf_ini_get_int(ini, "base", "ppo_debug") == 0) {
                 continue;
             }
 
@@ -5184,12 +5568,45 @@ TrainResult launch_train(Ini* ini) {
     return result;
 }
 
+#ifndef PUFFER_GPU_ENV
+static void run_trace(Ini* ini, TrainContext* ctx) {
+    char resolved_path[4096];
+    const char* load_path = puf_checkpoint_path_key(ini,
+        "load_model_path", resolved_path, sizeof(resolved_path));
+    if (!load_path) {
+        fprintf(stderr, "trace requires base.load_model_path\n");
+        exit(1);
+    }
+
+    // Trace only the primary row and bypass worker scheduling so every field
+    // can be printed at the same transition boundary as the CPU evaluator.
+    puf_ini_put(ini, "base.async", "0");
+    puf_ini_put(ini, "base.reset_every_horizon", "0");
+    puf_ini_put(ini, "base.cudagraphs", "-1");
+    puf_ini_put(ini, "base.eval_deterministic", "1");
+    puf_ini_put(ini, "vec.total_agents", "1");
+    puf_ini_put(ini, "vec.num_buffers", "1");
+    puf_ini_put(ini, "vec.num_threads", "1");
+    puf_ini_put(ini, "vec.num_frozen_banks", "0");
+    puf_ini_put(ini, "vec.frozen_bank_pct", "0");
+    puf_ini_put(ini, "selfplay.enabled", "0");
+
+    int steps = puf_ini_get_int(ini, "base", "trace_steps");
+    PuffeRL* pufferl = create_pufferl(ini, ctx);
+    puf_load_weights_into(pufferl->master_weights, pufferl->param_puf,
+        pufferl->default_stream, load_path);
+    pufferl_sync_loaded_policy(pufferl);
+    pufferl_trace(pufferl, steps);
+    close_pufferl(pufferl);
+}
+#endif
+
 #ifdef PUFFERLIB_BUILD_MAIN
 int main(int argc, char** argv) {
     setbuf(stdout, NULL);
     setbuf(stderr, NULL);
     if (argc < 3) {
-        fprintf(stderr, "usage: %s train|eval|eval_bot|match|league|sweep ENV [section.key=value ...]\n", argv[0]);
+        fprintf(stderr, "usage: %s train|eval|trace|eval_bot|match|league|sweep ENV [section.key=value ...]\n", argv[0]);
         exit(1);
     }
 
@@ -5198,7 +5615,14 @@ int main(int argc, char** argv) {
     puf_ini_load_env(&ini, argv[2], argc - 3, argv + 3);
     TrainContext ctx = {.world_size = 1, .artifact_owner = 1};
 
-    if (strcmp(mode, "train") == 0) {
+    if (strcmp(mode, "trace") == 0) {
+#ifdef PUFFER_GPU_ENV
+        fprintf(stderr, "trace is only supported by the native CPU environment build\n");
+        return 1;
+#else
+        run_trace(&ini, &ctx);
+#endif
+    } else if (strcmp(mode, "train") == 0) {
         launch_train(&ini);
     } else if (strcmp(mode, "sweep") == 0) {
         run_sweep(&ini, argv[0]);

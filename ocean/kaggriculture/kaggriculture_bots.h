@@ -87,7 +87,12 @@ static inline int kag_script_b64_decode(const char* source,
             if (out >= capacity) return -1;
             output[out++] = (uint8_t)((value >> bits) & 255);
             bits -= 8;
-            value = bits ? value & ((1u << bits) - 1u) : 0;
+            /* `bits` returns to [-8, -3] after emitting a byte. Preserve the
+             * 0..5 unconsumed low bits; shifting by the negative accumulator
+             * was undefined behavior under both the CPU and CUDA compilers. */
+            int remaining = bits + 8;
+            value = remaining > 0
+                ? value & ((1u << remaining) - 1u) : 0;
         }
     }
     return out;

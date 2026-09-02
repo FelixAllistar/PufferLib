@@ -47,9 +47,24 @@ class CConfig(ctypes.Structure):
 
 def load_core(path):
     lib = ctypes.CDLL(str(path))
+    lib.kg_config_default.argtypes = [ctypes.POINTER(CConfig)]
+    lib.kg_config_default.restype = None
     lib.kg_create.argtypes = [ctypes.POINTER(CConfig)]
     lib.kg_create.restype = ctypes.c_void_p
     lib.kg_destroy.argtypes = [ctypes.c_void_p]
+    lib.kg_done.argtypes = [ctypes.c_void_p]
+    lib.kg_done.restype = ctypes.c_int
+    lib.kg_state_step.argtypes = [ctypes.c_void_p]
+    lib.kg_state_step.restype = ctypes.c_int
+    lib.kg_player_money.argtypes = [ctypes.c_void_p, ctypes.c_int]
+    lib.kg_player_money.restype = ctypes.c_int
+    if hasattr(lib, "kg_rule_action_ex"):
+        lib.kg_rule_action_ex.argtypes = [
+            ctypes.c_void_p, ctypes.c_int, ctypes.c_int, ctypes.POINTER(CAction),
+        ]
+        lib.kg_rule_action_ex.restype = None
+    lib.kg_rule_action.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.POINTER(CAction)]
+    lib.kg_rule_action.restype = None
     lib.kg_step.argtypes = [ctypes.c_void_p, ctypes.POINTER(CAction)]
     lib.kg_snapshot_json.argtypes = [ctypes.c_void_p]
     lib.kg_snapshot_json.restype = ctypes.c_void_p
@@ -60,6 +75,19 @@ def load_core(path):
     lib.kg_state_serialize.restype = ctypes.c_int
     lib.kg_state_deserialize.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t]
     lib.kg_state_deserialize.restype = ctypes.c_int
+    if hasattr(lib, "kg_policy_observation"):
+        lib.kg_policy_observation.argtypes = [
+            ctypes.c_void_p, ctypes.c_int, ctypes.c_void_p, ctypes.c_size_t,
+        ]
+        lib.kg_policy_observation.restype = None
+    if hasattr(lib, "kg_policy_action_mask"):
+        lib.kg_policy_action_mask.argtypes = [
+            ctypes.c_void_p, ctypes.c_int, ctypes.c_void_p, ctypes.c_size_t,
+        ]
+        lib.kg_policy_action_mask.restype = None
+    if hasattr(lib, "kg_policy_hand_count"):
+        lib.kg_policy_hand_count.argtypes = [ctypes.c_void_p, ctypes.c_int]
+        lib.kg_policy_hand_count.restype = ctypes.c_int
     return lib
 
 
@@ -129,6 +157,16 @@ def c_action(action) -> CAction:
     for i in range(out.market_count):
         out.market[i] = market_order(market[i])
     return out
+
+
+def clone_action(action) -> CAction | dict:
+    """Copy either a ctypes action or a structured JSON action."""
+
+    if isinstance(action, CAction):
+        return CAction.from_buffer_copy(bytes(action))
+    if isinstance(action, dict):
+        return json.loads(json.dumps(action))
+    raise TypeError(f"unsupported action type: {type(action)!r}")
 
 
 def canonical_replay_frame(frame):

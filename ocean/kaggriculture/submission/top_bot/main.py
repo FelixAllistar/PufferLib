@@ -156,7 +156,10 @@ def _route(me, unit, tx, ty):
                 return ["NORTH"]
             if "SW" in unlocked:
                 return ["WEST"]
-            return ["PASS"]
+            # A newly hired hand may spawn on the shed's locked SE access
+            # cell while only NW is owned. Movement is bounds-only, so escape
+            # through locked NE and then route west on the following turn.
+            return ["NORTH"]
         if x >= 5:
             return ["WEST"]
         if y >= 5:
@@ -168,34 +171,48 @@ def _route(me, unit, tx, ty):
     return ["PASS"]
 
 
+def _remaining_days(obs):
+    step = obs.get("step", obs["day"] * 24 + obs["hour"])
+    remaining = 720 - step
+    return 0 if remaining <= 0 else (remaining + 23) // 24
+
+
+def _crop_events(obs, crop):
+    _cost, first, _max_day, interval, max_yield, ongoing = CROP_DEF[crop]
+    remaining = _remaining_days(obs)
+    if remaining <= first:
+        return 0
+    events = 1 + (remaining - first - 1) // interval if ongoing else max_yield
+    return min(events, max_yield)
+
+
 def _dynamic(obs, me, private):
     rank = _crop_rank(obs, obs["player"])
     seed_budget = dict(private["seeds"])
     seed_need = {crop: 0 for crop in CROPS}
     jobs = []
-    # Animal maintenance first: feed/care/collect/harvest are the top source of
-    # income once the opening has placed the herd. Handle workers already on an
-    # animal tile immediately, and enqueue the rest as high-priority jobs.
-    animal_jobs = []
+    # Match kag_bot_jobs_ex: occupied animal tiles are a separate row-major
+    # pass, so their ordering remains ahead of crop work.
     for y, row in enumerate(me["tiles"]):
         for x, tile in enumerate(row):
-            if isinstance(tile, dict) and tile.get("kind") in ("COOP", "PASTURE") and tile.get("animal"):
-                if not tile.get("fed_today"):
-                    animal_jobs.append((0, x, y, "FEED", "WHEAT"))
-                elif tile.get("yield_units", 0) > 0:
-                    animal_jobs.append((1, x, y, "HARVEST", None))
-                elif tile.get("fertilizer_available"):
-                    animal_jobs.append((1, x, y, "COLLECT_FERTILIZER", None))
-                elif not tile.get("cared_today"):
-                    animal_jobs.append((2, x, y, "CARE", None))
-    jobs.extend(animal_jobs)
-    slot = 0
+            if not (isinstance(tile, dict)
+                    and tile.get("kind") in ("COOP", "PASTURE")
+                    and tile.get("animal")):
+                continue
+            if not tile.get("fed_today"):
+                jobs.append((0, x, y, "FEED", None))
+            elif tile.get("yield_units", 0) > 0:
+                jobs.append((1, x, y, "HARVEST", None))
+            elif tile.get("fertilizer_available"):
+                jobs.append((1, x, y, "COLLECT_FERTILIZER", None))
+            elif not tile.get("cared_today"):
+                jobs.append((2, x, y, "CARE", None))
+
+    planting_slot = 0
     for y, row in enumerate(me["tiles"]):
         for x, tile in enumerate(row):
             if tile == "LOCKED":
                 continue
-            crop = _crop_for(slot, rank)
-            slot += 1
             if isinstance(tile, dict) and tile.get("kind") == "PLANT":
                 planted = tile["planted_day"]
                 age = obs["day"] - planted
@@ -210,10 +227,12 @@ def _dynamic(obs, me, private):
             elif isinstance(tile, dict) and tile.get("kind") == "WEED":
                 jobs.append((3, x, y, "DIG", None))
             elif tile is None:
-                viable = obs["market"]["prices"][crop] > CROP_DEF[crop][0]
+                crop = _crop_for(planting_slot, rank)
+                planting_slot += 1
+                viable = _crop_events(obs, crop) > 0
                 if viable:
                     seed_need[crop] += 1
-                if viable and seed_budget.get(crop, 0) > 0 and obs["day"] + CROP_DEF[crop][1] < 30:
+                if viable and seed_budget.get(crop, 0) > 0:
                     jobs.append((4, x, y, "PLANT", crop))
                     seed_budget[crop] -= 1
 
@@ -225,7 +244,26 @@ def _dynamic(obs, me, private):
                 and tile.get("animal") and not tile.get("fed_today"))
     pickup_assigned = False
     claimed = set()
+
+    # Native commits a job already under each worker before considering any
+    # route. This prevents a worker standing on work from walking away after
+    # an earlier worker claimed an unrelated global job.
     for worker, (x, y) in enumerate(positions):
+        inv = private["inventories"][worker]
+        candidates = [
+            (priority, index, op, arg)
+            for index, (priority, tx, ty, op, arg) in enumerate(jobs)
+            if index not in claimed and (tx, ty) == (x, y)
+            and (op != "FEED" or inv.get("WHEAT", 0) > 0)
+        ]
+        if candidates:
+            _priority, index, op, arg = min(candidates)
+            commands[worker] = [op, arg] if arg is not None else [op]
+            claimed.add(index)
+
+    for worker, (x, y) in enumerate(positions):
+        if commands[worker][0] != "PASS":
+            continue
         inv = private["inventories"][worker]
         if (unfed and inv.get("WHEAT", 0) == 0 and not pickup_assigned
                 and private["shed"].get("WHEAT", 0) > 0):
@@ -240,6 +278,8 @@ def _dynamic(obs, me, private):
         best_score = 2 ** 31 - 1
         for j, (priority, tx, ty, op, arg) in enumerate(jobs):
             if j in claimed:
+                continue
+            if op == "FEED" and inv.get("WHEAT", 0) <= 0:
                 continue
             score = priority * 32 + abs(x - tx) + abs(y - ty)
             if score < best_score:
@@ -257,24 +297,31 @@ def _dynamic(obs, me, private):
             count -= unfed
         if count > 0 and len(market) < 10:
             market.append(["SELL", product, count])
-    if obs["day"] < 28:
-        land = len(me["unlocked_quadrants"])
-        carried_wheat = sum(inv.get("WHEAT", 0)
-                            for inv in private["inventories"])
-        missing_feed = unfed - private["shed"].get("WHEAT", 0) - carried_wheat
-        if missing_feed > 0 and len(market) < 10:
-            market.append(["BUY_PRODUCT", "WHEAT", missing_feed])
-        if obs["day"] in (4, 9) and land < 3 and me["money"] >= (1500 if land == 1 else 3000) and len(market) < 10:
-            market.append(["BUY_LAND"])
-        for crop in CROPS:
-            missing = seed_need[crop] - private["seeds"].get(crop, 0)
-            if missing > 0 and len(market) < 10:
-                market.append(["BUY_SEED", crop, missing])
-        desired = 4 if land == 1 else 8 if land == 2 else 12
-        for _ in range(len(me["hands"]), desired):
-            if len(market) >= 10:
-                break
-            market.append(["HIRE"])
+    carried_wheat = sum(inv.get("WHEAT", 0)
+                        for inv in private["inventories"])
+    missing_feed = unfed - private["shed"].get("WHEAT", 0) - carried_wheat
+    if missing_feed > 0 and len(market) < 10:
+        market.append(["BUY_PRODUCT", "WHEAT", missing_feed])
+
+    # The final-two-day freeze suppresses new capital, never feed for existing
+    # animals. This return deliberately follows the mandatory feed order.
+    if _remaining_days(obs) <= 2:
+        return {"farmer": commands[0], "hands": commands[1:], "market": market}
+
+    land = len(me["unlocked_quadrants"])
+    if (obs["day"] in (4, 9) and land < 3
+            and me["money"] >= (1500 if land == 1 else 3000)
+            and len(market) < 10):
+        market.append(["BUY_LAND"])
+    for crop in CROPS:
+        missing = seed_need[crop] - private["seeds"].get(crop, 0)
+        if missing > 0 and len(market) < 10:
+            market.append(["BUY_SEED", crop, missing])
+    desired = 4 if land == 1 else 8 if land == 2 else 12
+    for _ in range(len(me["hands"]), desired):
+        if len(market) >= 10:
+            break
+        market.append(["HIRE"])
     return {"farmer": commands[0], "hands": commands[1:], "market": market}
 
 

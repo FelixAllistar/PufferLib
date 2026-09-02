@@ -258,6 +258,16 @@ void kg_destroy(KGState* state);
 KG_HD void kg_reset(KGState* state);
 KG_HD void kg_step(KGState* state, const KGAction actions[KG_NUM_PLAYERS]);
 KG_HD int kg_done(const KGState* state);
+/* Small read-only accessors used by offline counterfactual evaluation. */
+KG_HD int kg_state_step(const KGState* state);
+KG_HD int kg_player_money(const KGState* state, int player);
+/* Deterministic reactive baseline used by offline PvP branching.  It only
+ * reads the state and writes one legal-shaped action; it is not part of the
+ * live PPO policy ABI.  The explicit liquidation window lets offline profiles
+ * vary this rule while keeping the default symbol stable for callers. */
+KG_HD void kg_rule_action_ex(const KGState* state, int player, int liquidation_steps,
+    KGAction* output);
+KG_HD void kg_rule_action(const KGState* state, int player, KGAction* output);
 /* Complete, resumable snapshots for offline reset banks. The payload is the
  * native POD layout, so consumers must require both this schema version and
  * the exact serialized size before loading it. */
@@ -267,6 +277,14 @@ int kg_state_serialize(const KGState* state, void* output, size_t output_size);
 int kg_state_deserialize(KGState* state, const void* input, size_t input_size);
 const char* kg_snapshot_json(const KGState* state);
 void kg_free_string(const char* value);
+/* Exact elite PPO observation/mask views without JSON serialization.  These
+ * helpers are used by the offline learned-opponent batcher and intentionally
+ * share the production kag_write_observation/kag_write_mask implementation. */
+void kg_policy_observation(const KGState* state, int player, unsigned char* output,
+    size_t output_size);
+void kg_policy_action_mask(const KGState* state, int player, unsigned char* output,
+    size_t output_size);
+int kg_policy_hand_count(const KGState* state, int player);
 
 /* String/enum helpers used by the parity harness and agent adapter. */
 int kg_crop_from_name(const char* name);

@@ -21,6 +21,8 @@ fi
 #   ./build.sh breakout --gpu        # GPU env path (Env* on device; requires ocean/ENV/ENV.cu)
 #   ./build.sh breakout --float      # float32 precision (required for --slowly)
 #   ./build.sh breakout --cpu        # Tiny standalone CPU eval executable
+#   ./build.sh shenaniguns3d --encoder-test # Native encoder parity/gradient test
+#   ./build.sh shenaniguns3d --gpu-test     # CPU/GPU reset and rollout check
 #   ./build.sh breakout --debug      # Debug build
 #   ./build.sh breakout --local      # Standalone executable (debug, sanitizers)
 #   ./build.sh breakout --fast       # Standalone executable (optimized)
@@ -33,7 +35,7 @@ fi
 #   ./build.sh all                   # Build all envs native and native float32
 
 if [ -z "$1" ]; then
-    echo "Usage: ./build.sh ENV_NAME [--gpu] [--cards N] [--float] [--debug] [--local|--fast|--web|--profile|--cpu]"
+    echo "Usage: ./build.sh ENV_NAME [--gpu] [--gpu-test] [--cards N] [--float] [--debug] [--local|--fast|--web|--profile|--cpu]"
     exit 1
 fi
 ENV=$1
@@ -56,6 +58,8 @@ while [ $i -lt ${#args[@]} ]; do
         --tui)   MODE=tui ;;
         --web)   MODE=web ;;
         --profile) MODE=profile ;;
+        --encoder-test) MODE=encoder_test ;;
+        --gpu-test) MODE=gpu_test ;;
         --exploit) MODE=exploit ;;
         --exploit-gpu) MODE=exploit_gpu ;;
         --behavior-gpu) MODE=behavior_gpu ;;
@@ -219,6 +223,7 @@ elif [ "$ENV" = "shenaniguns3d" ]; then
     INCLUDES+=(-I"$BOX3D_DIR/include" -I"../pd64")
     LINK_ARCHIVES+=("$BOX3D_DIR/build/src/libbox3d.a")
     EXTRA_CFLAGS+=(-DB3_MAX_WORLDS=8192)
+    EXTRA_CFLAGS+=(-DPUFFER_SHENANIGUNS3D)
     EXTRA_LDFLAGS+=("$BOX3D_DIR/build/src/libbox3d.a")
     EXTRA_SRC="../pd64/character.c"
 elif [ -d "ocean/$ENV" ]; then
@@ -245,6 +250,11 @@ SRC_FILE=${SRC_FILE:-$SRC_DIR/$ENV.c}
 # -mavx2 enables AVX2 intrinsics (__m256, _mm256_*) which drive.h and
 # src/pufferenv.h use directly. x86_64 only — strip if porting to ARM/Apple Silicon.
 SIMD_FLAGS=(-mavx2 -mfma)
+if [ "$ENV" = "retro" ]; then
+    # QuickNES' 6502 interpreter dominates this build. Keep the explicit AVX2
+    # target, but let clang tune the branch-heavy host code for this machine.
+    SIMD_FLAGS+=(-march=native)
+fi
 if [ -n "$DEBUG" ] || [ "$MODE" = "local" ]; then
     CLANG_OPT=(-g -O0 "${CLANG_WARN[@]}" "${SANITIZE_FLAGS[@]}" "${SIMD_FLAGS[@]}")
     NVCC_OPT="-O0 -g"
@@ -422,11 +432,66 @@ fi
 
 MODE=${MODE:-native}
 
+if [ "$MODE" = "encoder_test" ]; then
+    if [ "$ENV" != "shenaniguns3d" ]; then
+        echo "Error: --encoder-test is only available for shenaniguns3d" >&2
+        exit 1
+    fi
+    TEST_OMP_FLAG=()
+    if [ "${HEADLESS:-0}" != "1" ]; then
+        TEST_OMP_FLAG=(-Xcompiler=-fopenmp)
+    fi
+    echo "Compiling shenaniguns3d encoder test ($ARCH)..."
+    $NVCC $NVCC_OPT -arch=$ARCH -std=c++17 \
+        -I. -Isrc -Iocean/shenaniguns3d -Ivendor \
+        "${INCLUDES[@]}" \
+        -I$CUDA_HOME/include -I$CUDA_HOME/include/cccl $NCCL_IFLAG \
+        -Xcompiler=-DPLATFORM_DESKTOP \
+        "${TEST_OMP_FLAG[@]}" \
+        "${EXTRA_CFLAGS[@]}" \
+        tests/test_shenaniguns3d_encoder.cu $EXTRA_SRC \
+        ${RAYLIB_A:+"$RAYLIB_A"} \
+        -L$CUDA_HOME/lib64 $NCCL_LFLAG \
+        "${EXTRA_LDFLAGS[@]}" \
+        -lcudart -lcublas -lcurand -lm -lpthread $OMP_LIB \
+        "${STANDALONE_LDFLAGS[@]}" \
+        -o test_shenaniguns3d_encoder
+    echo "Built: ./test_shenaniguns3d_encoder"
+    exit 0
+fi
+
+if [ "$MODE" = "gpu_test" ]; then
+    if [ "$ENV" != "shenaniguns3d" ]; then
+        echo "Error: --gpu-test is only available for shenaniguns3d" >&2
+        exit 1
+    fi
+    echo "Compiling shenaniguns3d GPU differential test ($ARCH)..."
+    $NVCC $NVCC_OPT -arch=$ARCH -std=c++17 \
+        -I. -Isrc -I$SRC_DIR -Ivendor \
+        "${INCLUDES[@]}" \
+        -I$CUDA_HOME/include -I$CUDA_HOME/include/cccl $NCCL_IFLAG \
+        -Xcompiler=-DPLATFORM_DESKTOP \
+        "${EXTRA_CFLAGS[@]}" \
+        tests/test_shenaniguns3d_gpu.cu $EXTRA_SRC \
+        ${RAYLIB_A:+"$RAYLIB_A"} \
+        -L$CUDA_HOME/lib64 $NCCL_LFLAG \
+        "${EXTRA_LDFLAGS[@]}" \
+        -lcudart -lm -lpthread $OMP_LIB \
+        "${STANDALONE_LDFLAGS[@]}" \
+        -o test_shenaniguns3d_gpu
+    echo "Built: ./test_shenaniguns3d_gpu"
+    exit 0
+fi
+
 if [ "$MODE" = "native" ]; then
     echo "Compiling native train/eval binary ($ARCH)..."
     OMP_FLAG=()
     if [ "${HEADLESS:-0}" != "1" ]; then
         OMP_FLAG=(-Xcompiler=-fopenmp)
+    fi
+    RETRO_HOST_FLAG=()
+    if [ "$ENV" = "retro" ]; then
+        RETRO_HOST_FLAG=(-Xcompiler=-march=native)
     fi
     $NVCC $NVCC_OPT -arch=$ARCH -std=c++17 \
         -I. -Isrc -I$SRC_DIR -Ivendor \
@@ -438,6 +503,7 @@ if [ "$MODE" = "native" ]; then
 	    -DPUFFER_ENV_NAME=\"$ENV\" \
 	    -DPUFFERLIB_BUILD_MAIN \
 	    -Xcompiler=-DPLATFORM_DESKTOP \
+	    "${RETRO_HOST_FLAG[@]}" \
 	    "${OMP_FLAG[@]}" \
 	    "${EXTRA_CFLAGS[@]}" \
 	    $PRECISION \
