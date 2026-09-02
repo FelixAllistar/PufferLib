@@ -17,6 +17,7 @@ validation_games=${KAG_ELITE_BC_VALIDATION_GAMES:-400}
 opening_steps=${KAG_ELITE_BC_OPENING_STEPS:-1}
 opening_weight=${KAG_ELITE_BC_OPENING_WEIGHT:-1}
 root_weight=${KAG_ELITE_BC_ROOT_WEIGHT:-$opening_weight}
+seed=${KAG_ELITE_BC_SEED:-42}
 argmax_margin=${KAG_ELITE_BC_ARGMAX_MARGIN:-0}
 opening_argmax_coef=${KAG_ELITE_BC_OPENING_ARGMAX_COEF:-0}
 learning_rate=${KAG_ELITE_BC_LR:-0.00005}
@@ -27,7 +28,7 @@ if [[ ! -s "$data" ]]; then
     echo "elite BC dataset not found: $data" >&2
     exit 1
 fi
-mkdir -p "$(dirname "$repo_root/$output")"
+mkdir -p "$(dirname "$output")"
 make -C "$repo_root/ocean/kaggriculture" build/kag_bc
 
 cd "$repo_root"
@@ -39,6 +40,7 @@ exec ./ocean/kaggriculture/build/kag_bc \
     bc.epochs="$epochs" \
     bc.learning_rate="$learning_rate" \
     bc.batch="$batch" \
+    bc.seed="$seed" \
     bc.validation_games="$validation_games" \
     bc.report_interval="$report_interval" \
     bc.opening_steps="$opening_steps" \
