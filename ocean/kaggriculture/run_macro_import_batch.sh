@@ -12,6 +12,7 @@ data_root=${KAG_ELITE_DATA_ROOT:-/workspace/elite_replays}
 factory_root=${KAG_MACRO_CLONE_ROOT:-$data_root/clone_factory_macro2}
 raw_glob=${KAG_MACRO_RAW_GLOB:-$data_root/raw/*/*.zip}
 raw_globs_value=${KAG_MACRO_RAW_GLOBS:-}
+trajectory_dir=${KAG_MACRO_TRAJECTORY_DIR:-}
 minimum_version=${KAG_ELITE_MIN_VERSION:-1.32.7}
 exact_version=${KAG_ELITE_EXACT_VERSION:-$minimum_version}
 limit=${KAG_MACRO_MAX_EPISODES:-0}
@@ -78,6 +79,9 @@ run_agent() {
     )
     if ((limit > 0)); then
         args+=(--limit "$limit")
+    fi
+    if [[ -n "$trajectory_dir" && -s "$trajectory_dir/$slug.players.tsv" ]]; then
+        args+=(--trajectory-file "$trajectory_dir/$slug.players.tsv")
     fi
     echo "IMPORT exact agent=$agent cutoff=$cutoff"
     "$python_bin" "$repo_root/ocean/kaggriculture/import_elite_replays.py" \
