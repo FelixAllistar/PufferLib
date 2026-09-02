@@ -89,6 +89,7 @@ log="$data_root/macro-train-2026-09-03.log"
     wait_for_external_and_gpu
     echo "TRAIN START $(date -u +%FT%TZ)"
     KAG_MACRO_CLONE_ROOT="$new_split" \
+    KAG_MACRO_REUSE_EXISTING=1 \
     KAG_MACRO_TRAIN_UNTIL=2026-08-31 \
     KAG_MACRO_ARTIFACT_SUFFIX=_episode_split \
     KAG_MACRO_EPOCHS=25 KAG_MACRO_MAX_EPISODES=0 \
@@ -96,6 +97,7 @@ log="$data_root/macro-train-2026-09-03.log"
         "Crop Dusta" "Ryo Hasegawa" peikopon tetsuya
     echo "OLD TRAIN START $(date -u +%FT%TZ)"
     KAG_MACRO_CLONE_ROOT="$old_split" \
+    KAG_MACRO_REUSE_EXISTING=1 \
     KAG_MACRO_TRAIN_UNTIL=2026-08-21 \
     KAG_MACRO_ARTIFACT_SUFFIX=_episode_split \
     KAG_MACRO_EPOCHS=25 KAG_MACRO_MAX_EPISODES=0 \

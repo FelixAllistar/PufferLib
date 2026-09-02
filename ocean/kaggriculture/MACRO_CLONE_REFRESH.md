@@ -96,6 +96,12 @@ python ocean/kaggriculture/split_macro_dataset.py full.bc \
 No episode ID is split across the two outputs, so recurrent-state evaluation
 cannot leak neighboring turns from a held-out replay.
 
+When training from these pre-built split files, set
+`KAG_MACRO_REUSE_EXISTING=1` on the factory invocation. Split outputs carry
+their own split report rather than a full-import audit sidecar; this guard
+requires the existing dataset/manifest and prevents an accidental raw replay
+re-import from collapsing the train/holdout boundary.
+
 ## Factory
 
 `build_macro_clone_factory.sh` builds exact-agent mode-2 datasets and names
