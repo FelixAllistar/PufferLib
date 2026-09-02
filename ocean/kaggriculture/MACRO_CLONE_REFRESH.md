@@ -78,6 +78,10 @@ retaining turn-180 and late maintenance/liquidation slices. Compare models on
 held-out whole episodes or later daily versions; training loss alone does not
 establish a clone improvement.
 
+`evaluate_macro_clone.py` also records the ten most common hard-label opening
+signatures and prediction overlap with that expert top ten, making unusual
+single-agent openings and shared top-agent openings visible in the report.
+
 `split_macro_dataset.py` creates a clean train/holdout pair from an imported
 KAGB file using complete manifest trajectories. It holds out the latest source
 day by default (or an explicit `--holdout-day`), preserves section ordering and

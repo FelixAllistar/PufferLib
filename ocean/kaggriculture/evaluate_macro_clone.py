@@ -8,6 +8,9 @@ leakage.  The evaluator runs the recurrent policy from a fresh state per
 episode, applies the recorded mode-2 mask, and reports intent/quantity/target
 accuracy, legal-label coverage, opening (`<=60`) fidelity, the turn-180 window,
 and macro/quantity/target diversity descriptors.
+It also records the ten most common hard-label opening signatures (the first
+eight opening decisions by default) and how often predictions land in that
+expert top-ten set.
 
 The old primitive clone artifacts cannot be evaluated as mode-2 checkpoints:
 their first-head command IDs have different semantics.  Use the importer on
@@ -116,6 +119,7 @@ def evaluate(
     dataset: pathlib.Path, model_path: pathlib.Path, manifest_path: pathlib.Path,
     *, holdout_day: str | None = None, holdout_fraction: float = 0.2,
     opening_steps: int = 61, turn180_start: int = 168, turn180_end: int = 192,
+    opening_signature_steps: int = 8,
 ) -> dict[str, Any]:
     codec = _load_submission()
     magic, version, count, row_obs, row_expert, row_mask, games, steps = _read_header(dataset)
@@ -150,12 +154,16 @@ def evaluate(
     quantity_counts: collections.Counter[str] = collections.Counter()
     target_counts: collections.Counter[str] = collections.Counter()
     source_counts: collections.Counter[str] = collections.Counter()
+    expert_opening_signatures: collections.Counter[str] = collections.Counter()
+    predicted_opening_signatures: collections.Counter[str] = collections.Counter()
     heldout_rows = 0
     skipped_rows = 0
     for game in selected_games:
         model.reset()
         source = rows[game].get("source", "")
         source_counts[_source_day(source)] += 1
+        expert_signature: list[tuple[int, int, int]] = []
+        predicted_signature: list[tuple[int, int, int]] = []
         for turn in range(steps):
             index = game * steps + turn
             expert = np.asarray(experts[index], dtype=np.float32)
@@ -198,9 +206,33 @@ def evaluate(
                 if target_counter is not None:
                     target_counter[name][1] += 1
                     target_counter[name][0] += int(predictions[head] == int(expert[head]))
+            if turn < opening_steps and len(expert_signature) < opening_signature_steps:
+                expert_signature.append(tuple(int(value) for value in expert[:3]))
+                predicted_signature.append(tuple(int(value) for value in predictions[:3]))
             macro_counts[str(int(expert[0]))] += 1
             quantity_counts[str(int(expert[1]))] += 1
             target_counts[str(int(expert[2]))] += 1
+
+        if len(expert_signature) == opening_signature_steps:
+            def encode_signature(values: list[tuple[int, int, int]]) -> str:
+                return ";".join(
+                    ",".join(str(value) for value in triple) for triple in values
+                )
+            expert_opening_signatures[encode_signature(expert_signature)] += 1
+            predicted_opening_signatures[encode_signature(predicted_signature)] += 1
+
+    expert_top10 = expert_opening_signatures.most_common(10)
+    predicted_top10 = predicted_opening_signatures.most_common(10)
+    expert_top10_keys = {signature for signature, _count in expert_top10}
+    total_signature_episodes = sum(predicted_opening_signatures.values())
+    predicted_in_expert_top10 = sum(
+        count for signature, count in predicted_opening_signatures.items()
+        if signature in expert_top10_keys
+    )
+    exact_signature_matches = sum(
+        count for signature, count in predicted_opening_signatures.items()
+        if signature in expert_opening_signatures
+    )
 
     return {
         "dataset": str(dataset), "model": str(model_path),
@@ -218,6 +250,28 @@ def evaluate(
             "quantity_bins": dict(quantity_counts.most_common()),
             "target_bins": dict(target_counts.most_common()),
         },
+        "opening_signatures": {
+            "steps": opening_signature_steps,
+            "episodes_with_signature": sum(expert_opening_signatures.values()),
+            "expert_top10": [
+                {"signature": signature, "count": count}
+                for signature, count in expert_top10
+            ],
+            "predicted_top10": [
+                {"signature": signature, "count": count}
+                for signature, count in predicted_top10
+            ],
+            "predicted_in_expert_top10": predicted_in_expert_top10,
+            "predicted_in_expert_top10_rate": (
+                predicted_in_expert_top10 / total_signature_episodes
+                if total_signature_episodes else None
+            ),
+            "exact_signature_matches": exact_signature_matches,
+            "exact_signature_match_rate": (
+                exact_signature_matches / total_signature_episodes
+                if total_signature_episodes else None
+            ),
+        },
         "mode2_abi": {"observation_bytes": 1280, "heads": 47, "mask_bits": 1058},
     }
 
@@ -232,13 +286,17 @@ def main() -> int:
     parser.add_argument("--opening-steps", type=int, default=61)
     parser.add_argument("--turn180-start", type=int, default=168)
     parser.add_argument("--turn180-end", type=int, default=192)
+    parser.add_argument("--opening-signature-steps", type=int, default=8)
     parser.add_argument("--output", type=pathlib.Path)
     args = parser.parse_args()
+    if args.opening_signature_steps < 1:
+        parser.error("--opening-signature-steps must be positive")
     manifest = args.manifest or args.dataset.with_suffix(args.dataset.suffix + ".players.tsv")
     result = evaluate(
         args.dataset, args.model, manifest, holdout_day=args.holdout_day,
         holdout_fraction=args.holdout_fraction, opening_steps=args.opening_steps,
         turn180_start=args.turn180_start, turn180_end=args.turn180_end,
+        opening_signature_steps=args.opening_signature_steps,
     )
     payload = json.dumps(result, indent=2, sort_keys=True)
     if args.output:
