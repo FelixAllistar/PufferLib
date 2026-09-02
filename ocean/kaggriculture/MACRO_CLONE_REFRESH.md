@@ -112,3 +112,12 @@ KAG_MACRO_SKIP_TRAIN=1 \
 The factory TSV/JSON manifests include source paths, trajectory counts, and
 SHA-256/size metadata. Set `KAG_MACRO_MAX_EPISODES=0` for a full import; a
 full pass is preferred before attempting a 512-wide clone.
+
+For a matching historical window, `run_macro_import_batch.sh` accepts
+space-separated exact patterns in `KAG_MACRO_RAW_GLOBS`; this avoids silently
+including older archives merely because a cutoff date is earlier:
+
+```bash
+KAG_MACRO_RAW_GLOBS="/workspace/elite_replays/raw/kaggriculture-episodes-2026-08-16/*.zip /workspace/elite_replays/raw/kaggriculture-episodes-2026-08-17/*.zip" \
+./ocean/kaggriculture/run_macro_import_batch.sh "Crop Dusta"
+```
