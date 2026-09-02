@@ -21,7 +21,7 @@ output_root="$data_root/evals_2026-09-03"
 
 external_training_active() {
     ps -eo comm=,args= | awk \
-        '$1 == "puffer" && $2 == "./puffer" && $3 == "train" && $4 == "kaggriculture" { found = 1 } END { exit !found }'
+        '$1 == "puffer" && $3 == "train" && $4 == "kaggriculture" { found = 1 } END { exit !found }'
 }
 
 gpu_busy() {

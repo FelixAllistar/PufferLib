@@ -20,7 +20,7 @@ external_training_active() {
     # a stale PID.  Any matching process is treated as external and left
     # completely untouched.
     ps -eo comm=,args= | awk \
-        '$1 == "puffer" && $2 == "./puffer" && $3 == "train" && $4 == "kaggriculture" { found = 1 } END { exit !found }'
+        '$1 == "puffer" && $3 == "train" && $4 == "kaggriculture" { found = 1 } END { exit !found }'
 }
 
 gpu_busy() {
@@ -103,4 +103,3 @@ log="$data_root/macro-train-2026-09-03.log"
         "Crop Dusta" "Ryo Hasegawa" peikopon tetsuya
     echo "TRAIN COMPLETE $(date -u +%FT%TZ)"
 } >"$log" 2>&1
-
