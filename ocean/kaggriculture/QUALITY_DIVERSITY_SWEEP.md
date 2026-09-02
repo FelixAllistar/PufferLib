@@ -9,8 +9,8 @@ we have found for every materially different farm behavior?”
 checkpoint with the native evaluator. It archives a policy by three observed
 outcome axes:
 
-- expansion: compact, one expansion, or broad expansion;
-- production: crop-heavy, mixed, or animal-heavy;
+- expansion: compact, partial, or full expansion;
+- production: crop-only, dual-production, or animal-led;
 - capital use: cash-heavy, balanced, or growth-heavy reinvestment.
 
 This produces 27 niches. Final money ranks checkpoints only within the same
@@ -55,6 +55,12 @@ python ocean/kaggriculture/qd_sweep.py \
   --agents 2048 --minibatch-size 2048 --horizon 64 \
   --hidden-size 128 --layers 2 --gpus 0
 ```
+
+The family seeds deliberately cover balanced, crop, animal, expansion,
+liquidator, and sparse teaching regimes. Crop and animal scale ranges extend
+to 40 and 80 because observed 128/256 policies often need much more than the
+old nominal five-point range before the corresponding behavior appears. The
+archive still classifies the resulting behavior, not the coefficient name.
 
 On a multi-GPU host use, for example, `--gpus 0,1,2,3`. One independent trial
 runs on each GPU. The principal outputs are `archive.json`, a compact
