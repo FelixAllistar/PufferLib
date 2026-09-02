@@ -33,6 +33,25 @@ from typing import Any, Iterable, Iterator
 
 import numpy as np
 
+try:
+    # This module lives beside the importer and is deliberately imported by
+    # path-compatible name so the script remains runnable from a checkout.
+    import macro_bc_labels as _macro_bc_labels
+    from macro_bc_labels import (
+        NUM_HEADS as MACRO_NUM_HEADS,
+        build_macro_row,
+        fill_mode2_observation,
+        remember_label,
+    )
+except ImportError:  # pragma: no cover - package-style invocation fallback
+    from ocean.kaggriculture import macro_bc_labels as _macro_bc_labels
+    from ocean.kaggriculture.macro_bc_labels import (
+        NUM_HEADS as MACRO_NUM_HEADS,
+        build_macro_row,
+        fill_mode2_observation,
+        remember_label,
+    )
+
 
 HEADER = struct.Struct("<8I")
 MAGIC = 0x4B414742  # KAGB
@@ -101,7 +120,11 @@ class Audit:
     unit_actions: collections.Counter[str] = field(default_factory=collections.Counter)
     market_actions: collections.Counter[str] = field(default_factory=collections.Counter)
     market_quantities: collections.Counter[str] = field(default_factory=collections.Counter)
+    macro_actions: collections.Counter[str] = field(default_factory=collections.Counter)
+    macro_reasons: collections.Counter[str] = field(default_factory=collections.Counter)
+    macro_targets: collections.Counter[str] = field(default_factory=collections.Counter)
     final_money: list[float] = field(default_factory=list)
+    macro_mode: str = "primitive"
 
     def merge(self, other: "Audit") -> None:
         self.counts.update(other.counts)
@@ -110,7 +133,12 @@ class Audit:
         self.unit_actions.update(other.unit_actions)
         self.market_actions.update(other.market_actions)
         self.market_quantities.update(other.market_quantities)
+        self.macro_actions.update(other.macro_actions)
+        self.macro_reasons.update(other.macro_reasons)
+        self.macro_targets.update(other.macro_targets)
         self.final_money.extend(other.final_money)
+        if other.macro_mode != "primitive":
+            self.macro_mode = other.macro_mode
 
     def as_dict(self) -> dict[str, Any]:
         money = np.asarray(self.final_money, dtype=np.float64)
@@ -151,6 +179,7 @@ class Audit:
                 "expert_heads": NUM_HEADS,
                 "mask_bits": MASK_SIZE,
                 "mask_bytes": MASK_BYTES,
+                "macro_mode": 2 if self.macro_mode == "structured" else 0,
             },
             "counts": counts,
             "ratios": ratios,
@@ -159,6 +188,9 @@ class Audit:
             "unit_actions": dict(self.unit_actions.most_common()),
             "market_actions": dict(self.market_actions.most_common()),
             "market_quantities": dict(self.market_quantities.most_common()),
+            "macro_actions": dict(self.macro_actions.most_common()),
+            "macro_reasons": dict(self.macro_reasons.most_common()),
+            "macro_targets": dict(self.macro_targets.most_common()),
             "final_money": money_summary,
         }
 
@@ -393,13 +425,54 @@ def _head_legal(mask: np.ndarray, head: int, action: int) -> bool:
     return bool(mask[int(CODEC.HEAD_OFFSETS[head]) + action])
 
 
-def _build_row(observation: dict[str, Any], action: dict[str, Any]) -> tuple[
-    np.ndarray, np.ndarray, np.ndarray, Audit
-]:
+def _build_row(
+    observation: dict[str, Any], action: dict[str, Any],
+    macro_mode: str = "primitive", macro_runtime: Any | None = None,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, Audit]:
     audit = Audit()
     encoded_obs = np.asarray(CODEC.encode_observation(observation), dtype=np.uint8)
     if encoded_obs.shape != (OBS_SIZE,):
         raise ValueError(f"encoder returned shape {encoded_obs.shape}")
+
+    if macro_mode == "structured":
+        if MACRO_NUM_HEADS != NUM_HEADS:
+            raise RuntimeError(
+                f"macro label heads {MACRO_NUM_HEADS} != codec heads {NUM_HEADS}"
+            )
+        if macro_runtime is None:
+            # A caller that builds an isolated row does not need recurrent tail
+            # state. Trajectory import passes one runtime per player sequence.
+            macro_runtime = _macro_bc_labels.RUNTIME.NativeMacroRuntime()
+        fill_mode2_observation(observation, encoded_obs, runtime=macro_runtime)
+        expert, packed, label, mask = build_macro_row(
+            observation, action, runtime=macro_runtime
+        )
+        audit.macro_mode = "structured"
+        audit.counts["macro_rows"] += 1
+        if label is None or label.ambiguous:
+            audit.counts["macro_ambiguous_rows"] += 1
+            if label is not None:
+                audit.macro_reasons[label.reason] += 1
+        else:
+            audit.counts["macro_labeled_rows"] += 1
+            audit.macro_actions[str(label.macro_id)] += 1
+            audit.macro_targets[str(label.target)] += 1
+            if not label.quantity_exact:
+                audit.counts["macro_lossy_quantities"] += 1
+            audit.counts["macro_confident_rows"] += int(label.confidence >= 0.8)
+            audit.macro_reasons[label.reason] += 1
+        # Keep the mode-2 tail's previous-decision state in sync for the
+        # following observation. Ambiguous rows become HOLD and cannot leak a
+        # discarded primitive intent into features.
+        remember_label(macro_runtime, observation, label)
+        # The mode-2 row's runtime mask is semantic, never the primitive mask.
+        audit.counts["macro_mask_bits"] += int(np.count_nonzero(mask))
+        audit.counts["rows"] += 1
+        packed = np.asarray(packed, dtype=np.uint8)
+        if packed.shape != (MASK_BYTES,):
+            raise RuntimeError(f"packed mask shape mismatch: {packed.shape}")
+        return encoded_obs, expert, packed, audit
+
     mask = np.asarray(CODEC.action_mask(observation), dtype=np.bool_)
     if mask.shape != (MASK_SIZE,):
         raise ValueError(f"action mask returned shape {mask.shape}")
@@ -560,12 +633,18 @@ def _selected_players(
 
 
 def _build_trajectory(
-    episode: dict[str, Any], player: int, expected_steps: int
+    episode: dict[str, Any], player: int, expected_steps: int,
+    macro_mode: str = "primitive",
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, Audit]:
     observations = np.empty((expected_steps, OBS_SIZE), dtype=np.uint8)
     experts = np.empty((expected_steps, NUM_HEADS), dtype="<f4")
     masks = np.empty((expected_steps, MASK_BYTES), dtype=np.uint8)
     audit = Audit()
+    macro_runtime = (
+        _macro_bc_labels.RUNTIME.NativeMacroRuntime()
+        if macro_mode == "structured" else None
+    )
+    audit.macro_mode = macro_mode
     # Kaggle stores the action chosen from observation t in record t + 1,
     # alongside the resulting observation.  Record zero contains only the
     # framework's default PASS action; the terminal record has no following
@@ -580,14 +659,23 @@ def _build_trajectory(
         if turn + 1 < expected_steps:
             action = episode["steps"][turn + 1][player]["action"]
             row_obs, row_expert, row_mask, row_audit = _build_row(
-                observation, action
+                observation, action, macro_mode=macro_mode,
+                macro_runtime=macro_runtime,
             )
         else:
             row_obs = np.asarray(CODEC.encode_observation(observation), dtype=np.uint8)
-            mask = np.asarray(CODEC.action_mask(observation), dtype=np.bool_)
+            if macro_mode == "structured":
+                assert macro_runtime is not None
+                fill_mode2_observation(observation, row_obs, runtime=macro_runtime)
+                mask = _macro_bc_labels.mode2_mask(
+                    observation, runtime=macro_runtime
+                )
+            else:
+                mask = np.asarray(CODEC.action_mask(observation), dtype=np.bool_)
             row_expert = np.full(NUM_HEADS, -1.0, dtype="<f4")
             row_mask = np.packbits(mask, bitorder="little")
             row_audit = Audit()
+            row_audit.macro_mode = macro_mode
             row_audit.counts["rows"] += 1
             row_audit.counts["padding_rows"] += 1
         observations[turn] = row_obs
@@ -625,7 +713,7 @@ def _write_json_atomic(path: pathlib.Path, value: Any) -> None:
 def _write_manifest_atomic(path: pathlib.Path, rows: list[dict[str, Any]]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     fields = ("episode_id", "source", "player", "agent", "final_money", "winner",
-              "module_version", "rows")
+              "module_version", "rows", "macro_mode")
     with tempfile.NamedTemporaryFile(
         mode="w", encoding="utf-8", newline="", dir=path.parent,
         prefix=f".{path.name}.", delete=False
@@ -655,6 +743,14 @@ def main() -> int:
     parser.add_argument("--steps", type=int, default=EXPECTED_STEPS)
     parser.add_argument("--players", choices=("both", "winner"), default="both")
     parser.add_argument(
+        "--macro-mode", choices=("primitive", "structured", "2"),
+        default="primitive",
+        help=(
+            "label primitive replay actions as legacy primitive heads or as "
+            "structured macro_mode=2 intent/quantity/target heads"
+        ),
+    )
+    parser.add_argument(
         "--agent", action="append", default=[],
         help="exact agent name to import; repeat to retain multiple agents",
     )
@@ -670,6 +766,8 @@ def main() -> int:
         parser.error("--steps must be positive")
     if args.limit < 0:
         parser.error("--limit cannot be negative")
+    if args.macro_mode == "2":
+        args.macro_mode = "structured"
 
     inputs = _expand_inputs(args.inputs)
     audit = Audit()
@@ -755,7 +853,9 @@ def main() -> int:
             built = []
             try:
                 for player in players:
-                    built.append((player, _build_trajectory(episode, player, args.steps)))
+                    built.append((player, _build_trajectory(
+                        episode, player, args.steps, args.macro_mode
+                    )))
             except Exception as error:  # keep a corrupt replay from killing a daily job
                 audit.skip_reasons[f"conversion:{type(error).__name__}"] += 1
                 print(f"skip {source}: {error}", file=sys.stderr)
@@ -786,6 +886,7 @@ def main() -> int:
                     "winner": int(rewards[player] == best),
                     "module_version": module_version,
                     "rows": args.steps,
+                    "macro_mode": 2 if args.macro_mode == "structured" else 0,
                 })
             if accepted % 25 == 0:
                 print(
