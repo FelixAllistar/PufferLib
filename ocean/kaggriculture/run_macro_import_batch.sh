@@ -11,6 +11,7 @@ repo_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
 data_root=${KAG_ELITE_DATA_ROOT:-/workspace/elite_replays}
 factory_root=${KAG_MACRO_CLONE_ROOT:-$data_root/clone_factory_macro2}
 raw_glob=${KAG_MACRO_RAW_GLOB:-$data_root/raw/*/*.zip}
+raw_globs_value=${KAG_MACRO_RAW_GLOBS:-}
 minimum_version=${KAG_ELITE_MIN_VERSION:-1.32.7}
 exact_version=${KAG_ELITE_EXACT_VERSION:-$minimum_version}
 limit=${KAG_MACRO_MAX_EPISODES:-0}
@@ -33,7 +34,16 @@ if (($# == 0)); then
     echo "pass exact agent names" >&2
     exit 2
 fi
-mapfile -t archives < <(compgen -G "$raw_glob" | sort -r)
+if [[ -n "$raw_globs_value" ]]; then
+    read -r -a raw_globs <<< "$raw_globs_value"
+else
+    raw_globs=("$raw_glob")
+fi
+mapfile -t archives < <(
+    for pattern in "${raw_globs[@]}"; do
+        compgen -G "$pattern" || true
+    done | sort -r -u
+)
 if ((${#archives[@]} == 0)); then
     echo "no raw archives match: $raw_glob" >&2
     exit 1
