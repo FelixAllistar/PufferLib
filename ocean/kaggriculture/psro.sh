@@ -4,7 +4,7 @@ set -euo pipefail
 cd "$(dirname "$0")/../.."
 
 kag_mode=iterate
-if (($#)) && [[ $1 =~ ^(iterate|analyze|runs)$ ]]; then
+if (($#)) && [[ $1 =~ ^(iterate|analyze|init|runs)$ ]]; then
     kag_mode=$1
     shift
 fi
@@ -16,9 +16,10 @@ kag_gpu_agents=${KAG_GPU_AGENTS:-64}
 kag_range=0:100:12
 kag_shortlist=4
 kag_prescreen_games=20
-kag_prescreen_agents=16384
+kag_prescreen_agents=${KAG_PRESCREEN_AGENTS:-0}
 kag_run=
 kag_run_explicit=0
+kag_run_id_arg=
 kag_output=
 kag_reuse=
 kag_max_admit=2
@@ -29,25 +30,32 @@ kag_jsd_seeds=2
 kag_profile_games=0
 kag_quality_gap=0.15
 kag_eval_deterministic=1
+kag_hidden_size=
+kag_num_layers=
 kag_meta_share=0.70
 kag_diversity_share=0.25
 kag_exploration_share=0.05
-kag_fixed=none
+kag_fixed=rules
 kag_league=saved/kaggriculture_league_v6
 kag_config=config/kaggriculture.ini
-kag_archive_root=saved/kaggriculture_league_v6_archive
+kag_archive_root=
+kag_archive_explicit=0
+kag_next_run_id=
+kag_league_prob=1
 
 kag_usage() {
     printf '%s\n' \
-        "Usage: $0 [iterate|analyze|runs] [options]" \
+        "Usage: $0 [iterate|analyze|init|runs] [options]" \
         "" \
         "With no subcommand, run one PSRO iteration against the newest run." \
         "  iterate             Evaluate, solve, admit support policies, update config" \
         "  analyze             Evaluate and solve without changing the active league" \
+        "  init                Create/repair league metadata, then exit without evaluation" \
         "  runs                List non-sweep runs, checkpoint counts, and step ranges" \
         "" \
         "Options:" \
-        "  --run DIRECTORY     Candidate run (default newest non-sweep run)" \
+        "  --run PATH_OR_ID    Candidate run directory or checkpoints/kaggriculture ID" \
+        "  --run-id ID         Shorthand for checkpoints/kaggriculture/ID" \
         "  --games N           Games per shortlisted pairing, balanced by seat (default 10)" \
         "  --confirm-games N   Games for the screened support set (default 50; 0 disables)" \
         "  --jobs N            Legacy/fixed evaluator processes (default 1; matrix eval is persistent)" \
@@ -55,7 +63,7 @@ kag_usage() {
         "  --range A:B:N       Coarse sample N stages from A through B percent (default 0:100:12)" \
         "  --shortlist N       Local peaks retained for the full matrix (default 4)" \
         "  --prescreen-games N Games/candidate against each active league member (default 20)" \
-        "  --prescreen-agents N Minimum native screen batch; surplus runs unique games (default 4096)" \
+        "  --prescreen-agents N Minimum native screen batch; 0 honors --prescreen-games (default 0)" \
         "  --output PREFIX     Result prefix under logs/kaggriculture" \
         "  --reuse PREFIX      Reuse an existing screen instead of evaluating again" \
         "  --max-admit N       Maximum new support policies admitted (default 2)" \
@@ -65,17 +73,22 @@ kag_usage() {
         "  --jsd-seeds N       Independent probe seeds, each a full trajectory (default 2)" \
         "  --profile-games N   GPU behavior profile games per active policy (default 0)" \
         "  --quality-gap X     Max score gap for diversity candidates (default 0.15)" \
+        "  --hidden-size N     Policy width (default recovered from the run log)" \
+        "  --num-layers N      Policy layers (default recovered from the run log)" \
         "  --stochastic       Sample masked actions throughout screening/confirmation" \
-        "  --fixed LIST        Optional fixed eval sides (default none)" \
-        "  --league DIRECTORY  Active league (default saved/kaggriculture_league_v6)" \
+        "  --fixed LIST        Fixed eval sides used for economy selection (default rules)" \
+        "  --league PATH_OR_ID Active league; a bare ID is created below saved/" \
         "  --config FILE       INI updated by iterate (default config/kaggriculture.ini)" \
-        "  --archive DIRECTORY League snapshot root" \
+        "  --archive DIRECTORY League snapshot root (default LEAGUE_archive)" \
+        "  --next-run-id ID    Response-training ID (default RUN_ID_psro_response[_N])" \
+        "  --league-prob X     Learned-opponent probability written by iterate (default 1)" \
         "  -h, --help          Show this help"
 }
 
 while (($#)); do
     case "$1" in
         --run) kag_run=$2; kag_run_explicit=1; shift 2 ;;
+        --run-id) kag_run_id_arg=$2; kag_run_explicit=1; shift 2 ;;
         --games) kag_games=$2; shift 2 ;;
         --confirm-games) kag_confirm_games=$2; shift 2 ;;
         --jobs) kag_jobs=$2; shift 2 ;;
@@ -93,17 +106,59 @@ while (($#)); do
         --jsd-seeds) kag_jsd_seeds=$2; shift 2 ;;
         --profile-games) kag_profile_games=$2; shift 2 ;;
         --quality-gap) kag_quality_gap=$2; shift 2 ;;
+        --hidden-size) kag_hidden_size=$2; shift 2 ;;
+        --num-layers) kag_num_layers=$2; shift 2 ;;
         --stochastic) kag_eval_deterministic=0; shift ;;
         --fixed) kag_fixed=$2; shift 2 ;;
         --league) kag_league=$2; shift 2 ;;
         --config) kag_config=$2; shift 2 ;;
-        --archive) kag_archive_root=$2; shift 2 ;;
+        --archive) kag_archive_root=$2; kag_archive_explicit=1; shift 2 ;;
+        --next-run-id) kag_next_run_id=$2; shift 2 ;;
+        --league-prob) kag_league_prob=$2; shift 2 ;;
         -h|--help) kag_usage; exit 0 ;;
         *) printf 'Unknown argument: %s\n' "$1" >&2; kag_usage >&2; exit 2 ;;
     esac
 done
 kag_eval_mode_args=()
 ((kag_eval_deterministic)) || kag_eval_mode_args+=(--stochastic)
+
+kag_resolve_run() {
+    local kag_value=$1
+    if [[ -d $kag_value ]]; then
+        printf '%s\n' "${kag_value%/}"
+    elif [[ -d checkpoints/kaggriculture/$kag_value ]]; then
+        printf 'checkpoints/kaggriculture/%s\n' "${kag_value%/}"
+    else
+        # Preserve the most useful missing-path diagnostic for either spelling.
+        if [[ $kag_value == */* ]]; then
+            printf '%s\n' "${kag_value%/}"
+        else
+            printf 'checkpoints/kaggriculture/%s\n' "${kag_value%/}"
+        fi
+    fi
+}
+
+kag_resolve_league() {
+    local kag_value=${1%/}
+    [[ $kag_value == */league.ini ]] && kag_value=${kag_value%/league.ini}
+    if [[ $kag_value == /* || $kag_value == */* ]]; then
+        printf '%s\n' "$kag_value"
+    else
+        printf 'saved/%s\n' "$kag_value"
+    fi
+}
+
+if [[ -n $kag_run_id_arg ]]; then
+    [[ $kag_run_id_arg != */* ]] || {
+        printf '%s\n' '--run-id accepts an ID, not a path; use --run for paths' >&2
+        exit 2
+    }
+    kag_run="checkpoints/kaggriculture/$kag_run_id_arg"
+fi
+kag_league=$(kag_resolve_league "$kag_league")
+if (( ! kag_archive_explicit )); then
+    kag_archive_root="${kag_league}_archive"
+fi
 
 kag_latest_run() {
     find checkpoints/kaggriculture -mindepth 2 -maxdepth 2 -type f \
@@ -182,6 +237,19 @@ awk -v x="$kag_min_weight" 'BEGIN {exit !(x >= 0 && x <= 1)}' \
     || { printf '%s\n' '--min-weight must be a probability' >&2; exit 2; }
 awk -v x="$kag_quality_gap" 'BEGIN {exit !(x >= 0 && x <= 1)}' \
     || { printf '%s\n' '--quality-gap must be in [0,1]' >&2; exit 2; }
+awk -v x="$kag_league_prob" 'BEGIN {exit !(x >= 0 && x <= 1)}' \
+    || { printf '%s\n' '--league-prob must be in [0,1]' >&2; exit 2; }
+if [[ -n $kag_next_run_id && ! $kag_next_run_id =~ ^[A-Za-z0-9_.-]+$ ]]; then
+    printf '%s\n' '--next-run-id must contain only letters, numbers, dot, underscore, or dash' >&2
+    exit 2
+fi
+if [[ -n $kag_hidden_size || -n $kag_num_layers ]]; then
+    [[ $kag_hidden_size =~ ^[1-9][0-9]*$ \
+        && $kag_num_layers =~ ^[1-9][0-9]*$ ]] || {
+        printf '%s\n' '--hidden-size and --num-layers must be positive integers supplied together' >&2
+        exit 2
+    }
+fi
 
 if (( ! kag_run_explicit )) && [[ -n $kag_reuse \
         && -f ${kag_reuse}_manifest.tsv ]]; then
@@ -193,12 +261,9 @@ if (( ! kag_run_explicit )) && [[ -n $kag_reuse \
     [[ -n $kag_reuse_checkpoint ]] && kag_run=${kag_reuse_checkpoint%/*}
 fi
 if [[ -z $kag_run ]]; then kag_run=$(kag_latest_run); fi
+[[ -z $kag_run ]] || kag_run=$(kag_resolve_run "$kag_run")
 if [[ -z $kag_run || ! -d $kag_run ]]; then
     printf 'Candidate run not found: %s\n' "$kag_run" >&2
-    exit 1
-fi
-if [[ ! -d $kag_league ]]; then
-    printf 'Active league not found: %s\n' "$kag_league" >&2
     exit 1
 fi
 if [[ ! -f $kag_config ]]; then
@@ -206,15 +271,67 @@ if [[ ! -f $kag_config ]]; then
     exit 1
 fi
 
-kag_reference_checkpoint=$(find "$kag_league" -maxdepth 1 -type f \
-    -name '*.bin' -print -quit)
-if [[ -z $kag_reference_checkpoint ]]; then
-    printf 'No active checkpoints in %s\n' "$kag_league" >&2
-    exit 1
-fi
-kag_reference_bytes=$(stat -c %s "$kag_reference_checkpoint")
 mapfile -t kag_run_files_all < <(find "$kag_run" -maxdepth 1 -type f \
     -regextype posix-extended -regex '.*/[0-9]{16}\.bin' -print | sort)
+if ((${#kag_run_files_all[@]} == 0)); then
+    printf 'No checkpoints found in %s\n' "$kag_run" >&2
+    exit 1
+fi
+kag_run_id=${kag_run##*/}
+kag_safe_run_id=$(printf '%s' "$kag_run_id" | sed 's/[^A-Za-z0-9_.-]/_/g')
+kag_run_log="logs/kaggriculture/$kag_run_id.ini"
+if [[ -z $kag_hidden_size && -z $kag_num_layers && -f $kag_run_log ]]; then
+    read -r kag_hidden_size kag_num_layers < <(awk -F '=' '
+        function trim(s) {gsub(/^[[:space:]]+|[[:space:]]+$/, "", s); return s}
+        /^\[/ {section=$0; next}
+        section=="[policy]" {
+            key=trim($1); value=trim($2)
+            if (key=="hidden_size") hidden=value
+            else if (key=="num_layers") layers=value
+        }
+        END {print hidden, layers}
+    ' "$kag_run_log")
+fi
+kag_arch_args=()
+kag_eval_arch_args=()
+if [[ -n $kag_hidden_size && -n $kag_num_layers ]]; then
+    kag_arch_args+=(
+        "policy.hidden_size=$kag_hidden_size"
+        "policy.num_layers=$kag_num_layers"
+        "vec.frozen_bank_hidden_size=$kag_hidden_size"
+        "vec.frozen_bank_num_layers=$kag_num_layers"
+    )
+    kag_eval_arch_args+=(
+        --hidden-size "$kag_hidden_size"
+        --num-layers "$kag_num_layers"
+    )
+    printf 'Resolved policy architecture: %sx%s%s\n' "$kag_hidden_size" \
+        "$kag_num_layers" "$([[ -f $kag_run_log ]] && printf ' from run log' || true)"
+else
+    printf 'Warning: no saved architecture for %s; evaluators will use %s. Pass --hidden-size/--num-layers if needed.\n' \
+        "$kag_run_id" "$kag_config" >&2
+fi
+
+mkdir -p "$kag_league"
+mapfile -t kag_active_paths < <(find "$kag_league" -maxdepth 1 -type f \
+    -name '*.bin' -print | sort)
+if ((${#kag_active_paths[@]})); then
+    kag_reference_checkpoint=${kag_active_paths[0]}
+else
+    kag_reference_checkpoint=$(find "$kag_run" -maxdepth 1 -type f \
+        -regextype posix-extended -regex '.*/[0-9]{16}\.bin' \
+        -printf '%T@\t%p\n' | sort -nr | awk -F '\t' 'NR==1 {print $2}')
+fi
+kag_reference_bytes=$(stat -c %s "$kag_reference_checkpoint")
+
+for kag_path in "${kag_active_paths[@]}"; do
+    if [[ $(stat -c %s "$kag_path") != "$kag_reference_bytes" ]]; then
+        printf 'League contains mixed policy architectures: %s differs from %s\n' \
+            "$kag_path" "$kag_reference_checkpoint" >&2
+        exit 1
+    fi
+done
+
 kag_run_files=()
 for kag_path in "${kag_run_files_all[@]}"; do
     [[ $(stat -c %s "$kag_path") == "$kag_reference_bytes" ]] \
@@ -225,16 +342,123 @@ if ((${#kag_run_files[@]} != ${#kag_run_files_all[@]})); then
         "$(( ${#kag_run_files_all[@]} - ${#kag_run_files[@]} ))" "$kag_run"
 fi
 if ((${#kag_run_files[@]} < 2)); then
-    printf 'Need at least two checkpoints in %s\n' "$kag_run" >&2
+    printf 'Need at least two architecture-compatible checkpoints in %s\n' "$kag_run" >&2
     exit 1
 fi
-kag_run_id=${kag_run##*/}
+
+kag_seed_checkpoint() {
+    local kag_source=$1 kag_existing kag_name kag_step kag_dest kag_suffix
+    for kag_existing in "${kag_active_paths[@]}"; do
+        cmp -s "$kag_source" "$kag_existing" && return 0
+    done
+    kag_name=${kag_source##*/}
+    kag_step=${kag_name%.bin}
+    kag_dest="$kag_league/seed_${kag_safe_run_id}_${kag_step}.bin"
+    kag_suffix=1
+    while [[ -e $kag_dest ]]; do
+        kag_dest="$kag_league/seed_${kag_safe_run_id}_${kag_step}_${kag_suffix}.bin"
+        kag_suffix=$((kag_suffix + 1))
+    done
+    cp "$kag_source" "$kag_dest"
+    kag_active_paths+=("$kag_dest")
+    printf 'Bootstrapped %s from %s\n' "$kag_dest" "$kag_source"
+}
+
+kag_bootstrapped=0
+if ((${#kag_active_paths[@]} < 2)); then
+    kag_bootstrapped=1
+    kag_seed_target=2
+    ((${#kag_active_paths[@]} == 0 && ${#kag_run_files[@]} >= 4)) \
+        && kag_seed_target=4
+    for ((kag_pick=0; kag_pick<kag_seed_target; kag_pick++)); do
+        if ((kag_seed_target == 1)); then
+            kag_idx=0
+        else
+            kag_idx=$((kag_pick * (${#kag_run_files[@]} - 1) / (kag_seed_target - 1)))
+        fi
+        kag_seed_checkpoint "${kag_run_files[kag_idx]}"
+    done
+    # Identical checkpoints can collapse an evenly spaced selection. Search
+    # every compatible stage before declaring the run unseedable.
+    if ((${#kag_active_paths[@]} < 2)); then
+        for kag_path in "${kag_run_files[@]}"; do
+            kag_seed_checkpoint "$kag_path"
+            ((${#kag_active_paths[@]} >= 2)) && break
+        done
+    fi
+fi
+if ((${#kag_active_paths[@]} < 2 || ${#kag_active_paths[@]} > 8)); then
+    printf 'Fast PSRO requires 2..8 active league policies; found %d in %s\n' \
+        "${#kag_active_paths[@]}" "$kag_league" >&2
+    exit 1
+fi
+
+kag_refresh_league_metadata() {
+    local kag_old_manifest=$kag_league/manifest.tsv
+    local kag_raw kag_manifest_tmp kag_league_ini_tmp
+    local kag_path kag_policy kag_role kag_weight kag_default_weight
+    kag_raw=$(mktemp)
+    kag_default_weight=$(awk -v n="${#kag_active_paths[@]}" 'BEGIN {print 1/n}')
+    for kag_path in "${kag_active_paths[@]}"; do
+        kag_policy=${kag_path##*/}
+        kag_policy=${kag_policy%.bin}
+        kag_role=exploration
+        kag_weight=$kag_default_weight
+        if [[ -f $kag_old_manifest ]]; then
+            kag_old=$(awk -F '\t' -v policy="$kag_policy" \
+                'NR>1 && $1==policy {print $2"\t"$3; exit}' "$kag_old_manifest")
+            if [[ -n $kag_old ]]; then
+                IFS=$'\t' read -r kag_role kag_weight <<< "$kag_old"
+            fi
+        fi
+        printf '%s\t%s\t%s\t%s\n' "$kag_policy" "$kag_role" \
+            "$kag_weight" "$kag_path" >> "$kag_raw"
+    done
+    kag_manifest_tmp=$(mktemp "$kag_league/.manifest.XXXXXX")
+    {
+        printf 'policy\trole\tbase_weight\tsource\n'
+        awk -F '\t' 'BEGIN {OFS="\t"}
+            {w[NR]=$3+0; if (w[NR]<=0) w[NR]=1; line[NR]=$1 OFS $2; path[NR]=$4; sum+=w[NR]}
+            END {for(i=1;i<=NR;i++) print line[i],w[i]/sum,path[i]}' "$kag_raw"
+    } > "$kag_manifest_tmp"
+    mv "$kag_manifest_tmp" "$kag_league/manifest.tsv"
+
+    kag_league_ini_tmp=$(mktemp "$kag_league/.league.XXXXXX")
+    {
+        printf '[league]\nmax_active = %d\n\n' "$kag_max_league"
+        while IFS=$'\t' read -r kag_policy kag_role kag_weight kag_path; do
+            [[ $kag_policy == policy ]] && continue
+            printf '[policy.%s]\n' "$kag_policy"
+            printf "path = '%s'\n" "$kag_path"
+            printf "role = '%s'\n" "$kag_role"
+            printf 'train_weight = %s\n' "$kag_weight"
+            printf 'enabled = 1\n\n'
+        done < "$kag_league/manifest.tsv"
+    } > "$kag_league_ini_tmp"
+    mv "$kag_league_ini_tmp" "$kag_league/league.ini"
+    rm "$kag_raw"
+}
+
+if ((kag_bootstrapped)) || [[ ! -f $kag_league/manifest.tsv \
+        || ! -f $kag_league/league.ini ]]; then
+    kag_refresh_league_metadata
+    printf 'League ready: %s (%d compatible policies)\n' \
+        "$kag_league" "${#kag_active_paths[@]}"
+fi
+if [[ $kag_mode == init ]]; then
+    printf 'Initialization complete. Analyze with:\n  %s analyze --league %q --run-id %q\n' \
+        "$0" "$kag_league" "$kag_run_id"
+    exit 0
+fi
+
 kag_last_name=${kag_run_files[${#kag_run_files[@]}-1]##*/}
 kag_last_step=$((10#${kag_last_name%.bin}))
 if [[ -n $kag_reuse ]]; then
     kag_output=$kag_reuse
 elif [[ -z $kag_output ]]; then
-    kag_output="logs/kaggriculture/psro_${kag_run_id}_${kag_last_step}"
+    kag_league_id=${kag_league##*/}
+    kag_league_id=$(printf '%s' "$kag_league_id" | sed 's/[^A-Za-z0-9_.-]/_/g')
+    kag_output="logs/kaggriculture/psro_${kag_league_id}_${kag_run_id}_${kag_last_step}"
 fi
 kag_tmp=$(mktemp -d)
 trap 'rm -r "$kag_tmp"' EXIT
@@ -306,6 +530,7 @@ if [[ -z $kag_reuse ]]; then
         "league.games=$kag_prescreen_games" \
         "league.min_agents=$kag_prescreen_agents" \
         "base.eval_deterministic=$kag_eval_deterministic" \
+        "${kag_arch_args[@]}" \
         base.seed=6100
 
     kag_prescreen_scores="$kag_tmp/prescreen_scores.tsv"
@@ -365,6 +590,7 @@ if [[ -z $kag_reuse ]]; then
 
     ./ocean/kaggriculture/eval_population.sh \
         --games "$kag_games" --jobs "$kag_jobs" --gpu-agents "$kag_gpu_agents" \
+        "${kag_eval_arch_args[@]}" \
         --fixed "$kag_fixed" \
         --cache "$kag_league/payoffs.tsv" \
         --focal-count "${#kag_selected_paths[@]}" \
@@ -500,6 +726,7 @@ if ((kag_confirm_games)); then
         "${#kag_support_paths[@]}" "$kag_confirm_games"
     ./ocean/kaggriculture/eval_population.sh --games "$kag_confirm_games" \
         --jobs "$kag_jobs" --gpu-agents "$kag_gpu_agents" --fixed none \
+        "${kag_eval_arch_args[@]}" \
         --output "$kag_confirm_output" "${kag_eval_mode_args[@]}" \
         "${kag_support_paths[@]}"
     kag_meta="${kag_output}_metagame.tsv"
@@ -536,7 +763,14 @@ if [[ -n $kag_learner_source ]]; then
 fi
 
 if [[ $kag_mode == analyze ]]; then
-    printf 'Analysis only; active league unchanged. Meta-strategy: %s\n' "$kag_meta"
+    if ((kag_bootstrapped)); then
+        printf 'Analysis complete; newly bootstrapped league retained at %s. No policies were admitted or pruned. Meta-strategy: %s\n' \
+            "$kag_league" "$kag_meta"
+    else
+        printf 'Analysis only; active league unchanged. Meta-strategy: %s\n' "$kag_meta"
+    fi
+    printf 'Promote this analysis without repeating the screen:\n  %s iterate --league %q --run-id %q --reuse %q\n' \
+        "$0" "$kag_league" "$kag_run_id" "$kag_output"
     exit 0
 fi
 
@@ -764,18 +998,63 @@ if [[ -z $kag_learner_active ]]; then
 fi
 kag_config_dir=${kag_config%/*}
 [[ $kag_config_dir == "$kag_config" ]] && kag_config_dir=.
+kag_response_base="${kag_safe_run_id}_psro_response"
+if [[ -z $kag_next_run_id ]]; then
+    kag_next_run_id=$kag_response_base
+    kag_response_index=2
+    while [[ -e checkpoints/kaggriculture/$kag_next_run_id \
+            || -e logs/kaggriculture/$kag_next_run_id.ini ]]; do
+        kag_next_run_id="${kag_response_base}_${kag_response_index}"
+        kag_response_index=$((kag_response_index + 1))
+    done
+fi
 kag_config_tmp=$(mktemp "$kag_config_dir/.kaggriculture.XXXXXX")
-awk -v league="$kag_league/league.ini" -v learner="$kag_learner_active" '
-    /^load_model_path =/ && learner != "" {
+awk -v league="$kag_league/league.ini" -v learner="$kag_learner_active" \
+    -v run_id="$kag_next_run_id" -v hidden="$kag_hidden_size" \
+    -v layers="$kag_num_layers" -v league_prob="$kag_league_prob" '
+    /^\[/ {section=$0}
+    section=="[base]" && /^load_model_path =/ && learner != "" {
         printf "load_model_path = \047%s\047\n", learner; found=1; next
     }
-    /^opponent_pool =/ {print "opponent_pool = \047None\047"; next}
-    /^opponent_league =/ {
+    section=="[base]" && /^load_enemy_model_path =/ {
+        print "load_enemy_model_path = None"; next
+    }
+    section=="[base]" && /^enemy_hidden_size =/ {
+        print "enemy_hidden_size = 0"; next
+    }
+    section=="[base]" && /^enemy_num_layers =/ {
+        print "enemy_num_layers = 0"; next
+    }
+    section=="[base]" && /^run_id =/ {
+        printf "run_id = %s\n", run_id; next
+    }
+    section=="[vec]" && /^frozen_bank_hidden_size =/ && hidden != "" {
+        printf "frozen_bank_hidden_size = %s\n", hidden; next
+    }
+    section=="[vec]" && /^frozen_bank_num_layers =/ && layers != "" {
+        printf "frozen_bank_num_layers = %s\n", layers; next
+    }
+    section=="[selfplay]" && /^enabled =/ {print "enabled = 1"; next}
+    section=="[selfplay]" && /^opponent_pool =/ {
+        print "opponent_pool = \047None\047"; next
+    }
+    section=="[selfplay]" && /^opponent_league =/ {
         printf "opponent_league = \047%s\047\n", league; next
+    }
+    section=="[selfplay]" && /^opponent_pool_prob =/ {
+        printf "opponent_pool_prob = %s\n", league_prob; next
     }
     # Per-policy base weights now live in league.ini; PFSP multiplies them by
     # the online matchup priority instead of discarding the solved allocation.
-    /^opponent_pool_weights =/ {print "opponent_pool_weights = \047None\047"; next}
+    section=="[selfplay]" && /^opponent_pool_weights =/ {
+        print "opponent_pool_weights = \047None\047"; next
+    }
+    section=="[policy]" && /^hidden_size =/ && hidden != "" {
+        printf "hidden_size = %s\n", hidden; next
+    }
+    section=="[policy]" && /^num_layers =/ && layers != "" {
+        printf "num_layers = %s\n", layers; next
+    }
     {print}
 ' "$kag_config" > "$kag_config_tmp"
 mv "$kag_config_tmp" "$kag_config"
@@ -787,17 +1066,20 @@ if [[ -n $kag_learner_active ]]; then
         printf '%s\t%s\t%s\t%s\t%s\n' "$kag_run_id" "$kag_learner_policy" \
             "${kag_learner_weight:-0}" "$kag_learner_source" "$kag_learner_active"
     } > "$kag_learner_marker"
-    printf 'Updated %s: load_model_path=%s\n' "$kag_config" "$kag_learner_active"
+    printf 'Updated %s: run_id=%s learner=%s league_prob=%s architecture=%sx%s\n' \
+        "$kag_config" "$kag_next_run_id" "$kag_learner_active" \
+        "$kag_league_prob" "${kag_hidden_size:-config}" "${kag_num_layers:-config}"
     printf 'Learner marker: %s\n' "$kag_learner_marker"
 fi
 
 if ((kag_profile_games)); then
     ./ocean/kaggriculture/profile_population_gpu.sh \
         --games "$kag_profile_games" --jobs "$kag_jobs" --gpu-agents "$kag_gpu_agents" \
+        "${kag_eval_arch_args[@]}" \
         --output "${kag_output}_profile" "$kag_league"
 fi
 
 printf 'PSRO iteration complete: admitted=%d active=%d\n' "$kag_admitted" "$(wc -l < "$kag_weights")"
 printf 'Future training will use learner=%s and the updated active league; an already-running trainer is unchanged.\n' \
     "${kag_learner_active:-unchanged}"
-printf 'Next command: ./puffer train kaggriculture\n'
+printf 'Next command: ./puffer train kaggriculture  # run_id=%s\n' "$kag_next_run_id"

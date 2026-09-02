@@ -7,6 +7,7 @@ The accompanying checkpoint contains only our trained
 PufferLib policy weights.
 """
 
+import math
 import os
 import sys
 
@@ -31,6 +32,13 @@ QUADRANT_BITS = {"NW": 1, "NE": 2, "SW": 4, "SE": 8}
 SEED_COST = (10, 20, 50, 100, 80)
 ANIMAL_COST = (300, 400, 500)
 MARKET_THROUGHPUT = (400, 450, 200, 100, 300, 332, 122, 105, 200)
+MARKET_BASE = (25, 35, 60, 120, 250, 50, 160, 200, 100)
+MARKET_BELOW_FUNC = ("sqrt", "hinge", "hinge", "sqrt", "log",
+                     "hinge", "sqrt", "log", "linear")
+MARKET_BELOW_TARGET = (.80, 1.00, .40, .70, .20, .40, .60, .20, .40)
+MARKET_ABOVE_FUNC = ("log", "sqrt", "sqrt", "linear", "sq",
+                     "log", "linear", "sq", "linear")
+MARKET_ABOVE_TARGET = (.20, .70, .60, 1.60, 3.60, .20, 1.60, 3.20, .40)
 FIRST_YIELD_DAY = (2, 2, 8, 10, 10)
 ANIMAL_STRUCTURE = ("COOP", "PASTURE", "PASTURE")
 
@@ -773,6 +781,39 @@ def _market_spec(command_id):
     return "BUY_LAND", None
 
 
+def _market_shape(name, value, throughput):
+    value = max(0.0, float(value))
+    if name == "linear":
+        return value
+    if name == "sq":
+        return value * value
+    if name == "sqrt":
+        return math.sqrt(value)
+    if name == "log":
+        return math.log1p(value)
+    if name == "hinge":
+        ratio = value / throughput if throughput > 0 else value
+        return ratio + 8.0 * max(0.0, ratio - 1.0) ** 2
+    return value
+
+
+def _market_buy_price(obs, item_id):
+    """Quote one product purchase at inventory-1, matching the simulator."""
+    market = _get(obs, "market", {})
+    inventory = int(_get(_get(market, "inventory", {}), ITEMS[item_id], 0)) - 1
+    base = MARKET_BASE[item_id]
+    throughput = MARKET_THROUGHPUT[item_id]
+    below = inventory < 10000
+    name = MARKET_BELOW_FUNC[item_id] if below else MARKET_ABOVE_FUNC[item_id]
+    target = (MARKET_BELOW_TARGET[item_id] if below
+              else MARKET_ABOVE_TARGET[item_id])
+    distance = 10000 - inventory if below else inventory - 10000
+    delta = (target * base * _market_shape(name, distance, throughput)
+             / _market_shape(name, throughput, throughput))
+    value = base + delta if below else base - delta
+    return max(1, int(round(value)))
+
+
 def action_mask(obs):
     """Simulator legality only; no strategy or usefulness heuristics."""
     player = int(_get(obs, "player", 0))
@@ -792,20 +833,23 @@ def action_mask(obs):
         mask[44 * slot:44 * (slot + 1)] = cohort_mask
 
     money = int(_get(farm, "money", 0))
-    prices = _get(_get(obs, "market", {}), "prices", {})
+    shed = _get(private, "shed", {})
+    shed_total = sum(int(_get(shed, name, 0)) for name in ITEMS)
     command_mask = np.zeros(MARKET_COMMANDS, dtype=bool)
     for command in range(MARKET_COMMANDS):
         op, item_id = _market_spec(command)
         if op == "BUY_SEED":
             legal = money >= SEED_COST[item_id]
         elif op == "BUY_PRODUCT":
-            legal = money >= int(_get(prices, ITEMS[item_id], 0))
+            legal = (shed_total < 100
+                     and money >= _market_buy_price(obs, item_id))
         elif op == "BUY_ANIMAL":
-            legal = money >= ANIMAL_COST[item_id - 9]
+            legal = (shed_total < 100
+                     and money >= ANIMAL_COST[item_id - 9])
         elif op == "SELL":
             legal = True  # an earlier queue command can create inventory
         elif op == "HIRE":
-            legal = (len(hands) + 1 < MAX_HANDS
+            legal = (len(hands) < MAX_HANDS
                      and money >= _fib(_get(farm, "hires_today", 0)))
         else:
             extra = len(_get(farm, "unlocked_quadrants", ())) - 1
@@ -904,6 +948,23 @@ class NativeMinGRU:
     def reset(self):
         self.state.fill(0)
 
+    def clone(self):
+        """Return an independent read-only-weight recurrent policy copy.
+
+        The checkpoint arrays are immutable during inference and may be shared;
+        only the per-layer hidden state needs to be copied.  Offline branch
+        evaluation normally resets state per snapshot, while live episode
+        comparisons use this helper when a branch must preserve history.
+        """
+        import copy
+
+        result = copy.copy(self)
+        result.encoder = self.encoder
+        result.decoder = self.decoder
+        result.layers = self.layers
+        result.state = self.state.copy()
+        return result
+
     def forward(self, obs):
         hidden = self.hidden
         x = self.encoder @ (obs.astype(np.float32) * (1.0 / 255.0))
@@ -938,6 +999,31 @@ _POLICY_SEED = int(os.environ.get("PUFFERLIB_POLICY_SEED", "97"))
 _DETERMINISTIC = os.environ.get("PUFFERLIB_DETERMINISTIC", "1") != "0"
 _RNG = np.random.default_rng(73)
 
+# ``importlib.util.spec_from_file_location`` (used by our export test and by
+# some competition runners) does not automatically add the archive directory
+# to sys.path.  Make adjacent optional runtime modules reliably importable.
+if _CODE_DIR not in sys.path:
+    sys.path.insert(0, _CODE_DIR)
+
+# The optional learned macro overlay is loaded only when its model artifact is
+# packaged.  Raw package exports remain byte-for-byte compatible; enhanced
+# packages provide macro_learned_72_ridge.npz plus the pure top-bot executor.
+try:
+    from macro_overlay import make_overlay
+    _MACRO_OVERLAY = make_overlay()
+except Exception:
+    _MACRO_OVERLAY = None
+
+# Structured macro checkpoints use the same tensors as primitive policies but
+# assign different meanings to the first three heads.  The runtime is present
+# only in a dedicated macro export; ordinary historical packages therefore
+# retain their original primitive behavior.
+try:
+    from native_macro_runtime import NativeMacroRuntime
+    _NATIVE_MACRO = NativeMacroRuntime()
+except Exception:
+    _NATIVE_MACRO = None
+
 
 def _sample_heads(logits, mask):
     actions = np.zeros(len(HEAD_SIZES), dtype=np.int32)
@@ -970,15 +1056,37 @@ def _sample_heads(logits, mask):
 
 def agent(obs):
     global _RNG
-    if _MODEL is None:
-        raise FileNotFoundError(f"PufferLib checkpoint not found: {_MODEL_PATH}")
     day = int(_get(obs, "day", 0))
     hour = int(_get(obs, "hour", 0))
+
+    # Enhanced exports are controlled by the parity-tested top-bot executor
+    # (and, when explicitly enabled, its public-state macro proposal layer).
+    # Do this before the neural forward pass: the checkpoint remains in the
+    # archive for legacy/raw exports, but it is not a silent behavior fallback
+    # for the hierarchical submission.
+    if (_MACRO_OVERLAY is not None
+            and _MACRO_OVERLAY.top_bot is not None):
+        fallback = _MACRO_OVERLAY.fallback(obs, None)
+        return _MACRO_OVERLAY.action(obs, fallback)
+
+    if _MODEL is None:
+        raise FileNotFoundError(f"PufferLib checkpoint not found: {_MODEL_PATH}")
     if day == 0 and hour == 0:
         _MODEL.reset()
         _RNG = np.random.default_rng(
             _POLICY_SEED + int(_get(obs, "player", 0)))
     encoded = encode_observation(obs)
-    mask = action_mask(obs)
+    if _NATIVE_MACRO is not None:
+        encoded = _NATIVE_MACRO.fill_observation(obs, encoded)
+        mask = _NATIVE_MACRO.action_mask(obs)
+    else:
+        mask = action_mask(obs)
     logits = _MODEL.forward(encoded)[:MASK_SIZE]
-    return decode_actions(obs, _sample_heads(logits, mask))
+    learned_actions = _sample_heads(logits, mask)
+    learned_fallback = (lambda: _NATIVE_MACRO.decode(obs, learned_actions)) \
+        if _NATIVE_MACRO is not None else \
+        (lambda: decode_actions(obs, learned_actions))
+    if _MACRO_OVERLAY is None:
+        return learned_fallback()
+    fallback = _MACRO_OVERLAY.fallback(obs, learned_fallback)
+    return _MACRO_OVERLAY.action(obs, fallback)

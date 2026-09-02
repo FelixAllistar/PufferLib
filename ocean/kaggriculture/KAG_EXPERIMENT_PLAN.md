@@ -375,3 +375,56 @@ python3 ocean/kaggriculture/select_replay_state_stage.py \
   --output /workspace/elite_replays/state_bank/sell.tsv \
   --stage sell --max-states-per-scenario 5000 --min-final-money 10000
 ```
+
+## C0: counterfactual strategic planner
+
+The exact-simulator/candidate-value goal is documented in
+`COUNTERFACTUAL_PLANNING.md`. C0 is an offline, ABI-preserving vertical slice:
+`macro_actions.py` defines observation-safe macro candidates and
+`counterfactual_dataset.py` branches verified native snapshots against an
+explicit continuation mode, writing common-random-number cash-difference
+labels. Pass-only labels are smoke tests, not PvP values. C1 and C2 are now
+implemented: `macro_executor.py` emits auditable multi-turn plant/animal/
+harvest/maintenance/liquidation plans; `kg_rule_action_ex` supplies a reactive
+native scripted opponent; `fit_macro_value.py` supports ridge and optional
+LightGBM regression/ranking; `macro_planner.py` evaluates greedy and bounded
+top-K native MPC; and `macro_policy.py` provides a versioned, validated
+macro-PPO boundary. The current primitive PPO ABI and live reward/config path
+remain unchanged. See `COUNTERFACTUAL_PLANNING.md` for commands and gates.
+
+The completed learned-league run is reproducible from
+`/home/felix/puffertank/macro_pilot_learned_final/`: 24/72/terminal
+counterfactual tables and Ridge/LightGBM fits use 256 stratified bank rows,
+512 player views, and all six enabled 512x2 PPO opponents.  The held-out
+72-turn planner improved mean cash by $211 (greedy) and $513 (top-4 MPC).
+The full 720-turn panel against the same six opponents showed +$862 for
+deterministic Ridge terminal-guard MPC and +$974 for its stochastic counterpart
+(two episodes per opponent).  The deterministic panel had no winner flips; two
+stochastic episodes changed the winner despite the cash improvement, so this
+is not a win-rate claim.  The LightGBM terminal-guard panel was +$442 and +$26
+respectively.  Unguarded stochastic proposals were negative, so
+`--guard-horizon 720` is required for the safe runtime overlay.  These are
+validation/engineering gates, not a leaderboard promotion.
+
+## Native macro runtime bridge
+
+The first native runtime bridge for C2 is now implemented in
+`kaggriculture.h`/`kaggriculture.cu`. `env.macro_mode=1` repurposes the existing
+44-way unit selector, masks primitive heads and market slots between decision
+boundaries, and expands the selected intent through the existing native
+planner. It keeps the 1,280-byte observation and 47-head tensor sizes, so it is
+not a smaller encoder. The default `macro_mode=0` primitive path is unchanged.
+
+The score bytes appended in macro mode are bounded public-state heuristic
+features; the offline Ridge/LightGBM files are not silently loaded by the
+trainer. A macro-trained checkpoint must therefore be evaluated as its own
+semantic policy even though its tensor byte size matches a primitive one. See
+`NATIVE_MACRO_MODE.md` and `make -C ocean/kaggriculture adapter`.
+
+Mode 2 is the parameterized follow-up. It keeps the same ABI but lets the
+policy choose an intent, an amount, and (for planting) a target quadrant. The
+native executor only performs legality checks, order packing, maintenance,
+worker scheduling, and Manhattan routing. This removes the previous fixed
+ten-seed/one-animal planner decisions from the learned side while leaving the
+primitive `macro_mode=0` path untouched. The Python submission bridge is
+intentionally out of scope until this training-side behavior is benchmarked.

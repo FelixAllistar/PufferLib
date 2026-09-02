@@ -675,6 +675,15 @@ KG_HD int kg_done(const KGState* state) {
     return state != NULL && state->done;
 }
 
+KG_HD int kg_state_step(const KGState* state) {
+    return state != NULL ? state->step : -1;
+}
+
+KG_HD int kg_player_money(const KGState* state, int player) {
+    if (state == NULL || player < 0 || player >= KG_NUM_PLAYERS) return 0;
+    return state->players[player].money;
+}
+
 size_t kg_state_serialized_size(void) {
     return sizeof(KGState);
 }
@@ -1444,6 +1453,193 @@ KG_HD void kg_step(KGState* state, const KGAction actions[KG_NUM_PLAYERS]) {
     if (old_step >= state->config.episode_steps - 2) {
         state->done = 1;
     }
+}
+
+/*
+ * A small native reactive opponent for offline counterfactual labels.
+ *
+ * This is intentionally a baseline, not a hidden production policy: it uses
+ * only the same complete state a player would receive, emits one ordinary
+ * KGAction, and has no side effects.  Keeping it in the rule core avoids
+ * serializing a 38-KB snapshot to JSON for every branch turn.  A learned
+ * policy provider can replace it through the same Python-side interface.
+ */
+KG_HD static void kg_rule_clear_action(KGAction* output, int hand_count) {
+    int i;
+    memset(output, 0, sizeof(*output));
+    output->farmer.op = KG_OP_PASS;
+    output->farmer.arg = KG_CROP_INVALID;
+    output->hand_count = hand_count < KG_MAX_HANDS ? hand_count : KG_MAX_HANDS;
+    for (i = 0; i < KG_MAX_HANDS; i++) {
+        output->hands[i].op = KG_OP_PASS;
+        output->hands[i].arg = KG_CROP_INVALID;
+    }
+}
+
+KG_HD static KGUnitAction* kg_rule_unit_action(KGAction* output, int unit) {
+    if (unit == 0) return &output->farmer;
+    if (unit > 0 && unit <= KG_MAX_HANDS) return &output->hands[unit - 1];
+    return NULL;
+}
+
+KG_HD static int kg_rule_distance(int x0, int y0, int x1, int y1) {
+    int dx = x0 - x1;
+    int dy = y0 - y1;
+    if (dx < 0) dx = -dx;
+    if (dy < 0) dy = -dy;
+    return dx + dy;
+}
+
+KG_HD static void kg_rule_move_or_set(
+        KGUnitAction* command, int x, int y, int tx, int ty,
+        int target_op, int target_arg) {
+    command->op = KG_OP_PASS;
+    command->arg = KG_CROP_INVALID;
+    command->n = 0;
+    if (x < tx) command->op = KG_OP_EAST;
+    else if (x > tx) command->op = KG_OP_WEST;
+    else if (y < ty) command->op = KG_OP_SOUTH;
+    else if (y > ty) command->op = KG_OP_NORTH;
+    else {
+        command->op = target_op;
+        command->arg = target_arg;
+        command->n = target_op == KG_OP_PICKUP || target_op == KG_OP_PLACE ? 1 : 0;
+    }
+}
+
+KG_HD void kg_rule_action_ex(
+        const KGState* state, int player, int liquidation_steps, KGAction* output) {
+    const KGPlayer* current;
+    int remaining;
+    int market_count = 0;
+    int used[KG_MAX_TILES] = {0};
+    if (output == NULL) return;
+    if (liquidation_steps < 0) liquidation_steps = 48;
+    if (state == NULL || player < 0 || player >= KG_NUM_PLAYERS) {
+        kg_rule_clear_action(output, 0);
+        return;
+    }
+    current = &state->players[player];
+    kg_rule_clear_action(output, current->hand_count);
+    remaining = state->config.episode_steps - state->step;
+
+    /* Sell all held products in the final two days.  Otherwise sell one item
+     * only when its visible price is at least 25% above its base price. */
+    for (int item = 0; item < KG_NUM_PRODUCTS && market_count < KG_MAX_MARKET_ORDERS; item++) {
+        int price = state->market.prices[item];
+        int base = KG_MARKET_DEFS[item].base;
+        if (current->shed[item] <= 0) continue;
+        if (remaining <= liquidation_steps || price * 4 >= base * 5) {
+            output->market[market_count++] = (KGMarketOrder){
+                KG_MARKET_SELL, item,
+                current->shed[item]};
+            if (remaining > liquidation_steps) break;
+        }
+    }
+    /* Expand when cash can cover the next quadrant; this is deliberately
+     * after liquidation so an urgent sale is not blocked by expansion. */
+    if (market_count == 0) {
+        static const int land_prices[3] = {1000, 2000, 4000};
+        int extra = __builtin_popcount((unsigned int)current->unlocked_mask) - 1;
+        if (extra >= 0 && extra < 3 && current->money >= land_prices[extra]) {
+            output->market[market_count++] = (KGMarketOrder){KG_MARKET_BUY_LAND, -1, 0};
+        }
+    }
+    /* Buy one seed for the best visible price/cost ratio if an empty tile is
+     * available.  The unit planner below plants it on a later turn. */
+    if (market_count == 0) {
+        int empty = 0;
+        int best_crop = KG_CROP_INVALID;
+        int best_numerator = -1;
+        for (int index = 0; index < KG_MAX_TILES; index++) {
+            if (current->tiles[index].kind == KG_TILE_EMPTY) empty = 1;
+        }
+        if (empty) {
+            for (int crop = 0; crop < KG_NUM_CROPS; crop++) {
+                int cost = KG_CROP_DEFS[crop].seed_cost;
+                int score = state->market.prices[crop] * 100 / (cost > 0 ? cost : 1);
+                if (current->money >= cost && current->seeds[crop] == 0
+                        && score > best_numerator) {
+                    best_numerator = score;
+                    best_crop = crop;
+                }
+            }
+        }
+        if (best_crop >= 0) {
+            output->market[market_count++] = (KGMarketOrder){KG_MARKET_BUY_SEED, best_crop, 1};
+        }
+    }
+    output->market_count = market_count;
+
+    /* Assign one nearest visible task per unit.  Movement is bounds-only in
+     * the native rules, so a Manhattan route is always legal. */
+    for (int unit = 0; unit < current->unit_count && unit <= KG_MAX_HANDS; unit++) {
+        KGUnitAction* command = kg_rule_unit_action(output, unit);
+        KGPosition position = kg_unit_position(current, unit);
+        int best_index = -1;
+        int best_op = KG_OP_PASS;
+        int best_arg = KG_CROP_INVALID;
+        int best_distance = INT_MAX;
+        for (int index = 0; index < KG_MAX_TILES; index++) {
+            const KGTile* tile = &current->tiles[index];
+            int x = index % KG_MAX_BOARD_SIZE;
+            int y = index / KG_MAX_BOARD_SIZE;
+            int op = KG_OP_PASS;
+            int arg = KG_CROP_INVALID;
+            if (used[index] || x >= state->config.board_size || y >= state->config.board_size) continue;
+            if (tile->kind == KG_TILE_PLANT) {
+                if (!tile->watered_today) op = KG_OP_WATER;
+                else if (tile->yield_units > 0) op = KG_OP_HARVEST;
+            } else if (kg_is_animal_tile(tile)) {
+                if (!tile->fed_today && current->units[unit].inventory[KG_ITEM_WHEAT] > 0) {
+                    op = KG_OP_FEED;
+                } else if (tile->kind == KG_TILE_PASTURE && !tile->cared_today) {
+                    op = KG_OP_CARE;
+                } else if (tile->fertilizer_available) {
+                    op = KG_OP_COLLECT_FERTILIZER;
+                }
+            } else if ((tile->kind == KG_TILE_COOP || tile->kind == KG_TILE_PASTURE)
+                    && !kg_is_animal_tile(tile)) {
+                for (int animal = 0; animal < KG_NUM_ANIMALS; animal++) {
+                    int item = KG_ITEM_GOOSE + animal;
+                    if (current->units[unit].inventory[item] > 0
+                            && KG_ANIMAL_DEFS[animal].structure == tile->kind) {
+                        op = KG_OP_PLACE;
+                        arg = item;
+                        break;
+                    }
+                }
+            } else if (tile->kind == KG_TILE_EMPTY) {
+                for (int crop = 0; crop < KG_NUM_CROPS; crop++) {
+                    if (current->seeds[crop] > 0
+                            && (arg < 0 || state->market.prices[crop] > state->market.prices[arg])) {
+                        arg = crop;
+                    }
+                }
+                if (arg >= 0) op = KG_OP_PLANT;
+            }
+            if (op != KG_OP_PASS) {
+                int distance = kg_rule_distance(position.x, position.y, x, y);
+                if (distance < best_distance) {
+                    best_distance = distance;
+                    best_index = index;
+                    best_op = op;
+                    best_arg = arg;
+                }
+            }
+        }
+        if (best_index >= 0) {
+            int target_x = best_index % KG_MAX_BOARD_SIZE;
+            int target_y = best_index / KG_MAX_BOARD_SIZE;
+            used[best_index] = 1;
+            kg_rule_move_or_set(command, position.x, position.y,
+                target_x, target_y, best_op, best_arg);
+        }
+    }
+}
+
+KG_HD void kg_rule_action(const KGState* state, int player, KGAction* output) {
+    kg_rule_action_ex(state, player, 48, output);
 }
 
 static void kg_json_init(char** data, size_t* length, size_t* capacity) {

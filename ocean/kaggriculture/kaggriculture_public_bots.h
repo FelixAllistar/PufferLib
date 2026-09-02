@@ -149,6 +149,118 @@ KG_HD static inline int kag_public_structure_animal(int profile, int slot) {
     return KG_COW;
 }
 
+KG_HD static inline int kag_public_is_structure(const KGTile* tile) {
+    return tile->kind == KG_TILE_COOP || tile->kind == KG_TILE_PASTURE;
+}
+
+KG_HD static inline int kag_public_structure_counts(const KGPlayer* farm,
+        int* empty_coops, int* empty_pastures) {
+    int structures = 0;
+    *empty_coops = 0;
+    *empty_pastures = 0;
+    for (int tile_id = 0; tile_id < KG_MAX_TILES; tile_id++) {
+        const KGTile* tile = &farm->tiles[tile_id];
+        if (!kag_public_is_structure(tile)) continue;
+        structures++;
+        if (tile->animal != KG_ANIMAL_INVALID) continue;
+        if (tile->kind == KG_TILE_COOP) (*empty_coops)++;
+        else (*empty_pastures)++;
+    }
+    return structures;
+}
+
+/* Count existing structures globally before reserving layout slots. This is
+ * important when a reset/profile switch leaves buildings outside this
+ * profile's layout: those buildings still consume the structure target. */
+KG_HD static inline int kag_public_build_plan(const KGPlayer* farm,
+        int profile, int structure_limit, int* coop_builds,
+        int* pasture_builds) {
+    int existing_coops = 0;
+    int existing_pastures = 0;
+    for (int tile_id = 0; tile_id < KG_MAX_TILES; tile_id++) {
+        const KGTile* tile = &farm->tiles[tile_id];
+        existing_coops += tile->kind == KG_TILE_COOP;
+        existing_pastures += tile->kind == KG_TILE_PASTURE;
+    }
+    int desired_coops = 0;
+    int desired_pastures = 0;
+    for (int slot = 0; slot < structure_limit; slot++) {
+        int animal = kag_public_structure_animal(profile, slot);
+        if (KG_ANIMAL_DEFS[animal].structure == KG_TILE_COOP) desired_coops++;
+        else desired_pastures++;
+    }
+    int need_coops = desired_coops - existing_coops;
+    int need_pastures = desired_pastures - existing_pastures;
+    if (need_coops < 0) need_coops = 0;
+    if (need_pastures < 0) need_pastures = 0;
+    int slots = 0;
+    *coop_builds = 0;
+    *pasture_builds = 0;
+    for (int slot = 0; slot < structure_limit
+            && (need_coops > 0 || need_pastures > 0); slot++) {
+        int x;
+        int y;
+        kag_public_structure_position(slot, &x, &y);
+        if (!kag_public_unlocked(farm, x, y)) continue;
+        const KGTile* tile = &farm->tiles[kg_tile_index(x, y)];
+        if (tile->kind != KG_TILE_EMPTY) continue;
+        int animal = kag_public_structure_animal(profile, slot);
+        int kind = KG_ANIMAL_DEFS[animal].structure;
+        if ((kind == KG_TILE_COOP && need_coops <= 0)
+                || (kind == KG_TILE_PASTURE && need_pastures <= 0)) {
+            continue;
+        }
+        slots |= 1 << slot;
+        if (kind == KG_TILE_COOP) {
+            (*coop_builds)++;
+            need_coops--;
+        } else {
+            (*pasture_builds)++;
+            need_pastures--;
+        }
+    }
+    return slots;
+}
+
+KG_HD static inline void kag_public_desired_animals(int profile,
+        int structure_limit, int desired[KG_NUM_ANIMALS]) {
+    memset(desired, 0, sizeof(int) * KG_NUM_ANIMALS);
+    for (int slot = 0; slot < structure_limit; slot++) {
+        int animal = kag_public_structure_animal(profile, slot);
+        desired[animal]++;
+    }
+}
+
+/* Pick from the profile's existing species sequence first, then fall back to
+ * compatible stock already purchased under another profile. No incompatible
+ * PLACE command is ever emitted. */
+KG_HD static inline int kag_public_select_animal(int profile,
+        int structure_limit, int structure_kind,
+        const int available[KG_NUM_ANIMALS],
+        const int need[KG_NUM_ANIMALS]) {
+    for (int slot = 0; slot < structure_limit; slot++) {
+        int animal = kag_public_structure_animal(profile, slot);
+        if (KG_ANIMAL_DEFS[animal].structure == structure_kind
+                && need[animal] > 0 && available[animal] > 0) {
+            return animal;
+        }
+    }
+    for (int slot = 0; slot < structure_limit; slot++) {
+        int animal = kag_public_structure_animal(profile, slot);
+        if (KG_ANIMAL_DEFS[animal].structure == structure_kind
+                && available[animal] > 0) {
+            return animal;
+        }
+    }
+    for (int animal = 0; animal < KG_NUM_ANIMALS; animal++) {
+        if (KG_ANIMAL_DEFS[animal].structure == structure_kind
+                && available[animal] > 0) {
+            return animal;
+        }
+    }
+    return KG_ANIMAL_INVALID;
+}
+
 KG_HD static inline int kag_public_reserved_slot(int profile, int x, int y) {
     (void)profile;
     for (int slot = 0; slot < 15; slot++) {
@@ -284,46 +396,66 @@ KG_HD static inline int kag_public_job_count(const KGState* game, int player_id,
         }
     }
 
-    /* Build and occupy the source policies' deliberate animal slots. */
-    int structures = 0;
-    int empty_structures = 0;
-    for (int tile_id = 0; tile_id < KG_MAX_TILES; tile_id++) {
-        const KGTile* tile = &farm->tiles[tile_id];
-        if (tile->kind == KG_TILE_COOP || tile->kind == KG_TILE_PASTURE) {
-            structures++;
-            if (!kg_is_animal_tile(tile)) empty_structures++;
-        }
-    }
+    /* Build only the global structure shortfall, while retaining the source
+     * policies' deliberate positions and species sequence. */
+    int empty_coops;
+    int empty_pastures;
+    int structures = kag_public_structure_counts(farm,
+        &empty_coops, &empty_pastures);
     int desired_structures = structure_limit;
+    int coop_builds;
+    int pasture_builds;
+    int build_slots = kag_public_build_plan(farm, profile,
+        desired_structures, &coop_builds, &pasture_builds);
     for (int slot = 0; slot < desired_structures; slot++) {
+        if (!(build_slots & (1 << slot))) continue;
         int x;
         int y;
         kag_public_structure_position(slot, &x, &y);
-        if (!kag_public_unlocked(farm, x, y)) continue;
-        const KGTile* tile = &farm->tiles[kg_tile_index(x, y)];
         int animal = kag_public_structure_animal(profile, slot);
-        if (tile->kind == KG_TILE_EMPTY) {
-            kag_public_add_job(jobs, &count, x, y, 4,
-                profile == KAG_ADAPTIVE_HARVEST_PULSE
-                    ? KG_OP_BUILD_COOP : KG_OP_BUILD_PASTURE, -1);
-        } else if ((tile->kind == KG_TILE_COOP
-                    || tile->kind == KG_TILE_PASTURE)
-                && tile->animal == KG_ANIMAL_INVALID) {
-            int item = KG_ITEM_GOOSE + animal;
-            int held = 0;
-            for (int unit = 0; unit < farm->unit_count; unit++) {
-                held |= farm->units[unit].inventory[item] > 0;
-            }
-            if (held) {
-                kag_public_add_job(jobs, &count, x, y, 3,
-                    KG_OP_PLACE, item);
-            }
+        int op = KG_ANIMAL_DEFS[animal].structure == KG_TILE_COOP
+            ? KG_OP_BUILD_COOP : KG_OP_BUILD_PASTURE;
+        kag_public_add_job(jobs, &count, x, y, 4, op, -1);
+    }
+
+    /* Empty compatible structures are useful wherever they are on the farm,
+     * not only when they happen to coincide with the current layout slots. */
+    int desired_animals[KG_NUM_ANIMALS];
+    int place_need[KG_NUM_ANIMALS];
+    int held_animals[KG_NUM_ANIMALS] = {0};
+    kag_public_desired_animals(profile, desired_structures, desired_animals);
+    for (int animal = 0; animal < KG_NUM_ANIMALS; animal++) {
+        place_need[animal] = desired_animals[animal]
+            - kag_public_placed_animals(farm, animal);
+        if (place_need[animal] < 0) place_need[animal] = 0;
+        int item = KG_ITEM_GOOSE + animal;
+        for (int unit = 0; unit < farm->unit_count; unit++) {
+            held_animals[animal] += farm->units[unit].inventory[item];
         }
     }
-    (void)structures;
+    int planned_coop_places = 0;
+    int planned_pasture_places = 0;
+    for (int tile_id = 0; tile_id < KG_MAX_TILES; tile_id++) {
+        const KGTile* tile = &farm->tiles[tile_id];
+        if (!kag_public_is_structure(tile)
+                || tile->animal != KG_ANIMAL_INVALID) {
+            continue;
+        }
+        int animal = kag_public_select_animal(profile, desired_structures,
+            tile->kind, held_animals, place_need);
+        if (animal == KG_ANIMAL_INVALID) continue;
+        int x = tile_id % KG_MAX_BOARD_SIZE;
+        int y = tile_id / KG_MAX_BOARD_SIZE;
+        kag_public_add_job(jobs, &count, x, y, 3,
+            KG_OP_PLACE, KG_ITEM_GOOSE + animal);
+        held_animals[animal]--;
+        if (place_need[animal] > 0) place_need[animal]--;
+        if (tile->kind == KG_TILE_COOP) planned_coop_places++;
+        else planned_pasture_places++;
+    }
 
     target_crops = kag_public_crop_target(game, farm, profile,
-        desired_structures);
+        structures + coop_builds + pasture_builds);
     int planned = crop_count;
     int local = 0;
     for (int tile_id = 0; tile_id < KG_MAX_TILES && planned < target_crops;
@@ -334,7 +466,7 @@ KG_HD static inline int kag_public_job_count(const KGState* game, int player_id,
         int y = tile_id / KG_MAX_BOARD_SIZE;
         if (!kag_public_unlocked(farm, x, y)) continue;
         int reserved = kag_public_reserved_slot(profile, x, y);
-        if (reserved >= 0 && reserved < desired_structures) continue;
+        if (reserved >= 0 && (build_slots & (1 << reserved))) continue;
         int crop = kag_public_crop_for(game, profile, x, y, local++, rank);
         const KGCropDef* def = &KG_CROP_DEFS[crop];
         if (game->day + def->first_yield_day >= 29) continue;
@@ -347,8 +479,8 @@ KG_HD static inline int kag_public_job_count(const KGState* game, int player_id,
         }
     }
 
-    /* Wheat is the shared animal feed resource.  Pull it out of the shed in
-     * small batches instead of asking every worker to do a blind FEED. */
+    /* Wheat is the shared animal feed resource. One pickup job transfers one
+     * wheat, so expose exactly the uncovered shortfall to the executor. */
     int animals = 0;
     int unfed = 0;
     for (int tile_id = 0; tile_id < KG_MAX_TILES; tile_id++) {
@@ -361,12 +493,14 @@ KG_HD static inline int kag_public_job_count(const KGState* game, int player_id,
     for (int unit = 0; unit < farm->unit_count; unit++) {
         carried_wheat += farm->units[unit].inventory[KG_ITEM_WHEAT];
     }
-    int pickup_batches = (unfed - carried_wheat + 1) / 2;
-    if (pickup_batches < 0) pickup_batches = 0;
-    if (pickup_batches > 8) pickup_batches = 8;
+    int wheat_pickups = unfed - carried_wheat;
+    if (wheat_pickups < 0) wheat_pickups = 0;
+    if (wheat_pickups > farm->shed[KG_ITEM_WHEAT]) {
+        wheat_pickups = farm->shed[KG_ITEM_WHEAT];
+    }
     KGPosition access[4];
     kg_shed_access_count(game->config.board_size, access);
-    for (int i = 0; i < pickup_batches && farm->shed[KG_ITEM_WHEAT] > 0; i++) {
+    for (int i = 0; i < wheat_pickups; i++) {
         kag_public_add_job(jobs, &count, access[0].x, access[0].y, 0,
             KG_OP_PICKUP, KG_ITEM_WHEAT);
     }
@@ -388,14 +522,40 @@ KG_HD static inline int kag_public_job_count(const KGState* game, int player_id,
         }
     }
 
-    /* Animal stock waits in the shed until a reserved structure exists. */
+    /* Only withdraw animal stock that has a currently empty, compatible
+     * structure. Planned builds become pickup capacity on the next turn. */
+    int animal_stock[KG_NUM_ANIMALS];
+    int pickup_count[KG_NUM_ANIMALS] = {0};
     for (int animal = 0; animal < KG_NUM_ANIMALS; animal++) {
-        int item = KG_ITEM_GOOSE + animal;
-        int batches = farm->shed[item] > 3 ? 3 : farm->shed[item];
-        for (int i = 0; i < batches; i++) {
-            kag_public_add_job(jobs, &count, access[0].x, access[0].y, 3,
-                KG_OP_PICKUP, item);
+        animal_stock[animal] = farm->shed[KG_ITEM_GOOSE + animal];
+    }
+    int open_coops = empty_coops - planned_coop_places;
+    int open_pastures = empty_pastures - planned_pasture_places;
+    while (open_coops > 0) {
+        int animal = kag_public_select_animal(profile, desired_structures,
+            KG_TILE_COOP, animal_stock, place_need);
+        if (animal == KG_ANIMAL_INVALID || pickup_count[animal] >= 3) break;
+        kag_public_add_job(jobs, &count, access[0].x, access[0].y, 3,
+            KG_OP_PICKUP, KG_ITEM_GOOSE + animal);
+        animal_stock[animal]--;
+        pickup_count[animal]++;
+        if (place_need[animal] > 0) place_need[animal]--;
+        open_coops--;
+    }
+    while (open_pastures > 0) {
+        int animal = kag_public_select_animal(profile, desired_structures,
+            KG_TILE_PASTURE, animal_stock, place_need);
+        if (animal == KG_ANIMAL_INVALID) break;
+        if (pickup_count[animal] >= 3) {
+            animal_stock[animal] = 0;
+            continue;
         }
+        kag_public_add_job(jobs, &count, access[0].x, access[0].y, 3,
+            KG_OP_PICKUP, KG_ITEM_GOOSE + animal);
+        animal_stock[animal]--;
+        pickup_count[animal]++;
+        if (place_need[animal] > 0) place_need[animal]--;
+        open_pastures--;
     }
 
     for (int unit = 0; unit < farm->unit_count; unit++) {
@@ -411,7 +571,6 @@ KG_HD static inline int kag_public_job_count(const KGState* game, int player_id,
         }
     }
     (void)animals;
-    (void)empty_structures;
     return count;
 }
 
@@ -425,18 +584,72 @@ KG_HD static inline void kag_public_assign_jobs(const KGState* game,
         int job_count, KGAction* action) {
     (void)game;
     uint64_t claimed[(KG_PUBLIC_MAX_JOBS + 63) / 64] = {0};
+
+    /* Local maintenance is committed before global routing. Claim only the
+     * matching local job; the unrelated job this worker used to claim remains
+     * available to the rest of the crew. */
     for (int unit = 0; unit < farm->unit_count; unit++) {
         const KGUnitState* state = &farm->units[unit];
+        const KGUnitAction* command = kag_public_unit_action(action, unit);
+        if (command->op == KG_OP_PASS) continue;
+        for (int job = 0; job < job_count; job++) {
+            if (claimed[job >> 6] & (1ULL << (job & 63))) continue;
+            const KGPublicJob* candidate = &jobs[job];
+            if (candidate->x == state->x && candidate->y == state->y
+                    && candidate->op == command->op
+                    && (candidate->arg == command->arg
+                        || candidate->arg < 0 || command->arg < 0)) {
+                claimed[job >> 6] |= 1ULL << (job & 63);
+                break;
+            }
+        }
+    }
+
+    for (int unit = 0; unit < farm->unit_count; unit++) {
+        const KGUnitState* state = &farm->units[unit];
+        KGUnitAction* command = kag_public_unit_action(action, unit);
+        if (command->op != KG_OP_PASS) continue;
         int best = -1;
         int best_score = 0x7fffffff;
         for (int job = 0; job < job_count; job++) {
             if (claimed[job >> 6] & (1ULL << (job & 63))) continue;
             const KGPublicJob* candidate = &jobs[job];
-            if (candidate->op == KG_OP_PLACE
-                    && (candidate->arg < KG_ITEM_GOOSE
-                        || candidate->arg > KG_ITEM_SHEEP
-                        || state->inventory[candidate->arg] <= 0)) {
+            if (candidate->op == KG_OP_FEED
+                    && state->inventory[KG_ITEM_WHEAT] <= 0) {
                 continue;
+            }
+            if (candidate->op == KG_OP_PICKUP) {
+                if (candidate->arg == KG_ITEM_WHEAT
+                        && state->inventory[KG_ITEM_WHEAT] > 0) {
+                    continue;
+                }
+                if (candidate->arg == KG_ITEM_FERTILIZER
+                        && state->inventory[KG_ITEM_FERTILIZER] > 0) {
+                    continue;
+                }
+                if (candidate->arg >= KG_ITEM_GOOSE
+                        && candidate->arg <= KG_ITEM_SHEEP) {
+                    int carrying_animal = 0;
+                    for (int item = KG_ITEM_GOOSE;
+                            item <= KG_ITEM_SHEEP; item++) {
+                        carrying_animal |= state->inventory[item] > 0;
+                    }
+                    if (carrying_animal) continue;
+                }
+            }
+            if (candidate->op == KG_OP_PLACE) {
+                if (candidate->arg < KG_ITEM_GOOSE
+                        || candidate->arg > KG_ITEM_SHEEP
+                        || state->inventory[candidate->arg] <= 0) {
+                    continue;
+                }
+                const KGTile* target = &farm->tiles[kg_tile_index(
+                    candidate->x, candidate->y)];
+                int animal = candidate->arg - KG_ITEM_GOOSE;
+                if (target->kind != KG_ANIMAL_DEFS[animal].structure
+                        || target->animal != KG_ANIMAL_INVALID) {
+                    continue;
+                }
             }
             int distance = kag_abs((int)state->x - candidate->x)
                 + kag_abs((int)state->y - candidate->y);
@@ -449,7 +662,6 @@ KG_HD static inline void kag_public_assign_jobs(const KGState* game,
         if (best < 0) continue;
         claimed[best >> 6] |= 1ULL << (best & 63);
         const KGPublicJob* job = &jobs[best];
-        KGUnitAction* command = kag_public_unit_action(action, unit);
         if (state->x == job->x && state->y == job->y) {
             *command = (KGUnitAction){job->op, job->arg,
                 job->op == KG_OP_DROP ? KG_POLICY_N_ALL : 1};
@@ -578,41 +790,36 @@ KG_HD static inline void kag_public_market(const KGState* game, int player_id,
 
     int target_animals = kag_public_animal_target(game, farm, profile);
     int structure_limit = kag_public_structure_limit(game, farm, profile);
-    int structures = 0;
-    int empty_structures = 0;
-    for (int tile_id = 0; tile_id < KG_MAX_TILES; tile_id++) {
-        const KGTile* tile = &farm->tiles[tile_id];
-        if (tile->kind == KG_TILE_COOP || tile->kind == KG_TILE_PASTURE) {
-            structures++;
-            if (!kg_is_animal_tile(tile)) empty_structures++;
-        }
-    }
-    int potential_structures = structures;
-    for (int slot = 0; slot < structure_limit; slot++) {
-        int x;
-        int y;
-        kag_public_structure_position(slot, &x, &y);
-        if (!kag_public_unlocked(farm, x, y)) continue;
-        const KGTile* tile = &farm->tiles[kg_tile_index(x, y)];
-        if (tile->kind == KG_TILE_EMPTY) potential_structures++;
-    }
-    if (potential_structures > structure_limit) {
-        potential_structures = structure_limit;
-    }
-    int animal_capacity = potential_structures - structures + empty_structures;
-    if (animal_capacity < 0) animal_capacity = 0;
+    int empty_coops;
+    int empty_pastures;
+    kag_public_structure_counts(farm, &empty_coops, &empty_pastures);
+    int coop_builds;
+    int pasture_builds;
+    kag_public_build_plan(farm, profile, structure_limit,
+        &coop_builds, &pasture_builds);
     int missing = target_animals - animals;
-    if (missing > animal_capacity) missing = animal_capacity;
     if (missing > 0 && game->day <= 18) {
         int cow_total = kag_public_total_animals(farm, KG_COW);
         int sheep_total = kag_public_total_animals(farm, KG_SHEEP);
-        int goose_total = kag_public_total_animals(farm, KG_GOOSE);
         int type = KG_COW;
         if (profile == KAG_ADAPTIVE_HARVEST_PULSE) type = KG_GOOSE;
         else if (profile == KAG_ADAPTIVE_TRIAD && sheep_total < 1
                 && cow_total >= 2) type = KG_SHEEP;
         else if (profile == KAG_ADAPTIVE_STRUCTURED
                 && sheep_total * 3 < cow_total + sheep_total) type = KG_SHEEP;
+        /* Empty pastures are shared cow/sheep capacity; subtract all already
+         * purchased compatible stock before buying another animal. */
+        int animal_capacity;
+        if (KG_ANIMAL_DEFS[type].structure == KG_TILE_COOP) {
+            animal_capacity = empty_coops + coop_builds
+                - kag_public_stock(farm, KG_ITEM_GOOSE);
+        } else {
+            animal_capacity = empty_pastures + pasture_builds
+                - kag_public_stock(farm, KG_ITEM_COW)
+                - kag_public_stock(farm, KG_ITEM_SHEEP);
+        }
+        if (animal_capacity < 0) animal_capacity = 0;
+        if (missing > animal_capacity) missing = animal_capacity;
         int item = KG_ITEM_GOOSE + type;
         int cost = KG_ANIMAL_DEFS[type].cost;
         int reserve = profile == KAG_ADAPTIVE_STRUCTURED ? 250 : 350;
@@ -624,7 +831,6 @@ KG_HD static inline void kag_public_market(const KGState* game, int player_id,
             kag_public_add_order(action, limit, KG_MARKET_BUY_ANIMAL,
                 item, affordable);
             money -= affordable * cost;
-            (void)goose_total;
         }
     }
 
@@ -699,8 +905,8 @@ KG_HD static inline void kag_public_action(const KGState* game, int player_id,
     int seed_need[KG_NUM_CROPS];
     int job_count = kag_public_job_count(game, player_id, profile,
         jobs, seed_need);
-    kag_public_assign_jobs(game, farm, jobs, job_count, action);
     kag_public_local_maintenance(game, farm, profile, action);
+    kag_public_assign_jobs(game, farm, jobs, job_count, action);
     kag_public_market(game, player_id, profile, seed_need, action);
 }
 
@@ -803,31 +1009,14 @@ KG_HD static inline void kag_thunder_market(const KGState* game, int player_id,
         KAG_ADAPTIVE_THUNDER);
     int structure_limit = kag_public_structure_limit(game, farm,
         KAG_ADAPTIVE_THUNDER);
-    int structures = 0;
-    int empty_structures = 0;
-    for (int tile_id = 0; tile_id < KG_MAX_TILES; tile_id++) {
-        const KGTile* tile = &farm->tiles[tile_id];
-        if (tile->kind == KG_TILE_COOP || tile->kind == KG_TILE_PASTURE) {
-            structures++;
-            if (!kg_is_animal_tile(tile)) empty_structures++;
-        }
-    }
-    int potential_structures = structures;
-    for (int slot = 0; slot < structure_limit; slot++) {
-        int x;
-        int y;
-        kag_public_structure_position(slot, &x, &y);
-        if (!kag_public_unlocked(farm, x, y)) continue;
-        const KGTile* tile = &farm->tiles[kg_tile_index(x, y)];
-        if (tile->kind == KG_TILE_EMPTY) potential_structures++;
-    }
-    if (potential_structures > structure_limit) {
-        potential_structures = structure_limit;
-    }
-    int animal_capacity = potential_structures - structures + empty_structures;
-    if (animal_capacity < 0) animal_capacity = 0;
+    int empty_coops;
+    int empty_pastures;
+    kag_public_structure_counts(farm, &empty_coops, &empty_pastures);
+    int coop_builds;
+    int pasture_builds;
+    kag_public_build_plan(farm, KAG_ADAPTIVE_THUNDER, structure_limit,
+        &coop_builds, &pasture_builds);
     int missing = target_animals - animals;
-    if (missing > animal_capacity) missing = animal_capacity;
     if (missing > 0 && day >= 1 && day <= 18) {
         int type = KG_COW;
         if (sheep < 4) {
@@ -838,6 +1027,17 @@ KG_HD static inline void kag_thunder_market(const KGState* game, int player_id,
                 && game->market.prices[KG_ITEM_WOOL] >= 180) {
             type = KG_SHEEP;
         }
+        int animal_capacity;
+        if (KG_ANIMAL_DEFS[type].structure == KG_TILE_COOP) {
+            animal_capacity = empty_coops + coop_builds
+                - kag_public_stock(farm, KG_ITEM_GOOSE);
+        } else {
+            animal_capacity = empty_pastures + pasture_builds
+                - kag_public_stock(farm, KG_ITEM_COW)
+                - kag_public_stock(farm, KG_ITEM_SHEEP);
+        }
+        if (animal_capacity < 0) animal_capacity = 0;
+        if (missing > animal_capacity) missing = animal_capacity;
         int item = KG_ITEM_GOOSE + type;
         int cost = KG_ANIMAL_DEFS[type].cost;
         int reserve = 350;
@@ -910,8 +1110,8 @@ KG_HD static inline void kag_thunder_action(const KGState* game, int player_id,
     int seed_need[KG_NUM_CROPS];
     int job_count = kag_public_job_count(game, player_id,
         KAG_ADAPTIVE_THUNDER, jobs, seed_need);
-    kag_public_assign_jobs(game, farm, jobs, job_count, action);
     kag_public_local_maintenance(game, farm, KAG_ADAPTIVE_THUNDER, action);
+    kag_public_assign_jobs(game, farm, jobs, job_count, action);
     kag_thunder_market(game, player_id, seed_need, action);
 }
 

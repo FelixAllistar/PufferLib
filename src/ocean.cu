@@ -32,6 +32,9 @@ void puf_normal_init(PrecisionTensor* dst, float std, ulong seed, cudaStream_t s
 #ifdef PUFFER_NETHACK
 #include "../ocean/nethack/nethack.cu"
 #endif
+#ifdef PUFFER_SHENANIGUNS3D
+#include "shenaniguns3d.cu"
+#endif
 
 // Override encoder vtable for known ocean environments. No-op for unknown envs.
 static void create_custom_encoder(const char* env_name, Encoder* enc) {
@@ -50,6 +53,12 @@ static void create_custom_encoder(const char* env_name, Encoder* enc) {
 #ifdef PUFFER_NMMO3
     if (strcmp(env_name, "nmmo3") == 0) {
         create_nmmo3_encoder(enc);
+        return;
+    }
+#endif
+#ifdef PUFFER_SHENANIGUNS3D
+    if (strcmp(env_name, "shenaniguns3d") == 0) {
+        create_shenaniguns3d_encoder(enc);
         return;
     }
 #endif

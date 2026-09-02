@@ -14,11 +14,36 @@ pufferlib/extensions/hip/
 *.py
 # Kaggriculture competition adapters are source, not generated Python glue.
 !ocean/kaggriculture/submission/main.py
+!ocean/kaggriculture/submission/native_macro_runtime.py
+!ocean/kaggriculture/submission/test_native_macro_runtime.py
 !ocean/kaggriculture/submission/top_bot/main.py
 !ocean/kaggriculture/submission/test_top_bot_parity.py
 !ocean/kaggriculture/submission/test_model_export.py
 !ocean/kaggriculture/harvest_public_agents.py
 !ocean/kaggriculture/merge_bc_datasets.py
+!ocean/kaggriculture/macro_actions.py
+!ocean/kaggriculture/counterfactual_dataset.py
+!ocean/kaggriculture/fit_macro_value.py
+!ocean/kaggriculture/macro_executor.py
+!ocean/kaggriculture/opponent_providers.py
+!ocean/kaggriculture/macro_value_model.py
+!ocean/kaggriculture/macro_planner.py
+!ocean/kaggriculture/macro_policy.py
+!ocean/kaggriculture/macro_pipeline.py
+!ocean/kaggriculture/macro_episode_eval.py
+!ocean/kaggriculture/merge_counterfactual.py
+!ocean/kaggriculture/state_sampling.py
+!ocean/kaggriculture/qd_sweep.py
+!ocean/kaggriculture/tests/test_counterfactual_dataset.py
+!ocean/kaggriculture/tests/test_macro_value.py
+!ocean/kaggriculture/tests/test_macro_executor.py
+!ocean/kaggriculture/tests/test_opponent_providers.py
+!ocean/kaggriculture/tests/test_macro_policy.py
+!ocean/kaggriculture/tests/test_macro_planner.py
+!ocean/kaggriculture/tests/test_macro_episode_eval.py
+!ocean/kaggriculture/tests/test_state_sampling.py
+!ocean/kaggriculture/tests/test_counterfactual_merge.py
+!ocean/kaggriculture/tests/test_qd_sweep.py
 # Raylib
 raylib_wasm/
 

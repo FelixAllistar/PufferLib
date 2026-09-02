@@ -69,6 +69,42 @@
 #define KG_POLICY_ACTION_MASK_SIZE \
     (KG_POLICY_MARKET_MASK_OFFSET \
         + KG_POLICY_MARKET_SLOTS * KG_POLICY_MARKET_SLOT_MASK_SIZE)
+
+/* Optional native macro controller.  Macro mode deliberately reuses the
+ * existing 44-way unit heads instead of changing NUM_ATNS or OBS_SIZE, so
+ * primitive checkpoints and the normal environment ABI remain byte-for-byte
+ * compatible.  Mode 1 is the original fixed-planner macro path.  Mode 2 is
+ * the structured path: the policy selects a macro, a quantity bin, and a
+ * target quadrant; deterministic code handles legality, worker assignment,
+ * order packing, and movement. */
+#define KAG_MACRO_MODE_LEGACY 1
+#define KAG_MACRO_MODE_STRUCTURED 2
+#define KAG_MACRO_COUNT KG_POLICY_UNIT_COMMANDS
+#define KAG_MACRO_OBS_OFFSET (KAG_OBS_RESET_SOURCE_INDEX + 1)
+#define KAG_MACRO_QUANTITY_HEAD 1
+#define KAG_MACRO_TARGET_HEAD 2
+#define KAG_MACRO_PARAMETER_HEADS 2
+#define KAG_MACRO_QUANTITY_BINS 8
+#define KAG_MACRO_TARGET_BINS 5
+#define KAG_MACRO_OBS_BYTES (KAG_MACRO_COUNT + 4)
+enum {
+    KAG_MACRO_HOLD = 0,
+    KAG_MACRO_PLANT_BASE = 1,       /* + crop (5) */
+    KAG_MACRO_ANIMAL_BASE = 6,      /* + animal (3) */
+    KAG_MACRO_EXPAND = 9,
+    KAG_MACRO_SELL_BASE = 10,       /* + product (9) */
+    KAG_MACRO_SELL_ALL = 19,
+    KAG_MACRO_BUY_SEED_BASE = 20,   /* + crop (5) */
+    KAG_MACRO_BUY_ANIMAL_BASE = 25, /* + animal (3) */
+    KAG_MACRO_HIRE = 28,
+    KAG_MACRO_HARVEST = 29,
+    KAG_MACRO_MAINTAIN = 30,
+    KAG_MACRO_DIVERSIFY = 31,
+    KAG_MACRO_BUY_WHEAT = 32,
+    KAG_MACRO_BUY_FERTILIZER = 33,
+    KAG_MACRO_CASH_OUT = 34,
+    KAG_MACRO_RESERVED_BASE = 35,
+};
 #define KAG_CURRICULUM_STAGES 8
 enum {
     KAG_CURRICULUM_SELL = 0,
@@ -326,6 +362,18 @@ struct Env {
     int curriculum_target_item;
     int curriculum_branch;
     int curriculum_action_flags;
+    /* Runtime strategic layer.  Primitive mode (the default) leaves these
+     * zero and follows the original 47-head decoder. */
+    int macro_mode;
+    int macro_decision_interval;
+    float macro_score_scale;
+    int macro_intent[KG_NUM_PLAYERS];
+    int macro_ticks[KG_NUM_PLAYERS];
+    /* Mode 2 parameters are sticky for the selected intent.  Quantity is an
+     * exact requested count before feasibility clipping; target is a quadrant
+     * bit (0 means automatic). */
+    int macro_quantity[KG_NUM_PLAYERS];
+    int macro_target[KG_NUM_PLAYERS];
     float potential[KG_NUM_PLAYERS];
     float progress_value[KG_NUM_PLAYERS];
     int expansion_peak_land[KG_NUM_PLAYERS];
@@ -342,6 +390,15 @@ struct Env {
     /* Inline state makes the generic Puffer environment array an arena. */
     KGState game_storage;
 };
+
+/* Forward declarations are needed because the observation and mask writers
+ * live before the detailed market decoder below. */
+KG_HD static inline int kag_macro_candidate_legal(const Env* env,
+        int player_id, int macro_id);
+KG_HD static inline float kag_macro_candidate_score(const Env* env,
+        int player_id, int macro_id);
+KG_HD static inline uint8_t kag_macro_score_byte(const Env* env,
+        int player_id, int macro_id);
 
 /* The build scripts compile one translation unit for each environment. */
 #include "kaggriculture_core.c"
@@ -368,6 +425,28 @@ KG_HD static inline int kag_discrete_index(float value, int size) {
     if (index < 0) index = 0;
     if (index >= size) index = size - 1;
     return index;
+}
+
+/* Structured macro parameters intentionally use a small, ABI-neutral set of
+ * quantity bins.  They cover the useful scale of Kaggriculture actions while
+ * keeping the policy head compact; the deterministic executor clips the
+ * requested amount to cash, stock, capacity, and the board. */
+KG_HD static inline int kag_macro_quantity_from_bin(int bin) {
+    static const int quantities[KAG_MACRO_QUANTITY_BINS] =
+        {1, 2, 4, 8, 12, 20, 32, 64};
+    if (bin < 0) bin = 0;
+    if (bin >= KAG_MACRO_QUANTITY_BINS) bin = KAG_MACRO_QUANTITY_BINS - 1;
+    return quantities[bin];
+}
+
+/* 0 is automatic placement.  The remaining bins use the native quadrant
+ * bit values (NW=1, NE=2, SW=4, SE=8), which are already used by the game
+ * state and therefore require no new coordinate ABI. */
+KG_HD static inline int kag_macro_target_from_bin(int bin) {
+    static const int targets[KAG_MACRO_TARGET_BINS] = {0, 1, 2, 4, 8};
+    if (bin < 0) bin = 0;
+    if (bin >= KAG_MACRO_TARGET_BINS) bin = KAG_MACRO_TARGET_BINS - 1;
+    return targets[bin];
 }
 
 KG_HD static inline int kag_popcount(unsigned value) {
@@ -682,7 +761,12 @@ KG_HD static inline float kag_player_progress_value(const Env* env,
     }
     /* Uncommitted inventory stays at a conservative fraction of its paid
      * cost. Planting/placing is what unlocks fitted future production value;
-     * merely hoarding seeds or animals cannot masquerade as a giant farm. */
+     * merely hoarding seeds or animals cannot masquerade as a giant farm.
+     * In particular, reward_progress_animal_scale applies only to a placed
+     * animal's future production below. Applying it to livestock inventory
+     * would make buying an unplaced cow at scale 40 look like acquiring forty
+     * cows' worth of capital, then create an artificial loss when it is
+     * placed. */
     for (int crop = 0; crop < KG_NUM_CROPS; crop++) {
         assets += env->reward_progress_seed_scale
             * env->reward_progress_seed_realization[crop]
@@ -690,8 +774,7 @@ KG_HD static inline float kag_player_progress_value(const Env* env,
     }
     for (int animal = 0; animal < KG_NUM_ANIMALS; animal++) {
         int count = player->shed[KG_ITEM_GOOSE + animal];
-        assets += env->reward_progress_animal_scale
-            * env->reward_progress_animal_realization[animal]
+        assets += env->reward_progress_animal_realization[animal]
             * count * KG_ANIMAL_DEFS[animal].cost;
     }
     for (int unit = 0; unit < player->unit_count; unit++) {
@@ -704,8 +787,7 @@ KG_HD static inline float kag_player_progress_value(const Env* env,
             } else {
                 int animal = item - KG_ITEM_GOOSE;
                 if ((unsigned)animal < KG_NUM_ANIMALS) {
-                    assets += env->reward_progress_animal_scale
-                        * env->reward_progress_animal_realization[animal]
+                    assets += env->reward_progress_animal_realization[animal]
                         * count * KG_ANIMAL_DEFS[animal].cost;
                 }
             }
@@ -1368,6 +1450,21 @@ KG_HD static inline void kag_write_observation_with_summaries(Env* env, int play
     }
 #endif
     out[k++] = env->reset_source ? 255 : 0;
+    if (env->macro_mode) {
+        /* Informational strategic features only: the first 44-way head still
+         * chooses the macro, while the high bit marks legal candidates and
+         * the low seven bits carry a bounded native economic score. */
+        for (int macro = 0; macro < KAG_MACRO_COUNT; macro++) {
+            out[k++] = kag_macro_score_byte(env, player_id, macro);
+        }
+        out[k++] = kag_u8_scale(env->macro_ticks[player_id],
+            env->macro_decision_interval > 0
+                ? env->macro_decision_interval : 1);
+        out[k++] = kag_u8_scale(env->macro_intent[player_id],
+            KAG_MACRO_COUNT - 1);
+        out[k++] = kag_u8_scale(env->macro_quantity[player_id], 64);
+        out[k++] = kag_u8_scale(env->macro_target[player_id], 8);
+    }
     if (k > OBS_SIZE) {
 #ifndef __CUDA_ARCH__
         fprintf(stderr, "kaggriculture observation overflow: %d > %d\n", k, OBS_SIZE);
@@ -1492,7 +1589,6 @@ KG_HD static inline int kag_market_quantity_id(int n) {
 
 KG_HD static inline int kag_market_quantity(const KGState* game, const KGPlayer* player,
         KGPolicyMarketSpec spec) {
-    (void)game;
     if (spec.n != KG_POLICY_N_ALL) return spec.n;
     if (spec.op == KG_MARKET_SELL) return player->shed[spec.item];
     if (spec.op == KG_MARKET_BUY_SEED) {
@@ -1502,13 +1598,17 @@ KG_HD static inline int kag_market_quantity(const KGState* game, const KGPlayer*
     if (spec.op == KG_MARKET_BUY_ANIMAL) {
         int animal = spec.item - KG_ITEM_GOOSE;
         int affordable = player->money / KG_ANIMAL_DEFS[animal].cost;
+        int room = game->config.shed_capacity - kg_shed_total(player);
+        if (room < 0) room = 0;
+        if (affordable > room) affordable = room;
         return affordable < KG_MAX_TILES ? affordable : KG_MAX_TILES;
     }
     if (spec.op == KG_MARKET_BUY_PRODUCT) {
         int price = game->market.prices[spec.item];
         int affordable = price > 0 ? player->money / price : 0;
-        return affordable < game->config.shed_capacity
-            ? affordable : game->config.shed_capacity;
+        int room = game->config.shed_capacity - kg_shed_total(player);
+        if (room < 0) room = 0;
+        return affordable < room ? affordable : room;
     }
     return 1;
 }
@@ -1603,14 +1703,17 @@ KG_HD static inline int kag_market_action_legal(const KGState* game, const KGPla
         return price > 0 && player->money >= price;
     }
     if (spec.op == KG_MARKET_BUY_PRODUCT) {
-        price = game->market.prices[spec.item];
-        return price > 0 && player->money >= price;
+        int inventory = game->market.inventory[spec.item];
+        price = kg_market_price(spec.item, inventory - 1);
+        return price > 0 && player->money >= price
+            && kg_shed_total(player) < game->config.shed_capacity;
     }
     if (spec.op == KG_MARKET_BUY_ANIMAL) {
         int animal = spec.item - KG_ITEM_GOOSE;
         if ((unsigned)animal >= KG_NUM_ANIMALS) return 0;
         price = KG_ANIMAL_DEFS[spec.item - KG_ITEM_GOOSE].cost;
-        return price > 0 && player->money >= price;
+        return price > 0 && player->money >= price
+            && kg_shed_total(player) < game->config.shed_capacity;
     }
     if (spec.op == KG_MARKET_SELL) {
         return spec.item >= 0 && spec.item < KG_NUM_PRODUCTS;
@@ -1626,6 +1729,576 @@ KG_HD static inline int kag_market_action_legal(const KGState* game, const KGPla
         return extra >= 0 && extra < 3 && player->money >= price;
     }
     return 0;
+}
+
+/* Native macro candidates are intentionally cheap, public-state features.
+ * They are not rewards and do not call the Python replay/value pipeline.  A
+ * candidate is legal when the corresponding primitive market operation or a
+ * deterministic executor can make progress from the current state. */
+KG_HD static inline int kag_macro_empty_tiles(const KGPlayer* player) {
+    int count = 0;
+    for (int tile = 0; tile < KG_MAX_TILES; tile++) {
+        if (player->tiles[tile].kind == KG_TILE_EMPTY) count++;
+    }
+    return count;
+}
+
+KG_HD static inline int kag_macro_reclaimable_tiles_in_quadrant(
+        const KGState* game, const KGPlayer* player, int quadrant) {
+    int count = 0;
+    for (int tile = 0; tile < KG_MAX_TILES; tile++) {
+        int kind = player->tiles[tile].kind;
+        if (kind != KG_TILE_EMPTY && kind != KG_TILE_WEED) continue;
+        int x = tile % KG_MAX_BOARD_SIZE;
+        int y = tile / KG_MAX_BOARD_SIZE;
+        if (quadrant == 0
+                || kg_quadrant(x, y, game->config.board_size) == quadrant) {
+            count++;
+        }
+    }
+    return count;
+}
+
+KG_HD static inline int kag_macro_reclaimable_tiles(const KGPlayer* player) {
+    int count = 0;
+    for (int tile = 0; tile < KG_MAX_TILES; tile++) {
+        int kind = player->tiles[tile].kind;
+        if (kind == KG_TILE_EMPTY || kind == KG_TILE_WEED) count++;
+    }
+    return count;
+}
+
+KG_HD static inline int kag_macro_seed_stock(const KGPlayer* player) {
+    int count = 0;
+    for (int crop = 0; crop < KG_NUM_CROPS; crop++) {
+        count += player->seeds[crop];
+    }
+    return count;
+}
+
+/* Seeds cannot create more simultaneous plants than the farm has empty or
+ * reclaimable tiles.  This is a physical capacity clip, not a strategy rule:
+ * without it a single structured BUY_SEED(64) can repeatedly convert all cash
+ * into an inventory that cannot possibly be planted. */
+KG_HD static inline int kag_macro_seed_purchase_room(const KGPlayer* player) {
+    int room = kag_macro_reclaimable_tiles(player)
+        - kag_macro_seed_stock(player);
+    return room > 0 ? room : 0;
+}
+
+KG_HD static inline int kag_macro_item_stock(const KGPlayer* player,
+        int item) {
+    if ((unsigned)item >= KG_NUM_ITEMS) return 0;
+    int count = player->shed[item];
+    for (int unit = 0; unit < player->unit_count; unit++) {
+        count += player->units[unit].inventory[item];
+    }
+    return count;
+}
+
+KG_HD static inline int kag_macro_product_stock(const KGPlayer* player,
+        int item) {
+    if ((unsigned)item >= KG_NUM_PRODUCTS) return 0;
+    return kag_macro_item_stock(player, item);
+}
+
+KG_HD static inline int kag_macro_animal_room(const KGPlayer* player,
+        int animal) {
+    if ((unsigned)animal >= KG_NUM_ANIMALS) return 0;
+    int structure = KG_ANIMAL_DEFS[animal].structure;
+    int room = 0;
+    for (int tile = 0; tile < KG_MAX_TILES; tile++) {
+        const KGTile* candidate = &player->tiles[tile];
+        if (candidate->kind == structure
+                && candidate->animal == KG_ANIMAL_INVALID) room++;
+    }
+    return room;
+}
+
+KG_HD static inline int kag_macro_compatible_animal_stock(
+        const KGPlayer* player, int structure) {
+    int stock = 0;
+    for (int animal = 0; animal < KG_NUM_ANIMALS; animal++) {
+        if (KG_ANIMAL_DEFS[animal].structure == structure) {
+            stock += kag_macro_item_stock(player, KG_ITEM_GOOSE + animal);
+        }
+    }
+    return stock;
+}
+
+KG_HD static inline int kag_macro_animal_purchase_room(
+        const KGPlayer* player, int animal) {
+    if ((unsigned)animal >= KG_NUM_ANIMALS) return 0;
+    int structure = KG_ANIMAL_DEFS[animal].structure;
+    int room = kag_macro_animal_room(player, animal)
+        - kag_macro_compatible_animal_stock(player, structure);
+    return room > 0 ? room : 0;
+}
+
+KG_HD static inline int kag_macro_remaining_days(const KGState* game) {
+    int remaining = game->config.episode_steps - game->step;
+    if (remaining <= 0) return 0;
+    int turns = game->config.turns_per_day > 0
+        ? game->config.turns_per_day : 1;
+    return (remaining + turns - 1) / turns;
+}
+
+KG_HD static inline int kag_macro_crop_events(const KGState* game, int crop) {
+    if ((unsigned)crop >= KG_NUM_CROPS) return 0;
+    const KGCropDef* def = &KG_CROP_DEFS[crop];
+    int remaining = kag_macro_remaining_days(game);
+    if (remaining <= def->first_yield_day) return 0;
+    int events = def->ongoing
+        ? 1 + (remaining - def->first_yield_day - 1) / def->interval
+        : def->max_yield;
+    return events > def->max_yield ? def->max_yield : events;
+}
+
+KG_HD static inline int kag_macro_animal_events(const KGState* game,
+        int animal) {
+    if ((unsigned)animal >= KG_NUM_ANIMALS) return 0;
+    const KGAnimalDef* def = &KG_ANIMAL_DEFS[animal];
+    int remaining = kag_macro_remaining_days(game);
+    if (remaining <= def->first_yield_day) return 0;
+    return 1 + (remaining - def->first_yield_day - 1) / def->interval;
+}
+
+KG_HD static inline int kag_macro_liquidation_window(const KGState* game) {
+    /* Match the native continuation's final-two-day capital freeze without
+     * hard-coding a 30-day episode. Existing assets may still be maintained,
+     * harvested, and sold; new long-lived capital is no longer purchased. */
+    return kag_macro_remaining_days(game) <= 2;
+}
+
+KG_HD static inline int kag_macro_work_items(const KGPlayer* player) {
+    int work = 0;
+    int empty = 0;
+    for (int tile = 0; tile < KG_MAX_TILES; tile++) {
+        const KGTile* candidate = &player->tiles[tile];
+        if (candidate->kind == KG_TILE_EMPTY) {
+            empty++;
+        } else if (candidate->kind == KG_TILE_WEED) {
+            work++;
+        } else if (candidate->kind == KG_TILE_PLANT) {
+            if (!candidate->watered_today || candidate->yield_units > 0) work++;
+        } else if (kg_is_animal_tile(candidate)) {
+            if (!candidate->fed_today || !candidate->cared_today
+                    || candidate->yield_units > 0
+                    || candidate->fertilizer_available) work++;
+        }
+    }
+    int plantable = kag_macro_seed_stock(player);
+    if (plantable > empty) plantable = empty;
+    return work + plantable;
+}
+
+/* Hired hands disappear overnight, so their value cannot scale with all
+ * remaining season days. Estimate only today's visible workload and cap it by
+ * the executor's direct-hand ABI. Four visible jobs per unit-day is a modest
+ * routing allowance; PPO still decides whether and how often to hire. */
+KG_HD static inline int kag_macro_desired_hands(const KGPlayer* player) {
+    int work = kag_macro_work_items(player);
+    int desired_units = (work + 3) / 4;
+    int desired_hands = desired_units > 0 ? desired_units - 1 : 0;
+    int land_cap = 4 * kag_popcount((unsigned)player->unlocked_mask);
+    if (desired_hands > land_cap) desired_hands = land_cap;
+    if (desired_hands > KG_POLICY_DIRECT_HANDS) {
+        desired_hands = KG_POLICY_DIRECT_HANDS;
+    }
+    return desired_hands;
+}
+
+KG_HD static inline int kag_macro_plant_needs_water(const KGState* game,
+        const KGTile* tile) {
+    if (tile->kind != KG_TILE_PLANT || tile->watered_today) return 0;
+    const KGCropDef* def = &KG_CROP_DEFS[tile->crop];
+    int age = game->day - tile->planted_day;
+    int bonus_window = !def->ongoing
+        && age >= (def->max_yield_day + 1) / 2
+        && age <= def->max_yield_day;
+    return tile->consecutive_unwatered > 0 || bonus_window || def->ongoing;
+}
+
+KG_HD static inline int kag_macro_feed_shortfall(const KGState* game,
+        int player_id) {
+    const KGPlayer* player = &game->players[player_id];
+    int need = 0;
+    int available = player->shed[KG_ITEM_WHEAT];
+    for (int tile = 0; tile < KG_MAX_TILES; tile++) {
+        if (kg_is_animal_tile(&player->tiles[tile])
+                && !player->tiles[tile].fed_today) need++;
+    }
+    for (int unit = 0; unit < player->unit_count; unit++) {
+        available += player->units[unit].inventory[KG_ITEM_WHEAT];
+    }
+    need -= available;
+    return need > 0 ? need : 0;
+}
+
+KG_HD static inline int kag_macro_feed_cost(const KGState* game,
+        int player_id) {
+    int units = kag_macro_feed_shortfall(game, player_id);
+    int cost = 0;
+    int inventory = game->market.inventory[KG_ITEM_WHEAT];
+    for (int unit = 0; unit < units; unit++) {
+        cost += kg_market_price(KG_ITEM_WHEAT, inventory - unit - 1);
+    }
+    return cost;
+}
+
+/* Existing animals are an executor obligation. New strategic purchases may
+ * use only resources left after the exact visible feed shortfall is covered,
+ * otherwise a macro can be legal yet have its selected order starved by the
+ * feed order that precedes it in the market queue. */
+KG_HD static inline int kag_macro_can_invest_after_feed(const KGState* game,
+        int player_id, int cost, int shed_units) {
+    const KGPlayer* player = &game->players[player_id];
+    int feed = kag_macro_feed_shortfall(game, player_id);
+    int room = game->config.shed_capacity - kg_shed_total(player) - feed;
+    int money = player->money - kag_macro_feed_cost(game, player_id);
+    return money >= cost && room >= shed_units;
+}
+
+/* Defined by kaggriculture_public_bots.h below; the legality check shares the
+ * exact portable structure slots with the DIVERSIFY executor. */
+KG_HD static inline void kag_public_structure_position(
+    int slot, int* x, int* y);
+
+/* MAINTAIN is only a useful policy choice when its executor can commit at
+ * least one chore. Feeding can use wheat already carried or in the shed; if
+ * neither exists, the automatic wheat order must itself be executable. */
+KG_HD static inline int kag_macro_maintain_can_progress(const KGState* game,
+        int player_id) {
+    const KGPlayer* player = &game->players[player_id];
+    int unfed = 0;
+    int wheat = player->shed[KG_ITEM_WHEAT];
+    for (int unit_id = 0; unit_id < player->unit_count; unit_id++) {
+        const KGUnitState* unit = &player->units[unit_id];
+        wheat += unit->inventory[KG_ITEM_WHEAT];
+    }
+    for (int tile = 0; tile < KG_MAX_TILES; tile++) {
+        const KGTile* candidate = &player->tiles[tile];
+        if (kag_macro_plant_needs_water(game, candidate)) return 1;
+        if (!kg_is_animal_tile(candidate)) continue;
+        if (!candidate->fed_today) unfed = 1;
+        else if (!candidate->cared_today) return 1;
+    }
+    if (!unfed) return 0;
+    if (wheat > 0) return 1;
+    return kag_market_action_legal(game, player,
+        (KGPolicyMarketSpec){KG_MARKET_BUY_PRODUCT, KG_ITEM_WHEAT, 1});
+}
+
+KG_HD static inline int kag_macro_candidate_legal(const Env* env,
+        int player_id, int macro_id) {
+    const KGState* game = &env->game_storage;
+    const KGPlayer* player = &game->players[player_id];
+    if ((unsigned)macro_id >= KAG_MACRO_COUNT
+            || macro_id >= KAG_MACRO_RESERVED_BASE) return 0;
+    if (macro_id == KAG_MACRO_HOLD) return 1;
+    if (macro_id == KAG_MACRO_DIVERSIFY) {
+        if (kag_macro_liquidation_window(game)) return 0;
+        if (kag_macro_maintain_can_progress(game, player_id)) return 1;
+        int reclaimable = kag_macro_reclaimable_tiles(player);
+        /* The portable generic planner's first reclaimable slot is always
+         * wheat. Restrict this conservative legality witness to that exact
+         * guaranteed choice; later ranked slots may still add diversity once
+         * the executor is already known to make progress. */
+        if (reclaimable > 0 && (player->seeds[KG_WHEAT] > 0
+                || player->money >= KG_CROP_DEFS[KG_WHEAT].seed_cost)
+                && kag_macro_crop_events(game, KG_WHEAT) > 0) return 1;
+        for (int tile = 0; tile < KG_MAX_TILES; tile++) {
+            const KGTile* candidate = &player->tiles[tile];
+            if (candidate->kind == KG_TILE_PLANT) {
+                int age = game->day - candidate->planted_day;
+                if (candidate->yield_units > 0
+                        && age >= KG_CROP_DEFS[candidate->crop].first_yield_day) {
+                    return 1;
+                }
+            }
+            if (kg_is_animal_tile(candidate)
+                    && (candidate->yield_units > 0
+                        || candidate->fertilizer_available)) return 1;
+        }
+        for (int item = 0; item < KG_NUM_PRODUCTS; item++) {
+            int reserved = item == KG_ITEM_WHEAT
+                ? kag_macro_feed_shortfall(game, player_id) : 0;
+            if (player->shed[item] > reserved) return 1;
+        }
+        int land = kag_popcount((unsigned)player->unlocked_mask);
+        if ((game->day == 4 || game->day == 9) && land < 3
+                && player->money >= (land == 1 ? 1500 : 3000)
+                && kag_market_action_legal(game, player,
+                    (KGPolicyMarketSpec){KG_MARKET_BUY_LAND,
+                        KG_ITEM_INVALID, 1})) return 1;
+        int desired_hands = land == 1 ? 4 : land == 2 ? 8 : 12;
+        if (player->hand_count < desired_hands
+                && kag_market_action_legal(game, player,
+                    (KGPolicyMarketSpec){KG_MARKET_HIRE,
+                        KG_ITEM_INVALID, 1})) return 1;
+        int has_pasture = 0;
+        for (int tile = 0; tile < KG_MAX_TILES; tile++) {
+            has_pasture |= player->tiles[tile].kind == KG_TILE_PASTURE;
+        }
+        if (!has_pasture && player->unit_count > 0) {
+            for (int slot = 0; slot < 15; slot++) {
+                int x;
+                int y;
+                kag_public_structure_position(slot, &x, &y);
+                if (player->tiles[kg_tile_index(x, y)].kind == KG_TILE_EMPTY) {
+                    return 1;
+                }
+            }
+        }
+        return 0;
+    }
+    if (macro_id >= KAG_MACRO_PLANT_BASE
+            && macro_id < KAG_MACRO_PLANT_BASE + KG_NUM_CROPS) {
+        int crop = macro_id - KAG_MACRO_PLANT_BASE;
+        return kag_macro_reclaimable_tiles(player) > 0
+            && kag_macro_crop_events(game, crop) > 0
+            && (player->seeds[crop] > 0
+                || kag_macro_can_invest_after_feed(game, player_id,
+                    KG_CROP_DEFS[crop].seed_cost, 0));
+    }
+    if (macro_id >= KAG_MACRO_ANIMAL_BASE
+            && macro_id < KAG_MACRO_ANIMAL_BASE + KG_NUM_ANIMALS) {
+        int animal = macro_id - KAG_MACRO_ANIMAL_BASE;
+        int stock = kag_macro_item_stock(player, KG_ITEM_GOOSE + animal);
+        KGPolicyMarketSpec buy = {KG_MARKET_BUY_ANIMAL,
+            KG_ITEM_GOOSE + animal, 1};
+        return !kag_macro_liquidation_window(game)
+            && kag_macro_animal_events(game, animal) > 0
+            && (kag_macro_animal_room(player, animal) > 0
+                || kag_macro_empty_tiles(player) > 0)
+            && (stock > 0
+                || (kag_market_action_legal(game, player, buy)
+                    && kag_macro_can_invest_after_feed(game, player_id,
+                        KG_ANIMAL_DEFS[animal].cost, 1)));
+    }
+    if (macro_id == KAG_MACRO_EXPAND) {
+        KGPolicyMarketSpec spec = {KG_MARKET_BUY_LAND, KG_ITEM_INVALID, 1};
+        int extra = kag_popcount((unsigned)player->unlocked_mask) - 1;
+        int can_produce = 0;
+        for (int crop = 0; crop < KG_NUM_CROPS; crop++) {
+            can_produce |= kag_macro_crop_events(game, crop) > 0;
+        }
+        return !kag_macro_liquidation_window(game) && can_produce
+            && kag_market_action_legal(game, player, spec)
+            && kag_macro_can_invest_after_feed(game, player_id,
+                extra == 0 ? 1000 : extra == 1 ? 2000 : 4000, 0);
+    }
+    if (macro_id >= KAG_MACRO_SELL_BASE
+            && macro_id < KAG_MACRO_SELL_BASE + KG_NUM_PRODUCTS) {
+        return player->shed[macro_id - KAG_MACRO_SELL_BASE] > 0;
+    }
+    if (macro_id == KAG_MACRO_SELL_ALL || macro_id == KAG_MACRO_CASH_OUT) {
+        for (int item = 0; item < KG_NUM_PRODUCTS; item++) {
+            if (player->shed[item] > 0) return 1;
+        }
+        return 0;
+    }
+    if (macro_id >= KAG_MACRO_BUY_SEED_BASE
+            && macro_id < KAG_MACRO_BUY_SEED_BASE + KG_NUM_CROPS) {
+        int crop = macro_id - KAG_MACRO_BUY_SEED_BASE;
+        return !kag_macro_liquidation_window(game)
+            && kag_macro_crop_events(game, crop) > 0
+            && kag_macro_seed_purchase_room(player) > 0
+            && kag_market_action_legal(game, player,
+            (KGPolicyMarketSpec){KG_MARKET_BUY_SEED, crop, 1})
+            && kag_macro_can_invest_after_feed(game, player_id,
+                KG_CROP_DEFS[crop].seed_cost, 0);
+    }
+    if (macro_id >= KAG_MACRO_BUY_ANIMAL_BASE
+            && macro_id < KAG_MACRO_BUY_ANIMAL_BASE + KG_NUM_ANIMALS) {
+        int animal = macro_id - KAG_MACRO_BUY_ANIMAL_BASE;
+        return !kag_macro_liquidation_window(game)
+            && kag_macro_animal_events(game, animal) > 0
+            && kag_macro_animal_purchase_room(player, animal) > 0
+            && kag_market_action_legal(game, player,
+            (KGPolicyMarketSpec){KG_MARKET_BUY_ANIMAL,
+                KG_ITEM_GOOSE + animal, 1})
+            && kag_macro_can_invest_after_feed(game, player_id,
+                KG_ANIMAL_DEFS[animal].cost, 1);
+    }
+    if (macro_id == KAG_MACRO_HIRE) {
+        int configured = env->policy_max_hands > 0
+            ? env->policy_max_hands : KG_POLICY_DIRECT_HANDS;
+        int hand_limit = configured < KG_POLICY_DIRECT_HANDS
+            ? configured : KG_POLICY_DIRECT_HANDS;
+        int turns_today = game->config.turns_per_day - game->hour;
+        return !kag_macro_liquidation_window(game) && turns_today > 4
+            && player->hand_count < hand_limit
+            && player->hand_count < kag_macro_desired_hands(player)
+            && kag_market_action_legal(game, player,
+            (KGPolicyMarketSpec){KG_MARKET_HIRE, KG_ITEM_INVALID, 1})
+            && kag_macro_can_invest_after_feed(game, player_id,
+                kg_hire_cost(player->hires_today,
+                    game->config.farm_hand_cost_mult), 0);
+    }
+    if (macro_id == KAG_MACRO_HARVEST) {
+        for (int tile = 0; tile < KG_MAX_TILES; tile++) {
+            const KGTile* candidate = &player->tiles[tile];
+            if (candidate->kind == KG_TILE_PLANT) {
+                int age = game->day - candidate->planted_day;
+                if (candidate->yield_units > 0
+                        && age >= KG_CROP_DEFS[candidate->crop].first_yield_day) {
+                    return 1;
+                }
+            } else if (kg_is_animal_tile(candidate)
+                    && (candidate->yield_units > 0
+                        || candidate->fertilizer_available)) {
+                return 1;
+            }
+        }
+        return 0;
+    }
+    if (macro_id == KAG_MACRO_MAINTAIN) {
+        return kag_macro_maintain_can_progress(game, player_id);
+    }
+    if (macro_id == KAG_MACRO_BUY_WHEAT
+            || macro_id == KAG_MACRO_BUY_FERTILIZER) {
+        int item = macro_id == KAG_MACRO_BUY_WHEAT
+            ? KG_ITEM_WHEAT : KG_ITEM_FERTILIZER;
+        return (item == KG_ITEM_WHEAT
+                || !kag_macro_liquidation_window(game))
+            && kag_market_action_legal(game, player,
+            (KGPolicyMarketSpec){KG_MARKET_BUY_PRODUCT, item, 1})
+            && (item == KG_ITEM_WHEAT
+                || kag_macro_can_invest_after_feed(game, player_id,
+                    game->market.prices[item], 1));
+    }
+    return 0;
+}
+
+KG_HD static inline float kag_macro_crop_score(const KGState* game, int crop) {
+    int events = kag_macro_crop_events(game, crop);
+    if (events <= 0) return -10000.0f;
+    return (float)events * (float)game->market.prices[crop]
+        - (float)KG_CROP_DEFS[crop].seed_cost;
+}
+
+KG_HD static inline float kag_macro_animal_score(const KGState* game,
+        int animal) {
+    int events = kag_macro_animal_events(game, animal);
+    if (events <= 0) return -10000.0f;
+    const KGAnimalDef* def = &KG_ANIMAL_DEFS[animal];
+    int product = def->product;
+    float revenue = (float)events * (float)def->max_held
+        * (float)game->market.prices[product];
+    float feed = (float)events * 2.0f
+        * (float)game->market.prices[KG_ITEM_WHEAT];
+    return revenue - feed - (float)def->cost;
+}
+
+KG_HD static inline float kag_macro_candidate_score(const Env* env,
+        int player_id, int macro_id) {
+    const KGState* game = &env->game_storage;
+    const KGPlayer* player = &game->players[player_id];
+    float score = 0.0f;
+    if (macro_id >= KAG_MACRO_PLANT_BASE
+            && macro_id < KAG_MACRO_PLANT_BASE + KG_NUM_CROPS) {
+        score = kag_macro_crop_score(game, macro_id - KAG_MACRO_PLANT_BASE);
+    } else if (macro_id >= KAG_MACRO_ANIMAL_BASE
+            && macro_id < KAG_MACRO_ANIMAL_BASE + KG_NUM_ANIMALS) {
+        score = kag_macro_animal_score(game, macro_id - KAG_MACRO_ANIMAL_BASE);
+    } else if (macro_id == KAG_MACRO_EXPAND) {
+        float best = 0.0f;
+        for (int crop = 0; crop < KG_NUM_CROPS; crop++) {
+            float candidate = kag_macro_crop_score(game, crop);
+            if (candidate > best) best = candidate;
+        }
+        for (int animal = 0; animal < KG_NUM_ANIMALS; animal++) {
+            float candidate = kag_macro_animal_score(game, animal);
+            if (candidate > best) best = candidate;
+        }
+        int extra = kag_popcount((unsigned)player->unlocked_mask) - 1;
+        int price = extra == 0 ? 1000 : extra == 1 ? 2000 : 4000;
+        /* One quadrant unlocks 25 tiles, but the old estimate credited only
+         * one crop slot. Value up to eight near-term marginal slots, activated
+         * only when the existing farm is crowded or already has a seed
+         * backlog. This creates staged expansion rather than buying all land
+         * at the root or never buying it at all. */
+        int spare = kag_macro_reclaimable_tiles(player);
+        int pressure = 8 - spare;
+        int backlog = kag_macro_seed_stock(player) - spare;
+        if (backlog > pressure) pressure = backlog;
+        if (pressure < 0) pressure = 0;
+        if (pressure > 8) pressure = 8;
+        score = best * (float)pressure - (float)price;
+    } else if (macro_id >= KAG_MACRO_SELL_BASE
+            && macro_id < KAG_MACRO_SELL_BASE + KG_NUM_PRODUCTS) {
+        int item = macro_id - KAG_MACRO_SELL_BASE;
+        score = (float)player->shed[item] * game->market.prices[item];
+    } else if (macro_id == KAG_MACRO_SELL_ALL
+            || macro_id == KAG_MACRO_CASH_OUT) {
+        for (int item = 0; item < KG_NUM_PRODUCTS; item++) {
+            score += (float)player->shed[item] * game->market.prices[item];
+        }
+    } else if (macro_id >= KAG_MACRO_BUY_SEED_BASE
+            && macro_id < KAG_MACRO_BUY_SEED_BASE + KG_NUM_CROPS) {
+        int crop = macro_id - KAG_MACRO_BUY_SEED_BASE;
+        /* This is the marginal next seed, not another full planting. Existing
+         * same-crop stock reduces its urgency while the hard capacity clip
+         * prevents total seed inventory from exceeding usable soil. */
+        score = kag_macro_crop_score(game, crop)
+            - (float)player->seeds[crop] * KG_CROP_DEFS[crop].seed_cost;
+    } else if (macro_id >= KAG_MACRO_BUY_ANIMAL_BASE
+            && macro_id < KAG_MACRO_BUY_ANIMAL_BASE + KG_NUM_ANIMALS) {
+        int animal = macro_id - KAG_MACRO_BUY_ANIMAL_BASE;
+        score = kag_macro_animal_score(game, animal)
+            - (float)kag_macro_item_stock(player, KG_ITEM_GOOSE + animal)
+                * KG_ANIMAL_DEFS[animal].cost;
+    } else if (macro_id == KAG_MACRO_HIRE) {
+        int turns = game->config.turns_per_day > 0
+            ? game->config.turns_per_day : 1;
+        int turns_today = turns - game->hour;
+        float day_fraction = (float)turns_today / (float)turns;
+        /* Hands expire overnight. The previous remaining_days * 100 term
+         * incorrectly valued one hire as if it worked for the entire season,
+         * which made buying the full Fibonacci ladder every day look good. */
+        score = 250.0f * day_fraction
+            - (float)kg_hire_cost(player->hires_today,
+                game->config.farm_hand_cost_mult);
+    } else if (macro_id == KAG_MACRO_HARVEST) {
+        for (int tile = 0; tile < KG_MAX_TILES; tile++) {
+            const KGTile* candidate = &player->tiles[tile];
+            if (candidate->yield_units <= 0) continue;
+            int item = candidate->kind == KG_TILE_PLANT
+                ? candidate->crop
+                : kg_is_animal_tile(candidate)
+                ? KG_ANIMAL_DEFS[candidate->animal].product : -1;
+            if ((unsigned)item < KG_NUM_PRODUCTS) {
+                score += (float)candidate->yield_units
+                    * game->market.prices[item];
+            }
+        }
+    } else if (macro_id == KAG_MACRO_MAINTAIN) {
+        score = 250.0f;
+    } else if (macro_id == KAG_MACRO_DIVERSIFY) {
+        score = 100.0f;
+    } else if (macro_id == KAG_MACRO_BUY_WHEAT) {
+        score = -2.0f * game->market.prices[KG_ITEM_WHEAT];
+    } else if (macro_id == KAG_MACRO_BUY_FERTILIZER) {
+        score = -2.0f * game->market.prices[KG_ITEM_FERTILIZER];
+    }
+    return kag_macro_candidate_legal(env, player_id, macro_id)
+        ? score : -10000.0f;
+}
+
+KG_HD static inline uint8_t kag_macro_score_byte(const Env* env,
+        int player_id, int macro_id) {
+    float scale = env->macro_score_scale > 1.0f
+        ? env->macro_score_scale : 10000.0f;
+    float normalized = kag_macro_candidate_score(env, player_id, macro_id)
+        / scale;
+    if (normalized < -1.0f) normalized = -1.0f;
+    if (normalized > 1.0f) normalized = 1.0f;
+    int quantized = (int)((normalized + 1.0f) * 63.5f + 0.5f);
+    if (quantized < 0) quantized = 0;
+    if (quantized > 127) quantized = 127;
+    if (kag_macro_candidate_legal(env, player_id, macro_id)) quantized |= 128;
+    return (uint8_t)quantized;
 }
 
 KG_HD static inline void kag_write_unit_mask(const KGState* game, const KGPlayer* player,
@@ -1772,6 +2445,63 @@ KG_HD static inline void kag_write_mask(Env* env, int player_id) {
     unsigned char* mask = agent->action_mask;
     if (mask == NULL) return;
     memset(mask, 0, KG_POLICY_ACTION_MASK_SIZE);
+    if (env->macro_mode) {
+        unsigned char* macro_head = mask;
+        if (env->macro_ticks[player_id] > 0) {
+            /* A macro remains active between decision boundaries.  Keeping
+             * the head's only legal value at HOLD prevents the policy sampler
+             * from treating an ignored action as a second decision. */
+            macro_head[KAG_MACRO_HOLD] = 1;
+        } else {
+            for (int macro = 0; macro < KAG_MACRO_COUNT; macro++) {
+                if (kag_macro_candidate_legal(env, player_id, macro)) {
+                    macro_head[macro] = 1;
+                }
+            }
+            /* HOLD is always a safe fallback even if a malformed state has
+             * no executable investment/sale candidate. */
+            if (macro_head[KAG_MACRO_HOLD] == 0) {
+                macro_head[KAG_MACRO_HOLD] = 1;
+            }
+        }
+        for (int unit = 1; unit < KG_POLICY_UNIT_HEADS; unit++) {
+            mask[unit * KG_POLICY_UNIT_COMMANDS + KG_U_PASS] = 1;
+        }
+        if (env->macro_mode >= KAG_MACRO_MODE_STRUCTURED) {
+            /* The extra unit heads are parameter heads only in mode 2.  They
+             * still have the original 44-way storage, so enabling the first
+             * few values changes semantics without changing the checkpoint
+             * or action-mask ABI. */
+            unsigned char* quantity = mask
+                + KAG_MACRO_QUANTITY_HEAD * KG_POLICY_UNIT_COMMANDS;
+            unsigned char* target = mask
+                + KAG_MACRO_TARGET_HEAD * KG_POLICY_UNIT_COMMANDS;
+            memset(quantity, 0, KG_POLICY_UNIT_COMMANDS);
+            memset(target, 0, KG_POLICY_UNIT_COMMANDS);
+            if (env->macro_ticks[player_id] > 0) {
+                /* Stored parameters are replayed while an intent is sticky;
+                 * newly sampled values would be ignored aliases. */
+                quantity[0] = 1;
+                target[0] = 1;
+            } else {
+                for (int bin = 0; bin < KAG_MACRO_QUANTITY_BINS; bin++) {
+                    quantity[bin] = 1;
+                }
+                for (int bin = 0; bin < KAG_MACRO_TARGET_BINS; bin++) {
+                    int quadrant = kag_macro_target_from_bin(bin);
+                    target[bin] = quadrant == 0
+                        || ((player->unlocked_mask & quadrant) != 0
+                            && kag_macro_reclaimable_tiles_in_quadrant(
+                                game, player, quadrant) > 0);
+                }
+            }
+        }
+        for (int slot = 0; slot < KG_POLICY_MARKET_SLOTS; slot++) {
+            unsigned char* slot_mask = kag_market_slot_mask(mask, slot);
+            slot_mask[PUFFER_CONDITIONAL_STOP] = 1;
+        }
+        return;
+    }
     kag_write_unit_mask(game, player, 0, mask);
     for (int unit = 1; unit <= KG_POLICY_DIRECT_HANDS; unit++) {
         unsigned char* unit_mask = mask + unit * KG_POLICY_UNIT_COMMANDS;
@@ -1800,7 +2530,7 @@ KG_HD static inline void kag_write_opening_mask(Env* env, int player_id,
         const KGAction* target) {
     Agent* agent = &env->agents[player_id];
     unsigned char* mask = agent->action_mask;
-    if (mask == NULL || agent->policy != 0
+    if (mask == NULL || env->macro_mode || agent->policy != 0
             || env->opening_turns <= env->game_storage.step) return;
 
     for (int slot = 0; slot < KG_POLICY_UNITS; slot++) {
@@ -2456,6 +3186,17 @@ typedef struct {
     int8_t arg;
 } KagBotJob;
 
+/* Job classes let a macro request execution without inheriting unrelated
+ * strategy from the general-purpose bot. Maintenance remains available to
+ * every strategic action, while planting and harvesting are explicit. */
+enum {
+    KAG_BOT_JOBS_MAINTAIN = 1 << 0,
+    KAG_BOT_JOBS_HARVEST = 1 << 1,
+    KAG_BOT_JOBS_DIG = 1 << 2,
+    KAG_BOT_JOBS_PLANT = 1 << 3,
+    KAG_BOT_JOBS_ALL = (1 << 4) - 1,
+};
+
 KG_HD static inline void kag_bot_crop_rank(const KGState* game, int player_id,
         int rank[KG_NUM_CROPS]) {
     int own[KG_NUM_CROPS] = {0};
@@ -2526,7 +3267,10 @@ KG_HD static inline int kag_bot_route(const KGPlayer* farm, const KGUnitState* u
         if (unit->x >= 5 && unit->y >= 5) {
             if (farm->unlocked_mask & 2) return KG_OP_NORTH;
             if (farm->unlocked_mask & 4) return KG_OP_WEST;
-            return KG_OP_PASS;
+            /* Hands can spawn at the shed's locked SE access cell while only
+             * NW is owned. Core movement is bounds-only, so take a two-step
+             * escape through locked NE and then west into the owned farm. */
+            return KG_OP_NORTH;
         }
         if (unit->x >= 5) return KG_OP_WEST;
         if (unit->y >= 5) return KG_OP_NORTH;
@@ -2536,8 +3280,9 @@ KG_HD static inline int kag_bot_route(const KGPlayer* farm, const KGUnitState* u
     return KG_OP_PASS;
 }
 
-KG_HD static inline int kag_bot_jobs(const KGState* game, int player_id,
-        const KGPlayer* farm, int fixed_crop, KagBotJob jobs[KG_MAX_TILES],
+KG_HD static inline int kag_bot_jobs_ex(const KGState* game, int player_id,
+        const KGPlayer* farm, int fixed_crop, int plant_limit,
+        int target_quadrant, int job_flags, KagBotJob jobs[KG_MAX_TILES],
         int seed_need[KG_NUM_CROPS]) {
     int seed_budget[KG_NUM_CROPS];
     memcpy(seed_budget, farm->seeds, sizeof(seed_budget));
@@ -2545,6 +3290,8 @@ KG_HD static inline int kag_bot_jobs(const KGState* game, int player_id,
     int crop_rank[KG_NUM_CROPS];
     kag_bot_crop_rank(game, player_id, crop_rank);
     int count = 0;
+    int requested_plants = 0;
+    int planned_plants = 0;
     /* The exported top continuation prioritizes every occupied animal tile
      * before crop work. Keep this as a separate row-major pass so job order,
      * worker tie-breaking, and therefore the entire trajectory match the
@@ -2557,65 +3304,90 @@ KG_HD static inline int kag_bot_jobs(const KGState* game, int player_id,
         uint8_t y = (uint8_t)(tile_id / KG_MAX_BOARD_SIZE);
         /* Feeding is the only deadline: two missed day refreshes destroy the
          * animal. Harvest, fertilizer, and care can safely wait behind it. */
-        if (!tile->fed_today) {
+        if ((job_flags & KAG_BOT_JOBS_MAINTAIN) && !tile->fed_today) {
             jobs[count++] = (KagBotJob){x, y, 0, KG_OP_FEED, -1};
-        } else if (tile->yield_units > 0) {
+        } else if ((job_flags & KAG_BOT_JOBS_HARVEST)
+                && tile->yield_units > 0) {
             jobs[count++] = (KagBotJob){x, y, 1, KG_OP_HARVEST, -1};
-        } else if (tile->fertilizer_available) {
+        } else if ((job_flags & KAG_BOT_JOBS_HARVEST)
+                && tile->fertilizer_available) {
             jobs[count++] = (KagBotJob){x, y, 1,
                 KG_OP_COLLECT_FERTILIZER, -1};
-        } else if (!tile->cared_today) {
+        } else if ((job_flags & KAG_BOT_JOBS_MAINTAIN)
+                && !tile->cared_today) {
             jobs[count++] = (KagBotJob){x, y, 2, KG_OP_CARE, -1};
         }
     }
-    int slot = 0;
+    int planting_slot = 0;
     for (int tile_id = 0; tile_id < KG_MAX_TILES; tile_id++) {
         const KGTile* tile = &farm->tiles[tile_id];
         if (tile->kind == KG_TILE_LOCKED) continue;
-        int crop_slot = slot++;
-        int specialist_cap = fixed_crop == KG_WHEAT ? 25
-            : fixed_crop == KG_CARROT ? 6
-            : fixed_crop == KG_MELON ? 10 : 16;
-        if (fixed_crop >= 0 && crop_slot >= specialist_cap) {
-            continue;
-        }
         uint8_t x = (uint8_t)(tile_id % KG_MAX_BOARD_SIZE);
         uint8_t y = (uint8_t)(tile_id / KG_MAX_BOARD_SIZE);
-        int crop = kag_bot_crop(fixed_crop, crop_slot, crop_rank);
         if (tile->kind == KG_TILE_PLANT) {
             int age = game->day - tile->planted_day;
             const KGCropDef* def = &KG_CROP_DEFS[tile->crop];
-            int bonus_window = !def->ongoing
-                && age >= (def->max_yield_day + 1) / 2
-                && age <= def->max_yield_day;
-            int must_water = tile->consecutive_unwatered > 0
-                || bonus_window || def->ongoing;
-            if (!tile->watered_today && must_water) {
+            if ((job_flags & KAG_BOT_JOBS_MAINTAIN)
+                    && kag_macro_plant_needs_water(game, tile)) {
                 jobs[count++] = (KagBotJob){x, y,
                     (uint8_t)(tile->consecutive_unwatered ? 0 : 2),
                     KG_OP_WATER, -1};
-            } else if (tile->yield_units > 0 && age >= def->first_yield_day) {
+            } else if ((job_flags & KAG_BOT_JOBS_HARVEST)
+                    && tile->yield_units > 0
+                    && age >= def->first_yield_day) {
                 jobs[count++] = (KagBotJob){x, y, 1, KG_OP_HARVEST, -1};
             }
-        } else if (tile->kind == KG_TILE_WEED) {
+        } else if (tile->kind == KG_TILE_WEED
+                && (job_flags & KAG_BOT_JOBS_DIG)
+                && (target_quadrant == 0
+                    || kg_quadrant(x, y, game->config.board_size)
+                        == target_quadrant)) {
             jobs[count++] = (KagBotJob){x, y, 3, KG_OP_DIG, -1};
-        } else if (tile->kind == KG_TILE_EMPTY) {
-            int viable = game->market.prices[crop]
-                > KG_CROP_DEFS[crop].seed_cost;
-            if (viable) seed_need[crop]++;
-            if (viable && seed_budget[crop] > 0
-                    && game->day + KG_CROP_DEFS[crop].first_yield_day < 30) {
+        } else if (tile->kind == KG_TILE_EMPTY
+                && (job_flags & KAG_BOT_JOBS_PLANT)) {
+            if (target_quadrant != 0
+                    && kg_quadrant(x, y, game->config.board_size)
+                        != target_quadrant) {
+                continue;
+            }
+            int crop_slot = planting_slot++;
+            int specialist_cap = fixed_crop == KG_WHEAT ? 25
+                : fixed_crop == KG_CARROT ? 6
+                : fixed_crop == KG_MELON ? 10 : 16;
+            /* Legacy fixed-crop bots retain their historical cap. Structured
+             * PLANT already has an explicit quantity and must work in every
+             * target quadrant, regardless of row-major board position. */
+            if (fixed_crop >= 0 && plant_limit < 0
+                    && crop_slot >= specialist_cap) {
+                continue;
+            }
+            int crop = kag_bot_crop(fixed_crop, crop_slot, crop_rank);
+            int viable = kag_macro_crop_events(game, crop) > 0;
+            if ((plant_limit < 0 || requested_plants < plant_limit)
+                    && viable) {
+                /* Count the request independently of current seed stock.  A
+                 * structured PLANT(20) action must buy the missing seeds now
+                 * and plant them on subsequent turns, rather than silently
+                 * expanding to every empty tile when seed_budget is zero. */
+                seed_need[crop]++;
+                requested_plants++;
+            }
+            if ((plant_limit < 0 || planned_plants < plant_limit)
+                    && viable && seed_budget[crop] > 0) {
                 jobs[count++] = (KagBotJob){x, y, 4, KG_OP_PLANT,
                     (int8_t)crop};
                 seed_budget[crop]--;
+                planned_plants++;
             }
         }
     }
     return count;
 }
 
-KG_HD static inline void kag_bot_action(const KGState* game, int player_id,
-        int fixed_crop, KGAction* action) {
+KG_HD static inline void kag_bot_action_filtered_ex(const KGState* game,
+        int player_id,
+        int fixed_crop, int plant_limit, int target_quadrant,
+        int job_flags, KGAction* action) {
     const KGPlayer* farm = &game->players[player_id];
     action->hand_count = 0;
     action->market_count = 0;
@@ -2627,8 +3399,8 @@ KG_HD static inline void kag_bot_action(const KGState* game, int player_id,
 
     KagBotJob jobs[KG_MAX_TILES];
     int seed_need[KG_NUM_CROPS];
-    int job_count = kag_bot_jobs(game, player_id, farm, fixed_crop,
-        jobs, seed_need);
+    int job_count = kag_bot_jobs_ex(game, player_id, farm, fixed_crop,
+        plant_limit, target_quadrant, job_flags, jobs, seed_need);
     int unfed_animals = 0;
     for (int tile = 0; tile < KG_MAX_TILES; tile++) {
         if (kg_is_animal_tile(&farm->tiles[tile])
@@ -2636,10 +3408,37 @@ KG_HD static inline void kag_bot_action(const KGState* game, int player_id,
     }
     int wheat_pickup_assigned = 0;
     uint64_t claimed[KG_TILE_WORDS] = {0};
+
+    /* Commit work already under a worker before assigning routes. A purely
+     * worker-ordered greedy pass could send the farmer one square toward a
+     * job while the hand standing on that job walked away to something else. */
     for (int worker = 0; worker < farm->unit_count; worker++) {
         const KGUnitState* unit = &farm->units[worker];
         KGUnitAction* command = worker == 0
             ? &action->farmer : &action->hands[worker - 1];
+        int best = -1;
+        int best_priority = 0x7fffffff;
+        for (int job = 0; job < job_count; job++) {
+            if (claimed[job >> 6] & (1ULL << (job & 63))) continue;
+            if (jobs[job].x != unit->x || jobs[job].y != unit->y) continue;
+            if (jobs[job].op == KG_OP_FEED
+                    && unit->inventory[KG_ITEM_WHEAT] <= 0) continue;
+            if (jobs[job].priority < best_priority) {
+                best = job;
+                best_priority = jobs[job].priority;
+            }
+        }
+        if (best >= 0) {
+            claimed[best >> 6] |= 1ULL << (best & 63);
+            *command = (KGUnitAction){jobs[best].op, jobs[best].arg, 1};
+        }
+    }
+
+    for (int worker = 0; worker < farm->unit_count; worker++) {
+        const KGUnitState* unit = &farm->units[worker];
+        KGUnitAction* command = worker == 0
+            ? &action->farmer : &action->hands[worker - 1];
+        if (command->op != KG_OP_PASS) continue;
         /* Daily inventory is dropped at the shed. Reacquire feed before
          * routing to animals; otherwise FEED is an endless silent no-op. */
         if (unfed_animals > 0 && unit->inventory[KG_ITEM_WHEAT] == 0
@@ -2660,6 +3459,11 @@ KG_HD static inline void kag_bot_action(const KGState* game, int player_id,
         int best_score = 0x7fffffff;
         for (int job = 0; job < job_count; job++) {
             if (claimed[job >> 6] & (1ULL << (job & 63))) continue;
+            /* Routing an empty-handed worker to FEED only creates a silent
+             * no-op at the destination. One worker acquires the day's wheat
+             * above; feed jobs wait until a worker actually carries it. */
+            if (jobs[job].op == KG_OP_FEED
+                    && unit->inventory[KG_ITEM_WHEAT] <= 0) continue;
             int distance = kag_abs((int)unit->x - jobs[job].x)
                 + kag_abs((int)unit->y - jobs[job].y);
             int score = jobs[job].priority * 32 + distance;
@@ -2691,8 +3495,6 @@ KG_HD static inline void kag_bot_action(const KGState* game, int player_id,
                 (KGMarketOrder){KG_MARKET_SELL, product, sell_count};
         }
     }
-    if (game->day >= 28) return;
-    int land = kag_popcount((unsigned)farm->unlocked_mask);
     int carried_wheat = 0;
     for (int unit = 0; unit < farm->unit_count; unit++) {
         carried_wheat += farm->units[unit].inventory[KG_ITEM_WHEAT];
@@ -2704,6 +3506,10 @@ KG_HD static inline void kag_bot_action(const KGState* game, int player_id,
             (KGMarketOrder){KG_MARKET_BUY_PRODUCT, KG_ITEM_WHEAT,
                 missing_feed};
     }
+    /* Liquidation suppresses new capital, never food required by animals that
+     * already exist. The old early return silently removed end-game feed. */
+    if (kag_macro_liquidation_window(game)) return;
+    int land = kag_popcount((unsigned)farm->unlocked_mask);
     if (fixed_crop < 0 && (game->day == 4 || game->day == 9) && land < 3
             && farm->money >= (land == 1 ? 1500 : 3000)
             && action->market_count < limit) {
@@ -2724,6 +3530,18 @@ KG_HD static inline void kag_bot_action(const KGState* game, int player_id,
         action->market[action->market_count++] =
             (KGMarketOrder){KG_MARKET_HIRE, -1, 1};
     }
+}
+
+KG_HD static inline void kag_bot_action_ex(const KGState* game, int player_id,
+        int fixed_crop, int plant_limit, int target_quadrant,
+        KGAction* action) {
+    kag_bot_action_filtered_ex(game, player_id, fixed_crop, plant_limit,
+        target_quadrant, KAG_BOT_JOBS_ALL, action);
+}
+
+KG_HD static inline void kag_bot_action(const KGState* game, int player_id,
+        int fixed_crop, KGAction* action) {
+    kag_bot_action_ex(game, player_id, fixed_crop, -1, 0, action);
 }
 
 KG_HD static inline void kag_adaptive_market_add(KGAction* action, int limit,
@@ -2870,6 +3688,732 @@ KG_HD static inline void kag_adaptive_action(const KGState* game, int player_id,
     (void)structures;
 }
 
+KG_HD static inline void kag_macro_append_order(const KGState* game,
+        int player_id, KGAction* action, KGMarketOrder order) {
+    int limit = game->config.max_market_orders_per_turn;
+    if (limit > KG_MAX_MARKET_ORDERS) limit = KG_MAX_MARKET_ORDERS;
+    if (action->market_count >= limit || order.n <= 0) return;
+    const KGPlayer* player = &game->players[player_id];
+    int legal = 0;
+    if (order.op == KG_MARKET_SELL) {
+        legal = order.item >= 0 && order.item < KG_NUM_PRODUCTS
+            && player->shed[order.item] > 0;
+    } else if (order.op == KG_MARKET_BUY_SEED) {
+        legal = kag_market_action_legal(game, player,
+            (KGPolicyMarketSpec){KG_MARKET_BUY_SEED, order.item, 1});
+    } else if (order.op == KG_MARKET_BUY_PRODUCT) {
+        legal = kag_market_action_legal(game, player,
+            (KGPolicyMarketSpec){KG_MARKET_BUY_PRODUCT, order.item, 1});
+    } else if (order.op == KG_MARKET_BUY_ANIMAL) {
+        legal = kag_market_action_legal(game, player,
+            (KGPolicyMarketSpec){KG_MARKET_BUY_ANIMAL, order.item, 1});
+    } else if (order.op == KG_MARKET_HIRE) {
+        legal = kag_market_action_legal(game, player,
+            (KGPolicyMarketSpec){KG_MARKET_HIRE, KG_ITEM_INVALID, 1});
+    } else if (order.op == KG_MARKET_BUY_LAND) {
+        legal = kag_market_action_legal(game, player,
+            (KGPolicyMarketSpec){KG_MARKET_BUY_LAND, KG_ITEM_INVALID, 1});
+    }
+    if (legal) action->market[action->market_count++] = order;
+}
+
+KG_HD static inline void kag_macro_keep_only_sell(const KGState* game,
+        int player_id, KGAction* action, int item) {
+    int kept = 0;
+    for (int order = 0; order < action->market_count; order++) {
+        KGMarketOrder candidate = action->market[order];
+        if (candidate.op != KG_MARKET_SELL || candidate.item == item) {
+            action->market[kept++] = candidate;
+        }
+    }
+    action->market_count = kept;
+    const KGPlayer* player = &game->players[player_id];
+    if (player->shed[item] > 0) {
+        int present = 0;
+        for (int order = 0; order < action->market_count; order++) {
+            present |= action->market[order].op == KG_MARKET_SELL
+                && action->market[order].item == item;
+        }
+        if (!present) {
+            kag_macro_append_order(game, player_id, action,
+                (KGMarketOrder){KG_MARKET_SELL, item, player->shed[item]});
+        }
+    }
+}
+
+/* Mode-2 macros own strategic market choices.  The deterministic planner may
+ * still emit wheat purchases needed to keep existing animals alive, but it
+ * must not silently add land, seeds, animals, hires, or unrelated sales on a
+ * different macro. */
+KG_HD static inline void kag_macro_keep_feed_and(const KGState* game,
+        int player_id, KGAction* action, int keep_op, int keep_item) {
+    int kept = 0;
+    int feed_remaining = kag_macro_feed_shortfall(game, player_id);
+    for (int order = 0; order < action->market_count; order++) {
+        KGMarketOrder candidate = action->market[order];
+        int feed = candidate.op == KG_MARKET_BUY_PRODUCT
+            && candidate.item == KG_ITEM_WHEAT;
+        int selected = keep_op >= 0 && candidate.op == keep_op
+            && (keep_item < 0 || candidate.item == keep_item);
+        if (feed && !selected) {
+            if (feed_remaining <= 0) continue;
+            if (candidate.n > feed_remaining) candidate.n = feed_remaining;
+            feed_remaining -= candidate.n;
+        }
+        if (feed || selected) action->market[kept++] = candidate;
+    }
+    action->market_count = kept;
+}
+
+/* Market orders commit sequentially. Move mandatory wheat ahead of optional
+ * DIVERSIFY investments so an animal purchase cannot consume the final shed
+ * slot (or cash) and starve an existing animal's feed. */
+KG_HD static inline void kag_macro_prioritize_feed(KGAction* action) {
+    KGMarketOrder ordered[KG_MAX_MARKET_ORDERS];
+    int count = 0;
+    for (int order = 0; order < action->market_count; order++) {
+        KGMarketOrder candidate = action->market[order];
+        if (candidate.op == KG_MARKET_BUY_PRODUCT
+                && candidate.item == KG_ITEM_WHEAT) {
+            ordered[count++] = candidate;
+        }
+    }
+    for (int order = 0; order < action->market_count; order++) {
+        KGMarketOrder candidate = action->market[order];
+        if (candidate.op != KG_MARKET_BUY_PRODUCT
+                || candidate.item != KG_ITEM_WHEAT) {
+            ordered[count++] = candidate;
+        }
+    }
+    memcpy(action->market, ordered, count * sizeof(*ordered));
+    action->market_count = count;
+}
+
+KG_HD static inline void kag_macro_remove_market_op(KGAction* action, int op) {
+    int kept = 0;
+    for (int order = 0; order < action->market_count; order++) {
+        if (action->market[order].op != op) {
+            action->market[kept++] = action->market[order];
+        }
+    }
+    action->market_count = kept;
+}
+
+KG_HD static inline void kag_macro_remove_market_op_item(KGAction* action,
+        int op, int item) {
+    int kept = 0;
+    for (int order = 0; order < action->market_count; order++) {
+        KGMarketOrder candidate = action->market[order];
+        if (candidate.op != op || candidate.item != item) {
+            action->market[kept++] = candidate;
+        }
+    }
+    action->market_count = kept;
+}
+
+/* A quantity-limited SELL_ALL is a request for units, not product-index
+ * priority. Consume that budget from the highest visible unit price first so
+ * SELL_ALL(1) cannot dump wheat while leaving much more valuable milk/wool. */
+KG_HD static inline void kag_macro_sort_sales_by_price(const KGState* game,
+        KGAction* action) {
+    for (int i = 0; i < action->market_count; i++) {
+        if (action->market[i].op != KG_MARKET_SELL) continue;
+        int best = i;
+        for (int j = i + 1; j < action->market_count; j++) {
+            if (action->market[j].op != KG_MARKET_SELL) continue;
+            int candidate_item = action->market[j].item;
+            int best_item = action->market[best].item;
+            int candidate_price = (unsigned)candidate_item < KG_NUM_PRODUCTS
+                ? game->market.prices[candidate_item] : 0;
+            int best_price = (unsigned)best_item < KG_NUM_PRODUCTS
+                ? game->market.prices[best_item] : 0;
+            if (candidate_price > best_price) best = j;
+        }
+        if (best != i) {
+            KGMarketOrder swap = action->market[i];
+            action->market[i] = action->market[best];
+            action->market[best] = swap;
+        }
+    }
+}
+
+KG_HD static inline void kag_macro_cap_market(KGAction* action, int op,
+        int item, int max_n) {
+    if (max_n < 0) return;
+    int kept = 0;
+    int remaining = max_n;
+    for (int order = 0; order < action->market_count; order++) {
+        KGMarketOrder candidate = action->market[order];
+        if (candidate.op == op && (item < 0 || candidate.item == item)) {
+            if (remaining <= 0) continue;
+            if (candidate.n > remaining) candidate.n = remaining;
+            remaining -= candidate.n;
+            if (candidate.n <= 0) continue;
+        }
+        action->market[kept++] = candidate;
+    }
+    action->market_count = kept;
+}
+
+KG_HD static inline void kag_macro_append_quantity(const KGState* game,
+        int player_id, KGAction* action, KGMarketOrder order, int quantity) {
+    if (quantity <= 0) return;
+    if (order.op == KG_MARKET_HIRE) {
+        /* HIRE is a one-order operation in kg_process_market; represent a
+         * requested count as repeated legal orders. */
+        for (int i = 0; i < quantity; i++) {
+            kag_macro_append_order(game, player_id, action,
+                (KGMarketOrder){KG_MARKET_HIRE, KG_ITEM_INVALID, 1});
+        }
+    } else {
+        order.n = quantity;
+        kag_macro_append_order(game, player_id, action, order);
+    }
+}
+
+KG_HD static inline void kag_macro_strip_plant_commands(KGAction* action) {
+    for (int unit = 0; unit <= action->hand_count; unit++) {
+        KGUnitAction* command = unit == 0
+            ? &action->farmer : &action->hands[unit - 1];
+        if (command->op == KG_OP_PLANT) {
+            *command = (KGUnitAction){KG_OP_PASS, -1, 1};
+        }
+    }
+}
+
+KG_HD static inline void kag_macro_strip_growth(KGAction* action) {
+    for (int unit = 0; unit <= action->hand_count; unit++) {
+        KGUnitAction* command = unit == 0
+            ? &action->farmer : &action->hands[unit - 1];
+        if (command->op == KG_OP_PLANT
+                || command->op == KG_OP_BUILD_COOP
+                || command->op == KG_OP_BUILD_PASTURE) {
+            *command = (KGUnitAction){KG_OP_PASS, -1, 1};
+        }
+    }
+}
+
+KG_HD static inline void kag_macro_cap_structure_commands(KGAction* action,
+        int structure_kind, int max_builds) {
+    int expected_op = structure_kind == KG_TILE_COOP
+        ? KG_OP_BUILD_COOP : KG_OP_BUILD_PASTURE;
+    int kept = 0;
+    for (int unit = 0; unit <= action->hand_count; unit++) {
+        KGUnitAction* command = unit == 0
+            ? &action->farmer : &action->hands[unit - 1];
+        if (command->op != KG_OP_BUILD_COOP
+                && command->op != KG_OP_BUILD_PASTURE) continue;
+        if (command->op != expected_op || kept >= max_builds) {
+            *command = (KGUnitAction){KG_OP_PASS, -1, 1};
+        } else {
+            kept++;
+        }
+    }
+}
+
+/* Execute one selected animal production intent without borrowing a complete
+ * public-bot strategy.  The policy owns species and batch size.  Native code
+ * only keeps existing assets alive, routes the selected stock, builds the
+ * matching structure, and packs the selected purchase order. */
+KG_HD static inline void kag_macro_selected_animal_action(
+        const KGState* game, int player_id, int animal, int quantity,
+        KGAction* action) {
+    const KGPlayer* player = &game->players[player_id];
+    int item = KG_ITEM_GOOSE + animal;
+    int structure = KG_ANIMAL_DEFS[animal].structure;
+    int build_op = structure == KG_TILE_COOP
+        ? KG_OP_BUILD_COOP : KG_OP_BUILD_PASTURE;
+
+    kag_bot_action_filtered_ex(game, player_id, -1, 0, 0,
+        KAG_BOT_JOBS_MAINTAIN, action);
+    kag_macro_keep_feed_and(game, player_id, action,
+        KG_MARKET_BUY_ANIMAL, item);
+    kag_macro_remove_market_op(action, KG_MARKET_BUY_ANIMAL);
+
+    int selected_stock = kag_macro_item_stock(player, item);
+    int selected_batch_stock = selected_stock < quantity
+        ? selected_stock : quantity;
+    int empty_room = kag_macro_animal_room(player, animal);
+    int desired_purchase = quantity - selected_batch_stock;
+    if (desired_purchase < 0) desired_purchase = 0;
+    /* The selected intent may build only for its selected batch. Backlogged
+     * cow/sheep stock from another intent does not authorize hidden expansion
+     * for that other species. */
+    int build_needed = quantity - empty_room;
+    if (build_needed < 0) build_needed = 0;
+
+    KGPublicJob jobs[KG_PUBLIC_MAX_JOBS];
+    int job_count = 0;
+    int place_slots = selected_batch_stock < empty_room
+        ? selected_batch_stock : empty_room;
+    for (int tile_id = 0; tile_id < KG_MAX_TILES && place_slots > 0;
+            tile_id++) {
+        const KGTile* tile = &player->tiles[tile_id];
+        if (tile->kind != structure
+                || tile->animal != KG_ANIMAL_INVALID) continue;
+        jobs[job_count++] = (KGPublicJob){
+            tile_id % KG_MAX_BOARD_SIZE, tile_id / KG_MAX_BOARD_SIZE,
+            0, KG_OP_PLACE, item};
+        place_slots--;
+    }
+
+    int carried = 0;
+    for (int unit = 0; unit < player->unit_count; unit++) {
+        carried += player->units[unit].inventory[item];
+    }
+    int carried_batch = carried < quantity ? carried : quantity;
+    int pickup_count = quantity - carried_batch;
+    int room_after_carried = empty_room - carried_batch;
+    if (pickup_count > room_after_carried) pickup_count = room_after_carried;
+    if (pickup_count > player->shed[item]) pickup_count = player->shed[item];
+    if (pickup_count < 0) pickup_count = 0;
+    KGPosition access[4];
+    kg_shed_access_count(game->config.board_size, access);
+    for (int pickup = 0; pickup < pickup_count
+            && job_count < KG_PUBLIC_MAX_JOBS; pickup++) {
+        jobs[job_count++] = (KGPublicJob){access[0].x, access[0].y,
+            1, KG_OP_PICKUP, item};
+    }
+
+    uint64_t reserved_builds[KG_TILE_WORDS] = {0};
+    for (int slot = 0; slot < 15 && build_needed > 0
+            && job_count < KG_PUBLIC_MAX_JOBS; slot++) {
+        int x;
+        int y;
+        kag_public_structure_position(slot, &x, &y);
+        int tile_id = kg_tile_index(x, y);
+        if (player->tiles[tile_id].kind != KG_TILE_EMPTY) continue;
+        jobs[job_count++] = (KGPublicJob){x, y, 2, build_op, -1};
+        reserved_builds[tile_id >> 6] |= 1ULL << (tile_id & 63);
+        build_needed--;
+    }
+    for (int tile_id = 0; tile_id < KG_MAX_TILES && build_needed > 0
+            && job_count < KG_PUBLIC_MAX_JOBS; tile_id++) {
+        const KGTile* tile = &player->tiles[tile_id];
+        if (tile->kind != KG_TILE_EMPTY
+                || (reserved_builds[tile_id >> 6]
+                    & (1ULL << (tile_id & 63)))) continue;
+        jobs[job_count++] = (KGPublicJob){
+            tile_id % KG_MAX_BOARD_SIZE, tile_id / KG_MAX_BOARD_SIZE,
+            2, build_op, -1};
+        build_needed--;
+    }
+    kag_public_assign_jobs(game, player, jobs, job_count, action);
+
+    /* Unit commands commit before the market, so only structures actually
+     * built this turn add purchase capacity. Merely routing toward a planned
+     * build must not authorize an animal that has nowhere to go. */
+    int built_now = 0;
+    int picked_now = 0;
+    for (int unit = 0; unit <= action->hand_count; unit++) {
+        const KGUnitAction* command = unit == 0
+            ? &action->farmer : &action->hands[unit - 1];
+        built_now += command->op == build_op;
+        picked_now += command->op == KG_OP_PICKUP && command->arg == item;
+    }
+    int capacity = empty_room + built_now - selected_batch_stock;
+    if (capacity < 0) capacity = 0;
+    if (desired_purchase > capacity) desired_purchase = capacity;
+    int feed = kag_macro_feed_shortfall(game, player_id);
+    int shed_room = game->config.shed_capacity - kg_shed_total(player)
+        + picked_now - feed;
+    if (shed_room < 0) shed_room = 0;
+    if (desired_purchase > shed_room) desired_purchase = shed_room;
+    int cost = KG_ANIMAL_DEFS[animal].cost;
+    int money_after_feed = player->money
+        - kag_macro_feed_cost(game, player_id);
+    int affordable = cost > 0 && money_after_feed > 0
+        ? money_after_feed / cost : 0;
+    if (desired_purchase > affordable) desired_purchase = affordable;
+    if (!kag_macro_liquidation_window(game) && desired_purchase > 0) {
+        int limit = game->config.max_market_orders_per_turn;
+        if (limit > KG_MAX_MARKET_ORDERS) limit = KG_MAX_MARKET_ORDERS;
+        /* A selected-animal pickup executes before market processing and can
+         * make a currently-full shed legal. Resource checks above prove this
+         * prevalidated order can commit after the mandatory feed reservation. */
+        if (action->market_count < limit) {
+            action->market[action->market_count++] = (KGMarketOrder){
+                KG_MARKET_BUY_ANIMAL, item, desired_purchase};
+        }
+    }
+}
+
+/* Turn a strategic ID plus optional parameters into an ordinary KGAction.
+ * Mode 1 keeps the original fixed-planner behavior.  Mode 2 gives the policy
+ * ownership of quantity and target while the executor owns only legality,
+ * maintenance, worker assignment, routing, and order packing. */
+KG_HD static inline void kag_macro_action_ex_limit(const KGState* game,
+        int player_id,
+        int macro_id, int quantity, int target_quadrant,
+        int parameterized, int hand_limit, KGAction* action) {
+    const KGPlayer* player = &game->players[player_id];
+    if (quantity <= 0) quantity = 1;
+    if (parameterized && target_quadrant != 0
+            && (player->unlocked_mask & target_quadrant) == 0) {
+        target_quadrant = 0;
+    }
+    if (macro_id >= KAG_MACRO_PLANT_BASE
+            && macro_id < KAG_MACRO_PLANT_BASE + KG_NUM_CROPS) {
+        int crop = macro_id - KAG_MACRO_PLANT_BASE;
+        if (parameterized) {
+            kag_bot_action_filtered_ex(game, player_id, crop, quantity,
+                target_quadrant, KAG_BOT_JOBS_MAINTAIN
+                    | KAG_BOT_JOBS_DIG | KAG_BOT_JOBS_PLANT, action);
+        } else {
+            kag_bot_action_ex(game, player_id, crop, -1, 0, action);
+        }
+        if (parameterized) {
+            kag_macro_keep_feed_and(game, player_id, action,
+                KG_MARKET_BUY_SEED, crop);
+            kag_macro_cap_market(action, KG_MARKET_BUY_SEED, crop, quantity);
+        }
+        return;
+    }
+    if (macro_id >= KAG_MACRO_ANIMAL_BASE
+            && macro_id < KAG_MACRO_ANIMAL_BASE + KG_NUM_ANIMALS) {
+        int animal = macro_id - KAG_MACRO_ANIMAL_BASE;
+        if (parameterized) {
+            kag_macro_selected_animal_action(game, player_id, animal,
+                quantity, action);
+        } else {
+            int purchase_room = kag_macro_animal_purchase_room(player, animal);
+            int profile = animal == KG_GOOSE ? KAG_ADAPTIVE_HARVEST_PULSE
+                : animal == KG_COW ? KAG_ADAPTIVE_STRUCTURED
+                : KAG_ADAPTIVE_THUNDER;
+            kag_public_action(game, player_id, profile, action);
+            if (purchase_room > 0) {
+                kag_macro_append_order(game, player_id, action,
+                    (KGMarketOrder){KG_MARKET_BUY_ANIMAL,
+                        KG_ITEM_GOOSE + animal, 1});
+            }
+        }
+        return;
+    }
+    if (macro_id == KAG_MACRO_EXPAND) {
+        if (parameterized) {
+            kag_bot_action_filtered_ex(game, player_id, -1, 0, 0,
+                KAG_BOT_JOBS_MAINTAIN, action);
+        } else {
+            kag_bot_action(game, player_id, -1, action);
+        }
+        if (parameterized) {
+            kag_macro_keep_feed_and(game, player_id, action,
+                KG_MARKET_BUY_LAND, KG_ITEM_INVALID);
+            kag_macro_remove_market_op(action, KG_MARKET_BUY_LAND);
+            kag_macro_strip_plant_commands(action);
+        }
+        if (!kag_macro_liquidation_window(game)) {
+            kag_macro_append_order(game, player_id, action,
+                (KGMarketOrder){KG_MARKET_BUY_LAND, KG_ITEM_INVALID, 1});
+        }
+        return;
+    }
+    if (macro_id >= KAG_MACRO_SELL_BASE
+            && macro_id < KAG_MACRO_SELL_BASE + KG_NUM_PRODUCTS) {
+        int item = macro_id - KAG_MACRO_SELL_BASE;
+        if (parameterized) {
+            kag_bot_action_filtered_ex(game, player_id, -1, 0, 0,
+                KAG_BOT_JOBS_MAINTAIN, action);
+        } else {
+            kag_bot_action(game, player_id, -1, action);
+        }
+        if (parameterized) {
+            kag_macro_keep_feed_and(game, player_id, action,
+                KG_MARKET_SELL, item);
+            kag_macro_cap_market(action, KG_MARKET_SELL, item, quantity);
+            kag_macro_strip_plant_commands(action);
+            if (player->shed[item] > 0 && quantity > 0) {
+                int present = 0;
+                for (int order = 0; order < action->market_count; order++) {
+                    present |= action->market[order].op == KG_MARKET_SELL
+                        && action->market[order].item == item;
+                }
+                if (!present) {
+                    kag_macro_append_quantity(game, player_id, action,
+                        (KGMarketOrder){KG_MARKET_SELL, item, quantity},
+                        quantity);
+                }
+            }
+        } else {
+            kag_macro_keep_only_sell(game, player_id, action, item);
+        }
+        return;
+    }
+    if (macro_id == KAG_MACRO_SELL_ALL || macro_id == KAG_MACRO_CASH_OUT) {
+        if (parameterized) {
+            kag_bot_action_filtered_ex(game, player_id, -1, 0, 0,
+                KAG_BOT_JOBS_MAINTAIN, action);
+        } else {
+            kag_bot_action(game, player_id, -1, action);
+        }
+        if (parameterized) {
+            kag_macro_keep_feed_and(game, player_id, action,
+                KG_MARKET_SELL, -1);
+            if (macro_id == KAG_MACRO_SELL_ALL) {
+                kag_macro_sort_sales_by_price(game, action);
+                kag_macro_cap_market(action, KG_MARKET_SELL, -1, quantity);
+            }
+            kag_macro_strip_plant_commands(action);
+        }
+        return;
+    }
+    if (macro_id >= KAG_MACRO_BUY_SEED_BASE
+            && macro_id < KAG_MACRO_BUY_SEED_BASE + KG_NUM_CROPS) {
+        int crop = macro_id - KAG_MACRO_BUY_SEED_BASE;
+        int purchase_room = kag_macro_seed_purchase_room(player);
+        if (quantity > purchase_room) quantity = purchase_room;
+        if (kag_macro_liquidation_window(game)
+                || kag_macro_crop_events(game, crop) <= 0) quantity = 0;
+        if (parameterized) {
+            kag_bot_action_filtered_ex(game, player_id, -1, 0, 0,
+                KAG_BOT_JOBS_MAINTAIN, action);
+        } else {
+            kag_bot_action(game, player_id, crop, action);
+        }
+        if (parameterized) {
+            kag_macro_keep_feed_and(game, player_id, action,
+                KG_MARKET_BUY_SEED, crop);
+            kag_macro_remove_market_op(action, KG_MARKET_BUY_SEED);
+            kag_macro_append_quantity(game, player_id, action,
+                (KGMarketOrder){KG_MARKET_BUY_SEED, crop, quantity}, quantity);
+            kag_macro_strip_plant_commands(action);
+        } else {
+            int fixed = purchase_room < 10 ? purchase_room : 10;
+            if (!kag_macro_liquidation_window(game)
+                    && kag_macro_crop_events(game, crop) > 0) {
+                kag_macro_append_order(game, player_id, action,
+                    (KGMarketOrder){KG_MARKET_BUY_SEED, crop, fixed});
+            }
+        }
+        return;
+    }
+    if (macro_id >= KAG_MACRO_BUY_ANIMAL_BASE
+            && macro_id < KAG_MACRO_BUY_ANIMAL_BASE + KG_NUM_ANIMALS) {
+        int animal = macro_id - KAG_MACRO_BUY_ANIMAL_BASE;
+        int purchase_room = kag_macro_animal_purchase_room(player, animal);
+        if (quantity > purchase_room) quantity = purchase_room;
+        if (kag_macro_liquidation_window(game)
+                || kag_macro_animal_events(game, animal) <= 0) quantity = 0;
+        if (parameterized) {
+            kag_bot_action_filtered_ex(game, player_id, -1, 0, 0,
+                KAG_BOT_JOBS_MAINTAIN, action);
+        } else {
+            kag_public_action(game, player_id, KAG_ADAPTIVE_STRUCTURED, action);
+        }
+        if (parameterized) {
+            kag_macro_keep_feed_and(game, player_id, action,
+                KG_MARKET_BUY_ANIMAL,
+                KG_ITEM_GOOSE + animal);
+            kag_macro_remove_market_op(action, KG_MARKET_BUY_ANIMAL);
+            kag_macro_append_quantity(game, player_id, action,
+                (KGMarketOrder){KG_MARKET_BUY_ANIMAL,
+                    KG_ITEM_GOOSE + animal, quantity}, quantity);
+            kag_macro_strip_plant_commands(action);
+        } else {
+            if (purchase_room > 0 && !kag_macro_liquidation_window(game)
+                    && kag_macro_animal_events(game, animal) > 0) {
+                kag_macro_append_order(game, player_id, action,
+                    (KGMarketOrder){KG_MARKET_BUY_ANIMAL,
+                        KG_ITEM_GOOSE + animal, 1});
+            }
+        }
+        return;
+    }
+    if (macro_id == KAG_MACRO_HIRE) {
+        int hire_room = kag_macro_desired_hands(player) - player->hand_count;
+        int configured_room = hand_limit - player->hand_count;
+        if (hire_room > configured_room) hire_room = configured_room;
+        if (hire_room < 0) hire_room = 0;
+        if (quantity > hire_room) quantity = hire_room;
+        if (kag_macro_liquidation_window(game)) quantity = 0;
+        if (parameterized) {
+            kag_bot_action_filtered_ex(game, player_id, -1, 0, 0,
+                KAG_BOT_JOBS_MAINTAIN, action);
+        } else {
+            kag_bot_action(game, player_id, -1, action);
+        }
+        if (parameterized) {
+            kag_macro_keep_feed_and(game, player_id, action,
+                KG_MARKET_HIRE, KG_ITEM_INVALID);
+            kag_macro_remove_market_op(action, KG_MARKET_HIRE);
+            kag_macro_append_quantity(game, player_id, action,
+                (KGMarketOrder){KG_MARKET_HIRE, KG_ITEM_INVALID, 1}, quantity);
+            kag_macro_strip_plant_commands(action);
+        } else {
+            if (hire_room > 0 && !kag_macro_liquidation_window(game)) {
+                kag_macro_append_order(game, player_id, action,
+                    (KGMarketOrder){KG_MARKET_HIRE, KG_ITEM_INVALID, 1});
+            }
+        }
+        return;
+    }
+    if (macro_id == KAG_MACRO_HARVEST) {
+        kag_bot_action_filtered_ex(game, player_id, -1, 0, 0,
+            KAG_BOT_JOBS_HARVEST, action);
+        if (parameterized) {
+            kag_macro_keep_feed_and(game, player_id, action,
+                -1, KG_ITEM_INVALID);
+        }
+        return;
+    }
+    if (macro_id == KAG_MACRO_MAINTAIN) {
+        kag_bot_action_filtered_ex(game, player_id, -1, 0, 0,
+            KAG_BOT_JOBS_MAINTAIN, action);
+        if (parameterized) {
+            kag_macro_keep_feed_and(game, player_id, action,
+                -1, KG_ITEM_INVALID);
+        }
+        return;
+    }
+    if (macro_id == KAG_MACRO_DIVERSIFY) {
+        /* Portable generic farm plan shared exactly with the submission
+         * runtime. Add one pasture bridge when livestock has no structure;
+         * the policy still owns explicit species/batch choices elsewhere. */
+        kag_bot_action(game, player_id, -1, action);
+        int has_pasture = 0;
+        for (int tile = 0; tile < KG_MAX_TILES; tile++) {
+            has_pasture |= player->tiles[tile].kind == KG_TILE_PASTURE;
+        }
+        if (!has_pasture) {
+            for (int slot = 0; slot < 15; slot++) {
+                int x;
+                int y;
+                kag_public_structure_position(slot, &x, &y);
+                if (player->tiles[kg_tile_index(x, y)].kind != KG_TILE_EMPTY) {
+                    continue;
+                }
+                for (int unit = 0; unit < player->unit_count; unit++) {
+                    KGUnitAction* command = unit == 0
+                        ? &action->farmer : &action->hands[unit - 1];
+                    if (command->op != KG_OP_PASS) continue;
+                    const KGUnitState* state = &player->units[unit];
+                    if (state->x == x && state->y == y) {
+                        *command = (KGUnitAction){
+                            KG_OP_BUILD_PASTURE, -1, 1};
+                    } else {
+                        *command = (KGUnitAction){
+                            kag_bot_route(player, state, x, y), -1, 1};
+                    }
+                    slot = 15;
+                    break;
+                }
+            }
+        }
+        kag_macro_prioritize_feed(action);
+        return;
+    }
+    if (macro_id == KAG_MACRO_BUY_WHEAT
+            || macro_id == KAG_MACRO_BUY_FERTILIZER) {
+        int item = macro_id == KAG_MACRO_BUY_WHEAT
+            ? KG_ITEM_WHEAT : KG_ITEM_FERTILIZER;
+        if (item == KG_ITEM_FERTILIZER
+                && kag_macro_liquidation_window(game)) quantity = 0;
+        if (parameterized) {
+            kag_bot_action_filtered_ex(game, player_id, -1, 0, 0,
+                KAG_BOT_JOBS_MAINTAIN, action);
+        } else {
+            kag_bot_action(game, player_id, -1, action);
+        }
+        if (parameterized) {
+            kag_macro_keep_feed_and(game, player_id, action,
+                KG_MARKET_BUY_PRODUCT, item);
+            kag_macro_remove_market_op_item(action,
+                KG_MARKET_BUY_PRODUCT, item);
+            if (item == KG_ITEM_WHEAT) {
+                int feed = kag_macro_feed_shortfall(game, player_id);
+                if (quantity < feed) quantity = feed;
+            }
+            kag_macro_append_quantity(game, player_id, action,
+                (KGMarketOrder){KG_MARKET_BUY_PRODUCT, item, quantity}, quantity);
+            kag_macro_strip_plant_commands(action);
+        } else {
+            kag_macro_append_order(game, player_id, action,
+                (KGMarketOrder){KG_MARKET_BUY_PRODUCT, item, 2});
+        }
+        return;
+    }
+    /* HOLD and malformed/reserved IDs keep chores/harvests deterministic but
+     * suppress strategic market actions. */
+    if (parameterized) {
+        kag_bot_action_filtered_ex(game, player_id, -1, 0, 0,
+            KAG_BOT_JOBS_MAINTAIN, action);
+        kag_macro_keep_feed_and(game, player_id, action,
+            -1, KG_ITEM_INVALID);
+        kag_macro_strip_growth(action);
+    } else {
+        kag_bot_action(game, player_id, -1, action);
+        action->market_count = 0;
+        kag_macro_strip_growth(action);
+    }
+}
+
+KG_HD static inline void kag_macro_action_ex(const KGState* game, int player_id,
+        int macro_id, int quantity, int target_quadrant,
+        int parameterized, KGAction* action) {
+    kag_macro_action_ex_limit(game, player_id, macro_id, quantity,
+        target_quadrant, parameterized, KG_POLICY_DIRECT_HANDS, action);
+}
+
+KG_HD static inline void kag_macro_action(const KGState* game, int player_id,
+        int macro_id, KGAction* action) {
+    kag_macro_action_ex(game, player_id, macro_id, 1, 0, 0, action);
+}
+
+KG_HD static inline void kag_decode_macro_action(KGAction* action,
+        const Agent* agent, const KGState* game, int player_id, Env* env) {
+    int macro_id;
+    int quantity;
+    int target_quadrant;
+    if (env->macro_ticks[player_id] > 0) {
+        macro_id = env->macro_intent[player_id];
+        quantity = env->macro_quantity[player_id];
+        target_quadrant = env->macro_target[player_id];
+        env->macro_ticks[player_id]--;
+    } else {
+        macro_id = kag_discrete_index(agent->actions[0], KAG_MACRO_COUNT);
+        if (!kag_macro_candidate_legal(env, player_id, macro_id)) {
+            macro_id = KAG_MACRO_HOLD;
+        }
+        if (env->macro_mode >= KAG_MACRO_MODE_STRUCTURED) {
+            quantity = kag_macro_quantity_from_bin(kag_discrete_index(
+                agent->actions[KAG_MACRO_QUANTITY_HEAD],
+                KAG_MACRO_QUANTITY_BINS));
+            target_quadrant = kag_macro_target_from_bin(kag_discrete_index(
+                agent->actions[KAG_MACRO_TARGET_HEAD],
+                KAG_MACRO_TARGET_BINS));
+        } else {
+            quantity = -1;
+            target_quadrant = 0;
+        }
+        env->macro_quantity[player_id] = quantity;
+        env->macro_target[player_id] = target_quadrant;
+        env->macro_intent[player_id] = macro_id;
+        /* Structured quantities are one decision's batch, not a per-turn
+         * rate. Until the ABI carries explicit remaining-work state, mode 2
+         * therefore decides every turn. Legacy mode may retain sticky
+         * planner intents because it has no quantity/target parameters. */
+        int interval = env->macro_mode >= KAG_MACRO_MODE_STRUCTURED ? 1
+            : env->macro_decision_interval > 0
+                ? env->macro_decision_interval : 1;
+        env->macro_ticks[player_id] = interval - 1;
+    }
+    if (!kag_macro_candidate_legal(env, player_id, macro_id)) {
+        macro_id = KAG_MACRO_HOLD;
+        env->macro_intent[player_id] = macro_id;
+        env->macro_ticks[player_id] = 0;
+        env->macro_quantity[player_id] = 0;
+        env->macro_target[player_id] = 0;
+    }
+    int hand_limit = env->policy_max_hands > 0
+        ? env->policy_max_hands : KG_POLICY_DIRECT_HANDS;
+    if (hand_limit > KG_POLICY_DIRECT_HANDS) {
+        hand_limit = KG_POLICY_DIRECT_HANDS;
+    }
+    kag_macro_action_ex_limit(game, player_id, macro_id, quantity,
+        target_quadrant, env->macro_mode >= KAG_MACRO_MODE_STRUCTURED,
+        hand_limit, action);
+}
+
 /* A hinge opportunity is driven only by randomized town/shop demand. It is
  * present once the no-production inventory deficit crosses the product's
  * hinge throughput, where the 1.32.7 price curve begins accelerating. */
@@ -2955,6 +4499,24 @@ void puf_init(Env* env, Dict* kwargs) {
     env->render_selected_unit = 0;
     env->policy_market_slots = (int)dict_get(kwargs, "policy_market_slots");
     env->policy_max_hands = (int)dict_get(kwargs, "policy_max_hands");
+    env->macro_mode = (int)dict_get(kwargs, "macro_mode");
+    env->macro_decision_interval = (int)dict_get(kwargs,
+        "macro_decision_interval");
+    env->macro_score_scale = (float)dict_get(kwargs, "macro_score_scale");
+    if (env->macro_decision_interval <= 0) env->macro_decision_interval = 1;
+    if (env->macro_score_scale <= 0.0f) env->macro_score_scale = 10000.0f;
+    if (env->macro_mode < 0 || env->macro_mode > KAG_MACRO_MODE_STRUCTURED) {
+        fprintf(stderr, "macro_mode must be 0, 1 (legacy), or 2 (structured)\n");
+        exit(1);
+    }
+    if (env->macro_decision_interval < 1
+            || env->macro_decision_interval > config.episode_steps) {
+        fprintf(stderr, "macro_decision_interval must be in [1, episode_steps]\n");
+        exit(1);
+    }
+    if (env->macro_mode >= KAG_MACRO_MODE_STRUCTURED) {
+        env->macro_decision_interval = 1;
+    }
     env->opening_turns = (int)dict_get(kwargs, "opening_turns");
     env->reset_opening_turns = (int)dict_get(kwargs,
         "reset_opening_turns");
@@ -3014,6 +4576,14 @@ void puf_init(Env* env, Dict* kwargs) {
     }
     env->episode_returns[0] = 0.0f;
     env->episode_returns[1] = 0.0f;
+    env->macro_intent[0] = KAG_MACRO_HOLD;
+    env->macro_intent[1] = KAG_MACRO_HOLD;
+    env->macro_ticks[0] = 0;
+    env->macro_ticks[1] = 0;
+    env->macro_quantity[0] = 0;
+    env->macro_quantity[1] = 0;
+    env->macro_target[0] = 0;
+    env->macro_target[1] = 0;
     env->reward_potential_scale = (float)dict_get(kwargs, "reward_potential_scale");
     env->reward_potential_gamma = (float)dict_get(
         kwargs, "reward_potential_gamma");
@@ -3224,6 +4794,14 @@ void puf_init(Env* env, Dict* kwargs) {
 
 void puf_reset(Env* env) {
     kag_curriculum_reset(env, kag_script_tapes);
+    env->macro_intent[0] = KAG_MACRO_HOLD;
+    env->macro_intent[1] = KAG_MACRO_HOLD;
+    env->macro_ticks[0] = 0;
+    env->macro_ticks[1] = 0;
+    env->macro_quantity[0] = 0;
+    env->macro_quantity[1] = 0;
+    env->macro_target[0] = 0;
+    env->macro_target[1] = 0;
     for (int player = 0; player < KG_NUM_PLAYERS; player++) {
         env->agents[player].rewards[0] = 0.0f;
         env->agents[player].terminals[0] = 0.0f;
@@ -3249,7 +4827,12 @@ void puf_step(Env* env) {
     };
 
     for (int player = 0; player < KG_NUM_PLAYERS; player++) {
-        kag_decode_action(&actions[player], &env->agents[player], game, player);
+        if (env->macro_mode) {
+            kag_decode_macro_action(&actions[player], &env->agents[player],
+                game, player, env);
+        } else {
+            kag_decode_action(&actions[player], &env->agents[player], game, player);
+        }
         env->agents[player].terminals[0] = 0.0f;
     }
     for (int player = 0; player < KG_NUM_PLAYERS; player++) {
@@ -3546,6 +5129,14 @@ void puf_step(Env* env) {
         /* Auto-reset while preserving the completed transition's reward and
          * terminal flag in PufferLib's externally-owned buffers. */
         kag_curriculum_reset(env, kag_script_tapes);
+        env->macro_intent[0] = KAG_MACRO_HOLD;
+        env->macro_intent[1] = KAG_MACRO_HOLD;
+        env->macro_ticks[0] = 0;
+        env->macro_ticks[1] = 0;
+        env->macro_quantity[0] = 0;
+        env->macro_quantity[1] = 0;
+        env->macro_target[0] = 0;
+        env->macro_target[1] = 0;
         env->episode_returns[0] = 0.0f;
         env->episode_returns[1] = 0.0f;
         env->potential[0] = kag_player_potential(env, 0);

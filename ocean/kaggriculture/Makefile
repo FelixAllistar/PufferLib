@@ -4,7 +4,7 @@ BUILD := build
 LIB := $(BUILD)/libkaggriculture.so
 CFLAGS ?= -O3 -std=c17 -Wall -Wextra -Werror -fPIC
 
-.PHONY: all lib parity state-bank-test top-bot-parity cuda-core cuda-adapter bc bench hotpath adapter eval metagame native-test test clean
+.PHONY: all lib parity state-bank-test counterfactual-test top-bot-parity cuda-core cuda-adapter bc bench hotpath adapter eval metagame native-test test clean
 
 all: lib
 
@@ -13,8 +13,11 @@ lib: $(LIB)
 $(BUILD):
 	mkdir -p $(BUILD)
 
-$(LIB): kaggriculture_core.c kaggriculture_core.h | $(BUILD)
-	$(CC) $(CFLAGS) -shared kaggriculture_core.c -lm -o $@
+$(LIB): kag_policy_view.c kaggriculture.h kaggriculture_core.c kaggriculture_core.h | $(BUILD)
+	$(CC) $(CFLAGS) -I$(ROOT) -I$(ROOT)/src -I$(ROOT)/vendor \
+		-I$(ROOT)/raylib-5.5_linux_amd64/include -shared kag_policy_view.c \
+		$(ROOT)/raylib-5.5_linux_amd64/lib/libraylib.a \
+		-lGL -lm -lpthread -o $@
 
 parity: $(LIB)
 	$(ROOT)/../.venv/bin/python parity.py --lib $(LIB)
@@ -23,6 +26,14 @@ state-bank-test: $(LIB)
 	$(ROOT)/../.venv/bin/python tests/test_replay_state_index.py
 	$(ROOT)/../.venv/bin/python tests/test_replay_state_stage.py
 	$(ROOT)/../.venv/bin/python tests/test_replay_state_bank.py
+
+counterfactual-test: $(LIB)
+	$(ROOT)/../.venv/bin/python -m unittest \
+		tests/test_counterfactual_dataset.py tests/test_macro_value.py \
+		tests/test_macro_executor.py tests/test_opponent_providers.py \
+		tests/test_macro_policy.py tests/test_macro_planner.py \
+		tests/test_state_sampling.py tests/test_counterfactual_merge.py \
+		tests/test_macro_episode_eval.py
 
 top-bot-parity: | $(BUILD)
 	$(CC) $(CFLAGS) -shared \

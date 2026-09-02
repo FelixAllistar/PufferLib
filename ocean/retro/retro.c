@@ -8,6 +8,9 @@
 #include <dirent.h>
 #include <sys/stat.h>
 #include <time.h>
+#ifdef __cplusplus
+#include <omp.h>
+#endif
 
 static const char* RETRO_ENV_NAME = "retro";
 
@@ -48,6 +51,75 @@ static int retro_resolve_model(const char* arg, char* out, size_t out_size){
 static void retro_print_usage(const char* a0){
     fprintf(stderr,"usage:\n  %s                 human play\n  %s play            human play\n  %s watch [latest|PATH.bin] [--deterministic]\n\nRun from repo root. Watch reads policy from config/retro.ini\n",a0,a0,a0);
 }
+
+#ifdef __cplusplus
+static double retro_now_seconds(){
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return (double)ts.tv_sec + (double)ts.tv_nsec / 1000000000.0;
+}
+
+static int retro_benchmark(const char* a0, int argc, char** argv){
+    int env_count = argc > 2 ? atoi(argv[2]) : 512;
+    int steps = argc > 3 ? atoi(argv[3]) : 100;
+    int workers = argc > 4 ? atoi(argv[4]) : 1;
+    if(env_count < 1 || steps < 1 || workers < 1){
+        fprintf(stderr,"usage: %s bench [envs] [steps] [workers]\n",a0);
+        return 1;
+    }
+
+    Ini ini={0};
+    puf_ini_load_env(&ini, RETRO_ENV_NAME, 0, NULL);
+    Dict* env_kwargs=puf_ini_section(&ini,"env",0);
+    Env* envs=(Env*)calloc((size_t)env_count,sizeof(Env));
+    Nes_Emu* emus=new Nes_Emu[env_count];
+    float* observations=(float*)calloc((size_t)env_count*OBS_SIZE,sizeof(float));
+    float* actions=(float*)calloc((size_t)env_count*NUM_ATNS,sizeof(float));
+    float* rewards=(float*)calloc((size_t)env_count,sizeof(float));
+    float* terminals=(float*)calloc((size_t)env_count,sizeof(float));
+    if(!envs || !observations || !actions || !rewards || !terminals){
+        fprintf(stderr,"benchmark allocation failed\n");
+        free(envs); delete[] emus; free(observations); free(actions);
+        free(rewards); free(terminals); puf_ini_free(&ini);
+        return 1;
+    }
+
+    for(int i=0;i<env_count;i++){
+        envs[i].rng=(unsigned int)i;
+        envs[i].emu=&emus[i];
+        envs[i].emu_owned=false;
+        puf_init(&envs[i],env_kwargs);
+        envs[i].agents[0].observations=observations+(size_t)i*OBS_SIZE;
+        envs[i].agents[0].actions=actions+(size_t)i*NUM_ATNS;
+        envs[i].agents[0].rewards=rewards+i;
+        envs[i].agents[0].terminals=terminals+i;
+        envs[i].agents[0].action_mask=nullptr;
+        envs[i].agents[0].policy=0;
+        actions[i]=1;
+        puf_reset(&envs[i]);
+    }
+
+    omp_set_dynamic(0);
+    double start=retro_now_seconds();
+    for(int step=0;step<steps;step++){
+        #pragma omp parallel for schedule(static) num_threads(workers)
+        for(int i=0;i<env_count;i++) puf_step(&envs[i]);
+    }
+    double elapsed=retro_now_seconds()-start;
+    long long checksum=0;
+    for(int i=0;i<env_count;i++) checksum+=envs[i].x_pos+envs[i].score+envs[i].tick;
+    fprintf(stderr,"bench envs=%d steps=%d workers=%d elapsed=%.3f env_steps/s=%.0f frames/s=%.0f checksum=%lld\n",
+        env_count,steps,workers,elapsed,
+        (double)env_count*steps/elapsed,
+        (double)env_count*steps*envs[0].frameskip/elapsed,checksum);
+
+    for(int i=0;i<env_count;i++) puf_close(&envs[i]);
+    delete[] emus; free(envs); free(observations); free(actions);
+    free(rewards); free(terminals); puf_ini_free(&ini);
+    return 0;
+}
+#endif
+
 static Weights* g_weights=nullptr;
 static void retro_policy_arch(int* hidden,int* layers){
     Ini ini={0};
@@ -98,7 +170,14 @@ int main(int argc, char** argv){
     int watch_deterministic=0;
     const char* model_arg=nullptr;
     if(argc>=2){
-        if(strcmp(argv[1],"watch")==0){
+        if(strcmp(argv[1],"bench")==0){
+#ifdef __cplusplus
+            return retro_benchmark(argv[0],argc,argv);
+#else
+            fprintf(stderr,"benchmark requires the C++ standalone build\n");
+            return 1;
+#endif
+        } else if(strcmp(argv[1],"watch")==0){
             watch_mode=1; model_arg="latest";
             int set=0;
             for(int i=2;i<argc;i++){

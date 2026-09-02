@@ -56,6 +56,11 @@ public:
 	// Afterwards, audio is available for output using the accessors below.
 	virtual const char * emulate_skip_frame( int joypad1, int joypad2 = 0 );
 
+	// Training-only skip path. The retro environment uses the default silent
+	// buffer, so it omits intermediate frame metadata and palette capture while
+	// preserving the complete CPU/PPU/APU state transition.
+	const char * emulate_skip_frame_fast( int joypad1, int joypad2 = 0 );
+
 	// Maximum size of palette that can be generated
 	enum { max_palette_size = 256 };
 
