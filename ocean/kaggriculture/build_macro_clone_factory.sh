@@ -134,6 +134,7 @@ PY
                 KAG_ELITE_BC_OUTPUT="$model" \
                 KAG_ELITE_BC_HIDDEN="$hidden" \
                 KAG_ELITE_BC_LAYERS=2 \
+                KAG_ELITE_BC_SEED="$seed" \
                 KAG_ELITE_BC_VALIDATION_GAMES="$validation_games" \
                 KAG_ELITE_BC_OPENING_STEPS="$opening_steps" \
                 KAG_ELITE_BC_OPENING_WEIGHT="$opening_weight" \
@@ -164,7 +165,8 @@ PY
             echo "TRAIN exact agent=$agent hidden=512 trajectories=$trajectories"
             if ! KAG_ELITE_BC_DATA="$dataset" \
                 KAG_ELITE_BC_OUTPUT="$model" KAG_ELITE_BC_HIDDEN=512 \
-                KAG_ELITE_BC_LAYERS=2 KAG_ELITE_BC_VALIDATION_GAMES="$validation_games" \
+                KAG_ELITE_BC_LAYERS=2 KAG_ELITE_BC_SEED="$seed" \
+                KAG_ELITE_BC_VALIDATION_GAMES="$validation_games" \
                 KAG_ELITE_BC_OPENING_STEPS="$opening_steps" \
                 KAG_ELITE_BC_OPENING_WEIGHT="$opening_weight" \
                 KAG_ELITE_BC_ROOT_WEIGHT="$root_weight" \
