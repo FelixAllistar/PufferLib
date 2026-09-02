@@ -159,12 +159,17 @@ def evaluate(
         for turn in range(steps):
             index = game * steps + turn
             expert = np.asarray(experts[index], dtype=np.float32)
+            # Even an ambiguous/filtered expert row is a real observation in
+            # the recurrent trajectory.  Advance the hidden state before
+            # skipping its metrics; otherwise every later prediction would
+            # see a history with those turns silently removed, unlike a live
+            # mode-2 rollout.
+            logits = model.forward(np.asarray(observations[index]))
             if expert[0] < 0:
                 skipped_rows += 1
                 continue
             heldout_rows += 1
             mask = np.unpackbits(masks[index], bitorder="little")[:row_mask * 8]
-            logits = model.forward(np.asarray(observations[index]))
             predictions = []
             for head in range(3):
                 start, end = codec.HEAD_OFFSETS[head], codec.HEAD_OFFSETS[head + 1]
