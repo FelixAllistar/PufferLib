@@ -28,6 +28,7 @@ min_512_trajectories=${KAG_MACRO_MIN_512_TRAJECTORIES:-200}
 max_episodes=${KAG_MACRO_MAX_EPISODES:-0}
 newest_first=${KAG_MACRO_NEWEST_FIRST:-1}
 artifact_suffix=${KAG_MACRO_ARTIFACT_SUFFIX:-}
+reuse_existing=${KAG_MACRO_REUSE_EXISTING:-0}
 python_bin=${KAG_ELITE_PYTHON:-}
 
 if [[ -z "$python_bin" ]]; then
@@ -96,7 +97,17 @@ PY
     dataset="$factory_root/datasets/${slug}_cutoff-${cutoff}_v${exact_version}_macro2${artifact_suffix}.bc"
     audit="$dataset.audit.json"
     players="$dataset.players.tsv"
-    if [[ ! -s "$dataset" || ! -s "$audit" || ! -s "$players" ]]; then
+    # Episode-safe split datasets are deliberately materialized without the
+    # full-import audit sidecar.  When a caller supplies an existing split,
+    # never fall back to importing raw archives: doing so would silently
+    # replace the day-held-out train set with the full source set.
+    if [[ "$reuse_existing" == 1 ]]; then
+        if [[ ! -s "$dataset" || ! -s "$players" ]]; then
+            echo "pre-built dataset/manifest missing for exact agent=$agent: $dataset" >&2
+            exit 1
+        fi
+        echo "REUSE pre-built dataset=$dataset"
+    elif [[ ! -s "$dataset" || ! -s "$audit" || ! -s "$players" ]]; then
         echo "IMPORT exact agent=$agent cutoff=$cutoff"
         import_args=(
             --output "$dataset" --audit-json "$audit" --manifest "$players"
