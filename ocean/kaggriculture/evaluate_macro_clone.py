@@ -7,7 +7,7 @@ the default split holds out the latest source day, avoiding neighboring-turn
 leakage.  The evaluator runs the recurrent policy from a fresh state per
 episode, applies the recorded mode-2 mask, and reports intent/quantity/target
 accuracy, legal-label coverage, opening (`<=60`) fidelity, the turn-180 window,
-and macro/quantity/target diversity descriptors.
+and expert plus predicted macro/quantity/target diversity descriptors.
 It also records the ten most common hard-label opening signatures (the first
 eight opening decisions by default) and how often predictions land in that
 expert top-ten set.
@@ -153,6 +153,9 @@ def evaluate(
     macro_counts: collections.Counter[str] = collections.Counter()
     quantity_counts: collections.Counter[str] = collections.Counter()
     target_counts: collections.Counter[str] = collections.Counter()
+    predicted_macro_counts: collections.Counter[str] = collections.Counter()
+    predicted_quantity_counts: collections.Counter[str] = collections.Counter()
+    predicted_target_counts: collections.Counter[str] = collections.Counter()
     source_counts: collections.Counter[str] = collections.Counter()
     expert_opening_signatures: collections.Counter[str] = collections.Counter()
     predicted_opening_signatures: collections.Counter[str] = collections.Counter()
@@ -212,6 +215,11 @@ def evaluate(
             macro_counts[str(int(expert[0]))] += 1
             quantity_counts[str(int(expert[1]))] += 1
             target_counts[str(int(expert[2]))] += 1
+            for counter, prediction in zip(
+                (predicted_macro_counts, predicted_quantity_counts,
+                 predicted_target_counts), predictions
+            ):
+                counter[str(int(prediction))] += 1
 
         if len(expert_signature) == opening_signature_steps:
             def encode_signature(values: list[tuple[int, int, int]]) -> str:
@@ -249,6 +257,11 @@ def evaluate(
             "macro_ids": dict(macro_counts.most_common()),
             "quantity_bins": dict(quantity_counts.most_common()),
             "target_bins": dict(target_counts.most_common()),
+        },
+        "predicted_diversity": {
+            "macro_ids": dict(predicted_macro_counts.most_common()),
+            "quantity_bins": dict(predicted_quantity_counts.most_common()),
+            "target_bins": dict(predicted_target_counts.most_common()),
         },
         "opening_signatures": {
             "steps": opening_signature_steps,
