@@ -21,12 +21,6 @@ from horizon_x3_matrix import (
 from qd_sweep import behavior_descriptor, parse_eval_json
 
 
-VARIANTS = (
-    ("exp0_land1", 0.0, 1.0),
-    ("exp0_land0", 0.0, 0.0),
-)
-
-
 def write_summary(output: Path, records: list[dict]) -> None:
     columns = (
         "variant", "run_id", "checkpoint_step", "deterministic", "money",
@@ -48,11 +42,20 @@ def main() -> None:
     parser.add_argument("--eval-games", type=int, default=128)
     parser.add_argument("--seed", type=int, default=707)
     parser.add_argument("--eval-seed", type=int, default=9001)
+    parser.add_argument(
+        "--expansion-scale", type=float, default=0.0,
+        help="fixed direct balanced-expansion reward for both land variants",
+    )
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
     # Reuse the common controlled-run helpers with the established H256 setup.
     args.minibatch = 2048
     args.learning_rate = 7e-4
+    expansion_tag = f"{args.expansion_scale:g}".replace("-", "m").replace(".", "p")
+    variants = (
+        (f"exp{expansion_tag}_land1", args.expansion_scale, 1.0),
+        (f"exp{expansion_tag}_land0", args.expansion_scale, 0.0),
+    )
 
     output = args.output if args.output.is_absolute() else REPO / args.output
     output.mkdir(parents=True, exist_ok=True)
@@ -61,7 +64,7 @@ def main() -> None:
     if not snapshot.exists():
         shutil.copy2(config, snapshot)
     metadata = {
-        "format": "kaggriculture_land_ablation_v1",
+        "format": "kaggriculture_land_ablation_v2",
         "source_config_sha256": hashlib.sha256(snapshot.read_bytes()).hexdigest(),
         "architecture": "256x3",
         "horizon": 256,
@@ -75,7 +78,7 @@ def main() -> None:
         "variants": [
             {"name": name, "reward_expansion_scale": expansion,
              "reward_progress_land_scale": land}
-            for name, expansion, land in VARIANTS
+            for name, expansion, land in variants
         ],
     }
     (output / "experiment.json").write_text(json.dumps(metadata, indent=2) + "\n")
@@ -89,7 +92,7 @@ def main() -> None:
             records.append(row)
             completed.add((row["run_id"], row["checkpoint_step"], row["deterministic"]))
 
-    for name, expansion_scale, land_scale in VARIANTS:
+    for name, expansion_scale, land_scale in variants:
         run_id = f"{output.name}_{name}_h256_a512_m2048_lr0.0007_s{args.seed}"
         run_dir = REPO / "checkpoints/kaggriculture" / run_id
         done_marker = output / f"{run_id}.trained"
