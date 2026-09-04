@@ -29,7 +29,8 @@ import sys
 from typing import Any, Iterable
 
 
-FORMAT = "kaggriculture_qd_archive_v1"
+FORMAT = "kaggriculture_qd_archive_v2"
+LEGACY_FORMATS = {"kaggriculture_qd_archive_v1"}
 REPO = Path(__file__).resolve().parents[2]
 DEFAULT_FAMILIES = ("balanced", "crop", "animal", "expansion", "liquidator", "sparse")
 
@@ -160,16 +161,22 @@ def behavior_descriptor(metrics: dict[str, float]) -> dict[str, float | str]:
     spend = max(0.0, float(metrics.get("env/purchase_spend", 0.0)))
     revenue = max(0.0, float(metrics.get("env/sales_revenue", 0.0)))
     reinvestment = spend / max(revenue, 1.0)
+    # MILK can only be produced by cows, so this is a direct behavioral tag
+    # rather than an inference from a reward coefficient or selected action.
+    cow_units = max(0.0, float(metrics.get("env/milk_units", 0.0)))
     return {
         "land": land,
         "animal_fraction": animal_fraction,
         "reinvestment": reinvestment,
+        "cow_units": cow_units,
         # These cuts are calibrated to the 0..3 extra-land range and observed
         # production ratios. "dual" means materially using both branches; it
         # does not pretend a 5% animal share is animal-led.
         "land_bin": _bin(land, (1.5, 2.75), ("compact", "partial", "full")),
         "mix_bin": _bin(animal_fraction, (0.005, 0.15),
                         ("crop_only", "dual", "animal_led")),
+        "cow_bin": _bin(cow_units, (1.0, 50.0),
+                        ("no_cow", "cow_used", "cow_heavy")),
         "reinvestment_bin": _bin(
             reinvestment, (0.50, 0.70), ("cash_heavy", "balanced", "growth_heavy")),
     }
@@ -177,7 +184,7 @@ def behavior_descriptor(metrics: dict[str, float]) -> dict[str, float | str]:
 
 def niche_key(descriptor: dict[str, float | str]) -> str:
     return "/".join(str(descriptor[key]) for key in
-        ("land_bin", "mix_bin", "reinvestment_bin"))
+        ("land_bin", "mix_bin", "cow_bin", "reinvestment_bin"))
 
 
 def parse_eval_json(text: str) -> dict[str, float]:
@@ -205,7 +212,7 @@ class Archive:
         self.entries: dict[str, dict[str, Any]] = {}
         if path.exists():
             data = json.loads(path.read_text())
-            if data.get("format") != FORMAT:
+            if data.get("format") != FORMAT and data.get("format") not in LEGACY_FORMATS:
                 raise ValueError(f"unsupported archive format in {path}")
             self.entries = dict(data.get("entries", {}))
 
@@ -227,7 +234,7 @@ class Archive:
         temporary.replace(self.path)
         rows = self.path.with_suffix(".tsv")
         columns = ["niche", "quality", "money", "win_rate", "checkpoint", "trial", "family",
-                   "land", "animal_fraction", "reinvestment"]
+                   "land", "animal_fraction", "cow_units", "reinvestment"]
         with rows.open("w") as handle:
             handle.write("\t".join(columns) + "\n")
             for key, entry in sorted(self.entries.items()):
@@ -237,6 +244,7 @@ class Archive:
                     "win_rate": entry.get("win_rate", 0.0), "checkpoint": entry["checkpoint"],
                     "trial": entry["trial"], "family": entry["family"],
                     "land": descriptor["land"], "animal_fraction": descriptor["animal_fraction"],
+                    "cow_units": descriptor["cow_units"],
                     "reinvestment": descriptor["reinvestment"],
                 }
                 handle.write("\t".join(str(values[column]) for column in columns) + "\n")
@@ -254,7 +262,7 @@ def fixed_training_overrides(args: argparse.Namespace, run_id: str) -> dict[str,
     interval = max(1, train_epochs // max(args.checkpoints_per_run, 1))
     overrides = {
         "base.run_id": run_id,
-        "base.load_model_path": "None",
+        "base.load_model_path": str(args.warm_start) if args.warm_start else "None",
         "base.load_enemy_model_path": "None",
         "base.checkpoint_interval": interval,
         "base.eval_episodes": 4,
@@ -291,7 +299,10 @@ def fixed_training_overrides(args: argparse.Namespace, run_id: str) -> dict[str,
         "train.gae_lambda": 0.999,
         "train.reward_clip": 0,
         "train.anneal_lr": 0,
+        "selfplay.magnet_path": str(args.magnet) if args.magnet else "None",
         "train.emag_kl_coef": 0,
+        "train.emag_tau": args.emag_tau,
+        "train.emag_cutoff": args.emag_cutoff,
     }
     if args.league is not None:
         overrides.update({
@@ -367,6 +378,8 @@ def run_trial(args: argparse.Namespace, output: Path, trial: int, family: str,
     trial_dir.mkdir(parents=True, exist_ok=False)
     overrides = fixed_training_overrides(args, run_id)
     overrides.update(parameters)
+    if args.fixed_learning_rate is not None:
+        overrides["train.learning_rate"] = args.fixed_learning_rate
     command = [str(REPO / "puffer"), "train", "kaggriculture"]
     command.extend(_format_override(key, value) for key, value in overrides.items())
     environment = dict(os.environ)
@@ -451,6 +464,16 @@ def build_parser() -> argparse.ArgumentParser:
                         help="optional architecture-compatible league.ini for refinement")
     parser.add_argument("--league-banks", type=int, default=4)
     parser.add_argument("--league-pct", type=float, default=0.75)
+    parser.add_argument("--warm-start", type=Path,
+                        help="architecture-compatible checkpoint used to initialize every trial")
+    parser.add_argument("--magnet", type=Path,
+                        help="architecture-compatible frozen EMAg reference")
+    parser.add_argument("--emag-coefs", default="0",
+                        help="comma-separated EMAg coefficients cycled across trials")
+    parser.add_argument("--emag-cutoff", type=float, default=0.25)
+    parser.add_argument("--emag-tau", type=float, default=0.0)
+    parser.add_argument("--fixed-learning-rate", type=float,
+                        help="hold LR fixed instead of mutating it through QD")
     parser.add_argument("--hidden-size", type=int, default=128)
     parser.add_argument("--layers", type=int, default=2)
     parser.add_argument("--agents", type=int, default=2048)
@@ -480,6 +503,21 @@ def main(argv: Iterable[str] | None = None) -> int:
             args.league = (REPO / args.league).resolve()
         if not args.league.is_file():
             raise FileNotFoundError(f"league manifest not found: {args.league}")
+    for attribute in ("warm_start", "magnet"):
+        path = getattr(args, attribute)
+        if path is None:
+            continue
+        if not path.is_absolute():
+            path = (REPO / path).resolve()
+            setattr(args, attribute, path)
+        if not path.is_file():
+            raise FileNotFoundError(f"{attribute.replace('_', ' ')} not found: {path}")
+    emag_coefs = [float(value.strip()) for value in args.emag_coefs.split(",")
+                  if value.strip()]
+    if not emag_coefs or any(value < 0 for value in emag_coefs):
+        raise ValueError("--emag-coefs must contain nonnegative values")
+    if args.magnet is None and any(value > 0 for value in emag_coefs):
+        raise ValueError("positive --emag-coefs require --magnet")
     archive = Archive(args.output / "archive.json")
     journal = args.output / "trials.jsonl"
     reindexed = reindex_archive_from_journal(archive, journal)
@@ -509,6 +547,7 @@ def main(argv: Iterable[str] | None = None) -> int:
             parameters = sample_parameters(
                 rng, family, global_sample=global_sample, parent=parent,
                 mutation_strength=args.mutation_strength)
+            parameters["train.emag_kl_coef"] = emag_coefs[trial % len(emag_coefs)]
             batch.append((trial, family, parameters))
         with concurrent.futures.ThreadPoolExecutor(max_workers=len(batch)) as pool:
             futures = [pool.submit(run_trial, args, args.output, trial, family, params,
@@ -531,7 +570,7 @@ def main(argv: Iterable[str] | None = None) -> int:
                       f"checkpoints={len(result['records'])} new_cells={new_cells} "
                       f"improved_cells={improved_cells} best_money={best:.1f}")
     archive.save()
-    print(f"QD complete: cells={len(archive.entries)}/27 archive={archive.path}")
+    print(f"QD complete: cells={len(archive.entries)}/81 archive={archive.path}")
     return 0
 
 

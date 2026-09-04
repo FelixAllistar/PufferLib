@@ -124,6 +124,14 @@ The factory TSV/JSON manifests include source paths, trajectory counts, and
 SHA-256/size metadata. Set `KAG_MACRO_MAX_EPISODES=0` for a full import; a
 full pass is preferred before attempting a 512-wide clone.
 
+The default factory still emits 128x2 and 256x2 models. Compatible anchors for
+another PPO architecture are explicit, for example:
+
+```bash
+KAG_MACRO_CLONE_WIDTHS=256 KAG_MACRO_CLONE_LAYERS=3 \
+  ./ocean/kaggriculture/build_macro_clone_factory.sh "Crop Dusta"
+```
+
 For a non-interrupting Vast run, the checked-in queue wrappers detect an
 active `./puffer train kaggriculture` by command shape (so a restarted user
 PID remains protected), wait for the GPU, and train/evaluate both widths:
