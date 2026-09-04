@@ -15,7 +15,9 @@ output_root=${KAG_OPENING_OUTPUT_ROOT:-/workspace/elite_replays/macro_opening_te
 epochs_list=${KAG_OPENING_EPOCHS:-1 3 10}
 learning_rate=${KAG_OPENING_LR:-0.00001}
 anchor_l2=${KAG_OPENING_ANCHOR_L2:-0.01}
+decision_through=${KAG_DECISION_THROUGH:-201}
 opening_steps=${KAG_OPENING_STEPS:-61}
+opening_weight=${KAG_OPENING_WEIGHT:-2}
 batch=${KAG_OPENING_BATCH:-32}
 hidden=${KAG_OPENING_HIDDEN:-256}
 layers=${KAG_OPENING_LAYERS:-3}
@@ -31,7 +33,7 @@ filter_one() {
     local manifest="${source}.players.tsv"
     local output_manifest="${output}.players.tsv"
     "$python_bin" "$repo_root/ocean/kaggriculture/filter_macro_decisions.py" \
-        "$source" --output "$output" --opening-steps "$opening_steps" \
+        "$source" --output "$output" --opening-steps "$decision_through" \
         --manifest "$manifest" --output-manifest "$output_manifest" \
         --report "${output}.decision_filter.json"
 }
@@ -53,7 +55,7 @@ for epochs in $epochs_list; do
     KAG_ELITE_BC_SEED="$seed" KAG_ELITE_BC_BATCH="$batch" \
     KAG_ELITE_BC_VALIDATION_GAMES=20 \
     KAG_ELITE_BC_OPENING_STEPS="$opening_steps" \
-    KAG_ELITE_BC_OPENING_WEIGHT=1 KAG_ELITE_BC_ROOT_WEIGHT=1 \
+    KAG_ELITE_BC_OPENING_WEIGHT="$opening_weight" KAG_ELITE_BC_ROOT_WEIGHT="$opening_weight" \
     KAG_ELITE_BC_MACRO_CLASS_BALANCE=0 \
     KAG_ELITE_BC_ANCHOR_L2="$anchor_l2" KAG_ELITE_BC_LR="$learning_rate" \
     KAG_ELITE_BC_REPORT_INTERVAL=1 KAG_ELITE_BC_DETAILED_STATS=1 \

@@ -162,9 +162,15 @@ KAG_OPENING_TRAIN_DATA=/workspace/elite_replays/clone_factory_macro2_train0831_e
 KAG_OPENING_HOLDOUT_DATA=/workspace/elite_replays/clone_factory_macro2_train0831_episode_split/holdout/Crop_Dusta_holdout-latest.bc \
 KAG_OPENING_PARENT=saved/kaggriculture_league_macro_256x3_v1/run_macro_h256_land0_noanneal_league_ft_v3_0000000100663296.bin \
 KAG_OPENING_OUTPUT_ROOT=/workspace/elite_replays/macro_opening_teacher/crop_dusta_v1 \
+KAG_DECISION_THROUGH=201 KAG_OPENING_STEPS=61 KAG_OPENING_WEIGHT=2 \
 KAG_OPENING_EPOCHS='1 3 10' KAG_OPENING_LR=0.00001 \
 ./ocean/kaggriculture/train_macro_opening_teacher.sh
 ```
+
+The default filter retains strategic changes through turn 200 because Crop
+Dusta's first 60 turns contain no land-purchase demonstrations.  BC still
+weights turns 0--60 twice as strongly, so early mechanics remain the primary
+teacher while the later rows can teach the first expansion decision.
 
 The produced offline fidelity report is only the first gate.  Use
 `evaluate_macro_opening_rollout.py` to compare the parent and candidates at
