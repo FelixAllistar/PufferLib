@@ -25,6 +25,9 @@ widths=${KAG_MACRO_CLONE_WIDTHS:-128 256}
 opening_steps=${KAG_MACRO_OPENING_STEPS:-61}
 opening_weight=${KAG_MACRO_OPENING_WEIGHT:-2}
 root_weight=${KAG_MACRO_ROOT_WEIGHT:-2}
+macro_class_balance=${KAG_MACRO_CLASS_BALANCE:-1}
+macro_class_weight_cap=${KAG_MACRO_CLASS_WEIGHT_CAP:-8}
+clone_init=${KAG_MACRO_CLONE_INIT:-None}
 validation_games=${KAG_MACRO_VALIDATION_GAMES:-20}
 min_512_trajectories=${KAG_MACRO_MIN_512_TRAJECTORIES:-200}
 max_episodes=${KAG_MACRO_MAX_EPISODES:-0}
@@ -170,6 +173,9 @@ PY
                 KAG_ELITE_BC_OPENING_STEPS="$opening_steps" \
                 KAG_ELITE_BC_OPENING_WEIGHT="$opening_weight" \
                 KAG_ELITE_BC_ROOT_WEIGHT="$root_weight" \
+                KAG_ELITE_BC_MACRO_CLASS_BALANCE="$macro_class_balance" \
+                KAG_ELITE_BC_MACRO_CLASS_WEIGHT_CAP="$macro_class_weight_cap" \
+                KAG_ELITE_BC_INIT="$clone_init" \
                 KAG_ELITE_BC_REPORT_INTERVAL=5 \
                 KAG_ELITE_BC_DETAILED_STATS=1 \
                 "$repo_root/ocean/kaggriculture/train_elite_bc.sh" "$epochs" \

@@ -23,6 +23,8 @@ opening_argmax_coef=${KAG_ELITE_BC_OPENING_ARGMAX_COEF:-0}
 learning_rate=${KAG_ELITE_BC_LR:-0.00005}
 report_interval=${KAG_ELITE_BC_REPORT_INTERVAL:-1}
 detailed_stats=${KAG_ELITE_BC_DETAILED_STATS:-0}
+macro_class_balance=${KAG_ELITE_BC_MACRO_CLASS_BALANCE:-0}
+macro_class_weight_cap=${KAG_ELITE_BC_MACRO_CLASS_WEIGHT_CAP:-8}
 
 if [[ ! -s "$data" ]]; then
     echo "elite BC dataset not found: $data" >&2
@@ -49,6 +51,8 @@ exec ./ocean/kaggriculture/build/kag_bc \
     bc.argmax_margin="$argmax_margin" \
     bc.opening_argmax_coef="$opening_argmax_coef" \
     bc.detailed_stats="$detailed_stats" \
+    bc.macro_class_balance="$macro_class_balance" \
+    bc.macro_class_weight_cap="$macro_class_weight_cap" \
     bc.anchor_l2=0 \
     bc.zero_reset_source=0 \
     policy.hidden_size="$hidden" \
