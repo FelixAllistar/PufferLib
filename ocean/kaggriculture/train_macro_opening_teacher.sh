@@ -22,6 +22,7 @@ batch=${KAG_OPENING_BATCH:-32}
 hidden=${KAG_OPENING_HIDDEN:-256}
 layers=${KAG_OPENING_LAYERS:-3}
 seed=${KAG_OPENING_SEED:-2903}
+rollout_games=${KAG_OPENING_ROLLOUT_GAMES:-20}
 
 for path in "$train_data" "$holdout_data" "$parent"; do
     [[ -s "$path" ]] || { echo "required input missing: $path" >&2; exit 1; }
@@ -44,7 +45,14 @@ filter_one "$train_data" "$train_filtered" >"$output_root/logs/filter_train.log"
 filter_one "$holdout_data" "$holdout_filtered" >"$output_root/logs/filter_holdout.log"
 
 make -C "$repo_root/ocean/kaggriculture" build/kag_bc
+parent_evaluation="$output_root/evals/parent.json"
+"$python_bin" "$repo_root/ocean/kaggriculture/evaluate_macro_clone.py" \
+    "$holdout_filtered" "$parent" \
+    --manifest "${holdout_filtered}.players.tsv" --holdout-fraction 1 \
+    --opening-steps "$opening_steps" --output "$parent_evaluation" \
+    >"$output_root/logs/eval_parent.log" 2>&1
 printf 'epochs\tlearning_rate\tanchor_l2\tmodel\teval\n' >"$output_root/candidates.tsv"
+rollout_models=("$parent")
 for epochs in $epochs_list; do
     model="$output_root/models/opening_teacher_e${epochs}_lr${learning_rate}.bin"
     log="$output_root/logs/train_e${epochs}.log"
@@ -70,12 +78,22 @@ for epochs in $epochs_list; do
     printf '%s\t%s\t%s\t%s\t%s\n' \
         "$epochs" "$learning_rate" "$anchor_l2" "$model" "$evaluation" \
         >>"$output_root/candidates.tsv"
+    rollout_models+=("$model")
 done
 
-"$python_bin" - "$output_root" "$parent" <<'PY'
+if ((rollout_games > 0)); then
+    "$repo_root/ocean/kaggriculture/eval_population.sh" \
+        --games "$rollout_games" --jobs 1 --gpu-agents 16 \
+        --fixed pass,rules,top --hidden-size "$hidden" --num-layers "$layers" \
+        --output "$output_root/evals/closed_loop" "${rollout_models[@]}" \
+        >"$output_root/logs/closed_loop.log" 2>&1
+fi
+
+"$python_bin" - "$output_root" "$parent" "$parent_evaluation" <<'PY'
 import csv, json, pathlib, sys
-root, parent = map(pathlib.Path, sys.argv[1:])
+root, parent, parent_evaluation = map(pathlib.Path, sys.argv[1:])
 rows = list(csv.DictReader((root / "candidates.tsv").open(), delimiter="\t"))
+parent_report = json.loads(parent_evaluation.read_text())
 for row in rows:
     report = json.loads(pathlib.Path(row["eval"]).read_text())
     row["macro_accuracy"] = report["accuracy"]["macro"]
@@ -85,6 +103,13 @@ for row in rows:
 payload = {
     "format": "kaggriculture_macro_opening_teacher_v1",
     "parent": str(parent),
+    "parent_offline": {
+        "macro_accuracy": parent_report["accuracy"]["macro"],
+        "macro_top3": parent_report["macro_top3"],
+        "signature_match": parent_report["opening_signatures"]["exact_signature_match_rate"],
+        "predicted_macros": parent_report["predicted_diversity"]["macro_ids"],
+    },
+    "closed_loop_prefix": str(root / "evals" / "closed_loop"),
     "selection_warning": "Offline fidelity is not a promotion result; run closed-loop and league gates.",
     "candidates": rows,
 }
