@@ -92,6 +92,7 @@ __global__ void kag_bc_loss_kernel(
         float* __restrict__ stats,                // aggregate stats
         float* __restrict__ detail,               // optional per-step stats
         const int* __restrict__ act_sizes,
+        const float* __restrict__ macro_class_weights,
         int rows, float valid_weight, int A_total, int num_atns,
         int mask_stride, int sequence_steps, int opening_steps,
         float opening_weight, float root_weight, float argmax_margin,
@@ -129,6 +130,10 @@ __global__ void kag_bc_loss_kernel(
         float best_other_val = -INFINITY;
         int prediction = 0;
         int best_other = -1;
+        float head_weight = row_weight;
+        if (h == 0 && opening && macro_class_weights) {
+            head_weight *= macro_class_weights[expert_action];
+        }
         for (int a = 0; a < A; a++) {
             if (puf_mask_bit(mask, mask_base, offset + a)) {
                 float l = to_float(logits[logits_base + offset + a]);
@@ -172,12 +177,12 @@ __global__ void kag_bc_loss_kernel(
                 to_float(logits[logits_base + offset + a]) - logsumexp);
             grad_logits[idx * A_total + offset + a] =
                 ((a == expert_action) ? (p - 1.0f) : p)
-                    * row_weight / valid_weight;
+                    * head_weight / valid_weight;
         }
         if (opening && opening_argmax_coef > 0.0f && best_other >= 0
                 && expert_logit < best_other_val + argmax_margin) {
             float margin_scale = opening_argmax_coef
-                * row_weight / valid_weight;
+                * head_weight / valid_weight;
             grad_logits[idx * A_total + offset + expert_action]
                 -= margin_scale;
             grad_logits[idx * A_total + offset + best_other]
@@ -745,6 +750,10 @@ static int bc_train(Ini* ini) {
     float argmax_margin = (float)puf_ini_get(ini, "bc", "argmax_margin");
     float opening_argmax_coef = (float)puf_ini_get(
         ini, "bc", "opening_argmax_coef");
+    float macro_class_balance = (float)puf_ini_get(
+        ini, "bc", "macro_class_balance");
+    float macro_class_weight_cap = (float)puf_ini_get(
+        ini, "bc", "macro_class_weight_cap");
     /* Zero is an intentional conversion-only pass (for example, zeroing a
      * newly assigned observation column in a legacy checkpoint). */
     if (bc_epochs < 0) bc_epochs = 2000;
@@ -757,6 +766,9 @@ static int bc_train(Ini* ini) {
     if (root_weight <= 0.0f) root_weight = opening_weight;
     if (argmax_margin < 0.0f) argmax_margin = 0.0f;
     if (opening_argmax_coef < 0.0f) opening_argmax_coef = 0.0f;
+    if (macro_class_balance < 0.0f) macro_class_balance = 0.0f;
+    if (macro_class_balance > 1.0f) macro_class_balance = 1.0f;
+    if (macro_class_weight_cap < 1.0f) macro_class_weight_cap = 8.0f;
     bc_rng_state = (uint32_t)bc_seed * 2654435761u + 1u;
     if (!data_path || !data_path[0]) {
         fprintf(stderr, "bc.data is required for train mode\n");
@@ -809,10 +821,11 @@ static int bc_train(Ini* ini) {
     printf("BC train: %d games x %d steps (%d train/%d validation), "
         "batch=%d epochs=%d lr=%g hidden=%d layers=%d "
         "opening=%d weight=%g root_weight=%g argmax_margin=%g "
-        "opening_argmax_coef=%g init=%s\n",
+        "opening_argmax_coef=%g macro_balance=%g macro_cap=%g init=%s\n",
         games, sequence_steps, train_games, validation_games, batch,
         bc_epochs, bc_lr, hidden, layers, opening_steps, opening_weight,
         root_weight, argmax_margin, opening_argmax_coef,
+        macro_class_balance, macro_class_weight_cap,
         load_path && load_path[0] && strcmp(load_path, "None")
             ? load_path : "random");
 
@@ -932,6 +945,66 @@ static int bc_train(Ini* ini) {
         int j = (int)(bc_rand() % (uint32_t)(i + 1));
         uint32_t tmp = order[i]; order[i] = order[j]; order[j] = tmp;
     }
+    /* Intent labels are extremely imbalanced: routine HOLD/MAINTAIN rows can
+     * outnumber strategic land/animal/crop decisions by orders of magnitude.
+     * Balance only the opening-window macro-intent head. The inverse-sqrt
+     * weights are capped, blended with ordinary CE, then normalized to mean
+     * one over training examples so this knob changes class emphasis rather
+     * than the overall learning-rate scale. */
+    int macro_classes = act_sizes[0];
+    uint64_t* macro_counts = (uint64_t*)calloc(
+        (size_t)macro_classes, sizeof(uint64_t));
+    float* macro_weights = (float*)malloc(
+        (size_t)macro_classes * sizeof(float));
+    if (!macro_counts || !macro_weights) { perror("malloc"); return 1; }
+    uint64_t macro_total = 0;
+    int macro_present = 0;
+    for (int sequence = 0; sequence < train_games; sequence++) {
+        uint32_t game = order[sequence];
+        for (int t = 0; t < opening_steps; t++) {
+            int action = (int)expert[((size_t)game * sequence_steps + t)
+                * NUM_ATNS];
+            if (action >= 0 && action < macro_classes) {
+                macro_counts[action]++;
+                macro_total++;
+            }
+        }
+    }
+    for (int action = 0; action < macro_classes; action++) {
+        if (macro_counts[action]) macro_present++;
+    }
+    double weighted_total = 0.0;
+    for (int action = 0; action < macro_classes; action++) {
+        float balanced = 1.0f;
+        if (macro_class_balance > 0.0f && macro_counts[action]
+                && macro_present > 0) {
+            balanced = sqrtf((float)macro_total
+                / ((float)macro_present * (float)macro_counts[action]));
+            if (balanced > macro_class_weight_cap) {
+                balanced = macro_class_weight_cap;
+            }
+        }
+        macro_weights[action] = (1.0f - macro_class_balance)
+            + macro_class_balance * balanced;
+        weighted_total += (double)macro_counts[action] * macro_weights[action];
+    }
+    float macro_normalizer = weighted_total > 0.0
+        ? (float)((double)macro_total / weighted_total) : 1.0f;
+    printf("BC opening macro classes: total=%llu present=%d weights=",
+        (unsigned long long)macro_total, macro_present);
+    for (int action = 0; action < macro_classes; action++) {
+        macro_weights[action] *= macro_normalizer;
+        if (macro_counts[action]) {
+            printf("%s%d:%llu:%.3f", action ? "," : "",
+                action, (unsigned long long)macro_counts[action],
+                macro_weights[action]);
+        }
+    }
+    printf("\n");
+    float* d_macro_weights = (float*)xcuda(
+        (size_t)macro_classes * sizeof(float));
+    cudaMemcpy(d_macro_weights, macro_weights,
+        (size_t)macro_classes * sizeof(float), cudaMemcpyHostToDevice);
     precision_t* host_grad_bf = (precision_t*)malloc(
         (size_t)params.total_elems * sizeof(precision_t));
     float* host_master = (float*)malloc(
@@ -999,6 +1072,7 @@ static int bc_train(Ini* ini) {
         kag_bc_loss_kernel<<<grid_size(batch_rows), BLOCK_SIZE, 0,
             bc_stream>>>(dec_flat.data, d_expert, d_mask, grad_logits,
             stats_acc, host_detail ? detail_acc : NULL, act_sizes_puf.data,
+            d_macro_weights,
             batch_rows, valid_weight,
             A_total, num_atns, packed_stride, sequence_steps, opening_steps,
             opening_weight, root_weight, argmax_margin,
@@ -1168,6 +1242,7 @@ static int bc_train(Ini* ini) {
     printf("BC anchor saved to %s (%lld bytes)\n", out_path,
         (long long)nbytes);
     free(order); free(obs); free(expert); free(mask);
+    free(macro_counts); free(macro_weights); cudaFree(d_macro_weights);
     free(host_grad_bf); free(host_master); free(host_mom);
     free(h_obs_chunk); free(h_expert_chunk); free(h_mask_chunk);
     return 0;

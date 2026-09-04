@@ -132,6 +132,16 @@ KAG_MACRO_CLONE_WIDTHS=256 KAG_MACRO_CLONE_LAYERS=3 \
   ./ocean/kaggriculture/build_macro_clone_factory.sh "Crop Dusta"
 ```
 
+Macro datasets are dominated by routine HOLD/MAINTAIN rows. The factory
+therefore defaults `KAG_MACRO_CLASS_BALANCE=1` and applies capped
+inverse-square-root weighting to the opening-window macro-intent loss only.
+`KAG_MACRO_CLASS_WEIGHT_CAP=8` bounds rare-label influence. The weights are
+renormalized to mean one, leaving the overall learning-rate scale unchanged;
+quantity, target, and post-opening losses remain ordinary cross entropy.
+Set `KAG_MACRO_CLASS_BALANCE=0` for the legacy objective. A compatible PPO
+checkpoint can be preserved as the starting policy with
+`KAG_MACRO_CLONE_INIT=/path/to/checkpoint.bin`.
+
 For a non-interrupting Vast run, the checked-in queue wrappers detect an
 active `./puffer train kaggriculture` by command shape (so a restarted user
 PID remains protected), wait for the GPU, and train/evaluate both widths:
