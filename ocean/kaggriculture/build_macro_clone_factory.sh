@@ -20,6 +20,8 @@ train_until=${KAG_MACRO_TRAIN_UNTIL:-latest}
 skip_train=${KAG_MACRO_SKIP_TRAIN:-0}
 seed=${KAG_MACRO_CLONE_SEED:-2903}
 epochs=${KAG_MACRO_CLONE_EPOCHS:-25}
+layers=${KAG_MACRO_CLONE_LAYERS:-2}
+widths=${KAG_MACRO_CLONE_WIDTHS:-128 256}
 opening_steps=${KAG_MACRO_OPENING_STEPS:-61}
 opening_weight=${KAG_MACRO_OPENING_WEIGHT:-2}
 root_weight=${KAG_MACRO_ROOT_WEIGHT:-2}
@@ -42,6 +44,15 @@ fi
 
 if (($# == 0)); then
     echo "pass one or more exact agent names (for example: Yuan800)" >&2
+    exit 2
+fi
+if ((layers < 1)); then
+    echo "KAG_MACRO_CLONE_LAYERS must be positive: $layers" >&2
+    exit 2
+fi
+read -r -a clone_widths <<< "$widths"
+if ((${#clone_widths[@]} == 0)); then
+    echo "KAG_MACRO_CLONE_WIDTHS must name at least one width" >&2
     exit 2
 fi
 if [[ ! -x "$python_bin" ]]; then
@@ -133,9 +144,17 @@ PY
         echo "agent has no exact trajectories: $agent" >&2
         exit 1
     fi
-    for hidden in 128 256; do
-        model="$factory_root/models/${slug}_cutoff-${cutoff}_v${exact_version}_macro2${artifact_suffix}_h${hidden}x2_s${seed}_e${epochs}.bin"
-        log="$factory_root/logs/${slug}_h${hidden}x2.log"
+    for hidden in "${clone_widths[@]}"; do
+        if ((hidden < 1)); then
+            echo "invalid clone width: $hidden" >&2
+            exit 2
+        fi
+        if ((hidden >= 512 && trajectories < min_512_trajectories)); then
+            echo "SKIP $hidden agent=$agent trajectories=$trajectories threshold=$min_512_trajectories"
+            continue
+        fi
+        model="$factory_root/models/${slug}_cutoff-${cutoff}_v${exact_version}_macro2${artifact_suffix}_h${hidden}x${layers}_s${seed}_e${epochs}.bin"
+        log="$factory_root/logs/${slug}_h${hidden}x${layers}.log"
         status=ready
         if [[ "$skip_train" == 1 ]]; then
             status=deferred
@@ -145,7 +164,7 @@ PY
             if ! KAG_ELITE_BC_DATA="$dataset" \
                 KAG_ELITE_BC_OUTPUT="$model" \
                 KAG_ELITE_BC_HIDDEN="$hidden" \
-                KAG_ELITE_BC_LAYERS=2 \
+                KAG_ELITE_BC_LAYERS="$layers" \
                 KAG_ELITE_BC_SEED="$seed" \
                 KAG_ELITE_BC_VALIDATION_GAMES="$validation_games" \
                 KAG_ELITE_BC_OPENING_STEPS="$opening_steps" \
@@ -161,42 +180,10 @@ PY
         else
             echo "REUSE model=$model"
         fi
-        printf '%s\t%s\t%s\t%s\t%s\t%s\t2\t%s\t%s\t%s\t%s\n' \
+        printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
             "$agent" "$cutoff" "$exact_version" "$dataset" "$model" \
-            "$hidden" "$epochs" "$seed" "$trajectories" "$status" >>"$manifest"
+            "$hidden" "$layers" "$epochs" "$seed" "$trajectories" "$status" >>"$manifest"
     done
-    if ((trajectories >= min_512_trajectories)); then
-        hidden=512
-        model="$factory_root/models/${slug}_cutoff-${cutoff}_v${exact_version}_macro2${artifact_suffix}_h512x2_s${seed}_e${epochs}.bin"
-        log="$factory_root/logs/${slug}_h512x2.log"
-        status=ready
-        if [[ "$skip_train" == 1 ]]; then
-            status=deferred
-            echo "DEFER TRAIN exact agent=$agent hidden=512 (KAG_MACRO_SKIP_TRAIN=1)"
-        elif [[ ! -s "$model" ]]; then
-            echo "TRAIN exact agent=$agent hidden=512 trajectories=$trajectories"
-            if ! KAG_ELITE_BC_DATA="$dataset" \
-                KAG_ELITE_BC_OUTPUT="$model" KAG_ELITE_BC_HIDDEN=512 \
-                KAG_ELITE_BC_LAYERS=2 KAG_ELITE_BC_SEED="$seed" \
-                KAG_ELITE_BC_VALIDATION_GAMES="$validation_games" \
-                KAG_ELITE_BC_OPENING_STEPS="$opening_steps" \
-                KAG_ELITE_BC_OPENING_WEIGHT="$opening_weight" \
-                KAG_ELITE_BC_ROOT_WEIGHT="$root_weight" \
-                KAG_ELITE_BC_REPORT_INTERVAL=5 KAG_ELITE_BC_DETAILED_STATS=1 \
-                "$repo_root/ocean/kaggriculture/train_elite_bc.sh" "$epochs" \
-                >"$log" 2>&1; then
-                status=failed
-                tail -n 50 "$log" >&2 || true
-            fi
-        else
-            echo "REUSE model=$model"
-        fi
-        printf '%s\t%s\t%s\t%s\t%s\t512\t2\t%s\t%s\t%s\t%s\n' \
-            "$agent" "$cutoff" "$exact_version" "$dataset" "$model" \
-            "$epochs" "$seed" "$trajectories" "$status" >>"$manifest"
-    else
-        echo "SKIP 512 agent=$agent trajectories=$trajectories threshold=$min_512_trajectories"
-    fi
 done
 
 # JSON is useful for transfer/deletion audits; it contains hashes of all

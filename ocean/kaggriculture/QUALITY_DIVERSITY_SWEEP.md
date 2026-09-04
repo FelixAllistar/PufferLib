@@ -11,9 +11,10 @@ outcome axes:
 
 - expansion: compact, partial, or full expansion;
 - production: crop-only, dual-production, or animal-led;
+- cow production: none, used, or heavy (measured directly from milk output);
 - capital use: cash-heavy, balanced, or growth-heavy reinvestment.
 
-This produces 27 niches. Final money ranks checkpoints only within the same
+This produces 81 niches. Final money ranks checkpoints only within the same
 niche. Reward coefficients are mutation inputs, never the niche labels. That
 prevents a coefficient called “animal” from being mistaken for actual animal
 behavior.
@@ -85,3 +86,18 @@ The archive is discovery data, not proof of strength. Promote promising niche
 elites into a new league, then compare them using fixed-seed, seat-balanced
 matches and PSRO. Longer continuations should start from those finalists rather
 than making every QD probe expensive.
+
+Warm-started EMAg refinement can preserve a profitable macro champion while a
+compatible replay clone teaches an opening prefix. The LR can be frozen so QD
+explores behavior instead of silently rescaling optimization:
+
+```bash
+python ocean/kaggriculture/qd_sweep.py \
+  --output logs/kaggriculture/qd_macro_emag_256x3_v1 \
+  --warm-start saved/champion_256x3.bin \
+  --magnet saved/macro_bc_256x3.bin --emag-coefs 0.002,0.005,0.01 \
+  --emag-cutoff 0.25 --emag-tau 0 --fixed-learning-rate 0.0007 \
+  --league saved/kaggriculture_league_macro_256x3_v1/league.ini \
+  --hidden-size 256 --layers 3 --horizon 256 \
+  --agents 512 --minibatch-size 2048 --steps 50000000 --trials 9
+```
