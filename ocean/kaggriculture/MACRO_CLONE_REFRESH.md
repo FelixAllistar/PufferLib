@@ -142,6 +142,36 @@ Set `KAG_MACRO_CLASS_BALANCE=0` for the legacy objective. A compatible PPO
 checkpoint can be preserved as the starting policy with
 `KAG_MACRO_CLONE_INIT=/path/to/checkpoint.bin`.
 
+## Sparse opening teachers
+
+Full-row accuracy is not a useful gate when HOLD, HARVEST, and MAINTAIN are
+executor-owned routine work.  `filter_macro_decisions.py` preserves every
+observation in each recurrent trajectory but makes routine rows, post-opening
+rows, and unchanged consecutive decisions loss-free.  The BC kernel normalizes
+gradients by the remaining labeled rows, so sparsifying a dataset does not
+silently divide its effective learning rate by 720.
+
+`train_macro_opening_teacher.sh` applies this filter to an episode/day-split
+train and holdout pair and fine-tunes several independent candidates from the
+same compatible competitive PPO parent.  It does not chain candidates.  A
+small L2 anchor protects the parent while strategic opening labels adjust the
+policy.  For example:
+
+```bash
+KAG_OPENING_TRAIN_DATA=/workspace/elite_replays/clone_factory_macro2_train0831_episode_split/datasets/Crop_Dusta_cutoff-2026-08-31_v1.32.7_macro2_episode_split.bc \
+KAG_OPENING_HOLDOUT_DATA=/workspace/elite_replays/clone_factory_macro2_train0831_episode_split/holdout/Crop_Dusta_holdout-latest.bc \
+KAG_OPENING_PARENT=saved/kaggriculture_league_macro_256x3_v1/run_macro_h256_land0_noanneal_league_ft_v3_0000000100663296.bin \
+KAG_OPENING_OUTPUT_ROOT=/workspace/elite_replays/macro_opening_teacher/crop_dusta_v1 \
+KAG_OPENING_EPOCHS='1 3 10' KAG_OPENING_LR=0.00001 \
+./ocean/kaggriculture/train_macro_opening_teacher.sh
+```
+
+The produced offline fidelity report is only the first gate.  Use
+`evaluate_macro_opening_rollout.py` to compare the parent and candidates at
+turns 24/60/180/719 of genuine 720-turn closed-loop games.  Shortening the
+episode to 60 changes remaining-time features and is not an honest opening
+test.  League evaluation remains the final promotion gate.
+
 For a non-interrupting Vast run, the checked-in queue wrappers detect an
 active `./puffer train kaggriculture` by command shape (so a restarted user
 PID remains protected), wait for the GPU, and train/evaluate both widths:

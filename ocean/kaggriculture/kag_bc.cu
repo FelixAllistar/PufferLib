@@ -1066,9 +1066,19 @@ static int bc_train(Ini* ini) {
         PrecisionTensor dec_out = policy_forward_train(&policy, weights,
             train_acts, obs_t, state, terminals, bc_stream);
         PrecisionTensor dec_flat = *puf_squeeze(&dec_out, 0);
-        float valid_weight = (float)B * (root_weight
-            + (opening_steps - 1) * opening_weight
-            + sequence_steps - opening_steps);
+        /* Normalize by rows that actually carry a label.  Decision-filtered
+         * datasets intentionally retain every recurrent observation while
+         * marking routine frames expert[0] = -1.  Dividing those sparse
+         * gradients by all 720 frames would silently make the learning rate
+         * hundreds of times smaller than configured. */
+        float valid_weight = 0.0f;
+        for (int row = 0; row < B * sequence_steps; row++) {
+            if ((int)h_expert_chunk[(size_t)row * NUM_ATNS] < 0) continue;
+            int sequence_step = row % sequence_steps;
+            valid_weight += sequence_step == 0 ? root_weight
+                : (sequence_step < opening_steps ? opening_weight : 1.0f);
+        }
+        if (valid_weight <= 0.0f) valid_weight = 1.0f;
         kag_bc_loss_kernel<<<grid_size(batch_rows), BLOCK_SIZE, 0,
             bc_stream>>>(dec_flat.data, d_expert, d_mask, grad_logits,
             stats_acc, host_detail ? detail_acc : NULL, act_sizes_puf.data,
