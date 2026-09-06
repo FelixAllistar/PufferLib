@@ -87,6 +87,16 @@ static void configure_case(Env* env, int case_id, obs_t* observations,
     env->policy_market_slots = case_id % 3 == 0 ? 1
         : case_id % 3 == 1 ? 4 : 10;
     env->policy_max_hands = case_id % 2 ? 8 : KG_MAX_HANDS;
+    env->macro_mode = case_id == 9 ? KAG_MACRO_MODE_LEGACY
+        : case_id == 10 ? KAG_MACRO_MODE_STRUCTURED
+        : case_id == 11 ? KAG_MACRO_MODE_TASKS : 0;
+    /* Case 11 is deliberately mixed: the learner uses task semantics while
+     * policy one retains an old structured-macro ABI. */
+    env->frozen_macro_mode = case_id == 11
+        ? KAG_MACRO_MODE_STRUCTURED : -1;
+    env->macro_decision_interval = env->macro_mode == KAG_MACRO_MODE_LEGACY
+        ? 4 : 1;
+    env->macro_score_scale = 10000.0f;
     env->opening_turns = case_id == 0 ? 10 : case_id == 7 ? 26 : 0;
     env->reset_opening_turns = case_id == 1 ? 20
         : case_id == 8 ? 26 : 0;
@@ -162,7 +172,7 @@ static void configure_case(Env* env, int case_id, obs_t* observations,
     KGConfig config;
     kg_config_default(&config);
     config.seed = 0xfedcba987654321ULL + (uint64_t)case_id * 1000003ULL;
-    config.episode_steps = case_id == 0 ? 1 : 31 + 7 * case_id;
+    config.episode_steps = case_id == 0 ? 1 : case_id == 10 ? 720 : 31 + 7 * case_id;
     config.starting_money = case_id % 4 == 0 ? 500 : 3000 + 97 * case_id;
     config.max_market_orders_per_turn = 1 + case_id % KG_MAX_MARKET_ORDERS;
     config.shed_capacity = case_id % 4 == 0 ? 1
@@ -295,7 +305,12 @@ int main(void) {
 
     for (int step = 0; step < ADAPTER_STEPS; step++) {
         for (int i = 0; i < ADAPTER_CASES; i++) {
-            if (i == 0) {
+            if (i == 10) {
+                float* requests = cpu_actions + (size_t)(2 * i) * NUM_ATNS;
+                std::memset(requests, 0, 2 * NUM_ATNS * sizeof(float));
+                requests[0] = cpu[i].game_storage.step < 12
+                    ? KAG_MACRO_ANIMAL_BASE + KG_COW : KAG_MACRO_HOLD;
+            } else if (i == 0) {
                 std::memset(cpu_actions + (size_t)(2 * i) * NUM_ATNS, 0,
                     2 * NUM_ATNS * sizeof(float));
             } else {
@@ -391,6 +406,10 @@ int main(void) {
         return 1;
     }
 
+    if (cpu[10].log.milk_units <= 0.0f) {
+        std::fprintf(stderr, "mode2 cow then HOLD failed to collect milk\n");
+        return 1;
+    }
     CUDA_OK(cudaFree(d_bank_completed));
     CUDA_OK(cudaFree(d_decoded));
     CUDA_OK(cudaFree(d_tapes));

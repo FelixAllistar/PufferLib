@@ -1,0 +1,57 @@
+--- a/src/smbcore/area.c
++++ b/src/smbcore/area.c
+@@ -500,7 +500,15 @@
+ // SM2MAIN:7319
+ // Signature: [] -> []
+ void ProcessAreaData(void) {
++  /* Rollout hardening (not upstream): bound the parse loop. Well-formed
++     area data exits in a handful of iterations; a corrupted AreaDataOffset
++     can otherwise spin here forever inside one frame. */
++  unsigned pad_iter = 0;
+   while (true) {
++    if (++pad_iter > 4096) {
++      fprintf(stderr, "[smbcore] ProcessAreaData cap tripped\n");
++      return;
++    }
+     bool behind_area_parser_flag;
+     for (int objoff = 2; objoff >= 0; objoff--) {
+       // Note: BehindAreaParserFlag is optimized away. It's only used in this function and DecodeAreaData
+--- a/src/smbcore/common.c
++++ b/src/smbcore/common.c
+@@ -1043,8 +1043,14 @@
+ 
+   case SRT_AREAPARSERTASKCONTROL:
+     DisableScreenFlag += 1;
++    /* Rollout hardening (not upstream): bound the task drain. */
++    unsigned apt_iter = 0;
+     do {
+       AreaParserTaskHandler();
++      if (++apt_iter > 4096) {
++        fprintf(stderr, "[smbcore] AreaParserTask cap tripped\n");
++        break;
++      }
+     } while (AreaParserTaskNum != 0);
+     ColumnSets -= 1;
+     if (ColumnSets >= 0x80) {
+@@ -4598,6 +4604,10 @@
+   u8 bVar3;
+   bool bVar6;
+ 
++  /* Rollout hardening (not upstream): the u8 enemy-data offset advanced
++     below wraps every ~128 iterations, so malformed enemy data can cycle
++     this loop forever inside one frame. Bound it. */
++  unsigned eloop_iter = 0;
+   do {
+     if (LoopCommand != 0 && CurrentColumnPos == 0) {
+       for (int idx = ssw(0xb,0xc)-1; idx >= 0; idx--) {
+@@ -4741,6 +4751,10 @@
+     EnemyObjectPageLoc = EnemyData[bVar5] & 0x3f;
+     EnemyDataOffset += 2;
+     EnemyObjectPageSel = 1;
++    if (++eloop_iter > 4096) {
++      fprintf(stderr, "[smbcore] ProcLoopCommand cap tripped\n");
++      return;
++    }
+   } while (true);
+ }
+ 

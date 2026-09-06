@@ -2300,19 +2300,31 @@ PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx) {
         vec->num_workers = 1;
     }
 #ifndef PUFFER_GPU_ENV
-    // A CPU rollout worker owns an OpenMP team. Do not let the configured
-    // team oversubscribe the host when a config is reused on a smaller box.
+    // A CPU rollout worker owns an OpenMP team. Cap the team so a config
+    // reused on a smaller box degrades gracefully. Default 1.5x online
+    // CPUs (light envs, e.g. retro fast backend, measured 6 > 4 on a
+    // 4-core box via latency hiding). Configurable via vec.cpu_scale in
+    // the env ini: e.g. cpu_scale = 3.0 allows heavier oversubscription,
+    // cpu_scale = -1 disables the cap entirely (num_threads is then used
+    // verbatim). 0 (key absent) keeps the 1.5x default.
     long online_cpus = sysconf(_SC_NPROCESSORS_ONLN);
-    int max_workers_per_buffer = online_cpus > 0
-        ? (int)(online_cpus / num_buffers) : 0;
-    if (max_workers_per_buffer < 1) {
-        max_workers_per_buffer = 1;
-    }
-    if (vec->num_workers > max_workers_per_buffer) {
-        fprintf(stderr, "vec.num_threads=%d exceeds %ld online CPUs; using %d workers\n",
-            vec->num_workers * num_buffers, online_cpus,
-            max_workers_per_buffer * num_buffers);
-        vec->num_workers = max_workers_per_buffer;
+    float cpu_scale = puf_ini_get_float(ini, "vec", "cpu_scale");
+    int max_workers_per_buffer = 0;
+    if (cpu_scale < 0.0f) {
+        // Cap disabled.
+    } else {
+        if (cpu_scale == 0.0f) cpu_scale = 1.5f;
+        max_workers_per_buffer = online_cpus > 0
+            ? (int)((online_cpus * cpu_scale) / num_buffers) : 0;
+        if (max_workers_per_buffer < 1) {
+            max_workers_per_buffer = 1;
+        }
+        if (vec->num_workers > max_workers_per_buffer) {
+            fprintf(stderr, "vec.num_threads=%d exceeds %ld online CPUs x %.2f; using %d workers (vec.cpu_scale)\n",
+                vec->num_workers * num_buffers, online_cpus, cpu_scale,
+                max_workers_per_buffer * num_buffers);
+            vec->num_workers = max_workers_per_buffer;
+        }
     }
 #endif
     int frozen_banks = (int)dict_get(&vec_kwargs, "num_frozen_banks");
@@ -4925,6 +4937,17 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
         selfplay.payoff_ema = (float)puf_ini_get(ini, "selfplay", "payoff_ema");
         assert(selfplay.external_prob >= 0.0f && selfplay.external_prob <= 1.0f
             && "selfplay.opponent_pool_prob must be in [0, 1]");
+        if (strcmp(puf_ini_get_str(ini, "base", "env_name"), "kaggriculture") == 0) {
+            int learner_mode = (int)puf_ini_get(ini, "env", "macro_mode");
+            int frozen_mode = (int)puf_ini_get(ini, "env", "frozen_macro_mode");
+            if (frozen_mode >= 0 && frozen_mode != learner_mode
+                    && selfplay.external_prob != 1.0f) {
+                fprintf(stderr, "Mixed Kaggriculture action modes require "
+                    "selfplay.opponent_pool_prob=1: learner snapshots cannot "
+                    "be decoded with the external league's action mode.\n");
+                exit(1);
+            }
+        }
         assert(selfplay.pfsp_alpha >= 0.0f && "selfplay.pfsp_alpha must be nonnegative");
         assert(selfplay.pfsp_uniform_mix >= 0.0f && selfplay.pfsp_uniform_mix <= 1.0f
             && "selfplay.pfsp_uniform_mix must be in [0, 1]");
@@ -5009,8 +5032,15 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
     TrainResult result = {0};
     char final_checkpoint[4096] = {0};
     double last_dashboard_time = 0;
+    // Stall diagnostics: phase heartbeat to a file (stdout may be a dead
+    // terminal when wedged). One line per epoch phase; if the run goes
+    // silent, the last line names exactly where it is stuck. Owner only so
+    // multi-GPU workers don't clobber the same path.
+    FILE* phase_log = ctx->artifact_owner ? fopen("/tmp/puf_phase.log", "w") : NULL;
+#define PUF_PHASE(msg) do { if (phase_log) { fprintf(phase_log, "epoch %ld %s %.3f\n", epoch, msg, wall_clock()); fflush(phase_log); } } while (0)
 
     for (long epoch = 0; epoch < train_epochs + eval_epochs; epoch++) {
+        PUF_PHASE("enter");
         if (epoch < train_epochs && pufferl->hypers.async) {
             int prefetch_next = epoch + 1 < train_epochs;
             if (!pufferl->async_bootstrapped) {
@@ -5027,25 +5057,35 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
             int next_slot = pufferl->async_next_slot;
             double t0 = 0.0;
             if (prefetch_next) {
+                PUF_PHASE("rollout_start");
                 t0 = rollout_start(pufferl, next_slot, false);
+                PUF_PHASE("rollout_started");
             }
 
             pufferl->global_step += pufferl->hypers.horizon * pufferl->hypers.total_agents;
             RolloutBuf train_src = rollout_time_view(&pufferl->rollouts,
                 ready_slot * pufferl->hypers.horizon, pufferl->hypers.horizon);
+            PUF_PHASE("train_begin");
             train_impl(*pufferl, &train_src);
+            PUF_PHASE("train_done");
 
             if (prefetch_next) {
+                PUF_PHASE("rollout_finish");
                 rollout_finish(pufferl, t0);
+                PUF_PHASE("rollout_finished");
                 pufferl->async_ready_slot = next_slot;
                 pufferl->async_next_slot = ready_slot;
             }
         } else {
             bool deterministic = epoch >= train_epochs
                 && pufferl->hypers.deterministic_actions;
+            PUF_PHASE("rollouts_begin");
             rollouts(pufferl, deterministic);
+            PUF_PHASE("rollouts_done");
             if (epoch < train_epochs) {
+                PUF_PHASE("train_begin");
                 train_impl(*pufferl, NULL);
+                PUF_PHASE("train_done");
             }
         }
 
@@ -5055,6 +5095,7 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
         bool should_save = epoch < train_epochs && (interval_save || is_final);
         char saved_checkpoint[4096] = {0};
         if (should_save) {
+            PUF_PHASE("save_begin");
             snprintf(saved_checkpoint, sizeof(saved_checkpoint),
                 "%s/%016ld.bin", checkpoint_dir, pufferl->global_step);
             if (ctx->artifact_owner) {
@@ -5303,6 +5344,19 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
 
             float sum = 0;
             int pool_size = selfplay.external_size + selfplay.pool_size;
+            // A replacement Kaggriculture controller can face a league with
+            // a different action ABI. Rolling learner snapshots have the
+            // learner ABI; external checkpoints use frozen_macro_mode.
+            int kag_learner_mode = 0;
+            int kag_external_mode = 0;
+            bool kag_mixed_modes = strcmp(puf_ini_get_str(ini, "base", "env_name"),
+                "kaggriculture") == 0;
+            if (kag_mixed_modes) {
+                kag_learner_mode = (int)puf_ini_get(ini, "env", "macro_mode");
+                kag_external_mode = (int)puf_ini_get(ini, "env", "frozen_macro_mode");
+                kag_mixed_modes = kag_external_mode >= 0
+                    && kag_external_mode != kag_learner_mode;
+            }
             for (int i = 0; i < pool_size && n_opp < max_opp; i++) {
                 const char* opponent = i < selfplay.external_size
                     ? selfplay.external[i]
@@ -5314,11 +5368,28 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
 
                 puf_ini_put(ini, "base.load_model_path", final_checkpoint);
                 puf_ini_put(ini, "base.load_enemy_model_path", opponent);
+                char learner_mode_buf[16], opponent_mode_buf[16];
+                if (kag_mixed_modes) {
+                    snprintf(learner_mode_buf, sizeof(learner_mode_buf), "%d", kag_learner_mode);
+                    snprintf(opponent_mode_buf, sizeof(opponent_mode_buf), "%d",
+                        i < selfplay.external_size ? kag_external_mode : kag_learner_mode);
+                    puf_ini_put(ini, "env.macro_mode", learner_mode_buf);
+                    puf_ini_put(ini, "env.frozen_macro_mode", opponent_mode_buf);
+                }
                 EvalResult first = run_eval(ini, ctx, EVAL_MATCH, 0);
 
                 puf_ini_put(ini, "base.load_model_path", opponent);
                 puf_ini_put(ini, "base.load_enemy_model_path", final_checkpoint);
+                if (kag_mixed_modes) {
+                    puf_ini_put(ini, "env.macro_mode", opponent_mode_buf);
+                    puf_ini_put(ini, "env.frozen_macro_mode", learner_mode_buf);
+                }
                 EvalResult second = run_eval(ini, ctx, EVAL_MATCH, 0);
+                if (kag_mixed_modes) {
+                    puf_ini_put(ini, "env.macro_mode", learner_mode_buf);
+                    snprintf(opponent_mode_buf, sizeof(opponent_mode_buf), "%d", kag_external_mode);
+                    puf_ini_put(ini, "env.frozen_macro_mode", opponent_mode_buf);
+                }
 
                 float winrate = 0.5f * (first.score + 1.0f - second.score);
                 float draw = 0.5f * (first.draw + second.draw);
@@ -5469,6 +5540,8 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
         dict_clear(&log_history.items[i]);
     }
     free(log_history.items);
+    if (phase_log) { fprintf(phase_log, "done %.3f\n", wall_clock()); fclose(phase_log); }
+#undef PUF_PHASE
     if (use_selfplay && ctx->artifact_owner) selfplay_write_payoffs(&selfplay);
     free(selfplay.pool);
     free(selfplay.external);

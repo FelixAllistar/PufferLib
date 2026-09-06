@@ -19,6 +19,9 @@ def load_agent(source, model, deterministic=True):
     spec = importlib.util.spec_from_file_location("kag_export", source)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
+    if (Path(source).parent / "native_macro_mode.py").is_file():
+        assert module._NATIVE_MACRO is not None
+        assert module._MACRO_OVERLAY is None, "native package must execute its neural policy"
     return module
 
 

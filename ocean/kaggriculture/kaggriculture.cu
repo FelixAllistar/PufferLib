@@ -28,6 +28,7 @@ typedef struct {
     int policy_market_slots;
     int policy_max_hands;
     int macro_mode;
+    int frozen_macro_mode;
     int macro_decision_interval;
     float macro_score_scale;
     int opening_turns;
@@ -354,12 +355,8 @@ __device__ static void kag_cuda_transition(Env* env, Env* shells,
         env->progress_value[0], env->progress_value[1]};
 
     for (int player = 0; player < KG_NUM_PLAYERS; player++) {
-        if (env->macro_mode) {
-            kag_decode_macro_action(&actions[player], &env->agents[player],
-                game, player, env);
-        } else {
-            kag_decode_action(&actions[player], &env->agents[player], game, player);
-        }
+        kag_decode_policy_action(&actions[player], &env->agents[player],
+            game, player, env);
         env->agents[player].terminals[0] = 0.0f;
     }
     kag_cuda_bot_overrides(env, actions, tapes);
@@ -622,6 +619,7 @@ __global__ static void kag_cuda_reset_kernel(Env* shells, Env* matches,
     env->policy_market_slots = d_kag_cuda_config.policy_market_slots;
     env->policy_max_hands = d_kag_cuda_config.policy_max_hands;
     env->macro_mode = d_kag_cuda_config.macro_mode;
+    env->frozen_macro_mode = d_kag_cuda_config.frozen_macro_mode;
     env->macro_decision_interval = d_kag_cuda_config.macro_decision_interval;
     env->macro_score_scale = d_kag_cuda_config.macro_score_scale;
     env->opening_turns = d_kag_cuda_config.opening_turns;
@@ -762,6 +760,7 @@ static void kag_cuda_load_config(Dict* kwargs) {
     h_kag_cuda_config.policy_market_slots = template_env.policy_market_slots;
     h_kag_cuda_config.policy_max_hands = template_env.policy_max_hands;
     h_kag_cuda_config.macro_mode = template_env.macro_mode;
+    h_kag_cuda_config.frozen_macro_mode = template_env.frozen_macro_mode;
     h_kag_cuda_config.macro_decision_interval =
         template_env.macro_decision_interval;
     h_kag_cuda_config.macro_score_scale = template_env.macro_score_scale;

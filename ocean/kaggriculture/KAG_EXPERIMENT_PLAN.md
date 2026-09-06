@@ -428,3 +428,33 @@ worker scheduling, and Manhattan routing. This removes the previous fixed
 ten-seed/one-animal planner decisions from the learned side while leaving the
 primitive `macro_mode=0` path untouched. The Python submission bridge is
 intentionally out of scope until this training-side behavior is benchmarked.
+
+## Macro capacity and expansion-order observation (2026-09-02)
+
+Long macro-mode runs at 256x2 and 512x2 converged to approximately the same
+behavior and cash range. A preliminary 2048-wide run was also following the
+same two-land/~$55K trajectory by roughly 160M steps, while 128x2 was materially
+weaker (~$43K). Treat 256x2 as the current capacity floor and efficient search
+model; widths above 256 have not yet shown that capacity is the limiting
+variable. Do not spend on another large-width run without first changing the
+training signal, opponent distribution, or optimizer and demonstrating a gain
+at 256x2.
+
+A repeatable training trajectory is early over-expansion followed by crop or
+animal deaths, then convergence toward a conservative one-land strategy that
+is easy to sustain. This makes a direct land-purchase reward a plausible
+anti-signal: it pays for acquiring capacity before the policy has demonstrated
+the labor, maintenance, seed/animal, and cash-flow competence needed to fill
+and sustain the previous land. Later collapse can then teach that expansion in
+general is unsafe.
+
+The next reward/curriculum ablation should therefore avoid paying for land
+ownership or purchase directly. Test a staged **fill-before-expand** gate using
+public, contemporaneous state only: expansion becomes an available curriculum
+milestone after the currently unlocked farm maintains a target utilization and
+maintenance-success rate for a sustained window. Any temporary milestone
+reward must not enter the terminal cash objective. Log utilization at purchase,
+post-purchase survival/production over the following days, and time-to-refill;
+otherwise a high land count can hide destructive expansion. Compare this
+against no explicit expansion reward before adding a negative penalty for
+unused land.

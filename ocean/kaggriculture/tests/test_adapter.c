@@ -1753,6 +1753,249 @@ static void assert_native_structured_macro_mode(void) {
     }
 }
 
+static void assert_mode2_autonomous_livestock(void) {
+    for (int animal = 0; animal < KG_NUM_ANIMALS; animal++) {
+        KGConfig config;
+        KGState game;
+        kg_config_default(&config);
+        config.weed_spawn_chance = 0;
+        kg_init(&game, &config);
+        KGPlayer* farm = &game.players[0];
+        int site = kg_tile_index(3, 4);
+        kg_set_player_tile(farm, site, KG_ANIMAL_DEFS[animal].structure);
+        KGAction actions[2] = {0};
+        kag_macro_action_ex(&game, 0, KAG_MACRO_BUY_ANIMAL_BASE + animal,
+            1, 0, 1, &actions[0]);
+        kg_step(&game, actions);
+        assert(kag_macro_item_stock(farm, KG_ITEM_GOOSE + animal) == 1);
+        for (int turn = 1; turn < 720; turn++) {
+            memset(actions, 0, sizeof(actions));
+            /* No repeated animal intent, no explicit harvest, no sales. */
+            kag_macro_action_ex(&game, 0, KAG_MACRO_HOLD, 1, 0, 1, &actions[0]);
+            for (int order = 0; order < actions[0].market_count; order++) {
+                assert(actions[0].market[order].op == KG_MARKET_BUY_PRODUCT);
+                assert(actions[0].market[order].item == KG_ITEM_WHEAT);
+            }
+            kg_step(&game, actions);
+        }
+        assert(kg_is_animal_tile(&farm->tiles[site]));
+        assert(farm->tiles[site].animal == animal);
+        assert(game.placed_animals[0] == 1);
+        assert(game.production_product_units[0][KG_ANIMAL_DEFS[animal].product] > 0);
+        assert(game.sales_revenue[0] == 0);
+        printf("mode2 buy then HOLD: animal=%d harvested=%u alive=1\n", animal,
+            game.production_product_units[0][KG_ANIMAL_DEFS[animal].product]);
+    }
+
+    KGConfig config;
+    KGState game;
+    kg_config_default(&config);
+    config.weed_spawn_chance = 0;
+    kg_init(&game, &config);
+    KGPlayer* mixed = &game.players[0];
+    mixed->money = 20000;
+    kg_new_animal(mixed, kg_tile_index(3, 4), KG_COW, 0);
+    kg_new_animal(mixed, kg_tile_index(4, 3), KG_GOOSE, 0);
+    kg_new_plant(mixed, kg_tile_index(3, 3), KG_TOMATO, 0, config.turns_per_day);
+    for (int turn = 0; turn < 360; turn++) {
+        KGAction actions[2] = {0};
+        int macro = game.hour == 0 ? KAG_MACRO_HIRE : KAG_MACRO_HOLD;
+        kag_macro_action_ex(&game, 0, macro, 4, 0, 1, &actions[0]);
+        kg_step(&game, actions);
+    }
+    assert(kg_is_animal_tile(&mixed->tiles[kg_tile_index(3, 4)]));
+    assert(kg_is_animal_tile(&mixed->tiles[kg_tile_index(4, 3)]));
+    assert(game.production_product_units[0][KG_ITEM_MILK] > 0);
+    assert(game.production_product_units[0][KG_ITEM_EGG] > 0);
+    assert(game.production_product_units[0][KG_ITEM_TOMATO] > 0);
+    assert(game.sales_revenue[0] == 0);
+    printf("mode2 mixed farm: milk=%u eggs=%u tomatoes=%u\n",
+        game.production_product_units[0][KG_ITEM_MILK],
+        game.production_product_units[0][KG_ITEM_EGG],
+        game.production_product_units[0][KG_ITEM_TOMATO]);
+    kg_init(&game, &config);
+    KGPlayer* farm = &game.players[0];
+    int site = kg_tile_index(4, 4);
+    kg_new_animal(farm, site, KG_COW, 0);
+    farm->tiles[site].fed_today = 0;
+    farm->tiles[site].yield_units = 6;
+    farm->units[0].inventory[KG_ITEM_WHEAT] = 1;
+    KGAction action = {0};
+    kag_macro_action_ex(&game, 0, KAG_MACRO_HARVEST, 1, 0, 1, &action);
+    assert(action.farmer.op == KG_OP_FEED);
+
+    kg_new_plant(farm, site, KG_WHEAT, 0, config.turns_per_day);
+    game.day = 2;
+    game.step = 48;
+    farm->tiles[site].watered_today = 1;
+    farm->tiles[site].yield_units = 2;
+    kag_macro_action_ex(&game, 0, KAG_MACRO_HOLD, 1, 0, 1, &action);
+    assert(action.farmer.op != KG_OP_HARVEST);
+    kag_macro_action_ex(&game, 0, KAG_MACRO_HARVEST, 1, 0, 1, &action);
+    assert(action.farmer.op == KG_OP_HARVEST);
+    game.day = KG_CROP_DEFS[KG_WHEAT].max_yield_day;
+    game.step = game.day * config.turns_per_day;
+    kag_macro_action_ex(&game, 0, KAG_MACRO_HOLD, 1, 0, 1, &action);
+    assert(action.farmer.op == KG_OP_HARVEST);
+}
+
+static void assert_native_task_macro_mode(void) {
+    KGConfig config;
+    KGState game;
+    float policy_actions[NUM_ATNS] = {0};
+    unsigned char mask[KG_POLICY_ACTION_MASK_SIZE] = {0};
+    obs_t observation[OBS_SIZE] = {0};
+    Agent agent = {
+        .actions = policy_actions,
+        .action_mask = mask,
+        .observations = observation,
+    };
+    KGAction decoded;
+    kg_config_default(&config);
+    kg_init(&game, &config);
+
+    /* IDLE is genuinely idle. The executor does not invent maintenance,
+     * production, sales, hires, purchases, or land orders. PPO's explicit
+     * market queue is preserved independently. */
+    kag_clear_policy_actions(&agent);
+    kag_decode_task_action(&decoded, &agent, &game, 0);
+    assert(decoded.farmer.op == KG_OP_PASS);
+    assert(decoded.market_count == 0);
+    kag_set_policy_market(&agent, 0, KG_MARKET_BUY_LAND, -1, 1);
+    kag_decode_task_action(&decoded, &agent, &game, 0);
+    assert(decoded.farmer.op == KG_OP_PASS);
+    assert(decoded.market_count == 1);
+    assert(decoded.market[0].op == KG_MARKET_BUY_LAND);
+
+    /* Crop and quadrant are PPO decisions. Leave one empty NE tile under the
+     * worker and prove the executor neither substitutes another crop/region
+     * nor synthesizes a seed purchase. */
+    KGPlayer* farm = &game.players[0];
+    farm->unlocked_mask = 15;
+    for (int tile = 0; tile < KG_MAX_TILES; tile++) {
+        kg_set_player_tile(farm, tile, KG_TILE_WEED);
+    }
+    int ne = kg_tile_index(7, 2);
+    kg_set_player_tile(farm, ne, KG_TILE_EMPTY);
+    kg_set_unit_position(farm, 0, 7, 2);
+    farm->seeds[KG_TOMATO] = 1;
+    kag_clear_policy_actions(&agent);
+    agent.actions[0] = (float)(KAG_TASK_PLANT_BASE + 4 * KG_TOMATO + 1);
+    kag_decode_task_action(&decoded, &agent, &game, 0);
+    assert(decoded.farmer.op == KG_OP_PLANT);
+    assert(decoded.farmer.arg == KG_TOMATO);
+    assert(decoded.market_count == 0);
+
+    /* Several heads request several simultaneous tasks. Head order is only
+     * conflict priority; deterministic assignment chooses the nearest free
+     * worker and target without changing task semantics. */
+    kg_init(&game, &config);
+    farm = &game.players[0];
+    farm->hand_count = 1;
+    farm->unit_count = 2;
+    kg_set_unit_position(farm, 0, 0, 0);
+    kg_set_unit_position(farm, 1, 1, 0);
+    kg_new_plant(farm, kg_tile_index(0, 0), KG_WHEAT, 0,
+        config.turns_per_day);
+    kg_new_animal(farm, kg_tile_index(1, 0), KG_GOOSE, 0);
+    kag_clear_policy_actions(&agent);
+    agent.actions[0] = (float)KAG_TASK_WATER;
+    agent.actions[1] = (float)KAG_TASK_CARE;
+    kag_decode_task_action(&decoded, &agent, &game, 0);
+    int watered = decoded.farmer.op == KG_OP_WATER
+        || decoded.hands[0].op == KG_OP_WATER;
+    int cared = decoded.farmer.op == KG_OP_CARE
+        || decoded.hands[0].op == KG_OP_CARE;
+    assert(watered && cared);
+    assert(decoded.market_count == 0);
+
+    /* ADD_COW can place stock PPO already owns. It cannot buy a cow, choose
+     * sheep instead, or create pasture capacity behind the policy's back. */
+    kg_init(&game, &config);
+    farm = &game.players[0];
+    int pasture = kg_tile_index(farm->units[0].x, farm->units[0].y);
+    kg_set_player_tile(farm, pasture, KG_TILE_PASTURE);
+    farm->tiles[pasture].animal = KG_ANIMAL_INVALID;
+    farm->units[0].inventory[KG_ITEM_COW] = 1;
+    kag_clear_policy_actions(&agent);
+    agent.actions[0] = (float)KAG_TASK_ADD_COW;
+    kag_decode_task_action(&decoded, &agent, &game, 0);
+    assert(decoded.farmer.op == KG_OP_PLACE);
+    assert(decoded.farmer.arg == KG_ITEM_COW);
+    assert(decoded.market_count == 0);
+
+    /* Mask/observation retain the old 47-head/1280-byte ABI. Only live unit
+     * slots expose tasks; the ordinary market tree remains available. */
+    Env env = {0};
+    env.game_storage = game;
+    env.macro_mode = KAG_MACRO_MODE_TASKS;
+    env.policy_market_slots = KG_POLICY_MARKET_SLOTS;
+    env.policy_max_hands = KG_POLICY_DIRECT_HANDS;
+    env.agents[0] = agent;
+    kag_write_observation(&env, 0);
+    kag_write_mask(&env, 0);
+    assert(mask[KAG_TASK_IDLE] == 1);
+    assert(mask[KAG_TASK_ADD_COW] == 1);
+    assert(mask[KG_POLICY_UNIT_COMMANDS + KAG_TASK_IDLE] == 1);
+    assert(mask[KG_POLICY_UNIT_COMMANDS + KAG_TASK_ADD_COW] == 0);
+    int market = KG_POLICY_MARKET_MASK_OFFSET;
+    assert(mask[market] == 1);
+    assert(mask[market + 1] == 1);
+    assert(observation[KAG_MACRO_OBS_OFFSET + KAG_TASK_ADD_COW] >= 128);
+}
+
+static void assert_mixed_frozen_macro_modes(void) {
+    Env env = {0};
+    KGConfig config;
+    obs_t observations[KG_NUM_PLAYERS * OBS_SIZE] = {0};
+    float policy_actions[KG_NUM_PLAYERS * NUM_ATNS] = {0};
+    unsigned char masks[KG_NUM_PLAYERS * KG_POLICY_ACTION_MASK_SIZE] = {0};
+    KGAction decoded[KG_NUM_PLAYERS];
+    kg_config_default(&config);
+    kg_init(&env.game_storage, &config);
+    env.macro_mode = KAG_MACRO_MODE_TASKS;
+    env.frozen_macro_mode = KAG_MACRO_MODE_STRUCTURED;
+    env.macro_decision_interval = 1;
+    env.macro_score_scale = 10000.0f;
+    env.policy_market_slots = KG_POLICY_MARKET_SLOTS;
+    env.policy_max_hands = KG_POLICY_DIRECT_HANDS;
+    for (int player = 0; player < KG_NUM_PLAYERS; player++) {
+        env.agents[player].policy = player;
+        env.agents[player].observations = observations + player * OBS_SIZE;
+        env.agents[player].actions = policy_actions + player * NUM_ATNS;
+        env.agents[player].action_mask = masks
+            + player * KG_POLICY_ACTION_MASK_SIZE;
+        KGPlayer* farm = &env.game_storage.players[player];
+        farm->hand_count = 1;
+        farm->unit_count = 2;
+        kg_new_plant(farm, kg_tile_index(0, 0), KG_WHEAT, 0,
+            config.turns_per_day);
+        kg_set_unit_position(farm, 0, 0, 0);
+        kg_set_unit_position(farm, 1, 1, 0);
+    }
+    kag_write_all_observations(&env);
+    assert(kag_agent_macro_mode(&env, 0) == KAG_MACRO_MODE_TASKS);
+    assert(kag_agent_macro_mode(&env, 1) == KAG_MACRO_MODE_STRUCTURED);
+    assert(masks[KAG_TASK_WATER] == 1);
+    size_t frozen_mask = KG_POLICY_ACTION_MASK_SIZE;
+    assert(masks[frozen_mask + KAG_MACRO_HOLD] == 1);
+    assert(masks[frozen_mask + KAG_MACRO_EXPAND] == 1);
+    /* A non-parameter structured head is PASS-only, unlike a task slot. */
+    assert(masks[frozen_mask + 3 * KG_POLICY_UNIT_COMMANDS + KG_U_PASS] == 1);
+    assert(masks[frozen_mask + 3 * KG_POLICY_UNIT_COMMANDS
+        + KAG_TASK_WATER] == 0);
+
+    policy_actions[0] = (float)KAG_TASK_WATER;
+    policy_actions[NUM_ATNS] = (float)KAG_MACRO_EXPAND;
+    for (int player = 0; player < KG_NUM_PLAYERS; player++) {
+        kag_decode_policy_action(&decoded[player], &env.agents[player],
+            &env.game_storage, player, &env);
+    }
+    assert(decoded[0].farmer.op == KG_OP_WATER);
+    assert(decoded[1].market_count == 1);
+    assert(decoded[1].market[0].op == KG_MARKET_BUY_LAND);
+}
+
 int main(void) {
     assert_progress_potential_reward();
     assert_expansion_curriculum_reward();
@@ -1789,6 +2032,9 @@ int main(void) {
     assert_macro_diversify_feed_priority_and_legality();
     assert_native_macro_mode();
     assert_native_structured_macro_mode();
+    assert_native_task_macro_mode();
+    assert_mode2_autonomous_livestock();
+    assert_mixed_frozen_macro_modes();
     Env env = {0};
     env.reward_potential_scale = 0.0f;
     env.reward_potential_gamma = 0.9997f;

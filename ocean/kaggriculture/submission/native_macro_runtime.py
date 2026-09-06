@@ -1,9 +1,10 @@
-"""Portable runtime for native Kaggriculture structured macro policies.
+"""Portable runtime for native Kaggriculture macro policies.
 
-This module mirrors ``macro_mode = 2`` from ``kaggriculture.h``.  It keeps the
-trained 1280-byte observation and 1058-logit ABI, fills the strategic tail,
-constructs the structured action mask, decodes intent/quantity/target heads,
-and expands the selected intent into ordinary Kaggle actions.
+This module mirrors ``macro_mode = 2`` and ``macro_mode = 3`` from
+``kaggriculture.h``. Both keep the trained 1280-byte observation and
+1058-logit ABI. Mode 2 expands one strategic intent through the historical
+planner. Mode 3 treats every live unit head as a policy-selected mechanical
+task and leaves the existing market queue policy-controlled.
 
 Only public state and the acting player's private inventory are used.  The
 runtime deliberately has no Ridge/MPC artifact and never reads an opponent's
@@ -41,6 +42,7 @@ ANIMAL_DEF = (
 )
 QUADRANT_BITS = {"NW": 1, "NE": 2, "SW": 4, "SE": 8}
 QUANTITIES = (1, 2, 4, 8, 12, 20, 32, 64)
+MARKET_QUANTITIES = (1, 2, 3, 4, 5, 6, 8, 10)
 TARGETS = (0, 1, 2, 4, 8)
 
 MACRO_COUNT = 44
@@ -61,6 +63,24 @@ MACRO_BUY_FERTILIZER = 33
 MACRO_CASH_OUT = 34
 MACRO_RESERVED_BASE = 35
 
+TASK_IDLE = 0
+TASK_WATER = 1
+TASK_FERTILIZE = 2
+TASK_FEED = 3
+TASK_CARE = 4
+TASK_HARVEST_CROP = 5
+TASK_HARVEST_ANIMAL = 6
+TASK_COLLECT_FERTILIZER = 7
+TASK_DROP = 8
+TASK_CLEAR_BASE = 9
+TASK_PLANT_BASE = 13
+TASK_BUILD_COOP_BASE = 33
+TASK_BUILD_PASTURE_BASE = 37
+TASK_ADD_GOOSE = 41
+TASK_ADD_COW = 42
+TASK_ADD_SHEEP = 43
+TASK_COUNT = 44
+
 OBS_OFFSET = 1198
 UNIT_HEADS = 17
 UNIT_COMMANDS = 44
@@ -78,6 +98,9 @@ JOB_HARVEST = 2
 JOB_DIG = 4
 JOB_PLANT = 8
 JOB_ALL = JOB_MAINTAIN | JOB_HARVEST | JOB_DIG | JOB_PLANT
+JOB_OPERATE = 16
+JOB_SELECTED_ANIMAL = 32
+JOB_EARLY_HARVEST = 64
 STRUCTURE_POSITIONS = (
     (3, 4), (4, 3), (3, 3), (2, 4),
     (5, 0), (6, 0), (5, 1), (6, 1), (7, 0), (7, 1),
@@ -430,6 +453,205 @@ def _market_buy_legal(obs, kind, item=None):
     return False
 
 
+def _task_quadrant(token):
+    if TASK_CLEAR_BASE <= token < TASK_PLANT_BASE:
+        return 1 << (token - TASK_CLEAR_BASE)
+    if TASK_PLANT_BASE <= token < TASK_BUILD_COOP_BASE:
+        return 1 << ((token - TASK_PLANT_BASE) & 3)
+    if TASK_BUILD_COOP_BASE <= token < TASK_BUILD_PASTURE_BASE:
+        return 1 << (token - TASK_BUILD_COOP_BASE)
+    if TASK_BUILD_PASTURE_BASE <= token < TASK_ADD_GOOSE:
+        return 1 << (token - TASK_BUILD_PASTURE_BASE)
+    return 0
+
+
+def _task_crop(token):
+    if TASK_PLANT_BASE <= token < TASK_BUILD_COOP_BASE:
+        return (token - TASK_PLANT_BASE) // 4
+    return -1
+
+
+def task_available_count(obs, token):
+    """Mechanical capacity only; deliberately contains no economic score."""
+    token = int(token)
+    if token < 0 or token >= TASK_COUNT:
+        return 0
+    if token == TASK_IDLE:
+        return 1
+    quadrant = _task_quadrant(token)
+    if quadrant and not (_unlocked_mask(obs) & quadrant):
+        return 0
+    crop_id = _task_crop(token)
+    if crop_id >= 0:
+        stock = int(_get(_seeds(obs), CROPS[crop_id], 0))
+        if stock <= 0 or _crop_events(obs, crop_id) <= 0:
+            return 0
+        room = sum(tile is None and _quadrant(x, y) == quadrant
+                   for y, row in enumerate(_tiles(obs))
+                   for x, tile in enumerate(row))
+        return min(stock, room)
+    if TASK_CLEAR_BASE <= token < TASK_PLANT_BASE:
+        return sum(_kind(tile) not in ("", "COOP", "PASTURE", "LOCKED")
+                   and _quadrant(x, y) == quadrant
+                   for y, row in enumerate(_tiles(obs))
+                   for x, tile in enumerate(row))
+    if TASK_BUILD_COOP_BASE <= token < TASK_ADD_GOOSE:
+        return sum(tile is None and _quadrant(x, y) == quadrant
+                   for y, row in enumerate(_tiles(obs))
+                   for x, tile in enumerate(row))
+    if token >= TASK_ADD_GOOSE:
+        animal_id = token - TASK_ADD_GOOSE
+        return min(_item_stock(obs, ANIMALS[animal_id]),
+                   _animal_room(obs, animal_id))
+    has_fertilizer = _item_stock(obs, "FERTILIZER") > 0
+    has_wheat = _item_stock(obs, "WHEAT") > 0
+    count = 0
+    for row in _tiles(obs):
+        for tile in row:
+            kind = _kind(tile)
+            if token == TASK_WATER and kind == "PLANT" \
+                    and not bool(_get(tile, "watered_today", False)):
+                count += 1
+            elif token == TASK_FERTILIZE and has_fertilizer \
+                    and kind == "PLANT" \
+                    and int(_get(tile, "fertilized_until_day", 0)) \
+                    < int(_get(obs, "day", 0)) + 2:
+                count += 1
+            elif token == TASK_FEED and has_wheat and _is_animal(tile) \
+                    and not bool(_get(tile, "fed_today", False)):
+                count += 1
+            elif token == TASK_CARE and _is_animal(tile) \
+                    and not bool(_get(tile, "cared_today", False)):
+                count += 1
+            elif token == TASK_HARVEST_CROP and kind == "PLANT" \
+                    and int(_get(tile, "yield_units", 0)) > 0:
+                crop = _get(tile, "crop")
+                if crop in CROPS and int(_get(obs, "day", 0)) \
+                        - int(_get(tile, "planted_day", 0)) \
+                        >= CROP_DEF[CROPS.index(crop)][1]:
+                    count += 1
+            elif token == TASK_HARVEST_ANIMAL and _is_animal(tile) \
+                    and int(_get(tile, "yield_units", 0)) > 0:
+                count += 1
+            elif token == TASK_COLLECT_FERTILIZER and _is_animal(tile) \
+                    and bool(_get(tile, "fertilizer_available", False)):
+                count += 1
+    if token == TASK_DROP:
+        return sum(any(int(_get(_inventory(obs, unit), item, 0)) > 0
+                       for item in ITEMS)
+                   for unit in range(len(_positions(obs))))
+    return count
+
+
+def _task_tile_matches(obs, token, x, y, tile):
+    quadrant = _task_quadrant(token)
+    if quadrant and _quadrant(x, y) != quadrant:
+        return False
+    crop_id = _task_crop(token)
+    if crop_id >= 0:
+        return tile is None
+    if TASK_CLEAR_BASE <= token < TASK_PLANT_BASE:
+        return _kind(tile) not in ("", "COOP", "PASTURE", "LOCKED")
+    if TASK_BUILD_COOP_BASE <= token < TASK_BUILD_PASTURE_BASE:
+        return tile is None
+    if TASK_BUILD_PASTURE_BASE <= token < TASK_ADD_GOOSE:
+        return tile is None
+    if token >= TASK_ADD_GOOSE:
+        animal_id = token - TASK_ADD_GOOSE
+        return (_kind(tile) == ANIMAL_DEF[animal_id][1]
+                and _get(tile, "animal") is None)
+    if token == TASK_WATER:
+        return _kind(tile) == "PLANT" \
+            and not bool(_get(tile, "watered_today", False))
+    if token == TASK_FERTILIZE:
+        return (_kind(tile) == "PLANT"
+                and int(_get(tile, "fertilized_until_day", 0))
+                < int(_get(obs, "day", 0)) + 2)
+    if token == TASK_FEED:
+        return _is_animal(tile) and not bool(_get(tile, "fed_today", False))
+    if token == TASK_CARE:
+        return _is_animal(tile) and not bool(_get(tile, "cared_today", False))
+    if token == TASK_HARVEST_CROP:
+        crop = _get(tile, "crop")
+        return (_kind(tile) == "PLANT" and crop in CROPS
+                and int(_get(tile, "yield_units", 0)) > 0
+                and int(_get(obs, "day", 0))
+                - int(_get(tile, "planted_day", 0))
+                >= CROP_DEF[CROPS.index(crop)][1])
+    if token == TASK_HARVEST_ANIMAL:
+        return _is_animal(tile) and int(_get(tile, "yield_units", 0)) > 0
+    if token == TASK_COLLECT_FERTILIZER:
+        return _is_animal(tile) \
+            and bool(_get(tile, "fertilizer_available", False))
+    return False
+
+
+def _task_operation(token):
+    crop_id = _task_crop(token)
+    if crop_id >= 0:
+        return "PLANT", CROPS[crop_id], None
+    if TASK_CLEAR_BASE <= token < TASK_PLANT_BASE:
+        return "DIG", None, None
+    if TASK_BUILD_COOP_BASE <= token < TASK_BUILD_PASTURE_BASE:
+        return "BUILD_COOP", None, None
+    if TASK_BUILD_PASTURE_BASE <= token < TASK_ADD_GOOSE:
+        return "BUILD_PASTURE", None, None
+    if token >= TASK_ADD_GOOSE:
+        animal = ANIMALS[token - TASK_ADD_GOOSE]
+        return "PLACE", animal, animal
+    table = {
+        TASK_WATER: ("WATER", None, None),
+        TASK_FERTILIZE: ("FERTILIZE", None, "FERTILIZER"),
+        TASK_FEED: ("FEED", None, "WHEAT"),
+        TASK_CARE: ("CARE", None, None),
+        TASK_HARVEST_CROP: ("HARVEST", None, None),
+        TASK_HARVEST_ANIMAL: ("HARVEST", None, None),
+        TASK_COLLECT_FERTILIZER: ("COLLECT_FERTILIZER", None, None),
+    }
+    return table.get(token, ("PASS", None, None))
+
+
+def _market_command_legal(obs, command):
+    if command < 5:
+        return _market_buy_legal(obs, "BUY_SEED", CROPS[command])
+    if command < 7:
+        return _market_buy_legal(obs, "BUY_PRODUCT",
+                                 ("WHEAT", "FERTILIZER")[command - 5])
+    if command < 10:
+        return _market_buy_legal(obs, "BUY_ANIMAL", ANIMALS[command - 7])
+    if command < 19:
+        return True
+    if command == 19:
+        return (len(_get(_farm(obs), "hands", ())) < DIRECT_HANDS
+                and _market_buy_legal(obs, "HIRE"))
+    return _market_buy_legal(obs, "BUY_LAND")
+
+
+def _decode_market(actions):
+    market = []
+    for slot in range(MARKET_SLOTS):
+        head = UNIT_HEADS + 3 * slot
+        if int(actions[head]) != 1:
+            break
+        command = max(0, min(20, int(actions[head + 1])))
+        quantity = (MARKET_QUANTITIES[max(0, min(7, int(actions[head + 2])))]
+                    if command < 19 else 1)
+        if command < 5:
+            market.append(["BUY_SEED", CROPS[command], quantity])
+        elif command < 7:
+            market.append(["BUY_PRODUCT",
+                           ("WHEAT", "FERTILIZER")[command - 5], quantity])
+        elif command < 10:
+            market.append(["BUY_ANIMAL", ANIMALS[command - 7], quantity])
+        elif command < 19:
+            market.append(["SELL", PRODUCTS[command - 10], quantity])
+        elif command == 19:
+            market.append(["HIRE"])
+        else:
+            market.append(["BUY_LAND"])
+    return market
+
+
 def _maintain_can_progress(obs):
     wheat = int(_get(_shed(obs), "WHEAT", 0))
     wheat += sum(int(_get(_inventory(obs, unit), "WHEAT", 0))
@@ -655,9 +877,18 @@ def _base_action(obs, fixed_crop=None, plant_limit=-1, target=0,
     seed_budget = dict(_get(private, "seeds", {}))
     seed_need = {crop: 0 for crop in CROPS}
     jobs = []
+    animal_stock = {animal: _item_stock(obs, animal) for animal in ANIMALS}
     for y, row in enumerate(_tiles(obs)):
         for x, tile in enumerate(row):
             if not _is_animal(tile):
+                if job_flags & JOB_OPERATE and not job_flags & JOB_SELECTED_ANIMAL:
+                    for animal_id, animal in enumerate(ANIMALS):
+                        if (_kind(tile) == ANIMAL_DEF[animal_id][1]
+                                and _get(tile, "animal") is None
+                                and animal_stock[animal] > 0):
+                            jobs.append((3, x, y, "PLACE", animal))
+                            animal_stock[animal] -= 1
+                            break
                 continue
             if job_flags & JOB_MAINTAIN and not bool(_get(tile, "fed_today", False)):
                 jobs.append((0, x, y, "FEED", None))
@@ -683,7 +914,12 @@ def _base_action(obs, fixed_crop=None, plant_limit=-1, target=0,
                 if job_flags & JOB_MAINTAIN and _plant_needs_water(obs, tile):
                     jobs.append((0 if missed else 2, x, y, "WATER", None))
                 elif (job_flags & JOB_HARVEST
-                      and int(_get(tile, "yield_units", 0)) > 0 and age >= first):
+                      and int(_get(tile, "yield_units", 0)) > 0 and age >= first
+                      and (not job_flags & JOB_OPERATE
+                           or job_flags & JOB_EARLY_HARVEST
+                           or TOP.CROP_DEF[_get(tile, "crop")][5]
+                           or age >= TOP.CROP_DEF[_get(tile, "crop")][2]
+                           or EPISODE_STEPS - _step(obs) <= TURNS_PER_DAY)):
                     jobs.append((1, x, y, "HARVEST", None))
             elif (kind == "WEED" and job_flags & JOB_DIG
                   and (not target or _quadrant(x, y) == target)):
@@ -713,6 +949,7 @@ def _base_action(obs, fixed_crop=None, plant_limit=-1, target=0,
     unfed = sum(_is_animal(tile) and not bool(_get(tile, "fed_today", False))
                 for row in _tiles(obs) for tile in row)
     pickup_assigned = False
+    animal_pickup_assigned = set()
     claimed = set()
     # Native commits jobs under a worker before global routing.
     for worker, (x, y) in enumerate(positions):
@@ -720,7 +957,8 @@ def _base_action(obs, fixed_crop=None, plant_limit=-1, target=0,
         candidates = [(priority, index, op, arg)
                       for index, (priority, tx, ty, op, arg) in enumerate(jobs)
                       if index not in claimed and (tx, ty) == (x, y)
-                      and (op != "FEED" or int(_get(inv, "WHEAT", 0)) > 0)]
+                      and (op != "FEED" or int(_get(inv, "WHEAT", 0)) > 0)
+                      and (op != "PLACE" or int(_get(inv, arg, 0)) > 0)]
         if candidates:
             _priority, index, op, arg = min(candidates)
             commands[worker] = [op, arg] if arg is not None else [op]
@@ -738,12 +976,37 @@ def _base_action(obs, fixed_crop=None, plant_limit=-1, target=0,
                 commands[worker] = _route(farm, (x, y), 4, 4)
             pickup_assigned = True
             continue
+        if (job_flags & JOB_OPERATE and not job_flags & JOB_SELECTED_ANIMAL
+                and not (unfed and int(_get(inv, "WHEAT", 0)) > 0)):
+            requested_pickup = False
+            for animal_id, animal in enumerate(ANIMALS):
+                if (animal in animal_pickup_assigned
+                        or int(_get(_shed(obs), animal, 0)) <= 0
+                        or _animal_room(obs, animal_id) <= 0
+                        or any(int(_get(inv, other, 0)) > 0 for other in ANIMALS)):
+                    continue
+                slots = sum(op == "PLACE" and arg == animal
+                            for _, _, _, op, arg in jobs)
+                carried = sum(int(_get(_inventory(obs, unit), animal, 0))
+                              for unit in range(len(positions)))
+                if carried >= slots:
+                    continue
+                commands[worker] = (["PICKUP", animal, 1]
+                                    if (x, y) in ((4, 4), (5, 4), (4, 5), (5, 5))
+                                    else _route(farm, (x, y), 4, 4))
+                animal_pickup_assigned.add(animal)
+                requested_pickup = True
+                break
+            if requested_pickup:
+                continue
         best = None
         best_score = 2 ** 31 - 1
         for index, (priority, tx, ty, op, _arg) in enumerate(jobs):
             if index in claimed:
                 continue
             if op == "FEED" and int(_get(inv, "WHEAT", 0)) <= 0:
+                continue
+            if op == "PLACE" and int(_get(inv, _arg, 0)) <= 0:
                 continue
             score = priority * 32 + abs(x - tx) + abs(y - ty)
             if score < best_score:
@@ -901,9 +1164,15 @@ def _assign_public_jobs(obs, action, jobs):
             command[:] = _route(_farm(obs), (x, y), tx, ty)
 
 
+def _operate_action(obs, fixed_crop=None, plant_limit=-1, target=0,
+                    job_flags=JOB_MAINTAIN):
+    return _base_action(obs, fixed_crop, plant_limit, target,
+                        job_flags | JOB_MAINTAIN | JOB_HARVEST | JOB_OPERATE)
+
+
 def _selected_animal_action(obs, animal_id, quantity):
     """Execute exactly one policy-selected livestock species and batch."""
-    action = _base_action(obs, job_flags=JOB_MAINTAIN)
+    action = _operate_action(obs, job_flags=JOB_MAINTAIN | JOB_SELECTED_ANIMAL)
     _keep_feed_and(
         obs, action,
         lambda order: order[:2] == ["BUY_ANIMAL", ANIMALS[animal_id]],
@@ -998,13 +1267,112 @@ def _diversify_action(obs):
     return action
 
 
+def execute_tasks(obs, actions):
+    """Expand PPO-selected mechanical tasks; never synthesize strategy."""
+    positions = _positions(obs)
+    controlled = min(len(positions), UNIT_HEADS)
+    commands = [["PASS"] for _ in positions]
+    used_workers = set()
+    used_tiles = set()
+    reserved_seed = {crop: 0 for crop in CROPS}
+    reserved_item = {item: 0 for item in ITEMS}
+    accesses = ((4, 4), (5, 4), (4, 5), (5, 5))
+
+    for priority in range(controlled):
+        token = max(0, min(TASK_COUNT - 1, int(actions[priority])))
+        if token == TASK_IDLE or task_available_count(obs, token) <= 0:
+            continue
+        if token == TASK_DROP:
+            candidates = []
+            for worker in range(controlled):
+                if worker in used_workers:
+                    continue
+                if not any(int(_get(_inventory(obs, worker), item, 0)) > 0
+                           for item in ITEMS):
+                    continue
+                x, y = positions[worker]
+                tx, ty = min(accesses,
+                             key=lambda p: abs(x - p[0]) + abs(y - p[1]))
+                candidates.append((abs(x - tx) + abs(y - ty), worker, tx, ty))
+            if not candidates:
+                continue
+            _distance, worker, tx, ty = min(candidates)
+            used_workers.add(worker)
+            x, y = positions[worker]
+            commands[worker] = (["DROP"] if (x, y) == (tx, ty)
+                                else _route(_farm(obs), (x, y), tx, ty))
+            continue
+
+        op, arg, required = _task_operation(token)
+        crop_id = _task_crop(token)
+        if crop_id >= 0:
+            crop = CROPS[crop_id]
+            if reserved_seed[crop] >= int(_get(_seeds(obs), crop, 0)):
+                continue
+        choices = []
+        for worker in range(controlled):
+            if worker in used_workers:
+                continue
+            if required is not None \
+                    and int(_get(_inventory(obs, worker), required, 0)) <= 0:
+                continue
+            x, y = positions[worker]
+            for ty, row in enumerate(_tiles(obs)):
+                for tx, tile in enumerate(row):
+                    if (tx, ty) in used_tiles \
+                            or not _task_tile_matches(obs, token, tx, ty, tile):
+                        continue
+                    choices.append((abs(x - tx) + abs(y - ty), worker, tx, ty))
+        if not choices and required is not None \
+                and int(_get(_shed(obs), required, 0)) > reserved_item[required]:
+            pickup = []
+            for worker in range(controlled):
+                if worker in used_workers:
+                    continue
+                x, y = positions[worker]
+                tx, ty = min(accesses,
+                             key=lambda p: abs(x - p[0]) + abs(y - p[1]))
+                pickup.append((abs(x - tx) + abs(y - ty), worker, tx, ty))
+            if pickup:
+                _distance, worker, tx, ty = min(pickup)
+                used_workers.add(worker)
+                reserved_item[required] += 1
+                x, y = positions[worker]
+                commands[worker] = (["PICKUP", required, 1]
+                                    if (x, y) == (tx, ty)
+                                    else _route(_farm(obs), (x, y), tx, ty))
+            continue
+        if not choices:
+            continue
+        _distance, worker, tx, ty = min(choices)
+        used_workers.add(worker)
+        used_tiles.add((tx, ty))
+        if crop_id >= 0:
+            reserved_seed[CROPS[crop_id]] += 1
+        if required is not None:
+            reserved_item[required] += 1
+        x, y = positions[worker]
+        if (x, y) != (tx, ty):
+            commands[worker] = _route(_farm(obs), (x, y), tx, ty)
+        elif arg is None:
+            commands[worker] = [op]
+        else:
+            commands[worker] = [op, arg, 1] if op == "PLACE" else [op, arg]
+
+    return {
+        "farmer": commands[0],
+        "hands": commands[1:],
+        "market": _decode_market(actions),
+    }
+
+
 def execute_macro(obs, macro, quantity, target):
     quantity = max(1, int(quantity))
     if not candidate_legal(obs, macro):
         macro = MACRO_HOLD
     if MACRO_PLANT_BASE <= macro < MACRO_PLANT_BASE + 5:
         crop = CROPS[macro - MACRO_PLANT_BASE]
-        action = _base_action(obs, crop, quantity, target,
+        action = _operate_action(obs, crop, quantity, target,
                               JOB_MAINTAIN | JOB_DIG | JOB_PLANT)
         _keep_feed_and(obs, action,
                        lambda order: order[:2] == ["BUY_SEED", crop])
@@ -1014,7 +1382,7 @@ def execute_macro(obs, macro, quantity, target):
         animal_id = macro - MACRO_ANIMAL_BASE
         return _selected_animal_action(obs, animal_id, quantity)
     if macro == MACRO_EXPAND:
-        action = _base_action(obs, job_flags=JOB_MAINTAIN)
+        action = _operate_action(obs, job_flags=JOB_MAINTAIN)
         _keep_feed_and(obs, action,
                        lambda order: order and order[0] == "BUY_LAND")
         action["market"] = [order for order in action["market"] if order[0] != "BUY_LAND"]
@@ -1024,7 +1392,7 @@ def execute_macro(obs, macro, quantity, target):
         return action
     if MACRO_SELL_BASE <= macro < MACRO_SELL_BASE + 9:
         item = PRODUCTS[macro - MACRO_SELL_BASE]
-        action = _base_action(obs, job_flags=JOB_MAINTAIN)
+        action = _operate_action(obs, job_flags=JOB_MAINTAIN)
         _keep_feed_and(obs, action,
                        lambda order: order[:2] == ["SELL", item])
         _cap_orders(action, "SELL", item, quantity)
@@ -1034,7 +1402,7 @@ def execute_macro(obs, macro, quantity, target):
         _strip_commands(action)
         return action
     if macro in (MACRO_SELL_ALL, MACRO_CASH_OUT):
-        action = _base_action(obs, job_flags=JOB_MAINTAIN)
+        action = _operate_action(obs, job_flags=JOB_MAINTAIN)
         _keep_feed_and(obs, action,
                        lambda order: order and order[0] == "SELL")
         if macro == MACRO_SELL_ALL:
@@ -1054,7 +1422,7 @@ def execute_macro(obs, macro, quantity, target):
         quantity = min(quantity, _seed_purchase_room(obs))
         if _liquidation(obs) or _crop_events(obs, crop_id) <= 0:
             quantity = 0
-        action = _base_action(obs, crop, job_flags=JOB_MAINTAIN)
+        action = _operate_action(obs, crop, job_flags=JOB_MAINTAIN)
         _keep_feed_and(obs, action,
                        lambda order: order[:2] == ["BUY_SEED", crop])
         action["market"] = [order for order in action["market"]
@@ -1069,7 +1437,7 @@ def execute_macro(obs, macro, quantity, target):
         quantity = min(quantity, _animal_purchase_room(obs, animal_id))
         if _liquidation(obs) or _animal_events(obs, animal_id) <= 0:
             quantity = 0
-        action = _base_action(obs, job_flags=JOB_MAINTAIN)
+        action = _operate_action(obs, job_flags=JOB_MAINTAIN)
         _keep_feed_and(obs, action,
                        lambda order: order[:2] == ["BUY_ANIMAL", animal])
         action["market"] = [order for order in action["market"]
@@ -1079,7 +1447,7 @@ def execute_macro(obs, macro, quantity, target):
         _strip_commands(action)
         return action
     if macro == MACRO_HIRE:
-        action = _base_action(obs, job_flags=JOB_MAINTAIN)
+        action = _operate_action(obs, job_flags=JOB_MAINTAIN)
         room = max(0, _desired_hands(obs) - len(_get(_farm(obs), "hands", ())))
         quantity = 0 if _liquidation(obs) else min(quantity, room)
         _keep_feed_and(obs, action,
@@ -1094,7 +1462,7 @@ def execute_macro(obs, macro, quantity, target):
         _prioritize_feed(action)
         return action
     if macro in (MACRO_HARVEST, MACRO_MAINTAIN):
-        action = _base_action(obs, job_flags=(JOB_HARVEST
+        action = _operate_action(obs, job_flags=(JOB_HARVEST | JOB_EARLY_HARVEST
                                               if macro == MACRO_HARVEST
                                               else JOB_MAINTAIN))
         _keep_feed_and(obs, action, lambda _order: False)
@@ -1103,7 +1471,7 @@ def execute_macro(obs, macro, quantity, target):
         item = "WHEAT" if macro == MACRO_BUY_WHEAT else "FERTILIZER"
         if item == "FERTILIZER" and _liquidation(obs):
             quantity = 0
-        action = _base_action(obs, job_flags=JOB_MAINTAIN)
+        action = _operate_action(obs, job_flags=JOB_MAINTAIN)
         _keep_feed_and(obs, action,
                        lambda order: order[:2] == ["BUY_PRODUCT", item])
         action["market"] = [order for order in action["market"]
@@ -1114,16 +1482,19 @@ def execute_macro(obs, macro, quantity, target):
             _append(action, ["BUY_PRODUCT", item, quantity])
         _strip_commands(action)
         return action
-    action = _base_action(obs, job_flags=JOB_MAINTAIN)
+    action = _operate_action(obs, job_flags=JOB_MAINTAIN)
     _keep_feed_and(obs, action, lambda _order: False)
     _strip_commands(action, growth=True)
     return action
 
 
 class NativeMacroRuntime:
-    """Stateful mode-2 adapter for one or both competition seats."""
+    """Portable mode-2 or mode-3 adapter for both competition seats."""
 
-    def __init__(self):
+    def __init__(self, mode=2):
+        if int(mode) not in (2, 3):
+            raise ValueError("native macro runtime mode must be 2 or 3")
+        self.mode = int(mode)
         self._state = {}
 
     def reset(self, player=None):
@@ -1144,6 +1515,14 @@ class NativeMacroRuntime:
         return entry
 
     def fill_observation(self, obs, encoded):
+        if self.mode == 3:
+            encoded[OBS_OFFSET:OBS_OFFSET + TASK_COUNT] = [
+                min(127, task_available_count(obs, task))
+                | (128 if task_available_count(obs, task) > 0 else 0)
+                for task in range(TASK_COUNT)
+            ]
+            encoded[OBS_OFFSET + TASK_COUNT:OBS_OFFSET + TASK_COUNT + 4] = 0
+            return encoded
         entry = self._entry(obs)
         encoded[OBS_OFFSET:OBS_OFFSET + MACRO_COUNT] = [
             score_byte(obs, macro) for macro in range(MACRO_COUNT)
@@ -1156,6 +1535,27 @@ class NativeMacroRuntime:
 
     def action_mask(self, obs):
         mask = np.zeros(MASK_SIZE, dtype=bool)
+        if self.mode == 3:
+            controlled = min(len(_positions(obs)), UNIT_HEADS)
+            for slot in range(UNIT_HEADS):
+                base = slot * UNIT_COMMANDS
+                mask[base + TASK_IDLE] = True
+                if slot < controlled:
+                    for task in range(1, TASK_COUNT):
+                        mask[base + task] = task_available_count(obs, task) > 0
+            command_legal = np.array([
+                _market_command_legal(obs, command)
+                for command in range(21)
+            ], dtype=bool)
+            has_command = bool(np.any(command_legal))
+            market_base = UNIT_HEADS * UNIT_COMMANDS
+            for slot in range(MARKET_SLOTS):
+                base = market_base + slot * MARKET_STRIDE
+                mask[base] = True
+                mask[base + 1] = has_command
+                mask[base + 2:base + 23] = command_legal
+                mask[base + 23:base + 31] = True
+            return mask
         for macro in range(MACRO_COUNT):
             mask[macro] = candidate_legal(obs, macro)
         mask[MACRO_HOLD] = True
@@ -1175,6 +1575,9 @@ class NativeMacroRuntime:
         return mask
 
     def decode(self, obs, actions):
+        if self.mode == 3:
+            self._entry(obs)
+            return execute_tasks(obs, actions)
         entry = self._entry(obs)
         macro = int(actions[0])
         if not candidate_legal(obs, macro):

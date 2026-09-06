@@ -74,6 +74,97 @@ def commands(action):
 
 
 class NativeMacroRuntimeFixtures(unittest.TestCase):
+    def test_mode3_idle_is_idle_and_market_queue_is_policy_owned(self):
+        obs = observation(money=5000)
+        runtime = macro.NativeMacroRuntime(mode=3)
+        actions = np.zeros(47, dtype=np.int32)
+
+        idle = runtime.decode(obs, actions)
+        self.assertEqual(idle["farmer"], ["PASS"])
+        self.assertEqual(idle["market"], [])
+
+        # Existing conditional heads: CONTINUE, BUY_LAND, then STOP.
+        actions[17] = 1
+        actions[18] = 20
+        land = runtime.decode(obs, actions)
+        self.assertEqual(land["farmer"], ["PASS"])
+        self.assertEqual(land["market"], [["BUY_LAND"]])
+
+    def test_mode3_plant_crop_and_quadrant_are_not_substituted(self):
+        obs = observation(unlocked=("NW", "NE"), seeds={"TOMATO": 1})
+        board = obs["farms"][0]["tiles"]
+        for y in range(5):
+            for x in range(10):
+                board[y][x] = tile("WEED")
+        board[2][7] = None
+        obs["farms"][0]["farmer"] = [7, 2]
+        token = macro.TASK_PLANT_BASE + 4 * macro.CROPS.index("TOMATO") + 1
+        actions = np.zeros(47, dtype=np.int32)
+        actions[0] = token
+        result = macro.execute_tasks(obs, actions)
+        self.assertEqual(result["farmer"], ["PLANT", "TOMATO"])
+        self.assertEqual(result["market"], [])
+
+        runtime = macro.NativeMacroRuntime(mode=3)
+        mask = runtime.action_mask(obs)
+        self.assertTrue(mask[token])
+        wrong_quadrant = macro.TASK_PLANT_BASE + 4 * 2
+        self.assertFalse(mask[wrong_quadrant])
+
+    def test_mode3_assigns_multiple_tasks_without_hidden_strategy(self):
+        obs = observation(hands=((1, 0),), inventories=({}, {}))
+        board = obs["farms"][0]["tiles"]
+        board[0][0] = tile("PLANT", crop="WHEAT", planted_day=0,
+                           watered_today=False, yield_units=0)
+        board[0][1] = tile("COOP", animal="GOOSE", fed_today=True,
+                           cared_today=False, yield_units=0,
+                           fertilizer_available=False)
+        obs["farms"][0]["farmer"] = [0, 0]
+        actions = np.zeros(47, dtype=np.int32)
+        actions[0] = macro.TASK_WATER
+        actions[1] = macro.TASK_CARE
+        result = macro.execute_tasks(obs, actions)
+        self.assertCountEqual([command[0] for command in commands(result)],
+                              ["WATER", "CARE"])
+        self.assertEqual(result["market"], [])
+
+    def test_mode3_add_animal_uses_owned_stock_only(self):
+        obs = observation(inventories=({"COW": 1},))
+        board = obs["farms"][0]["tiles"]
+        board[4][4] = tile("PASTURE", animal=None, fed_today=False,
+                           cared_today=False, yield_units=0,
+                           fertilizer_available=False)
+        actions = np.zeros(47, dtype=np.int32)
+        actions[0] = macro.TASK_ADD_COW
+        result = macro.execute_tasks(obs, actions)
+        self.assertEqual(result["farmer"], ["PLACE", "COW", 1])
+        self.assertEqual(result["market"], [])
+
+    def test_mode3_clear_can_abandon_a_policy_selected_quadrant(self):
+        obs = observation(unlocked=("NW", "NE"))
+        board = obs["farms"][0]["tiles"]
+        for y in range(5):
+            for x in range(10):
+                board[y][x] = None
+        board[2][7] = tile("PLANT", crop="MELON", planted_day=0,
+                           watered_today=True, yield_units=0)
+        obs["farms"][0]["farmer"] = [7, 2]
+        actions = np.zeros(47, dtype=np.int32)
+        actions[0] = macro.TASK_CLEAR_BASE + 1
+        result = macro.execute_tasks(obs, actions)
+        self.assertEqual(result["farmer"], ["DIG"])
+
+    def test_mode3_tail_is_capacity_not_fake_economic_score(self):
+        obs = observation(seeds={"WHEAT": 2})
+        runtime = macro.NativeMacroRuntime(mode=3)
+        encoded = np.zeros(1280, dtype=np.uint8)
+        runtime.fill_observation(obs, encoded)
+        wheat_nw = macro.TASK_PLANT_BASE
+        self.assertEqual(encoded[macro.OBS_OFFSET + macro.TASK_IDLE], 129)
+        self.assertEqual(encoded[macro.OBS_OFFSET + wheat_nw], 130)
+        self.assertTrue(np.all(encoded[macro.OBS_OFFSET + macro.TASK_COUNT:
+                                       macro.OBS_OFFSET + macro.TASK_COUNT + 4] == 0))
+
     def test_weeds_are_reclaimable_and_target_filter_precedes_plant_slots(self):
         obs = observation(unlocked=("NW", "NE"), seeds={"WHEAT": 1},
                           prices={"WHEAT": 0})
@@ -98,7 +189,7 @@ class NativeMacroRuntimeFixtures(unittest.TestCase):
         board[0][5] = tile("WEED")
         self.assertTrue(macro.candidate_legal(obs, macro.MACRO_PLANT_BASE))
 
-    def test_harvest_and_maintain_have_disjoint_job_filters(self):
+    def test_harvest_and_maintain_both_protect_due_maintenance(self):
         obs = observation(step=72, day=3, seeds={})
         board = obs["farms"][0]["tiles"]
         board[4][4] = tile("PLANT", crop="TOMATO", planted_day=0,
@@ -110,9 +201,8 @@ class NativeMacroRuntimeFixtures(unittest.TestCase):
 
         harvest = macro.execute_macro(obs, macro.MACRO_HARVEST, 1, 0)
         maintain = macro.execute_macro(obs, macro.MACRO_MAINTAIN, 1, 0)
-        self.assertEqual(harvest["farmer"], ["WEST"])
+        self.assertEqual(harvest["farmer"], ["WATER"])
         self.assertEqual(maintain["farmer"], ["WATER"])
-        self.assertNotEqual(harvest["farmer"][0], "WATER")
         self.assertNotEqual(maintain["farmer"][0], "HARVEST")
 
     def test_compatible_animal_stock_reduces_buy_room(self):
