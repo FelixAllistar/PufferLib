@@ -25,6 +25,9 @@ report_interval=${KAG_ELITE_BC_REPORT_INTERVAL:-1}
 detailed_stats=${KAG_ELITE_BC_DETAILED_STATS:-0}
 macro_class_balance=${KAG_ELITE_BC_MACRO_CLASS_BALANCE:-0}
 macro_class_weight_cap=${KAG_ELITE_BC_MACRO_CLASS_WEIGHT_CAP:-8}
+task_mode=${KAG_ELITE_BC_TASK_MODE:-0}
+task_class_balance=${KAG_ELITE_BC_TASK_CLASS_BALANCE:-0}
+task_class_weight_cap=${KAG_ELITE_BC_TASK_CLASS_WEIGHT_CAP:-8}
 anchor_l2=${KAG_ELITE_BC_ANCHOR_L2:-0}
 
 if [[ ! -s "$data" ]]; then
@@ -54,6 +57,9 @@ exec ./ocean/kaggriculture/build/kag_bc \
     bc.detailed_stats="$detailed_stats" \
     bc.macro_class_balance="$macro_class_balance" \
     bc.macro_class_weight_cap="$macro_class_weight_cap" \
+    bc.task_mode="$task_mode" \
+    bc.task_class_balance="$task_class_balance" \
+    bc.task_class_weight_cap="$task_class_weight_cap" \
     bc.anchor_l2="$anchor_l2" \
     bc.zero_reset_source=0 \
     policy.hidden_size="$hidden" \

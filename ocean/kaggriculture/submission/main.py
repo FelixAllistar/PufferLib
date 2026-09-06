@@ -1009,6 +1009,8 @@ if _CODE_DIR not in sys.path:
 # packaged.  Raw package exports remain byte-for-byte compatible; enhanced
 # packages provide macro_learned_72_ridge.npz plus the pure top-bot executor.
 try:
+    if not os.path.isfile(os.path.join(_CODE_DIR, "macro_overlay.py")):
+        raise ImportError("This package does not include a macro overlay")
     from macro_overlay import make_overlay
     _MACRO_OVERLAY = make_overlay()
 except Exception:
@@ -1020,7 +1022,11 @@ except Exception:
 # retain their original primitive behavior.
 try:
     from native_macro_runtime import NativeMacroRuntime
-    _NATIVE_MACRO = NativeMacroRuntime()
+    try:
+        from native_macro_mode import MODE as _NATIVE_MACRO_MODE
+    except Exception:
+        _NATIVE_MACRO_MODE = 2
+    _NATIVE_MACRO = NativeMacroRuntime(mode=_NATIVE_MACRO_MODE)
 except Exception:
     _NATIVE_MACRO = None
 

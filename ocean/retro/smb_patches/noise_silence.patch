@@ -1,0 +1,22 @@
+--- a/src/smbcore/common_sound.c
++++ b/src/smbcore/common_sound.c
+@@ -1220,8 +1220,17 @@
+   // we're getting rid of the loop for readability
+ 
+   if (MusicData[MusicOffset_Noise] == 0) {
+-    assert_smb_crashbug(MusicData[NoiseDataLoopbackOfs] != 0, "An infinite loop would've occurred in the original game");
+-
++    /* Headless hardening (not upstream): a corrupted music state can leave
++       the noise loopback offset pointing at silence, where upstream aborts
++       the whole process (the original game loops forever). Drop the noise
++       channel to silence instead; the trainer and episode both survive. */
++    if (MusicData[NoiseDataLoopbackOfs] == 0) {
++      AreaMusicBuffer = 0;
++      apu_tri_linear(0);
++      apu_sq1_vol(0x90);
++      apu_sq2_vol(0x90);
++      return;
++    }
+     MusicOffset_Noise = NoiseDataLoopbackOfs;
+   }
+ 

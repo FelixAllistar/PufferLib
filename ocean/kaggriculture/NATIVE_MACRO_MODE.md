@@ -38,6 +38,20 @@ In mode 2 the selected macro owns strategic market actions. The executor keeps
 only feed purchases required to prevent existing animals from starving and
 the selected macro's orders; it does not silently add unrelated land, growth,
 sales, or hires. Worker assignment and movement remain deterministic.
+
+As of 2026-09-05, structured mode also operates retained assets across macro
+switches: feed/care/watering, animal and ongoing-crop harvesting, fertilizer
+collection, and pickup/placement of already-owned livestock into compatible
+empty housing. BUY_ANIMAL followed by HOLD therefore completes placement and
+collects production without further animal/harvest choices. Inventory drops at
+the game's normal end-of-day boundary; collecting products does not sell them.
+One-shot crops are automatically harvested at maximum-yield age (or during the
+last day). Explicit HARVEST can request earlier legal collection while still
+protecting maintenance. An explicit species-production action retains its
+batch limit; background placement resumes on other actions. This does not
+persist an unpurchased investment batch or automatically build missing housing,
+and does not add an abandon/cancel action. Mode 3 remains fully task-controlled.
+
 `DIVERSIFY` is the explicit exception: selecting it delegates one turn to the
 portable generic farm plan, including its crop mix, sales, scheduled land and
 labor, plus a first-pasture bridge. Mandatory feed is ordered before optional
@@ -50,9 +64,40 @@ sticky for that many native turns. Structured mode 2 always decides every
 turn: its quantity is a one-decision batch, and replaying that full batch on
 sticky turns would silently multiply purchases, hires, planting, and sales.
 
+## Mode 3: PPO-owned task controller
+
+`macro_mode = 3` removes the remaining generic-farm strategy from the
+executor. The 17 existing unit heads become an ordered set of task requests;
+the ten existing conditional market slots remain policy-owned. Lower unit
+head numbers have conflict priority, but no head is tied to a particular
+worker. For each request, native code chooses the closest unused worker and
+closest compatible target and emits one legal movement/work command.
+
+The 44 task values are:
+
+* `IDLE`, water, fertilize, feed, care, crop harvest, animal harvest,
+  fertilizer collection, and shed drop;
+* clear/abandon in each of four quadrants;
+* each of five crops in each of four quadrants;
+* coop and pasture construction in each quadrant; and
+* add goose, cow, or sheep to compatible capacity.
+
+Repeated task values across heads express quantity. PPO also decides every
+buy, sale, hire, and land order—including item and quantity—through the market
+queue. The executor never chooses a crop, species, investment, sale,
+liquidation, or maintenance policy. It may route a worker to the shed and
+pick up a required seed/product/animal already owned; it never purchases that
+prerequisite. `IDLE` is genuinely idle.
+
+This gives PPO ownership of the strategic and spatial decisions while keeping
+worker identity, assignment, and grid routing as deterministic mechanics. It
+also permits explicit abandonment through the quadrant `CLEAR` tasks. The
+fixed ABI directly schedules the farmer plus sixteen hands; farms with more
+workers require a future cohort/assignment extension.
+
 ## Observation input
 
-The base observation remains byte-for-byte 1,280 bytes. Macro mode fills the
+The base observation remains byte-for-byte 1,280 bytes. Modes 1 and 2 fill the
 previously unused tail after the reset-source byte with 44 bounded,
 public-state candidate-score bytes plus the active intent and remaining sticky
 ticks. The high bit of each candidate byte is a legality flag; the lower seven
@@ -63,6 +108,13 @@ terms, and do not add crop, animal, land, or selling reward.
 scores currently use visible cash, prices, costs, production timing, inventory,
 remaining time, and physical farm capacity. They do not load a
 Ridge/LightGBM file yet and they never read opponent private inventory.
+
+Mode 3 does **not** expose those economic estimates. Its same 44 tail bytes
+contain only public mechanical task capacity: the high bit is task legality
+and the low seven bits are the currently visible compatible-job count, capped
+at 127. The final four tail bytes are zero. A task controller can therefore
+use any reward/potential ablation without silently inheriting the handwritten
+candidate-value formula.
 
 The native estimate also enforces a few accounting constraints that are true
 independently of strategy:
@@ -90,6 +142,41 @@ macro_decision_interval = 1
 macro_score_scale = 10000
 ```
 
+Use mode 3 for the PPO-owned task controller. When training it against the
+existing mode-2 league, keep each frozen policy on its original semantics:
+
+```ini
+[env]
+macro_mode = 3
+frozen_macro_mode = 2
+macro_decision_interval = 1
+```
+
+`frozen_macro_mode = -1` makes every policy inherit the learner mode. Policy
+ID zero is the live learner; nonzero frozen-bank policies use
+`frozen_macro_mode`. Observation tails, legality masks, and action decoding
+are selected independently for the two seats in one native game.
+
+With different learner and frozen modes, set `selfplay.opponent_pool_prob=1`
+and supply an external league containing only the frozen mode's models.
+Rolling task snapshots cannot enter mode-2 banks. Live mirror games still
+use the task mode on both seats. End-of-training evaluation swaps the modes
+along with the models for its reverse-seat match.
+
+The task dataset and BC/PPO launchers are:
+
+```bash
+./ocean/kaggriculture/build_task_bc_dataset.sh /path/to/tasks.bc /path/to/replays.zip
+./ocean/kaggriculture/train_task_controller.sh /path/to/tasks.bc task_run_v1 saved/kaggriculture_league_macro_256x3_v1/league.ini
+```
+
+The second command defaults to 256x3, weights the first 300 BC turns, balances
+task classes, then trains with LR 0.0007 without annealing. It inherits the
+current reward configuration. `KAG_TASK_BC_ONLY=1` stops after BC;
+`KAG_TASK_BC_EPOCHS=0 KAG_TASK_ANCHOR=/path/to/task.bin` reuses an existing
+task checkpoint. Dataset version and controller mode must match; a mode-2
+BC dataset cannot train mode-3 task labels.
+
 Use `macro_mode = 2` for the parameterized training experiment:
 
 ```ini
@@ -106,16 +193,34 @@ interpreted as macro IDs and all other heads are ignored. Train/evaluate a
 macro policy with the switch enabled from the start (or treat a primitive
 checkpoint only as a cautious parameter warm start).
 
-The native adapter smoke test covers the mask, score-tail, legality fallback,
-and sticky-interval behavior:
+The native tests cover masks, task/score tails, legality fallback, sticky
+behavior, task execution, mixed task-learner/structured-opponent dispatch,
+and exact submission parity:
 
 ```bash
 make -C ocean/kaggriculture adapter
+make -C ocean/kaggriculture cuda-adapter
+PYTHONPATH=ocean/kaggriculture:ocean/kaggriculture/submission \
+  python -m unittest ocean/kaggriculture/tests/test_native_task_parity.py
 ```
 
+Replay BC data for mode 3 is generated with:
+
+```bash
+python ocean/kaggriculture/import_elite_replays.py REPLAY.zip \
+  --output task.bc --macro-mode tasks --task-lookahead 32 \
+  --exact-version 1.32.7
+```
+
+Movement and prerequisite pickups are traced forward only to their actual
+demonstrated work task. Independent task requests are packed toward head zero;
+the demonstrated conditional market queue is retained. The importer reports
+unresolved and capacity-clipped labels rather than inventing a macro.
+
 The macro path is compiled into the GPU environment as well; it does not
-change the normal primitive path when the switch is zero. Mode-2 checkpoints
-must be packaged with ``package_native_macro_model.sh``. That export includes
-the strategic observation tail, structured mask, quantity/target decoder, and
-portable deterministic executor; using ``package_model.sh`` would incorrectly
-interpret the same logits as primitive unit commands.
+change the normal primitive path when the switch is zero. Mode-2 and mode-3
+checkpoints must be packaged with `package_native_macro_model.sh`; set
+`KAG_NATIVE_MACRO_MODE=3` for task models. The export includes the matching
+tail, mask, decoder, and portable deterministic executor. Using
+`package_model.sh` would incorrectly interpret the same logits as primitive
+unit commands.

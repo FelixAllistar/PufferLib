@@ -38,7 +38,7 @@ struct ARCudaSim {
 
     // External tensors. Default layout:
     //   observations: [num_envs, AR_OBS_SIZE]
-    //   actions:      [num_envs, 2]
+    //   actions:      [num_envs, NUM_ATNS]
     //   rewards:      [num_envs]
     //   terminals:    [num_envs]
     float* observations;
@@ -49,8 +49,15 @@ struct ARCudaSim {
     // Scalar state, SoA over envs.
     uint32_t* rng;
     float *px, *py, *pvx, *pvy, *hp, *max_hp;
+    float *summon_cd, *dash_cd, *nova_cd, *frost_cd;
+    float *fx_nova, *fx_frost, *fx_dash;
+    float *shards;
     int *facing_left, *invuln_timer, *tick;
+    int *order;
     int *enemy_count, *next_enemy_slot, *pets_alive, *spawn_timer, *nearest_enemy;
+    int *shard_count, *builds_alive;
+    uint32_t* dungeon_seed;
+    uint8_t* dungeon_floor;  // [num_envs, AR_DUN_CELLS] contiguous per env
 
     // Episode stats.
     float *episode_return;
@@ -61,9 +68,10 @@ struct ARCudaSim {
     float *episode_peak_enemies, *episode_min_hp;
 
     // Pet pool [AR_MAX_PETS, N]
-    uint8_t *pet_active, *pet_attacking;
+    uint8_t *pet_active, *pet_attacking, *pet_kind;
     float *pet_x, *pet_y, *pet_vx, *pet_vy;
     float *pet_hp, *pet_max_hp, *pet_cd, *pet_age;
+    float *pet_spd, *pet_dmg, *pet_rad;
     int *pet_invuln, *pet_target;
 
     // Enemy pool [enemy_cap, N]. enemy_next doubles as the separation grid
@@ -71,11 +79,20 @@ struct ARCudaSim {
     uint8_t *enemy_active, *enemy_type;
     float *enemy_x, *enemy_y, *enemy_vx, *enemy_vy;
     float *enemy_hp, *enemy_max_hp, *enemy_radius, *enemy_speed, *enemy_damage;
-    int *enemy_next, *enemy_dense, *enemy_dense_pos;
+    int *enemy_next, *enemy_dense, *enemy_dense_pos, *enemy_slow_timer;
 
     // Obstacles [AR_MAX_OBSTACLES, N]
     uint8_t* obstacle_active;
     float *obstacle_x, *obstacle_y, *obstacle_radius;
+
+    // Shard nodes [AR_MAX_SHARDS, N]
+    uint8_t* shard_active;
+    float *shard_x, *shard_y, *shard_value;
+
+    // Buildings [AR_MAX_BUILDINGS, N]
+    uint8_t *build_active, *build_kind;
+    float *build_x, *build_y, *build_hp, *build_max_hp;
+    float *build_rad, *build_flash, *build_cd, *build_hurtcd;
 
     // Separation grid [AR_GRID_CELLS, N]
     int* grid_head;
@@ -118,6 +135,9 @@ static inline void ar_cuda_alloc(ARCudaSim* sim, int num_envs, ARConfig cfg) {
     const size_t NP = (size_t)AR_MAX_PETS * N;
     const size_t NO = (size_t)AR_MAX_OBSTACLES * N;
     const size_t NG = (size_t)AR_GRID_CELLS * N;
+    const size_t ND = (size_t)AR_DUN_CELLS * N;
+    const size_t NS = (size_t)AR_MAX_SHARDS * N;
+    const size_t NB = (size_t)AR_MAX_BUILDINGS * N;
 
     AR_CUDA_CHECK(cudaMalloc((void**)&sim->observations,
         sizeof(float) * N * AR_OBS_SIZE));
@@ -128,16 +148,27 @@ static inline void ar_cuda_alloc(ARCudaSim* sim, int num_envs, ARConfig cfg) {
     size_t state_bytes = 0;
     AR_BLOB_ACCOUNT(uint32_t, N);            // rng
     AR_BLOB_ACCOUNT(float, N * 6);           // px py pvx pvy hp max_hp
-    AR_BLOB_ACCOUNT(int, N * 8);             // facing invuln tick counts cursors
+    AR_BLOB_ACCOUNT(float, N * 7);           // summon/dash/nova/frost cd + fx
+    AR_BLOB_ACCOUNT(float, N);               // shards
+    AR_BLOB_ACCOUNT(int, N * 9);             // facing invuln tick order counts
+    AR_BLOB_ACCOUNT(int, N * 2);             // shard_count builds_alive
+    AR_BLOB_ACCOUNT(uint32_t, N);            // dungeon_seed
+    AR_BLOB_ACCOUNT(uint8_t, ND);            // dungeon floor
     AR_BLOB_ACCOUNT(float, N * 14);          // episode stats
     // Pet pool
-    AR_BLOB_ACCOUNT(uint8_t, NP * 2);
-    AR_BLOB_ACCOUNT(float, NP * 8);
+    AR_BLOB_ACCOUNT(uint8_t, NP * 3);
+    AR_BLOB_ACCOUNT(float, NP * 11);
     AR_BLOB_ACCOUNT(int, NP * 2);
     // Enemy pool
     AR_BLOB_ACCOUNT(uint8_t, NE * 2);
     AR_BLOB_ACCOUNT(float, NE * 9);
-    AR_BLOB_ACCOUNT(int, NE * 3);
+    AR_BLOB_ACCOUNT(int, NE * 4);
+    // Shards
+    AR_BLOB_ACCOUNT(uint8_t, NS);
+    AR_BLOB_ACCOUNT(float, NS * 3);
+    // Buildings
+    AR_BLOB_ACCOUNT(uint8_t, NB * 2);
+    AR_BLOB_ACCOUNT(float, NB * 8);
     // Obstacles
     AR_BLOB_ACCOUNT(uint8_t, NO);
     AR_BLOB_ACCOUNT(float, NO * 3);
@@ -150,11 +181,19 @@ static inline void ar_cuda_alloc(ARCudaSim* sim, int num_envs, ARConfig cfg) {
     AR_BLOB_FIELD(float, px, N); AR_BLOB_FIELD(float, py, N);
     AR_BLOB_FIELD(float, pvx, N); AR_BLOB_FIELD(float, pvy, N);
     AR_BLOB_FIELD(float, hp, N); AR_BLOB_FIELD(float, max_hp, N);
+    AR_BLOB_FIELD(float, summon_cd, N); AR_BLOB_FIELD(float, dash_cd, N);
+    AR_BLOB_FIELD(float, nova_cd, N); AR_BLOB_FIELD(float, frost_cd, N);
+    AR_BLOB_FIELD(float, fx_nova, N); AR_BLOB_FIELD(float, fx_frost, N);
+    AR_BLOB_FIELD(float, fx_dash, N);
+    AR_BLOB_FIELD(float, shards, N);
     AR_BLOB_FIELD(int, facing_left, N); AR_BLOB_FIELD(int, invuln_timer, N);
-    AR_BLOB_FIELD(int, tick, N);
+    AR_BLOB_FIELD(int, tick, N); AR_BLOB_FIELD(int, order, N);
     AR_BLOB_FIELD(int, enemy_count, N); AR_BLOB_FIELD(int, next_enemy_slot, N);
     AR_BLOB_FIELD(int, pets_alive, N); AR_BLOB_FIELD(int, spawn_timer, N);
     AR_BLOB_FIELD(int, nearest_enemy, N);
+    AR_BLOB_FIELD(int, shard_count, N); AR_BLOB_FIELD(int, builds_alive, N);
+    AR_BLOB_FIELD(uint32_t, dungeon_seed, N);
+    AR_BLOB_FIELD(uint8_t, dungeon_floor, ND);
     AR_BLOB_FIELD(float, episode_return, N);
     AR_BLOB_FIELD(float, episode_reward_survival, N);
     AR_BLOB_FIELD(float, episode_reward_kill, N);
@@ -170,10 +209,13 @@ static inline void ar_cuda_alloc(ARCudaSim* sim, int num_envs, ARConfig cfg) {
     AR_BLOB_FIELD(float, episode_peak_enemies, N);
     AR_BLOB_FIELD(float, episode_min_hp, N);
     AR_BLOB_FIELD(uint8_t, pet_active, NP); AR_BLOB_FIELD(uint8_t, pet_attacking, NP);
+    AR_BLOB_FIELD(uint8_t, pet_kind, NP);
     AR_BLOB_FIELD(float, pet_x, NP); AR_BLOB_FIELD(float, pet_y, NP);
     AR_BLOB_FIELD(float, pet_vx, NP); AR_BLOB_FIELD(float, pet_vy, NP);
     AR_BLOB_FIELD(float, pet_hp, NP); AR_BLOB_FIELD(float, pet_max_hp, NP);
     AR_BLOB_FIELD(float, pet_cd, NP); AR_BLOB_FIELD(float, pet_age, NP);
+    AR_BLOB_FIELD(float, pet_spd, NP); AR_BLOB_FIELD(float, pet_dmg, NP);
+    AR_BLOB_FIELD(float, pet_rad, NP);
     AR_BLOB_FIELD(int, pet_invuln, NP); AR_BLOB_FIELD(int, pet_target, NP);
     AR_BLOB_FIELD(uint8_t, enemy_active, NE); AR_BLOB_FIELD(uint8_t, enemy_type, NE);
     AR_BLOB_FIELD(float, enemy_x, NE); AR_BLOB_FIELD(float, enemy_y, NE);
@@ -182,10 +224,19 @@ static inline void ar_cuda_alloc(ARCudaSim* sim, int num_envs, ARConfig cfg) {
     AR_BLOB_FIELD(float, enemy_radius, NE); AR_BLOB_FIELD(float, enemy_speed, NE);
     AR_BLOB_FIELD(float, enemy_damage, NE);
     AR_BLOB_FIELD(int, enemy_next, NE); AR_BLOB_FIELD(int, enemy_dense, NE);
-    AR_BLOB_FIELD(int, enemy_dense_pos, NE);
+    AR_BLOB_FIELD(int, enemy_dense_pos, NE); AR_BLOB_FIELD(int, enemy_slow_timer, NE);
     AR_BLOB_FIELD(uint8_t, obstacle_active, NO);
     AR_BLOB_FIELD(float, obstacle_x, NO); AR_BLOB_FIELD(float, obstacle_y, NO);
     AR_BLOB_FIELD(float, obstacle_radius, NO);
+    AR_BLOB_FIELD(uint8_t, shard_active, NS);
+    AR_BLOB_FIELD(float, shard_x, NS); AR_BLOB_FIELD(float, shard_y, NS);
+    AR_BLOB_FIELD(float, shard_value, NS);
+    AR_BLOB_FIELD(uint8_t, build_active, NB);
+    AR_BLOB_FIELD(uint8_t, build_kind, NB);
+    AR_BLOB_FIELD(float, build_x, NB); AR_BLOB_FIELD(float, build_y, NB);
+    AR_BLOB_FIELD(float, build_hp, NB); AR_BLOB_FIELD(float, build_max_hp, NB);
+    AR_BLOB_FIELD(float, build_rad, NB); AR_BLOB_FIELD(float, build_flash, NB);
+    AR_BLOB_FIELD(float, build_cd, NB); AR_BLOB_FIELD(float, build_hurtcd, NB);
     AR_BLOB_FIELD(int, grid_head, NG);
 }
 

@@ -165,6 +165,7 @@ fi
 EXTRA_SRC=""
 EXTRA_LDFLAGS=()
 EXTRA_CFLAGS=()
+RETRO_LD=()
 SRC_FILE=""
 
 if [ "$ENV" = "constellation" ]; then
@@ -226,12 +227,49 @@ elif [ "$ENV" = "shenaniguns3d" ]; then
     EXTRA_CFLAGS+=(-DPUFFER_SHENANIGUNS3D)
     EXTRA_LDFLAGS+=("$BOX3D_DIR/build/src/libbox3d.a")
     EXTRA_SRC="../pd64/character.c"
+elif [ "$ENV" = "arpg" ]; then
+    SRC_DIR="ocean/$ENV"
+    BOX3D_DIR="${BOX3D_DIR:-../box3d}"
+    if [ ! -f "$BOX3D_DIR/build/src/libbox3d.a" ]; then
+        echo "Building box3d from $BOX3D_DIR ..."
+        cmake -S "$BOX3D_DIR" -B "$BOX3D_DIR/build" -DCMAKE_BUILD_TYPE=Release \
+            -DBOX3D_SAMPLES=OFF -DBOX3D_UNIT_TESTS=OFF -DBOX3D_BENCHMARKS=OFF > /dev/null
+        cmake --build "$BOX3D_DIR/build" --target box3d -j8 > /dev/null
+    fi
+    INCLUDES+=(-I"$BOX3D_DIR/include")
+    LINK_ARCHIVES+=("$BOX3D_DIR/build/src/libbox3d.a")
+    EXTRA_LDFLAGS+=("$BOX3D_DIR/build/src/libbox3d.a")
 elif [ -d "ocean/$ENV" ]; then
     SRC_DIR="ocean/$ENV"
     if [ "$ENV" = "retro" ]; then
         EXTRA_LDFLAGS+=(-ldl)
         EXTRA_SRC+=" ocean/retro/nes_emu/*.cpp"
         INCLUDES+=(-I./ocean/retro/nes_emu -I./ocean/retro)
+        # Fast native-C backend (smb-vanilla-port smbcore, pinned commit).
+        # Fetched at build time like raylib/box2d and never vendored into git
+        # (upstream ships no license file). smbcore objects are prebuilt below
+        # into build/smbcore/*.o and linked wherever retro.h is compiled.
+        SMBV_PIN=87af9a388eb01093f99c2ac6a81238bce4d7158d
+        SMBV_DIR="smb-vanilla-port-$SMBV_PIN"
+        if [ ! -d "$SMBV_DIR/src/smbcore" ]; then
+            echo "Downloading smb-vanilla-port@$SMBV_PIN ..."
+            download "$SMBV_DIR" "https://github.com/nukep/smb-vanilla-port/archive/$SMBV_PIN.tar.gz"
+        fi
+        # Training hardening patches (ocean/retro/smb_patches/): bounded
+        # parse loops + tripwires. Applied once each (per-patch sentinels);
+        # delete $SMBV_DIR/.patched-* to force re-apply. See the patch files
+        # and smb_patches/README.md for rationale.
+        for p in ocean/retro/smb_patches/*.patch; do
+            [ -f "$p" ] || continue
+            sent="$SMBV_DIR/.patched-$(basename "$p" .patch)"
+            if [ ! -f "$sent" ]; then
+                echo "Applying $p ..."
+                patch -d "$SMBV_DIR" -p1 -N < "$p" || exit 1
+                touch "$sent"
+            fi
+        done
+        INCLUDES+=(-I./$SMBV_DIR/src)
+        EXTRA_CFLAGS+=(-DTHREAD_LOCAL_SMBSTATE)
         # fast/local standalone uses clang++ for Nes_Emu (retro.c is C++ despite .c)
         if [ "$MODE" = "fast" ] || [ "$MODE" = "local" ]; then
             CC="clang++"
@@ -254,6 +292,10 @@ if [ "$ENV" = "retro" ]; then
     # QuickNES' 6502 interpreter dominates this build. Keep the explicit AVX2
     # target, but let clang tune the branch-heavy host code for this machine.
     SIMD_FLAGS+=(-march=native)
+    # Export symbols so tick-watchdog backtraces (captured mid-spin inside
+    # game code by the SIGURG handler) symbolize via backtrace_symbols.
+    # Clang-only: applied in the standalone link, never to nvcc.
+    RETRO_LD=(-rdynamic)
 fi
 if [ -n "$DEBUG" ] || [ "$MODE" = "local" ]; then
     CLANG_OPT=(-g -O0 "${CLANG_WARN[@]}" "${SANITIZE_FLAGS[@]}" "${SIMD_FLAGS[@]}")
@@ -264,6 +306,68 @@ else
     CLANG_OPT=(-O2 "${CLANG_WARN[@]}" "${SIMD_FLAGS[@]}")
     NVCC_OPT="-O2 --threads 0"
     LINK_OPT="-O2"
+fi
+if [ "$ENV" = "retro" ]; then
+    # pthread_getcpuclockid (tick-watchdog CPU-time budget) needs GNU
+    # extensions; define on the command line so it covers every TU and
+    # include order.
+    CLANG_OPT+=(-D_GNU_SOURCE)
+    NVCC_OPT+=(-Xcompiler=-D_GNU_SOURCE)
+fi
+if [ "$ENV" = "retro" ]; then
+    # Prebuild smbcore objects exactly like upstream: the shared TUs once per
+    # game mode (SMB1_MODE / SMB2J_MODE), smbcore.c + the headless rasterizer
+    # as plain C. Host clang (C, never C++); ASAN flags included for local
+    # builds. Stamp-gated so normal rebuilds are no-ops.
+    mkdir -p build/smbcore
+    if [ -n "$DEBUG" ] || [ "$MODE" = "local" ]; then
+        _smb_opt=(-g -O0 "${SANITIZE_FLAGS[@]}")
+    else
+        _smb_opt=(-O2)
+    fi
+    _smb_opt+=("${SIMD_FLAGS[@]}")
+    # THREAD_LOCAL_SMBSTATE is mandatory: rollout workers are OpenMP threads
+    # and SMB_tick parks the active state in this global. A single shared
+    # global would let workers read/write each other's envs mid-tick.
+    # Upstream's header only spells it `thread_local` (C++ keyword), so plain
+    # C objects alias it to C11 _Thread_local: same TLS symbol the C++ TUs see
+    # as `thread_local`. Verified: identical mangled name, real per-thread copy.
+    _smb_cxx="clang"
+    _smb_opt+=(-DTHREAD_LOCAL_SMBSTATE "-Dthread_local=_Thread_local")
+    _smb_stamp="$SMBV_PIN | ${_smb_opt[*]} | $(cat ocean/retro/smb_patches/*.patch 2>/dev/null | sha1sum)"
+    SMBCORE_OBJS=()
+    if [ ! -f build/smbcore/stamp ] || [ "$(cat build/smbcore/stamp)" != "$_smb_stamp" ]; then
+        echo "Building smbcore objects ..."
+        rm -f build/smbcore/*.o
+        for tu in common common_sound area; do
+            for mode in SMB1_MODE SMB2J_MODE; do
+                $_smb_cxx "${_smb_opt[@]}" -I./$SMBV_DIR/src -D$mode \
+                    -c ./$SMBV_DIR/src/smbcore/$tu.c -o build/smbcore/${tu}_${mode}.o || exit 1
+                SMBCORE_OBJS+=(build/smbcore/${tu}_${mode}.o)
+            done
+        done
+        $_smb_cxx "${_smb_opt[@]}" -I./$SMBV_DIR/src -DSMB1_MODE \
+            -c ./$SMBV_DIR/src/smbcore/smb1only.c -o build/smbcore/smb1only.o || exit 1
+        SMBCORE_OBJS+=(build/smbcore/smb1only.o)
+        $_smb_cxx "${_smb_opt[@]}" -I./$SMBV_DIR/src -DSMB2J_MODE \
+            -c ./$SMBV_DIR/src/smbcore/smb2jonly.c -o build/smbcore/smb2jonly.o || exit 1
+        SMBCORE_OBJS+=(build/smbcore/smb2jonly.o)
+        $_smb_cxx "${_smb_opt[@]}" -I./$SMBV_DIR/src \
+            -c ./$SMBV_DIR/src/smbcore/smbcore.c -o build/smbcore/smbcore.o || exit 1
+        SMBCORE_OBJS+=(build/smbcore/smbcore.o)
+        $_smb_cxx "${_smb_opt[@]}" -I./$SMBV_DIR/src \
+            -c ./$SMBV_DIR/src/platform/render_raster.c -o build/smbcore/render_raster.o || exit 1
+        SMBCORE_OBJS+=(build/smbcore/render_raster.o)
+        echo "$_smb_stamp" > build/smbcore/stamp
+    else
+        for o in build/smbcore/*.o; do SMBCORE_OBJS+=("$o"); done
+    fi
+    # Link everywhere except web (host-arch objects can't link into wasm;
+    # web compiles retro.h as C and takes the stub path anyway).
+    if [ "$MODE" != "web" ]; then
+        LINK_ARCHIVES+=("${SMBCORE_OBJS[@]}")
+    fi
+    SMBCORE_NVCC=("${SMBCORE_OBJS[@]}")
 fi
 if [ "$MODE" = "local" ] || [ "$MODE" = "fast" ]; then
     FLAGS=(
@@ -277,7 +381,7 @@ if [ "$MODE" = "local" ] || [ "$MODE" = "fast" ]; then
         "${EXTRA_CFLAGS[@]}"
     )
     echo "Compiling $ENV..."
-    ${CC:-clang} "${CLANG_OPT[@]}" "${FLAGS[@]}"
+    ${CC:-clang} "${CLANG_OPT[@]}" "${FLAGS[@]}" "${RETRO_LD[@]}"
     echo "Built: ./$OUTPUT_NAME"
     exit 0
 elif [ "$MODE" = "tui" ]; then
@@ -510,6 +614,7 @@ if [ "$MODE" = "native" ]; then
 	    src/pufferl.cu \
         $EXTRA_SRC \
         ${RAYLIB_A:+"$RAYLIB_A"} \
+        ${SMBCORE_NVCC[@]:-} \
         -L$CUDA_HOME/lib64 $NCCL_LFLAG \
         "${EXTRA_LDFLAGS[@]}" \
         -lcudart -lnccl -lnvidia-ml -lcublas -lcusolver -lcurand \

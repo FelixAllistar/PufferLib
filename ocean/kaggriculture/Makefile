@@ -49,7 +49,11 @@ cuda-core: | $(BUILD)
 		tests/test_cuda_core.cu -lm -o $(BUILD)/test_cuda_core
 	$(BUILD)/test_cuda_core
 
-cuda-adapter: | $(BUILD)
+cuda-adapter: $(BUILD)/test_cuda_adapter
+	$(BUILD)/test_cuda_adapter
+
+$(BUILD)/test_cuda_adapter: tests/test_cuda_adapter.cu kaggriculture.cu \
+		$(wildcard *.h) kaggriculture_core.c $(ROOT)/src/pufferenv.h | $(BUILD)
 	$${CUDA_HOME:-$${CUDA_PATH:-/usr/local/cuda}}/bin/nvcc \
 		-O2 --threads 0 -arch=$${NVCC_ARCH:-native} -std=c++17 \
 		-I$(ROOT) -I$(ROOT)/src -I$(ROOT)/vendor \
@@ -57,7 +61,6 @@ cuda-adapter: | $(BUILD)
 		tests/test_cuda_adapter.cu \
 		$(ROOT)/raylib-5.5_linux_amd64/lib/libraylib.a \
 		-lGL -lm -lpthread -o $(BUILD)/test_cuda_adapter
-	$(BUILD)/test_cuda_adapter
 
 $(BUILD)/kag_bc: kag_bc.cu kaggriculture.h kaggriculture_core.h \
 		kaggriculture_core.c kaggriculture_bots.h \
@@ -75,12 +78,15 @@ $(BUILD)/kag_bc: kag_bc.cu kaggriculture.h kaggriculture_core.h \
 bc: $(BUILD)/kag_bc
 	$(BUILD)/kag_bc bc.steps=26 bc.epochs=200
 
-adapter: | $(BUILD)
+adapter: $(BUILD)/test_adapter
+	$(BUILD)/test_adapter
+
+$(BUILD)/test_adapter: tests/test_adapter.c $(wildcard *.h) \
+		kaggriculture_core.c $(ROOT)/src/pufferenv.h | $(BUILD)
 	$(CC) -O3 -std=c17 -Wall -Wextra -Werror \
 		-I$(ROOT) -I$(ROOT)/src -I$(ROOT)/vendor -I$(ROOT)/raylib-5.5_linux_amd64/include \
 		tests/test_adapter.c $(ROOT)/raylib-5.5_linux_amd64/lib/libraylib.a \
 		-lGL -lm -lpthread -o $(BUILD)/test_adapter
-	$(BUILD)/test_adapter
 
 metagame: | $(BUILD)
 	$(CC) -O3 -std=c17 -Wall -Wextra -Werror metagame.c -lm \

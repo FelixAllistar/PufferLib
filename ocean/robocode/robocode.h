@@ -877,6 +877,10 @@ void close_client(Client* client) {
     CloseWindow();
 }
 
+// Standalone-viewer toggle (H key in robocode.c play/watch loops).
+// Training never sets this, so headless/vectorized runs are unaffected.
+static int g_robocode_hide_radar = 0;
+
 void puf_render(Robocode* env) {
     if(env->client == NULL){
         env->client = make_client(env);
@@ -919,8 +923,10 @@ void puf_render(Robocode* env) {
         float a_right = (sweep >= 0) ? robot.radar_heading_prev : robot.radar_heading;
         Vector2 p_left  = (Vector2){robot.x + 1200*cos_deg(a_left),  robot.y + 1200*sin_deg(a_left)};
         Vector2 p_right = (Vector2){robot.x + 1200*cos_deg(a_right), robot.y + 1200*sin_deg(a_right)};
-        Color wedge_color = is_agent ? (Color){0, 255, 0, 128} : (Color){255, 140, 0, 128};
-        DrawTriangle(robot_pos, p_left, p_right, wedge_color);
+        if (!g_robocode_hide_radar) {
+            Color wedge_color = is_agent ? (Color){0, 255, 0, 128} : (Color){255, 140, 0, 128};
+            DrawTriangle(robot_pos, p_left, p_right, wedge_color);
+        }
 
         int src_y = is_agent ? 64 : 128;  // blue row for agents, red row for bots
         Rectangle body_rect  = (Rectangle){0,   src_y, 64, 64};

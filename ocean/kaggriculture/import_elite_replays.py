@@ -43,6 +43,7 @@ try:
         fill_mode2_observation,
         remember_label,
     )
+    import task_bc_labels as _task_bc_labels
 except ImportError:  # pragma: no cover - package-style invocation fallback
     from ocean.kaggriculture import macro_bc_labels as _macro_bc_labels
     from ocean.kaggriculture.macro_bc_labels import (
@@ -51,6 +52,7 @@ except ImportError:  # pragma: no cover - package-style invocation fallback
         fill_mode2_observation,
         remember_label,
     )
+    from ocean.kaggriculture import task_bc_labels as _task_bc_labels
 
 
 HEADER = struct.Struct("<8I")
@@ -171,6 +173,8 @@ class Audit:
                 counts.get("illegal_unit_heads", 0), counts.get("unit_heads_seen", 0)
             ),
         }
+        mode_id = 2 if self.macro_mode == "structured" \
+            else 3 if self.macro_mode == "tasks" else 0
         return {
             "format": {
                 "magic": "KAGB",
@@ -179,7 +183,7 @@ class Audit:
                 "expert_heads": NUM_HEADS,
                 "mask_bits": MASK_SIZE,
                 "mask_bytes": MASK_BYTES,
-                "macro_mode": 2 if self.macro_mode == "structured" else 0,
+                "macro_mode": mode_id,
             },
             "counts": counts,
             "ratios": ratios,
@@ -586,6 +590,85 @@ def _build_row(
     return encoded_obs, expert, packed, audit
 
 
+def _build_task_row(
+    observation: dict[str, Any], action: dict[str, Any], task_tokens: list[int],
+    *, runtime: Any,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, Audit]:
+    """Build one mode-3 row from a behavior-equivalent task multiset."""
+
+    audit = Audit()
+    audit.macro_mode = "tasks"
+    encoded_obs = np.asarray(CODEC.encode_observation(observation), dtype=np.uint8)
+    runtime.fill_observation(observation, encoded_obs)
+    mask = np.asarray(runtime.action_mask(observation), dtype=np.bool_)
+    if encoded_obs.shape != (OBS_SIZE,) or mask.shape != (MASK_SIZE,):
+        raise ValueError("mode-3 runtime returned an incompatible ABI")
+
+    expert = np.full(NUM_HEADS, -1.0, dtype="<f4")
+    farm = observation["farms"][int(observation.get("player", 0))]
+    live = min(1 + len(farm.get("hands", ())), UNIT_HEADS)
+    emitted: collections.Counter[int] = collections.Counter()
+    for head in range(live):
+        token = int(task_tokens[head]) if head < len(task_tokens) else 0
+        available = int(runtime_module_task_count(runtime, observation, token))
+        if token != 0 and emitted[token] >= available:
+            audit.counts["task_duplicate_capacity_clipped"] += 1
+            token = 0
+        offset = int(CODEC.HEAD_OFFSETS[head]) + token
+        if token < 0 or token >= int(CODEC.HEAD_SIZES[head]) or not mask[offset]:
+            audit.counts["task_illegal_clipped"] += 1
+            token = 0
+        expert[head] = float(token)
+        emitted[token] += token != 0
+        audit.macro_actions[str(token)] += 1
+        audit.counts["task_heads_labeled"] += 1
+
+    market_result = _encode_market_orders(action.get("market", []), audit)
+    market_legal = market_result is not None
+    market_exact = False
+    if market_result is not None:
+        encoded_orders, market_exact = market_result
+        for slot in range(MARKET_SLOTS):
+            head = UNIT_HEADS + 3 * slot
+            if slot < len(encoded_orders):
+                command, quantity_id = encoded_orders[slot]
+                values = (1, command, 0 if quantity_id is None else quantity_id)
+                active_values = 2 if quantity_id is None else 3
+            else:
+                values = (0, 0, 0)
+                active_values = 1 if slot == len(encoded_orders) else 0
+            for node in range(active_values):
+                if not _head_legal(mask, head + node, values[node]):
+                    market_legal = False
+                    audit.counts["illegal_market_heads"] += 1
+            expert[head:head + 3] = values
+        if not market_legal:
+            expert[UNIT_HEADS:] = -1.0
+            audit.counts["market_mask_rejected_rows"] += 1
+        else:
+            audit.counts["market_usable_rows"] += 1
+
+    if expert[0] >= 0 and market_legal:
+        audit.counts["whole_row_head_representable"] += 1
+        if market_exact:
+            audit.counts["whole_row_exact_quantity"] += 1
+    audit.counts["macro_rows"] += 1
+    audit.counts["macro_labeled_rows"] += 1
+    audit.counts["macro_mask_bits"] += int(np.count_nonzero(mask))
+    audit.counts["rows"] += 1
+    packed = np.packbits(mask, bitorder="little")
+    if packed.shape != (MASK_BYTES,):
+        raise RuntimeError(f"packed mask shape mismatch: {packed.shape}")
+    return encoded_obs, expert, packed, audit
+
+
+def runtime_module_task_count(runtime: Any, observation: dict[str, Any], token: int) -> int:
+    """Call the checked-in runtime module without relying on private state."""
+
+    del runtime  # the count is intentionally stateless
+    return int(_macro_bc_labels.RUNTIME.task_available_count(observation, token))
+
+
 def _validate_episode(
     episode: dict[str, Any], minimum_version: tuple[int, ...], expected_steps: int,
     exact_version: tuple[int, ...] | None = None,
@@ -671,34 +754,58 @@ def _identity_players(
 
 def _build_trajectory(
     episode: dict[str, Any], player: int, expected_steps: int,
-    macro_mode: str = "primitive",
+    macro_mode: str = "primitive", task_lookahead: int = 32,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, Audit]:
     observations = np.empty((expected_steps, OBS_SIZE), dtype=np.uint8)
     experts = np.empty((expected_steps, NUM_HEADS), dtype="<f4")
     masks = np.empty((expected_steps, MASK_BYTES), dtype=np.uint8)
     audit = Audit()
-    macro_runtime = (
-        _macro_bc_labels.RUNTIME.NativeMacroRuntime()
-        if macro_mode == "structured" else None
-    )
+    macro_runtime = None
+    if macro_mode == "structured":
+        macro_runtime = _macro_bc_labels.RUNTIME.NativeMacroRuntime(mode=2)
+    elif macro_mode == "tasks":
+        macro_runtime = _macro_bc_labels.RUNTIME.NativeMacroRuntime(mode=3)
     audit.macro_mode = macro_mode
-    # Kaggle stores the action chosen from observation t in record t + 1,
-    # alongside the resulting observation.  Record zero contains only the
-    # framework's default PASS action; the terminal record has no following
-    # decision.  Align 719 real labels with observations 0..718 and pad the
-    # final recurrent row with expert[0] = -1 so the BC kernel ignores it.
+    replay_observations = []
+    replay_actions = []
     for turn in range(expected_steps):
         observation = episode["steps"][turn][player]["observation"]
         if int(observation.get("player", player)) != player:
             raise ValueError(f"turn {turn}: observation player mismatch")
         observation.setdefault("player", player)
         observation.setdefault("step", turn)
+        replay_observations.append(observation)
+        replay_actions.append(
+            episode["steps"][turn + 1][player]["action"]
+            if turn + 1 < expected_steps else {}
+        )
+    task_tokens = None
+    if macro_mode == "tasks":
+        task_tokens, task_audit = _task_bc_labels.trajectory_task_tokens(
+            replay_observations, replay_actions,
+            lookahead=task_lookahead, unit_heads=UNIT_HEADS,
+        )
+        audit.counts.update(task_audit)
+    # Kaggle stores the action chosen from observation t in record t + 1,
+    # alongside the resulting observation.  Record zero contains only the
+    # framework's default PASS action; the terminal record has no following
+    # decision.  Align 719 real labels with observations 0..718 and pad the
+    # final recurrent row with expert[0] = -1 so the BC kernel ignores it.
+    for turn in range(expected_steps):
+        observation = replay_observations[turn]
         if turn + 1 < expected_steps:
-            action = episode["steps"][turn + 1][player]["action"]
-            row_obs, row_expert, row_mask, row_audit = _build_row(
-                observation, action, macro_mode=macro_mode,
-                macro_runtime=macro_runtime,
-            )
+            action = replay_actions[turn]
+            if macro_mode == "tasks":
+                assert macro_runtime is not None and task_tokens is not None
+                row_obs, row_expert, row_mask, row_audit = _build_task_row(
+                    observation, action, task_tokens[turn],
+                    runtime=macro_runtime,
+                )
+            else:
+                row_obs, row_expert, row_mask, row_audit = _build_row(
+                    observation, action, macro_mode=macro_mode,
+                    macro_runtime=macro_runtime,
+                )
         else:
             row_obs = np.asarray(CODEC.encode_observation(observation), dtype=np.uint8)
             if macro_mode == "structured":
@@ -706,6 +813,12 @@ def _build_trajectory(
                 fill_mode2_observation(observation, row_obs, runtime=macro_runtime)
                 mask = _macro_bc_labels.mode2_mask(
                     observation, runtime=macro_runtime
+                )
+            elif macro_mode == "tasks":
+                assert macro_runtime is not None
+                macro_runtime.fill_observation(observation, row_obs)
+                mask = np.asarray(
+                    macro_runtime.action_mask(observation), dtype=np.bool_
                 )
             else:
                 mask = np.asarray(CODEC.action_mask(observation), dtype=np.bool_)
@@ -780,12 +893,17 @@ def main() -> int:
     parser.add_argument("--steps", type=int, default=EXPECTED_STEPS)
     parser.add_argument("--players", choices=("both", "winner"), default="both")
     parser.add_argument(
-        "--macro-mode", choices=("primitive", "structured", "2"),
+        "--macro-mode", choices=("primitive", "structured", "tasks", "2", "3"),
         default="primitive",
         help=(
             "label primitive replay actions as legacy primitive heads or as "
-            "structured macro_mode=2 intent/quantity/target heads"
+            "macro_mode=2 intent/quantity/target heads, or behavior-equivalent "
+            "macro_mode=3 task heads plus the original market queue"
         ),
+    )
+    parser.add_argument(
+        "--task-lookahead", type=int, default=32,
+        help="maximum movement frames to trace to an eventual mode-3 work task",
     )
     parser.add_argument(
         "--agent", action="append", default=[],
@@ -819,6 +937,10 @@ def main() -> int:
         parser.error("--limit cannot be negative")
     if args.macro_mode == "2":
         args.macro_mode = "structured"
+    elif args.macro_mode == "3":
+        args.macro_mode = "tasks"
+    if args.task_lookahead < 0:
+        parser.error("--task-lookahead cannot be negative")
 
     inputs = _expand_inputs(args.inputs)
     audit = Audit()
@@ -902,7 +1024,8 @@ def main() -> int:
             try:
                 for player in players:
                     built.append((player, _build_trajectory(
-                        episode, player, args.steps, args.macro_mode
+                        episode, player, args.steps, args.macro_mode,
+                        args.task_lookahead,
                     )))
             except Exception as error:  # keep a corrupt replay from killing a daily job
                 audit.skip_reasons[f"conversion:{type(error).__name__}"] += 1
@@ -934,7 +1057,8 @@ def main() -> int:
                     "winner": int(rewards[player] == best),
                     "module_version": module_version,
                     "rows": args.steps,
-                    "macro_mode": 2 if args.macro_mode == "structured" else 0,
+                    "macro_mode": 2 if args.macro_mode == "structured"
+                        else 3 if args.macro_mode == "tasks" else 0,
                 })
             if accepted % 25 == 0:
                 print(

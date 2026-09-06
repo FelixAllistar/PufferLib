@@ -197,6 +197,7 @@ box2d*/
 
 # Native build/test products
 /puffer
+/arpg
 /bomberman
 /breakout
 /build_cpu

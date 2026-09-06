@@ -1,0 +1,18 @@
+--- a/src/smbcore/common.c
++++ b/src/smbcore/common.c
+@@ -2485,7 +2485,14 @@
+         AltEntranceControl += 1;
+         return;
+       }
+-      if (EventMusicBuffer == 0) {
++      /* Headless hardening (not upstream): death completes when the death
++         jingle ends, but note lengths advance ~10x too slowly without an
++         audio backend, so EventMusicBuffer effectively never clears and
++         death never completes (corpse falls forever, -2.5/step bleed with
++         zero completions). On hardware the jingle (~150f) always ends long
++         before the corpse falls this far, so proceeding here is
++         behavior-identical there while guaranteeing completion headless. */
++      if (EventMusicBuffer == 0 || Player_Y_HighPos >= 5) {
+         GameEngineSubroutine = GR_PLAYERLOSELIFE;
+       }
+     }

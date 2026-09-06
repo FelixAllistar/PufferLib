@@ -80,14 +80,31 @@ def load_core(path):
             ctypes.c_void_p, ctypes.c_int, ctypes.c_void_p, ctypes.c_size_t,
         ]
         lib.kg_policy_observation.restype = None
+    if hasattr(lib, "kg_policy_observation_mode"):
+        lib.kg_policy_observation_mode.argtypes = [
+            ctypes.c_void_p, ctypes.c_int, ctypes.c_int,
+            ctypes.c_void_p, ctypes.c_size_t,
+        ]
+        lib.kg_policy_observation_mode.restype = None
     if hasattr(lib, "kg_policy_action_mask"):
         lib.kg_policy_action_mask.argtypes = [
             ctypes.c_void_p, ctypes.c_int, ctypes.c_void_p, ctypes.c_size_t,
         ]
         lib.kg_policy_action_mask.restype = None
+    if hasattr(lib, "kg_policy_action_mask_mode"):
+        lib.kg_policy_action_mask_mode.argtypes = [
+            ctypes.c_void_p, ctypes.c_int, ctypes.c_int,
+            ctypes.c_void_p, ctypes.c_size_t,
+        ]
+        lib.kg_policy_action_mask_mode.restype = None
     if hasattr(lib, "kg_policy_hand_count"):
         lib.kg_policy_hand_count.argtypes = [ctypes.c_void_p, ctypes.c_int]
         lib.kg_policy_hand_count.restype = ctypes.c_int
+    if hasattr(lib, "kg_policy_task_action"):
+        lib.kg_policy_task_action.argtypes = [
+            ctypes.c_void_p, ctypes.c_int, ctypes.c_void_p, ctypes.POINTER(CAction),
+        ]
+        lib.kg_policy_task_action.restype = ctypes.c_int
     return lib
 
 

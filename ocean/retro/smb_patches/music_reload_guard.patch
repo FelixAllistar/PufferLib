@@ -1,0 +1,55 @@
+--- a/src/smbcore/common_sound.c
++++ b/src/smbcore/common_sound.c
+@@ -963,7 +963,15 @@
+ void FindEventMusicHeader(const u8 param_1, const u8 param_2) {
+   // The second argument is either 0 or 8 in practice.
+ 
+-  assert_smb_crashbug(param_1 != 0, "An infinite loop would've occurred in the original game");
++  if (param_1 == 0) {
++    /* Headless hardening (not upstream): the original game infinitely loops
++       here (upstream aborts the process). For RL training we drop to
++       silence and continue; a corrupted music queue must not kill the
++       emulator process or wedge the episode. */
++    EventMusicBuffer = 0;
++    AreaMusicBuffer = 0;
++    return;
++  }
+ 
+ 
+   // 1 to 16 (inclusive) in practice
+@@ -974,6 +982,27 @@
+ // SM2MAIN:d731
+ // Signature: [Y] -> []
+ void LoadHeader(const u8 param_1) {
++  /* Headless hardening (not upstream): a corrupted music state can make the
++     music-reload cycle (HandleSquare2Music terminator -> LoadEventMusic ->
++     FindEventMusicHeader -> here -> HandleSquare2Music) reload the same
++     event forever. Tail-call optimisation compiles the cycle into a flat
++     infinite loop that burns CPU indefinitely (observed as tick-budget
++     preempts with eng=00/x=0 during area reload; spin stacks land in
++     FindEventMusicHeader / HandleSquare2Music). Legit play nests at most
++     ~2-3 headers (event -> area -> loop variants); cap the nesting and
++     drop to silence beyond it, which the game's own silence path also
++     does. _Thread_local: OMP rollout workers tick independent states. */
++  static _Thread_local int depth = 0;
++  if (depth >= 8) {
++    EventMusicBuffer = 0;
++    AreaMusicBuffer = 0;
++    apu_tri_linear(0);
++    apu_sq1_vol(0x90);
++    apu_sq2_vol(0x90);
++    return;
++  }
++  depth++;
++
+   // Get the offset of the header within the data
+ 
+   const u8 off = MusicHeaderData[param_1 - 1];
+@@ -999,6 +1028,7 @@
+   apu_snd_chn(0xf);
+   NoiseDataLoopbackOfs = MusicOffset_Noise;
+   HandleSquare2Music();
++  depth--;
+ }
+ 
+ // SMB:f73a
