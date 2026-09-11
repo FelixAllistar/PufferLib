@@ -93,7 +93,9 @@ public:
 	// Use already-loaded cartridge. Retains pointer, so it must be kept around until
 	// closed. A cartridge can be shared among multiple emulators. After opening,
 	// cartridge's CHR data shouldn't be modified since a copy is cached internally.
-	const char * set_cart( Nes_Cart const* );
+	const char * set_cart( Nes_Cart const*, const Nes_Emu* share = NULL );
+	const void* chr_cache_identity() const { return emu.ppu.chr_cache_identity(); }
+	void set_idle_skip(bool enabled) { emu.set_idle_skip(enabled); }
 
 	// Pointer to current cartridge, or NULL if none is loaded
 	Nes_Cart const* cart() const { return emu.cart; }

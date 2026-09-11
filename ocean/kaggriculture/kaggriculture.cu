@@ -28,6 +28,10 @@ typedef struct {
     int policy_market_slots;
     int policy_max_hands;
     int macro_mode;
+    int macro_executor_version;
+    int frozen_macro_executor_version;
+    int observation_version;
+    int frozen_observation_version;
     int frozen_macro_mode;
     int macro_decision_interval;
     float macro_score_scale;
@@ -58,6 +62,7 @@ typedef struct {
     float reward_progress_land_scale;
     float reward_progress_health_ratio;
     float reward_expansion_scale;
+    float reward_phase_scale;
     int reward_expansion_deadline;
     int reward_expansion_land_target;
     int reward_expansion_plant_target;
@@ -393,6 +398,7 @@ __device__ static void kag_cuda_transition(Env* env, Env* shells,
         env->progress_value[player] = progress_value;
         reward += maintenance_rewards[player];
         reward += kag_expansion_reward(env, player);
+        reward += kag_phase_reward(game, player, env->reward_phase_scale);
         if (player == kag_curriculum_player(env)) reward += curriculum_reward;
         env->agents[player].rewards[0] = reward;
         env->episode_returns[player] += reward;
@@ -619,6 +625,10 @@ __global__ static void kag_cuda_reset_kernel(Env* shells, Env* matches,
     env->policy_market_slots = d_kag_cuda_config.policy_market_slots;
     env->policy_max_hands = d_kag_cuda_config.policy_max_hands;
     env->macro_mode = d_kag_cuda_config.macro_mode;
+    env->macro_executor_version = d_kag_cuda_config.macro_executor_version;
+    env->frozen_macro_executor_version = d_kag_cuda_config.frozen_macro_executor_version;
+    env->observation_version = d_kag_cuda_config.observation_version;
+    env->frozen_observation_version = d_kag_cuda_config.frozen_observation_version;
     env->frozen_macro_mode = d_kag_cuda_config.frozen_macro_mode;
     env->macro_decision_interval = d_kag_cuda_config.macro_decision_interval;
     env->macro_score_scale = d_kag_cuda_config.macro_score_scale;
@@ -661,6 +671,7 @@ __global__ static void kag_cuda_reset_kernel(Env* shells, Env* matches,
     env->reward_progress_health_ratio =
         d_kag_cuda_config.reward_progress_health_ratio;
     env->reward_expansion_scale = d_kag_cuda_config.reward_expansion_scale;
+    env->reward_phase_scale = d_kag_cuda_config.reward_phase_scale;
     env->reward_expansion_deadline =
         d_kag_cuda_config.reward_expansion_deadline;
     env->reward_expansion_land_target =
@@ -760,6 +771,10 @@ static void kag_cuda_load_config(Dict* kwargs) {
     h_kag_cuda_config.policy_market_slots = template_env.policy_market_slots;
     h_kag_cuda_config.policy_max_hands = template_env.policy_max_hands;
     h_kag_cuda_config.macro_mode = template_env.macro_mode;
+    h_kag_cuda_config.macro_executor_version = template_env.macro_executor_version;
+    h_kag_cuda_config.frozen_macro_executor_version = template_env.frozen_macro_executor_version;
+    h_kag_cuda_config.observation_version = template_env.observation_version;
+    h_kag_cuda_config.frozen_observation_version = template_env.frozen_observation_version;
     h_kag_cuda_config.frozen_macro_mode = template_env.frozen_macro_mode;
     h_kag_cuda_config.macro_decision_interval =
         template_env.macro_decision_interval;
@@ -804,6 +819,7 @@ static void kag_cuda_load_config(Dict* kwargs) {
         template_env.reward_progress_health_ratio;
     h_kag_cuda_config.reward_expansion_scale =
         template_env.reward_expansion_scale;
+    h_kag_cuda_config.reward_phase_scale = template_env.reward_phase_scale;
     h_kag_cuda_config.reward_expansion_deadline =
         template_env.reward_expansion_deadline;
     h_kag_cuda_config.reward_expansion_land_target =

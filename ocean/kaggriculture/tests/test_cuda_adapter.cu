@@ -20,7 +20,7 @@
 } while (0)
 
 enum {
-    ADAPTER_CASES = 12,
+    ADAPTER_CASES = 14,
     ADAPTER_STEPS = 1440,
     ADAPTER_ROWS = 2 * ADAPTER_CASES,
 };
@@ -97,6 +97,13 @@ static void configure_case(Env* env, int case_id, obs_t* observations,
     env->macro_decision_interval = env->macro_mode == KAG_MACRO_MODE_LEGACY
         ? 4 : 1;
     env->macro_score_scale = 10000.0f;
+    if (case_id >= 12) env->macro_mode = KAG_MACRO_MODE_STRUCTURED;
+    env->macro_executor_version = case_id >= 12 ? 1 : 0;
+    env->frozen_macro_executor_version = case_id == 13 ? 0 : -1;
+    /* Fixed/fixed, legacy/legacy, and mixed observation contracts. Cases
+     * rotate learner seats below, exercising per-policy dispatch on CUDA. */
+    env->observation_version = case_id % 3 == 0 ? 0 : 1;
+    env->frozen_observation_version = case_id % 3 == 2 ? 0 : -1;
     env->opening_turns = case_id == 0 ? 10 : case_id == 7 ? 26 : 0;
     env->reset_opening_turns = case_id == 1 ? 20
         : case_id == 8 ? 26 : 0;
@@ -120,6 +127,9 @@ static void configure_case(Env* env, int case_id, obs_t* observations,
     /* Exercise the non-telescoping curriculum in the CPU/GPU transition
      * parity suite. Omitting the CUDA reward call or peak reset must now fail. */
     env->reward_expansion_scale = 0.41f;
+    /* Exercise phases through the real CPU and GPU transitions, not just
+     * the shared helper. Cases with zero also retain the disabled path. */
+    env->reward_phase_scale = case_id % 2 ? 0.0f : 2.0f;
     env->reward_expansion_deadline = 720;
     env->reward_expansion_land_target = 3;
     env->reward_expansion_plant_target = 5;
@@ -152,6 +162,8 @@ static void configure_case(Env* env, int case_id, obs_t* observations,
         KAG_BOT_ADAPTIVE_BASE + KAG_ADAPTIVE_STRUCTURED,
         KAG_BOT_ADAPTIVE_BASE + KAG_ADAPTIVE_TRIAD,
         KAG_BOT_SCRIPT_BASE + KG_SCRIPT_MOON,
+        KAG_BOT_NONE,
+        KAG_BOT_NONE,
     };
     env->bot_opponent = bots[case_id];
     if (bots[case_id] != KAG_BOT_NONE) {
@@ -166,7 +178,7 @@ static void configure_case(Env* env, int case_id, obs_t* observations,
         env->agents[player].terminals = terminals + row;
         env->agents[player].action_mask = masks
             + (size_t)row * KG_POLICY_ACTION_MASK_SIZE;
-        env->agents[player].policy = player;
+        env->agents[player].policy = case_id % 2 ? 1 - player : player;
     }
 
     KGConfig config;
@@ -183,6 +195,16 @@ static void configure_case(Env* env, int case_id, obs_t* observations,
     config.town_shop_sell_interval = 1 + case_id % 7;
     config.town_center_sell_interval = 1 + case_id % 29;
     kg_init(&env->game_storage, &config);
+    if (case_id >= 12) {
+        env->game_storage.config.episode_steps = 720;
+        for (int p = 0; p < 2; p++) {
+            KGPlayer* farm = &env->game_storage.players[p];
+            farm->money = 10000;
+            kg_do_hire(&env->game_storage, farm);
+            kg_set_player_tile(farm, 44, KG_TILE_PASTURE);
+            kg_inventory_add(&farm->units[0], KG_ITEM_COW, 1);
+        }
+    }
     /* A deterministic terminal case catches both reward regressions that the
      * randomized suite previously missed: nonzero relative-money margin and
      * an inactivity threshold wider than the CUDA path's old hardcoded $2. */

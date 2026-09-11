@@ -53,6 +53,8 @@ typedef struct {
     int script_profile;
     int hybrid_turns;
     int macro_mode;
+    int observation_version;
+    int macro_executor_version;
     int macro_decision_interval;
     float macro_score_scale;
     char path[4096];
@@ -89,6 +91,9 @@ static void kag_init_demo(Env* env, obs_t* observations, float* actions,
     env->policy_market_slots = KG_POLICY_MARKET_SLOTS;
     env->policy_max_hands = KG_MAX_HANDS;
     env->macro_mode = macro_mode;
+#ifdef KAG_MACRO_MODE_TASKS
+    env->frozen_macro_mode = -1;
+#endif
     env->macro_decision_interval = macro_decision_interval > 0
         ? macro_decision_interval : 1;
     env->macro_score_scale = macro_score_scale > 1.0f
@@ -166,6 +171,15 @@ static const float* kag_model_forward(KagSide* side, const Agent* agent) {
 
 static void kag_model_action(KagSide* side, Env* env, int player) {
     Agent* agent = &env->agents[player];
+    if (agent->policy == 0) {
+        env->observation_version = side->observation_version;
+        env->macro_executor_version = side->macro_executor_version;
+    } else {
+        env->frozen_observation_version = side->observation_version;
+        env->frozen_macro_executor_version = side->macro_executor_version;
+    }
+    kag_write_observation(env, player);
+    kag_write_mask(env, player);
     const float* logits = kag_model_forward(side, agent);
     const unsigned char* mask = agent->action_mask;
     int offset = 0;
@@ -273,6 +287,9 @@ static int kag_load_model_side(KagSide* side, const char* spec) {
     Ini ini = {0};
     puf_ini_load_file(&ini, "config/default.ini");
     puf_ini_load_file(&ini, "config/kaggriculture.ini");
+    /* Old files must not inherit a newly selected executor or obs layout. */
+    puf_ini_put(&ini, "env.observation_version", "0");
+    puf_ini_put(&ini, "env.macro_executor_version", "0");
     char config_path[4096];
     if (kag_model_config_path(side->path, config_path, sizeof(config_path))) {
         puf_ini_load_file(&ini, config_path);
@@ -281,6 +298,25 @@ static int kag_load_model_side(KagSide* side, const char* spec) {
     layers = puf_ini_get_int(&ini, "policy", "num_layers");
     int model_mask = puf_ini_get_int(&ini, "vec", "action_mask_size");
     side->macro_mode = puf_ini_get_int(&ini, "env", "macro_mode");
+    side->observation_version = puf_ini_get_int(&ini, "env", "observation_version");
+    side->macro_executor_version = puf_ini_get_int(&ini, "env", "macro_executor_version");
+    const char* suffixes[] = {".obs_version", ".executor_version"};
+    int* versions[] = {&side->observation_version, &side->macro_executor_version};
+    for (int i = 0; i < 2; i++) {
+        char metadata[8192];
+        snprintf(metadata, sizeof(metadata), "%s%s", side->path, suffixes[i]);
+        FILE* file = fopen(metadata, "r");
+        if (file) {
+            int parsed = -1; char extra;
+            int n = fscanf(file, "%d %c", &parsed, &extra);
+            fclose(file);
+            if (n != 1 || parsed < 0 || parsed > 1) {
+                fprintf(stderr, "Invalid policy contract %s\n", metadata);
+                puf_ini_free(&ini); return 0;
+            }
+            *versions[i] = parsed;
+        }
+    }
     side->macro_decision_interval = puf_ini_get_int(
         &ini, "env", "macro_decision_interval");
     side->macro_score_scale = puf_ini_get_float(
@@ -799,6 +835,28 @@ static int kag_behavior_jsd(int argc, char** argv) {
         }
         kag_init_demo(&env, observations, actions, rewards, terminals,
             masks, 0, seed, macro_mode, macro_interval, macro_score_scale);
+        const char* obs_override = getenv("KAG_JSD_OBSERVATION_VERSION");
+        const char* exec_override = getenv("KAG_JSD_EXECUTOR_VERSION");
+        env.observation_version = models[0].observation_version;
+        env.macro_executor_version = models[0].macro_executor_version;
+        if (obs_override) {
+            if (strcmp(obs_override, "0") && strcmp(obs_override, "1")) return 2;
+            env.observation_version = atoi(obs_override);
+        }
+        if (exec_override) {
+            if (strcmp(exec_override, "0") && strcmp(exec_override, "1")) return 2;
+            env.macro_executor_version = atoi(exec_override);
+        }
+        for (int i = 1; i < count; i++) {
+            if ((!obs_override && models[i].observation_version != env.observation_version)
+                    || (!exec_override && models[i].macro_executor_version != env.macro_executor_version)) {
+                fprintf(stderr, "JSD requires homogeneous policy contracts; use version-aware PSRO analysis.\n");
+                return 2;
+            }
+        }
+        env.frozen_observation_version = env.observation_version;
+        env.frozen_macro_executor_version = env.macro_executor_version;
+        kag_write_all_observations(&env);
 
         for (int step = 0; step < steps; step++) {
             Agent* probe = &env.agents[0];

@@ -9,10 +9,10 @@
 #endif
 
 #define PUF_GPU_ENV_BANK_LAYOUT 1
-#define PUF_GPU_SELFPLAY 1
 
 #include <cuda_runtime.h>
 
+#include <cassert>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -29,7 +29,6 @@ typedef struct {
     uint64_t base_seed;
     int exact_enabled;
     int exact_banks;
-    int exact_history;
     float exact_current_prob;
     int exact_count;
 } GSCudaConfig;
@@ -76,139 +75,28 @@ static void gs_fail(const char* what) {
     std::exit(1);
 }
 
-/* Mirror the CPU log accumulation exactly (player-0 perspective). */
-__device__ static void gs_cuda_log_game(Env* env, const float* returns) {
-    int max_score = -1;
-    int winners = 0;
-    for (int p = 0; p < env->num_agents; p++) {
-        int score = env->state.scores[p];
-        if (score > max_score) {
-            max_score = score;
-            winners = 1;
-        } else if (score == max_score) {
-            winners++;
-        }
-    }
-
-    float draw = winners == env->num_agents;
-    float slot_0 = draw ? 0.5f
-        : env->state.scores[0] == max_score ? 1.0f : 0.0f;
-    float slot_1 = env->num_agents > 1
-        ? (draw ? 0.5f : env->state.scores[1] == max_score ? 1.0f : 0.0f)
-        : 0.0f;
-    int decisions = env->cfg.num_turns;
-    if (env->cfg.auto_forced_last
-            && env->cfg.num_turns == env->cfg.num_cards) {
-        decisions--;
-    }
-
-    env->log.perf += slot_0;
-    env->log.score += env->state.scores[0];
-    env->log.episode_return += returns[0];
-    env->log.episode_length += decisions;
-    env->log.slot_0_points += env->state.scores[0];
-    env->log.slot_0_score += slot_0;
-    env->log.slot_1_score += slot_1;
-    env->log.draw_rate += draw;
-    env->log.n += 1.0f;
-}
-
 __device__ static void gs_cuda_reset_state(Env* env) {
-    gs_reset(&env->state, &env->history, &env->cfg, &env->rng);
-    gs_write_masks(env);
-    gs_observe(env);
-    env->exact_depth = 0;
-    env->exact_table = 0;
-    env->exact_node = 0;
-    if (d_gs_cuda_config.exact_enabled) {
-        uint32_t exact_draw = gs_mix32(env->rng ^ 0x85ebca6bu);
-        env->exact_table = d_gs_cuda_config.exact_count <= 1
-            || (double)exact_draw / 4294967296.0
-                < d_gs_cuda_config.exact_current_prob
-            ? 0 : 1 + (int)(exact_draw
-                % (uint32_t)(d_gs_cuda_config.exact_count - 1));
-        env->exact_node = env->cfg.prize_order == GS_PRIZES_RANDOM
-            ? env->state.prizes[0] : 0;
-    }
+    gs_reset_state(env, d_gs_cuda_config.exact_count,
+        d_gs_cuda_config.exact_current_prob);
 }
 
 __device__ static void gs_cuda_transition(Env* env, Env* shells,
         const int rows[GS_MAX_PLAYERS], int* bank_completed) {
-    uint8_t bids[GS_MAX_PLAYERS];
-    for (int p = 0; p < env->num_agents; p++) {
-        bids[p] = (uint8_t)env->agents[p].actions[0];
-        env->agents[p].rewards[0] = 0.0f;
-        env->agents[p].terminals[0] = 0.0f;
-    }
     int exact = d_gs_cuda_config.exact_enabled && env->tag > 0
         && env->tag <= d_gs_cuda_config.exact_banks
         && env->exact_table >= 0 && env->exact_table < d_gs_cuda_config.exact_count
         && env->exact_depth < d_gs_exact_decisions[env->exact_table];
+    const uint8_t* response = nullptr;
+    int decisions = 0;
     if (exact) {
-        int depth = env->exact_depth;
-        int table = env->exact_table;
-        uint64_t node = env->exact_node;
-        uint64_t count = d_gs_exact_counts[
-            (uint64_t)table * GS_EXACT_LEVELS + depth];
-        if (node >= count) {
-            node = 0; /* clamp out-of-range; should not happen */
-        }
-        uint64_t offset = d_gs_exact_offsets[
-            (uint64_t)table * GS_EXACT_LEVELS + depth];
-        bids[1] = d_gs_exact_actions[offset + node];
+        uint64_t level = (uint64_t)env->exact_table * GS_EXACT_LEVELS
+            + env->exact_depth;
+        assert(env->exact_node < d_gs_exact_counts[level]);
+        response = d_gs_exact_actions + d_gs_exact_offsets[level];
+        decisions = d_gs_exact_decisions[env->exact_table];
     }
-    for (int p = 0; p < env->num_agents; p++) {
-        env->agents[p].action_mask[bids[p]] = 0;
-    }
-
-    uint64_t next_exact_node = 0;
-    if (exact && env->exact_depth + 1 < d_gs_exact_decisions[env->exact_table]) {
-        int hand_size = env->cfg.num_cards - env->state.round;
-        int prize_choices = env->cfg.prize_order == GS_PRIZES_RANDOM
-            ? env->cfg.num_cards - env->state.round - 1 : 1;
-        uint32_t below_response = (1u << bids[1]) - 1u;
-        uint32_t below_opponent = (1u << bids[0]) - 1u;
-        int response_rank = __builtin_popcount(
-            (unsigned int)(env->state.hands[1] & below_response));
-        int opponent_rank = __builtin_popcount(
-            (unsigned int)(env->state.hands[0] & below_opponent));
-        int prize_rank = 0;
-        if (env->cfg.prize_order == GS_PRIZES_RANDOM) {
-            int next_prize = env->state.prizes[env->state.round + 1];
-            uint32_t below_prize = (1u << next_prize) - 1u;
-            prize_rank = __builtin_popcount((unsigned int)(
-                env->state.remaining_prizes & below_prize));
-        }
-        int stride = hand_size * hand_size * prize_choices;
-        next_exact_node = env->exact_node * stride
-            + response_rank * hand_size * prize_choices
-            + opponent_rank * prize_choices + prize_rank;
-    }
-
-    if (!gs_step(&env->state, &env->history, &env->cfg, bids)) {
-        if (exact) {
-            env->exact_node = next_exact_node;
-            env->exact_depth++;
-        }
-        gs_observe(env);
-        return;
-    }
-
-    float returns[GS_MAX_PLAYERS];
-    gs_returns(&env->state, &env->cfg, returns);
-    float scale = env->cfg.return_type == GS_RETURN_WIN_LOSS
-        ? 1.0f : (float)env->cfg.total_points;
-    for (int p = 0; p < env->num_agents; p++) {
-        returns[p] /= scale;
-        env->agents[p].rewards[0] = returns[p];
-        env->agents[p].terminals[0] = 1.0f;
-    }
-
-    gs_cuda_log_game(env, returns);
-    if (env->tag > 0) {
-        env->boundary_reached = 1;
-        atomicAdd(&bank_completed[env->tag], 1);
-    }
+    if (!gs_transition(env, response, decisions)) return;
+    if (env->tag > 0) atomicAdd(&bank_completed[env->tag], 1);
 
     /* Fold into the player-0 shell row so the generic log reducer sees one
      * completed game per match. */
@@ -287,8 +175,6 @@ static void gs_cuda_load_config(Dict* kwargs) {
         (int)dict_get(kwargs, "exact_exploiter");
     h_gs_cuda_config.exact_banks =
         (int)dict_get(kwargs, "exact_exploiter_banks");
-    h_gs_cuda_config.exact_history =
-        (int)dict_get(kwargs, "exact_exploiter_history");
     h_gs_cuda_config.exact_current_prob =
         (float)dict_get(kwargs, "exact_exploiter_current_prob");
     h_gs_cuda_config.exact_count = 0;
@@ -306,7 +192,22 @@ void gs_gpu_exact_upload(const GSExactTable* tables, int count) {
     cudaMemcpyToSymbol(d_gs_cuda_config, &h_gs_cuda_config,
         sizeof(h_gs_cuda_config));
     gs_cuda_check("exact config upload");
-    if (!count) return;
+    if (h_gs_exact_actions) cudaFree(h_gs_exact_actions);
+    if (h_gs_exact_offsets) cudaFree(h_gs_exact_offsets);
+    if (h_gs_exact_counts) cudaFree(h_gs_exact_counts);
+    if (h_gs_exact_decisions) cudaFree(h_gs_exact_decisions);
+    h_gs_exact_actions = nullptr;
+    h_gs_exact_offsets = nullptr;
+    h_gs_exact_counts = nullptr;
+    h_gs_exact_decisions = nullptr;
+    if (!count) {
+        cudaMemcpyToSymbol(d_gs_exact_actions, &h_gs_exact_actions, sizeof(h_gs_exact_actions));
+        cudaMemcpyToSymbol(d_gs_exact_offsets, &h_gs_exact_offsets, sizeof(h_gs_exact_offsets));
+        cudaMemcpyToSymbol(d_gs_exact_counts, &h_gs_exact_counts, sizeof(h_gs_exact_counts));
+        cudaMemcpyToSymbol(d_gs_exact_decisions, &h_gs_exact_decisions, sizeof(h_gs_exact_decisions));
+        gs_cuda_check("exact table clear");
+        return;
+    }
 
     uint64_t offsets[GS_EXACT_POOL_MAX * GS_EXACT_LEVELS] = {0};
     uint64_t counts[GS_EXACT_POOL_MAX * GS_EXACT_LEVELS] = {0};
@@ -332,10 +233,6 @@ void gs_gpu_exact_upload(const GSExactTable* tables, int count) {
     uint64_t* d_offsets = nullptr;
     uint64_t* d_counts = nullptr;
     int* d_decisions = nullptr;
-    if (h_gs_exact_actions) cudaFree(h_gs_exact_actions);
-    if (h_gs_exact_offsets) cudaFree(h_gs_exact_offsets);
-    if (h_gs_exact_counts) cudaFree(h_gs_exact_counts);
-    if (h_gs_exact_decisions) cudaFree(h_gs_exact_decisions);
     cudaMalloc(&d_actions, total ? total : 1);
     cudaMalloc(&d_offsets,
         (size_t)GS_EXACT_POOL_MAX * GS_EXACT_LEVELS * sizeof(uint64_t));
@@ -427,6 +324,8 @@ static Env* puf_envs_create(int total_agents, Dict* env_kwargs,
     std::free(host_shells);
     std::free(host_rows);
     std::free(cursors);
+    g_gs_gpu_env_active = 1;
+    gs_gpu_exact_upload(gs_exact_tables, gs_exact_count);
     return shells;
 }
 
@@ -490,6 +389,8 @@ static void puf_envs_selfplay_clear(int bank) {
 }
 
 static void puf_envs_close(Env* envs) {
+    gs_gpu_exact_upload(nullptr, 0);
+    g_gs_gpu_env_active = 0;
     if (d_gs_rows) cudaFree(d_gs_rows);
     if (d_gs_matches) cudaFree(d_gs_matches);
     if (d_gs_bank_completed) cudaFree(d_gs_bank_completed);
@@ -498,6 +399,11 @@ static void puf_envs_close(Env* envs) {
     d_gs_matches = nullptr;
     d_gs_bank_completed = nullptr;
     g_gs_bound = 0;
+    g_gs_actions = nullptr;
+    g_gs_masks = nullptr;
+    g_gs_observations = nullptr;
+    g_gs_rewards = nullptr;
+    g_gs_terminals = nullptr;
     g_gs_total_agents = 0;
     g_gs_num_matches = 0;
     g_gs_bank_count = 0;

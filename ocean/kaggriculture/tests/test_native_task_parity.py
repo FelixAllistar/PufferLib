@@ -35,6 +35,45 @@ class NativeTaskParityTests(unittest.TestCase):
             with self.subTest(driver=driver):
                 self._check_mode2_operation_parity(driver)
 
+    def test_observation_versions_both_seats(self):
+        fn = self.lib.kg_policy_observation_version
+        fn.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.c_int,
+                       ctypes.c_int, ctypes.c_void_p, ctypes.c_size_t]
+        fn.restype = None
+        cfg = CConfig()
+        self.lib.kg_config_default(ctypes.byref(cfg))
+        cfg.seed = 709
+        state = self.lib.kg_create(ctypes.byref(cfg))
+        runtime = NativeMacroRuntime(mode=2)
+        different = False
+        try:
+            for turn in range(720):
+                if turn % 24 == 0:
+                    snapshot = c_snapshot(self.lib, state)
+                    for player in range(2):
+                        obs = dict(snapshot, player=player, private=snapshot['privates'][player])
+                        obs.pop('privates', None)
+                        versions = []
+                        for version in (0, 1):
+                            portable = submission_main.encode_observation(obs, version)
+                            runtime.fill_observation(obs, portable)
+                            native = np.zeros(1280, dtype=np.uint8)
+                            fn(state, player, 2, version, native.ctypes.data, native.nbytes)
+                            np.testing.assert_array_equal(portable, native,
+                                err_msg=f'turn={turn} seat={player} version={version}')
+                            versions.append(portable)
+                        if player == 0:
+                            np.testing.assert_array_equal(*versions)
+                        else:
+                            different |= not np.array_equal(*versions)
+                actions = (CAction * 2)()
+                self.lib.kg_rule_action(state, 0, ctypes.byref(actions[0]))
+                # Asymmetric rule-versus-pass farms make the ownership check non-vacuous.
+                self.lib.kg_step(state, actions)
+            self.assertTrue(different)
+        finally:
+            self.lib.kg_destroy(state)
+
     def _check_mode2_operation_parity(self, driver):
         self.lib.kg_policy_macro_action.argtypes = [
             ctypes.c_void_p, ctypes.c_int, ctypes.c_void_p, ctypes.POINTER(CAction)]

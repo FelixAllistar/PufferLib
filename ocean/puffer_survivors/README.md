@@ -132,5 +132,7 @@ make -C ocean/puffer_survivors sanitize
 make -C ocean/puffer_survivors cuda-test
 ```
 
-`cuda-test` requires a usable NVIDIA driver. See `VERIFY.md` for the checks run
-during the 5c port.
+`cuda-test` requires a usable NVIDIA driver. CPU and CUDA tests cover inactive
+enemy slots on both sides of the dense/capacity scan threshold, as well as
+terminal rewards and dash behavior. The CPU test also checks pool invariants
+over 20,000 steps.

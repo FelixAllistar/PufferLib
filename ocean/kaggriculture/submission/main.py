@@ -7,6 +7,7 @@ The accompanying checkpoint contains only our trained
 PufferLib policy weights.
 """
 
+import json
 import math
 import os
 import sys
@@ -404,8 +405,11 @@ def _encode_observation_v2(obs):
     return out
 
 
-def encode_observation(obs):
+def encode_observation(obs, observation_version=None):
     """Mirror kag_write_observation byte-for-byte; trailing bytes are padding."""
+    version = _OBSERVATION_VERSION if observation_version is None else observation_version
+    if version not in (0, 1):
+        raise ValueError("Unsupported observation version")
     player = int(_get(obs, "player", 0))
     farms = _get(obs, "farms", ())
     me, opponent = farms[player], farms[1 - player]
@@ -450,9 +454,8 @@ def encode_observation(obs):
     for phase in range(4):
         put(255 if phase == season_phase else 0)
 
-    # Public farm summaries have a stable absolute-player ordering in the
-    # native ABI. Private/global fields above remain observer-relative.
-    for farm in farms:
+    # Historical policies use absolute ordering; version 1 uses own farm first.
+    for farm in (farms if version == 0 else (me, opponent)):
         entity = [[0] * 13 for _ in range(4)]
         state = [[0] * 8 for _ in range(4)]
         crop_state = [[0] * 6 for _ in CROPS]
@@ -985,6 +988,22 @@ class NativeMinGRU:
 
 
 _CODE_DIR = os.path.dirname(os.path.abspath(sys._getframe().f_code.co_filename))
+_OBSERVATION_VERSION = 0
+_EXECUTOR_VERSION = 0
+_DEFAULT_DETERMINISTIC = True
+_METADATA_PATH = os.path.join(_CODE_DIR, "policy_metadata.json")
+if os.path.isfile(_METADATA_PATH):
+    with open(_METADATA_PATH) as _metadata_file:
+        _metadata = json.load(_metadata_file)
+        _OBSERVATION_VERSION = _metadata["observation_version"]
+        _EXECUTOR_VERSION = _metadata.get("macro_executor_version", 0)
+        _DEFAULT_DETERMINISTIC = _metadata.get("deterministic", True)
+    if type(_OBSERVATION_VERSION) is not int or _OBSERVATION_VERSION not in (0, 1):
+        raise ValueError("Unsupported packaged observation version")
+    if type(_EXECUTOR_VERSION) is not int or _EXECUTOR_VERSION not in (0, 1):
+        raise ValueError("Unsupported packaged executor version")
+    if type(_DEFAULT_DETERMINISTIC) is not bool:
+        raise ValueError("Packaged deterministic flag must be boolean")
 _MODEL_OVERRIDE = os.environ.get("PUFFERLIB_MODEL_PATH")
 _MODEL_CANDIDATES = tuple(path for path in (
     os.path.join(_CODE_DIR, "kaggriculture_v4.bin"),
@@ -996,7 +1015,7 @@ _MODEL_PATH = (_MODEL_OVERRIDE if _MODEL_OVERRIDE is not None else
                     _MODEL_CANDIDATES[0]))
 _MODEL = NativeMinGRU(_MODEL_PATH) if os.path.isfile(_MODEL_PATH) else None
 _POLICY_SEED = int(os.environ.get("PUFFERLIB_POLICY_SEED", "97"))
-_DETERMINISTIC = os.environ.get("PUFFERLIB_DETERMINISTIC", "1") != "0"
+_DETERMINISTIC = os.environ.get("PUFFERLIB_DETERMINISTIC", "1" if _DEFAULT_DETERMINISTIC else "0") != "0"
 _RNG = np.random.default_rng(73)
 
 # ``importlib.util.spec_from_file_location`` (used by our export test and by
@@ -1026,8 +1045,10 @@ try:
         from native_macro_mode import MODE as _NATIVE_MACRO_MODE
     except Exception:
         _NATIVE_MACRO_MODE = 2
-    _NATIVE_MACRO = NativeMacroRuntime(mode=_NATIVE_MACRO_MODE)
+    _NATIVE_MACRO = NativeMacroRuntime(mode=_NATIVE_MACRO_MODE, executor_version=_EXECUTOR_VERSION)
 except Exception:
+    if _EXECUTOR_VERSION:
+        raise  # Never silently run an executor-1 policy as a primitive policy.
     _NATIVE_MACRO = None
 
 

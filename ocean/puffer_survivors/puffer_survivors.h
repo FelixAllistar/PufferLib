@@ -200,7 +200,6 @@ static inline PSConfig ps_config_from_kwargs(Dict* kwargs) {
     cfg.wave_tail_interval = (int)dict_get(kwargs, "wave_tail_interval");
     cfg.wave_min_spawn_interval = (int)dict_get(kwargs, "wave_min_spawn_interval");
     cfg.progress_normal_wave_count = (int)dict_get(kwargs, "progress_normal_wave_count");
-    cfg.weapon_min_cooldown = (float)dict_get(kwargs, "weapon_min_cooldown");
     cfg.bubble_target_range = (float)dict_get(kwargs, "bubble_target_range");
     cfg.bubble_target_area_range = (float)dict_get(kwargs, "bubble_target_area_range");
     cfg.bubble_shot_spread = (float)dict_get(kwargs, "bubble_shot_spread");
@@ -267,7 +266,7 @@ void puf_init(Env* env, Dict* kwargs) {
 }
 
 void c_reset(PufferSurvivors* env) {
-    ps_reset_env(env, 0);
+    ps_reset_core(env, 0, 1);
 }
 
 void c_step(PufferSurvivors* env) {

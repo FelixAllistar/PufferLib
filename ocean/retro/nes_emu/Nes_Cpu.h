@@ -79,6 +79,10 @@ private:
 	
 public:
 	registers_t r;
+	// Opt-in for the validated mapper-0 ROM runner. A JMP to its own opcode
+	// changes no registers or memory; only whole three-cycle iterations may
+	// be folded, and never across the next scheduled CPU/PPU/APU event.
+	bool idle_skip_enabled = false;
 	
 	// low_mem is a full page size so it can be mapped with code_map
 	uint8_t low_mem [page_size > 0x800 ? page_size : 0x800];

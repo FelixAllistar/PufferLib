@@ -1,0 +1,8 @@
+{
+  "url": "https://data.pkmn.cc/sets/gen1.json",
+  "fetched_at": "2026-09-09T02:36:35.318Z",
+  "sha256": "f88949e38b1b6039c7076cb3ffc9370d670a077c395dd4d13a60f0f7cd7793b4",
+  "attribution": "Smogon University and its contributors; distributed via pkmn/smogon. Set data is not covered by the API code MIT license.",
+  "documentation": "https://pkmn.github.io/smogon/data/sets/",
+  "validator": "pokemon-showdown@0.11.11 gen1ou"
+}

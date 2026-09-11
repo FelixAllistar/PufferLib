@@ -1,842 +1,436 @@
 #pragma once
-// Retro / SMB1 -- 8 worlds * 4 stages = 32 levels. No procgen.
-// Each Env runs its own QuickNES state, while the immutable cartridge is
-// shared. CPU vector workers remain independent and need no core mutex.
-// OBS 256 = 64 ego/physics + 48 entities + 12*12 window sampled from
-// framebuffer around Mario. Ego/entities come straight from NES RAM
-// (low_mem, 0x800 bytes), so the same builder runs on libretro via
-// RETRO_MEMORY_SYSTEM_RAM + video framebuffer (sim2real: policy only).
-// ACT 12 discrete (RETRO_ACTION_MASKS). C++ (pufferl) path uses Nes_Emu
-// directly; C fallback (if __cplusplus not defined) is stub.
-
-#include <stdlib.h>
-#include <string.h>
-#include <math.h>
-#include <assert.h>
-#include <stdio.h>
-#include <stdbool.h>
-#include <stdint.h>
-#include "pufferenv.h"
-
-#ifdef PUFFER_TUI_CAPTURE
-#include "puffer_tui.h"
+#ifdef PUFFER_RETRO_LEGACY
+#include "retro_legacy.h"
+#else
+#ifndef __cplusplus
+#error "retro requires C++ and the QuickNES ROM core"
 #endif
-
-#define RETRO_MAX_LEVELS 32
-#define RETRO_LEVEL_W 256
-#define RETRO_LEVEL_H 16
-#define NUM_ATNS 1
-#define ACT_SIZES {12}
-#define RETRO_NUM_ACTIONS 12
-// Obs layout lives in retro_obs.h (shared with the fast native-C backend).
+#ifdef PUFFER_GPU_ENV
+#error "retro has no validated CUDA ROM core"
+#endif
+#include "pufferenv.h"
 #include "retro_obs.h"
-#define RETRO_WINDOW_RADIUS_W (RETRO_WINDOW_W/2)
-#define RETRO_WINDOW_RADIUS_H (RETRO_WINDOW_H/2)
+#include "nes_emu/Nes_Emu.h"
+#include "nes_emu/Nes_State.h"
+#include "nes_emu/Data_Reader.h"
+#include <mutex>
+#include <memory>
+#include <vector>
+#include <string>
+#include <stdexcept>
+#include <algorithm>
+#include <cmath>
 
+// All combinations of A, B, Up, Down, Left, Right. Raw replay also supports
+// Start/Select through retro_frame(), without wrapper resets or RAM writes.
+#define NUM_ATNS 1
+#define ACT_SIZES {64}
+#define RETRO_NUM_ACTIONS 64
+#define RETRO_MAX_LEVELS 32
+#define RETRO_BTN_A 1
+#define RETRO_BTN_B 2
+#define RETRO_BTN_SELECT 4
+#define RETRO_BTN_START 8
+#define RETRO_BTN_UP 16
+#define RETRO_BTN_DOWN 32
+#define RETRO_BTN_LEFT 64
+#define RETRO_BTN_RIGHT 128
 #if defined(from_float) && !defined(PRECISION_FLOAT)
 typedef precision_t obs_t;
 #else
 typedef float obs_t;
 #endif
-
 struct Log {
-    float perf;
-    float score;
-    float episode_return;
-    float episode_length;
-    float distance;
-    float flag;
-    float deaths;
-    float coins;
+    float perf, score, episode_return, episode_length, distance, flag, deaths, coins;
+    float truncations, frames, decisions, clears, warps;
+    float progress_pixels, checkpoints;
+    float level_episodes[32], level_clears[32];
     float n;
 };
-
-#define RETRO_BTN_A      (1u<<0)
-#define RETRO_BTN_B      (1u<<1)
-#define RETRO_BTN_SELECT (1u<<2)
-#define RETRO_BTN_START  (1u<<3)
-#define RETRO_BTN_UP     (1u<<4)
-#define RETRO_BTN_DOWN   (1u<<5)
-#define RETRO_BTN_LEFT   (1u<<6)
-#define RETRO_BTN_RIGHT  (1u<<7)
-
-static const unsigned char RETRO_ACTION_MASKS[RETRO_NUM_ACTIONS] = {
-    0,
-    RETRO_BTN_RIGHT,
-    RETRO_BTN_RIGHT | RETRO_BTN_A,
-    RETRO_BTN_RIGHT | RETRO_BTN_B,
-    RETRO_BTN_RIGHT | RETRO_BTN_A | RETRO_BTN_B,
-    RETRO_BTN_A,
-    RETRO_BTN_LEFT,
-    RETRO_BTN_LEFT  | RETRO_BTN_A,
-    RETRO_BTN_DOWN,
-    RETRO_BTN_B,
-    RETRO_BTN_UP,
-    RETRO_BTN_RIGHT | RETRO_BTN_DOWN,
+struct RetroStart {
+    Nes_State state;
+    unsigned char pixels[256*240];
+    short palette[256];
+    int world, stage, area, data, x;
 };
-
-#define RETRO_TILE_EMPTY    0
-#define RETRO_TILE_SOLID    1
-#define RETRO_TILE_BRICK    2
-#define RETRO_TILE_QUESTION 3
-#define RETRO_TILE_PIPE     4
-#define RETRO_TILE_ENEMY    5
-#define RETRO_TILE_COIN     6
-#define RETRO_TILE_FLAG     7
-
-#ifndef PUFFER_GPU_ENV
-
-#ifdef __cplusplus
-// ===== C++ path (pufferl) : per-Env Nes_Emu =====
-#include "nes_emu/Nes_Emu.h"
-#include "nes_emu/Nes_State.h"
-#include "nes_emu/Data_Reader.h"
-// Fast native-C backend types (smbcore, fetched at build time by build.sh).
-// Function bodies live in retro_fast.h, included after struct Env.
-#include "smbcore/mario.h"
-#include "smbcore/base.h" // likely()/unlikely() used by interface.h (via mario.h)
-#include "smbcore/interface.h" // NOTE: no include guard; include exactly once
-extern "C" {
-#include "platform/render_raster.h"
-}
-extern "C" {
-#include "platform/render_raster.h"
-}
-
-static uint8_t* g_rom_data = NULL;
-static size_t g_rom_size = 0;
-static Nes_Cart g_rom_cart;
-static Nes_State g_initial_state;
-static bool g_initial_state_valid = false;
-static bool g_rom_loaded = false;
-static char g_rom_error[512] = {0};
-static bool g_verbose = true;
-static bool g_full_render = false;
-static __thread uint8_t* t_pixel_buffer = nullptr;
-static inline uint8_t* retro_thread_pixels(){
-    if(!t_pixel_buffer){
-        t_pixel_buffer=(uint8_t*)calloc(256*256,1);
-    }
-    return t_pixel_buffer;
-}
-
-// forward for helper
-struct Env;
-
-static bool retro_load_rom_global(const char* hint) {
-    if (g_rom_loaded) return true;
-    const char* candidates[] = {
-        hint,
-        "ocean/retro/roms/smb1.nes",
-        "../ocean/retro/roms/smb1.nes",
-        "pufferlib/ocean/retro/roms/smb1.nes",
-        "/tmp/smb1_pure.nes",
-        "ocean/retro/roms/smb1.nes",
-        NULL
-    };
-    const char* chosen = NULL;
-    for (int i=0; candidates[i]; i++) {
-        if (!candidates[i] || !candidates[i][0]) continue;
-        FILE* f = fopen(candidates[i], "rb");
-        if (f) {
-            fseek(f,0,SEEK_END); long sz=ftell(f); fseek(f,0,SEEK_SET);
-            if (sz>16 && sz<1024*1024) {
-                uint8_t hdr[16];
-                fread(hdr,1,16,f);
-                if (hdr[0]=='N' && hdr[1]=='E' && hdr[2]=='S') {
-                    fclose(f);
-                    chosen = candidates[i];
-                    break;
-                }
-            }
-            fclose(f);
-        }
-        // try zip
-        if (strstr(candidates[i], ".zip")) {
-            char cmd[1024];
-            snprintf(cmd,sizeof(cmd),"unzip -p \"%s\" \"*.nes\" 2>/dev/null | head -c 16 | od -An -t x1 | head -n1", candidates[i]);
-            // just assume zip contains valid nes, try actual load via unzip -p in Data_Reader? For now skip and rely on extracted smb1.nes
-        }
-    }
-    if (!chosen) {
-        // fallback to known pure path
-        chosen = "ocean/retro/roms/smb1.nes";
-        FILE* f=fopen(chosen,"rb");
-        if (!f) {
-            snprintf(g_rom_error,sizeof(g_rom_error),"ROM not found (tried ocean/retro/roms/smb1.nes)");
-            return false;
-        }
-        fclose(f);
-    }
-    FILE* f=fopen(chosen,"rb");
-    if (!f) { snprintf(g_rom_error,sizeof(g_rom_error),"cannot open %s",chosen); return false; }
-    fseek(f,0,SEEK_END); long sz=ftell(f); fseek(f,0,SEEK_SET);
-    g_rom_data = (uint8_t*)malloc(sz);
-    fread(g_rom_data,1,sz,f); fclose(f);
-    g_rom_size = sz;
-    const char* full_render = getenv("RETRO_FULL_RENDER");
-    g_full_render = full_render && *full_render && strcmp(full_render,"0") != 0;
-    Mem_File_Reader cart_rdr(g_rom_data, (long)g_rom_size);
-    const char* cart_err = g_rom_cart.load_ines(cart_rdr);
-    if (cart_err) {
-        snprintf(g_rom_error,sizeof(g_rom_error),"load cartridge: %s",cart_err);
-        free(g_rom_data);
-        g_rom_data = NULL;
-        g_rom_size = 0;
-        return false;
-    }
-    g_rom_loaded = true;
-    if (g_verbose) fprintf(stderr,"[retro] rom loaded %s %zu bytes\n", chosen, g_rom_size);
-    // build initial state once via temp emu
-    {
-        Nes_Emu* tmp = new Nes_Emu();
-        uint8_t* pix = retro_thread_pixels();
-        tmp->set_pixels(pix + 8*256, 256);
-        const char* err = tmp->set_cart(&g_rom_cart);
-        if (err) { snprintf(g_rom_error,sizeof(g_rom_error),"load_ines: %s",err); delete tmp; return false; }
-        // tmp->set_sample_rate(0); // no audio - skip to avoid crash
-        // skip start screen like gym
-        // press START 1 frame then run until time !=0 (like gym _skip_start_screen)
-        auto read_time = [&]()->int {
-            uint8_t* m = tmp->low_mem();
-            return (m[0x07F8]%10)*100 + (m[0x07F9]%10)*10 + (m[0x07FA]%10);
-        };
-        // initial press
-        tmp->emulate_frame(RETRO_BTN_START,0);
-        tmp->emulate_frame(0,0);
-        for(int i=0;i<300;i++){
-            int t=read_time();
-            if(t!=0) break;
-            tmp->emulate_frame(RETRO_BTN_START,0);
-            tmp->emulate_frame(0,0);
-            uint8_t* m=tmp->low_mem();
-            if(m) m[0x07A0]=0;
-            if (tmp->low_mem()[0x075F]!=0 || tmp->low_mem()[0x075C]!=0) {
-                // if target stage logic, not needed
-            }
-        }
-        // wait for time to start decrementing (gym second loop)
-        int last_t = read_time();
-        for(int i=0;i<100;i++){
-            if(read_time()!=last_t) break;
-            tmp->emulate_frame(RETRO_BTN_START,0);
-            tmp->emulate_frame(0,0);
-            uint8_t* m=tmp->low_mem(); if(m) m[0x07A0]=0;
-        }
-        int saved_time = read_time();
-        tmp->save_state(&g_initial_state);
-        g_initial_state_valid = true;
-        delete tmp;
-        if (g_verbose) fprintf(stderr,"[retro] initial state saved time=%d\n", saved_time);
-    }
-    return true;
-}
-
-static inline int smb_ram_read(Nes_Emu* emu, int addr) {
-    if (!emu) return 0;
-    uint8_t* m = emu->low_mem();
-    if (!m || addr<0 || addr>=0x800) return 0;
-    return m[addr];
-}
-// Thin wrappers over the shared RAM readers in retro_obs.h (same addresses
-// the fast backend and libretro adapter use).
-static inline uint8_t* smb_mem(Nes_Emu* emu){ return emu ? emu->low_mem() : NULL; }
-static inline int smb_time(Nes_Emu* emu){ uint8_t* m=smb_mem(emu); return m?robs_time(m):0; }
-static inline int smb_world(Nes_Emu* emu){ uint8_t* m=smb_mem(emu); return m?robs_world(m):0; }
-static inline int smb_stage(Nes_Emu* emu){ uint8_t* m=smb_mem(emu); return m?robs_stage(m):0; }
-static inline int smb_area(Nes_Emu* emu){ uint8_t* m=smb_mem(emu); return m?robs_area(m):0; }
-static inline int smb_score(Nes_Emu* emu){ uint8_t* m=smb_mem(emu); return m?robs_score(m):0; }
-static inline int smb_coins(Nes_Emu* emu){ uint8_t* m=smb_mem(emu); return m?robs_coins(m):0; }
-static inline int smb_life(Nes_Emu* emu){ return smb_ram_read(emu,0x075A); }
-static inline int smb_x(Nes_Emu* emu){ uint8_t* m=smb_mem(emu); return m?robs_x(m):0; }
-static inline int smb_left_x(Nes_Emu* emu){ return (smb_ram_read(emu,0x86) - smb_ram_read(emu,0x071C)) & 0xFF; }
-static inline int smb_y_pixel(Nes_Emu* emu){ return smb_ram_read(emu,0x03B8); }
-static inline int smb_player_state(Nes_Emu* emu){ uint8_t* m=smb_mem(emu); return m?robs_pstate(m):0; }
-static inline bool smb_is_dying(Nes_Emu* emu){ uint8_t* m=smb_mem(emu); return m&&robs_dying(m); }
-static inline bool smb_is_dead(Nes_Emu* emu){ uint8_t* m=smb_mem(emu); return m&&robs_dead(m); }
-static inline bool smb_is_game_over(Nes_Emu* emu){ uint8_t* m=smb_mem(emu); return m&&robs_gameover(m); }
-static inline bool smb_is_world_over(Nes_Emu* emu){ uint8_t* m=smb_mem(emu); return m&&robs_worldover(m); }
-static inline bool smb_flag_get(Nes_Emu* emu){ uint8_t* m=smb_mem(emu); return m&&robs_flagget(m); }
-
+struct RetroRom {
+    Nes_Cart cart;
+    Nes_Emu seed;
+    Nes_State title;
+    std::unique_ptr<RetroStart> starts[32];
+    std::string path;
+    std::mutex mutex;
+    bool loaded = false;
+    unsigned long long fingerprint = 0;
+};
+static RetroRom& retro_rom() { static RetroRom rom; return rom; }
+struct RetroVecArena { Nes_Emu* emus; int count; };
+struct RetroDisplay {
+    unsigned char pixels[256*240];
+    short palette[256];
+    bool valid;
+};
+// Episode-local frontiers, keyed by source level and actual loaded area data.
+// The ROM's upcoming pipe destination ($0750) is not a stable area identity.
+struct RetroFrontier { unsigned int key; int x; };
 struct Env {
     Log log;
     Agent agents[1];
-    int num_agents;
-    int tag;
-    int boundary_reached;
+    int num_agents, tag, boundary_reached;
     unsigned int rng;
-    int tick;
-    int world, stage, area;
-    int x_pos, x_pos_max;
-    int score, coins, time, life;
-    int has_flag, is_dead;
-    int frameskip;
-    int window_w, window_h;
-    float potential_gamma; // must equal train.gamma (PBRS invariance)
-    RetroWeights rw;       // sparse-event reward weights ([env] config)
-    // Enemy-kill tracking snapshot for retro_kill_scan (per-step deltas).
-    unsigned char prev_eid[RETRO_NUM_ENEMIES];
-    short prev_ex[RETRO_NUM_ENEMIES];
-    int kills_total;
-    float gravity, max_vx, jump_v, run_accel, friction;
-    unsigned char* level_tiles;
-    unsigned char* entity_tiles;
-    char rom_path[512];
-    char core_path[512];
-    void* client; // retro client placeholder
-    // per-Env emu
+    int tick, world, stage, area, x_pos, x_pos_max, score, coins, time, life;
+    int has_flag, is_dead, frameskip, max_frames, spawn_n, cur_spawn, spawn_pin;
+    unsigned char spawn_w[32], spawn_l[32];
+    int episode_spawn, episode_clears, episode_warps, last_frames;
+    unsigned int rewarded_levels;
+    float episode_return, potential_gamma, completion_reward, death_penalty, score_scale, reward_scale;
+    float checkpoint_reward;
+    int checkpoint_distance, progress_pixels, episode_decisions, frontier_count;
+    RetroFrontier frontiers[256];
+    bool emu_ok, emu_owned, full_render, reset_image, last_truncated;
     Nes_Emu* emu;
-    uint8_t* pixels;
-    bool emu_ok;
-    bool emu_owned;
-    struct RetroVecArena* arena;
-    // fast native-C backend (env.backend=fast): per-env smbcore state.
-    // Full SMB_state per env (~90KB: 2KB RAM + 16KB PPU regs/nametables live
-    // here; the 32KB PRG + 8KB CHR copies are immutable after init). Snap
-    // holds only the varying part for instant reset.
-    int use_fast;
-    SMB_state* fast;
-    bool fast_owned;
-    struct RetroFastArena* fast_arena;
-    int fast_idx;
-    int fast_clone_src; // >=0: clone boot state from arena env instead of booting
+    RetroVecArena* arena;
+    const RetroStart* start;
+    RetroDisplay* display;
 };
-
-// Refresh the kill-tracker snapshot at init/reset: a stale "enemy alive"
-// entry from the previous episode would false-fire on the first scan.
-static inline void retro_kill_reset(Env* env){
-    for(int i=0;i<RETRO_NUM_ENEMIES;i++){ env->prev_eid[i]=0; env->prev_ex[i]=0; }
-    env->kills_total = 0;
-};
-
-struct RetroFastSnap {
-    uint8_t ram[0x800];
-    uint8_t ppuram[0x4000];
-    struct ppu_state ppu;
-    const uint8_t *area_data, *enemy_data, *music_data;
-    bool reset_occurred;
-    uint8_t start_world, start_level;
-};
-
-struct RetroFastArena {
-    SMB_state* st;
-    RetroFastSnap* snap;
-    int count;
-};
-
-struct RetroVecArena {
-    Nes_Emu* emus;
-    int count;
-};
-
-static void retro_sync_from_emu(Env* env){
-    Nes_Emu* e=env->emu;
-    if(!e) return;
-    env->world=smb_world(e);
-    env->stage=smb_stage(e);
-    env->area=smb_area(e);
-    env->x_pos=smb_x(e);
-    env->score=smb_score(e);
-    env->coins=smb_coins(e);
-    env->time=smb_time(e);
-    env->life=smb_life(e);
-    env->has_flag=smb_flag_get(e)?1:0;
-    env->is_dead=smb_is_dead(e)||smb_is_dying(e)?1:0;
+static inline unsigned char retro_action_mask(int a) { return (a&3)|((a&60)<<2); }
+static inline int retro_mask_action(unsigned char m) { return (m&3)|((m>>2)&60); }
+static inline unsigned int retro_random(unsigned int* state) {
+    unsigned int x=*state?*state:0x9e3779b9u;
+    x^=x<<13; x^=x>>17; x^=x<<5; return *state=x;
 }
-
-// Fast native-C backend (env.backend=fast). Same ABI; see retro_fast.h.
-#include "retro_fast.h"
-
-static void retro_compute_obs_real(const Env* env, obs_t* obs){
-    const Nes_Emu* e = env->emu;
-    Nes_Emu* m = (Nes_Emu*)e;
-    float o[OBS_SIZE];
-    uint8_t* ram = m ? m->low_mem() : NULL;
-    if(ram){
-        RetroScalars sc;
-        sc.x_pos=env->x_pos; sc.x_pos_max=env->x_pos_max; sc.coins=env->coins;
-        sc.score=env->score; sc.tick=env->tick; sc.world=env->world;
-        sc.stage=env->stage; sc.area=env->area; sc.time=env->time;
-        sc.has_flag=env->has_flag; sc.is_dead=env->is_dead;
-        retro_ego_ent(o, ram, &sc);
-    } else {
-        for(int i=0;i<RETRO_EGO_SIZE+RETRO_ENT_SIZE;i++) o[i]=0;
+static unsigned char* retro_thread_pixels() {
+    static thread_local unsigned char pixels[Nes_Emu::buffer_width*256]={};
+    return pixels;
+}
+static void retro_bind_pixels(Nes_Emu* e) {
+    e->set_pixels(retro_thread_pixels()+8*Nes_Emu::buffer_width,Nes_Emu::buffer_width);
+}
+static void retro_check(const char* err) { if(err) throw std::runtime_error(std::string("retro: ")+err); }
+static int retro_level_id(int w,int l) { return w>=1&&w<=8&&l>=1&&l<=4?(w-1)*4+l-1:-1; }
+static void retro_parse_spawns(Env* e,const char* spec) {
+    e->spawn_n=0;
+    if(!spec||!*spec) spec="1-1";
+    if(!strcmp(spec,"all")) {
+        for(int w=1;w<=8;w++) for(int l=1;l<=4;l++) {
+            int n=e->spawn_n++; e->spawn_w[n]=w; e->spawn_l[n]=l;
+        }
+        return;
     }
-    for(int i=0;i<RETRO_EGO_SIZE+RETRO_ENT_SIZE;i++){
-#if defined(from_float) && !defined(PRECISION_FLOAT)
-        obs[i]=from_float(o[i]);
-#else
-        obs[i]=o[i];
-#endif
+    const char* p=spec;
+    while(*p) {
+        int w,l,n=0;
+        if(sscanf(p," %d-%d %n",&w,&l,&n)!=2||n<=0||retro_level_id(w,l)<0
+            ||e->spawn_n==32||(p[n]&&p[n]!=','))
+            throw std::runtime_error("retro: spawn_levels must be all or a CSV of levels 1-1 through 8-4");
+        e->spawn_w[e->spawn_n]=w; e->spawn_l[e->spawn_n++]=l; p+=n;
+        if(*p==',') { ++p; if(!*p) throw std::runtime_error("retro: empty spawn entry"); }
     }
+}
+static void retro_pick_spawn(Env* e) { if(!e->spawn_pin) e->cur_spawn=retro_random(&e->rng)%e->spawn_n; }
+
+static void retro_load_rom_locked(RetroRom& rom,const char* path) {
+    if(rom.loaded) {
+        if(rom.path!=path) throw std::runtime_error("retro: cannot change ROM inside a vector process");
+        return;
+    }
+    FILE* f=fopen(path,"rb");
+    if(!f) throw std::runtime_error(std::string("retro: cannot open ROM ")+path);
+    std::vector<unsigned char> bytes(40976);
+    size_t size=fread(bytes.data(),1,bytes.size(),f); int extra=fgetc(f); fclose(f);
+    if(size!=bytes.size()||extra!=EOF||memcmp(bytes.data(),"NES\x1a",4))
+        throw std::runtime_error("retro: supported SMB1 iNES ROM required");
+    unsigned long long hash=14695981039346656037ull;
+    for(unsigned char b:bytes) hash=(hash^b)*1099511628211ull;
+    if(hash!=0x31d802e3779199daull)
+        throw std::runtime_error("retro: ROM differs from validated SMB1 NTSC image (see README SHA-256)");
+    rom.fingerprint=hash;
+    Mem_File_Reader reader(bytes.data(),(long)bytes.size());
+    retro_check(rom.cart.load_ines(reader));
+    if(rom.cart.mapper_code()!=0||rom.cart.prg_size()!=32768||rom.cart.chr_size()!=8192)
+        throw std::runtime_error("retro: SMB1 mapper-0 cartridge required");
+    retro_check(rom.seed.set_cart(&rom.cart)); retro_bind_pixels(&rom.seed);
+    bool ready=false;
+    for(int i=0;i<600;i++) {
+        retro_check(rom.seed.emulate_frame(0,0));
+        const unsigned char* m=rom.seed.low_mem();
+        if(i>30&&m[0x770]==0&&m[0x772]==3) { ready=true; break; }
+    }
+    if(!ready||rom.seed.error_count()) throw std::runtime_error("retro: ROM did not reach title menu without unsupported opcodes");
+    rom.seed.save_state(&rom.title); rom.path=path; rom.loaded=true;
+    fprintf(stderr,"[retro] ROM %s fingerprint=%016llx mapper=0 NTSC; original CPU/PPU/APU\n",path,hash);
+}
+static int retro_start_area(const RetroRom& rom,int w,int l) {
+    const unsigned char* prg=rom.cart.prg();
+    int base=prg[0x9cb4-0x8000+w-1],area=0;
+    for(int s=1;s<l;s++) { if(prg[0x9cbc-0x8000+base+area]==0x29) area++; area++; }
+    return area;
+}
+static void retro_prepare_start_locked(RetroRom& rom,int w,int l) {
+    int id=retro_level_id(w,l); if(rom.starts[id]) return;
+    std::unique_ptr<RetroStart> start(new RetroStart());
+    Nes_Emu& emu=rom.seed;
+    emu.load_state(rom.title); retro_bind_pixels(&emu);
+    unsigned char* m=emu.low_mem(); int area=retro_start_area(rom,w,l);
+    // Reset setup only: ROM menu code resolves the area and runs the entrance.
+    m[0x75f]=w-1; m[0x75c]=l-1; m[0x760]=area;
+    retro_check(emu.emulate_frame(RETRO_BTN_START,0));
+    bool ready=false;
+    for(int i=0;i<1200;i++) {
+        retro_check(emu.emulate_frame(0,0));
+        if(m[0x770]==1&&m[0x772]==3&&m[0xe]==8&&robs_time(m)>0) { ready=true; break; }
+    }
+    int base=rom.cart.prg()[0x9cb4-0x8000+w-1];
+    int expected=rom.cart.prg()[0x9cbc-0x8000+base+area];
+    // Underground stages begin with a ROM-controlled pipe intermission.
+    // By the first controllable frame, the ROM has entered the following area.
+    if(expected==0x29) { area++; expected=rom.cart.prg()[0x9cbc-0x8000+base+area]; }
+    const unsigned char* prg=rom.cart.prg();
+    int offset=prg[0x9d28-0x8000+((expected>>5)&3)]+(expected&31);
+    int expected_data=prg[0x9d2c - 0x8000 + offset]+256*prg[0x9d4e - 0x8000 + offset]+2;
+    // $0750 is also the upcoming pipe destination and can already differ.
+    // Validate the actual loaded level-data pointer, not that warp pointer.
+    if(!ready||emu.error_count()||robs_world(m)!=w||robs_stage(m)!=l||m[0x760]!=area||m[0xe7]+256*m[0xe8]!=expected_data) {
+        fprintf(stderr,"[retro] boot requested=%d-%d area=%d ptr=%02x got=%d-%d area=%d ptr=%02x mode=%d task=%d eng=%d time=%d\n",
+            w,l,area,expected,robs_world(m),robs_stage(m),m[0x760],m[0x750],m[0x770],m[0x772],m[0xe],robs_time(m));
+        throw std::runtime_error("retro: level start validation failed");
+    }
+    emu.save_state(&start->state); const auto& fr=emu.frame();
+    for(int y=0;y<240;y++) memcpy(start->pixels+y*256,fr.pixels+y*fr.pitch,256);
+    memcpy(start->palette,fr.palette,sizeof(start->palette));
+    start->world=w; start->stage=l; start->area=area+1;
+    start->data=m[0xe7]+256*m[0xe8]; start->x=robs_x(m);
+    rom.starts[id]=std::move(start);
+}
+static void retro_sync_from_emu(Env* e) {
+    const unsigned char* m=e->emu->low_mem();
+    e->world=robs_world(m); e->stage=robs_stage(m); e->area=robs_area(m);
+    e->x_pos=robs_x(m); e->score=robs_score(m); e->coins=robs_coins(m);
+    e->time=robs_time(m); e->life=robs_life(m);
+    e->has_flag=robs_flagget(m); e->is_dead=robs_dead(m)||robs_dying(m);
+}
+static int retro_progress(Env* e,unsigned int key,int x) {
+    // Bound coordinate-wrap/glitch jackpots without changing ROM execution.
+    x=std::max(0,std::min((int)RETRO_POT_XMAX,x));
+    for(int i=0;i<e->frontier_count;i++) if(e->frontiers[i].key==key) {
+        int novel=std::max(0,x-e->frontiers[i].x);
+        e->frontiers[i].x=std::max(x,e->frontiers[i].x);
+        int before=e->progress_pixels/e->checkpoint_distance;
+        e->progress_pixels+=novel;
+        return e->progress_pixels/e->checkpoint_distance-before;
+    }
+    // First arrival establishes a baseline; loading an area isn't movement.
+    // Exhaustion suppresses new-area rewards, never alters/emits ROM inputs.
+    if(e->frontier_count<256) e->frontiers[e->frontier_count++]={key,x};
+    return 0;
+}
+static int retro_track_progress(Env* e) {
+    const unsigned char* m=e->emu->low_mem();
+    int level=retro_level_id(robs_world(m),robs_stage(m));
+    if(level<0||m[0x770]!=1||m[0x772]!=3||m[0xe]!=8||robs_dying(m)) return 0;
+    unsigned int data=m[0xe7]+256u*m[0xe8];
+    if(data<0x8000) return 0;
+    return retro_progress(e,((unsigned int)level<<16)|data,robs_x(m));
+}
+static void retro_compute_obs_real(const Env* e,obs_t* obs) {
+    float values[OBS_SIZE];
+    RetroScalars sc={e->x_pos,e->x_pos_max,e->coins,e->score,e->tick,e->world,e->stage,e->area,e->time,e->has_flag,e->is_dead,0,0};
+    const unsigned char* m=e->emu->low_mem(); retro_ego_ent(values,m,&sc);
+    const auto& fr=e->emu->frame();
+    const unsigned char* pixels=e->reset_image?e->start->pixels:fr.pixels;
+    const short* palette=e->reset_image?e->start->palette:fr.palette;
+    int pitch=e->reset_image?256:(int)fr.pitch;
+    float lut[256];
+    for(int i=0;i<256;i++) {
+        const auto& c=Nes_Emu::nes_colors[palette[i]&(Nes_Emu::color_table_size-1)];
+        lut[i]=retro_luma(c.red,c.green,c.blue);
+    }
+    int mx=(m[0x86]-m[0x71c])&255,my=m[0x3b8]; if(my>=240) my=120;
+    int xs[96],ys[96];
+    for(int i=0;i<96;i++) { xs[i]=std::max(0,std::min(255,mx-48+i)); ys[i]=std::max(0,std::min(239,my-48+i))*pitch; }
     int idx=RETRO_EGO_SIZE+RETRO_ENT_SIZE;
-    if(e && e->frame().pixels){
-        const Nes_Emu::frame_t& fr = e->frame();
-        // 12x12-TILE window, per-tile mean luma of the full 8x8 block
-        // (matches the fast backend; single-pixel sampling aliased away
-        // coins and pits). Backend-agnostic luma: resolve the indexed pixel
-        // through the base 64-entry NES palette (the fast native-C backend
-        // renders through the same table), so the window matches across
-        // renderers. Emphasis bits are masked out; SMB1 does not use them.
-        int mx = smb_left_x((Nes_Emu*)e);
-        int my = smb_y_pixel((Nes_Emu*)e);
-        if(my<0) my=0; if(my>=240) my=120;
-        for(int dy=-RETRO_WINDOW_RADIUS_H; dy<RETRO_WINDOW_H-RETRO_WINDOW_RADIUS_H; dy++){
-            for(int dx=-RETRO_WINDOW_RADIUS_W; dx<RETRO_WINDOW_W-RETRO_WINDOW_RADIUS_W; dx++){
-                int bx = mx + dx*8;
-                int by = my + dy*8;
-                float acc = 0; int n = 0;
-                for(int py=0; py<8; py++){
-                    int sy = by + py;
-                    if(sy<0) sy=0; if(sy>=240) sy=239;
-                    for(int px=0; px<8; px++){
-                        int sx = bx + px;
-                        if(sx<0) sx=0; if(sx>=256) sx=255;
-                        uint8_t pix = 0;
-                        if(fr.pixels) pix = fr.pixels[sy*256 + sx];
-                        int slot = fr.palette[pix & 63] & (Nes_Emu::color_table_size-1);
-                        const Nes_Emu::rgb_t& rgb = Nes_Emu::nes_colors[slot];
-                        acc += retro_luma(rgb.red, rgb.green, rgb.blue); n++;
-                    }
-                }
-                float luma = n ? acc / n : 0.0f;
+    for(int ty=0;ty<12;ty++) for(int tx=0;tx<12;tx++) {
+        float sum=0;
+        if(pixels) for(int y=0;y<8;y++) {
+            const unsigned char* row=pixels+ys[ty*8+y];
+            for(int x=0;x<8;x++) sum+=lut[row[xs[tx*8+x]]];
+        }
+        values[idx++]=sum*(1.0f/64);
+    }
+    for(int i=0;i<OBS_SIZE;i++) {
 #if defined(from_float) && !defined(PRECISION_FLOAT)
-                obs[idx++]=from_float(luma);
+        obs[i]=from_float(values[i]);
 #else
-                obs[idx++]=luma;
+        obs[i]=values[i];
 #endif
-            }
-        }
-    } else {
-        for(int i=0;i<RETRO_TILES;i++){
-#if defined(from_float) && !defined(PRECISION_FLOAT)
-            obs[idx++]=from_float(0);
-#else
-            obs[idx++]=0;
-#endif
-        }
     }
 }
-
-void puf_init(Env* env, Dict* kwargs){
-    Nes_Emu* supplied_emu = env->emu;
-    RetroVecArena* supplied_arena = env->arena;
-    bool supplied_emu_owned = env->emu_owned;
-    RetroFastArena* supplied_fast = env->fast_arena;
-    int supplied_fast_idx = env->fast_idx;
-    bool supplied_fast_owned = env->fast_owned;
-    int supplied_clone_src = env->fast_clone_src;
-    memset(env,0,sizeof(*env));
-    env->num_agents=1; env->agents[0].policy=0;
-    env->emu = supplied_emu;
-    env->arena = supplied_arena;
-    env->emu_owned = supplied_emu_owned;
-    env->fast_arena = supplied_fast;
-    env->fast_idx = supplied_fast_idx;
-    env->fast_owned = supplied_fast_owned;
-    env->fast_clone_src = supplied_clone_src;
-    DictItem* it;
-    DictItem* be_it=dict_find(kwargs,"backend");
-    env->use_fast = (be_it && be_it->str && strcmp(be_it->str,"fast")==0) ? 1 : 0;
-    it=dict_find(kwargs,"frameskip"); env->frameskip = it? (int)it->value : 4;
-    it=dict_find(kwargs,"gravity"); env->gravity = it? (float)it->value : 0.52f;
-    it=dict_find(kwargs,"potential_gamma"); env->potential_gamma = it? (float)it->value : 0.99f;
-    // Sparse-event reward weights ([env] in the env ini). Defaults reproduce
-    // the original hardcoded values exactly.
-    it=dict_find(kwargs,"score_scale"); env->rw.score = it? (float)it->value : 0.01f;
-    it=dict_find(kwargs,"coin_reward"); env->rw.coin = it? (float)it->value : 0.5f;
-    it=dict_find(kwargs,"kill_reward"); env->rw.kill = it? (float)it->value : 1.0f;
-    it=dict_find(kwargs,"death_penalty"); env->rw.death = it? (float)it->value : 2.5f;
-    it=dict_find(kwargs,"flag_reward"); env->rw.flag = it? (float)it->value : 5.0f;
-    it=dict_find(kwargs,"area_reward"); env->rw.area = it? (float)it->value : 2.0f;
-    it=dict_find(kwargs,"idle_penalty"); env->rw.idle = it? (float)it->value : 0.0f;
-    env->kills_total = 0;
-    for(int i=0;i<RETRO_NUM_ENEMIES;i++){ env->prev_eid[i]=0; env->prev_ex[i]=0; }
-    it=dict_find(kwargs,"max_vx"); env->max_vx = it? (float)it->value : 2.8f;
-    it=dict_find(kwargs,"jump_v"); env->jump_v = it? (float)it->value : -6.2f;
-    it=dict_find(kwargs,"run_accel"); env->run_accel = it? (float)it->value : 0.22f;
-    it=dict_find(kwargs,"friction"); env->friction = it? (float)it->value : 0.88f;
-    const char* rp=NULL; DictItem* rp_it=dict_find(kwargs,"rom_path"); if(rp_it&&rp_it->str) rp=rp_it->str;
-    if(rp) snprintf(env->rom_path,sizeof(env->rom_path),"%s",rp);
-    const char* cp=NULL; DictItem* cp_it=dict_find(kwargs,"core_path"); if(cp_it&&cp_it->str) cp=cp_it->str;
-    if(cp) snprintf(env->core_path,sizeof(env->core_path),"%s",cp);
-    env->window_w=RETRO_WINDOW_W; env->window_h=RETRO_WINDOW_H;
-    const char* rom_hint = env->rom_path[0]?env->rom_path:NULL;
-    if(env->use_fast){
-        if(!fast_load_rom_global(rom_hint)){
-            fprintf(stderr,"[retro] fast rom load failed: %s\n", g_fast_rom_error);
-            env->emu_ok=false;
-            env->fast=nullptr;
-            return;
-        }
-        if(!env->fast_arena){
-            env->fast_arena = (RetroFastArena*)calloc(1, sizeof(RetroFastArena));
-            if(!fast_arena_alloc(env->fast_arena, 1)){
-                fprintf(stderr,"[retro] fast arena alloc failed\n");
-                env->emu_ok=false;
-                return;
-            }
-            env->fast_owned = true;
-            env->fast_idx = 0;
-        }
-        env->fast = &env->fast_arena->st[env->fast_idx];
-        if (env->fast_clone_src >= 0 && env->fast_clone_src < env->fast_arena->count &&
-            env->fast_clone_src != env->fast_idx) {
-            // Boot-clone: bit-identical to a fresh boot (deterministic dance).
-            fast_clone_env(env->fast_arena, env->fast_idx, env->fast_clone_src);
-        } else if(!fast_boot_env(env->fast_arena, env->fast_idx)){
-            fprintf(stderr,"[retro] fast boot to gameplay failed\n");
-            env->emu_ok=false;
-            env->fast=nullptr;
-            return;
-        }
-        fast_reset_to_snap(env);
-        if (g_verbose) fprintf(stderr,"[retro-fast] env booted time=%d x=%d\n",
-            env->time, env->x_pos);
-        env->emu_ok=true;
-        return;
-    }
-    if(!retro_load_rom_global(rom_hint)){
-        fprintf(stderr,"[retro] rom load failed: %s\n", g_rom_error);
-        env->emu_ok=false;
-        env->emu=nullptr;
-        return;
-    }
-    // per-Env emu
-    if(!env->emu){
-        env->emu = new Nes_Emu();
-        env->emu_owned = true;
-    }
-    // per-thread pixel buffer to save 65KB*4096
-    env->pixels = nullptr;
-    uint8_t* pix = retro_thread_pixels();
-    env->emu->set_pixels(pix + 8*256, 256);
-    const char* err = env->emu->set_cart(&g_rom_cart);
-    if(err){ fprintf(stderr,"[retro] load_ines failed: %s\n",err); env->emu_ok=false; return; }
-    // env->emu->set_sample_rate(0);
-    // load initial state
-    if(g_initial_state_valid){
-        env->emu->load_state(g_initial_state);
-    } else {
-        // fallback: should have been created
-        env->emu->save_state(&g_initial_state);
-        g_initial_state_valid=true;
-    }
-    retro_sync_from_emu(env);
-    env->x_pos_max = env->x_pos;
-    env->tick=0;
-    env->emu_ok=true;
-    retro_kill_reset(env);
+static double retro_option(Dict* cfg,const char* key,double fallback) { DictItem* i=dict_find(cfg,key); return i?i->value:fallback; }
+void puf_init(Env* e,Dict* cfg) {
+    Nes_Emu* supplied=e->emu; RetroVecArena* arena=e->arena; unsigned int seed=e->rng;
+    memset(e,0,sizeof(*e)); e->num_agents=1; e->rng=seed?seed:0x9e3779b9u; e->emu=supplied; e->arena=arena;
+    e->frameskip=retro_option(cfg,"frameskip",1); e->max_frames=retro_option(cfg,"max_frames",30000);
+    e->potential_gamma=retro_option(cfg,"potential_gamma",0.997);
+    e->completion_reward=retro_option(cfg,"completion_reward",10); e->death_penalty=retro_option(cfg,"death_penalty",0.125);
+    double spacing=retro_option(cfg,"checkpoint_distance",128);
+    e->checkpoint_reward=retro_option(cfg,"checkpoint_reward",0.125);
+    if(!std::isfinite(spacing)||spacing<1||spacing>RETRO_POT_XMAX||spacing!=floor(spacing)
+        ||!std::isfinite(e->checkpoint_reward)||e->checkpoint_reward<0)
+        throw std::runtime_error("retro: invalid checkpoint_distance/checkpoint_reward");
+    e->checkpoint_distance=(int)spacing;
+    e->reward_scale=retro_option(cfg,"reward_scale",0.0625);
+    e->score_scale=retro_option(cfg,"score_scale",0); e->full_render=retro_option(cfg,"full_render",0)!=0;
+    const char* full=getenv("RETRO_FULL_RENDER"); if(full&&strcmp(full,"0")) e->full_render=true;
+    if(e->frameskip<1||e->frameskip>16||e->max_frames<1||!(e->potential_gamma>0&&e->potential_gamma<=1)
+        ||!std::isfinite(e->reward_scale)||e->reward_scale<=0)
+        throw std::runtime_error("retro: invalid frameskip, max_frames, or potential_gamma");
+    DictItem* be=dict_find(cfg,"backend");
+    if(be&&be->str&&strcmp(be->str,"quicknes")) throw std::runtime_error("retro: ROM-only build; legacy port requires RETRO_LEGACY=1");
+    DictItem* sp=dict_find(cfg,"spawn_levels"); retro_parse_spawns(e,sp&&sp->str?sp->str:"all");
+    DictItem* rp=dict_find(cfg,"rom_path"); const char* path=rp&&rp->str?rp->str:"ocean/retro/roms/smb1.nes";
+    RetroRom& rom=retro_rom();
+    std::lock_guard<std::mutex> lock(rom.mutex);
+    retro_load_rom_locked(rom,path);
+    for(int i=0;i<e->spawn_n;i++) retro_prepare_start_locked(rom,e->spawn_w[i],e->spawn_l[i]);
+    if(!e->emu) { e->emu=new Nes_Emu(); e->emu_owned=true; }
+    retro_check(e->emu->set_cart(&rom.cart,&rom.seed));
+    e->emu->set_idle_skip(retro_option(cfg,"idle_loop_skip",1)!=0);
+    e->emu_ok=true;
 }
-
-void puf_log(Log* log, Dict* out){
-    dict_set(out,"perf",log->perf);
-    dict_set(out,"score",log->score);
-    dict_set(out,"episode_return",log->episode_return);
-    dict_set(out,"episode_length",log->episode_length);
-    dict_set(out,"distance",log->distance);
-    dict_set(out,"flag",log->flag);
-    dict_set(out,"deaths",log->deaths);
-    dict_set(out,"coins",log->coins);
+void puf_reset(Env* e) {
+    retro_pick_spawn(e);
+    int id=retro_level_id(e->spawn_w[e->cur_spawn],e->spawn_l[e->cur_spawn]);
+    e->start=retro_rom().starts[id].get();
+    if(!e->start) throw std::runtime_error("retro: unprepared level start");
+    e->emu->load_state(e->start->state); e->reset_image=true; retro_sync_from_emu(e);
+    e->x_pos_max=e->x_pos; e->tick=0; e->episode_return=0; e->episode_clears=0; e->episode_warps=0;
+    e->rewarded_levels=0; e->episode_spawn=id;
+    e->frontier_count=0; e->progress_pixels=0; e->episode_decisions=0;
+    retro_track_progress(e);
+    if(e->agents[0].observations) retro_compute_obs_real(e,(obs_t*)e->agents[0].observations);
 }
-
-void puf_reset(Env* env){
-    if(!env->emu_ok) return;
-    if(env->use_fast){
-        if(!env->fast) return;
-        Log saved=env->log;
-        fast_reset_to_snap(env);
-        env->log=saved;
-        if(env->agents[0].observations) retro_fast_obs(env, (obs_t*)env->agents[0].observations);
-        return;
+// Exact controller-frame API: no RAM writes, shaping, episode limits or resets.
+static void retro_frame(Env* e,unsigned char buttons,bool draw=true) {
+    retro_bind_pixels(e->emu);
+    retro_check(draw?e->emu->emulate_frame(buttons,0):e->emu->emulate_skip_frame_fast(buttons,0));
+    // The vendored core approximates a few unsupported opcodes as NOPs.
+    // Never silently train through that path under a ROM-fidelity contract.
+    if(e->emu->error_count())
+        throw std::runtime_error("retro: unsupported CPU opcode; refusing approximate ROM execution (see README)");
+    if(draw&&e->display) {
+        // Only an explicitly watched environment owns a persistent image.
+        // Native evaluation draws after workers have reused their scratch.
+        const auto& fr=e->emu->frame();
+        for(int y=0;y<240;y++) memcpy(e->display->pixels+y*256,fr.pixels+y*fr.pitch,256);
+        memcpy(e->display->palette,fr.palette,sizeof(e->display->palette));
+        e->display->valid=true;
     }
-    if(!env->emu) return;
-    env->emu->load_state(g_initial_state);
-    retro_sync_from_emu(env);
-    env->x_pos_max = env->x_pos;
-    env->tick=0; env->has_flag=0; env->is_dead=0;
-    retro_kill_reset(env);
-    if(env->agents[0].observations) retro_compute_obs_real(env, (obs_t*)env->agents[0].observations);
+    e->reset_image=false;
 }
-
-void puf_step(Env* env){
-    if(env->use_fast){ puf_step_fast(env); return; }
-    if(!env->emu_ok || !env->emu){ env->agents[0].rewards[0]=0; env->agents[0].terminals[0]=1; return; }
-    env->agents[0].rewards[0]=0; env->agents[0].terminals[0]=0;
-    // puf_init runs on the main thread, while stepping runs on OMP workers.
-    // Rebind the scratch framebuffer here so workers never render into one
-    // shared thread-local buffer.
-    uint8_t* pix = retro_thread_pixels();
-    env->emu->set_pixels(pix + 8*256, 256);
-    int act=0; if(env->agents[0].actions) act=(int)env->agents[0].actions[0];
-    if(act<0) act=0; if(act>=RETRO_NUM_ACTIONS) act=RETRO_NUM_ACTIONS-1;
-    unsigned char mask = RETRO_ACTION_MASKS[act];
-    float reward=0;
-    bool done=false;
-    bool froze=false;
-    int eng0_run=0;
-    RetroScalars prev;
-    prev.x_pos=env->x_pos; prev.x_pos_max=env->x_pos_max; prev.coins=env->coins;
-    prev.score=env->score; prev.tick=env->tick; prev.world=env->world;
-    prev.stage=env->stage; prev.area=env->area; prev.time=env->time;
-    prev.has_flag=env->has_flag; prev.is_dead=env->is_dead;
-    prev.kills=env->kills_total; prev.idle=0;
-    for(int f=0; f<env->frameskip; f++){
-        env->tick++;
-        // PPO only observes after the action's final frame. QuickNES still
-        // advances the complete CPU/PPU/APU state in skip mode, but avoids
-        // writing an intermediate 256x240 framebuffer.
-        const bool draw = (f + 1 == env->frameskip)
-            || g_full_render;
-        uint8_t* mb = env->emu->low_mem();
-        int fc_before = mb ? mb[0x0009] : -1;
-        const char* err = draw
-            ? env->emu->emulate_frame(mask,0)
-            : env->emu->emulate_skip_frame_fast(mask,0);
-        (void)err;
-        retro_sync_from_emu(env);
-        uint8_t* ma = env->emu->low_mem();
-        if(ma && fc_before >= 0 && ma[0x0009] == fc_before){
-            // Frame counter stalled: input-dead freeze state. End the
-            // episode so one frozen env can never wedge a rollout.
-            froze = true;
-            done = true;
-            break;
+static bool retro_level_advance(int ow,int ol,int w,int l) { return retro_level_id(w,l)>=0&&(w>ow||(w==ow&&l>ol)); }
+static float retro_rom_reward(const Env* e,float old_potential,float next_potential,
+        int advances,bool dead,bool done,int score_delta,int checkpoints=0) {
+    float reward=(done?0:e->potential_gamma*next_potential)-old_potential;
+    reward+=advances*e->completion_reward-(dead?e->death_penalty:0);
+    reward+=std::max(0,score_delta)*e->score_scale;
+    // Earned checkpoints are base rewards, never cancelled by terminal PBRS.
+    reward+=checkpoints*e->checkpoint_reward;
+    return reward*e->reward_scale;
+}
+void puf_step(Env* e) {
+    int action=std::max(0,std::min(63,(int)e->agents[0].actions[0]));
+    unsigned char buttons=retro_action_mask(action);
+    float old_potential=retro_potential(e->x_pos); int old_score=e->score;
+    bool dead=false,won=false; int advances=0,checkpoints=0; e->last_frames=0;
+    for(int f=0;f<e->frameskip;f++) {
+        const unsigned char* m=e->emu->low_mem(); int ow=robs_world(m),ol=robs_stage(m),mode=m[0x770];
+        retro_frame(e,buttons,e->full_render||f+1==e->frameskip||e->tick+1>=e->max_frames);
+        e->tick++; e->last_frames++;
+        checkpoints+=retro_track_progress(e);
+        bool clear=retro_level_advance(ow,ol,robs_world(m),robs_stage(m))||(mode!=2&&m[0x770]==2);
+        int id=retro_level_id(ow,ol);
+        if(clear&&id>=0&&!(e->rewarded_levels&(1u<<id))) {
+            e->rewarded_levels|=1u<<id; advances++; e->episode_clears++; e->log.level_clears[id]++;
+            if(robs_world(m)>ow+(ol==4)||(robs_world(m)==ow&&robs_stage(m)>ol+1)) e->episode_warps++;
         }
-        // eng=00 (GR_ENTRANCE_GAMETIMERSETUP) is a 1-3 frame handoff at
-        // every entrance/area reload. Persisting this long means the
-        // entrance state machine is wedged (observed after transition
-        // deaths: eng=00, x=0, stale warp pointers). End the episode for
-        // ~30 frame-equivalents of cost instead of stalling the worker.
-        if(ma && ma[0x000E] == 0x00){
-            if(++eng0_run > 120){
-                froze = true;
-                done = true;
-                break;
-            }
-        } else {
-            eng0_run = 0;
-        }
-        // Fast-forward the death animation by forcing the dead state, but
-        // ONLY during normal gameplay (engine 0x08). Forcing it mid-transition
-        // (pipe/vine/flag/area-load) strands area-load state machines with
-        // zeroed RAM and wedges area reload -- observed as tick-budget
-        // preempts with eng=00/x=0. Transition deaths play out naturally.
-        if(smb_is_dying(env->emu) && smb_player_state(env->emu)==0x08){
-            uint8_t* m = env->emu->low_mem();
-            if(m) m[0x000E]=0x06;
-            env->emu->emulate_skip_frame_fast(0,0);
-            retro_sync_from_emu(env);
-        }
-        if(env->tick>4000){ done=true; break; }
-        if(smb_is_dead(env->emu) || smb_is_game_over(env->emu)){ done=true; break; }
-        if(smb_flag_get(env->emu)){ done=true; break; }
+        dead=robs_dead(m)||robs_gameover(m); won=ow==8&&mode!=2&&m[0x770]==2;
+        if(dead||won||e->tick>=e->max_frames) break;
     }
-    retro_sync_from_emu(env);
-    RetroScalars cur;
-    cur.x_pos=env->x_pos; cur.x_pos_max=env->x_pos_max; cur.coins=env->coins;
-    cur.score=env->score; cur.tick=env->tick; cur.world=env->world;
-    cur.stage=env->stage; cur.area=env->area; cur.time=env->time;
-    cur.has_flag=env->has_flag; cur.is_dead=env->is_dead;
-    { // enemy-kill scan + anti-sit-still idle flag for this step
-        uint8_t* mk = env->emu->low_mem();
-        if(mk) env->kills_total += retro_kill_scan(mk, env->prev_eid, env->prev_ex, env->x_pos);
-        cur.kills = env->kills_total;
-        cur.idle = (env->x_pos == prev.x_pos && mk && mk[0x000E]==0x08
-            && !smb_is_dying(env->emu) && !smb_is_dead(env->emu)
-            && !smb_flag_get(env->emu)) ? 1 : 0;
-    }
-    reward = retro_reward(&prev, &cur, &env->x_pos_max,
-        smb_is_dying(env->emu), smb_is_dead(env->emu),
-        smb_flag_get(env->emu) && !env->has_flag, env->potential_gamma, &env->rw);
-    if (froze) reward -= 1.0f;
-    done = smb_is_dead(env->emu) || smb_is_game_over(env->emu) || smb_flag_get(env->emu) || env->tick>4000 || froze;
-    if(done){
-        env->log.n+=1;
-        env->log.episode_length+=env->tick;
-        env->log.episode_return+=reward;
-        env->log.score+=env->score;
-        float prog = env->x_pos_max/3200.0f; if(prog>1) prog=1; if(env->has_flag) prog=1;
-        env->log.perf+=prog;
-        env->log.distance+=env->x_pos_max;
-        env->log.flag+= smb_flag_get(env->emu)?1:0;
-        env->log.deaths+= (smb_is_dead(env->emu) || froze)?1:0;
-        env->log.coins+= env->coins;
-        env->agents[0].terminals[0]=1.0f;
-    }
-    env->agents[0].rewards[0]=reward;
-    if(done){
-        Log saved=env->log;
-        env->emu->load_state(g_initial_state);
-        retro_sync_from_emu(env);
-        env->x_pos_max=env->x_pos;
-        env->tick=0; env->has_flag=0; env->is_dead=0;
-        retro_kill_reset(env);
-        env->log=saved;
-        if(env->agents[0].observations) retro_compute_obs_real(env,(obs_t*)env->agents[0].observations);
-    } else {
-        if(env->agents[0].observations) retro_compute_obs_real(env,(obs_t*)env->agents[0].observations);
+    retro_sync_from_emu(e); e->x_pos_max=std::max(e->x_pos_max,e->x_pos);
+    e->last_truncated=e->tick>=e->max_frames&&!dead&&!won;
+    bool done=dead||won||e->last_truncated;
+    // Finite-horizon task; all task terminals have zero potential. Area
+    // transitions retain the complete potential difference (no omitted edge).
+    float reward=retro_rom_reward(e,old_potential,retro_potential(e->x_pos),advances,dead,done,e->score-old_score,checkpoints);
+    e->episode_return+=reward; e->episode_decisions++;
+    if(done) {
+        e->log.n++; e->log.episode_return+=e->episode_return; e->log.episode_length+=e->tick;
+        e->log.frames+=e->tick; e->log.decisions+=e->episode_decisions;
+        e->log.progress_pixels+=e->progress_pixels;
+        e->log.checkpoints+=e->progress_pixels/e->checkpoint_distance;
+        e->log.score+=e->score; e->log.distance+=e->x_pos_max; e->log.coins+=e->coins;
+        e->log.flag+=e->episode_clears>0; e->log.clears+=e->episode_clears; e->log.perf+=e->episode_clears>0;
+        e->log.deaths+=dead; e->log.truncations+=e->last_truncated; e->log.warps+=e->episode_warps;
+        e->log.level_episodes[e->episode_spawn]++; e->boundary_reached=1;
+        puf_reset(e);
+    } else if(e->agents[0].observations) retro_compute_obs_real(e,(obs_t*)e->agents[0].observations);
+    e->agents[0].rewards[0]=reward; e->agents[0].terminals[0]=done?1:0;
+}
+void puf_log(Log* log,Dict* out) {
+#define RETRO_LOG(name) dict_set(out,#name,log->name)
+    RETRO_LOG(perf); RETRO_LOG(score); RETRO_LOG(episode_return); RETRO_LOG(episode_length);
+    RETRO_LOG(distance); RETRO_LOG(flag); RETRO_LOG(deaths); RETRO_LOG(coins);
+    RETRO_LOG(truncations); RETRO_LOG(frames); RETRO_LOG(decisions); RETRO_LOG(clears); RETRO_LOG(warps);
+    RETRO_LOG(progress_pixels); RETRO_LOG(checkpoints);
+#undef RETRO_LOG
+    for(int i=0;i<32;i++) {
+        char key[64]; snprintf(key,sizeof(key),"level_%d_%d_episodes",i/4+1,i%4+1); dict_set(out,key,log->level_episodes[i]);
+        snprintf(key,sizeof(key),"level_%d_%d_clears",i/4+1,i%4+1); dict_set(out,key,log->level_clears[i]);
     }
 }
-
-void puf_render(Env* env){
-    if(!IsWindowReady()){
-        const char* _d=getenv("DISPLAY"); const char* _w=getenv("WAYLAND_DISPLAY");
-        if((!_d || !*_d) && (!_w || !*_w)) return;
-        InitWindow(960,600,"PufferLib Retro // Super Mario Bros.");
-        if(!IsWindowReady()) return;
-        SetTargetFPS(60);
-    }
-    if(IsKeyDown(KEY_ESCAPE)) exit(0);
-    if(!IsWindowReady()) return;
-    const int view_x=24, view_y=72, scale=2;
-    const int view_w=Nes_Emu::image_width*scale;
-    const int view_h=Nes_Emu::image_height*scale;
-    BeginDrawing();
-    ClearBackground((Color){8,13,27,255});
-    DrawRectangle(0,0,960,52,(Color){15,23,42,255});
-    DrawRectangle(0,51,960,1,(Color){47,72,108,255});
-    DrawText("PUFFERLIB  /  SMB1",24,14,22,(Color){236,244,255,255});
-    DrawText(env->use_fast ? "NATIVE-C CORE" : "REAL NES ROM",774,18,14,(Color){91,221,190,255});
-    DrawRectangle(view_x-4,view_y-4,view_w+8,view_h+8,(Color){42,61,88,255});
-    DrawRectangle(view_x,view_y,view_w,view_h,(Color){0,0,0,255});
-    if(env->emu && env->emu->frame().pixels){
-        const auto& fr = env->emu->frame();
-        for(int y=0;y<240;y++) for(int x=0;x<256;x++){
-            uint8_t pix = fr.pixels[y*256 + x];
-            // Frame pixels are palette slots. Resolve them through QuickNES'
-            // actual NES palette instead of treating the slot as grayscale.
-            int color_index = fr.palette[pix] & (Nes_Emu::color_table_size-1);
-            const Nes_Emu::rgb_t& rgb = Nes_Emu::nes_colors[color_index];
-            Color color=(Color){rgb.red,rgb.green,rgb.blue,255};
-            DrawRectangle(view_x+x*scale,view_y+y*scale,scale,scale,color);
-        }
-    }
-    DrawText("ARROWS / WASD move    X / SPACE jump    Z / C run    R reset",view_x,view_y+view_h+14,14,(Color){164,181,207,255});
-
-    const int panel_x=576, panel_y=84, panel_w=344;
-    DrawRectangle(panel_x,panel_y,panel_w,view_h-24,(Color){15,23,42,255});
-    DrawRectangle(panel_x,panel_y,4,view_h-24,(Color){91,221,190,255});
-    DrawText("RUN STATUS",panel_x+24,panel_y+22,16,(Color){91,221,190,255});
-    DrawText(TextFormat("WORLD  %d-%d",env->world,env->stage),panel_x+24,panel_y+68,24,(Color){236,244,255,255});
-    DrawText(TextFormat("X POSITION  %d",env->x_pos),panel_x+24,panel_y+116,17,(Color){184,201,224,255});
-    DrawText(TextFormat("SCORE      %06d",env->score),panel_x+24,panel_y+148,17,(Color){184,201,224,255});
-    DrawText(TextFormat("COINS      %02d",env->coins),panel_x+24,panel_y+180,17,(Color){255,211,91,255});
-    DrawText(TextFormat("TIME       %03d",env->time),panel_x+24,panel_y+212,17,(Color){184,201,224,255});
-    DrawText(TextFormat("FRAME      %d",env->tick),panel_x+24,panel_y+244,17,(Color){184,201,224,255});
-    DrawLine(panel_x+24,panel_y+274,panel_x+panel_w-24,panel_y+274,(Color){47,72,108,255});
-    DrawText("12-action PPO interface",panel_x+24,panel_y+302,15,(Color){137,158,188,255});
-    DrawText("indexed pixels -> color preview",panel_x+24,panel_y+328,15,(Color){137,158,188,255});
-    EndDrawing();
+void puf_close(Env* e) {
+    if(e->emu_owned) delete e->emu;
+    e->emu=nullptr; delete e->display; e->display=nullptr;
 }
-
-void puf_close(Env* env){
-    if(env->emu){
-        if(env->emu_owned) delete env->emu;
-        env->emu=nullptr;
+void puf_render(Env* e) {
+    if(!IsWindowReady()) { InitWindow(768,720,"Retro / original SMB1 ROM"); SetTargetFPS(60/e->frameskip); }
+    if(!e->display) e->display=new RetroDisplay{};
+    if(!e->reset_image&&!e->display->valid) {
+        BeginDrawing(); ClearBackground(BLACK); EndDrawing(); return;
     }
-    if(env->fast){
-        if(env->fast_owned && env->fast_arena){
-            fast_arena_free(env->fast_arena);
-            free(env->fast_arena);
-        }
-        env->fast=nullptr;
-        env->fast_arena=nullptr;
+    static Texture2D texture={0}; unsigned char rgb[256*240*4];
+    const unsigned char* pixels=e->reset_image?e->start->pixels:e->display->pixels;
+    const short* pal=e->reset_image?e->start->palette:e->display->palette; int pitch=256;
+    for(int y=0;y<240;y++) for(int x=0;x<256;x++) {
+        const auto& c=Nes_Emu::nes_colors[pal[pixels[y*pitch+x]]&(Nes_Emu::color_table_size-1)];
+        int p=(y*256+x)*4; rgb[p]=c.red; rgb[p+1]=c.green; rgb[p+2]=c.blue; rgb[p+3]=255;
     }
-    if(env->pixels){ free(env->pixels); env->pixels=nullptr; }
-    if(env->level_tiles){ free(env->level_tiles); env->level_tiles=nullptr; }
-    if(env->entity_tiles){ free(env->entity_tiles); env->entity_tiles=nullptr; }
-    if(env->client){ free(env->client); env->client=nullptr; }
-    if(IsWindowReady()) CloseWindow();
+    if(!texture.id) { Image im={rgb,256,240,1,PIXELFORMAT_UNCOMPRESSED_R8G8B8A8}; texture=LoadTextureFromImage(im); }
+    UpdateTexture(texture,rgb); BeginDrawing(); ClearBackground(BLACK);
+    DrawTextureEx(texture,(Vector2){0,0},0,3,WHITE); EndDrawing();
 }
-
-// The emulator objects are large and are touched in env order on every step.
-// Keep them in one contiguous arena instead of scattering 4096 allocations.
-// The public Env/Agent ABI remains unchanged, so PPO still sees the same buffers.
 #ifdef PUFFERLIB_BUILD_MAIN
-static Env* my_vec_init(int* num_envs_out, int* buffer_env_starts,
-        int* buffer_env_counts, Dict* vec_kwargs, Dict* env_kwargs){
-    int total_agents = (int)dict_get(vec_kwargs,"total_agents");
-    int num_buffers = (int)dict_get(vec_kwargs,"num_buffers");
-    int agents_per_buffer = total_agents / num_buffers;
-    Env* envs = (Env*)calloc((size_t)total_agents,sizeof(Env));
-    DictItem* be_it0=dict_find(env_kwargs,"backend");
-    int use_fast0 = (be_it0 && be_it0->str && strcmp(be_it0->str,"fast")==0) ? 1 : 0;
-    RetroVecArena* arena = NULL;
-    RetroFastArena* farena = NULL;
-    if(use_fast0){
-        farena = (RetroFastArena*)calloc(1,sizeof(RetroFastArena));
-        if(!fast_arena_alloc(farena, total_agents)){
-            fprintf(stderr,"[retro] fast arena alloc failed\n");
-            return envs;
-        }
-        fast_hb_init(total_agents);
-    } else {
-        arena = (RetroVecArena*)calloc(1,sizeof(RetroVecArena));
-        arena->emus = new Nes_Emu[total_agents];
-        arena->count = total_agents;
+static Env* my_vec_init(int* num_envs,int* starts,int* counts,Dict* vec,Dict* cfg) {
+    int n=dict_get(vec,"total_agents"),buffers=dict_get(vec,"num_buffers");
+    if(n<=0||buffers<=0||n%buffers) throw std::runtime_error("retro: total_agents must divide evenly into buffers");
+    Env* envs=(Env*)calloc(n,sizeof(Env)); RetroVecArena* arena=new RetroVecArena{new Nes_Emu[n],n};
+    for(int i=0;i<n;i++) {
+        envs[i].rng=(unsigned int)i*2654435761u+12345u; envs[i].emu=&arena->emus[i]; envs[i].arena=arena;
+        puf_init(&envs[i],cfg);
     }
-
-    int buf=0, buf_agents=0;
-    buffer_env_starts[0]=0;
-    buffer_env_counts[0]=0;
-    for(int i=0;i<total_agents;i++){
-        Env* env=&envs[i];
-        env->rng=(unsigned int)i;
-        if(use_fast0){
-            env->fast=&farena->st[i];
-            env->fast_owned=false;
-            env->fast_arena=farena;
-            env->fast_idx=i;
-            env->fast_clone_src=(i>0)?0:-1;
-        } else {
-            env->emu=&arena->emus[i];
-            env->emu_owned=false;
-            env->arena=arena;
-        }
-        puf_init(env,env_kwargs);
-        buf_agents += env->num_agents;
-        buffer_env_counts[buf]++;
-        if(buf_agents>=agents_per_buffer && buf<num_buffers-1){
-            buf++;
-            buffer_env_starts[buf]=i+1;
-            buffer_env_counts[buf]=0;
-            buf_agents=0;
-        }
-    }
-    *num_envs_out=total_agents;
-    return envs;
+    for(int b=0;b<buffers;b++) { starts[b]=b*(n/buffers); counts[b]=n/buffers; }
+    *num_envs=n; return envs;
 }
-
-static void my_vec_close(Env* envs){
+static void my_vec_close(Env* envs) {
     if(!envs) return;
     RetroVecArena* arena=envs[0].arena;
-    if(arena){
-        delete[] arena->emus;
-        free(arena);
-    }
-    RetroFastArena* farena=envs[0].fast_arena;
-    if(farena && !envs[0].fast_owned){
-        // shared arena (owned by my_vec_init, not by envs[0])
-        fast_arena_free(farena);
-        free(farena);
-    }
-    free(envs);
+    for(int i=0;i<arena->count;i++) { delete envs[i].display; envs[i].display=nullptr; }
+    delete[] arena->emus; delete arena; free(envs);
 }
-
 #define MY_VEC_INIT
 #define MY_VEC_CLOSE
 #endif
-
-#else
-// C fallback for standalone compiled as C (should not happen via pufferl)
-struct Env { Log log; Agent agents[1]; int num_agents; int tag; int boundary_reached; unsigned int rng; int tick; int world,stage,area; int x_pos,x_pos_max; int score,coins,time,life; int has_flag,is_dead; int frameskip; int window_w,window_h; float gravity,max_vx,jump_v,run_accel,friction; unsigned char* level_tiles; unsigned char* entity_tiles; char rom_path[512]; char core_path[512]; RetroClient* client; };
-void puf_init(Env* e, Dict* k){ memset(e,0,sizeof(*e)); e->num_agents=1; fprintf(stderr,"[retro] C fallback: rebuild with C++\n"); }
-void puf_log(Log* l, Dict* o){}
-void puf_reset(Env* e){}
-void puf_step(Env* e){ e->agents[0].terminals[0]=1; }
-void puf_render(Env* e){}
-void puf_close(Env* e){}
+#if defined(__CUDACC__) && defined(PUFFERLIB_BUILD_MAIN)
+#include "retro_sweep.h"
 #endif
-
 #endif

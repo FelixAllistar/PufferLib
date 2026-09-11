@@ -681,9 +681,11 @@ static inline void ps_draw_enemy(PufferSurvivors* env, int i, float scale, int w
         : (kind == 1 ? 3.85f : (kind == 2 ? 3.5f : 3.35f)));
     int flip_x = env->enemies.vx[i] < -0.001f || (fabsf(env->enemies.vx[i]) < 0.001f && env->enemies.x[i] > env->px);
     Vector2 p = ps_screen(env, env->enemies.x[i], env->enemies.y[i], scale, w, h);
+    float dmg_flash = 0.0f;
+#ifdef PS_FAST_RENDER
     // Damage flash without per-enemy numbers: global flash with distance falloff so swarm still reads.
     PSClient* ec = ps_client(env);
-    float dmg_flash = ec ? ec->fast_damage_flash : 0.0f;
+    dmg_flash = ec ? ec->fast_damage_flash : 0.0f;
     if (dmg_flash > 0.015f) {
         float dx = env->enemies.x[i] - env->px;
         float dy = env->enemies.y[i] - env->py;
@@ -695,6 +697,7 @@ static inline void ps_draw_enemy(PufferSurvivors* env, int i, float scale, int w
     } else {
         dmg_flash = 0.0f;
     }
+#endif
     if (ari_k) {
         float width = env->enemies.half_width[i] * scale * 2.0f;
         float height = env->enemies.half_height[i] * scale * 2.0f;
@@ -804,14 +807,17 @@ static inline void ps_draw_moving_obstacle(PufferSurvivors* env, int i,
 }
 
 static inline void ps_draw_hud(PufferSurvivors* env) {
-    PSClient* client = ps_client(env);
     float hp_pct = env->max_hp > 0.0f ? env->hp / env->max_hp : 0.0f;
     float xp_pct = ps_xp_threshold(env, 0) > 0.0f ? env->xp / ps_xp_threshold(env, 0) : 0.0f;
     float dash_cd_total = ps_dash_cooldown_total(env, 0);
     float dash_ready = 1.0f - ps_clampf(env->dash_cd / dash_cd_total, 0.0f, 1.0f);
     int is_dashing = env->dash_timer > 0;
     int dash_on_cd = env->dash_cd > 0.0f;
-    float hit_flash = client ? ps_clampf(client->fast_hit_time / 0.22f, 0.0f, 1.0f) : 0.0f;
+    float hit_flash = 0.0f;
+#ifdef PS_FAST_RENDER
+    PSClient* client = ps_client(env);
+    hit_flash = client ? ps_clampf(client->fast_hit_time / 0.22f, 0.0f, 1.0f) : 0.0f;
+#endif
 
     int panel_x = 12, panel_y = 12, panel_w = 384, panel_h = 218;
     // Panel with soft shadow and rounded feel

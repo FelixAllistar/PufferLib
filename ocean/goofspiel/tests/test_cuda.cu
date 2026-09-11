@@ -5,9 +5,8 @@
 #include <cstdlib>
 #include <cstring>
 
-#include "../goofspiel.h"
-
 #define PUFFER_GPU_ENV 1
+#include "../goofspiel.h"
 #include "../goofspiel.cu"
 
 #define CUDA_OK(call) do { \
@@ -81,9 +80,27 @@ static void set_kwargs(Dict* kwargs, int cards, int turns, int prize,
 }
 
 static void run_suite(const char* name, int cards, int turns, int prize,
-        int info, int ret, int ties) {
+        int info, int ret, int ties, bool exact = false, bool open_spiel = false) {
     Dict kwargs = {0};
     set_kwargs(&kwargs, cards, turns, prize, info, ret, ties);
+    dict_set(&kwargs, "open_spiel_obs", open_spiel);
+    dict_set(&kwargs, "exact_exploiter", exact);
+    dict_set(&kwargs, "exact_exploiter_current_prob", 0.5);
+    std::vector<uint8_t> responses[2][2];
+    gs_exact_count = exact ? 2 : 0;
+    for (int table = 0; table < gs_exact_count; table++) {
+        uint64_t roots = prize == GS_PRIZES_RANDOM ? cards : 1;
+        uint64_t children = roots * cards * cards
+            * (prize == GS_PRIZES_RANDOM ? cards - 1 : 1);
+        responses[table][0].assign(roots, table ? cards - 1 : 0);
+        responses[table][1].assign(children, table ? cards - 2 : 1);
+        gs_exact_tables[table] = {};
+        gs_exact_tables[table].decisions = 2;
+        for (int depth = 0; depth < 2; depth++) {
+            gs_exact_tables[table].actions[depth] = responses[table][depth].data();
+            gs_exact_tables[table].counts[depth] = responses[table][depth].size();
+        }
+    }
 
     Env* cpu = (Env*)std::calloc(SUITE_MATCHES, sizeof(Env));
     obs_t* cpu_obs = (obs_t*)std::calloc(
@@ -150,6 +167,11 @@ static void run_suite(const char* name, int cards, int turns, int prize,
         (double)frozen_matches / SUITE_MATCHES);
     dict_set(&vec_kwargs, "seat_balance", 1);
     Env* gpu_envs = puf_envs_create(SUITE_ROWS, &kwargs, &vec_kwargs, layout);
+    GSCudaConfig uploaded;
+    CUDA_OK(cudaMemcpyFromSymbol(&uploaded, d_gs_cuda_config, sizeof(uploaded)));
+    assert(uploaded.exact_count == gs_exact_count);
+    // Exercise replacement uploads as well as pools present during creation.
+    gs_gpu_exact_upload(gs_exact_tables, gs_exact_count);
 
     obs_t* d_obs = nullptr;
     float* d_actions = nullptr;
@@ -204,6 +226,14 @@ static void run_suite(const char* name, int cards, int turns, int prize,
             (size_t)SUITE_ROWS * GS_NUM_CARDS, cudaMemcpyDeviceToHost));
 
         for (int i = 0; i < SUITE_MATCHES; i++) {
+            if (exact && cpu[i].tag > 0 && cpu[i].state.round == 1) {
+                int responder = cpu[i].agents[0].policy > 0 ? 0 : 1;
+                int learner = 1 - responder;
+                assert(cpu[i].state.last_bids[responder]
+                    == (cpu[i].exact_table ? cards - 1 : 0));
+                assert(cpu[i].state.last_bids[learner]
+                    == (uint8_t)cpu_actions[cpu_rows[i][learner]]);
+            }
             if (std::memcmp(&cpu[i].state, &gpu[i].state, sizeof(GSState)) != 0) {
                 fail_bytes("state", name, i, step,
                     &cpu[i].state, &gpu[i].state, sizeof(GSState));
@@ -256,6 +286,11 @@ static void run_suite(const char* name, int cards, int turns, int prize,
     }
 
     puf_envs_close(gpu_envs);
+    assert(!g_gs_gpu_env_active && !h_gs_exact_actions && !g_gs_actions);
+    CUDA_OK(cudaMemcpyFromSymbol(&uploaded, d_gs_cuda_config, sizeof(uploaded)));
+    assert(uploaded.exact_count == 0);
+    gs_exact_count = 0;
+    memset(gs_exact_tables, 0, sizeof(gs_exact_tables));
     CUDA_OK(cudaFree(d_obs));
     CUDA_OK(cudaFree(d_actions));
     CUDA_OK(cudaFree(d_rewards));
@@ -282,10 +317,13 @@ int main(void) {
     run_suite("4c-ascending-hidden-carry", 4, 4, 1, 1, 1, 1);
     run_suite("4c-descending-perfect-points", 4, 4, 2, 0, 2, 0);
     run_suite("4c-random-perfect-pointdiff", 4, 3, 0, 0, 1, 1);
+    run_suite("4c-exact-random-balanced", 4, 4, 0, 0, 0, 0, true);
+    run_suite("4c-exact-ascending-balanced", 4, 4, 1, 0, 0, 0, true);
 #else
-    run_suite("13c-random-hidden-discard", 13, 13, 0, 1, 0, 0);
-    run_suite("13c-descending-perfect-points", 13, 13, 2, 0, 2, 1);
+    run_suite("random-hidden-discard", GS_NUM_CARDS, GS_NUM_CARDS, 0, 1, 0, 0);
+    run_suite("descending-perfect-points", GS_NUM_CARDS, GS_NUM_CARDS, 2, 0, 2, 1);
 #endif
+    run_suite("OpenSpiel-layout", GS_NUM_CARDS, GS_NUM_CARDS, 0, 0, 0, 0, false, true);
     std::printf("Goofspiel CUDA adapter: ALL SUITES PASS\n");
     return 0;
 }

@@ -16,13 +16,6 @@ static PSNativeVec ps_native_vecs[8];
 
 static void ps_native_bind_io(PSCudaSim* sim, obs_t* observations,
         float* actions, float* rewards, float* terminals) {
-    if (sim->owns_io) {
-        cudaFree(sim->observations);
-        cudaFree(sim->actions);
-        cudaFree(sim->rewards);
-        cudaFree(sim->terminals);
-        sim->owns_io = 0;
-    }
     sim->observations = (float*)observations;
     sim->actions = actions;
     sim->rewards = rewards;
@@ -66,8 +59,8 @@ static Env* puf_envs_create(int total_agents, Dict* env_kwargs) {
     ps_cuda_alloc(sim, total_agents, ps_config_from_kwargs(env_kwargs));
 
     Env* envs = nullptr;
-    cudaMalloc((void**)&envs, (size_t)total_agents * sizeof(Env));
-    cudaMemset(envs, 0, (size_t)total_agents * sizeof(Env));
+    PS_CUDA_CHECK(cudaMalloc((void**)&envs, (size_t)total_agents * sizeof(Env)));
+    PS_CUDA_CHECK(cudaMemset(envs, 0, (size_t)total_agents * sizeof(Env)));
     sim->native_envs = envs;
     ps_native_register(envs, sim);
     return envs;
@@ -84,10 +77,7 @@ static void puf_envs_reset(Env* envs, obs_t* observations, float* rewards,
 static void puf_envs_step(Env* envs, const float* actions, obs_t* observations,
         float* rewards, float* terminals, int start, int count, cudaStream_t stream) {
     PSCudaSim* sim = ps_native_find(envs);
-    sim->observations = (float*)observations;
-    sim->actions = (float*)actions;
-    sim->rewards = rewards;
-    sim->terminals = terminals;
+    ps_native_bind_io(sim, observations, (float*)actions, rewards, terminals);
     ps_cuda_step_range(sim, start, count, stream);
 }
 

@@ -55,8 +55,9 @@ static inline b3WorldId ar_phys_create_world(const ARConfig* cfg) {
 
 // Dynamic sphere body locked to the ground plane (no z, no rotation). Used for
 // the player, pets, and enemies; velocities are set every tick by the sim.
+// Density sets shove weight: the avatar holds ground against the pack.
 static inline b3BodyId ar_phys_dynamic_body(b3WorldId world, float x, float y,
-        float radius) {
+        float radius, float density) {
     b3BodyDef bd = b3DefaultBodyDef();
     bd.type = b3_dynamicBody;
     bd.position = (b3Pos){x, y, radius};
@@ -69,7 +70,7 @@ static inline b3BodyId ar_phys_dynamic_body(b3WorldId world, float x, float y,
     if (B3_IS_NULL(body)) return body;
 
     b3ShapeDef sd = b3DefaultShapeDef();
-    sd.density = 1.0f;
+    sd.density = density;
     sd.baseMaterial.friction = 0.0f;
     sd.baseMaterial.restitution = 0.0f;
     b3Sphere sphere;

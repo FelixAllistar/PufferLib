@@ -74,7 +74,6 @@ typedef struct {
     uint8_t owner;
     uint8_t range;
     uint8_t active;
-    uint8_t shaping_flags;
 } BMBomb;
 
 typedef struct {
@@ -342,7 +341,10 @@ BM_HD int bm_bomb_escape(const BMMatch* m, const BMConfig* cfg,
 // is the untouched opening, and stage 9 is the ordinary full game.
 BM_HD int bm_apply_reverse_curriculum(BMMatch* m, const BMConfig* cfg,
         float progress) {
-    if (!cfg->reverse_curriculum || m->num_agents != 2 || progress >= 1.0f) {
+    // Tactical layouts need room for a trap and its escape corridor in either
+    // orientation. Smaller boards remain ordinary, valid full games.
+    if (!cfg->reverse_curriculum || m->num_agents != 2 || progress >= 1.0f
+            || m->width < 9 || m->height < 9) {
         m->curriculum_stage = -1;
         return 0;
     }
@@ -737,7 +739,6 @@ BM_HD int bm_try_place_bomb(BMMatch* m, const BMConfig* cfg, int agent_i) {
     bomb->y = (uint8_t)a->y;
     bomb->owner = (uint8_t)agent_i;
     bomb->range = (uint8_t)bm_clamp_i(a->bomb_range, 1, BM_MAX_FLAME_RANGE);
-    bomb->shaping_flags = 0;
     // +1 compensates for the fuse tick later in this same environment step, so
     // bomb_timer is the actual number of future decision steps before explosion.
     bomb->timer = (uint16_t)(bm_bomb_timer(cfg) + 1);

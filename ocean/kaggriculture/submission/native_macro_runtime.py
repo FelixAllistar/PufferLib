@@ -808,7 +808,7 @@ def _animal_score(obs, animal):
             - events * 2 * int(_get(prices, "WHEAT", 0)) - cost)
 
 
-def candidate_score(obs, macro):
+def candidate_score(obs, macro, legal=None):
     score = 0.0
     prices = _get(_get(obs, "market", {}), "prices", {})
     if MACRO_PLANT_BASE <= macro < MACRO_PLANT_BASE + 5:
@@ -855,13 +855,15 @@ def candidate_score(obs, macro):
         score = -2.0 * int(_get(prices, "WHEAT", 0))
     elif macro == MACRO_BUY_FERTILIZER:
         score = -2.0 * int(_get(prices, "FERTILIZER", 0))
-    return score if candidate_legal(obs, macro) else -10000.0
+    return score if (candidate_legal(obs, macro) if legal is None else legal) else -10000.0
 
 
-def score_byte(obs, macro):
-    normalized = max(-1.0, min(1.0, candidate_score(obs, macro) / SCORE_SCALE))
+def score_byte(obs, macro, legal=None):
+    if legal is None:
+        legal = candidate_legal(obs, macro)
+    normalized = max(-1.0, min(1.0, candidate_score(obs, macro, legal) / SCORE_SCALE))
     quantized = max(0, min(127, int((normalized + 1.0) * 63.5 + 0.5)))
-    return quantized | (128 if candidate_legal(obs, macro) else 0)
+    return quantized | (128 if legal else 0)
 
 
 def _copy_action(action):
@@ -1491,10 +1493,18 @@ def execute_macro(obs, macro, quantity, target):
 class NativeMacroRuntime:
     """Portable mode-2 or mode-3 adapter for both competition seats."""
 
-    def __init__(self, mode=2):
+    def __init__(self, mode=2, executor_version=0):
         if int(mode) not in (2, 3):
             raise ValueError("native macro runtime mode must be 2 or 3")
         self.mode = int(mode)
+        if executor_version not in (0, 1) or (executor_version == 1 and self.mode != 2):
+            raise ValueError("executor 1 requires macro mode 2")
+        self.executor_version = executor_version
+        self._legal = candidate_legal
+        self._execute = execute_macro
+        if executor_version == 1:
+            from native_macro_executor1 import legal, execute
+            self._legal, self._execute = legal, execute
         self._state = {}
 
     def reset(self, player=None):
@@ -1525,7 +1535,7 @@ class NativeMacroRuntime:
             return encoded
         entry = self._entry(obs)
         encoded[OBS_OFFSET:OBS_OFFSET + MACRO_COUNT] = [
-            score_byte(obs, macro) for macro in range(MACRO_COUNT)
+            score_byte(obs, macro, self._legal(obs, macro)) for macro in range(MACRO_COUNT)
         ]
         encoded[OBS_OFFSET + MACRO_COUNT] = _u8_scale(entry["ticks"], 1)
         encoded[OBS_OFFSET + MACRO_COUNT + 1] = _u8_scale(entry["intent"], MACRO_COUNT - 1)
@@ -1557,7 +1567,7 @@ class NativeMacroRuntime:
                 mask[base + 23:base + 31] = True
             return mask
         for macro in range(MACRO_COUNT):
-            mask[macro] = candidate_legal(obs, macro)
+            mask[macro] = self._legal(obs, macro)
         mask[MACRO_HOLD] = True
         quantity_base = UNIT_COMMANDS
         mask[quantity_base:quantity_base + len(QUANTITIES)] = True
@@ -1566,7 +1576,8 @@ class NativeMacroRuntime:
         for index, target in enumerate(TARGETS):
             mask[target_base + index] = (target == 0
                 or bool(unlocked & target)
-                and _reclaimable_tiles_in_target(obs, target) > 0)
+                and (self.executor_version == 1
+                     or _reclaimable_tiles_in_target(obs, target) > 0))
         for unit in range(3, UNIT_HEADS):
             mask[unit * UNIT_COMMANDS] = True
         market_base = UNIT_HEADS * UNIT_COMMANDS
@@ -1580,7 +1591,7 @@ class NativeMacroRuntime:
             return execute_tasks(obs, actions)
         entry = self._entry(obs)
         macro = int(actions[0])
-        if not candidate_legal(obs, macro):
+        if not self._legal(obs, macro):
             macro = MACRO_HOLD
         quantity_bin = max(0, min(len(QUANTITIES) - 1, int(actions[1])))
         target_bin = max(0, min(len(TARGETS) - 1, int(actions[2])))
@@ -1589,4 +1600,4 @@ class NativeMacroRuntime:
         if target and not (_unlocked_mask(obs) & target):
             target = 0
         entry.update(intent=macro, quantity=quantity, target=target, ticks=0)
-        return execute_macro(obs, macro, quantity, target)
+        return self._execute(obs, macro, quantity, target)

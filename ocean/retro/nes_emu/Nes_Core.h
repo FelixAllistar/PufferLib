@@ -21,10 +21,11 @@ public:
 	~Nes_Core();
 	
 	const char * init();
-	const char * open( Nes_Cart const* );
+	const char * open( Nes_Cart const*, const Nes_Core* share = NULL );
 	void reset( bool full_reset = true, bool erase_battery_ram = false );
 	blip_time_t emulate_frame();
 	void close();
+	void set_idle_skip(bool enabled) { cpu::idle_skip_enabled = enabled; }
 	
 	void save_state( Nes_State* ) const;
 	void save_state( Nes_State_* ) const;

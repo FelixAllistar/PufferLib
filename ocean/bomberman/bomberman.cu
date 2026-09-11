@@ -30,88 +30,6 @@ static inline int bm_grid(int n) {
     return (n + BM_CUDA_BLOCK - 1) / BM_CUDA_BLOCK;
 }
 
-static void bm_host_load_config(BMConfig* cfg, Dict* kwargs) {
-    *cfg = bm_default_config();
-    cfg->width = (int)dict_get(kwargs, "width");
-    cfg->height = (int)dict_get(kwargs, "height");
-    cfg->num_agents = (int)dict_get(kwargs, "num_agents");
-    cfg->max_ticks = (int)dict_get(kwargs, "max_ticks");
-    cfg->bomb_timer = (int)dict_get(kwargs, "bomb_timer");
-    cfg->flame_duration = (int)dict_get(kwargs, "flame_duration");
-    cfg->frames_per_cell = (int)dict_get(kwargs, "frames_per_cell");
-    cfg->soft_density = (float)dict_get(kwargs, "soft_density");
-    cfg->item_chance = (float)dict_get(kwargs, "item_chance");
-    cfg->reward_soft = (float)dict_get(kwargs, "reward_soft");
-    cfg->reward_pickup = (float)dict_get(kwargs, "reward_pickup");
-    cfg->reward_kill = (float)dict_get(kwargs, "reward_kill");
-    cfg->reward_death = (float)dict_get(kwargs, "reward_death");
-    cfg->reward_self_kill = (float)dict_get(kwargs, "reward_self_kill");
-    cfg->reward_win = (float)dict_get(kwargs, "reward_win");
-    cfg->reward_alive = (float)dict_get(kwargs, "reward_alive");
-    cfg->reward_timeout = (float)dict_get(kwargs, "reward_timeout");
-    cfg->reward_bomb_threat = (float)dict_get(kwargs, "reward_bomb_threat");
-    cfg->reward_bomb_escape = (float)dict_get(kwargs, "reward_bomb_escape");
-    cfg->reward_curriculum_aim = (float)dict_get(kwargs, "reward_curriculum_aim");
-    cfg->reward_curriculum_escape = (float)dict_get(kwargs, "reward_curriculum_escape");
-    cfg->reward_curriculum_progress = (float)dict_get(kwargs, "reward_curriculum_progress");
-    cfg->reverse_curriculum = (int)dict_get(kwargs, "reverse_curriculum");
-    cfg->curriculum_steps = (int)dict_get(kwargs, "curriculum_steps");
-    cfg->curriculum_window = (int)dict_get(kwargs, "curriculum_window");
-    cfg->curriculum_success_rate = (float)dict_get(kwargs, "curriculum_success_rate");
-    cfg->pillar_mode = (int)dict_get(kwargs, "pillar_mode");
-    if (cfg->num_agents < 2) cfg->num_agents = 2;
-    if (cfg->num_agents > BM_MAX_AGENTS) cfg->num_agents = BM_MAX_AGENTS;
-}
-
-__device__ void bm_gpu_fold_logs(Env* envs, BMMatch* match, int match_id, int num_agents) {
-    // Pack onto agent-0's log shell only would under-count n for reduce; fold
-    // into every agent index (same as CPU: +1 n per agent per episode) and
-    // put match scores only on the first agent of the match so they aren't
-    // multiplied by num_agents twice. Actually robocode puts scores once on
-    // env->log then n += num_agents. Here each Env is one agent: put full
-    // match accounting on agent 0, and only n/stats on others? Simpler: put
-    // everything on agent 0 only with n += num_agents.
-    int gi0 = match_id * num_agents;
-    Log* log = &envs[gi0].log;
-    int outcome = (match->winner == 0) ? 1 : (match->winner > 0) ? -1 : 0;
-    float s0 = (outcome > 0) ? 1.0f : (outcome < 0) ? 0.0f : 0.5f;
-    float na = (float)num_agents;
-    log->slot_0_score += s0 * na;
-    log->slot_1_score += (1.0f - s0) * na;
-    if (outcome == 0) log->draw_rate += na;
-    log->perf += s0 * na;
-    log->slot_0_kills += (float)match->agents[0].kills * na;
-    log->slot_0_self_kills += (float)match->agents[0].self_kills * na;
-    int opponent_suicides = 0;
-    for (int a = 1; a < num_agents; a++) {
-        opponent_suicides += match->agents[a].self_kills;
-    }
-    log->slot_0_opponent_suicides += (float)opponent_suicides * na;
-    log->curriculum_stage += (float)(match->curriculum_stage < 0 ? 4 : match->curriculum_stage) * na;
-    log->curriculum_full_game += (match->curriculum_stage < 0 ? 1.0f : 0.0f) * na;
-
-    int draw = (outcome == 0) ? 1 : 0;
-    for (int a = 0; a < num_agents; a++) {
-        BMAgent* ag = &match->agents[a];
-        int win = (match->winner == a) ? 1 : 0;
-        log->score += ag->ep_score;
-        log->episode_return += ag->ep_return;
-        log->episode_length += (float)match->tick;
-        log->kills += (float)ag->kills;
-        log->self_kills += (float)ag->self_kills;
-        log->soft_breaks += (float)ag->soft_breaks;
-        log->bomb_pickups += (float)ag->bomb_pickups;
-        log->range_pickups += (float)ag->range_pickups;
-        log->speed_pickups += (float)ag->speed_pickups;
-        log->pickups += (float)(ag->bomb_pickups
-            + ag->range_pickups + ag->speed_pickups);
-        log->wins += (float)win;
-        log->draws += (float)draw;
-        log->deaths += ag->alive ? 0.0f : 1.0f;
-        log->n += 1.0f;
-    }
-}
-
 __global__ void bm_reset_kernel(Env* envs, BMMatch* matches, obs_t* observations,
         float* rewards, float* terminals, int num_matches, int num_agents) {
     int mid = blockIdx.x * blockDim.x + threadIdx.x;
@@ -159,24 +77,11 @@ __global__ void bm_step_kernel(Env* envs, BMMatch* matches,
     bm_step_match(m, &d_bcfg, acts, rew, term);
 
     if (m->done) {
-        bm_gpu_fold_logs(envs, m, mid, num_agents);
-        // Preserve terminal rewards, then auto-reset for next rollout step.
-        float keep_r[BM_MAX_AGENTS];
-        float keep_t[BM_MAX_AGENTS];
-        for (int a = 0; a < num_agents; a++) {
-            keep_r[a] = rew[a];
-            keep_t[a] = term[a];
-        }
+        int outcome = m->winner == 0 ? 1 : m->winner > 0 ? -1 : 0;
+        bm_log_match(&envs[mid * num_agents].log, m, outcome);
+        // Reset does not touch the local transition rewards and terminals.
         uint32_t seed = m->rng ^ (0x85ebca6bu * (uint32_t)(m->tick + 1));
         bm_reset_match(m, &d_bcfg, seed);
-        for (int a = 0; a < num_agents; a++) {
-            int gi = mid * num_agents + a;
-            rewards[gi] = keep_r[a];
-            terminals[gi] = keep_t[a];
-            bm_write_obs(m, &d_bcfg, a,
-                observations + (size_t)gi * OBS_SIZE);
-        }
-        return;
     }
 
     for (int a = 0; a < num_agents; a++) {
@@ -189,7 +94,7 @@ __global__ void bm_step_kernel(Env* envs, BMMatch* matches,
 }
 
 static Env* puf_envs_create(int total_agents, Dict* env_kwargs) {
-    bm_host_load_config(&h_bcfg, env_kwargs);
+    bm_load_config(&h_bcfg, env_kwargs);
     if (h_bcfg.reverse_curriculum) {
         fprintf(stderr, "Bomberman reverse curriculum currently requires vec.gpu_env=0\n");
         exit(1);

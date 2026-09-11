@@ -1,29 +1,5 @@
-/* arpg standalone viewer (human play + policy autoplay).
- *
- * Build from repo root:
- *   ./build.sh arpg --fast
- *
- * Run from repo root so config/arpg.ini resolves. Movement is WASD by
- * default; every binding lives in the [keys] section of config/arpg.ini and
- * accepts multiple comma-separated keys (e.g. "up = W, UP").
- *
- * Usage:
- *   ./arpg                      # autoplay if a checkpoint exists, else human
- *   ./arpg play                 # human (pets always auto - they are scripted in C)
- *   ./arpg watch [latest|PATH.bin] [--deterministic]
- *
- * Default controls:
- *   WASD / arrows   move (screen-relative)
- *   Space           summon selected pet (Z/X/C select wisp/fang/aegis)
- *   Q / E / F       dash / nova / frost
- *   G / V           build totem / wall (costs shards)
- *   1 / 2 / 3 / 4   squad order follow / attack / guard / focus
- *   T               toggle autoplay (policy drives avatar; pets always auto)
- *   R               restart run
- *   H               toggle hitboxes
- *   Esc             quit
- */
-
+// Hearthwild viewer. Manual keeper + model pet tasks, or full policy autoplay.
+// Build, controls, model contract, and test commands: README.md.
 #include "arpg.h"
 #include "puffercpu.h"
 
@@ -150,8 +126,8 @@ typedef struct {
     ARBinding up, down, left, right;
     ARBinding summon;
     ARBinding dash, nova, frost;
-    ARBinding build_totem, build_wall;
-    ARBinding class_wisp, class_fang, class_aegis;
+    ARBinding build_totem, build_wall, build_harvester;
+    ARBinding class_wisp, class_fang, class_aegis, class_mule;
     ARBinding order_follow, order_attack, order_guard, order_focus;
     ARBinding reset;
     ARBinding hitboxes;
@@ -184,9 +160,11 @@ static void ar_load_config(ARPG* env, ARControls* controls) {
         .frost = ar_binding_from_ini_opt(&g_controls_ini, "keys", "frost", KEY_F),
         .build_totem = ar_binding_from_ini_opt(&g_controls_ini, "keys", "build_totem", KEY_G),
         .build_wall = ar_binding_from_ini_opt(&g_controls_ini, "keys", "build_wall", KEY_V),
+        .build_harvester = ar_binding_from_ini_opt(&g_controls_ini, "keys", "build_harvester", KEY_B),
         .class_wisp = ar_binding_from_ini_opt(&g_controls_ini, "keys", "class_wisp", KEY_Z),
         .class_fang = ar_binding_from_ini_opt(&g_controls_ini, "keys", "class_fang", KEY_X),
         .class_aegis = ar_binding_from_ini_opt(&g_controls_ini, "keys", "class_aegis", KEY_C),
+        .class_mule = ar_binding_from_ini_opt(&g_controls_ini, "keys", "class_mule", KEY_M),
         .order_follow = ar_binding_from_ini_opt(&g_controls_ini, "keys", "order_follow", KEY_ONE),
         .order_attack = ar_binding_from_ini_opt(&g_controls_ini, "keys", "order_attack", KEY_TWO),
         .order_guard = ar_binding_from_ini_opt(&g_controls_ini, "keys", "order_guard", KEY_THREE),
@@ -230,7 +208,7 @@ static float ar_read_move_action(int mask) {
 }
 
 // ---------------------------------------------------------------------------
-// Policy autoplay (slice 2: PPO avatar, scripted pets).
+// Policy control: one avatar and four independent companion task heads.
 // ---------------------------------------------------------------------------
 
 static int ar_has_suffix(const char* s, const char* suffix) {
@@ -274,223 +252,205 @@ static int ar_try_latest(char* out, size_t out_size) {
 static void ar_print_usage(const char* argv0) {
     fprintf(stderr,
         "usage:\n"
-        "  %s                      autoplay if a checkpoint exists, else human\n"
-        "  %s play                 human (pets always auto)\n"
+        "  %s                      manual avatar; policy pets when a checkpoint exists\n"
+        "  %s play [latest|PATH.bin] [--deterministic]\n"
         "  %s watch [latest|PATH.bin] [--deterministic]\n",
         argv0, argv0, argv0);
 }
 
 static int ar_expected_floats(int hidden, int layers) {
-    int act_sizes[] = ACT_SIZES;
-    int atn_sum = 0;
-    for (int i = 0; i < NUM_ATNS; i++) atn_sum += act_sizes[i];
-    return hidden * AR_OBS_SIZE + (atn_sum + 1) * hidden
-        + layers * 3 * hidden * hidden;
+    int sizes[]=ACT_SIZES,sum=0;
+    for(int i=0;i<NUM_ATNS;i++)sum+=sizes[i];
+    int n=(hidden*AR_OBS_SIZE+7)&~7;
+    n+=((sum+1)*hidden+7)&~7;
+    for(int i=0;i<layers;i++)n+=(3*hidden*hidden+7)&~7;
+    return n;
 }
 
 static void ar_reset_policy(PufferNet* net) {
-    if (!net || !net->mingru || !net->mingru->state) return;
-    int n = net->mingru->num_layers * net->mingru->batch_size
-        * net->mingru->hidden_size;
-    memset(net->mingru->state, 0, (size_t)n * sizeof(float));
+    if(!net || !net->mingru)return;
+    memset(net->mingru->state,0,(size_t)net->mingru->num_layers*net->mingru->hidden_size*sizeof(float));
 }
 
-static void ar_forward_argmax(PufferNet* net, float* obs, float* atn) {
-    linear(net->encoder, obs);
-    mingru(net->mingru, net->encoder->output);
-    linear(net->decoder, net->mingru->output);
-    argmax_multidiscrete(net->multidiscrete, net->decoder->output, atn);
-}
-
-static PufferNet* ar_load_policy(const char* path, Weights** out_w) {
-    Weights* w = load_weights(path);
-    if (!w) {
-        fprintf(stderr, "failed to load weights: %s\n", path);
+static PufferNet* ar_load_policy(const char* path,Weights** out) {
+    int hidden=puf_ini_get_int(&g_controls_ini,"policy","hidden_size");
+    int layers=puf_ini_get_int(&g_controls_ini,"policy","num_layers");
+    if(hidden<1 || hidden>4096 || layers<1 || layers>16)return NULL;
+    int expected=ar_expected_floats(hidden,layers);
+    struct stat st;
+    if(stat(path,&st) || st.st_size!=(off_t)expected*(off_t)sizeof(float)) {
+        fprintf(stderr,"ARPG v%d checkpoint mismatch: expected %d floats (%d observations, %d heads). Retrain v1 policies.\n",
+            AR_OBS_VERSION,expected,AR_OBS_SIZE,NUM_ATNS);
         return NULL;
     }
-    int act_sizes[] = ACT_SIZES;
-    int hidden = puf_ini_get_int(&g_controls_ini, "policy", "hidden_size");
-    int layers = puf_ini_get_int(&g_controls_ini, "policy", "num_layers");
-    int expected = ar_expected_floats(hidden, layers);
-    fprintf(stderr, "autoplay: %s (hidden=%d layers=%d)\n", path, hidden, layers);
-    PufferNet* net = make_puffernet(w, 1, AR_OBS_SIZE, hidden, layers,
-        act_sizes, NUM_ATNS);
-    if (w->idx != expected) {
-        fprintf(stderr,
-            "checkpoint/model mismatch: expected %d floats for hidden=%d layers=%d, loader consumed %d\n",
-            expected, hidden, layers, w->idx);
-        free_puffernet(net);
-        free(w);
-        return NULL;
-    }
-    *out_w = w;
+    Weights* weights=load_weights(path);
+    if(!weights)return NULL;
+    int sizes[]=ACT_SIZES;
+    PufferNet* net=make_puffernet(weights,1,AR_OBS_SIZE,hidden,layers,sizes,NUM_ATNS);
+    *out=weights;
+    fprintf(stderr,"Loaded ARPG v%d policy: %s (avatar + four pet task heads)\n",AR_OBS_VERSION,path);
     return net;
 }
 
-int main(int argc, char** argv) {
-    int want_watch = 0;
-    int want_play = 0;
-    int deterministic = 0;
-    const char* model_arg = NULL;
+static void ar_policy_step(PufferNet* net,float* obs,float* actions,int deterministic) {
+    if(!deterministic){forward_puffernet(net,obs,actions);return;}
+    linear(net->encoder,obs);mingru(net->mingru,net->encoder->output);
+    linear(net->decoder,net->mingru->output);
+    argmax_multidiscrete(net->multidiscrete,net->decoder->output,actions);
+}
 
-    for (int i = 1; i < argc; i++) {
-        if (strcmp(argv[i], "watch") == 0) want_watch = 1;
-        else if (strcmp(argv[i], "play") == 0) want_play = 1;
-        else if (strcmp(argv[i], "--deterministic") == 0) deterministic = 1;
-        else if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0
-                || strcmp(argv[i], "help") == 0) {
-            ar_print_usage(argv[0]);
-            return 0;
-        } else if (argv[i][0] != '-') model_arg = argv[i];
-        else {
-            fprintf(stderr, "unknown argument '%s'\n", argv[i]);
-            ar_print_usage(argv[0]);
-            return 1;
-        }
+static int ar_move_toward(ARPG* e,float tx,float ty) {
+    float dx=tx-e->px,dy=ty-e->py;
+    if(dx*dx+dy*dy<0.5f)return 0;
+    float best=-2;int result=0;
+    float length=sqrtf(dx*dx+dy*dy);dx/=length;dy/=length;
+    for(int action=1;action<AR_MOVE_ACTION_COUNT;action++) {
+        float vx,vy;ar_move_dir(action,&vx,&vy);
+        if(!ar_geometry_floor(e->dungeon,e->cfg.arena_size,e->px+vx*0.7f,e->py+vy*0.7f))continue;
+        float score=dx*vx+dy*vy;
+        if(score>best){best=score;result=action;}
     }
-    if (want_watch && want_play) {
-        fprintf(stderr, "pick one of play or watch\n");
-        return 1;
+    return result;
+}
+
+int main(int argc,char** argv) {
+    int watch=0,deterministic=0;
+    const char* model=NULL;
+    for(int i=1;i<argc;i++) {
+        if(!strcmp(argv[i],"watch"))watch=1;
+        else if(!strcmp(argv[i],"play"))watch=0;
+        else if(!strcmp(argv[i],"--deterministic"))deterministic=1;
+        else if(!strcmp(argv[i],"--help") || !strcmp(argv[i],"-h")){ar_print_usage(argv[0]);return 0;}
+        else if(argv[i][0]!='-')model=argv[i];
+        else {ar_print_usage(argv[0]);return 1;}
     }
-
-    float observations[AR_OBS_SIZE] = {0};
-    float actions[NUM_ATNS] = {0};
-    float rewards[1] = {0};
-    float terminals[1] = {0};
-
-    ARPG env = {0};
-    env.num_agents = 1;
-    // Fresh dungeon every launch (training uses vector seeds instead).
-    env.rng = (uint32_t)(GetTime() * 1000000.0) ^ 0x9e3779b9u;
-    if (!env.rng) env.rng = 1u;
-    env.agents[0].observations = observations;
-    env.agents[0].actions = actions;
-    env.agents[0].rewards = rewards;
-    env.agents[0].terminals = terminals;
-    env.agents[0].action_mask = NULL;
-    env.agents[0].policy = 0;
-
-    ARControls controls;
-    ar_load_config(&env, &controls);
-
-    // Policy setup: watch always loads; default mode autoplays when a
-    // checkpoint exists (idle-game behavior); play stays human.
-    PufferNet* net = NULL;
-    Weights* weights = NULL;
-    int autoplay = 0;
-    if (want_watch || (!want_play && !want_watch)) {
-        char path[4096];
-        if (model_arg && strcmp(model_arg, "latest") != 0) {
-            snprintf(path, sizeof(path), "%s", model_arg);
-        } else if (ar_try_latest(path, sizeof(path)) != 0) {
-            if (want_watch) {
-                fprintf(stderr, "no .bin checkpoints in checkpoints/arpg/\n");
-                return 1;
-            }
-            fprintf(stderr, "no checkpoint yet - human play (train to unlock autoplay)\n");
-        } else if (want_play) {
-            path[0] = 0;
-        }
-        if (path[0]) {
-            net = ar_load_policy(path, &weights);
-            if (!net && want_watch) return 1;
-            autoplay = (net != NULL);
-        }
+    float obs[AR_OBS_SIZE]={0},actions[NUM_ATNS]={0},rewards[1]={0},terminals[1]={0};
+    ARPG e={0};e.num_agents=1;e.rng=(uint32_t)time(NULL);
+    const char* seed=getenv("ARPG_SEED");if(seed)e.rng=(uint32_t)strtoul(seed,NULL,10);
+    e.agents[0].observations=obs;e.agents[0].actions=actions;
+    e.agents[0].rewards=rewards;e.agents[0].terminals=terminals;
+    ARControls controls;ar_load_config(&e,&controls);
+    e.cfg.max_steps=2147483647;
+    char path[4096]={0};
+    if(model && strcmp(model,"latest"))snprintf(path,sizeof(path),"%s",model);
+    else ar_try_latest(path,sizeof(path));
+    Weights* weights=NULL;
+    PufferNet* net=path[0] ? ar_load_policy(path,&weights) : NULL;
+    if((watch || model) && !net) {
+        fprintf(stderr,"RL autoplay requires an ARPG v2 checkpoint. Train arpg, then use ./arpg watch PATH.bin.\n");
+        puf_ini_free(&g_controls_ini);return 1;
     }
-
-    c_reset(&env);
-    c_render(&env);
-
-    double sim_accumulator = 0.0;
-    int human_order = AR_ORDER_FOLLOW;
-    env.pick_class = 0;
-    while (!WindowShouldClose()) {
-        double frame_start = GetTime();
-        float frame_dt = GetFrameTime();
-        if (frame_dt <= 0.0f) frame_dt = (float)AR_FAST_SIM_DT;
-        if (frame_dt > 0.10f) frame_dt = 0.10f;
-        sim_accumulator += frame_dt;
-
-        if (ar_binding_pressed(controls.reset)) {
-            c_reset(&env);
-            if (net) ar_reset_policy(net);
-            sim_accumulator = 0.0;
+    c_reset(&e);c_render(&e);
+    ARClient* client=ar_client(&e);
+    client->autoplay=watch;client->pet_policy=net!=NULL;
+    double accumulator=0;
+    int human_order=AR_ORDER_FOLLOW,shot_frame=0;
+    const char* shot=getenv("ARPG_SHOT");
+    int shot_at=240;
+    if(getenv("ARPG_SHOT_FRAME"))shot_at=atoi(getenv("ARPG_SHOT_FRAME"));
+    while(!WindowShouldClose()) {
+        float frame_dt=fminf(GetFrameTime(),0.1f);
+        if(ar_binding_pressed(controls.reset)) {
+            c_reset(&e);ar_reset_policy(net);client->paused=0;client->move_target=0;accumulator=0;
+            human_order=AR_ORDER_FOLLOW;client->build_kind=-1;client->selected_pet=-1;
+            client->camera_free=0;
+            client->ui_summon=0;client->ui_ability=0;
+            memset(actions,0,sizeof(actions));
+            for(int p=0;p<AR_MAX_PETS;p++)client->task_override[p]=-1;
         }
-        if (ar_binding_pressed(controls.hitboxes)) {
-            env.show_hitboxes = !env.show_hitboxes;
+        if(IsKeyPressed(KEY_TAB) || client->ui_pause) {
+            client->paused=e.hp<=0 ? 1 : !client->paused;client->ui_pause=0;accumulator=0;
         }
-        if (net && ar_binding_pressed(controls.autoplay)) {
-            autoplay = !autoplay;
-            fprintf(stderr, "autoplay %s\n", autoplay ? "ON" : "OFF");
-        }
-        if (autoplay) {
-            env.pick_class = -1;  // HUD shows POLICY
-        } else if (env.pick_class < 0) {
-            env.pick_class = 0;
-        }
-
-        if (!autoplay) {
-            int mask = ar_read_move_mask(&controls);
-            actions[0] = ar_read_move_action(mask);
-            if (ar_binding_pressed(controls.class_wisp)) env.pick_class = AR_PET_WISP;
-            if (ar_binding_pressed(controls.class_fang)) env.pick_class = AR_PET_FANG;
-            if (ar_binding_pressed(controls.class_aegis)) env.pick_class = AR_PET_AEGIS;
-            if (ar_binding_pressed(controls.order_follow)) human_order = AR_ORDER_FOLLOW;
-            if (ar_binding_pressed(controls.order_attack)) human_order = AR_ORDER_ATTACK;
-            if (ar_binding_pressed(controls.order_guard)) human_order = AR_ORDER_GUARD;
-            if (ar_binding_pressed(controls.order_focus)) human_order = AR_ORDER_FOCUS;
-            actions[1] = ar_binding_pressed(controls.summon)
-                ? (float)(env.pick_class + 1)
-                : 0.0f;
-            actions[2] = (float)human_order;
-            actions[3] = 0.0f;
-            if (ar_binding_pressed(controls.dash)) actions[3] = 1.0f;
-            else if (ar_binding_pressed(controls.nova)) actions[3] = 2.0f;
-            else if (ar_binding_pressed(controls.frost)) actions[3] = 3.0f;
-            actions[4] = 0.0f;
-            if (ar_binding_pressed(controls.build_totem)) actions[4] = 1.0f;
-            else if (ar_binding_pressed(controls.build_wall)) actions[4] = 2.0f;
-        }
-
-        int steps = 0;
-        while (sim_accumulator >= AR_FAST_SIM_DT
-                && steps < AR_FAST_MAX_CATCHUP_STEPS) {
-            if (autoplay && net) {
-                if (deterministic) ar_forward_argmax(net, observations, actions);
-                else forward_puffernet(net, observations, actions);
+        if(ar_binding_pressed(controls.hitboxes))e.show_hitboxes=!e.show_hitboxes;
+        if(ar_binding_pressed(controls.autoplay) || client->ui_toggle) {
+            client->ui_toggle=0;
+            if(net) {
+                client->autoplay=!client->autoplay;ar_reset_policy(net);
+                memset(actions,0,sizeof(actions));client->move_target=0;
+                client->ui_summon=0;client->ui_ability=0;client->build_kind=-1;
             }
-            c_step(&env);
-            steps++;
-            sim_accumulator -= AR_FAST_SIM_DT;
-            // Human summon/ability/build are one-shot; order stays held.
-            if (!autoplay) {
-                actions[1] = 0.0f;
-                actions[3] = 0.0f;
-                actions[4] = 0.0f;
+            else ar_notice(client,"No RL checkpoint loaded. Scripted pet assist is active; train arpg for RL control.");
+        }
+        if(IsKeyPressed(KEY_P)) {
+            for(int p=0;p<AR_MAX_PETS;p++)client->task_override[p]=-1;
+            client->pet_policy=net!=NULL;
+            ar_notice(client,net ? "Pet policy restored; manual task overrides cleared." : "Scripted companion assist restored. No RL checkpoint loaded.");
+        }
+        Vector2 mouse=GetMousePosition();
+        int in_world=mouse.y>210 && mouse.y<GetScreenHeight()-150;
+        if(mouse.x>330 && mouse.x<GetScreenWidth()-185)in_world=mouse.y>76 && mouse.y<GetScreenHeight()-150;
+        if(in_world && IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) {
+            Vector2 world=ar_unproject(client,mouse);
+            if(ar_geometry_floor(e.dungeon,e.cfg.arena_size,world.x,world.y)) {
+                e.rally_x=world.x;e.rally_y=world.y;e.rally_active=1;
+                ar_notice(client,"Rally set. 2 sends combat companions forward; 1 recalls them.");
             }
-            if (env.agents[0].terminals[0] > 0.0f) {
-                if (net) ar_reset_policy(net);
-                if (want_watch && net) {
-                    c_reset(&env);  // leave it running like survivors watch
+            client->build_kind=-1;
+        }
+        if(!client->autoplay) {
+            if(ar_binding_pressed(controls.class_wisp))e.pick_class=AR_PET_WISP;
+            if(ar_binding_pressed(controls.class_fang))e.pick_class=AR_PET_FANG;
+            if(ar_binding_pressed(controls.class_aegis))e.pick_class=AR_PET_AEGIS;
+            if(ar_binding_pressed(controls.class_mule))e.pick_class=AR_PET_MULE;
+            if(ar_binding_pressed(controls.order_follow)){human_order=AR_ORDER_FOLLOW;e.rally_active=0;}
+            if(ar_binding_pressed(controls.order_attack))human_order=AR_ORDER_ATTACK;
+            if(ar_binding_pressed(controls.order_guard))human_order=AR_ORDER_GUARD;
+            if(ar_binding_pressed(controls.order_focus))human_order=AR_ORDER_FOCUS;
+            if(ar_binding_pressed(controls.summon))actions[1]=(float)e.pick_class+1;
+            if(client->ui_summon){actions[1]=(float)client->ui_summon;client->ui_summon=0;}
+            if(client->ui_ability){actions[3]=(float)client->ui_ability;client->ui_ability=0;}
+            if(ar_binding_pressed(controls.dash))actions[3]=1;
+            if(ar_binding_pressed(controls.nova))actions[3]=2;
+            if(ar_binding_pressed(controls.frost))actions[3]=3;
+            if(ar_binding_pressed(controls.build_totem))client->build_kind=AR_BUILD_TOTEM;
+            if(ar_binding_pressed(controls.build_wall))client->build_kind=AR_BUILD_WALL;
+            if(ar_binding_pressed(controls.build_harvester))client->build_kind=AR_BUILD_HARVESTER;
+            if(IsKeyPressed(KEY_BACKSPACE))client->build_kind=-1;
+            if(in_world && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+                Vector2 world=ar_unproject(client,mouse);
+                if(client->build_kind>=0) {
+                    if(ar_geometry_dist2(e.px,e.py,world.x,world.y)>144)
+                        ar_notice(client,"Move closer to build here (12-unit construction reach).");
+                    else if(ar_build_at(&e,0,client->build_kind,world.x,world.y)>=0)
+                        {client->build_kind=-1;ar_compute_observations(&e,0);}
+                    else ar_notice(client,"Cannot build here: check aether, footprint, and clear ground.");
                 } else {
-                    c_reset(&env);
+                    client->move_target=1;client->move_x=world.x;client->move_y=world.y;
                 }
-                sim_accumulator = 0.0;
-                break;
+            }
+            int movement=ar_read_move_mask(&controls);
+            if(movement)client->move_target=0;
+            actions[0]=ar_read_move_action(movement);
+            if(client->move_target){actions[0]=(float)ar_move_toward(&e,client->move_x,client->move_y);if(!actions[0])client->move_target=0;}
+            actions[2]=(float)human_order;
+        }
+        if(!client->paused)accumulator+=frame_dt;
+        int steps=0;
+        while(accumulator>=AR_FAST_SIM_DT && steps<AR_FAST_MAX_CATCHUP_STEPS && !client->paused) {
+            for(int p=0;p<AR_MAX_PETS;p++)actions[5+p]=0;
+            if(net) {
+                float predicted[NUM_ATNS]={0};ar_policy_step(net,obs,predicted,deterministic);
+                if(client->autoplay)memcpy(actions,predicted,5*sizeof(float));
+                for(int p=0;p<AR_MAX_PETS;p++)actions[5+p]=client->pet_policy ? predicted[5+p] : 0;
+            }
+            for(int p=0;p<AR_MAX_PETS;p++)if(client->task_override[p]>=0)actions[5+p]=(float)client->task_override[p];
+            c_step(&e);accumulator-=AR_FAST_SIM_DT;steps++;
+            if(!client->autoplay){actions[1]=0;actions[3]=0;actions[4]=0;}
+            if(terminals[0]>0) {
+                if(client->autoplay){c_reset(&e);ar_reset_policy(net);}
+                else {client->paused=1;ar_notice(client,"Run complete. R starts a fresh homestead.");}
+                accumulator=0;break;
             }
         }
-
-        c_render(&env);
-        // Pin the loop to the sim rate; rendering already spent some budget.
-        double spare = AR_FAST_SIM_DT - (GetTime() - frame_start);
-        if (spare > 0.0) {
-            WaitTime(spare);
+        c_render(&e);
+        if(shot && ++shot_frame==shot_at) {
+            // ExportImage preserves absolute paths (raylib TakeScreenshot strips them).
+            Image screen=LoadImageFromScreen();ExportImage(screen,shot);UnloadImage(screen);
         }
+        if(shot && shot_frame>=shot_at+2)break;
     }
-
-    c_close(&env);
-    if (net) free_puffernet(net);
-    if (weights) free(weights);
-    puf_ini_free(&g_controls_ini);
+    puf_close(&e);
+    if(net)free_puffernet(net);
+    free(weights);puf_ini_free(&g_controls_ini);
     return 0;
 }

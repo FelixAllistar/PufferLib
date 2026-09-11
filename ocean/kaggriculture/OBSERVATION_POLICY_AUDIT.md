@@ -1,5 +1,10 @@
 # Kaggriculture encoder/decoder audit
 
+2026-09-07 follow-up: a farm-ownership ordering bug was subsequently reproduced
+and repaired behind `observation_version=1`. Legacy league inputs remain
+available as version 0. See [the ownership fix](OBSERVATION_OWNERSHIP_FIX_20260907.md)
+for the regression tests and mixed-version training/evaluation contract.
+
 This audit covers the current native training path used by `./puffer train
 kaggriculture`, including structured macro mode 2.
 

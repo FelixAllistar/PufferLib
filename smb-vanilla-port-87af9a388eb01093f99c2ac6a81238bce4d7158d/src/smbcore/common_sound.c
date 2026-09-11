@@ -1003,16 +1003,26 @@ void LoadHeader(const u8 param_1) {
   }
   depth++;
 
-  // Get the offset of the header within the data
+  /* Off-by-one fix (upstream bug, found via QuickNES differential trace).
+     The 6502 ($F6F6) reads header[Y] with Y = the tune number used directly
+     (the caller's bit-scan loop INYs before testing, so tune numbers are
+     1-based), then NoteLenLookupTblOfs = header[off+1], data lo/hi =
+     header[off+2..3], channel offsets = header[off+4..6]. The port read
+     header[tune-1] and header[off..off+5] -- every field shifted one byte.
+     Consequences: wrong length-table base (notes ~6x too slow -- the death
+     jingle took ~10x real time and never completed headless) and a garbage
+     music data pointer ($A0FD instead of $FB73 for the death tune), which
+     also starved the reload-cycle terminator. Verified against the ROM and
+     QuickNES: hardware first death-note length = 0x18, buggy port = 0x96;
+     the fixed parse reproduces 0x18 exactly. */
+  const u8 off = MusicHeaderData[param_1];
 
-  const u8 off = MusicHeaderData[param_1 - 1];
-
-  NoteLenLookupTblOfs  = MusicHeaderData[off];
-  const u8 lo        = MusicHeaderData[off + 1];
-  const u8 hi        = MusicHeaderData[off + 2];
-  MusicOffset_Triangle = MusicHeaderData[off + 3];
-  MusicOffset_Square1  = MusicHeaderData[off + 4];
-  MusicOffset_Noise    = MusicHeaderData[off + 5];
+  NoteLenLookupTblOfs  = MusicHeaderData[off + 1];
+  const u8 lo        = MusicHeaderData[off + 2];
+  const u8 hi        = MusicHeaderData[off + 3];
+  MusicOffset_Triangle = MusicHeaderData[off + 4];
+  MusicOffset_Square1  = MusicHeaderData[off + 5];
+  MusicOffset_Noise    = MusicHeaderData[off + 6];
 
   const u16 addr = (hi << 8) | lo;
   STORE_16(MusicData_addr_hi, MusicData_addr_lo, addr);

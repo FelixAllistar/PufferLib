@@ -6,8 +6,8 @@
 // code runs on RETRO_MEMORY_SYSTEM_RAM.
 //
 // Layout: OBS 256 = 64 ego/physics + 48 entities + 12*12 pixel patch.
-// The pixel patch is backend-rendered RGB luma; both backends use the same
-// 64-entry base NES palette so the window matches across renderers.
+// The pixel patch is backend-rendered RGB luma. Sharing the RAM builder does
+// not imply the experimental native port's rendering or timing matches ROM.
 
 #include <stdint.h>
 
@@ -47,7 +47,7 @@ static inline int robs_gameover(const uint8_t *m){ return m[0x075A]==0xFF; }
 static inline int robs_worldover(const uint8_t *m){ return m[0x0770]==2; }
 static inline int robs_flagget(const uint8_t *m){
     if(m[0x0770]==2) return 1;
-    for(int a=0x16;a<=0x1A;a++){ int t=m[a]; if(t==0x2D || t==0x31) return m[0x001D]==3; }
+    for(int i=0;i<6;i++) if(m[0x000f+i] && m[0x0016+i]==0x30 && m[0x001d]==3) return 1;
     return 0;
 }
 
@@ -94,8 +94,9 @@ static inline int retro_kill_scan(const uint8_t *m, unsigned char *pid,
 // with P(x) = clamp(x/XMAX) in [0,1]. Telescopes over the episode, so the
 // optimal policy is unchanged; retreat is penalized symmetrically (unlike
 // max-tracking). gamma MUST equal the learner's train.gamma (policy
-// invariance holds only then). Applied within one area only; area changes
-// reset the basis (warp/flag bonuses below carry those events).
+// invariance also requires complete transition differences and zero terminal
+// potential, as implemented by the ROM wrapper. The legacy reward below does
+// not satisfy these boundary conditions.
 #define RETRO_POT_XMAX 3400.0f
 static inline float retro_potential(int x){
     float v = (float)x / RETRO_POT_XMAX;
@@ -194,8 +195,10 @@ static inline void retro_ego_ent(float *o, const uint8_t *m, const RetroScalars 
         int b = RETRO_EGO_SIZE + RETRO_NUM_ENEMIES*RETRO_ENT_PER;
         int pact = m[0x0023]!=0 ? 1 : 0;
         if(pact){
-            int ex = m[0x006F]*256 + m[0x008C];
-            int ey = m[0x00B7]*256 + m[0x00D4];
+            // Powerups occupy enemy slot 5: both page and offset must use
+            // that slot, not a page byte from enemy slot 1.
+            int ex = m[0x0073]*256 + m[0x008C];
+            int ey = m[0x00BB]*256 + m[0x00D4];
             o[b+0]=robs_c11((ex-px)/256.0f);
             o[b+1]=robs_c11((ey-py)/256.0f);
         }

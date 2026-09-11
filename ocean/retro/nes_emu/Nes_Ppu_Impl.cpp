@@ -63,7 +63,7 @@ void Nes_Ppu_Impl::all_tiles_modified()
 	memset( modified_tiles, ~0, sizeof modified_tiles );
 }
 
-const char *Nes_Ppu_Impl::open_chr( uint8_t const* new_chr, long chr_data_size )
+const char *Nes_Ppu_Impl::open_chr( uint8_t const* new_chr, long chr_data_size, const Nes_Ppu_Impl* share )
 {
 	close_chr();
 	
@@ -88,8 +88,21 @@ const char *Nes_Ppu_Impl::open_chr( uint8_t const* new_chr, long chr_data_size )
 	
 	// allocate aligned memory for cache
 	long tile_count = chr_size / bytes_per_tile;
+	// Explicit opt-in for immutable cartridge bytes. Ownership survives the
+	// donor emulator; mutable CHR RAM always has a private cache.
+	if ( share && !chr_is_writable && !share->chr_is_writable &&
+		share->chr_data == chr_data && share->chr_size == chr_size )
+	{
+		tile_cache_owner = share->tile_cache_owner;
+		tile_cache_mem = share->tile_cache_mem;
+		tile_cache = share->tile_cache;
+		flipped_tiles = share->flipped_tiles;
+		any_tiles_modified = false;
+		return 0;
+	}
 	tile_cache_mem  = new uint8_t [tile_count * sizeof (cached_tile_t) * 2 + cache_line_size];
 	CHECK_ALLOC( tile_cache_mem );
+	tile_cache_owner.reset( tile_cache_mem, std::default_delete<uint8_t[]>() );
 	tile_cache = (cached_tile_t*) (tile_cache_mem + cache_line_size -
 			(uintptr_t) tile_cache_mem % cache_line_size);
 	flipped_tiles = tile_cache + tile_count;
@@ -107,7 +120,7 @@ const char *Nes_Ppu_Impl::open_chr( uint8_t const* new_chr, long chr_data_size )
 
 void Nes_Ppu_Impl::close_chr()
 {
-	delete [] tile_cache_mem;
+	tile_cache_owner.reset();
 	tile_cache_mem = NULL;
 }
 
@@ -330,6 +343,16 @@ inline void Nes_Ppu_Impl::update_tile( int index )
 
 void Nes_Ppu_Impl::rebuild_chr( unsigned long begin, unsigned long end )
 {
+	// Debugger/explicit CHR edits must not mutate another emulator's cache.
+	if ( tile_cache_owner.use_count() > 1 )
+	{
+		long count = chr_size / bytes_per_tile;
+		uint8_t* storage = new uint8_t[count * sizeof(cached_tile_t) * 2 + cache_line_size];
+		cached_tile_t* tiles = (cached_tile_t*)(storage + cache_line_size - (uintptr_t)storage % cache_line_size);
+		memcpy(tiles, tile_cache, count * sizeof(cached_tile_t) * 2);
+		tile_cache_owner.reset(storage, std::default_delete<uint8_t[]>());
+		tile_cache_mem = storage; tile_cache = tiles; flipped_tiles = tiles + count;
+	}
 	unsigned end_index = (end + bytes_per_tile - 1) / bytes_per_tile;
 	for ( unsigned index = begin / bytes_per_tile; index < end_index; index++ )
 		update_tile( index );

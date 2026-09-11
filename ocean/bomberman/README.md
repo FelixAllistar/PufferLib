@@ -45,6 +45,18 @@ PufferLib's normal CPU-environment action-mask binding is used when available.
 The same legal actions are also included in the observation. The optional CUDA
 environment keeps the standard PufferLib GPU interface and therefore treats all
 actions as sampleable; invalid actions remain safe no-ops in the simulator.
+GPU environments require `vec.num_frozen_banks=0`; use CPU environments for
+frozen-opponent selfplay or reverse curriculum. Unsupported GPU frozen-bank
+configurations fail at startup instead of silently assigning learner rows to
+frozen policies.
+
+Reverse-curriculum layouts require at least a 9×9 board. Smaller boards use
+ordinary full-game resets, without modifying border cells or placing agents
+outside the arena.
+
+Run `make cuda-adapter` in this directory for CPU/CUDA transition, observation,
+terminal-output, and log parity checks. `make test` also runs the CPU adapter
+regressions.
 
 ## Simulator fixes
 

@@ -94,11 +94,11 @@ void Nes_Emu::close()
 	}
 }
 
-const char * Nes_Emu::set_cart( Nes_Cart const* new_cart )
+const char * Nes_Emu::set_cart( Nes_Cart const* new_cart, const Nes_Emu* share )
 {
 	close();
 	RETURN_ERR( auto_init() );
-	RETURN_ERR( emu.open( new_cart ) );
+	RETURN_ERR( emu.open( new_cart, share ? &share->emu : NULL ) );
 
 	channel_count_ = Nes_Apu::osc_count + emu.mapper->channel_count();
 	RETURN_ERR( sound_buf->set_channel_count( channel_count() ) );

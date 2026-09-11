@@ -3,6 +3,7 @@ c_*.c
 pufferlib/extensions.c
 pufferlib/puffernet.c
 logs/
+leagues/pokemon/
 saved/
 kaggle_sources/
 v27_agents/
@@ -12,7 +13,29 @@ goof*
 # hipified cuda extensions dir [HIP/ROCM]
 pufferlib/extensions/hip/
 *.py
+!pufferlib/population.py
+!tests/test_population_descriptors.py
+!ocean/pokemon/profile_population.py
+!ocean/pokemon/tests/test_profiles.py
+!ocean/pokemon/league.py
+!ocean/pokemon/tests/test_league.py
+!pufferlib/metagame.py
 # Kaggriculture competition adapters are source, not generated Python glue.
+!ocean/kaggriculture/expansion_experiment.py
+!ocean/kaggriculture/confirm_expansion.py
+!ocean/kaggriculture/profit_ablation.py
+!ocean/kaggriculture/phase_ablation.py
+!ocean/kaggriculture/opening_spending.py
+!ocean/kaggriculture/admit_diversity.py
+!ocean/kaggriculture/audit_rewards.py
+!ocean/kaggriculture/tests/test_profit_ablation.py
+!ocean/kaggriculture/experiment_behavior.py
+!ocean/kaggriculture/policy_identity.py
+!ocean/kaggriculture/repair_league_weights.py
+!ocean/kaggriculture/eval_observation_versions.py
+!ocean/kaggriculture/tests/test_policy_identity.py
+!ocean/kaggriculture/tests/test_expansion_experiment.py
+!ocean/kaggriculture/tests/test_eval_observation_versions.py
 !ocean/kaggriculture/submission/main.py
 !ocean/kaggriculture/submission/native_macro_runtime.py
 !ocean/kaggriculture/submission/test_native_macro_runtime.py
@@ -44,6 +67,7 @@ pufferlib/extensions/hip/
 !ocean/kaggriculture/tests/test_state_sampling.py
 !ocean/kaggriculture/tests/test_counterfactual_merge.py
 !ocean/kaggriculture/tests/test_qd_sweep.py
+!ocean/kaggriculture/tests/check_phase_training.py
 # Raylib
 raylib_wasm/
 
@@ -197,6 +221,7 @@ box2d*/
 
 # Native build/test products
 /puffer
+/pokemon
 /arpg
 /bomberman
 /breakout
