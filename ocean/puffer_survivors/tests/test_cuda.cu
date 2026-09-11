@@ -7,6 +7,11 @@
 
 #include "../puffer_survivors.h"
 #include "../puffer_survivors.cu"
+#include "test_enemy_scans.h"
+
+__global__ void test_enemy_scans_kernel(PSCudaSim sim) {
+    ps_test_enemy_scans(&sim, 0);
+}
 
 #define CUDA_CHECK(call) do { \
     cudaError_t err__ = (call); \
@@ -49,6 +54,8 @@ int main() {
     CUDA_CHECK(cudaMemcpy(actions, dash_actions, sizeof(dash_actions), cudaMemcpyHostToDevice));
 
     puf_envs_reset(envs, observations, rewards, terminals, 1);
+    test_enemy_scans_kernel<<<1, 1>>>(*sim);
+    CUDA_CHECK(cudaDeviceSynchronize());
     puf_envs_step(envs, actions, observations, rewards, terminals, 0, 1, 0);
     CUDA_CHECK(cudaDeviceSynchronize());
     float dash_px = 0.0f;

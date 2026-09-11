@@ -101,7 +101,7 @@ struct Env {
 
     float px, py, pvx, pvy, hp, max_hp, xp;
     int player_facing_left;
-    float speed_bonus, damage_bonus, cooldown_mult, projectile_speed_bonus;
+    float speed_bonus, damage_bonus, cooldown_mult;
     float magnet_bonus, area_bonus;
     int level, pierce_bonus, pending_upgrade, queued_upgrades, last_boss_tick;
     int offered[PS_UPGRADE_SLOTS];

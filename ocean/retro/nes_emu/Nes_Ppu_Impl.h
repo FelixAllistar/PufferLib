@@ -7,6 +7,7 @@
 #define NES_PPU_IMPL_H
 
 #include "nes_data.h"
+#include <memory>
 class Nes_State_;
 
 class Nes_Ppu_Impl : public ppu_state_t {
@@ -17,7 +18,8 @@ public:
 	void reset( bool full_reset );
 	
 	// Setup
-	const char * open_chr( const uint8_t*, long size );
+	const char * open_chr( const uint8_t*, long size, const Nes_Ppu_Impl* share = NULL );
+	const void* chr_cache_identity() const { return tile_cache_mem; }
 	void rebuild_chr( unsigned long begin, unsigned long end );
 	void close_chr();
 	void save_state( Nes_State_* out ) const;
@@ -165,6 +167,7 @@ private:
 	cached_tile_t* tile_cache;
 	cached_tile_t* flipped_tiles;
 	uint8_t* tile_cache_mem;
+	std::shared_ptr<uint8_t> tile_cache_owner;
 	union {
 		uint8_t modified_tiles [chr_tile_count / 8];
 		uint32_t align_;

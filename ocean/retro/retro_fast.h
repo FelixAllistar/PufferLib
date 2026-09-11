@@ -117,6 +117,11 @@ static __thread bool t_tilecap_hit = false;
 // obs patch are rasterized. Full-screen raster is ~95% of step cost;
 // the patch covers ~1/7 of the screen.
 static __thread int t_clip[4];
+// Preempt-catch bookkeeping (thread-local: OMP workers). streak counts
+// consecutive watchdog catches within one env-step; >3 means the reset
+// path itself is pathological -> full re-boot instead of snap load.
+static __thread int t_preempt_streak = 0;
+static __thread bool t_in_catch = false;
 static void fast_joy1(void* u, struct SMB_buttons* b) { (void)u; *b = t_fast_pad; }
 static inline void fast_mask_to_pad(unsigned char mask, struct SMB_buttons* p) {
     memset(p, 0, sizeof(*p));
@@ -476,8 +481,13 @@ static void fast_clone_env(RetroFastArena* a, int dst, int src) {
 }
 
 // Boot one env to gameplay start (START dance mirrors the ROM path), then
-// snapshot. Returns false on failure.
+// snapshot. Returns false on failure. w/l parameterized for the curriculum
+// (default 1,1 = classic 1-1 boot; byte-identical behavior when defaults).
+static bool fast_boot_env_level(RetroFastArena* a, int i, int w, int l);
 static bool fast_boot_env(RetroFastArena* a, int i) {
+    return fast_boot_env_level(a, i, 1, 1);
+}
+static bool fast_boot_env_level(RetroFastArena* a, int i, int w, int l) {
     SMB_state* s = &a->st[i];
     FastRomReader* rr = (FastRomReader*)malloc(sizeof(FastRomReader));
     rr->base = g_fast_rom; rr->size = g_fast_rom_size; rr->pos = 0;
@@ -489,7 +499,7 @@ static bool fast_boot_env(RetroFastArena* a, int i) {
     cb.joy1 = fast_joy1;
     if (!SMB_state_init(s, &cb)) { free(rr); return false; }
     free(rr);
-    SMB_start_on_level(s, 1, 1);
+    SMB_start_on_level(s, w, l);
     memset(&t_fast_pad, 0, sizeof(t_fast_pad));
     uint8_t* ram = SMB_ram(s);
     bool started = false;
@@ -542,13 +552,15 @@ static void fast_window(float* o, SMB_state* s) {
 static bool fast_arena_alloc(RetroFastArena* a, int n) {
     a->st = (SMB_state*)calloc((size_t)n, SMB_state_size());
     a->snap = (RetroFastSnap*)calloc((size_t)n, sizeof(RetroFastSnap));
-    a->count = (a->st && a->snap) ? n : 0;
+    a->lsnap_n = 40; // spawn table cap (retro_parse_spawns)
+    a->lsnap = (RetroFastSnap*)calloc((size_t)a->lsnap_n, sizeof(RetroFastSnap));
+    a->count = (a->st && a->snap && a->lsnap) ? n : 0;
     return a->count == n;
 }
 static void fast_arena_free(RetroFastArena* a) {
     if (!a) return;
-    free(a->st); free(a->snap);
-    a->st = NULL; a->snap = NULL; a->count = 0;
+    free(a->st); free(a->snap); free(a->lsnap);
+    a->st = NULL; a->snap = NULL; a->lsnap = NULL; a->count = 0; a->lsnap_n = 0;
 }
 
 static void retro_sync_from_fast(Env* env) {
@@ -600,9 +612,25 @@ static void retro_fast_obs(Env* env, obs_t* obs) {
 }
 
 // Restore gameplay-start snapshot + one deterministic neutral render tick so
-// the obs window is populated. Used by both init tail and reset.
+// the obs window is populated. Used by both init tail and reset. With the
+// curriculum active (spawn_n > 1), loads the per-level snap for this
+// episode's spawn instead of the env's 1-1 snap.
 static void fast_reset_to_snap(Env* env) {
-    fast_snap_load(env->fast_arena, env->fast_idx);
+    if (env->spawn_n > 1 && env->fast_arena && env->fast_arena->lsnap) {
+        int L = env->cur_spawn;
+        if (L < 0 || L >= env->fast_arena->lsnap_n) L = 0;
+        RetroFastSnap* sn = &env->fast_arena->lsnap[L];
+        SMB_state* s = env->fast;
+        memcpy(SMB_ram(s), sn->ram, 0x800);
+        memcpy(SMB_ppuram(s), sn->ppuram, 0x4000);
+        s->ppu = sn->ppu;
+        s->area_data = sn->area_data; s->enemy_data = sn->enemy_data; s->music_data = sn->music_data;
+        s->reset_occurred = sn->reset_occurred;
+        s->start_on_world = sn->start_world; s->start_on_level = sn->start_level;
+        SMB_ram_finishwrite(s);
+    } else {
+        fast_snap_load(env->fast_arena, env->fast_idx);
+    }
     if (getenv("FAST_SNAP_DEBUG")) {
         fprintf(stderr, "[reset] env=%d joy1=%p upd=%p draw=%p userdata=%p\n",
             env->fast_idx,
@@ -629,6 +657,8 @@ static void puf_step_fast(Env* env) {
     bool done = false;
     bool froze = false;
     int eng0_run = 0;
+    t_preempt_streak = 0;
+    t_in_catch = false;
     fast_hb_mark(env, act);
     // Tick-budget preemption: arm a recovery point for this step. If the
     // watchdog fires (step running >10s; normal steps take ~25us), we land
@@ -677,18 +707,35 @@ static void puf_step_fast(Env* env) {
             fprintf(stderr, "\n");
             free(syms);
         }
+        // Stay armed while resetting (in_tick=1): a hung reset must remain
+        // preemptable. With the guard disarmed here, one wedged reset froze
+        // a whole rollout for an hour (epoch 334, 2026-09-06): the catch's
+        // own fast_reset_to_snap hung and no watchdog covered it. Repeat
+        // catches (streak) mean the snap/state is pathological: fully
+        // re-boot the env from ROM, which also heals the snap.
+        if (!t_in_catch) {
+            t_in_catch = true;
+            env->agents[0].rewards[0] = -1.0f;
+            env->agents[0].terminals[0] = 1.0f;
+            env->log.n += 1;
+            env->log.episode_length += env->tick;
+            env->log.episode_return += -1.0f;
+            env->log.score += env->score;
+            env->log.deaths += 1;
+            env->log.coins += env->coins;
+        }
+        tguard->in_tick = 1;
+        retro_pick_spawn(env); // next episode's curriculum spawn
+        if (++t_preempt_streak > 3) {
+            fprintf(stderr, "[retro-fast] preempt streak=%d: re-booting env=%d from ROM\n",
+                t_preempt_streak, env->fast_idx);
+            if (!fast_boot_env(env->fast_arena, env->fast_idx)) {
+                fast_reset_to_snap(env); // best effort
+            }
+        } else {
+            fast_reset_to_snap(env);
+        }
         tguard->in_tick = 0;
-        env->agents[0].rewards[0] = -1.0f;
-        env->agents[0].terminals[0] = 1.0f;
-        env->log.n += 1;
-        env->log.episode_length += env->tick;
-        env->log.episode_return += -1.0f;
-        env->log.score += env->score;
-        env->log.deaths += 1;
-        env->log.coins += env->coins;
-        Log saved = env->log;
-        fast_reset_to_snap(env);
-        env->log = saved;
         if (env->agents[0].observations) retro_fast_obs(env, (obs_t*)env->agents[0].observations);
         return;
     }
@@ -802,6 +849,10 @@ static void puf_step_fast(Env* env) {
     env->agents[0].rewards[0] = reward;
     if (done) {
         Log saved = env->log;
+        // Reset must stay preemptable: it runs SMB_tick + big memcpys, and
+        // this is where the epoch-334 freeze lived (watchdog was disarmed).
+        retro_pick_spawn(env); // next episode's curriculum spawn
+        if (tguard) tguard->in_tick = 1;
         fast_reset_to_snap(env);
         env->log = saved;
         if (env->agents[0].observations) retro_fast_obs(env, (obs_t*)env->agents[0].observations);

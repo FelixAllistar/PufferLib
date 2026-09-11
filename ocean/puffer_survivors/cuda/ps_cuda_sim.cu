@@ -32,7 +32,6 @@
 struct PSCudaSim {
     int num_envs;
     PSConfig cfg;
-    int owns_io;
     void* blob;
     Env* native_envs;
 
@@ -50,7 +49,7 @@ struct PSCudaSim {
     uint32_t* rng;
     float *px, *py, *pvx, *pvy, *hp, *max_hp, *xp;
     int *player_facing_left;
-    float *speed_bonus, *damage_bonus, *cooldown_mult, *projectile_speed_bonus;
+    float *speed_bonus, *damage_bonus, *cooldown_mult;
     float *magnet_bonus, *area_bonus;
     int *level, *pierce_bonus, *pending_upgrade, *queued_upgrades, *last_boss_tick;
     int *offered;          // [PS_UPGRADE_SLOTS, N]
@@ -138,23 +137,16 @@ static inline void ps_cuda_check(cudaError_t err, const char* expr, const char* 
 }
 #define PS_CUDA_CHECK(expr) ps_cuda_check((expr), #expr, __FILE__, __LINE__)
 
-#define PS_BLOB_ACCOUNT(type, count) do { \
-    state_bytes = (state_bytes + sizeof(type) - 1) & ~(sizeof(type) - 1); \
-    state_bytes += sizeof(type) * (size_t)(count); \
-} while (0)
 #define PS_BLOB_FIELD(type, field, count) do { \
-    state_offset = (state_offset + sizeof(type) - 1) & ~(sizeof(type) - 1); \
-    (sim)->field = (type*)((char*)(sim)->blob + state_offset); \
+    state_offset = (state_offset + alignof(type) - 1) & ~(alignof(type) - 1); \
+    if (sim->blob) (sim)->field = (type*)((char*)(sim)->blob + state_offset); \
     state_offset += sizeof(type) * (size_t)(count); \
 } while (0)
 
-static inline void ps_cuda_alloc(PSCudaSim* sim, int num_envs, PSConfig cfg) {
-    std::memset(sim, 0, sizeof(*sim));
-    sim->num_envs = num_envs;
-    sim->cfg = cfg;
-    sim->owns_io = 1;
-
-    const size_t N = (size_t)num_envs;
+// One field list determines both allocation size and pointer layout.
+static inline size_t ps_cuda_layout(PSCudaSim* sim) {
+    const PSConfig& cfg = sim->cfg;
+    const size_t N = (size_t)sim->num_envs;
     const size_t NE = (size_t)cfg.enemy_cap * N;
     const size_t NP = (size_t)cfg.projectile_cap * N;
     const size_t ND = (size_t)cfg.drop_cap * N;
@@ -164,48 +156,6 @@ static inline void ps_cuda_alloc(PSCudaSim* sim, int num_envs, PSConfig cfg) {
     const size_t NG = (size_t)PS_GRID_CELLS * N;
     const size_t NGT = (size_t)cfg.enemy_cap * N;
 
-    PS_CUDA_CHECK(cudaMalloc((void**)&sim->observations, sizeof(float) * N * PS_OBS_SIZE));
-    PS_CUDA_CHECK(cudaMalloc((void**)&sim->actions, sizeof(float) * N * 2));
-    PS_CUDA_CHECK(cudaMalloc((void**)&sim->rewards, sizeof(float) * N));
-    PS_CUDA_CHECK(cudaMalloc((void**)&sim->terminals, sizeof(float) * N));
-
-    size_t state_bytes = 0;
-    PS_BLOB_ACCOUNT(uint32_t, N);                       // rng
-    PS_BLOB_ACCOUNT(float, N * 10);                     // px py pvx pvy hp max_hp xp + orbit_phase frost_aim dash_cd
-    PS_BLOB_ACCOUNT(int, N * 7);                        // player_facing_left level pierce pending queued last_boss dash_timer
-    PS_BLOB_ACCOUNT(float, N * 6);                      // speed damage cooldown projectile_speed magnet area
-    PS_BLOB_ACCOUNT(int, N * 9);                        // tick invuln nearest + all pool counts
-    PS_BLOB_ACCOUNT(int, N * 5);                        // next_*_slot cursors
-    PS_BLOB_ACCOUNT(int, N * PS_UPGRADE_SLOTS);         // offered
-    PS_BLOB_ACCOUNT(float, N * PS_WEAPON_COUNT * 2);    // weapon_cd + weapon_active
-    PS_BLOB_ACCOUNT(int, N * PS_WEAPON_COUNT);          // weapon_level
-    PS_BLOB_ACCOUNT(float, N * 22);                     // episode stats + nearest_enemy_d2
-    PS_BLOB_ACCOUNT(int, N * (PS_GRID_CELLS + 2));      // grid_head + grid_touched_count + aabb_count
-    PS_BLOB_ACCOUNT(int, NGT * 2);                      // grid_touched + aabb_indices
-    PS_BLOB_ACCOUNT(uint8_t, NE * 3);
-    PS_BLOB_ACCOUNT(float, NE * 13);
-    PS_BLOB_ACCOUNT(int, NE * 3);
-    // Projectile pool
-    PS_BLOB_ACCOUNT(uint8_t, NP * 2);
-    PS_BLOB_ACCOUNT(float, NP * 6);
-    PS_BLOB_ACCOUNT(int, NP * 4);
-    // Drop pool
-    PS_BLOB_ACCOUNT(uint8_t, ND * 2);
-    PS_BLOB_ACCOUNT(float, ND * 3);
-    PS_BLOB_ACCOUNT(int, ND * 2);
-    // Area pool
-    PS_BLOB_ACCOUNT(uint8_t, NA * 2);
-    PS_BLOB_ACCOUNT(float, NA * 4);
-    PS_BLOB_ACCOUNT(int, NA * 5);
-    // Obstacles
-    PS_BLOB_ACCOUNT(uint8_t, NO);
-    PS_BLOB_ACCOUNT(float, NO * 3);
-    // Moving obstacles
-    PS_BLOB_ACCOUNT(uint8_t, NMO * 3);
-    PS_BLOB_ACCOUNT(float, NMO * 7);
-    PS_BLOB_ACCOUNT(int, NMO * 3);
-
-    PS_CUDA_CHECK(cudaMalloc(&sim->blob, state_bytes));
     size_t state_offset = 0;
     PS_BLOB_FIELD(uint32_t, rng, N);
     PS_BLOB_FIELD(float, px, N); PS_BLOB_FIELD(float, py, N);
@@ -218,7 +168,7 @@ static inline void ps_cuda_alloc(PSCudaSim* sim, int num_envs, PSConfig cfg) {
     PS_BLOB_FIELD(int, queued_upgrades, N); PS_BLOB_FIELD(int, last_boss_tick, N);
     PS_BLOB_FIELD(int, dash_timer, N);
     PS_BLOB_FIELD(float, speed_bonus, N); PS_BLOB_FIELD(float, damage_bonus, N);
-    PS_BLOB_FIELD(float, cooldown_mult, N); PS_BLOB_FIELD(float, projectile_speed_bonus, N);
+    PS_BLOB_FIELD(float, cooldown_mult, N);
     PS_BLOB_FIELD(float, magnet_bonus, N); PS_BLOB_FIELD(float, area_bonus, N);
     PS_BLOB_FIELD(int, tick, N); PS_BLOB_FIELD(int, invuln_timer, N);
     PS_BLOB_FIELD(int, nearest_enemy, N);
@@ -288,15 +238,19 @@ static inline void ps_cuda_alloc(PSCudaSim* sim, int num_envs, PSConfig cfg) {
     PS_BLOB_FIELD(int, moving_obstacle_ttl, NMO);
     PS_BLOB_FIELD(int, moving_obstacle_dense, NMO);
     PS_BLOB_FIELD(int, moving_obstacle_dense_pos, NMO);
+    return state_offset;
+}
+#undef PS_BLOB_FIELD
+
+static inline void ps_cuda_alloc(PSCudaSim* sim, int num_envs, PSConfig cfg) {
+    std::memset(sim, 0, sizeof(*sim));
+    sim->num_envs = num_envs;
+    sim->cfg = cfg;
+    PS_CUDA_CHECK(cudaMalloc(&sim->blob, ps_cuda_layout(sim)));
+    ps_cuda_layout(sim);
 }
 
 static inline void ps_cuda_free(PSCudaSim* sim) {
-    if (sim->owns_io) {
-        cudaFree(sim->observations);
-        cudaFree(sim->actions);
-        cudaFree(sim->rewards);
-        cudaFree(sim->terminals);
-    }
     if (sim->blob) cudaFree(sim->blob);
     std::memset(sim, 0, sizeof(*sim));
 }
@@ -319,12 +273,6 @@ __global__ void ps_reset_all_kernel(PSCudaSim sim, uint32_t seed) {
     ps_reset_core(&sim, env, 1);
 }
 
-__global__ void ps_step_kernel(PSCudaSim sim) {
-    int env = blockIdx.x * blockDim.x + threadIdx.x;
-    if (env >= sim.num_envs) return;
-    ps_step_env(&sim, env);
-}
-
 __global__ void ps_step_range_kernel(PSCudaSim sim, int start, int count) {
     int lane = blockIdx.x * blockDim.x + threadIdx.x;
     if (lane >= count) return;
@@ -335,14 +283,12 @@ __global__ void ps_step_range_kernel(PSCudaSim sim, int start, int count) {
 
 static inline void ps_cuda_reset_all(PSCudaSim* sim, uint32_t seed, cudaStream_t stream = 0) {
     int blocks = (sim->num_envs + PS_CUDA_BLOCK_SIZE - 1) / PS_CUDA_BLOCK_SIZE;
-    // observations zeroed inside ps_reset_core->ps_compute_observations; redundant Memset removed (~11MB/step)
     ps_reset_all_kernel<<<blocks, PS_CUDA_BLOCK_SIZE, 0, stream>>>(*sim, seed);
     PS_CUDA_CHECK(cudaGetLastError());
 }
 
 static inline void ps_cuda_step_range(PSCudaSim* sim, int start, int count, cudaStream_t stream = 0) {
     int blocks = (count + PS_CUDA_BLOCK_SIZE - 1) / PS_CUDA_BLOCK_SIZE;
-    // observations zeroed inside ps_compute_observations; redundant Memset removed
     ps_step_range_kernel<<<blocks, PS_CUDA_BLOCK_SIZE, 0, stream>>>(*sim, start, count);
     PS_CUDA_CHECK(cudaGetLastError());
 }

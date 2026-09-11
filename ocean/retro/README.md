@@ -1,152 +1,202 @@
-# Retro (Super Mario Bros) - PufferLib Ocean Env
+# Retro: original-ROM SMB1 training
 
-C/C++ only. The active training path runs the real `smb1.nes` ROM through one
-independent QuickNES instance per environment. There is no Python emulator path
-and no procedural level substitute.
+The default environment executes the original ROM in independent QuickNES
+CPU/PPU/APU instances. It does not approximate Mario's physics or patch game
+loops to recover from glitches. The policy runs on CUDA; emulation runs on CPU.
 
-## Layout
+Supported SMB1 NTSC mapper-0 image, iNES file SHA-256:
+`ec299b990e8bfee8ba46e3f61d63b2e1ae5b8a2e431de84e2e4bbd692dc53586`.
+Use your own ROM at `ocean/retro/roms/smb1.nes`; other images fail explicitly.
 
-* `retro.h` - real-ROM CPU environment and the unchanged PufferLib env ABI. The
-  immutable cartridge is loaded once, QuickNES objects are contiguous in the
-  native vector arena, and the first `frameskip - 1` frames use QuickNES
-  skip-render mode.
-* `retro.c` - standalone CPU eval/demo entry (`./build.sh retro --local/fast`).
-* `config/retro.ini` - train defaults (`puffer train retro`).
+## Build and run
 
-The old procedural CUDA prototype is not used. A CUDA port of the complete
-6502 CPU, PPU, APU, mapper, and SMB timing would be a separate emulator and is
-not enabled because replacing it with simplified physics would lose enemies,
-secrets, scrolling behavior, and other ROM logic.
-
-## Observation
-
-```
-OBS_SIZE = 64 (ego/physics) + 48 (entities) + 12*12 (pixels) = 256
-```
-
-* Ego (64): absolute/page/offset/subpixel X (`$6D/$86/$0400/$0705`), Y
-  (`$B5/$CE/$0433`), signed X/Y velocities (`$57/$9F`), ground/engine state
-  (`$1D/$0E`), facing, size/power, duck/swim/jump/invuln/star timers, scroll
-  (`$073F/$071A-$071D/$0775`/lock), area+warp pointers (`$0750/$06D6/$072C/
-  $0739`), world/level/area, timer, frame counter, RNG (`$07A7`), side
-  collision, coins/score/tick/flag/dead/lives. This is the screen-X vs scroll
-  desync state behind 4-2 wrong warp, minus-world wall clips, bump warps,
-  and the subpixel/velocity windows behind wall clips, flagpole and vine
-  glitches. All RAM, so the same builder runs on libretro
-  (`RETRO_MEMORY_SYSTEM_RAM`).
-* Entities (48): 5 enemy slots x 8 (active, type `$16`, state `$1E`,
-  dx/dy vs Mario, dir, x/y speed) + powerup/fireball dx/dy/type/state.
-* Window (144 values): a `12x12` framebuffer patch centered around Mario. The
-  active real-ROM path samples QuickNES's indexed framebuffer and converts each
-  value to a normalized float.
-
-## Reward
-
-```
-progress = γ·Φ(x') − Φ(x),  Φ(x) = clamp(x/3400), γ = potential_gamma = train.gamma
-```
-
-Potential-based shaping (Ng–Harada–Russell): telescopes over the episode so
-the optimal policy is unchanged; retreat is penalized symmetrically. Gated to
-the same (world,stage,area) so warps reset the basis. Sparse events on top:
-score/100, coin +0.5, death −2.5, flag +5, new-area +2. `x_pos_max` is kept
-for the distance log only.
-
-## Actions
-
-Single discrete head `ACT_SIZES {12}`:
-
-```
-0 NOOP
-1 RIGHT           5 A                9 B
-2 RIGHT+A         6 LEFT            10 UP
-3 RIGHT+B         7 LEFT+A           11 RIGHT+DOWN
-4 RIGHT+A+B       8 DOWN
-```
-
-These map to the NES joypad mask (`A/B/Up/Down/Left/Right`). PPO still samples
-one normal discrete action per environment. Start and Select are not in the
-training action set.
-
-## CPU Throughput Notes
-
-* **Shared cartridge.** The ROM is parsed once. Each environment gets
-  independent CPU, PPU, APU, RAM, nametable, sprite, mapper, and save-state
-  data; only immutable cartridge bytes are shared.
-* **Skip intermediate rendering.** With `frameskip = 4`, QuickNES still
-  executes all four complete frames, but only the fourth writes the framebuffer
-  used by the observation. Set `RETRO_FULL_RENDER=1` to render every frame for
-  diagnostics.
-* **Contiguous emulator arena.** Native training constructs the QuickNES
-  objects in one contiguous array. PPO buffers and the `Env` ABI remain
-  unchanged, while emulator state is less scattered in memory.
-* **Thread-local framebuffer binding.** Workers rebind each emulator to their
-  own scratch framebuffer before stepping, avoiding cross-thread pixel races.
-
-## Backends (`env.backend`, default `quicknes`)
-
-| backend | core | speed (4096 envs, 4 workers) | use for |
-|---|---|---|---|
-| `quicknes` | QuickNES interpreter (this repo) | ~11.5k env_steps/s | eval, `watch`, readable preview, ground truth |
-| `fast` | native-C smbcore, fetched at build time (pinned `87af9a3`) | ~44k env_steps/s bench, ~21.5k SPS training | training |
-
-Select per run: `./retro bench 4096 16 4 fast`, `./puffer train retro env.backend=fast`.
-Same ROM (`ocean/retro/roms/smb1.nes`), same RAM map, same `OBS 256` / 12-action
-ABI, shared `retro_obs.h` builder. The fast core keeps upstream's
-bug-compatible game logic (minus world / clipping bugs in scope) but runs it
-as compiled C with no APU synthesis and rasterizes only the 12x12 obs patch
-on observed frames.
-
-Known cross-backend gap (measured, honest): a ~1-frame input/physics phase
-offset from different NMI/joypad-latch ordering, so full-RAM hashes never
-match bit-exact. Train on `fast`, confirm transfer by evaluating the policy
-under `quicknes`/libretro -- closed-loop PPO acting every 4 frames absorbs
-the phase gap; frame-perfect input tapes do NOT transfer 1:1.
-
-Robustness: both backends convert an input-dead freeze state (frame counter
-`$0009` stalled across a tick -- SMB1 has several documented ones, and random
-exploration finds them) into a terminal + reset, so one frozen env can never
-wedge a rollout. Hunt regressions with the chaos monkey:
-`./retro chaos 1024 2000 4 fast 12345` (deterministic seed, random actions).
-
-### Why no CUDA env kernel
-
-Single-core tick rate is ~800k frames/s (game logic) vs ~15k for the
-interpreter, so 4 CPU cores already feed the GPU policy loop (training is
-policy-bound past ~20k SPS). A branch-heavy logic port would be
-divergence- and launch-overhead-bound on GPU. SoA note: vectorization is at
-env level (contiguous compact states, ~18KB varying/env); field-wise SoA of
-the game state is impossible without rewriting smbcore (it indexes RAM
-arrays).
-
-### Why There Is No CUDA ROM Kernel Yet
-
-The full ROM emulator is stateful and branch-heavy. Moving it to CUDA while
-preserving behavior would require porting the complete 6502/PPU/APU/mapper
-state machine, not just changing `Env` from AoS to SoA. The vendored libretro
-cores remain available for comparison, but the active path directly uses
-QuickNES so each environment is independent and does not serialize through a
-singleton core.
-
-## Build and Run
+Run from the Git repository, `/home/felix/puffertank/pufferlib`, not the older
+duplicate directory one level above it.
 
 ```bash
-# CPU standalone demo
-./build.sh retro --fast
-./retro
-
-# CPU native train binary
-./build.sh retro
+make -C ocean/retro test -j2
+./build.sh retro --fast                 # optimized standalone ROM runner
+./retro levels                         # inspect all 32 starts
+./retro play 4-2                        # arrows, X/Space=A, Z/Shift=B; R=reset
+./build.sh retro                        # CUDA policy + CPU ROM environment
 ./puffer train retro
+./retro watch latest --random           # new-contract checkpoint, all starts
 ```
 
-The standalone commands are:
+For the native all-level hyperparameter sweep, run `./puffer sweep retro`.
+See [SWEEP.md](SWEEP.md) for budgets, the sparse-aware ranking and how to
+compare or extend promising trials. Rebuild with `./build.sh retro` first if
+another environment has replaced the shared `./puffer` executable.
+
+Without a display, play/watch run a bounded 600-decision smoke test.
+Defaults: two recurrent layers of width 128, 1,024 environments, four workers.
+Override starts with `env.spawn_levels=1-1,4-2,8-4`; single levels work too.
+
+The new interface has **64 actions**, not 12. Old checkpoints are incompatible
+and are not automatically loaded. New checkpoints go under
+`checkpoints/retro_rom/retro/`. The watcher checks tensor sizes against
+`config/retro.ini`; use the same policy width/layers as training.
+
+## Fidelity contract and training choices
+
+- Gameplay executes ROM instructions. Integer/subpixel arithmetic, backwards
+  acceleration, controller polling, collision and warp logic are not
+  reimplemented. No gameplay RAM writes occur during stepping.
+- `frameskip=1` permits input every emulated frame. Action bits represent A, B,
+  Up, Down, Left, Right, including opposite directions:
+  `mask = (action & 3) | ((action & 60) << 2)`.
+  Start/Select are excluded from training but available to raw replay.
+- Reset setup writes world, stage and area in a title snapshot, then lets the
+  ROM perform its entrance. All 32 first-controllable starts are prebuilt.
+  Actual area and level-data pointers are validated, not just labels.
+  Some original stages reuse geometry.
+- Reset restores complete emulator state plus its matching image and palette.
+  This is a training start distribution, not a claim that a level start equals
+  every possible state reached there during uninterrupted play.
+- Flags and ordinary level changes do not reset the game. Wrong warps are not
+  repaired. A stalled game frame counter is not treated as a death.
+- Training ends on ROM death/game-over, final castle completion, or
+  `max_frames=30000`. The horizon is logged separately from deaths. The
+  trainer ABI has one done bit: this is a finite-horizon task terminal, not a
+  bootstrapped time-limit mask. Raw `retro_frame()` has none of these limits.
+
+**ROM execution is not proof that QuickNES is hardware-perfect.** Tests
+compare optimized and unoptimized execution of this same core. Independent
+emulator/hardware comparison and recorded glitch tapes remain acceptance
+gates before claiming every exploit is reproduced. Preserving an exploit and
+getting PPO to discover it are different problems.
+
+The independent cold-boot diagnostic, `make -C ocean/retro reference-probe`,
+currently reports RAM/RNG differences from the local FCEUmm core. Sampled Mario
+positions/subpixels matched after gameplay began, but this is NOT full parity.
+The diagnostic intentionally does not hide differing bytes or call its exit
+status a parity pass. Power-on state and controller/frame phase must be aligned
+before determining which remaining differences are emulation inaccuracies.
+
+The vendored CPU also approximates some unsupported opcodes as NOPs. The ROM
+wrapper now **fails explicitly** if that path is reached, including at boot,
+instead of silently training on altered behavior. Ordinary game-code loops
+remain emulated. Hardware CPU-jam/unsupported-opcode exploits need proper core
+support before they can be trained; this is a known limit, not a repaired hang.
+
+## Speed work
+
+- The core is compiled once into a cached host-compiler archive. The native-C
+  SMB port, SMB2J objects, patches, signals and hang watchdogs are absent from
+  the default build. Unused reference cores and prototypes are not loaded.
+- Cartridge bytes and decoded immutable CHR tiles are shared. CPU, RAM, PPU,
+  APU, controller and mapper state remain private. CHR cache ownership is
+  reference-counted, with copy-on-write for explicit cache modifications.
+- Repeated ROM jump-to-itself dispatches are folded up to the next scheduled
+  emulator event. Folding advances by whole three-cycle JMP instructions,
+  preserving the original cycle overshoot. Disable with
+  `env.idle_loop_skip=0`. This does not skip game frames or reset frozen games.
+- Workers rebind private scratch framebuffers every frame. At frameskip > 1,
+  intermediate frames can omit final pixels while still executing emulation.
+- Human display uploads a texture instead of drawing rectangles per pixel.
+  Training requires no display/audio playback; sound hardware is emulated.
 
 ```bash
-./retro                         # human play
-./retro play                    # human play
-./retro watch latest            # watch newest policy checkpoint
-./retro watch PATH.bin         # watch a specific checkpoint
+# envs, decisions/env, workers, frameskip, starts, inputs, idle folding
+./retro bench 512 512 4 1 all random 1
+./retro bench 512 512 4 1 all random 0
+./retro bench 512 512 4 4 all random 1
 ```
 
-Set `DISPLAY=` and `WAYLAND_DISPLAY=` to use the 100-step headless smoke demo.
+Benchmarks exclude initialization but include observations, terminals and
+resets through the actual native vector constructor. They report decisions/s
+and actual ROM frames/s separately. Environment-only SPS is not PPO SPS.
+Four-frame holds restrict frame-perfect inputs: they are a different control
+task, even though all four frames are emulated.
+
+The bounded 2026-09-07 PPO run completed 1,048,576 one-frame training decisions
+in 60.703 seconds: **17.3k actual PPO SPS**, with about 0.945 GiB trainer-reported
+VRAM. Checkpoint reload passed. This short run recorded no level clears; it
+establishes throughput/stability, not learned competence. See
+`REALIGNMENT_20260907.md` for the configuration, artifacts and comparison caveats.
+
+## Observation and reward
+
+OBS 256 = 64 RAM/physics features + 48 entity features + a 12×12 luma window
+(each cell averages an 8×8 pixel block). Features include subpixels, signed
+velocity, scrolling and warp state. This is a compact partial observation;
+the policy is recurrent.
+
+The reward combines retained distance checkpoints with soft potential shaping.
+Every `env.checkpoint_distance=128` novel pixels earns
+`env.checkpoint_reward=0.125` raw reward. Novel pixels accumulate across area
+frontiers; revisiting the same level/loaded-area data retains its high-water
+mark. First arrival establishes a baseline, so entering an area does not pay
+for its starting coordinate. Each frontier is capped at x=3400 to bound
+coordinate-wrap jackpots; 256 frontier records per episode are available,
+after which new identities earn no distance reward. This bookkeeping never
+writes ROM state. It measures new forward exploration, not calibrated route
+length or credit for every level skipped by a warp.
+
+The unscaled weights are +10 for completion and −0.125 for death, with score
+reward disabled. `env.reward_scale=0.0625` multiplies the **entire** reward:
+checkpoints contribute +0.0078125 each, completion +0.625, death −0.0078125.
+Earned checkpoint rewards survive death/timeouts; two checkpoints outweigh
+one death penalty before shaping/discounting. Set `checkpoint_reward=0` to
+ablate the hard reward. These defaults intentionally change the old sparse
+objective to encourage exploration; the old sweep is not a validation of them.
+Completion pays once per source level per episode on a forward level/world
+transition or castle completion.
+A warp counts as advancing from its source, not playing every skipped level.
+Per-level episode starts and completion events are separate: their ratio is
+not automatically a success rate, since an episode can traverse several levels.
+
+Shaping is `gamma * Phi(next_x) - Phi(previous_x)`, where
+`Phi(x)=clamp(x/3400,0,1)` and terminal potential is zero. The difference is
+retained across area changes. The native launcher automatically sets
+`env.potential_gamma = train.gamma` after CLI overrides, including sweep trials.
+Other entry points must keep these equal themselves.
+
+`train.reward_clip=1` stays enabled. With the default weights and one-frame
+controls, the combined returned reward lies within [−0.0703125, +0.8984375], so the
+clip does not distort reward ratios. The native launcher checks a conservative
+bound and rejects unsafe scales/weights. Raising frameskip or enabling score
+reward may require reducing the common scale. Episode return sums actual
+scaled rewards; old unscaled returns are not directly comparable. The earlier
+throughput smoke test predates this reward rescaling. `progress_pixels` and
+`checkpoints` report episode totals; `frames` and `decisions` also report full
+episodes rather than the final logging window. Start a fresh policy for this
+reward experiment (`base.load_model_path=None`); already-running processes
+continue using their loaded code and settings until restarted.
+
+## Validation and experimental code
+
+`make -C ocean/retro test` covers all starts, exact reset state/images,
+single-level selection, controller combinations, flag/powerup RAM slots,
+horizons and return accounting. It compares RAM every frame and canonical
+images/serialized state every four frames across moving, jumping, backwards,
+idle and random trajectories. It toggles idle folding, CHR sharing and
+intermediate rendering, and repeatedly restores only one side. It also
+compares one-worker/four-worker vectors through resets.
+It also checks clipping-safe reward scaling, sweep configuration and the
+clear-first panel score/action decoder.
+
+AddressSanitizer build (separate archive, leaving optimized binaries intact):
+
+```bash
+make -C ocean/retro test -j2 BUILD=../../build/retro-asan \
+  'CXXFLAGS=-O1 -g -march=native -std=c++17 -fsanitize=address -fno-omit-frame-pointer'
+```
+
+```bash
+./retro replay INPUT.txt 4-2
+```
+
+Replay takes one decimal NES mask (0–255) per frame and prints frame, input,
+RAM hash, world, stage and X. It never shapes rewards, ends or resets the game.
+This is the entry point for future recorded glitch tapes.
+
+Old sources remain in `retro_legacy.h`, `retro_legacy.c`, `retro_fast.h` and
+`smb_patches/` for recovery/experiments. Opt in with
+`RETRO_LEGACY=1 ./build.sh retro --fast`; the old 12-action configuration is
+separate and has no exactness guarantee. Policy transfer is not frame parity.
+
+A CUDA successor should be tested ROM execution or equivalent instruction
+translation, not float-physics recreation. Integer subpixels alone are not
+enough: carry flags, RAM aliasing, input timing, interrupts and PPU interactions
+matter. Gate optimizations on differential replay, then measured throughput.

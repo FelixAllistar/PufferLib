@@ -13,12 +13,13 @@
 
 #include "kaggriculture.h"
 
-void kg_policy_observation_mode(const KGState* state, int player,
-        int macro_mode, unsigned char* output, size_t output_size) {
+void kg_policy_observation_version(const KGState* state, int player,
+        int macro_mode, int observation_version, unsigned char* output, size_t output_size) {
     Env env;
     if (state == NULL || output == NULL || output_size != OBS_SIZE
             || player < 0 || player >= KG_NUM_PLAYERS
-            || macro_mode < 0 || macro_mode > KAG_MACRO_MODE_TASKS) {
+            || macro_mode < 0 || macro_mode > KAG_MACRO_MODE_TASKS
+            || observation_version < 0 || observation_version > 1) {
         return;
     }
     memset(&env, 0, sizeof(env));
@@ -26,6 +27,8 @@ void kg_policy_observation_mode(const KGState* state, int player,
     env.agents[player].observations = output;
     env.macro_mode = macro_mode;
     env.frozen_macro_mode = -1;
+    env.observation_version = observation_version;
+    env.frozen_observation_version = -1;
     env.macro_decision_interval = 1;
     env.macro_score_scale = 10000.0f;
     /* These limits are the elite policy ABI, matching the normal trainer. */
@@ -33,6 +36,11 @@ void kg_policy_observation_mode(const KGState* state, int player,
     env.policy_max_hands = KG_POLICY_DIRECT_HANDS;
     env.reset_source = 0;
     kag_write_observation(&env, player);
+}
+
+void kg_policy_observation_mode(const KGState* state, int player,
+        int macro_mode, unsigned char* output, size_t output_size) {
+    kg_policy_observation_version(state, player, macro_mode, 0, output, output_size);
 }
 
 void kg_policy_observation(const KGState* state, int player,

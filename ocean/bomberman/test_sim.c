@@ -75,7 +75,6 @@ static void add_bomb(BMMatch* m, int slot, int owner,
     b->owner = (uint8_t)owner;
     b->timer = (uint16_t)timer;
     b->range = (uint8_t)range;
-    b->shaping_flags = 0;
     m->bomb_here[bm_idx(m, x, y)] = (uint8_t)(slot + 1);
     m->agents[owner].bombs_out += 1;
 }
@@ -704,6 +703,46 @@ static void test_two_player_random_seat_symmetry(void) {
         wins[0], wins[1], draws);
 }
 
+static void test_curriculum_board_bounds(void) {
+    BMConfig cfg = bm_default_config();
+    cfg.reverse_curriculum = 1;
+    cfg.num_agents = 2;
+    for (int width = 5; width <= BM_MAX_W; width += 2) {
+        for (int height = 5; height <= BM_MAX_H; height += 2) {
+            cfg.width = width;
+            cfg.height = height;
+            for (int stage = 0; stage < BM_CURRICULUM_STAGES; stage++) {
+                for (uint32_t seed = 1; seed <= 32; seed++) {
+                    BMMatch m;
+                    bm_reset_match(&m, &cfg, seed);
+                    BMMatch initial = m;
+                    bm_apply_reverse_curriculum(&m, &cfg,
+                        (float)stage / BM_CURRICULUM_STAGES);
+                    if (width < 9 || height < 9) {
+                        CHECK(memcmp(&m, &initial, sizeof(m)) == 0,
+                            "small boards keep their normal initial state");
+                    }
+                    for (int a = 0; a < m.num_agents; a++) {
+                        CHECK(m.agents[a].x > 0 && m.agents[a].x < m.width - 1
+                            && m.agents[a].y > 0 && m.agents[a].y < m.height - 1,
+                            "curriculum spawn stays inside board");
+                    }
+                    for (int x = 0; x < m.width; x++) {
+                        CHECK(m.tiles[bm_idx(&m, x, 0)] == BM_TILE_HARD
+                            && m.tiles[bm_idx(&m, x, m.height - 1)] == BM_TILE_HARD,
+                            "curriculum preserves horizontal borders");
+                    }
+                    for (int y = 0; y < m.height; y++) {
+                        CHECK(m.tiles[bm_idx(&m, 0, y)] == BM_TILE_HARD
+                            && m.tiles[bm_idx(&m, m.width - 1, y)] == BM_TILE_HARD,
+                            "curriculum preserves vertical borders");
+                    }
+                }
+            }
+        }
+    }
+}
+
 int main(void) {
     printf("bomberman reworked simulator tests\n");
     test_layout();
@@ -718,6 +757,7 @@ int main(void) {
     test_self_kill_penalty();
     test_kill_coupled_bomb_shaping();
     test_reverse_curriculum_finish();
+    test_curriculum_board_bounds();
     test_observation_and_mask();
     test_pickup_reward();
     test_timeout_penalty();

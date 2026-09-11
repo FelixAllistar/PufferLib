@@ -4,7 +4,7 @@ BUILD := build
 LIB := $(BUILD)/libkaggriculture.so
 CFLAGS ?= -O3 -std=c17 -Wall -Wextra -Werror -fPIC
 
-.PHONY: all lib parity state-bank-test counterfactual-test top-bot-parity cuda-core cuda-adapter bc bench hotpath adapter eval metagame native-test test clean
+.PHONY: all lib parity state-bank-test counterfactual-test top-bot-parity cuda-core cuda-adapter bc bench hotpath adapter observation-test eval metagame native-test test clean
 
 all: lib
 
@@ -81,6 +81,16 @@ bc: $(BUILD)/kag_bc
 adapter: $(BUILD)/test_adapter
 	$(BUILD)/test_adapter
 
+observation-test: $(BUILD)/test_observation_version
+	cd $(ROOT) && ocean/kaggriculture/$(BUILD)/test_observation_version
+
+$(BUILD)/test_observation_version: tests/test_observation_version.c $(wildcard *.h) \
+		kaggriculture_core.c $(ROOT)/src/pufferenv.h $(ROOT)/src/kag_observation_contract.h | $(BUILD)
+	$(CC) -O1 -std=c17 -Wall -Wextra -Werror \
+		-I$(ROOT) -I$(ROOT)/src -I$(ROOT)/vendor -I$(ROOT)/raylib-5.5_linux_amd64/include \
+		tests/test_observation_version.c $(ROOT)/raylib-5.5_linux_amd64/lib/libraylib.a \
+		-lGL -lm -lpthread -o $@
+
 $(BUILD)/test_adapter: tests/test_adapter.c $(wildcard *.h) \
 		kaggriculture_core.c $(ROOT)/src/pufferenv.h | $(BUILD)
 	$(CC) -O3 -std=c17 -Wall -Wextra -Werror \
@@ -92,7 +102,7 @@ metagame: | $(BUILD)
 	$(CC) -O3 -std=c17 -Wall -Wextra -Werror metagame.c -lm \
 		-o $(BUILD)/kaggriculture_metagame
 
-native-test: adapter
+native-test: adapter observation-test
 
 test: native-test parity
 

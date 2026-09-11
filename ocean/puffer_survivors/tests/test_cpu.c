@@ -5,6 +5,7 @@
 
 #define PS_DEBUG_COUNTS 1
 #include "../puffer_survivors.h"
+#include "test_enemy_scans.h"
 
 static void assert_finite_observation(const float* obs) {
     for (int i = 0; i < PS_OBS_SIZE; i++) {
@@ -112,6 +113,7 @@ int main(void) {
 
     assert(PS_OBS_SIZE == 337);
     assert_finite_observation(observations);
+    ps_test_enemy_scans(&env, 0);
     assert(ps_geometry_shape_overlaps_circle(PS_SHAPE_AABB,
         4.0f, 0.0f, 0.0f, 4.65f, 4.65f, 0.5f));
     assert(!ps_geometry_shape_overlaps_circle(PS_SHAPE_AABB,

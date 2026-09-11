@@ -109,13 +109,6 @@ typedef struct {
 } PSEnemyDef;
 
 typedef struct {
-    float base_cd;
-    float cd_per_level;
-    float base_damage;
-    float damage_per_level;
-} PSWeaponDef;
-
-typedef struct {
     float arena_size;
     int max_steps;
     int wave_length_steps;
@@ -264,7 +257,6 @@ typedef struct {
     int wave_tail_interval;
     int wave_min_spawn_interval;
     int progress_normal_wave_count;
-    float weapon_min_cooldown;
     float bubble_target_range;
     float bubble_target_area_range;
     float bubble_shot_spread;

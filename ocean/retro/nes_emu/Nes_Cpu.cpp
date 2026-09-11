@@ -304,9 +304,18 @@ imm##op:                                \
 		goto loop;
 	}
 	
-	case 0x4C: // JMP abs
-		pc = GET_OPERAND16( pc );
+	case 0x4C: { // JMP abs
+		unsigned target = GET_OPERAND16( pc );
+		if ( idle_skip_enabled && pc >= 0x8001 && target == pc - 1 && clock_count < clock_limit )
+		{
+			// The ordinary interpreter begins instructions while clock < limit
+			// and may finish one up to two cycles beyond it. Preserve exactly
+			// that overshoot; setting clock_count=clock_limit would shift NMIs.
+			clock_count += ((clock_limit - clock_count + 2) / 3) * 3;
+		}
+		pc = target;
 		goto loop;
+	}
 	
 	case 0xE8: INC_DEC_XY( x, 1 )  // INX
 	

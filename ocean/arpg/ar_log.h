@@ -12,6 +12,7 @@ struct Log {
     float reward_damage;
     float reward_hurt;
     float reward_summon;
+    float reward_economy;
     float reward_terminal;
     float kills;
     float summons;
@@ -20,7 +21,10 @@ struct Log {
     float damage_dealt;
     float damage_taken;
     float enemies_alive;
-    float wave;
+    float level;
+    float harvested;
+    float buildings;
+    float camps_cleared;
     float hp;
     float success;
     float n;

@@ -16,7 +16,7 @@ typedef uint8_t obs_t;
 
 #include "goofspiel_exploit.h"
 
-#ifdef __CUDACC__
+#ifdef PUFFER_GPU_ENV
 void gs_gpu_exact_upload(const GSExactTable* tables, int count);
 #endif
 
@@ -201,15 +201,16 @@ GS_ENV_HD static inline void gs_write_masks(Env* env) {
     }
 }
 
-static inline void gs_reset_state(Env* env) {
+GS_ENV_HD static inline void gs_reset_state(Env* env, int exact_count,
+        float exact_current_prob) {
     gs_reset(&env->state, &env->history, &env->cfg, &env->rng);
     gs_write_masks(env);
     gs_observe(env);
     env->exact_depth = 0;
     uint32_t exact_draw = gs_mix32(env->rng ^ 0x85ebca6bu);
-    env->exact_table = gs_exact_count <= 1
-        || (double)exact_draw / 4294967296.0 < gs_exact_current_prob
-        ? 0 : 1 + (int)(exact_draw % (uint32_t)(gs_exact_count - 1));
+    env->exact_table = exact_count <= 1
+        || (double)exact_draw / 4294967296.0 < exact_current_prob
+        ? 0 : 1 + (int)(exact_draw % (uint32_t)(exact_count - 1));
     env->exact_node = env->cfg.prize_order == GS_PRIZES_RANDOM
         ? env->state.prizes[0] : 0;
 }
@@ -288,10 +289,10 @@ void puf_reset(Env* env) {
         env->agents[p].rewards[0] = 0.0f;
         env->agents[p].terminals[0] = 0.0f;
     }
-    gs_reset_state(env);
+    gs_reset_state(env, gs_exact_count, gs_exact_current_prob);
 }
 
-static inline void gs_log_game(Env* env, const float* returns) {
+GS_ENV_HD static inline void gs_log_game(Env* env, const float* returns) {
     int max_score = -1;
     int winners = 0;
     for (int p = 0; p < env->num_agents; p++) {
@@ -327,7 +328,9 @@ static inline void gs_log_game(Env* env, const float* returns) {
     env->log.n += 1.0f;
 }
 
-void puf_step(Env* env) {
+// The response table is relative to the frozen policy, not a fixed seat.
+GS_ENV_HD static inline int gs_transition(Env* env, const uint8_t* response,
+        int exact_decisions) {
     uint8_t bids[GS_MAX_PLAYERS];
     for (int p = 0; p < env->num_agents; p++) {
         bids[p] = (uint8_t)env->agents[p].actions[0];
@@ -335,28 +338,25 @@ void puf_step(Env* env) {
         env->agents[p].terminals[0] = 0.0f;
     }
 
-    GSExactTable* exact_table = gs_exact_tables + env->exact_table;
-    int exact = gs_exact_enabled && gs_exact_count && env->tag > 0
-        && env->tag <= gs_exact_banks
-        && env->exact_depth < exact_table->decisions;
-    if (exact) {
-        bids[1] = exact_table->actions[env->exact_depth][env->exact_node];
-    }
+    int exact = response != NULL;
+    int responder = env->agents[0].policy > 0 ? 0 : 1;
+    int opponent = 1 - responder;
+    if (exact) bids[responder] = response[env->exact_node];
     for (int p = 0; p < env->num_agents; p++) {
         env->agents[p].action_mask[bids[p]] = 0;
     }
 
     uint64_t next_exact_node = 0;
-    if (exact && env->exact_depth + 1 < exact_table->decisions) {
+    if (exact && env->exact_depth + 1 < exact_decisions) {
         int hand_size = env->cfg.num_cards - env->state.round;
         int prize_choices = env->cfg.prize_order == GS_PRIZES_RANDOM
             ? env->cfg.num_cards - env->state.round - 1 : 1;
-        uint32_t below_response = (1u << bids[1]) - 1u;
-        uint32_t below_opponent = (1u << bids[0]) - 1u;
+        uint32_t below_response = (1u << bids[responder]) - 1u;
+        uint32_t below_opponent = (1u << bids[opponent]) - 1u;
         int response_rank = __builtin_popcount(
-            (unsigned int)(env->state.hands[1] & below_response));
+            (unsigned int)(env->state.hands[responder] & below_response));
         int opponent_rank = __builtin_popcount(
-            (unsigned int)(env->state.hands[0] & below_opponent));
+            (unsigned int)(env->state.hands[opponent] & below_opponent));
         int prize_rank = 0;
         if (env->cfg.prize_order == GS_PRIZES_RANDOM) {
             int next_prize = env->state.prizes[env->state.round + 1];
@@ -376,7 +376,7 @@ void puf_step(Env* env) {
             env->exact_depth++;
         }
         gs_observe(env);
-        return;
+        return 0;
     }
 
     float returns[GS_MAX_PLAYERS];
@@ -394,9 +394,19 @@ void puf_step(Env* env) {
         env->boundary_reached = 1;
     }
 
-    // Prepare the next episode immediately while preserving the completed
-    // transition's rewards and terminal flags in Puffer's external buffers.
-    gs_reset_state(env);
+    return 1;
+}
+
+void puf_step(Env* env) {
+    const GSExactTable* table = gs_exact_tables + env->exact_table;
+    int exact = gs_exact_enabled && env->exact_table < gs_exact_count
+        && env->tag > 0 && env->tag <= gs_exact_banks
+        && env->exact_depth < table->decisions;
+    if (gs_transition(env, exact ? table->actions[env->exact_depth] : NULL,
+            exact ? table->decisions : 0)) {
+        // Reset the game without clearing the completed transition's outputs.
+        gs_reset_state(env, gs_exact_count, gs_exact_current_prob);
+    }
 }
 
 #ifdef __CUDACC__
@@ -416,6 +426,9 @@ static inline void gs_exact_load(const char* checkpoint, Ini* ini) {
             checkpoint);
         return;
     }
+#ifdef PUFFER_GPU_ENV
+    gs_gpu_exact_upload(gs_exact_tables, gs_exact_count);
+#endif
     gs_exact_restored = 1;
     printf("Restored exact response pool: pool=%d/%d seen=%llu from %s.exact\n",
         gs_exact_count, gs_exact_history,
@@ -450,7 +463,9 @@ static inline void gs_checkpoint_hook(const char* checkpoint, Ini* ini) {
     double exploitability = gs_cuda_pool_response(checkpoint, ini,
         gs_exact_tables, &gs_exact_count, gs_exact_history, &gs_exact_seen,
         &nodes, &milliseconds);
+#ifdef PUFFER_GPU_ENV
     gs_gpu_exact_upload(gs_exact_tables, gs_exact_count);
+#endif
     gs_exact_save(checkpoint);
     printf("Exact response: exploitability=%.9f pool=%d/%d seen=%llu nodes=%llu milliseconds=%.3f\n",
         exploitability, gs_exact_count, gs_exact_history,
@@ -459,7 +474,7 @@ static inline void gs_checkpoint_hook(const char* checkpoint, Ini* ini) {
 }
 #define PUF_CHECKPOINT_HOOK(checkpoint, ini) gs_checkpoint_hook(checkpoint, ini)
 #else
-/* The exact solver is 4-card-only. In a 13-card ABI build, disable the
+/* The exact solver supports up to five cards. In larger ABI builds, disable the
  * solver-backed sweep/checkpoint hooks rather than abort on every save. */
 #define PUF_SWEEP_SCORE(checkpoint, ini) 0.0f
 #define PUF_CHECKPOINT_HOOK(checkpoint, ini) ((void)0)

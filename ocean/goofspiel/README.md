@@ -1,9 +1,10 @@
 # Goofspiel
 
-CPU Goofspiel is specialized for two players and up to four cards. It supports
+Goofspiel is specialized for two players, with a compile-time card count
+(`GS_NUM_CARDS`, default 4, up to 13) shared by CPU and CUDA. It supports
 random/ascending/descending prizes, perfect/hidden information, egocentric
 observations, discard/carry ties, and OpenSpiel-compatible terminal returns.
-The fixed model interface has four actions and 48 observation values. Compact
+The default model interface has four actions and 48 observation values. Compact
 observations use the first 27 values; OpenSpiel observations use all 48.
 
 ## Exact exploitability
@@ -27,7 +28,16 @@ Evaluate a checkpoint on the four-card game:
 
 Use `uniform` instead of a checkpoint to evaluate the uniform random policy.
 The exact evaluator supports shared egocentric recurrent policies in two-player
-perfect-information zero-sum games with 2-4 cards. It enumerates seeded chance
+perfect-information zero-sum games with 2-5 cards. The runtime card count cannot
+exceed the compiled card count. Build every evaluator and the environment with
+the same ABI as the checkpoint, for example:
+
+```bash
+bash build.sh goofspiel --exploit --cards=5
+bash build.sh goofspiel --exploit-gpu --cards=5
+```
+
+The five-card ABI has five actions and 69 observation values. It enumerates seeded chance
 outcomes exactly, advances the MinGRU on the same pre-action observation used
 during training, masks spent cards, and computes a pure best response without
 revealing the opponent's simultaneous bid.
@@ -82,6 +92,12 @@ reviewed. Verify every supported rule family against it with:
 ```bash
 ocean/goofspiel/tests/test_exploit_gpu.sh MODEL HIDDEN_SIZE NUM_LAYERS
 ```
+
+Run CPU core, adapter, and reference-solver regressions with
+`make -C ocean/goofspiel test` or `make -C ocean/goofspiel sanitize`.
+CUDA adapter parity (including exact opponents in both seats) is a separate
+`make -C ocean/goofspiel cuda-adapter` target; set `GS_NUM_CARDS=5` or `13`
+to check those compiled layouts.
 
 ## GPU-resident environment
 

@@ -14,6 +14,7 @@ typedef struct {
     uint8_t type[AR_MAX_ENEMIES];
     float x[AR_MAX_ENEMIES];
     float y[AR_MAX_ENEMIES];
+    float home_x[AR_MAX_ENEMIES], home_y[AR_MAX_ENEMIES];
     float vx[AR_MAX_ENEMIES];
     float vy[AR_MAX_ENEMIES];
     float hp[AR_MAX_ENEMIES];
@@ -21,7 +22,6 @@ typedef struct {
     float radius[AR_MAX_ENEMIES];
     float speed[AR_MAX_ENEMIES];
     float damage[AR_MAX_ENEMIES];
-    int invuln[AR_MAX_ENEMIES];
     int slow_timer[AR_MAX_ENEMIES];  // frost slow ticks remaining
     int next[AR_MAX_ENEMIES];
     int dense[AR_MAX_ENEMIES];
@@ -41,9 +41,10 @@ typedef struct {
     float dmg[AR_MAX_PETS];
     float rad[AR_MAX_PETS];
     float cd[AR_MAX_PETS];
-    float age[AR_MAX_PETS];
     int invuln[AR_MAX_PETS];
     int target[AR_MAX_PETS];
+    int task[AR_MAX_PETS];
+    int ntarget[AR_MAX_PETS];  // nest slot targeted, -1 none
     uint8_t attacking[AR_MAX_PETS];
 } ARPetPool;
 
@@ -60,6 +61,9 @@ struct Env {
 
     // Player.
     float px, py, pvx, pvy, hp, max_hp;
+    float home_x, home_y, harvested;
+    float rally_x, rally_y;
+    int rally_active;
     int facing_left;
     float summon_cd;
     float dash_cd, nova_cd, frost_cd;
@@ -75,7 +79,7 @@ struct Env {
     float shard_x[AR_MAX_SHARDS];
     float shard_y[AR_MAX_SHARDS];
     float shard_value[AR_MAX_SHARDS];
-    int shard_count;
+    float shard_cd[AR_MAX_SHARDS];
     uint8_t build_active[AR_MAX_BUILDINGS];
     uint8_t build_kind[AR_MAX_BUILDINGS];
     float build_x[AR_MAX_BUILDINGS];
@@ -88,15 +92,23 @@ struct Env {
     float build_hurtcd[AR_MAX_BUILDINGS];
     int builds_alive;
 
+    // Enemy nest bases.
+    uint8_t nest_active[AR_MAX_NESTS];
+    float nest_x[AR_MAX_NESTS];
+    float nest_y[AR_MAX_NESTS];
+    float nest_hp[AR_MAX_NESTS];
+    float nest_max_hp[AR_MAX_NESTS];
+    float nest_cd[AR_MAX_NESTS];
+    int nests_alive, camps_cleared;
+
     ARPetPool pets;
     AREnemyPool enemies;
     int enemy_count;
     int next_enemy_slot;
     int pets_alive;
-    int spawn_timer;
     int nearest_enemy;
 
-    // Procedural dungeon: 1 = floor, 0 = solid. Cell size is
+    // Procedural ARTile terrain. Cell size is
     // arena_size / AR_DUN_W world units, centered on the origin.
     uint8_t dungeon[AR_DUN_CELLS];
     uint32_t dungeon_seed;
@@ -117,16 +129,15 @@ struct Env {
     float episode_reward_damage;
     float episode_reward_hurt;
     float episode_reward_summon;
+    float episode_reward_economy;
     float episode_reward_terminal;
     float episode_kills;
     float episode_summons;
     float episode_pets_lost;
     float episode_damage_dealt;
     float episode_damage_taken;
-    float episode_peak_enemies;
-    float episode_min_hp;
 
-    // box3d handles. One world per env, created on first reset and reused;
+    // box3d handles. One world per env, rebuilt on reset;
     // enemies and pets own bodies for their lifetime.
     b3WorldId world;
     b3BodyId player_body;

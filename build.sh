@@ -193,6 +193,15 @@ elif [ "$ENV" = "impulse_wars" ]; then
     download "$BOX2D_NAME" "$BOX2D_URL/$BOX2D_NAME.tar.gz"
     INCLUDES+=(-I./$BOX2D_NAME/include -I./$BOX2D_NAME/src)
     LINK_ARCHIVES+=("./$BOX2D_NAME/libbox2d.a")
+elif [ "$ENV" = "pokemon" ]; then
+    SRC_DIR="ocean/$ENV"
+    if [ "$MODE" = "web" ] || [ "$USE_GPU_ENV" = "1" ]; then
+        echo "pokemon currently supports native CPU simulation only" >&2
+        exit 1
+    fi
+    bash ocean/pokemon/build_engine.sh
+    LINK_ARCHIVES+=("build/pokemon/libpokemon.a")
+    EXTRA_LDFLAGS+=("build/pokemon/libpokemon.a")
 elif [ "$ENV" = "nethack" ]; then
     SRC_DIR="ocean/$ENV"
     EXTRA_CFLAGS+=(-DPUFFER_NETHACK)
@@ -245,6 +254,8 @@ elif [ -d "ocean/$ENV" ]; then
         EXTRA_LDFLAGS+=(-ldl)
         EXTRA_SRC+=" ocean/retro/nes_emu/*.cpp"
         INCLUDES+=(-I./ocean/retro/nes_emu -I./ocean/retro)
+        if [ "${RETRO_LEGACY:-0}" = "1" ]; then
+        EXTRA_CFLAGS+=(-DPUFFER_RETRO_LEGACY)
         # Fast native-C backend (smb-vanilla-port smbcore, pinned commit).
         # Fetched at build time like raylib/box2d and never vendored into git
         # (upstream ships no license file). smbcore objects are prebuilt below
@@ -270,6 +281,7 @@ elif [ -d "ocean/$ENV" ]; then
         done
         INCLUDES+=(-I./$SMBV_DIR/src)
         EXTRA_CFLAGS+=(-DTHREAD_LOCAL_SMBSTATE)
+        fi
         # fast/local standalone uses clang++ for Nes_Emu (retro.c is C++ despite .c)
         if [ "$MODE" = "fast" ] || [ "$MODE" = "local" ]; then
             CC="clang++"
@@ -314,7 +326,7 @@ if [ "$ENV" = "retro" ]; then
     CLANG_OPT+=(-D_GNU_SOURCE)
     NVCC_OPT+=(-Xcompiler=-D_GNU_SOURCE)
 fi
-if [ "$ENV" = "retro" ]; then
+if [ "$ENV" = "retro" ] && [ "${RETRO_LEGACY:-0}" = "1" ]; then
     # Prebuild smbcore objects exactly like upstream: the shared TUs once per
     # game mode (SMB1_MODE / SMB2J_MODE), smbcore.c + the headless rasterizer
     # as plain C. Host clang (C, never C++); ASAN flags included for local
@@ -369,6 +381,16 @@ if [ "$ENV" = "retro" ]; then
     fi
     SMBCORE_NVCC=("${SMBCORE_OBJS[@]}")
 fi
+if [ "$ENV" = "retro" ] && [ "${RETRO_LEGACY:-0}" != "1" ] && [ "$MODE" != "local" ]; then
+    # Compile/cache the emulator with the host compiler. nvcc only needs to
+    # compile the policy and thin environment wrapper, not thirty emulator TUs.
+    make -C ocean/retro library sweep-tools -j2
+    EXTRA_SRC="build/retro/libquicknes.a"
+fi
+# Every Goofspiel entry point must use the same observation/action ABI.
+if [ "$ENV" = "goofspiel" ]; then
+    EXTRA_CFLAGS+=(-DGS_NUM_CARDS=${GS_NUM_CARDS:-4})
+fi
 if [ "$MODE" = "local" ] || [ "$MODE" = "fast" ]; then
     FLAGS=(
         "${INCLUDES[@]}"
@@ -413,7 +435,7 @@ elif [ "$MODE" = "exploit" ]; then
         exit 1
     fi
     ${CC:-clang} -O3 "${CLANG_WARN[@]}" "${SIMD_FLAGS[@]}" \
-        -I. -Isrc -I$SRC_DIR -Ivendor \
+        "${EXTRA_CFLAGS[@]}" -I. -Isrc -I$SRC_DIR -Ivendor \
         "$SRC_DIR/goofspiel_exploit.c" -lm -o goofspiel_exploit
     echo "Built: ./goofspiel_exploit"
     exit 0
@@ -424,7 +446,7 @@ elif [ "$MODE" = "exploit_gpu" ]; then
     fi
     CUDA_HOME=${CUDA_HOME:-${CUDA_PATH:-$(dirname "$(dirname "$(which nvcc)")")}}
     ${CUDA_HOME}/bin/nvcc -O3 --threads 0 -arch=${NVCC_ARCH:-native} -std=c++17 \
-        -I. -Isrc -I$SRC_DIR -Ivendor \
+        "${EXTRA_CFLAGS[@]}" -I. -Isrc -I$SRC_DIR -Ivendor \
         "$SRC_DIR/goofspiel_exploit.cu" -L$CUDA_HOME/lib64 -lcublas -lm \
         -o goofspiel_exploit_gpu
     echo "Built: ./goofspiel_exploit_gpu"
@@ -436,7 +458,7 @@ elif [ "$MODE" = "behavior_gpu" ]; then
     fi
     CUDA_HOME=${CUDA_HOME:-${CUDA_PATH:-$(dirname "$(dirname "$(which nvcc)")")}}
     ${CUDA_HOME}/bin/nvcc -O3 --threads 0 -arch=${NVCC_ARCH:-native} -std=c++17 \
-        -I. -Isrc -I$SRC_DIR -Ivendor \
+        "${EXTRA_CFLAGS[@]}" -I. -Isrc -I$SRC_DIR -Ivendor \
         "$SRC_DIR/goofspiel_behavior.cu" -L$CUDA_HOME/lib64 -lcublas -lm \
         -o goofspiel_behavior_gpu
     echo "Built: ./goofspiel_behavior_gpu"
@@ -470,6 +492,7 @@ elif [ "$MODE" = "cpu" ]; then
 
     echo "Compiling standalone CPU eval for $ENV..."
     ${CC:-clang} "${CLANG_OPT[@]}" \
+        "${EXTRA_CFLAGS[@]}" \
         -I. -Isrc -I$SRC_DIR -Ivendor "${INCLUDES[@]}" \
         -DPLATFORM_DESKTOP \
         -DPUFFERCPU_EVAL_MAIN \
@@ -519,10 +542,6 @@ fi
 ENV_COMPILE_FLAGS=(-DENV_HEADER=\"$ENV_HEADER\")
 if [ "${KAG_DUMP_ROOT_OBS:-0}" = "1" ]; then
     ENV_COMPILE_FLAGS+=(-DKAG_DUMP_ROOT_OBS)
-fi
-# Goofspiel compile-time ABI: 4-card (default) or 13-card training layout.
-if [ "$ENV" = "goofspiel" ]; then
-    ENV_COMPILE_FLAGS+=(-DGS_NUM_CARDS=${GS_NUM_CARDS:-4})
 fi
 # GPU env is compile-time exclusive (not a runtime dual path with CPU workers).
 if [ "$USE_GPU_ENV" = "1" ]; then
@@ -619,9 +638,9 @@ if [ "$MODE" = "native" ]; then
         "${EXTRA_LDFLAGS[@]}" \
         -lcudart -lnccl -lnvidia-ml -lcublas -lcusolver -lcurand \
         -lm -lpthread $OMP_LIB "${STANDALONE_LDFLAGS[@]}" \
-        -o puffer
-    echo "Built: ./puffer"
-    if [ "$ENV" = "kaggriculture" ] && [ "${HEADLESS:-0}" != "1" ]; then
+        -o "${NATIVE_OUTPUT_NAME:-puffer}"
+    echo "Built: ./${NATIVE_OUTPUT_NAME:-puffer}"
+    if { [ "$ENV" = "kaggriculture" ] || [ "$ENV" = "pokemon" ]; } && [ "${HEADLESS:-0}" != "1" ]; then
         bash "$0" "$ENV" --fast
     fi
 

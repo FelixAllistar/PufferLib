@@ -21,40 +21,56 @@
 
 // Actions: movement [9] screen-relative {0 idle, 1 up, 2 down, 3 left,
 // 4 right, 5 up-left, 6 up-right, 7 down-left, 8 down-right},
-// summon [4] {0 none, 1 wisp, 2 fang, 3 aegis},
+// summon [5] {0 none, 1 wisp, 2 fang, 3 aegis, 4 mule},
 // order [4] {0 follow, 1 attack, 2 guard, 3 focus},
 // ability [4] {0 none, 1 dash, 2 nova, 3 frost},
-// build [3] {0 none, 1 totem, 2 wall}.
+// build [4] {0 none, 1 totem, 2 wall, 3 harvester}.
 #define AR_MOVE_ACTION_COUNT 9
-#define AR_SUMMON_ACTION_COUNT 4
+#define AR_SUMMON_ACTION_COUNT 5
 #define AR_ORDER_ACTION_COUNT 4
 #define AR_ABILITY_ACTION_COUNT 4
-#define AR_BUILD_ACTION_COUNT 3
+#define AR_BUILD_ACTION_COUNT 4
+#define AR_PET_TASK_COUNT 6
+#define AR_OBS_VERSION 2
+
+typedef enum {
+    AR_TASK_AUTO, AR_TASK_GATHER, AR_TASK_ESCORT,
+    AR_TASK_HUNT, AR_TASK_HOLD, AR_TASK_HOME,
+} ARPetTask;
 
 // RTS pools.
 #define AR_MAX_SHARDS 24
 #define AR_MAX_BUILDINGS 8
+#define AR_MAX_NESTS 6
+#define AR_CAMP_WAKE_RADIUS 9.0f
+#define AR_CAMP_DEFENDERS 3
 
 // Buildings.
 typedef enum {
-    AR_BUILD_TOTEM = 0,  // static damage-aura pulse
-    AR_BUILD_WALL = 1,   // static blocker enemies chew through
-    AR_BUILD_KIND_COUNT = 2,
+    AR_BUILD_TOTEM = 0,      // static damage-aura pulse
+    AR_BUILD_WALL = 1,       // static blocker enemies chew through
+    AR_BUILD_HARVESTER = 2,  // extracts nearby renewable deposits
+    AR_BUILD_KIND_COUNT = 3,
 } ARBuildKind;
 
 // Observation schema (see ar_sim.h: ar_compute_observations).
 // Player: pos(2) vel(2) hp(1) summon_cd(1) pets_alive(1) enemies_alive(1)
-//         order(1) dash_cd(1) nova_cd(1) frost_cd(1) shards(1) builds(1) = 14.
+//         order(1) dash_cd(1) nova_cd(1) frost_cd(1) shards(1) builds(1)
+//         nearest_nest(2) = 16.
 // Pet slot: active(1) rel_pos(2) hp(1) cd(1) attacking(1) has_target(1)
 //         kind(1) = 8. Enemy slot: rel_pos(2) hp(1) kind(1) slowed(1) = 5.
-#define AR_PLAYER_FEATURES 14
+#define AR_PLAYER_FEATURES 16
 #define AR_PET_SLOTS AR_MAX_PETS
 #define AR_PET_FEATURES 8
 #define AR_ENEMY_SLOTS 8
 #define AR_ENEMY_FEATURES 5
-#define AR_OBS_SIZE (AR_PLAYER_FEATURES \
-    + AR_PET_SLOTS * AR_PET_FEATURES \
-    + AR_ENEMY_SLOTS * AR_ENEMY_FEATURES)
+#define AR_LOCAL_OBS_SIZE (AR_PLAYER_FEATURES + AR_PET_SLOTS * AR_PET_FEATURES + AR_ENEMY_SLOTS * AR_ENEMY_FEATURES)
+#define AR_WORLD_FEATURES 8
+#define AR_RESOURCE_FEATURES 3
+#define AR_BUILD_FEATURES 5
+#define AR_OBS_SIZE (AR_LOCAL_OBS_SIZE + AR_WORLD_FEATURES \
+    + AR_MAX_SHARDS * AR_RESOURCE_FEATURES + AR_MAX_BUILDINGS * AR_BUILD_FEATURES \
+    + AR_MAX_PETS + 25)
 
 typedef enum {
     AR_ENEMY_GRUNT = 0,
@@ -62,12 +78,13 @@ typedef enum {
     AR_ENEMY_KIND_COUNT = 2,
 } AREnemyKind;
 
-// Pet classes (Pikmin restraint: 3 types, distinct roles).
+// Pet classes (Pikmin restraint: distinct roles, wisp first).
 typedef enum {
-    AR_PET_WISP = 0,   // balanced all-rounder
+    AR_PET_WISP = 0,   // balanced escort
     AR_PET_FANG = 1,   // fast, fragile, high damage
     AR_PET_AEGIS = 2,  // slow, tanky body-blocker
-    AR_PET_CLASS_COUNT = 3,
+    AR_PET_MULE = 3,   // non-combat gatherer; flees threats
+    AR_PET_CLASS_COUNT = 4,
 } ARPetClass;
 
 // Squad orders (Halo Wars one-button rule: a single discrete head).
@@ -100,8 +117,10 @@ typedef enum {
 
 // Procedural terrain grid. Cell size = arena_size / AR_DUN_W world units.
 // Cells hold ARTile values (the "dungeon" is now open world).
-#define AR_DUN_W 32
-#define AR_DUN_H 32
+// 64x64 at 1 unit/cell: big enough to get chased across, small enough that
+// a 4KB/env GPU blob stays cheap.
+#define AR_DUN_W 64
+#define AR_DUN_H 64
 #define AR_DUN_CELLS (AR_DUN_W * AR_DUN_H)
 
 // The sim selects the CUDA SoA branch only when nvcc compiles the native GPU
@@ -116,7 +135,6 @@ typedef enum {
 typedef struct ARConfig {
     float arena_size;
     int max_steps;
-    int wave_length_steps;
 
     int enemy_cap;
     int pet_cap;
@@ -146,17 +164,10 @@ typedef struct ARConfig {
     float enemy_base_hp[AR_ENEMY_KIND_COUNT];
     float enemy_base_speed[AR_ENEMY_KIND_COUNT];
     float enemy_base_damage[AR_ENEMY_KIND_COUNT];
-    float enemy_hp_growth_per_wave;
-    float enemy_speed_growth_per_wave;
-    int enemy_growth_wave_cap;
-    int enemy_kind_switch_wave;
-
-    // Spawning.
-    float enemy_spawn_radius;
-    int spawn_interval;
-    int spawn_batch;
-    int spawn_min_interval;
-    int spawn_interval_per_wave;
+    float enemy_hp_growth_per_level;
+    float enemy_speed_growth_per_level;
+    int enemy_growth_level_cap;
+    int enemy_kind_switch_level;
 
     // Static pillar obstacles.
     float obstacle_radius_min;
@@ -177,7 +188,15 @@ typedef struct ARConfig {
     float frost_slow_mult;   // enemy speed multiplier while slowed
     float frost_slow_time;   // seconds of slow
 
-    // RTS economy.
+    // Homestead and renewable resource economy.
+    float home_radius;
+    float home_regen;
+    float enemy_aggro_range;
+    float enemy_territory_range;
+    float gather_period;
+    float resource_regen;
+    float reward_harvest;
+    float reward_build;
     float start_shards;
     float kill_shards;
     float summon_cost[AR_PET_CLASS_COUNT];
@@ -187,14 +206,23 @@ typedef struct ARConfig {
     float totem_radius;
     float totem_damage;
     float totem_period;
-    float shard_trickle_period;
-    int shard_trickle_cap;
+    float harvest_radius;
+    float harvest_period;
+    // Enemy nests (Factorio biters): static spawners to hunt down.
+    float nest_hp;
+    float nest_radius;
+    float nest_period;
+    float nest_shards;
+    int nest_count;
+    // Production-level unlocks; wisp, porter, and barricade start unlocked.
+    int unlock_level_fang;
+    int unlock_level_aegis;
+    int unlock_level_harvester;
 
     // Rewards.
     float reward_survival;
     float reward_kill;
     float reward_damage;
-    float damage_reward_scale;
     float reward_hurt;
     float reward_summon;
     float reward_pet_lose;
@@ -206,7 +234,12 @@ enum {
     AR_OBS_PLAYER_BASE = 0,
     AR_OBS_PET_BASE = AR_OBS_PLAYER_BASE + AR_PLAYER_FEATURES,
     AR_OBS_ENEMY_BASE = AR_OBS_PET_BASE + AR_PET_SLOTS * AR_PET_FEATURES,
-    AR_OBS_END = AR_OBS_ENEMY_BASE + AR_ENEMY_SLOTS * AR_ENEMY_FEATURES,
+    AR_OBS_WORLD_BASE = AR_OBS_ENEMY_BASE + AR_ENEMY_SLOTS * AR_ENEMY_FEATURES,
+    AR_OBS_RESOURCE_BASE = AR_OBS_WORLD_BASE + AR_WORLD_FEATURES,
+    AR_OBS_BUILD_BASE = AR_OBS_RESOURCE_BASE + AR_MAX_SHARDS * AR_RESOURCE_FEATURES,
+    AR_OBS_TASK_BASE = AR_OBS_BUILD_BASE + AR_MAX_BUILDINGS * AR_BUILD_FEATURES,
+    AR_OBS_TERRAIN_BASE = AR_OBS_TASK_BASE + AR_MAX_PETS,
+    AR_OBS_END = AR_OBS_TERRAIN_BASE + 25,
 };
 
 #if defined(__cplusplus)
@@ -215,4 +248,4 @@ enum {
 #define AR_STATIC_ASSERT _Static_assert
 #endif
 AR_STATIC_ASSERT(AR_OBS_END == AR_OBS_SIZE, "Observation layout does not match AR_OBS_SIZE");
-AR_STATIC_ASSERT(AR_OBS_SIZE == 86, "Unexpected arpg observation size");
+AR_STATIC_ASSERT(AR_OBS_SIZE == 237, "Unexpected arpg observation size");

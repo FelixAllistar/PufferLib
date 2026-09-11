@@ -46,90 +46,37 @@ struct Log {
     float n;
 };
 
-#ifndef PUFFER_GPU_ENV
-
-typedef struct Client Client;
-struct Client {
-    int cell;
-};
-
-struct Env {
-    Log log;
-    Agent agents[BM_MAX_AGENTS];
-    int tag;
-    int boundary_reached;
-    int num_agents;
-    unsigned int rng;
-    Client* client;
-
-    BMConfig cfg;
-    BMMatch match;
-    uint64_t curriculum_elapsed;
-    int curriculum_level;
-    int curriculum_attempts;
-    int curriculum_successes;
-    // Per-agent running stats for the current episode (also on match.agents)
-    Log agent_logs[BM_MAX_AGENTS];
-    // When 1, puf_step ends the match but does NOT auto-reset (play freeze).
-    int hold_on_done;
-};
-
-static inline float bm_kw(Dict* kwargs, const char* key) {
-    return (float)dict_get(kwargs, key);
-}
-
 static inline void bm_load_config(BMConfig* cfg, Dict* kwargs) {
     *cfg = bm_default_config();
-    cfg->width = (int)bm_kw(kwargs, "width");
-    cfg->height = (int)bm_kw(kwargs, "height");
-    cfg->num_agents = (int)bm_kw(kwargs, "num_agents");
-    cfg->max_ticks = (int)bm_kw(kwargs, "max_ticks");
-    cfg->bomb_timer = (int)bm_kw(kwargs, "bomb_timer");
-    cfg->flame_duration = (int)bm_kw(kwargs, "flame_duration");
-    cfg->frames_per_cell = (int)bm_kw(kwargs, "frames_per_cell");
-    cfg->soft_density = bm_kw(kwargs, "soft_density");
-    cfg->item_chance = bm_kw(kwargs, "item_chance");
-    cfg->reward_soft = bm_kw(kwargs, "reward_soft");
-    cfg->reward_pickup = bm_kw(kwargs, "reward_pickup");
-    cfg->reward_kill = bm_kw(kwargs, "reward_kill");
-    cfg->reward_death = bm_kw(kwargs, "reward_death");
-    cfg->reward_self_kill = bm_kw(kwargs, "reward_self_kill");
-    cfg->reward_win = bm_kw(kwargs, "reward_win");
-    cfg->reward_alive = bm_kw(kwargs, "reward_alive");
-    cfg->reward_timeout = bm_kw(kwargs, "reward_timeout");
-    cfg->reward_bomb_threat = bm_kw(kwargs, "reward_bomb_threat");
-    cfg->reward_bomb_escape = bm_kw(kwargs, "reward_bomb_escape");
-    cfg->reward_curriculum_aim = bm_kw(kwargs, "reward_curriculum_aim");
-    cfg->reward_curriculum_escape = bm_kw(kwargs, "reward_curriculum_escape");
-    cfg->reward_curriculum_progress = bm_kw(kwargs, "reward_curriculum_progress");
-    cfg->reverse_curriculum = (int)bm_kw(kwargs, "reverse_curriculum");
-    cfg->curriculum_steps = (int)bm_kw(kwargs, "curriculum_steps");
-    cfg->curriculum_window = (int)bm_kw(kwargs, "curriculum_window");
-    cfg->curriculum_success_rate = bm_kw(kwargs, "curriculum_success_rate");
-    cfg->pillar_mode = (int)bm_kw(kwargs, "pillar_mode");
+    cfg->width = (int)dict_get(kwargs, "width");
+    cfg->height = (int)dict_get(kwargs, "height");
+    cfg->num_agents = (int)dict_get(kwargs, "num_agents");
+    cfg->max_ticks = (int)dict_get(kwargs, "max_ticks");
+    cfg->bomb_timer = (int)dict_get(kwargs, "bomb_timer");
+    cfg->flame_duration = (int)dict_get(kwargs, "flame_duration");
+    cfg->frames_per_cell = (int)dict_get(kwargs, "frames_per_cell");
+    cfg->soft_density = (float)dict_get(kwargs, "soft_density");
+    cfg->item_chance = (float)dict_get(kwargs, "item_chance");
+    cfg->reward_soft = (float)dict_get(kwargs, "reward_soft");
+    cfg->reward_pickup = (float)dict_get(kwargs, "reward_pickup");
+    cfg->reward_kill = (float)dict_get(kwargs, "reward_kill");
+    cfg->reward_death = (float)dict_get(kwargs, "reward_death");
+    cfg->reward_self_kill = (float)dict_get(kwargs, "reward_self_kill");
+    cfg->reward_win = (float)dict_get(kwargs, "reward_win");
+    cfg->reward_alive = (float)dict_get(kwargs, "reward_alive");
+    cfg->reward_timeout = (float)dict_get(kwargs, "reward_timeout");
+    cfg->reward_bomb_threat = (float)dict_get(kwargs, "reward_bomb_threat");
+    cfg->reward_bomb_escape = (float)dict_get(kwargs, "reward_bomb_escape");
+    cfg->reward_curriculum_aim = (float)dict_get(kwargs, "reward_curriculum_aim");
+    cfg->reward_curriculum_escape = (float)dict_get(kwargs, "reward_curriculum_escape");
+    cfg->reward_curriculum_progress = (float)dict_get(kwargs, "reward_curriculum_progress");
+    cfg->reverse_curriculum = (int)dict_get(kwargs, "reverse_curriculum");
+    cfg->curriculum_steps = (int)dict_get(kwargs, "curriculum_steps");
+    cfg->curriculum_window = (int)dict_get(kwargs, "curriculum_window");
+    cfg->curriculum_success_rate = (float)dict_get(kwargs, "curriculum_success_rate");
+    cfg->pillar_mode = (int)dict_get(kwargs, "pillar_mode");
     if (cfg->num_agents < 2) cfg->num_agents = 2;
     if (cfg->num_agents > BM_MAX_AGENTS) cfg->num_agents = BM_MAX_AGENTS;
-}
-
-void puf_init(Env* env, Dict* kwargs) {
-    bm_load_config(&env->cfg, kwargs);
-    env->num_agents = env->cfg.num_agents;
-    env->client = NULL;
-    env->tag = 0;
-    env->boundary_reached = 0;
-    env->curriculum_elapsed = 0;
-    env->curriculum_level = 0;
-    env->curriculum_attempts = 0;
-    env->curriculum_successes = 0;
-    for (int i = 0; i < env->num_agents; i++) {
-        // Slot 0 learns; others default to bank 1 for selfplay opponents.
-        env->agents[i].policy = (i == 0) ? 0 : 1;
-        // PufferLib binds this after puf_init; standalone play leaves it NULL.
-        env->agents[i].action_mask = NULL;
-    }
-    memset(env->agent_logs, 0, sizeof(env->agent_logs));
-    memset(&env->log, 0, sizeof(env->log));
-    env->hold_on_done = 0;
 }
 
 void puf_log(Log* log, Dict* out) {
@@ -158,6 +105,96 @@ void puf_log(Log* log, Dict* out) {
     dict_set(out, "n", log->n);
 }
 
+BM_HD void bm_log_match(Log* log, const BMMatch* match, int outcome) {
+    float s0 = (outcome > 0) ? 1.0f : (outcome < 0) ? 0.0f : 0.5f;
+    float na = (float)match->num_agents;
+    log->slot_0_score += s0 * na;
+    log->slot_1_score += (1.0f - s0) * na;
+    if (outcome == 0) log->draw_rate += na;
+    // perf tracks slot-0 win rate the same way
+    log->perf += s0 * na;
+    log->slot_0_kills += (float)match->agents[0].kills * na;
+    log->slot_0_self_kills += (float)match->agents[0].self_kills * na;
+    int opponent_suicides = 0;
+    for (int a = 1; a < match->num_agents; a++) {
+        opponent_suicides += match->agents[a].self_kills;
+    }
+    log->slot_0_opponent_suicides += (float)opponent_suicides * na;
+    int curriculum_stage = match->curriculum_stage;
+    log->curriculum_stage += (float)(curriculum_stage < 0
+        ? BM_CURRICULUM_STAGES : curriculum_stage) * na;
+    log->curriculum_full_game += (curriculum_stage < 0
+        || curriculum_stage == BM_CURRICULUM_STAGES - 1
+        ? 1.0f : 0.0f) * na;
+
+    int draw = (outcome == 0) ? 1 : 0;
+    for (int a = 0; a < match->num_agents; a++) {
+        const BMAgent* ag = &match->agents[a];
+        int win = (match->winner == a) ? 1 : 0;
+        log->score += ag->ep_score;
+        log->episode_return += ag->ep_return;
+        log->episode_length += (float)match->tick;
+        log->kills += (float)ag->kills;
+        log->self_kills += (float)ag->self_kills;
+        log->soft_breaks += (float)ag->soft_breaks;
+        log->bomb_pickups += (float)ag->bomb_pickups;
+        log->range_pickups += (float)ag->range_pickups;
+        log->speed_pickups += (float)ag->speed_pickups;
+        log->pickups += (float)(ag->bomb_pickups
+            + ag->range_pickups + ag->speed_pickups);
+        log->wins += (float)win;
+        log->draws += (float)draw;
+        log->deaths += ag->alive ? 0.0f : 1.0f;
+        log->n += 1.0f;
+    }
+}
+
+#ifndef PUFFER_GPU_ENV
+
+typedef struct Client Client;
+struct Client {
+    int cell;
+};
+
+struct Env {
+    Log log;
+    Agent agents[BM_MAX_AGENTS];
+    int tag;
+    int boundary_reached;
+    int num_agents;
+    unsigned int rng;
+    Client* client;
+
+    BMConfig cfg;
+    BMMatch match;
+    uint64_t curriculum_elapsed;
+    int curriculum_level;
+    int curriculum_attempts;
+    int curriculum_successes;
+    // When 1, puf_step ends the match but does NOT auto-reset (play freeze).
+    int hold_on_done;
+};
+
+void puf_init(Env* env, Dict* kwargs) {
+    bm_load_config(&env->cfg, kwargs);
+    env->num_agents = env->cfg.num_agents;
+    env->client = NULL;
+    env->tag = 0;
+    env->boundary_reached = 0;
+    env->curriculum_elapsed = 0;
+    env->curriculum_level = 0;
+    env->curriculum_attempts = 0;
+    env->curriculum_successes = 0;
+    for (int i = 0; i < env->num_agents; i++) {
+        // Slot 0 learns; others default to bank 1 for selfplay opponents.
+        env->agents[i].policy = (i == 0) ? 0 : 1;
+        // PufferLib binds this after puf_init; standalone play leaves it NULL.
+        env->agents[i].action_mask = NULL;
+    }
+    memset(&env->log, 0, sizeof(env->log));
+    env->hold_on_done = 0;
+}
+
 static inline void bm_compute_observations(Env* env) {
     for (int a = 0; a < env->num_agents; a++) {
         obs_t* obs = (obs_t*)env->agents[a].observations;
@@ -168,47 +205,8 @@ static inline void bm_compute_observations(Env* env) {
 
 // outcome: +1 slot-0 won, -1 slot-0 lost, 0 draw. Robocode match accounting.
 static inline void bm_end_episode(Env* env, int outcome) {
-    float s0 = (outcome > 0) ? 1.0f : (outcome < 0) ? 0.0f : 0.5f;
-    float na = (float)env->num_agents;
-    env->log.slot_0_score += s0 * na;
-    env->log.slot_1_score += (1.0f - s0) * na;
-    if (outcome == 0) env->log.draw_rate += na;
-    // perf tracks slot-0 win rate the same way
-    env->log.perf += s0 * na;
-    env->log.slot_0_kills += (float)env->match.agents[0].kills * na;
-    env->log.slot_0_self_kills += (float)env->match.agents[0].self_kills * na;
-    int opponent_suicides = 0;
-    for (int a = 1; a < env->num_agents; a++) {
-        opponent_suicides += env->match.agents[a].self_kills;
-    }
-    env->log.slot_0_opponent_suicides += (float)opponent_suicides * na;
+    bm_log_match(&env->log, &env->match, outcome);
     int curriculum_stage = env->match.curriculum_stage;
-    env->log.curriculum_stage += (float)(curriculum_stage < 0
-        ? BM_CURRICULUM_STAGES : curriculum_stage) * na;
-    env->log.curriculum_full_game += (curriculum_stage < 0
-        || curriculum_stage == BM_CURRICULUM_STAGES - 1
-        ? 1.0f : 0.0f) * na;
-
-    int draw = (outcome == 0) ? 1 : 0;
-    for (int a = 0; a < env->num_agents; a++) {
-        BMAgent* ag = &env->match.agents[a];
-        int win = (env->match.winner == a) ? 1 : 0;
-        env->log.score += ag->ep_score;
-        env->log.episode_return += ag->ep_return;
-        env->log.episode_length += (float)env->match.tick;
-        env->log.kills += (float)ag->kills;
-        env->log.self_kills += (float)ag->self_kills;
-        env->log.soft_breaks += (float)ag->soft_breaks;
-        env->log.bomb_pickups += (float)ag->bomb_pickups;
-        env->log.range_pickups += (float)ag->range_pickups;
-        env->log.speed_pickups += (float)ag->speed_pickups;
-        env->log.pickups += (float)(ag->bomb_pickups
-            + ag->range_pickups + ag->speed_pickups);
-        env->log.wins += (float)win;
-        env->log.draws += (float)draw;
-        env->log.deaths += ag->alive ? 0.0f : 1.0f;
-        env->log.n += 1.0f;
-    }
     int mastery_stage = env->curriculum_level < BM_CURRICULUM_STAGES
         ? env->curriculum_level : BM_CURRICULUM_STAGES - 1;
     // Rehearsal episodes retain old skills but cannot promote the frontier.
@@ -320,16 +318,10 @@ void puf_step(Env* env) {
             return;
         }
         // Train path: auto-reset; preserve terminal/reward for the learner.
-        float term_r[BM_MAX_AGENTS];
-        float term_t[BM_MAX_AGENTS];
-        for (int a = 0; a < env->num_agents; a++) {
-            term_r[a] = env->agents[a].rewards[0];
-            term_t[a] = env->agents[a].terminals[0];
-        }
         puf_reset(env);
         for (int a = 0; a < env->num_agents; a++) {
-            env->agents[a].rewards[0] = term_r[a];
-            env->agents[a].terminals[0] = term_t[a];
+            env->agents[a].rewards[0] = rewards[a];
+            env->agents[a].terminals[0] = terminals[a];
         }
         return;
     }
@@ -451,32 +443,6 @@ void puf_render(Env* env) { (void)env; }
 struct Env {
     Log log;
 };
-
-void puf_log(Log* log, Dict* out) {
-    dict_set(out, "perf", log->perf);
-    dict_set(out, "score", log->score);
-    dict_set(out, "episode_return", log->episode_return);
-    dict_set(out, "episode_length", log->episode_length);
-    dict_set(out, "kills", log->kills);
-    dict_set(out, "self_kills", log->self_kills);
-    dict_set(out, "soft_breaks", log->soft_breaks);
-    dict_set(out, "pickups", log->pickups);
-    dict_set(out, "bomb_pickups", log->bomb_pickups);
-    dict_set(out, "range_pickups", log->range_pickups);
-    dict_set(out, "speed_pickups", log->speed_pickups);
-    dict_set(out, "wins", log->wins);
-    dict_set(out, "draws", log->draws);
-    dict_set(out, "deaths", log->deaths);
-    dict_set(out, "slot_0_score", log->slot_0_score);
-    dict_set(out, "slot_1_score", log->slot_1_score);
-    dict_set(out, "draw_rate", log->draw_rate);
-    dict_set(out, "slot_0_kills", log->slot_0_kills);
-    dict_set(out, "slot_0_self_kills", log->slot_0_self_kills);
-    dict_set(out, "slot_0_opponent_suicides", log->slot_0_opponent_suicides);
-    dict_set(out, "curriculum_stage", log->curriculum_stage);
-    dict_set(out, "curriculum_full_game", log->curriculum_full_game);
-    dict_set(out, "n", log->n);
-}
 
 void puf_render(Env* env) { (void)env; }
 #endif // !PUFFER_GPU_ENV

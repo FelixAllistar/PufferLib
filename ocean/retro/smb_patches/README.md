@@ -33,6 +33,23 @@ climbing, lives never decrementing). On hardware the jingle (~150f) always
 ends long before the corpse falls to yhigh 5, so proceeding there is
 behavior-identical while guaranteeing completion headless.
 
+## header_parse_fix.patch
+
+**Upstream bug** (affects hardware-faithfulness everywhere, not just
+headless): `LoadHeader` read the music header table one byte early —
+`header[tune-1]` instead of `header[tune]`, and every field offset one byte
+short (`NoteLenLookupTblOfs = header[off]` instead of `header[off+1]`, etc.).
+The 6502 ($F6F6) uses the caller's 1-based bit-scan result directly. Found
+via the parity tool's death-jingle trace: the port's note counters ran
+~150 frames vs hardware's 4-24 (the same melody shifted +0x80), and the
+music data pointer was garbage ($A0FD vs $FB73). Verified against the ROM
+bytes and QuickNES: after the fix the fast backend's death jingle is
+note-for-note identical to hardware and completes in ~120 frames, which
+also removes the feeding condition for the reload-cycle spin (the corrupt
+pointer walked data with no terminator). `music_timeout.patch` is now a
+near no-op (kept as belt), `music_reload_guard` stays as corrupt-state
+insurance.
+
 ## music_reload_guard.patch
 
 Bound the music-reload cycle. `HandleSquare2Music`'s terminator can reload

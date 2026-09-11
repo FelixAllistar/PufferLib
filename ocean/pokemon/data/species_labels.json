@@ -1,0 +1,1050 @@
+{
+  "tier_source": "pokemon-showdown@0.11.11 gen1 formats-data",
+  "strategy_source_sha256": "f88949e38b1b6039c7076cb3ffc9370d670a077c395dd4d13a60f0f7cd7793b4",
+  "ss_meaning": "Non-OU species with a published OU strategy; not an official tier",
+  "species": [
+    {
+      "species": "Bulbasaur",
+      "species_id": 1,
+      "tier": "LC",
+      "has_ou_strategy": false,
+      "label": "Bulbasaur_LC"
+    },
+    {
+      "species": "Ivysaur",
+      "species_id": 2,
+      "tier": "NFE",
+      "has_ou_strategy": false,
+      "label": "Ivysaur_NFE"
+    },
+    {
+      "species": "Venusaur",
+      "species_id": 3,
+      "tier": "PU",
+      "has_ou_strategy": true,
+      "label": "Venusaur_PU-SS"
+    },
+    {
+      "species": "Charmander",
+      "species_id": 4,
+      "tier": "LC",
+      "has_ou_strategy": false,
+      "label": "Charmander_LC"
+    },
+    {
+      "species": "Charmeleon",
+      "species_id": 5,
+      "tier": "NFE",
+      "has_ou_strategy": false,
+      "label": "Charmeleon_NFE"
+    },
+    {
+      "species": "Charizard",
+      "species_id": 6,
+      "tier": "NU",
+      "has_ou_strategy": true,
+      "label": "Charizard_NU-SS"
+    },
+    {
+      "species": "Squirtle",
+      "species_id": 7,
+      "tier": "LC",
+      "has_ou_strategy": false,
+      "label": "Squirtle_LC"
+    },
+    {
+      "species": "Wartortle",
+      "species_id": 8,
+      "tier": "NFE",
+      "has_ou_strategy": false,
+      "label": "Wartortle_NFE"
+    },
+    {
+      "species": "Blastoise",
+      "species_id": 9,
+      "tier": "NU",
+      "has_ou_strategy": false,
+      "label": "Blastoise_NU"
+    },
+    {
+      "species": "Caterpie",
+      "species_id": 10,
+      "tier": "LC",
+      "has_ou_strategy": false,
+      "label": "Caterpie_LC"
+    },
+    {
+      "species": "Metapod",
+      "species_id": 11,
+      "tier": "NFE",
+      "has_ou_strategy": false,
+      "label": "Metapod_NFE"
+    },
+    {
+      "species": "Butterfree",
+      "species_id": 12,
+      "tier": "ZU",
+      "has_ou_strategy": false,
+      "label": "Butterfree_ZU"
+    },
+    {
+      "species": "Weedle",
+      "species_id": 13,
+      "tier": "LC",
+      "has_ou_strategy": false,
+      "label": "Weedle_LC"
+    },
+    {
+      "species": "Kakuna",
+      "species_id": 14,
+      "tier": "NFE",
+      "has_ou_strategy": false,
+      "label": "Kakuna_NFE"
+    },
+    {
+      "species": "Beedrill",
+      "species_id": 15,
+      "tier": "ZU",
+      "has_ou_strategy": false,
+      "label": "Beedrill_ZU"
+    },
+    {
+      "species": "Pidgey",
+      "species_id": 16,
+      "tier": "LC",
+      "has_ou_strategy": false,
+      "label": "Pidgey_LC"
+    },
+    {
+      "species": "Pidgeotto",
+      "species_id": 17,
+      "tier": "NFE",
+      "has_ou_strategy": false,
+      "label": "Pidgeotto_NFE"
+    },
+    {
+      "species": "Pidgeot",
+      "species_id": 18,
+      "tier": "PU",
+      "has_ou_strategy": false,
+      "label": "Pidgeot_PU"
+    },
+    {
+      "species": "Rattata",
+      "species_id": 19,
+      "tier": "LC",
+      "has_ou_strategy": false,
+      "label": "Rattata_LC"
+    },
+    {
+      "species": "Raticate",
+      "species_id": 20,
+      "tier": "NU",
+      "has_ou_strategy": true,
+      "label": "Raticate_NU-SS"
+    },
+    {
+      "species": "Spearow",
+      "species_id": 21,
+      "tier": "LC",
+      "has_ou_strategy": false,
+      "label": "Spearow_LC"
+    },
+    {
+      "species": "Fearow",
+      "species_id": 22,
+      "tier": "NU",
+      "has_ou_strategy": false,
+      "label": "Fearow_NU"
+    },
+    {
+      "species": "Ekans",
+      "species_id": 23,
+      "tier": "LC",
+      "has_ou_strategy": false,
+      "label": "Ekans_LC"
+    },
+    {
+      "species": "Arbok",
+      "species_id": 24,
+      "tier": "ZU",
+      "has_ou_strategy": true,
+      "label": "Arbok_ZU-SS"
+    },
+    {
+      "species": "Pikachu",
+      "species_id": 25,
+      "tier": "LC",
+      "has_ou_strategy": false,
+      "label": "Pikachu_LC"
+    },
+    {
+      "species": "Raichu",
+      "species_id": 26,
+      "tier": "UU",
+      "has_ou_strategy": true,
+      "label": "Raichu_UU-SS"
+    },
+    {
+      "species": "Sandshrew",
+      "species_id": 27,
+      "tier": "LC",
+      "has_ou_strategy": false,
+      "label": "Sandshrew_LC"
+    },
+    {
+      "species": "Sandslash",
+      "species_id": 28,
+      "tier": "ZU",
+      "has_ou_strategy": true,
+      "label": "Sandslash_ZU-SS"
+    },
+    {
+      "species": "Nidoran-F",
+      "species_id": 29,
+      "tier": "LC",
+      "has_ou_strategy": false,
+      "label": "NidoranF_LC"
+    },
+    {
+      "species": "Nidorina",
+      "species_id": 30,
+      "tier": "NFE",
+      "has_ou_strategy": false,
+      "label": "Nidorina_NFE"
+    },
+    {
+      "species": "Nidoqueen",
+      "species_id": 31,
+      "tier": "ZU",
+      "has_ou_strategy": false,
+      "label": "Nidoqueen_ZU"
+    },
+    {
+      "species": "Nidoran-M",
+      "species_id": 32,
+      "tier": "LC",
+      "has_ou_strategy": false,
+      "label": "NidoranM_LC"
+    },
+    {
+      "species": "Nidorino",
+      "species_id": 33,
+      "tier": "NFE",
+      "has_ou_strategy": false,
+      "label": "Nidorino_NFE"
+    },
+    {
+      "species": "Nidoking",
+      "species_id": 34,
+      "tier": "PU",
+      "has_ou_strategy": false,
+      "label": "Nidoking_PU"
+    },
+    {
+      "species": "Clefairy",
+      "species_id": 35,
+      "tier": "LC",
+      "has_ou_strategy": false,
+      "label": "Clefairy_LC"
+    },
+    {
+      "species": "Clefable",
+      "species_id": 36,
+      "tier": "UU",
+      "has_ou_strategy": true,
+      "label": "Clefable_UU-SS"
+    },
+    {
+      "species": "Vulpix",
+      "species_id": 37,
+      "tier": "LC",
+      "has_ou_strategy": false,
+      "label": "Vulpix_LC"
+    },
+    {
+      "species": "Ninetales",
+      "species_id": 38,
+      "tier": "UU",
+      "has_ou_strategy": false,
+      "label": "Ninetales_UU"
+    },
+    {
+      "species": "Jigglypuff",
+      "species_id": 39,
+      "tier": "LC",
+      "has_ou_strategy": false,
+      "label": "Jigglypuff_LC"
+    },
+    {
+      "species": "Wigglytuff",
+      "species_id": 40,
+      "tier": "ZU",
+      "has_ou_strategy": false,
+      "label": "Wigglytuff_ZU"
+    },
+    {
+      "species": "Zubat",
+      "species_id": 41,
+      "tier": "LC",
+      "has_ou_strategy": false,
+      "label": "Zubat_LC"
+    },
+    {
+      "species": "Golbat",
+      "species_id": 42,
+      "tier": "ZU",
+      "has_ou_strategy": false,
+      "label": "Golbat_ZU"
+    },
+    {
+      "species": "Oddish",
+      "species_id": 43,
+      "tier": "LC",
+      "has_ou_strategy": false,
+      "label": "Oddish_LC"
+    },
+    {
+      "species": "Gloom",
+      "species_id": 44,
+      "tier": "NFE",
+      "has_ou_strategy": false,
+      "label": "Gloom_NFE"
+    },
+    {
+      "species": "Vileplume",
+      "species_id": 45,
+      "tier": "ZU",
+      "has_ou_strategy": false,
+      "label": "Vileplume_ZU"
+    },
+    {
+      "species": "Paras",
+      "species_id": 46,
+      "tier": "LC",
+      "has_ou_strategy": false,
+      "label": "Paras_LC"
+    },
+    {
+      "species": "Parasect",
+      "species_id": 47,
+      "tier": "ZU",
+      "has_ou_strategy": false,
+      "label": "Parasect_ZU"
+    },
+    {
+      "species": "Venonat",
+      "species_id": 48,
+      "tier": "LC",
+      "has_ou_strategy": false,
+      "label": "Venonat_LC"
+    },
+    {
+      "species": "Venomoth",
+      "species_id": 49,
+      "tier": "NU",
+      "has_ou_strategy": false,
+      "label": "Venomoth_NU"
+    },
+    {
+      "species": "Diglett",
+      "species_id": 50,
+      "tier": "LC",
+      "has_ou_strategy": false,
+      "label": "Diglett_LC"
+    },
+    {
+      "species": "Dugtrio",
+      "species_id": 51,
+      "tier": "UU",
+      "has_ou_strategy": false,
+      "label": "Dugtrio_UU"
+    },
+    {
+      "species": "Meowth",
+      "species_id": 52,
+      "tier": "LC",
+      "has_ou_strategy": false,
+      "label": "Meowth_LC"
+    },
+    {
+      "species": "Persian",
+      "species_id": 53,
+      "tier": "UU",
+      "has_ou_strategy": true,
+      "label": "Persian_UU-SS"
+    },
+    {
+      "species": "Psyduck",
+      "species_id": 54,
+      "tier": "LC",
+      "has_ou_strategy": false,
+      "label": "Psyduck_LC"
+    },
+    {
+      "species": "Golduck",
+      "species_id": 55,
+      "tier": "PU",
+      "has_ou_strategy": false,
+      "label": "Golduck_PU"
+    },
+    {
+      "species": "Mankey",
+      "species_id": 56,
+      "tier": "LC",
+      "has_ou_strategy": false,
+      "label": "Mankey_LC"
+    },
+    {
+      "species": "Primeape",
+      "species_id": 57,
+      "tier": "PU",
+      "has_ou_strategy": false,
+      "label": "Primeape_PU"
+    },
+    {
+      "species": "Growlithe",
+      "species_id": 58,
+      "tier": "LC",
+      "has_ou_strategy": false,
+      "label": "Growlithe_LC"
+    },
+    {
+      "species": "Arcanine",
+      "species_id": 59,
+      "tier": "NU",
+      "has_ou_strategy": false,
+      "label": "Arcanine_NU"
+    },
+    {
+      "species": "Poliwag",
+      "species_id": 60,
+      "tier": "ZUBL",
+      "has_ou_strategy": false,
+      "label": "Poliwag_ZUBL"
+    },
+    {
+      "species": "Poliwhirl",
+      "species_id": 61,
+      "tier": "NU",
+      "has_ou_strategy": false,
+      "label": "Poliwhirl_NU"
+    },
+    {
+      "species": "Poliwrath",
+      "species_id": 62,
+      "tier": "NU",
+      "has_ou_strategy": true,
+      "label": "Poliwrath_NU-SS"
+    },
+    {
+      "species": "Abra",
+      "species_id": 63,
+      "tier": "PU",
+      "has_ou_strategy": false,
+      "label": "Abra_PU"
+    },
+    {
+      "species": "Kadabra",
+      "species_id": 64,
+      "tier": "NU",
+      "has_ou_strategy": false,
+      "label": "Kadabra_NU"
+    },
+    {
+      "species": "Alakazam",
+      "species_id": 65,
+      "tier": "OU",
+      "has_ou_strategy": true,
+      "label": "Alakazam_OU"
+    },
+    {
+      "species": "Machop",
+      "species_id": 66,
+      "tier": "LC",
+      "has_ou_strategy": false,
+      "label": "Machop_LC"
+    },
+    {
+      "species": "Machoke",
+      "species_id": 67,
+      "tier": "NFE",
+      "has_ou_strategy": false,
+      "label": "Machoke_NFE"
+    },
+    {
+      "species": "Machamp",
+      "species_id": 68,
+      "tier": "ZU",
+      "has_ou_strategy": true,
+      "label": "Machamp_ZU-SS"
+    },
+    {
+      "species": "Bellsprout",
+      "species_id": 69,
+      "tier": "LC",
+      "has_ou_strategy": false,
+      "label": "Bellsprout_LC"
+    },
+    {
+      "species": "Weepinbell",
+      "species_id": 70,
+      "tier": "NFE",
+      "has_ou_strategy": false,
+      "label": "Weepinbell_NFE"
+    },
+    {
+      "species": "Victreebel",
+      "species_id": 71,
+      "tier": "NU",
+      "has_ou_strategy": true,
+      "label": "Victreebel_NU-SS"
+    },
+    {
+      "species": "Tentacool",
+      "species_id": 72,
+      "tier": "ZU",
+      "has_ou_strategy": false,
+      "label": "Tentacool_ZU"
+    },
+    {
+      "species": "Tentacruel",
+      "species_id": 73,
+      "tier": "NU",
+      "has_ou_strategy": false,
+      "label": "Tentacruel_NU"
+    },
+    {
+      "species": "Geodude",
+      "species_id": 74,
+      "tier": "LC",
+      "has_ou_strategy": false,
+      "label": "Geodude_LC"
+    },
+    {
+      "species": "Graveler",
+      "species_id": 75,
+      "tier": "PU",
+      "has_ou_strategy": false,
+      "label": "Graveler_PU"
+    },
+    {
+      "species": "Golem",
+      "species_id": 76,
+      "tier": "NU",
+      "has_ou_strategy": true,
+      "label": "Golem_NU-SS"
+    },
+    {
+      "species": "Ponyta",
+      "species_id": 77,
+      "tier": "LC",
+      "has_ou_strategy": false,
+      "label": "Ponyta_LC"
+    },
+    {
+      "species": "Rapidash",
+      "species_id": 78,
+      "tier": "UU",
+      "has_ou_strategy": false,
+      "label": "Rapidash_UU"
+    },
+    {
+      "species": "Slowpoke",
+      "species_id": 79,
+      "tier": "ZU",
+      "has_ou_strategy": false,
+      "label": "Slowpoke_ZU"
+    },
+    {
+      "species": "Slowbro",
+      "species_id": 80,
+      "tier": "UU",
+      "has_ou_strategy": true,
+      "label": "Slowbro_UU-SS"
+    },
+    {
+      "species": "Magnemite",
+      "species_id": 81,
+      "tier": "LC",
+      "has_ou_strategy": false,
+      "label": "Magnemite_LC"
+    },
+    {
+      "species": "Magneton",
+      "species_id": 82,
+      "tier": "NU",
+      "has_ou_strategy": false,
+      "label": "Magneton_NU"
+    },
+    {
+      "species": "Farfetch’d",
+      "species_id": 83,
+      "tier": "ZU",
+      "has_ou_strategy": false,
+      "label": "Farfetchd_ZU"
+    },
+    {
+      "species": "Doduo",
+      "species_id": 84,
+      "tier": "LC",
+      "has_ou_strategy": false,
+      "label": "Doduo_LC"
+    },
+    {
+      "species": "Dodrio",
+      "species_id": 85,
+      "tier": "UU",
+      "has_ou_strategy": true,
+      "label": "Dodrio_UU-SS"
+    },
+    {
+      "species": "Seel",
+      "species_id": 86,
+      "tier": "LC",
+      "has_ou_strategy": false,
+      "label": "Seel_LC"
+    },
+    {
+      "species": "Dewgong",
+      "species_id": 87,
+      "tier": "NU",
+      "has_ou_strategy": false,
+      "label": "Dewgong_NU"
+    },
+    {
+      "species": "Grimer",
+      "species_id": 88,
+      "tier": "LC",
+      "has_ou_strategy": false,
+      "label": "Grimer_LC"
+    },
+    {
+      "species": "Muk",
+      "species_id": 89,
+      "tier": "ZU",
+      "has_ou_strategy": false,
+      "label": "Muk_ZU"
+    },
+    {
+      "species": "Shellder",
+      "species_id": 90,
+      "tier": "LC",
+      "has_ou_strategy": false,
+      "label": "Shellder_LC"
+    },
+    {
+      "species": "Cloyster",
+      "species_id": 91,
+      "tier": "OU",
+      "has_ou_strategy": true,
+      "label": "Cloyster_OU"
+    },
+    {
+      "species": "Gastly",
+      "species_id": 92,
+      "tier": "PU",
+      "has_ou_strategy": false,
+      "label": "Gastly_PU"
+    },
+    {
+      "species": "Haunter",
+      "species_id": 93,
+      "tier": "UU",
+      "has_ou_strategy": false,
+      "label": "Haunter_UU"
+    },
+    {
+      "species": "Gengar",
+      "species_id": 94,
+      "tier": "OU",
+      "has_ou_strategy": true,
+      "label": "Gengar_OU"
+    },
+    {
+      "species": "Onix",
+      "species_id": 95,
+      "tier": "ZU",
+      "has_ou_strategy": false,
+      "label": "Onix_ZU"
+    },
+    {
+      "species": "Drowzee",
+      "species_id": 96,
+      "tier": "ZU",
+      "has_ou_strategy": false,
+      "label": "Drowzee_ZU"
+    },
+    {
+      "species": "Hypno",
+      "species_id": 97,
+      "tier": "UU",
+      "has_ou_strategy": true,
+      "label": "Hypno_UU-SS"
+    },
+    {
+      "species": "Krabby",
+      "species_id": 98,
+      "tier": "LC",
+      "has_ou_strategy": false,
+      "label": "Krabby_LC"
+    },
+    {
+      "species": "Kingler",
+      "species_id": 99,
+      "tier": "ZU",
+      "has_ou_strategy": true,
+      "label": "Kingler_ZU-SS"
+    },
+    {
+      "species": "Voltorb",
+      "species_id": 100,
+      "tier": "LC",
+      "has_ou_strategy": false,
+      "label": "Voltorb_LC"
+    },
+    {
+      "species": "Electrode",
+      "species_id": 101,
+      "tier": "NU",
+      "has_ou_strategy": false,
+      "label": "Electrode_NU"
+    },
+    {
+      "species": "Exeggcute",
+      "species_id": 102,
+      "tier": "PU",
+      "has_ou_strategy": false,
+      "label": "Exeggcute_PU"
+    },
+    {
+      "species": "Exeggutor",
+      "species_id": 103,
+      "tier": "OU",
+      "has_ou_strategy": true,
+      "label": "Exeggutor_OU"
+    },
+    {
+      "species": "Cubone",
+      "species_id": 104,
+      "tier": "LC",
+      "has_ou_strategy": false,
+      "label": "Cubone_LC"
+    },
+    {
+      "species": "Marowak",
+      "species_id": 105,
+      "tier": "ZU",
+      "has_ou_strategy": false,
+      "label": "Marowak_ZU"
+    },
+    {
+      "species": "Hitmonlee",
+      "species_id": 106,
+      "tier": "ZU",
+      "has_ou_strategy": false,
+      "label": "Hitmonlee_ZU"
+    },
+    {
+      "species": "Hitmonchan",
+      "species_id": 107,
+      "tier": "ZU",
+      "has_ou_strategy": false,
+      "label": "Hitmonchan_ZU"
+    },
+    {
+      "species": "Lickitung",
+      "species_id": 108,
+      "tier": "ZU",
+      "has_ou_strategy": true,
+      "label": "Lickitung_ZU-SS"
+    },
+    {
+      "species": "Koffing",
+      "species_id": 109,
+      "tier": "LC",
+      "has_ou_strategy": false,
+      "label": "Koffing_LC"
+    },
+    {
+      "species": "Weezing",
+      "species_id": 110,
+      "tier": "ZU",
+      "has_ou_strategy": false,
+      "label": "Weezing_ZU"
+    },
+    {
+      "species": "Rhyhorn",
+      "species_id": 111,
+      "tier": "LC",
+      "has_ou_strategy": false,
+      "label": "Rhyhorn_LC"
+    },
+    {
+      "species": "Rhydon",
+      "species_id": 112,
+      "tier": "OU",
+      "has_ou_strategy": true,
+      "label": "Rhydon_OU"
+    },
+    {
+      "species": "Chansey",
+      "species_id": 113,
+      "tier": "OU",
+      "has_ou_strategy": true,
+      "label": "Chansey_OU"
+    },
+    {
+      "species": "Tangela",
+      "species_id": 114,
+      "tier": "NU",
+      "has_ou_strategy": false,
+      "label": "Tangela_NU"
+    },
+    {
+      "species": "Kangaskhan",
+      "species_id": 115,
+      "tier": "UU",
+      "has_ou_strategy": true,
+      "label": "Kangaskhan_UU-SS"
+    },
+    {
+      "species": "Horsea",
+      "species_id": 116,
+      "tier": "LC",
+      "has_ou_strategy": false,
+      "label": "Horsea_LC"
+    },
+    {
+      "species": "Seadra",
+      "species_id": 117,
+      "tier": "NU",
+      "has_ou_strategy": false,
+      "label": "Seadra_NU"
+    },
+    {
+      "species": "Goldeen",
+      "species_id": 118,
+      "tier": "LC",
+      "has_ou_strategy": false,
+      "label": "Goldeen_LC"
+    },
+    {
+      "species": "Seaking",
+      "species_id": 119,
+      "tier": "PU",
+      "has_ou_strategy": false,
+      "label": "Seaking_PU"
+    },
+    {
+      "species": "Staryu",
+      "species_id": 120,
+      "tier": "PU",
+      "has_ou_strategy": false,
+      "label": "Staryu_PU"
+    },
+    {
+      "species": "Starmie",
+      "species_id": 121,
+      "tier": "OU",
+      "has_ou_strategy": true,
+      "label": "Starmie_OU"
+    },
+    {
+      "species": "Mr. Mime",
+      "species_id": 122,
+      "tier": "NU",
+      "has_ou_strategy": false,
+      "label": "MrMime_NU"
+    },
+    {
+      "species": "Scyther",
+      "species_id": 123,
+      "tier": "PU",
+      "has_ou_strategy": false,
+      "label": "Scyther_PU"
+    },
+    {
+      "species": "Jynx",
+      "species_id": 124,
+      "tier": "OU",
+      "has_ou_strategy": true,
+      "label": "Jynx_OU"
+    },
+    {
+      "species": "Electabuzz",
+      "species_id": 125,
+      "tier": "UU",
+      "has_ou_strategy": false,
+      "label": "Electabuzz_UU"
+    },
+    {
+      "species": "Magmar",
+      "species_id": 126,
+      "tier": "PU",
+      "has_ou_strategy": false,
+      "label": "Magmar_PU"
+    },
+    {
+      "species": "Pinsir",
+      "species_id": 127,
+      "tier": "ZU",
+      "has_ou_strategy": true,
+      "label": "Pinsir_ZU-SS"
+    },
+    {
+      "species": "Tauros",
+      "species_id": 128,
+      "tier": "OU",
+      "has_ou_strategy": true,
+      "label": "Tauros_OU"
+    },
+    {
+      "species": "Magikarp",
+      "species_id": 129,
+      "tier": "LC",
+      "has_ou_strategy": false,
+      "label": "Magikarp_LC"
+    },
+    {
+      "species": "Gyarados",
+      "species_id": 130,
+      "tier": "UU",
+      "has_ou_strategy": true,
+      "label": "Gyarados_UU-SS"
+    },
+    {
+      "species": "Lapras",
+      "species_id": 131,
+      "tier": "UU",
+      "has_ou_strategy": true,
+      "label": "Lapras_UU-SS"
+    },
+    {
+      "species": "Ditto",
+      "species_id": 132,
+      "tier": "ZU",
+      "has_ou_strategy": false,
+      "label": "Ditto_ZU"
+    },
+    {
+      "species": "Eevee",
+      "species_id": 133,
+      "tier": "LC",
+      "has_ou_strategy": false,
+      "label": "Eevee_LC"
+    },
+    {
+      "species": "Vaporeon",
+      "species_id": 134,
+      "tier": "NU",
+      "has_ou_strategy": false,
+      "label": "Vaporeon_NU"
+    },
+    {
+      "species": "Jolteon",
+      "species_id": 135,
+      "tier": "UU",
+      "has_ou_strategy": true,
+      "label": "Jolteon_UU-SS"
+    },
+    {
+      "species": "Flareon",
+      "species_id": 136,
+      "tier": "ZU",
+      "has_ou_strategy": true,
+      "label": "Flareon_ZU-SS"
+    },
+    {
+      "species": "Porygon",
+      "species_id": 137,
+      "tier": "PU",
+      "has_ou_strategy": true,
+      "label": "Porygon_PU-SS"
+    },
+    {
+      "species": "Omanyte",
+      "species_id": 138,
+      "tier": "ZU",
+      "has_ou_strategy": false,
+      "label": "Omanyte_ZU"
+    },
+    {
+      "species": "Omastar",
+      "species_id": 139,
+      "tier": "NU",
+      "has_ou_strategy": true,
+      "label": "Omastar_NU-SS"
+    },
+    {
+      "species": "Kabuto",
+      "species_id": 140,
+      "tier": "LC",
+      "has_ou_strategy": false,
+      "label": "Kabuto_LC"
+    },
+    {
+      "species": "Kabutops",
+      "species_id": 141,
+      "tier": "NU",
+      "has_ou_strategy": true,
+      "label": "Kabutops_NU-SS"
+    },
+    {
+      "species": "Aerodactyl",
+      "species_id": 142,
+      "tier": "NU",
+      "has_ou_strategy": false,
+      "label": "Aerodactyl_NU"
+    },
+    {
+      "species": "Snorlax",
+      "species_id": 143,
+      "tier": "OU",
+      "has_ou_strategy": true,
+      "label": "Snorlax_OU"
+    },
+    {
+      "species": "Articuno",
+      "species_id": 144,
+      "tier": "UU",
+      "has_ou_strategy": true,
+      "label": "Articuno_UU-SS"
+    },
+    {
+      "species": "Zapdos",
+      "species_id": 145,
+      "tier": "OU",
+      "has_ou_strategy": true,
+      "label": "Zapdos_OU"
+    },
+    {
+      "species": "Moltres",
+      "species_id": 146,
+      "tier": "UU",
+      "has_ou_strategy": true,
+      "label": "Moltres_UU-SS"
+    },
+    {
+      "species": "Dratini",
+      "species_id": 147,
+      "tier": "LC",
+      "has_ou_strategy": false,
+      "label": "Dratini_LC"
+    },
+    {
+      "species": "Dragonair",
+      "species_id": 148,
+      "tier": "ZU",
+      "has_ou_strategy": true,
+      "label": "Dragonair_ZU-SS"
+    },
+    {
+      "species": "Dragonite",
+      "species_id": 149,
+      "tier": "UU",
+      "has_ou_strategy": true,
+      "label": "Dragonite_UU-SS"
+    }
+  ]
+}

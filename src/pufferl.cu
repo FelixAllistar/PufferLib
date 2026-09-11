@@ -36,6 +36,7 @@
 
 // Project
 #include "ini.h"
+#include "kag_observation_contract.h"
 
 // To investigate: 32f compute? Need to check bf16
 #ifdef PRECISION_FLOAT
@@ -729,7 +730,7 @@ __global__ void sample_logits(
             } else {
                 float rand_val = curand_uniform(&state);
                 float cumsum = 0.0f;
-                sampled = A - 1;
+                sampled = A;
                 for (int a = 0; a < A; a++) {
                     float l = use_cache ? cache[a] : load_logit_masked_byte(
                         logits, logits_base, logits_offset, a,
@@ -738,6 +739,15 @@ __global__ void sample_logits(
                     if (rand_val < cumsum) {
                         sampled = a;
                         break;
+                    }
+                }
+                // Float rounding (or a draw of 1) can leave the CDF short.
+                // Give that tail to the last legal action, never masked padding.
+                if (sampled == A) {
+                    sampled = A - 1;
+                    while (sampled > 0 &&
+                            !action_mask[mask_base + logits_offset + sampled]) {
+                        sampled--;
                     }
                 }
             }
@@ -2392,6 +2402,11 @@ PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx) {
     vec->envs = puf_envs_create(total_agents, env_kwargs,
         &vec_kwargs, vec->bank_layout);
 #else
+    if (frozen_banks > 0) {
+        fprintf(stderr, "This GPU environment does not support frozen policy banks; "
+            "set vec.num_frozen_banks=0 or use the CPU environment.\n");
+        exit(1);
+    }
     vec->envs = puf_envs_create(total_agents, env_kwargs);
     vec->bank_layout[0] = 0;
     vec->bank_layout[vec->num_banks] = vec->agents_per_buffer;
@@ -2410,6 +2425,9 @@ PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx) {
     while (agents_created < total_agents) {
         envs[num_envs].rng = num_envs;
         puf_init(&envs[num_envs], env_kwargs);
+        // puf_init memsets Env (RNG coverage fix): reseed AFTER init so the
+        // curriculum spawn picker (retro_pick_spawn) sees per-env streams.
+        envs[num_envs].rng = (unsigned int)num_envs*2654435761u + 12345u;
         agents_created += envs[num_envs].num_agents;
         num_envs++;
     }
@@ -3187,6 +3205,34 @@ void puf_dashboard_print(Ini* ini, PuffeRL* p, Dict* log, int epoch) {
     printf("%s│%*s│%s", PUF_W, PUF_DASH_W - 2, "", PUF_R);
     dash_eol();
 
+#ifdef PUF_POKEMON_DASHBOARD
+    {
+        dash_env_pair(log, "score", "draw_rate");
+        dash_env_pair(log, "battle_turns", "timeout_rate");
+        printf("%s│ %-36s    %-36s │%s", PUF_W,
+            "Top species (% of learner teams)", "Top leads (% of learner games)", PUF_R);
+        dash_eol();
+        int species[6]={0}, leads[6]={0};
+        double picked[6]={0}, led[6]={0};
+        int ns=pk_top_species(log,"env/",0,species,picked);
+        int nl=pk_top_species(log,"env/",1,leads,led);
+        int rows=ns>nl?ns:nl;
+        if (!rows) {
+            printf("%s│ %-76s │%s", PUF_W, "Waiting for completed learner battles...", PUF_R);
+            dash_eol();
+        }
+        for(int i=0;i<rows;i++) {
+            char left[64]="",right[64]="",name[64];
+            if(i<ns) { pk_species_label(species[i],name); snprintf(left,sizeof(left),"%d. %-18.18s %5.1f%%",i+1,name,100*picked[i]); }
+            if(i<nl) { pk_species_label(leads[i],name); snprintf(right,sizeof(right),"%d. %-18.18s %5.1f%%",i+1,name,100*led[i]); }
+            printf("%s│ %-36s    %-36s │%s", PUF_W,left,right,PUF_R);
+            dash_eol();
+        }
+        dash_rule("╰", "╯");
+        dash_end();
+        return;
+    }
+#endif
     if (!strcmp(env_name, "kaggriculture")) {
         static const char* const rows[][2] = {
             {"score", "opponent_score"},
@@ -3595,7 +3641,9 @@ typedef struct {
     int size;
 } LeagueEvalList;
 
+#ifndef SELFPLAY_MAX_BANKS
 #define SELFPLAY_MAX_BANKS 8
+#endif
 #define SELFPLAY_PATH_MAX 4096
 #define SELFPLAY_MEMORY_BOOTSTRAP "<fresh-policy>"
 
@@ -3889,6 +3937,9 @@ void selfplay_write_payoffs(Selfplay* sp) {
 
 void selfplay_load_bank(Selfplay* sp, PuffeRL* pufferl,
         int bank, const char* path, long step) {
+#ifdef PUF_SELFPLAY_BANK_PATH
+    path = PUF_SELFPLAY_BANK_PATH(bank, path);
+#endif
     if (strcmp(path, SELFPLAY_MEMORY_BOOTSTRAP) == 0) {
         pufferl_copy_frozen_bank_from_learner(pufferl, bank);
     } else {
@@ -3897,6 +3948,15 @@ void selfplay_load_bank(Selfplay* sp, PuffeRL* pufferl,
     SelfplayBank* state = &sp->banks[bank];
     state->opponent = selfplay_payoff(sp, path);
     state->opp_started_step = step;
+#ifdef PUF_SELFPLAY_BANK_LOADED
+    PUF_SELFPLAY_BANK_LOADED(pufferl->vec->envs, pufferl->vec->size, bank, path);
+    // The environment hook can update reset observations and legal actions.
+    // Publish them before the first inference with this bank's weights.
+    cudaMemcpy(pufferl->vec->gpu_observations, pufferl->vec->observations,
+        (size_t)pufferl->hypers.total_agents * OBS_SIZE * sizeof(obs_t), cudaMemcpyHostToDevice);
+    cudaMemcpy(pufferl->vec->gpu_action_mask, pufferl->vec->action_mask,
+        (size_t)pufferl->hypers.total_agents * pufferl->vec->action_mask_size, cudaMemcpyHostToDevice);
+#endif
     printf("Selfplay bank %d opponent %d: %s\n", bank, state->opponent, path);
 }
 
@@ -4666,8 +4726,8 @@ EvalResult run_eval(Ini* ini, TrainContext* ctx, int mode, int verbose) {
         } else {
             // Environment-specific scripted curricula must not replace either
             // policy during a requested model-vs-model match.
-            puf_ini_put(ini, "env.bot_opponent_fraction", "0");
-            puf_ini_put(ini, "env.bot_rules_fraction", "0");
+            league_eval_put_optional(ini, "env", "bot_opponent_fraction", "0");
+            league_eval_put_optional(ini, "env", "bot_rules_fraction", "0");
         }
     }
     puf_ini_put(ini, "base.reset_every_horizon", "0");
@@ -4815,6 +4875,14 @@ EvalResult run_eval(Ini* ini, TrainContext* ctx, int mode, int verbose) {
 
 TrainResult run_train(Ini* ini, TrainContext* ctx) {
     int use_selfplay = puf_ini_get(ini, "selfplay", "enabled");
+    int use_history = use_selfplay;
+#ifdef PUF_FROZEN_LEAGUE_ACTIVE
+    if (PUF_FROZEN_LEAGUE_ACTIVE()) {
+        // Reuse opponent-bank inference, not learner/history opponents.
+        use_selfplay = 1;
+        use_history = 0;
+    }
+#endif
 #ifdef PUFFER_GPU_ENV
     // GPU selfplay rotation is host-driven from per-bank completed-episode
     // counters maintained by the environment; tags/boundaries live on device.
@@ -4851,6 +4919,7 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
     const char* load_path = puf_checkpoint_path_key(ini,
         "load_model_path", resolved_path, sizeof(resolved_path));
     if (load_path) {
+        kag_executor_check_load(load_path, kag_observation_contract(ini), 0);
         puf_load_weights_into(pufferl->master_weights, pufferl->param_puf,
             pufferl->default_stream, load_path);
         printf("Loaded weights from %s\n", load_path);
@@ -4966,6 +5035,15 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
         size_t frozen_bytes = (size_t)numel(
             pufferl->frozen_banks[0].master_weights.shape) * sizeof(float);
         selfplay_validate_external(&selfplay, frozen_bytes);
+        for (int i = 0; i < selfplay.external_size; i++)
+            kag_executor_check_load(selfplay.external[i], kag_observation_contract(ini), 1);
+        if (!kag_observation_pool_compatible(kag_observation_contract(ini),
+                selfplay.external_prob, selfplay.external_size)) {
+            fprintf(stderr, "Mixed Kaggriculture observation/executor versions require "
+                "a nonempty external league and selfplay.opponent_pool_prob=1; "
+                "new learner snapshots cannot use legacy frozen-bank inputs.\n");
+            exit(1);
+        }
         selfplay_set_external_weights(&selfplay,
             puf_ini_get_str(ini, "selfplay", "opponent_pool_weights"));
         long current_step = pufferl->global_step * pufferl->hypers.world_size;
@@ -4988,14 +5066,16 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
         }
 #endif
 
-        selfplay_add_checkpoint(&selfplay, initial_opponent);
+        if (use_history) selfplay_add_checkpoint(&selfplay, initial_opponent);
         printf("Selfplay pool: history=%d external=%d banks=%d external_prob=%.2f "
             "pfsp=%s:%.2f uniform=%.2f\n",
             selfplay.pool_size, selfplay.external_size,
             selfplay.num_banks, selfplay.external_prob, pfsp_mode,
             selfplay.pfsp_alpha, selfplay.pfsp_uniform_mix);
         for (int b = 0; b < selfplay.num_banks; b++) {
-            const char* initial_path = selfplay.external_prob > 0.0f
+            const char* initial_path = !use_history && selfplay.external_size > 0
+                ? selfplay.external[b % selfplay.external_size]
+                : selfplay.external_prob > 0.0f
                     && selfplay.external_size >= selfplay.num_banks
                 ? selfplay.external[b] : selfplay_sample(&selfplay);
             selfplay_load_bank(&selfplay, pufferl, b,
@@ -5100,6 +5180,7 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
                 "%s/%016ld.bin", checkpoint_dir, pufferl->global_step);
             if (ctx->artifact_owner) {
                 puf_save_weights(pufferl, saved_checkpoint);
+                kag_observation_save(saved_checkpoint, ini);
 #ifdef PUF_CHECKPOINT_HOOK
                 PUF_CHECKPOINT_HOOK(saved_checkpoint, ini);
 #endif
@@ -5107,7 +5188,7 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
                     "%s", saved_checkpoint);
             }
         }
-        if (use_selfplay && saved_checkpoint[0]) {
+        if (use_history && saved_checkpoint[0]) {
             selfplay_add_checkpoint(&selfplay, saved_checkpoint);
         }
 
@@ -5344,6 +5425,7 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
 
             float sum = 0;
             int pool_size = selfplay.external_size + selfplay.pool_size;
+            KagObservationContract kag_obs_contract = kag_observation_contract(ini);
             // A replacement Kaggriculture controller can face a league with
             // a different action ABI. Rolling learner snapshots have the
             // learner ABI; external checkpoints use frozen_macro_mode.
@@ -5376,6 +5458,7 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
                     puf_ini_put(ini, "env.macro_mode", learner_mode_buf);
                     puf_ini_put(ini, "env.frozen_macro_mode", opponent_mode_buf);
                 }
+                kag_observation_pair(ini, kag_obs_contract, i < selfplay.external_size, 0);
                 EvalResult first = run_eval(ini, ctx, EVAL_MATCH, 0);
 
                 puf_ini_put(ini, "base.load_model_path", opponent);
@@ -5384,7 +5467,9 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
                     puf_ini_put(ini, "env.macro_mode", opponent_mode_buf);
                     puf_ini_put(ini, "env.frozen_macro_mode", learner_mode_buf);
                 }
+                kag_observation_pair(ini, kag_obs_contract, i < selfplay.external_size, 1);
                 EvalResult second = run_eval(ini, ctx, EVAL_MATCH, 0);
+                kag_observation_restore(ini, kag_obs_contract);
                 if (kag_mixed_modes) {
                     puf_ini_put(ini, "env.macro_mode", learner_mode_buf);
                     snprintf(opponent_mode_buf, sizeof(opponent_mode_buf), "%d", kag_external_mode);
@@ -5686,6 +5771,9 @@ int main(int argc, char** argv) {
     const char* mode = argv[1];
     Ini ini = {0};
     puf_ini_load_env(&ini, argv[2], argc - 3, argv + 3);
+#ifdef PUF_CONFIGURE
+    PUF_CONFIGURE(&ini, mode);
+#endif
     TrainContext ctx = {.world_size = 1, .artifact_owner = 1};
 
     if (strcmp(mode, "trace") == 0) {

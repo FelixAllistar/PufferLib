@@ -295,7 +295,22 @@ for kag_input in "${kag_inputs[@]}"; do
     fi
 done
 
+# Keep the first occurrence (candidate paths precede the cached league tail).
+# Identical weights with different observation layouts remain distinct.
+mkdir -p "$(dirname "$kag_output")"
+kag_identity_tmp=$(mktemp)
+if ! "${KAG_PYTHON:-python3}" ocean/kaggriculture/policy_identity.py dedup \
+        --focal-count "$kag_focal_count" --aliases "${kag_output}_aliases.tsv" \
+        "${kag_paths[@]}" > "$kag_identity_tmp"; then
+    rm -f "$kag_identity_tmp"
+    exit 1
+fi
+mapfile -t kag_identity_lines < "$kag_identity_tmp"
+rm -f "$kag_identity_tmp"
+kag_focal_count=${kag_identity_lines[0]}
+kag_paths=("${kag_identity_lines[@]:1}")
 kag_count=${#kag_paths[@]}
+if ((kag_focal_count >= kag_count)); then kag_focal_count=0; fi
 if ((kag_count < 2)); then
     printf 'Need at least two checkpoints; found %d\n' "$kag_count" >&2
     exit 1
@@ -308,12 +323,22 @@ fi
 
 kag_names=()
 kag_hashes=()
+kag_versions_file=$(mktemp)
+if ! "${KAG_PYTHON:-python3}" ocean/kaggriculture/eval_observation_versions.py \
+        version "${kag_paths[@]}" > "$kag_versions_file"; then
+    rm -f "$kag_versions_file"
+    exit 1
+fi
+mapfile -t kag_observation_versions < "$kag_versions_file"
+rm -f "$kag_versions_file"
 declare -A kag_seen_name=()
 # A payoff is reusable only under the same simulator/evaluator build and reset
 # configuration. Prefixing policy hashes with that context keeps the cache
 # incremental without silently carrying results across simulator changes.
 kag_eval_context=$({
     sha256sum ./puffer ./kaggriculture
+    sha256sum ocean/kaggriculture/eval_observation_versions.py
+    sha256sum ocean/kaggriculture/policy_identity.py
     printf '%s\n' "eval_deterministic=$kag_eval_deterministic"
 } | sha256sum | cut -d' ' -f1)
 for kag_path in "${kag_paths[@]}"; do
@@ -335,7 +360,8 @@ for kag_path in "${kag_paths[@]}"; do
     fi
     kag_seen_name["$kag_name"]=1
     kag_names+=("$kag_name")
-    kag_hashes+=("$kag_eval_context:$(sha256sum "$kag_path" | cut -d' ' -f1)")
+    kag_version=${kag_observation_versions[${#kag_hashes[@]}]}
+    kag_hashes+=("$kag_eval_context:obs$kag_version:$(sha256sum "$kag_path" | cut -d' ' -f1)")
 done
 
 if ((kag_focal_count >= kag_count)); then
@@ -355,9 +381,12 @@ kag_tmp=$(mktemp -d)
 trap 'rm -r "$kag_tmp"' EXIT
 
 printf 'id\tpolicy\tcheckpoint\n' > "$kag_manifest"
+printf 'id\tobservation_version\tcheckpoint\n' > "${kag_output}_observation_versions.tsv"
 for ((kag_i=0; kag_i<kag_count; kag_i++)); do
     printf '%d\t%s\t%s\n' "$kag_i" "${kag_names[kag_i]}" \
         "${kag_paths[kag_i]}" >> "$kag_manifest"
+    printf '%d\t%s\t%s\n' "$kag_i" "${kag_observation_versions[kag_i]}" \
+        "${kag_paths[kag_i]}" >> "${kag_output}_observation_versions.tsv"
 done
 
 declare -A kag_cached_row=()
@@ -438,6 +467,8 @@ kag_run_fixed_gpu() {
             "base.eval_agents=$kag_exact_agents" \
             "base.seed=$((kag_fixed_seed_a + kag_seed_offset))" \
             "base.load_model_path=$kag_a" \
+            "env.observation_version=${kag_observation_versions[kag_i]}" \
+            "env.frozen_observation_version=${kag_observation_versions[kag_i]}" \
             "base.eval_deterministic=$kag_eval_deterministic" \
             "${kag_arch_args[@]}" \
             "env.bot_opponent_fraction=1" \
@@ -458,6 +489,8 @@ kag_run_fixed_gpu() {
             "base.eval_agents=$kag_exact_agents" \
             "base.seed=$((kag_fixed_seed_b + kag_seed_offset))" \
             "base.load_model_path=$kag_a" \
+            "env.observation_version=${kag_observation_versions[kag_i]}" \
+            "env.frozen_observation_version=${kag_observation_versions[kag_i]}" \
             "base.eval_deterministic=$kag_eval_deterministic" \
             "${kag_arch_args[@]}" \
             "env.bot_opponent_fraction=1" \
@@ -510,6 +543,8 @@ kag_run_gpu_pair() {
             "base.seed=$((7000 + kag_i * 257 + kag_j * 3))" \
             "base.load_model_path=$kag_a" \
             "base.load_enemy_model_path=$kag_b" \
+            "env.observation_version=${kag_observation_versions[kag_i]}" \
+            "env.frozen_observation_version=${kag_observation_versions[kag_j]}" \
             "base.eval_deterministic=$kag_eval_deterministic" \
             "${kag_arch_args[@]}" \
             env.reset_state_prob=0 env.reset_state_bank=None \
@@ -524,6 +559,8 @@ kag_run_gpu_pair() {
             "base.seed=$((7001 + kag_i * 257 + kag_j * 3))" \
             "base.load_model_path=$kag_b" \
             "base.load_enemy_model_path=$kag_a" \
+            "env.observation_version=${kag_observation_versions[kag_j]}" \
+            "env.frozen_observation_version=${kag_observation_versions[kag_i]}" \
             "base.eval_deterministic=$kag_eval_deterministic" \
             "${kag_arch_args[@]}" \
             env.reset_state_prob=0 env.reset_state_bank=None \
@@ -566,33 +603,19 @@ kag_wait_slot() {
     done
 }
 
-if ((kag_count <= 9)); then
-    printf 'Using one persistent CUDA process with resident opponent banks\n'
-    if ! ./puffer league kaggriculture \
-            "league.mode=matrix" \
-            "league.policy_manifest=$kag_manifest" \
-            "league.output=$kag_tmp/p_native.tsv" \
-            "league.games=$kag_games" \
-            "league.focal_count=$kag_focal_count" \
-            "base.eval_deterministic=$kag_eval_deterministic" \
-            "${kag_arch_args[@]}" \
-            env.reset_state_prob=0 env.reset_state_bank=None \
-            env.curriculum_enabled=0 \
-            "base.seed=7000"; then
-        printf '%s\n' 'Native persistent league evaluation failed' >&2
-        exit 1
-    fi
-else
-    for ((kag_i=0; kag_i<kag_count; kag_i++)); do
-        for ((kag_j=kag_i+1; kag_j<kag_count; kag_j++)); do
-            kag_wait_slot
-            kag_run_pair "$kag_i" "$kag_j" "${kag_paths[kag_i]}" \
-                "${kag_paths[kag_j]}" "$kag_tmp/p_${kag_i}_${kag_j}.tsv" &
-            kag_jobs_active=$((kag_jobs_active + 1))
-        done
-    done
-    wait
-    kag_jobs_active=0
+printf 'Using version-aware CUDA batches with resident opponent banks\n'
+if ! "${KAG_PYTHON:-python3}" ocean/kaggriculture/eval_observation_versions.py matrix \
+        --manifest "$kag_manifest" \
+        --output "$kag_tmp/p_native.tsv" \
+        --games "$kag_games" \
+        --focal-count "$kag_focal_count" -- \
+        "base.eval_deterministic=$kag_eval_deterministic" \
+        "${kag_arch_args[@]}" \
+        env.reset_state_prob=0 env.reset_state_bank=None \
+        env.curriculum_enabled=0 \
+        "base.seed=7000"; then
+    printf '%s\n' 'Native persistent league evaluation failed' >&2
+    exit 1
 fi
 
 if ((kag_focal_count)); then

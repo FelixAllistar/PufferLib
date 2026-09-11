@@ -420,11 +420,7 @@ int main(int argc, char** argv) {
             upgrade_confirmed = 0;
             if (env.agents[0].terminals[0] > 0.0f) {
                 if (net) ps_reset_policy_state(net);
-                // Auto-reset in watch so you can leave it running.
-                if (watch_mode) {
-                    c_reset(&env);
-                    ps_reset_policy_state(net);
-                }
+                // c_step already resets the environment on terminal transitions.
                 ps_fast_sync_render_state(&env);
                 sim_accumulator = 0.0;
                 break;

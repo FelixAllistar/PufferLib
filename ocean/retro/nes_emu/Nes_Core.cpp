@@ -62,7 +62,7 @@ void Nes_Core::close()
 	disable_rendering();
 }
 
-const char * Nes_Core::open( Nes_Cart const* new_cart )
+const char * Nes_Core::open( Nes_Cart const* new_cart, const Nes_Core* share )
 {
 	close();
 	
@@ -72,7 +72,8 @@ const char * Nes_Core::open( Nes_Cart const* new_cart )
 	if ( !mapper ) 
 		return unsupported_mapper;
 
-	RETURN_ERR( ppu.open_chr( new_cart->chr(), new_cart->chr_size() ) );
+	RETURN_ERR( ppu.open_chr( new_cart->chr(), new_cart->chr_size(),
+		share && share->cart == new_cart ? &share->ppu : NULL ) );
 	
 	cart = new_cart;
 	memset( impl->unmapped_page, unmapped_fill, sizeof impl->unmapped_page );

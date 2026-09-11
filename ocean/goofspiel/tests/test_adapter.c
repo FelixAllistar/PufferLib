@@ -149,12 +149,46 @@ static void test_open_spiel_observation(void) {
     assert(observations[OBS_SIZE + 30] == 1);
 }
 
+static void test_exact_responder_seats(void) {
+    for (int responder = 0; responder < 2; responder++) {
+        Env env = make_env();
+        env.cfg.auto_forced_last = 0;
+        env.agents[responder].policy = 1;
+        env.tag = 1;
+        obs_t observations[2 * OBS_SIZE] = {0};
+        float actions[2] = {2, 2}, rewards[2] = {0}, terminals[2] = {0};
+        unsigned char masks[2 * GS_MAX_CARDS] = {0};
+        bind_env(&env, observations, actions, rewards, terminals, masks);
+        puf_reset(&env);
+        uint8_t first[] = {0};
+        uint8_t second[9] = {0};
+        // First response rank=0, learner rank=2: child node must be 2.
+        second[2] = 1;
+        gs_exact_enabled = gs_exact_count = gs_exact_banks = 1;
+        gs_exact_tables[0].decisions = 2;
+        gs_exact_tables[0].actions[0] = first;
+        gs_exact_tables[0].actions[1] = second;
+        puf_step(&env);
+        assert(env.state.last_bids[responder] == 0);
+        assert(env.state.last_bids[1 - responder] == 2);
+        assert(env.exact_node == 2 && env.exact_depth == 1);
+        actions[responder] = 2;
+        actions[1 - responder] = 0;
+        puf_step(&env);
+        assert(env.state.last_bids[responder] == 1);
+        assert(env.state.last_bids[1 - responder] == 0);
+    }
+    gs_exact_enabled = gs_exact_count = gs_exact_banks = 0;
+    memset(gs_exact_tables, 0, sizeof(gs_exact_tables));
+}
+
 int main(void) {
     assert(GS_COMPACT_OBS_SIZE == 27);
     assert(OBS_SIZE == 48);
     test_observation_views();
     test_open_spiel_observation();
     test_masks_and_terminal_reset();
+    test_exact_responder_seats();
     printf("goofspiel adapter tests passed\n");
     return 0;
 }

@@ -1,858 +1,446 @@
 #pragma once
+// Client-only presentation. World rendering is full resolution; UI never scales
+// with the camera. All gameplay, production, and pet tasks live in ar_sim.h.
+#include "raylib.h"
+#include <stdio.h>
+#include <stdlib.h>
 
-// Raylib isometric top-down renderer for human play. Included only on the CPU
-// path (the GPU train binary never sees this file). Rendered gameplay geometry
-// (radii, arena) comes from ARConfig, exactly like the sim uses it.
+#define AR_VIEW_SCALE 24.0f
+#define AR_FX_COUNT 64
+static const Color AR_INK = {20,30,30,255};
+static const Color AR_PANEL = {24,37,36,248};
+static const Color AR_LINE = {60,79,70,255};
+static const Color AR_TEXT = {232,234,213,255};
+static const Color AR_MUTED = {144,166,149,255};
+static const Color AR_MINT = {123,219,185,255};
+static const Color AR_GOLD = {228,185,108,255};
+static const Color AR_RED = {224,118,98,255};
+static const char* AR_PET_NAMES[] = {"Wisp","Fang","Aegis","Porter"};
+static const char* AR_TASK_NAMES[] = {"Assist","Gather","Escort","Hunt","Hold","Home"};
+static const char* AR_BUILD_NAMES[] = {"Ward tower","Barricade","Extractor"};
 
-#include "ar_constants.h"
-
-// Isometric projection: 2:1 diamonds, one world unit per tile step.
-#define AR_ISO_W 30.0f
-#define AR_ISO_H (AR_ISO_W * 0.5f)
-
-// Client-side juice pools (visual only, never touch the sim).
-#define AR_PART_MAX 256
-#define AR_DMG_MAX 48
-
-typedef struct ARParticle {
-    float x, y, vx, vy, life, maxlife, size;
+typedef struct {
+    float x,y,value,life;
     Color color;
-} ARParticle;
-
-typedef struct ARDmgNum {
-    float x, y, value, life;
-} ARDmgNum;
-
+} ARFeedback;
+typedef struct {
+    float depth,x,y,size;
+    int sprite,slot,kind;
+} ARDrawable;
 typedef struct ARClient {
-    float cam_x, cam_y;   // world position the camera eases toward
-    float off_x, off_y;   // screen offset derived from cam_x/cam_y
-    float zoom;
-    int show_hitboxes;
-    float time;
-    float trauma;         // screen shake energy 0..1
-    int part_head;
-    int dmg_head;
-    ARParticle parts[AR_PART_MAX];
-    ARDmgNum dmgs[AR_DMG_MAX];
-    float enemy_hp_prev[AR_MAX_ENEMIES];
-    uint8_t enemy_prev_active[AR_MAX_ENEMIES];
-    float player_hp_prev;
-    float fx_nova_prev, fx_frost_prev, fx_dash_prev;
-    uint8_t pet_prev_active[AR_MAX_PETS];
-    uint8_t primed;       // hp snapshot initialized
+    float cam_x,cam_y,off_x,off_y,zoom,time;
+    Texture2D atlas;
+    Rectangle sprites[16];
+    Font font,heading;
+    int initialized,selected_pet,build_kind,paused,autoplay,pet_policy;
+    int ui_summon,ui_toggle,ui_pause,ui_ability;
+    int task_override[AR_MAX_PETS];
+    int move_target,camera_free;
+    float move_x,move_y;
+    char notice[160];
+    float notice_time,prev_hp,prev_harvest,rate,rate_elapsed,rate_base;
+    int prev_tick,prev_builds,prev_nests,prev_pets,prev_level,fx_head;
+    float enemy_hp[AR_MAX_ENEMIES];
+    ARFeedback fx[AR_FX_COUNT];
 } ARClient;
 
 static inline ARClient* ar_client(ARPG* env) {
-    if (env->client == NULL) {
-        env->client = calloc(1, sizeof(ARClient));
-        ARClient* client = (ARClient*)env->client;
-        client->cam_x = env->px;
-        client->cam_y = env->py;
-        client->zoom = 1.0f;
-        client->show_hitboxes = env->show_hitboxes;
+    if (!env->client) {
+        ARClient* c=(ARClient*)calloc(1,sizeof(ARClient));
+        c->cam_x=env->px; c->cam_y=env->py; c->zoom=1.0f;
+        c->selected_pet=-1; c->build_kind=-1;
+        for(int p=0;p<AR_MAX_PETS;p++) c->task_override[p]=-1;
+        env->client=c;
     }
     return (ARClient*)env->client;
 }
-
-// World (x, y, z height) -> screen, centered on the camera target.
-static inline Vector2 ar_iso(ARClient* client, float x, float y, float z) {
-    Vector2 out;
-    out.x = (x - y) * AR_ISO_W + client->off_x;
-    out.y = (x + y) * AR_ISO_H - z * AR_ISO_W * 0.9f + client->off_y;
-    return out;
+static inline void ar_notice(ARClient* c,const char* text) {
+    snprintf(c->notice,sizeof(c->notice),"%s",text); c->notice_time=4.0f;
 }
-
-static inline void ar_draw_shadow(ARClient* client, float x, float y,
-        float radius) {
-    Vector2 p = ar_iso(client, x, y, 0.0f);
-    DrawEllipse((int)p.x, (int)p.y, radius * AR_ISO_W * 0.8f,
-        radius * AR_ISO_W * 0.4f, (Color){0, 0, 0, 70});
+static inline Vector2 ar_iso(ARClient* c,float x,float y,float z) {
+    float scale=AR_VIEW_SCALE*c->zoom;
+    return (Vector2){(x-y)*scale+c->off_x,(x+y)*scale*0.5f-z*scale+c->off_y};
 }
-
-// A ground diamond centered at world (x, y) with half-extent `half` units.
-// NOTE: llvmpipe + raylib 5.5 drops >0-winding DrawTriangles in this frame,
-// so all tris below use <0 (screen-space clockwise) winding.
-static inline void ar_draw_diamond(ARClient* client, float x, float y,
-        float half, Color color) {
-    Vector2 top = ar_iso(client, x, y - half, 0.0f);
-    Vector2 right = ar_iso(client, x + half, y, 0.0f);
-    Vector2 bottom = ar_iso(client, x, y + half, 0.0f);
-    Vector2 left = ar_iso(client, x - half, y, 0.0f);
-    DrawTriangle(top, bottom, right, color);
-    DrawTriangle(top, left, bottom, color);
+static inline Vector2 ar_unproject(ARClient* c,Vector2 p) {
+    float sx=(p.x-c->off_x)/(AR_VIEW_SCALE*c->zoom);
+    float sy=(p.y-c->off_y)/(AR_VIEW_SCALE*c->zoom*0.5f);
+    return (Vector2){(sx+sy)*0.5f,(sy-sx)*0.5f};
 }
-
-// Extruded pillar: top diamond lifted by height plus two visible side faces.
-static inline void ar_draw_pillar(ARClient* client, float x, float y,
-        float radius) {
-    float h = radius * 2.4f;
-    Vector2 top_t = ar_iso(client, x, y - radius, h);
-    Vector2 top_r = ar_iso(client, x + radius, y, h);
-    Vector2 top_b = ar_iso(client, x, y + radius, h);
-    Vector2 top_l = ar_iso(client, x - radius, y, h);
-    Vector2 base_b = ar_iso(client, x, y + radius, 0.0f);
-    Vector2 base_r = ar_iso(client, x + radius, y, 0.0f);
-    Vector2 base_l = ar_iso(client, x - radius, y, 0.0f);
-
-    Color side_a = (Color){72, 70, 78, 255};
-    Color side_b = (Color){56, 54, 62, 255};
-    DrawTriangle(top_l, base_b, top_b, side_a);
-    DrawTriangle(top_l, base_l, base_b, side_a);
-    DrawTriangle(top_b, base_r, top_r, side_b);
-    DrawTriangle(top_b, base_b, base_r, side_b);
-    DrawTriangle(top_t, top_b, top_r, (Color){104, 102, 112, 255});
-    DrawTriangle(top_t, top_l, top_b, (Color){92, 90, 100, 255});
+static inline void ar_text(ARClient* c,const char* text,float x,float y,int size,Color color) {
+    DrawTextEx(c->font,text,(Vector2){x,y},(float)size,0.3f,color);
 }
-
-static inline void ar_draw_hp_bar(ARClient* client, float x, float y, float z,
-        float frac, Color color) {
-    Vector2 p = ar_iso(client, x, y, z);
-    if (frac > 1.0f) frac = 1.0f;
-    if (frac < 0.0f) frac = 0.0f;
-    DrawRectangle((int)p.x - 15, (int)p.y - 4, 30, 4, (Color){0, 0, 0, 160});
-    DrawRectangle((int)p.x - 14, (int)p.y - 3, (int)(28.0f * frac), 2, color);
+static inline void ar_box(Rectangle r,Color fill) {
+    DrawRectangleRounded(r,0.16f,5,fill);
+    DrawRectangleRoundedLinesEx(r,0.16f,5,1,AR_LINE);
 }
-
-static inline void ar_draw_player(ARClient* client, ARPG* env) {
-    float z = 1.6f;
-    Vector2 p = ar_iso(client, env->px, env->py, z);
-    // Robe: teardrop from shoulder point down to the shadow.
-    Vector2 hem = ar_iso(client, env->px, env->py, 0.0f);
-    Color robe = (env->invuln_timer > 0 && ((int)(client->time * 20.0f) & 1))
-        ? (Color){168, 130, 255, 140}
-        : (Color){124, 88, 214, 255};
-    DrawTriangle(p, hem, (Vector2){hem.x + 11.0f, hem.y}, robe);
-    DrawTriangle(p, (Vector2){hem.x - 11.0f, hem.y}, hem, robe);
-    DrawCircleV(p, 6.5f, (Color){241, 213, 178, 255});   // head
-    DrawCircleV(p, 6.5f, (Color){60, 44, 96, 120});      // hood shading
-    DrawCircleLines((int)p.x, (int)p.y, 6.5f, (Color){40, 28, 64, 255});
+static inline int ar_button(ARClient* c,Rectangle r,const char* label,int active,int enabled) {
+    int hover=enabled && CheckCollisionPointRec(GetMousePosition(),r);
+    ar_box(r,active ? (Color){47,76,63,255} : hover ? (Color){42,57,49,255} : AR_PANEL);
+    Vector2 t=MeasureTextEx(c->font,label,16,0.3f);
+    ar_text(c,label,r.x+(r.width-t.x)*0.5f,r.y+(r.height-t.y)*0.5f,16,
+        !enabled ? (Color){87,108,96,255} : active ? AR_MINT : AR_TEXT);
+    return hover && IsMouseButtonPressed(MOUSE_BUTTON_LEFT);
 }
-
-static inline void ar_draw_pet(ARClient* client, ARPG* env, int slot) {
-    float x = env->pets.x[slot];
-    float y = env->pets.y[slot];
-    int kind = env->pets.kind[slot];
-    float pulse = 1.0f + 0.15f * sinf(client->time * 6.0f + (float)slot);
-    float z = 1.3f + 0.15f * sinf(client->time * 3.0f + (float)slot * 1.7f);
-    Vector2 p = ar_iso(client, x, y, z);
-    Color outer, core, ring;
-    float r = 6.0f;
-    if (kind == AR_PET_FANG) {
-        outer = (Color){255, 150, 70, 230};
-        core = (Color){255, 235, 220, 255};
-        ring = (Color){255, 150, 70, 90};
-        r = 5.0f;
-    } else if (kind == AR_PET_AEGIS) {
-        outer = (Color){130, 170, 255, 230};
-        core = (Color){235, 244, 255, 255};
-        ring = (Color){130, 170, 255, 90};
-        r = 7.5f;
+static inline void ar_bar(float x,float y,float w,float h,float ratio,Color color) {
+    DrawRectangleRounded((Rectangle){x,y,w,h},0.5f,4,(Color){13,24,25,220});
+    DrawRectangleRounded((Rectangle){x,y,w*ar_clampf(ratio,0,1),h},0.5f,4,color);
+}
+static inline void ar_feedback(ARClient* c,float x,float y,float value,Color color) {
+    c->fx[c->fx_head++ % AR_FX_COUNT]=(ARFeedback){x,y,value,1.1f,color};
+}
+static inline void ar_assets(ARClient* c) {
+    Image atlas=LoadImage("ocean/arpg/assets/hearthwild-atlas.png");
+    if (atlas.data) {
+        c->atlas=LoadTextureFromImage(atlas);
+        SetTextureFilter(c->atlas,TEXTURE_FILTER_BILINEAR);
+        Color* pixels=LoadImageColors(atlas);
+        // Alpha bounds stay inside each atlas cell; the source image is untouched.
+        for(int n=0;n<16;n++) {
+            int x0=(n%4)*atlas.width/4,x1=(n%4+1)*atlas.width/4;
+            int y0=(n/4)*atlas.height/4,y1=(n/4+1)*atlas.height/4;
+            int lx=x1,rx=x0,ty=y1,by=y0;
+            for(int y=y0;y<y1;y++) for(int x=x0;x<x1;x++) if(pixels[y*atlas.width+x].a>40) {
+                if(x<lx)lx=x; if(x>rx)rx=x; if(y<ty)ty=y; if(y>by)by=y;
+            }
+            c->sprites[n]=(Rectangle){(float)lx,(float)ty,(float)(rx-lx+1),(float)(by-ty+1)};
+        }
+        UnloadImageColors(pixels); UnloadImage(atlas);
+    }
+    c->font=LoadFontEx("resources/shared/Roboto-Regular.ttf",32,NULL,0);
+    c->heading=LoadFontEx("resources/shared/Montserrat-Regular.ttf",40,NULL,0);
+    SetTextureFilter(c->font.texture,TEXTURE_FILTER_BILINEAR);
+    SetTextureFilter(c->heading.texture,TEXTURE_FILTER_BILINEAR);
+    c->initialized=1;
+    ar_notice(c,"Your porter is already working. Build an extractor beside a crystal seam.");
+}
+static inline void ar_sprite(ARClient* c,int sprite,Vector2 feet,float height,float flip,Color tint) {
+    if(!c->atlas.id) { DrawCircleV(feet,height*0.2f,tint); return; }
+    Rectangle src=c->sprites[sprite];
+    float width=height*src.width/src.height;
+    if(flip<0)src.width=-src.width;
+    DrawTexturePro(c->atlas,src,(Rectangle){feet.x-width*0.5f,feet.y-height,width,height},
+        (Vector2){0,0},0,tint);
+}
+static inline void ar_ring(ARClient* c,float x,float y,float r,Color color) {
+    Vector2 p=ar_iso(c,x,y,0);
+    float radius=r*AR_VIEW_SCALE*c->zoom*1.41421356f;
+    DrawEllipseLines((int)p.x,(int)p.y,radius,radius*0.5f,color);
+}
+static inline void ar_tile(ARClient* c,float x,float y,float half,Color color) {
+    Vector2 a=ar_iso(c,x-half,y-half,0),b=ar_iso(c,x+half,y-half,0);
+    Vector2 d=ar_iso(c,x-half,y+half,0),e=ar_iso(c,x+half,y+half,0);
+    DrawTriangle(a,e,b,color); DrawTriangle(a,d,e,color);
+}
+static inline Color ar_ground(int tile,int noise) {
+    const Color palette[]={{66,78,65,255},{94,119,77,255},{64,91,64,255},
+        {146,139,101,255},{62,112,115,255},{41,75,88,255}};
+    Color c=palette[tile]; int d=noise%7-3;
+    c.r=(unsigned char)(c.r+d);c.g=(unsigned char)(c.g+d);c.b=(unsigned char)(c.b+d);
+    return c;
+}
+static inline int ar_drawable_compare(const void* a,const void* b) {
+    float d=((const ARDrawable*)a)->depth-((const ARDrawable*)b)->depth;
+    return d<0 ? -1 : d>0;
+}
+static inline void ar_world(ARClient* c,ARPG* e) {
+    const float half=e->cfg.arena_size*0.5f,cell=e->cfg.arena_size/AR_DUN_W;
+    int width=GetScreenWidth(),height=GetScreenHeight();
+    ARDrawable objects[AR_DUN_CELLS+AR_MAX_ENEMIES+AR_MAX_PETS+AR_MAX_OBSTACLES+AR_MAX_SHARDS+AR_MAX_BUILDINGS+AR_MAX_NESTS+2];
+    int count=0;
+    for(int y=0;y<AR_DUN_H;y++)for(int x=0;x<AR_DUN_W;x++) {
+        float wx=-half+(x+0.5f)*cell,wy=-half+(y+0.5f)*cell;
+        Vector2 p=ar_iso(c,wx,wy,0);
+        if(p.x < -180 || p.x > width+180 || p.y < -30 || p.y > height+150) continue;
+        int tile=e->dungeon[y*AR_DUN_W+x];
+        uint32_t hash=ar_hash_xy(e->dungeon_seed,x,y);
+        ar_tile(c,wx,wy,cell*0.505f,ar_ground(tile,(int)(hash%16)));
+        if(tile==AR_TILE_GRASS && hash%6==0) {
+            DrawLineEx((Vector2){p.x-3*c->zoom,p.y},(Vector2){p.x,p.y-3*c->zoom},c->zoom,(Color){123,144,91,125});
+            DrawLineEx((Vector2){p.x,p.y},(Vector2){p.x+3*c->zoom,p.y-2*c->zoom},c->zoom,(Color){73,104,65,110});
+        }
+        if((tile==AR_TILE_SHALLOW || tile==AR_TILE_DEEP) && hash%11==0) {
+            float sway=sinf(c->time*1.2f+(float)(hash%40))*3;
+            DrawLineEx((Vector2){p.x-5+sway,p.y},(Vector2){p.x+7+sway,p.y},1,(Color){141,194,179,75});
+        }
+        int sprite=-1;float size=0;
+        if(tile==AR_TILE_FOREST && hash%5==0){sprite=11;size=100+(hash%25);}
+        if(tile==AR_TILE_ROCK && hash%3==0){sprite=12;size=49+(hash%14);}
+        if(tile==AR_TILE_GRASS && hash%67==0){sprite=15;size=27;}
+        if(sprite>=0)objects[count++]=(ARDrawable){wx+wy,wx,wy,size,sprite,0,0};
+    }
+    ar_ring(c,e->home_x,e->home_y,e->cfg.home_radius,(Color){184,210,139,85});
+    objects[count++]=(ARDrawable){e->home_x+e->home_y-4,e->home_x-2,e->home_y-2,158,14,0,0};
+    for(int o=0;o<AR_MAX_OBSTACLES;o++)if(e->obstacle_active[o])
+        objects[count++]=(ARDrawable){e->obstacle_x[o]+e->obstacle_y[o],e->obstacle_x[o],e->obstacle_y[o],
+            45+e->obstacle_radius[o]*15,12,o,0};
+    for(int n=0;n<AR_MAX_SHARDS;n++)if(e->shard_active[n])
+        objects[count++]=(ARDrawable){e->shard_x[n]+e->shard_y[n],e->shard_x[n],e->shard_y[n],36,13,n,1};
+    for(int b=0;b<AR_MAX_BUILDINGS;b++)if(e->build_active[b])
+        objects[count++]=(ARDrawable){e->build_x[b]+e->build_y[b],e->build_x[b],e->build_y[b],
+            e->build_kind[b]==AR_BUILD_WALL ? 44 : 70,7+e->build_kind[b],b,2};
+    for(int n=0;n<AR_MAX_NESTS;n++)if(e->nest_active[n]) {
+        ar_ring(c,e->nest_x[n],e->nest_y[n],AR_CAMP_WAKE_RADIUS,(Color){202,95,70,90});
+        objects[count++]=(ARDrawable){e->nest_x[n]+e->nest_y[n],e->nest_x[n],e->nest_y[n],104,10,n,3};
+    }
+    for(int i=0;i<e->cfg.enemy_cap;i++)if(e->enemies.active[i])
+        objects[count++]=(ARDrawable){e->enemies.x[i]+e->enemies.y[i],e->enemies.x[i],e->enemies.y[i],
+            e->enemies.type[i] ? 70 : 43,e->enemies.type[i] ? 6 : 5,i,4};
+    for(int p=0;p<AR_MAX_PETS;p++)if(e->pets.active[p])
+        objects[count++]=(ARDrawable){e->pets.x[p]+e->pets.y[p],e->pets.x[p],e->pets.y[p],
+            e->pets.kind[p]==AR_PET_AEGIS ? 46 : 37,e->pets.kind[p]+1,p,5};
+    objects[count++]=(ARDrawable){e->px+e->py,e->px,e->py,61,0,0,6};
+    qsort(objects,(size_t)count,sizeof(objects[0]),ar_drawable_compare);
+    if(e->rally_active) {
+        Vector2 flag=ar_iso(c,e->rally_x,e->rally_y,0);
+        ar_ring(c,e->rally_x,e->rally_y,1.0f,AR_MINT);
+        DrawLineEx(flag,(Vector2){flag.x,flag.y-32*c->zoom},2,AR_TEXT);
+        DrawTriangle((Vector2){flag.x,flag.y-32*c->zoom},(Vector2){flag.x,flag.y-19*c->zoom},
+            (Vector2){flag.x+15*c->zoom,flag.y-28*c->zoom},AR_MINT);
+    }
+    for(int n=0;n<count;n++) {
+        ARDrawable d=objects[n]; Vector2 feet=ar_iso(c,d.x,d.y,0);
+        if(feet.x < -160 || feet.x>width+160 || feet.y<60 || feet.y>height+100)continue;
+        float flip=1,bob=0;Color tint=WHITE;
+        if(d.kind==5) {
+            int p=d.slot;
+            float speed=fabsf(e->pets.vx[p])+fabsf(e->pets.vy[p]);
+            bob=speed>0.2f ? sinf(c->time*11+p)*2*c->zoom : sinf(c->time*2+p)*c->zoom;
+            flip=e->pets.vx[p]-e->pets.vy[p] < -0.1f ? -1 : 1;
+            if(e->pets.invuln[p]>0 && (e->tick/4)%2)tint=(Color){255,205,174,255};
+            ar_ring(c,d.x,d.y,0.9f,c->selected_pet==p ? AR_GOLD : (Color){130,219,187,95});
+        }
+        if(d.kind==6) {
+            bob=(fabsf(e->pvx)+fabsf(e->pvy)>0.2f ? sinf(c->time*11)*1.7f : 0)*c->zoom;
+            flip=e->pvx-e->pvy < -0.1f ? -1 : 1;
+            ar_ring(c,d.x,d.y,1,AR_GOLD);
+            if(e->invuln_timer>0 && (e->tick/4)%2)tint=(Color){255,191,172,255};
+        }
+        if(d.sprite==11 && ar_geometry_dist2(d.x,d.y,e->px,e->py)<8)tint.a=95;
+        if(d.kind==1 && e->shard_value[d.slot]<1)tint=(Color){120,145,135,170};
+        float shadow=d.size*0.26f*c->zoom;
+        DrawEllipse((int)feet.x,(int)feet.y,shadow,shadow*0.35f,(Color){15,31,29,65});
+        ar_sprite(c,d.sprite,(Vector2){feet.x,feet.y-bob},d.size*c->zoom,flip,tint);
+        if(d.kind==1 && e->shard_cd[d.slot]>0) {
+            ar_bar(feet.x-15*c->zoom,feet.y+5*c->zoom,30*c->zoom,3*c->zoom,
+                1-e->shard_cd[d.slot]/e->cfg.gather_period,AR_MINT);
+        }
+        if(d.kind==2 && e->build_kind[d.slot]==AR_BUILD_HARVESTER) {
+            float pulse=0.5f+0.5f*sinf(c->time*3);
+            DrawCircleV((Vector2){feet.x+12*c->zoom,feet.y-28*c->zoom},2.5f*c->zoom,Fade(AR_MINT,pulse));
+        }
+        if(d.kind==2 && e->build_kind[d.slot]==AR_BUILD_TOTEM && e->build_flash[d.slot]>0)
+            ar_ring(c,d.x,d.y,e->cfg.totem_radius*(1-e->build_flash[d.slot]/0.4f),Fade(AR_MINT,e->build_flash[d.slot]/0.4f));
+        if(d.kind==2 && e->build_hp[d.slot]<e->build_max_hp[d.slot])
+            ar_bar(feet.x-23*c->zoom,feet.y-d.size*c->zoom-8,46*c->zoom,4,
+                e->build_hp[d.slot]/e->build_max_hp[d.slot],AR_GOLD);
+        if(d.kind==4 && e->enemies.hp[d.slot]<e->enemies.max_hp[d.slot])
+            ar_bar(feet.x-20*c->zoom,feet.y-d.size*c->zoom-8,40*c->zoom,4,
+                e->enemies.hp[d.slot]/e->enemies.max_hp[d.slot],AR_RED);
+        if(d.kind==5 && (c->selected_pet==d.slot || e->pets.hp[d.slot]<e->pets.max_hp[d.slot]*0.9f))
+            ar_bar(feet.x-17*c->zoom,feet.y-d.size*c->zoom-8,34*c->zoom,4,
+                e->pets.hp[d.slot]/e->pets.max_hp[d.slot],AR_MINT);
+        if(d.kind==3) {
+            ar_bar(feet.x-32*c->zoom,feet.y-d.size*c->zoom-12,64*c->zoom,4,
+                e->nest_hp[d.slot]/e->nest_max_hp[d.slot],AR_RED);
+            ar_text(c,"THORN CAMP",feet.x-43,feet.y-d.size*c->zoom-34,13,AR_RED);
+        }
+        if(e->show_hitboxes && d.kind>=4) ar_ring(c,d.x,d.y,d.kind==6 ? e->cfg.player_radius : 0.5f,AR_RED);
+    }
+    if(e->fx_nova>0)ar_ring(c,e->px,e->py,e->cfg.nova_radius*(1-e->fx_nova/0.4f),Fade(AR_GOLD,e->fx_nova/0.4f));
+    if(e->fx_frost>0)ar_ring(c,e->px,e->py,e->cfg.frost_range*(1-e->fx_frost/0.5f),Fade(AR_MINT,e->fx_frost/0.5f));
+    if(e->fx_dash>0)ar_ring(c,e->px,e->py,1+(1-e->fx_dash/0.35f)*2,Fade(AR_TEXT,e->fx_dash/0.35f));
+    for(int p=0;p<AR_MAX_PETS;p++)if(e->pets.active[p] && e->pets.cd[p]>e->cfg.pet_attack_cooldown-0.14f) {
+        int target=e->pets.target[p];
+        if(target>=0 && e->enemies.active[target]) {
+            Vector2 from=ar_iso(c,e->pets.x[p],e->pets.y[p],0.65f);
+            Vector2 to=ar_iso(c,e->enemies.x[target],e->enemies.y[target],0.6f);
+            DrawLineEx(from,to,3*c->zoom,Fade(AR_GOLD,0.8f));
+        }
+    }
+    if(c->build_kind>=0) {
+        Vector2 world=ar_unproject(c,GetMousePosition());
+        int valid=ar_build_location_valid(e,0,c->build_kind,world.x,world.y)
+            && ar_geometry_dist2(e->px,e->py,world.x,world.y)<=144;
+        ar_ring(c,world.x,world.y,e->cfg.build_radius[c->build_kind]+0.5f,valid ? AR_MINT : AR_RED);
+        ar_sprite(c,7+c->build_kind,GetMousePosition(),70*c->zoom,1,Fade(valid ? WHITE : AR_RED,0.55f));
+        if(c->build_kind==AR_BUILD_HARVESTER)ar_ring(c,world.x,world.y,e->cfg.harvest_radius,Fade(AR_MINT,0.4f));
+    }
+    for(int i=0;i<AR_FX_COUNT;i++)if(c->fx[i].life>0) {
+        ARFeedback* f=&c->fx[i];
+        Vector2 p=ar_iso(c,f->x,f->y,0.9f+(1.1f-f->life));
+        ar_text(c,TextFormat("%+.0f",f->value),p.x-8,p.y,19,Fade(f->color,fminf(1,f->life*2)));
+    }
+}
+static inline void ar_minimap(ARClient* c,ARPG* e,float x,float y) {
+    float size=144,cell=size/AR_DUN_W;
+    ar_box((Rectangle){x-9,y-9,size+18,size+42},AR_PANEL);
+    for(int gy=0;gy<AR_DUN_H;gy++)for(int gx=0;gx<AR_DUN_W;gx++)
+        DrawRectangleRec((Rectangle){x+gx*cell,y+gy*cell,cell+0.1f,cell+0.1f},ar_ground(e->dungeon[gy*AR_DUN_W+gx],3));
+    for(int n=0;n<AR_MAX_NESTS;n++)if(e->nest_active[n])
+        DrawCircleV((Vector2){x+(e->nest_x[n]/e->cfg.arena_size+0.5f)*size,y+(e->nest_y[n]/e->cfg.arena_size+0.5f)*size},3,AR_RED);
+    DrawCircleV((Vector2){x+(e->home_x/e->cfg.arena_size+0.5f)*size,y+(e->home_y/e->cfg.arena_size+0.5f)*size},4,AR_GOLD);
+    DrawCircleV((Vector2){x+(e->px/e->cfg.arena_size+0.5f)*size,y+(e->py/e->cfg.arena_size+0.5f)*size},3,WHITE);
+    ar_text(c,"THE GREEN REACH",x+6,y+size+8,12,AR_MUTED);
+}
+static inline void ar_hud(ARClient* c,ARPG* e) {
+    int w=GetScreenWidth(),h=GetScreenHeight(); float bottom=h-150;
+    DrawRectangle(0,0,w,76,AR_INK); DrawLine(0,75,w,75,AR_LINE);
+    DrawTextEx(c->heading,"HEARTHWILD",(Vector2){24,14},27,1.5f,AR_TEXT);
+    ar_text(c,"A LITTLE KINGDOM, AT YOUR PACE",25,47,11,AR_MUTED);
+    ar_text(c,"KEEPER",300,16,12,AR_MUTED);
+    ar_bar(300,39,146,8,e->hp/e->max_hp,AR_MINT);
+    ar_text(c,TextFormat("%.0f / %.0f",e->hp,e->max_hp),456,31,16,AR_TEXT);
+    ar_text(c,"AETHER",550,14,12,AR_MUTED);
+    ar_text(c,TextFormat("%.0f",e->shards),550,34,25,AR_GOLD);
+    ar_text(c,TextFormat("+%.1f / min",c->rate),616,39,14,AR_MINT);
+    ar_text(c,TextFormat("HOMESTEAD %d",ar_tech_level(e,0)+1),754,14,12,AR_MUTED);
+    ar_text(c,TextFormat("%d / %d camps cleared",e->camps_cleared,e->camps_cleared+e->nests_alive),754,39,16,AR_TEXT);
+    ar_bar(754,63,155,3,fmodf(e->harvested,20)/20,AR_GOLD);
+    if(ar_button(c,(Rectangle){w-212,17,119,40},c->autoplay ? "T  RL autoplay" : "T  Manual",c->autoplay,1))c->ui_toggle=1;
+    if(ar_button(c,(Rectangle){w-81,17,58,40},c->paused ? "Play" : "Pause",c->paused,1))c->ui_pause=1;
+    ar_minimap(c,e,w-172,97);
+    ar_box((Rectangle){23,97,298,103},Fade(AR_PANEL,0.94f));
+    ar_text(c,"YOUR NEXT LITTLE PROJECT",38,109,11,AR_GOLD);
+    int extractors=0;
+    for(int b=0;b<AR_MAX_BUILDINGS;b++)if(e->build_active[b] && e->build_kind[b]==AR_BUILD_HARVESTER)extractors++;
+    ar_text(c,!e->nests_alive ? "The Reach is yours." : extractors ? "Let the workshop do the work." : "Make your first extractor.",38,132,19,AR_TEXT);
+    ar_text(c,!e->nests_alive ? "Keep growing your little kingdom." : extractors ? "Explore a red camp when you're ready." : "Press B, then click beside a crystal seam.",38,160,14,AR_MUTED);
+    ar_text(c,"Shelter restores you and your companions.",38,181,12,AR_MUTED);
+    if(c->notice_time>0) {
+        Vector2 m=MeasureTextEx(c->font,c->notice,17,0.3f);
+        float nx=(w-m.x-36)*0.5f;
+        ar_box((Rectangle){nx,bottom-59,m.x+36,40},AR_PANEL);
+        ar_text(c,c->notice,nx+18,bottom-49,17,AR_GOLD);
+    }
+    DrawRectangle(0,(int)bottom,w,150,AR_INK); DrawLine(0,(int)bottom,w,(int)bottom,AR_LINE);
+    ar_text(c,c->pet_policy ? "COMPANIONS  /  RL POLICY" : "COMPANIONS  /  SCRIPTED ASSIST",24,bottom+12,12,AR_MUTED);
+    for(int p=0;p<AR_MAX_PETS;p++) {
+        Rectangle card={24+p*139.0f,bottom+35,130,72};
+        int alive=e->pets.active[p],selected=c->selected_pet==p;
+        if(ar_button(c,card,"",selected,alive))c->selected_pet=selected ? -1 : p;
+        if(!alive){ar_text(c,"Empty slot",card.x+24,card.y+27,14,AR_MUTED);continue;}
+        ar_sprite(c,e->pets.kind[p]+1,(Vector2){card.x+25,card.y+45},34,1,WHITE);
+        ar_text(c,AR_PET_NAMES[e->pets.kind[p]],card.x+50,card.y+10,15,AR_TEXT);
+        int task=e->pets.task[p];
+        const char* job=task==AR_TASK_AUTO ? (e->pets.kind[p]==AR_PET_MULE ? "Auto gather" : "Auto escort") : AR_TASK_NAMES[task];
+        ar_text(c,job,card.x+50,card.y+31,12,AR_MUTED);
+        ar_bar(card.x+12,card.y+59,106,4,e->pets.hp[p]/e->pets.max_hp[p],AR_MINT);
+    }
+    float bx=604;
+    if(c->selected_pet>=0) {
+        ar_text(c,"ASSIGN TASK  /  CLICK A CARD TO DESELECT",bx,bottom+12,12,AR_MUTED);
+        for(int t=0;t<AR_PET_TASK_COUNT;t++) {
+            if(ar_button(c,(Rectangle){bx+(t%3)*100,bottom+35+(t/3)*37,92,31},AR_TASK_NAMES[t],
+                    c->task_override[c->selected_pet]==t,1)) {
+                c->task_override[c->selected_pet]=t;
+                ar_notice(c,"Task assigned. P clears overrides and restores the pet policy.");
+            }
+        }
     } else {
-        outer = (Color){120, 236, 255, 230};
-        core = (Color){235, 255, 255, 255};
-        ring = (Color){120, 236, 255, 90};
+        ar_text(c,"BUILD YOUR HOMESTEAD",bx,bottom+12,12,AR_MUTED);
+        const char* build_keys[]={"G","V","B"};
+        for(int b=0;b<3;b++) {
+            char label[64];snprintf(label,sizeof(label),"%s  %s  %.0f",build_keys[b],AR_BUILD_NAMES[b],e->cfg.build_cost[b]);
+            int unlocked=b!=AR_BUILD_HARVESTER || ar_tech_level(e,0)>=e->cfg.unlock_level_harvester;
+            if(ar_button(c,(Rectangle){bx,bottom+33+b*27,273,24},label,c->build_kind==b,
+                    !c->autoplay && unlocked && e->builds_alive<AR_MAX_BUILDINGS && e->shards>=e->cfg.build_cost[b]))
+                c->build_kind=c->build_kind==b ? -1 : b;
+        }
     }
-    DrawCircleV(p, r * pulse, outer);
-    DrawCircleV(p, r * 0.5f * pulse, core);
-    DrawCircleLines((int)p.x, (int)p.y, (r + 2.0f) * pulse, ring);
-
-    // Summon flash: expanding ring right after the pet appears.
-    if (env->pets.age[slot] < 0.45f) {
-        float t = env->pets.age[slot] / 0.45f;
-        Vector2 base = ar_iso(client, x, y, 0.0f);
-        DrawEllipseLines((int)base.x, (int)base.y, 26.0f * t, 13.0f * t,
-            (Color){120, 236, 255, (unsigned char)(200.0f * (1.0f - t))});
+    ar_text(c,"KEEPER ABILITIES",914,bottom+12,12,AR_MUTED);
+    const char* ability_names[]={"Q  Dash","E  Nova","F  Frost"};
+    float cds[]={e->dash_cd,e->nova_cd,e->frost_cd};
+    float periods[]={e->cfg.dash_cooldown,e->cfg.nova_cooldown,e->cfg.frost_cooldown};
+    for(int a=0;a<3;a++) {
+        Rectangle r={914,bottom+33+a*27,138,24};
+        const char* label=cds[a]>0 ? TextFormat("%s  %.1fs",ability_names[a],cds[a]) : ability_names[a];
+        if(ar_button(c,r,label,0,!c->autoplay && cds[a]<=0))c->ui_ability=a+1;
+        if(cds[a]>0 && periods[a]>0)ar_bar(r.x+5,r.y+22,r.width-10,2,1-cds[a]/periods[a],AR_MINT);
     }
-
-    // Attack swipe toward the current target.
-    if (env->pets.attacking[slot] && env->pets.target[slot] >= 0
-            && env->enemies.active[env->pets.target[slot]]) {
-        int t = env->pets.target[slot];
-        Vector2 tp = ar_iso(client, env->enemies.x[t], env->enemies.y[t], 8.0f);
-        DrawLineEx(p, tp, 2.0f, (Color){235, 255, 255, 180});
+    float sx=w-210;
+    ar_text(c,"SUMMON COMPANION",sx,bottom+12,12,AR_MUTED);
+    for(int p=0;p<4;p++) {
+        int unlocked=p==0 || p==3 || ar_tech_level(e,0)>=(p==1 ? e->cfg.unlock_level_fang : e->cfg.unlock_level_aegis);
+        if(ar_button(c,(Rectangle){sx+(p%2)*94,bottom+35+(p/2)*37,86,31},
+                TextFormat("%s %.0f",AR_PET_NAMES[p],e->cfg.summon_cost[p]),0,
+                !c->autoplay && unlocked && e->summon_cd<=0 && e->pets_alive<e->cfg.pet_cap && e->shards>=e->cfg.summon_cost[p]))c->ui_summon=p+1;
+    }
+    ar_text(c,"WASD move   Right-click rally   1 Follow / 2 Advance / 3 Hold / 4 Focus   Wheel zoom   Middle-drag pan   Home recenter   Tab pause   P pet brain   R restart",24,h-26,13,AR_MUTED);
+    if(c->paused) {
+        ar_box((Rectangle){w*0.5f-125,95,250,49},AR_PANEL);
+        ar_text(c,e->hp<=0 ? "RUN ENDED  /  R TO RESTART" : "PAUSED  /  TAB TO RESUME",w*0.5f-109,112,14,AR_GOLD);
     }
 }
-
-static inline void ar_draw_enemy(ARClient* client, ARPG* env, int slot) {
-    float x = env->enemies.x[slot];
-    float y = env->enemies.y[slot];
-    float radius = env->enemies.radius[slot];
-    int brute = env->enemies.type[slot] == AR_ENEMY_BRUTE;
-    float z = radius * 3.0f;
-    Vector2 p = ar_iso(client, x, y, z);
-    Color body = brute ? (Color){156, 52, 44, 255} : (Color){206, 82, 60, 255};
-    Color belly = brute ? (Color){196, 96, 82, 255} : (Color){232, 132, 100, 255};
-    if (env->enemies.slow_timer[slot] > 0) {
-        // Frost tint: lerp toward ice blue.
-        body = (Color){(unsigned char)(body.r * 0.4f + 150 * 0.6f),
-            (unsigned char)(body.g * 0.4f + 220 * 0.6f),
-            (unsigned char)(body.b * 0.4f + 255 * 0.6f), 255};
-        belly = (Color){(unsigned char)(belly.r * 0.4f + 190 * 0.6f),
-            (unsigned char)(belly.g * 0.4f + 235 * 0.6f),
-            (unsigned char)(belly.b * 0.4f + 255 * 0.6f), 255};
+static inline void c_render(ARPG* e) {
+    if(!IsWindowReady()) {
+        SetConfigFlags(FLAG_MSAA_4X_HINT|FLAG_WINDOW_RESIZABLE);
+        InitWindow(1440,900,"Hearthwild / ARPG");
+        SetWindowMinSize(1280,720);SetTargetFPS(60);
     }
-    DrawCircleV(p, radius * AR_ISO_W * 0.85f, body);
-    DrawCircleV(p, radius * AR_ISO_W * 0.5f, belly);
-    // Eyes track the player.
-    Vector2 eyes = ar_iso(client, env->px, env->py, z);
-    float dx = eyes.x - p.x, dy = eyes.y - p.y;
-    float len = sqrtf(dx * dx + dy * dy);
-    if (len > 1.0f) {
-        dx /= len;
-        dy /= len;
+    ARClient* c=ar_client(e);
+    if(!c->initialized)ar_assets(c);
+    float dt=fminf(GetFrameTime(),0.1f); c->time+=dt;
+    c->notice_time=fmaxf(0,c->notice_time-dt);
+    for(int i=0;i<AR_FX_COUNT;i++)c->fx[i].life=fmaxf(0,c->fx[i].life-dt);
+    if(e->tick<c->prev_tick || !c->prev_tick) {
+        memset(c->fx,0,sizeof(c->fx)); memset(c->enemy_hp,0,sizeof(c->enemy_hp));
+        c->prev_hp=e->hp; c->prev_harvest=e->harvested; c->rate_base=e->harvested;
+        c->prev_builds=e->builds_alive;c->prev_nests=e->nests_alive;c->rate_elapsed=0;c->rate=0;
+        c->prev_tick=e->tick;c->prev_pets=e->pets_alive;
+        c->prev_level=ar_tech_level(e,0);
     }
-    float er = radius * AR_ISO_W * 0.85f;
-    DrawCircleV((Vector2){p.x + dx * er * 0.45f - 3.0f, p.y + dy * er * 0.3f - 2.0f},
-        2.2f, (Color){20, 12, 12, 255});
-    DrawCircleV((Vector2){p.x + dx * er * 0.45f + 3.0f, p.y + dy * er * 0.3f - 2.0f},
-        2.2f, (Color){20, 12, 12, 255});
-    ar_draw_hp_bar(client, x, y, z + 1.2f,
-        env->enemies.hp[slot] / env->enemies.max_hp[slot],
-        brute ? (Color){220, 70, 60, 255} : (Color){240, 130, 90, 255});
-}
-
-// Painter's-order entity record: draw farther entities (smaller x+y) first.
-typedef struct ARDrawable {
-    float depth;
-    int kind;    // 0 pillar, 1 enemy, 2 pet, 3 player, 4 rock, 6 tree,
-                 // 7 building, 8 shard
-    int index;
-} ARDrawable;
-
-static inline void ar_draw_hitbox(ARClient* client, float x, float y,
-        float radius, Color color) {
-    Vector2 p = ar_iso(client, x, y, 0.0f);
-    DrawEllipseLines((int)p.x, (int)p.y, radius * AR_ISO_W,
-        radius * AR_ISO_W * 0.5f, color);
-}
-
-static inline uint32_t ar_hash3(uint32_t s, int x, int y) {
-    uint32_t h = s ^ (uint32_t)(x * 374761393u + y * 668265263u);
-    h = (h ^ (h >> 13)) * 1274126177u;
-    return h ^ (h >> 16);
-}
-
-static inline void ar_spawn_burst(ARClient* client, float x, float y, int n,
-        float speed, float size, Color color) {
-    for (int i = 0; i < n; i++) {
-        ARParticle* pt = &client->parts[client->part_head];
-        client->part_head = (client->part_head + 1) % AR_PART_MAX;
-        float a = ((float)rand() / (float)RAND_MAX) * 2.0f * PI;
-        float v = speed * (0.4f + 0.6f * ((float)rand() / (float)RAND_MAX));
-        pt->x = x;
-        pt->y = y;
-        pt->vx = cosf(a) * v;
-        pt->vy = sinf(a) * v;
-        pt->life = pt->maxlife = 0.35f + 0.3f * ((float)rand() / (float)RAND_MAX);
-        pt->size = size;
-        pt->color = color;
+    if(e->hp<c->prev_hp)ar_feedback(c,e->px,e->py,e->hp-c->prev_hp,AR_RED);
+    if(e->harvested>c->prev_harvest)ar_feedback(c,e->px,e->py,e->harvested-c->prev_harvest,AR_MINT);
+    if(e->builds_alive>c->prev_builds)ar_notice(c,"Outpost established. Your network is growing.");
+    if(e->nests_alive<c->prev_nests)ar_notice(c,"Camp cleared. A little more of the Reach is yours.");
+    if(e->pets_alive<c->prev_pets)ar_notice(c,"A companion fell. Return to shelter and summon a replacement.");
+    c->prev_pets=e->pets_alive;
+    int level=ar_tech_level(e,0);
+    if(level>c->prev_level) {
+        const char* unlock=level==e->cfg.unlock_level_aegis ? "Aegis companion unlocked." :
+            level==e->cfg.unlock_level_fang ? "Fang companion unlocked." : "Your homestead is thriving.";
+        ar_notice(c,TextFormat("Homestead %d - %s",level+1,unlock));
     }
-}
-
-static inline void ar_spawn_dmg(ARClient* client, float x, float y,
-        float value) {
-    ARDmgNum* d = &client->dmgs[client->dmg_head];
-    client->dmg_head = (client->dmg_head + 1) % AR_DMG_MAX;
-    d->x = x;
-    d->y = y;
-    d->value = value;
-    d->life = 0.7f;
-}
-
-static inline void ar_add_trauma(ARClient* client, float t) {
-    client->trauma += t;
-    if (client->trauma > 1.0f) client->trauma = 1.0f;
-}
-
-static inline void c_render(ARPG* env) {
-    ARClient* client = ar_client(env);
-    if (!IsWindowReady()) {
-        InitWindow(1280, 720, "arpg");
-        SetTargetFPS(60);
+    c->prev_level=level;
+    for(int i=0;i<e->cfg.enemy_cap;i++) {
+        if(e->enemies.active[i] && c->enemy_hp[i]>e->enemies.hp[i])
+            ar_feedback(c,e->enemies.x[i],e->enemies.y[i],e->enemies.hp[i]-c->enemy_hp[i],AR_GOLD);
+        if(!e->enemies.active[i] && c->enemy_hp[i]>0)
+            ar_feedback(c,e->enemies.x[i],e->enemies.y[i],-c->enemy_hp[i],AR_GOLD);
+        c->enemy_hp[i]=e->enemies.active[i] ? e->enemies.hp[i] : 0;
     }
-    float dt = GetFrameTime();
-    client->time += dt;
-    client->show_hitboxes = env->show_hitboxes;
-
-    // Events -> juice: hp deltas become particles, numbers, and shake.
-    // Slots recycle, so edges reset the snapshot (good enough visually).
-    if (!client->primed) {
-        client->player_hp_prev = env->hp;
-        for (int i = 0; i < env->cfg.enemy_cap; i++) {
-            client->enemy_prev_active[i] = env->enemies.active[i];
-            client->enemy_hp_prev[i] = env->enemies.hp[i];
-        }
-        for (int i = 0; i < AR_MAX_PETS; i++) {
-            client->pet_prev_active[i] = env->pets.active[i];
-        }
-        client->primed = 1;
-    } else {
-        if (env->hp < client->player_hp_prev - 0.001f) {
-            ar_spawn_burst(client, env->px, env->py, 10, 5.0f, 3.0f,
-                (Color){230, 70, 60, 255});
-            ar_add_trauma(client, 0.35f);
-        }
-        client->player_hp_prev = env->hp;
-        for (int i = 0; i < env->cfg.enemy_cap; i++) {
-            if (env->enemies.active[i] && client->enemy_prev_active[i]) {
-                float drop = client->enemy_hp_prev[i] - env->enemies.hp[i];
-                if (drop > 0.001f) {
-                    ar_spawn_dmg(client, env->enemies.x[i], env->enemies.y[i],
-                        drop);
-                    ar_spawn_burst(client, env->enemies.x[i],
-                        env->enemies.y[i], 4, 3.5f, 2.5f,
-                        (Color){255, 210, 140, 255});
-                }
-                client->enemy_hp_prev[i] = env->enemies.hp[i];
-            } else if (!env->enemies.active[i] && client->enemy_prev_active[i]) {
-                ar_spawn_burst(client, env->enemies.x[i], env->enemies.y[i],
-                    12, 5.0f, 3.0f, (Color){255, 150, 80, 255});
-                ar_add_trauma(client, 0.12f);
-            } else if (env->enemies.active[i]) {
-                client->enemy_hp_prev[i] = env->enemies.hp[i];
-            }
-            client->enemy_prev_active[i] = env->enemies.active[i];
-        }
-        for (int i = 0; i < AR_MAX_PETS; i++) {
-            if (!env->pets.active[i] && client->pet_prev_active[i]) {
-                ar_spawn_burst(client, env->pets.x[i], env->pets.y[i], 10,
-                    4.0f, 3.0f, (Color){120, 236, 255, 255});
-            }
-            client->pet_prev_active[i] = env->pets.active[i];
-        }
-        if (env->fx_nova > 0.0f && client->fx_nova_prev <= 0.0f) {
-            ar_spawn_burst(client, env->px, env->py, 26, 9.0f, 3.5f,
-                (Color){255, 200, 110, 255});
-            ar_add_trauma(client, 0.5f);
-        }
-        if (env->fx_frost > 0.0f && client->fx_frost_prev <= 0.0f) {
-            ar_add_trauma(client, 0.2f);
-        }
-        if (env->fx_dash > 0.0f && client->fx_dash_prev <= 0.0f) {
-            ar_spawn_burst(client, env->px, env->py, 8, 4.0f, 2.5f,
-                (Color){200, 170, 255, 255});
-        }
+    c->prev_hp=e->hp;c->prev_harvest=e->harvested;c->prev_builds=e->builds_alive;c->prev_nests=e->nests_alive;
+    c->rate_elapsed+=(e->tick-c->prev_tick)*AR_DT;c->prev_tick=e->tick;
+    if(c->rate_elapsed>=5) {c->rate=(e->harvested-c->rate_base)*60/c->rate_elapsed;c->rate_base=e->harvested;c->rate_elapsed=0;}
+    if(GetMousePosition().y>76 && GetMousePosition().y<GetScreenHeight()-150)
+        c->zoom=ar_clampf(c->zoom+GetMouseWheelMove()*0.09f,0.55f,1.65f);
+    if(IsMouseButtonDown(MOUSE_BUTTON_MIDDLE)) {
+        Vector2 delta=GetMouseDelta();float scale=AR_VIEW_SCALE*c->zoom;
+        c->cam_x-=(delta.x+2*delta.y)/(2*scale);
+        c->cam_y-=(2*delta.y-delta.x)/(2*scale);
+        c->cam_x=ar_clampf(c->cam_x,-e->cfg.arena_size*0.5f,e->cfg.arena_size*0.5f);
+        c->cam_y=ar_clampf(c->cam_y,-e->cfg.arena_size*0.5f,e->cfg.arena_size*0.5f);
+        c->camera_free=1;
     }
-    client->fx_nova_prev = env->fx_nova;
-    client->fx_frost_prev = env->fx_frost;
-    client->fx_dash_prev = env->fx_dash;
-
-    // Particles integrate in world space.
-    for (int i = 0; i < AR_PART_MAX; i++) {
-        ARParticle* pt = &client->parts[i];
-        if (pt->life <= 0.0f) continue;
-        pt->life -= dt;
-        pt->x += pt->vx * dt;
-        pt->y += pt->vy * dt;
-        pt->vx *= (1.0f - 3.0f * dt);
-        pt->vy *= (1.0f - 3.0f * dt);
-    }
-    for (int i = 0; i < AR_DMG_MAX; i++) {
-        if (client->dmgs[i].life > 0.0f) {
-            client->dmgs[i].life -= dt;
-            client->dmgs[i].y += 1.2f * dt;
-        }
-    }
-
-    // Smooth camera follow, then derive the screen offset from the camera.
-    float follow = dt * 6.0f;
-    if (follow > 1.0f) follow = 1.0f;
-    client->cam_x += (env->px - client->cam_x) * follow;
-    client->cam_y += (env->py - client->cam_y) * follow;
-    client->off_x = 0.5f * (float)GetScreenWidth()
-        - (client->cam_x - client->cam_y) * AR_ISO_W;
-    client->off_y = 0.42f * (float)GetScreenHeight()
-        - (client->cam_x + client->cam_y) * AR_ISO_H;
-    // Screen shake: trauma^2 scaled, decaying.
-    if (client->trauma > 0.0f) {
-        client->trauma -= dt * 1.4f;
-        if (client->trauma < 0.0f) client->trauma = 0.0f;
-        float sh = client->trauma * client->trauma * 14.0f;
-        float sa = ((float)rand() / (float)RAND_MAX) * 2.0f * PI;
-        client->off_x += cosf(sa) * sh;
-        client->off_y += sinf(sa) * sh;
-    }
-
-    BeginDrawing();
-    ClearBackground((Color){16, 14, 22, 255});
-
-    float half = 0.5f * env->cfg.arena_size;
-    float cell = env->cfg.arena_size / (float)AR_DUN_W;
-    // Camera-space cull bounds (u = x-y across, v = x+y down).
-    float cu = client->cam_x - client->cam_y;
-    float cv = client->cam_x + client->cam_y;
-    float ru = (float)GetScreenWidth() * 0.5f / AR_ISO_W + 3.0f;
-    float rv = (float)GetScreenHeight() / AR_ISO_H + 12.0f;
-
-    // Terrain floor: one diamond per visible cell, tinted by tile type.
-    for (int gy = 0; gy < AR_DUN_H; gy++) {
-        for (int gx = 0; gx < AR_DUN_W; gx++) {
-            uint8_t t = env->dungeon[gy * AR_DUN_W + gx];
-            float wx = -half + (gx + 0.5f) * cell;
-            float wy = -half + (gy + 0.5f) * cell;
-            float u = wx - wy, v = wx + wy;
-            if (u < cu - ru || u > cu + ru || v < cv - rv || v > cv + rv) {
-                continue;
-            }
-            if (t == AR_TILE_GRASS) {
-                ar_draw_diamond(client, wx, wy, cell * 0.5f,
-                    ((gx + gy) & 1) ? (Color){44, 74, 44, 255}
-                        : (Color){38, 66, 40, 255});
-                if (ar_hash3(env->dungeon_seed ^ 0x51f15e, gx, gy) % 13 == 0) {
-                    Vector2 rp = ar_iso(client, wx + 0.2f, wy - 0.15f, 0.0f);
-                    DrawCircleV(rp, 3.0f, (Color){90, 90, 96, 255});
-                }
-            } else if (t == AR_TILE_FOREST) {
-                ar_draw_diamond(client, wx, wy, cell * 0.5f,
-                    ((gx + gy) & 1) ? (Color){30, 58, 36, 255}
-                        : (Color){26, 52, 32, 255});
-            } else if (t == AR_TILE_SAND) {
-                ar_draw_diamond(client, wx, wy, cell * 0.5f,
-                    ((gx + gy) & 1) ? (Color){150, 130, 90, 255}
-                        : (Color){140, 120, 84, 255});
-            } else if (t == AR_TILE_SHALLOW) {
-                ar_draw_diamond(client, wx, wy, cell * 0.5f,
-                    ((gx + gy) & 1) ? (Color){52, 94, 124, 255}
-                        : (Color){46, 86, 116, 255});
-                if (ar_hash3(env->dungeon_seed ^ 0xbeef, gx, gy) % 4 == 0) {
-                    Vector2 rp = ar_iso(client, wx, wy, 0.0f);
-                    DrawLineEx((Vector2){rp.x - 4, rp.y},
-                        (Vector2){rp.x - 4, rp.y - 8}, 1.5f,
-                        (Color){90, 160, 120, 220});
-                    DrawLineEx((Vector2){rp.x + 3, rp.y + 1},
-                        (Vector2){rp.x + 3, rp.y - 7}, 1.5f,
-                        (Color){90, 160, 120, 220});
-                }
-            } else if (t == AR_TILE_DEEP) {
-                int rim = (gx == 0 || gy == 0 || gx == AR_DUN_W - 1
-                    || gy == AR_DUN_H - 1);
-                if (!rim) {
-                    uint8_t a = env->dungeon[gy * AR_DUN_W + gx - 1];
-                    uint8_t b = env->dungeon[gy * AR_DUN_W + gx + 1];
-                    uint8_t c = env->dungeon[(gy - 1) * AR_DUN_W + gx];
-                    uint8_t d = env->dungeon[(gy + 1) * AR_DUN_W + gx];
-                    rim = (a != AR_TILE_ROCK && a != AR_TILE_DEEP)
-                        || (b != AR_TILE_ROCK && b != AR_TILE_DEEP)
-                        || (c != AR_TILE_ROCK && c != AR_TILE_DEEP)
-                        || (d != AR_TILE_ROCK && d != AR_TILE_DEEP);
-                }
-                if (rim) {
-                    ar_draw_diamond(client, wx, wy, cell * 0.5f,
-                        (Color){36, 70, 110, 255});
-                }
-            }
-        }
-    }
-    // Torch glow (under entities): hashed walkable cells next to rock.
-    int torches = 0;
-    for (int gy = 0; gy < AR_DUN_H && torches < 24; gy++) {
-        for (int gx = 0; gx < AR_DUN_W && torches < 24; gx++) {
-            uint8_t t = env->dungeon[gy * AR_DUN_W + gx];
-            if (t == AR_TILE_ROCK || t == AR_TILE_DEEP) continue;
-            if (ar_hash3(env->dungeon_seed, gx, gy) % 41 != 0) continue;
-            float wx = -half + (gx + 0.5f) * cell;
-            float wy = -half + (gy + 0.5f) * cell;
-            float u = wx - wy, v = wx + wy;
-            if (u < cu - ru || u > cu + ru || v < cv - rv || v > cv + rv) {
-                continue;
-            }
-            int near_wall = (gx == 0 || gy == 0 || gx == AR_DUN_W - 1
-                || gy == AR_DUN_H - 1);
-            if (!near_wall) {
-                near_wall = env->dungeon[gy * AR_DUN_W + gx - 1] == AR_TILE_ROCK
-                    || env->dungeon[gy * AR_DUN_W + gx + 1] == AR_TILE_ROCK
-                    || env->dungeon[(gy - 1) * AR_DUN_W + gx] == AR_TILE_ROCK
-                    || env->dungeon[(gy + 1) * AR_DUN_W + gx] == AR_TILE_ROCK;
-            }
-            if (!near_wall) continue;
-            Vector2 gp = ar_iso(client, wx, wy, 0.5f);
-            DrawCircleV(gp, 26.0f, (Color){255, 160, 60, 28});
-            DrawCircleV(gp, 13.0f, (Color){255, 190, 90, 40});
-            torches++;
-        }
-    }
-
-    // Painter's order over rock rims, trees, pillars, shards, buildings,
-    // enemies, pets, player.
-    ARDrawable draws[AR_DUN_CELLS * 2 + AR_MAX_OBSTACLES + AR_MAX_SHARDS
-        + AR_MAX_BUILDINGS + AR_MAX_ENEMIES + AR_MAX_PETS + 1];
-    int draw_count = 0;
-    for (int gy = 0; gy < AR_DUN_H; gy++) {
-        for (int gx = 0; gx < AR_DUN_W; gx++) {
-            uint8_t t = env->dungeon[gy * AR_DUN_W + gx];
-            float wx = -half + (gx + 0.5f) * cell;
-            float wy = -half + (gy + 0.5f) * cell;
-            float u = wx - wy, v = wx + wy;
-            if (u < cu - ru || u > cu + ru || v < cv - rv || v > cv + rv) {
-                continue;
-            }
-            if (t == AR_TILE_ROCK) {
-                int rim = (gx == 0 || gy == 0 || gx == AR_DUN_W - 1
-                    || gy == AR_DUN_H - 1);
-                if (!rim) {
-                    uint8_t a = env->dungeon[gy * AR_DUN_W + gx - 1];
-                    uint8_t b = env->dungeon[gy * AR_DUN_W + gx + 1];
-                    uint8_t c = env->dungeon[(gy - 1) * AR_DUN_W + gx];
-                    uint8_t d = env->dungeon[(gy + 1) * AR_DUN_W + gx];
-                    rim = (a != AR_TILE_ROCK && a != AR_TILE_DEEP)
-                        || (b != AR_TILE_ROCK && b != AR_TILE_DEEP)
-                        || (c != AR_TILE_ROCK && c != AR_TILE_DEEP)
-                        || (d != AR_TILE_ROCK && d != AR_TILE_DEEP);
-                }
-                if (!rim) continue;
-                draws[draw_count].depth = wx + wy;
-                draws[draw_count].kind = 4;
-                draws[draw_count].index = gy * AR_DUN_W + gx;
-                draw_count++;
-            } else if (t == AR_TILE_FOREST
-                    && ar_hash3(env->dungeon_seed ^ 0x7ee5, gx, gy) % 6 == 0) {
-                draws[draw_count].depth = wx + wy;
-                draws[draw_count].kind = 6;
-                draws[draw_count].index = gy * AR_DUN_W + gx;
-                draw_count++;
-            }
-        }
-    }
-    for (int i = 0; i < env->cfg.obstacle_count; i++) {
-        if (!env->obstacle_active[i]) continue;
-        draws[draw_count].depth = env->obstacle_x[i] + env->obstacle_y[i];
-        draws[draw_count].kind = 0;
-        draws[draw_count].index = i;
-        draw_count++;
-    }
-    for (int k = 0; k < env->enemy_count; k++) {
-        int i = env->enemies.dense[k];
-        draws[draw_count].depth = env->enemies.x[i] + env->enemies.y[i];
-        draws[draw_count].kind = 1;
-        draws[draw_count].index = i;
-        draw_count++;
-    }
-    for (int i = 0; i < AR_MAX_PETS; i++) {
-        if (!env->pets.active[i]) continue;
-        draws[draw_count].depth = env->pets.x[i] + env->pets.y[i];
-        draws[draw_count].kind = 2;
-        draws[draw_count].index = i;
-        draw_count++;
-    }
-    draws[draw_count].depth = env->px + env->py;
-    draws[draw_count].kind = 3;
-    draws[draw_count].index = 0;
-    draw_count++;
-    for (int i = 0; i < AR_MAX_SHARDS; i++) {
-        if (!env->shard_active[i]) continue;
-        draws[draw_count].depth = env->shard_x[i] + env->shard_y[i];
-        draws[draw_count].kind = 8;
-        draws[draw_count].index = i;
-        draw_count++;
-    }
-    for (int i = 0; i < AR_MAX_BUILDINGS; i++) {
-        if (!env->build_active[i]) continue;
-        draws[draw_count].depth = env->build_x[i] + env->build_y[i];
-        draws[draw_count].kind = 7;
-        draws[draw_count].index = i;
-        draw_count++;
-    }
-    for (int i = 1; i < draw_count; i++) {
-        ARDrawable key = draws[i];
-        int j = i - 1;
-        while (j >= 0 && draws[j].depth > key.depth) {
-            draws[j + 1] = draws[j];
-            j--;
-        }
-        draws[j + 1] = key;
-    }
-
-    for (int i = 0; i < draw_count; i++) {
-        ARDrawable* d = &draws[i];
-        switch (d->kind) {
-            case 0:
-                ar_draw_shadow(client, env->obstacle_x[d->index],
-                    env->obstacle_y[d->index], env->obstacle_radius[d->index]);
-                ar_draw_pillar(client, env->obstacle_x[d->index],
-                    env->obstacle_y[d->index], env->obstacle_radius[d->index]);
-                break;
-            case 4: {
-                int cx = d->index % AR_DUN_W;
-                int cy = d->index / AR_DUN_W;
-                float wx = -half + (cx + 0.5f) * cell;
-                float wy = -half + (cy + 0.5f) * cell;
-                ar_draw_pillar(client, wx, wy, cell * 0.5f);
-                break;
-            }
-            case 6: {
-                int cx = d->index % AR_DUN_W;
-                int cy = d->index / AR_DUN_W;
-                float wx = -half + (cx + 0.5f) * cell;
-                float wy = -half + (cy + 0.5f) * cell;
-                float sway = sinf(client->time * 1.5f + (float)(cx + cy)) * 1.5f;
-                Vector2 base = ar_iso(client, wx, wy, 0.0f);
-                Vector2 top = ar_iso(client, wx, wy, 1.6f);
-                DrawLineEx(base, top, 3.0f, (Color){96, 70, 50, 255});
-                DrawCircleV((Vector2){top.x + sway, top.y}, 9.0f,
-                    (Color){34, 96, 44, 255});
-                DrawCircleV((Vector2){top.x + sway - 3.0f, top.y - 3.0f}, 5.0f,
-                    (Color){48, 128, 58, 255});
-                break;
-            }
-            case 7: {
-                int b = d->index;
-                float bx = env->build_x[b], by = env->build_y[b];
-                if (env->build_kind[b] == AR_BUILD_TOTEM) {
-                    Vector2 base = ar_iso(client, bx, by, 0.0f);
-                    Vector2 tip = ar_iso(client, bx, by, 1.8f);
-                    float pulse = 1.0f
-                        + 0.12f * sinf(client->time * 4.0f + (float)b);
-                    DrawLineEx(base, tip, 4.0f, (Color){110, 90, 150, 255});
-                    DrawCircleV(tip, 6.0f * pulse, (Color){150, 220, 255, 255});
-                    DrawCircleV(tip, 3.0f * pulse, (Color){235, 250, 255, 255});
-                    if (env->build_flash[b] > 0.0f) {
-                        float t = 1.0f - env->build_flash[b] / 0.4f;
-                        float r = env->cfg.totem_radius / cell * AR_ISO_W * t;
-                        DrawEllipseLines((int)base.x, (int)base.y, r, r * 0.5f,
-                            (Color){150, 220, 255,
-                                (unsigned char)(200 * (1.0f - t))});
-                    }
-                } else {
-                    ar_draw_shadow(client, bx, by, env->build_rad[b]);
-                    ar_draw_pillar(client, bx, by, env->build_rad[b]);
-                    ar_draw_hp_bar(client, bx, by, 2.2f,
-                        env->build_hp[b] / env->build_max_hp[b],
-                        (Color){170, 170, 190, 255});
-                }
-                break;
-            }
-            case 8: {
-                int s = d->index;
-                float bob = sinf(client->time * 3.0f + (float)s * 2.1f) * 0.12f;
-                Vector2 sp = ar_iso(client, env->shard_x[s],
-                    env->shard_y[s], 0.5f + bob);
-                float big = env->shard_value[s] > 1.5f ? 1.4f : 1.0f;
-                DrawCircleV(sp, 4.0f * big, (Color){120, 255, 220, 230});
-                DrawCircleV(sp, 2.0f * big, (Color){235, 255, 250, 255});
-                break;
-            }
-            case 1:
-                ar_draw_shadow(client, env->enemies.x[d->index],
-                    env->enemies.y[d->index], env->enemies.radius[d->index]);
-                ar_draw_enemy(client, env, d->index);
-                break;
-            case 2:
-                ar_draw_shadow(client, env->pets.x[d->index],
-                    env->pets.y[d->index], env->pets.rad[d->index]);
-                ar_draw_pet(client, env, d->index);
-                break;
-            default:
-                ar_draw_shadow(client, env->px, env->py, env->cfg.player_radius);
-                ar_draw_player(client, env);
-                break;
-        }
-    }
-
-    // Ability flashes (driven by the sim's visual-only fx timers).
-    if (env->fx_nova > 0.0f) {
-        float t = 1.0f - env->fx_nova / 0.4f;
-        Vector2 base = ar_iso(client, env->px, env->py, 0.0f);
-        float r = env->cfg.nova_radius / cell * AR_ISO_W * t;
-        DrawEllipseLines((int)base.x, (int)base.y, r, r * 0.5f,
-            (Color){255, 200, 110, (unsigned char)(220 * (1.0f - t))});
-        DrawEllipseLines((int)base.x, (int)base.y, r * 0.7f, r * 0.35f,
-            (Color){255, 240, 200, (unsigned char)(160 * (1.0f - t))});
-    }
-    if (env->fx_frost > 0.0f) {
-        float t = 1.0f - env->fx_frost / 0.5f;
-        float ax = env->facing_left ? -1.0f : 1.0f, ay = 0.0f;
-        if (env->nearest_enemy >= 0
-                && env->enemies.active[env->nearest_enemy]) {
-            int ne = env->nearest_enemy;
-            float dx = env->enemies.x[ne] - env->px;
-            float dy = env->enemies.y[ne] - env->py;
-            float d = sqrtf(dx * dx + dy * dy);
-            if (d > 0.0001f) {
-                ax = dx / d;
-                ay = dy / d;
-            }
-        }
-        Vector2 p = ar_iso(client, env->px, env->py, 1.2f);
-        float base_a = atan2f(ay, ax);
-        for (int s = -2; s <= 2; s++) {
-            float a = base_a + s * env->cfg.frost_half_angle / 2.5f;
-            float rr = env->cfg.frost_range * AR_ISO_W * (0.4f + 0.6f * t);
-            Vector2 tip = (Vector2){p.x + cosf(a) * rr,
-                p.y + sinf(a) * rr * 0.5f};
-            DrawLineEx(p, tip, 3.0f,
-                (Color){170, 220, 255, (unsigned char)(180 * (1.0f - t))});
-        }
-    }
-    if (env->fx_dash > 0.0f) {
-        float t = env->fx_dash / 0.35f;
-        Vector2 p = ar_iso(client, env->px, env->py, 7.0f);
-        float dx = env->facing_left ? 1.0f : -1.0f;
-        for (int s = 0; s < 3; s++) {
-            float yy = p.y - 6.0f + s * 6.0f;
-            DrawLineEx((Vector2){p.x + dx * 26.0f * t, yy},
-                (Vector2){p.x + dx * 8.0f * t, yy}, 2.0f,
-                (Color){200, 170, 255, (unsigned char)(200 * t)});
-        }
-    }
-
-    // Torch flames (over entities so fire reads on top of glow).
-    {
-        int torches = 0;
-        for (int gy = 0; gy < AR_DUN_H && torches < 24; gy++) {
-            for (int gx = 0; gx < AR_DUN_W && torches < 24; gx++) {
-                if (!env->dungeon[gy * AR_DUN_W + gx]) continue;
-                if (ar_hash3(env->dungeon_seed, gx, gy) % 41 != 0) continue;
-                int near_wall = (gx == 0 || gy == 0 || gx == AR_DUN_W - 1
-                    || gy == AR_DUN_H - 1);
-                if (!near_wall) {
-                    near_wall = !env->dungeon[gy * AR_DUN_W + gx - 1]
-                        || !env->dungeon[gy * AR_DUN_W + gx + 1]
-                        || !env->dungeon[(gy - 1) * AR_DUN_W + gx]
-                        || !env->dungeon[(gy + 1) * AR_DUN_W + gx];
-                }
-                if (!near_wall) continue;
-                float wx = -half + (gx + 0.5f) * cell;
-                float wy = -half + (gy + 0.5f) * cell;
-                Vector2 fp = ar_iso(client, wx, wy, 1.0f);
-                float fl = 1.0f + 0.25f * sinf(client->time * 11.0f
-                    + (float)(gx * 5 + gy * 11));
-                DrawCircleV(fp, 3.2f * fl, (Color){255, 140, 40, 230});
-                DrawCircleV(fp, 1.6f * fl, (Color){255, 230, 150, 255});
-                torches++;
-            }
-        }
-    }
-
-    // Particles and damage numbers (world-anchored).
-    for (int i = 0; i < AR_PART_MAX; i++) {
-        ARParticle* pt = &client->parts[i];
-        if (pt->life <= 0.0f) continue;
-        float a = pt->life / pt->maxlife;
-        Vector2 pp = ar_iso(client, pt->x, pt->y, 0.6f);
-        DrawCircleV(pp, pt->size * (0.5f + 0.5f * a),
-            (Color){pt->color.r, pt->color.g, pt->color.b,
-                (unsigned char)(255 * a)});
-    }
-    for (int i = 0; i < AR_DMG_MAX; i++) {
-        ARDmgNum* d = &client->dmgs[i];
-        if (d->life <= 0.0f) continue;
-        float a = d->life / 0.7f;
-        Vector2 pp = ar_iso(client, d->x, d->y, 2.2f);
-        DrawText(TextFormat("%.0f", d->value), (int)pp.x - 8,
-            (int)pp.y - (int)((0.7f - d->life) * 40.0f), 14,
-            (Color){255, 235, 180, (unsigned char)(255 * a)});
-    }
-
-    if (client->show_hitboxes) {
-        ar_draw_hitbox(client, env->px, env->py, env->cfg.player_radius, GREEN);
-        for (int k = 0; k < env->enemy_count; k++) {
-            int i = env->enemies.dense[k];
-            ar_draw_hitbox(client, env->enemies.x[i], env->enemies.y[i],
-                env->enemies.radius[i], RED);
-        }
-        for (int i = 0; i < AR_MAX_PETS; i++) {
-            if (!env->pets.active[i]) continue;
-            ar_draw_hitbox(client, env->pets.x[i], env->pets.y[i],
-                env->pets.rad[i], SKYBLUE);
-        }
-    }
-
-    // HUD.
-    DrawRectangle(16, 16, 210, 22, (Color){0, 0, 0, 140});
-    float hp_frac = env->hp / env->max_hp;
-    if (hp_frac < 0.0f) hp_frac = 0.0f;
-    DrawRectangle(18, 18, 206.0f * hp_frac, 18,
-        hp_frac > 0.35f ? (Color){96, 210, 120, 255} : (Color){220, 80, 70, 255});
-    DrawRectangleLines(16, 16, 210, 22, (Color){255, 255, 255, 60});
-    DrawText(TextFormat("HP %.0f/%.0f", env->hp, env->max_hp), 232, 20, 16, RAYWHITE);
-    DrawText(TextFormat("wave %d   enemies %d   pets %d/%d",
-        env->tick / (int)env->cfg.wave_length_steps, env->enemy_count,
-        env->pets_alive, env->cfg.pet_cap), 16, 46, 16, (Color){230, 230, 230, 200});
-    DrawText(TextFormat("shards %.0f   builds %d/%d",
-        env->shards, env->builds_alive, AR_MAX_BUILDINGS), 16, 124, 16,
-        (Color){120, 255, 220, 220});
-    // Order + summon class + ability cooldowns.
-    const char* order_name = "FOLLOW";
-    if (env->order == AR_ORDER_ATTACK) order_name = "ATTACK";
-    else if (env->order == AR_ORDER_GUARD) order_name = "GUARD";
-    else if (env->order == AR_ORDER_FOCUS) order_name = "FOCUS";
-    const char* class_name = "POLICY";
-    if (env->pick_class == AR_PET_WISP) class_name = "WISP";
-    else if (env->pick_class == AR_PET_FANG) class_name = "FANG";
-    else if (env->pick_class == AR_PET_AEGIS) class_name = "AEGIS";
-    DrawText(TextFormat("%s  |  %s", order_name, class_name), 16, 68, 16,
-        (Color){255, 220, 130, 220});
-    float cds[3] = {env->dash_cd, env->nova_cd, env->frost_cd};
-    float maxs[3] = {env->cfg.dash_cooldown, env->cfg.nova_cooldown,
-        env->cfg.frost_cooldown};
-    const char* names[3] = {"Q dash", "E nova", "F frost"};
-    for (int i = 0; i < 3; i++) {
-        float frac = maxs[i] > 0.0f ? 1.0f - cds[i] / maxs[i] : 1.0f;
-        if (frac < 0.0f) frac = 0.0f;
-        if (frac > 1.0f) frac = 1.0f;
-        int bx = 16 + i * 74;
-        DrawRectangle(bx, 92, 68, 10, (Color){0, 0, 0, 140});
-        DrawRectangle(bx + 1, 93, (int)(66.0f * frac), 8,
-            frac >= 1.0f ? (Color){140, 200, 255, 255} : (Color){90, 110, 150, 255});
-        DrawText(names[i], bx + 2, 106, 12, (Color){230, 230, 230, 180});
-    }
-    // Minimap.
-    {
-        int mw = 104, mh = 104;
-        int mx = GetScreenWidth() - mw - 12, my = 12;
-        DrawRectangle(mx - 2, my - 2, mw + 4, mh + 4, (Color){0, 0, 0, 150});
-        float s = (float)mw / (float)AR_DUN_W;
-        for (int gy = 0; gy < AR_DUN_H; gy++) {
-            for (int gx = 0; gx < AR_DUN_W; gx++) {
-                uint8_t t = env->dungeon[gy * AR_DUN_W + gx];
-                if (t == AR_TILE_ROCK) continue;
-                Color c = (Color){110, 130, 110, 255};
-                if (t == AR_TILE_FOREST) c = (Color){60, 110, 70, 255};
-                else if (t == AR_TILE_SAND) c = (Color){150, 130, 90, 255};
-                else if (t == AR_TILE_SHALLOW) c = (Color){60, 100, 140, 255};
-                else if (t == AR_TILE_DEEP) c = (Color){40, 70, 120, 255};
-                DrawRectangle(mx + (int)(gx * s), my + (int)(gy * s),
-                    (int)(s + 0.5f), (int)(s + 0.5f), c);
-            }
-        }
-        float w2m = (float)mw / env->cfg.arena_size;
-        for (int k = 0; k < env->enemy_count; k++) {
-            int i = env->enemies.dense[k];
-            DrawCircle(mx + (int)((env->enemies.x[i] + half) * w2m),
-                my + (int)((env->enemies.y[i] + half) * w2m), 2.0f,
-                (Color){230, 80, 60, 255});
-        }
-        for (int i = 0; i < AR_MAX_PETS; i++) {
-            if (!env->pets.active[i]) continue;
-            DrawCircle(mx + (int)((env->pets.x[i] + half) * w2m),
-                my + (int)((env->pets.y[i] + half) * w2m), 2.0f,
-                (Color){120, 236, 255, 255});
-        }
-        for (int i = 0; i < AR_MAX_SHARDS; i++) {
-            if (!env->shard_active[i]) continue;
-            DrawCircle(mx + (int)((env->shard_x[i] + half) * w2m),
-                my + (int)((env->shard_y[i] + half) * w2m), 1.5f,
-                (Color){120, 255, 220, 255});
-        }
-        for (int i = 0; i < AR_MAX_BUILDINGS; i++) {
-            if (!env->build_active[i]) continue;
-            DrawCircle(mx + (int)((env->build_x[i] + half) * w2m),
-                my + (int)((env->build_y[i] + half) * w2m), 2.0f,
-                (Color){150, 220, 255, 255});
-        }
-        DrawCircle(mx + (int)((env->px + half) * w2m),
-            my + (int)((env->py + half) * w2m), 3.0f, WHITE);
-    }
-    DrawText(TextFormat("%5.0f fps", GetFPS()), 16,
-        (float)GetScreenHeight() - 30.0f, 16, (Color){230, 230, 230, 140});
-
+    if(IsKeyPressed(KEY_HOME))c->camera_free=0;
+    float blend=1-expf(-7*dt);
+    if(!c->camera_free){c->cam_x+=(e->px-c->cam_x)*blend;c->cam_y+=(e->py-c->cam_y)*blend;}
+    c->off_x=GetScreenWidth()*0.5f-(c->cam_x-c->cam_y)*AR_VIEW_SCALE*c->zoom;
+    c->off_y=(GetScreenHeight()-150+76)*0.5f-(c->cam_x+c->cam_y)*AR_VIEW_SCALE*c->zoom;
+    BeginDrawing(); ClearBackground((Color){40,60,52,255});
+    BeginScissorMode(0,76,GetScreenWidth(),GetScreenHeight()-226);
+    ar_world(c,e);
+    EndScissorMode();
+    ar_hud(c,e);
     EndDrawing();
 }
-
-static inline void c_close(ARPG* env) {
-    if (env->client != NULL) {
-        if (IsWindowReady()) CloseWindow();
-        free(env->client);
-        env->client = NULL;
+static inline void c_close(ARPG* e) {
+    if(!e->client)return;
+    ARClient* c=(ARClient*)e->client;
+    if(c->initialized) {
+        if(c->atlas.id)UnloadTexture(c->atlas);
+        UnloadFont(c->font);UnloadFont(c->heading);
     }
+    free(c);e->client=NULL;
+    if(IsWindowReady())CloseWindow();
 }
