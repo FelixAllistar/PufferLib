@@ -56,5 +56,5 @@ int main(void) {
     }
     AR_CUDA_CHECK(cudaDeviceSynchronize());
     puf_envs_close(envs);puf_ini_free(&ini);
-    puts("ARPG CUDA idle economy, 237-float observations, pet task heads, terminal reset: PASS");
+    puts("ARPG CUDA idle economy, 443-float observations, eight pet task heads, terminal reset: PASS");
 }

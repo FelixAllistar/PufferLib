@@ -10,13 +10,14 @@
 
 #define OBS_SIZE AR_OBS_SIZE
 #define NUM_ATNS (5 + AR_MAX_PETS)
-#define ACT_SIZES {AR_MOVE_ACTION_COUNT, AR_SUMMON_ACTION_COUNT, AR_ORDER_ACTION_COUNT, AR_ABILITY_ACTION_COUNT, AR_BUILD_ACTION_COUNT, AR_PET_TASK_COUNT, AR_PET_TASK_COUNT, AR_PET_TASK_COUNT, AR_PET_TASK_COUNT}
+#define ACT_SIZES {AR_MOVE_ACTION_COUNT, AR_SUMMON_ACTION_COUNT, AR_ORDER_ACTION_COUNT, AR_ABILITY_ACTION_COUNT, AR_BUILD_ACTION_COUNT, AR_PET_TASK_COUNT, AR_PET_TASK_COUNT, AR_PET_TASK_COUNT, AR_PET_TASK_COUNT, AR_PET_TASK_COUNT, AR_PET_TASK_COUNT, AR_PET_TASK_COUNT, AR_PET_TASK_COUNT}
 
 typedef float obs_t;
 
 #ifndef PUFFER_GPU_ENV
 #include "ar_state.h"
 #include "ar_sim.h"
+#include "ar_world.h"
 #ifndef AR_HEADLESS_BINDING
 #include "ar_render.h"
 #endif
@@ -24,6 +25,9 @@ typedef float obs_t;
 
 static inline int ar_config_cap(int value, int max) {
     return value < 0 ? 0 : (value > max ? max : value);
+}
+static inline float ar_config_optional(Dict* kwargs,const char* name,float fallback) {
+    return dict_find(kwargs,name) ? (float)dict_get(kwargs,name) : fallback;
 }
 
 static inline ARConfig ar_config_from_kwargs(Dict* kwargs) {
@@ -139,6 +143,23 @@ static inline ARConfig ar_config_from_kwargs(Dict* kwargs) {
     cfg.reward_pet_lose = (float)dict_get(kwargs, "reward_pet_lose");
     cfg.reward_death = (float)dict_get(kwargs, "reward_death");
     cfg.reward_success = (float)dict_get(kwargs, "reward_success");
+    // Expansion defaults also support old ini files; schema v3 requires new policies.
+    cfg.pet_radius[AR_PET_BURROWER]=ar_config_optional(kwargs,"pet_radius_burrower",0.4f);
+    cfg.pet_health[AR_PET_BURROWER]=ar_config_optional(kwargs,"pet_health_burrower",40);
+    cfg.pet_speed[AR_PET_BURROWER]=ar_config_optional(kwargs,"pet_speed_burrower",4.5f);
+    cfg.pet_damage[AR_PET_BURROWER]=ar_config_optional(kwargs,"pet_damage_burrower",3);
+    cfg.summon_cost[AR_PET_BURROWER]=ar_config_optional(kwargs,"summon_cost_burrower",10);
+    cfg.pet_radius[AR_PET_EMBER]=ar_config_optional(kwargs,"pet_radius_ember",0.35f);
+    cfg.pet_health[AR_PET_EMBER]=ar_config_optional(kwargs,"pet_health_ember",22);
+    cfg.pet_speed[AR_PET_EMBER]=ar_config_optional(kwargs,"pet_speed_ember",5);
+    cfg.pet_damage[AR_PET_EMBER]=ar_config_optional(kwargs,"pet_damage_ember",4);
+    cfg.summon_cost[AR_PET_EMBER]=ar_config_optional(kwargs,"summon_cost_ember",12);
+    cfg.build_cost[AR_BUILD_ARTILLERY]=ar_config_optional(kwargs,"build_cost_artillery",60);
+    cfg.build_hp[AR_BUILD_ARTILLERY]=ar_config_optional(kwargs,"build_hp_artillery",80);
+    cfg.build_radius[AR_BUILD_ARTILLERY]=ar_config_optional(kwargs,"build_radius_artillery",1);
+    cfg.build_cost[AR_BUILD_BRIDGE]=ar_config_optional(kwargs,"build_cost_bridge",5);
+    cfg.build_hp[AR_BUILD_BRIDGE]=ar_config_optional(kwargs,"build_hp_bridge",40);
+    cfg.build_radius[AR_BUILD_BRIDGE]=0;
     return cfg;
 }
 
@@ -157,6 +178,7 @@ void c_reset(ARPG* env) {
 
 void c_step(ARPG* env) {
     ar_step_env(env, 0);
+    ar_world_step(env);
 }
 
 void puf_reset(Env* env) {
@@ -182,6 +204,7 @@ void puf_render(Env* env) {
 }
 
 void puf_close(Env* env) {
+    ar_world_close(env);
 #ifndef AR_HEADLESS_BINDING
     c_close(env);
 #endif

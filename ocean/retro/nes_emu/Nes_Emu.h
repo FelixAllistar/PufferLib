@@ -96,6 +96,18 @@ public:
 	const char * set_cart( Nes_Cart const*, const Nes_Emu* share = NULL );
 	const void* chr_cache_identity() const { return emu.ppu.chr_cache_identity(); }
 	void set_idle_skip(bool enabled) { emu.set_idle_skip(enabled); }
+	bool set_wide_background(bool enabled) {
+		if (enabled && (!emu.cart || emu.cart->mapper_code()!=0 || emu.cart->chr_size()!=8192))
+			return false;
+		emu.ppu.wide_background = enabled;
+		return true;
+	}
+	bool set_rom_blocks(bool enabled) {
+		if (enabled && (!emu.cart || emu.cart->mapper_code()!=0 || emu.cart->prg_size()!=32768)) {
+			emu.set_rom_blocks(false); return false;
+		}
+		return emu.set_rom_blocks(enabled);
+	}
 
 	// Pointer to current cartridge, or NULL if none is loaded
 	Nes_Cart const* cart() const { return emu.cart; }
@@ -194,6 +206,15 @@ public:
 	void set_palette_range( int begin, int end = 256 );
 
 // Access to emulated memory, for viewer/cheater/debugger
+
+	// Instruction-level differential tests/debuggers only. Advancing this CPU
+	// directly does not advance the frame scheduler; gameplay uses emulate_frame.
+	Nes_Cpu& cpu_debug() { return emu; }
+	// Set a cached status-read interval for instruction-level differential
+	// tests. Not a frame advance or a gameplay API.
+	void cached_status_debug(nes_time_t until, int value, bool write_latch) {
+		emu.ppu_2002_time=until; emu.ppu.r2002=value; emu.ppu.second_write=write_latch;
+	}
 
 	// CHR
 	uint8_t const* chr_mem();

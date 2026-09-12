@@ -7,7 +7,7 @@ CFLAGS ?= -O2 -g -std=gnu11 -Wall -Wextra -Wno-unused-function -Wno-unused-param
 LDLIBS := $(BOX3D)/build/src/libbox3d.a -lm -lpthread
 NVCC := $${CUDA_HOME:-$${CUDA_PATH:-/usr/local/cuda}}/bin/nvcc
 
-.PHONY: test sanitize cuda-test native-cpu-test viewer-test
+.PHONY: test sanitize cuda-test native-cpu-test viewer-test frontier-test
 $(BUILD):
 	mkdir -p $(BUILD)
 test: | $(BUILD)
@@ -15,6 +15,10 @@ test: | $(BUILD)
 	cd $(ROOT) && $(abspath $(BUILD)/test_sim)
 sanitize:
 	$(MAKE) test BUILD=$(BUILD)/sanitize CFLAGS="-O1 -g -std=gnu11 -fsanitize=address,undefined -fno-omit-frame-pointer"
+	$(MAKE) frontier-test BUILD=$(BUILD)/sanitize CFLAGS="-O1 -g -std=gnu11 -fsanitize=address,undefined -fno-omit-frame-pointer"
+frontier-test: | $(BUILD)
+	$(CC) $(CFLAGS) $(INCLUDES) tests/test_frontier.c $(LDLIBS) -o $(BUILD)/test_frontier
+	cd $(ROOT) && $(abspath $(BUILD)/test_frontier)
 viewer-test: | $(BUILD)
 	$(CC) $(CFLAGS) $(INCLUDES) tests/test_viewer.c $(ROOT)/raylib-5.5_linux_amd64/lib/libraylib.a \
 		$(LDLIBS) -lGL -ldl -o $(BUILD)/test_viewer

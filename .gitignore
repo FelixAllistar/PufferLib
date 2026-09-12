@@ -221,8 +221,15 @@ box2d*/
 
 # Native build/test products
 /puffer
+/puffer_retro_batch
+/puffer_retro_candidate
+/puffer_retro_fullscreen_candidate
+/puffer_retro_cnn_candidate
+/test_retro_encoder
+/retro_batch
 /pokemon
 /arpg
+/saves/arpg/
 /bomberman
 /breakout
 /build_cpu
@@ -246,6 +253,11 @@ box2d*/
 /ocean/puffer_survivors/tests/bench_cuda_capacity_profile
 /ocean/puffer_survivors/tests/bench_cuda_profile
 /exports/
+
+# Build-time ROM translator source (generated ROM files remain in /build).
+!ocean/retro/batch/generate_blocks.py
+!tests/test_native_retro_runtime.py
+!ocean/retro/batch/benchmark_training.py
 
 # Generated visual-editing scratch files.
 /tmp/imagegen/

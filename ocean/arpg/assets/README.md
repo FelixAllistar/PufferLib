@@ -1,4 +1,4 @@
-# Hearthwild sprite atlas
+# Hearthwild sprite atlases
 
 Saved asset: [hearthwild-atlas.png](hearthwild-atlas.png).
 
@@ -23,4 +23,21 @@ Row 3: (9) short timber-and-stone palisade barricade; (10) copper and oak automa
 Row 4: (13) weathered mossy boulder; (14) small cluster of luminous turquoise resource crystals in earth; (15) cozy small timber lodge workshop with copper roof and warm window light, the home base; (16) low leafy fern and tiny white flower cluster.
 Composition: one and ONLY one sprite centered in each cell, generous transparent space at every cell edge, each entire object including all extremities inside its own cell, zero overlap. Objects rest on the same baseline at 85% of their cell height. No ground tiles or background scene under sprites. Structures and tree use more of their cell than creatures. Precise 4x4 layout.
 Constraints: genuinely transparent background with alpha, not white or checkerboard; no text, no grid lines, no labels, no interface, no logos, no watermark. Fine crisp alpha edges. Original designs.
+```
+
+## Frontier expansion
+
+Saved asset: [hearthwild-frontier-atlas.png](hearthwild-frontier-atlas.png).
+Generated with the built-in image generation tool, not the CLI fallback, using
+the original atlas as a style reference. The 1254×1254 RGBA output retains its
+alpha. The renderer reads the four cells directly: Burrower, Ember, Starfire,
+bridge. No base asset was replaced.
+
+The [frontier preview](frontier-preview.png) is a capture of the running game,
+developed through actual simulation and production, not an image-generated UI.
+
+### Final expansion prompt
+
+```text
+Use case: stylized-concept. Asset type: one 2x2 transparent sprite atlas for the Hearthwild isometric fantasy game. Reference image is STYLE REFERENCE ONLY: match its richly hand-painted cozy RTS sprites, readable silhouettes, warm wood/brass/stone and teal magic, isometric 3/4 view. Create exactly four isolated objects in equal square cells, generous transparent gutters, no overlap, all fully inside cells: top left a friendly stout tunneling mole monster with enormous digging claws and rugged brass harness; top right a friendly ember salamander with orange glowing throat and tiny portable smelting saddle; bottom left a large fantasy starfire artillery launcher, an upward-angled rune cannon with luminous teal warhead, stone base and brass machinery; bottom right a short wooden and stone bridge segment. Actual alpha transparency across the background, no backdrop, no grid, no captions, no lettering or watermark. Crisp painted shapes visible at small sizes. This is a new expansion atlas, do not reproduce the reference sheet.
 ```

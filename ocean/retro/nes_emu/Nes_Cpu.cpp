@@ -8,6 +8,9 @@
 #include "blargg_endian.h"
 
 #include "nes_cpu_io.h"
+#ifdef RETRO_ROM_BLOCKS
+#include "rom_blocks_identity.h"
+#endif
 
 /* Copyright (C) 2003-2006 Shay Green. This module is free software; you
 can redistribute it and/or modify it under the terms of the GNU Lesser
@@ -33,6 +36,7 @@ inline void Nes_Cpu::set_code_page( int i, uint8_t const* p )
 
 void Nes_Cpu::reset( void const* unmapped_page )
 {
+	rom_blocks_enabled = false;
 	r.status = 0;
 	r.sp = 0;
 	r.pc = 0;
@@ -56,9 +60,24 @@ void Nes_Cpu::reset( void const* unmapped_page )
 
 void Nes_Cpu::map_code( nes_addr_t start, unsigned size, const void* data )
 {
+	// A mapper/debugger remap invalidates previously validated constants.
+	rom_blocks_enabled = false;
 	unsigned first_page = start / page_size;
 	for ( unsigned i = size / page_size; i--; )
 		set_code_page( first_page + i, (uint8_t*) data + i * page_size );
+}
+
+bool Nes_Cpu::set_rom_blocks( bool enabled )
+{
+	rom_blocks_enabled = false;
+	if (!enabled) return true;
+#ifdef RETRO_ROM_BLOCKS
+	uint64_t hash = 14695981039346656037ull;
+	for (unsigned addr=0x8000; addr<0x10000; addr++)
+		hash = (hash ^ *get_code(addr)) * 1099511628211ull;
+	if (hash == RETRO_BLOCKS_PRG_FNV) return rom_blocks_enabled = true;
+#endif
+	return false;
 }
 
 // Note: 'addr' is evaulated more than once in the following macros, so it
@@ -164,6 +183,8 @@ Nes_Cpu::result_t Nes_Cpu::run( nes_time_t end )
 	int status;
 	int c;  // carry set if (c & 0x100) != 0
 	int nz; // Z set if (nz & 0xFF) == 0, N set if (nz & 0x880) != 0
+	uint8_t const* page;
+	unsigned opcode, data;
 	{
 		int temp = r.status;
 		SET_STATUS( temp );
@@ -173,16 +194,28 @@ Nes_Cpu::result_t Nes_Cpu::run( nes_time_t end )
 dec_clock_loop:
 	clock_count--;
 loop:
-	
-	uint8_t const* page = code_map [pc >> page_bits];
-	unsigned opcode = page [pc];
+#ifdef RETRO_ROM_BLOCKS
+	if (rom_blocks_enabled && rom_compiled_pc(pc)) {
+		RomRegisters regs={pc,a,x,y,sp,status,c,nz};
+#if !BLARGG_CPU_CISC
+		this->clock_count=clock_count;
+#endif
+		run_rom_blocks(regs);
+#if !BLARGG_CPU_CISC
+		clock_count=this->clock_count;
+#endif
+		pc=regs.pc; a=regs.a; x=regs.x; y=regs.y; sp=regs.sp;
+		status=regs.status; c=regs.c; nz=regs.nz;
+	}
+#endif
+	page = code_map [pc >> page_bits];
+	opcode = page [pc];
 	pc++;
 	
 	if ( clock_count >= clock_limit )
 		goto stop;
 	
 	clock_count += clock_table [opcode];
-	unsigned data;
 	data = page [pc];
 	
 	switch ( opcode )
@@ -1206,4 +1239,7 @@ end:
 	return result;
 }
 
+#ifdef RETRO_ROM_BLOCKS
+#include "rom_blocks.inc"
+#endif
 #endif

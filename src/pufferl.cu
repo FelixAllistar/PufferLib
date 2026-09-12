@@ -37,6 +37,8 @@
 // Project
 #include "ini.h"
 #include "kag_observation_contract.h"
+#include "puf_worker_sync.h"
+#include "puf_training_stop.h"
 
 // To investigate: 32f compute? Need to check bf16
 #ifdef PRECISION_FLOAT
@@ -483,6 +485,7 @@ struct VecEnv {
     // Cross-thread: BufWorkerState, only via __atomic_*.
     int* worker_state;
     int shutdown;
+    PufWorkerSync worker_sync;
     pthread_t* threads;
     void* thread_args;  // VecThreadArg[buffers]; owned once threads exist
     float* accum;
@@ -1017,21 +1020,16 @@ static void* vec_thread_main(void* arg) {
     cudaEventCreate(&copy_end);
     cudaEventCreate(&h2d_start);
     cudaEventCreate(&h2d_end);
-    __atomic_store_n(&vec->worker_state[buf], BUF_WAITING, __ATOMIC_SEQ_CST);
+    puf_worker_publish(&vec->worker_sync, &vec->worker_state[buf], BUF_WAITING);
 
     float* my_accum = &vec->accum[buf * NUM_VEC_PROF];
     struct timespec t0, t1;
     float ms = 0.0f;
 
-    int alive = 1;
-    while (alive) {
-        while (__atomic_load_n(&vec->worker_state[buf], __ATOMIC_SEQ_CST) != BUF_RUNNING) {
-            if (__atomic_load_n(&vec->shutdown, __ATOMIC_SEQ_CST)) {
-                alive = 0;
-                break;
-            }
-        }
-        if (!alive) {
+    while (true) {
+        puf_worker_wait(&vec->worker_sync, &vec->worker_state[buf],
+            BUF_RUNNING, &vec->shutdown);
+        if (__atomic_load_n(&vec->shutdown, __ATOMIC_SEQ_CST)) {
             break;
         }
 
@@ -1099,7 +1097,7 @@ static void* vec_thread_main(void* arg) {
             cudaEventElapsedTime(&ms, h2d_start, h2d_end);
             my_accum[VEC_COPY] += ms;
         }
-        __atomic_store_n(&vec->worker_state[buf], BUF_WAITING, __ATOMIC_SEQ_CST);
+        puf_worker_publish(&vec->worker_sync, &vec->worker_state[buf], BUF_WAITING);
     }
 
     cudaEventDestroy(model_start);
@@ -2064,7 +2062,11 @@ const char* puf_checkpoint_path_key(Ini* ini, const char* key,
 void puf_save_tensor(FloatTensor weights, const char* path) {
     int64_t nbytes = numel(weights.shape) * sizeof(float);
     char* buf = (char*)malloc(nbytes);
-    cudaMemcpy(buf, weights.data, nbytes, cudaMemcpyDeviceToHost);
+    if (!buf || cudaMemcpy(buf, weights.data, nbytes, cudaMemcpyDeviceToHost) != cudaSuccess) {
+        fprintf(stderr, "failed to retrieve checkpoint weights for %s\n", path);
+        free(buf);
+        exit(1);
+    }
     char tmp[4096];
     snprintf(tmp, sizeof(tmp), "%s.tmp.%d", path, getpid());
     FILE* fp = fopen(tmp, "wb");
@@ -2079,7 +2081,11 @@ void puf_save_tensor(FloatTensor weights, const char* path) {
         free(buf);
         exit(1);
     }
-    fclose(fp);
+    if (fflush(fp) != 0 || fsync(fileno(fp)) != 0 || fclose(fp) != 0) {
+        fprintf(stderr, "failed to flush checkpoint %s\n", tmp);
+        free(buf);
+        exit(1);
+    }
     free(buf);
     if (rename(tmp, path) != 0) {
         fprintf(stderr, "failed to publish weights to %s\n", path);
@@ -2310,6 +2316,12 @@ PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx) {
         vec->num_workers = 1;
     }
 #ifndef PUFFER_GPU_ENV
+    const char* worker_wait = puf_ini_get_str(ini, "vec", "worker_wait");
+    if (strcmp(worker_wait, "block") && strcmp(worker_wait, "spin")) {
+        fprintf(stderr, "vec.worker_wait must be block or spin\n");
+        exit(1);
+    }
+    puf_worker_sync_init(&vec->worker_sync, !strcmp(worker_wait, "block"));
     // A CPU rollout worker owns an OpenMP team. Cap the team so a config
     // reused on a smaller box degrades gracefully. Default 1.5x online
     // CPUs (light envs, e.g. retro fast backend, measured 6 > 4 on a
@@ -2899,9 +2911,8 @@ PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx) {
             pthread_create(&vec->threads[i], NULL, vec_thread_main, &args[i]);
         }
         for (int i = 0; i < vec->buffers; i++) {
-            while (__atomic_load_n(&vec->worker_state[i], __ATOMIC_SEQ_CST)
-                    != BUF_WAITING) {
-            }
+            puf_worker_wait(&vec->worker_sync, &vec->worker_state[i],
+                BUF_WAITING, &vec->shutdown);
         }
     }
 #endif
@@ -2932,10 +2943,11 @@ void close_pufferl(PuffeRL* p) {
 #ifdef PUFFER_GPU_ENV
     puf_envs_close(vec->envs);
 #else
-    __atomic_store_n(&vec->shutdown, 1, __ATOMIC_SEQ_CST);
+    puf_worker_publish(&vec->worker_sync, &vec->shutdown, 1);
     for (int i = 0; i < vec->buffers; i++) {
         pthread_join(vec->threads[i], NULL);
     }
+    puf_worker_sync_destroy(&vec->worker_sync);
     for (int i = 0; i < vec->size; i++) {
         puf_close(&vec->envs[i]);
     }
@@ -3424,7 +3436,8 @@ double rollout_start(PuffeRL* p, int slot, bool deterministic) {
     }
 #else
     for (int buf = 0; buf < p->vec->buffers; buf++) {
-        __atomic_store_n(&p->vec->worker_state[buf], BUF_RUNNING, __ATOMIC_SEQ_CST);
+        puf_worker_publish(&p->vec->worker_sync,
+            &p->vec->worker_state[buf], BUF_RUNNING);
     }
 #endif
     return t0;
@@ -3454,9 +3467,8 @@ void rollout_finish(PuffeRL* p, double t0) {
     p->profile.accum[PROF_ROLLOUT] += gpu_ms + env_ms;
 #else
     for (int buf = 0; buf < p->vec->buffers; buf++) {
-        while (__atomic_load_n(&p->vec->worker_state[buf], __ATOMIC_SEQ_CST)
-                != BUF_WAITING) {
-        }
+        puf_worker_wait(&p->vec->worker_sync, &p->vec->worker_state[buf],
+            BUF_WAITING, &p->vec->shutdown);
     }
     float sec = (float)(wall_clock() - t0);
     p->profile.accum[PROF_ROLLOUT] += sec * 1000.0f;
@@ -4411,9 +4423,8 @@ static void league_eval_reset(PuffeRL* pufferl) {
         vec->gpu_terminals, vec->total_agents);
 #else
     for (int buf = 0; buf < vec->buffers; buf++) {
-        while (__atomic_load_n(&vec->worker_state[buf], __ATOMIC_SEQ_CST)
-                != BUF_WAITING) {
-        }
+        puf_worker_wait(&vec->worker_sync, &vec->worker_state[buf],
+            BUF_WAITING, &vec->shutdown);
     }
 
     #pragma omp parallel for schedule(static) num_threads(vec->num_workers)
@@ -4874,6 +4885,11 @@ EvalResult run_eval(Ini* ini, TrainContext* ctx, int mode, int verbose) {
 }
 
 TrainResult run_train(Ini* ini, TrainContext* ctx) {
+    // Rank-local signals must not interrupt only one side of an NCCL
+    // collective. Graceful checkpoint-on-interrupt is single-GPU CLI only.
+    PufTrainingStop stop(puf_ini_get_int(ini, "base", "checkpoint_on_interrupt")
+        && ctx->world_size == 1 && puf_ini_get_int(ini, "base", "result_fd") == 0);
+    bool interrupted = false;
     int use_selfplay = puf_ini_get(ini, "selfplay", "enabled");
     int use_history = use_selfplay;
 #ifdef PUF_FROZEN_LEAGUE_ACTIVE
@@ -5095,9 +5111,11 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
         eval_epochs = 0;
     }
 #endif
-    // Optional multiplier for longer post-train eval (noise studies). Default 1.
+    // Zero permits bounded train-only comparisons; one retains normal eval.
     double eval_epoch_mult = puf_ini_get(ini, "base", "eval_epoch_mult");
-    if (eval_epoch_mult > 1.0) {
+    if (eval_epoch_mult == 0.0) {
+        eval_epochs = 0;
+    } else if (eval_epoch_mult > 1.0) {
         eval_epochs = (long)fmax(1, (double)eval_epochs * eval_epoch_mult);
     }
     long checkpoint_interval = puf_ini_get(ini, "base", "checkpoint_interval");
@@ -5116,7 +5134,9 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
     // terminal when wedged). One line per epoch phase; if the run goes
     // silent, the last line names exactly where it is stuck. Owner only so
     // multi-GPU workers don't clobber the same path.
-    FILE* phase_log = ctx->artifact_owner ? fopen("/tmp/puf_phase.log", "w") : NULL;
+    char phase_path[4096];
+    snprintf(phase_path, sizeof(phase_path), "%s/train-phase.log", checkpoint_dir);
+    FILE* phase_log = ctx->artifact_owner ? fopen(phase_path, "w") : NULL;
 #define PUF_PHASE(msg) do { if (phase_log) { fprintf(phase_log, "epoch %ld %s %.3f\n", epoch, msg, wall_clock()); fflush(phase_log); } } while (0)
 
     for (long epoch = 0; epoch < train_epochs + eval_epochs; epoch++) {
@@ -5169,10 +5189,11 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
             }
         }
 
+        bool stop_now = stop.requested();
         bool is_final = epoch == train_epochs - 1;
         bool interval_save = checkpoint_interval > 0 &&
             (epoch + 1) % checkpoint_interval == 0;
-        bool should_save = epoch < train_epochs && (interval_save || is_final);
+        bool should_save = epoch < train_epochs && (interval_save || is_final || stop_now);
         char saved_checkpoint[4096] = {0};
         if (should_save) {
             PUF_PHASE("save_begin");
@@ -5186,6 +5207,10 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
 #endif
                 snprintf(final_checkpoint, sizeof(final_checkpoint),
                     "%s", saved_checkpoint);
+                if (stop_now) {
+                    printf("Saved interrupted-run policy at step %ld: %s\n",
+                        pufferl->global_step, saved_checkpoint);
+                }
             }
         }
         if (use_history && saved_checkpoint[0]) {
@@ -5193,7 +5218,7 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
         }
 
         int is_eval = epoch >= train_epochs;
-        if (!is_eval && last_log.size &&
+        if (!stop_now && !puf_ini_get_int(ini, "base", "perf_log") && !is_eval && last_log.size &&
                 wall_clock() < pufferl->last_log_time + 0.6 && epoch < train_epochs - 1) {
             continue;
         }
@@ -5273,6 +5298,15 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
             }
             dict_set(&new_log, "perf/train", train_total);
             memset(pufferl->profile.accum, 0, sizeof(pufferl->profile.accum));
+            if (puf_ini_get_int(ini, "base", "perf_log") && ctx->artifact_owner) {
+                struct timespec cpu_clock;
+                clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &cpu_clock);
+                printf("[perf] steps=%ld uptime=%.9f cpu=%.9f sps=%.3f env=%.9f model=%.9f copy=%.9f train=%.9f\n",
+                    global_step, now-pufferl->start_time,
+                    cpu_clock.tv_sec+cpu_clock.tv_nsec*1e-9, sps,
+                    dict_get(&new_log,"perf/eval_env"), dict_get(&new_log,"perf/eval_model"),
+                    dict_get(&new_log,"perf/eval_copy"), (double)train_total);
+            }
         }
         for (int i = 0; i < new_log.size; i++) {
             DictItem* item = &new_log.items[i];
@@ -5352,6 +5386,11 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
             last_dashboard_time = now;
         }
 
+        if (stop_now) {
+            interrupted = true;
+            break;
+        }
+
         // Wait until the objective appears; do not treat negative values as missing.
         if (!dict_find(&last_log, target_key)) {
             continue;
@@ -5406,7 +5445,7 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
 
     // Selfplay end rating: seat-balanced matches against a fixed external panel.
     // This replaces the noisy final training rollout as the protein objective.
-    if (use_selfplay && final_checkpoint[0] && ctx->artifact_owner) {
+    if (!interrupted && use_selfplay && final_checkpoint[0] && ctx->artifact_owner) {
         int max_opp = (int)puf_ini_get(ini, "selfplay", "eval_pool_size");
         long games = (long)puf_ini_get(ini, "selfplay", "eval_games");
         if (max_opp > 0 && games > 0) {

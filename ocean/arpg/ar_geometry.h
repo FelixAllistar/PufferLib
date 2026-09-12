@@ -1,6 +1,7 @@
 #pragma once
 
 #include <math.h>
+#include <stdint.h>
 
 #include "ar_constants.h"
 
@@ -45,8 +46,8 @@ AR_GEOMETRY_FN int ar_geometry_push_out_circle(float* x, float* y,
 AR_GEOMETRY_FN int ar_geometry_floor(const uint8_t* floor, float arena_size,
         float x, float y) {
     float half = 0.5f * arena_size;
-    int gx = (int)(((x + half) / arena_size) * (float)AR_DUN_W);
-    int gy = (int)(((y + half) / arena_size) * (float)AR_DUN_H);
+    int gx = (int)floorf(((x + half) / arena_size) * (float)AR_DUN_W);
+    int gy = (int)floorf(((y + half) / arena_size) * (float)AR_DUN_H);
     if (gx < 0 || gx >= AR_DUN_W || gy < 0 || gy >= AR_DUN_H) return 0;
     uint8_t t = floor[gy * AR_DUN_W + gx];
     return (t != AR_TILE_ROCK && t != AR_TILE_DEEP) ? 1 : 0;
@@ -63,8 +64,8 @@ AR_GEOMETRY_FN float ar_tile_speed(uint8_t tile) {
 AR_GEOMETRY_FN uint8_t ar_tile_at(const uint8_t* floor, float arena_size,
         float x, float y) {
     float half = 0.5f * arena_size;
-    int gx = (int)(((x + half) / arena_size) * (float)AR_DUN_W);
-    int gy = (int)(((y + half) / arena_size) * (float)AR_DUN_H);
+    int gx = (int)floorf(((x + half) / arena_size) * (float)AR_DUN_W);
+    int gy = (int)floorf(((y + half) / arena_size) * (float)AR_DUN_H);
     if (gx < 0 || gx >= AR_DUN_W || gy < 0 || gy >= AR_DUN_H) {
         return AR_TILE_ROCK;
     }
@@ -78,14 +79,15 @@ AR_GEOMETRY_FN int ar_geometry_collide_dungeon(const uint8_t* floor,
         float arena_size, float* x, float* y, float radius) {
     float half = 0.5f * arena_size;
     float cell = arena_size / (float)AR_DUN_W;
-    int gx = (int)(((*x + half) / arena_size) * (float)AR_DUN_W);
-    int gy = (int)(((*y + half) / arena_size) * (float)AR_DUN_H);
+    int gx = (int)floorf(((*x + half) / arena_size) * (float)AR_DUN_W);
+    int gy = (int)floorf(((*y + half) / arena_size) * (float)AR_DUN_H);
     int moved = 0;
     for (int cy = gy - 1; cy <= gy + 1; cy++) {
         for (int cx = gx - 1; cx <= gx + 1; cx++) {
             int solid = 1;
             if (cx >= 0 && cx < AR_DUN_W && cy >= 0 && cy < AR_DUN_H) {
-                solid = floor[cy * AR_DUN_W + cx] ? 0 : 1;
+                uint8_t tile=floor[cy * AR_DUN_W + cx];
+                solid = tile==AR_TILE_ROCK || tile==AR_TILE_DEEP;
             }
             if (!solid) continue;
             float minx = -half + cx * cell;

@@ -53,7 +53,7 @@ struct ARCudaSim {
     int* rally_active;
     float *summon_cd, *dash_cd, *nova_cd, *frost_cd;
     float *fx_nova, *fx_frost, *fx_dash;
-    float *shards;
+    float *shards, *cores, *fx_blast, *blast_x, *blast_y;
     int *facing_left, *invuln_timer, *tick;
     int *order;
     int *enemy_count, *next_enemy_slot, *pets_alive, *nearest_enemy;
@@ -70,10 +70,15 @@ struct ARCudaSim {
     float *episode_damage_dealt, *episode_damage_taken;
 
     // Pet pool [AR_MAX_PETS, N]
-    uint8_t *pet_active, *pet_attacking, *pet_kind;
+    uint8_t *pet_active, *pet_attacking, *pet_kind, *pet_dormant;
     float *pet_x, *pet_y, *pet_vx, *pet_vy;
     float *pet_hp, *pet_max_hp, *pet_cd;
     float *pet_spd, *pet_dmg, *pet_rad;
+    float *pet_goal_x, *pet_goal_y;
+    float *pet_nav_x, *pet_nav_y;
+    int *pet_nav_tick;
+    float *pet_work_cd;
+    int *pet_command;
     int *pet_invuln, *pet_target, *pet_ntarget, *pet_task;
 
     // Enemy pool [enemy_cap, N]. enemy_next doubles as the separation grid
@@ -157,7 +162,7 @@ static inline void ar_cuda_alloc(ARCudaSim* sim, int num_envs, ARConfig cfg) {
     AR_BLOB_ACCOUNT(uint32_t, N);            // rng
     AR_BLOB_ACCOUNT(float, N * 11);           // px py pvx pvy hp max_hp
     AR_BLOB_ACCOUNT(float, N * 7);           // summon/dash/nova/frost cd + fx
-    AR_BLOB_ACCOUNT(float, N);               // shards
+    AR_BLOB_ACCOUNT(float, N * 5);           // shards, cores, blast event
     AR_BLOB_ACCOUNT(int, N * 9);             // facing invuln tick order counts
     AR_BLOB_ACCOUNT(int, N);                 // builds_alive
     AR_BLOB_ACCOUNT(int, N * 2);             // nests_alive camps_cleared
@@ -165,9 +170,9 @@ static inline void ar_cuda_alloc(ARCudaSim* sim, int num_envs, ARConfig cfg) {
     AR_BLOB_ACCOUNT(uint8_t, ND);            // dungeon floor
     AR_BLOB_ACCOUNT(float, N * 13);          // episode stats
     // Pet pool
-    AR_BLOB_ACCOUNT(uint8_t, NP * 3);
-    AR_BLOB_ACCOUNT(float, NP * 10);
-    AR_BLOB_ACCOUNT(int, NP * 4);
+    AR_BLOB_ACCOUNT(uint8_t, NP * 4);
+    AR_BLOB_ACCOUNT(float, NP * 15);
+    AR_BLOB_ACCOUNT(int, NP * 6);
     // Enemy pool
     AR_BLOB_ACCOUNT(uint8_t, NE * 2);
     AR_BLOB_ACCOUNT(float, NE * 11);
@@ -201,6 +206,8 @@ static inline void ar_cuda_alloc(ARCudaSim* sim, int num_envs, ARConfig cfg) {
     AR_BLOB_FIELD(float, fx_nova, N); AR_BLOB_FIELD(float, fx_frost, N);
     AR_BLOB_FIELD(float, fx_dash, N);
     AR_BLOB_FIELD(float, shards, N);
+    AR_BLOB_FIELD(float, cores, N); AR_BLOB_FIELD(float, fx_blast, N);
+    AR_BLOB_FIELD(float, blast_x, N); AR_BLOB_FIELD(float, blast_y, N);
     AR_BLOB_FIELD(int, facing_left, N); AR_BLOB_FIELD(int, invuln_timer, N);
     AR_BLOB_FIELD(int, tick, N); AR_BLOB_FIELD(int, order, N);
     AR_BLOB_FIELD(int, enemy_count, N); AR_BLOB_FIELD(int, next_enemy_slot, N);
@@ -225,6 +232,7 @@ static inline void ar_cuda_alloc(ARCudaSim* sim, int num_envs, ARConfig cfg) {
     AR_BLOB_FIELD(float, episode_damage_dealt, N);
     AR_BLOB_FIELD(float, episode_damage_taken, N);
     AR_BLOB_FIELD(uint8_t, pet_active, NP); AR_BLOB_FIELD(uint8_t, pet_attacking, NP);
+    AR_BLOB_FIELD(uint8_t, pet_dormant, NP);
     AR_BLOB_FIELD(uint8_t, pet_kind, NP);
     AR_BLOB_FIELD(float, pet_x, NP); AR_BLOB_FIELD(float, pet_y, NP);
     AR_BLOB_FIELD(float, pet_vx, NP); AR_BLOB_FIELD(float, pet_vy, NP);
@@ -232,8 +240,13 @@ static inline void ar_cuda_alloc(ARCudaSim* sim, int num_envs, ARConfig cfg) {
     AR_BLOB_FIELD(float, pet_cd, NP);
     AR_BLOB_FIELD(float, pet_spd, NP); AR_BLOB_FIELD(float, pet_dmg, NP);
     AR_BLOB_FIELD(float, pet_rad, NP);
+    AR_BLOB_FIELD(float, pet_goal_x, NP); AR_BLOB_FIELD(float, pet_goal_y, NP);
+    AR_BLOB_FIELD(float, pet_nav_x, NP); AR_BLOB_FIELD(float, pet_nav_y, NP);
+    AR_BLOB_FIELD(float, pet_work_cd, NP);
     AR_BLOB_FIELD(int, pet_invuln, NP); AR_BLOB_FIELD(int, pet_target, NP);
     AR_BLOB_FIELD(int, pet_ntarget, NP); AR_BLOB_FIELD(int, pet_task, NP);
+    AR_BLOB_FIELD(int, pet_command, NP);
+    AR_BLOB_FIELD(int, pet_nav_tick, NP);
     AR_BLOB_FIELD(uint8_t, enemy_active, NE); AR_BLOB_FIELD(uint8_t, enemy_type, NE);
     AR_BLOB_FIELD(float, enemy_x, NE); AR_BLOB_FIELD(float, enemy_y, NE);
     AR_BLOB_FIELD(float, enemy_home_x, NE); AR_BLOB_FIELD(float, enemy_home_y, NE);

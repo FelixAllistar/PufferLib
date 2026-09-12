@@ -208,7 +208,7 @@ static float ar_read_move_action(int mask) {
 }
 
 // ---------------------------------------------------------------------------
-// Policy control: one avatar and four independent companion task heads.
+// Policy control: one avatar and eight independent companion task heads.
 // ---------------------------------------------------------------------------
 
 static int ar_has_suffix(const char* s, const char* suffix) {
@@ -253,8 +253,9 @@ static void ar_print_usage(const char* argv0) {
     fprintf(stderr,
         "usage:\n"
         "  %s                      manual avatar; policy pets when a checkpoint exists\n"
-        "  %s play [latest|PATH.bin] [--deterministic]\n"
-        "  %s watch [latest|PATH.bin] [--deterministic]\n",
+        "  %s play [latest|PATH.bin] [--new] [--no-save] [--save PATH] [--arena]\n"
+        "  %s watch [latest|PATH.bin] [--deterministic]\n"
+        "Manual play streams and autosaves the frontier. --arena uses the bounded training map.\n",
         argv0, argv0, argv0);
 }
 
@@ -279,7 +280,7 @@ static PufferNet* ar_load_policy(const char* path,Weights** out) {
     int expected=ar_expected_floats(hidden,layers);
     struct stat st;
     if(stat(path,&st) || st.st_size!=(off_t)expected*(off_t)sizeof(float)) {
-        fprintf(stderr,"ARPG v%d checkpoint mismatch: expected %d floats (%d observations, %d heads). Retrain v1 policies.\n",
+        fprintf(stderr,"ARPG v%d checkpoint mismatch: expected %d floats (%d observations, %d heads). Retrain older policies.\n",
             AR_OBS_VERSION,expected,AR_OBS_SIZE,NUM_ATNS);
         return NULL;
     }
@@ -288,7 +289,7 @@ static PufferNet* ar_load_policy(const char* path,Weights** out) {
     int sizes[]=ACT_SIZES;
     PufferNet* net=make_puffernet(weights,1,AR_OBS_SIZE,hidden,layers,sizes,NUM_ATNS);
     *out=weights;
-    fprintf(stderr,"Loaded ARPG v%d policy: %s (avatar + four pet task heads)\n",AR_OBS_VERSION,path);
+    fprintf(stderr,"Loaded ARPG v%d policy: %s (avatar + eight pet task heads)\n",AR_OBS_VERSION,path);
     return net;
 }
 
@@ -299,9 +300,75 @@ static void ar_policy_step(PufferNet* net,float* obs,float* actions,int determin
     argmax_multidiscrete(net->multidiscrete,net->decoder->output,actions);
 }
 
+static int ar_pick_pet(ARPG* e,ARClient* c,Vector2 mouse) {
+    int found=-1;float best=1e9f;
+    for(int p=0;p<AR_MAX_PETS;p++)if(e->pets.active[p]) {
+        Vector2 at=ar_iso(c,e->pets.x[p],e->pets.y[p],0);
+        Rectangle hit={at.x-23*c->zoom,at.y-48*c->zoom,46*c->zoom,55*c->zoom};
+        float d=(mouse.x-at.x)*(mouse.x-at.x)+(mouse.y-at.y+20*c->zoom)*(mouse.y-at.y+20*c->zoom);
+        if(CheckCollisionPointRec(mouse,hit) && d<best){best=d;found=p;}
+    }
+    return found;
+}
+
+static void ar_context_order(ARPG* e,ARClient* c,Vector2 mouse,int attack_move) {
+    Vector2 goal=ar_unproject(c,mouse);int command=attack_move ? AR_CMD_ATTACK : AR_CMD_MOVE;
+    int target=-1;
+    for(int n=0;n<AR_MAX_NESTS;n++)if(e->nest_active[n]) {
+        Vector2 at=ar_iso(c,e->nest_x[n],e->nest_y[n],0);
+        if(CheckCollisionPointRec(mouse,(Rectangle){at.x-42*c->zoom,at.y-99*c->zoom,84*c->zoom,105*c->zoom}) ||
+                ar_geometry_dist2(goal.x,goal.y,e->nest_x[n],e->nest_y[n])<3) {
+            goal=(Vector2){e->nest_x[n],e->nest_y[n]};command=AR_CMD_ATTACK;target=n;break;
+        }
+    }
+    if(target<0)for(int k=0;k<e->enemy_count;k++) {
+        int i=e->enemies.dense[k];Vector2 at=ar_iso(c,e->enemies.x[i],e->enemies.y[i],0);
+        if(CheckCollisionPointRec(mouse,(Rectangle){at.x-22*c->zoom,at.y-48*c->zoom,44*c->zoom,52*c->zoom})) {
+            goal=(Vector2){e->enemies.x[i],e->enemies.y[i]};command=AR_CMD_ATTACK;target=i;break;
+        }
+    }
+    if(target<0)for(int n=0;n<AR_MAX_SHARDS;n++)if(e->shard_active[n]) {
+        Vector2 at=ar_iso(c,e->shard_x[n],e->shard_y[n],0);
+        if(CheckCollisionPointRec(mouse,(Rectangle){at.x-20*c->zoom,at.y-37*c->zoom,40*c->zoom,42*c->zoom}) ||
+                ar_geometry_dist2(goal.x,goal.y,e->shard_x[n],e->shard_y[n])<1.5f) {
+            goal=(Vector2){e->shard_x[n],e->shard_y[n]};command=AR_CMD_GATHER;target=n;break;
+        }
+    }
+    int tile=ar_tile_at(e->dungeon,e->cfg.arena_size,goal.x,goal.y);
+    if(e->campaign) {
+        int gx=(int)floorf((goal.x+e->cfg.arena_size*0.5f)/ar_world_cell(e));
+        int gy=(int)floorf((goal.y+e->cfg.arena_size*0.5f)/ar_world_cell(e));
+        tile=ar_world_sample(e,gx,gy);
+    }
+    if(target<0 && (tile==AR_TILE_ROCK || tile==AR_TILE_FOREST))command=AR_CMD_WORK;
+    uint32_t mask=c->selected_mask;
+    if(!mask) {
+        // Contextual defaults never pull individually assigned workers off a job.
+        for(int p=0;p<AR_MAX_PETS;p++)if(e->pets.active[p] && e->pets.command[p]==AR_CMD_AUTO) {
+            if(command==AR_CMD_GATHER && e->pets.kind[p]==AR_PET_MULE){mask=1u<<p;break;}
+            if(command==AR_CMD_WORK && e->pets.kind[p]>=AR_PET_BURROWER){mask=1u<<p;break;}
+            if((command==AR_CMD_MOVE || command==AR_CMD_ATTACK) && e->pets.kind[p]!=AR_PET_MULE && e->pets.kind[p]!=AR_PET_EMBER)mask|=1u<<p;
+        }
+    }
+    int issued=0;
+    for(int p=0;p<AR_MAX_PETS;p++)if((mask&(1u<<p)) && e->pets.active[p]) {
+        if(command==AR_CMD_WORK && e->pets.kind[p]<AR_PET_BURROWER)continue;
+        if(command==AR_CMD_ATTACK && e->pets.dmg[p]<=0)continue;
+        if(command==AR_CMD_MOVE && (tile==AR_TILE_ROCK || tile==AR_TILE_DEEP))continue;
+        ar_command_pet(e,0,p,command,goal.x,goal.y);issued++;
+    }
+    if(issued)ar_notice(c,TextFormat("%s assigned to %d companion%s. P restores automatic assist.",AR_COMMAND_NAMES[command],issued,issued==1 ? "" : "s"));
+    else ar_notice(c,command==AR_CMD_WORK ? "Select a Burrower or Ember to work this terrain." : "Select companions first, or choose reachable ground.");
+    c->build_kind=-1;c->targeting_nuke=0;ar_compute_observations(e,0);
+}
+
 static int ar_move_toward(ARPG* e,float tx,float ty) {
     float dx=tx-e->px,dy=ty-e->py;
     if(dx*dx+dy*dy<0.5f)return 0;
+    if(!ar_nav_visible(e->dungeon,e->cfg.arena_size,e->px,e->py,tx,ty)) {
+        float nx,ny;if(!ar_nav_next(e->dungeon,e->cfg.arena_size,e->px,e->py,tx,ty,&nx,&ny))return 0;
+        dx=nx-e->px;dy=ny-e->py;if(dx*dx+dy*dy<0.01f)return 0;
+    }
     float best=-2;int result=0;
     float length=sqrtf(dx*dx+dy*dy);dx/=length;dy/=length;
     for(int action=1;action<AR_MOVE_ACTION_COUNT;action++) {
@@ -314,12 +381,17 @@ static int ar_move_toward(ARPG* e,float tx,float ty) {
 }
 
 int main(int argc,char** argv) {
-    int watch=0,deterministic=0;
+    int watch=0,deterministic=0,bounded=0,no_save=0,new_world=0;
+    const char* save_path="saves/arpg/frontier-v3.bin";
     const char* model=NULL;
     for(int i=1;i<argc;i++) {
         if(!strcmp(argv[i],"watch"))watch=1;
         else if(!strcmp(argv[i],"play"))watch=0;
         else if(!strcmp(argv[i],"--deterministic"))deterministic=1;
+        else if(!strcmp(argv[i],"--arena"))bounded=1;
+        else if(!strcmp(argv[i],"--no-save"))no_save=1;
+        else if(!strcmp(argv[i],"--new"))new_world=1;
+        else if(!strcmp(argv[i],"--save") && i+1<argc)save_path=argv[++i];
         else if(!strcmp(argv[i],"--help") || !strcmp(argv[i],"-h")){ar_print_usage(argv[0]);return 0;}
         else if(argv[i][0]!='-')model=argv[i];
         else {ar_print_usage(argv[0]);return 1;}
@@ -337,26 +409,69 @@ int main(int argc,char** argv) {
     Weights* weights=NULL;
     PufferNet* net=path[0] ? ar_load_policy(path,&weights) : NULL;
     if((watch || model) && !net) {
-        fprintf(stderr,"RL autoplay requires an ARPG v2 checkpoint. Train arpg, then use ./arpg watch PATH.bin.\n");
+        fprintf(stderr,"RL autoplay requires an ARPG v3 checkpoint. Train arpg, then use ./arpg watch PATH.bin.\n");
         puf_ini_free(&g_controls_ini);return 1;
     }
-    c_reset(&e);c_render(&e);
+    int save_enabled=!watch && !bounded && !no_save && !getenv("ARPG_SHOT");
+    int loaded=0;
+    c_reset(&e);
+    if(!watch && !bounded) {
+        if(save_enabled) {
+            mkdir("saves",0755);mkdir("saves/arpg",0755);
+            if(new_world) {
+                char archive[4096];snprintf(archive,sizeof(archive),"%s.archive-%lld-%ld",save_path,(long long)time(NULL),(long)getpid());
+                if(rename(save_path,archive)!=0 && errno!=ENOENT) {
+                    fprintf(stderr,"Cannot archive the previous save; leaving it untouched.\n");puf_close(&e);if(net)free_puffernet(net);free(weights);puf_ini_free(&g_controls_ini);return 1;
+                }
+            } else loaded=ar_world_load(&e,save_path);
+            if(loaded<0) {
+                fprintf(stderr,"Save is invalid or incompatible: %s. It was not changed. Use --new to archive it, or --no-save for a temporary world.\n",save_path);
+                puf_close(&e);if(net)free_puffernet(net);free(weights);puf_ini_free(&g_controls_ini);return 1;
+            }
+        }
+        if(!loaded)ar_world_begin(&e);
+    }
+    c_render(&e);
     ARClient* client=ar_client(&e);
     client->autoplay=watch;client->pet_policy=net!=NULL;
+    if(e.campaign)for(int p=0;p<AR_MAX_PETS;p++)client->task_override[p]=((ARWorld*)e.campaign)->task_override[p];
+    if(loaded)ar_notice(client,"Frontier restored. Your outposts, companions, and terrain changes are here.");
     double accumulator=0;
-    int human_order=AR_ORDER_FOLLOW,shot_frame=0;
+    double reset_armed_until=0;
+    int next_save_tick=e.tick+3600;
+    int human_order=e.order,shot_frame=0;
     const char* shot=getenv("ARPG_SHOT");
     int shot_at=240;
     if(getenv("ARPG_SHOT_FRAME"))shot_at=atoi(getenv("ARPG_SHOT_FRAME"));
     while(!WindowShouldClose()) {
         float frame_dt=fminf(GetFrameTime(),0.1f);
+        if(e.campaign)for(int p=0;p<AR_MAX_PETS;p++)((ARWorld*)e.campaign)->task_override[p]=client->task_override[p];
+        if(save_enabled && IsKeyPressed(KEY_F5))ar_notice(client,ar_world_save(&e,save_path) ? "Frontier saved." : "Save failed. Your current world is still in memory.");
         if(ar_binding_pressed(controls.reset)) {
+            int reset_ok=!e.campaign || (reset_armed_until>GetTime());
+            if(!reset_ok){reset_armed_until=GetTime()+4;ar_notice(client,save_enabled ? "Press R again within four seconds for a new world. Your current world will be archived." : "Press R again within four seconds to replace this unsaved world.");}
+            if(reset_ok && save_enabled) {
+                char archive[4096];snprintf(archive,sizeof(archive),"%s.archive-%lld-XXXXXX",save_path,(long long)time(NULL));
+                int fd=mkstemp(archive);reset_ok=fd>=0;
+                if(fd>=0) {
+                    close(fd);reset_ok=ar_world_save(&e,archive);
+                    if(!reset_ok)unlink(archive);
+                }
+                if(!reset_ok)ar_notice(client,"Could not archive the current frontier. Restart cancelled.");
+            }
+            if(reset_ok) {
+            ar_world_close(&e);
             c_reset(&e);ar_reset_policy(net);client->paused=0;client->move_target=0;accumulator=0;
+            if(!watch && !bounded)ar_world_begin(&e);
             human_order=AR_ORDER_FOLLOW;client->build_kind=-1;client->selected_pet=-1;
-            client->camera_free=0;
+            client->camera_free=0;client->cam_x=e.px;client->cam_y=e.py;client->origin_x=client->origin_y=0;
+            client->selected_mask=0;client->targeting_nuke=0;client->dragging=0;
+            memset(client->groups,0,sizeof(client->groups));
             client->ui_summon=0;client->ui_ability=0;
             memset(actions,0,sizeof(actions));
             for(int p=0;p<AR_MAX_PETS;p++)client->task_override[p]=-1;
+            next_save_tick=e.tick+3600;reset_armed_until=0;
+            }
         }
         if(IsKeyPressed(KEY_TAB) || client->ui_pause) {
             client->paused=e.hp<=0 ? 1 : !client->paused;client->ui_pause=0;accumulator=0;
@@ -372,21 +487,18 @@ int main(int argc,char** argv) {
             else ar_notice(client,"No RL checkpoint loaded. Scripted pet assist is active; train arpg for RL control.");
         }
         if(IsKeyPressed(KEY_P)) {
-            for(int p=0;p<AR_MAX_PETS;p++)client->task_override[p]=-1;
+            for(int p=0;p<AR_MAX_PETS;p++)if(!client->selected_mask || (client->selected_mask&(1u<<p))) {
+                client->task_override[p]=-1;ar_command_pet(&e,0,p,AR_CMD_AUTO,e.pets.x[p],e.pets.y[p]);
+            }
             client->pet_policy=net!=NULL;
             ar_notice(client,net ? "Pet policy restored; manual task overrides cleared." : "Scripted companion assist restored. No RL checkpoint loaded.");
         }
         Vector2 mouse=GetMousePosition();
-        int in_world=mouse.y>210 && mouse.y<GetScreenHeight()-150;
-        if(mouse.x>330 && mouse.x<GetScreenWidth()-185)in_world=mouse.y>76 && mouse.y<GetScreenHeight()-150;
-        if(in_world && IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) {
-            Vector2 world=ar_unproject(client,mouse);
-            if(ar_geometry_floor(e.dungeon,e.cfg.arena_size,world.x,world.y)) {
-                e.rally_x=world.x;e.rally_y=world.y;e.rally_active=1;
-                ar_notice(client,"Rally set. 2 sends combat companions forward; 1 recalls them.");
-            }
-            client->build_kind=-1;
-        }
+        int in_world=mouse.y>76 && mouse.y<GetScreenHeight()-150 &&
+            !CheckCollisionPointRec(mouse,(Rectangle){23,97,298,103}) &&
+            !CheckCollisionPointRec(mouse,(Rectangle){GetScreenWidth()-181.0f,88,162,186});
+        if(in_world && !client->autoplay && IsMouseButtonPressed(MOUSE_BUTTON_RIGHT))
+            ar_context_order(&e,client,mouse,IsKeyDown(KEY_LEFT_CONTROL));
         if(!client->autoplay) {
             if(ar_binding_pressed(controls.class_wisp))e.pick_class=AR_PET_WISP;
             if(ar_binding_pressed(controls.class_fang))e.pick_class=AR_PET_FANG;
@@ -397,7 +509,7 @@ int main(int argc,char** argv) {
             if(ar_binding_pressed(controls.order_guard))human_order=AR_ORDER_GUARD;
             if(ar_binding_pressed(controls.order_focus))human_order=AR_ORDER_FOCUS;
             if(ar_binding_pressed(controls.summon))actions[1]=(float)e.pick_class+1;
-            if(client->ui_summon){actions[1]=(float)client->ui_summon;client->ui_summon=0;}
+            if(client->ui_summon){actions[1]=(float)client->ui_summon;e.pick_class=client->ui_summon-1;client->ui_summon=0;}
             if(client->ui_ability){actions[3]=(float)client->ui_ability;client->ui_ability=0;}
             if(ar_binding_pressed(controls.dash))actions[3]=1;
             if(ar_binding_pressed(controls.nova))actions[3]=2;
@@ -405,18 +517,58 @@ int main(int argc,char** argv) {
             if(ar_binding_pressed(controls.build_totem))client->build_kind=AR_BUILD_TOTEM;
             if(ar_binding_pressed(controls.build_wall))client->build_kind=AR_BUILD_WALL;
             if(ar_binding_pressed(controls.build_harvester))client->build_kind=AR_BUILD_HARVESTER;
-            if(IsKeyPressed(KEY_BACKSPACE))client->build_kind=-1;
+            if(IsKeyPressed(KEY_J))client->build_kind=AR_BUILD_ARTILLERY;
+            if(IsKeyPressed(KEY_O))client->build_kind=AR_BUILD_BRIDGE;
+            if(IsKeyPressed(KEY_N)){client->targeting_nuke=!client->targeting_nuke;client->build_kind=-1;}
+            if(IsKeyPressed(KEY_BACKSPACE)){client->build_kind=-1;client->targeting_nuke=0;client->selected_mask=0;}
+            if(IsKeyPressed(KEY_DELETE)) {
+                for(int p=0;p<AR_MAX_PETS;p++)if((client->selected_mask&(1u<<p)) && e.pets.active[p]) {
+                    e.shards+=e.cfg.summon_cost[e.pets.kind[p]]*0.5f;ar_free_pet(&e,0,p);client->task_override[p]=-1;
+                }
+                client->selected_mask=0;ar_notice(client,"Selected summons released. Half their aether cost was returned.");
+            }
+            for(int g=0;g<4;g++)if(IsKeyPressed(KEY_F1+g)) {
+                if(IsKeyDown(KEY_LEFT_CONTROL)){client->groups[g]=client->selected_mask;ar_notice(client,"Control group stored.");}
+                else {client->selected_mask=client->groups[g];ar_sync_selection(client,&e);}
+            }
             if(in_world && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
                 Vector2 world=ar_unproject(client,mouse);
-                if(client->build_kind>=0) {
+                if(client->targeting_nuke) {
+                    if(ar_fire_artillery(&e,0,world.x,world.y)) {client->targeting_nuke=0;ar_notice(client,"STARFIRE. A new landscape begins.");}
+                    else if(e.campaign && (fabsf(world.x)>e.cfg.arena_size*0.5f-8 || fabsf(world.y)>e.cfg.arena_size*0.5f-8))
+                        ar_notice(client,"Move closer to load the whole strike area. No ammunition was spent.");
+                    else ar_notice(client,"Need a ready Starfire within 48 units, 8 cores, and 20 aether.");
+                } else if(client->build_kind>=0) {
                     if(ar_geometry_dist2(e.px,e.py,world.x,world.y)>144)
                         ar_notice(client,"Move closer to build here (12-unit construction reach).");
-                    else if(ar_build_at(&e,0,client->build_kind,world.x,world.y)>=0)
-                        {client->build_kind=-1;ar_compute_observations(&e,0);}
+                    else if(ar_build_at(&e,0,client->build_kind,world.x,world.y)>=0) {
+                        if(!IsKeyDown(KEY_LEFT_SHIFT) && !IsKeyDown(KEY_RIGHT_SHIFT))client->build_kind=-1;
+                        ar_compute_observations(&e,0);
+                    }
                     else ar_notice(client,"Cannot build here: check aether, footprint, and clear ground.");
                 } else {
-                    client->move_target=1;client->move_x=world.x;client->move_y=world.y;
+                    client->drag_start=mouse;client->dragging=1;
                 }
+            }
+            if(client->dragging && IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) {
+                float dx=mouse.x-client->drag_start.x,dy=mouse.y-client->drag_start.y;
+                int additive=IsKeyDown(KEY_LEFT_SHIFT)||IsKeyDown(KEY_RIGHT_SHIFT);
+                if(dx*dx+dy*dy>64) {
+                    if(!additive)client->selected_mask=0;
+                    Rectangle box={fminf(mouse.x,client->drag_start.x),fminf(mouse.y,client->drag_start.y),fabsf(dx),fabsf(dy)};
+                    for(int p=0;p<AR_MAX_PETS;p++)if(e.pets.active[p]) {
+                        Vector2 at=ar_iso(client,e.pets.x[p],e.pets.y[p],0.6f);
+                        if(CheckCollisionPointRec(at,box))client->selected_mask|=1u<<p;
+                    }
+                } else {
+                    int p=ar_pick_pet(&e,client,mouse);
+                    if(p>=0)ar_select_pet(client,&e,p,additive);
+                    else if(in_world) {
+                        Vector2 world=ar_unproject(client,mouse);
+                        client->selected_mask=0;client->move_target=1;client->move_x=world.x;client->move_y=world.y;
+                    }
+                }
+                client->dragging=0;ar_sync_selection(client,&e);
             }
             int movement=ar_read_move_mask(&controls);
             if(movement)client->move_target=0;
@@ -434,13 +586,22 @@ int main(int argc,char** argv) {
                 for(int p=0;p<AR_MAX_PETS;p++)actions[5+p]=client->pet_policy ? predicted[5+p] : 0;
             }
             for(int p=0;p<AR_MAX_PETS;p++)if(client->task_override[p]>=0)actions[5+p]=(float)client->task_override[p];
+            int respawns=e.campaign ? ((ARWorld*)e.campaign)->respawns : 0;
             c_step(&e);accumulator-=AR_FAST_SIM_DT;steps++;
+            if(e.campaign && ((ARWorld*)e.campaign)->respawns>respawns) {
+                client->move_target=0;client->camera_free=0;
+                ar_notice(client,"Returned to your lodge. Recovery costs 5 aether; your industry remains.");
+            }
             if(!client->autoplay){actions[1]=0;actions[3]=0;actions[4]=0;}
             if(terminals[0]>0) {
                 if(client->autoplay){c_reset(&e);ar_reset_policy(net);}
                 else {client->paused=1;ar_notice(client,"Run complete. R starts a fresh homestead.");}
                 accumulator=0;break;
             }
+        }
+        if(save_enabled && e.tick>=next_save_tick) {
+            if(!ar_world_save(&e,save_path))ar_notice(client,"Autosave failed. F5 retries; your world is still in memory.");
+            next_save_tick=e.tick+3600;
         }
         c_render(&e);
         if(shot && ++shot_frame==shot_at) {
@@ -449,8 +610,10 @@ int main(int argc,char** argv) {
         }
         if(shot && shot_frame>=shot_at+2)break;
     }
+    int save_failed=save_enabled && !ar_world_save(&e,save_path);
+    if(save_failed)fprintf(stderr,"WARNING: failed to save frontier to %s\n",save_path);
     puf_close(&e);
     if(net)free_puffernet(net);
     free(weights);puf_ini_free(&g_controls_ini);
-    return 0;
+    return save_failed ? 1 : 0;
 }
