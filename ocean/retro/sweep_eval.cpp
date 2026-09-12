@@ -4,6 +4,7 @@
 #include "retro.h"
 #undef PUFFERLIB_BUILD_MAIN
 #include "puffercpu.h"
+#include "retro_policy_cpu.h"
 #include "retro_sweep_config.h"
 #include <exception>
 #include <filesystem>
@@ -46,8 +47,7 @@ int main(int argc,char** argv) {
         int hidden=puf_ini_get_int(&ini,"policy","hidden_size"),layers=puf_ini_get_int(&ini,"policy","num_layers");
         if(hidden<8||hidden>1024||hidden%8||layers<1||layers>8)
             throw std::runtime_error("invalid checkpoint architecture");
-        auto aligned=[](size_t n) { return (n+7)&~size_t(7); };
-        size_t expected=aligned(OBS_SIZE*hidden)+aligned(65*hidden)+layers*aligned(3*hidden*hidden);
+        size_t expected=retro_policy_weights(hidden,layers);
         if(std::filesystem::file_size(argv[1])!=expected*sizeof(float))
             throw std::runtime_error("checkpoint shape does not match ROM policy metadata");
         Weights* weights=load_weights(argv[1]); if(!weights) throw std::runtime_error("checkpoint read failed");
@@ -55,10 +55,10 @@ int main(int argc,char** argv) {
         // Independent recurrent state per attempt; immutable weights shared.
         // Run each case through its terminal in one worker instead of barriers
         // every frame or forwarding dead rows until the slowest case finishes.
-        std::vector<PufferNet*> nets(n);
+        std::vector<RetroPolicy*> nets(n);
         for(int i=0;i<n;i++) {
             Weights cursor=*weights;
-            nets[i]=make_puffernet(&cursor,1,OBS_SIZE,hidden,layers,actions_sizes,1);
+            nets[i]=make_retro_policy(&cursor,hidden,layers);
         }
         Dict vec={}; dict_set(&vec,"total_agents",n); dict_set(&vec,"num_buffers",1);
         int count,begin[1],sizes[1]; Env* envs=my_vec_init(&count,begin,sizes,&vec,puf_ini_section(&ini,"env",0));
@@ -77,11 +77,9 @@ int main(int argc,char** argv) {
         #pragma omp parallel for num_threads(workers) schedule(dynamic,1)
         for(int i=0;i<n;i++) {
             try {
-                Env* e=&envs[i]; int level=i%32; PufferNet* net=nets[i];
+                Env* e=&envs[i]; int level=i%32; RetroPolicy* net=nets[i];
                 for(int f=0;f<frames;f++) {
-                    linear(net->encoder,obs.data()+i*OBS_SIZE);
-                    mingru(net->mingru,net->encoder->output);
-                    linear(net->decoder,net->mingru->output);
+                    retro_policy_logits(net,obs.data()+i*OBS_SIZE);
                     actions[i]=retro_panel_action(net->decoder->output,retro_random(&rng[i]),deterministic);
                     float before=e->log.level_clears[level];
                     puf_step(e); elapsed[i]+=e->last_frames;
@@ -120,7 +118,7 @@ int main(int argc,char** argv) {
         printf("retro_panel version=1 score=%.9g clears=%d attempts=%d progress=%.9g frames=%ld seed=%u deterministic=%d\n",
             score,clears,n,mean_progress,executed,seed,deterministic);
         my_vec_close(envs); dict_clear(&vec);
-        for(PufferNet* net:nets) free_puffernet(net);
+        for(RetroPolicy* net:nets) free_retro_policy(net);
         free(weights); puf_ini_free(&ini);
         return 0;
     } catch(const std::exception& e) { fprintf(stderr,"retro panel: %s\n",e.what()); return 1; }

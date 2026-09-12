@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ini.h"
+#include "kag_action_contract.h"
 #include <unistd.h>
 
 /* Host-side policy/observation association for end-of-training two-seat eval.
@@ -28,6 +29,11 @@ static inline KagObservationContract kag_observation_contract(Ini* ini) {
         ? (int)dict_get(env, "macro_executor_version") : 0;
     result.frozen_executor = dict_find(env, "frozen_macro_executor_version")
         ? (int)dict_get(env, "frozen_macro_executor_version") : -1;
+    int mode = (int)dict_get(env, "macro_mode");
+    int frozen_mode = dict_find(env, "frozen_macro_mode")
+        ? (int)dict_get(env, "frozen_macro_mode") : -1;
+    kag_resolve_executor_versions(mode, frozen_mode,
+        &result.executor, &result.frozen_executor);
     return result;
 }
 

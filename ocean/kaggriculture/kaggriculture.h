@@ -28,6 +28,7 @@
 #include <string.h>
 
 #include "pufferenv.h"
+#include "kag_action_contract.h"
 #include "kaggriculture_core.h"
 #include "phase_rewards.h"
 
@@ -5087,6 +5088,10 @@ void puf_init(Env* env, Dict* kwargs) {
         ? (int)dict_get(kwargs, "macro_executor_version") : 0;
     env->frozen_macro_executor_version = dict_find(kwargs, "frozen_macro_executor_version")
         ? (int)dict_get(kwargs, "frozen_macro_executor_version") : -1;
+    int configured_frozen_mode = dict_find(kwargs, "frozen_macro_mode")
+        ? (int)dict_get(kwargs, "frozen_macro_mode") : -1;
+    kag_resolve_executor_versions(env->macro_mode, configured_frozen_mode,
+        &env->macro_executor_version, &env->frozen_macro_executor_version);
     if (env->macro_executor_version < 0 || env->macro_executor_version > 1
             || env->frozen_macro_executor_version < -1 || env->frozen_macro_executor_version > 1
             || (env->macro_executor_version && env->macro_mode != 2)) {

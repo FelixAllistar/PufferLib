@@ -10,7 +10,7 @@
 
 // Compile-time backing storage. cfg caps may be lower, never higher.
 #define AR_MAX_ENEMIES 128
-#define AR_MAX_PETS 4
+#define AR_MAX_PETS 8
 #define AR_MAX_OBSTACLES 16
 
 // Whole-arena uniform grid for the analytic (GPU) separation and pet targeting.
@@ -21,27 +21,32 @@
 
 // Actions: movement [9] screen-relative {0 idle, 1 up, 2 down, 3 left,
 // 4 right, 5 up-left, 6 up-right, 7 down-left, 8 down-right},
-// summon [5] {0 none, 1 wisp, 2 fang, 3 aegis, 4 mule},
+// summon [7] {0 none, 1 wisp, 2 fang, 3 aegis, 4 mule, 5 burrower, 6 ember},
 // order [4] {0 follow, 1 attack, 2 guard, 3 focus},
-// ability [4] {0 none, 1 dash, 2 nova, 3 frost},
-// build [4] {0 none, 1 totem, 2 wall, 3 harvester}.
+// ability [5] {0 none, 1 dash, 2 nova, 3 frost, 4 starfire},
+// build [6] {0 none, 1 totem, 2 wall, 3 harvester, 4 starfire, 5 bridge},
+// followed by eight independent seven-choice companion task heads.
 #define AR_MOVE_ACTION_COUNT 9
-#define AR_SUMMON_ACTION_COUNT 5
+#define AR_SUMMON_ACTION_COUNT 7
 #define AR_ORDER_ACTION_COUNT 4
-#define AR_ABILITY_ACTION_COUNT 4
-#define AR_BUILD_ACTION_COUNT 4
-#define AR_PET_TASK_COUNT 6
-#define AR_OBS_VERSION 2
+#define AR_ABILITY_ACTION_COUNT 5
+#define AR_BUILD_ACTION_COUNT 6
+#define AR_PET_TASK_COUNT 7
+#define AR_OBS_VERSION 3
 
 typedef enum {
     AR_TASK_AUTO, AR_TASK_GATHER, AR_TASK_ESCORT,
-    AR_TASK_HUNT, AR_TASK_HOLD, AR_TASK_HOME,
+    AR_TASK_HUNT, AR_TASK_HOLD, AR_TASK_HOME, AR_TASK_WORK,
 } ARPetTask;
 
+typedef enum {
+    AR_CMD_AUTO, AR_CMD_MOVE, AR_CMD_GATHER, AR_CMD_ATTACK, AR_CMD_HOLD, AR_CMD_WORK,
+} ARPetCommand;
+
 // RTS pools.
-#define AR_MAX_SHARDS 24
-#define AR_MAX_BUILDINGS 8
-#define AR_MAX_NESTS 6
+#define AR_MAX_SHARDS 32
+#define AR_MAX_BUILDINGS 32
+#define AR_MAX_NESTS 16
 #define AR_CAMP_WAKE_RADIUS 9.0f
 #define AR_CAMP_DEFENDERS 3
 
@@ -50,7 +55,9 @@ typedef enum {
     AR_BUILD_TOTEM = 0,      // static damage-aura pulse
     AR_BUILD_WALL = 1,       // static blocker enemies chew through
     AR_BUILD_HARVESTER = 2,  // extracts nearby renewable deposits
-    AR_BUILD_KIND_COUNT = 3,
+    AR_BUILD_ARTILLERY = 3,
+    AR_BUILD_BRIDGE = 4,
+    AR_BUILD_KIND_COUNT = 5,
 } ARBuildKind;
 
 // Observation schema (see ar_sim.h: ar_compute_observations).
@@ -65,12 +72,12 @@ typedef enum {
 #define AR_ENEMY_SLOTS 8
 #define AR_ENEMY_FEATURES 5
 #define AR_LOCAL_OBS_SIZE (AR_PLAYER_FEATURES + AR_PET_SLOTS * AR_PET_FEATURES + AR_ENEMY_SLOTS * AR_ENEMY_FEATURES)
-#define AR_WORLD_FEATURES 8
+#define AR_WORLD_FEATURES 10
 #define AR_RESOURCE_FEATURES 3
 #define AR_BUILD_FEATURES 5
 #define AR_OBS_SIZE (AR_LOCAL_OBS_SIZE + AR_WORLD_FEATURES \
     + AR_MAX_SHARDS * AR_RESOURCE_FEATURES + AR_MAX_BUILDINGS * AR_BUILD_FEATURES \
-    + AR_MAX_PETS + 25)
+    + AR_MAX_PETS + 25 + AR_MAX_PETS * 3)
 
 typedef enum {
     AR_ENEMY_GRUNT = 0,
@@ -84,7 +91,9 @@ typedef enum {
     AR_PET_FANG = 1,   // fast, fragile, high damage
     AR_PET_AEGIS = 2,  // slow, tanky body-blocker
     AR_PET_MULE = 3,   // non-combat gatherer; flees threats
-    AR_PET_CLASS_COUNT = 4,
+    AR_PET_BURROWER = 4, // opens rock and forests; durable melee
+    AR_PET_EMBER = 5,    // melts terrain; refines aether beside extractors
+    AR_PET_CLASS_COUNT = 6,
 } ARPetClass;
 
 // Squad orders (Halo Wars one-button rule: a single discrete head).
@@ -102,7 +111,8 @@ typedef enum {
     AR_ABILITY_DASH = 1,  // blink through enemies, stops at rock
     AR_ABILITY_NOVA = 2,  // radial damage around the player
     AR_ABILITY_FROST = 3, // cone damage + slow in facing/move dir
-    AR_ABILITY_COUNT = 4,
+    AR_ABILITY_STARFIRE = 4,
+    AR_ABILITY_COUNT = 5,
 } ARAbility;
 
 // Open-world terrain tiles stored in the AR_DUN grid.
@@ -113,6 +123,8 @@ typedef enum {
     AR_TILE_SAND = 3,    // walkable shore
     AR_TILE_SHALLOW = 4, // walkable, 0.6x speed
     AR_TILE_DEEP = 5,    // solid water
+    AR_TILE_BRIDGE = 6, // constructed, walkable water crossing
+    AR_TILE_COUNT = 7,
 } ARTile;
 
 // Procedural terrain grid. Cell size = arena_size / AR_DUN_W world units.
@@ -239,7 +251,8 @@ enum {
     AR_OBS_BUILD_BASE = AR_OBS_RESOURCE_BASE + AR_MAX_SHARDS * AR_RESOURCE_FEATURES,
     AR_OBS_TASK_BASE = AR_OBS_BUILD_BASE + AR_MAX_BUILDINGS * AR_BUILD_FEATURES,
     AR_OBS_TERRAIN_BASE = AR_OBS_TASK_BASE + AR_MAX_PETS,
-    AR_OBS_END = AR_OBS_TERRAIN_BASE + 25,
+    AR_OBS_COMMAND_BASE = AR_OBS_TERRAIN_BASE + 25,
+    AR_OBS_END = AR_OBS_COMMAND_BASE + AR_MAX_PETS * 3,
 };
 
 #if defined(__cplusplus)
@@ -248,4 +261,4 @@ enum {
 #define AR_STATIC_ASSERT _Static_assert
 #endif
 AR_STATIC_ASSERT(AR_OBS_END == AR_OBS_SIZE, "Observation layout does not match AR_OBS_SIZE");
-AR_STATIC_ASSERT(AR_OBS_SIZE == 237, "Unexpected arpg observation size");
+AR_STATIC_ASSERT(AR_OBS_SIZE == 443, "Unexpected arpg observation size");

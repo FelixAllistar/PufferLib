@@ -21,7 +21,9 @@ static void retro_checkpoint_config(const char* checkpoint, Ini* ini) {
 
 static float retro_sweep_score(const char* checkpoint, Ini* ini) {
     // argv-based spawning: checkpoint paths are never interpreted by a shell.
-    std::vector<std::string> args={"build/retro/sweep_eval",checkpoint,"--config",
+    const char* panel=!strcmp(puf_ini_get_str(ini,"env","cpu_backend"),"blocks")
+        ?"build/retro_batch/sweep_eval":"build/retro/sweep_eval";
+    std::vector<std::string> args={panel,checkpoint,"--config",
         std::string(checkpoint)+".ini","--output",std::string(checkpoint)+".eval.tsv"};
     for(const char* key:{"frames","repeats","seed","workers"}) {
         std::string option=std::string("eval_")+key;
@@ -37,7 +39,7 @@ static float retro_sweep_score(const char* checkpoint, Ini* ini) {
     extern char** environ; pid_t pid=0;
     int error=posix_spawn(&pid,argv[0],&actions,nullptr,argv.data(),environ);
     posix_spawn_file_actions_destroy(&actions); close(fds[1]);
-    if(error) { close(fds[0]); throw std::runtime_error("retro: build/retro/sweep_eval missing or failed to launch; run ./build.sh retro"); }
+    if(error) { close(fds[0]); throw std::runtime_error(std::string("retro: panel executable missing or failed to launch: ")+panel); }
     FILE* stream=fdopen(fds[0],"r");
     float score=NAN; int results=0; char line[1024];
     if(stream) {

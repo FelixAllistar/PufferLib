@@ -31,6 +31,7 @@ typedef struct {
 typedef struct {
     uint8_t active[AR_MAX_PETS];
     uint8_t kind[AR_MAX_PETS];
+    uint8_t dormant[AR_MAX_PETS];
     float x[AR_MAX_PETS];
     float y[AR_MAX_PETS];
     float vx[AR_MAX_PETS];
@@ -44,6 +45,11 @@ typedef struct {
     int invuln[AR_MAX_PETS];
     int target[AR_MAX_PETS];
     int task[AR_MAX_PETS];
+    int command[AR_MAX_PETS];
+    float goal_x[AR_MAX_PETS], goal_y[AR_MAX_PETS];
+    float nav_x[AR_MAX_PETS], nav_y[AR_MAX_PETS];
+    int nav_tick[AR_MAX_PETS];
+    float work_cd[AR_MAX_PETS];
     int ntarget[AR_MAX_PETS];  // nest slot targeted, -1 none
     uint8_t attacking[AR_MAX_PETS];
 } ARPetPool;
@@ -53,6 +59,7 @@ struct Env {
     Agent agents[1];
     int tag, boundary_reached;
     void* client;
+    void* campaign; // Optional persistent CPU viewer world; training stays bounded.
     int num_agents;
     uint32_t rng;
 
@@ -75,6 +82,7 @@ struct Env {
 
     // RTS economy: spendable shards, harvest nodes, player buildings.
     float shards;
+    float cores, fx_blast, blast_x, blast_y;
     uint8_t shard_active[AR_MAX_SHARDS];
     float shard_x[AR_MAX_SHARDS];
     float shard_y[AR_MAX_SHARDS];

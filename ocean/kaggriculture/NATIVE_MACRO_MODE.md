@@ -66,6 +66,13 @@ sticky turns would silently multiply purchases, hires, planting, and sales.
 
 ## Mode 3: PPO-owned task controller
 
+Select `macro_mode = 3` to use the task controller. A leftover
+`macro_executor_version = 1` is automatically treated as 0 for task policies;
+it does not select a legacy planner. Mode 3 has its own decoder. The same
+normalization applies independently to task-mode frozen opponents, while
+mode-2 opponents retain their selected executor. Saved task checkpoint
+executor metadata is 0 regardless of a leftover mode-2 flag.
+
 `macro_mode = 3` removes the remaining generic-farm strategy from the
 executor. The 17 existing unit heads become an ordered set of task requests;
 the ten existing conditional market slots remain policy-owned. Lower unit

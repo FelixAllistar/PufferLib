@@ -198,7 +198,37 @@ void Nes_Ppu_Rendering::draw_background_( int remain )
 		unsigned long const mask = 0x03030303 + zero;
 		unsigned long const attrib_factor = 0x04040404 + zero;
 		
-		if ( height == 8 )
+		if ( wide_background && has_wide_tiles() && !exgrafix_exram )
+		{
+			int fine_y = addr >> 12;
+			addr &= 0x03ff;
+			while (true) {
+				while (count--) {
+					int attrib = attr_table[addr >> 2 & 7];
+					attrib >>= (addr >> 4 & 4) | (addr & 2);
+					uint32_t offset = (attrib & 3) * 0x04040404u + (uint32_t)palette_offset;
+					uint64_t wide_offset = ((uint64_t)offset << 32) | offset;
+					uint64_t const* tile = get_wide_bg_tile(nametable[addr] + bg_bank);
+					uint8_t* p = pixels;
+					for (int y = 0; y < height; ++y) {
+						// Each byte stays <= 255, so integer addition cannot carry
+						// into its neighbor. memcpy permits unaligned destinations.
+						uint64_t row = tile[fine_y + y] + wide_offset;
+						memcpy(p, &row, sizeof(row));
+						p += row_bytes;
+					}
+					addr++;
+					pixels += 8;
+				}
+				count = count2;
+				count2 = 0;
+				addr -= 32;
+				attr_table = attr_table - nametable + nametable2;
+				nametable = nametable2;
+				if (!count) break;
+			}
+		}
+		else if ( height == 8 )
 		{
 			// unclipped
 			addr &= 0x03ff;
