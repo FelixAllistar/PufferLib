@@ -1,8 +1,9 @@
 #pragma once
+#include "personality.h"
 // Evaluation-only episode descriptors. Never changes observations or rewards.
 typedef struct {
     int species[149], leads[149], types[32];
-    double hp_sum;
+    double hp_sum, personality_sum[PK_PERSONALITY_DIM];
     int samples;
 } PKProfile;
 typedef struct {
@@ -47,6 +48,9 @@ static void pk_profile_step(PKProfile* p, const PKGame* g, int side) {
         p->leads[pk_species(g->teams[side][0])-1]++;
     }
     for (int i=0;i<6;i++) p->hp_sum += obs[16+32*i+1]/(255.0*6);
+    double features[PK_PERSONALITY_DIM];
+    pk_personality_features(obs,features);
+    for(int k=0;k<PK_PERSONALITY_DIM;k++) p->personality_sum[k]+=features[k];
     p->samples++;
 }
 static void pk_profile_array(const int* values, int n) {
@@ -61,7 +65,17 @@ static void pk_profile_emit(const PKProfile* p, const PKGame* g, int side, doubl
     printf(",\"types\":"); pk_profile_array(p->types,32);
     double alive=0;
     for(int i=0;i<6;i++) alive += !g->obs[side][16+32*i+3];
-    printf(",\"mean_team_hp\":%.9g,\"survivors\":%.9g,\"duration\":%.9g,\"timeout\":%d}}\n",
+    printf(",\"mean_team_hp\":%.9g,\"survivors\":%.9g,\"duration\":%.9g,\"timeout\":%d}",
         p->samples?p->hp_sum/p->samples:0,alive/6,
         (double)g->updates/g->max_updates,g->result==5);
+    /* Additive fields: existing profile_population consumers keep their schema.
+     * Exact ordered sets permit joint-core diagnostics, not just marginal usage.
+     */
+    printf(",\"qd_version\":1,\"species_ids\":[");
+    for(int i=0;i<6;i++) printf("%s%d",i?",":"",pk_species(g->teams[side][i]));
+    printf("],\"set_ids\":[");
+    for(int i=0;i<6;i++) printf("%s%d",i?",":"",(int)g->teams[side][i]);
+    printf("],\"personality\":[");
+    for(int k=0;k<PK_PERSONALITY_DIM;k++) printf("%s%.9g",k?",":"",p->samples?p->personality_sum[k]/p->samples:0);
+    printf("]}\n");
 }
