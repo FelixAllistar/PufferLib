@@ -52,6 +52,54 @@ CMA/RNG state, caches completed children, and retains failed-job logs. Changed
 inputs or nonzero child exits fail loudly, rather than becoming fabricated
 fitness scores. Checkpoints and their sidecars must not be edited during search.
 
+## Selfplay-only comparison
+
+```bash
+source /home/felix/puffertank/.venv/bin/activate
+python ocean/pokemon/qd.py run --opponent-mode selfplay \
+  --trainer build/pokemon/puffer_qd --out runs/pokemon_qd_selfplay_new \
+  --population 4 --generations 2 --train-steps 100000000 --games 64 \
+  --total-agents 1024 --horizon 512 --gae-lambda 0.995 \
+  --learning-rate 0.0001 --entropy-coef 0.0005 \
+  --history-panel-size 4 --selfplay-checkpoint-interval 10
+```
+
+This mode rejects `--native-league` and `--seed-model`. It initializes a fresh
+learner; `--resume` continues only its own run. Training explicitly clears every
+external opponent source and uses live selfplay plus a private rolling history
+of up to 16 learner checkpoints. Each child starts its history with its parent
+and adds its own checkpoints, not other personality branches. Two frozen banks,
+`frozen_bank_pct=0.5`, and a 1M-step rotation interval use the native trainer's
+existing selfplay implementation. With 1024 agents, a checkpoint every 10 rollout
+epochs is every 5,242,880 interaction steps. At startup frozen banks use the
+initial learner until saved checkpoints become available.
+
+This layout allocates half the matches to learner-vs-learner and half to
+learner-vs-history: 75% of agent rows learn, versus 50% with the fixed league.
+Requested interaction budgets match, but learner samples/update counts do not.
+The 100M-per-job example requests 1.1B steps across all branches, not per policy.
+
+Selection never uses external league scores. Before each generation, up to four
+historical checkpoints are selected deterministically across the saved history's
+index range. This common panel contains only completed earlier jobs from this
+run. It stays frozen while every candidate, control, incumbent archive entry,
+and champion is evaluated. Incumbents are rescored before comparisons; candidates
+are added to the historical pool only after the generation's selection completes.
+An early seed panel can include the seed itself among earlier snapshots. Its
+mirror score alone is not interpreted as progress.
+
+Panel definitions and IDs are stored in `generations/gNNNN/panel.json`, rankings
+in `summary.json`, and per-policy evaluation logs/results beside them. Scores
+from different generations **are not directly comparable** because panels change.
+Resume validates model/config hashes and preserves panels/cached jobs. Keep all
+run checkpoints; the panel references immutable files rather than duplicating
+each model. Any optional post-hoc match against the old league must be kept out
+of training, CMA ranking, archive admission, and parent selection.
+
+For a short test use `--train-steps 4194304 --generations 1 --games 8
+--history-panel-size 2 --selfplay-checkpoint-interval 2` in a separate output.
+The local long-run launcher is `bash ocean/pokemon/run_qd_selfplay_local.sh`.
+
 ## Personality signals
 
 All five defaults are zero, preserving ordinary training. These are bounded

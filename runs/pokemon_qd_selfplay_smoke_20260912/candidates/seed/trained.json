@@ -1,0 +1,15 @@
+{
+  "checkpoint": "/home/felix/puffertank/pufferlib/runs/pokemon_qd_selfplay_smoke_20260912/candidates/seed/checkpoints/pokemon/seed_1789262484232114372/0000000004194304.bin",
+  "checkpoint_sha256": "2d1e84705b66fcbd8fff70f915ab6af3711f5731aab6fcfadd24f857dfa14c9e",
+  "config_sha256": "a765bfddfc0d5137672b16253cfa0a31cb1cd7fbaea9d36bf562f3330ea4ddfb",
+  "id": "seed",
+  "parent": "None",
+  "train_seed": 42,
+  "weights": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+  ]
+}
