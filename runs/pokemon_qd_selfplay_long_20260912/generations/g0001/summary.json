@@ -1,0 +1,34 @@
+{
+  "champion": "g0000_control",
+  "panel_id": "55735215a2550a92c8b6fff65bea210691040a8286ed2e1058956cfc208e6956",
+  "parent": "/home/felix/puffertank/pufferlib/runs/pokemon_qd_selfplay_long_20260912/candidates/seed/checkpoints/pokemon/seed_1789263411277120264/0000000099614720.bin",
+  "ranks": {
+    "g0001_c000": [
+      2,
+      0.58203125
+    ],
+    "g0001_c001": [
+      2,
+      0.4765625
+    ],
+    "g0001_c002": [
+      1,
+      0.03515625
+    ],
+    "g0001_c003": [
+      0,
+      -0.19140625
+    ],
+    "g0001_control": [
+      0,
+      -0.078125
+    ]
+  },
+  "scores": {
+    "g0001_c000": 0.58203125,
+    "g0001_c001": 0.4765625,
+    "g0001_c002": 0.734375,
+    "g0001_c003": 0.390625,
+    "g0001_control": 0.32421875
+  }
+}

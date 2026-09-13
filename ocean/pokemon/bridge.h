@@ -14,6 +14,7 @@ int pk_update(PKBattle*, int p1, int p2);
 void pk_mask(const PKBattle*, int player, uint8_t out[PK_ACTIONS]);
 void pk_observe(const PKBattle*, int player, uint8_t out[PK_OBS]);
 int pk_turn(const PKBattle*);
+void pk_behavior(const PKBattle*, int player, float out[2]);
 int pk_species(int set);
 const char* pk_set_name(int set);
 const char* pk_move_name(int move);

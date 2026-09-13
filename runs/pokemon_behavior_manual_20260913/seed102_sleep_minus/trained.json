@@ -1,0 +1,12 @@
+{
+  "checkpoint": "/home/felix/puffertank/pufferlib/runs/pokemon_behavior_manual_20260913/seed102_sleep_minus/checkpoints/pokemon/seed102_sleep_minus/0000000099614720.bin",
+  "checkpoint_sha256": "19a7a1aedc6d794fd1f95ee592b7592acd2206cbe4db943ef99a39ebd7033ac7",
+  "condition": "sleep_minus",
+  "config_sha256": "d26dd2ab5830c8496ec3e5e41587cf7d527ab4c297f4371bc73f1ae606a63e81",
+  "parent": "/home/felix/puffertank/pufferlib/runs/pokemon_behavior_manual_20260913/parent/0000000099614720.bin",
+  "seed": 102,
+  "weights": [
+    -0.5,
+    0
+  ]
+}

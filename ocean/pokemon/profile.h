@@ -77,5 +77,9 @@ static void pk_profile_emit(const PKProfile* p, const PKGame* g, int side, doubl
     for(int i=0;i<6;i++) printf("%s%d",i?",":"",(int)g->teams[side][i]);
     printf("],\"personality\":[");
     for(int k=0;k<PK_PERSONALITY_DIM;k++) printf("%s%.9g",k?",":"",p->samples?p->personality_sum[k]/p->samples:0);
-    printf("]}\n");
+    float behavior[2]={0},opponent_behavior[2]={0};
+    pk_behavior(&g->battle,side,behavior);
+    pk_behavior(&g->battle,1-side,opponent_behavior);
+    printf("],\"behavior_version\":1,\"behavior_events\":[%.9g,%.9g],\"opponent_behavior_events\":[%.9g,%.9g]}\n",
+           behavior[0],behavior[1],opponent_behavior[0],opponent_behavior[1]);
 }

@@ -1,0 +1,380 @@
+{
+  "purpose": "posthoc_only_no_selection_feedback",
+  "games_per_match": 256,
+  "seed": 2000076,
+  "max_updates": 512,
+  "league_round": 20,
+  "roster": {
+    "master": "league_20_master_3_823257236",
+    "starmie_rhydon": "league_20_starmie_rhydon_3_443903528",
+    "alakazam_zapdos": "league_20_alakazam_zapdos_3_197177983",
+    "starmie_alakazam": "league_20_starmie_alakazam_3_266905515",
+    "jynx_starmie": "league_20_jynx_starmie_3_236079906",
+    "jolteon_cloyster": "league_20_jolteon_cloyster_3_483352555",
+    "jynx_cloyster": "league_20_jynx_cloyster_3_565116445",
+    "lapras_core": "league_20_lapras_core_3_48341676",
+    "articuno_core": "league_20_articuno_core_3_483140664",
+    "victreebel_core": "league_20_victreebel_core_3_322848883",
+    "dragonite_core": "league_20_dragonite_core_3_774768967"
+  },
+  "candidates": {
+    "selfplay_champion": {
+      "behavior": {
+        "leads": {
+          "103": 0.890625,
+          "113": 0.015625,
+          "128": 0.09375
+        },
+        "pairs": {
+          "103,112": 0.890625,
+          "103,125": 0.890625,
+          "103,131": 0.890625,
+          "103,145": 0.890625,
+          "112,113": 0.015625,
+          "112,125": 1.0,
+          "112,128": 0.09375,
+          "112,131": 1.0,
+          "112,145": 1.0,
+          "113,125": 0.015625,
+          "113,131": 0.015625,
+          "113,145": 0.015625,
+          "125,128": 0.09375,
+          "125,131": 1.0,
+          "125,145": 1.0,
+          "128,131": 0.09375,
+          "128,145": 0.09375,
+          "131,145": 1.0,
+          "20,112": 0.09375,
+          "20,125": 0.09375,
+          "20,128": 0.09375,
+          "20,131": 0.09375,
+          "20,145": 0.09375,
+          "80,103": 0.890625,
+          "80,112": 0.90625,
+          "80,113": 0.015625,
+          "80,125": 0.90625,
+          "80,131": 0.90625,
+          "80,145": 0.90625
+        },
+        "species": {
+          "103": 0.890625,
+          "112": 1.0,
+          "113": 0.015625,
+          "125": 1.0,
+          "128": 0.09375,
+          "131": 1.0,
+          "145": 1.0,
+          "20": 0.09375,
+          "80": 0.90625
+        },
+        "style": [
+          -0.01983902570273438,
+          -0.035410205165664066,
+          0.05604054849289062,
+          0.0002728672213671875,
+          0.6758586785585942
+        ],
+        "teams": {
+          "297,365,389,431,457,526": 0.78125,
+          "297,367,389,431,457,526": 0.109375,
+          "297,389,398,431,457,526": 0.015625,
+          "47,391,432,445,457,527": 0.09375
+        }
+      },
+      "checkpoint": "/home/felix/puffertank/pufferlib/runs/pokemon_qd_selfplay_long_20260912/candidates/g0000_control/checkpoints/pokemon/g0000_control_1789266489107356907/0000000099614720.bin",
+      "checkpoint_sha256": "9eaab6e98045294ba81722d7e8574fd7e8d9d0972745481b12a83ff2b271616c",
+      "config_sha256": "08534b38a8ff183423e42a04cfbc0849431f20b73d26a9775accf32bd6dbf8f0",
+      "evaluation_directory": "/home/felix/puffertank/pufferlib/runs/pokemon_qd_selfplay_long_20260912/generations/g0001/g0000_control/evaluation",
+      "evaluation_panel_id": "55735215a2550a92c8b6fff65bea210691040a8286ed2e1058956cfc208e6956",
+      "games": 256,
+      "id": "g0000_control",
+      "noise": 0.05572212598158787,
+      "parent": "/home/felix/puffertank/pufferlib/runs/pokemon_qd_selfplay_long_20260912/candidates/seed/checkpoints/pokemon/seed_1789263411277120264/0000000099614720.bin",
+      "payoffs": {
+        "0": 1.0,
+        "1": 0.671875,
+        "2": 0.8125,
+        "3": 0.609375
+      },
+      "quality": 0.7734375,
+      "timeout_rate": 0.0,
+      "train_seed": 43,
+      "weights": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    "personality": {
+      "behavior": {
+        "leads": {
+          "103": 1.0
+        },
+        "pairs": {
+          "103,112": 1.0,
+          "103,125": 1.0,
+          "103,131": 1.0,
+          "103,145": 1.0,
+          "112,125": 1.0,
+          "112,131": 1.0,
+          "112,145": 1.0,
+          "125,131": 1.0,
+          "125,145": 1.0,
+          "131,145": 1.0,
+          "80,103": 1.0,
+          "80,112": 1.0,
+          "80,125": 1.0,
+          "80,131": 1.0,
+          "80,145": 1.0
+        },
+        "species": {
+          "103": 1.0,
+          "112": 1.0,
+          "125": 1.0,
+          "131": 1.0,
+          "145": 1.0,
+          "80": 1.0
+        },
+        "style": [
+          -0.024690387546210932,
+          -0.01304830451226563,
+          0.06482173996941402,
+          0.0,
+          0.6895109444648442
+        ],
+        "teams": {
+          "297,365,389,431,457,526": 0.03125,
+          "297,367,389,431,457,526": 0.96875
+        }
+      },
+      "checkpoint": "/home/felix/puffertank/pufferlib/runs/pokemon_qd_selfplay_long_20260912/candidates/g0001_c002/checkpoints/pokemon/g0001_c002_1789268912955093782/0000000099614720.bin",
+      "checkpoint_sha256": "ae7a70509ef4fd964bb88f04566ed1fcf2b187a279c4016cac0f770817f97f08",
+      "config_sha256": "b1d1c65995ada24c6809fdbdedf69f1cb09b9d51c85974bf523e87d200f1175e",
+      "evaluation_directory": "/home/felix/puffertank/pufferlib/runs/pokemon_qd_selfplay_long_20260912/generations/g0001/g0001_c002/evaluation",
+      "evaluation_panel_id": "55735215a2550a92c8b6fff65bea210691040a8286ed2e1058956cfc208e6956",
+      "games": 256,
+      "id": "g0001_c002",
+      "noise": 0.02796087836140904,
+      "parent": "/home/felix/puffertank/pufferlib/runs/pokemon_qd_selfplay_long_20260912/candidates/seed/checkpoints/pokemon/seed_1789263411277120264/0000000099614720.bin",
+      "payoffs": {
+        "0": 1.0,
+        "1": 0.71875,
+        "2": 0.765625,
+        "3": 0.453125
+      },
+      "quality": 0.734375,
+      "timeout_rate": 0.0,
+      "train_seed": 44,
+      "weights": [
+        0.05201590889222057,
+        -0.35439663447624214,
+        -0.03991338162099719,
+        -0.13996618166316085,
+        -0.41370789334737934
+      ]
+    }
+  },
+  "evaluator_sha256": "205cd33c80c93f6e373329cbc8115860b9a89719bd6047ab22729564d7df697d",
+  "results": [
+    {
+      "candidate": "selfplay_champion",
+      "opponent": "alakazam_zapdos",
+      "wins": 73,
+      "draws": 0,
+      "losses": 183,
+      "score": 0.28515625,
+      "timeouts": 0
+    },
+    {
+      "candidate": "personality",
+      "opponent": "alakazam_zapdos",
+      "wins": 111,
+      "draws": 0,
+      "losses": 145,
+      "score": 0.43359375,
+      "timeouts": 0
+    },
+    {
+      "candidate": "selfplay_champion",
+      "opponent": "articuno_core",
+      "wins": 183,
+      "draws": 0,
+      "losses": 73,
+      "score": 0.71484375,
+      "timeouts": 0
+    },
+    {
+      "candidate": "personality",
+      "opponent": "articuno_core",
+      "wins": 215,
+      "draws": 0,
+      "losses": 41,
+      "score": 0.83984375,
+      "timeouts": 0
+    },
+    {
+      "candidate": "selfplay_champion",
+      "opponent": "dragonite_core",
+      "wins": 245,
+      "draws": 0,
+      "losses": 11,
+      "score": 0.95703125,
+      "timeouts": 0
+    },
+    {
+      "candidate": "personality",
+      "opponent": "dragonite_core",
+      "wins": 234,
+      "draws": 0,
+      "losses": 22,
+      "score": 0.9140625,
+      "timeouts": 0
+    },
+    {
+      "candidate": "selfplay_champion",
+      "opponent": "jolteon_cloyster",
+      "wins": 203,
+      "draws": 0,
+      "losses": 53,
+      "score": 0.79296875,
+      "timeouts": 0
+    },
+    {
+      "candidate": "personality",
+      "opponent": "jolteon_cloyster",
+      "wins": 176,
+      "draws": 0,
+      "losses": 80,
+      "score": 0.6875,
+      "timeouts": 0
+    },
+    {
+      "candidate": "selfplay_champion",
+      "opponent": "jynx_cloyster",
+      "wins": 73,
+      "draws": 0,
+      "losses": 183,
+      "score": 0.28515625,
+      "timeouts": 0
+    },
+    {
+      "candidate": "personality",
+      "opponent": "jynx_cloyster",
+      "wins": 55,
+      "draws": 0,
+      "losses": 201,
+      "score": 0.21484375,
+      "timeouts": 0
+    },
+    {
+      "candidate": "selfplay_champion",
+      "opponent": "jynx_starmie",
+      "wins": 97,
+      "draws": 1,
+      "losses": 158,
+      "score": 0.380859375,
+      "timeouts": 0
+    },
+    {
+      "candidate": "personality",
+      "opponent": "jynx_starmie",
+      "wins": 126,
+      "draws": 0,
+      "losses": 130,
+      "score": 0.4921875,
+      "timeouts": 0
+    },
+    {
+      "candidate": "selfplay_champion",
+      "opponent": "lapras_core",
+      "wins": 251,
+      "draws": 0,
+      "losses": 5,
+      "score": 0.98046875,
+      "timeouts": 0
+    },
+    {
+      "candidate": "personality",
+      "opponent": "lapras_core",
+      "wins": 231,
+      "draws": 0,
+      "losses": 25,
+      "score": 0.90234375,
+      "timeouts": 0
+    },
+    {
+      "candidate": "selfplay_champion",
+      "opponent": "master",
+      "wins": 157,
+      "draws": 0,
+      "losses": 99,
+      "score": 0.61328125,
+      "timeouts": 0
+    },
+    {
+      "candidate": "personality",
+      "opponent": "master",
+      "wins": 143,
+      "draws": 0,
+      "losses": 113,
+      "score": 0.55859375,
+      "timeouts": 0
+    },
+    {
+      "candidate": "selfplay_champion",
+      "opponent": "starmie_alakazam",
+      "wins": 170,
+      "draws": 0,
+      "losses": 86,
+      "score": 0.6640625,
+      "timeouts": 0
+    },
+    {
+      "candidate": "personality",
+      "opponent": "starmie_alakazam",
+      "wins": 193,
+      "draws": 0,
+      "losses": 63,
+      "score": 0.75390625,
+      "timeouts": 0
+    },
+    {
+      "candidate": "selfplay_champion",
+      "opponent": "starmie_rhydon",
+      "wins": 183,
+      "draws": 3,
+      "losses": 70,
+      "score": 0.720703125,
+      "timeouts": 0
+    },
+    {
+      "candidate": "personality",
+      "opponent": "starmie_rhydon",
+      "wins": 168,
+      "draws": 3,
+      "losses": 85,
+      "score": 0.662109375,
+      "timeouts": 0
+    },
+    {
+      "candidate": "selfplay_champion",
+      "opponent": "victreebel_core",
+      "wins": 163,
+      "draws": 0,
+      "losses": 93,
+      "score": 0.63671875,
+      "timeouts": 0
+    },
+    {
+      "candidate": "personality",
+      "opponent": "victreebel_core",
+      "wins": 129,
+      "draws": 0,
+      "losses": 127,
+      "score": 0.50390625,
+      "timeouts": 0
+    }
+  ]
+}

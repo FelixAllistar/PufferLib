@@ -32,7 +32,7 @@ static DictItem* dict_find(Dict* i,const char* key) {
 static double puf_ini_get(Ini* i,const char* s,const char* k) { (void)s;(void)k;return i->clip; }
 typedef struct { float* rewards; float* terminals; } Agent;
 typedef struct { struct { uint8_t obs[2][640]; } game; Agent agents[2];
-    float reward_gamma,episode_return; struct {float episode_return;} log;
+    float reward_gamma,episode_return,behavior_delta[2][2]; struct {float episode_return;} log;
     int end,calls;
 } Env;
 static void pk_audit(Env* e,int inputs) { (void)inputs; assert(e->agents[0].rewards[0]==-e->agents[1].rewards[0]); }
@@ -126,7 +126,7 @@ class TestWrapperContract(unittest.TestCase):
     def test_wrapper_reset_bookkeeping(self):
         with tempfile.TemporaryDirectory() as tmp:
             p=Path(tmp)
-            for f in ('pokemon.h','personality.h'):shutil.copyfile(HERE/f,p/f)
+            for f in ('pokemon.h','personality.h','behavior.h'):shutil.copyfile(HERE/f,p/f)
             (p/'pokemon_base.h').write_text(STUB);(p/'test.c').write_text(HARNESS)
             subprocess.run(['cc','-std=c11','-Wall','-Wextra','-Werror',str(p/'test.c'),'-lm','-o',str(p/'test')],check=True)
             subprocess.run([p/'test'],check=True)
@@ -142,6 +142,7 @@ typedef struct {uint8_t obs[2][640];int teams[2][6],picks,updates,max_updates,re
 static const char* pk_species_labels[150]={"", "One","Two","Three","Four","Five","Six"};
 static int pk_species(int set){return set+1;}
 static int pk_turn(const int* battle){return *battle;}
+static void pk_behavior(const int* battle,int player,float out[2]){(void)battle;out[0]=1-player;out[1]=2+player;}
 #include "profile.h"
 int main(void) {
     PKGame g={0};g.picks=6;g.updates=10;g.max_updates=512;g.battle=9;
@@ -165,6 +166,9 @@ int main(void) {
             self.assertEqual(len(row['descriptors']['species']),149)
             self.assertEqual(row['qd_version'],1);self.assertAlmostEqual(row['personality'][0],-1/6)
             self.assertEqual(row['personality'][4],1)
+            self.assertEqual(row['behavior_version'],1)
+            self.assertEqual(row['behavior_events'],[1,2])
+            self.assertEqual(row['opponent_behavior_events'],[0,3])
 
 
 class TestRunnerContract(unittest.TestCase):

@@ -6,6 +6,9 @@ CFLAGS ?= -O3 -g -std=c11 -Wall -Wextra -Wno-unused-function -Wno-unused-paramet
 LDLIBS := $(BUILD)/libpokemon.a -lm
 RAYLIB := $(ROOT)/raylib-5.5_linux_amd64/lib/libraylib.a -lGL -lpthread -ldl -lrt
 .PHONY: engine test benchmark sanitize validate audit sampler-test profile-test policy-test league-test league-eval native-league-test
+behavior-test:
+	$(CC) $(CPPFLAGS) $(CFLAGS) -fsanitize=address,undefined -fno-omit-frame-pointer tests/test_behavior_events.c $(LDLIBS) $(RAYLIB) -o $(BUILD)/test_behavior_events
+	$(BUILD)/test_behavior_events
 native-league-test:
 	$(CC) $(CPPFLAGS) $(CFLAGS) tests/test_native_league.c $(LDLIBS) $(RAYLIB) -o $(BUILD)/test_native_league
 	cd $(ROOT) && build/pokemon/test_native_league
