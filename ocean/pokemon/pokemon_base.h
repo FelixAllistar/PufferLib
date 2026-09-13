@@ -7,6 +7,7 @@
 #include <time.h>
 #include "pufferenv.h"
 #include "pokemon_core.h"
+#include "behavior.h"
 #include "species_labels.h"
 typedef uint8_t obs_t;
 #define OBS_SIZE PK_OBS
@@ -191,6 +192,8 @@ struct Env {
     long long team_log_max_bytes;
     char team_log_path[512];
     int audit;
+    int behavior_enabled;
+    float behavior_delta[2][PK_BEHAVIOR_DIM];
 };
 // Opt-in adapter-boundary diagnostics; no trainer or learning changes.
 static inline void pk_audit(Env* env, int inputs) {
@@ -368,6 +371,8 @@ void puf_init(Env* env, Dict* kwargs) {
     env->reward_hp_scale = pk_reward_option(kwargs, "reward_hp_scale", 0);
     env->reward_ko_scale = pk_reward_option(kwargs, "reward_ko_scale", 0);
     env->reward_gamma = pk_reward_option(kwargs, "reward_gamma", 0.999f);
+    env->behavior_enabled = pk_reward_option(kwargs,"behavior_sleep",0)!=0 ||
+                            pk_reward_option(kwargs,"behavior_paralysis",0)!=0;
     env->episodes = 0;
     env->team_log_interval = (int)pk_reward_option(kwargs, "team_log_interval", 0);
     env->team_log_max_bytes = (long long)pk_reward_option(kwargs, "team_log_max_bytes", 8388608);
@@ -409,6 +414,9 @@ static inline void pk_native_bank_loaded(Env* envs, int count, int bank, const c
 void puf_step(Env* env) {
     pk_audit(env,1);
     float old_potential = pk_potential(env);
+    float old_behavior[2][PK_BEHAVIOR_DIM]={{0}};
+    if (env->behavior_enabled && env->game.picks==6)
+        for (int p=0;p<2;p++) pk_behavior(&env->game.battle,p,old_behavior[p]);
     int actions[2];
     for (int p = 0; p < 2; p++) {
         float value = env->agents[p].actions[0];
@@ -418,6 +426,14 @@ void puf_step(Env* env) {
         env->agents[p].terminals[0] = 0;
     }
     int result = pk_game_step(&env->game, actions[0], actions[1]);
+    if (env->behavior_enabled) {
+        for (int p=0;p<2;p++) {
+            float after[PK_BEHAVIOR_DIM]={0};
+            if (env->game.picks==6) pk_behavior(&env->game.battle,p,after);
+            for (int k=0;k<PK_BEHAVIOR_DIM;k++)
+                env->behavior_delta[p][k]=pk_behavior_progress(old_behavior[p][k],after[k],k);
+        }
+    }
     if (result == 4) {
         fprintf(stderr, "pokemon engine error at update %d\n", env->game.updates);
         abort(); // Simulator failures must not silently become training draws.

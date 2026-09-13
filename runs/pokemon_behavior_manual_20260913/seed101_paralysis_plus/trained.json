@@ -1,0 +1,12 @@
+{
+  "checkpoint": "/home/felix/puffertank/pufferlib/runs/pokemon_behavior_manual_20260913/seed101_paralysis_plus/checkpoints/pokemon/seed101_paralysis_plus/0000000099614720.bin",
+  "checkpoint_sha256": "d806236df24cf87a1bf1f5c7475e83cc456fb17ad47682048fe1a5718ecec801",
+  "condition": "paralysis_plus",
+  "config_sha256": "f7b330b3fb23fdb099dc91ab6f28c61b6fe487c0443811c2046ff9b5db97b8c3",
+  "parent": "/home/felix/puffertank/pufferlib/runs/pokemon_behavior_manual_20260913/parent/0000000099614720.bin",
+  "seed": 101,
+  "weights": [
+    0,
+    0.5
+  ]
+}

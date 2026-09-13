@@ -1,0 +1,67 @@
+{
+  "behavior": {
+    "leads": {
+      "128": 1.0
+    },
+    "pairs": {
+      "112,125": 1.0,
+      "112,128": 1.0,
+      "112,131": 1.0,
+      "112,145": 1.0,
+      "125,128": 1.0,
+      "125,131": 1.0,
+      "125,145": 1.0,
+      "128,131": 1.0,
+      "128,145": 1.0,
+      "131,145": 1.0,
+      "20,112": 1.0,
+      "20,125": 1.0,
+      "20,128": 1.0,
+      "20,131": 1.0,
+      "20,145": 1.0
+    },
+    "species": {
+      "112": 1.0,
+      "125": 1.0,
+      "128": 1.0,
+      "131": 1.0,
+      "145": 1.0,
+      "20": 1.0
+    },
+    "style": [
+      -0.010904659894687498,
+      -0.01429056630300781,
+      0.0,
+      0.0,
+      0.6093288460820315
+    ],
+    "teams": {
+      "47,389,432,445,457,526": 1.0
+    }
+  },
+  "checkpoint": "/home/felix/puffertank/pufferlib/runs/pokemon_qd_selfplay_long_20260912/candidates/g0001_c003/checkpoints/pokemon/g0001_c003_1789270768298090036/0000000099614720.bin",
+  "checkpoint_sha256": "a82c5fc32661d36bf19bc10ba213fd82c0cf19c5fc9a8d94d279dddd2eb42e53",
+  "config_sha256": "84e40ffb837c2c10f0c5424a200d4314a7e5abf33c40ed6e435c166d94c9d097",
+  "evaluation_directory": "/home/felix/puffertank/pufferlib/runs/pokemon_qd_selfplay_long_20260912/generations/g0001/g0001_c003/evaluation",
+  "evaluation_panel_id": "55735215a2550a92c8b6fff65bea210691040a8286ed2e1058956cfc208e6956",
+  "games": 256,
+  "id": "g0001_c003",
+  "noise": 0.0006367166285280282,
+  "parent": "/home/felix/puffertank/pufferlib/runs/pokemon_qd_selfplay_long_20260912/candidates/seed/checkpoints/pokemon/seed_1789263411277120264/0000000099614720.bin",
+  "payoffs": {
+    "0": 1.0,
+    "1": 0.125,
+    "2": 0.296875,
+    "3": 0.140625
+  },
+  "quality": 0.390625,
+  "timeout_rate": 0.0,
+  "train_seed": 44,
+  "weights": [
+    0.1251208890482019,
+    -0.2925147510081604,
+    0.10675296999979371,
+    -0.016999741551465972,
+    -0.45861164839237806
+  ]
+}

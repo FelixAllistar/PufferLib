@@ -1,0 +1,82 @@
+{
+  "behavior": {
+    "leads": {
+      "128": 1.0
+    },
+    "pairs": {
+      "112,125": 1.0,
+      "112,128": 1.0,
+      "112,131": 1.0,
+      "112,145": 1.0,
+      "125,128": 1.0,
+      "125,131": 1.0,
+      "125,145": 1.0,
+      "128,131": 1.0,
+      "128,145": 1.0,
+      "131,145": 1.0,
+      "20,112": 1.0,
+      "20,125": 1.0,
+      "20,128": 1.0,
+      "20,131": 1.0,
+      "20,145": 1.0
+    },
+    "species": {
+      "112": 1.0,
+      "125": 1.0,
+      "128": 1.0,
+      "131": 1.0,
+      "145": 1.0,
+      "20": 1.0
+    },
+    "style": [
+      -0.01367263475683594,
+      -0.0210604974440625,
+      0.0,
+      0.0,
+      0.6516839183867187
+    ],
+    "teams": {
+      "47,391,432,445,457,527": 1.0
+    }
+  },
+  "behavior_events": [
+    0.0,
+    2.3203125
+  ],
+  "behavior_events_capped": [
+    0.0,
+    0.6874999999999998
+  ],
+  "checkpoint": "/home/felix/puffertank/pufferlib/runs/pokemon_behavior_manual_20260913/seed101_paralysis_plus/checkpoints/pokemon/seed101_paralysis_plus/0000000099614720.bin",
+  "checkpoint_sha256": "d806236df24cf87a1bf1f5c7475e83cc456fb17ad47682048fe1a5718ecec801",
+  "condition": "paralysis_plus",
+  "config_sha256": "f7b330b3fb23fdb099dc91ab6f28c61b6fe487c0443811c2046ff9b5db97b8c3",
+  "event_order": [
+    "early_opponent_sleep",
+    "distinct_opponents_paralyzed"
+  ],
+  "games": 256,
+  "noise": 0.00034450416433459826,
+  "opponent_behavior_events": [
+    0.5,
+    0.57421875
+  ],
+  "opponent_behavior_events_capped": [
+    0.5,
+    0.19140625000000017
+  ],
+  "parent": "/home/felix/puffertank/pufferlib/runs/pokemon_behavior_manual_20260913/parent/0000000099614720.bin",
+  "payoffs": {
+    "0": 1.0,
+    "1": 0.46875,
+    "2": 0.65625,
+    "3": 0.6875
+  },
+  "quality": 0.703125,
+  "seed": 101,
+  "timeout_rate": 0.0,
+  "weights": [
+    0,
+    0.5
+  ]
+}

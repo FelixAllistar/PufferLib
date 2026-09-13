@@ -13,6 +13,8 @@ goof*
 # hipified cuda extensions dir [HIP/ROCM]
 pufferlib/extensions/hip/
 *.py
+!ocean/pokemon/behavior_experiment.py
+!ocean/pokemon/tests/test_behavior.py
 !pufferlib/population.py
 !tests/test_population_descriptors.py
 !ocean/pokemon/profile_population.py
