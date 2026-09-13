@@ -1,0 +1,24 @@
+{
+  "bank_contract_sha256": "192f306d4b37ec020238e984c056650f11fccbe042e040ea23b5185309236e50",
+  "bytes": 103636320,
+  "counts": [
+    1079,
+    20574,
+    24285
+  ],
+  "games": 8192,
+  "joint_decisions": 463779,
+  "path": "/home/felix/puffertank/pufferlib/runs/pokemon_states_20260913/states.pks",
+  "perturbed_games": 1024,
+  "record_bytes": 2256,
+  "seed": 76101,
+  "sha256": "5ccc6ac9ef1c7ff787bfdc18d19e1ea0c969411f44b5f71652312e441c1cfeca",
+  "strata": [
+    8,
+    153,
+    308
+  ],
+  "timeouts": 0,
+  "version": 1,
+  "wall_seconds": 305.2204691349998
+}

@@ -23,6 +23,7 @@
  */
 
 #include <stdint.h>
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -343,6 +344,9 @@ struct Env {
     int render_selected_unit;
     int policy_market_slots;
     int policy_max_hands;
+    int land_buy_min_days;
+    int land_fill_step[KG_NUM_PLAYERS];
+    int land_fill_mask[KG_NUM_PLAYERS];
     int opening_turns;
     int reset_opening_turns;
     int reset_opening_min;
@@ -474,6 +478,7 @@ KG_HD static inline int kag_task_available_count(const KGState* game,
 
 /* The build scripts compile one translation unit for each environment. */
 #include "kaggriculture_core.c"
+#include "land_buy_delay.h"
 #include "kaggriculture_bots.h"
 
 KG_HD static inline uint8_t kag_u8(int value) {
@@ -2379,6 +2384,8 @@ KG_HD static inline int kag_macro_candidate_legal_legacy(const Env* env,
 
 KG_HD static inline int kag_macro_candidate_legal(const Env* env,
         int player_id, int macro_id) {
+    if (macro_id == KAG_MACRO_EXPAND
+            && !kag_land_buy_delay_ready(env, player_id)) return 0;
     return kag_agent_executor_version(env, player_id)
         ? kag_explicit_legal(env, player_id, macro_id)
         : kag_macro_candidate_legal_legacy(env, player_id, macro_id);
@@ -2629,6 +2636,9 @@ KG_HD static inline void kag_write_market_slots(const Env* env,
         const KGState* game, const KGPlayer* player, unsigned char* mask) {
     unsigned char commands[KG_POLICY_MARKET_COMMANDS];
     kag_write_market_mask(game, player, commands);
+    if (!kag_land_buy_delay_ready(env, (int)(player - game->players))) {
+        commands[KG_M_LAND] = 0;
+    }
     if (player->hand_count >= kag_policy_hand_limit(env)) {
         for (int id = 0; id < KG_POLICY_MARKET_COMMANDS; id++) {
             if (kag_market_spec(id).op == KG_MARKET_HIRE) commands[id] = 0;
@@ -2652,6 +2662,7 @@ KG_HD static inline void kag_write_market_slots(const Env* env,
 }
 
 KG_HD static inline void kag_write_mask(Env* env, int player_id) {
+    kag_update_land_buy_delay(env, player_id);
     Agent* agent = &env->agents[player_id];
     KGState* game = &env->game_storage;
     KGPlayer* player = &game->players[player_id];
@@ -2876,8 +2887,14 @@ KG_HD static inline void kag_apply_policy_limits(const Env* env,
     int hand_count = player->hand_count;
     int hand_limit = kag_policy_hand_limit(env);
     int output_count = 0;
+    int land_order_seen = 0;
     for (int order = 0; order < input_count; order++) {
         KGMarketOrder candidate = action->market[order];
+        if (candidate.op == KG_MARKET_BUY_LAND && env->land_buy_min_days > 0) {
+            int player_id = (int)(player - env->game_storage.players);
+            if (land_order_seen || !kag_land_buy_delay_ready(env, player_id)) continue;
+            land_order_seen = 1;
+        }
         if (candidate.op == KG_MARKET_HIRE) {
             if (hand_count >= hand_limit) continue;
             hand_count++;
@@ -5082,6 +5099,14 @@ void puf_init(Env* env, Dict* kwargs) {
     env->render_selected_unit = 0;
     env->policy_market_slots = (int)dict_get(kwargs, "policy_market_slots");
     env->policy_max_hands = (int)dict_get(kwargs, "policy_max_hands");
+    double land_days = dict_find(kwargs, "land_buy_min_days")
+        ? dict_get(kwargs, "land_buy_min_days") : 2;
+    if (!isfinite(land_days) || land_days < 0 || land_days > INT_MAX
+            || land_days != (int)land_days) {
+        fprintf(stderr, "land_buy_min_days must be a nonnegative integer (0 disables the restriction)\n");
+        exit(1);
+    }
+    env->land_buy_min_days = (int)land_days;
     env->macro_mode = (int)dict_get(kwargs, "macro_mode");
     env->macro_executor_version = dict_find(kwargs, "macro_executor_version")
         ? (int)dict_get(kwargs, "macro_executor_version") : 0;
@@ -5429,6 +5454,7 @@ void puf_reset(Env* env) {
         env->potential[player] = kag_player_potential(env, player);
         env->progress_value[player] = kag_player_progress_value(env, player);
         kag_reset_expansion_peaks(env, player);
+        kag_reset_land_buy_delay(env, player);
     }
     kag_write_all_observations(env);
 }
@@ -5762,6 +5788,8 @@ void puf_step(Env* env) {
         env->progress_value[1] = kag_player_progress_value(env, 1);
         kag_reset_expansion_peaks(env, 0);
         kag_reset_expansion_peaks(env, 1);
+        kag_reset_land_buy_delay(env, 0);
+        kag_reset_land_buy_delay(env, 1);
         kag_write_all_observations(env);
     } else {
         kag_write_all_observations(env);

@@ -1,0 +1,84 @@
+{
+  "checkpoints": [
+    {
+      "config_sha256": "40b1c262b28921510dd716ae7b270a63c664a7dd5cbe06ad543b24091052c47f",
+      "path": "/home/felix/puffertank/pufferlib/runs/pokemon_states_20260913/jobs/seed6101_states/checkpoints/pokemon/seed6101_states/0000000005242880.bin",
+      "sha256": "94ad32962a7e221c9daf2348f57a72e7742a5fff0895ba22866afa7f98eeda46",
+      "steps": 5242880,
+      "train_seconds": 54.98521184921265
+    },
+    {
+      "config_sha256": "40b1c262b28921510dd716ae7b270a63c664a7dd5cbe06ad543b24091052c47f",
+      "path": "/home/felix/puffertank/pufferlib/runs/pokemon_states_20260913/jobs/seed6101_states/checkpoints/pokemon/seed6101_states/0000000010485760.bin",
+      "sha256": "4cd3af6290eec40739c7684d625c847f0359aa82f944d2a863bcff4ceda8f093",
+      "steps": 10485760,
+      "train_seconds": 95.81726741790771
+    },
+    {
+      "config_sha256": "40b1c262b28921510dd716ae7b270a63c664a7dd5cbe06ad543b24091052c47f",
+      "path": "/home/felix/puffertank/pufferlib/runs/pokemon_states_20260913/jobs/seed6101_states/checkpoints/pokemon/seed6101_states/0000000015728640.bin",
+      "sha256": "03cb8cd6b87f67b7aa4dc9de83930386296f45d643763df2c4267895c5e667a0",
+      "steps": 15728640,
+      "train_seconds": 135.42279267311096
+    },
+    {
+      "config_sha256": "40b1c262b28921510dd716ae7b270a63c664a7dd5cbe06ad543b24091052c47f",
+      "path": "/home/felix/puffertank/pufferlib/runs/pokemon_states_20260913/jobs/seed6101_states/checkpoints/pokemon/seed6101_states/0000000019922944.bin",
+      "sha256": "52c51181c0c06a5949cb8e90eb346f17016bb86153aac71290243792a853e0fc",
+      "steps": 19922944,
+      "train_seconds": 163.8527615070343
+    }
+  ],
+  "telemetry": {
+    "env/endgame_fraction": [
+      0.20397556573152542,
+      0.20048323273658752,
+      0.19989197701215744,
+      0.19926159746117061,
+      0.2003026306629181
+    ],
+    "env/midgame_fraction": [
+      0.397959041595459,
+      0.4022701051500108,
+      0.3995457500219345,
+      0.40143221616744995,
+      0.39947041869163513
+    ],
+    "env/opening_fraction": [
+      0.39806539118289946,
+      0.3972466720475091,
+      0.4005622863769531,
+      0.39930617809295654,
+      0.40022698044776917
+    ],
+    "env/reset_episode_fraction": [
+      0.5023078948259354,
+      0.5009675555759006,
+      0.5011240363121032,
+      0.49925656782256234,
+      0.4968051016330719
+    ],
+    "env/reset_score": [
+      0.5127340108156204,
+      0.5311774048540328,
+      0.5376331627368927,
+      0.5341444280412462,
+      0.5476641058921814
+    ],
+    "env/reset_step_fraction": [
+      0.3982490569353104,
+      0.3864373001787398,
+      0.39700087904930115,
+      0.4120280047257741,
+      0.40549659729003906
+    ],
+    "env/root_score": [
+      0.5720457553863525,
+      0.5652436514695486,
+      0.5919739782810212,
+      0.6016345620155334,
+      0.556209146976471
+    ]
+  },
+  "wall_seconds": 169.72431154599872
+}

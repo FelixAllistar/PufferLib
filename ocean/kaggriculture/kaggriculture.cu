@@ -27,6 +27,7 @@ typedef struct {
     uint64_t base_seed;
     int policy_market_slots;
     int policy_max_hands;
+    int land_buy_min_days;
     int macro_mode;
     int macro_executor_version;
     int frozen_macro_executor_version;
@@ -608,6 +609,8 @@ __device__ static void kag_cuda_transition(Env* env, Env* shells,
     env->progress_value[1] = kag_player_progress_value(env, 1);
     kag_reset_expansion_peaks(env, 0);
     kag_reset_expansion_peaks(env, 1);
+    kag_reset_land_buy_delay(env, 0);
+    kag_reset_land_buy_delay(env, 1);
     kag_write_all_observations_from_tapes(env, tapes);
 }
 
@@ -624,6 +627,7 @@ __global__ static void kag_cuda_reset_kernel(Env* shells, Env* matches,
     env->rng = (unsigned)match_id;
     env->policy_market_slots = d_kag_cuda_config.policy_market_slots;
     env->policy_max_hands = d_kag_cuda_config.policy_max_hands;
+    env->land_buy_min_days = d_kag_cuda_config.land_buy_min_days;
     env->macro_mode = d_kag_cuda_config.macro_mode;
     env->macro_executor_version = d_kag_cuda_config.macro_executor_version;
     env->frozen_macro_executor_version = d_kag_cuda_config.frozen_macro_executor_version;
@@ -734,6 +738,7 @@ __global__ static void kag_cuda_reset_kernel(Env* shells, Env* matches,
         env->progress_value[player] =
             kag_player_progress_value(env, player);
         kag_reset_expansion_peaks(env, player);
+        kag_reset_land_buy_delay(env, player);
     }
     kag_write_all_observations_from_tapes(env, tapes);
 }
@@ -770,6 +775,7 @@ static void kag_cuda_load_config(Dict* kwargs) {
     h_kag_cuda_config.base_seed = (uint64_t)dict_get(kwargs, "seed");
     h_kag_cuda_config.policy_market_slots = template_env.policy_market_slots;
     h_kag_cuda_config.policy_max_hands = template_env.policy_max_hands;
+    h_kag_cuda_config.land_buy_min_days = template_env.land_buy_min_days;
     h_kag_cuda_config.macro_mode = template_env.macro_mode;
     h_kag_cuda_config.macro_executor_version = template_env.macro_executor_version;
     h_kag_cuda_config.frozen_macro_executor_version = template_env.frozen_macro_executor_version;

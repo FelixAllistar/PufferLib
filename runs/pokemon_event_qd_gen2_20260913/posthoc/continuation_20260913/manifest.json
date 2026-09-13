@@ -1,0 +1,33 @@
+{
+  "seeds": [
+    15601,
+    15602
+  ],
+  "child_steps": [
+    5242880,
+    20971520,
+    52428800,
+    99614720
+  ],
+  "panel_games": 64,
+  "parent_games": 128,
+  "files": {
+    "/home/felix/puffertank/pufferlib/build/pokemon/pokemon_behavior": "d5cd497c332b02066ca5711cd4e69f175ad39778198ff91316e97cabe64c07d3",
+    "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/jobs/g01_c03/checkpoints/pokemon/g01_c03/0000000099614720.bin": "e2877cfb13245fce1d5ace37810ed401cd8f9b9b5b1ca577c79748843cc2699c",
+    "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/jobs/g02_control/checkpoints/pokemon/g02_control/0000000005242880.bin": "f080c8b9d7b691abd6bbce20b62070d760dc40db2c7f181093fa3fa1f61ec4b8",
+    "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/jobs/g02_control/checkpoints/pokemon/g02_control/0000000020971520.bin": "e483cf2e771b46e7dab066d77f2df4caf53ca0567a72a23c843a331192e53c7e",
+    "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/jobs/g02_control/checkpoints/pokemon/g02_control/0000000052428800.bin": "58e93568d30e868923536b1e5d5ba592b19adb0665dec508a2473ed55b4c81c7",
+    "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/jobs/g02_control/checkpoints/pokemon/g02_control/0000000099614720.bin": "32988e5a65acae35d5c4089ec574ed9fe00f52599ab8aaefee664ec18bea3063",
+    "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/inputs/selection/0/0000000005242880.bin": "9c855e733b7b08fb9f54016239f1d21a982e24c47ecb3d755a70f2a5e3e0fa01",
+    "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/inputs/selection/1/0000000099614720.bin": "8f6e3de065ddd6cde24e2e53cbcb9d3a2206558f962f0571f1eaee835f55a7ee",
+    "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/inputs/selection/2/0000000099614720.bin": "dda4492e1d9b82d4a9b7b423f125b7419f3014e4cecd9b45d049291d21e30b45",
+    "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/inputs/selection/3/0000000099614720.bin": "9eaab6e98045294ba81722d7e8574fd7e8d9d0972745481b12a83ff2b271616c",
+    "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/jobs/g01_c03/checkpoints/pokemon/g01_c03/config.ini": "8af046b6e9fc1305f881fc9bfc4d7433a5735a6a61d08b513e54e7622ceda427",
+    "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/jobs/g02_control/checkpoints/pokemon/g02_control/config.ini": "0425738efb3cbcc521d7a8e7eb397f5743802a2cec54555c48fadd6eee1cff12",
+    "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/inputs/selection/0/config.ini": "fdc9456e8e904b90912d2413bfd28feaa1bbf4cd68ccc3268bdb571fff2584c3",
+    "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/inputs/selection/1/config.ini": "a714e4e1a3d15e3ae8bb99edeea7cd132d68800185a76d233ef150843b415cee",
+    "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/inputs/selection/2/config.ini": "dad8430e0c5da721632eaef93187fbf202b4f3ae92d8e1f5b1237a1017fb22e9",
+    "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/inputs/selection/3/config.ini": "08534b38a8ff183423e42a04cfbc0849431f20b73d26a9775accf32bd6dbf8f0"
+  },
+  "note": "Fresh evaluation seeds; parent plus four prespecified child checkpoints. Posthoc diagnostic only; no causal attribution from this comparison."
+}

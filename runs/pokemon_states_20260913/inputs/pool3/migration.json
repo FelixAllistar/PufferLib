@@ -1,0 +1,12 @@
+{
+  "config_sha256": "d10d7a49738c6ed610af242e1a29cc10544a47c496d42c22eca791b427ae0a39",
+  "flag_byte": 476,
+  "flag_encoding": "raw uint8 0/1 (Pokemon is not normalized)",
+  "hidden_size": 128,
+  "num_layers": 2,
+  "path": "/home/felix/puffertank/pufferlib/runs/pokemon_states_20260913/inputs/pool3/0000000099614720.bin",
+  "sha256": "d9d9645e1fafaf8f9de4e54e2f824cef89596f51569c210c329f095ffcafb7fc",
+  "source": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/inputs/warm03/0000000099614720.bin",
+  "source_config_sha256": "f7b330b3fb23fdb099dc91ab6f28c61b6fe487c0443811c2046ff9b5db97b8c3",
+  "source_sha256": "d806236df24cf87a1bf1f5c7475e83cc456fb17ad47682048fe1a5718ecec801"
+}

@@ -1,0 +1,12 @@
+{
+  "config_sha256": "56a652895f5dccfaacc1d49e84204e59439faa3058eca2bd5be862df1c1826cb",
+  "flag_byte": 476,
+  "flag_encoding": "raw uint8 0/1 (Pokemon is not normalized)",
+  "hidden_size": 128,
+  "num_layers": 2,
+  "path": "/home/felix/puffertank/pufferlib/runs/pokemon_states_smoke_20260913/inputs/holdout1/0000000099614720.bin",
+  "sha256": "a6e06f9ef48900daa655a5c4bf9e7c170a0bd6cae498079be64ec849923ee58e",
+  "source": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/inputs/holdout/1/0000000099614720.bin",
+  "source_config_sha256": "662989d01a0fdccc69fc06c0e6957dc1dc594b2c22d24b92a6cc2101efcc8a55",
+  "source_sha256": "04dd6f694176c8c07271d55ee63a4e2c56d67168eb3b7d81205613e869a0e567"
+}

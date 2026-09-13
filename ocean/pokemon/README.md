@@ -187,7 +187,8 @@ itself rejects invalid battle choices without mutating state.
 | 208–399 | Six opposing records in first-revealed order; unseen entries zero |
 | 400–463 | Two active-state records, own then opponent |
 | 464–475 | Six own global set IDs + 1, little-endian uint16 |
-| 476–479 | Reserved, zero |
+| 476 | State-bank source flag (version 1): 0 normal game, 1 auxiliary reset game |
+| 477–479 | Reserved, zero |
 | 480–639 | Current legal-action mask |
 
 Pokémon record offsets: species at 0, HP scaled to 0–255 at 1, public status at

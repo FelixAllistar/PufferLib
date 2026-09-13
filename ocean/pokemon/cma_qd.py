@@ -31,13 +31,15 @@ class CMAES:
         self.damps = 1 + 2*max(0, math.sqrt((me-1)/(n+1))-1) + self.cs
         self.chi = math.sqrt(n)*(1-1/(4*n)+1/(21*n*n))
 
-    def ask(self):
+    def ask(self, mirrored=False):
         if self.pending is not None:
             raise RuntimeError('tell must follow ask')
         d, B = np.linalg.eigh((self.C+self.C.T)/2)
         d = np.clip(d, 1e-12, 1e12)
         self.C = (B*d) @ B.T
-        z = self.rng.standard_normal((self.population, self.n))
+        z = self.rng.standard_normal((self.population//2 if mirrored else self.population, self.n))
+        if mirrored:
+            z = np.concatenate((z, -z))
         self.pending = self.mean + self.sigma*(z @ (B*np.sqrt(d)).T)
         return self.pending.copy()
 
@@ -104,10 +106,11 @@ def behavior_distance(a, b):
 
 
 class Archive:
-    def __init__(self, radius=.12, capacity=64):
+    def __init__(self, radius=.12, capacity=64, distance=behavior_distance):
         if not 0 < radius <= 1 or capacity < 2:
             raise ValueError('invalid archive limits')
         self.radius, self.capacity, self.records = radius, capacity, []
+        self.distance = distance
 
     def add_batch(self, records):
         """New region > local quality improvement > rejection.
@@ -120,7 +123,7 @@ class Archive:
         for r in sorted(records, key=lambda x: (-x['quality'], x['id'])):
             if not math.isfinite(r['quality']) or not 0 <= r['quality'] <= 1:
                 raise ValueError('quality must be a real match score in [0,1]')
-            ds = [behavior_distance(r['behavior'], old['behavior']) for old in self.records]
+            ds = [self.distance(r['behavior'], old['behavior']) for old in self.records]
             eligible = [i for i, (d, old) in enumerate(zip(ds, self.records))
                         if d <= self.radius + .5*(r.get('noise', 0)+old.get('noise', 0))]
             if not eligible:

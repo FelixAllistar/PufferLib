@@ -1,0 +1,12 @@
+{
+  "checkpoints": [
+    {
+      "config_sha256": "5ed8ed72ca87ed0a357296e00b4b5c8a6a5e525f4e53790f765656dc9fa45eb5",
+      "path": "/home/felix/puffertank/pufferlib/runs/pokemon_states_smoke_20260913/jobs/seed6100_states/checkpoints/pokemon/seed6100_states/0000000001048576.bin",
+      "sha256": "9aa54c9f5a9517577aab66a5dde5068e4dc3e1c04323ec0df6aed10f25ed9cf1",
+      "steps": 1048576,
+      "train_seconds": 6.733382225036621
+    }
+  ],
+  "wall_seconds": 10.526593673001116
+}

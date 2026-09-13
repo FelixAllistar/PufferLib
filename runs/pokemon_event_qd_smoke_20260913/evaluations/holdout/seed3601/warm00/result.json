@@ -1,0 +1,107 @@
+{
+  "behavior": {
+    "events": [
+      1.0,
+      0.29166666666666663
+    ],
+    "leads": {
+      "103": 1.0
+    },
+    "pairs": {
+      "103,112": 1.0,
+      "103,125": 1.0,
+      "103,131": 1.0,
+      "103,145": 1.0,
+      "112,125": 1.0,
+      "112,131": 1.0,
+      "112,145": 1.0,
+      "125,131": 1.0,
+      "125,145": 1.0,
+      "131,145": 1.0,
+      "80,103": 1.0,
+      "80,112": 1.0,
+      "80,125": 1.0,
+      "80,131": 1.0,
+      "80,145": 1.0
+    },
+    "species": {
+      "103": 1.0,
+      "112": 1.0,
+      "125": 1.0,
+      "131": 1.0,
+      "145": 1.0,
+      "80": 1.0
+    },
+    "species_teams": {
+      "80,103,112,125,131,145": 1.0
+    },
+    "style": [
+      -0.038059401140000004,
+      -0.0062850561,
+      0.058359268292499995,
+      0.0,
+      0.62341778375
+    ],
+    "teams": {
+      "297,367,389,431,457,526": 1.0
+    }
+  },
+  "behavior_events": [
+    1.0,
+    0.875
+  ],
+  "behavior_events_capped": [
+    1.0,
+    0.29166666666666663
+  ],
+  "checkpoint": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_smoke_20260913/inputs/warm00/0000000099614720.bin",
+  "checkpoint_sha256": "1b88d32641ff3af65e3c7dbc2c794b184f4fa530545b014eb67494ddc8b724a9",
+  "config_sha256": "23e7aeed0a190c15ebbebaabfae865b5044319e58a19b307220de4c0a490c7b1",
+  "evaluation_contract": {
+    "checkpoint_sha256": "1b88d32641ff3af65e3c7dbc2c794b184f4fa530545b014eb67494ddc8b724a9",
+    "config_sha256": "23e7aeed0a190c15ebbebaabfae865b5044319e58a19b307220de4c0a490c7b1",
+    "games_per_opponent": 2,
+    "panel": [
+      {
+        "path": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_smoke_20260913/inputs/holdout/0/0000000099614720.bin",
+        "team": "None"
+      },
+      {
+        "path": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_smoke_20260913/inputs/holdout/1/0000000099614720.bin",
+        "team": "None"
+      },
+      {
+        "path": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_smoke_20260913/inputs/holdout/2/0000000099614720.bin",
+        "team": "None"
+      },
+      {
+        "path": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_smoke_20260913/inputs/holdout/3/0000000099614720.bin",
+        "team": "None"
+      }
+    ],
+    "seed": 3601
+  },
+  "event_order": [
+    "early_opponent_sleep",
+    "distinct_opponents_paralyzed"
+  ],
+  "games": 8,
+  "id": "warm00",
+  "noise": 0.12499999999999999,
+  "opponent_behavior_events": [
+    0.0,
+    1.25
+  ],
+  "opponent_behavior_events_capped": [
+    0.0,
+    0.4166666666666667
+  ],
+  "payoffs": {
+    "0": 1.0,
+    "1": 1.0,
+    "2": 0.5,
+    "3": 0.5
+  },
+  "quality": 0.75,
+  "timeout_rate": 0.0
+}

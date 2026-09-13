@@ -1,0 +1,14 @@
+{
+  "actual_steps": 10485760,
+  "checkpoint": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_smoke_20260913/jobs/baseline/checkpoints/pokemon/baseline/0000000010485760.bin",
+  "checkpoint_sha256": "14d579ecdf346cb17fd3a75a4c2e204bf0eb759face15f16a1fa3ba2c6000d6f",
+  "config_sha256": "47d6a12d48f928350a39dd5e9e54c4f6e5afc232b2cfe04cfd3d4b9e814aa4c6",
+  "id": "baseline",
+  "parent": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_smoke_20260913/inputs/initial/0000000099614720.bin",
+  "requested_steps": 10485760,
+  "train_seed": 601,
+  "weights": [
+    0.0,
+    0.0
+  ]
+}

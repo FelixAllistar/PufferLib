@@ -25,6 +25,8 @@ static void pk_same_rules(PKPolicy* a, PKPolicy* b) {
 }
 static double pk_match(PKPolicy* a, PKPolicy* b, int games, uint64_t seed, int deterministic, int watch) {
     pk_same_rules(a, b);
+    // Scores/watch are always for the original game, even for bank-trained models.
+    puf_ini_put(&a->ini,"env.reset_state_prob","0");
     Env env = {0};
     puf_init(&env, puf_ini_section(&a->ini, "env", 0));
     int wins = 0, losses = 0, draws = 0, timeouts = 0;

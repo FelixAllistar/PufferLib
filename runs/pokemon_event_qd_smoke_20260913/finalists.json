@@ -1,0 +1,445 @@
+[
+  {
+    "behavior": {
+      "events": [
+        0.75,
+        0.29166666666666663
+      ],
+      "leads": {
+        "103": 1.0
+      },
+      "pairs": {
+        "103,112": 1.0,
+        "103,125": 1.0,
+        "103,131": 1.0,
+        "103,145": 1.0,
+        "112,125": 1.0,
+        "112,131": 1.0,
+        "112,145": 1.0,
+        "125,131": 1.0,
+        "125,145": 1.0,
+        "131,145": 1.0,
+        "80,103": 1.0,
+        "80,112": 1.0,
+        "80,125": 1.0,
+        "80,131": 1.0,
+        "80,145": 1.0
+      },
+      "species": {
+        "103": 1.0,
+        "112": 1.0,
+        "125": 1.0,
+        "131": 1.0,
+        "145": 1.0,
+        "80": 1.0
+      },
+      "species_teams": {
+        "80,103,112,125,131,145": 1.0
+      },
+      "style": [
+        -0.0220520886875,
+        -0.0098393243375,
+        0.06842415139125,
+        0.0,
+        0.6882579609999999
+      ],
+      "teams": {
+        "297,365,389,431,457,526": 0.5,
+        "297,367,389,431,457,526": 0.5
+      }
+    },
+    "behavior_events": [
+      0.75,
+      0.875
+    ],
+    "behavior_events_capped": [
+      0.75,
+      0.29166666666666663
+    ],
+    "checkpoint": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_smoke_20260913/inputs/warm00/0000000099614720.bin",
+    "checkpoint_sha256": "1b88d32641ff3af65e3c7dbc2c794b184f4fa530545b014eb67494ddc8b724a9",
+    "config_sha256": "23e7aeed0a190c15ebbebaabfae865b5044319e58a19b307220de4c0a490c7b1",
+    "evaluation_contract": {
+      "checkpoint_sha256": "1b88d32641ff3af65e3c7dbc2c794b184f4fa530545b014eb67494ddc8b724a9",
+      "config_sha256": "23e7aeed0a190c15ebbebaabfae865b5044319e58a19b307220de4c0a490c7b1",
+      "games_per_opponent": 2,
+      "panel": [
+        {
+          "path": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_smoke_20260913/inputs/selection/0/0000000005242880.bin",
+          "team": "None"
+        },
+        {
+          "path": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_smoke_20260913/inputs/selection/1/0000000099614720.bin",
+          "team": "None"
+        },
+        {
+          "path": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_smoke_20260913/inputs/selection/2/0000000099614720.bin",
+          "team": "None"
+        },
+        {
+          "path": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_smoke_20260913/inputs/selection/3/0000000099614720.bin",
+          "team": "None"
+        }
+      ],
+      "seed": 1601
+    },
+    "event_order": [
+      "early_opponent_sleep",
+      "distinct_opponents_paralyzed"
+    ],
+    "games": 8,
+    "id": "warm00",
+    "noise": 0.57282196186948,
+    "opponent_behavior_events": [
+      0.375,
+      0.625
+    ],
+    "opponent_behavior_events_capped": [
+      0.375,
+      0.20833333333333331
+    ],
+    "payoffs": {
+      "0": 1.0,
+      "1": 1.0,
+      "2": 1.0,
+      "3": 1.0
+    },
+    "quality": 1.0,
+    "timeout_rate": 0.0
+  },
+  {
+    "behavior": {
+      "events": [
+        0.0,
+        0.625
+      ],
+      "leads": {
+        "128": 1.0
+      },
+      "pairs": {
+        "112,125": 1.0,
+        "112,128": 1.0,
+        "112,131": 1.0,
+        "112,145": 1.0,
+        "125,128": 1.0,
+        "125,131": 1.0,
+        "125,145": 1.0,
+        "128,131": 1.0,
+        "128,145": 1.0,
+        "131,145": 1.0,
+        "20,112": 1.0,
+        "20,125": 1.0,
+        "20,128": 1.0,
+        "20,131": 1.0,
+        "20,145": 1.0
+      },
+      "species": {
+        "112": 1.0,
+        "125": 1.0,
+        "128": 1.0,
+        "131": 1.0,
+        "145": 1.0,
+        "20": 1.0
+      },
+      "species_teams": {
+        "20,112,125,128,131,145": 1.0
+      },
+      "style": [
+        -0.0036231884,
+        -0.02701914099625,
+        0.0,
+        0.0,
+        0.6669192496249999
+      ],
+      "teams": {
+        "47,391,432,445,457,527": 1.0
+      }
+    },
+    "behavior_events": [
+      0.0,
+      1.875
+    ],
+    "behavior_events_capped": [
+      0.0,
+      0.625
+    ],
+    "checkpoint": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_smoke_20260913/inputs/warm02/0000000099614720.bin",
+    "checkpoint_sha256": "3a8c772203707b89c351c502c5010bec4371524a67777b35dc61a3049ec1ee30",
+    "config_sha256": "0f82c9ace6953f7bf894120fc62e9ea38a758dc6e68b3ecd411897d8a0f3ca04",
+    "evaluation_contract": {
+      "checkpoint_sha256": "3a8c772203707b89c351c502c5010bec4371524a67777b35dc61a3049ec1ee30",
+      "config_sha256": "0f82c9ace6953f7bf894120fc62e9ea38a758dc6e68b3ecd411897d8a0f3ca04",
+      "games_per_opponent": 2,
+      "panel": [
+        {
+          "path": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_smoke_20260913/inputs/selection/0/0000000005242880.bin",
+          "team": "None"
+        },
+        {
+          "path": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_smoke_20260913/inputs/selection/1/0000000099614720.bin",
+          "team": "None"
+        },
+        {
+          "path": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_smoke_20260913/inputs/selection/2/0000000099614720.bin",
+          "team": "None"
+        },
+        {
+          "path": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_smoke_20260913/inputs/selection/3/0000000099614720.bin",
+          "team": "None"
+        }
+      ],
+      "seed": 1601
+    },
+    "event_order": [
+      "early_opponent_sleep",
+      "distinct_opponents_paralyzed"
+    ],
+    "games": 8,
+    "id": "warm02",
+    "noise": 0.20833333333333337,
+    "opponent_behavior_events": [
+      0.375,
+      0.125
+    ],
+    "opponent_behavior_events_capped": [
+      0.375,
+      0.041666666666666664
+    ],
+    "payoffs": {
+      "0": 1.0,
+      "1": 0.5,
+      "2": 0.5,
+      "3": 0.5
+    },
+    "quality": 0.625,
+    "timeout_rate": 0.0
+  },
+  {
+    "behavior": {
+      "events": [
+        0.75,
+        0.125
+      ],
+      "leads": {
+        "103": 1.0
+      },
+      "pairs": {
+        "103,112": 1.0,
+        "103,125": 1.0,
+        "103,131": 1.0,
+        "103,145": 1.0,
+        "112,125": 1.0,
+        "112,131": 1.0,
+        "112,145": 1.0,
+        "125,131": 1.0,
+        "125,145": 1.0,
+        "131,145": 1.0,
+        "80,103": 1.0,
+        "80,112": 1.0,
+        "80,125": 1.0,
+        "80,131": 1.0,
+        "80,145": 1.0
+      },
+      "species": {
+        "103": 1.0,
+        "112": 1.0,
+        "125": 1.0,
+        "131": 1.0,
+        "145": 1.0,
+        "80": 1.0
+      },
+      "species_teams": {
+        "80,103,112,125,131,145": 1.0
+      },
+      "style": [
+        -0.03298072548125,
+        -0.008418761025,
+        0.06125822464625,
+        0.0,
+        0.6884420325
+      ],
+      "teams": {
+        "297,365,389,431,457,526": 1.0
+      }
+    },
+    "behavior_events": [
+      0.75,
+      0.375
+    ],
+    "behavior_events_capped": [
+      0.75,
+      0.125
+    ],
+    "checkpoint": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_smoke_20260913/inputs/warm04/0000000099614720.bin",
+    "checkpoint_sha256": "90752d95c8211de031fcaae029c8c0204ea40f7e67c98daad2588fc0ceceb944",
+    "config_sha256": "da116b4785180f525dc0c3c6bceb6ba0668029df5a9b16b9396472e8e27306f2",
+    "evaluation_contract": {
+      "checkpoint_sha256": "90752d95c8211de031fcaae029c8c0204ea40f7e67c98daad2588fc0ceceb944",
+      "config_sha256": "da116b4785180f525dc0c3c6bceb6ba0668029df5a9b16b9396472e8e27306f2",
+      "games_per_opponent": 2,
+      "panel": [
+        {
+          "path": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_smoke_20260913/inputs/selection/0/0000000005242880.bin",
+          "team": "None"
+        },
+        {
+          "path": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_smoke_20260913/inputs/selection/1/0000000099614720.bin",
+          "team": "None"
+        },
+        {
+          "path": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_smoke_20260913/inputs/selection/2/0000000099614720.bin",
+          "team": "None"
+        },
+        {
+          "path": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_smoke_20260913/inputs/selection/3/0000000099614720.bin",
+          "team": "None"
+        }
+      ],
+      "seed": 1601
+    },
+    "event_order": [
+      "early_opponent_sleep",
+      "distinct_opponents_paralyzed"
+    ],
+    "games": 8,
+    "id": "warm04",
+    "noise": 0.2534484387624258,
+    "opponent_behavior_events": [
+      0.375,
+      1.125
+    ],
+    "opponent_behavior_events_capped": [
+      0.375,
+      0.37499999999999994
+    ],
+    "payoffs": {
+      "0": 1.0,
+      "1": 1.0,
+      "2": 1.0,
+      "3": 1.0
+    },
+    "quality": 1.0,
+    "timeout_rate": 0.0
+  },
+  {
+    "actual_steps": 10485760,
+    "behavior": {
+      "events": [
+        0.75,
+        0.125
+      ],
+      "leads": {
+        "103": 1.0
+      },
+      "pairs": {
+        "103,112": 1.0,
+        "103,125": 1.0,
+        "103,131": 1.0,
+        "103,145": 1.0,
+        "112,125": 1.0,
+        "112,131": 1.0,
+        "112,145": 1.0,
+        "125,131": 1.0,
+        "125,145": 1.0,
+        "131,145": 1.0,
+        "80,103": 1.0,
+        "80,112": 1.0,
+        "80,125": 1.0,
+        "80,131": 1.0,
+        "80,145": 1.0
+      },
+      "species": {
+        "103": 1.0,
+        "112": 1.0,
+        "125": 1.0,
+        "131": 1.0,
+        "145": 1.0,
+        "80": 1.0
+      },
+      "species_teams": {
+        "80,103,112,125,131,145": 1.0
+      },
+      "style": [
+        -0.0159888285,
+        -0.011810700506249999,
+        0.06165928009,
+        0.0,
+        0.6887358535
+      ],
+      "teams": {
+        "297,365,389,431,457,526": 1.0
+      }
+    },
+    "behavior_events": [
+      0.75,
+      0.375
+    ],
+    "behavior_events_capped": [
+      0.75,
+      0.125
+    ],
+    "checkpoint": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_smoke_20260913/jobs/baseline/checkpoints/pokemon/baseline/0000000010485760.bin",
+    "checkpoint_sha256": "14d579ecdf346cb17fd3a75a4c2e204bf0eb759face15f16a1fa3ba2c6000d6f",
+    "config_sha256": "47d6a12d48f928350a39dd5e9e54c4f6e5afc232b2cfe04cfd3d4b9e814aa4c6",
+    "evaluation_contract": {
+      "checkpoint_sha256": "14d579ecdf346cb17fd3a75a4c2e204bf0eb759face15f16a1fa3ba2c6000d6f",
+      "config_sha256": "47d6a12d48f928350a39dd5e9e54c4f6e5afc232b2cfe04cfd3d4b9e814aa4c6",
+      "games_per_opponent": 2,
+      "panel": [
+        {
+          "path": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_smoke_20260913/inputs/selection/0/0000000005242880.bin",
+          "team": "None"
+        },
+        {
+          "path": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_smoke_20260913/inputs/selection/1/0000000099614720.bin",
+          "team": "None"
+        },
+        {
+          "path": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_smoke_20260913/inputs/selection/2/0000000099614720.bin",
+          "team": "None"
+        },
+        {
+          "path": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_smoke_20260913/inputs/selection/3/0000000099614720.bin",
+          "team": "None"
+        }
+      ],
+      "seed": 1601
+    },
+    "event_order": [
+      "early_opponent_sleep",
+      "distinct_opponents_paralyzed"
+    ],
+    "games": 8,
+    "id": "baseline",
+    "noise": 0.2534484387624258,
+    "opponent_behavior_events": [
+      0.375,
+      0.625
+    ],
+    "opponent_behavior_events_capped": [
+      0.375,
+      0.20833333333333331
+    ],
+    "parent": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_smoke_20260913/inputs/initial/0000000099614720.bin",
+    "payoffs": {
+      "0": 1.0,
+      "1": 0.5,
+      "2": 1.0,
+      "3": 1.0
+    },
+    "quality": 0.875,
+    "requested_steps": 10485760,
+    "timeout_rate": 0.0,
+    "train_seed": 601,
+    "weights": [
+      0.0,
+      0.0
+    ]
+  },
+  {
+    "checkpoint": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_smoke_20260913/inputs/initial/0000000099614720.bin",
+    "checkpoint_sha256": "9eaab6e98045294ba81722d7e8574fd7e8d9d0972745481b12a83ff2b271616c",
+    "config_sha256": "08534b38a8ff183423e42a04cfbc0849431f20b73d26a9775accf32bd6dbf8f0",
+    "id": "initial"
+  }
+]
