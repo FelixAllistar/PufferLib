@@ -6,6 +6,18 @@ CFLAGS ?= -O3 -g -std=c11 -Wall -Wextra -Wno-unused-function -Wno-unused-paramet
 LDLIBS := $(BUILD)/libpokemon.a -lm
 RAYLIB := $(ROOT)/raylib-5.5_linux_amd64/lib/libraylib.a -lGL -lpthread -ldl -lrt
 .PHONY: engine test benchmark sanitize validate audit sampler-test profile-test policy-test league-test league-eval native-league-test
+states: $(BUILD)/collect_states
+state-audit:
+	$(CC) $(CFLAGS) audit_states.c $(LDLIBS) -o $(BUILD)/audit_states
+state-test:
+	$(CC) $(CPPFLAGS) $(CFLAGS) -fsanitize=address,undefined -fno-omit-frame-pointer tests/test_state_bank.c $(LDLIBS) $(RAYLIB) -o $(BUILD)/test_state_bank
+	$(BUILD)/test_state_bank
+state-benchmark:
+	$(CC) $(CPPFLAGS) $(CFLAGS) tests/test_state_bank.c $(LDLIBS) $(RAYLIB) -o $(BUILD)/benchmark_state_bank
+state-flag-test:
+	$(CC) $(CPPFLAGS) $(CFLAGS) tests/test_state_flag.c $(LDLIBS) $(RAYLIB) -o $(BUILD)/test_state_flag
+$(BUILD)/collect_states: collect_states.c state_bank.h pokemon_core.h pokemon_base.h bridge.h $(BUILD)/libpokemon.a
+	$(CC) $(CPPFLAGS) $(CFLAGS) collect_states.c $(LDLIBS) $(RAYLIB) -o $@
 behavior-test:
 	$(CC) $(CPPFLAGS) $(CFLAGS) -fsanitize=address,undefined -fno-omit-frame-pointer tests/test_behavior_events.c $(LDLIBS) $(RAYLIB) -o $(BUILD)/test_behavior_events
 	$(BUILD)/test_behavior_events

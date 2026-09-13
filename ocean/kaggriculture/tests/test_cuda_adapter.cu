@@ -87,6 +87,7 @@ static void configure_case(Env* env, int case_id, obs_t* observations,
     env->policy_market_slots = case_id % 3 == 0 ? 1
         : case_id % 3 == 1 ? 4 : 10;
     env->policy_max_hands = case_id % 2 ? 8 : KG_MAX_HANDS;
+    env->land_buy_min_days = case_id % 3;
     env->macro_mode = case_id == 9 ? KAG_MACRO_MODE_LEGACY
         : case_id == 10 ? KAG_MACRO_MODE_STRUCTURED
         : case_id == 11 ? KAG_MACRO_MODE_TASKS : 0;
@@ -215,6 +216,7 @@ static void configure_case(Env* env, int case_id, obs_t* observations,
         env->potential[player] = kag_player_potential(env, player);
         env->progress_value[player] = kag_player_progress_value(env, player);
         kag_reset_expansion_peaks(env, player);
+        kag_reset_land_buy_delay(env, player);
     }
     kag_write_all_observations(env);
 }
@@ -258,7 +260,76 @@ static void compare_float(const char* field, int case_id, int step,
     }
 }
 
+__global__ static void land_delay_mask_kernel(Env* envs, unsigned char* masks) {
+    int i = threadIdx.x;
+    if (i >= 8) return;
+    for (int p = 0; p < 2; p++) {
+        envs[i].agents[p].action_mask = masks
+            + (2 * i + p) * KG_POLICY_ACTION_MASK_SIZE;
+        kag_write_mask(&envs[i], p);
+    }
+}
+
+static void test_land_delay_cuda_boundaries(void) {
+    Env* cpu = (Env*)std::calloc(8, sizeof(Env));
+    unsigned char expected[16 * KG_POLICY_ACTION_MASK_SIZE];
+    unsigned char actual[sizeof(expected)];
+    const int days[8] = {2, 2, 2, 2, 0, 1, 2, 2};
+    const int elapsed[8] = {0, 47, 48, 72, 0, 24, 48, 48};
+    const int allowed[8] = {0, 0, 1, 0, 1, 1, 0, 0};
+    for (int i = 0; i < 8; i++) {
+        Env* env = &cpu[i];
+        KGConfig cfg;
+        kg_config_default(&cfg);
+        kg_init(&env->game_storage, &cfg);
+        env->land_buy_min_days = days[i];
+        env->macro_mode = KAG_MACRO_MODE_TASKS;
+        env->frozen_macro_mode = -1;
+        env->game_storage.step = 103;
+        for (int p = 0; p < 2; p++) {
+            KGPlayer* farm = &env->game_storage.players[p];
+            farm->money = 20000;
+            for (int y = 0; y < 5; y++)
+                for (int x = 0; x < 5; x++)
+                    kg_new_plant(farm, kg_tile_index(x, y), KG_WHEAT, 0, 24);
+            if (i == 3) kg_set_player_tile(farm, 0, KG_TILE_COOP);
+            kag_update_land_buy_delay(env, p);
+            if (i == 6) kg_do_buy_land(&env->game_storage, farm);
+            if (i == 7) kag_reset_land_buy_delay(env, p);
+        }
+        env->game_storage.step += elapsed[i];
+    }
+    Env* device = nullptr;
+    unsigned char* device_masks = nullptr;
+    CUDA_OK(cudaMalloc((void**)&device, 8 * sizeof(Env)));
+    CUDA_OK(cudaMalloc((void**)&device_masks, sizeof(expected)));
+    CUDA_OK(cudaMemcpy(device, cpu, 8 * sizeof(Env), cudaMemcpyHostToDevice));
+    land_delay_mask_kernel<<<1, 32>>>(device, device_masks);
+    CUDA_OK(cudaGetLastError());
+    CUDA_OK(cudaMemcpy(actual, device_masks, sizeof(actual), cudaMemcpyDeviceToHost));
+    for (int i = 0; i < 8; i++) {
+        for (int p = 0; p < 2; p++) {
+            unsigned char* mask = expected + (2 * i + p) * KG_POLICY_ACTION_MASK_SIZE;
+            cpu[i].agents[p].action_mask = mask;
+            kag_write_mask(&cpu[i], p);
+            for (int slot = 0; slot < KG_POLICY_MARKET_SLOTS; slot++) {
+                if (kag_market_slot_mask(mask, slot)
+                        [KG_POLICY_MARKET_CONTINUE_ACTIONS + KG_M_LAND] != allowed[i]) {
+                    std::fprintf(stderr, "land-delay boundary case=%d player=%d failed\n", i, p);
+                    std::exit(1);
+                }
+            }
+        }
+    }
+    fail_bytes("land-delay boundaries", 0, 0, expected, actual, sizeof(expected));
+    CUDA_OK(cudaFree(device_masks));
+    CUDA_OK(cudaFree(device));
+    std::free(cpu);
+    std::puts("land-delay CPU/CUDA: 8 boundary/reset/disabled cases x both seats PASS");
+}
+
 int main(void) {
+    test_land_delay_cuda_boundaries();
     kag_script_init();
     Env* cpu = (Env*)std::calloc(ADAPTER_CASES, sizeof(Env));
     Env* gpu = (Env*)std::calloc(ADAPTER_CASES, sizeof(Env));
@@ -370,6 +441,10 @@ int main(void) {
                 fail_bytes("state", i, step, &cpu[i].game_storage,
                     &gpu[i].game_storage, sizeof(KGState));
             }
+            fail_bytes("land fill step", i, step, cpu[i].land_fill_step,
+                gpu[i].land_fill_step, sizeof(cpu[i].land_fill_step));
+            fail_bytes("land fill mask", i, step, cpu[i].land_fill_mask,
+                gpu[i].land_fill_mask, sizeof(cpu[i].land_fill_mask));
             if (cpu[i].boundary_reached != gpu[i].boundary_reached) {
                 std::fprintf(stderr,
                     "CUDA adapter scalar mismatch case=%d turn=%d "

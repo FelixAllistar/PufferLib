@@ -7,6 +7,7 @@
 #include <time.h>
 #include "pufferenv.h"
 #include "pokemon_core.h"
+#include "state_bank.h"
 #include "behavior.h"
 #include "species_labels.h"
 typedef uint8_t obs_t;
@@ -117,6 +118,14 @@ static inline int pk_top_species(Dict* log, const char* prefix, int leads,
 }
 static inline void pk_configure(Ini* ini, const char* mode) {
     pk_native_configure(ini,mode);
+    double reset_prob=puf_ini_get(ini,"env","reset_state_prob");
+    if(!isfinite(reset_prob) || reset_prob<0 || reset_prob>1) { fprintf(stderr,"Invalid reset_state_prob\n"); exit(1); }
+    if(!strcmp(mode,"train") && reset_prob>0) {
+        const char* path=puf_ini_get_str(ini,"env","reset_state_bank");
+        if(!pk_state_load(&pk_state_bank,path)) { fprintf(stderr,"Invalid Pokemon state bank: %s\n",path); exit(1); }
+        printf("PK_STATE_BANK v=1 states=%zu bytes=%zu probability=%.9g mix=0.4,0.4,0.2 memory=zero flag=476\n",
+            pk_state_bank.count,pk_state_bank.count*sizeof(PKGame),reset_prob);
+    }
     Dict* rules = puf_ini_section(ini, "env", 0);
     DictItem* learner = dict_find(rules, "learner_team");
     DictItem* opponent = dict_find(rules, "opponent_team");
@@ -177,6 +186,8 @@ struct Log {
     float perf, score, episode_return, episode_length;
     float slot_0_score, slot_1_score, draw_rate, timeout_rate;
     float battle_turns, invalid_actions;
+    float root_games, reset_games, root_score_sum, reset_score_sum;
+    float root_steps, reset_steps, opening_starts, midgame_starts, endgame_starts;
     float team_samples, team_picks[PK_SETS], lead_picks[PK_SETS], n;
 };
 struct Env {
@@ -194,6 +205,9 @@ struct Env {
     int audit;
     int behavior_enabled;
     float behavior_delta[2][PK_BEHAVIOR_DIM];
+    float reset_state_prob;
+    uint64_t reset_rng;
+    int episode_steps, reset_bucket;
 };
 // Opt-in adapter-boundary diagnostics; no trainer or learning changes.
 static inline void pk_audit(Env* env, int inputs) {
@@ -373,6 +387,14 @@ void puf_init(Env* env, Dict* kwargs) {
     env->reward_gamma = pk_reward_option(kwargs, "reward_gamma", 0.999f);
     env->behavior_enabled = pk_reward_option(kwargs,"behavior_sleep",0)!=0 ||
                             pk_reward_option(kwargs,"behavior_paralysis",0)!=0;
+    env->reset_state_prob=pk_reward_option(kwargs,"reset_state_prob",0);
+    env->reset_rng=env->game.rng ^ UINT64_C(0x76cb834b803aecb3);
+    if (!isfinite(env->reset_state_prob) || env->reset_state_prob<0 || env->reset_state_prob>1 ||
+            (env->reset_state_prob>0 && (!pk_state_bank.states || !draft || max_updates!=512 ||
+            env->game.fixed_enabled[0] || env->game.fixed_enabled[1] || env->behavior_enabled ||
+            env->reward_hp_scale || env->reward_ko_scale))) {
+        fprintf(stderr,"State-bank resets require a loaded bank, unrestricted draft, max_updates=512 and win-only rewards\n"); exit(1);
+    }
     env->episodes = 0;
     env->team_log_interval = (int)pk_reward_option(kwargs, "team_log_interval", 0);
     env->team_log_max_bytes = (long long)pk_reward_option(kwargs, "team_log_max_bytes", 8388608);
@@ -391,8 +413,20 @@ void puf_init(Env* env, Dict* kwargs) {
     memset(&env->log, 0, sizeof(env->log));
     for (int p = 0; p < 2; p++) env->agents[p].policy = p;
 }
+static inline void pk_episode_start(Env* env) {
+    env->episode_steps=0;
+    env->reset_bucket=-1;
+    // Do not consume the original game stream for choosing reset sources.
+    if(env->reset_state_prob>0 && (pk_random(&env->reset_rng)>>11)*0x1.0p-53 < env->reset_state_prob) {
+        unsigned draw=(unsigned)(pk_random(&env->reset_rng)%5);
+        int k=draw<2?0:draw<4?1:2;
+        size_t index=pk_state_bank.offsets[k]+pk_random(&env->reset_rng)%pk_state_bank.header.counts[k];
+        pk_state_restore(&env->game,&pk_state_bank.states[index],pk_random(&env->reset_rng));
+        env->reset_bucket=k;
+    } else pk_game_reset(&env->game);
+}
 void puf_reset(Env* env) {
-    pk_game_reset(&env->game);
+    pk_episode_start(env);
     env->episode_return = 0;
     for (int p = 0; p < 2; p++) {
         env->agents[p].rewards[0] = 0;
@@ -425,6 +459,8 @@ void puf_step(Env* env) {
         env->agents[p].rewards[0] = 0;
         env->agents[p].terminals[0] = 0;
     }
+    env->episode_steps++;
+    if(env->game.reset_source) env->log.reset_steps++; else env->log.root_steps++;
     int result = pk_game_step(&env->game, actions[0], actions[1]);
     if (env->behavior_enabled) {
         for (int p=0;p<2;p++) {
@@ -450,7 +486,12 @@ void puf_step(Env* env) {
         env->log.perf += score;
         env->log.score += score;
         env->log.episode_return += env->episode_return;
-        env->log.episode_length += env->game.updates + (env->game.draft ? 12 : 0);
+        env->log.episode_length += env->episode_steps;
+        if(env->game.reset_source) { env->log.reset_games++; env->log.reset_score_sum+=score; }
+        else { env->log.root_games++; env->log.root_score_sum+=score; }
+        if(env->reset_bucket==0) env->log.opening_starts++;
+        if(env->reset_bucket==1) env->log.midgame_starts++;
+        if(env->reset_bucket==2) env->log.endgame_starts++;
         env->log.slot_0_score += score;
         env->log.slot_1_score += 1.0f - score;
         env->log.draw_rate += outcome == 0;
@@ -460,12 +501,19 @@ void puf_step(Env* env) {
         env->log.n++;
         pk_record_teams(env);
         if (env->tag > 0) env->boundary_reached = 1;
-        pk_game_reset(&env->game); // Preserve rewards/terminals of completed transition.
+        pk_episode_start(env); // Preserve rewards/terminals of completed transition.
         env->episode_return = 0;
     }
     pk_publish(env);
 }
 void puf_log(Log* log, Dict* out) {
+    dict_set(out,"root_score",log->root_games?log->root_score_sum/log->root_games:0);
+    dict_set(out,"reset_score",log->reset_games?log->reset_score_sum/log->reset_games:0);
+    dict_set(out,"reset_episode_fraction",(log->root_games+log->reset_games)?log->reset_games/(log->root_games+log->reset_games):0);
+    dict_set(out,"reset_step_fraction",(log->root_steps+log->reset_steps)?log->reset_steps/(log->root_steps+log->reset_steps):0);
+    dict_set(out,"opening_fraction",log->reset_games?log->opening_starts/log->reset_games:0);
+    dict_set(out,"midgame_fraction",log->reset_games?log->midgame_starts/log->reset_games:0);
+    dict_set(out,"endgame_fraction",log->reset_games?log->endgame_starts/log->reset_games:0);
     dict_set(out, "perf", log->perf);
     dict_set(out, "score", log->score);
     dict_set(out, "episode_return", log->episode_return);

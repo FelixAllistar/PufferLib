@@ -14,6 +14,8 @@ goof*
 pufferlib/extensions/hip/
 *.py
 !ocean/pokemon/behavior_experiment.py
+!ocean/pokemon/event_qd.py
+!ocean/pokemon/tests/test_event_qd.py
 !ocean/pokemon/tests/test_behavior.py
 !pufferlib/population.py
 !tests/test_population_descriptors.py
@@ -275,3 +277,7 @@ config/kaggriculture.ini.before_*
 config/kaggriculture.ini.failed_*
 config/kaggriculture.ini.pre_*
 ocean/kaggriculture/submission/*.tar.gz
+
+# Native Pokemon state-bank experiment and its runner tests.
+!ocean/pokemon/state_experiment.py
+!ocean/pokemon/tests/test_state_experiment.py

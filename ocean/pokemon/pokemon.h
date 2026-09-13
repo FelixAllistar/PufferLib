@@ -43,6 +43,10 @@ static inline void pk_personality_configure(Ini* ini, const char* mode) {
         fprintf(stderr,"Behavior weights require L1<=1 and potential personality weights off\n"); exit(1);
     }
     pk_behavior_enabled=behavior_norm>0;
+    DictItem* resets=dict_find(puf_ini_section(ini,"env",0),"reset_state_prob");
+    if(resets && resets->value>0 && (pk_personality_enabled || pk_behavior_enabled)) {
+        fprintf(stderr,"State-bank experiment requires win-only rewards\n"); exit(1);
+    }
     if(pk_behavior_enabled && (puf_ini_get(ini,"train","reward_clip")!=0 ||
             puf_ini_get(ini,"env","reward_hp_scale")!=0 || puf_ini_get(ini,"env","reward_ko_scale")!=0)) {
         fprintf(stderr,"Behavior test requires reward clipping and HP/KO potentials off\n"); exit(1);

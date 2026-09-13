@@ -220,6 +220,12 @@ export fn pk_turn(raw: *align(8) const [512]u8) c_int {
     const s: *const State = @ptrCast(raw);
     return s.battle.turn;
 }
+// Resample only future chance draws, never existing hidden durations or reveals.
+export fn pk_reseed(raw: *align(8) [512]u8, seed: u64) void {
+    const s: *State = @ptrCast(raw);
+    var rand = pkmn.gen1.PRNG.init(seed);
+    s.battle.rng = .{ .src = .{ .seed = rand.newSeed() } };
+}
 // Cumulative episode measures: early opponent sleep (0/1), distinct opponents
 // successfully paralyzed (0..6). Repeated status/cure/switch cycles cannot grow
 // the distinct count. Reward normalization/caps live in behavior.h.

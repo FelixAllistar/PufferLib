@@ -21,6 +21,7 @@ typedef struct {
     int updates;
     int invalid_actions;
     int result;      // Engine results; 5 means wrapper time limit (draw).
+    int reset_source; // 0 original game, 1 auxiliary state-bank game; public to both.
 } PKGame;
 
 static inline uint64_t pk_random(uint64_t* rng) {
@@ -99,9 +100,11 @@ static inline void pk_game_observe(PKGame* g) {
             g->obs[p][465 + 2*i] = (uint8_t)(set >> 8);
         }
         memcpy(g->obs[p] + 480, g->masks[p], PK_ACTIONS);
+        g->obs[p][476] = (uint8_t)g->reset_source;
     }
 }
 static inline void pk_game_reset(PKGame* g) {
+    g->reset_source = 0;
     g->picks = 0;
     g->selecting_set = 0;
     g->pending_species[0] = g->pending_species[1] = 0;

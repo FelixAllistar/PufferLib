@@ -13,7 +13,7 @@ lib: $(LIB)
 $(BUILD):
 	mkdir -p $(BUILD)
 
-$(LIB): kag_policy_view.c kaggriculture.h kaggriculture_core.c kaggriculture_core.h | $(BUILD)
+$(LIB): kag_policy_view.c kaggriculture.h land_buy_delay.h kaggriculture_core.c kaggriculture_core.h | $(BUILD)
 	$(CC) $(CFLAGS) -I$(ROOT) -I$(ROOT)/src -I$(ROOT)/vendor \
 		-I$(ROOT)/raylib-5.5_linux_amd64/include -shared kag_policy_view.c \
 		$(ROOT)/raylib-5.5_linux_amd64/lib/libraylib.a \
@@ -62,7 +62,7 @@ $(BUILD)/test_cuda_adapter: tests/test_cuda_adapter.cu kaggriculture.cu \
 		$(ROOT)/raylib-5.5_linux_amd64/lib/libraylib.a \
 		-lGL -lm -lpthread -o $(BUILD)/test_cuda_adapter
 
-$(BUILD)/kag_bc: kag_bc.cu kaggriculture.h kaggriculture_core.h \
+$(BUILD)/kag_bc: kag_bc.cu kaggriculture.h land_buy_delay.h kaggriculture_core.h \
 		kaggriculture_core.c kaggriculture_bots.h \
 		kaggriculture_public_bots.h kaggriculture_tape_data.h \
 		kaggriculture_public_extra_tapes.h \
@@ -102,7 +102,16 @@ metagame: | $(BUILD)
 	$(CC) -O3 -std=c17 -Wall -Wextra -Werror metagame.c -lm \
 		-o $(BUILD)/kaggriculture_metagame
 
-native-test: adapter observation-test
+land-delay-test: $(BUILD)/test_land_buy_delay
+	$(BUILD)/test_land_buy_delay
+
+$(BUILD)/test_land_buy_delay: tests/test_land_buy_delay.c $(wildcard *.h) kaggriculture_core.c | $(BUILD)
+	$(CC) -O1 -std=c17 -Wall -Wextra -Werror \
+		-I$(ROOT) -I$(ROOT)/src -I$(ROOT)/vendor -I$(ROOT)/raylib-5.5_linux_amd64/include \
+		tests/test_land_buy_delay.c $(ROOT)/raylib-5.5_linux_amd64/lib/libraylib.a \
+		-lGL -lm -lpthread -o $@
+
+native-test: adapter observation-test land-delay-test
 
 test: native-test parity
 

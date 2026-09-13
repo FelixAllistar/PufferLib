@@ -1,0 +1,812 @@
+{
+  "manifest": {
+    "seeds": [
+      15601,
+      15602
+    ],
+    "child_steps": [
+      5242880,
+      20971520,
+      52428800,
+      99614720
+    ],
+    "panel_games": 64,
+    "parent_games": 128,
+    "files": {
+      "/home/felix/puffertank/pufferlib/build/pokemon/pokemon_behavior": "d5cd497c332b02066ca5711cd4e69f175ad39778198ff91316e97cabe64c07d3",
+      "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/jobs/g01_c03/checkpoints/pokemon/g01_c03/0000000099614720.bin": "e2877cfb13245fce1d5ace37810ed401cd8f9b9b5b1ca577c79748843cc2699c",
+      "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/jobs/g02_control/checkpoints/pokemon/g02_control/0000000005242880.bin": "f080c8b9d7b691abd6bbce20b62070d760dc40db2c7f181093fa3fa1f61ec4b8",
+      "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/jobs/g02_control/checkpoints/pokemon/g02_control/0000000020971520.bin": "e483cf2e771b46e7dab066d77f2df4caf53ca0567a72a23c843a331192e53c7e",
+      "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/jobs/g02_control/checkpoints/pokemon/g02_control/0000000052428800.bin": "58e93568d30e868923536b1e5d5ba592b19adb0665dec508a2473ed55b4c81c7",
+      "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/jobs/g02_control/checkpoints/pokemon/g02_control/0000000099614720.bin": "32988e5a65acae35d5c4089ec574ed9fe00f52599ab8aaefee664ec18bea3063",
+      "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/inputs/selection/0/0000000005242880.bin": "9c855e733b7b08fb9f54016239f1d21a982e24c47ecb3d755a70f2a5e3e0fa01",
+      "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/inputs/selection/1/0000000099614720.bin": "8f6e3de065ddd6cde24e2e53cbcb9d3a2206558f962f0571f1eaee835f55a7ee",
+      "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/inputs/selection/2/0000000099614720.bin": "dda4492e1d9b82d4a9b7b423f125b7419f3014e4cecd9b45d049291d21e30b45",
+      "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/inputs/selection/3/0000000099614720.bin": "9eaab6e98045294ba81722d7e8574fd7e8d9d0972745481b12a83ff2b271616c",
+      "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/jobs/g01_c03/checkpoints/pokemon/g01_c03/config.ini": "8af046b6e9fc1305f881fc9bfc4d7433a5735a6a61d08b513e54e7622ceda427",
+      "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/jobs/g02_control/checkpoints/pokemon/g02_control/config.ini": "0425738efb3cbcc521d7a8e7eb397f5743802a2cec54555c48fadd6eee1cff12",
+      "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/inputs/selection/0/config.ini": "fdc9456e8e904b90912d2413bfd28feaa1bbf4cd68ccc3268bdb571fff2584c3",
+      "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/inputs/selection/1/config.ini": "a714e4e1a3d15e3ae8bb99edeea7cd132d68800185a76d233ef150843b415cee",
+      "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/inputs/selection/2/config.ini": "dad8430e0c5da721632eaef93187fbf202b4f3ae92d8e1f5b1237a1017fb22e9",
+      "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/inputs/selection/3/config.ini": "08534b38a8ff183423e42a04cfbc0849431f20b73d26a9775accf32bd6dbf8f0"
+    },
+    "note": "Fresh evaluation seeds; parent plus four prespecified child checkpoints. Posthoc diagnostic only; no causal attribution from this comparison."
+  },
+  "summary": [
+    {
+      "label": "parent",
+      "panel": {
+        "games": 512,
+        "score": 0.759765625,
+        "sleep": 0.0,
+        "paralysis": 2.001953125,
+        "by_seed": {
+          "15601": 0.74609375,
+          "15602": 0.7734375
+        }
+      },
+      "parent_match": {
+        "games": 256,
+        "score": 0.546875,
+        "sleep": 0.0,
+        "paralysis": 1.55078125,
+        "by_seed": {
+          "15601": 0.5234375,
+          "15602": 0.5703125
+        }
+      }
+    },
+    {
+      "label": "child_005242880",
+      "panel": {
+        "games": 512,
+        "score": 0.716796875,
+        "sleep": 0.0,
+        "paralysis": 1.923828125,
+        "by_seed": {
+          "15601": 0.71875,
+          "15602": 0.71484375
+        }
+      },
+      "parent_match": {
+        "games": 256,
+        "score": 0.671875,
+        "sleep": 0.0,
+        "paralysis": 1.46484375,
+        "by_seed": {
+          "15601": 0.65625,
+          "15602": 0.6875
+        }
+      }
+    },
+    {
+      "label": "child_020971520",
+      "panel": {
+        "games": 512,
+        "score": 0.59765625,
+        "sleep": 0.0,
+        "paralysis": 1.974609375,
+        "by_seed": {
+          "15601": 0.59765625,
+          "15602": 0.59765625
+        }
+      },
+      "parent_match": {
+        "games": 256,
+        "score": 0.81640625,
+        "sleep": 0.0,
+        "paralysis": 1.2734375,
+        "by_seed": {
+          "15601": 0.8203125,
+          "15602": 0.8125
+        }
+      }
+    },
+    {
+      "label": "child_052428800",
+      "panel": {
+        "games": 512,
+        "score": 0.564453125,
+        "sleep": 0.0,
+        "paralysis": 1.984375,
+        "by_seed": {
+          "15601": 0.53125,
+          "15602": 0.59765625
+        }
+      },
+      "parent_match": {
+        "games": 256,
+        "score": 0.8046875,
+        "sleep": 0.0,
+        "paralysis": 1.2578125,
+        "by_seed": {
+          "15601": 0.828125,
+          "15602": 0.78125
+        }
+      }
+    },
+    {
+      "label": "child_099614720",
+      "panel": {
+        "games": 512,
+        "score": 0.611328125,
+        "sleep": 0.0,
+        "paralysis": 1.95703125,
+        "by_seed": {
+          "15601": 0.6171875,
+          "15602": 0.60546875
+        }
+      },
+      "parent_match": {
+        "games": 256,
+        "score": 0.87109375,
+        "sleep": 0.0,
+        "paralysis": 1.2421875,
+        "by_seed": {
+          "15601": 0.875,
+          "15602": 0.8671875
+        }
+      }
+    }
+  ],
+  "matches": [
+    {
+      "label": "parent",
+      "opponent": "panel0",
+      "seed": 15601,
+      "games": 64,
+      "score": 0.984375,
+      "sleep": 0.0,
+      "paralysis": 1.4375,
+      "teams": [
+        "47,391,432,445,457,527"
+      ],
+      "log": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/posthoc/continuation_20260913/parent/seed15601/panel0.log"
+    },
+    {
+      "label": "parent",
+      "opponent": "panel1",
+      "seed": 15601,
+      "games": 64,
+      "score": 0.5625,
+      "sleep": 0.0,
+      "paralysis": 2.40625,
+      "teams": [
+        "47,391,432,445,457,527"
+      ],
+      "log": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/posthoc/continuation_20260913/parent/seed15601/panel1.log"
+    },
+    {
+      "label": "parent",
+      "opponent": "panel2",
+      "seed": 15601,
+      "games": 64,
+      "score": 0.6875,
+      "sleep": 0.0,
+      "paralysis": 1.75,
+      "teams": [
+        "47,391,432,445,457,527"
+      ],
+      "log": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/posthoc/continuation_20260913/parent/seed15601/panel2.log"
+    },
+    {
+      "label": "parent",
+      "opponent": "panel3",
+      "seed": 15601,
+      "games": 64,
+      "score": 0.75,
+      "sleep": 0.0,
+      "paralysis": 2.421875,
+      "teams": [
+        "47,391,432,445,457,527"
+      ],
+      "log": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/posthoc/continuation_20260913/parent/seed15601/panel3.log"
+    },
+    {
+      "label": "parent",
+      "opponent": "panel0",
+      "seed": 15602,
+      "games": 64,
+      "score": 0.984375,
+      "sleep": 0.0,
+      "paralysis": 1.59375,
+      "teams": [
+        "47,391,432,445,457,527"
+      ],
+      "log": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/posthoc/continuation_20260913/parent/seed15602/panel0.log"
+    },
+    {
+      "label": "parent",
+      "opponent": "panel1",
+      "seed": 15602,
+      "games": 64,
+      "score": 0.59375,
+      "sleep": 0.0,
+      "paralysis": 2.421875,
+      "teams": [
+        "47,391,432,445,457,527"
+      ],
+      "log": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/posthoc/continuation_20260913/parent/seed15602/panel1.log"
+    },
+    {
+      "label": "parent",
+      "opponent": "panel2",
+      "seed": 15602,
+      "games": 64,
+      "score": 0.734375,
+      "sleep": 0.0,
+      "paralysis": 1.671875,
+      "teams": [
+        "47,391,432,445,457,527"
+      ],
+      "log": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/posthoc/continuation_20260913/parent/seed15602/panel2.log"
+    },
+    {
+      "label": "parent",
+      "opponent": "panel3",
+      "seed": 15602,
+      "games": 64,
+      "score": 0.78125,
+      "sleep": 0.0,
+      "paralysis": 2.3125,
+      "teams": [
+        "47,391,432,445,457,527"
+      ],
+      "log": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/posthoc/continuation_20260913/parent/seed15602/panel3.log"
+    },
+    {
+      "label": "child_005242880",
+      "opponent": "panel0",
+      "seed": 15601,
+      "games": 64,
+      "score": 1.0,
+      "sleep": 0.0,
+      "paralysis": 1.34375,
+      "teams": [
+        "47,391,432,445,457,527"
+      ],
+      "log": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/posthoc/continuation_20260913/child_005242880/seed15601/panel0.log"
+    },
+    {
+      "label": "child_005242880",
+      "opponent": "panel1",
+      "seed": 15601,
+      "games": 64,
+      "score": 0.53125,
+      "sleep": 0.0,
+      "paralysis": 2.25,
+      "teams": [
+        "47,391,432,445,457,527"
+      ],
+      "log": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/posthoc/continuation_20260913/child_005242880/seed15601/panel1.log"
+    },
+    {
+      "label": "child_005242880",
+      "opponent": "panel2",
+      "seed": 15601,
+      "games": 64,
+      "score": 0.671875,
+      "sleep": 0.0,
+      "paralysis": 1.859375,
+      "teams": [
+        "47,391,432,445,457,527"
+      ],
+      "log": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/posthoc/continuation_20260913/child_005242880/seed15601/panel2.log"
+    },
+    {
+      "label": "child_005242880",
+      "opponent": "panel3",
+      "seed": 15601,
+      "games": 64,
+      "score": 0.671875,
+      "sleep": 0.0,
+      "paralysis": 2.265625,
+      "teams": [
+        "47,391,432,445,457,527"
+      ],
+      "log": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/posthoc/continuation_20260913/child_005242880/seed15601/panel3.log"
+    },
+    {
+      "label": "child_005242880",
+      "opponent": "panel0",
+      "seed": 15602,
+      "games": 64,
+      "score": 1.0,
+      "sleep": 0.0,
+      "paralysis": 1.640625,
+      "teams": [
+        "47,391,432,445,457,527"
+      ],
+      "log": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/posthoc/continuation_20260913/child_005242880/seed15602/panel0.log"
+    },
+    {
+      "label": "child_005242880",
+      "opponent": "panel1",
+      "seed": 15602,
+      "games": 64,
+      "score": 0.5,
+      "sleep": 0.0,
+      "paralysis": 2.15625,
+      "teams": [
+        "47,391,432,445,457,527"
+      ],
+      "log": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/posthoc/continuation_20260913/child_005242880/seed15602/panel1.log"
+    },
+    {
+      "label": "child_005242880",
+      "opponent": "panel2",
+      "seed": 15602,
+      "games": 64,
+      "score": 0.703125,
+      "sleep": 0.0,
+      "paralysis": 1.734375,
+      "teams": [
+        "47,391,432,445,457,527"
+      ],
+      "log": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/posthoc/continuation_20260913/child_005242880/seed15602/panel2.log"
+    },
+    {
+      "label": "child_005242880",
+      "opponent": "panel3",
+      "seed": 15602,
+      "games": 64,
+      "score": 0.65625,
+      "sleep": 0.0,
+      "paralysis": 2.140625,
+      "teams": [
+        "47,391,432,445,457,527"
+      ],
+      "log": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/posthoc/continuation_20260913/child_005242880/seed15602/panel3.log"
+    },
+    {
+      "label": "child_020971520",
+      "opponent": "panel0",
+      "seed": 15601,
+      "games": 64,
+      "score": 1.0,
+      "sleep": 0.0,
+      "paralysis": 1.4375,
+      "teams": [
+        "47,391,432,445,457,527"
+      ],
+      "log": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/posthoc/continuation_20260913/child_020971520/seed15601/panel0.log"
+    },
+    {
+      "label": "child_020971520",
+      "opponent": "panel1",
+      "seed": 15601,
+      "games": 64,
+      "score": 0.34375,
+      "sleep": 0.0,
+      "paralysis": 2.265625,
+      "teams": [
+        "47,391,432,445,457,527"
+      ],
+      "log": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/posthoc/continuation_20260913/child_020971520/seed15601/panel1.log"
+    },
+    {
+      "label": "child_020971520",
+      "opponent": "panel2",
+      "seed": 15601,
+      "games": 64,
+      "score": 0.5,
+      "sleep": 0.0,
+      "paralysis": 1.875,
+      "teams": [
+        "47,391,432,445,457,527"
+      ],
+      "log": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/posthoc/continuation_20260913/child_020971520/seed15601/panel2.log"
+    },
+    {
+      "label": "child_020971520",
+      "opponent": "panel3",
+      "seed": 15601,
+      "games": 64,
+      "score": 0.546875,
+      "sleep": 0.0,
+      "paralysis": 2.296875,
+      "teams": [
+        "47,391,432,445,457,527"
+      ],
+      "log": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/posthoc/continuation_20260913/child_020971520/seed15601/panel3.log"
+    },
+    {
+      "label": "child_020971520",
+      "opponent": "panel0",
+      "seed": 15602,
+      "games": 64,
+      "score": 1.0,
+      "sleep": 0.0,
+      "paralysis": 1.59375,
+      "teams": [
+        "47,391,432,445,457,527"
+      ],
+      "log": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/posthoc/continuation_20260913/child_020971520/seed15602/panel0.log"
+    },
+    {
+      "label": "child_020971520",
+      "opponent": "panel1",
+      "seed": 15602,
+      "games": 64,
+      "score": 0.328125,
+      "sleep": 0.0,
+      "paralysis": 2.15625,
+      "teams": [
+        "47,391,432,445,457,527"
+      ],
+      "log": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/posthoc/continuation_20260913/child_020971520/seed15602/panel1.log"
+    },
+    {
+      "label": "child_020971520",
+      "opponent": "panel2",
+      "seed": 15602,
+      "games": 64,
+      "score": 0.640625,
+      "sleep": 0.0,
+      "paralysis": 1.96875,
+      "teams": [
+        "47,391,432,445,457,527"
+      ],
+      "log": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/posthoc/continuation_20260913/child_020971520/seed15602/panel2.log"
+    },
+    {
+      "label": "child_020971520",
+      "opponent": "panel3",
+      "seed": 15602,
+      "games": 64,
+      "score": 0.421875,
+      "sleep": 0.0,
+      "paralysis": 2.203125,
+      "teams": [
+        "47,391,432,445,457,527"
+      ],
+      "log": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/posthoc/continuation_20260913/child_020971520/seed15602/panel3.log"
+    },
+    {
+      "label": "child_052428800",
+      "opponent": "panel0",
+      "seed": 15601,
+      "games": 64,
+      "score": 0.984375,
+      "sleep": 0.0,
+      "paralysis": 1.71875,
+      "teams": [
+        "47,391,432,445,457,527"
+      ],
+      "log": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/posthoc/continuation_20260913/child_052428800/seed15601/panel0.log"
+    },
+    {
+      "label": "child_052428800",
+      "opponent": "panel1",
+      "seed": 15601,
+      "games": 64,
+      "score": 0.265625,
+      "sleep": 0.0,
+      "paralysis": 2.390625,
+      "teams": [
+        "47,391,432,445,457,527"
+      ],
+      "log": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/posthoc/continuation_20260913/child_052428800/seed15601/panel1.log"
+    },
+    {
+      "label": "child_052428800",
+      "opponent": "panel2",
+      "seed": 15601,
+      "games": 64,
+      "score": 0.390625,
+      "sleep": 0.0,
+      "paralysis": 1.71875,
+      "teams": [
+        "47,391,432,445,457,527"
+      ],
+      "log": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/posthoc/continuation_20260913/child_052428800/seed15601/panel2.log"
+    },
+    {
+      "label": "child_052428800",
+      "opponent": "panel3",
+      "seed": 15601,
+      "games": 64,
+      "score": 0.484375,
+      "sleep": 0.0,
+      "paralysis": 2.140625,
+      "teams": [
+        "47,391,432,445,457,527"
+      ],
+      "log": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/posthoc/continuation_20260913/child_052428800/seed15601/panel3.log"
+    },
+    {
+      "label": "child_052428800",
+      "opponent": "panel0",
+      "seed": 15602,
+      "games": 64,
+      "score": 1.0,
+      "sleep": 0.0,
+      "paralysis": 1.90625,
+      "teams": [
+        "47,391,432,445,457,527"
+      ],
+      "log": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/posthoc/continuation_20260913/child_052428800/seed15602/panel0.log"
+    },
+    {
+      "label": "child_052428800",
+      "opponent": "panel1",
+      "seed": 15602,
+      "games": 64,
+      "score": 0.375,
+      "sleep": 0.0,
+      "paralysis": 2.21875,
+      "teams": [
+        "47,391,432,445,457,527"
+      ],
+      "log": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/posthoc/continuation_20260913/child_052428800/seed15602/panel1.log"
+    },
+    {
+      "label": "child_052428800",
+      "opponent": "panel2",
+      "seed": 15602,
+      "games": 64,
+      "score": 0.5625,
+      "sleep": 0.0,
+      "paralysis": 1.875,
+      "teams": [
+        "47,391,432,445,457,527"
+      ],
+      "log": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/posthoc/continuation_20260913/child_052428800/seed15602/panel2.log"
+    },
+    {
+      "label": "child_052428800",
+      "opponent": "panel3",
+      "seed": 15602,
+      "games": 64,
+      "score": 0.453125,
+      "sleep": 0.0,
+      "paralysis": 1.90625,
+      "teams": [
+        "47,391,432,445,457,527"
+      ],
+      "log": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/posthoc/continuation_20260913/child_052428800/seed15602/panel3.log"
+    },
+    {
+      "label": "child_099614720",
+      "opponent": "panel0",
+      "seed": 15601,
+      "games": 64,
+      "score": 0.984375,
+      "sleep": 0.0,
+      "paralysis": 1.390625,
+      "teams": [
+        "47,391,432,445,457,527"
+      ],
+      "log": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/posthoc/continuation_20260913/child_099614720/seed15601/panel0.log"
+    },
+    {
+      "label": "child_099614720",
+      "opponent": "panel1",
+      "seed": 15601,
+      "games": 64,
+      "score": 0.515625,
+      "sleep": 0.0,
+      "paralysis": 2.171875,
+      "teams": [
+        "47,391,432,445,457,527"
+      ],
+      "log": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/posthoc/continuation_20260913/child_099614720/seed15601/panel1.log"
+    },
+    {
+      "label": "child_099614720",
+      "opponent": "panel2",
+      "seed": 15601,
+      "games": 64,
+      "score": 0.46875,
+      "sleep": 0.0,
+      "paralysis": 1.75,
+      "teams": [
+        "47,391,432,445,457,527"
+      ],
+      "log": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/posthoc/continuation_20260913/child_099614720/seed15601/panel2.log"
+    },
+    {
+      "label": "child_099614720",
+      "opponent": "panel3",
+      "seed": 15601,
+      "games": 64,
+      "score": 0.5,
+      "sleep": 0.0,
+      "paralysis": 2.484375,
+      "teams": [
+        "47,391,432,445,457,527"
+      ],
+      "log": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/posthoc/continuation_20260913/child_099614720/seed15601/panel3.log"
+    },
+    {
+      "label": "child_099614720",
+      "opponent": "panel0",
+      "seed": 15602,
+      "games": 64,
+      "score": 1.0,
+      "sleep": 0.0,
+      "paralysis": 1.609375,
+      "teams": [
+        "47,391,432,445,457,527",
+        "47,391,432,447,457,527"
+      ],
+      "log": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/posthoc/continuation_20260913/child_099614720/seed15602/panel0.log"
+    },
+    {
+      "label": "child_099614720",
+      "opponent": "panel1",
+      "seed": 15602,
+      "games": 64,
+      "score": 0.453125,
+      "sleep": 0.0,
+      "paralysis": 2.140625,
+      "teams": [
+        "47,391,432,445,457,527",
+        "47,391,432,447,457,527"
+      ],
+      "log": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/posthoc/continuation_20260913/child_099614720/seed15602/panel1.log"
+    },
+    {
+      "label": "child_099614720",
+      "opponent": "panel2",
+      "seed": 15602,
+      "games": 64,
+      "score": 0.53125,
+      "sleep": 0.0,
+      "paralysis": 1.921875,
+      "teams": [
+        "47,391,432,445,457,527",
+        "47,391,432,447,457,527"
+      ],
+      "log": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/posthoc/continuation_20260913/child_099614720/seed15602/panel2.log"
+    },
+    {
+      "label": "child_099614720",
+      "opponent": "panel3",
+      "seed": 15602,
+      "games": 64,
+      "score": 0.4375,
+      "sleep": 0.0,
+      "paralysis": 2.1875,
+      "teams": [
+        "47,391,432,445,457,527",
+        "47,391,432,447,457,527"
+      ],
+      "log": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/posthoc/continuation_20260913/child_099614720/seed15602/panel3.log"
+    },
+    {
+      "label": "parent",
+      "opponent": "parent_match",
+      "seed": 15601,
+      "games": 128,
+      "score": 0.5234375,
+      "sleep": 0.0,
+      "paralysis": 1.5390625,
+      "teams": [
+        "47,391,432,445,457,526",
+        "47,391,432,445,457,527"
+      ],
+      "log": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/posthoc/continuation_20260913/parent/seed15601/parent_match.log"
+    },
+    {
+      "label": "parent",
+      "opponent": "parent_match",
+      "seed": 15602,
+      "games": 128,
+      "score": 0.5703125,
+      "sleep": 0.0,
+      "paralysis": 1.5625,
+      "teams": [
+        "47,391,432,445,457,527"
+      ],
+      "log": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/posthoc/continuation_20260913/parent/seed15602/parent_match.log"
+    },
+    {
+      "label": "child_005242880",
+      "opponent": "parent_match",
+      "seed": 15601,
+      "games": 128,
+      "score": 0.65625,
+      "sleep": 0.0,
+      "paralysis": 1.46875,
+      "teams": [
+        "47,391,432,445,457,527"
+      ],
+      "log": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/posthoc/continuation_20260913/child_005242880/seed15601/parent_match.log"
+    },
+    {
+      "label": "child_005242880",
+      "opponent": "parent_match",
+      "seed": 15602,
+      "games": 128,
+      "score": 0.6875,
+      "sleep": 0.0,
+      "paralysis": 1.4609375,
+      "teams": [
+        "47,391,432,445,457,527"
+      ],
+      "log": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/posthoc/continuation_20260913/child_005242880/seed15602/parent_match.log"
+    },
+    {
+      "label": "child_020971520",
+      "opponent": "parent_match",
+      "seed": 15601,
+      "games": 128,
+      "score": 0.8203125,
+      "sleep": 0.0,
+      "paralysis": 1.3125,
+      "teams": [
+        "47,391,432,445,457,526",
+        "47,391,432,445,457,527"
+      ],
+      "log": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/posthoc/continuation_20260913/child_020971520/seed15601/parent_match.log"
+    },
+    {
+      "label": "child_020971520",
+      "opponent": "parent_match",
+      "seed": 15602,
+      "games": 128,
+      "score": 0.8125,
+      "sleep": 0.0,
+      "paralysis": 1.234375,
+      "teams": [
+        "47,391,432,445,457,527"
+      ],
+      "log": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/posthoc/continuation_20260913/child_020971520/seed15602/parent_match.log"
+    },
+    {
+      "label": "child_052428800",
+      "opponent": "parent_match",
+      "seed": 15601,
+      "games": 128,
+      "score": 0.828125,
+      "sleep": 0.0,
+      "paralysis": 1.2578125,
+      "teams": [
+        "47,391,432,445,457,527"
+      ],
+      "log": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/posthoc/continuation_20260913/child_052428800/seed15601/parent_match.log"
+    },
+    {
+      "label": "child_052428800",
+      "opponent": "parent_match",
+      "seed": 15602,
+      "games": 128,
+      "score": 0.78125,
+      "sleep": 0.0,
+      "paralysis": 1.2578125,
+      "teams": [
+        "47,391,432,445,457,527"
+      ],
+      "log": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/posthoc/continuation_20260913/child_052428800/seed15602/parent_match.log"
+    },
+    {
+      "label": "child_099614720",
+      "opponent": "parent_match",
+      "seed": 15601,
+      "games": 128,
+      "score": 0.875,
+      "sleep": 0.0,
+      "paralysis": 1.296875,
+      "teams": [
+        "47,391,432,445,457,527",
+        "47,391,432,447,457,527"
+      ],
+      "log": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/posthoc/continuation_20260913/child_099614720/seed15601/parent_match.log"
+    },
+    {
+      "label": "child_099614720",
+      "opponent": "parent_match",
+      "seed": 15602,
+      "games": 128,
+      "score": 0.8671875,
+      "sleep": 0.0,
+      "paralysis": 1.1875,
+      "teams": [
+        "47,391,432,445,457,527",
+        "47,391,432,447,457,527"
+      ],
+      "log": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/posthoc/continuation_20260913/child_099614720/seed15602/parent_match.log"
+    }
+  ]
+}
