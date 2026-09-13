@@ -217,6 +217,7 @@ static void test_potential_rewards_and_team_log(void) {
     close(fd);
     snprintf(env.team_log_path, sizeof(env.team_log_path), "%s", path);
     env.team_log_interval = 1;
+    env.team_log_max_bytes = 8388608;
     uint8_t obs[2][PK_OBS], masks[2][PK_ACTIONS];
     float actions[2], rewards[2], terminals[2];
     bind_env(&env, obs, masks, actions, rewards, terminals);

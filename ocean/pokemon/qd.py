@@ -134,8 +134,11 @@ def build_panel(args, out):
 def fingerprint(args, panel):
     files = [args.trainer, args.evaluator, 'config/default.ini', 'config/pokemon.ini',
              'ocean/pokemon/data/catalog.json', 'ocean/pokemon/qd.py', 'ocean/pokemon/cma_qd.py',
-             'ocean/pokemon/personality.h', 'ocean/pokemon/pokemon.h', 'ocean/pokemon/profile.h',
-             str(Path(args.out)/'native.ini')]
+             'ocean/pokemon/personality.h', 'ocean/pokemon/pokemon.h', 'ocean/pokemon/profile.h']
+    if args.opponent_mode == 'league':
+        files.append(str(Path(args.out)/'native.ini'))
+    else:
+        files.append('ocean/pokemon/qd_selfplay.py')
     for r in panel:
         files.extend([r['path'], str(Path(r['path']).parent/'config.ini')])
     if args.seed_model:
@@ -148,7 +151,8 @@ def fingerprint(args, panel):
 def candidate(args, panel, contract, label, parent, weights, train_seed):
     job = Path(args.out)/'candidates'/label
     job.mkdir(parents=True, exist_ok=True)
-    result = job/'result.json'
+    # Selfplay mode trains first, then scores against a versioned common panel.
+    result = job/('trained.json' if panel is None else 'result.json')
     if result.exists():
         r = json.loads(result.read_text())
         if (r['parent'] != parent or r['weights'] != weights or r['train_seed'] != train_seed
@@ -161,11 +165,13 @@ def candidate(args, panel, contract, label, parent, weights, train_seed):
     ckroot = job/'checkpoints'
     cmd = [args.trainer, 'train', 'pokemon', f'--base.run-id={run_id}',
            f'--base.load-model-path={parent}', f'--base.checkpoint-dir={ckroot}',
-           f'--base.log-dir={job / "logs"}', f'--env.native-league={Path(args.out)/"native.ini"}',
+           f'--base.log-dir={job / "logs"}',
+           f'--env.native-league={Path(args.out)/"native.ini" if args.opponent_mode == "league" else "None"}',
            '--env.learner-team=None', '--env.opponent-team=None', '--env.team-selection=1',
            f'--env.max-updates={args.max_updates}', '--env.reward-win=1',
-           '--env.reward-hp-scale=0', '--env.reward-ko-scale=0', '--selfplay.enabled=0',
-           f'--train.seed={train_seed}', f'--train.total-timesteps={args.train_steps}',
+           '--env.reward-hp-scale=0', '--env.reward-ko-scale=0',
+           f'--selfplay.enabled={int(args.opponent_mode == "selfplay")}',
+           f'--base.seed={train_seed}', f'--train.total-timesteps={args.train_steps}',
            f'--train.horizon={args.horizon}', f'--train.gae-lambda={args.gae_lambda}',
            '--train.anneal-lr=0', '--train.anneal-ent-coef=0', f'--train.emag-kl-coef={args.emag}',
            '--train.reward-clip=0', '--train.epoch-sampling=1', '--train.prio-alpha=0']
@@ -174,6 +180,23 @@ def candidate(args, panel, contract, label, parent, weights, train_seed):
         for k in ('hidden_size', 'num_layers'):
             cmd.append(f'--policy.{k}={cfg.getint("policy", k)}')
     cmd += [f'--env.personality-{k}={v:.12g}' for k,v in zip(NAMES, weights)]
+    if args.total_agents is not None:
+        cmd.append(f'--vec.total-agents={args.total_agents}')
+    if args.learning_rate is not None:
+        cmd.append(f'--train.learning-rate={args.learning_rate}')
+    if args.entropy_coef is not None:
+        cmd.append(f'--train.ent-coef={args.entropy_coef}')
+    if args.opponent_mode == 'selfplay':
+        cmd += ['--selfplay.opponent-pool=None', '--selfplay.opponent-league=None',
+                '--selfplay.opponent-pool-weights=None', '--selfplay.opponent-pool-prob=0',
+                '--base.load-enemy-model-path=None', '--selfplay.eval-pool-size=0',
+                '--selfplay.max-size=16', '--selfplay.opp-timeout-steps=1000000',
+                f'--selfplay.seed={train_seed}', '--base.async=0', '--vec.seat-balance=0',
+                '--vec.num-frozen-banks=2', '--vec.frozen-bank-pct=0.5',
+                f'--base.checkpoint-interval={args.selfplay_checkpoint_interval}']
+        arch = read_ini(Path(parent).parent/'config.ini' if parent != 'None' else 'config/pokemon.ini')
+        cmd += [f'--vec.frozen-bank-hidden-size={arch.getint("policy", "hidden_size")}',
+                f'--vec.frozen-bank-num-layers={arch.getint("policy", "num_layers")}']
     train_log = job/f'train_{run_id}.log'
     execute(cmd, train_log)
     prefix = 'PK_PERSONALITY_CONFIG v=1 weights='
@@ -185,10 +208,10 @@ def candidate(args, panel, contract, label, parent, weights, train_seed):
     if not checkpoints:
         raise ValueError('trainer produced no checkpoint')
     checkpoint = str(checkpoints[-1].resolve())
-    r = evaluate(args.evaluator, checkpoint, panel, args.games, args.seed, args.max_updates, job/'evaluation')
+    r = {} if panel is None else evaluate(args.evaluator, checkpoint, panel, args.games, args.seed, args.max_updates, job/'evaluation')
     r.update(id=label, checkpoint=checkpoint, parent=parent, weights=weights, train_seed=train_seed,
              checkpoint_sha256=digest(checkpoint), config_sha256=digest(Path(checkpoint).parent/'config.ini'))
-    if fingerprint(args, panel) != contract:
+    if fingerprint(args, panel or []) != contract:
         raise ValueError('run inputs changed during candidate; results rejected')
     dump(result, r)
     return r
@@ -289,7 +312,11 @@ def main():
     p = argparse.ArgumentParser(description=__doc__)
     sub = p.add_subparsers(dest='command', required=True)
     q = sub.add_parser('run')
-    q.add_argument('--native-league', required=True)
+    q.add_argument('--opponent-mode', choices=('league', 'selfplay'), default='league')
+    q.add_argument('--native-league')
+    q.add_argument('--history-panel-size', type=int, default=4)
+    q.add_argument('--selfplay-checkpoint-interval', type=int, default=10,
+                   help='save a learner checkpoint every N rollout epochs in selfplay mode')
     q.add_argument('--out', required=True)
     q.add_argument('--seed-model')
     q.add_argument('--trainer', default='./puffer')
@@ -301,6 +328,12 @@ def main():
     q.add_argument('--seed', type=int, default=42)
     q.add_argument('--max-updates', type=int, default=512)
     q.add_argument('--horizon', type=int, default=512)
+    q.add_argument('--total-agents', type=int,
+                   help='override rollout agents for local GPU memory limits; shared by all candidates and controls')
+    q.add_argument('--learning-rate', type=float,
+                   help='explicit PPO learning rate shared by all candidates and controls')
+    q.add_argument('--entropy-coef', type=float,
+                   help='explicit entropy coefficient shared by all candidates and controls')
     q.add_argument('--gae-lambda', type=float, default=.995)
     q.add_argument('--emag', type=float, default=0)
     q.add_argument('--radius', type=float, default=.12)
@@ -314,17 +347,37 @@ def main():
     if a.command == 'report':
         report(a)
         return
+    if a.opponent_mode == 'league' and not a.native_league:
+        p.error('league mode requires --native-league')
+    if a.opponent_mode == 'selfplay' and (a.native_league or a.seed_model):
+        p.error('selfplay-only mode starts fresh: no --native-league or --seed-model; use --resume to continue its own run')
+    if a.history_panel_size < 2 or a.selfplay_checkpoint_interval < 1:
+        p.error('history-panel-size must be >=2 and selfplay-checkpoint-interval positive')
     if (a.generations < 1 or a.population < 4 or a.population % 2 or a.games < 8 or a.games % 4
             or a.seed < 0 or a.max_updates < 1 or a.train_steps < 1 or a.horizon < 1
             or a.emitter_generations < 1 or not 0 <= a.gae_lambda <= 1
             or not np.isfinite(a.emag) or a.emag < 0):
         p.error('invalid settings; games must be a multiple of four >=8, population even >=4')
     Archive(a.radius, a.capacity)
+    if a.learning_rate is not None and (not np.isfinite(a.learning_rate) or a.learning_rate <= 0):
+        p.error('learning-rate must be finite and positive')
+    if a.entropy_coef is not None and (not np.isfinite(a.entropy_coef) or a.entropy_coef < 0):
+        p.error('entropy-coef must be finite and nonnegative')
     cfg = read_ini('config/pokemon.ini')
     agents, mb = cfg.getint('vec', 'total_agents'), cfg.getint('train', 'minibatch_size')
+    if a.total_agents is not None:
+        agents = a.total_agents
+    buffers = cfg.getint('vec', 'num_buffers', fallback=1)
+    if agents < 2 or agents % (2*buffers):
+        p.error('total-agents must be positive and divisible by twice num_buffers')
     if mb % a.horizon or mb > a.horizon*agents or a.train_steps < 2*a.horizon*agents:
         p.error('horizon must divide minibatch_size; allow >=2 complete rollout batches')
-    run(a)
+    if a.opponent_mode == 'selfplay':
+        import sys
+        from qd_selfplay import run_selfplay
+        run_selfplay(a, sys.modules[__name__])
+    else:
+        run(a)
 
 
 if __name__ == '__main__':

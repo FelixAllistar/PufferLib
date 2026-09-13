@@ -92,7 +92,20 @@ if args[0]=='train':
         c[section][key]=value
     assert c['env']['max_updates']=='17'
     assert c['env']['reward_hp_scale']==c['env']['reward_ko_scale']=='0'
-    assert c['selfplay']['enabled']=='0'
+    if c['env']['native_league']=='None':
+        assert c['selfplay']['enabled']=='1'
+        assert c['selfplay']['opponent_pool']==c['selfplay']['opponent_league']=='None'
+        assert c['selfplay']['opponent_pool_prob']=='0'
+        assert c['base']['load_enemy_model_path']=='None'
+        assert c['vec']['frozen_bank_pct']=='0.5'
+        assert c['env']['learner_team']==c['env']['opponent_team']=='None'
+        assert c['selfplay']['eval_pool_size']=='0'
+    else:
+        assert c['selfplay']['enabled']=='0'
+    assert c['base']['seed'] in ('42','43','44')
+    assert not c.has_option('train','seed')
+    assert c['train']['learning_rate']=='0.0001'
+    assert c['train']['ent_coef']=='0.0005'
     print('PK_PERSONALITY_CONFIG v=1 weights='+','.join(c['env']['personality_'+n] for n in ('paralysis','sleep','offense','defense','reserve')))
     path=pathlib.Path(c['base']['checkpoint_dir'])/'pokemon'/c['base']['run_id']
     path.mkdir(parents=True)
@@ -156,9 +169,15 @@ int main(void) {
 
 class TestRunnerContract(unittest.TestCase):
     def test_mock_run_resume_and_input_rejection(self):
+        self.exercise_mode('league')
+
+    def test_selfplay_panel_rescore_resume_and_input_rejection(self):
+        self.exercise_mode('selfplay')
+
+    def exercise_mode(self, mode):
         with tempfile.TemporaryDirectory() as tmp:
             root=Path(tmp);folder=root/'ocean/pokemon';folder.mkdir(parents=True)
-            for name in ('qd.py','cma_qd.py','personality.h','pokemon.h','profile.h'):
+            for name in ('qd.py','qd_selfplay.py','cma_qd.py','personality.h','pokemon.h','profile.h'):
                 shutil.copyfile(HERE/name,folder/name)
             (folder/'data').mkdir();(folder/'data/catalog.json').write_text('{}')
             (root/'config').mkdir();(root/'config/default.ini').write_text('[base]\n')
@@ -170,7 +189,11 @@ class TestRunnerContract(unittest.TestCase):
             for name in ('puffer','pokemon'):
                 (root/name).write_text('#!'+sys.executable+' -S\n'+MOCK);(root/name).chmod(0o755)
             cmd=[sys.executable,str(folder/'qd.py'),'run','--native-league','native.ini','--out','out',
-                 '--population','4','--generations','1','--train-steps','8','--games','8','--horizon','2','--max-updates','17']
+                 '--population','4','--generations','1','--train-steps','8','--games','8','--horizon','2','--max-updates','17',
+                 '--learning-rate','0.0001','--entropy-coef','0.0005','--total-agents','2']
+            if mode == 'selfplay':
+                i=cmd.index('--native-league');del cmd[i:i+2]
+                cmd+=['--opponent-mode','selfplay']
             first=subprocess.run(cmd,cwd=root,capture_output=True,text=True)
             self.assertEqual(first.returncode,0,first.stdout+first.stderr)
             path=root/'out/state.json';state=json.loads(path.read_text())
@@ -180,9 +203,23 @@ class TestRunnerContract(unittest.TestCase):
             self.assertEqual(resumed.returncode,0,resumed.stdout+resumed.stderr)
             state=json.loads(path.read_text());self.assertEqual(state['generation'],2)
             self.assertEqual(state['requested_train_steps'],88)
-            (root/'out/panel/0/model.bin').write_text('CHANGED INPUT')
+            if mode == 'selfplay':
+                self.assertEqual(state['opponent_mode'],'selfplay')
+                self.assertFalse((root/'out/native.ini').exists())
+                first_panel=json.loads((root/'out/generations/g0000/panel.json').read_text())
+                second_panel=json.loads((root/'out/generations/g0001/panel.json').read_text())
+                self.assertNotEqual(first_panel['id'],second_panel['id'])
+                for r in state['archive']+[state['champion']]:
+                    self.assertEqual(r['evaluation_panel_id'],second_panel['id'])
+                for entry in second_panel['opponents']:
+                    self.assertTrue(Path(entry['path']).is_relative_to(root/'out/candidates'))
+                    self.assertEqual(entry['team'],'None')
+                Path(state['history'][0]['checkpoint']).write_text('CHANGED INPUT')
+            else:
+                (root/'out/panel/0/model.bin').write_text('CHANGED INPUT')
             bad=subprocess.run(cmd,cwd=root,capture_output=True,text=True)
-            self.assertNotEqual(bad.returncode,0);self.assertIn('resume contract mismatch',bad.stderr)
+            self.assertNotEqual(bad.returncode,0)
+            self.assertIn('selfplay checkpoint/config changed' if mode=='selfplay' else 'resume contract mismatch',bad.stderr)
 
 
 if __name__=='__main__':unittest.main()
