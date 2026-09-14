@@ -543,6 +543,7 @@ typedef struct {
 } ProfileT;
 
 typedef struct PuffeRL {
+    KagObservationContract checkpoint_contract;
     Policy policy;
     PolicyWeights weights;       // current precision_t weights (structured)
     PolicyWeights actor_weights; // async rollout snapshot; unused when async=0
@@ -2089,15 +2090,23 @@ void puf_save_tensor(FloatTensor weights, const char* path) {
 
 void puf_save_weights(PuffeRL* p, const char* path) {
     puf_save_tensor(p->master_weights, path);
+    kag_observation_save_contract(path, p->checkpoint_contract);
     if (p->hypers.emag_kl_coef > 0.0f) {
         char magnet_path[8192];
         snprintf(magnet_path, sizeof(magnet_path), "%s.emag", path);
         puf_save_tensor(p->magnet_master_weights, magnet_path);
+        kag_observation_save_contract(magnet_path, p->checkpoint_contract);
     }
 }
 
 void puf_load_weights_into(FloatTensor dst, PrecisionTensor params,
-        cudaStream_t stream, const char* path) {
+        cudaStream_t stream, const char* path, const KagObservationContract* contract = nullptr) {
+    if (strcmp(PUFFER_ENV_NAME, "kaggriculture") == 0) {
+        if (!contract || !contract->enabled) {
+            fprintf(stderr, "Kaggriculture checkpoint loads require a fresh-policy contract\n"); exit(1);
+        }
+        kag_executor_check_load(path, *contract, 0);
+    }
     int64_t nbytes = numel(dst.shape) * sizeof(float);
     struct stat info;
     if (stat(path, &info) != 0) {
@@ -2133,8 +2142,11 @@ void puf_load_weights_into(FloatTensor dst, PrecisionTensor params,
 
 void pufferl_load_frozen_bank(PuffeRL* pufferl, int bank_idx, const char* path) {
     WeightBank* bank = &pufferl->frozen_banks[bank_idx];
+    KagObservationContract contract = pufferl->checkpoint_contract;
+    contract.hidden = bank->policy.network.hidden;
+    contract.layers = bank->policy.network.num_layers;
     puf_load_weights_into(bank->master_weights, bank->param_puf,
-        pufferl->default_stream, path);
+        pufferl->default_stream, path, &contract);
     cudaDeviceSynchronize();
 }
 
@@ -2252,28 +2264,16 @@ PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx) {
         .seed = puf_ini_get_int(ini, "base", "seed"),
     };
 
-    /* Discount-consistent potential shaping is policy-invariant only when
-     * its gamma matches the learner's return gamma. Refuse a silent mismatch
-     * for Kaggriculture; it would turn the heuristic asset mark into part of
-     * the objective instead of pure credit assignment. */
-    if (strcmp(PUFFER_ENV_NAME, "kaggriculture") == 0) {
-        float potential_gamma = puf_ini_get_float(
-            ini, "env", "reward_potential_gamma");
-        if (potential_gamma > 0.0f
-                && fabsf(potential_gamma - hypers.gamma) > 1.0e-6f) {
-            fprintf(stderr, "config error: env.reward_potential_gamma=%g "
-                "must equal train.gamma=%g\n",
-                potential_gamma, hypers.gamma);
-            exit(1);
-        }
-    }
-
     Dict vec_kwargs = {0};
     dict_copy(&vec_kwargs, puf_ini_section(ini, "vec", 0));
     Dict* env_kwargs = puf_ini_section(ini, "env", 0);
+#ifdef KAG_REWARD_V2_AVAILABLE
+    kag_reward_bind_train_config(env_kwargs, hypers.gamma, hypers.reward_clip);
+#endif
     ncclUniqueId* nccl_id = ctx->nccl_id;
 
     PuffeRL* pufferl = (PuffeRL*)calloc(1, sizeof(PuffeRL));
+    pufferl->checkpoint_contract = kag_observation_contract(ini);
     pufferl->hypers = hypers;
     snprintf(pufferl->env_name, sizeof(pufferl->env_name), "%s", PUFFER_ENV_NAME);
 
@@ -2699,6 +2699,13 @@ PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx) {
             exit(1);
         }
     }
+#ifdef KAG_REWARD_V2_AVAILABLE
+    if (params->total_bytes != params->total_elems * (long)sizeof(precision_t)
+            || grads->total_bytes != grads->total_elems * (long)sizeof(precision_t)) {
+        fprintf(stderr, "Entity policy parameters must be gap-free for flat optimizer/checkpoint storage\n");
+        exit(1);
+    }
+#endif
     pufferl->buffer_activations = (PolicyActivations*)xcalloc((size_t)num_buffers * sizeof(PolicyActivations));
     pufferl->buffer_states = (PrecisionTensor*)xcalloc((size_t)num_buffers * sizeof(PrecisionTensor));
     for (int i = 0; i < num_buffers; i++) {
@@ -4584,7 +4591,7 @@ static void run_league_eval(Ini* ini, TrainContext* ctx) {
             policies.size, pairs, games, banks);
         for (int i = 0; i < waves; i++) {
             puf_load_weights_into(pufferl->master_weights, pufferl->param_puf,
-                pufferl->default_stream, policies.items[i].path);
+                pufferl->default_stream, policies.items[i].path, &pufferl->checkpoint_contract);
             pufferl_sync_loaded_policy(pufferl);
             int active = policies.size - i - 1;
             for (int bank = 0; bank < banks; bank++) {
@@ -4617,7 +4624,7 @@ static void run_league_eval(Ini* ini, TrainContext* ctx) {
         }
         for (int i = 0; i < candidates.size; i++) {
             puf_load_weights_into(pufferl->master_weights, pufferl->param_puf,
-                pufferl->default_stream, candidates.items[i].path);
+                pufferl->default_stream, candidates.items[i].path, &pufferl->checkpoint_contract);
             pufferl_sync_loaded_policy(pufferl);
             league_eval_episode(pufferl, games, logs);
             for (int bank = 0; bank < banks; bank++) {
@@ -4748,7 +4755,7 @@ EvalResult run_eval(Ini* ini, TrainContext* ctx, int mode, int verbose) {
             exit(1);
         }
         puf_load_weights_into(pufferl->master_weights,
-            pufferl->param_puf, pufferl->default_stream, a_path);
+            pufferl->param_puf, pufferl->default_stream, a_path, &pufferl->checkpoint_contract);
         if (!match_enemy_bot) pufferl_load_frozen_bank(pufferl, 0, b_path);
     } else {
         char resolved_path[4096];
@@ -4756,7 +4763,7 @@ EvalResult run_eval(Ini* ini, TrainContext* ctx, int mode, int verbose) {
             "load_model_path", resolved_path, sizeof(resolved_path));
         if (load_path) {
             puf_load_weights_into(pufferl->master_weights, pufferl->param_puf,
-                pufferl->default_stream, load_path);
+                pufferl->default_stream, load_path, &pufferl->checkpoint_contract);
             printf("Loaded weights from %s\n", load_path);
         }
     }
@@ -4921,7 +4928,7 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
     if (load_path) {
         kag_executor_check_load(load_path, kag_observation_contract(ini), 0);
         puf_load_weights_into(pufferl->master_weights, pufferl->param_puf,
-            pufferl->default_stream, load_path);
+            pufferl->default_stream, load_path, &pufferl->checkpoint_contract);
         printf("Loaded weights from %s\n", load_path);
     }
     if (pufferl->hypers.emag_kl_coef > 0.0f) {
@@ -4935,7 +4942,7 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
             if (access(magnet_path, R_OK) == 0) {
                 puf_load_weights_into(pufferl->magnet_master_weights,
                     pufferl->magnet_param_puf, pufferl->default_stream,
-                    magnet_path);
+                    magnet_path, &pufferl->checkpoint_contract);
                 printf("Loaded EMA magnet from %s\n", magnet_path);
             } else {
                 fprintf(stderr, "magnet_path %s not found\n", magnet_path);
@@ -4946,7 +4953,7 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
             if (access(magnet_path, R_OK) == 0) {
                 puf_load_weights_into(pufferl->magnet_master_weights,
                     pufferl->magnet_param_puf, pufferl->default_stream,
-                    magnet_path);
+                    magnet_path, &pufferl->checkpoint_contract);
                 printf("Loaded EMA magnet from %s\n", magnet_path);
             } else {
                 cudaMemcpyAsync(pufferl->magnet_master_weights.data,
@@ -5035,8 +5042,11 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
         size_t frozen_bytes = (size_t)numel(
             pufferl->frozen_banks[0].master_weights.shape) * sizeof(float);
         selfplay_validate_external(&selfplay, frozen_bytes);
+        KagObservationContract frozen_contract = pufferl->checkpoint_contract;
+        frozen_contract.hidden = pufferl->frozen_banks[0].policy.network.hidden;
+        frozen_contract.layers = pufferl->frozen_banks[0].policy.network.num_layers;
         for (int i = 0; i < selfplay.external_size; i++)
-            kag_executor_check_load(selfplay.external[i], kag_observation_contract(ini), 1);
+            kag_executor_check_load(selfplay.external[i], frozen_contract, 1);
         if (!kag_observation_pool_compatible(kag_observation_contract(ini),
                 selfplay.external_prob, selfplay.external_size)) {
             fprintf(stderr, "Mixed Kaggriculture observation/executor versions require "
@@ -5180,7 +5190,6 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
                 "%s/%016ld.bin", checkpoint_dir, pufferl->global_step);
             if (ctx->artifact_owner) {
                 puf_save_weights(pufferl, saved_checkpoint);
-                kag_observation_save(saved_checkpoint, ini);
 #ifdef PUF_CHECKPOINT_HOOK
                 PUF_CHECKPOINT_HOOK(saved_checkpoint, ini);
 #endif
@@ -5752,7 +5761,7 @@ static void run_trace(Ini* ini, TrainContext* ctx) {
     int steps = puf_ini_get_int(ini, "base", "trace_steps");
     PuffeRL* pufferl = create_pufferl(ini, ctx);
     puf_load_weights_into(pufferl->master_weights, pufferl->param_puf,
-        pufferl->default_stream, load_path);
+        pufferl->default_stream, load_path, &pufferl->checkpoint_contract);
     pufferl_sync_loaded_policy(pufferl);
     pufferl_trace(pufferl, steps);
     close_pufferl(pufferl);

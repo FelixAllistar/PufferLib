@@ -655,6 +655,8 @@ void free_mingru(MinGRU* layer) {
     free(layer);
 }
 
+#include "../ocean/kaggriculture/entity_cpu.h"
+
 // PufferNet: default policy matching the native backend Policy in models.cu.
 // Architecture: Linear encoder -> N x MinGRU -> Linear decoder (fused value).
 // Weight file order (matches policy_weights_create reg_params call order):
@@ -664,6 +666,7 @@ void free_mingru(MinGRU* layer) {
 //   mingru weights[0..num_layers-1] (3*hidden_dim x hidden_dim each)
 typedef struct PufferNet PufferNet;
 struct PufferNet {
+    KagCpuPolicy* kag;
     int num_agents;
     float* obs;
     Linear* encoder;
@@ -701,6 +704,18 @@ PufferNet* make_puffernet(Weights* weights, int num_agents, int input_dim,
     return net;
 }
 
+static inline PufferNet* make_kag_entity_puffernet(Weights* weights, int batch,
+        int hidden, int layers, int alignment, int logit_sizes[], int num_actions) {
+    PufferNet* net = (PufferNet*)calloc(1, sizeof(PufferNet));
+    net->num_agents = batch;
+    net->num_actions = num_actions;
+    net->obs = (float*)calloc((size_t)batch * KAG_ENTITY_OBS_SIZE, sizeof(float));
+    net->kag = kag_cpu_make(weights, batch, hidden, layers, alignment);
+    net->mingru = net->kag->mingru;
+    net->multidiscrete = make_multidiscrete(batch, logit_sizes, num_actions);
+    return net;
+}
+
 void _gaussian_mean(float* input, float* output, int batch_size, int num_actions) {
     for (int b = 0; b < batch_size; b++) {
         // +1 skips the value head fused into the decoder output
@@ -711,6 +726,10 @@ void _gaussian_mean(float* input, float* output, int batch_size, int num_actions
 }
 
 void forward_puffernet(PufferNet* net, float* observations, float* actions) {
+    if (net->kag) {
+        softmax_multidiscrete(net->multidiscrete, kag_cpu_forward(net->kag, observations), actions);
+        return;
+    }
     linear(net->encoder, observations);
     mingru(net->mingru, net->encoder->output);
     linear(net->decoder, net->mingru->output);
@@ -725,7 +744,8 @@ void free_puffernet(PufferNet* net) {
     free(net->obs);
     free(net->encoder);
     free(net->decoder);
-    free_mingru(net->mingru);
+    if (net->kag) kag_cpu_free(net->kag);
+    else free_mingru(net->mingru);
     if (net->multidiscrete) {
         free(net->multidiscrete->logit_sizes);
         free(net->multidiscrete);
@@ -736,6 +756,7 @@ void free_puffernet(PufferNet* net) {
 #ifdef PUFFERCPU_EVAL_MAIN
 
 #include "ini.h"
+#include "kag_observation_contract.h"
 #include <dirent.h>
 #include <sys/stat.h>
 #include <time.h>
@@ -819,6 +840,11 @@ int main(int argc, char** argv) {
     const char* env_name = argv[1];
     Ini ini = {0};
     puf_ini_load_env(&ini, env_name, argc - 2, argv + 2);
+#ifdef KAG_REWARD_V2_AVAILABLE
+    kag_reward_bind_train_config(puf_ini_section(&ini, "env", 0),
+        puf_ini_get_float(&ini, "train", "gamma"),
+        puf_ini_get_float(&ini, "train", "reward_clip"));
+#endif
 
     if (sizeof(obs_t) != sizeof(float)) {
         fprintf(stderr, "cpu eval currently requires float observations\n");
@@ -827,6 +853,13 @@ int main(int argc, char** argv) {
 
     char path_buf[1024];
     const char* path = puf_model_path(&ini, env_name, path_buf, sizeof(path_buf));
+#ifdef KG_POLICY_UNIT_HEADS
+    KagObservationContract cpu_contract = kag_observation_contract(&ini);
+    cpu_contract.hidden = kag_checkpoint_integer(path, ".hidden_size");
+    cpu_contract.layers = kag_checkpoint_integer(path, ".num_layers");
+    cpu_contract.alignment = kag_checkpoint_integer(path, ".param_alignment");
+    kag_executor_check_load(path, cpu_contract, 0);
+#endif
     Weights* weights = load_weights(path);
     if (!weights) {
         puf_ini_free(&ini);
@@ -836,8 +869,10 @@ int main(int argc, char** argv) {
     int act_sizes[] = ACT_SIZES;
     int num_actions = (int)(sizeof(act_sizes) / sizeof(act_sizes[0]));
 
+#ifndef KG_POLICY_UNIT_HEADS
     int hidden_size = (int)puf_ini_get(&ini, "policy", "hidden_size");
     int num_layers = (int)puf_ini_get(&ini, "policy", "num_layers");
+#endif
 
     Env env = {0};
     env.rng = 0;
@@ -861,8 +896,13 @@ int main(int argc, char** argv) {
     }
     puf_reset(&env);
 
+#ifdef KG_POLICY_UNIT_HEADS
+    PufferNet* net = make_kag_entity_puffernet(weights, env.num_agents,
+        cpu_contract.hidden, cpu_contract.layers, cpu_contract.alignment, act_sizes, num_actions);
+#else
     PufferNet* net = make_puffernet(weights, env.num_agents, OBS_SIZE,
         hidden_size, num_layers, act_sizes, num_actions);
+#endif
 
     int frame = 0;
     puf_render(&env);
