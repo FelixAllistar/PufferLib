@@ -4,6 +4,9 @@ All six meaningful mode/executor combinations use the entity encoder, dense
 rewards, reset-state banks, self-play, and checkpoint leagues. Start fresh: v2
 weights are rejected because controller/history feature meanings and masks changed.
 The 1,424-float observation size, network layers, and reset-bank file format are unchanged.
+Replay reset-state bank import is currently a GPU-environment feature: build with
+`bash build.sh kaggriculture --gpu` for those experiments. CPU viewers start from
+the normal opening; CPU training checks use `reset_state_prob=0`.
 
 ## Controllers
 
