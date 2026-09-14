@@ -14,7 +14,9 @@ static Env* fixture(void) {
     Env* e = calloc(1, sizeof(*e));
     KGConfig c; kg_config_default(&c); c.weed_spawn_chance = 0;
     kg_init(&e->game_storage, &c);
-    e->reward = (KagRewardConfig){1, 1, 0.25f, 0, 0.997f, 1, 1, 0.25f, 0.25f};
+    e->reward = (KagRewardConfig){.money_scale=1, .quality_scale=1,
+        .quality_idle_cost=0.25f, .gamma=0.997f, .cash_weight=1,
+        .stock_weight=1, .crop_weight=0.25f, .animal_weight=0.25f};
     e->macro_mode = KAG_MACRO_MODE_TASKS;
     e->frozen_macro_mode = e->frozen_observation_version = e->frozen_macro_executor_version = -1;
     e->observation_version = KAG_OBSERVATION_ENTITIES;
@@ -89,8 +91,7 @@ static void terminal_and_pbrs(void) {
         e->game_storage.players[0].shed[KG_ITEM_MILK] = step % 8;
         int done = step == 19;
         float reward = kag_reward_step(e, 0, done);
-        float terminal = e->reward_state[0].money_reward + e->reward_state[0].quality_reward;
-        if (!done) near(terminal, 0);
+        float terminal = done ? e->reward_state[0].money_reward + e->reward_state[0].quality_reward : 0;
         total_discounted += discount * (reward - terminal);
         discount *= e->reward.gamma;
     }
@@ -149,7 +150,45 @@ static void rejects_bad_config(void) {
         int status; waitpid(child, &status, 0); assert(WIFEXITED(status) && WEXITSTATUS(status) == 1);
     }
 }
+static void dense_growth(void) {
+    Env* e = fixture(); Dict d = {0}; kag_reward_configure(e, &d);
+    assert(e->reward.money_timing == 1 && e->reward.target_plots == 3
+        && e->reward.target_animals == 15 && kag_reward_crop_target(e) == 60);
+    KGPlayer* p = &e->game_storage.players[0];
+    kag_reward_reset(e, 0);
+    p->money -= 300; near(kag_reward_step(e, 0, 0), -0.1f);
+    p->money += 600; near(kag_reward_step(e, 0, 0), 0.2f);
+    near(kag_reward_step(e, 0, 0), 0);
+    p->unlocked_mask = 3; near(kag_reward_step(e, 0, 0), 1);
+    p->unlocked_mask = 7; near(kag_reward_step(e, 0, 0), 1);
+    p->unlocked_mask = 15; near(kag_reward_step(e, 0, 0), 0); /* Three TOTAL plots. */
+    e->reward.alive_daily = 0;
+    kg_new_plant(p, 0, KG_WHEAT, 0, 24); p->tiles[0].watered_today = 1;
+    near(kag_reward_step(e, 0, 0), 0.05f);
+    kg_set_player_tile(p, 0, KG_TILE_EMPTY); near(kag_reward_step(e, 0, 0), 0);
+    kg_new_plant(p, 0, KG_WHEAT, 0, 24); p->tiles[0].watered_today = 1;
+    near(kag_reward_step(e, 0, 0), 0); /* Kill/replant below the peak pays nothing. */
+    kg_new_animal(p, 1, KG_COW, 0); p->tiles[1].fed_today = 1;
+    near(kag_reward_step(e, 0, 0), 0.25f);
+    kag_reward_reset(e, 0); near(kag_reward_step(e, 0, 0), 0); /* No inherited bonus. */
+    near(e->reward_state[0].growth_crop_reward, 0);
+    e->reward.alive_daily = 0.05f;
+    near(kag_reward_step(e, 0, 0), 0.05f * (1.0f / 60 + 1.0f / 15) / 48);
+    p->tiles[0].watered_today = 0; p->tiles[0].consecutive_unwatered = 1;
+    p->tiles[1].fed_today = 0; p->tiles[1].consecutive_unfed = 1;
+    near(kag_reward_step(e, 0, 0), 0);
+    /* Full caps, then an extra producer beyond each cap. */
+    for (int t = 0; t < 100; t++) {
+        if (t < 15) { kg_new_animal(p, t, KG_COW, 0); p->tiles[t].fed_today = 1; }
+        else { kg_new_plant(p, t, KG_WHEAT, 0, 24); p->tiles[t].watered_today = 1; }
+    }
+    e->reward.alive_daily = 0;
+    near(kag_reward_step(e, 0, 0), 59 * 0.05f + 14 * 0.25f);
+    kg_new_animal(p, 99, KG_COW, 0); p->tiles[99].fed_today = 1;
+    near(kag_reward_step(e, 0, 1), 0);
+    free(e); free(d.items);
+}
 int main(void) {
-    quality(); viable(); terminal_and_pbrs(); sustained(); quotes(); rejects_bad_config();
-    puts("entity rewards: terminal cash, sustained quality, viability, reset accounting, PBRS, exact quotes PASS");
+    quality(); viable(); terminal_and_pbrs(); sustained(); quotes(); rejects_bad_config(); dense_growth();
+    puts("entity rewards: dense/terminal cash, capped growth, alive upkeep, reset accounting, optional quality/PBRS PASS");
 }

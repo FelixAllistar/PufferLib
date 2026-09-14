@@ -854,11 +854,8 @@ int main(int argc, char** argv) {
     char path_buf[1024];
     const char* path = puf_model_path(&ini, env_name, path_buf, sizeof(path_buf));
 #ifdef KG_POLICY_UNIT_HEADS
-    KagObservationContract cpu_contract = kag_observation_contract(&ini);
-    cpu_contract.hidden = kag_checkpoint_integer(path, ".hidden_size");
-    cpu_contract.layers = kag_checkpoint_integer(path, ".num_layers");
-    cpu_contract.alignment = kag_checkpoint_integer(path, ".param_alignment");
-    kag_executor_check_load(path, cpu_contract, 0);
+    KagObservationContract cpu_contract = kag_checkpoint_contract(path);
+    kag_observation_restore(&ini, cpu_contract);
 #endif
     Weights* weights = load_weights(path);
     if (!weights) {
@@ -907,11 +904,26 @@ int main(int argc, char** argv) {
     int frame = 0;
     puf_render(&env);
     while (!WindowShouldClose()) {
+#ifdef KG_POLICY_UNIT_HEADS
+        // Kaggriculture must sample every simulation turn, using exactly the
+        // same prefix masks as training. Repeating an unmasked action for four
+        // turns silently changes controller semantics.
+        const float* logits = kag_cpu_forward(net->kag, (const float*)observations);
+        for (int player = 0; player < env.num_agents; player++)
+            kag_sample_cpu_logits(&env, player, logits + player * (KAG_ALL_LOGITS + 1), 0);
+#else
         if (frame % 4 == 0) {
             forward_puffernet(net, observations, actions);
         }
+#endif
         frame = (frame + 1) % 4;
         puf_step(&env);
+#ifdef KG_POLICY_UNIT_HEADS
+        if (terminals[0]) {
+            memset(net->mingru->state, 0, (size_t)net->mingru->num_layers
+                * env.num_agents * net->mingru->hidden_size * sizeof(float));
+        }
+#endif
         puf_render(&env);
     }
 

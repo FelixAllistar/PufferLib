@@ -95,13 +95,45 @@ KG_HD static inline float kag_reward_phi(const Env* env, int pid) {
     return value;
 }
 
+KG_HD static inline int kag_reward_crop_target(const Env* env) {
+    if (env->reward.target_crops >= 0) return env->reward.target_crops;
+    int capacity = 0;
+    for (int y = 0; y < env->game_storage.config.board_size; y++) {
+        for (int x = 0; x < env->game_storage.config.board_size; x++) {
+            int bit = kg_quadrant(x, y, env->game_storage.config.board_size);
+            if (bit < (1 << env->reward.target_plots)) capacity++;
+        }
+    }
+    capacity -= env->reward.target_animals;
+    return capacity > 0 ? capacity : 0;
+}
+
+KG_HD static inline int kag_reward_capped(int n, int cap) {
+    return n < cap ? n : cap;
+}
+
+/* High-water counts are simultaneous healthy/viable producers, never action
+ * counts. Keep the raw peaks in state/observations, independently of targets. */
+KG_HD static inline float kag_reward_growth(int count, int target, int* peak,
+        float weight) {
+    int previous = *peak;
+    if (count > *peak) *peak = count;
+    return weight * (kag_reward_capped(*peak, target)
+        - kag_reward_capped(previous, target));
+}
+
 KG_HD static inline void kag_reward_reset(Env* env, int pid) {
     KagRewardState* s = &env->reward_state[pid];
     memset(s, 0, sizeof(*s));
     s->start_cash = env->game_storage.players[pid].money;
+    s->previous_cash = s->start_cash;
     s->start_step = env->game_storage.step;
     s->discount = 1.0f;
     s->phi = kag_reward_phi(env, pid);
+    float coverage, idle;
+    kag_quality_components(&env->game_storage, pid, &coverage, &idle,
+        &s->peak_crops, &s->peak_animals);
+    s->peak_plots = kag_popcount(env->game_storage.players[pid].unlocked_mask);
 }
 
 KG_HD static inline float kag_reward_step(Env* env, int pid, int done) {
@@ -112,27 +144,67 @@ KG_HD static inline float kag_reward_step(Env* env, int pid, int done) {
     kag_quality_components(&env->game_storage, pid, &coverage, &idle, &crops, &animals);
     s->coverage_sum += coverage;
     s->idle_sum += idle;
+    int cash = env->game_storage.players[pid].money;
+    float cash_delta = r->money_scale * ((float)cash - s->previous_cash)
+        / env->game_storage.config.starting_money;
+    s->previous_cash = cash;
+    s->money_reward = r->money_scale * ((float)cash - s->start_cash)
+        / env->game_storage.config.starting_money;
+    float quality_delta = r->quality_scale * (coverage - r->quality_idle_cost * idle)
+        / env->game_storage.config.episode_steps;
+    s->quality_reward += quality_delta;
+    int crop_target = kag_reward_crop_target(env);
+    float land_bonus = kag_reward_growth(
+        kag_popcount(env->game_storage.players[pid].unlocked_mask),
+        r->target_plots, &s->peak_plots, r->growth_land);
+    float crop_bonus = kag_reward_growth(crops, crop_target,
+        &s->peak_crops, r->growth_crop);
+    float animal_bonus = kag_reward_growth(animals, r->target_animals,
+        &s->peak_animals, r->growth_animal);
+    s->growth_land_reward += land_bonus;
+    s->growth_crop_reward += crop_bonus;
+    s->growth_animal_reward += animal_bonus;
+    float alive = 0.0f;
+    int active_targets = 0;
+    if (crop_target > 0) {
+        alive += (float)kag_reward_capped(crops, crop_target) / crop_target;
+        active_targets++;
+    }
+    if (r->target_animals > 0) {
+        alive += (float)kag_reward_capped(animals, r->target_animals) / r->target_animals;
+        active_targets++;
+    }
+    /* A full target farm earns alive_daily per game day. Distribute it over
+     * actual played steps: no day-boundary spike and no reset inheritance. */
+    float alive_bonus = active_targets ? r->alive_daily * alive
+        / (active_targets * env->game_storage.config.turns_per_day) : 0.0f;
+    s->alive_reward += alive_bonus;
     /* Zero the ENTIRE terminal potential, including cash and stock. */
     float next_phi = done ? 0.0f : kag_reward_phi(env, pid);
     float shaping = r->pbrs_scale * (r->gamma * next_phi - s->phi);
     s->discounted_pbrs += s->discount * shaping;
     s->discount *= r->gamma;
     s->phi = next_phi;
-    if (!done) return shaping;
-    s->money_reward = r->money_scale
-        * ((float)env->game_storage.players[pid].money - s->start_cash)
-        / env->game_storage.config.starting_money;
-    s->quality_reward = r->quality_scale * (s->coverage_sum - r->quality_idle_cost * s->idle_sum)
-        / env->game_storage.config.episode_steps;
-    return shaping + s->money_reward + s->quality_reward;
+    float reward = shaping + land_bonus + crop_bonus + animal_bonus + alive_bonus;
+    reward += r->money_timing ? cash_delta : done ? s->money_reward : 0.0f;
+    reward += r->quality_timing ? quality_delta : done ? s->quality_reward : 0.0f;
+    return reward;
 }
 
 KG_HD static inline void kag_reward_log(Env* env, int pid) {
     const KagRewardState* s = &env->reward_state[pid];
     float gain = (float)env->game_storage.players[pid].money - s->start_cash;
     env->log.cash_gain += gain;
-    env->log.terminal_cash_reward += s->money_reward;
-    env->log.terminal_quality_reward += s->quality_reward;
+    env->log.terminal_cash_reward += env->reward.money_timing ? 0 : s->money_reward;
+    env->log.cash_flow_reward += env->reward.money_timing ? s->money_reward : 0;
+    env->log.terminal_quality_reward += env->reward.quality_timing ? 0 : s->quality_reward;
+    env->log.dense_quality_reward += env->reward.quality_timing ? s->quality_reward : 0;
+    env->log.growth_land_reward += s->growth_land_reward;
+    env->log.growth_crop_reward += s->growth_crop_reward;
+    env->log.growth_animal_reward += s->growth_animal_reward;
+    env->log.alive_reward += s->alive_reward;
+    env->log.objective_reward += s->money_reward + s->quality_reward
+        + s->growth_land_reward + s->growth_crop_reward + s->growth_animal_reward + s->alive_reward;
     env->log.discounted_pbrs += s->discounted_pbrs;
     env->log.quality_coverage += s->coverage_sum / env->game_storage.config.episode_steps;
     env->log.quality_idle += s->idle_sum / env->game_storage.config.episode_steps;
@@ -147,6 +219,15 @@ static inline float kag_reward_setting(Dict* d, const char* key, float default_v
         exit(1);
     }
     return value;
+}
+
+static inline int kag_reward_integer(Dict* d, const char* key, int default_value,
+        int lo, int hi) {
+    double v = dict_find(d, key) ? dict_get(d, key) : default_value;
+    if (!isfinite(v) || v < lo || v > hi || v != (int)v) {
+        fprintf(stderr, "%s must be an integer in [%d,%d]\n", key, lo, hi); exit(1);
+    }
+    return (int)v;
 }
 
 /* Trainer owns gamma. Inference needs no shaping; training calls this before
@@ -177,13 +258,22 @@ static inline void kag_reward_configure(Env* env, Dict* d) {
     }
     KagRewardConfig* r = &env->reward;
     r->money_scale = kag_reward_setting(d, "reward_money_scale", 1.0f);
-    r->quality_scale = kag_reward_setting(d, "reward_quality_scale", 1.0f);
+    r->quality_scale = kag_reward_setting(d, "reward_quality_scale", 0.0f);
     r->quality_idle_cost = kag_reward_setting(d, "reward_quality_idle_cost", 0.25f);
     r->pbrs_scale = kag_reward_setting(d, "reward_pbrs_scale", 0.0f);
     r->cash_weight = kag_reward_setting(d, "pbrs_cash_weight", 1.0f);
     r->stock_weight = kag_reward_setting(d, "pbrs_stock_weight", 1.0f);
     r->crop_weight = kag_reward_setting(d, "pbrs_crop_weight", 0.25f);
     r->animal_weight = kag_reward_setting(d, "pbrs_animal_weight", 0.25f);
+    r->money_timing = kag_reward_integer(d, "reward_money_timing", 1, 0, 1);
+    r->quality_timing = kag_reward_integer(d, "reward_quality_timing", 1, 0, 1);
+    r->growth_land = kag_reward_setting(d, "reward_growth_land", 1.0f);
+    r->growth_crop = kag_reward_setting(d, "reward_growth_crop", 0.05f);
+    r->growth_animal = kag_reward_setting(d, "reward_growth_animal", 0.25f);
+    r->alive_daily = kag_reward_setting(d, "reward_alive_daily", 0.05f);
+    r->target_plots = kag_reward_integer(d, "reward_target_plots", 3, 1, 4);
+    r->target_animals = kag_reward_integer(d, "reward_target_animals", 15, 0, KG_MAX_TILES);
+    r->target_crops = kag_reward_integer(d, "reward_target_crops", -1, -1, KG_MAX_TILES);
     if (r->pbrs_scale && !dict_find(d, "_reward_train_gamma")) {
         fprintf(stderr, "PBRS requires gamma bound from the trainer before puf_init\n"); exit(1);
     }

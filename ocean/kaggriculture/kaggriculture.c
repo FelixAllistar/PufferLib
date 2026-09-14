@@ -56,6 +56,7 @@ typedef struct {
     int macro_mode;
     int observation_version;
     int macro_executor_version;
+    int macro_score_features;
     int macro_decision_interval;
     float macro_score_scale;
     char path[4096];
@@ -123,7 +124,9 @@ static void kag_init_demo(Env* env, obs_t* observations, float* actions,
     }
     env->observation_version = KAG_OBSERVATION_ENTITIES;
     env->frozen_observation_version = env->frozen_macro_executor_version = -1;
-    env->reward = (KagRewardConfig){1, 1, 0.25f, 0, 1, 1, 1, 0.25f, 0.25f};
+    env->frozen_macro_decision_interval = env->frozen_macro_score_features = -1;
+    Dict reward_settings = {0};
+    kag_reward_configure(env, &reward_settings);
     env->land_buy_min_days = 2;
     env->num_agents = KG_NUM_PLAYERS;
     kg_init(&env->game_storage, &config);
@@ -134,9 +137,12 @@ static void kag_init_demo(Env* env, obs_t* observations, float* actions,
 static void kag_random_bot(Env* env, int player) {
     Agent* agent = &env->agents[player];
     unsigned char* mask = agent->action_mask;
+    KagActionMaskState state;
+    kag_action_mask_begin(&state, env, player);
     int offset = 0;
     for (int head = 0; head < NUM_ATNS; head++) {
         int size = KG_ACTION_SIZES[head];
+        kag_action_mask_before(&state, head, mask);
         int legal = 0;
         for (int action = 0; action < size; action++) legal += mask[offset + action];
         int pick = legal ? (int)(rand_r(&env->rng) % (unsigned)legal) : 0;
@@ -147,6 +153,7 @@ static void kag_random_bot(Env* env, int player) {
             if (pick-- == 0) break;
         }
         agent->actions[head] = (float)selected;
+        kag_action_mask_commit(&state, head, selected);
         offset += size;
     }
 }
@@ -165,6 +172,8 @@ static const float* kag_model_forward(KagSide* side, const Agent* agent) {
 
 static void kag_model_action(KagSide* side, Env* env, int player) {
     Agent* agent = &env->agents[player];
+    env->controller[player] = (KagController){1, side->macro_mode,
+        side->macro_executor_version, side->macro_decision_interval, side->macro_score_features};
     if (agent->policy == 0) {
         env->observation_version = side->observation_version;
         env->macro_executor_version = side->macro_executor_version;
@@ -175,31 +184,7 @@ static void kag_model_action(KagSide* side, Env* env, int player) {
     kag_write_observation(env, player);
     kag_write_mask(env, player);
     const float* logits = kag_model_forward(side, agent);
-    const unsigned char* mask = agent->action_mask;
-    int offset = 0;
-    for (int head = 0; head < NUM_ATNS; head++) {
-        int size = KG_ACTION_SIZES[head];
-        float max_logit = -INFINITY;
-        for (int action = 0; action < size; action++) {
-            if (mask[offset + action] && logits[offset + action] > max_logit) {
-                max_logit = logits[offset + action];
-            }
-        }
-        float sum = 0.0f;
-        for (int action = 0; action < size; action++) {
-            if (mask[offset + action]) sum += expf(logits[offset + action] - max_logit);
-        }
-        float target = rand_r(&env->rng) / ((float)RAND_MAX + 1.0f) * sum;
-        int selected = 0;
-        for (int action = 0; action < size; action++) {
-            if (!mask[offset + action]) continue;
-            selected = action;
-            target -= expf(logits[offset + action] - max_logit);
-            if (target <= 0.0f) break;
-        }
-        agent->actions[head] = (float)selected;
-        offset += size;
-    }
+    kag_sample_cpu_logits(env, player, logits, 0);
 }
 
 static int kag_has_suffix(const char* text, const char* suffix) {
@@ -247,15 +232,13 @@ static int kag_resolve_model(const char* spec, char* out, size_t out_size) {
 
 static int kag_load_model_side(KagSide* side, const char* spec) {
     if (!kag_resolve_model(spec, side->path, sizeof(side->path))) return 0;
-    int hidden = kag_checkpoint_integer(side->path, ".hidden_size");
-    int layers = kag_checkpoint_integer(side->path, ".num_layers");
-    int alignment = kag_checkpoint_integer(side->path, ".param_alignment");
-    KagObservationContract contract = {1, 2, -1, 0, -1, hidden, layers, alignment};
-    kag_executor_check_load(side->path, contract, 0);
-    side->macro_mode = KAG_MACRO_MODE_TASKS;
+    KagObservationContract contract = kag_checkpoint_contract(side->path);
+    int hidden = contract.hidden, layers = contract.layers, alignment = contract.alignment;
+    side->macro_mode = contract.mode;
     side->observation_version = KAG_OBSERVATION_ENTITIES;
-    side->macro_executor_version = 0;
-    side->macro_decision_interval = 1;
+    side->macro_executor_version = contract.executor;
+    side->macro_decision_interval = contract.interval;
+    side->macro_score_features = contract.score_features;
     side->macro_score_scale = 0;
     side->weights = load_weights(side->path);
     if (!side->weights) return 0;
@@ -432,14 +415,20 @@ static int kag_parse_side(KagSide* side, const char* spec) {
 static void kag_track_side(KagSide* side, const Env* env, int player) {
     const Agent* agent = &env->agents[player];
     const KGPlayer* farm = &env->game_storage.players[player];
+    KGAction decoded;
+    int mode = kag_agent_macro_mode(env, player);
+    if (mode == 3) kag_decode_task_action(&decoded, agent, &env->game_storage, player);
+    else if (mode) {
+        Env preview = *env; /* Macro decoding advances intent state; statistics must not. */
+        kag_decode_macro_action(&decoded, agent, &env->game_storage, player, &preview);
+    } else kag_decode_action(&decoded, agent, &env->game_storage, player);
     int controlled = farm->unit_count < KG_POLICY_UNITS
         ? farm->unit_count : KG_POLICY_UNITS;
     for (int unit = 0; unit < controlled; unit++) {
         const KGUnitState* unit_state = &farm->units[unit];
         const KGTile* tile = &farm->tiles[kg_tile_index(
             unit_state->x, unit_state->y)];
-        KGPolicyUnitSpec spec = kag_unit_spec(kag_discrete_index(
-            agent->actions[unit], KG_POLICY_UNIT_COMMANDS));
+        KGUnitAction spec = unit ? decoded.hands[unit - 1] : decoded.farmer;
         side->stats[KAG_STAT_UNIT]++;
         if (spec.op == KG_OP_PASS) side->stats[KAG_STAT_PASS]++;
         else if (spec.op >= KG_OP_NORTH && spec.op <= KG_OP_WEST) {
@@ -474,13 +463,8 @@ static void kag_track_side(KagSide* side, const Env* env, int player) {
             side->stats[KAG_STAT_CARE]++;
         }
     }
-    for (int order = 0; order < KG_POLICY_MARKET_SLOTS; order++) {
-        int continue_head = KG_POLICY_MARKET_HEAD_OFFSET + 3 * order;
-        if (kag_discrete_index(agent->actions[continue_head],
-                KG_POLICY_MARKET_CONTINUE_ACTIONS)
-                != PUFFER_CONDITIONAL_CONTINUE) break;
-        KGPolicyMarketSpec market = kag_market_spec(kag_discrete_index(
-            agent->actions[continue_head + 1], KG_POLICY_MARKET_COMMANDS));
+    for (int order = 0; order < decoded.market_count; order++) {
+        KGMarketOrder market = decoded.market[order];
         side->stats[KAG_STAT_MARKET]++;
         if (market.op == KG_MARKET_BUY_SEED) {
             side->stats[KAG_STAT_BUY]++;
@@ -627,39 +611,6 @@ static double kag_kl_term(double probability, double mixture) {
     return probability > 0.0 ? probability * log(probability / mixture) : 0.0;
 }
 
-/* Probability that this policy's market queue reaches a head, from its own
- * masked softmax probabilities. Unit heads are always reached; deeper slots
- * are weighted by the policy's continuation probabilities. */
-static float kag_probe_reach(const float* probs, int head) {
-    if (head < KG_POLICY_MARKET_HEAD_OFFSET) return 1.0f;
-    int relative = head - KG_POLICY_MARKET_HEAD_OFFSET;
-    int slot = relative / PUFFER_CONDITIONAL_HEADS_PER_SLOT;
-    int node = relative % PUFFER_CONDITIONAL_HEADS_PER_SLOT;
-    float reach = 1.0f;
-    for (int prev = 0; prev < slot; prev++) {
-        int cont_head = KG_POLICY_MARKET_HEAD_OFFSET + 3 * prev;
-        int off = 0;
-        for (int h = 0; h < cont_head; h++) off += KG_ACTION_SIZES[h];
-        reach *= probs[off + 1];
-        if (reach == 0.0f) return 0.0f;
-    }
-    if (node == 0) return reach;
-    int cont_head = KG_POLICY_MARKET_HEAD_OFFSET + 3 * slot;
-    int off = 0;
-    for (int h = 0; h < cont_head; h++) off += KG_ACTION_SIZES[h];
-    reach *= probs[off + 1];
-    if (reach == 0.0f) return 0.0f;
-    if (node == 1) return reach;
-    int command_head = cont_head + 1;
-    int coff = 0;
-    for (int h = 0; h < command_head; h++) coff += KG_ACTION_SIZES[h];
-    float quant = 0.0f;
-    for (int id = 0; id < KG_POLICY_MARKET_QUANTITY_COMMANDS; id++) {
-        quant += probs[coff + id];
-    }
-    return reach * quant;
-}
-
 static int kag_behavior_jsd(int argc, char** argv) {
     int arg = 2;
     int steps = 720;
@@ -732,22 +683,26 @@ static int kag_behavior_jsd(int argc, char** argv) {
         env.observation_version = models[0].observation_version;
         env.macro_executor_version = models[0].macro_executor_version;
         if (obs_override) {
-            if (strcmp(obs_override, "2")) return 2;
+            if (strcmp(obs_override, "3")) return 2;
             env.observation_version = atoi(obs_override);
         }
         if (exec_override) {
-            if (strcmp(exec_override, "0")) return 2;
+            if (!kag_controller_valid(macro_mode, atoi(exec_override))) return 2;
             env.macro_executor_version = atoi(exec_override);
         }
         for (int i = 1; i < count; i++) {
             if ((!obs_override && models[i].observation_version != env.observation_version)
-                    || (!exec_override && models[i].macro_executor_version != env.macro_executor_version)) {
+                    || (!exec_override && models[i].macro_executor_version != env.macro_executor_version)
+                    || models[i].macro_decision_interval != models[0].macro_decision_interval
+                    || models[i].macro_score_features != models[0].macro_score_features) {
                 fprintf(stderr, "JSD requires homogeneous policy contracts; use version-aware PSRO analysis.\n");
                 return 2;
             }
         }
         env.frozen_observation_version = env.observation_version;
         env.frozen_macro_executor_version = env.macro_executor_version;
+        env.macro_decision_interval = models[0].macro_decision_interval;
+        env.macro_score_features = models[0].macro_score_features;
         kag_write_all_observations(&env);
 
         for (int step = 0; step < steps; step++) {
@@ -755,6 +710,16 @@ static int kag_behavior_jsd(int argc, char** argv) {
             const unsigned char* mask = probe->action_mask;
             for (int i = 0; i < count; i++) {
                 const float* logits = kag_model_forward(&models[i], probe);
+                memcpy(probabilities + (size_t)i * KG_POLICY_ACTION_MASK_SIZE,
+                    logits, KG_POLICY_ACTION_MASK_SIZE * sizeof(float));
+            }
+            /* All policies are compared at the SAME feasible prefix, sampled
+             * from a rotating probe policy. This is a conditional-head JSD
+             * diagnostic, not the exact joint-policy JSD. */
+            kag_sample_cpu_logits(&env, 0,
+                probabilities + (size_t)(step % count) * KG_POLICY_ACTION_MASK_SIZE, 0);
+            for (int i = 0; i < count; i++) {
+                float* logits = probabilities + (size_t)i * KG_POLICY_ACTION_MASK_SIZE;
                 int offset = 0;
                 for (int head = 0; head < NUM_ATNS; head++) {
                     int size = KG_ACTION_SIZES[head];
@@ -781,9 +746,16 @@ static int kag_behavior_jsd(int argc, char** argv) {
                     offset += size;
                 }
                 for (int head = 0; head < NUM_ATNS; head++) {
-                    reach[(size_t)i * NUM_ATNS + head] = kag_probe_reach(
-                        probabilities + (size_t)i * KG_POLICY_ACTION_MASK_SIZE,
-                        head);
+                    int active = 1;
+                    if (head >= KG_POLICY_UNIT_HEADS) {
+                        int slot = (head - KG_POLICY_UNIT_HEADS) / 3;
+                        int node = (head - KG_POLICY_UNIT_HEADS) % 3;
+                        for (int prev = 0; prev < slot; prev++)
+                            active &= probe->actions[KG_POLICY_UNIT_HEADS + 3 * prev] == 1;
+                        if (node) active &= probe->actions[KG_POLICY_UNIT_HEADS + 3 * slot] == 1;
+                        if (node == 2) active &= probe->actions[head - 1] < KG_POLICY_MARKET_QUANTITY_COMMANDS;
+                    }
+                    reach[(size_t)i * NUM_ATNS + head] = (float)active;
                 }
             }
 
@@ -834,6 +806,7 @@ static int kag_behavior_jsd(int argc, char** argv) {
         puf_close(&env);
     }
 
+    fprintf(stderr, "JSD: sampled-common-prefix conditional heads (not exact joint-policy JSD)\n");
     printf("policy");
     for (int i = 0; i < count; i++) printf("\t%s", labels[i]);
     putchar('\n');
@@ -891,21 +864,9 @@ int main(int argc, char** argv) {
     int macro_mode = 0;
     int macro_interval = 1;
     float macro_score_scale = 10000.0f;
-    int model_side = -1;
     for (int player = 0; player < KG_NUM_PLAYERS; player++) {
         if (sides[player].kind != KAG_SIDE_MODEL
                 && sides[player].kind != KAG_SIDE_HYBRID) continue;
-        if (model_side >= 0 && sides[player].macro_mode != macro_mode) {
-            fprintf(stderr,
-                "Cannot mix primitive and macro checkpoints in one native match: "
-                "%s uses mode %d, %s uses mode %d.\n",
-                model_side ? spec1 : spec0, macro_mode,
-                player ? spec1 : spec0, sides[player].macro_mode);
-            kag_free_side(&sides[0]);
-            kag_free_side(&sides[1]);
-            return 2;
-        }
-        model_side = player;
         macro_mode = sides[player].macro_mode;
         macro_interval = sides[player].macro_decision_interval;
         macro_score_scale = sides[player].macro_score_scale;

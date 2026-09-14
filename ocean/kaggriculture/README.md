@@ -1,8 +1,9 @@
 # Kaggriculture
 
-Current native training uses the fresh [entity policy and reward v2](ENTITY_POLICY_V2.md).
+Current native training uses [dense rewards and controller experiments, v3](DENSE_EXPERIMENTS.md),
+on the [entity network architecture](ENTITY_POLICY_V2.md).
 That document supersedes older checkpoint/observation/reward descriptions below.
-Old neural checkpoints and byte-observation tooling are not compatible with v2.
+Old neural checkpoints and byte-observation tooling are not compatible with v3.
 
 ## Native training and match viewer
 

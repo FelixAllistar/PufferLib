@@ -74,16 +74,16 @@ static void metadata(void) {
     puf_ini_set(puf_ini_section(&ini, "base", 1), "env_name", "kaggriculture");
     puf_ini_set(puf_ini_section(&ini, "policy", 1), "hidden_size", "256");
     puf_ini_set(puf_ini_section(&ini, "policy", 1), "num_layers", "3");
-    puf_ini_set(puf_ini_section(&ini, "env", 1), "observation_version", "2");
-    puf_ini_set(puf_ini_section(&ini, "env", 1), "frozen_observation_version", "2");
+    puf_ini_set(puf_ini_section(&ini, "env", 1), "observation_version", "3");
+    puf_ini_set(puf_ini_section(&ini, "env", 1), "frozen_observation_version", "3");
     puf_ini_set(puf_ini_section(&ini, "env", 1), "macro_executor_version", "0");
     puf_ini_set(puf_ini_section(&ini, "env", 1), "frozen_macro_executor_version", "-1");
     KagObservationContract c = kag_observation_contract(&ini);
     assert(c.enabled && !kag_observation_mixed(c));
     for (int seat = 0; seat < 2; seat++) {
         kag_observation_pair(&ini, c, 1, seat);
-        assert(puf_ini_get_int(&ini, "env", "observation_version") == 2);
-        assert(puf_ini_get_int(&ini, "env", "frozen_observation_version") == 2);
+        assert(puf_ini_get_int(&ini, "env", "observation_version") == KAG_OBSERVATION_ENTITIES);
+        assert(puf_ini_get_int(&ini, "env", "frozen_observation_version") == KAG_OBSERVATION_ENTITIES);
     }
     kag_observation_restore(&ini, c);
     char directory[] = "/tmp/kag-entity-contract-XXXXXX"; assert(mkdtemp(directory));
@@ -95,8 +95,20 @@ static void metadata(void) {
     c.hidden = 128; expect_rejected(checkpoint, c); c.hidden = 256;
     char path[1100]; snprintf(path, sizeof(path), "%s.policy_version", checkpoint);
     FILE* f = fopen(path, "w"); assert(f); fputs("1\n", f); fclose(f); expect_rejected(checkpoint, c);
-    const char* suffixes[] = {".obs_version", ".executor_version", ".policy_version", ".hidden_size", ".num_layers", ".param_alignment"};
-    for (int i = 0; i < 6; i++) { snprintf(path, sizeof(path), "%s%s", checkpoint, suffixes[i]); assert(unlink(path) == 0); }
+    const char* suffixes[] = {".obs_version", ".executor_version", ".policy_version", ".hidden_size", ".num_layers", ".param_alignment",
+        ".macro_mode", ".macro_decision_interval", ".macro_score_features"};
+    for (int mode = 0; mode <= 3; mode++) for (int executor = 0; executor <= 1; executor++) {
+        if (!kag_controller_valid(mode, executor)) continue;
+        c.mode = mode; c.executor = executor; c.interval = mode == 1 ? 4 : 1;
+        c.score_features = mode % 2;
+        kag_observation_save_contract(checkpoint, c);
+        KagObservationContract loaded = kag_checkpoint_contract(checkpoint);
+        assert(loaded.mode == mode && loaded.executor == executor && loaded.interval == c.interval
+            && loaded.score_features == c.score_features);
+        kag_executor_check_load(checkpoint, c, 0);
+        c.mode = (mode + 1) % 4; expect_rejected(checkpoint, c); c.mode = mode;
+    }
+    for (int i = 0; i < 9; i++) { snprintf(path, sizeof(path), "%s%s", checkpoint, suffixes[i]); assert(unlink(path) == 0); }
     assert(rmdir(directory) == 0); puf_ini_free(&ini);
 }
 int main(void) {

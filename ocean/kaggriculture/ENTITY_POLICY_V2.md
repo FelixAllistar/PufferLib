@@ -1,5 +1,10 @@
 # Fresh entity policy and reward v2
 
+Historical v2 reward/observation contract; the network architecture below is still
+used. Current defaults, dense rewards, restored macro executors, masks, and nine
+checkpoint sidecars are specified in [Dense experiments v3](DENSE_EXPERIMENTS.md).
+The v2 terminal-only defaults and mode-3 restriction below are no longer current.
+
 The native trainer, frozen banks, match/league evaluator, and native CPU model
 viewer use this architecture. Start a new run: old or untagged checkpoints are
 rejected, not reshaped or converted. The game-state/reset-bank format is unchanged.

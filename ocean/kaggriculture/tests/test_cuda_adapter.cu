@@ -88,10 +88,14 @@ static void configure_case(Env* env, int case_id, obs_t* observations,
         : case_id % 3 == 1 ? 4 : 10;
     env->policy_max_hands = case_id % 2 ? 8 : KG_MAX_HANDS;
     env->land_buy_min_days = case_id % 3;
-    env->macro_mode = KAG_MACRO_MODE_TASKS;
+    const int modes[] = {0, 1, 1, 2, 2, 3};
+    const int executors[] = {0, 0, 1, 0, 1, 0};
+    env->macro_mode = case_id == 10 ? 3 : modes[case_id % 6];
     env->frozen_macro_mode = -1;
-    env->macro_decision_interval = 1;
-    env->macro_executor_version = 0;
+    env->macro_decision_interval = env->macro_mode == 1 ? 4 : 1;
+    env->macro_executor_version = case_id == 10 ? 0 : executors[case_id % 6];
+    env->frozen_macro_decision_interval = env->frozen_macro_score_features = -1;
+    env->macro_score_features = case_id % 2;
     env->frozen_macro_executor_version = -1;
     env->observation_version = KAG_OBSERVATION_ENTITIES;
     env->frozen_observation_version = case_id % 2 ? -1 : KAG_OBSERVATION_ENTITIES;
@@ -101,7 +105,10 @@ static void configure_case(Env* env, int case_id, obs_t* observations,
     env->reset_opening_prob = case_id == 1 ? 0.5f
         : case_id == 8 ? 1.0f : 0.0f;
     env->reward = {0.13f, 0.41f, 0.25f, case_id % 2 ? 0.0f : 0.7f,
-        0.9993f, 1.0f, 0.8f, 0.25f, 0.3f};
+        0.9993f, 1.0f, 0.8f, 0.25f, 0.3f,
+        case_id % 2, (case_id / 2) % 2, 1.0f, 0.05f, 0.25f, 0.05f, 3, 15, -1};
+    if (case_id == 12) env->controller[1] = {1, 2, 1, 1, 0};
+    if (case_id == 13) env->controller[0] = {1, 3, 0, 1, 0};
     env->bot_first = case_id & 1;
     env->bot_opponent_fraction = 1.0f;
     static const int bots[ADAPTER_CASES] = {

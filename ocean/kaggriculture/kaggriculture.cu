@@ -30,12 +30,15 @@ typedef struct {
     KagRewardConfig reward;
     int land_buy_min_days;
     int macro_mode;
+    int macro_score_features;
+    int frozen_macro_score_features;
     int macro_executor_version;
     int frozen_macro_executor_version;
     int observation_version;
     int frozen_observation_version;
     int frozen_macro_mode;
     int macro_decision_interval;
+    int frozen_macro_decision_interval;
     float macro_score_scale;
     int opening_turns;
     int reset_opening_turns;
@@ -85,8 +88,11 @@ typedef struct {
 
 static KagCudaConfig h_kag_cuda_config;
 static __constant__ KagCudaConfig d_kag_cuda_config;
+#define KAG_CONTROLLER_BANKS 64
+static __constant__ KagController d_kag_controllers[KAG_CONTROLLER_BANKS];
 static Env* d_kag_matches = nullptr;
 static int* d_kag_rows = nullptr;
+static int* d_kag_sampling_rows = nullptr; /* policy row -> 2*match + seat */
 static KGScriptTape* d_kag_tapes = nullptr;
 static KGAction* d_kag_decoded_actions = nullptr;
 static int g_kag_total_agents = 0;
@@ -591,6 +597,9 @@ __global__ static void kag_cuda_reset_kernel(Env* shells, Env* matches,
     env->frozen_observation_version = d_kag_cuda_config.frozen_observation_version;
     env->frozen_macro_mode = d_kag_cuda_config.frozen_macro_mode;
     env->macro_decision_interval = d_kag_cuda_config.macro_decision_interval;
+    env->frozen_macro_decision_interval = d_kag_cuda_config.frozen_macro_decision_interval;
+    env->macro_score_features = d_kag_cuda_config.macro_score_features;
+    env->frozen_macro_score_features = d_kag_cuda_config.frozen_macro_score_features;
     env->macro_score_scale = d_kag_cuda_config.macro_score_scale;
     env->opening_turns = d_kag_cuda_config.opening_turns;
     env->reset_opening_turns = d_kag_cuda_config.reset_opening_turns;
@@ -676,6 +685,8 @@ __global__ static void kag_cuda_reset_kernel(Env* shells, Env* matches,
      * them in shell.num_agents/policy so reset remains one compact kernel. */
     env->agents[0].policy = shells[match_rows[0]].agents[0].policy;
     env->agents[1].policy = shells[match_rows[1]].agents[0].policy;
+    for (int player = 0; player < 2; player++)
+        env->controller[player] = d_kag_controllers[env->agents[player].policy];
     env->tag = env->agents[0].policy > env->agents[1].policy
         ? env->agents[0].policy : env->agents[1].policy;
     kag_cuda_choose_bot(env, match_id);
@@ -731,6 +742,8 @@ static void kag_cuda_load_config(Dict* kwargs) {
     h_kag_cuda_config.reward = template_env.reward;
     h_kag_cuda_config.land_buy_min_days = template_env.land_buy_min_days;
     h_kag_cuda_config.macro_mode = template_env.macro_mode;
+    h_kag_cuda_config.macro_score_features = template_env.macro_score_features;
+    h_kag_cuda_config.frozen_macro_score_features = template_env.frozen_macro_score_features;
     h_kag_cuda_config.macro_executor_version = template_env.macro_executor_version;
     h_kag_cuda_config.frozen_macro_executor_version = template_env.frozen_macro_executor_version;
     h_kag_cuda_config.observation_version = template_env.observation_version;
@@ -738,6 +751,7 @@ static void kag_cuda_load_config(Dict* kwargs) {
     h_kag_cuda_config.frozen_macro_mode = template_env.frozen_macro_mode;
     h_kag_cuda_config.macro_decision_interval =
         template_env.macro_decision_interval;
+    h_kag_cuda_config.frozen_macro_decision_interval = template_env.frozen_macro_decision_interval;
     h_kag_cuda_config.macro_score_scale = template_env.macro_score_scale;
     h_kag_cuda_config.opening_turns = template_env.opening_turns;
     h_kag_cuda_config.reset_opening_turns = template_env.reset_opening_turns;
@@ -830,6 +844,9 @@ static Env* puf_envs_create(int total_agents, Dict* env_kwargs,
     kag_script_init();
 
     int frozen_banks = (int)dict_get(vec_kwargs, "num_frozen_banks");
+    if (frozen_banks >= KAG_CONTROLLER_BANKS) std::abort();
+    KagController controllers[KAG_CONTROLLER_BANKS] = {};
+    cudaMemcpyToSymbol(d_kag_controllers, controllers, sizeof(controllers));
     g_kag_bank_count = frozen_banks;
     float frozen_pct = (float)dict_get(vec_kwargs, "frozen_bank_pct");
     int frozen_matches = frozen_banks > 0
@@ -878,6 +895,12 @@ static Env* puf_envs_create(int total_agents, Dict* env_kwargs,
     cudaMalloc((void**)&d_kag_rows, (size_t)total_agents * sizeof(int));
     cudaMemcpy(d_kag_rows, host_rows, (size_t)total_agents * sizeof(int),
         cudaMemcpyHostToDevice);
+    int* sampling_rows = (int*)std::calloc((size_t)total_agents, sizeof(int));
+    if (!sampling_rows) std::abort();
+    for (int i = 0; i < total_agents; i++) sampling_rows[host_rows[i]] = i;
+    cudaMalloc((void**)&d_kag_sampling_rows, (size_t)total_agents * sizeof(int));
+    cudaMemcpy(d_kag_sampling_rows, sampling_rows, (size_t)total_agents * sizeof(int), cudaMemcpyHostToDevice);
+    std::free(sampling_rows);
     cudaMalloc((void**)&d_kag_tapes, KG_SCRIPT_COUNT * sizeof(KGScriptTape));
     cudaMemcpy(d_kag_tapes, kag_script_tapes,
         KG_SCRIPT_COUNT * sizeof(KGScriptTape), cudaMemcpyHostToDevice);
@@ -979,6 +1002,7 @@ static void puf_envs_close(Env* envs) {
     if (d_kag_decoded_actions) cudaFree(d_kag_decoded_actions);
     if (d_kag_tapes) cudaFree(d_kag_tapes);
     if (d_kag_rows) cudaFree(d_kag_rows);
+    if (d_kag_sampling_rows) cudaFree(d_kag_sampling_rows);
     if (d_kag_matches) cudaFree(d_kag_matches);
     if (d_kag_opening_rng) cudaFree(d_kag_opening_rng);
     if (d_kag_reset_states) cudaFree(d_kag_reset_states);
@@ -986,6 +1010,7 @@ static void puf_envs_close(Env* envs) {
     cudaFree(envs);
     d_kag_tapes = nullptr;
     d_kag_rows = nullptr;
+    d_kag_sampling_rows = nullptr;
     d_kag_matches = nullptr;
     d_kag_decoded_actions = nullptr;
     d_kag_opening_rng = nullptr;
@@ -999,5 +1024,32 @@ static void puf_envs_close(Env* envs) {
 }
 
 #define PUF_GPU_ENV_BIND_BUFFERS 1
+
+static const Env* puf_sampling_envs(void) { return d_kag_matches; }
+static const int* puf_sampling_rows(void) { return d_kag_sampling_rows; }
+
+__global__ static void kag_set_controller_kernel(Env* matches, int n, int policy,
+        KagController controller, const KGScriptTape* tapes) {
+    int match = blockIdx.x * blockDim.x + threadIdx.x;
+    if (match >= n) return;
+    Env* env = matches + match;
+    int changed = 0;
+    for (int seat = 0; seat < 2; seat++) if (env->agents[seat].policy == policy) {
+        env->controller[seat] = controller;
+        env->macro_intent[seat] = env->macro_ticks[seat] = 0;
+        env->macro_quantity[seat] = env->macro_target[seat] = 0;
+        changed = 1;
+    }
+    if (changed) kag_write_all_observations_from_tapes(env, tapes);
+}
+
+static void puf_envs_set_controller(int policy, KagController controller) {
+    if (policy < 0 || policy >= KAG_CONTROLLER_BANKS) std::abort();
+    cudaMemcpyToSymbol(d_kag_controllers, &controller, sizeof(controller),
+        (size_t)policy * sizeof(controller));
+    kag_set_controller_kernel<<<kag_cuda_grid(g_kag_num_matches), KAG_CUDA_BLOCK>>>(
+        d_kag_matches, g_kag_num_matches, policy, controller, d_kag_tapes);
+    kag_cuda_check("controller binding");
+}
 
 #endif

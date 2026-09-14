@@ -200,6 +200,13 @@ struct Log {
     float cash_gain;
     float terminal_cash_reward;
     float terminal_quality_reward;
+    float cash_flow_reward;
+    float dense_quality_reward;
+    float growth_land_reward;
+    float growth_crop_reward;
+    float growth_animal_reward;
+    float alive_reward;
+    float objective_reward;
     float discounted_pbrs;
     float quality_coverage;
     float quality_idle;
@@ -340,6 +347,7 @@ struct Env {
     int render_selected_unit;
     int policy_market_slots;
     int policy_max_hands;
+    KagController controller[KG_NUM_PLAYERS]; /* Per-bank metadata override. */
     KagRewardConfig reward;
     KagRewardState reward_state[KG_NUM_PLAYERS];
     KagQuoteCache quote_cache[KG_NUM_PRODUCTS];
@@ -403,6 +411,8 @@ struct Env {
     /* Runtime strategic layer.  Primitive mode (the default) leaves these
      * zero and follows the original 47-head decoder. */
     int macro_mode;
+    int macro_score_features;
+    int frozen_macro_score_features;
     int macro_executor_version;
     int frozen_macro_executor_version;
     int observation_version;
@@ -414,6 +424,7 @@ struct Env {
      * macro_mode; policy id zero is always the live learner. */
     int frozen_macro_mode;
     int macro_decision_interval;
+    int frozen_macro_decision_interval;
     float macro_score_scale;
     int macro_intent[KG_NUM_PLAYERS];
     int macro_ticks[KG_NUM_PLAYERS];
@@ -443,6 +454,7 @@ struct Env {
  * live before the detailed market decoder below. */
 KG_HD static inline int kag_explicit_legal(const Env* env, int player_id, int macro_id);
 KG_HD static inline int kag_agent_executor_version(const Env* env, int player_id) {
+    if (env->controller[player_id].valid) return env->controller[player_id].executor;
     return env->frozen_macro_executor_version >= 0 && env->agents[player_id].policy != 0
         ? env->frozen_macro_executor_version : env->macro_executor_version;
 }
@@ -457,11 +469,24 @@ KG_HD static inline int kag_agent_observation_version(const Env* env,
     return env->observation_version;
 }
 KG_HD static inline int kag_agent_macro_mode(const Env* env, int player_id) {
+    if (env->controller[player_id].valid) return env->controller[player_id].mode;
     if (env->frozen_macro_mode >= 0
             && env->agents[player_id].policy != 0) {
         return env->frozen_macro_mode;
     }
     return env->macro_mode;
+}
+KG_HD static inline int kag_agent_macro_interval(const Env* env, int player_id) {
+    if (kag_agent_macro_mode(env, player_id) != 1) return 1;
+    if (env->controller[player_id].valid) return env->controller[player_id].interval;
+    int interval = env->frozen_macro_decision_interval >= 0 && env->agents[player_id].policy != 0
+        ? env->frozen_macro_decision_interval : env->macro_decision_interval;
+    return interval > 0 ? interval : 1;
+}
+KG_HD static inline int kag_agent_macro_scores(const Env* env, int player_id) {
+    if (env->controller[player_id].valid) return env->controller[player_id].score_features;
+    return env->frozen_macro_score_features >= 0 && env->agents[player_id].policy != 0
+        ? env->frozen_macro_score_features : env->macro_score_features;
 }
 KG_HD static inline float kag_macro_candidate_score(const Env* env,
         int player_id, int macro_id);
@@ -478,6 +503,7 @@ KG_HD static inline int kag_task_available_count(const KGState* game,
 /* The build scripts compile one translation unit for each environment. */
 #include "kaggriculture_core.c"
 #include "land_buy_delay.h"
+KG_HD static inline int kag_popcount(unsigned value);
 #include "rewards_v2.h"
 #include "kaggriculture_bots.h"
 
@@ -1633,7 +1659,6 @@ KG_HD static inline int kag_unit_action_legal(const KGState* game, const KGPlaye
         return kg_unit_can_move_to(player, x + dx, y + dy,
             game->config.board_size);
     }
-    if (tile->kind == KG_TILE_LOCKED) return 0;
     if (spec.op == KG_OP_PICKUP) {
         return kg_is_shed_adjacent(&pos, game->config.board_size)
             && spec.arg >= 0 && spec.arg < KG_NUM_ITEMS
@@ -1643,6 +1668,7 @@ KG_HD static inline int kag_unit_action_legal(const KGState* game, const KGPlaye
         return kg_is_shed_adjacent(&pos, game->config.board_size)
             && unit->inventory_order_count > 0;
     }
+    if (tile->kind == KG_TILE_LOCKED) return 0;
     if (spec.op == KG_OP_PLANT) {
         return spec.arg >= 0 && spec.arg < KG_NUM_CROPS
             && tile->kind == KG_TILE_EMPTY && player->seeds[spec.arg] > 0;
@@ -1661,6 +1687,7 @@ KG_HD static inline int kag_unit_action_legal(const KGState* game, const KGPlaye
     }
     if (spec.op == KG_OP_FERTILIZE) {
         return tile->kind == KG_TILE_PLANT
+            && tile->fertilized_until_day < game->day + 2
             && unit->inventory[KG_ITEM_FERTILIZER] > 0;
     }
     if (spec.op == KG_OP_BUILD_COOP || spec.op == KG_OP_BUILD_PASTURE) {
@@ -1715,10 +1742,21 @@ KG_HD static inline int kag_market_action_legal(const KGState* game, const KGPla
             && kg_shed_total(player) < game->config.shed_capacity;
     }
     if (spec.op == KG_MARKET_SELL) {
-        return spec.item >= 0 && spec.item < KG_NUM_PRODUCTS;
+        if (spec.item < 0 || spec.item >= KG_NUM_PRODUCTS) return 0;
+        if (player->shed[spec.item] > 0) return 1;
+        /* Conservative pre-sampling mask: preserve potential same-turn
+         * deposits. The prefix-aware sampler checks the actual chosen jobs. */
+        for (int u = 0; u < player->unit_count; u++) {
+            KGPosition pos = {player->units[u].x, player->units[u].y};
+            if (player->units[u].inventory[spec.item] > 0
+                    && kg_is_shed_adjacent(&pos, game->config.board_size)) return 1;
+        }
+        return 0;
     }
     if (spec.op == KG_MARKET_HIRE) {
         return player->unit_count < KG_MAX_UNITS
+            && game->hour != game->config.turns_per_day - 1
+            && game->step < game->config.episode_steps - 2
             && player->money >= kg_hire_cost(player->hires_today,
                 game->config.farm_hand_cost_mult);
     }
@@ -2359,7 +2397,8 @@ KG_HD static inline void kag_write_unit_mask(const KGState* game, const KGPlayer
                     >= KG_CROP_DEFS[tile->crop].first_yield_day) {
             mask[KG_U_SINGLE + 1] = 1; /* HARVEST */
         }
-        if (unit->inventory[KG_ITEM_FERTILIZER] > 0) {
+        if (unit->inventory[KG_ITEM_FERTILIZER] > 0
+                && tile->fertilized_until_day < game->day + 2) {
             mask[KG_U_SINGLE + 2] = 1; /* FERTILIZE */
         }
     } else if (kg_is_animal_tile(tile)) {
@@ -2461,15 +2500,15 @@ KG_HD static inline void kag_write_mask(Env* env, int player_id) {
     if (macro_mode == KAG_MACRO_MODE_TASKS) {
         int controlled = player->unit_count < KG_POLICY_UNIT_HEADS
             ? player->unit_count : KG_POLICY_UNIT_HEADS;
+        unsigned char available[KAG_TASK_COUNT] = {1};
+        for (int task = 1; task < KAG_TASK_COUNT; task++)
+            available[task] = kag_task_available_count(game, player_id, task) > 0;
         for (int slot = 0; slot < KG_POLICY_UNIT_HEADS; slot++) {
             unsigned char* task_head = mask
                 + slot * KG_POLICY_UNIT_COMMANDS;
             task_head[KAG_TASK_IDLE] = 1;
             if (slot >= controlled) continue;
-            for (int task = 1; task < KAG_TASK_COUNT; task++) {
-                task_head[task] = kag_task_available_count(
-                    game, player_id, task) > 0;
-            }
+            memcpy(task_head, available, KAG_TASK_COUNT);
         }
         /* Investment, sale, hiring, and land timing stay fully under PPO's
          * existing autoregressive market queue. */
@@ -4763,9 +4802,7 @@ KG_HD static inline void kag_decode_macro_action(KGAction* action,
          * rate. Until the ABI carries explicit remaining-work state, mode 2
          * therefore decides every turn. Legacy mode may retain sticky
          * planner intents because it has no quantity/target parameters. */
-        int interval = macro_mode >= KAG_MACRO_MODE_STRUCTURED ? 1
-            : env->macro_decision_interval > 0
-                ? env->macro_decision_interval : 1;
+        int interval = kag_agent_macro_interval(env, player_id);
         env->macro_ticks[player_id] = interval - 1;
     }
     if (!kag_macro_candidate_legal(env, player_id, macro_id)) {
@@ -4805,6 +4842,8 @@ KG_HD static inline void kag_decode_policy_action(KGAction* action,
         kag_decode_action(action, agent, game, player_id);
     }
 }
+
+#include "action_feasibility.h"
 
 /* A hinge opportunity is driven only by randomized town/shop demand. It is
  * present once the no-production inventory deficit crosses the product's
@@ -4883,6 +4922,7 @@ KG_HD static inline void kag_log_actions(Env* env, const KGState* game,
 
 void puf_init(Env* env, Dict* kwargs) {
     KGConfig config = kag_load_config(env, kwargs);
+    memset(env->controller, 0, sizeof(env->controller));
     kag_script_init();
     env->num_agents = KG_NUM_PLAYERS;
     env->tag = 0;
@@ -4899,17 +4939,9 @@ void puf_init(Env* env, Dict* kwargs) {
         exit(1);
     }
     env->land_buy_min_days = (int)land_days;
-    env->macro_mode = (int)dict_get(kwargs, "macro_mode");
-    env->macro_executor_version = dict_find(kwargs, "macro_executor_version")
-        ? (int)dict_get(kwargs, "macro_executor_version") : 0;
-    env->frozen_macro_executor_version = dict_find(kwargs, "frozen_macro_executor_version")
-        ? (int)dict_get(kwargs, "frozen_macro_executor_version") : -1;
-    if (env->macro_executor_version < 0 || env->macro_executor_version > 1
-            || env->frozen_macro_executor_version < -1 || env->frozen_macro_executor_version > 1
-            || (env->macro_executor_version && env->macro_mode != 2)) {
-        fprintf(stderr, "macro_executor_version must be 0/1 (1 requires macro_mode=2); frozen version -1/0/1\n");
-        exit(1);
-    }
+    env->macro_mode = kag_reward_integer(kwargs, "macro_mode", 3, 0, 3);
+    env->macro_executor_version = kag_reward_integer(kwargs, "macro_executor_version", 0, 0, 1);
+    env->frozen_macro_executor_version = kag_reward_integer(kwargs, "frozen_macro_executor_version", -1, -1, 1);
     env->observation_version = dict_find(kwargs, "observation_version")
         ? (int)dict_get(kwargs, "observation_version") : KAG_OBSERVATION_ENTITIES;
     env->frozen_observation_version = dict_find(kwargs, "frozen_observation_version")
@@ -4917,21 +4949,26 @@ void puf_init(Env* env, Dict* kwargs) {
     if (env->observation_version != KAG_OBSERVATION_ENTITIES
             || (env->frozen_observation_version != -1
                 && env->frozen_observation_version != KAG_OBSERVATION_ENTITIES)) {
-        fprintf(stderr, "Fresh entity policies require observation_version=2; frozen version -1 or 2\n");
+        fprintf(stderr, "Fresh entity policies require observation_version=3; frozen version -1 or 3\n");
         exit(1);
     }
-    env->frozen_macro_mode = dict_find(kwargs, "frozen_macro_mode")
-        ? (int)dict_get(kwargs, "frozen_macro_mode") : -1;
-    env->macro_decision_interval = (int)dict_get(kwargs,
-        "macro_decision_interval");
+    env->frozen_macro_mode = kag_reward_integer(kwargs, "frozen_macro_mode", -1, -1, 3);
+    env->macro_decision_interval = kag_reward_integer(kwargs,
+        "macro_decision_interval", 1, 1, config.episode_steps);
+    env->frozen_macro_decision_interval = kag_reward_integer(kwargs,
+        "frozen_macro_decision_interval", -1, -1, config.episode_steps);
+    env->macro_score_features = kag_reward_integer(kwargs, "macro_score_features", 0, 0, 1);
+    env->frozen_macro_score_features = kag_reward_integer(kwargs, "frozen_macro_score_features", -1, -1, 1);
     env->macro_score_scale = (float)dict_get(kwargs, "macro_score_scale");
     if (env->macro_decision_interval <= 0) env->macro_decision_interval = 1;
     if (env->macro_score_scale <= 0.0f) env->macro_score_scale = 10000.0f;
-    if (env->macro_mode != KAG_MACRO_MODE_TASKS
-            || (env->frozen_macro_mode != -1 && env->frozen_macro_mode != KAG_MACRO_MODE_TASKS)
-            || env->macro_executor_version != 0
-            || env->frozen_macro_executor_version > 0) {
-        fprintf(stderr, "Entity v2 requires macro_mode=3 and executor_version=0 for every policy bank\n");
+    int frozen_mode = env->frozen_macro_mode < 0 ? env->macro_mode : env->frozen_macro_mode;
+    int frozen_executor = env->frozen_macro_executor_version < 0
+        ? env->macro_executor_version : env->frozen_macro_executor_version;
+    if ((env->macro_executor_version && env->macro_mode != 1 && env->macro_mode != 2)
+            || (frozen_executor && frozen_mode != 1 && frozen_mode != 2)
+            || env->frozen_macro_decision_interval == 0) {
+        fprintf(stderr, "Executor 1 applies to macro modes 1/2; modes 0/3 have their own decoders. Frozen interval must be -1 or positive.\n");
         exit(1);
     }
     if (env->macro_decision_interval < 1
@@ -4939,9 +4976,11 @@ void puf_init(Env* env, Dict* kwargs) {
         fprintf(stderr, "macro_decision_interval must be in [1, episode_steps]\n");
         exit(1);
     }
-    if (env->macro_mode >= KAG_MACRO_MODE_STRUCTURED) {
+    if (env->macro_mode != 1) {
         env->macro_decision_interval = 1;
     }
+    if (frozen_mode != 1 && env->frozen_macro_decision_interval >= 0)
+        env->frozen_macro_decision_interval = 1;
     env->opening_turns = (int)dict_get(kwargs, "opening_turns");
     env->reset_opening_turns = (int)dict_get(kwargs,
         "reset_opening_turns");
@@ -5578,6 +5617,13 @@ void puf_log(Log* log, Dict* out) {
     dict_set(out, "cash_gain", log->cash_gain);
     dict_set(out, "terminal_cash_reward", log->terminal_cash_reward);
     dict_set(out, "terminal_quality_reward", log->terminal_quality_reward);
+    dict_set(out, "cash_flow_reward", log->cash_flow_reward);
+    dict_set(out, "dense_quality_reward", log->dense_quality_reward);
+    dict_set(out, "growth_land_reward", log->growth_land_reward);
+    dict_set(out, "growth_crop_reward", log->growth_crop_reward);
+    dict_set(out, "growth_animal_reward", log->growth_animal_reward);
+    dict_set(out, "alive_reward", log->alive_reward);
+    dict_set(out, "objective_reward", log->objective_reward);
     dict_set(out, "discounted_pbrs", log->discounted_pbrs);
     dict_set(out, "quality_coverage", log->quality_coverage);
     dict_set(out, "quality_idle", log->quality_idle);
