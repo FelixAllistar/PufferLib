@@ -225,9 +225,26 @@ KG_HD static inline void kag_write_observation_with_summaries(Env* env, int pid,
         row[55] = KG_MARKET_DEFS[item].throughput / 500.0f;
     }
     float* task = out + KAG_TASK_OFFSET;
-    for (int t = 0; t < KAG_TASK_COUNT; t++) task[t] = kag_task_available_count(game, pid, t) / 100.0f;
-    task[44] = me->unit_count / 17.0f;
-    task[45] = out[36]; task[46] = out[39]; task[47] = out[6];
-    for (int q = 0; q < 4; q++) task[48 + q] = (me->unlocked_mask & (1 << q)) != 0;
-    task[52] = out[29]; task[53] = out[30]; task[54] = out[32]; task[55] = out[5];
+    int mode = kag_agent_macro_mode(env, pid);
+    for (int t = 0; t < KAG_TASK_COUNT; t++) {
+        if (mode == 1 || mode == 2) {
+            task[t] = kag_macro_candidate_legal(env, pid, t)
+                ? kag_agent_macro_scores(env, pid) ? kag_macro_candidate_score(env, pid, t) / 10000.0f : 1.0f
+                : 0.0f;
+        } else task[t] = kag_task_available_count(game, pid, t) / 100.0f;
+    }
+    /* v3 replaces duplicated tail features with controller identity and raw
+     * episode peaks. These make sticky actions and milestone history visible. */
+    task[44] = mode / 3.0f;
+    task[45] = kag_agent_executor_version(env, pid);
+    task[46] = env->macro_intent[pid] / 44.0f;
+    task[47] = env->macro_ticks[pid] / episode;
+    task[48] = env->macro_quantity[pid] / 100.0f;
+    task[49] = env->macro_target[pid] / 15.0f;
+    task[50] = rs->peak_plots / 4.0f;
+    task[51] = rs->peak_crops / 100.0f;
+    task[52] = rs->peak_animals / 100.0f;
+    task[53] = 1.0f; /* state-aware market feasibility contract */
+    task[54] = kag_agent_macro_scores(env, pid);
+    task[55] = kag_agent_macro_interval(env, pid) / episode;
 }

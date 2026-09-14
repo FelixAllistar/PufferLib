@@ -1833,10 +1833,17 @@ __global__ void ppo_loss_compute(
                 nt * a.num_atns, h);
             head_active[h] = active;
             head_act[h] = act;
+#ifdef PUFFER_PREFIX_DEPENDENT_MASK
+            // Prefix-dependent masks only describe this sampled path. Apply
+            // EMA's local KL on visited decisions; do not invent distributions
+            // for unvisited branches using another prefix's feasibility mask.
+            head_reach[h] = a.emag_kl_coef > 0.0f && active ? 1.0f : 0.0f;
+#else
             head_reach[h] = a.emag_kl_coef > 0.0f
                 ? puf_head_reach_weight(a.magnet_logits, logits_base, h,
                     a.action_mask, mask_base, a.act_sizes, a.num_atns)
                 : 0.0f;
+#endif
             head_legal[h] = false;
             for (int action = 0; action < A; action++) {
                 if (puf_mask_bit(a.action_mask, mask_base,

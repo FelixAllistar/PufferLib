@@ -132,7 +132,29 @@ $(BUILD)/test_entity_rewards: tests/test_entity_rewards.c $(wildcard *.h) kaggri
 		tests/test_entity_rewards.c $(ROOT)/raylib-5.5_linux_amd64/lib/libraylib.a \
 		-lGL -lm -lpthread -o $@
 
-native-test: adapter observation-test land-delay-test entity-reward-test
+action-feasibility-test: $(BUILD)/test_action_feasibility
+	$(BUILD)/test_action_feasibility
+
+$(BUILD)/test_action_feasibility: tests/test_action_feasibility.c $(wildcard *.h) kaggriculture_core.c | $(BUILD)
+	$(CC) -O1 -std=c17 -Wall -Wextra -Werror \
+		-I$(ROOT) -I$(ROOT)/src -I$(ROOT)/vendor -I$(ROOT)/raylib-5.5_linux_amd64/include \
+		tests/test_action_feasibility.c $(ROOT)/raylib-5.5_linux_amd64/lib/libraylib.a \
+		-lGL -lm -lpthread -o $@
+
+sampling-test: $(BUILD)/test_kag_sampling
+	$(BUILD)/test_kag_sampling
+
+$(BUILD)/test_kag_sampling: $(ROOT)/tests/test_kag_sampling.cu $(wildcard *.h) \
+		$(ROOT)/src/pufferl.cu $(ROOT)/src/algo.cu | $(BUILD)
+	$${CUDA_HOME:-$${CUDA_PATH:-/usr/local/cuda}}/bin/nvcc \
+		-O1 --threads 2 -arch=$${NVCC_ARCH:-native} -std=c++17 -Xcompiler=-fopenmp \
+		-I$(ROOT) -I$(ROOT)/src -I$(ROOT)/vendor -I$(ROOT)/raylib-5.5_linux_amd64/include \
+		-I$${CUDA_HOME:-/usr/local/cuda}/include/cccl $${NCCL_IFLAG:-} \
+		$(ROOT)/tests/test_kag_sampling.cu $(ROOT)/raylib-5.5_linux_amd64/lib/libraylib.a \
+		$${NCCL_LFLAG:-} -lcudart -lnccl -lnvidia-ml -lcublas -lcusolver -lcurand \
+		-lGL -lm -lpthread -lgomp -o $@
+
+native-test: adapter observation-test land-delay-test entity-reward-test action-feasibility-test
 
 test: native-test parity
 
