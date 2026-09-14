@@ -115,6 +115,13 @@ for that prefix. Native `jsd` reports sampled-common-prefix conditional-head JSD
 not exact joint-policy JSD; that diagnostic requires homogeneous controller/input
 semantics. Head-to-head leagues support mixed controllers.
 
+`psro.sh` defaults to a separate `saved/kaggriculture_dense_v3` league. It copies
+all nine raw/EMA sidecars, includes the controller in deduplication/payoff-cache
+identity, and restores the selected learner's exact controller on `iterate`.
+Mixed-controller PSRO uses payoff diversity; it explicitly marks behavioral JSD
+unavailable instead of comparing incompatible action meanings. Historical
+checkpoint leagues must stay separate from fresh v3 leagues.
+
 ```bash
 make -C ocean/kaggriculture CC=clang native-test
 make -C ocean/kaggriculture cuda-adapter entity-policy-test sampling-test

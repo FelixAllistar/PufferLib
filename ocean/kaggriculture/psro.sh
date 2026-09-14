@@ -36,12 +36,20 @@ kag_meta_share=0.70
 kag_diversity_share=0.25
 kag_exploration_share=0.05
 kag_fixed=rules
-kag_league=saved/kaggriculture_league_v6
+kag_league=saved/kaggriculture_dense_v3
 kag_config=config/kaggriculture.ini
 kag_archive_root=
 kag_archive_explicit=0
 kag_next_run_id=
 kag_league_prob=1
+
+kag_same_policy() {
+    "${KAG_PYTHON:-python3}" ocean/kaggriculture/policy_identity.py same "$1" "$2"
+}
+
+kag_copy_policy() {
+    "${KAG_PYTHON:-python3}" ocean/kaggriculture/eval_observation_versions.py copy "$1" "$2"
+}
 
 kag_usage() {
     printf '%s\n' \
@@ -280,6 +288,12 @@ fi
 kag_run_id=${kag_run##*/}
 kag_safe_run_id=$(printf '%s' "$kag_run_id" | sed 's/[^A-Za-z0-9_.-]/_/g')
 kag_run_log="logs/kaggriculture/$kag_run_id.ini"
+if [[ -z $kag_hidden_size && -z $kag_num_layers \
+        && -f ${kag_run_files_all[-1]}.policy_version ]]; then
+    kag_latest_contract=$("${KAG_PYTHON:-python3}" ocean/kaggriculture/eval_observation_versions.py \
+        contract "${kag_run_files_all[-1]}")
+    read -r _ _ _ _ kag_hidden_size kag_num_layers _ <<< "$kag_latest_contract"
+fi
 if [[ -z $kag_hidden_size && -z $kag_num_layers && -f $kag_run_log ]]; then
     read -r kag_hidden_size kag_num_layers < <(awk -F '=' '
         function trim(s) {gsub(/^[[:space:]]+|[[:space:]]+$/, "", s); return s}
@@ -322,18 +336,16 @@ mapfile -t kag_active_paths < <(find "$kag_league" -maxdepth 1 -type f \
     -name '*.bin' -print | sort)
 kag_layouts=$("${KAG_PYTHON:-python3}" ocean/kaggriculture/eval_observation_versions.py \
     version "${kag_run_files_all[@]}" "${kag_active_paths[@]}")
-if [[ $kag_mode == iterate && $kag_layouts == *1* && $kag_layouts == *0* ]]; then
-    printf '%s\n' 'Mixed observation layouts support analyze only; use a homogeneous league for iterate.' >&2
+if [[ $(printf '%s\n' "$kag_layouts" | sort -u) != 3 ]]; then
+    printf '%s\n' 'Current PSRO requires fresh v3 policies. Use a new v3 run and league; old weights are not converted.' >&2
     exit 2
 fi
 kag_league_layout=${kag_layouts%%$'\n'*}
 kag_executors=$("${KAG_PYTHON:-python3}" ocean/kaggriculture/eval_observation_versions.py \
     executor-version "${kag_run_files_all[@]}" "${kag_active_paths[@]}")
-if [[ $kag_mode == iterate && $kag_executors == *1* && $kag_executors == *0* ]]; then
-    printf '%s\n' 'Mixed executor versions support analyze only; use a homogeneous league for iterate.' >&2
-    exit 2
-fi
 kag_league_executor=${kag_executors%%$'\n'*}
+kag_behavior_contracts=$("${KAG_PYTHON:-python3}" ocean/kaggriculture/eval_observation_versions.py \
+    behavior-key "${kag_run_files_all[@]}" "${kag_active_paths[@]}" | sort -u)
 if ((${#kag_active_paths[@]})); then
     kag_reference_checkpoint=${kag_active_paths[0]}
 else
@@ -368,7 +380,7 @@ fi
 kag_seed_checkpoint() {
     local kag_source=$1 kag_existing kag_name kag_step kag_dest kag_suffix
     for kag_existing in "${kag_active_paths[@]}"; do
-        cmp -s "$kag_source" "$kag_existing" && return 0
+        kag_same_policy "$kag_source" "$kag_existing" && return 0
     done
     kag_name=${kag_source##*/}
     kag_step=${kag_name%.bin}
@@ -378,12 +390,7 @@ kag_seed_checkpoint() {
         kag_dest="$kag_league/seed_${kag_safe_run_id}_${kag_step}_${kag_suffix}.bin"
         kag_suffix=$((kag_suffix + 1))
     done
-    cp "$kag_source" "$kag_dest"
-    "${KAG_PYTHON:-python3}" ocean/kaggriculture/eval_observation_versions.py \
-        version "$kag_source" > "$kag_dest.obs_version"
-    "${KAG_PYTHON:-python3}" ocean/kaggriculture/eval_observation_versions.py \
-        executor-version "$kag_source" > "$kag_dest.executor_version"
-    if [[ -f $kag_source.emag ]]; then cp "$kag_source.emag" "$kag_dest.emag"; fi
+    kag_copy_policy "$kag_source" "$kag_dest"
     kag_active_paths+=("$kag_dest")
     printf 'Bootstrapped %s from %s\n' "$kag_dest" "$kag_source"
 }
@@ -669,7 +676,7 @@ while IFS=$'\t' read -r _ kag_policy kag_path; do
     [[ $kag_policy == policy ]] && continue
     kag_jsd_specs+=("${kag_policy}=${kag_path}")
 done < "${kag_output}_manifest.tsv"
-if [[ ($kag_executors == *1* && $kag_executors == *0*) || ($kag_layouts == *1* && $kag_layouts == *0*) ]]; then
+if [[ $kag_behavior_contracts == *$'\n'* ]]; then
     printf '%s\n' 'Behavior JSD unavailable across different policy contracts; using payoff diversity only (not a measured zero JSD).'
     "${KAG_PYTHON:-python3}" -c 'import csv,sys; r=list(csv.reader(open(sys.argv[1]),delimiter="\t")); w=csv.writer(sys.stdout,delimiter="\t"); w.writerow(r[0]); w.writerows([x[0]]+[0]*(len(r[0])-1) for x in r[1:])' \
         "${kag_output}_matrix.tsv" > "$kag_behavior_jsd"
@@ -874,7 +881,7 @@ for kag_path in "$kag_league"/*.bin; do
     : "${kag_policy_role["$kag_policy"]:=exploration}"
     while IFS=$'\t' read -r _ kag_label kag_source; do
         [[ $kag_label == policy ]] && continue
-        if cmp -s "$kag_path" "$kag_source"; then
+        if kag_same_policy "$kag_path" "$kag_source"; then
             kag_policy_label["$kag_policy"]=$kag_label
             break
         fi
@@ -886,7 +893,7 @@ while IFS=$'\t' read -r kag_role kag_weight kag_policy kag_source; do
     ((kag_admitted < kag_max_admit)) || break
     kag_duplicate=
     for kag_existing in "$kag_league"/*.bin; do
-        if cmp -s "$kag_source" "$kag_existing"; then
+        if kag_same_policy "$kag_source" "$kag_existing"; then
             kag_duplicate=$kag_existing
             break
         fi
@@ -914,12 +921,7 @@ while IFS=$'\t' read -r kag_role kag_weight kag_policy kag_source; do
             exit 2
         fi
     fi
-    cp "$kag_source" "$kag_dest"
-    "${KAG_PYTHON:-python3}" ocean/kaggriculture/eval_observation_versions.py \
-        version "$kag_source" > "$kag_dest.obs_version"
-    "${KAG_PYTHON:-python3}" ocean/kaggriculture/eval_observation_versions.py \
-        executor-version "$kag_source" > "$kag_dest.executor_version"
-    if [[ -f $kag_source.emag ]]; then cp "$kag_source.emag" "$kag_dest.emag"; fi
+    kag_copy_policy "$kag_source" "$kag_dest"
     kag_policy_label["$kag_dest_policy"]=$kag_policy
     kag_policy_role["$kag_dest_policy"]=$([[ $kag_role == meta ]] \
         && printf meta || printf diversity)
@@ -1000,7 +1002,17 @@ for kag_path in "$kag_league"/*.bin; do
     kag_policy=${kag_path##*/}
     kag_policy=${kag_policy%.bin}
     if [[ -z ${kag_keep_policy["$kag_policy"]+x} ]]; then
-        rm "$kag_path"
+        # Keep the complete bundle together, including newly admitted policies
+        # that were not present when the initial archive was taken.
+        mkdir -p "$kag_archive/pruned"
+        for kag_model in "$kag_path" "$kag_path.emag"; do
+            [[ -f $kag_model ]] || continue
+            mv "$kag_model" "$kag_archive/pruned/"
+            for kag_tag in policy_version obs_version executor_version hidden_size num_layers \
+                    param_alignment macro_mode macro_decision_interval macro_score_features; do
+                [[ ! -f $kag_model.$kag_tag ]] || mv "$kag_model.$kag_tag" "$kag_archive/pruned/"
+            done
+        done
         printf 'Pruned %s (recoverable from %s)\n' "$kag_policy" "$kag_archive"
     fi
 done
@@ -1043,7 +1055,7 @@ kag_pool=$(awk -F '\t' -v root="$kag_league" \
 kag_learner_active=
 if [[ -n $kag_learner_source && -f $kag_learner_source ]]; then
     for kag_path in "$kag_league"/*.bin; do
-        if cmp -s "$kag_learner_source" "$kag_path"; then
+        if kag_same_policy "$kag_learner_source" "$kag_path"; then
             kag_learner_active=$kag_path
             break
         fi
@@ -1071,19 +1083,32 @@ if [[ -z $kag_next_run_id ]]; then
     done
 fi
 kag_config_tmp=$(mktemp "$kag_config_dir/.kaggriculture.XXXXXX")
+kag_learner_contract=$("${KAG_PYTHON:-python3}" ocean/kaggriculture/eval_observation_versions.py \
+    contract "$kag_learner_active")
+read -r kag_learner_mode kag_learner_executor kag_learner_interval kag_learner_features \
+    kag_hidden_size kag_num_layers _ <<< "$kag_learner_contract"
 awk -v league="$kag_league/league.ini" -v learner="$kag_learner_active" \
     -v run_id="$kag_next_run_id" -v hidden="$kag_hidden_size" \
     -v layers="$kag_num_layers" -v league_prob="$kag_league_prob" \
-    -v observation_version="$kag_league_layout" -v executor_version="$kag_league_executor" '
+    -v observation_version="$kag_league_layout" -v executor_version="$kag_learner_executor" \
+    -v macro_mode="$kag_learner_mode" -v macro_interval="$kag_learner_interval" \
+    -v macro_features="$kag_learner_features" '
     /^\[/ {section=$0}
     section=="[env]" && /^\[env\]/ {
         print; print "observation_version = " observation_version
         print "frozen_observation_version = " observation_version
         print "macro_executor_version = " executor_version
-        print "frozen_macro_executor_version = " executor_version; next
+        print "macro_mode = " macro_mode
+        print "macro_decision_interval = " macro_interval
+        print "macro_score_features = " macro_features
+        print "frozen_macro_mode = -1"
+        print "frozen_macro_executor_version = -1"
+        print "frozen_macro_decision_interval = -1"
+        print "frozen_macro_score_features = -1"; next
     }
     section=="[env]" && /^[[:space:]]*(observation_version|frozen_observation_version)[[:space:]]*=/ {next}
     section=="[env]" && /^[[:space:]]*(macro_executor_version|frozen_macro_executor_version)[[:space:]]*=/ {next}
+    section=="[env]" && /^[[:space:]]*(macro_mode|frozen_macro_mode|macro_decision_interval|frozen_macro_decision_interval|macro_score_features|frozen_macro_score_features)[[:space:]]*=/ {next}
     section=="[base]" && /^load_model_path =/ && learner != "" {
         printf "load_model_path = \047%s\047\n", learner; found=1; next
     }
