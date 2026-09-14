@@ -88,66 +88,20 @@ static void configure_case(Env* env, int case_id, obs_t* observations,
         : case_id % 3 == 1 ? 4 : 10;
     env->policy_max_hands = case_id % 2 ? 8 : KG_MAX_HANDS;
     env->land_buy_min_days = case_id % 3;
-    env->macro_mode = case_id == 9 ? KAG_MACRO_MODE_LEGACY
-        : case_id == 10 ? KAG_MACRO_MODE_STRUCTURED
-        : case_id == 11 ? KAG_MACRO_MODE_TASKS : 0;
-    /* Case 11 is deliberately mixed: the learner uses task semantics while
-     * policy one retains an old structured-macro ABI. */
-    env->frozen_macro_mode = case_id == 11
-        ? KAG_MACRO_MODE_STRUCTURED : -1;
-    env->macro_decision_interval = env->macro_mode == KAG_MACRO_MODE_LEGACY
-        ? 4 : 1;
-    env->macro_score_scale = 10000.0f;
-    if (case_id >= 12) env->macro_mode = KAG_MACRO_MODE_STRUCTURED;
-    env->macro_executor_version = case_id >= 12 ? 1 : 0;
-    env->frozen_macro_executor_version = case_id == 13 ? 0 : -1;
-    /* Fixed/fixed, legacy/legacy, and mixed observation contracts. Cases
-     * rotate learner seats below, exercising per-policy dispatch on CUDA. */
-    env->observation_version = case_id % 3 == 0 ? 0 : 1;
-    env->frozen_observation_version = case_id % 3 == 2 ? 0 : -1;
+    env->macro_mode = KAG_MACRO_MODE_TASKS;
+    env->frozen_macro_mode = -1;
+    env->macro_decision_interval = 1;
+    env->macro_executor_version = 0;
+    env->frozen_macro_executor_version = -1;
+    env->observation_version = KAG_OBSERVATION_ENTITIES;
+    env->frozen_observation_version = case_id % 2 ? -1 : KAG_OBSERVATION_ENTITIES;
     env->opening_turns = case_id == 0 ? 10 : case_id == 7 ? 26 : 0;
     env->reset_opening_turns = case_id == 1 ? 20
         : case_id == 8 ? 26 : 0;
     env->reset_opening_prob = case_id == 1 ? 0.5f
         : case_id == 8 ? 1.0f : 0.0f;
-    env->reward_potential_scale = 0.000772047148f;
-    env->reward_potential_gamma = 0.9993f;
-    env->reward_cash_scale = 0.07f;
-    env->reward_money_scale = 0.13f;
-    env->reward_progress_scale = 0.31f;
-    env->reward_progress_terminal_money_scale = 0.17f;
-    env->reward_progress_win_scale = 0.23f;
-    env->reward_progress_liquidation_days = 3.0f;
-    env->reward_progress_seed_scale = 1.0f;
-    env->reward_progress_crop_scale = 0.8f;
-    env->reward_progress_animal_scale = 0.9f;
-    env->reward_progress_product_scale = 0.7f;
-    env->reward_progress_maintenance_scale = 0.0f;
-    env->reward_progress_land_scale = 1.0f;
-    env->reward_progress_health_ratio = 0.6f;
-    /* Exercise the non-telescoping curriculum in the CPU/GPU transition
-     * parity suite. Omitting the CUDA reward call or peak reset must now fail. */
-    env->reward_expansion_scale = 0.41f;
-    /* Exercise phases through the real CPU and GPU transitions, not just
-     * the shared helper. Cases with zero also retain the disabled path. */
-    env->reward_phase_scale = case_id % 2 ? 0.0f : 2.0f;
-    env->reward_expansion_deadline = 720;
-    env->reward_expansion_land_target = 3;
-    env->reward_expansion_plant_target = 5;
-    env->reward_expansion_animal_target = 2;
-    for (int crop = 0; crop < KG_NUM_CROPS; crop++) {
-        env->reward_progress_crop_units[crop] = 3.0f + 0.25f * crop;
-        env->reward_progress_seed_realization[crop] = 1.0f;
-    }
-    for (int animal = 0; animal < KG_NUM_ANIMALS; animal++) {
-        env->reward_progress_animal_units_per_event[animal] =
-            1.0f + 0.5f * animal;
-        env->reward_progress_animal_realization[animal] = 1.0f;
-    }
-    for (int product = 0; product < KG_NUM_PRODUCTS; product++) {
-        env->reward_progress_product_realization[product] =
-            0.6f + 0.02f * product;
-    }
+    env->reward = {0.13f, 0.41f, 0.25f, case_id % 2 ? 0.0f : 0.7f,
+        0.9993f, 1.0f, 0.8f, 0.25f, 0.3f};
     env->bot_first = case_id & 1;
     env->bot_opponent_fraction = 1.0f;
     static const int bots[ADAPTER_CASES] = {
@@ -161,7 +115,7 @@ static void configure_case(Env* env, int case_id, obs_t* observations,
         KAG_BOT_SCRIPT_BASE + KG_SCRIPT_TOP,
         KAG_BOT_ADAPTIVE_BASE + KAG_ADAPTIVE_HARVEST_PULSE,
         KAG_BOT_ADAPTIVE_BASE + KAG_ADAPTIVE_STRUCTURED,
-        KAG_BOT_ADAPTIVE_BASE + KAG_ADAPTIVE_TRIAD,
+        KAG_BOT_NONE,
         KAG_BOT_SCRIPT_BASE + KG_SCRIPT_MOON,
         KAG_BOT_NONE,
         KAG_BOT_NONE,
@@ -185,7 +139,7 @@ static void configure_case(Env* env, int case_id, obs_t* observations,
     KGConfig config;
     kg_config_default(&config);
     config.seed = 0xfedcba987654321ULL + (uint64_t)case_id * 1000003ULL;
-    config.episode_steps = case_id == 0 ? 1 : case_id == 10 ? 720 : 31 + 7 * case_id;
+    config.episode_steps = case_id == 0 ? 2 : case_id == 10 ? 720 : 31 + 7 * case_id;
     config.starting_money = case_id % 4 == 0 ? 500 : 3000 + 97 * case_id;
     config.max_market_orders_per_turn = 1 + case_id % KG_MAX_MARKET_ORDERS;
     config.shed_capacity = case_id % 4 == 0 ? 1
@@ -206,16 +160,13 @@ static void configure_case(Env* env, int case_id, obs_t* observations,
             kg_inventory_add(&farm->units[0], KG_ITEM_COW, 1);
         }
     }
-    /* A deterministic terminal case catches both reward regressions that the
-     * randomized suite previously missed: nonzero relative-money margin and
-     * an inactivity threshold wider than the CUDA path's old hardcoded $2. */
+    /* A deterministic one-transition episode also exercises the shortest
+     * supported horizon and nonidentical reset cash baselines. */
     if (case_id == 0) env->game_storage.players[0].money += 123;
     env->reset_opening_rng = (uint32_t)config.seed ^ 0xa511e9b3u;
     kag_reset_with_opening(env, kag_script_tapes);
     for (int player = 0; player < 2; player++) {
-        env->potential[player] = kag_player_potential(env, player);
-        env->progress_value[player] = kag_player_progress_value(env, player);
-        kag_reset_expansion_peaks(env, player);
+        kag_reward_reset(env, player);
         kag_reset_land_buy_delay(env, player);
     }
     kag_write_all_observations(env);
@@ -398,12 +349,7 @@ int main(void) {
 
     for (int step = 0; step < ADAPTER_STEPS; step++) {
         for (int i = 0; i < ADAPTER_CASES; i++) {
-            if (i == 10) {
-                float* requests = cpu_actions + (size_t)(2 * i) * NUM_ATNS;
-                std::memset(requests, 0, 2 * NUM_ATNS * sizeof(float));
-                requests[0] = cpu[i].game_storage.step < 12
-                    ? KAG_MACRO_ANIMAL_BASE + KG_COW : KAG_MACRO_HOLD;
-            } else if (i == 0) {
+            if (i == 0 || i == 10) {
                 std::memset(cpu_actions + (size_t)(2 * i) * NUM_ATNS, 0,
                     2 * NUM_ATNS * sizeof(float));
             } else {
@@ -426,7 +372,7 @@ int main(void) {
         CUDA_OK(cudaMemcpy(shells, d_shells, ADAPTER_ROWS * sizeof(Env),
             cudaMemcpyDeviceToHost));
         CUDA_OK(cudaMemcpy(gpu_obs, d_obs,
-            (size_t)ADAPTER_ROWS * OBS_SIZE, cudaMemcpyDeviceToHost));
+            (size_t)ADAPTER_ROWS * OBS_SIZE * sizeof(obs_t), cudaMemcpyDeviceToHost));
         CUDA_OK(cudaMemcpy(gpu_rewards, d_rewards,
             ADAPTER_ROWS * sizeof(float), cudaMemcpyDeviceToHost));
         CUDA_OK(cudaMemcpy(gpu_terminals, d_terminals,
@@ -454,9 +400,10 @@ int main(void) {
             }
             for (int player = 0; player < 2; player++) {
                 int row = 2 * i + player;
-                fail_bytes("observation", i, step,
-                    cpu_obs + (size_t)row * OBS_SIZE,
-                    gpu_obs + (size_t)row * OBS_SIZE, OBS_SIZE);
+                for (int feature = 0; feature < OBS_SIZE; feature++) {
+                    compare_float("observation", i, step,
+                        cpu_obs[(size_t)row * OBS_SIZE + feature], gpu_obs[(size_t)row * OBS_SIZE + feature]);
+                }
                 fail_bytes("mask", i, step,
                     cpu_masks + (size_t)row * KG_POLICY_ACTION_MASK_SIZE,
                     gpu_masks + (size_t)row * KG_POLICY_ACTION_MASK_SIZE,
@@ -465,14 +412,16 @@ int main(void) {
                     cpu_rewards[row], gpu_rewards[row]);
                 compare_float("terminal", i, step,
                     cpu_terminals[row], gpu_terminals[row]);
-                compare_float("potential", i, step,
-                    cpu[i].potential[player], gpu[i].potential[player]);
-                compare_float("progress_value", i, step,
-                    cpu[i].progress_value[player],
-                    gpu[i].progress_value[player]);
-                compare_float("episode_return", i, step,
-                    cpu[i].episode_returns[player],
-                    gpu[i].episode_returns[player]);
+                const KagRewardState* a = &cpu[i].reward_state[player];
+                const KagRewardState* b = &gpu[i].reward_state[player];
+                fail_bytes("reward start cash", i, step, &a->start_cash, &b->start_cash, sizeof(int));
+                fail_bytes("reward start step", i, step, &a->start_step, &b->start_step, sizeof(int));
+                compare_float("coverage", i, step, a->coverage_sum, b->coverage_sum);
+                compare_float("idle", i, step, a->idle_sum, b->idle_sum);
+                compare_float("phi", i, step, a->phi, b->phi);
+                compare_float("discounted_pbrs", i, step, a->discounted_pbrs, b->discounted_pbrs);
+                compare_float("cash reward", i, step, a->money_reward, b->money_reward);
+                compare_float("quality reward", i, step, a->quality_reward, b->quality_reward);
             }
             Log gpu_log = combined_gpu_log(&gpu[i], shells, i);
             const float* expected = (const float*)&cpu[i].log;
@@ -503,8 +452,10 @@ int main(void) {
         return 1;
     }
 
-    if (cpu[10].log.milk_units <= 0.0f) {
-        std::fprintf(stderr, "mode2 cow then HOLD failed to collect milk\n");
+    if (cpu[10].log.milk_units != 0.0f
+            || cpu[10].log.successful_animal_places != 0.0f
+            || cpu[10].log.successful_plants != 0.0f) {
+        std::fprintf(stderr, "task IDLE unexpectedly ran autonomous farm work\n");
         return 1;
     }
     CUDA_OK(cudaFree(d_bank_completed));
@@ -519,7 +470,7 @@ int main(void) {
     CUDA_OK(cudaFree(d_envs));
     std::printf(
         "Kaggriculture CUDA adapter: PASS (%d adversarial modes x %d turns; "
-        "state/obs/mask/reward/reset/log exact)\n",
+        "state/mask/reset exact; float obs/reward/log tolerance checked)\n",
         ADAPTER_CASES, ADAPTER_STEPS);
     return 0;
 }

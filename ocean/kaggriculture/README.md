@@ -1,5 +1,9 @@
 # Kaggriculture
 
+Current native training uses the fresh [entity policy and reward v2](ENTITY_POLICY_V2.md).
+That document supersedes older checkpoint/observation/reward descriptions below.
+Old neural checkpoints and byte-observation tooling are not compatible with v2.
+
 ## Native training and match viewer
 
 ### Native public-policy opponents

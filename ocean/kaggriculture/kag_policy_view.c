@@ -13,39 +13,30 @@
 
 #include "kaggriculture.h"
 
-void kg_policy_observation_version(const KGState* state, int player,
-        int macro_mode, int observation_version, unsigned char* output, size_t output_size) {
-    Env env;
-    if (state == NULL || output == NULL || output_size != OBS_SIZE
+/* V2 is stateful: reset cash/quality history and land-fill timers are part of
+ * the observation contract. A KGState alone cannot reconstruct those values.
+ * Retired byte observation symbols are intentionally not exported. */
+int kg_policy_entity_observation(Env* env, int player, float* output, size_t count) {
+    if (!env || !output || count != OBS_SIZE || player < 0 || player >= KG_NUM_PLAYERS
+            || env->observation_version != KAG_OBSERVATION_ENTITIES
+            || kag_agent_macro_mode(env, player) != KAG_MACRO_MODE_TASKS) return 0;
+    void* previous = env->agents[player].observations;
+    env->agents[player].observations = output;
+    kag_write_observation(env, player);
+    env->agents[player].observations = previous;
+    return 1;
+}
+
+int kg_policy_entity_mask(Env* env, int player, unsigned char* output, size_t count) {
+    if (!env || !output || count != KG_POLICY_ACTION_MASK_SIZE
             || player < 0 || player >= KG_NUM_PLAYERS
-            || macro_mode < 0 || macro_mode > KAG_MACRO_MODE_TASKS
-            || observation_version < 0 || observation_version > 1) {
-        return;
-    }
-    memset(&env, 0, sizeof(env));
-    env.game_storage = *state;
-    env.agents[player].observations = output;
-    env.macro_mode = macro_mode;
-    env.frozen_macro_mode = -1;
-    env.observation_version = observation_version;
-    env.frozen_observation_version = -1;
-    env.macro_decision_interval = 1;
-    env.macro_score_scale = 10000.0f;
-    /* These limits are the elite policy ABI, matching the normal trainer. */
-    env.policy_market_slots = KG_POLICY_MARKET_SLOTS;
-    env.policy_max_hands = KG_POLICY_DIRECT_HANDS;
-    env.reset_source = 0;
-    kag_write_observation(&env, player);
-}
-
-void kg_policy_observation_mode(const KGState* state, int player,
-        int macro_mode, unsigned char* output, size_t output_size) {
-    kg_policy_observation_version(state, player, macro_mode, 0, output, output_size);
-}
-
-void kg_policy_observation(const KGState* state, int player,
-        unsigned char* output, size_t output_size) {
-    kg_policy_observation_mode(state, player, 0, output, output_size);
+            || env->observation_version != KAG_OBSERVATION_ENTITIES
+            || kag_agent_macro_mode(env, player) != KAG_MACRO_MODE_TASKS) return 0;
+    unsigned char* previous = env->agents[player].action_mask;
+    env->agents[player].action_mask = output;
+    kag_write_mask(env, player);
+    env->agents[player].action_mask = previous;
+    return 1;
 }
 
 void kg_policy_action_mask_mode(const KGState* state, int player,

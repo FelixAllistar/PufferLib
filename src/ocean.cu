@@ -71,6 +71,12 @@ static void create_custom_encoder(const char* env_name, Encoder* enc) {
 }
 
 static void create_custom_decoder(const char* env_name, Decoder* dec) {
+#ifdef PUFFER_KAGGRICULTURE
+    if (strcmp(env_name, "kaggriculture") == 0) {
+        create_kaggriculture_decoder(dec);
+        return;
+    }
+#endif
 #ifdef PUFFER_NETHACK
     if (strcmp(env_name, "nethack") == 0) {
         create_nethack_decoder(dec);

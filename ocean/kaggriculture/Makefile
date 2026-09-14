@@ -4,7 +4,7 @@ BUILD := build
 LIB := $(BUILD)/libkaggriculture.so
 CFLAGS ?= -O3 -std=c17 -Wall -Wextra -Werror -fPIC
 
-.PHONY: all lib parity state-bank-test counterfactual-test top-bot-parity cuda-core cuda-adapter bc bench hotpath adapter observation-test eval metagame native-test test clean
+.PHONY: all lib parity state-bank-test counterfactual-test top-bot-parity cuda-core cuda-adapter bc bench hotpath adapter observation-test land-delay-test entity-reward-test entity-policy-test eval metagame native-test test clean
 
 all: lib
 
@@ -13,7 +13,7 @@ lib: $(LIB)
 $(BUILD):
 	mkdir -p $(BUILD)
 
-$(LIB): kag_policy_view.c kaggriculture.h land_buy_delay.h kaggriculture_core.c kaggriculture_core.h | $(BUILD)
+$(LIB): kag_policy_view.c $(wildcard *.h) kaggriculture_core.c | $(BUILD)
 	$(CC) $(CFLAGS) -I$(ROOT) -I$(ROOT)/src -I$(ROOT)/vendor \
 		-I$(ROOT)/raylib-5.5_linux_amd64/include -shared kag_policy_view.c \
 		$(ROOT)/raylib-5.5_linux_amd64/lib/libraylib.a \
@@ -111,7 +111,28 @@ $(BUILD)/test_land_buy_delay: tests/test_land_buy_delay.c $(wildcard *.h) kaggri
 		tests/test_land_buy_delay.c $(ROOT)/raylib-5.5_linux_amd64/lib/libraylib.a \
 		-lGL -lm -lpthread -o $@
 
-native-test: adapter observation-test land-delay-test
+entity-reward-test: $(BUILD)/test_entity_rewards
+	$(BUILD)/test_entity_rewards
+
+entity-policy-test: $(BUILD)/test_entity_policy
+	$(BUILD)/test_entity_policy
+
+$(BUILD)/test_entity_policy: $(ROOT)/tests/test_kag_entity_policy.cu $(wildcard *.h) \
+		kaggriculture_encoder.cu $(ROOT)/src/algo.cu $(ROOT)/src/puffercpu.h \
+		$(ROOT)/src/ocean.cu $(ROOT)/src/pufferl_preamble.h | $(BUILD)
+	$${CUDA_HOME:-$${CUDA_PATH:-/usr/local/cuda}}/bin/nvcc \
+		-O2 --threads 2 -arch=$${NVCC_ARCH:-native} -std=c++17 \
+		-I$(ROOT) -I$(ROOT)/src -I$(ROOT)/vendor -I$(ROOT)/raylib-5.5_linux_amd64/include \
+		$(ROOT)/tests/test_kag_entity_policy.cu $(ROOT)/raylib-5.5_linux_amd64/lib/libraylib.a \
+		-lcudart -lcublas -lcusolver -lcurand -lGL -lm -lpthread -o $@
+
+$(BUILD)/test_entity_rewards: tests/test_entity_rewards.c $(wildcard *.h) kaggriculture_core.c | $(BUILD)
+	$(CC) -O1 -std=c17 -Wall -Wextra -Werror \
+		-I$(ROOT) -I$(ROOT)/src -I$(ROOT)/vendor -I$(ROOT)/raylib-5.5_linux_amd64/include \
+		tests/test_entity_rewards.c $(ROOT)/raylib-5.5_linux_amd64/lib/libraylib.a \
+		-lGL -lm -lpthread -o $@
+
+native-test: adapter observation-test land-delay-test entity-reward-test
 
 test: native-test parity
 

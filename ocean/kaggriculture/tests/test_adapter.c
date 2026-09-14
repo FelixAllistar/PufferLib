@@ -1577,7 +1577,7 @@ static void assert_native_macro_mode(void) {
     }
     puf_reset(&env);
     assert(masks[KAG_MACRO_HOLD] == 1);
-    assert((observations[KAG_MACRO_OBS_OFFSET] & 128) != 0);
+    assert(observations[KAG_TASK_OFFSET + KAG_TASK_IDLE] > 0);
     for (int macro = KAG_MACRO_RESERVED_BASE; macro < KAG_MACRO_COUNT; macro++) {
         assert(masks[macro] == 0);
     }
@@ -1646,10 +1646,7 @@ static void assert_native_structured_macro_mode(void) {
     assert(env.macro_intent[0] == KAG_MACRO_PLANT_BASE + KG_WHEAT);
     assert(env.macro_quantity[0] == 32);
     assert(env.macro_target[0] == 1);
-    assert(observations[KAG_MACRO_OBS_OFFSET + KAG_MACRO_COUNT + 2]
-        == kag_u8_scale(32, 64));
-    assert(observations[KAG_MACRO_OBS_OFFSET + KAG_MACRO_COUNT + 3]
-        == kag_u8_scale(1, 8));
+    /* Entity observations no longer expose retired sticky-macro parameters. */
 
     /* A parameterized purchase emits the requested quantity, rather than the
      * old fixed ten-seed/one-animal constants. */
@@ -1941,7 +1938,7 @@ static void assert_native_task_macro_mode(void) {
     int market = KG_POLICY_MARKET_MASK_OFFSET;
     assert(mask[market] == 1);
     assert(mask[market + 1] == 1);
-    assert(observation[KAG_MACRO_OBS_OFFSET + KAG_TASK_ADD_COW] >= 128);
+    assert(observation[KAG_TASK_OFFSET + KAG_TASK_ADD_COW] > 0);
 }
 
 static void assert_mixed_frozen_macro_modes(void) {
@@ -2040,6 +2037,8 @@ int main(void) {
     env.reward_potential_gamma = 0.9997f;
     env.reward_cash_scale = 0.0f;
     env.reward_money_scale = 1.0f;
+    env.reward.money_scale = 1.0f;
+    env.reward.gamma = 1.0f;
     obs_t observations[KG_NUM_PLAYERS * OBS_SIZE] = {0};
     float actions[KG_NUM_PLAYERS * NUM_ATNS] = {0};
     float rewards[KG_NUM_PLAYERS] = {0};

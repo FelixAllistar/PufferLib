@@ -1,6 +1,7 @@
 #include "kaggriculture.h"
 #include "puffercpu.h"
 #include "ini.h"
+#include "kag_observation_contract.h"
 
 #include <dirent.h>
 #include <sys/stat.h>
@@ -120,10 +121,10 @@ static void kag_init_demo(Env* env, obs_t* observations, float* actions,
         }
         env->policy_max_hands = (int)hands;
     }
-    env->reward_potential_scale = 1.0f;
-    env->reward_potential_gamma = 0.9997f;
-    env->reward_cash_scale = 0.0f;
-    env->reward_money_scale = 1.0f;
+    env->observation_version = KAG_OBSERVATION_ENTITIES;
+    env->frozen_observation_version = env->frozen_macro_executor_version = -1;
+    env->reward = (KagRewardConfig){1, 1, 0.25f, 0, 1, 1, 1, 0.25f, 0.25f};
+    env->land_buy_min_days = 2;
     env->num_agents = KG_NUM_PLAYERS;
     kg_init(&env->game_storage, &config);
     kag_bind_demo(env, observations, actions, rewards, terminals, action_masks);
@@ -159,14 +160,7 @@ static void kag_reset_net(PufferNet* net) {
 }
 
 static const float* kag_model_forward(KagSide* side, const Agent* agent) {
-    for (int i = 0; i < OBS_SIZE; i++) {
-        side->net->obs[i] = (float)((obs_t*)agent->observations)[i]
-            * (1.0f / 255.0f);
-    }
-    linear(side->net->encoder, side->net->obs);
-    mingru(side->net->mingru, side->net->encoder->output);
-    linear(side->net->decoder, side->net->mingru->output);
-    return side->net->decoder->output;
+    return kag_cpu_forward(side->net->kag, (const float*)agent->observations);
 }
 
 static void kag_model_action(KagSide* side, Env* env, int player) {
@@ -251,125 +245,23 @@ static int kag_resolve_model(const char* spec, char* out, size_t out_size) {
     return 1;
 }
 
-static int kag_model_config_path(const char* model, char* out, size_t out_size) {
-    const char* marker = strstr(model, "checkpoints/kaggriculture/");
-    if (!marker) return 0;
-    marker += strlen("checkpoints/kaggriculture/");
-    const char* slash = strchr(marker, '/');
-    if (!slash) return 0;
-    snprintf(out, out_size, "logs/kaggriculture/%.*s.ini", (int)(slash - marker), marker);
-    struct stat info;
-    return stat(out, &info) == 0 && S_ISREG(info.st_mode);
-}
-
-static int kag_infer_model_arch(int float_count, int obs_size, int logits,
-        int* hidden_out, int* layers_out) {
-    for (int layers = 1; layers <= 8; layers++) {
-        for (int hidden = 8; hidden <= 2048; hidden++) {
-            size_t encoder = ((size_t)hidden * obs_size + 7) & ~(size_t)7;
-            size_t decoder = ((size_t)(logits + 1) * hidden + 7) & ~(size_t)7;
-            size_t recurrent = ((size_t)3 * hidden * hidden + 7) & ~(size_t)7;
-            size_t total = encoder + decoder + (size_t)layers * recurrent;
-            if (total == (size_t)float_count) {
-                *hidden_out = hidden;
-                *layers_out = layers;
-                return 0;
-            }
-        }
-    }
-    return -1;
-}
-
 static int kag_load_model_side(KagSide* side, const char* spec) {
     if (!kag_resolve_model(spec, side->path, sizeof(side->path))) return 0;
-    int hidden = 32;
-    int layers = 2;
-    Ini ini = {0};
-    puf_ini_load_file(&ini, "config/default.ini");
-    puf_ini_load_file(&ini, "config/kaggriculture.ini");
-    /* Old files must not inherit a newly selected executor or obs layout. */
-    puf_ini_put(&ini, "env.observation_version", "0");
-    puf_ini_put(&ini, "env.macro_executor_version", "0");
-    char config_path[4096];
-    if (kag_model_config_path(side->path, config_path, sizeof(config_path))) {
-        puf_ini_load_file(&ini, config_path);
-    }
-    hidden = puf_ini_get_int(&ini, "policy", "hidden_size");
-    layers = puf_ini_get_int(&ini, "policy", "num_layers");
-    int model_mask = puf_ini_get_int(&ini, "vec", "action_mask_size");
-    side->macro_mode = puf_ini_get_int(&ini, "env", "macro_mode");
-    side->observation_version = puf_ini_get_int(&ini, "env", "observation_version");
-    side->macro_executor_version = puf_ini_get_int(&ini, "env", "macro_executor_version");
-    const char* suffixes[] = {".obs_version", ".executor_version"};
-    int* versions[] = {&side->observation_version, &side->macro_executor_version};
-    for (int i = 0; i < 2; i++) {
-        char metadata[8192];
-        snprintf(metadata, sizeof(metadata), "%s%s", side->path, suffixes[i]);
-        FILE* file = fopen(metadata, "r");
-        if (file) {
-            int parsed = -1; char extra;
-            int n = fscanf(file, "%d %c", &parsed, &extra);
-            fclose(file);
-            if (n != 1 || parsed < 0 || parsed > 1) {
-                fprintf(stderr, "Invalid policy contract %s\n", metadata);
-                puf_ini_free(&ini); return 0;
-            }
-            *versions[i] = parsed;
-        }
-    }
-    side->macro_decision_interval = puf_ini_get_int(
-        &ini, "env", "macro_decision_interval");
-    side->macro_score_scale = puf_ini_get_float(
-        &ini, "env", "macro_score_scale");
-    puf_ini_free(&ini);
-    if (model_mask != KG_POLICY_ACTION_MASK_SIZE) {
-        fprintf(stderr, "%s uses action mask %d; current Kaggriculture uses %d. "
-            "Retrain this incompatible checkpoint.\n",
-            side->path, model_mask, KG_POLICY_ACTION_MASK_SIZE);
-        return 0;
-    }
-
-    struct stat model_info;
-    int logits = 0;
-    for (int head = 0; head < NUM_ATNS; head++) logits += KG_ACTION_SIZES[head];
-    size_t encoder_floats = ((size_t)hidden * OBS_SIZE + 7) & ~(size_t)7;
-    size_t decoder_floats = ((size_t)(logits + 1) * hidden + 7) & ~(size_t)7;
-    size_t recurrent_floats = ((size_t)3 * hidden * hidden + 7) & ~(size_t)7;
-    size_t expected_floats = encoder_floats + decoder_floats
-        + (size_t)layers * recurrent_floats;
-    if (stat(side->path, &model_info) != 0) {
-        fprintf(stderr, "%s cannot be stat'ed\n", side->path);
-        return 0;
-    }
-    if ((size_t)model_info.st_size != expected_floats * sizeof(float)
-            && model_info.st_size % (off_t)sizeof(float) == 0) {
-        int inferred_hidden = 0;
-        int inferred_layers = 0;
-        int float_count = (int)(model_info.st_size / (off_t)sizeof(float));
-        if (kag_infer_model_arch(float_count, OBS_SIZE, logits,
-                &inferred_hidden, &inferred_layers) == 0) {
-            hidden = inferred_hidden;
-            layers = inferred_layers;
-            encoder_floats = ((size_t)hidden * OBS_SIZE + 7) & ~(size_t)7;
-            decoder_floats = ((size_t)(logits + 1) * hidden + 7) & ~(size_t)7;
-            recurrent_floats = ((size_t)3 * hidden * hidden + 7) & ~(size_t)7;
-            expected_floats = encoder_floats + decoder_floats
-                + (size_t)layers * recurrent_floats;
-        }
-    }
-    if ((size_t)model_info.st_size != expected_floats * sizeof(float)) {
-        fprintf(stderr, "%s has the wrong native network shape (expected %zu "
-            "bytes for obs=%d, hidden=%d, layers=%d). Retrain this incompatible "
-            "checkpoint.\n", side->path, expected_floats * sizeof(float),
-            OBS_SIZE, hidden, layers);
-        return 0;
-    }
-
+    int hidden = kag_checkpoint_integer(side->path, ".hidden_size");
+    int layers = kag_checkpoint_integer(side->path, ".num_layers");
+    int alignment = kag_checkpoint_integer(side->path, ".param_alignment");
+    KagObservationContract contract = {1, 2, -1, 0, -1, hidden, layers, alignment};
+    kag_executor_check_load(side->path, contract, 0);
+    side->macro_mode = KAG_MACRO_MODE_TASKS;
+    side->observation_version = KAG_OBSERVATION_ENTITIES;
+    side->macro_executor_version = 0;
+    side->macro_decision_interval = 1;
+    side->macro_score_scale = 0;
     side->weights = load_weights(side->path);
     if (!side->weights) return 0;
     int action_sizes[] = ACT_SIZES;
-    side->net = make_puffernet(side->weights, 1, OBS_SIZE, hidden, layers,
-        action_sizes, NUM_ATNS);
+    side->net = make_kag_entity_puffernet(side->weights, 1, hidden, layers,
+        alignment, action_sizes, NUM_ATNS);
     if (!kag_quiet_load) {
         printf("Loaded %s (hidden=%d layers=%d)\n", side->path, hidden, layers);
         printf("  action interface: macro_mode=%d interval=%d score_scale=%.6g\n",
@@ -840,11 +732,11 @@ static int kag_behavior_jsd(int argc, char** argv) {
         env.observation_version = models[0].observation_version;
         env.macro_executor_version = models[0].macro_executor_version;
         if (obs_override) {
-            if (strcmp(obs_override, "0") && strcmp(obs_override, "1")) return 2;
+            if (strcmp(obs_override, "2")) return 2;
             env.observation_version = atoi(obs_override);
         }
         if (exec_override) {
-            if (strcmp(exec_override, "0") && strcmp(exec_override, "1")) return 2;
+            if (strcmp(exec_override, "0")) return 2;
             env.macro_executor_version = atoi(exec_override);
         }
         for (int i = 1; i < count; i++) {
