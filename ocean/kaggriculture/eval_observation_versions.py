@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Run native GPU league batches with each checkpoint's observation layout.
 
-The native evaluator supports one learner layout and one frozen-bank layout
-per process. Partition a population into compatible batches, then restore the
-original manifest indices. No model conversion or training-config edits occur.
+Fresh v3 policies carry their own controller metadata in every resident bank.
+Partition a population into compatible architectures, then restore the original
+manifest indices. No model conversion or training-config edits occur.
 Unversioned historical checkpoints use layout 0. An explicit MODEL.obs_version
 sidecar takes precedence over the source run's logged configuration.
 """
@@ -16,11 +16,69 @@ from dataclasses import dataclass
 import math
 from pathlib import Path
 import re
+import shutil
 import subprocess
 import tempfile
 
 
 ROOT = Path(__file__).resolve().parents[2]
+FRESH_TAGS = ("policy_version", "obs_version", "executor_version", "hidden_size",
+              "num_layers", "param_alignment", "macro_mode",
+              "macro_decision_interval", "macro_score_features")
+
+
+def fresh_contract(checkpoint):
+    """Read the same nine required sidecars as the native v3 loader."""
+    path = Path(checkpoint)
+    if not path.is_absolute():
+        path = ROOT / path
+    if not path.is_file():
+        raise ValueError(f"Checkpoint does not exist: {path}")
+    result = {}
+    for tag in FRESH_TAGS:
+        sidecar = Path(f"{path}.{tag}")
+        if not sidecar.is_file():
+            raise ValueError(f"Fresh v3 checkpoint is missing {sidecar}")
+        value = sidecar.read_text().strip()
+        if not re.fullmatch(r"[0-9]+", value):
+            raise ValueError(f"Invalid integer in {sidecar}: {value!r}")
+        result[tag] = int(value)
+    mode, executor = result['macro_mode'], result['executor_version']
+    if (result['policy_version'] != 3 or result['obs_version'] != 3
+            or (mode, executor) not in ((0, 0), (1, 0), (1, 1), (2, 0), (2, 1), (3, 0))
+            or result['macro_decision_interval'] < 1
+            or (mode != 1 and result['macro_decision_interval'] != 1)
+            or result['macro_score_features'] not in (0, 1)
+            or result['hidden_size'] < 8 or result['hidden_size'] % 8
+            or result['num_layers'] < 1 or result['param_alignment'] not in (4, 8)):
+        raise ValueError(f"Invalid fresh v3 checkpoint contract: {path}: {result}")
+    return result
+
+
+def behavior_key(checkpoint):
+    contract = fresh_contract(checkpoint)
+    return ':'.join(str(contract[tag]) for tag in FRESH_TAGS)
+
+
+def copy_fresh_checkpoint(source, destination):
+    """Validate the entire raw/EMA bundle before copying; never infer tags."""
+    source, destination = Path(source), Path(destination)
+    contract = fresh_contract(source)
+    bundles = [(source, destination)]
+    ema = Path(f'{source}.emag')
+    if ema.is_file():
+        if fresh_contract(ema) != contract:
+            raise ValueError(f"EMA controller/architecture differs from {source}")
+        bundles.append((ema, Path(f'{destination}.emag')))
+    files = [(src, dst) for src, dst in bundles]
+    files += [(Path(f'{src}.{tag}'), Path(f'{dst}.{tag}'))
+              for src, dst in bundles for tag in FRESH_TAGS]
+    for model in (destination, Path(f'{destination}.emag')):
+        for dst in (model, *(Path(f'{model}.{tag}') for tag in FRESH_TAGS)):
+            if dst.exists():
+                raise ValueError(f"Refusing to overwrite checkpoint bundle member: {dst}")
+    for src, dst in files:
+        shutil.copy2(src, dst)
 
 
 def observation_version(checkpoint, root=ROOT):
@@ -52,6 +110,8 @@ def observation_version(checkpoint, root=ROOT):
         if run_id and log.is_file():
             config.read(log)
         value = config.get("env", "observation_version", fallback="0").strip()
+    if value == "3":
+        return fresh_contract(path)['obs_version']
     if value not in ("0", "1"):
         raise ValueError(f"Invalid observation version {value!r} for {path}")
     return int(value)
@@ -64,6 +124,12 @@ class Policy:
     checkpoint: str
     version: int
     executor: int = 0
+    mode: int = 3
+    interval: int = 1
+    score_features: int = 0
+    hidden: int = 0
+    layers: int = 0
+    alignment: int = 8
 
 
 def executor_version(checkpoint, root=ROOT):
@@ -71,6 +137,9 @@ def executor_version(checkpoint, root=ROOT):
     path = Path(checkpoint)
     if not path.is_absolute(): path = root / path
     if not path.is_file(): raise ValueError(f'Checkpoint does not exist: {path}')
+    obs_tag = Path(f'{path}.obs_version')
+    if obs_tag.is_file() and obs_tag.read_text().strip() == '3':
+        return fresh_contract(path)['executor_version']
     sidecar = Path(str(path) + '.executor_version')
     if sidecar.is_file():
         value = sidecar.read_text().strip()
@@ -101,8 +170,13 @@ def read_manifest(path):
         if int(row["id"]) != index:
             raise ValueError(f"Manifest IDs must be contiguous from zero: {path}")
         checkpoint = row["checkpoint"]
-        policies.append(Policy(index, row["policy"], checkpoint,
-                               observation_version(checkpoint), executor_version(checkpoint)))
+        version = observation_version(checkpoint)
+        c = fresh_contract(checkpoint) if version == 3 else {}
+        policies.append(Policy(index, row["policy"], checkpoint, version,
+                               executor_version(checkpoint), c.get('macro_mode', 3),
+                               c.get('macro_decision_interval', 1), c.get('macro_score_features', 0),
+                               c.get('hidden_size', 0), c.get('num_layers', 0),
+                               c.get('param_alignment', 8)))
     if not policies:
         raise ValueError(f"Empty policy manifest: {path}")
     return policies
@@ -114,8 +188,10 @@ def chunks(items, size=8):
 
 
 def groups(policies):
-    return [[p for p in policies if (p.version, p.executor) == version]
-            for version in sorted({(p.version, p.executor) for p in policies})]
+    def key(p):
+        return (3, p.hidden, p.layers, p.alignment) if p.version == 3 else (p.version, p.executor)
+    return [[p for p in policies if key(p) == version]
+            for version in sorted({key(p) for p in policies})]
 
 
 def matrix_jobs(policies, focal_count=0):
@@ -172,6 +248,17 @@ def remap_row(row, learners, opponents, matrix):
 
 
 def run(args):
+    if args.command == 'copy':
+        copy_fresh_checkpoint(args.source, args.destination)
+        return
+    if args.command in ('contract', 'behavior-key'):
+        for checkpoint in args.checkpoints:
+            c = fresh_contract(checkpoint)
+            print(behavior_key(checkpoint) if args.command == 'behavior-key' else
+                  ' '.join(str(c[tag]) for tag in ('macro_mode', 'executor_version',
+                      'macro_decision_interval', 'macro_score_features', 'hidden_size',
+                      'num_layers', 'param_alignment')))
+        return
     if args.command in ("version", "executor-version"):
         for checkpoint in args.checkpoints:
             print(executor_version(checkpoint) if args.command == 'executor-version' else observation_version(checkpoint))
@@ -179,6 +266,11 @@ def run(args):
     matrix = args.command == "matrix"
     learners = read_manifest(args.manifest if matrix else args.candidates)
     opponents = [] if matrix else read_manifest(args.opponents)
+    population = learners + opponents
+    if any(p.version != 3 for p in population):
+        raise ValueError('The current native evaluator requires fresh v3 checkpoints; start a new v3 league.')
+    if len({(p.hidden, p.layers, p.alignment) for p in population}) != 1:
+        raise ValueError('Native league banks require matching hidden size, layers, and parameter alignment.')
     if matrix:
         jobs = list(matrix_jobs(learners, args.focal_count))
         limit = args.focal_count or len(learners) - 1
@@ -208,8 +300,13 @@ def run(args):
                        f"league.min_agents={args.min_agents}",
                        f"env.observation_version={version_a}",
                        f"env.frozen_observation_version={version_b}",
-                       f"env.macro_executor_version={left[0].executor}",
-                       f"env.frozen_macro_executor_version={(right or left)[0].executor}",
+                       # Safe constructor defaults; every loaded bank then binds
+                       # its own mode, executor, interval, and input features.
+                       "env.macro_mode=3", "env.macro_executor_version=0",
+                       "env.frozen_macro_mode=-1", "env.frozen_macro_executor_version=-1",
+                       "env.macro_decision_interval=1", "env.frozen_macro_decision_interval=-1",
+                       "env.macro_score_features=0", "env.frozen_macro_score_features=-1",
+                       f"policy.hidden_size={left[0].hidden}", f"policy.num_layers={left[0].layers}",
                        "env.reset_state_prob=0", "env.reset_state_bank=None",
                        "env.reset_opening_prob=0", "env.reset_opening_turns=0",
                        "env.opening_turns=0", "env.curriculum_enabled=0"]
@@ -239,7 +336,10 @@ def run(args):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
-    for name in ("version", "executor-version"):
+    copy = sub.add_parser('copy')
+    copy.add_argument('source')
+    copy.add_argument('destination')
+    for name in ("version", "executor-version", "contract", "behavior-key"):
         version = sub.add_parser(name)
         version.add_argument("checkpoints", nargs="+")
     for name in ("matrix", "screen"):
