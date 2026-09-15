@@ -1,5 +1,16 @@
 # Gen 1 Pokémon self-play
 
+## Current implementation: semantic free-pick (ABI 3)
+
+Use [FREEPICK.md](FREEPICK.md) for build/train commands, legal individual-move
+drafting, semantic CPU/CUDA policies, core-reset experiments and resumable
+round-robin leagues. `league.sh` now runs the free-pick league CLI. Old preset
+checkpoints and state banks are incompatible and must be retrained/recollected.
+
+**The remainder of this README is historical preset-ABI documentation.** Its
+160-action, 12-step draft, catalog and checkpoint-compatibility descriptions do
+not describe the current 168-action, 30-step free-pick implementation.
+
 Two-player level-100 RBY singles using native Zig `pkmn/engine`, with an Ocean
 C adapter. No Python/JavaScript/network calls occur during rollouts. Engine
 revision: `9b88fd6c5467f703c38951d5b2e8a660314d410b`; Zig 0.16.0.
@@ -188,7 +199,7 @@ itself rejects invalid battle choices without mutating state.
 | 400–463 | Two active-state records, own then opponent |
 | 464–475 | Six own global set IDs + 1, little-endian uint16 |
 | 476 | State-bank source flag (version 1): 0 normal game, 1 auxiliary reset game |
-| 477–479 | Reserved, zero |
+| 477–479 | Own forced three-species core during draft (core version 1); otherwise zero |
 | 480–639 | Current legal-action mask |
 
 Pokémon record offsets: species at 0, HP scaled to 0–255 at 1, public status at

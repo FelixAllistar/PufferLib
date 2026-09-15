@@ -22,7 +22,7 @@ static unsigned state_cell(const PKGame* g) {
             int base=16+32*i;
             alive[p]+=g->obs[p][base+1]>0;
             status[p]|=g->obs[p][base+2]!=0;
-            uint64_t species=(uint64_t)pk_species(g->teams[p][i]);
+            uint64_t species=g->teams[p][i].species;
             h+=species*species*UINT64_C(0x9e3779b97f4a7c15)+species;
         }
         team_hash^=h;
@@ -79,7 +79,9 @@ int main(int argc,char** argv) {
     PKPolicy* players=(PKPolicy*)calloc(2*(size_t)policies,sizeof(PKPolicy));
     for(int side=0;side<2;side++) for(int i=0;i<policies;i++) {
         pk_load_policy(&players[side*policies+i],argv[4+i],0,0,NULL);
-        if(strcmp(players[side*policies+i].team,"None")) { fprintf(stderr,"Collectors must use unrestricted teams\n"); return 1; }
+        if(strcmp(players[side*policies+i].team,"None") || strcmp(players[side*policies+i].lead,"None")) {
+            fprintf(stderr,"Collectors must use unrestricted teams and leads\n"); return 1;
+        }
     }
     Collection banks[3]={0};
     const unsigned capacities[3]={8192,32768,24576};
@@ -103,7 +105,7 @@ int main(int argc,char** argv) {
         PKGame samples[3][4]; unsigned seen[3]={0}, used[3]={0};
         const unsigned per_game[3]={1,4,3};
         while(!g.result) {
-            if(g.picks==6) {
+            if(g.phase==PK_PHASE_BATTLE) {
                 unsigned k=phase(&g), index=seen[k]++;
                 if(index>=per_game[k]) index=(unsigned)(pk_random(&collection_rng)%seen[k]);
                 if(index<per_game[k]) { samples[k][index]=g; if(used[k]<per_game[k]) used[k]++; }
@@ -112,7 +114,7 @@ int main(int argc,char** argv) {
             for(int p=0;p<2;p++) {
                 // Forward even on exploratory choices to keep the collector's history current.
                 actions[p]=pk_policy_action(pair[p],g.obs[p],g.masks[p],0);
-                if((explore && g.picks<6) || (explore && pk_random(&collection_rng)%20==0))
+                if((explore && g.phase!=PK_PHASE_BATTLE) || (explore && pk_random(&collection_rng)%20==0))
                     actions[p]=pk_random_action(g.masks[p],&collection_rng);
             }
             if(pk_game_step(&g,actions[0],actions[1])==4) return 2;
@@ -126,8 +128,8 @@ int main(int argc,char** argv) {
         }
     }
     PKStateHeader header={0};
-    memcpy(header.magic,"PKSTATE1",8); header.version=PK_STATE_VERSION; header.record_bytes=sizeof(PKGame);
-    strcpy(header.catalog,PK_CATALOG_SHA); strcpy(header.schema,PK_STATE_SCHEMA);
+    memcpy(header.magic,"PKSTATE2",8); header.version=PK_STATE_VERSION; header.record_bytes=sizeof(PKGame);
+    strcpy(header.rules,PK_RULES_SHA); strcpy(header.schema,PK_STATE_SCHEMA);
     header.checksum=UINT64_C(14695981039346656037);
     for(int k=0;k<3;k++) {
         if(!banks[k].count) { fprintf(stderr,"Empty phase bank %d\n",k); return 1; }

@@ -36,16 +36,16 @@ static void pk_profile_summary(const PKProfileSummary* s) {
     printf("Mean team HP during battle: %.1f%% (equal weight per game)\n",100*s->hp/s->games);
 }
 static void pk_profile_step(PKProfile* p, const PKGame* g, int side) {
-    if (g->picks != 6) return;
+    if (g->phase != PK_PHASE_BATTLE) return;
     const uint8_t* obs = g->obs[side];
     if (!p->samples) {
         for (int i=0;i<6;i++) {
-            p->species[pk_species(g->teams[side][i])-1]++;
+            p->species[g->teams[side][i].species-1]++;
             const uint8_t* mon=obs+16+32*i;
             if (mon[5]<32) p->types[mon[5]]++;
             if (mon[6]<32 && mon[6]!=mon[5]) p->types[mon[6]]++;
         }
-        p->leads[pk_species(g->teams[side][0])-1]++;
+        p->leads[g->teams[side][0].species-1]++;
     }
     for (int i=0;i<6;i++) p->hp_sum += obs[16+32*i+1]/(255.0*6);
     double features[PK_PERSONALITY_DIM];
@@ -71,10 +71,14 @@ static void pk_profile_emit(const PKProfile* p, const PKGame* g, int side, doubl
     /* Additive fields: existing profile_population consumers keep their schema.
      * Exact ordered sets permit joint-core diagnostics, not just marginal usage.
      */
-    printf(",\"qd_version\":1,\"species_ids\":[");
-    for(int i=0;i<6;i++) printf("%s%d",i?",":"",pk_species(g->teams[side][i]));
-    printf("],\"set_ids\":[");
-    for(int i=0;i<6;i++) printf("%s%d",i?",":"",(int)g->teams[side][i]);
+    printf(",\"qd_version\":2,\"species_ids\":[");
+    for(int i=0;i<6;i++) printf("%s%d",i?",":"",g->teams[side][i].species);
+    printf("],\"move_ids\":[");
+    for(int i=0;i<6;i++) {
+        printf("%s[",i?",":"");
+        for(int m=0;m<4;m++) printf("%s%d",m?",":"",g->teams[side][i].moves[m]);
+        putchar(']');
+    }
     printf("],\"personality\":[");
     for(int k=0;k<PK_PERSONALITY_DIM;k++) printf("%s%.9g",k?",":"",p->samples?p->personality_sum[k]/p->samples:0);
     float behavior[2]={0},opponent_behavior[2]={0};

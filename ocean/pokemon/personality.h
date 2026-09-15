@@ -3,7 +3,7 @@
 #include <stdint.h>
 
 /* Species-blind state potentials, not bonuses for actions or winning teams.
- * Layout follows bridge.zig (ABI 2). Sleep includes Rest: the observation
+ * Layout follows bridge.zig (ABI 3). Sleep includes Rest: the observation
  * intentionally does not expose its cause. These are occupancy measures,
  * NEVER counts of successfully inflicted statuses/heals/attacks.
  */
@@ -19,7 +19,7 @@ static inline double pk_personality_clip(double x, double lo, double hi) {
  */
 static inline void pk_personality_features(const uint8_t* obs, double out[5]) {
     for (int k=0;k<5;k++) out[k]=0;
-    if (!obs[0]) return; /* Nothing is rewarded during species/set selection. */
+    if (obs[0]!=2) return; /* Nothing is rewarded during species/move selection. */
     for (int i=0;i<6;i++) {
         const uint8_t* mon=obs+16+32*i;
         if (mon[3]) continue;

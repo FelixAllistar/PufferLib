@@ -1102,6 +1102,9 @@ static void* vec_thread_main(void* arg) {
             for (int i = env_start; i < env_start + env_count; i++) {
                 puf_step(&envs[i]);
             }
+#ifdef PUF_CPU_POST_STEP
+            PUF_CPU_POST_STEP(&envs[env_start], env_count);
+#endif
             clock_gettime(CLOCK_MONOTONIC, &t1);
             my_accum[VEC_ENV_STEP] += (t1.tv_sec - t0.tv_sec) * 1000.0f + (t1.tv_nsec - t0.tv_nsec) / 1e6f;
 
@@ -2137,6 +2140,9 @@ void puf_save_weights(PuffeRL* p, const char* path) {
 
 void puf_load_weights_into(FloatTensor dst, PrecisionTensor params,
         cudaStream_t stream, const char* path, const KagObservationContract* contract = nullptr) {
+#ifdef PUF_VALIDATE_CHECKPOINT
+    PUF_VALIDATE_CHECKPOINT(path);
+#endif
     if (strcmp(PUFFER_ENV_NAME, "kaggriculture") == 0) {
         if (!contract || !contract->enabled) {
             fprintf(stderr, "Kaggriculture checkpoint loads require a fresh-policy contract\n"); exit(1);
@@ -2997,6 +3003,9 @@ PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx) {
     for (int i = 0; i < vec->size; i++) {
         puf_reset(&vec->envs[i]);
     }
+#ifdef PUF_CPU_POST_STEP
+    PUF_CPU_POST_STEP(vec->envs, vec->size);
+#endif
     cudaMemcpy(vec->gpu_observations, vec->observations,
         (size_t)vec->total_agents * OBS_SIZE * sizeof(obs_t),
         cudaMemcpyHostToDevice);
@@ -3328,13 +3337,24 @@ void puf_dashboard_print(Ini* ini, PuffeRL* p, Dict* log, int epoch) {
     {
         dash_env_pair(log, "score", "draw_rate");
         dash_env_pair(log, "battle_turns", "timeout_rate");
+        if(pk_core_deck.cards) {
+            dash_env_pair(log,"core_cycle","core_cycle_assigned");
+            dash_env_pair(log,"core_total_assigned","core_drafts_completed");
+        }
+        if(pk_core_deck.cards || pk_native_count) {
+            dash_env_pair(log,"normal_self_games_pct","normal_expert_games_pct");
+            dash_env_pair(log,"core_self_games_pct","core_expert_games_pct");
+        }
+        bool mixed_cores=pk_core_deck.cards && pk_core_probability>0 && pk_core_probability<1;
+        bool normal_cores=pk_core_deck.cards && pk_core_probability<1;
         printf("%s│ %-36s    %-36s │%s", PUF_W,
-            "Top species (% of learner teams)", "Top leads (% of learner games)", PUF_R);
+            normal_cores ? "Normal drafts (% of normal teams)" : pk_core_deck.cards ? "Free choices (% of core teams)" : "Top species (% of learner teams)",
+            mixed_cores ? "Learned extras (% of core teams)" : "Top leads (% of learner games)", PUF_R);
         dash_eol();
         int species[6]={0}, leads[6]={0};
         double picked[6]={0}, led[6]={0};
-        int ns=pk_top_species(log,"env/",0,species,picked);
-        int nl=pk_top_species(log,"env/",1,leads,led);
+        int ns=normal_cores ? pk_top_species_group(log,"env/","normal_team",species,picked) : pk_top_species(log,"env/",0,species,picked);
+        int nl=mixed_cores ? pk_top_species_group(log,"env/","free_team",leads,led) : pk_top_species(log,"env/",1,leads,led);
         int rows=ns>nl?ns:nl;
         if (!rows) {
             printf("%s│ %-76s │%s", PUF_W, "Waiting for completed learner battles...", PUF_R);
@@ -4555,6 +4575,9 @@ static void league_eval_reset(PuffeRL* pufferl) {
         vec->envs[i].boundary_reached = 0;
         puf_reset(&vec->envs[i]);
     }
+#ifdef PUF_CPU_POST_STEP
+    PUF_CPU_POST_STEP(vec->envs, vec->size);
+#endif
     memset(vec->accum, 0,
         (size_t)vec->buffers * NUM_VEC_PROF * sizeof(float));
 
@@ -5249,7 +5272,9 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
 #endif
     // Optional multiplier for longer post-train eval (noise studies). Default 1.
     double eval_epoch_mult = puf_ini_get(ini, "base", "eval_epoch_mult");
-    if (eval_epoch_mult > 1.0) {
+    if (eval_epoch_mult == 0.0) {
+        eval_epochs = 0;
+    } else if (eval_epoch_mult > 1.0) {
         eval_epochs = (long)fmax(1, (double)eval_epochs * eval_epoch_mult);
     }
     long checkpoint_interval = puf_ini_get(ini, "base", "checkpoint_interval");

@@ -1,5 +1,10 @@
 # Fixed state-bank pilot
 
+> Historical preset-ABI pilot. Current collection uses version-2 banks and ABI-3
+> semantic policies; old banks and the flag-migration procedure below are not
+> compatible. See [FREEPICK.md](FREEPICK.md). The current policy learns the reset
+> flag directly; observation/action widths are 640/168.
+
 This is DAGS-style auxiliary training with deliberately stratified state coverage,
 not a literal reproduction of OmniReset's robotics generators or a new PPO solver.
 

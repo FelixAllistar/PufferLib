@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "source": "https://www.smogon.com/forums/threads/rby-ou-sample-teams.3689726/",
+  "retrieved": "2026-09-14",
+  "note": "The 13 sample species compositions and prescribed leads. Moves are learned freely, not copied or restricted to the source paste.",
+  "members": [
+    {"name":"zam_egg_mie","team":["Alakazam","Exeggutor","Starmie","Chansey","Snorlax","Tauros"],"lead":"Alakazam","source":"https://pokepast.es/2c3090c9fe06d6a0"},
+    {"name":"zam_egg_zap","team":["Alakazam","Exeggutor","Zapdos","Chansey","Snorlax","Tauros"],"lead":"Alakazam","source":"https://pokepast.es/dc8867eaf68ca979"},
+    {"name":"zam_egg_gar","team":["Alakazam","Exeggutor","Gengar","Chansey","Snorlax","Tauros"],"lead":"Alakazam","source":"https://pokepast.es/7eb4e03da1770994"},
+    {"name":"zam_egg_cloy_don","team":["Alakazam","Exeggutor","Rhydon","Cloyster","Chansey","Tauros"],"lead":"Alakazam","source":"https://pokepast.es/7cbdb52e9097648f"},
+    {"name":"mie_egg_don","team":["Starmie","Exeggutor","Rhydon","Chansey","Snorlax","Tauros"],"lead":"Starmie","source":"https://pokepast.es/6eba7940bd5e4c94"},
+    {"name":"mie_egg_zap","team":["Starmie","Exeggutor","Zapdos","Chansey","Snorlax","Tauros"],"lead":"Starmie","source":"https://pokepast.es/69f97cddb9f3b059"},
+    {"name":"mie_egg_cloy","team":["Starmie","Exeggutor","Cloyster","Chansey","Snorlax","Tauros"],"lead":"Starmie","source":"https://pokepast.es/b440371df4fe9d90"},
+    {"name":"jynx_mie_don","team":["Jynx","Starmie","Rhydon","Chansey","Snorlax","Tauros"],"lead":"Jynx","source":"https://pokepast.es/3e7096e479e03605"},
+    {"name":"jynx_egg_zap","team":["Jynx","Exeggutor","Zapdos","Chansey","Snorlax","Tauros"],"lead":"Jynx","source":"https://pokepast.es/4f6977df8e742b66"},
+    {"name":"jynx_egg_gar_zap","team":["Jynx","Exeggutor","Gengar","Zapdos","Snorlax","Tauros"],"lead":"Jynx","source":"https://pokepast.es/c3464b7b276fa941"},
+    {"name":"gar_egg_mie","team":["Gengar","Exeggutor","Starmie","Chansey","Snorlax","Tauros"],"lead":"Gengar","source":"https://pokepast.es/34236b5de6d6e479"},
+    {"name":"gar_egg_zap","team":["Gengar","Exeggutor","Zapdos","Chansey","Snorlax","Tauros"],"lead":"Gengar","source":"https://pokepast.es/2e85771afa971c5f"},
+    {"name":"gar_egg_mie_zap","team":["Gengar","Exeggutor","Starmie","Zapdos","Snorlax","Tauros"],"lead":"Gengar","source":"https://pokepast.es/447870b176b8876c"}
+  ]
+}

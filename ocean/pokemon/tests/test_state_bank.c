@@ -1,8 +1,9 @@
 #define _POSIX_C_SOURCE 200809L
 #include "../pokemon.h"
+#include "fixtures.h"
 #include <time.h>
 
-typedef struct { uint8_t obs[640],mask[160]; float action,reward,terminal; } Buffer;
+typedef struct { uint8_t obs[PK_OBS],mask[PK_ACTIONS]; float action,reward,terminal; } Buffer;
 static void setup(Env* env,Buffer buffers[2],float probability) {
     memset(env,0,sizeof(*env)); memset(buffers,0,2*sizeof(*buffers));
     Dict kwargs={0};
@@ -22,10 +23,10 @@ static void verify(Env* env,Buffer b[2]) {
     assert(isfinite(b[0].reward) && fabsf(b[0].reward)<=1);
     for(int p=0;p<2;p++) {
         assert(b[p].obs[476]==env->game.reset_source);
-        assert(!memcmp(b[p].obs,env->game.obs[p],640));
-        assert(!memcmp(b[p].mask,env->game.masks[p],160));
-        assert(!memcmp(b[p].obs+480,b[p].mask,160));
-        int count=0; for(int a=0;a<160;a++) { assert(b[p].mask[a]<=1); count+=b[p].mask[a]; }
+        assert(!memcmp(b[p].obs,env->game.obs[p],PK_OBS));
+        assert(!memcmp(b[p].mask,env->game.masks[p],PK_ACTIONS));
+        assert(!memcmp(b[p].obs+480,b[p].mask,PK_ACTIONS));
+        int count=0; for(int a=0;a<PK_ACTIONS;a++) { assert(b[p].mask[a]<=1); count+=b[p].mask[a]; }
         assert(count>0);
     }
 }
@@ -35,7 +36,7 @@ static void make_states(PKGame samples[3]) {
     for(int game=0;game<1000 && (!found[0] || !found[1] || !found[2]);game++) {
         pk_game_reset(&g);
         while(!g.result) {
-            if(g.picks==6) {
+            if(g.phase==PK_PHASE_BATTLE) {
                 int alive=0; for(int i=0;i<6;i++) alive+=g.obs[0][16+32*i+1]>0;
                 int phase=g.updates==0?0:alive<=3?2:1;
                 if(!found[phase]) { samples[phase]=g; found[phase]=1; }
@@ -54,16 +55,16 @@ static void write_fixture(const char* path,PKStateHeader* header,PKGame samples[
 static void test_file(PKGame samples[3]) {
     char path[]="/tmp/pokemon-states-test-XXXXXX";
     int fd=mkstemp(path); assert(fd>=0); close(fd);
-    PKStateHeader h={0}; memcpy(h.magic,"PKSTATE1",8); h.version=1; h.record_bytes=sizeof(PKGame);
+    PKStateHeader h={0}; memcpy(h.magic,"PKSTATE2",8); h.version=PK_STATE_VERSION; h.record_bytes=sizeof(PKGame);
     for(int k=0;k<3;k++) h.counts[k]=1;
-    strcpy(h.catalog,PK_CATALOG_SHA); strcpy(h.schema,PK_STATE_SCHEMA);
+    strcpy(h.rules,PK_RULES_SHA); strcpy(h.schema,PK_STATE_SCHEMA);
     h.checksum=pk_state_hash(samples,3*sizeof(PKGame));
     PKStateBank b={0};
     write_fixture(path,&h,samples,0); assert(pk_state_load(&b,path)); assert(b.count==3);
     assert(!memcmp(b.states,samples,3*sizeof(PKGame))); free(b.states); b.states=NULL;
     h.checksum^=1; write_fixture(path,&h,samples,0); assert(!pk_state_load(&b,path)); h.checksum^=1;
     h.version++; write_fixture(path,&h,samples,0); assert(!pk_state_load(&b,path)); h.version--;
-    h.catalog[0]^=1; write_fixture(path,&h,samples,0); assert(!pk_state_load(&b,path)); h.catalog[0]^=1;
+    h.rules[0]^=1; write_fixture(path,&h,samples,0); assert(!pk_state_load(&b,path)); h.rules[0]^=1;
     h.schema[0]^=1; write_fixture(path,&h,samples,0); assert(!pk_state_load(&b,path)); h.schema[0]^=1;
     write_fixture(path,&h,samples,1); assert(!pk_state_load(&b,path));
     samples[0].obs[0][216]^=1; h.checksum=pk_state_hash(samples,3*sizeof(PKGame));
@@ -78,7 +79,7 @@ static void test_restore(PKGame samples[3]) {
         pk_state_restore(&b,&samples[k],seed);
         assert(b.rng==9876 && b.updates==samples[k].updates && b.max_updates==512);
         assert(b.reset_source==1);
-        for(int p=0;p<2;p++) for(int i=0;i<640;i++) if(i!=476) assert(a.obs[p][i]==b.obs[p][i]);
+        for(int p=0;p<2;p++) for(int i=0;i<PK_OBS;i++) if(i!=476) assert(a.obs[p][i]==b.obs[p][i]);
         pk_reseed(&a.battle,seed); a.reset_source=1; pk_game_observe(&a);
         for(int step=0;step<16 && !a.result;step++) {
             int a0=pk_random_action(a.masks[0],&rng),a1=pk_random_action(a.masks[1],&rng);

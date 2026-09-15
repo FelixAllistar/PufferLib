@@ -63,19 +63,26 @@ static void test_draft(void) {
         assert(pk_game_step(&a, pk_species(p0)-1, pk_species(p1)-1) == 0);
         assert(pk_game_step(&b, pk_species(p0)-1, pk_species(fixtures[6 + (pick + 1) % 6])-1) == 0);
         assert(memcmp(a.obs[0], b.obs[0], PK_OBS) == 0);
-        assert(a.obs[0][12] == 1 && a.obs[0][13] == pk_species(p0));
-        assert(pk_game_step(&a, 0, 0) == 0);
-        assert(pk_game_step(&b, 0, 0) == 0);
-        if (pick < 5) {
-            assert(memcmp(a.obs[0], b.obs[0], PK_OBS) == 0);
-            assert(memcmp(a.masks[0], b.masks[0], PK_ACTIONS) == 0);
-        }
-        assert(a.teams[0][pick] == p0);
+        assert(a.teams[0][pick].species == pk_species(p0));
         if (pick < 5) assert(a.masks[0][pk_species(p0)-1] == 0);
-        unsigned encoded = a.obs[0][464+2*pick] + 256u*a.obs[0][465+2*pick];
-        assert(encoded == (unsigned)p0+1);
     }
     assert(a.obs[0][0] == 1);
+    for(int turn=0;turn<24;turn++) {
+        int mon=turn/4;
+        assert(a.move_index[0]==mon && b.move_index[0]==mon);
+        int m=pk_move_count(&a.teams[0][mon]);
+        int ownmove=pk_set_move(fixtures[mon],m);
+        int own=a.move_stopped[0]?PK_MOVE_DONE:ownmove?ownmove-1:PK_MOVE_DONE;
+        int foeA=pk_random_action(a.masks[1],&a.rng);
+        // One opponent always stops at one move; the other may choose four.
+        int foeB=turn%4?PK_MOVE_DONE:pk_random_action(b.masks[1],&b.rng);
+        assert(pk_game_step(&a,own,foeA)==0);
+        assert(pk_game_step(&b,own,foeB)==0);
+        if(turn<23)assert(!memcmp(a.obs[0],b.obs[0],PK_OBS));
+    }
+    assert(a.phase==PK_PHASE_BATTLE && a.obs[0][0]==2);
+    assert(!a.invalid_actions && !b.invalid_actions);
+    for(int i=0;i<6;i++)for(int m=0;m<4;m++)assert(a.teams[0][i].moves[m]==pk_set_move(fixtures[i],m));
     assert(a.obs[0][208] == pk_species(fixtures[6])); // Only opposing lead is revealed.
     for (int i = 240; i < 400; i++) assert(a.obs[0][i] == 0);
     for (int i = 216; i < 220; i++) assert(a.obs[0][i] == 0); // No foe moves yet.
@@ -143,7 +150,7 @@ static void test_seeded_rollouts(void) {
             a.draft = b.draft = mode;
             a.max_updates = b.max_updates = 512;
             pk_game_reset(&a); pk_game_reset(&b);
-            for (int t = 0; !a.result && t < 530; t++) {
+            for (int t = 0; !a.result && t < 550; t++) {
                 int a0 = pk_random_action(a.masks[0], &policy_rng);
                 int a1 = pk_random_action(a.masks[1], &policy_rng);
                 assert(pk_game_step(&a, a0, a1) == pk_game_step(&b, a0, a1));
@@ -192,11 +199,13 @@ static void test_adapter_full_episodes(void) {
     assert(finished == 20 && decisive > 0 && env.log.n == 20);
     assert(env.log.invalid_actions == 0);
     float teams = 0, leads = 0;
-    for (int i = 0; i < PK_SETS; i++) {
+    for (int i = 1; i <=149; i++) {
         teams += env.log.team_picks[i];
         leads += env.log.lead_picks[i];
     }
-    assert(env.log.team_samples == 20 && teams == 120 && leads == 20);
+    // tag=0 is current-policy self-play: both seats are learners. The initial
+    // Agent.policy=1 is a layout hint, not evidence of a frozen opponent.
+    assert(env.log.team_samples == 40 && teams == 240 && leads == 40);
     // The simple numeric dictionary contains no allocated strings or arrays.
     free(kwargs.items);
 }
@@ -247,7 +256,7 @@ static void test_potential_rewards_and_team_log(void) {
     while (fgets(line, sizeof(line), file)) {
         assert(strstr(line, "\"leads\":[") && strstr(line, "\"teams\":["));
         assert(strstr(line, "\"banks\":[0,1]"));
-        assert(strstr(line, "\"moves\":[") && strstr(line, "\"abi\":2"));
+        assert(strstr(line, "\"moves\":[") && strstr(line, "\"abi\":3") && strstr(line,"\"rules_sha\":"));
         rows++;
     }
     fclose(file);
@@ -257,11 +266,9 @@ static void test_potential_rewards_and_team_log(void) {
 static void test_top_species_summary(void) {
     Log log = {0};
     log.team_samples=100;
-    int tauros=pk_species_set(128,0), snorlax=pk_species_set(143,0), meowth=pk_species_set(52,0);
-    assert(pk_species_count(143)>1);
+    int tauros=128, snorlax=143, meowth=52;
     log.team_picks[tauros]=80;
-    log.team_picks[snorlax]=40;
-    log.team_picks[snorlax+1]=50;
+    log.team_picks[snorlax]=90;
     log.team_picks[meowth]=5;
     log.lead_picks[tauros]=10;
     log.lead_picks[meowth]=60;

@@ -188,6 +188,7 @@ struct Decoder {
     int hidden_dim, output_dim;
     bool continuous;
     size_t activation_size;
+    void (*bind_observation)(void* activations, PrecisionTensor obs);
 };
 
 struct Network {
@@ -786,14 +787,17 @@ PrecisionTensor policy_forward(Policy* p, PolicyWeights& w, PolicyActivations& a
         PrecisionTensor obs, PrecisionTensor state, cudaStream_t stream) {
     PrecisionTensor enc_out = p->encoder.forward(w.encoder, activations.encoder, obs, stream);
     PrecisionTensor h = p->network.forward(w.network, enc_out, state, activations.network, stream);
+    if(p->decoder.bind_observation) p->decoder.bind_observation(activations.decoder,obs);
     return p->decoder.forward(w.decoder, activations.decoder, h, stream);
 }
 
 PrecisionTensor policy_forward_train(Policy* p, PolicyWeights& w, PolicyActivations& activations,
         PrecisionTensor x, PrecisionTensor state, PrecisionTensor terminals, cudaStream_t stream) {
     int B = x.shape[0], TT = x.shape[1];
-    PrecisionTensor h = p->encoder.forward(w.encoder, activations.encoder, *puf_squeeze(&x, 0), stream);
+    PrecisionTensor flat_obs=*puf_squeeze(&x,0);
+    PrecisionTensor h = p->encoder.forward(w.encoder, activations.encoder, flat_obs, stream);
     h = p->network.forward_train(w.network, *puf_unsqueeze(&h, 0, B, TT), state, terminals, activations.network, stream);
+    if(p->decoder.bind_observation) p->decoder.bind_observation(activations.decoder,flat_obs);
     PrecisionTensor dec_out = p->decoder.forward(w.decoder, activations.decoder, *puf_squeeze(&h, 0), stream);
     return *puf_unsqueeze(&dec_out, 0, B, TT);
 }
