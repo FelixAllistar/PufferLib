@@ -7,6 +7,14 @@
 // Called after native CLI overrides are applied, including in each clean
 // sweep worker. Keep learner and potential-shaping discounts coupled.
 static void retro_configure(Ini* ini, const char* mode) {
+    // Persist the actual execution engine in checkpoint/sweep sidecars.
+    if(!dict_find(puf_ini_section(ini,"env",0),"cpu_backend")) {
+#ifdef RETRO_DEFAULT_CPU_BLOCKS
+        puf_ini_set(puf_ini_section(ini,"env",0),"cpu_backend","blocks");
+#else
+        puf_ini_set(puf_ini_section(ini,"env",0),"cpu_backend","reference");
+#endif
+    }
     double gamma=puf_ini_get(ini,"train","gamma");
     if(!std::isfinite(gamma)||gamma<=0||gamma>=1)
         throw std::runtime_error("retro: train.gamma must be between 0 and 1");

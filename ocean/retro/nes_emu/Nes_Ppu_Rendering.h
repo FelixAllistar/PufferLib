@@ -14,6 +14,7 @@ public:
 	Nes_Ppu_Rendering();
 	
 	int sprite_limit;
+	bool wide_background;
 	
 	uint8_t* host_pixels;
 	long host_row_bytes;
@@ -50,6 +51,7 @@ private:
 inline Nes_Ppu_Rendering::Nes_Ppu_Rendering()
 {
 	sprite_limit = 8;
+	wide_background = false;
 	host_pixels = NULL;
 }
 

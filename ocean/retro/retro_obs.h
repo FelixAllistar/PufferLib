@@ -1,11 +1,11 @@
 #pragma once
 // Shared SMB1 observation + reward builder. Single source of truth for every
 // backend (QuickNES ROM path, native-C fast path) and the future libretro
-// deployment adapter: everything except the 144-pixel window comes straight
+// deployment adapter: everything except the visual input comes straight
 // from NES RAM (canonical addresses, smbdis.asm / Data Crystal), so the same
 // code runs on RETRO_MEMORY_SYSTEM_RAM.
 //
-// Layout: OBS 256 = 64 ego/physics + 48 entities + 12*12 pixel patch.
+// Sole observation contract: 112 RAM features + full screen at 128x120 luma.
 // The pixel patch is backend-rendered RGB luma. Sharing the RAM builder does
 // not imply the experimental native port's rendering or timing matches ROM.
 
@@ -16,8 +16,13 @@
 #define RETRO_NUM_ENEMIES 5
 #define RETRO_ENT_EXTRA 8
 #define RETRO_ENT_SIZE (RETRO_NUM_ENEMIES*RETRO_ENT_PER + RETRO_ENT_EXTRA)
-#define RETRO_WINDOW_W 12
-#define RETRO_WINDOW_H 12
+// Full 256x240 screen, non-overlapping 2x2 luma means. No crop mode.
+#define RETRO_WINDOW_W 128
+#define RETRO_WINDOW_H 120
+#ifndef RETRO_ENV_NAME
+#define RETRO_ENV_NAME "retro"
+#endif
+#define RETRO_OBSERVATION_CONTRACT "fullscreen128x120_luma_v1"
 #define RETRO_TILES (RETRO_WINDOW_W * RETRO_WINDOW_H)
 #define OBS_SIZE (RETRO_EGO_SIZE + RETRO_ENT_SIZE + RETRO_TILES)
 #define RETRO_WINDOW_RADIUS_W (RETRO_WINDOW_W/2)

@@ -8,6 +8,7 @@
 
 #include "nes_data.h"
 #include <memory>
+#include <stdint.h>
 class Nes_State_;
 
 class Nes_Ppu_Impl : public ppu_state_t {
@@ -120,6 +121,12 @@ protected: //friend class Nes_Ppu_Rendering; private:
 	typedef cache_t cached_tile_t [4];
 	cached_tile_t const& get_bg_tile( int index );
 	cached_tile_t const& get_bg_tile_ex( int exram_byte, int tile );
+	// Immutable CHR also has pre-expanded 8-pixel rows. Shared by ROM lanes;
+	// mutable CHR and mapper-sensitive fetches retain the reference renderer.
+	uint64_t const* get_wide_bg_tile( int index ) {
+		return wide_tiles + (map_chr_addr(index * bytes_per_tile) / bytes_per_tile) * 8;
+	}
+	bool has_wide_tiles() const { return wide_tiles != NULL && !chr_is_writable; }
 	cached_tile_t const& get_sprite_tile( uint8_t const* sprite );
 	uint8_t* get_nametable( int addr ) { return nt_banks [addr >> 10 & 3]; };
 	
@@ -168,6 +175,8 @@ private:
 	cached_tile_t* flipped_tiles;
 	uint8_t* tile_cache_mem;
 	std::shared_ptr<uint8_t> tile_cache_owner;
+	uint64_t* wide_tiles;
+	std::shared_ptr<uint64_t> wide_tiles_owner;
 	union {
 		uint8_t modified_tiles [chr_tile_count / 8];
 		uint32_t align_;

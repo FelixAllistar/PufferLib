@@ -1,6 +1,6 @@
 #pragma once
 #ifdef PUFFER_RETRO_LEGACY
-#include "retro_legacy.h"
+#error "Legacy retro backends are retired; full-screen ROM observations are required"
 #else
 #ifndef __cplusplus
 #error "retro requires C++ and the QuickNES ROM core"
@@ -87,7 +87,7 @@ struct Env {
     float checkpoint_reward;
     int checkpoint_distance, progress_pixels, episode_decisions, frontier_count;
     RetroFrontier frontiers[256];
-    bool emu_ok, emu_owned, full_render, reset_image, last_truncated;
+    bool emu_ok, emu_owned, full_render, reset_image, last_truncated, rom_blocks;
     Nes_Emu* emu;
     RetroVecArena* arena;
     const RetroStart* start;
@@ -240,22 +240,26 @@ static void retro_compute_obs_real(const Env* e,obs_t* obs) {
     const unsigned char* pixels=e->reset_image?e->start->pixels:fr.pixels;
     const short* palette=e->reset_image?e->start->palette:fr.palette;
     int pitch=e->reset_image?256:(int)fr.pitch;
-    float lut[256];
-    for(int i=0;i<256;i++) {
-        const auto& c=Nes_Emu::nes_colors[palette[i]&(Nes_Emu::color_table_size-1)];
-        lut[i]=retro_luma(c.red,c.green,c.blue);
-    }
-    int mx=(m[0x86]-m[0x71c])&255,my=m[0x3b8]; if(my>=240) my=120;
-    int xs[96],ys[96];
-    for(int i=0;i<96;i++) { xs[i]=std::max(0,std::min(255,mx-48+i)); ys[i]=std::max(0,std::min(239,my-48+i))*pitch; }
-    int idx=RETRO_EGO_SIZE+RETRO_ENT_SIZE;
-    for(int ty=0;ty<12;ty++) for(int tx=0;tx<12;tx++) {
-        float sum=0;
-        if(pixels) for(int y=0;y<8;y++) {
-            const unsigned char* row=pixels+ys[ty*8+y];
-            for(int x=0;x<8;x++) sum+=lut[row[xs[tx*8+x]]];
+    struct PaletteCache { short palette[256]; float lut[256]; bool valid; };
+    static thread_local PaletteCache cache={};
+    if(!cache.valid||memcmp(cache.palette,palette,sizeof(cache.palette))) {
+        memcpy(cache.palette,palette,sizeof(cache.palette));
+        for(int i=0;i<256;i++) {
+            const auto& c=Nes_Emu::nes_colors[palette[i]&(Nes_Emu::color_table_size-1)];
+            cache.lut[i]=retro_luma(c.red,c.green,c.blue);
         }
-        values[idx++]=sum*(1.0f/64);
+        cache.valid=true;
+    }
+    const float* lut=cache.lut;
+    int idx=RETRO_EGO_SIZE+RETRO_ENT_SIZE;
+    for(int y=0;y<240;y+=2) for(int x=0;x<256;x+=2) {
+        float sum=0;
+        if(pixels) {
+            const unsigned char* row=pixels+y*pitch+x;
+            sum+=lut[row[0]]; sum+=lut[row[1]];
+            sum+=lut[row[pitch]]; sum+=lut[row[pitch+1]];
+        }
+        values[idx++]=sum*0.25f;
     }
     for(int i=0;i<OBS_SIZE;i++) {
 #if defined(from_float) && !defined(PRECISION_FLOAT)
@@ -286,6 +290,14 @@ void puf_init(Env* e,Dict* cfg) {
         throw std::runtime_error("retro: invalid frameskip, max_frames, or potential_gamma");
     DictItem* be=dict_find(cfg,"backend");
     if(be&&be->str&&strcmp(be->str,"quicknes")) throw std::runtime_error("retro: ROM-only build; legacy port requires RETRO_LEGACY=1");
+    DictItem* cpu=dict_find(cfg,"cpu_backend");
+    if(cpu&&cpu->str&&strcmp(cpu->str,"reference")&&strcmp(cpu->str,"blocks"))
+        throw std::runtime_error("retro: cpu_backend must be reference or blocks");
+#ifdef RETRO_DEFAULT_CPU_BLOCKS
+    e->rom_blocks=!cpu||!cpu->str||!strcmp(cpu->str,"blocks");
+#else
+    e->rom_blocks=cpu&&cpu->str&&!strcmp(cpu->str,"blocks");
+#endif
     DictItem* sp=dict_find(cfg,"spawn_levels"); retro_parse_spawns(e,sp&&sp->str?sp->str:"all");
     DictItem* rp=dict_find(cfg,"rom_path"); const char* path=rp&&rp->str?rp->str:"ocean/retro/roms/smb1.nes";
     RetroRom& rom=retro_rom();
@@ -295,6 +307,16 @@ void puf_init(Env* e,Dict* cfg) {
     if(!e->emu) { e->emu=new Nes_Emu(); e->emu_owned=true; }
     retro_check(e->emu->set_cart(&rom.cart,&rom.seed));
     e->emu->set_idle_skip(retro_option(cfg,"idle_loop_skip",1)!=0);
+    DictItem* rb=dict_find(cfg,"render_backend");
+    const char* render=rb&&rb->str?rb->str:"reference";
+    if(strcmp(render,"reference")&&strcmp(render,"wide"))
+        throw std::runtime_error("retro: only full-screen reference/wide rendering is supported; crop mode is retired");
+    if(dict_find(cfg,"render_crop_margin"))
+        throw std::runtime_error("retro: remove obsolete render_crop_margin; the entire screen is always observed");
+    if(!e->emu->set_wide_background(strcmp(render,"reference")!=0))
+        throw std::runtime_error("retro: wide background requires immutable mapper-0 CHR");
+    if(!e->emu->set_rom_blocks(e->rom_blocks))
+        throw std::runtime_error("retro: blocks CPU requires the experimental ROM-block build and matching PRG");
     e->emu_ok=true;
 }
 void puf_reset(Env* e) {
@@ -303,6 +325,9 @@ void puf_reset(Env* e) {
     e->start=retro_rom().starts[id].get();
     if(!e->start) throw std::runtime_error("retro: unprepared level start");
     e->emu->load_state(e->start->state); e->reset_image=true; retro_sync_from_emu(e);
+    // State restore remaps the cartridge and invalidates the specialization.
+    if(e->rom_blocks&&!e->emu->set_rom_blocks(true))
+        throw std::runtime_error("retro: restored PRG does not match compiled blocks");
     e->x_pos_max=e->x_pos; e->tick=0; e->episode_return=0; e->episode_clears=0; e->episode_warps=0;
     e->rewarded_levels=0; e->episode_spawn=id;
     e->frontier_count=0; e->progress_pixels=0; e->episode_decisions=0;

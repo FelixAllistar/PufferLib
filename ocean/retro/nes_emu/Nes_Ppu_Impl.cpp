@@ -32,6 +32,7 @@ Nes_Ppu_Impl::Nes_Ppu_Impl()
 	host_palette = NULL;
 	max_palette_size = 0;
 	tile_cache_mem = NULL;
+	wide_tiles = NULL;
 	ppu_state_t::unused = 0;
 
 	mmc24_enabled = false;
@@ -97,6 +98,8 @@ const char *Nes_Ppu_Impl::open_chr( uint8_t const* new_chr, long chr_data_size, 
 		tile_cache_mem = share->tile_cache_mem;
 		tile_cache = share->tile_cache;
 		flipped_tiles = share->flipped_tiles;
+		wide_tiles_owner = share->wide_tiles_owner;
+		wide_tiles = share->wide_tiles;
 		any_tiles_modified = false;
 		return 0;
 	}
@@ -106,6 +109,11 @@ const char *Nes_Ppu_Impl::open_chr( uint8_t const* new_chr, long chr_data_size, 
 	tile_cache = (cached_tile_t*) (tile_cache_mem + cache_line_size -
 			(uintptr_t) tile_cache_mem % cache_line_size);
 	flipped_tiles = tile_cache + tile_count;
+	if ( !chr_is_writable ) {
+		wide_tiles = new uint64_t[tile_count * 8];
+		CHECK_ALLOC(wide_tiles);
+		wide_tiles_owner.reset(wide_tiles, std::default_delete<uint64_t[]>());
+	}
 	
 	// rebuild cache
 	all_tiles_modified();
@@ -122,6 +130,8 @@ void Nes_Ppu_Impl::close_chr()
 {
 	tile_cache_owner.reset();
 	tile_cache_mem = NULL;
+	wide_tiles_owner.reset();
+	wide_tiles = NULL;
 }
 
 void Nes_Ppu_Impl::set_chr_bank( int addr, int size, long data )
@@ -339,10 +349,28 @@ inline void Nes_Ppu_Impl::update_tile( int index )
 		SET_BE32( flipped_out, c );
 		flipped_out += 4;
 	}
+	if ( wide_tiles ) {
+		// Match the reference's native-word pixel byte order on either endian.
+		for (int y = 0; y < 8; ++y) {
+			uint32_t line = tile_cache[index][y / 2];
+			uint32_t row[2] = {
+				(line >> (y & 1 ? 6 : 4)) & 0x03030303u,
+				(line >> (y & 1 ? 2 : 0)) & 0x03030303u
+			};
+			memcpy(&wide_tiles[index * 8 + y], row, sizeof(row));
+		}
+	}
 }
 
 void Nes_Ppu_Impl::rebuild_chr( unsigned long begin, unsigned long end )
 {
+	if (wide_tiles_owner.use_count() > 1) {
+		long rows = (chr_size / bytes_per_tile) * 8;
+		uint64_t* data = new uint64_t[rows];
+		memcpy(data, wide_tiles, rows * sizeof(uint64_t));
+		wide_tiles_owner.reset(data, std::default_delete<uint64_t[]>());
+		wide_tiles = data;
+	}
 	// Debugger/explicit CHR edits must not mutate another emulator's cache.
 	if ( tile_cache_owner.use_count() > 1 )
 	{
