@@ -2,13 +2,14 @@
 #include <stdio.h>
 #include <string.h>
 #include "../personality.h"
+#include "../bridge.h"
 static void fresh(uint8_t* x) {
-    memset(x,0,640); x[0]=1; x[4]=1;
+    memset(x,0,PK_OBS); x[0]=2; x[4]=1;
     for(int i=0;i<6;i++) { x[16+32*i]=i+1; x[17+32*i]=255; }
     for(int i=403;i<=408;i++) x[i]=6;
 }
 int main(void) {
-    uint8_t a[640],b[640]; fresh(a); fresh(b);
+    uint8_t a[PK_OBS],b[PK_OBS]; fresh(a); fresh(b);
     double f[5],w[5]={.2,.2,.2,.2,.2};
     pk_personality_features(a,f); assert(fabs(f[4]-1)<1e-12);
     for(int k=0;k<4;k++) assert(f[k]==0);

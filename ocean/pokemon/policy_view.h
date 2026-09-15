@@ -10,6 +10,7 @@ typedef struct {
     char path[4096];
     uint64_t rng;
     char team[256];
+    char lead[64];
 } PKPolicy;
 static int pk_file(const char* path) {
     struct stat st;
@@ -74,9 +75,11 @@ static void pk_load_policy(PKPolicy* policy, const char* arg, int emag,
         puf_ini_load_file(&saved, config);
         Dict* rules = puf_ini_section(&saved, "env", 0);
         DictItem* abi = dict_find(rules, "abi_version");
-        DictItem* catalog = dict_find(rules, "catalog_sha");
-        if (!abi || abi->value != PK_ABI_VERSION || !catalog || !catalog->str || strcmp(catalog->str, PK_CATALOG_SHA)) {
-            fprintf(stderr, "Incompatible Pokemon checkpoint catalog/ABI: start a new run with the sourced catalog (ABI 2)\n"); exit(1);
+        DictItem* rules_sha = dict_find(rules, "rules_sha");
+        DictItem* architecture = dict_find(rules, "policy_version");
+        if (!abi || abi->value != PK_ABI_VERSION || !rules_sha || !rules_sha->str || strcmp(rules_sha->str, PK_RULES_SHA) ||
+                !architecture || architecture->value!=3) {
+            fprintf(stderr, "Incompatible Pokemon checkpoint: requires semantic free-pick ABI/policy 3 and matching legality rules\n"); exit(1);
         }
         puf_ini_free(&saved);
         puf_ini_load_file(&policy->ini, config);
@@ -84,14 +87,13 @@ static void pk_load_policy(PKPolicy* policy, const char* arg, int emag,
     for (int i = 0; i < override_count; i++) puf_ini_apply_arg(&policy->ini, "base", overrides[i], i);
     DictItem* team = dict_find(puf_ini_section(&policy->ini, "env", 0), "learner_team");
     snprintf(policy->team, sizeof(policy->team), "%s", team && team->str ? team->str : "None");
+    DictItem* lead=dict_find(puf_ini_section(&policy->ini,"env",0),"learner_lead");
+    snprintf(policy->lead,sizeof(policy->lead),"%s",lead && lead->str?lead->str:"None");
     if (!strcmp(arg, "random")) return;
     int h = puf_ini_get_int(&policy->ini, "policy", "hidden_size");
     int layers = puf_ini_get_int(&policy->ini, "policy", "num_layers");
     if (h < 1 || h > 4096 || layers < 1 || layers > 32) { fprintf(stderr, "Invalid policy architecture\n"); exit(1); }
-    size_t encoder = (size_t)h * PK_OBS, decoder = (size_t)(PK_ACTIONS + 1) * h;
-    size_t recurrent = (size_t)3 * h * h;
-    size_t expected = ((encoder + 7) & ~(size_t)7) + ((decoder + 7) & ~(size_t)7)
-        + layers * ((recurrent + 7) & ~(size_t)7);
+    size_t expected = pk_parameter_count(h,layers);
     struct stat st;
     if (stat(policy->path, &st) || st.st_size != (off_t)(expected * sizeof(float))) {
         fprintf(stderr, "Missing/incompatible checkpoint %s: expected %zu bytes (H=%d L=%d)\n",
@@ -102,8 +104,7 @@ static void pk_load_policy(PKPolicy* policy, const char* arg, int emag,
     for (size_t i = 0; i < expected; i++) {
         if (!isfinite(policy->weights->data[i])) { fprintf(stderr, "Non-finite checkpoint weights\n"); exit(1); }
     }
-    int sizes[] = {PK_ACTIONS};
-    policy->net = make_puffernet(policy->weights, 1, PK_OBS, h, layers, sizes, 1);
+    policy->net = make_pokemon_puffernet(policy->weights,1,h,layers);
     fprintf(stderr, "Loaded %s (hidden=%d layers=%d)\n", policy->path, h, layers);
 }
 static void pk_reset_policy(PKPolicy* policy, uint64_t seed) {
@@ -116,16 +117,13 @@ static void pk_reset_policy(PKPolicy* policy, uint64_t seed) {
 static int pk_policy_action(PKPolicy* policy, const uint8_t* obs, const uint8_t* mask, int deterministic) {
     if (!policy->net) return pk_random_action(mask, &policy->rng);
     PufferNet* net = policy->net;
-    // Native Pokemon inference casts bytes directly (no OBS_U8_NORMALIZED).
-    // Keep the checkpoint's training scale: normalizing here changes the policy.
+    // Semantic unpacking is identical to CUDA, including category one-hots.
     for (int i = 0; i < PK_OBS; i++) net->obs[i] = (float)obs[i];
-    linear(net->encoder, net->obs);
-    mingru(net->mingru, net->encoder->output);
-    linear(net->decoder, net->mingru->output);
+    float* logits=pk_cpu_forward(net->pokemon,net->obs);
     float max = -INFINITY;
     int best = -1;
     for (int i = 0; i < PK_ACTIONS; i++) if (mask[i]) {
-        float logit = net->decoder->output[i];
+        float logit = logits[i];
         if (!isfinite(logit)) { fprintf(stderr, "Non-finite policy logits\n"); exit(1); }
         if (logit > max) { max = logit; best = i; }
     }
@@ -133,7 +131,7 @@ static int pk_policy_action(PKPolicy* policy, const uint8_t* obs, const uint8_t*
     if (deterministic) return best;
     float weights[PK_ACTIONS] = {0}, sum = 0;
     for (int i = 0; i < PK_ACTIONS; i++) if (mask[i]) {
-        weights[i] = expf(net->decoder->output[i] - max); sum += weights[i];
+        weights[i] = expf(logits[i] - max); sum += weights[i];
     }
     double sample = (pk_random(&policy->rng) >> 11) * 0x1.0p-53 * sum;
     for (int i = 0; i < PK_ACTIONS; i++) if (mask[i]) {

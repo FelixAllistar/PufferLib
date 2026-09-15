@@ -1,0 +1,9 @@
+{
+  "version":1,
+  "note":"Species compositions of the previous three-expert experiment, now with explicit leads and freely learned moves. Old checkpoint files are not compatible with ABI 3.",
+  "members":[
+    {"name":"alakazam_zapdos","team":["Alakazam","Tauros","Snorlax","Chansey","Exeggutor","Zapdos"],"lead":"Alakazam"},
+    {"name":"jynx_starmie","team":["Jynx","Starmie","Tauros","Snorlax","Chansey","Exeggutor"],"lead":"Jynx"},
+    {"name":"jynx_cloyster","team":["Jynx","Cloyster","Alakazam","Tauros","Snorlax","Chansey"],"lead":"Jynx"}
+  ]
+}

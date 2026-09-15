@@ -656,6 +656,7 @@ void free_mingru(MinGRU* layer) {
 }
 
 #include "../ocean/kaggriculture/entity_cpu.h"
+#include "../ocean/pokemon/semantic_cpu.h"
 
 // PufferNet: default policy matching the native backend Policy in models.cu.
 // Architecture: Linear encoder -> N x MinGRU -> Linear decoder (fused value).
@@ -667,6 +668,7 @@ void free_mingru(MinGRU* layer) {
 typedef struct PufferNet PufferNet;
 struct PufferNet {
     KagCpuPolicy* kag;
+    PKCpuPolicy* pokemon;
     int num_agents;
     float* obs;
     Linear* encoder;
@@ -715,6 +717,15 @@ static inline PufferNet* make_kag_entity_puffernet(Weights* weights, int batch,
     net->multidiscrete = make_multidiscrete(batch, logit_sizes, num_actions);
     return net;
 }
+static inline PufferNet* make_pokemon_puffernet(Weights* weights,int batch,int hidden,int layers) {
+    PufferNet* net=(PufferNet*)calloc(1,sizeof(*net));
+    net->num_agents=batch;net->num_actions=1;
+    net->obs=(float*)calloc((size_t)batch*648,sizeof(float));
+    net->pokemon=pk_cpu_make(weights,batch,hidden,layers);
+    net->mingru=net->pokemon->mingru;
+    int sizes[]={168};net->multidiscrete=make_multidiscrete(batch,sizes,1);
+    return net;
+}
 
 void _gaussian_mean(float* input, float* output, int batch_size, int num_actions) {
     for (int b = 0; b < batch_size; b++) {
@@ -726,6 +737,21 @@ void _gaussian_mean(float* input, float* output, int batch_size, int num_actions
 }
 
 void forward_puffernet(PufferNet* net, float* observations, float* actions) {
+    if(net->pokemon) {
+        float* logits=pk_cpu_forward(net->pokemon,observations);
+        for(int b=0;b<net->num_agents;b++) {
+            float maximum=-INFINITY,sum=0,probability[168]={0};int last=-1;
+            for(int a=0;a<168;a++)if(observations[b*648+480+a]) {
+                if(!isfinite(logits[b*169+a])) {fprintf(stderr,"Non-finite Pokemon CPU logit\n");exit(1);}
+                maximum=fmaxf(maximum,logits[b*169+a]);last=a;
+            }
+            if(last<0) {fprintf(stderr,"Empty Pokemon CPU action mask\n");exit(1);}
+            for(int a=0;a<168;a++)if(observations[b*648+480+a])sum+=probability[a]=expf(logits[b*169+a]-maximum);
+            double sample=rand()/((double)RAND_MAX+1)*sum;actions[b]=(float)last;
+            for(int a=0;a<168;a++)if(probability[a]) {sample-=probability[a];if(sample<0) {actions[b]=(float)a;break;}}
+        }
+        return;
+    }
     if (net->kag) {
         softmax_multidiscrete(net->multidiscrete, kag_cpu_forward(net->kag, observations), actions);
         return;
@@ -745,6 +771,7 @@ void free_puffernet(PufferNet* net) {
     free(net->encoder);
     free(net->decoder);
     if (net->kag) kag_cpu_free(net->kag);
+    else if(net->pokemon)pk_cpu_free(net->pokemon);
     else free_mingru(net->mingru);
     if (net->multidiscrete) {
         free(net->multidiscrete->logit_sizes);
@@ -896,6 +923,8 @@ int main(int argc, char** argv) {
 #ifdef KG_POLICY_UNIT_HEADS
     PufferNet* net = make_kag_entity_puffernet(weights, env.num_agents,
         cpu_contract.hidden, cpu_contract.layers, cpu_contract.alignment, act_sizes, num_actions);
+#elif defined(PK_ABI_VERSION)
+    PufferNet* net=make_pokemon_puffernet(weights,env.num_agents,hidden_size,num_layers);
 #else
     PufferNet* net = make_puffernet(weights, env.num_agents, OBS_SIZE,
         hidden_size, num_layers, act_sizes, num_actions);

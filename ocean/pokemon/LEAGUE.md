@@ -1,5 +1,9 @@
 # One fixed named roster
 
+> Historical preset-policy workflow. The current ABI-3 launcher and examples are
+> in [FREEPICK.md](FREEPICK.md). `league.sh` now runs `freeleague.mjs`, not the old
+> Python orchestrator. Historical exports/checkpoints cannot seed ABI-3 policies.
+
 **Master + one specialist per named team = the league.** The default has exactly
 eleven members: one unrestricted master and ten specialists. Checkpoints are
 versions, not extra members. No selector adds historical versions or removes

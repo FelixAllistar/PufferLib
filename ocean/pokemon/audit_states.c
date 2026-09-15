@@ -3,7 +3,9 @@
 #include <assert.h>
 #include <inttypes.h>
 int main(int argc,char** argv) {
-    if(argc!=4) { fprintf(stderr,"Usage: audit_states BANK COLLECTION_SEED COLLECTION_GAMES\n"); return 1; }
+    if(argc!=4 && argc!=5) { fprintf(stderr,"Usage: audit_states BANK COLLECTION_SEED COLLECTION_GAMES [POLICY_COUNT=6]\n"); return 1; }
+    unsigned policies=argc==5?(unsigned)strtoul(argv[4],NULL,10):6;
+    if(policies<1 || policies>16) return 1;
     uint64_t seed=strtoull(argv[2],NULL,10);
     unsigned games=(unsigned)strtoul(argv[3],NULL,10);
     if(!games || games>50000 || !pk_state_load(&pk_state_bank,argv[1])) return 1;
@@ -15,7 +17,7 @@ int main(int argc,char** argv) {
     const unsigned caps[3]={1,4,3};
     printf("{\"version\":1,\"states\":%zu,\"phases\":[",pk_state_bank.count);
     for(int k=0;k<3;k++) {
-        unsigned species[150]={0}, exploratory=0, policy_pairs[6][6]={{0}};
+        unsigned species[150]={0}, exploratory=0, policy_pairs[16][16]={{0}};
         int min_turn=100000,max_turn=0,min_alive[2]={6,6},max_alive[2]={0};
         double alive_sum[2]={0},turn_sum=0;
         for(unsigned i=0;i<pk_state_bank.header.counts[k];i++) {
@@ -25,10 +27,10 @@ int main(int argc,char** argv) {
             uint64_t stream=seed+number*increment;
             if(pk_random(&stream)!=g->battle_seed || stream!=g->rng) return 1;
             exploratory+=number%8==7;
-            policy_pairs[number%6][(number/6)%6]++;
+            policy_pairs[number%policies][(number/policies)%policies]++;
             int alive[2]={0};
             for(int p=0;p<2;p++) for(int j=0;j<6;j++) {
-                species[pk_species(g->teams[p][j])]++;
+                species[g->teams[p][j].species]++;
                 alive[p]+=g->obs[p][16+32*j+1]>0;
             }
             int expected=g->updates==0?0:alive[0]<=3 || alive[1]<=3?2:1;
@@ -45,7 +47,7 @@ int main(int argc,char** argv) {
         }
         unsigned distinct=0,pairs=0;
         for(int i=1;i<=149;i++) distinct+=species[i]>0;
-        for(int a=0;a<6;a++) for(int b=0;b<6;b++) pairs+=policy_pairs[a][b]>0;
+        for(unsigned a=0;a<policies;a++) for(unsigned b=0;b<policies;b++) pairs+=policy_pairs[a][b]>0;
         double n=pk_state_bank.header.counts[k];
         printf("%s{\"phase\":%d,\"states\":%.0f,\"distinct_species\":%u,\"policy_pairs\":%u,"
                "\"exploratory_states\":%u,\"mean_turn\":%.3f,\"min_turn\":%d,\"max_turn\":%d,"

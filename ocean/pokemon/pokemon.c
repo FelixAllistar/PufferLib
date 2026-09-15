@@ -8,9 +8,9 @@ static void pk_teams(const PKGame* game) {
     for (int p = 0; p < 2; p++) {
         printf("P%d: ", p + 1);
         for (int i = 0; i < 6; i++) {
-            int set = game->teams[p][i];
-            printf("\n  %s%s: ", pk_set_name(set), i ? "" : " [lead]");
-            for (int m = 0; m < 4; m++) printf("%s%s", m ? "/" : "", pk_move_name(pk_set_move(set, m)));
+            const PKMon* mon = &game->teams[p][i];
+            printf("\n  %s%s: ", pk_species_names[mon->species], i ? "" : " [lead]");
+            for (int m = 0; m < 4; m++) printf("%s%s", m ? "/" : "", pk_move_name(mon->moves[m]));
         }
         putchar('\n');
     }
@@ -27,6 +27,7 @@ static double pk_match(PKPolicy* a, PKPolicy* b, int games, uint64_t seed, int d
     pk_same_rules(a, b);
     // Scores/watch are always for the original game, even for bank-trained models.
     puf_ini_put(&a->ini,"env.reset_state_prob","0");
+    puf_ini_put(&a->ini,"env.force_core_combos","0");
     Env env = {0};
     puf_init(&env, puf_ini_section(&a->ini, "env", 0));
     int wins = 0, losses = 0, draws = 0, timeouts = 0;
@@ -37,7 +38,10 @@ static double pk_match(PKPolicy* a, PKPolicy* b, int games, uint64_t seed, int d
     for (int game = 0; watch || game < games; game++) {
         int seat_a = game & 1;
         PKPolicy* players[2] = {seat_a ? b : a, seat_a ? a : b};
-        for (int p = 0; p < 2; p++) pk_parse_fixed_team(&env.game, p, players[p]->team);
+        for (int p = 0; p < 2; p++) {
+            pk_parse_fixed_team(&env.game,p,players[p]->team);
+            pk_parse_lead(&env.game,p,players[p]->lead);
+        }
         env.game.rng = seed + (uint64_t)game * UINT64_C(0x9e3779b97f4a7c15);
         pk_reset_policy(a, seed + 2 * (uint64_t)game);
         pk_reset_policy(b, seed + 2 * (uint64_t)game + 1);
@@ -64,7 +68,7 @@ static double pk_match(PKPolicy* a, PKPolicy* b, int games, uint64_t seed, int d
                 if (watch) next_step = GetTime() + delay;
             }
             if (watch) {
-                if (!printed && env.game.picks == 6) { pk_teams(&env.game); printed = 1; }
+                if (!printed && env.game.phase == PK_PHASE_BATTLE) { pk_teams(&env.game); printed = 1; }
                 puf_render(&env);
             }
         }
@@ -102,7 +106,8 @@ int main(int argc, char** argv) {
     if (argc < 2 || !strcmp(argv[1], "--help")) {
         printf("Eval profiles: --profile compact summary; --profile-json per-game raw JSON for tools.\n");
         printf("--profile-both-json: both policies' realized profiles from the same games (PK_SIDE A/B tags).\n");
-        printf("Fixed teams (eval/watch): --team-a=id,id,id,id,id,id --team-b=...; None means unrestricted.\n");
+        printf("Species constraints: --team-a=species:name,... --team-b=...; None means unrestricted.\n");
+        printf("Lead overrides: --lead-a=Jynx --lead-b=None. Saved team/lead bindings are used by default.\n");
         printf("Usage:\n  %s watch [latest|A.bin|random] [B.bin|random] [--emag]\n  %s eval [latest|A.bin] [B.bin|random] [--games=256]\n  %s matrix A.bin B.bin [C.bin ...] [--games=256]\nOptions: --seed=N --deterministic --emag env.KEY=VALUE\nWatch: Space pause, N single step, Up/Down speed, Enter skip result.\n", argv[0], argv[0], argv[0]);
         return 0;
     }
@@ -111,11 +116,15 @@ int main(int argc, char** argv) {
     char* paths[64], *overrides[64];
     const char* team_a = NULL;
     const char* team_b = NULL;
+    const char* lead_a = NULL;
+    const char* lead_b = NULL;
     int count = 0, override_count = 0, games = 256, deterministic = 0, emag = 0;
     uint64_t seed = 42;
     for (int i = 2; i < argc; i++) {
         if (!strncmp(argv[i], "--team-a=", 9)) team_a = argv[i] + 9;
         else if (!strncmp(argv[i], "--team-b=", 9)) team_b = argv[i] + 9;
+        else if (!strncmp(argv[i], "--lead-a=", 9)) lead_a = argv[i] + 9;
+        else if (!strncmp(argv[i], "--lead-b=", 9)) lead_b = argv[i] + 9;
         else if (!strcmp(argv[i], "--profile-both-json")) profile_enabled = 3;
         else if (!strcmp(argv[i], "--profile")) profile_enabled = 1;
         else if (!strcmp(argv[i], "--profile-json")) profile_enabled = 2;
@@ -137,8 +146,10 @@ int main(int argc, char** argv) {
     if (!matrix && count != 2) return 1;
     PKPolicy* policies = calloc(count, sizeof(PKPolicy));
     for (int i = 0; i < count; i++) pk_load_policy(policies + i, paths[i], emag, override_count, overrides);
-    if (matrix && (team_a || team_b)) { fprintf(stderr, "Team overrides require eval/watch\n"); return 1; }
+    if (matrix && (team_a || team_b || lead_a || lead_b)) { fprintf(stderr, "Team/lead overrides require eval/watch\n"); return 1; }
     if (team_a) snprintf(policies[0].team, sizeof(policies[0].team), "%s", team_a);
+    if (lead_a) snprintf(policies[0].lead, sizeof(policies[0].lead), "%s", lead_a);
+    if (lead_b) snprintf(policies[1].lead, sizeof(policies[1].lead), "%s", lead_b);
     if (team_b) snprintf(policies[1].team, sizeof(policies[1].team), "%s", team_b);
     if (matrix) {
         for (int i = 0; i < count; i++) for (int j = i + 1; j < count; j++) {

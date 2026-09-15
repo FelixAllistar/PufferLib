@@ -5,13 +5,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
-#define PK_STATE_VERSION 1
-#define PK_STATE_SCHEMA "pkmn-9b88fd6c5467f703c38951d5b2e8a660314d410b-bridge-states-v1"
+#define PK_STATE_VERSION 2
+#define PK_STATE_SCHEMA "pkmn-9b88fd6c5467f703c38951d5b2e8a660314d410b-freepick-states-v2"
 typedef struct {
     char magic[8];
     uint32_t version, record_bytes, counts[3], reserved;
     uint64_t checksum;
-    char catalog[72], schema[80];
+    char rules[72], schema[80];
 } PKStateHeader;
 typedef struct {
     PKStateHeader header;
@@ -26,12 +26,12 @@ static inline uint64_t pk_state_hash(const void* data, size_t bytes) {
     return h;
 }
 static inline int pk_state_valid(const PKGame* g) {
-    if (g->picks!=6 || g->result || g->invalid_actions || g->reset_source ||
+    if (g->picks!=6 || g->phase!=PK_PHASE_BATTLE || g->result || g->invalid_actions || g->reset_source ||
             g->updates<0 || g->updates>=g->max_updates || g->max_updates!=512 ||
-            g->draft!=1 || g->selecting_set || g->fixed_enabled[0] || g->fixed_enabled[1]) return 0;
+            g->draft!=1 || g->fixed_enabled[0] || g->fixed_enabled[1] || g->fixed_lead[0] || g->fixed_lead[1]) return 0;
     for (int p=0;p<2;p++) for (int i=0;i<6;i++) {
-        if (g->teams[p][i]>=PK_SETS) return 0;
-        for(int j=0;j<i;j++) if(pk_species(g->teams[p][i])==pk_species(g->teams[p][j])) return 0;
+        if (!pk_mon_legal(&g->teams[p][i])) return 0;
+        for(int j=0;j<i;j++) if(g->teams[p][i].species==g->teams[p][j].species) return 0;
     }
     PKGame check = *g;
     pk_game_observe(&check);
@@ -48,9 +48,9 @@ static inline int pk_state_load(PKStateBank* bank, const char* path) {
     if(!f) return 0;
     PKStateBank b={0};
     int ok=fread(&b.header,sizeof(b.header),1,f)==1;
-    if(!ok || memcmp(b.header.magic,"PKSTATE1",8) || b.header.version!=PK_STATE_VERSION ||
+    if(!ok || memcmp(b.header.magic,"PKSTATE2",8) || b.header.version!=PK_STATE_VERSION ||
             b.header.record_bytes!=sizeof(PKGame) || b.header.reserved ||
-            memcmp(b.header.catalog,PK_CATALOG_SHA,sizeof(PK_CATALOG_SHA)) ||
+            memcmp(b.header.rules,PK_RULES_SHA,sizeof(PK_RULES_SHA)) ||
             memcmp(b.header.schema,PK_STATE_SCHEMA,sizeof(PK_STATE_SCHEMA))) { fclose(f); return 0; }
     for(int k=0;k<3;k++) {
         if(!b.header.counts[k] || b.header.counts[k]>1000000) { fclose(f); return 0; }

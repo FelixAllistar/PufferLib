@@ -29,7 +29,7 @@ int main(void) {
             events+=env.behavior_delta[p][k]>0;
             cumulative[p][k]+=env.behavior_delta[p][k];
             assert(cumulative[p][k]<=1.000001);
-            if(!t[0] && env.game.picks==6) {
+            if(!t[0] && env.game.phase==PK_PHASE_BATTLE) {
                 float raw[2];pk_behavior(&env.game.battle,p,raw);
                 assert(fabs(cumulative[p][k]-pk_behavior_feature(raw[k],k))<1e-6);
             }
