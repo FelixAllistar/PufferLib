@@ -2096,6 +2096,8 @@ const char* puf_checkpoint_path_key(Ini* ini, const char* key,
     return out;
 }
 
+#include "kag_training_setup.h"
+
 void puf_save_tensor(FloatTensor weights, const char* path) {
     int64_t nbytes = numel(weights.shape) * sizeof(float);
     char* buf = (char*)malloc(nbytes);
@@ -3355,6 +3357,14 @@ void puf_dashboard_print(Ini* ini, PuffeRL* p, Dict* log, int epoch) {
             {"score", "opponent_score"},
             {"money", "opponent_money"},
             {"cash_gain", "objective_reward"},
+            {"start_money", "reset_fraction"},
+            {"root_money", "reset_money"},
+            {"root_cash_gain", "reset_cash_gain"},
+            {"root_crop_units", "reset_crop_units"},
+            {"root_animal_units", "reset_animal_units"},
+            {"root_land_purchases", "reset_land_purchases"},
+            {"root_steps", "reset_steps"},
+            {"start_plots", "ending_plots"},
             {"cash_flow_reward", "terminal_cash_reward"},
             {"growth_land_reward", "growth_crop_reward"},
             {"growth_animal_reward", "alive_reward"},
@@ -5028,15 +5038,34 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
     snprintf(log_dir, sizeof(log_dir), "%s/%s",
         puf_ini_get_str(ini, "base", "log_dir"),
         puf_ini_get_str(ini, "base", "env_name"));
-    if (ctx->artifact_owner) {
-        mkdir_p(checkpoint_dir);
-        mkdir_p(log_dir);
-    }
-
-    PuffeRL* pufferl = create_pufferl(ini, ctx);
     char resolved_path[4096];
     const char* load_path = puf_checkpoint_path_key(ini,
         "load_model_path", resolved_path, sizeof(resolved_path));
+    kag_training_preflight(ini, load_path);
+    int kag_setup = !strcmp(puf_ini_get_str(ini, "base", "env_name"), "kaggriculture");
+    if (kag_setup) kag_check_output_directory(checkpoint_dir);
+    if (ctx->artifact_owner) {
+        mkdir_p(checkpoint_dir);
+        mkdir_p(log_dir);
+        if (kag_setup) {
+            char setup_path[4096];
+            snprintf(setup_path, sizeof(setup_path), "%s/%s.start.ini", log_dir, run_id);
+            FILE* setup = fopen(setup_path, "wx");
+            if (!setup) {
+                if (errno == EEXIST) fprintf(stderr,
+                    "Startup record already exists at %s. Set base.run_id=None or choose a new run ID; the existing record was preserved.\n", setup_path);
+                else perror(setup_path);
+                exit(1);
+            }
+            fprintf(setup, "# Effective startup settings; command-line overrides included.\n# Resolved weights: %s\n",
+                load_path ? load_path : "None");
+            puf_ini_write(setup, ini);
+            fclose(setup);
+            printf("Effective config saved to %s\n", setup_path);
+        }
+    }
+
+    PuffeRL* pufferl = create_pufferl(ini, ctx);
     if (load_path) {
         kag_executor_check_load(load_path, kag_observation_contract(ini), 0);
         puf_load_weights_into(pufferl->master_weights, pufferl->param_puf,
@@ -5886,7 +5915,7 @@ int main(int argc, char** argv) {
     setbuf(stdout, NULL);
     setbuf(stderr, NULL);
     if (argc < 3) {
-        fprintf(stderr, "usage: %s train|eval|trace|eval_bot|match|league|sweep ENV [section.key=value ...]\n", argv[0]);
+        fprintf(stderr, "usage: %s train|check|eval|trace|eval_bot|match|league|sweep ENV [section.key=value ...]\n", argv[0]);
         exit(1);
     }
 
@@ -5898,7 +5927,12 @@ int main(int argc, char** argv) {
 #endif
     TrainContext ctx = {.world_size = 1, .artifact_owner = 1};
 
-    if (strcmp(mode, "trace") == 0) {
+    if (strcmp(mode, "check") == 0) {
+        char resolved[4096];
+        const char* load = puf_checkpoint_path_key(&ini, "load_model_path", resolved, sizeof(resolved));
+        kag_training_preflight(&ini, load);
+        printf("Configuration/checkpoint check passed. No GPU allocation or training performed.\n");
+    } else if (strcmp(mode, "trace") == 0) {
 #ifdef PUFFER_GPU_ENV
         fprintf(stderr, "trace is only supported by the native CPU environment build\n");
         return 1;
