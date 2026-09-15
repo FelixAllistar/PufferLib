@@ -26,6 +26,7 @@ public:
 	blip_time_t emulate_frame();
 	void close();
 	void set_idle_skip(bool enabled) { cpu::idle_skip_enabled = enabled; }
+	bool set_rom_blocks(bool enabled) { return cpu::set_rom_blocks(enabled); }
 	
 	void save_state( Nes_State* ) const;
 	void save_state( Nes_State_* ) const;

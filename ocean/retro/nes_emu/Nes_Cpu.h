@@ -52,6 +52,9 @@ public:
 	};
 	
 	result_t run( nes_time_t end_time );
+	// Optional immutable mapper-0 ROM specialization. False means unavailable
+	// or the mapped PRG differs from the build's fingerprint.
+	bool set_rom_blocks( bool enabled );
 	
 	nes_time_t time() const             { return clock_count; }
 	void reduce_limit( int offset );
@@ -66,6 +69,9 @@ public:
 	enum { bad_opcode = 0xD2 };
 	
 private:
+	struct RomRegisters { unsigned pc; int a,x,y,sp,status,c,nz; };
+	template<int Page> void run_rom_page(RomRegisters&);
+	void run_rom_blocks(RomRegisters&);
 	uint8_t const* code_map [page_count + 1];
 	nes_time_t clock_limit;
 	nes_time_t clock_count;
@@ -83,6 +89,7 @@ public:
 	// changes no registers or memory; only whole three-cycle iterations may
 	// be folded, and never across the next scheduled CPU/PPU/APU event.
 	bool idle_skip_enabled = false;
+	bool rom_blocks_enabled = false;
 	
 	// low_mem is a full page size so it can be mapped with code_map
 	uint8_t low_mem [page_size > 0x800 ? page_size : 0x800];

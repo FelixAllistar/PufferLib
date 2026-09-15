@@ -41,7 +41,13 @@ void puf_normal_init(PrecisionTensor* dst, float std, ulong seed, cudaStream_t s
 #endif
 
 // Override encoder vtable for known ocean environments. No-op for unknown envs.
+#ifdef PUFFER_RETRO_CNN
+#include "../ocean/retro/retro_encoder.cu"
+#endif
 static void create_custom_encoder(const char* env_name, Encoder* enc) {
+#ifdef PUFFER_RETRO_CNN
+    if (strcmp(env_name, "retro") == 0) { create_retro_encoder(enc); return; }
+#endif
 #ifdef PUFFER_POKEMON_SEMANTIC
     if(!strcmp(env_name,"pokemon")) {create_pokemon_encoder(enc);return;}
 #endif

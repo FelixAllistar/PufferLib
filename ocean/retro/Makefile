@@ -27,6 +27,6 @@ reference-probe: $(BUILD)/reference_probe
 	cd $(ROOT) && $(abspath $(BUILD)/reference_probe)
 -include $(OBJECTS:.o=.d)
 
-$(BUILD)/sweep_eval: sweep_eval.cpp retro.h retro_obs.h retro_sweep_config.h $(ROOT)/src/puffercpu.h $(LIB)
+$(BUILD)/sweep_eval: sweep_eval.cpp retro.h retro_obs.h retro_sweep_config.h retro_policy_cpu.h retro_policy_shape.h $(ROOT)/src/puffercpu.h $(LIB)
 	$(CXX) $(CXXFLAGS) -mavx2 -mfma $(INCLUDES) $< $(LIB) $(LDLIBS) -o $@
 sweep-tools: $(BUILD)/sweep_eval

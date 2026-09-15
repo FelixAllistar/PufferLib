@@ -69,6 +69,23 @@ while [ $i -lt ${#args[@]} ]; do
     i=$((i+1))
 done
 
+if [ "$ENV" = "retro" ]; then
+    if [ "${RETRO_LEGACY:-0}" = "1" ]; then
+        echo "Legacy retro backends are retired; only full-screen ROM observations are supported" >&2
+        exit 1
+    fi
+    if [ "${MODE:-native}" = "native" ] || [ "$MODE" = "fast" ]; then
+        RETRO_ROM_BLOCKS="${RETRO_ROM_BLOCKS:-1}"
+    fi
+fi
+if [ "${RETRO_ROM_BLOCKS:-0}" = "1" ]; then
+    if [ "$ENV" != "retro" ] || [ "${RETRO_LEGACY:-0}" = "1" ] || [ "$USE_GPU_ENV" = "1" ] \
+        || { [ "${MODE:-native}" != "native" ] && [ "${MODE:-native}" != "fast" ]; }; then
+        echo "Error: RETRO_ROM_BLOCKS=1 supports only retro native or --fast builds" >&2
+        exit 1
+    fi
+fi
+
 if [ "$BUILD_CARDS" = "1" ] && [ -z "${GS_NUM_CARDS:-}" ]; then
     echo "Error: --cards requires a value, e.g. --cards 13 or --cards=13" >&2
     exit 1
@@ -251,6 +268,7 @@ elif [ "$ENV" = "arpg" ]; then
 elif [ -d "ocean/$ENV" ]; then
     SRC_DIR="ocean/$ENV"
     if [ "$ENV" = "retro" ]; then
+        EXTRA_CFLAGS+=(-DPUFFER_RETRO_CNN)
         EXTRA_LDFLAGS+=(-ldl)
         EXTRA_SRC+=" ocean/retro/nes_emu/*.cpp"
         INCLUDES+=(-I./ocean/retro/nes_emu -I./ocean/retro)
@@ -386,6 +404,11 @@ if [ "$ENV" = "retro" ] && [ "${RETRO_LEGACY:-0}" != "1" ] && [ "$MODE" != "loca
     # compile the policy and thin environment wrapper, not thirty emulator TUs.
     make -C ocean/retro library sweep-tools -j2
     EXTRA_SRC="build/retro/libquicknes.a"
+    if [ "${RETRO_ROM_BLOCKS:-0}" = "1" ]; then
+        make -C ocean/retro/batch all
+        EXTRA_SRC="build/retro_batch/libquicknes_batch.a"
+        EXTRA_CFLAGS+=(-DRETRO_DEFAULT_CPU_BLOCKS)
+    fi
 fi
 # Every Goofspiel entry point must use the same observation/action ABI.
 if [ "$ENV" = "goofspiel" ]; then
@@ -556,30 +579,34 @@ fi
 MODE=${MODE:-native}
 
 if [ "$MODE" = "encoder_test" ]; then
-    if [ "$ENV" != "shenaniguns3d" ]; then
-        echo "Error: --encoder-test is only available for shenaniguns3d" >&2
+    if [ "$ENV" != "shenaniguns3d" ] && [ "$ENV" != "retro" ]; then
+        echo "Error: --encoder-test is only available for shenaniguns3d and retro" >&2
         exit 1
     fi
     TEST_OMP_FLAG=()
     if [ "${HEADLESS:-0}" != "1" ]; then
         TEST_OMP_FLAG=(-Xcompiler=-fopenmp)
     fi
-    echo "Compiling shenaniguns3d encoder test ($ARCH)..."
+    echo "Compiling $ENV encoder test ($ARCH)..."
+    RETRO_TEST_FLAGS=()
+    if [ "$ENV" = "retro" ] && [ "${RETRO_TEST_BF16:-0}" = "1" ]; then
+        RETRO_TEST_FLAGS=(-DRETRO_TEST_BF16)
+    fi
     $NVCC $NVCC_OPT -arch=$ARCH -std=c++17 \
-        -I. -Isrc -Iocean/shenaniguns3d -Ivendor \
+        -I. -Isrc -I"ocean/$ENV" -Ivendor \
         "${INCLUDES[@]}" \
         -I$CUDA_HOME/include -I$CUDA_HOME/include/cccl $NCCL_IFLAG \
         -Xcompiler=-DPLATFORM_DESKTOP \
         "${TEST_OMP_FLAG[@]}" \
         "${EXTRA_CFLAGS[@]}" \
-        tests/test_shenaniguns3d_encoder.cu $EXTRA_SRC \
+        "${RETRO_TEST_FLAGS[@]}" "tests/test_${ENV}_encoder.cu" $EXTRA_SRC \
         ${RAYLIB_A:+"$RAYLIB_A"} \
         -L$CUDA_HOME/lib64 $NCCL_LFLAG \
         "${EXTRA_LDFLAGS[@]}" \
         -lcudart -lcublas -lcurand -lm -lpthread $OMP_LIB \
         "${STANDALONE_LDFLAGS[@]}" \
-        -o test_shenaniguns3d_encoder
-    echo "Built: ./test_shenaniguns3d_encoder"
+        -o "test_${ENV}_encoder"
+    echo "Built: ./test_${ENV}_encoder"
     exit 0
 fi
 
@@ -616,6 +643,15 @@ if [ "$MODE" = "native" ]; then
     if [ "$ENV" = "retro" ]; then
         RETRO_HOST_FLAG=(-Xcompiler=-march=native)
     fi
+    NATIVE_LINK_OUTPUT="${NATIVE_OUTPUT_NAME:-puffer}"
+    RETRO_LAUNCHER_STAGE=""
+    if [ "$ENV" = "retro" ] && [ "$NATIVE_LINK_OUTPUT" = "puffer" ]; then
+        # Compile both entry points before publishing either one. Rename the
+        # finished binaries so rebuilding never writes through a running job's
+        # executable. Explicit candidate output names leave the launchers alone.
+        RETRO_LAUNCHER_STAGE="$(mktemp -d ./build/retro-launchers.XXXXXX)"
+        NATIVE_LINK_OUTPUT="$RETRO_LAUNCHER_STAGE/puffer"
+    fi
     $NVCC $NVCC_OPT -arch=$ARCH -std=c++17 \
         -I. -Isrc -I$SRC_DIR -Ivendor \
         "${INCLUDES[@]}" \
@@ -638,8 +674,22 @@ if [ "$MODE" = "native" ]; then
         "${EXTRA_LDFLAGS[@]}" \
         -lcudart -lnccl -lnvidia-ml -lcublas -lcusolver -lcurand \
         -lm -lpthread $OMP_LIB "${STANDALONE_LDFLAGS[@]}" \
-        -o "${NATIVE_OUTPUT_NAME:-puffer}"
-    echo "Built: ./${NATIVE_OUTPUT_NAME:-puffer}"
+        -o "$NATIVE_LINK_OUTPUT"
+    if [ -n "$RETRO_LAUNCHER_STAGE" ]; then
+        if [ "${HEADLESS:-0}" != "1" ]; then
+            OUTPUT_NAME="$RETRO_LAUNCHER_STAGE/retro" bash "$0" retro --fast
+            mv -f -- "$RETRO_LAUNCHER_STAGE/retro" retro
+        fi
+        mv -f -- "$RETRO_LAUNCHER_STAGE/puffer" puffer
+        rmdir -- "$RETRO_LAUNCHER_STAGE"
+        if [ "${HEADLESS:-0}" != "1" ]; then
+            echo "Built: ./puffer + ./retro"
+        else
+            echo "Built: ./puffer"
+        fi
+    else
+        echo "Built: ./${NATIVE_OUTPUT_NAME:-puffer}"
+    fi
     if { [ "$ENV" = "kaggriculture" ] || [ "$ENV" = "pokemon" ]; } && [ "${HEADLESS:-0}" != "1" ]; then
         bash "$0" "$ENV" --fast
     fi

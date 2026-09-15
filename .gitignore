@@ -225,6 +225,13 @@ box2d*/
 
 # Native build/test products
 /puffer
+/puffer_retro_batch
+/puffer_retro_candidate
+/puffer_retro_fullscreen_candidate
+/puffer_retro_cnn_candidate
+/test_retro_encoder
+/retro
+/retro_batch
 /pokemon
 /arpg
 /bomberman
@@ -250,6 +257,11 @@ box2d*/
 /ocean/puffer_survivors/tests/bench_cuda_capacity_profile
 /ocean/puffer_survivors/tests/bench_cuda_profile
 /exports/
+
+# Retro ROM compiler and validation sources (generated ROM blocks stay in build/).
+!ocean/retro/batch/generate_blocks.py
+!ocean/retro/batch/benchmark_training.py
+!tests/test_native_retro_runtime.py
 
 # Generated visual-editing scratch files.
 /tmp/imagegen/
