@@ -80,23 +80,88 @@ and `ending_shed_units` help distinguish growing from actually cashing out.
 
 ## Running experiments
 
-The launcher leaves `config/kaggriculture.ini` untouched, supplies the v3/dense
-preset, and generates a unique fresh run ID. Remaining arguments override the
-preset. Other training hyperparameters and reset/opponent mixtures come from
-your INI; use only fresh v3 external checkpoints, or disable that external pool.
+Both plain training and the launcher use `config/kaggriculture.ini`. The launcher
+only selects the requested controller, sets frozen controllers to inherit, and
+generates a new output run ID. **It no longer overrides rewards, score features,
+optimizer settings, reset mixtures, or `base.load_model_path`.** Use the explicit
+`--dense-preset` flag to restore the reward table above; trailing arguments win.
+
+Check the effective controller, checkpoint and rewards without allocating GPU
+memory or starting training:
 
 ```bash
-# Explicit structured macro executor + dense rewards:
-bash ocean/kaggriculture/dense_experiment.sh 2 1
-# Individual job requests + the same rewards:
+./puffer check kaggriculture
+./puffer train kaggriculture
+```
+
+Training prints those settings and saves them in `logs/kaggriculture/RUN.start.ini`
+before allocating the model. Set `base.run_id=None` for automatic new output IDs.
+Reusing an output directory that already contains checkpoints is rejected rather
+than overwriting old weights. Loading `.bin` weights is a warm start, not a restore
+of optimizer state or elapsed training steps. `latest` searches across runs: use
+an explicit checkpoint path when switching experiments. Its mode/executor/score
+features must match your configuration; to change controllers, start fresh with
+`base.load_model_path=None`. External opponent checkpoints carry their own modes.
+
+A fresh mode-3 configuration is:
+
+```ini
+[base]
+load_model_path = None
+run_id = None
+[env]
+observation_version = 3
+frozen_observation_version = 3
+macro_mode = 3
+macro_executor_version = 0
+frozen_macro_mode = -1
+frozen_macro_executor_version = -1
+macro_decision_interval = 1
+frozen_macro_decision_interval = -1
+macro_score_features = 0
+frozen_macro_score_features = -1
+```
+
+`-0` is zero, **not** inheritance. Executor 1 is invalid in mode 3. Score features
+are handcrafted macro value hints for modes 1/2, not a general encoder-quality
+switch; use 0 for a fresh mode-3 run. All controllers still use the same network
+shape (404,440 parameters at H128/L3); this repair does not change the architecture.
+
+```bash
+# Structured macro executor, using rewards/load path from your INI:
+bash ocean/kaggriculture/dense_experiment.sh 2 1 base.load_model_path=None
+# Individual job requests, also using your INI rewards:
 bash ocean/kaggriculture/dense_experiment.sh 3 0
 # Legacy sticky macros, older candidate estimates, and optional PBRS:
 bash ocean/kaggriculture/dense_experiment.sh 1 0 \
   env.macro_decision_interval=4 env.macro_score_features=1 env.reward_pbrs_scale=1
 # Dense cash only:
-bash ocean/kaggriculture/dense_experiment.sh 2 1 \
+bash ocean/kaggriculture/dense_experiment.sh --dense-preset 2 1 \
   env.reward_growth_land=0 env.reward_growth_crop=0 env.reward_growth_animal=0 env.reward_alive_daily=0
 ```
+
+## Interpreting replay-start metrics
+
+`money`/`score` remain final cash, including cash inherited at reset. `start_money`
+and `cash_gain` separate those quantities. Production, successful plant/animal
+placements, trades, deaths, watering coverage, and `land_purchases` now count only
+progress **after reset**, not the expert's earlier replay activity. The original
+KGState history is preserved for observations, market context and replay parity.
+Ending assets (`plants_alive`, `animals_alive`, `ending_plots`, shed stock) are
+still actual end-state totals; `start_plots` shows inherited land.
+
+Actions and duration are accumulated over the same completed episode window;
+`orders_per_turn` uses actual turns played, not the replay's absolute game step.
+`root_*` and `reset_*` fields report separate conditional averages for non-bank
+and replay-bank starts. `reset_fraction` gives their mixture; a zero source fraction
+means there were no completed episodes for that source, not measured zero skill.
+Market-opportunity classifications retain the game's historical demand context,
+but their production/trade responses exclude inherited player activity.
+
+These are diagnostic fixes, not reward changes. Cash/growth rewards already used
+reset baselines. The defaults have no separate death/neglect penalty; purchases
+reduce cash reward, and optional quality can penalize underused land. For a clean
+cash-only comparison, set quality/PBRS/growth/alive coefficients to zero explicitly.
 
 ## Feasibility masks
 

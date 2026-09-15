@@ -2,6 +2,7 @@
 
 #include "ini.h"
 #include <unistd.h>
+#include <math.h>
 #include "../ocean/kaggriculture/entity_contract.h"
 
 /* Host-side policy/observation association for end-of-training two-seat eval.
@@ -29,6 +30,27 @@ static inline int kag_controller_valid(int mode, int executor) {
         && (!executor || mode == 1 || mode == 2);
 }
 
+static inline int kag_contract_int(Dict* env, const char* key, int fallback,
+        int low, int high) {
+    double value = dict_find(env, key) ? dict_get(env, key) : fallback;
+    if (!isfinite(value) || value < low || value > high || value != (int)value) {
+        fprintf(stderr, "Invalid env.%s=%g: expected an integer from %d through %d.\n",
+            key, value, low, high);
+        exit(1);
+    }
+    return (int)value;
+}
+
+static inline void kag_check_controller(int mode, int executor, int frozen) {
+    if (kag_controller_valid(mode, executor)) return;
+    fprintf(stderr, "Incompatible Kaggriculture %scontroller: macro_mode=%d, executor=%d. "
+        "Modes 0 and 3 require executor 0; executor 1 only works with modes 1/2. "
+        "Set env.%smacro_executor_version=0%s.\n",
+        frozen ? "frozen " : "learner ", mode, executor, frozen ? "frozen_" : "",
+        frozen ? " or set BOTH frozen_macro_mode and frozen_macro_executor_version to -1 to inherit" : "");
+    exit(1);
+}
+
 static inline KagObservationContract kag_observation_contract(Ini* ini) {
     KagObservationContract result = {0, KAG_OBSERVATION_ENTITIES, -1, 0, -1, 0, 0, 8,
         3, -1, 1, -1, 0, -1};
@@ -45,32 +67,29 @@ static inline KagObservationContract kag_observation_contract(Ini* ini) {
         exit(1);
     }
     Dict* env = puf_ini_section(ini, "env", 0);
-    result.learner = dict_find(env, "observation_version")
-        ? (int)dict_get(env, "observation_version") : KAG_OBSERVATION_ENTITIES;
-    result.frozen = dict_find(env, "frozen_observation_version")
-        ? (int)dict_get(env, "frozen_observation_version") : -1;
-    result.executor = dict_find(env, "macro_executor_version")
-        ? (int)dict_get(env, "macro_executor_version") : 0;
-    result.frozen_executor = dict_find(env, "frozen_macro_executor_version")
-        ? (int)dict_get(env, "frozen_macro_executor_version") : -1;
-    result.mode = dict_find(env, "macro_mode") ? (int)dict_get(env, "macro_mode") : 3;
-    result.frozen_mode = dict_find(env, "frozen_macro_mode") ? (int)dict_get(env, "frozen_macro_mode") : -1;
-    result.interval = dict_find(env, "macro_decision_interval") ? (int)dict_get(env, "macro_decision_interval") : 1;
-    result.frozen_interval = dict_find(env, "frozen_macro_decision_interval") ? (int)dict_get(env, "frozen_macro_decision_interval") : -1;
-    result.score_features = dict_find(env, "macro_score_features") ? (int)dict_get(env, "macro_score_features") : 0;
-    result.frozen_score_features = dict_find(env, "frozen_macro_score_features") ? (int)dict_get(env, "frozen_macro_score_features") : -1;
-    int fm = result.frozen_mode < 0 ? result.mode : result.frozen_mode;
-    int fe = result.frozen_executor < 0 ? result.executor : result.frozen_executor;
+    result.learner = kag_contract_int(env, "observation_version", KAG_OBSERVATION_ENTITIES, 0, 3);
+    result.frozen = kag_contract_int(env, "frozen_observation_version", -1, -1, 3);
     if (result.learner != KAG_OBSERVATION_ENTITIES
-            || (result.frozen != -1 && result.frozen != KAG_OBSERVATION_ENTITIES)
-            || result.frozen_mode < -1 || result.frozen_executor < -1
-            || !kag_controller_valid(result.mode, result.executor) || !kag_controller_valid(fm, fe)
-            || result.interval < 1 || (result.frozen_interval != -1 && result.frozen_interval < 1)
-            || result.score_features < 0 || result.score_features > 1
-            || result.frozen_score_features < -1 || result.frozen_score_features > 1) {
-        fprintf(stderr, "Kaggriculture requires fresh entity v3 observations; modes 0..3, executor 0/1 (1 applies to modes 1/2), positive intervals, score_features 0/1; frozen settings may inherit with -1\n");
+            || (result.frozen != -1 && result.frozen != KAG_OBSERVATION_ENTITIES)) {
+        fprintf(stderr, "This build requires env.observation_version=3 and frozen_observation_version=3 (or -1). Old v0/v1/v2 observations are unsupported.\n");
         exit(1);
     }
+    result.mode = kag_contract_int(env, "macro_mode", 3, 0, 3);
+    result.executor = kag_contract_int(env, "macro_executor_version", 0, 0, 1);
+    result.frozen_mode = kag_contract_int(env, "frozen_macro_mode", -1, -1, 3);
+    result.frozen_executor = kag_contract_int(env, "frozen_macro_executor_version", -1, -1, 1);
+    result.interval = kag_contract_int(env, "macro_decision_interval", 1, 1, 1000000);
+    result.frozen_interval = kag_contract_int(env, "frozen_macro_decision_interval", -1, -1, 1000000);
+    if (result.frozen_interval == 0) {
+        fprintf(stderr, "env.frozen_macro_decision_interval=0 is invalid; use -1 to inherit or a positive interval.\n");
+        exit(1);
+    }
+    result.score_features = kag_contract_int(env, "macro_score_features", 0, 0, 1);
+    result.frozen_score_features = kag_contract_int(env, "frozen_macro_score_features", -1, -1, 1);
+    int fm = result.frozen_mode < 0 ? result.mode : result.frozen_mode;
+    int fe = result.frozen_executor < 0 ? result.executor : result.frozen_executor;
+    kag_check_controller(result.mode, result.executor, 0);
+    kag_check_controller(fm, fe, 1);
     if (result.mode != 1) result.interval = 1;
     if (fm != 1 && result.frozen_interval >= 0) result.frozen_interval = 1;
     return result;
@@ -191,6 +210,7 @@ static inline void kag_executor_check_load(const char* checkpoint,
         if (actual != expected[i]) {
             fprintf(stderr, "Policy contract mismatch: %s%s must contain %d (got %d).\n",
                 checkpoint, suffixes[i], expected[i], actual);
+            fprintf(stderr, "Loading weights does not change their controller. Match the checkpoint's mode, executor, score_features and H/L, or use base.load_model_path=None for a fresh policy. Use an explicit checkpoint path when switching experiments.\n");
             exit(1);
         }
     }

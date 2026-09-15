@@ -401,6 +401,8 @@ __device__ static void kag_cuda_transition(Env* env, Env* shells,
         env->agents[player].terminals[0] = 1.0f;
     }
 
+    KagEpisodeCounters metrics[2] = {kag_metrics_delta(env, 0), kag_metrics_delta(env, 1)};
+    kag_metrics_finish(env, model_player, model_win, &metrics[model_player]);
     env->log.perf += model_win;
     kag_reward_log(env, model_player);
     env->log.score += (float)model_money;
@@ -408,21 +410,21 @@ __device__ static void kag_cuda_transition(Env* env, Env* shells,
     env->log.opponent_score += (float)opponent_money;
     env->log.money += (float)model_money;
     env->log.opponent_money += (float)opponent_money;
-    env->log.gdp += game->production_value[model_player];
-    env->log.opponent_gdp += game->production_value[1 - model_player];
-    env->log.production_units += game->production_units[model_player];
+    env->log.gdp += metrics[model_player].production_value;
+    env->log.opponent_gdp += metrics[1 - model_player].production_value;
+    env->log.production_units += metrics[model_player].production_units;
     env->log.opponent_production_units +=
-        game->production_units[1 - model_player];
-    env->log.successful_plants += game->planted_crops[model_player];
-    env->log.successful_animal_places += game->placed_animals[model_player];
-    env->log.sold_units += game->sold_units[model_player];
-    env->log.sales_revenue += game->sales_revenue[model_player];
-    env->log.bought_units += game->bought_units[model_player];
-    env->log.purchase_spend += game->purchase_spend[model_player];
+        metrics[1 - model_player].production_units;
+    env->log.successful_plants += metrics[model_player].planted_crops;
+    env->log.successful_animal_places += metrics[model_player].placed_animals;
+    env->log.sold_units += metrics[model_player].sold_units;
+    env->log.sales_revenue += metrics[model_player].sales_revenue;
+    env->log.bought_units += metrics[model_player].bought_units;
+    env->log.purchase_spend += metrics[model_player].purchase_spend;
     for (int item = 0; item < KG_NUM_PRODUCTS; item++) {
-        int produced = (int)game->production_product_units[model_player][item];
-        int sold = (int)game->sold_product_units[model_player][item];
-        float revenue = game->sold_product_revenue[model_player][item];
+        int produced = (int)metrics[model_player].production_product_units[item];
+        int sold = (int)metrics[model_player].sold_product_units[item];
+        float revenue = metrics[model_player].sold_product_revenue[item];
         env->log.ending_shed_units += game->players[model_player].shed[item];
         env->log.ending_shed_value += game->players[model_player].shed[item]
             * game->market.prices[item];
@@ -437,14 +439,14 @@ __device__ static void kag_cuda_transition(Env* env, Env* shells,
         }
     }
     env->log.strawberry_sold_units +=
-        game->sold_product_units[model_player][KG_ITEM_STRAWBERRY];
+        metrics[model_player].sold_product_units[KG_ITEM_STRAWBERRY];
     env->log.strawberry_sales_revenue +=
-        game->sold_product_revenue[model_player][KG_ITEM_STRAWBERRY];
+        metrics[model_player].sold_product_revenue[KG_ITEM_STRAWBERRY];
     env->log.milk_sold_units +=
-        game->sold_product_units[model_player][KG_ITEM_MILK];
+        metrics[model_player].sold_product_units[KG_ITEM_MILK];
     env->log.milk_sales_revenue +=
-        game->sold_product_revenue[model_player][KG_ITEM_MILK];
-    kag_log_hinge_opportunity(game, model_player, KG_ITEM_CARROT,
+        metrics[model_player].sold_product_revenue[KG_ITEM_MILK];
+    kag_log_hinge_opportunity(game, &metrics[model_player], model_player, KG_ITEM_CARROT,
         &env->log.carrot_opportunity_fraction,
         &env->log.carrot_opportunity_no_production_price,
         &env->log.carrot_opportunity_response,
@@ -453,7 +455,7 @@ __device__ static void kag_cuda_transition(Env* env, Env* shells,
         &env->log.carrot_opportunity_sold_units,
         &env->log.carrot_opportunity_sales_revenue,
         &env->log.carrot_opportunity_sale_price);
-    kag_log_hinge_opportunity(game, model_player, KG_ITEM_TOMATO,
+    kag_log_hinge_opportunity(game, &metrics[model_player], model_player, KG_ITEM_TOMATO,
         &env->log.tomato_opportunity_fraction,
         &env->log.tomato_opportunity_no_production_price,
         &env->log.tomato_opportunity_response,
@@ -462,7 +464,7 @@ __device__ static void kag_cuda_transition(Env* env, Env* shells,
         &env->log.tomato_opportunity_sold_units,
         &env->log.tomato_opportunity_sales_revenue,
         &env->log.tomato_opportunity_sale_price);
-    kag_log_hinge_opportunity(game, model_player, KG_ITEM_EGG,
+    kag_log_hinge_opportunity(game, &metrics[model_player], model_player, KG_ITEM_EGG,
         &env->log.egg_opportunity_fraction,
         &env->log.egg_opportunity_no_production_price,
         &env->log.egg_opportunity_response,
@@ -472,32 +474,30 @@ __device__ static void kag_cuda_transition(Env* env, Env* shells,
         &env->log.egg_opportunity_sales_revenue,
         &env->log.egg_opportunity_sale_price);
     env->log.strawberry_units +=
-        game->production_product_units[model_player][KG_ITEM_STRAWBERRY];
+        metrics[model_player].production_product_units[KG_ITEM_STRAWBERRY];
     env->log.opponent_strawberry_units +=
-        game->production_product_units[1 - model_player][KG_ITEM_STRAWBERRY];
+        metrics[1 - model_player].production_product_units[KG_ITEM_STRAWBERRY];
     env->log.strawberry_value +=
-        game->production_product_value[model_player][KG_ITEM_STRAWBERRY];
+        metrics[model_player].production_product_value[KG_ITEM_STRAWBERRY];
     env->log.opponent_strawberry_value +=
-        game->production_product_value[1 - model_player][KG_ITEM_STRAWBERRY];
+        metrics[1 - model_player].production_product_value[KG_ITEM_STRAWBERRY];
     env->log.milk_units +=
-        game->production_product_units[model_player][KG_ITEM_MILK];
+        metrics[model_player].production_product_units[KG_ITEM_MILK];
     env->log.opponent_milk_units +=
-        game->production_product_units[1 - model_player][KG_ITEM_MILK];
+        metrics[1 - model_player].production_product_units[KG_ITEM_MILK];
     env->log.milk_value +=
-        game->production_product_value[model_player][KG_ITEM_MILK];
+        metrics[model_player].production_product_value[KG_ITEM_MILK];
     env->log.opponent_milk_value +=
-        game->production_product_value[1 - model_player][KG_ITEM_MILK];
+        metrics[1 - model_player].production_product_value[KG_ITEM_MILK];
     env->log.episode_return += env->episode_returns[model_player];
-    env->log.episode_length += (float)(game->step
-        - env->curriculum_start_step);
-    env->log.land_purchases += (float)(kag_popcount(
-        (unsigned)game->players[model_player].unlocked_mask) - 1);
-    env->log.water_coverage += game->plant_days[model_player] > 0
-        ? (float)game->watered_plant_days[model_player]
-            / game->plant_days[model_player] : 1.0f;
-    env->log.neglect_deaths += (float)game->neglect_deaths[model_player];
+    env->log.episode_length += metrics[model_player].step;
+    env->log.land_purchases += metrics[model_player].plots;
+    env->log.water_coverage += metrics[model_player].plant_days > 0
+        ? (float)metrics[model_player].watered_plant_days
+            / metrics[model_player].plant_days : 1.0f;
+    env->log.neglect_deaths += (float)metrics[model_player].neglect_deaths;
     env->log.planting_day_deaths +=
-        (float)game->planting_day_deaths[model_player];
+        (float)metrics[model_player].planting_day_deaths;
     for (int crop = 0; crop < KG_NUM_CROPS; crop++) {
         env->log.unused_seed_value += game->players[model_player].seeds[crop]
             * KG_CROP_DEFS[crop].seed_cost;

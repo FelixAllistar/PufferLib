@@ -154,7 +154,17 @@ $(BUILD)/test_kag_sampling: $(ROOT)/tests/test_kag_sampling.cu $(wildcard *.h) \
 		$${NCCL_LFLAG:-} -lcudart -lnccl -lnvidia-ml -lcublas -lcusolver -lcurand \
 		-lGL -lm -lpthread -lgomp -o $@
 
-native-test: adapter observation-test land-delay-test entity-reward-test action-feasibility-test
+$(BUILD)/test_episode_metrics: tests/test_episode_metrics.c $(wildcard *.h) kaggriculture_core.c | $(BUILD)
+	$(CC) -O1 -std=c17 -Wall -Wextra -Werror \
+		-I$(ROOT) -I$(ROOT)/src -I$(ROOT)/vendor -I$(ROOT)/raylib-5.5_linux_amd64/include \
+		tests/test_episode_metrics.c $(ROOT)/raylib-5.5_linux_amd64/lib/libraylib.a \
+		-lGL -lm -lpthread -o $@
+
+workflow-test: $(BUILD)/test_episode_metrics
+	$(BUILD)/test_episode_metrics
+	python3 tests/test_dense_launcher.py
+
+native-test: adapter observation-test land-delay-test entity-reward-test action-feasibility-test workflow-test
 
 test: native-test parity
 

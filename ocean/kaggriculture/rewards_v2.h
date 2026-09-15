@@ -123,6 +123,7 @@ KG_HD static inline float kag_reward_growth(int count, int target, int* peak,
 }
 
 KG_HD static inline void kag_reward_reset(Env* env, int pid) {
+    kag_episode_metrics_reset(env, pid);
     KagRewardState* s = &env->reward_state[pid];
     memset(s, 0, sizeof(*s));
     s->start_cash = env->game_storage.players[pid].money;
