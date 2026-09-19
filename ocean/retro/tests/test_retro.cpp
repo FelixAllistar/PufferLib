@@ -1,5 +1,7 @@
 #define PUFFERLIB_BUILD_MAIN
 #include "retro.h"
+#include "retro_playback.h"
+#include "observation_reference.h"
 #include "nes_emu/abstract_file.h"
 #include <omp.h>
 #include <set>
@@ -44,6 +46,7 @@ static void level_and_reset_tests(Dict* cfg) {
     std::set<int> data;
     for(int i=0;i<32;i++) {
         e.cur_spawn=i; puf_reset(&e);
+        require(retro_observation_matches_reference(&e,obs),"reset observation differs from staged reference");
         require(e.emu->chr_cache_identity()==rom.seed.chr_cache_identity(),"reset detached immutable CHR cache");
         require(e.world==i/4+1&&e.stage==i%4+1,"wrong level label");
         int selected=retro_start_area(rom,e.world,e.stage);
@@ -59,6 +62,7 @@ static void level_and_reset_tests(Dict* cfg) {
         require(!memcmp(obs,reset_obs,sizeof(obs)),"reset observation contains stale framebuffer");
     }
     require(data.size()>20,"stage labels alias level data");
+    require(retro_observation_synthetic_parity(&e),"synthetic palette observation mismatch");
     retro_parse_spawns(&e,"8-4"); e.cur_spawn=0; puf_reset(&e);
     require(e.world==8&&e.stage==4,"single-level spawn ignored");
     e.max_frames=9; e.frameskip=4;
@@ -135,7 +139,12 @@ static void vector_tests(Dict* cfg) {
     require(seeds.size()==32&&coverage==0xffffffffu,"missing vector seed/spawn coverage");
     a[0].display=new RetroDisplay{}; b[0].display=new RetroDisplay{};
     for(int s=0;s<160;s++) {
-        for(int i=0;i<n;i++) { act[i]=retro_random(&rng)%64; puf_step(&a[i]); }
+        for(int i=0;i<n;i++) {
+            act[i]=retro_random(&rng)%64; puf_step(&a[i]);
+            // Read before the next environment reuses this worker's image.
+            require(retro_observation_matches_reference(&a[i],oa.data()+i*OBS_SIZE),
+                "observation differs from staged reference");
+        }
         #pragma omp parallel for num_threads(4) schedule(static)
         for(int i=0;i<n;i++) puf_step(&b[i]);
         require(oa==ob&&ra==rb&&ta==tb,"worker count changes observations/rewards/terminals");
@@ -146,12 +155,77 @@ static void vector_tests(Dict* cfg) {
     my_vec_close(a); my_vec_close(b);
     dict_clear(&vec);
     printf("PASS: actual vector constructor, all spawn coverage, 1/4-worker reproducibility through resets\n");
+    puts("PASS: 5,120 float32 observations bit-identical to staged reference");
 }
-int main() {
+static void playback_tests(Dict* cfg) {
+    Env e={}; e.rng=73; puf_init(&e,cfg);
+    float obs[OBS_SIZE],act=retro_mask_action(RETRO_BTN_RIGHT|RETRO_BTN_B),rew=0,done=0;
+    e.agents[0]={obs,&act,&rew,&done,nullptr,0}; e.spawn_pin=1; e.cur_spawn=0;
+    Nes_Emu raw; retro_check(raw.set_cart(&retro_rom().cart));
+    std::vector<unsigned char> pixels(Nes_Emu::buffer_width*256);
+    raw.set_pixels(pixels.data()+8*Nes_Emu::buffer_width,Nes_Emu::buffer_width);
+    for(int skip:{1,4}) {
+        puf_reset(&e); e.log={}; e.max_frames=10000; e.frameskip=skip;
+        // Stand in for an already-advanced run: the chosen new-game start is
+        // 1-1, but the current ROM is at the validated 2-1 start. Losing a life
+        // must remain in 2-1; only game over may return to the selected 1-1.
+        const auto& later=retro_rom().starts[retro_level_id(2,1)]->state;
+        e.emu->load_state(later); e.reset_image=false; retro_sync_from_emu(&e);
+        if(e.rom_blocks) require(e.emu->set_rom_blocks(true),"playback test failed to restore compiled ROM blocks");
+        raw.load_state(later);
+        int lives=e.life,respawns=0,frames=0; bool saw_death=false,game_over=false;
+        RetroPlayback playback;
+        while(frames<10000) {
+            bool clear_rnn=retro_playback_step(&e,&playback);
+            for(int f=0;f<e.last_frames;f++) retro_check(raw.emulate_frame(RETRO_BTN_RIGHT|RETRO_BTN_B,0));
+            frames+=e.last_frames;
+            if(done) {
+                require(robs_gameover(raw.low_mem()),"playback reset before the ROM used its final life");
+                require(clear_rnn&&!playback.waiting_respawn,"game over did not reset recurrent playback state");
+                require(e.world==1&&e.stage==1&&e.tick==0&&e.life==lives,"game over did not return to the selected start");
+                game_over=true; break;
+            }
+            require(saved(*e.emu)==saved(raw),"playback restored or changed the live ROM before game over");
+            require(e.tick==frames&&e.log.n==0&&!e.reset_image,"life loss silently reset the playback episode");
+            require(std::isfinite(rew),"non-finite playback reward");
+            for(float value:obs) require(std::isfinite(value),"non-finite playback input");
+            saw_death|=robs_dead(raw.low_mem());
+            if(clear_rnn) {
+                respawns++;
+                require(e.world==2&&e.stage==1,"respawn returned to the original selected level");
+                require(e.life==lives-respawns,"respawn replenished lives or cleared recurrent state twice");
+                require(raw.low_mem()[0xe]==8&&!robs_dying(raw.low_mem()),"recurrent state cleared during the death animation");
+            }
+        }
+        require(saw_death&&game_over&&respawns==lives,"natural deaths/respawns/game over were not all exercised");
+        require(e.log.deaths==lives+1&&e.log.n==1,"playback counted a life loss more than once");
+        printf("PASS: playback frameskip=%d: %d raw-ROM-identical frames, %d natural respawns, game-over restart\n",skip,frames,respawns);
+    }
+    // The training entry point still ends at the first death and restores all
+    // lives. Playback must never silently change training's episode semantics.
+    puf_reset(&e); e.log={}; e.frameskip=1; done=0; int training_lives=e.life;
+    for(int i=0;i<10000&&!done;i++) puf_step(&e);
+    require(done&&e.log.n==1&&e.log.deaths==1&&e.tick==0&&e.life==training_lives,
+        "training no longer ends at the first death");
+    // Explicit single-life viewing matches that same path.
+    puf_reset(&e); e.log={}; done=0; RetroPlayback single={true,false};
+    for(int i=0;i<10000&&!done;i++) retro_playback_step(&e,&single);
+    require(done&&e.log.n==1&&e.log.deaths==1&&e.tick==0,"--single-life did not retain training-style resets");
+    // The inspector's explicit short test horizon must still exercise resets.
+    puf_reset(&e); e.log={}; e.max_frames=9; e.frameskip=4; RetroPlayback bounded;
+    for(int i=0;i<3;i++) retro_playback_step(&e,&bounded);
+    require(done&&e.log.truncations==1&&e.log.episode_length==9,"bounded inspector playback lost its regression reset");
+    puf_close(&e);
+    puts("PASS: training/single-life death boundaries and bounded inspector resets unchanged");
+}
+int main(int argc,char** argv) {
     try {
         scalar_tests();
         Dict cfg={}; dict_set_str(&cfg,"spawn_levels","all"); dict_set(&cfg,"frameskip",1);
-        level_and_reset_tests(&cfg); core_parity_tests(); vector_tests(&cfg);
+        playback_tests(&cfg);
+        if(argc!=2||strcmp(argv[1],"--playback-only")) {
+            level_and_reset_tests(&cfg); core_parity_tests(); vector_tests(&cfg);
+        }
         dict_clear(&cfg);
         return 0;
     } catch(const std::exception& e) { fprintf(stderr,"FAIL: %s\n",e.what()); return 1; }
