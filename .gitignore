@@ -261,7 +261,12 @@ box2d*/
 # Retro ROM compiler and validation sources (generated ROM blocks stay in build/).
 !ocean/retro/batch/generate_blocks.py
 !ocean/retro/batch/benchmark_training.py
+!ocean/retro/batch/benchmark_cnn.py
+!ocean/retro/tests/test_watch_cli.py
+!ocean/retro/tests/test_sweep_cli.py
 !tests/test_native_retro_runtime.py
+!tests/test_retro_copy_elision.py
+!tests/bench_retro_buffers.py
 
 # Generated visual-editing scratch files.
 /tmp/imagegen/

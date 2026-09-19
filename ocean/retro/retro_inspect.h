@@ -2,6 +2,7 @@
 // Standalone watcher only. Never linked into the running CUDA trainer.
 #include <cmath>
 #include <unistd.h>
+#include "retro_playback.h"
 
 static const char* const retro_ego_labels[64]={
     "world X", "X page", "X byte", "X subpixel", "X move force", "relative X",
@@ -28,7 +29,7 @@ static Color retro_inspect_pixel(const Env& e,int x,int y) {
 // image. The panel reads obs[112..15471] directly, exactly as inference does.
 static float retro_inspect_error(const Env& e,const float* obs) {
     float error=0;
-    const int scale=2,left=0,top=0;
+    const int scale=RETRO_OBS_SCALE,left=0,top=0;
     for(int ty=0;ty<RETRO_WINDOW_H;ty++) for(int tx=0;tx<RETRO_WINDOW_W;tx++) {
         float sum=0;
         for(int y=0;y<scale;y++) for(int x=0;x<scale;x++) {
@@ -71,7 +72,7 @@ static void retro_inspect_dump(const Env& e,const float* obs,int action,long dec
 }
 
 static int retro_inspect(Env& e,RetroPolicy* net,float* obs,float* action,
-        float* reward,float* terminal,bool deterministic,bool headless,const char* snapshot=nullptr) {
+        float* reward,float* terminal,RetroPlayback& playback,bool deterministic,bool headless,const char* snapshot=nullptr) {
     // Persistent full frame for comparison; policy construction is unchanged.
     if(!e.display) e.display=new RetroDisplay{};
     long decision=0; bool paused=true; int fps=60; Texture2D texture={};
@@ -79,7 +80,7 @@ static int retro_inspect(Env& e,RetroPolicy* net,float* obs,float* action,
     if(!headless) {
         SetTraceLogLevel(LOG_ERROR);
         if(snapshot) SetConfigFlags(FLAG_WINDOW_HIDDEN);
-        InitWindow(1280,900,"Retro / FULL SCREEN 128x120 / actual policy input");
+        InitWindow(1280,900,TextFormat("Retro / FULL SCREEN %dx%d / actual policy input",RETRO_WINDOW_W,RETRO_WINDOW_H));
         SetTargetFPS(fps);
     }
     fprintf(stderr,"Inspector: %s, %d inputs; CNN 8/16/32 + RAM32 -> MinGRU; no crop mode\n",RETRO_OBSERVATION_CONTRACT,OBS_SIZE);
@@ -107,10 +108,11 @@ static int retro_inspect(Env& e,RetroPolicy* net,float* obs,float* action,
         }
         if(reset) {
             puf_reset(&e); retro_inspect_clear_rnn(net); last_reward=0; last_terminal=false;
+            playback.waiting_respawn=false;
             retro_inspect_choose(net,obs,action,deterministic);
         } else if(advance) {
-            puf_step(&e); decision++; last_reward=*reward; last_terminal=*terminal!=0;
-            if(last_terminal) retro_inspect_clear_rnn(net);
+            if(retro_playback_step(&e,&playback)) retro_inspect_clear_rnn(net);
+            decision++; last_reward=*reward; last_terminal=*terminal!=0;
             retro_inspect_choose(net,obs,action,deterministic);
         }
         for(int i=0;i<OBS_SIZE;i++) if(!std::isfinite(obs[i]))
@@ -128,22 +130,22 @@ static int retro_inspect(Env& e,RetroPolicy* net,float* obs,float* action,
         if(!texture.id) { Image im={rgba,256,240,1,PIXELFORMAT_UNCOMPRESSED_R8G8B8A8}; texture=LoadTextureFromImage(im); }
         UpdateTexture(texture,rgba);
         BeginDrawing(); ClearBackground(Color{18,22,30,255});
-        DrawText(TextFormat("FULL SCREEN 128x120  |  %s  |  decision %ld  |  level %d-%d  |  tick %d  |  %d Hz",
-            paused?"PAUSED":"RUNNING",decision,e.world,e.stage,e.tick,fps),16,10,18,RAYWHITE);
+        DrawText(TextFormat("FULL SCREEN %dx%d  |  %s  |  decision %ld  |  level %d-%d  |  tick %d  |  %d Hz",
+            RETRO_WINDOW_W,RETRO_WINDOW_H,paused?"PAUSED":"RUNNING",decision,e.world,e.stage,e.tick,fps),16,10,18,RAYWHITE);
         DrawText("P/Space pause   N advance one decision   R reset   1/2/3 = 15/30/60 Hz   F12 save PNG + inputs   Esc close",16,37,16,LIGHTGRAY);
         DrawText("Entire NES framebuffer: 256 x 240 RGB",16,64,18,RAYWHITE);
         DrawTextureEx(texture,Vector2{16,88},0,2,WHITE);
-        DrawText("ACTUAL POLICY INPUT: 128 x 120 luma",550,64,18,RAYWHITE);
-        const int cell=4;
+        DrawText(TextFormat("ACTUAL POLICY INPUT: %d x %d luma",RETRO_WINDOW_W,RETRO_WINDOW_H),550,64,18,RAYWHITE);
+        const int cell=512/RETRO_WINDOW_W;
         for(int y=0;y<RETRO_WINDOW_H;y++) for(int x=0;x<RETRO_WINDOW_W;x++) {
             float v=obs[112+y*RETRO_WINDOW_W+x]; unsigned char c=(unsigned char)std::lround(robs_c01(v)*255);
             DrawRectangle(550+x*cell,88+y*cell,cell,cell,Color{c,c,c,255});
         }
         DrawText("CNN + RAM encoder",1080,90,15,RAYWHITE);
-        DrawText("2x2 pixel means",1080,118,15,LIGHTGRAY);
+        DrawText(TextFormat("%dx%d pixel means",RETRO_OBS_SCALE,RETRO_OBS_SCALE),1080,118,15,LIGHTGRAY);
         DrawText("No crop / camera",1080,144,15,LIGHTGRAY);
         DrawText("Conv: 8 / 16 / 32",1080,170,15,LIGHTGRAY);
-        DrawText("15,360 image inputs",1080,210,15,LIGHTGRAY);
+        DrawText(TextFormat("%d image inputs",RETRO_TILES),1080,210,15,LIGHTGRAY);
         DrawText("112 RAM inputs",1080,236,15,LIGHTGRAY);
         DrawText("Pixel/input max error",1080,276,14,LIGHTGRAY);
         DrawText(TextFormat("%.9g",error),1080,300,18,error==0?GREEN:RED);
@@ -161,7 +163,9 @@ static int retro_inspect(Env& e,RetroPolicy* net,float* obs,float* action,
             DrawText(buttons[i],x+6,y+5,14,RAYWHITE);
         }
         DrawText(TextFormat("Prev reward: %+.5f",last_reward),1080,510,14,LIGHTGRAY);
-        if(last_terminal) DrawText("Terminal -> reset",1080,536,14,YELLOW);
+        DrawText(TextFormat("Lives: %d",e.life==255?0:e.life+1),1080,534,14,LIGHTGRAY);
+        if(last_terminal) DrawText("Episode -> reset",1080,554,14,YELLOW);
+        else if(playback.waiting_respawn) DrawText("ROM respawning...",1080,554,14,YELLOW);
         DrawText("RAM state: normalized inputs [0..63] (not camera controls)",16,593,16,RAYWHITE);
         for(int i=0;i<64;i++) {
             int col=i/22,row=i%22;

@@ -2,6 +2,9 @@ ROOT := ../..
 BUILD := $(ROOT)/build/retro
 CXX := clang++
 CXXFLAGS ?= -O2 -g -march=native -std=c++17
+RETRO_OBS_SCALE ?= 4
+CXXFLAGS += -DRETRO_OBS_SCALE=$(RETRO_OBS_SCALE)
+# Recompile observation consumers when switching build-time resolution.
 CORE := $(wildcard nes_emu/*.cpp)
 OBJECTS := $(patsubst nes_emu/%.cpp,$(BUILD)/%.o,$(CORE))
 LIB := $(BUILD)/libquicknes.a
@@ -14,7 +17,7 @@ $(BUILD)/%.o: nes_emu/%.cpp
 	$(CXX) $(CXXFLAGS) -MMD -MP -Ines_emu -c $< -o $@
 $(LIB): $(OBJECTS)
 	$(AR) rcs $@ $^
-$(BUILD)/test_retro: tests/test_retro.cpp retro.h retro_obs.h $(LIB)
+$(BUILD)/test_retro: tests/test_retro.cpp tests/observation_reference.h retro.h retro_obs.h retro_playback.h $(LIB)
 	$(CXX) $(CXXFLAGS) -mavx2 -mfma $(INCLUDES) $< $(LIB) $(LDLIBS) -o $@
 $(BUILD)/test_sweep: tests/test_sweep.cpp retro.h retro_obs.h retro_sweep_config.h $(LIB)
 	$(CXX) $(CXXFLAGS) -mavx2 -mfma $(INCLUDES) $< $(LIB) $(LDLIBS) -o $@
@@ -30,3 +33,6 @@ reference-probe: $(BUILD)/reference_probe
 $(BUILD)/sweep_eval: sweep_eval.cpp retro.h retro_obs.h retro_sweep_config.h retro_policy_cpu.h retro_policy_shape.h $(ROOT)/src/puffercpu.h $(LIB)
 	$(CXX) $(CXXFLAGS) -mavx2 -mfma $(INCLUDES) $< $(LIB) $(LDLIBS) -o $@
 sweep-tools: $(BUILD)/sweep_eval
+.PHONY: resolution
+resolution:
+$(BUILD)/test_retro $(BUILD)/test_sweep $(BUILD)/reference_probe $(BUILD)/sweep_eval: resolution retro_resolution.h

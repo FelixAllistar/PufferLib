@@ -168,12 +168,12 @@ static void check_reference_visual_means(const Env& e,const float* obs) {
         const auto& c=Nes_Emu::nes_colors[palette[i]&(Nes_Emu::color_table_size-1)];
         lut[i]=retro_luma(c.red,c.green,c.blue);
     }
-    for(int ty=0;ty<120;ty++) for(int tx=0;tx<128;tx++) {
+    for(int ty=0;ty<RETRO_WINDOW_H;ty++) for(int tx=0;tx<RETRO_WINDOW_W;tx++) {
         float sum=0;
-        if(pixels) for(int y=0;y<2;y++) for(int x=0;x<2;x++)
-            sum+=lut[pixels[(ty*2+y)*pitch+tx*2+x]];
-        float mean=sum*0.25f;
-        require(!memcmp(&mean,obs+RETRO_EGO_SIZE+RETRO_ENT_SIZE+ty*128+tx,sizeof(float)),
+        if(pixels) for(int y=0;y<RETRO_OBS_SCALE;y++) for(int x=0;x<RETRO_OBS_SCALE;x++)
+            sum+=lut[pixels[(ty*RETRO_OBS_SCALE+y)*pitch+tx*RETRO_OBS_SCALE+x]];
+        float mean=sum/(RETRO_OBS_SCALE*RETRO_OBS_SCALE);
+        require(!memcmp(&mean,obs+RETRO_EGO_SIZE+RETRO_ENT_SIZE+ty*RETRO_WINDOW_W+tx,sizeof(float)),
             "parallel observation mean differs from original arithmetic");
     }
 }
