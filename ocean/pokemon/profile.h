@@ -1,8 +1,9 @@
 #pragma once
+#include "personality.h"
 // Evaluation-only episode descriptors. Never changes observations or rewards.
 typedef struct {
     int species[149], leads[149], types[32];
-    double hp_sum;
+    double hp_sum, personality_sum[PK_PERSONALITY_DIM];
     int samples;
 } PKProfile;
 typedef struct {
@@ -35,18 +36,21 @@ static void pk_profile_summary(const PKProfileSummary* s) {
     printf("Mean team HP during battle: %.1f%% (equal weight per game)\n",100*s->hp/s->games);
 }
 static void pk_profile_step(PKProfile* p, const PKGame* g, int side) {
-    if (g->picks != 6) return;
+    if (g->phase != PK_PHASE_BATTLE) return;
     const uint8_t* obs = g->obs[side];
     if (!p->samples) {
         for (int i=0;i<6;i++) {
-            p->species[pk_species(g->teams[side][i])-1]++;
+            p->species[g->teams[side][i].species-1]++;
             const uint8_t* mon=obs+16+32*i;
             if (mon[5]<32) p->types[mon[5]]++;
             if (mon[6]<32 && mon[6]!=mon[5]) p->types[mon[6]]++;
         }
-        p->leads[pk_species(g->teams[side][0])-1]++;
+        p->leads[g->teams[side][0].species-1]++;
     }
     for (int i=0;i<6;i++) p->hp_sum += obs[16+32*i+1]/(255.0*6);
+    double features[PK_PERSONALITY_DIM];
+    pk_personality_features(obs,features);
+    for(int k=0;k<PK_PERSONALITY_DIM;k++) p->personality_sum[k]+=features[k];
     p->samples++;
 }
 static void pk_profile_array(const int* values, int n) {
@@ -61,7 +65,25 @@ static void pk_profile_emit(const PKProfile* p, const PKGame* g, int side, doubl
     printf(",\"types\":"); pk_profile_array(p->types,32);
     double alive=0;
     for(int i=0;i<6;i++) alive += !g->obs[side][16+32*i+3];
-    printf(",\"mean_team_hp\":%.9g,\"survivors\":%.9g,\"duration\":%.9g,\"timeout\":%d}}\n",
+    printf(",\"mean_team_hp\":%.9g,\"survivors\":%.9g,\"duration\":%.9g,\"timeout\":%d}",
         p->samples?p->hp_sum/p->samples:0,alive/6,
         (double)g->updates/g->max_updates,g->result==5);
+    /* Additive fields: existing profile_population consumers keep their schema.
+     * Exact ordered sets permit joint-core diagnostics, not just marginal usage.
+     */
+    printf(",\"qd_version\":2,\"species_ids\":[");
+    for(int i=0;i<6;i++) printf("%s%d",i?",":"",g->teams[side][i].species);
+    printf("],\"move_ids\":[");
+    for(int i=0;i<6;i++) {
+        printf("%s[",i?",":"");
+        for(int m=0;m<4;m++) printf("%s%d",m?",":"",g->teams[side][i].moves[m]);
+        putchar(']');
+    }
+    printf("],\"personality\":[");
+    for(int k=0;k<PK_PERSONALITY_DIM;k++) printf("%s%.9g",k?",":"",p->samples?p->personality_sum[k]/p->samples:0);
+    float behavior[2]={0},opponent_behavior[2]={0};
+    pk_behavior(&g->battle,side,behavior);
+    pk_behavior(&g->battle,1-side,opponent_behavior);
+    printf("],\"behavior_version\":1,\"behavior_events\":[%.9g,%.9g],\"opponent_behavior_events\":[%.9g,%.9g]}\n",
+           behavior[0],behavior[1],opponent_behavior[0],opponent_behavior[1]);
 }

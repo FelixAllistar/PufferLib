@@ -1,0 +1,17 @@
+{
+  "id": "b4b2ef79a19edcc315b02428df7cfc754f8f2b396e1ccffbc34562ee00f131bd",
+  "opponents": [
+    {
+      "config_sha256": "a765bfddfc0d5137672b16253cfa0a31cb1cd7fbaea9d36bf562f3330ea4ddfb",
+      "path": "/home/felix/puffertank/pufferlib/runs/pokemon_qd_selfplay_smoke_20260912/candidates/seed/checkpoints/pokemon/seed_1789262484232114372/0000000001048576.bin",
+      "sha256": "5b912c36215b191863e1faea0f36c4d1d5a51e1ba80c2098a287b1274b60a12d",
+      "team": "None"
+    },
+    {
+      "config_sha256": "a765bfddfc0d5137672b16253cfa0a31cb1cd7fbaea9d36bf562f3330ea4ddfb",
+      "path": "/home/felix/puffertank/pufferlib/runs/pokemon_qd_selfplay_smoke_20260912/candidates/seed/checkpoints/pokemon/seed_1789262484232114372/0000000004194304.bin",
+      "sha256": "2d1e84705b66fcbd8fff70f915ab6af3711f5731aab6fcfadd24f857dfa14c9e",
+      "team": "None"
+    }
+  ]
+}

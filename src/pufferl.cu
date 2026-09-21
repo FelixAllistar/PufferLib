@@ -463,6 +463,10 @@ enum BufWorkerState {
 // with a PuffeRL* (worker threads); they are not isolated from the trainer.
 struct VecEnv {
     Env* envs;           // host (CPU) or device (PUFFER_GPU_ENV)
+#ifdef PUFFER_PREFIX_DEPENDENT_MASK
+    const Env* sampling_envs;
+    const int* sampling_rows;
+#endif
 #ifdef PUFFER_GPU_ENV
     float* gpu_log;      // device reduce scratch (sizeof(Log) floats)
 #endif
@@ -546,6 +550,7 @@ typedef struct {
 } ProfileT;
 
 typedef struct PuffeRL {
+    KagObservationContract checkpoint_contract;
     Policy policy;
     PolicyWeights weights;       // current precision_t weights (structured)
     PolicyWeights actor_weights; // async rollout snapshot; unused when async=0
@@ -654,9 +659,12 @@ __global__ void sample_logits(
         precision_t* logprobs,                // (B,)
         precision_t* value_out,               // (B,)
         curandStatePhilox4_32_10_t* rng_states,
-        const unsigned char* action_mask,     // (B, A_total); unpacked live mask
+        unsigned char* action_mask,           // (B, A_total); sampled-prefix mask
         int mask_stride,
-        bool deterministic) {
+        bool deterministic,
+        const Env* sampling_envs = nullptr,
+        const int* sampling_rows = nullptr,
+        int sampling_start = 0) {
     int B = dec_out.shape[0];
     int fused_cols = dec_out.shape[1];
     int num_atns = numel(act_sizes_puf.shape);
@@ -692,8 +700,17 @@ __global__ void sample_logits(
         constexpr int LOGIT_CACHE = 16;
         int logits_offset = 0;
         int mask_base = idx * mask_stride;
+#ifdef PUFFER_PREFIX_DEPENDENT_MASK
+        KagActionMaskState mask_state;
+        int sampling_row = sampling_rows ? sampling_rows[sampling_start + idx] : 0;
+        kag_action_mask_begin(&mask_state, sampling_envs ? sampling_envs + sampling_row / 2 : nullptr,
+            sampling_row % 2);
+#endif
         for (int h = 0; h < num_atns; h++) {
             int A = act_sizes[h];
+#ifdef PUFFER_PREFIX_DEPENDENT_MASK
+            kag_action_mask_before(&mask_state, h, action_mask + mask_base);
+#endif
             if (!puf_action_head_active(actions, idx * num_atns, h)) {
                 actions[idx * num_atns + h] = from_float(0.0f);
                 logits_offset += A;
@@ -758,6 +775,9 @@ __global__ void sample_logits(
             float sampled_logit = use_cache ? cache[sampled] : load_logit_masked_byte(
                 logits, logits_base, logits_offset, sampled, action_mask, mask_base);
             actions[idx * num_atns + h] = from_float((float)sampled);
+#ifdef PUFFER_PREFIX_DEPENDENT_MASK
+            kag_action_mask_commit(&mask_state, h, sampled);
+#endif
             total_log_prob += sampled_logit - logsumexp;
             logits_offset += A;
         }
@@ -851,6 +871,15 @@ __global__ void pack_action_mask(unsigned char* dst,
 void pufferl_forward(PuffeRL* pufferl, int buf, int t, cudaStream_t stream,
         bool deterministic) {
     HypersT& hypers = pufferl->hypers;
+#if defined(PUFFER_PREFIX_DEPENDENT_MASK) && !defined(PUFFER_GPU_ENV)
+    // The CPU simulator owns host state. Refresh its read-only sampling mirror
+    // outside graph capture, on this buffer's stream, before launching a graph.
+    int sampling_first = pufferl->vec->buffer_env_starts[buf];
+    int sampling_count = pufferl->vec->buffer_env_counts[buf];
+    cudaMemcpyAsync((Env*)pufferl->vec->sampling_envs + sampling_first,
+        pufferl->vec->envs + sampling_first, (size_t)sampling_count * sizeof(Env),
+        cudaMemcpyHostToDevice, stream);
+#endif
     int graph_slot = hypers.async ? pufferl->rollout_write_slot : 0;
     // Sampling mode is part of the captured kernel arguments. Keep separate
     // graph entries for stochastic training and deterministic evaluation.
@@ -904,10 +933,6 @@ void pufferl_forward(PuffeRL* pufferl, int buf, int t, cudaStream_t stream,
     int mask_stride = vec->action_mask_size;
     int packed_stride = (mask_stride + 7) / 8;
     ByteTensor mask_slice = puf_slice(rollouts.action_mask, t, start, block_size);
-    pack_action_mask<<<grid_size(block_size * packed_stride), BLOCK_SIZE, 0, stream>>>(
-        mask_slice.data,
-        env.action_mask.data + (long)start * mask_stride,
-        block_size, mask_stride, packed_stride);
 
     // Per-bank forward: layout[b]..layout[b+1) within each buffer chunk.
     int num_banks = 1 + pufferl->num_frozen_banks;
@@ -970,12 +995,22 @@ void pufferl_forward(PuffeRL* pufferl, int buf, int t, cudaStream_t stream,
             act_b.data, lp_b.data, val_b.data,
             pufferl->rng_states[buf] + bank_off,
             env.action_mask.data + (long)sub_start * mask_stride, mask_stride,
-            deterministic);
+            deterministic
+#ifdef PUFFER_PREFIX_DEPENDENT_MASK
+            , vec->sampling_envs, vec->sampling_rows, sub_start
+#endif
+            );
 
         cast<<<grid_size(numel(act_b.shape)), BLOCK_SIZE, 0, stream>>>(
                 env.actions.data + (long)sub_start * act_cols,
                 act_b.data, numel(act_b.shape));
     }
+
+    // Conditional masks depend on the sampled worker/market prefix. Archiving
+    // before sampling would give PPO a different distribution from the actor.
+    pack_action_mask<<<grid_size(block_size * packed_stride), BLOCK_SIZE, 0, stream>>>(
+        mask_slice.data, env.action_mask.data + (long)start * mask_stride,
+        block_size, mask_stride, packed_stride);
 
     if (hypers.cudagraphs) {
         cudaGraph_t _graph;
@@ -1065,6 +1100,9 @@ static void* vec_thread_main(void* arg) {
             for (int i = env_start; i < env_start + env_count; i++) {
                 puf_step(&envs[i]);
             }
+#ifdef PUF_CPU_POST_STEP
+            PUF_CPU_POST_STEP(&envs[env_start], env_count);
+#endif
             clock_gettime(CLOCK_MONOTONIC, &t1);
             my_accum[VEC_ENV_STEP] += (t1.tv_sec - t0.tv_sec) * 1000.0f + (t1.tv_nsec - t0.tv_nsec) / 1e6f;
 
@@ -2059,6 +2097,8 @@ const char* puf_checkpoint_path_key(Ini* ini, const char* key,
     return out;
 }
 
+#include "kag_training_setup.h"
+
 void puf_save_tensor(FloatTensor weights, const char* path) {
     int64_t nbytes = numel(weights.shape) * sizeof(float);
     char* buf = (char*)malloc(nbytes);
@@ -2095,15 +2135,26 @@ void puf_save_tensor(FloatTensor weights, const char* path) {
 
 void puf_save_weights(PuffeRL* p, const char* path) {
     puf_save_tensor(p->master_weights, path);
+    kag_observation_save_contract(path, p->checkpoint_contract);
     if (p->hypers.emag_kl_coef > 0.0f) {
         char magnet_path[8192];
         snprintf(magnet_path, sizeof(magnet_path), "%s.emag", path);
         puf_save_tensor(p->magnet_master_weights, magnet_path);
+        kag_observation_save_contract(magnet_path, p->checkpoint_contract);
     }
 }
 
 void puf_load_weights_into(FloatTensor dst, PrecisionTensor params,
-        cudaStream_t stream, const char* path) {
+        cudaStream_t stream, const char* path, const KagObservationContract* contract = nullptr) {
+#ifdef PUF_VALIDATE_CHECKPOINT
+    PUF_VALIDATE_CHECKPOINT(path);
+#endif
+    if (strcmp(PUFFER_ENV_NAME, "kaggriculture") == 0) {
+        if (!contract || !contract->enabled) {
+            fprintf(stderr, "Kaggriculture checkpoint loads require a fresh-policy contract\n"); exit(1);
+        }
+        kag_executor_check_load(path, *contract, 0);
+    }
     int64_t nbytes = numel(dst.shape) * sizeof(float);
     struct stat info;
     if (stat(path, &info) != 0) {
@@ -2137,17 +2188,73 @@ void puf_load_weights_into(FloatTensor dst, PrecisionTensor params,
     }
 }
 
+static KagObservationContract pufferl_kag_loaded_contract(const char* path,
+        KagObservationContract shape) {
+    if (!shape.enabled) return shape;
+    KagObservationContract loaded = kag_checkpoint_contract(path);
+    loaded.hidden = shape.hidden;
+    loaded.layers = shape.layers;
+    loaded.alignment = shape.alignment;
+    kag_executor_check_load(path, loaded, 0);
+    return loaded;
+}
+
+static void pufferl_kag_bind_controller(PuffeRL* pufferl, int policy,
+        KagObservationContract contract) {
+#ifdef PUFFER_PREFIX_DEPENDENT_MASK
+    if (!contract.enabled) return;
+    KagController controller = {1, contract.mode, contract.executor,
+        contract.interval, contract.score_features};
+#ifdef PUFFER_GPU_ENV
+    puf_envs_set_controller(policy, controller);
+#else
+    for (int e = 0; e < pufferl->vec->size; e++) {
+        Env* env = pufferl->vec->envs + e;
+        int changed = 0;
+        for (int seat = 0; seat < env->num_agents; seat++) if (env->agents[seat].policy == policy) {
+            env->controller[seat] = controller;
+            env->macro_intent[seat] = env->macro_ticks[seat] = 0;
+            env->macro_quantity[seat] = env->macro_target[seat] = 0;
+            changed = 1;
+        }
+        if (changed) kag_write_all_observations(env);
+    }
+    VecEnv* vec = pufferl->vec;
+    cudaMemcpy(vec->gpu_observations, vec->observations,
+        (size_t)vec->total_agents * OBS_SIZE * sizeof(obs_t), cudaMemcpyHostToDevice);
+    cudaMemcpy(vec->gpu_action_mask, vec->action_mask,
+        (size_t)vec->total_agents * vec->action_mask_size, cudaMemcpyHostToDevice);
+#endif
+    cudaDeviceSynchronize();
+#else
+    (void)pufferl; (void)policy; (void)contract;
+#endif
+}
+
+static void pufferl_load_eval_primary(PuffeRL* pufferl, const char* path) {
+    KagObservationContract contract = pufferl_kag_loaded_contract(path, pufferl->checkpoint_contract);
+    puf_load_weights_into(pufferl->master_weights, pufferl->param_puf,
+        pufferl->default_stream, path, &contract);
+    pufferl_kag_bind_controller(pufferl, 0, contract);
+}
+
 void pufferl_load_frozen_bank(PuffeRL* pufferl, int bank_idx, const char* path) {
     WeightBank* bank = &pufferl->frozen_banks[bank_idx];
+    KagObservationContract contract = pufferl->checkpoint_contract;
+    contract.hidden = bank->policy.network.hidden;
+    contract.layers = bank->policy.network.num_layers;
+    contract = pufferl_kag_loaded_contract(path, contract);
     puf_load_weights_into(bank->master_weights, bank->param_puf,
-        pufferl->default_stream, path);
+        pufferl->default_stream, path, &contract);
     cudaDeviceSynchronize();
+    pufferl_kag_bind_controller(pufferl, bank_idx + 1, contract);
 }
 
 // Bootstrap a frozen opponent from the learner without creating a fake
 // zero-step checkpoint.  This is used only when training starts from a fresh
 // policy; resumed training uses the requested checkpoint path directly.
 void pufferl_copy_frozen_bank_from_learner(PuffeRL* pufferl, int bank_idx) {
+    pufferl_kag_bind_controller(pufferl, bank_idx + 1, pufferl->checkpoint_contract);
     WeightBank* bank = &pufferl->frozen_banks[bank_idx];
     int64_t learner_n = numel(pufferl->master_weights.shape);
     int64_t bank_n = numel(bank->master_weights.shape);
@@ -2258,28 +2365,16 @@ PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx) {
         .seed = puf_ini_get_int(ini, "base", "seed"),
     };
 
-    /* Discount-consistent potential shaping is policy-invariant only when
-     * its gamma matches the learner's return gamma. Refuse a silent mismatch
-     * for Kaggriculture; it would turn the heuristic asset mark into part of
-     * the objective instead of pure credit assignment. */
-    if (strcmp(PUFFER_ENV_NAME, "kaggriculture") == 0) {
-        float potential_gamma = puf_ini_get_float(
-            ini, "env", "reward_potential_gamma");
-        if (potential_gamma > 0.0f
-                && fabsf(potential_gamma - hypers.gamma) > 1.0e-6f) {
-            fprintf(stderr, "config error: env.reward_potential_gamma=%g "
-                "must equal train.gamma=%g\n",
-                potential_gamma, hypers.gamma);
-            exit(1);
-        }
-    }
-
     Dict vec_kwargs = {0};
     dict_copy(&vec_kwargs, puf_ini_section(ini, "vec", 0));
     Dict* env_kwargs = puf_ini_section(ini, "env", 0);
+#ifdef KAG_REWARD_V2_AVAILABLE
+    kag_reward_bind_train_config(env_kwargs, hypers.gamma, hypers.reward_clip);
+#endif
     ncclUniqueId* nccl_id = ctx->nccl_id;
 
     PuffeRL* pufferl = (PuffeRL*)calloc(1, sizeof(PuffeRL));
+    pufferl->checkpoint_contract = kag_observation_contract(ini);
     pufferl->hypers = hypers;
     snprintf(pufferl->env_name, sizeof(pufferl->env_name), "%s", PUFFER_ENV_NAME);
 
@@ -2588,6 +2683,25 @@ PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx) {
         }
 #endif
     pufferl->vec = vec;
+#ifdef PUFFER_PREFIX_DEPENDENT_MASK
+#ifdef PUFFER_GPU_ENV
+    vec->sampling_envs = puf_sampling_envs();
+    vec->sampling_rows = puf_sampling_rows();
+#else
+    vec->sampling_envs = (Env*)xcuda((size_t)vec->size * sizeof(Env));
+    int* sampling_rows = (int*)xcalloc((size_t)total_agents * sizeof(int));
+    for (int e = 0; e < vec->size; e++) {
+        assert(vec->envs[e].num_agents == 2);
+        for (int seat = 0; seat < 2; seat++) {
+            int row = (int)(((obs_t*)vec->envs[e].agents[seat].observations - vec->observations) / OBS_SIZE);
+            sampling_rows[row] = 2 * e + seat;
+        }
+    }
+    vec->sampling_rows = (int*)xcuda((size_t)total_agents * sizeof(int));
+    cudaMemcpy((void*)vec->sampling_rows, sampling_rows, (size_t)total_agents * sizeof(int), cudaMemcpyHostToDevice);
+    free(sampling_rows);
+#endif
+#endif
 
     /* Minibatch must not exceed the primary (non-frozen) rollout, and epoch
      * sampling additionally needs primary_batch % minibatch == 0. Frozen-bank
@@ -2711,6 +2825,13 @@ PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx) {
             exit(1);
         }
     }
+#ifdef KAG_REWARD_V2_AVAILABLE
+    if (params->total_bytes != params->total_elems * (long)sizeof(precision_t)
+            || grads->total_bytes != grads->total_elems * (long)sizeof(precision_t)) {
+        fprintf(stderr, "Entity policy parameters must be gap-free for flat optimizer/checkpoint storage\n");
+        exit(1);
+    }
+#endif
     pufferl->buffer_activations = (PolicyActivations*)xcalloc((size_t)num_buffers * sizeof(PolicyActivations));
     pufferl->buffer_states = (PrecisionTensor*)xcalloc((size_t)num_buffers * sizeof(PrecisionTensor));
     for (int i = 0; i < num_buffers; i++) {
@@ -2894,6 +3015,9 @@ PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx) {
     for (int i = 0; i < vec->size; i++) {
         puf_reset(&vec->envs[i]);
     }
+#ifdef PUF_CPU_POST_STEP
+    PUF_CPU_POST_STEP(vec->envs, vec->size);
+#endif
     cudaMemcpy(vec->gpu_observations, vec->observations,
         (size_t)vec->total_agents * OBS_SIZE * sizeof(obs_t),
         cudaMemcpyHostToDevice);
@@ -2953,6 +3077,10 @@ void close_pufferl(PuffeRL* p) {
     }
 #ifdef MY_VEC_CLOSE
     my_vec_close(vec->envs);
+#endif
+#ifdef PUFFER_PREFIX_DEPENDENT_MASK
+    cudaFree((void*)vec->sampling_envs);
+    cudaFree((void*)vec->sampling_rows);
 #endif
 #endif
     cudaDeviceSynchronize();
@@ -3221,13 +3349,24 @@ void puf_dashboard_print(Ini* ini, PuffeRL* p, Dict* log, int epoch) {
     {
         dash_env_pair(log, "score", "draw_rate");
         dash_env_pair(log, "battle_turns", "timeout_rate");
+        if(pk_core_deck.cards) {
+            dash_env_pair(log,"core_cycle","core_cycle_assigned");
+            dash_env_pair(log,"core_total_assigned","core_drafts_completed");
+        }
+        if(pk_core_deck.cards || pk_native_count) {
+            dash_env_pair(log,"normal_self_games_pct","normal_expert_games_pct");
+            dash_env_pair(log,"core_self_games_pct","core_expert_games_pct");
+        }
+        bool mixed_cores=pk_core_deck.cards && pk_core_probability>0 && pk_core_probability<1;
+        bool normal_cores=pk_core_deck.cards && pk_core_probability<1;
         printf("%s│ %-36s    %-36s │%s", PUF_W,
-            "Top species (% of learner teams)", "Top leads (% of learner games)", PUF_R);
+            normal_cores ? "Normal drafts (% of normal teams)" : pk_core_deck.cards ? "Free choices (% of core teams)" : "Top species (% of learner teams)",
+            mixed_cores ? "Learned extras (% of core teams)" : "Top leads (% of learner games)", PUF_R);
         dash_eol();
         int species[6]={0}, leads[6]={0};
         double picked[6]={0}, led[6]={0};
-        int ns=pk_top_species(log,"env/",0,species,picked);
-        int nl=pk_top_species(log,"env/",1,leads,led);
+        int ns=normal_cores ? pk_top_species_group(log,"env/","normal_team",species,picked) : pk_top_species(log,"env/",0,species,picked);
+        int nl=mixed_cores ? pk_top_species_group(log,"env/","free_team",leads,led) : pk_top_species(log,"env/",1,leads,led);
         int rows=ns>nl?ns:nl;
         if (!rows) {
             printf("%s│ %-76s │%s", PUF_W, "Waiting for completed learner battles...", PUF_R);
@@ -3249,6 +3388,20 @@ void puf_dashboard_print(Ini* ini, PuffeRL* p, Dict* log, int epoch) {
         static const char* const rows[][2] = {
             {"score", "opponent_score"},
             {"money", "opponent_money"},
+            {"cash_gain", "objective_reward"},
+            {"start_money", "reset_fraction"},
+            {"root_money", "reset_money"},
+            {"root_cash_gain", "reset_cash_gain"},
+            {"root_crop_units", "reset_crop_units"},
+            {"root_animal_units", "reset_animal_units"},
+            {"root_land_purchases", "reset_land_purchases"},
+            {"root_steps", "reset_steps"},
+            {"start_plots", "ending_plots"},
+            {"cash_flow_reward", "terminal_cash_reward"},
+            {"growth_land_reward", "growth_crop_reward"},
+            {"growth_animal_reward", "alive_reward"},
+            {"dense_quality_reward", "terminal_quality_reward"},
+            {"quality_idle", "discounted_pbrs"},
             {"gdp", "opponent_gdp"},
             {"production_units", "opponent_production_units"},
             {"crop_production_units", "animal_production_units"},
@@ -4433,6 +4586,9 @@ static void league_eval_reset(PuffeRL* pufferl) {
         vec->envs[i].boundary_reached = 0;
         puf_reset(&vec->envs[i]);
     }
+#ifdef PUF_CPU_POST_STEP
+    PUF_CPU_POST_STEP(vec->envs, vec->size);
+#endif
     memset(vec->accum, 0,
         (size_t)vec->buffers * NUM_VEC_PROF * sizeof(float));
 
@@ -4594,8 +4750,7 @@ static void run_league_eval(Ini* ini, TrainContext* ctx) {
         printf("Native league matrix: policies=%d pairs=%d games=%d banks=%d\n",
             policies.size, pairs, games, banks);
         for (int i = 0; i < waves; i++) {
-            puf_load_weights_into(pufferl->master_weights, pufferl->param_puf,
-                pufferl->default_stream, policies.items[i].path);
+            pufferl_load_eval_primary(pufferl, policies.items[i].path);
             pufferl_sync_loaded_policy(pufferl);
             int active = policies.size - i - 1;
             for (int bank = 0; bank < banks; bank++) {
@@ -4627,8 +4782,7 @@ static void run_league_eval(Ini* ini, TrainContext* ctx) {
             pufferl_load_frozen_bank(pufferl, bank, opponents.items[bank].path);
         }
         for (int i = 0; i < candidates.size; i++) {
-            puf_load_weights_into(pufferl->master_weights, pufferl->param_puf,
-                pufferl->default_stream, candidates.items[i].path);
+            pufferl_load_eval_primary(pufferl, candidates.items[i].path);
             pufferl_sync_loaded_policy(pufferl);
             league_eval_episode(pufferl, games, logs);
             for (int bank = 0; bank < banks; bank++) {
@@ -4758,16 +4912,14 @@ EvalResult run_eval(Ini* ini, TrainContext* ctx, int mode, int verbose) {
             fprintf(stderr, "match requires base.load_model_path and base.load_enemy_model_path\n");
             exit(1);
         }
-        puf_load_weights_into(pufferl->master_weights,
-            pufferl->param_puf, pufferl->default_stream, a_path);
+        pufferl_load_eval_primary(pufferl, a_path);
         if (!match_enemy_bot) pufferl_load_frozen_bank(pufferl, 0, b_path);
     } else {
         char resolved_path[4096];
         const char* load_path = puf_checkpoint_path_key(ini,
             "load_model_path", resolved_path, sizeof(resolved_path));
         if (load_path) {
-            puf_load_weights_into(pufferl->master_weights, pufferl->param_puf,
-                pufferl->default_stream, load_path);
+            pufferl_load_eval_primary(pufferl, load_path);
             printf("Loaded weights from %s\n", load_path);
         }
     }
@@ -4925,19 +5077,38 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
     snprintf(log_dir, sizeof(log_dir), "%s/%s",
         puf_ini_get_str(ini, "base", "log_dir"),
         puf_ini_get_str(ini, "base", "env_name"));
-    if (ctx->artifact_owner) {
-        mkdir_p(checkpoint_dir);
-        mkdir_p(log_dir);
-    }
-
-    PuffeRL* pufferl = create_pufferl(ini, ctx);
     char resolved_path[4096];
     const char* load_path = puf_checkpoint_path_key(ini,
         "load_model_path", resolved_path, sizeof(resolved_path));
+    kag_training_preflight(ini, load_path);
+    int kag_setup = !strcmp(puf_ini_get_str(ini, "base", "env_name"), "kaggriculture");
+    if (kag_setup) kag_check_output_directory(checkpoint_dir);
+    if (ctx->artifact_owner) {
+        mkdir_p(checkpoint_dir);
+        mkdir_p(log_dir);
+        if (kag_setup) {
+            char setup_path[4096];
+            snprintf(setup_path, sizeof(setup_path), "%s/%s.start.ini", log_dir, run_id);
+            FILE* setup = fopen(setup_path, "wx");
+            if (!setup) {
+                if (errno == EEXIST) fprintf(stderr,
+                    "Startup record already exists at %s. Set base.run_id=None or choose a new run ID; the existing record was preserved.\n", setup_path);
+                else perror(setup_path);
+                exit(1);
+            }
+            fprintf(setup, "# Effective startup settings; command-line overrides included.\n# Resolved weights: %s\n",
+                load_path ? load_path : "None");
+            puf_ini_write(setup, ini);
+            fclose(setup);
+            printf("Effective config saved to %s\n", setup_path);
+        }
+    }
+
+    PuffeRL* pufferl = create_pufferl(ini, ctx);
     if (load_path) {
         kag_executor_check_load(load_path, kag_observation_contract(ini), 0);
         puf_load_weights_into(pufferl->master_weights, pufferl->param_puf,
-            pufferl->default_stream, load_path);
+            pufferl->default_stream, load_path, &pufferl->checkpoint_contract);
         printf("Loaded weights from %s\n", load_path);
     }
     if (pufferl->hypers.emag_kl_coef > 0.0f) {
@@ -4951,7 +5122,7 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
             if (access(magnet_path, R_OK) == 0) {
                 puf_load_weights_into(pufferl->magnet_master_weights,
                     pufferl->magnet_param_puf, pufferl->default_stream,
-                    magnet_path);
+                    magnet_path, &pufferl->checkpoint_contract);
                 printf("Loaded EMA magnet from %s\n", magnet_path);
             } else {
                 fprintf(stderr, "magnet_path %s not found\n", magnet_path);
@@ -4962,7 +5133,7 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
             if (access(magnet_path, R_OK) == 0) {
                 puf_load_weights_into(pufferl->magnet_master_weights,
                     pufferl->magnet_param_puf, pufferl->default_stream,
-                    magnet_path);
+                    magnet_path, &pufferl->checkpoint_contract);
                 printf("Loaded EMA magnet from %s\n", magnet_path);
             } else {
                 cudaMemcpyAsync(pufferl->magnet_master_weights.data,
@@ -5025,7 +5196,8 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
         if (strcmp(puf_ini_get_str(ini, "base", "env_name"), "kaggriculture") == 0) {
             int learner_mode = (int)puf_ini_get(ini, "env", "macro_mode");
             int frozen_mode = (int)puf_ini_get(ini, "env", "frozen_macro_mode");
-            if (frozen_mode >= 0 && frozen_mode != learner_mode
+            if (!pufferl->checkpoint_contract.enabled
+                    && frozen_mode >= 0 && frozen_mode != learner_mode
                     && selfplay.external_prob != 1.0f) {
                 fprintf(stderr, "Mixed Kaggriculture action modes require "
                     "selfplay.opponent_pool_prob=1: learner snapshots cannot "
@@ -5051,8 +5223,11 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
         size_t frozen_bytes = (size_t)numel(
             pufferl->frozen_banks[0].master_weights.shape) * sizeof(float);
         selfplay_validate_external(&selfplay, frozen_bytes);
+        KagObservationContract frozen_contract = pufferl->checkpoint_contract;
+        frozen_contract.hidden = pufferl->frozen_banks[0].policy.network.hidden;
+        frozen_contract.layers = pufferl->frozen_banks[0].policy.network.num_layers;
         for (int i = 0; i < selfplay.external_size; i++)
-            kag_executor_check_load(selfplay.external[i], kag_observation_contract(ini), 1);
+            (void)pufferl_kag_loaded_contract(selfplay.external[i], frozen_contract);
         if (!kag_observation_pool_compatible(kag_observation_contract(ini),
                 selfplay.external_prob, selfplay.external_size)) {
             fprintf(stderr, "Mixed Kaggriculture observation/executor versions require "
@@ -5201,7 +5376,6 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
                 "%s/%016ld.bin", checkpoint_dir, pufferl->global_step);
             if (ctx->artifact_owner) {
                 puf_save_weights(pufferl, saved_checkpoint);
-                kag_observation_save(saved_checkpoint, ini);
 #ifdef PUF_CHECKPOINT_HOOK
                 PUF_CHECKPOINT_HOOK(saved_checkpoint, ini);
 #endif
@@ -5791,7 +5965,7 @@ static void run_trace(Ini* ini, TrainContext* ctx) {
     int steps = puf_ini_get_int(ini, "base", "trace_steps");
     PuffeRL* pufferl = create_pufferl(ini, ctx);
     puf_load_weights_into(pufferl->master_weights, pufferl->param_puf,
-        pufferl->default_stream, load_path);
+        pufferl->default_stream, load_path, &pufferl->checkpoint_contract);
     pufferl_sync_loaded_policy(pufferl);
     pufferl_trace(pufferl, steps);
     close_pufferl(pufferl);
@@ -5803,7 +5977,7 @@ int main(int argc, char** argv) {
     setbuf(stdout, NULL);
     setbuf(stderr, NULL);
     if (argc < 3) {
-        fprintf(stderr, "usage: %s train|eval|trace|eval_bot|match|league|sweep ENV [section.key=value ...]\n", argv[0]);
+        fprintf(stderr, "usage: %s train|check|eval|trace|eval_bot|match|league|sweep ENV [section.key=value ...]\n", argv[0]);
         exit(1);
     }
 
@@ -5815,7 +5989,12 @@ int main(int argc, char** argv) {
 #endif
     TrainContext ctx = {.world_size = 1, .artifact_owner = 1};
 
-    if (strcmp(mode, "trace") == 0) {
+    if (strcmp(mode, "check") == 0) {
+        char resolved[4096];
+        const char* load = puf_checkpoint_path_key(&ini, "load_model_path", resolved, sizeof(resolved));
+        kag_training_preflight(&ini, load);
+        printf("Configuration/checkpoint check passed. No GPU allocation or training performed.\n");
+    } else if (strcmp(mode, "trace") == 0) {
 #ifdef PUFFER_GPU_ENV
         fprintf(stderr, "trace is only supported by the native CPU environment build\n");
         return 1;

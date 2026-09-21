@@ -1,0 +1,184 @@
+{
+  "bank": {
+    "bank_contract_sha256": "192f306d4b37ec020238e984c056650f11fccbe042e040ea23b5185309236e50",
+    "bytes": 103636320,
+    "counts": [
+      1079,
+      20574,
+      24285
+    ],
+    "games": 8192,
+    "joint_decisions": 463779,
+    "path": "/home/felix/puffertank/pufferlib/runs/pokemon_states_20260913/states.pks",
+    "perturbed_games": 1024,
+    "record_bytes": 2256,
+    "seed": 76101,
+    "sha256": "5ccc6ac9ef1c7ff787bfdc18d19e1ea0c969411f44b5f71652312e441c1cfeca",
+    "strata": [
+      8,
+      153,
+      308
+    ],
+    "timeouts": 0,
+    "version": 1,
+    "wall_seconds": 305.2204691349998
+  },
+  "note": "Root-start held-out panel scores, not exploitability. Training seconds exclude evaluation; bank generation is a one-time treatment cost. Two seeds are a pilot, not a general guarantee.",
+  "paired_final_deltas": [
+    {
+      "score_delta": 0.009765625,
+      "seed": 6101
+    },
+    {
+      "score_delta": 0.0078125,
+      "seed": 6102
+    }
+  ],
+  "parent_score": 0.814453125,
+  "results": [
+    {
+      "arm": "root",
+      "checkpoint": "/home/felix/puffertank/pufferlib/runs/pokemon_states_20260913/jobs/seed6101_root/checkpoints/pokemon/seed6101_root/0000000005242880.bin",
+      "final": false,
+      "score": 0.8046875,
+      "seed": 6101,
+      "steps": 5242880,
+      "train_seconds": 34.807204484939575
+    },
+    {
+      "arm": "root",
+      "checkpoint": "/home/felix/puffertank/pufferlib/runs/pokemon_states_20260913/jobs/seed6101_root/checkpoints/pokemon/seed6101_root/0000000010485760.bin",
+      "final": false,
+      "score": 0.80859375,
+      "seed": 6101,
+      "steps": 10485760,
+      "train_seconds": 75.48099565505981
+    },
+    {
+      "arm": "root",
+      "checkpoint": "/home/felix/puffertank/pufferlib/runs/pokemon_states_20260913/jobs/seed6101_root/checkpoints/pokemon/seed6101_root/0000000015728640.bin",
+      "final": false,
+      "score": 0.78125,
+      "seed": 6101,
+      "steps": 15728640,
+      "train_seconds": 105.1805305480957
+    },
+    {
+      "arm": "root",
+      "checkpoint": "/home/felix/puffertank/pufferlib/runs/pokemon_states_20260913/jobs/seed6101_root/checkpoints/pokemon/seed6101_root/0000000019922944.bin",
+      "final": true,
+      "score": 0.78515625,
+      "seed": 6101,
+      "steps": 19922944,
+      "train_seconds": 129.4412968158722
+    },
+    {
+      "arm": "states",
+      "checkpoint": "/home/felix/puffertank/pufferlib/runs/pokemon_states_20260913/jobs/seed6101_states/checkpoints/pokemon/seed6101_states/0000000005242880.bin",
+      "final": false,
+      "score": 0.7890625,
+      "seed": 6101,
+      "steps": 5242880,
+      "train_seconds": 54.98521184921265
+    },
+    {
+      "arm": "states",
+      "checkpoint": "/home/felix/puffertank/pufferlib/runs/pokemon_states_20260913/jobs/seed6101_states/checkpoints/pokemon/seed6101_states/0000000010485760.bin",
+      "final": false,
+      "score": 0.791015625,
+      "seed": 6101,
+      "steps": 10485760,
+      "train_seconds": 95.81726741790771
+    },
+    {
+      "arm": "states",
+      "checkpoint": "/home/felix/puffertank/pufferlib/runs/pokemon_states_20260913/jobs/seed6101_states/checkpoints/pokemon/seed6101_states/0000000015728640.bin",
+      "final": false,
+      "score": 0.775390625,
+      "seed": 6101,
+      "steps": 15728640,
+      "train_seconds": 135.42279267311096
+    },
+    {
+      "arm": "states",
+      "checkpoint": "/home/felix/puffertank/pufferlib/runs/pokemon_states_20260913/jobs/seed6101_states/checkpoints/pokemon/seed6101_states/0000000019922944.bin",
+      "final": true,
+      "score": 0.794921875,
+      "seed": 6101,
+      "steps": 19922944,
+      "train_seconds": 163.8527615070343
+    },
+    {
+      "arm": "states",
+      "checkpoint": "/home/felix/puffertank/pufferlib/runs/pokemon_states_20260913/jobs/seed6102_states/checkpoints/pokemon/seed6102_states/0000000005242880.bin",
+      "final": false,
+      "score": 0.810546875,
+      "seed": 6102,
+      "steps": 5242880,
+      "train_seconds": 40.99319934844971
+    },
+    {
+      "arm": "states",
+      "checkpoint": "/home/felix/puffertank/pufferlib/runs/pokemon_states_20260913/jobs/seed6102_states/checkpoints/pokemon/seed6102_states/0000000010485760.bin",
+      "final": false,
+      "score": 0.794921875,
+      "seed": 6102,
+      "steps": 10485760,
+      "train_seconds": 78.68869519233704
+    },
+    {
+      "arm": "states",
+      "checkpoint": "/home/felix/puffertank/pufferlib/runs/pokemon_states_20260913/jobs/seed6102_states/checkpoints/pokemon/seed6102_states/0000000015728640.bin",
+      "final": false,
+      "score": 0.802734375,
+      "seed": 6102,
+      "steps": 15728640,
+      "train_seconds": 116.09665155410767
+    },
+    {
+      "arm": "states",
+      "checkpoint": "/home/felix/puffertank/pufferlib/runs/pokemon_states_20260913/jobs/seed6102_states/checkpoints/pokemon/seed6102_states/0000000019922944.bin",
+      "final": true,
+      "score": 0.802734375,
+      "seed": 6102,
+      "steps": 19922944,
+      "train_seconds": 140.31492137908936
+    },
+    {
+      "arm": "root",
+      "checkpoint": "/home/felix/puffertank/pufferlib/runs/pokemon_states_20260913/jobs/seed6102_root/checkpoints/pokemon/seed6102_root/0000000005242880.bin",
+      "final": false,
+      "score": 0.8046875,
+      "seed": 6102,
+      "steps": 5242880,
+      "train_seconds": 56.404393911361694
+    },
+    {
+      "arm": "root",
+      "checkpoint": "/home/felix/puffertank/pufferlib/runs/pokemon_states_20260913/jobs/seed6102_root/checkpoints/pokemon/seed6102_root/0000000010485760.bin",
+      "final": false,
+      "score": 0.775390625,
+      "seed": 6102,
+      "steps": 10485760,
+      "train_seconds": 101.23477149009705
+    },
+    {
+      "arm": "root",
+      "checkpoint": "/home/felix/puffertank/pufferlib/runs/pokemon_states_20260913/jobs/seed6102_root/checkpoints/pokemon/seed6102_root/0000000015728640.bin",
+      "final": false,
+      "score": 0.79296875,
+      "seed": 6102,
+      "steps": 15728640,
+      "train_seconds": 146.89480018615723
+    },
+    {
+      "arm": "root",
+      "checkpoint": "/home/felix/puffertank/pufferlib/runs/pokemon_states_20260913/jobs/seed6102_root/checkpoints/pokemon/seed6102_root/0000000019922944.bin",
+      "final": true,
+      "score": 0.794921875,
+      "seed": 6102,
+      "steps": 19922944,
+      "train_seconds": 183.2257001399994
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "id": "a00eab937d73d4f926281b330401e03a83e890d7892fd5acbc81f2f23d8c09e6",
+  "opponents": [
+    {
+      "config_sha256": "fdc9456e8e904b90912d2413bfd28feaa1bbf4cd68ccc3268bdb571fff2584c3",
+      "path": "/home/felix/puffertank/pufferlib/runs/pokemon_qd_selfplay_long_20260912/candidates/seed/checkpoints/pokemon/seed_1789263411277120264/0000000005242880.bin",
+      "sha256": "9c855e733b7b08fb9f54016239f1d21a982e24c47ecb3d755a70f2a5e3e0fa01",
+      "team": "None"
+    },
+    {
+      "config_sha256": "fdc9456e8e904b90912d2413bfd28feaa1bbf4cd68ccc3268bdb571fff2584c3",
+      "path": "/home/felix/puffertank/pufferlib/runs/pokemon_qd_selfplay_long_20260912/candidates/seed/checkpoints/pokemon/seed_1789263411277120264/0000000036700160.bin",
+      "sha256": "7b59dcfa8a9720bac0da17bff36dd2d9516f7bf65ba8f176e32893c24e774b4b",
+      "team": "None"
+    },
+    {
+      "config_sha256": "fdc9456e8e904b90912d2413bfd28feaa1bbf4cd68ccc3268bdb571fff2584c3",
+      "path": "/home/felix/puffertank/pufferlib/runs/pokemon_qd_selfplay_long_20260912/candidates/seed/checkpoints/pokemon/seed_1789263411277120264/0000000068157440.bin",
+      "sha256": "282c9ab32568e2d418f0c97b7ed9fd343a71e1d72ee8cb1915a62835b3bca2a6",
+      "team": "None"
+    },
+    {
+      "config_sha256": "fdc9456e8e904b90912d2413bfd28feaa1bbf4cd68ccc3268bdb571fff2584c3",
+      "path": "/home/felix/puffertank/pufferlib/runs/pokemon_qd_selfplay_long_20260912/candidates/seed/checkpoints/pokemon/seed_1789263411277120264/0000000099614720.bin",
+      "sha256": "964e676aa5fd1151f8f77bec2372f87d6444fa42ae4961795d677f8affb10ae7",
+      "team": "None"
+    }
+  ]
+}

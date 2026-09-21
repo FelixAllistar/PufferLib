@@ -1,5 +1,67 @@
 # ROM training sweep
 
+## Current sweep contract (2026-09-18)
+
+`./puffer sweep retro` now respects `env.spawn_levels` and `env.frameskip`.
+Single-level starts, CSV subsets and `all` are supported. The final evaluation
+panel reads those settings from each checkpoint's sidecar. Explicit panel
+overrides are available as `--levels CSV|all` and `--frameskip N`.
+
+`train.reward_clip=0` disables clipping in both training and sweeps. Positive
+clipping retains the conservative reward-bound check. Reward weights must be
+finite and nonnegative. When using positive clipping, all sampled weight
+combinations must fit its bound.
+
+Use `base.load_model_path=None` for fresh trials or a concrete checkpoint path
+for a fixed warm start. Moving `latest` is rejected because completed trials
+would change the starting checkpoint. Loading weights does not restore optimizer
+state. Observation resolution, hidden size and layer count must match the file.
+
+`sweep_only` selects active search dimensions. The first trial uses the current
+defaults, so every selected parameter's current value must lie within its range.
+Reward defaults belong under `[env]`; bare reward keys under `[sweep]` have no
+effect. `sweep.trial_timesteps` controls trial budgets, rounded down to whole
+rollout batches. The Retro hook scores final checkpoints only.
+
+With `sweep.goal=maximize`, available objectives are:
+
+| Metric | Ranking |
+| --- | --- |
+| `speed` | More clears, then fewer native frames per successful clear |
+| `perf` / `score` | More clears, then bounded forward progress |
+| `distance` | Mean nonnegative forward pixels in the original area |
+
+For speed, with `N` attempts, `C` clears, budget `B`, and mean successful clear
+time `T`, the score is `100 * (C + 0.5 * (1 - T/B)) / N`. If no attempts clear,
+bounded mean progress replaces the speed tie-breaker. One additional clear
+outweighs all timing improvements; failures earn no survival-time bonus. Shaped
+reward does not enter the evaluation score, so larger reward weights cannot
+directly inflate the ranking.
+
+Clear time is the ROM's level transition, **not first flag contact**. Like the
+existing completion time bonus, it includes flag descent, castle entry, timer
+conversion and fireworks. A higher HUD timer at the flag need not imply an
+earlier next-level transition. Training continues past clears until its normal
+episode boundary; evaluation stops at the first source-level clear.
+
+```sh
+./build/retro_batch/sweep_eval PATH.bin --metric speed
+./build/retro_batch/sweep_eval PATH.bin --levels all --repeats 4
+./build/retro_batch/sweep_eval PATH.bin --levels 1-1 --frameskip 1 --deterministic
+```
+
+New `retro_panel_v2` TSV reports declare levels and frameskip and include exact
+native clear frames. Historical v1 panels always used all 32 starts and
+frameskip 1. Compare policies using matching task, budget and sampling settings.
+The stdout `retro_panel version=1 score=...` prefix stays compatible with the
+native score hook; the TSV version describes the evaluation contract.
+
+## Historical all-level preset
+
+The remaining sections document the original fixed all-level experiment.
+Its defaults and restrictions have been superseded by the contract above;
+current numeric values and search dimensions are in `config/retro.ini`.
+
 Run from `/home/felix/puffertank/pufferlib`:
 
 ```bash

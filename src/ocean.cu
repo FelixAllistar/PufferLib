@@ -32,6 +32,10 @@ void puf_normal_init(PrecisionTensor* dst, float std, ulong seed, cudaStream_t s
 #ifdef PUFFER_NETHACK
 #include "../ocean/nethack/nethack.cu"
 #endif
+#if __has_include("../ocean/pokemon/pokemon_encoder.cu")
+#define PUFFER_POKEMON_SEMANTIC
+#include "../ocean/pokemon/pokemon_encoder.cu"
+#endif
 #ifdef PUFFER_SHENANIGUNS3D
 #include "shenaniguns3d.cu"
 #endif
@@ -43,6 +47,9 @@ void puf_normal_init(PrecisionTensor* dst, float std, ulong seed, cudaStream_t s
 static void create_custom_encoder(const char* env_name, Encoder* enc) {
 #ifdef PUFFER_RETRO_CNN
     if (strcmp(env_name, "retro") == 0) { create_retro_encoder(enc); return; }
+#endif
+#ifdef PUFFER_POKEMON_SEMANTIC
+    if(!strcmp(env_name,"pokemon")) {create_pokemon_encoder(enc);return;}
 #endif
 #ifdef PUFFER_KAGGRICULTURE
     if (strcmp(env_name, "kaggriculture") == 0) {
@@ -77,6 +84,15 @@ static void create_custom_encoder(const char* env_name, Encoder* enc) {
 }
 
 static void create_custom_decoder(const char* env_name, Decoder* dec) {
+#ifdef PUFFER_POKEMON_SEMANTIC
+    if(!strcmp(env_name,"pokemon")) {create_pokemon_decoder(dec);return;}
+#endif
+#ifdef PUFFER_KAGGRICULTURE
+    if (strcmp(env_name, "kaggriculture") == 0) {
+        create_kaggriculture_decoder(dec);
+        return;
+    }
+#endif
 #ifdef PUFFER_NETHACK
     if (strcmp(env_name, "nethack") == 0) {
         create_nethack_decoder(dec);

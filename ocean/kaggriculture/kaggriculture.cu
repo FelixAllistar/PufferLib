@@ -27,13 +27,18 @@ typedef struct {
     uint64_t base_seed;
     int policy_market_slots;
     int policy_max_hands;
+    KagRewardConfig reward;
+    int land_buy_min_days;
     int macro_mode;
+    int macro_score_features;
+    int frozen_macro_score_features;
     int macro_executor_version;
     int frozen_macro_executor_version;
     int observation_version;
     int frozen_observation_version;
     int frozen_macro_mode;
     int macro_decision_interval;
+    int frozen_macro_decision_interval;
     float macro_score_scale;
     int opening_turns;
     int reset_opening_turns;
@@ -83,8 +88,11 @@ typedef struct {
 
 static KagCudaConfig h_kag_cuda_config;
 static __constant__ KagCudaConfig d_kag_cuda_config;
+#define KAG_CONTROLLER_BANKS 64
+static __constant__ KagController d_kag_controllers[KAG_CONTROLLER_BANKS];
 static Env* d_kag_matches = nullptr;
 static int* d_kag_rows = nullptr;
+static int* d_kag_sampling_rows = nullptr; /* policy row -> 2*match + seat */
 static KGScriptTape* d_kag_tapes = nullptr;
 static KGAction* d_kag_decoded_actions = nullptr;
 static int g_kag_total_agents = 0;
@@ -352,13 +360,6 @@ __device__ static void kag_cuda_transition(Env* env, Env* shells,
         KGAction* actions, int* bank_completed,
         const KGState* reset_states, int reset_state_count) {
     KGState* game = &env->game_storage;
-    float before_potential[KG_NUM_PLAYERS] = {
-        env->potential[0], env->potential[1]};
-    int before_money[KG_NUM_PLAYERS] = {
-        game->players[0].money, game->players[1].money};
-    float before_progress[KG_NUM_PLAYERS] = {
-        env->progress_value[0], env->progress_value[1]};
-
     for (int player = 0; player < KG_NUM_PLAYERS; player++) {
         kag_decode_policy_action(&actions[player], &env->agents[player],
             game, player, env);
@@ -366,11 +367,6 @@ __device__ static void kag_cuda_transition(Env* env, Env* shells,
     }
     kag_cuda_bot_overrides(env, actions, tapes);
     kag_curriculum_note_actions(env, actions);
-    float maintenance_rewards[KG_NUM_PLAYERS];
-    for (int player = 0; player < KG_NUM_PLAYERS; player++) {
-        maintenance_rewards[player] = kag_maintenance_action_reward(
-            env, player, &actions[player]);
-    }
     kag_log_actions(env, game, actions);
 
     kg_step(game, actions);
@@ -382,24 +378,10 @@ __device__ static void kag_cuda_transition(Env* env, Env* shells,
         ? (env->agents[0].policy == 0 ? 0 : 1)
         : (env->bot_first ? 1 : 0);
     int curriculum_success = 0;
-    float curriculum_reward = kag_curriculum_after_step(
-        env, &curriculum_success);
+    kag_curriculum_after_step(env, &curriculum_success);
     int done = kg_done(game);
-    env->potential[0] = kag_player_potential(env, 0);
-    env->potential[1] = kag_player_potential(env, 1);
     for (int player = 0; player < KG_NUM_PLAYERS; player++) {
-        float reward = kag_potential_shaping_reward(env,
-            before_potential[player], env->potential[player]);
-        reward += kag_cash_shaping_reward(env,
-            before_money[player], money[player]);
-        float progress_value = kag_player_progress_value(env, player);
-        reward += kag_progress_potential_reward(env,
-            before_progress[player], progress_value, done);
-        env->progress_value[player] = progress_value;
-        reward += maintenance_rewards[player];
-        reward += kag_expansion_reward(env, player);
-        reward += kag_phase_reward(game, player, env->reward_phase_scale);
-        if (player == kag_curriculum_player(env)) reward += curriculum_reward;
+        float reward = kag_reward_step(env, player, done);
         env->agents[player].rewards[0] = reward;
         env->episode_returns[player] += reward;
     }
@@ -410,54 +392,39 @@ __device__ static void kag_cuda_transition(Env* env, Env* shells,
     }
 
     kag_curriculum_record(env, curriculum_success);
-    float terminal_potential[KG_NUM_PLAYERS] = {
-        env->potential[0], env->potential[1]};
-    float terminal_progress[KG_NUM_PLAYERS] = {
-        kag_player_progress_value(env, 0), kag_player_progress_value(env, 1)};
     float win0 = money[0] > money[1] ? 1.0f
         : money[0] == money[1] ? 0.5f : 0.0f;
     float model_win = model_player == 0 ? win0 : 1.0f - win0;
     int model_money = money[model_player];
     int opponent_money = money[1 - model_player];
-    float money0_term = kag_terminal_money_reward(env, money[0]);
-    float money1_term = kag_terminal_money_reward(env, money[1]);
-    money0_term += kag_progress_terminal_money_reward(env, money[0]);
-    money1_term += kag_progress_terminal_money_reward(env, money[1]);
-    money0_term += kag_positive_terminal_win_reward(env, money[0], money[1]);
-    money1_term += kag_positive_terminal_win_reward(env, money[1], money[0]);
-    env->agents[0].rewards[0] += money0_term;
-    env->agents[1].rewards[0] += money1_term;
-    env->episode_returns[0] += money0_term;
-    env->episode_returns[1] += money1_term;
     for (int player = 0; player < KG_NUM_PLAYERS; player++) {
         env->agents[player].terminals[0] = 1.0f;
     }
 
+    KagEpisodeCounters metrics[2] = {kag_metrics_delta(env, 0), kag_metrics_delta(env, 1)};
+    kag_metrics_finish(env, model_player, model_win, &metrics[model_player]);
     env->log.perf += model_win;
-    env->log.score += terminal_potential[model_player];
-    env->log.sweep_score += env->reward_progress_scale > 0.0f
-        ? terminal_progress[model_player]
-        : terminal_potential[model_player];
-    env->log.opponent_score += terminal_potential[1 - model_player];
-    env->log.future_value_score += terminal_progress[model_player];
-    env->log.opponent_future_value_score += terminal_progress[1 - model_player];
+    kag_reward_log(env, model_player);
+    env->log.score += (float)model_money;
+    env->log.sweep_score += (float)model_money;
+    env->log.opponent_score += (float)opponent_money;
     env->log.money += (float)model_money;
     env->log.opponent_money += (float)opponent_money;
-    env->log.gdp += game->production_value[model_player];
-    env->log.opponent_gdp += game->production_value[1 - model_player];
-    env->log.production_units += game->production_units[model_player];
+    env->log.gdp += metrics[model_player].production_value;
+    env->log.opponent_gdp += metrics[1 - model_player].production_value;
+    env->log.production_units += metrics[model_player].production_units;
     env->log.opponent_production_units +=
-        game->production_units[1 - model_player];
-    env->log.successful_plants += game->planted_crops[model_player];
-    env->log.successful_animal_places += game->placed_animals[model_player];
-    env->log.sold_units += game->sold_units[model_player];
-    env->log.sales_revenue += game->sales_revenue[model_player];
-    env->log.bought_units += game->bought_units[model_player];
-    env->log.purchase_spend += game->purchase_spend[model_player];
+        metrics[1 - model_player].production_units;
+    env->log.successful_plants += metrics[model_player].planted_crops;
+    env->log.successful_animal_places += metrics[model_player].placed_animals;
+    env->log.sold_units += metrics[model_player].sold_units;
+    env->log.sales_revenue += metrics[model_player].sales_revenue;
+    env->log.bought_units += metrics[model_player].bought_units;
+    env->log.purchase_spend += metrics[model_player].purchase_spend;
     for (int item = 0; item < KG_NUM_PRODUCTS; item++) {
-        int produced = (int)game->production_product_units[model_player][item];
-        int sold = (int)game->sold_product_units[model_player][item];
-        float revenue = game->sold_product_revenue[model_player][item];
+        int produced = (int)metrics[model_player].production_product_units[item];
+        int sold = (int)metrics[model_player].sold_product_units[item];
+        float revenue = metrics[model_player].sold_product_revenue[item];
         env->log.ending_shed_units += game->players[model_player].shed[item];
         env->log.ending_shed_value += game->players[model_player].shed[item]
             * game->market.prices[item];
@@ -472,14 +439,14 @@ __device__ static void kag_cuda_transition(Env* env, Env* shells,
         }
     }
     env->log.strawberry_sold_units +=
-        game->sold_product_units[model_player][KG_ITEM_STRAWBERRY];
+        metrics[model_player].sold_product_units[KG_ITEM_STRAWBERRY];
     env->log.strawberry_sales_revenue +=
-        game->sold_product_revenue[model_player][KG_ITEM_STRAWBERRY];
+        metrics[model_player].sold_product_revenue[KG_ITEM_STRAWBERRY];
     env->log.milk_sold_units +=
-        game->sold_product_units[model_player][KG_ITEM_MILK];
+        metrics[model_player].sold_product_units[KG_ITEM_MILK];
     env->log.milk_sales_revenue +=
-        game->sold_product_revenue[model_player][KG_ITEM_MILK];
-    kag_log_hinge_opportunity(game, model_player, KG_ITEM_CARROT,
+        metrics[model_player].sold_product_revenue[KG_ITEM_MILK];
+    kag_log_hinge_opportunity(game, &metrics[model_player], model_player, KG_ITEM_CARROT,
         &env->log.carrot_opportunity_fraction,
         &env->log.carrot_opportunity_no_production_price,
         &env->log.carrot_opportunity_response,
@@ -488,7 +455,7 @@ __device__ static void kag_cuda_transition(Env* env, Env* shells,
         &env->log.carrot_opportunity_sold_units,
         &env->log.carrot_opportunity_sales_revenue,
         &env->log.carrot_opportunity_sale_price);
-    kag_log_hinge_opportunity(game, model_player, KG_ITEM_TOMATO,
+    kag_log_hinge_opportunity(game, &metrics[model_player], model_player, KG_ITEM_TOMATO,
         &env->log.tomato_opportunity_fraction,
         &env->log.tomato_opportunity_no_production_price,
         &env->log.tomato_opportunity_response,
@@ -497,7 +464,7 @@ __device__ static void kag_cuda_transition(Env* env, Env* shells,
         &env->log.tomato_opportunity_sold_units,
         &env->log.tomato_opportunity_sales_revenue,
         &env->log.tomato_opportunity_sale_price);
-    kag_log_hinge_opportunity(game, model_player, KG_ITEM_EGG,
+    kag_log_hinge_opportunity(game, &metrics[model_player], model_player, KG_ITEM_EGG,
         &env->log.egg_opportunity_fraction,
         &env->log.egg_opportunity_no_production_price,
         &env->log.egg_opportunity_response,
@@ -507,32 +474,30 @@ __device__ static void kag_cuda_transition(Env* env, Env* shells,
         &env->log.egg_opportunity_sales_revenue,
         &env->log.egg_opportunity_sale_price);
     env->log.strawberry_units +=
-        game->production_product_units[model_player][KG_ITEM_STRAWBERRY];
+        metrics[model_player].production_product_units[KG_ITEM_STRAWBERRY];
     env->log.opponent_strawberry_units +=
-        game->production_product_units[1 - model_player][KG_ITEM_STRAWBERRY];
+        metrics[1 - model_player].production_product_units[KG_ITEM_STRAWBERRY];
     env->log.strawberry_value +=
-        game->production_product_value[model_player][KG_ITEM_STRAWBERRY];
+        metrics[model_player].production_product_value[KG_ITEM_STRAWBERRY];
     env->log.opponent_strawberry_value +=
-        game->production_product_value[1 - model_player][KG_ITEM_STRAWBERRY];
+        metrics[1 - model_player].production_product_value[KG_ITEM_STRAWBERRY];
     env->log.milk_units +=
-        game->production_product_units[model_player][KG_ITEM_MILK];
+        metrics[model_player].production_product_units[KG_ITEM_MILK];
     env->log.opponent_milk_units +=
-        game->production_product_units[1 - model_player][KG_ITEM_MILK];
+        metrics[1 - model_player].production_product_units[KG_ITEM_MILK];
     env->log.milk_value +=
-        game->production_product_value[model_player][KG_ITEM_MILK];
+        metrics[model_player].production_product_value[KG_ITEM_MILK];
     env->log.opponent_milk_value +=
-        game->production_product_value[1 - model_player][KG_ITEM_MILK];
+        metrics[1 - model_player].production_product_value[KG_ITEM_MILK];
     env->log.episode_return += env->episode_returns[model_player];
-    env->log.episode_length += (float)(game->step
-        - env->curriculum_start_step);
-    env->log.land_purchases += (float)(kag_popcount(
-        (unsigned)game->players[model_player].unlocked_mask) - 1);
-    env->log.water_coverage += game->plant_days[model_player] > 0
-        ? (float)game->watered_plant_days[model_player]
-            / game->plant_days[model_player] : 1.0f;
-    env->log.neglect_deaths += (float)game->neglect_deaths[model_player];
+    env->log.episode_length += metrics[model_player].step;
+    env->log.land_purchases += metrics[model_player].plots;
+    env->log.water_coverage += metrics[model_player].plant_days > 0
+        ? (float)metrics[model_player].watered_plant_days
+            / metrics[model_player].plant_days : 1.0f;
+    env->log.neglect_deaths += (float)metrics[model_player].neglect_deaths;
     env->log.planting_day_deaths +=
-        (float)game->planting_day_deaths[model_player];
+        (float)metrics[model_player].planting_day_deaths;
     for (int crop = 0; crop < KG_NUM_CROPS; crop++) {
         env->log.unused_seed_value += game->players[model_player].seeds[crop]
             * KG_CROP_DEFS[crop].seed_cost;
@@ -592,6 +557,7 @@ __device__ static void kag_cuda_transition(Env* env, Env* shells,
     }
     env->log.n += 1.0f;
     env->log.reset_games += env->reset_source ? 1.0f : 0.0f;
+    env->log.root_games += env->reset_source ? 0.0f : 1.0f;
     if (env->tag > 0) {
         env->boundary_reached = 1;
         atomicAdd(&bank_completed[env->tag], 1);
@@ -602,12 +568,10 @@ __device__ static void kag_cuda_transition(Env* env, Env* shells,
     kag_cuda_reset_episode(env, tapes, reset_states, reset_state_count);
     env->episode_returns[0] = 0.0f;
     env->episode_returns[1] = 0.0f;
-    env->potential[0] = kag_player_potential(env, 0);
-    env->potential[1] = kag_player_potential(env, 1);
-    env->progress_value[0] = kag_player_progress_value(env, 0);
-    env->progress_value[1] = kag_player_progress_value(env, 1);
-    kag_reset_expansion_peaks(env, 0);
-    kag_reset_expansion_peaks(env, 1);
+    kag_reward_reset(env, 0);
+    kag_reward_reset(env, 1);
+    kag_reset_land_buy_delay(env, 0);
+    kag_reset_land_buy_delay(env, 1);
     kag_write_all_observations_from_tapes(env, tapes);
 }
 
@@ -624,6 +588,8 @@ __global__ static void kag_cuda_reset_kernel(Env* shells, Env* matches,
     env->rng = (unsigned)match_id;
     env->policy_market_slots = d_kag_cuda_config.policy_market_slots;
     env->policy_max_hands = d_kag_cuda_config.policy_max_hands;
+    env->reward = d_kag_cuda_config.reward;
+    env->land_buy_min_days = d_kag_cuda_config.land_buy_min_days;
     env->macro_mode = d_kag_cuda_config.macro_mode;
     env->macro_executor_version = d_kag_cuda_config.macro_executor_version;
     env->frozen_macro_executor_version = d_kag_cuda_config.frozen_macro_executor_version;
@@ -631,6 +597,9 @@ __global__ static void kag_cuda_reset_kernel(Env* shells, Env* matches,
     env->frozen_observation_version = d_kag_cuda_config.frozen_observation_version;
     env->frozen_macro_mode = d_kag_cuda_config.frozen_macro_mode;
     env->macro_decision_interval = d_kag_cuda_config.macro_decision_interval;
+    env->frozen_macro_decision_interval = d_kag_cuda_config.frozen_macro_decision_interval;
+    env->macro_score_features = d_kag_cuda_config.macro_score_features;
+    env->frozen_macro_score_features = d_kag_cuda_config.frozen_macro_score_features;
     env->macro_score_scale = d_kag_cuda_config.macro_score_scale;
     env->opening_turns = d_kag_cuda_config.opening_turns;
     env->reset_opening_turns = d_kag_cuda_config.reset_opening_turns;
@@ -716,6 +685,8 @@ __global__ static void kag_cuda_reset_kernel(Env* shells, Env* matches,
      * them in shell.num_agents/policy so reset remains one compact kernel. */
     env->agents[0].policy = shells[match_rows[0]].agents[0].policy;
     env->agents[1].policy = shells[match_rows[1]].agents[0].policy;
+    for (int player = 0; player < 2; player++)
+        env->controller[player] = d_kag_controllers[env->agents[player].policy];
     env->tag = env->agents[0].policy > env->agents[1].policy
         ? env->agents[0].policy : env->agents[1].policy;
     kag_cuda_choose_bot(env, match_id);
@@ -730,10 +701,8 @@ __global__ static void kag_cuda_reset_kernel(Env* shells, Env* matches,
     for (int player = 0; player < KG_NUM_PLAYERS; player++) {
         env->agents[player].rewards[0] = 0.0f;
         env->agents[player].terminals[0] = 0.0f;
-        env->potential[player] = kag_player_potential(env, player);
-        env->progress_value[player] =
-            kag_player_progress_value(env, player);
-        kag_reset_expansion_peaks(env, player);
+        kag_reward_reset(env, player);
+        kag_reset_land_buy_delay(env, player);
     }
     kag_write_all_observations_from_tapes(env, tapes);
 }
@@ -770,7 +739,11 @@ static void kag_cuda_load_config(Dict* kwargs) {
     h_kag_cuda_config.base_seed = (uint64_t)dict_get(kwargs, "seed");
     h_kag_cuda_config.policy_market_slots = template_env.policy_market_slots;
     h_kag_cuda_config.policy_max_hands = template_env.policy_max_hands;
+    h_kag_cuda_config.reward = template_env.reward;
+    h_kag_cuda_config.land_buy_min_days = template_env.land_buy_min_days;
     h_kag_cuda_config.macro_mode = template_env.macro_mode;
+    h_kag_cuda_config.macro_score_features = template_env.macro_score_features;
+    h_kag_cuda_config.frozen_macro_score_features = template_env.frozen_macro_score_features;
     h_kag_cuda_config.macro_executor_version = template_env.macro_executor_version;
     h_kag_cuda_config.frozen_macro_executor_version = template_env.frozen_macro_executor_version;
     h_kag_cuda_config.observation_version = template_env.observation_version;
@@ -778,6 +751,7 @@ static void kag_cuda_load_config(Dict* kwargs) {
     h_kag_cuda_config.frozen_macro_mode = template_env.frozen_macro_mode;
     h_kag_cuda_config.macro_decision_interval =
         template_env.macro_decision_interval;
+    h_kag_cuda_config.frozen_macro_decision_interval = template_env.frozen_macro_decision_interval;
     h_kag_cuda_config.macro_score_scale = template_env.macro_score_scale;
     h_kag_cuda_config.opening_turns = template_env.opening_turns;
     h_kag_cuda_config.reset_opening_turns = template_env.reset_opening_turns;
@@ -870,6 +844,9 @@ static Env* puf_envs_create(int total_agents, Dict* env_kwargs,
     kag_script_init();
 
     int frozen_banks = (int)dict_get(vec_kwargs, "num_frozen_banks");
+    if (frozen_banks >= KAG_CONTROLLER_BANKS) std::abort();
+    KagController controllers[KAG_CONTROLLER_BANKS] = {};
+    cudaMemcpyToSymbol(d_kag_controllers, controllers, sizeof(controllers));
     g_kag_bank_count = frozen_banks;
     float frozen_pct = (float)dict_get(vec_kwargs, "frozen_bank_pct");
     int frozen_matches = frozen_banks > 0
@@ -918,6 +895,12 @@ static Env* puf_envs_create(int total_agents, Dict* env_kwargs,
     cudaMalloc((void**)&d_kag_rows, (size_t)total_agents * sizeof(int));
     cudaMemcpy(d_kag_rows, host_rows, (size_t)total_agents * sizeof(int),
         cudaMemcpyHostToDevice);
+    int* sampling_rows = (int*)std::calloc((size_t)total_agents, sizeof(int));
+    if (!sampling_rows) std::abort();
+    for (int i = 0; i < total_agents; i++) sampling_rows[host_rows[i]] = i;
+    cudaMalloc((void**)&d_kag_sampling_rows, (size_t)total_agents * sizeof(int));
+    cudaMemcpy(d_kag_sampling_rows, sampling_rows, (size_t)total_agents * sizeof(int), cudaMemcpyHostToDevice);
+    std::free(sampling_rows);
     cudaMalloc((void**)&d_kag_tapes, KG_SCRIPT_COUNT * sizeof(KGScriptTape));
     cudaMemcpy(d_kag_tapes, kag_script_tapes,
         KG_SCRIPT_COUNT * sizeof(KGScriptTape), cudaMemcpyHostToDevice);
@@ -1019,6 +1002,7 @@ static void puf_envs_close(Env* envs) {
     if (d_kag_decoded_actions) cudaFree(d_kag_decoded_actions);
     if (d_kag_tapes) cudaFree(d_kag_tapes);
     if (d_kag_rows) cudaFree(d_kag_rows);
+    if (d_kag_sampling_rows) cudaFree(d_kag_sampling_rows);
     if (d_kag_matches) cudaFree(d_kag_matches);
     if (d_kag_opening_rng) cudaFree(d_kag_opening_rng);
     if (d_kag_reset_states) cudaFree(d_kag_reset_states);
@@ -1026,6 +1010,7 @@ static void puf_envs_close(Env* envs) {
     cudaFree(envs);
     d_kag_tapes = nullptr;
     d_kag_rows = nullptr;
+    d_kag_sampling_rows = nullptr;
     d_kag_matches = nullptr;
     d_kag_decoded_actions = nullptr;
     d_kag_opening_rng = nullptr;
@@ -1039,5 +1024,32 @@ static void puf_envs_close(Env* envs) {
 }
 
 #define PUF_GPU_ENV_BIND_BUFFERS 1
+
+static const Env* puf_sampling_envs(void) { return d_kag_matches; }
+static const int* puf_sampling_rows(void) { return d_kag_sampling_rows; }
+
+__global__ static void kag_set_controller_kernel(Env* matches, int n, int policy,
+        KagController controller, const KGScriptTape* tapes) {
+    int match = blockIdx.x * blockDim.x + threadIdx.x;
+    if (match >= n) return;
+    Env* env = matches + match;
+    int changed = 0;
+    for (int seat = 0; seat < 2; seat++) if (env->agents[seat].policy == policy) {
+        env->controller[seat] = controller;
+        env->macro_intent[seat] = env->macro_ticks[seat] = 0;
+        env->macro_quantity[seat] = env->macro_target[seat] = 0;
+        changed = 1;
+    }
+    if (changed) kag_write_all_observations_from_tapes(env, tapes);
+}
+
+static void puf_envs_set_controller(int policy, KagController controller) {
+    if (policy < 0 || policy >= KAG_CONTROLLER_BANKS) std::abort();
+    cudaMemcpyToSymbol(d_kag_controllers, &controller, sizeof(controller),
+        (size_t)policy * sizeof(controller));
+    kag_set_controller_kernel<<<kag_cuda_grid(g_kag_num_matches), KAG_CUDA_BLOCK>>>(
+        d_kag_matches, g_kag_num_matches, policy, controller, d_kag_tapes);
+    kag_cuda_check("controller binding");
+}
 
 #endif

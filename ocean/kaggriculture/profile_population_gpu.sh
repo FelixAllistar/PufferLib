@@ -62,7 +62,7 @@ if [[ -n $kag_hidden_size || -n $kag_num_layers ]]; then
 fi
 [[ -x ./puffer ]] || { printf '%s\n' 'Build ./puffer first' >&2; exit 1; }
 if ((${#kag_inputs[@]} == 0)); then
-    kag_inputs=(saved/kaggriculture_league_v5)
+    kag_inputs=(saved/kaggriculture_dense_v3)
 fi
 
 declare -A kag_seen=() kag_paths=() kag_roles=() kag_weights=()
@@ -108,6 +108,10 @@ json_value() {
 profile_one() {
     local label=$1 path=${kag_paths["$1"]} text json completed
     local architecture_args=()
+    local contract mode executor interval features hidden layers alignment
+    contract=$("${KAG_PYTHON:-python3}" ocean/kaggriculture/eval_observation_versions.py \
+        contract "$path") || return 1
+    read -r mode executor interval features hidden layers alignment <<< "$contract"
     local pass_fraction=0 rules_fraction=0
     if [[ $kag_opponent == pass ]]; then
         pass_fraction=1
@@ -119,12 +123,17 @@ profile_one() {
             "policy.hidden_size=$kag_hidden_size"
             "policy.num_layers=$kag_num_layers"
         )
-    elif [[ $label =~ _([0-9]+)x([0-9]+)_ ]]; then
+    else
         architecture_args+=(
-            "policy.hidden_size=${BASH_REMATCH[1]}"
-            "policy.num_layers=${BASH_REMATCH[2]}"
+            "policy.hidden_size=$hidden"
+            "policy.num_layers=$layers"
         )
     fi
+    architecture_args+=(env.observation_version=3 env.frozen_observation_version=3
+        env.macro_mode=3 env.macro_executor_version=0
+        env.frozen_macro_mode=-1 env.frozen_macro_executor_version=-1
+        env.macro_decision_interval=1 env.frozen_macro_decision_interval=-1
+        env.macro_score_features=0 env.frozen_macro_score_features=-1)
     if ! text=$(./puffer eval_bot kaggriculture \
             "base.eval_episodes=$((kag_games / 2))" \
             "base.eval_agents=$kag_gpu_agents" \

@@ -13,6 +13,10 @@ goof*
 # hipified cuda extensions dir [HIP/ROCM]
 pufferlib/extensions/hip/
 *.py
+!ocean/pokemon/behavior_experiment.py
+!ocean/pokemon/event_qd.py
+!ocean/pokemon/tests/test_event_qd.py
+!ocean/pokemon/tests/test_behavior.py
 !pufferlib/population.py
 !tests/test_population_descriptors.py
 !ocean/pokemon/profile_population.py
@@ -21,6 +25,16 @@ pufferlib/extensions/hip/
 !ocean/pokemon/tests/test_league.py
 !pufferlib/metagame.py
 # Kaggriculture competition adapters are source, not generated Python glue.
+!ocean/kaggriculture/prepare_bc_replays.py
+!ocean/kaggriculture/build_entity_bc_dataset.py
+!ocean/kaggriculture/entity_bc_labels.py
+!ocean/kaggriculture/multi_intent_labels.py
+!ocean/kaggriculture/multi_bc_labels.py
+!ocean/kaggriculture/audit_multi_coverage.py
+!ocean/kaggriculture/deploy_20260921/summarize_pilot.py
+!ocean/kaggriculture/tests/test_multi_bc.py
+!ocean/kaggriculture/tests/test_entity_bc.py
+!ocean/kaggriculture/tests/test_prepare_bc_replays.py
 !ocean/kaggriculture/expansion_experiment.py
 !ocean/kaggriculture/confirm_expansion.py
 !ocean/kaggriculture/profit_ablation.py
@@ -226,7 +240,10 @@ box2d*/
 /puffer_retro_fullscreen_candidate
 /puffer_retro_cnn_candidate
 /test_retro_encoder
+/retro
 /retro_batch
+# User-supplied cartridge, imported locally; do not add new ROMs to git.
+/ocean/retro/roms/smb1_ntsc.nes
 /pokemon
 /arpg
 /saves/arpg/
@@ -254,10 +271,15 @@ box2d*/
 /ocean/puffer_survivors/tests/bench_cuda_profile
 /exports/
 
-# Build-time ROM translator source (generated ROM files remain in /build).
+# Retro ROM compiler and validation sources (generated ROM blocks stay in build/).
 !ocean/retro/batch/generate_blocks.py
-!tests/test_native_retro_runtime.py
 !ocean/retro/batch/benchmark_training.py
+!ocean/retro/batch/benchmark_cnn.py
+!ocean/retro/tests/test_watch_cli.py
+!ocean/retro/tests/test_sweep_cli.py
+!tests/test_native_retro_runtime.py
+!tests/test_retro_copy_elision.py
+!tests/bench_retro_buffers.py
 
 # Generated visual-editing scratch files.
 /tmp/imagegen/
@@ -285,3 +307,7 @@ config/kaggriculture.ini.before_*
 config/kaggriculture.ini.failed_*
 config/kaggriculture.ini.pre_*
 ocean/kaggriculture/submission/*.tar.gz
+
+# Native Pokemon state-bank experiment and its runner tests.
+!ocean/pokemon/state_experiment.py
+!ocean/pokemon/tests/test_state_experiment.py

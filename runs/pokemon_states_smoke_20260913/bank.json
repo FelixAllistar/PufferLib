@@ -1,0 +1,24 @@
+{
+  "bank_contract_sha256": "03727806f02d15d58bf3f3a0cbeac994bce27830e0bf459aab9d00c9a2f4e94b",
+  "bytes": 2086992,
+  "counts": [
+    29,
+    512,
+    384
+  ],
+  "games": 128,
+  "joint_decisions": 7175,
+  "path": "/home/felix/puffertank/pufferlib/runs/pokemon_states_smoke_20260913/states.pks",
+  "perturbed_games": 16,
+  "record_bytes": 2256,
+  "seed": 76100,
+  "sha256": "5ed10307eb6641b563ce45b462efecf6d11293d957bae603f1150ff25e5f1a21",
+  "strata": [
+    7,
+    53,
+    79
+  ],
+  "timeouts": 0,
+  "version": 1,
+  "wall_seconds": 4.070892333000302
+}

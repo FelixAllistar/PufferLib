@@ -1,0 +1,10 @@
+[
+  {
+    "path": "/home/felix/puffertank/pufferlib/runs/pokemon_qd_fresh_long_20260912/panel/0/policy.bin",
+    "team": "231,445,513,397,368,526"
+  },
+  {
+    "path": "/home/felix/puffertank/pufferlib/runs/pokemon_qd_fresh_long_20260912/panel/1/policy.bin",
+    "team": "required:429,422,445,512,397,368"
+  }
+]

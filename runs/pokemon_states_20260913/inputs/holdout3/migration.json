@@ -1,0 +1,12 @@
+{
+  "config_sha256": "ff26d7cb1e6d60f4c3fc4e1747f5b2a650ae907ce075ac4bb9b0373316409850",
+  "flag_byte": 476,
+  "flag_encoding": "raw uint8 0/1 (Pokemon is not normalized)",
+  "hidden_size": 128,
+  "num_layers": 2,
+  "path": "/home/felix/puffertank/pufferlib/runs/pokemon_states_20260913/inputs/holdout3/0000000099614720.bin",
+  "sha256": "6e1191fbd2c02baf3c428fbfa8fe776527b764af4bc9d2d90a25649bd1b3bf2b",
+  "source": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/inputs/holdout/3/0000000099614720.bin",
+  "source_config_sha256": "84e40ffb837c2c10f0c5424a200d4314a7e5abf33c40ed6e435c166d94c9d097",
+  "source_sha256": "a82c5fc32661d36bf19bc10ba213fd82c0cf19c5fc9a8d94d279dddd2eb42e53"
+}

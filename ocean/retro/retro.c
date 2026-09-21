@@ -10,11 +10,14 @@
 #include <chrono>
 #include <filesystem>
 #include <ctime>
+#include <climits>
+#include "retro_playback.h"
 #include "retro_inspect.h"
 
 static double now() { return std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count(); }
 static void usage() {
-    fprintf(stderr,"retro play [level]\nretro watch PATH.bin|latest [--random|--continue] [--deterministic] [--inspect|--inspect-check]\n"
+    fprintf(stderr,"retro play [level] [--inspect] [--single-life]\nretro watch [PATH.bin|latest] [level|--level LEVEL] [--random] [--single-life] [--deterministic] [--inspect|--inspect-check]\n"
+        "  LEVEL: 1-1 through 8-4 (default 1-1); lives/respawns continue naturally unless --single-life\n"
         "retro levels\nretro bench [envs=512] [steps=512] [workers=4] [frameskip=1] [levels=all] [random|right|mixed] [idle_loop_skip=1] [reference|blocks] [reference|wide]\n"
         "retro replay INPUT.txt [level=1-1]  # one integer NES button mask (0..255) per frame\n");
 }
@@ -80,13 +83,26 @@ int main(int argc,char** argv) {
     try {
         Ini ini={0}; puf_ini_load_env(&ini,RETRO_ENV_NAME,0,nullptr);
         const char* mode=argc>1?argv[1]:"play";
+        if(!strcmp(mode,"--help")||!strcmp(mode,"-h")) { usage(); puf_ini_free(&ini); return 0; }
         if(!strcmp(mode,"bench")) return bench(argc,argv,&ini);
         bool watch=!strcmp(mode,"watch"),replay=!strcmp(mode,"replay"),levels=!strcmp(mode,"levels");
         if(!watch&&!replay&&!levels&&strcmp(mode,"play")) { usage(); return 1; }
-        bool random=false,deterministic=false,inspect=false,inspect_check=false;
+        bool random=false,deterministic=false,inspect=false,inspect_check=false,single_life=false;
         const char* inspect_snapshot=nullptr;
-        for(int i=3;i<argc;i++) {
-            if(!strcmp(argv[i],"--random")) random=true;
+        const char* selected_level=nullptr;
+        const char* checkpoint="latest";
+        int first_arg=2;
+        if(watch&&argc>2&&argv[2][0]!='-') { checkpoint=argv[2]; first_arg=3; }
+        else if(replay) first_arg=3;
+        for(int i=first_arg;i<argc;i++) {
+            if(!strcmp(argv[i],"--help")||!strcmp(argv[i],"-h")) { usage(); puf_ini_free(&ini); return 0; }
+            else if(!strcmp(argv[i],"--random")) random=true;
+            else if(!strcmp(argv[i],"--level")) {
+                if(++i>=argc||argv[i][0]=='-') throw std::runtime_error("--level needs a level such as 4-2");
+                if(selected_level) throw std::runtime_error("specify the starting level only once");
+                selected_level=argv[i];
+            }
+            else if(!strcmp(argv[i],"--single-life")) single_life=true;
             else if(!strcmp(argv[i],"--deterministic")) deterministic=true;
             else if(!strcmp(argv[i],"--inspect")) inspect=true;
             else if(!strcmp(argv[i],"--inspect-check")) inspect=inspect_check=true;
@@ -94,14 +110,18 @@ int main(int argc,char** argv) {
                 if(++i>=argc) throw std::runtime_error("--inspect-snapshot needs an output PNG path");
                 inspect=true; inspect_snapshot=argv[i];
             }
-            else if(!strcmp(argv[i],"--continue")) {} // ROM naturally advances levels.
+            else if(!strcmp(argv[i],"--continue")) {} // Natural lives/level continuation is now the default.
+            else if(argv[i][0]!='-'&&!selected_level&&!levels) selected_level=argv[i];
+            else throw std::runtime_error(std::string("unknown argument: ")+argv[i]);
         }
+        if(random&&selected_level) throw std::runtime_error("--random cannot be combined with an explicit starting level");
         if(inspect&&!watch&&strcmp(mode,"play")) throw std::runtime_error("--inspect requires watch or play mode");
         if(inspect_check&&inspect_snapshot) throw std::runtime_error("--inspect-check and --inspect-snapshot are mutually exclusive");
         // Bound episodes only in the explicit regression mode, to exercise
         // reset images and recurrent resets even with a competent checkpoint.
         if(inspect_check) puf_ini_put(&ini,"env.max_frames","128");
-        puf_ini_put(&ini,"env.spawn_levels",levels||random?"all":replay?(argc>3?argv[3]:"1-1"):!watch&&argc>2?argv[2]:"1-1");
+        else if(!single_life) puf_ini_put(&ini,"env.max_frames",std::to_string(INT_MAX).c_str());
+        puf_ini_put(&ini,"env.spawn_levels",levels||random?"all":selected_level?selected_level:"1-1");
         Env env={}; float obs[OBS_SIZE]={0},action=0,reward=0,terminal=0;
         env.rng=73; puf_init(&env,puf_ini_section(&ini,"env",0));
         env.agents[0].observations=obs; env.agents[0].actions=&action;
@@ -128,7 +148,7 @@ int main(int argc,char** argv) {
         }
         RetroPolicy* net=nullptr; Weights* weights=nullptr;
         if(watch) {
-            std::string path=argc>2&&strcmp(argv[2],"latest")?argv[2]:newest_checkpoint(&ini);
+            std::string path=strcmp(checkpoint,"latest")?checkpoint:newest_checkpoint(&ini);
             size_t hidden=puf_ini_get_int(&ini,"policy","hidden_size");
             size_t layers=puf_ini_get_int(&ini,"policy","num_layers");
             size_t expected=retro_policy_weights(hidden,layers);
@@ -138,10 +158,13 @@ int main(int argc,char** argv) {
             fprintf(stderr,"Watching checkpoint: %s (%s actions)\n",path.c_str(),deterministic?"argmax":"sampled");
             net=make_retro_policy(weights,hidden,layers);
         }
+        fprintf(stderr,"Playback: start %d-%d; %s\n",env.world,env.stage,
+            single_life?"single-life training episodes":"natural lives (new game on game over; R restarts)");
+        RetroPlayback playback={single_life,false};
         bool display=(getenv("DISPLAY")&&*getenv("DISPLAY"))||(getenv("WAYLAND_DISPLAY")&&*getenv("WAYLAND_DISPLAY"));
         if(inspect) {
             if(!display&&!inspect_check) throw std::runtime_error("--inspect needs a display; use --inspect-check for headless validation");
-            int result=retro_inspect(env,net,obs,&action,&reward,&terminal,deterministic,inspect_check,inspect_snapshot);
+            int result=retro_inspect(env,net,obs,&action,&reward,&terminal,playback,deterministic,inspect_check,inspect_snapshot);
             puf_close(&env); free_retro_policy(net); free(weights); puf_ini_free(&ini);
             return result;
         }
@@ -150,9 +173,11 @@ int main(int argc,char** argv) {
             if(watch) {
                 retro_policy_act(net,obs,&action,deterministic);
             } else action=retro_mask_action(display?human_buttons():RETRO_BTN_RIGHT);
-            puf_step(&env);
-            if(terminal&&net) memset(net->mingru->state,0,net->mingru->num_layers*net->mingru->batch_size*net->mingru->hidden_size*sizeof(float));
-            if(display) { if(IsKeyPressed(KEY_R)) { puf_reset(&env); if(net) memset(net->mingru->state,0,net->mingru->num_layers*net->mingru->hidden_size*sizeof(float)); } puf_render(&env); }
+            if(retro_playback_step(&env,&playback)) retro_inspect_clear_rnn(net);
+            if(display) {
+                if(IsKeyPressed(KEY_R)) { puf_reset(&env); playback.waiting_respawn=false; retro_inspect_clear_rnn(net); }
+                puf_render(&env);
+            }
         }
         fprintf(stderr,"ROM world=%d-%d x=%d episodes=%.0f clears=%.0f\n",env.world,env.stage,env.x_pos,env.log.n,env.log.clears);
         puf_close(&env); free_retro_policy(net); if(weights) free(weights); puf_ini_free(&ini);

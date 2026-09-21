@@ -1,0 +1,537 @@
+{
+  "cache": [
+    {
+      "episode_id": "110654074",
+      "split": "holdout",
+      "path": "/workspace/PufferLib/data/majkel64_tapes/110654074_07e8fad6_6ca74bb14138b14e.tape.json.gz",
+      "reused": true,
+      "parity_frames": 720,
+      "original_cache_path": "/home/felix/puffertank/elite_replays/bc_prep_2026-09-20/tapes/110654074_07e8fad6_6ca74bb14138b14e.tape.json.gz"
+    },
+    {
+      "episode_id": "110444203",
+      "split": "train",
+      "path": "/workspace/PufferLib/data/majkel64_tapes/110444203_cf9b1478_6ca74bb14138b14e.tape.json.gz",
+      "reused": true,
+      "parity_frames": 720,
+      "original_cache_path": "/home/felix/puffertank/elite_replays/bc_prep_2026-09-20/tapes/110444203_cf9b1478_6ca74bb14138b14e.tape.json.gz"
+    },
+    {
+      "episode_id": "110658772",
+      "split": "holdout",
+      "path": "/workspace/PufferLib/data/majkel64_tapes/110658772_ef8de251_6ca74bb14138b14e.tape.json.gz",
+      "reused": true,
+      "parity_frames": 720,
+      "original_cache_path": "/home/felix/puffertank/elite_replays/bc_prep_2026-09-20/tapes/110658772_ef8de251_6ca74bb14138b14e.tape.json.gz"
+    },
+    {
+      "episode_id": "110659520",
+      "split": "train",
+      "path": "/workspace/PufferLib/data/majkel64_tapes/110659520_56acc886_6ca74bb14138b14e.tape.json.gz",
+      "reused": true,
+      "parity_frames": 720,
+      "original_cache_path": "/home/felix/puffertank/elite_replays/bc_prep_2026-09-20/tapes/110659520_56acc886_6ca74bb14138b14e.tape.json.gz"
+    },
+    {
+      "episode_id": "110616012",
+      "split": "train",
+      "path": "/workspace/PufferLib/data/majkel64_tapes/110616012_6f57a20f_6ca74bb14138b14e.tape.json.gz",
+      "reused": true,
+      "parity_frames": 720,
+      "original_cache_path": "/home/felix/puffertank/elite_replays/bc_prep_2026-09-20/tapes/110616012_6f57a20f_6ca74bb14138b14e.tape.json.gz"
+    },
+    {
+      "episode_id": "110271825",
+      "split": "train",
+      "path": "/workspace/PufferLib/data/majkel64_tapes/110271825_ecc311ac_6ca74bb14138b14e.tape.json.gz",
+      "reused": true,
+      "parity_frames": 720,
+      "original_cache_path": "/home/felix/puffertank/elite_replays/bc_prep_2026-09-20/tapes/110271825_ecc311ac_6ca74bb14138b14e.tape.json.gz"
+    },
+    {
+      "episode_id": "110355319",
+      "split": "holdout",
+      "path": "/workspace/PufferLib/data/majkel64_tapes/110355319_7571f2ef_6ca74bb14138b14e.tape.json.gz",
+      "reused": true,
+      "parity_frames": 720,
+      "original_cache_path": "/home/felix/puffertank/elite_replays/bc_prep_2026-09-20/tapes/110355319_7571f2ef_6ca74bb14138b14e.tape.json.gz"
+    },
+    {
+      "episode_id": "110396387",
+      "split": "train",
+      "path": "/workspace/PufferLib/data/majkel64_tapes/110396387_0583f4b2_6ca74bb14138b14e.tape.json.gz",
+      "reused": true,
+      "parity_frames": 720,
+      "original_cache_path": "/home/felix/puffertank/elite_replays/bc_prep_2026-09-20/tapes/110396387_0583f4b2_6ca74bb14138b14e.tape.json.gz"
+    },
+    {
+      "episode_id": "110241660",
+      "split": "train",
+      "path": "/workspace/PufferLib/data/majkel64_tapes/110241660_09adaf28_6ca74bb14138b14e.tape.json.gz",
+      "reused": true,
+      "parity_frames": 720,
+      "original_cache_path": "/home/felix/puffertank/elite_replays/bc_prep_2026-09-20/tapes/110241660_09adaf28_6ca74bb14138b14e.tape.json.gz"
+    },
+    {
+      "episode_id": "110699866",
+      "split": "train",
+      "path": "/workspace/PufferLib/data/majkel64_tapes/110699866_47d3419f_6ca74bb14138b14e.tape.json.gz",
+      "reused": true,
+      "parity_frames": 720,
+      "original_cache_path": "/home/felix/puffertank/elite_replays/bc_prep_2026-09-20/tapes/110699866_47d3419f_6ca74bb14138b14e.tape.json.gz"
+    },
+    {
+      "episode_id": "110016042",
+      "split": "train",
+      "path": "/workspace/PufferLib/data/majkel64_tapes/110016042_bbb58a80_6ca74bb14138b14e.tape.json.gz",
+      "reused": true,
+      "parity_frames": 720,
+      "original_cache_path": "/home/felix/puffertank/elite_replays/bc_prep_2026-09-20/tapes/110016042_bbb58a80_6ca74bb14138b14e.tape.json.gz"
+    },
+    {
+      "episode_id": "110315360",
+      "split": "train",
+      "path": "/workspace/PufferLib/data/majkel64_tapes/110315360_b961b462_6ca74bb14138b14e.tape.json.gz",
+      "reused": true,
+      "parity_frames": 720,
+      "original_cache_path": "/home/felix/puffertank/elite_replays/bc_prep_2026-09-20/tapes/110315360_b961b462_6ca74bb14138b14e.tape.json.gz"
+    },
+    {
+      "episode_id": "110579969",
+      "split": "train",
+      "path": "/workspace/PufferLib/data/majkel64_tapes/110579969_aa56eeec_6ca74bb14138b14e.tape.json.gz",
+      "reused": true,
+      "parity_frames": 720,
+      "original_cache_path": "/home/felix/puffertank/elite_replays/bc_prep_2026-09-20/tapes/110579969_aa56eeec_6ca74bb14138b14e.tape.json.gz"
+    },
+    {
+      "episode_id": "110469896",
+      "split": "train",
+      "path": "/workspace/PufferLib/data/majkel64_tapes/110469896_be2d359c_6ca74bb14138b14e.tape.json.gz",
+      "reused": true,
+      "parity_frames": 720,
+      "original_cache_path": "/home/felix/puffertank/elite_replays/bc_prep_2026-09-20/tapes/110469896_be2d359c_6ca74bb14138b14e.tape.json.gz"
+    },
+    {
+      "episode_id": "110016022",
+      "split": "train",
+      "path": "/workspace/PufferLib/data/majkel64_tapes/110016022_fb389e11_6ca74bb14138b14e.tape.json.gz",
+      "reused": true,
+      "parity_frames": 720,
+      "original_cache_path": "/home/felix/puffertank/elite_replays/bc_prep_2026-09-20/tapes/110016022_fb389e11_6ca74bb14138b14e.tape.json.gz"
+    },
+    {
+      "episode_id": "110607329",
+      "split": "train",
+      "path": "/workspace/PufferLib/data/majkel64_tapes/110607329_a890cbaa_6ca74bb14138b14e.tape.json.gz",
+      "reused": true,
+      "parity_frames": 720,
+      "original_cache_path": "/home/felix/puffertank/elite_replays/bc_prep_2026-09-20/tapes/110607329_a890cbaa_6ca74bb14138b14e.tape.json.gz"
+    },
+    {
+      "episode_id": "110047042",
+      "split": "train",
+      "path": "/workspace/PufferLib/data/majkel64_tapes/110047042_80eee0bd_6ca74bb14138b14e.tape.json.gz",
+      "reused": false,
+      "parity_frames": 720,
+      "original_cache_path": "/home/felix/puffertank/elite_replays/bc_prep_2026-09-20/tapes/110047042_80eee0bd_6ca74bb14138b14e.tape.json.gz"
+    },
+    {
+      "episode_id": "110624937",
+      "split": "train",
+      "path": "/workspace/PufferLib/data/majkel64_tapes/110624937_f701953e_6ca74bb14138b14e.tape.json.gz",
+      "reused": false,
+      "parity_frames": 720,
+      "original_cache_path": "/home/felix/puffertank/elite_replays/bc_prep_2026-09-20/tapes/110624937_f701953e_6ca74bb14138b14e.tape.json.gz"
+    },
+    {
+      "episode_id": "110913897",
+      "split": "train",
+      "path": "/workspace/PufferLib/data/majkel64_tapes/110913897_0d2ac21c_6ca74bb14138b14e.tape.json.gz",
+      "reused": false,
+      "parity_frames": 720,
+      "original_cache_path": "/home/felix/puffertank/elite_replays/bc_prep_2026-09-20/tapes/110913897_0d2ac21c_6ca74bb14138b14e.tape.json.gz"
+    },
+    {
+      "episode_id": "110209290",
+      "split": "train",
+      "path": "/workspace/PufferLib/data/majkel64_tapes/110209290_2f0d86c4_6ca74bb14138b14e.tape.json.gz",
+      "reused": false,
+      "parity_frames": 720,
+      "original_cache_path": "/home/felix/puffertank/elite_replays/bc_prep_2026-09-20/tapes/110209290_2f0d86c4_6ca74bb14138b14e.tape.json.gz"
+    },
+    {
+      "episode_id": "110938064",
+      "split": "train",
+      "path": "/workspace/PufferLib/data/majkel64_tapes/110938064_bb852964_6ca74bb14138b14e.tape.json.gz",
+      "reused": false,
+      "parity_frames": 720,
+      "original_cache_path": "/home/felix/puffertank/elite_replays/bc_prep_2026-09-20/tapes/110938064_bb852964_6ca74bb14138b14e.tape.json.gz"
+    },
+    {
+      "episode_id": "110009545",
+      "split": "train",
+      "path": "/workspace/PufferLib/data/majkel64_tapes/110009545_01dd9018_6ca74bb14138b14e.tape.json.gz",
+      "reused": false,
+      "parity_frames": 720,
+      "original_cache_path": "/home/felix/puffertank/elite_replays/bc_prep_2026-09-20/tapes/110009545_01dd9018_6ca74bb14138b14e.tape.json.gz"
+    },
+    {
+      "episode_id": "110147572",
+      "split": "train",
+      "path": "/workspace/PufferLib/data/majkel64_tapes/110147572_44373808_6ca74bb14138b14e.tape.json.gz",
+      "reused": false,
+      "parity_frames": 720,
+      "original_cache_path": "/home/felix/puffertank/elite_replays/bc_prep_2026-09-20/tapes/110147572_44373808_6ca74bb14138b14e.tape.json.gz"
+    },
+    {
+      "episode_id": "110781324",
+      "split": "train",
+      "path": "/workspace/PufferLib/data/majkel64_tapes/110781324_72feb7fc_6ca74bb14138b14e.tape.json.gz",
+      "reused": false,
+      "parity_frames": 720,
+      "original_cache_path": "/home/felix/puffertank/elite_replays/bc_prep_2026-09-20/tapes/110781324_72feb7fc_6ca74bb14138b14e.tape.json.gz"
+    },
+    {
+      "episode_id": "110540339",
+      "split": "train",
+      "path": "/workspace/PufferLib/data/majkel64_tapes/110540339_ae00fc45_6ca74bb14138b14e.tape.json.gz",
+      "reused": false,
+      "parity_frames": 720,
+      "original_cache_path": "/home/felix/puffertank/elite_replays/bc_prep_2026-09-20/tapes/110540339_ae00fc45_6ca74bb14138b14e.tape.json.gz"
+    },
+    {
+      "episode_id": "110165031",
+      "split": "train",
+      "path": "/workspace/PufferLib/data/majkel64_tapes/110165031_346ca9ba_6ca74bb14138b14e.tape.json.gz",
+      "reused": false,
+      "parity_frames": 720,
+      "original_cache_path": "/home/felix/puffertank/elite_replays/bc_prep_2026-09-20/tapes/110165031_346ca9ba_6ca74bb14138b14e.tape.json.gz"
+    },
+    {
+      "episode_id": "109878019",
+      "split": "train",
+      "path": "/workspace/PufferLib/data/majkel64_tapes/109878019_d64fe5ac_6ca74bb14138b14e.tape.json.gz",
+      "reused": false,
+      "parity_frames": 720,
+      "original_cache_path": "/home/felix/puffertank/elite_replays/bc_prep_2026-09-20/tapes/109878019_d64fe5ac_6ca74bb14138b14e.tape.json.gz"
+    },
+    {
+      "episode_id": "110756078",
+      "split": "train",
+      "path": "/workspace/PufferLib/data/majkel64_tapes/110756078_bb89cf87_6ca74bb14138b14e.tape.json.gz",
+      "reused": false,
+      "parity_frames": 720,
+      "original_cache_path": "/home/felix/puffertank/elite_replays/bc_prep_2026-09-20/tapes/110756078_bb89cf87_6ca74bb14138b14e.tape.json.gz"
+    },
+    {
+      "episode_id": "110774738",
+      "split": "train",
+      "path": "/workspace/PufferLib/data/majkel64_tapes/110774738_e8a99e97_6ca74bb14138b14e.tape.json.gz",
+      "reused": false,
+      "parity_frames": 720,
+      "original_cache_path": "/home/felix/puffertank/elite_replays/bc_prep_2026-09-20/tapes/110774738_e8a99e97_6ca74bb14138b14e.tape.json.gz"
+    },
+    {
+      "episode_id": "110450400",
+      "split": "train",
+      "path": "/workspace/PufferLib/data/majkel64_tapes/110450400_b505d042_6ca74bb14138b14e.tape.json.gz",
+      "reused": false,
+      "parity_frames": 720,
+      "original_cache_path": "/home/felix/puffertank/elite_replays/bc_prep_2026-09-20/tapes/110450400_b505d042_6ca74bb14138b14e.tape.json.gz"
+    },
+    {
+      "episode_id": "109940088",
+      "split": "train",
+      "path": "/workspace/PufferLib/data/majkel64_tapes/109940088_a68c9964_6ca74bb14138b14e.tape.json.gz",
+      "reused": false,
+      "parity_frames": 720,
+      "original_cache_path": "/home/felix/puffertank/elite_replays/bc_prep_2026-09-20/tapes/109940088_a68c9964_6ca74bb14138b14e.tape.json.gz"
+    },
+    {
+      "episode_id": "110332585",
+      "split": "train",
+      "path": "/workspace/PufferLib/data/majkel64_tapes/110332585_b4350195_6ca74bb14138b14e.tape.json.gz",
+      "reused": false,
+      "parity_frames": 720,
+      "original_cache_path": "/home/felix/puffertank/elite_replays/bc_prep_2026-09-20/tapes/110332585_b4350195_6ca74bb14138b14e.tape.json.gz"
+    },
+    {
+      "episode_id": "110597521",
+      "split": "train",
+      "path": "/workspace/PufferLib/data/majkel64_tapes/110597521_ca89b50d_6ca74bb14138b14e.tape.json.gz",
+      "reused": false,
+      "parity_frames": 720,
+      "original_cache_path": "/home/felix/puffertank/elite_replays/bc_prep_2026-09-20/tapes/110597521_ca89b50d_6ca74bb14138b14e.tape.json.gz"
+    },
+    {
+      "episode_id": "110022430",
+      "split": "train",
+      "path": "/workspace/PufferLib/data/majkel64_tapes/110022430_75062a6c_6ca74bb14138b14e.tape.json.gz",
+      "reused": false,
+      "parity_frames": 720,
+      "original_cache_path": "/home/felix/puffertank/elite_replays/bc_prep_2026-09-20/tapes/110022430_75062a6c_6ca74bb14138b14e.tape.json.gz"
+    },
+    {
+      "episode_id": "110426627",
+      "split": "train",
+      "path": "/workspace/PufferLib/data/majkel64_tapes/110426627_befc37c1_6ca74bb14138b14e.tape.json.gz",
+      "reused": false,
+      "parity_frames": 720,
+      "original_cache_path": "/home/felix/puffertank/elite_replays/bc_prep_2026-09-20/tapes/110426627_befc37c1_6ca74bb14138b14e.tape.json.gz"
+    },
+    {
+      "episode_id": "110266528",
+      "split": "train",
+      "path": "/workspace/PufferLib/data/majkel64_tapes/110266528_ba665a43_6ca74bb14138b14e.tape.json.gz",
+      "reused": false,
+      "parity_frames": 720,
+      "original_cache_path": "/home/felix/puffertank/elite_replays/bc_prep_2026-09-20/tapes/110266528_ba665a43_6ca74bb14138b14e.tape.json.gz"
+    },
+    {
+      "episode_id": "110556579",
+      "split": "train",
+      "path": "/workspace/PufferLib/data/majkel64_tapes/110556579_64d0d620_6ca74bb14138b14e.tape.json.gz",
+      "reused": false,
+      "parity_frames": 720,
+      "original_cache_path": "/home/felix/puffertank/elite_replays/bc_prep_2026-09-20/tapes/110556579_64d0d620_6ca74bb14138b14e.tape.json.gz"
+    },
+    {
+      "episode_id": "110712591",
+      "split": "train",
+      "path": "/workspace/PufferLib/data/majkel64_tapes/110712591_e176ac49_6ca74bb14138b14e.tape.json.gz",
+      "reused": false,
+      "parity_frames": 720,
+      "original_cache_path": "/home/felix/puffertank/elite_replays/bc_prep_2026-09-20/tapes/110712591_e176ac49_6ca74bb14138b14e.tape.json.gz"
+    },
+    {
+      "episode_id": "110251501",
+      "split": "train",
+      "path": "/workspace/PufferLib/data/majkel64_tapes/110251501_7c62d150_6ca74bb14138b14e.tape.json.gz",
+      "reused": false,
+      "parity_frames": 720,
+      "original_cache_path": "/home/felix/puffertank/elite_replays/bc_prep_2026-09-20/tapes/110251501_7c62d150_6ca74bb14138b14e.tape.json.gz"
+    },
+    {
+      "episode_id": "110084421",
+      "split": "train",
+      "path": "/workspace/PufferLib/data/majkel64_tapes/110084421_ededadcf_6ca74bb14138b14e.tape.json.gz",
+      "reused": false,
+      "parity_frames": 720,
+      "original_cache_path": "/home/felix/puffertank/elite_replays/bc_prep_2026-09-20/tapes/110084421_ededadcf_6ca74bb14138b14e.tape.json.gz"
+    },
+    {
+      "episode_id": "110639261",
+      "split": "holdout",
+      "path": "/workspace/PufferLib/data/majkel64_tapes/110639261_afb85000_6ca74bb14138b14e.tape.json.gz",
+      "reused": false,
+      "parity_frames": 720,
+      "original_cache_path": "/home/felix/puffertank/elite_replays/bc_prep_2026-09-20/tapes/110639261_afb85000_6ca74bb14138b14e.tape.json.gz"
+    },
+    {
+      "episode_id": "110654128",
+      "split": "train",
+      "path": "/workspace/PufferLib/data/majkel64_tapes/110654128_231d814d_6ca74bb14138b14e.tape.json.gz",
+      "reused": false,
+      "parity_frames": 720,
+      "original_cache_path": "/home/felix/puffertank/elite_replays/bc_prep_2026-09-20/tapes/110654128_231d814d_6ca74bb14138b14e.tape.json.gz"
+    },
+    {
+      "episode_id": "111012214",
+      "split": "holdout",
+      "path": "/workspace/PufferLib/data/majkel64_tapes/111012214_829aa39b_6ca74bb14138b14e.tape.json.gz",
+      "reused": false,
+      "parity_frames": 720,
+      "original_cache_path": "/home/felix/puffertank/elite_replays/bc_prep_2026-09-20/tapes/111012214_829aa39b_6ca74bb14138b14e.tape.json.gz"
+    },
+    {
+      "episode_id": "110668628",
+      "split": "train",
+      "path": "/workspace/PufferLib/data/majkel64_tapes/110668628_e887d6de_6ca74bb14138b14e.tape.json.gz",
+      "reused": false,
+      "parity_frames": 720,
+      "original_cache_path": "/home/felix/puffertank/elite_replays/bc_prep_2026-09-20/tapes/110668628_e887d6de_6ca74bb14138b14e.tape.json.gz"
+    },
+    {
+      "episode_id": "110414631",
+      "split": "train",
+      "path": "/workspace/PufferLib/data/majkel64_tapes/110414631_2ba31dae_6ca74bb14138b14e.tape.json.gz",
+      "reused": false,
+      "parity_frames": 720,
+      "original_cache_path": "/home/felix/puffertank/elite_replays/bc_prep_2026-09-20/tapes/110414631_2ba31dae_6ca74bb14138b14e.tape.json.gz"
+    },
+    {
+      "episode_id": "110236479",
+      "split": "train",
+      "path": "/workspace/PufferLib/data/majkel64_tapes/110236479_d18c1490_6ca74bb14138b14e.tape.json.gz",
+      "reused": false,
+      "parity_frames": 720,
+      "original_cache_path": "/home/felix/puffertank/elite_replays/bc_prep_2026-09-20/tapes/110236479_d18c1490_6ca74bb14138b14e.tape.json.gz"
+    },
+    {
+      "episode_id": "110047043",
+      "split": "train",
+      "path": "/workspace/PufferLib/data/majkel64_tapes/110047043_ded047a7_6ca74bb14138b14e.tape.json.gz",
+      "reused": false,
+      "parity_frames": 720,
+      "original_cache_path": "/home/felix/puffertank/elite_replays/bc_prep_2026-09-20/tapes/110047043_ded047a7_6ca74bb14138b14e.tape.json.gz"
+    },
+    {
+      "episode_id": "110332447",
+      "split": "train",
+      "path": "/workspace/PufferLib/data/majkel64_tapes/110332447_98757bd1_6ca74bb14138b14e.tape.json.gz",
+      "reused": false,
+      "parity_frames": 720,
+      "original_cache_path": "/home/felix/puffertank/elite_replays/bc_prep_2026-09-20/tapes/110332447_98757bd1_6ca74bb14138b14e.tape.json.gz"
+    },
+    {
+      "episode_id": "110445890",
+      "split": "train",
+      "path": "/workspace/PufferLib/data/majkel64_tapes/110445890_ceed930f_6ca74bb14138b14e.tape.json.gz",
+      "reused": false,
+      "parity_frames": 720,
+      "original_cache_path": "/home/felix/puffertank/elite_replays/bc_prep_2026-09-20/tapes/110445890_ceed930f_6ca74bb14138b14e.tape.json.gz"
+    },
+    {
+      "episode_id": "110204283",
+      "split": "train",
+      "path": "/workspace/PufferLib/data/majkel64_tapes/110204283_d5ea8ce0_6ca74bb14138b14e.tape.json.gz",
+      "reused": false,
+      "parity_frames": 720,
+      "original_cache_path": "/home/felix/puffertank/elite_replays/bc_prep_2026-09-20/tapes/110204283_d5ea8ce0_6ca74bb14138b14e.tape.json.gz"
+    },
+    {
+      "episode_id": "110310020",
+      "split": "holdout",
+      "path": "/workspace/PufferLib/data/majkel64_tapes/110310020_72395e2b_6ca74bb14138b14e.tape.json.gz",
+      "reused": false,
+      "parity_frames": 720,
+      "original_cache_path": "/home/felix/puffertank/elite_replays/bc_prep_2026-09-20/tapes/110310020_72395e2b_6ca74bb14138b14e.tape.json.gz"
+    },
+    {
+      "episode_id": "110820765",
+      "split": "train",
+      "path": "/workspace/PufferLib/data/majkel64_tapes/110820765_57692687_6ca74bb14138b14e.tape.json.gz",
+      "reused": false,
+      "parity_frames": 720,
+      "original_cache_path": "/home/felix/puffertank/elite_replays/bc_prep_2026-09-20/tapes/110820765_57692687_6ca74bb14138b14e.tape.json.gz"
+    },
+    {
+      "episode_id": "110717373",
+      "split": "train",
+      "path": "/workspace/PufferLib/data/majkel64_tapes/110717373_b5b28a57_6ca74bb14138b14e.tape.json.gz",
+      "reused": false,
+      "parity_frames": 720,
+      "original_cache_path": "/home/felix/puffertank/elite_replays/bc_prep_2026-09-20/tapes/110717373_b5b28a57_6ca74bb14138b14e.tape.json.gz"
+    },
+    {
+      "episode_id": "110602868",
+      "split": "train",
+      "path": "/workspace/PufferLib/data/majkel64_tapes/110602868_4936b208_6ca74bb14138b14e.tape.json.gz",
+      "reused": false,
+      "parity_frames": 720,
+      "original_cache_path": "/home/felix/puffertank/elite_replays/bc_prep_2026-09-20/tapes/110602868_4936b208_6ca74bb14138b14e.tape.json.gz"
+    },
+    {
+      "episode_id": "110180281",
+      "split": "train",
+      "path": "/workspace/PufferLib/data/majkel64_tapes/110180281_5dc2481b_6ca74bb14138b14e.tape.json.gz",
+      "reused": false,
+      "parity_frames": 720,
+      "original_cache_path": "/home/felix/puffertank/elite_replays/bc_prep_2026-09-20/tapes/110180281_5dc2481b_6ca74bb14138b14e.tape.json.gz"
+    },
+    {
+      "episode_id": "109904803",
+      "split": "train",
+      "path": "/workspace/PufferLib/data/majkel64_tapes/109904803_edf2c264_6ca74bb14138b14e.tape.json.gz",
+      "reused": false,
+      "parity_frames": 720,
+      "original_cache_path": "/home/felix/puffertank/elite_replays/bc_prep_2026-09-20/tapes/109904803_edf2c264_6ca74bb14138b14e.tape.json.gz"
+    },
+    {
+      "episode_id": "110528434",
+      "split": "train",
+      "path": "/workspace/PufferLib/data/majkel64_tapes/110528434_b97a17e6_6ca74bb14138b14e.tape.json.gz",
+      "reused": false,
+      "parity_frames": 720,
+      "original_cache_path": "/home/felix/puffertank/elite_replays/bc_prep_2026-09-20/tapes/110528434_b97a17e6_6ca74bb14138b14e.tape.json.gz"
+    },
+    {
+      "episode_id": "110880100",
+      "split": "train",
+      "path": "/workspace/PufferLib/data/majkel64_tapes/110880100_cdb16475_6ca74bb14138b14e.tape.json.gz",
+      "reused": false,
+      "parity_frames": 720,
+      "original_cache_path": "/home/felix/puffertank/elite_replays/bc_prep_2026-09-20/tapes/110880100_cdb16475_6ca74bb14138b14e.tape.json.gz"
+    },
+    {
+      "episode_id": "110644331",
+      "split": "train",
+      "path": "/workspace/PufferLib/data/majkel64_tapes/110644331_65ff88a5_6ca74bb14138b14e.tape.json.gz",
+      "reused": false,
+      "parity_frames": 720,
+      "original_cache_path": "/home/felix/puffertank/elite_replays/bc_prep_2026-09-20/tapes/110644331_65ff88a5_6ca74bb14138b14e.tape.json.gz"
+    },
+    {
+      "episode_id": "110349852",
+      "split": "train",
+      "path": "/workspace/PufferLib/data/majkel64_tapes/110349852_635b9c95_6ca74bb14138b14e.tape.json.gz",
+      "reused": false,
+      "parity_frames": 720,
+      "original_cache_path": "/home/felix/puffertank/elite_replays/bc_prep_2026-09-20/tapes/110349852_635b9c95_6ca74bb14138b14e.tape.json.gz"
+    },
+    {
+      "episode_id": "109853556",
+      "split": "train",
+      "path": "/workspace/PufferLib/data/majkel64_tapes/109853556_141422ce_6ca74bb14138b14e.tape.json.gz",
+      "reused": false,
+      "parity_frames": 720,
+      "original_cache_path": "/home/felix/puffertank/elite_replays/bc_prep_2026-09-20/tapes/109853556_141422ce_6ca74bb14138b14e.tape.json.gz"
+    },
+    {
+      "episode_id": "110800991",
+      "split": "train",
+      "path": "/workspace/PufferLib/data/majkel64_tapes/110800991_96e63754_6ca74bb14138b14e.tape.json.gz",
+      "reused": false,
+      "parity_frames": 720,
+      "original_cache_path": "/home/felix/puffertank/elite_replays/bc_prep_2026-09-20/tapes/110800991_96e63754_6ca74bb14138b14e.tape.json.gz"
+    },
+    {
+      "episode_id": "110426623",
+      "split": "train",
+      "path": "/workspace/PufferLib/data/majkel64_tapes/110426623_76e8c3ae_6ca74bb14138b14e.tape.json.gz",
+      "reused": false,
+      "parity_frames": 720,
+      "original_cache_path": "/home/felix/puffertank/elite_replays/bc_prep_2026-09-20/tapes/110426623_76e8c3ae_6ca74bb14138b14e.tape.json.gz"
+    },
+    {
+      "episode_id": "110022417",
+      "split": "holdout",
+      "path": "/workspace/PufferLib/data/majkel64_tapes/110022417_e3ba16d0_6ca74bb14138b14e.tape.json.gz",
+      "reused": false,
+      "parity_frames": 720,
+      "original_cache_path": "/home/felix/puffertank/elite_replays/bc_prep_2026-09-20/tapes/110022417_e3ba16d0_6ca74bb14138b14e.tape.json.gz"
+    }
+  ],
+  "options": {
+    "inputs": [
+      "/home/felix/puffertank/elite_replays/raw/kaggriculture-episodes-2026-09-1[789]/*.zip"
+    ],
+    "output": "/home/felix/puffertank/elite_replays/bc_prep_2026-09-21/majkel_64",
+    "exact_version": "1.32.7",
+    "holdout_fraction": 0.15,
+    "seed": 20260920,
+    "teacher": "Majkel1337",
+    "agent_name": "Majkel1337",
+    "cache_limit": 64,
+    "cache_dir": "/home/felix/puffertank/elite_replays/bc_prep_2026-09-20/tapes",
+    "lib": "/home/felix/puffertank/pufferlib/ocean/kaggriculture/build/bc_entity/libcore.so",
+    "skip_incompatible": true
+  },
+  "rejected_cache_episodes": [],
+  "counts": {
+    "members": 1945
+  },
+  "unique_episodes": 1945,
+  "provenance_manifest": "/home/felix/puffertank/elite_replays/bc_prep_2026-09-21/majkel_64/summary.json"
+}

@@ -20,6 +20,9 @@
 #include <stdexcept>
 #include <algorithm>
 #include <cmath>
+#ifdef __AVX2__
+#include <immintrin.h>
+#endif
 
 // All combinations of A, B, Up, Down, Left, Right. Raw replay also supports
 // Start/Select through retro_frame(), without wrapper resets or RAM writes.
@@ -43,7 +46,10 @@ typedef float obs_t;
 struct Log {
     float perf, score, episode_return, episode_length, distance, flag, deaths, coins;
     float truncations, frames, decisions, clears, warps;
-    float progress_pixels, checkpoints;
+    float progress_pixels, checkpoints, clear_frame_sum;
+    // `coins` is the ending ROM counter; these fields count reward events.
+    float coin_events, idle_steps;
+    float area_transitions, area_transition_rewards;
     float level_episodes[32], level_clears[32];
     float n;
 };
@@ -82,10 +88,16 @@ struct Env {
     int has_flag, is_dead, frameskip, max_frames, spawn_n, cur_spawn, spawn_pin;
     unsigned char spawn_w[32], spawn_l[32];
     int episode_spawn, episode_clears, episode_warps, last_frames;
+    int level_start_tick, episode_clear_frames;
+    int idle_streak, episode_idle_steps, episode_coin_events;
+    int episode_area_transitions, episode_area_rewards, area_transition_key_count;
     unsigned int rewarded_levels;
     float episode_return, potential_gamma, completion_reward, death_penalty, score_scale, reward_scale;
-    float checkpoint_reward;
-    int checkpoint_distance, progress_pixels, episode_decisions, frontier_count;
+    float checkpoint_reward, completion_time_bonus, coin_reward, idle_penalty, area_transition_reward;
+    float area_transition_timer_bonus, completion_time_target_bonus, completion_time_target_max;
+    int area_transition_timer_1, area_transition_timer_2, completion_time_target;
+    int checkpoint_distance, idle_grace_decisions, progress_pixels, episode_decisions, frontier_count;
+    unsigned int last_area_key, area_transition_keys[256];
     RetroFrontier frontiers[256];
     bool emu_ok, emu_owned, full_render, reset_image, last_truncated, rom_blocks;
     Nes_Emu* emu;
@@ -209,6 +221,44 @@ static void retro_sync_from_emu(Env* e) {
     e->time=robs_time(m); e->life=robs_life(m);
     e->has_flag=robs_flagget(m); e->is_dead=robs_dead(m)||robs_dying(m);
 }
+static inline bool retro_playable_area_state(const unsigned char* m) {
+    return m[0x0770]==1&&m[0x0772]==3&&m[0x000e]==8&&!robs_dying(m);
+}
+// Identity of the actually loaded area, unlike $0750 which may already hold
+// a future pipe destination. Include the level, area index, and data pointer.
+static inline unsigned int retro_area_key(const unsigned char* m) {
+    int level=retro_level_id(robs_world(m),robs_stage(m));
+    unsigned int data=m[0x00e7]+256u*m[0x00e8];
+    if(level<0||data<0x8000u) return 0xffffffffu;
+    return ((unsigned int)level<<24)|((unsigned int)m[0x0760]<<16)|data;
+}
+static bool retro_area_key_seen(const Env* e,unsigned int key) {
+    for(int i=0;i<e->area_transition_key_count;i++)
+        if(e->area_transition_keys[i]==key) return true;
+    return false;
+}
+// Return 0 for no confirmed event, 1 for a repeated destination, and 2 for a
+// novel destination that may receive area_transition_reward. A destination
+// is confirmed only after the ROM is back in its ordinary playable state.
+static int retro_record_area_transition(Env* e,const unsigned char* m) {
+    if(!retro_playable_area_state(m)) return 0;
+    unsigned int key=retro_area_key(m);
+    if(key==0xffffffffu||key==e->last_area_key) return 0;
+    unsigned int old_key=e->last_area_key;
+    int old_level=old_key==0xffffffffu?-1:(int)(old_key>>24), new_level=(int)(key>>24);
+    e->last_area_key=key;
+    if(old_level<0||old_level!=new_level) return 0;
+    e->episode_area_transitions++;
+    if(retro_area_key_seen(e,key)) return 1;
+    if(e->area_transition_key_count<256)
+        e->area_transition_keys[e->area_transition_key_count++]=key;
+    else
+        // Keep logging transitions after the bounded frontier fills, but do
+        // not turn an unremembered destination into a repeatable reward farm.
+        return 1;
+    e->episode_area_rewards++;
+    return 2;
+}
 static int retro_progress(Env* e,unsigned int key,int x) {
     // Bound coordinate-wrap/glitch jackpots without changing ROM execution.
     x=std::max(0,std::min((int)RETRO_POT_XMAX,x));
@@ -232,8 +282,20 @@ static int retro_track_progress(Env* e) {
     if(data<0x8000) return 0;
     return retro_progress(e,((unsigned int)level<<16)|data,robs_x(m));
 }
+static inline obs_t retro_obs_value(float value) {
+#if defined(from_float) && !defined(PRECISION_FLOAT)
+    return from_float(value);
+#else
+    return value;
+#endif
+}
 static void retro_compute_obs_real(const Env* e,obs_t* obs) {
+    constexpr int ram_size=RETRO_EGO_SIZE+RETRO_ENT_SIZE;
+#ifdef __AVX2__
+    float values[ram_size];
+#else
     float values[OBS_SIZE];
+#endif
     RetroScalars sc={e->x_pos,e->x_pos_max,e->coins,e->score,e->tick,e->world,e->stage,e->area,e->time,e->has_flag,e->is_dead,0,0};
     const unsigned char* m=e->emu->low_mem(); retro_ego_ent(values,m,&sc);
     const auto& fr=e->emu->frame();
@@ -251,23 +313,65 @@ static void retro_compute_obs_real(const Env* e,obs_t* obs) {
         cache.valid=true;
     }
     const float* lut=cache.lut;
-    int idx=RETRO_EGO_SIZE+RETRO_ENT_SIZE;
-    for(int y=0;y<240;y+=2) for(int x=0;x<256;x+=2) {
+    int idx=ram_size;
+#ifdef __AVX2__
+    for(int i=0;i<ram_size;i++) obs[i]=retro_obs_value(values[i]);
+    if(!pixels) {
+        for(int i=ram_size;i<OBS_SIZE;i++) obs[i]=retro_obs_value(0);
+        return;
+    }
+    // Eight exact box means at a time, straight from NES palette indices to
+    // the final observation. Preserve the scalar addition order. Luminance
+    // is finite and nonnegative, so the integer bf16 round-to-nearest-even
+    // conversion below is identical to from_float without its NaN slow path.
+    const __m256i byte_mask=_mm256_set1_epi32(255);
+    for(int y=0;y<240;y+=RETRO_OBS_SCALE) for(int x=0;x<256;x+=8*RETRO_OBS_SCALE) {
+        const unsigned char* row=pixels+y*pitch+x;
+#if RETRO_OBS_SCALE == 2
+        __m256i top=_mm256_cvtepu16_epi32(_mm_loadu_si128((const __m128i*)row));
+        __m256i bottom=_mm256_cvtepu16_epi32(_mm_loadu_si128((const __m128i*)(row+pitch)));
+        __m256 sum=_mm256_i32gather_ps(lut,_mm256_and_si256(top,byte_mask),4);
+        sum=_mm256_add_ps(sum,_mm256_i32gather_ps(lut,_mm256_srli_epi32(top,8),4));
+        sum=_mm256_add_ps(sum,_mm256_i32gather_ps(lut,_mm256_and_si256(bottom,byte_mask),4));
+        sum=_mm256_add_ps(sum,_mm256_i32gather_ps(lut,_mm256_srli_epi32(bottom,8),4));
+        __m256 mean=_mm256_mul_ps(sum,_mm256_set1_ps(0.25f));
+#else
+        __m256 sum=_mm256_setzero_ps();
+        for(int dy=0;dy<4;dy++) {
+            __m256i pixels4=_mm256_loadu_si256((const __m256i*)(row+dy*pitch));
+            sum=_mm256_add_ps(sum,_mm256_i32gather_ps(lut,_mm256_and_si256(pixels4,byte_mask),4));
+            sum=_mm256_add_ps(sum,_mm256_i32gather_ps(lut,_mm256_and_si256(_mm256_srli_epi32(pixels4,8),byte_mask),4));
+            sum=_mm256_add_ps(sum,_mm256_i32gather_ps(lut,_mm256_and_si256(_mm256_srli_epi32(pixels4,16),byte_mask),4));
+            sum=_mm256_add_ps(sum,_mm256_i32gather_ps(lut,_mm256_srli_epi32(pixels4,24),4));
+        }
+        __m256 mean=_mm256_mul_ps(sum,_mm256_set1_ps(1.0f/16));
+#endif
+#if defined(from_float) && !defined(PRECISION_FLOAT)
+        __m256i bits=_mm256_castps_si256(mean);
+        __m256i tie=_mm256_and_si256(_mm256_srli_epi32(bits,16),_mm256_set1_epi32(1));
+        bits=_mm256_add_epi32(bits,_mm256_add_epi32(_mm256_set1_epi32(0x7fff),tie));
+        bits=_mm256_srli_epi32(bits,16);
+        __m128i packed=_mm_packus_epi32(_mm256_castsi256_si128(bits),_mm256_extracti128_si256(bits,1));
+        _mm_storeu_si128((__m128i*)(obs+idx),packed);
+#else
+        _mm256_storeu_ps(obs+idx,mean);
+#endif
+        idx+=8;
+    }
+#else
+    // Keep the previous portable path: full-frame conversion benchmarks
+    // faster than per-pixel/row bf16 packing without the explicit SIMD path.
+    for(int y=0;y<240;y+=RETRO_OBS_SCALE) for(int x=0;x<256;x+=RETRO_OBS_SCALE) {
         float sum=0;
         if(pixels) {
             const unsigned char* row=pixels+y*pitch+x;
-            sum+=lut[row[0]]; sum+=lut[row[1]];
-            sum+=lut[row[pitch]]; sum+=lut[row[pitch+1]];
+            for(int dy=0;dy<RETRO_OBS_SCALE;dy++) for(int dx=0;dx<RETRO_OBS_SCALE;dx++)
+                sum+=lut[row[dy*pitch+dx]];
         }
-        values[idx++]=sum*0.25f;
+        values[idx++]=sum*(1.0f/(RETRO_OBS_SCALE*RETRO_OBS_SCALE));
     }
-    for(int i=0;i<OBS_SIZE;i++) {
-#if defined(from_float) && !defined(PRECISION_FLOAT)
-        obs[i]=from_float(values[i]);
-#else
-        obs[i]=values[i];
+    for(int i=0;i<OBS_SIZE;i++) obs[i]=retro_obs_value(values[i]);
 #endif
-    }
 }
 static double retro_option(Dict* cfg,const char* key,double fallback) { DictItem* i=dict_find(cfg,key); return i?i->value:fallback; }
 void puf_init(Env* e,Dict* cfg) {
@@ -276,6 +380,32 @@ void puf_init(Env* e,Dict* cfg) {
     e->frameskip=retro_option(cfg,"frameskip",1); e->max_frames=retro_option(cfg,"max_frames",30000);
     e->potential_gamma=retro_option(cfg,"potential_gamma",0.997);
     e->completion_reward=retro_option(cfg,"completion_reward",10); e->death_penalty=retro_option(cfg,"death_penalty",0.125);
+    e->completion_time_bonus=retro_option(cfg,"completion_time_bonus",0);
+    if(!std::isfinite(e->completion_time_bonus)||e->completion_time_bonus<0)
+        throw std::runtime_error("retro: completion_time_bonus must be finite and nonnegative");
+    e->coin_reward=retro_option(cfg,"coin_reward",0);
+    e->idle_penalty=retro_option(cfg,"idle_penalty",0);
+    e->area_transition_reward=retro_option(cfg,"area_transition_reward",0);
+    e->area_transition_timer_bonus=retro_option(cfg,"area_transition_timer_bonus",0);
+    e->completion_time_target_bonus=retro_option(cfg,"completion_time_target_bonus",0);
+    e->completion_time_target_max=retro_option(cfg,"completion_time_target_max",0);
+    e->area_transition_timer_1=(int)retro_option(cfg,"area_transition_timer_1",0);
+    e->area_transition_timer_2=(int)retro_option(cfg,"area_transition_timer_2",0);
+    e->completion_time_target=(int)retro_option(cfg,"completion_time_target",0);
+    double idle_grace=retro_option(cfg,"idle_grace_decisions",8);
+    if(!std::isfinite(e->coin_reward)||e->coin_reward<0
+        ||!std::isfinite(e->idle_penalty)||e->idle_penalty<0
+        ||!std::isfinite(e->area_transition_reward)||e->area_transition_reward<0
+        ||!std::isfinite(e->area_transition_timer_bonus)||e->area_transition_timer_bonus<0
+        ||!std::isfinite(e->completion_time_target_bonus)||e->completion_time_target_bonus<0
+        ||!std::isfinite(e->completion_time_target_max)||e->completion_time_target_max<0
+        ||e->area_transition_timer_1<0||e->area_transition_timer_1>999
+        ||e->area_transition_timer_2<0||e->area_transition_timer_2>999
+        ||e->completion_time_target<0||e->completion_time_target>999
+        ||!std::isfinite(idle_grace)||idle_grace<0||idle_grace>100000
+        ||idle_grace!=floor(idle_grace))
+        throw std::runtime_error("retro: invalid coin/idle/area-transition reward configuration");
+    e->idle_grace_decisions=(int)idle_grace;
     double spacing=retro_option(cfg,"checkpoint_distance",128);
     e->checkpoint_reward=retro_option(cfg,"checkpoint_reward",0.125);
     if(!std::isfinite(spacing)||spacing<1||spacing>RETRO_POT_XMAX||spacing!=floor(spacing)
@@ -330,6 +460,12 @@ void puf_reset(Env* e) {
         throw std::runtime_error("retro: restored PRG does not match compiled blocks");
     e->x_pos_max=e->x_pos; e->tick=0; e->episode_return=0; e->episode_clears=0; e->episode_warps=0;
     e->rewarded_levels=0; e->episode_spawn=id;
+    e->level_start_tick=0; e->episode_clear_frames=0;
+    e->idle_streak=0; e->episode_idle_steps=0; e->episode_coin_events=0;
+    e->episode_area_transitions=0; e->episode_area_rewards=0;
+    e->area_transition_key_count=0; e->last_area_key=retro_area_key(e->emu->low_mem());
+    if(e->last_area_key!=0xffffffffu)
+        e->area_transition_keys[e->area_transition_key_count++]=e->last_area_key;
     e->frontier_count=0; e->progress_pixels=0; e->episode_decisions=0;
     retro_track_progress(e);
     if(e->agents[0].observations) retro_compute_obs_real(e,(obs_t*)e->agents[0].observations);
@@ -353,41 +489,118 @@ static void retro_frame(Env* e,unsigned char buttons,bool draw=true) {
     e->reset_image=false;
 }
 static bool retro_level_advance(int ow,int ol,int w,int l) { return retro_level_id(w,l)>=0&&(w>ow||(w==ow&&l>ol)); }
+// A bounded speed bonus paid only for a new clear. No per-step cost that
+// could be avoided by dying, and no reward for merely running down the clock.
+// NES frames (not decisions) keep the meaning independent of frameskip.
+static float retro_clear_speed(int elapsed_frames,int budget_frames) {
+    return std::max(0.0f,std::min(1.0f,1.0f-(float)elapsed_frames/budget_frames));
+}
+// The ROM stores coins as a two-digit decimal counter. A reset/death can make
+// the counter decrease, but that is never an earned negative reward.
+static int retro_coin_delta(int before,int after) {
+    int delta=after-before;
+    if(delta<-50) delta+=100;
+    return std::max(0,std::min(99,delta));
+}
+// Charge at most one anti-stall event per decision. Movement, coin pickup,
+// level advance, and terminal death/win all reset the grace streak.
+static int retro_idle_event(int* streak,int before_x,int after_x,int coin_delta,
+        bool meaningful_event,int grace,bool terminal_death_or_win) {
+    if(terminal_death_or_win||meaningful_event||after_x!=before_x||coin_delta>0) {
+        *streak=0;
+        return 0;
+    }
+    *streak=std::max(0,*streak+1);
+    return *streak>grace ? 1 : 0;
+}
 static float retro_rom_reward(const Env* e,float old_potential,float next_potential,
-        int advances,bool dead,bool done,int score_delta,int checkpoints=0) {
+        int advances,bool dead,bool done,int score_delta,int checkpoints=0,float clear_speed=0,
+        int coin_delta=0,int idle_events=0,int area_transition_rewards=0,
+        float area_transition_time_bonus=0,float completion_target_bonus=0) {
     float reward=(done?0:e->potential_gamma*next_potential)-old_potential;
     reward+=advances*e->completion_reward-(dead?e->death_penalty:0);
+    reward+=e->completion_time_bonus*std::max(0.0f,std::min((float)advances,clear_speed));
     reward+=std::max(0,score_delta)*e->score_scale;
+    // `coin_delta` is already normalized by retro_coin_delta; do not run a
+    // signed reward delta through the wrap detector a second time.
+    reward+=std::max(0,std::min(99,coin_delta))*e->coin_reward;
+    reward-=std::max(0,idle_events)*e->idle_penalty;
+    reward+=std::max(0,area_transition_rewards)*e->area_transition_reward;
+    reward+=std::max(0.0f,area_transition_time_bonus)*e->area_transition_timer_bonus;
+    reward+=std::max(0.0f,completion_target_bonus)*e->completion_time_target_bonus;
     // Earned checkpoints are base rewards, never cancelled by terminal PBRS.
     reward+=checkpoints*e->checkpoint_reward;
     return reward*e->reward_scale;
 }
-void puf_step(Env* e) {
+// Training ends an episode at the first death. Standalone playback can let
+// the ROM finish its death animation, spend a life, and respawn naturally.
+static void retro_step(Env* e,bool continue_lives) {
     int action=std::max(0,std::min(63,(int)e->agents[0].actions[0]));
     unsigned char buttons=retro_action_mask(action);
-    float old_potential=retro_potential(e->x_pos); int old_score=e->score;
-    bool dead=false,won=false; int advances=0,checkpoints=0; e->last_frames=0;
+    float old_potential=retro_potential(e->x_pos);
+    int old_score=e->score, old_coins=e->coins, old_x=e->x_pos;
+    bool dead=false,death_end=false,won=false,meaningful_event=false;
+    int advances=0,checkpoints=0,life_losses=0,area_transition_rewards=0; e->last_frames=0;
+    float clear_speed=0, area_transition_time_bonus=0, completion_target_bonus=0;
     for(int f=0;f<e->frameskip;f++) {
         const unsigned char* m=e->emu->low_mem(); int ow=robs_world(m),ol=robs_stage(m),mode=m[0x770];
+        int old_life=robs_life(m);
         retro_frame(e,buttons,e->full_render||f+1==e->frameskip||e->tick+1>=e->max_frames);
         e->tick++; e->last_frames++;
         checkpoints+=retro_track_progress(e);
+        int area_event=retro_record_area_transition(e,m);
+        if(area_event) meaningful_event=true;
+        if(area_event==2) {
+            // The timer is the HUD's native TIME value (e.g. 385), not NES
+            // frames. Every transition keeps its base reward and gets a
+            // smooth fraction of the configured fast-route bonus.
+            int milestone=e->episode_area_rewards;
+            int target=milestone==1?e->area_transition_timer_1:
+                (milestone==2?e->area_transition_timer_2:0);
+            area_transition_rewards++;
+            if(target>0) area_transition_time_bonus +=
+                std::max(0.0f,std::min(1.0f,(float)robs_time(m)/target));
+        }
         bool clear=retro_level_advance(ow,ol,robs_world(m),robs_stage(m))||(mode!=2&&m[0x770]==2);
+        if(clear) meaningful_event=true;
         int id=retro_level_id(ow,ol);
         if(clear&&id>=0&&!(e->rewarded_levels&(1u<<id))) {
             e->rewarded_levels|=1u<<id; advances++; e->episode_clears++; e->log.level_clears[id]++;
+            int clear_frames=e->tick-e->level_start_tick;
+            e->episode_clear_frames+=clear_frames;
+            clear_speed+=retro_clear_speed(clear_frames,e->max_frames);
+            // Extra HUD-time shaping, interpolated from target to target_max.
+            if(e->completion_time_target>0 && e->completion_time_target_max>e->completion_time_target)
+                completion_target_bonus=std::max(0.0f,std::min(1.0f,
+                    (float)(robs_time(m)-e->completion_time_target) /
+                    (e->completion_time_target_max-e->completion_time_target)));
             if(robs_world(m)>ow+(ol==4)||(robs_world(m)==ow&&robs_stage(m)>ol+1)) e->episode_warps++;
         }
+        if(clear) e->level_start_tick=e->tick;
         dead=robs_dead(m)||robs_gameover(m); won=ow==8&&mode!=2&&m[0x770]==2;
-        if(dead||won||e->tick>=e->max_frames) break;
+        if(continue_lives&&old_life!=255&&(robs_gameover(m)||robs_life(m)<old_life)) life_losses++;
+        death_end=continue_lives?robs_gameover(m):dead;
+        if(death_end||won||e->tick>=e->max_frames) break;
     }
     retro_sync_from_emu(e); e->x_pos_max=std::max(e->x_pos_max,e->x_pos);
-    e->last_truncated=e->tick>=e->max_frames&&!dead&&!won;
-    bool done=dead||won||e->last_truncated;
+    e->last_truncated=e->tick>=e->max_frames&&!death_end&&!won;
+    bool done=death_end||won||e->last_truncated;
+    // A terminal reset can look like the 99->0 counter wrap. Never turn a
+    // death/win (or a decreasing clear transition) into a coin pickup.
+    int coin_delta=(dead||won||(meaningful_event&&e->coins<old_coins))
+        ? 0 : retro_coin_delta(old_coins,e->coins);
+    int idle_event=retro_idle_event(&e->idle_streak,old_x,e->x_pos,coin_delta,
+        meaningful_event,e->idle_grace_decisions,dead||won);
+    e->episode_coin_events+=coin_delta;
+    e->episode_idle_steps+=idle_event;
     // Finite-horizon task; all task terminals have zero potential. Area
     // transitions retain the complete potential difference (no omitted edge).
-    float reward=retro_rom_reward(e,old_potential,retro_potential(e->x_pos),advances,dead,done,e->score-old_score,checkpoints);
+    float reward=retro_rom_reward(e,old_potential,retro_potential(e->x_pos),advances,
+        continue_lives?life_losses>0:dead,done,e->score-old_score,checkpoints,clear_speed,
+        coin_delta,idle_event,area_transition_rewards,area_transition_time_bonus,
+        completion_target_bonus);
     e->episode_return+=reward; e->episode_decisions++;
+    if(continue_lives) e->log.deaths+=life_losses;
     if(done) {
         e->log.n++; e->log.episode_return+=e->episode_return; e->log.episode_length+=e->tick;
         e->log.frames+=e->tick; e->log.decisions+=e->episode_decisions;
@@ -395,18 +608,29 @@ void puf_step(Env* e) {
         e->log.checkpoints+=e->progress_pixels/e->checkpoint_distance;
         e->log.score+=e->score; e->log.distance+=e->x_pos_max; e->log.coins+=e->coins;
         e->log.flag+=e->episode_clears>0; e->log.clears+=e->episode_clears; e->log.perf+=e->episode_clears>0;
-        e->log.deaths+=dead; e->log.truncations+=e->last_truncated; e->log.warps+=e->episode_warps;
+        e->log.clear_frame_sum+=e->episode_clear_frames;
+        e->log.coin_events+=e->episode_coin_events;
+        e->log.idle_steps+=e->episode_idle_steps;
+        e->log.area_transitions+=e->episode_area_transitions;
+        e->log.area_transition_rewards+=e->episode_area_rewards;
+        if(!continue_lives) e->log.deaths+=dead;
+        e->log.truncations+=e->last_truncated; e->log.warps+=e->episode_warps;
         e->log.level_episodes[e->episode_spawn]++; e->boundary_reached=1;
         puf_reset(e);
     } else if(e->agents[0].observations) retro_compute_obs_real(e,(obs_t*)e->agents[0].observations);
     e->agents[0].rewards[0]=reward; e->agents[0].terminals[0]=done?1:0;
 }
+void puf_step(Env* e) { retro_step(e,false); }
 void puf_log(Log* log,Dict* out) {
 #define RETRO_LOG(name) dict_set(out,#name,log->name)
     RETRO_LOG(perf); RETRO_LOG(score); RETRO_LOG(episode_return); RETRO_LOG(episode_length);
     RETRO_LOG(distance); RETRO_LOG(flag); RETRO_LOG(deaths); RETRO_LOG(coins);
     RETRO_LOG(truncations); RETRO_LOG(frames); RETRO_LOG(decisions); RETRO_LOG(clears); RETRO_LOG(warps);
-    RETRO_LOG(progress_pixels); RETRO_LOG(checkpoints);
+    RETRO_LOG(progress_pixels); RETRO_LOG(checkpoints); RETRO_LOG(coin_events); RETRO_LOG(idle_steps);
+    RETRO_LOG(area_transitions); RETRO_LOG(area_transition_rewards);
+    // All raw Log fields are divided by episode count before this hook.
+    // The ratio below is therefore frames per cleared level, not per episode.
+    dict_set(out,"clear_frames",log->clears>0?log->clear_frame_sum/log->clears:0);
 #undef RETRO_LOG
     for(int i=0;i<32;i++) {
         char key[64]; snprintf(key,sizeof(key),"level_%d_%d_episodes",i/4+1,i%4+1); dict_set(out,key,log->level_episodes[i]);

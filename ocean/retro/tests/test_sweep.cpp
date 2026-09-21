@@ -38,6 +38,27 @@ static void reward_tests() {
 
 static void config_tests() {
     Ini ini={}; puf_ini_load_env(&ini,"retro",0,nullptr);
+    // Fixed test fixture, independent of the user's current experiment.
+    puf_ini_put(&ini,"vec.total_agents","64");
+    puf_ini_put(&ini,"train.minibatch_size","2048");
+    puf_ini_put(&ini,"sweep.trial_timesteps","16777216");
+    puf_ini_put(&ini,"sweep.metric","distance");
+    puf_ini_put(&ini,"env.frameskip","1");
+    puf_ini_put(&ini,"env.backend","quicknes");
+    puf_ini_put(&ini,"env.completion_reward","10");
+    puf_ini_put(&ini,"env.completion_time_bonus","0");
+    puf_ini_put(&ini,"env.death_penalty","0.125");
+    puf_ini_put(&ini,"env.checkpoint_reward","0.125");
+    puf_ini_put(&ini,"env.checkpoint_distance","128");
+    puf_ini_put(&ini,"env.score_scale","0");
+    // The reward fixture intentionally keeps the new optional terms disabled
+    // so the historical clip-safe bounds above remain directly comparable.
+    puf_ini_put(&ini,"env.coin_reward","0");
+    puf_ini_put(&ini,"env.idle_penalty","0");
+    puf_ini_put(&ini,"env.idle_grace_decisions","8");
+    puf_ini_put(&ini,"env.area_transition_reward","0");
+    puf_ini_put(&ini,"env.reward_scale","0.0625");
+    puf_ini_put(&ini,"train.reward_clip","1");
     long ordinary=puf_ini_get(&ini,"train","total_timesteps");
     puf_ini_put(&ini,"train.gamma","0.9993");
     retro_configure(&ini,"train");
@@ -56,6 +77,38 @@ static void config_tests() {
     puf_ini_put(&ini,"base.load_model_path","latest"); bool rejected=false;
     try { retro_configure(&ini,"sweep"); } catch(...) { rejected=true; }
     require(rejected,"moving latest anchor accepted");
+    puf_ini_put(&ini,"base.load_model_path","checkpoints/fixed-policy.bin");
+    retro_configure(&ini,"sweep");
+    require(!strcmp(puf_ini_get_str(&ini,"base","load_model_path"),"checkpoints/fixed-policy.bin"),
+        "fixed finetune checkpoint was replaced");
+    puf_ini_put(&ini,"base.load_model_path","None");
+    puf_ini_put(&ini,"sweep.metric","typo"); rejected=false;
+    try { retro_configure(&ini,"sweep"); } catch(...) { rejected=true; }
+    require(rejected,"unknown sweep metric accepted");
+    puf_ini_put(&ini,"sweep.metric","distance");
+    puf_ini_put(&ini,"env.completion_time_bonus","-1"); rejected=false;
+    try { retro_configure(&ini,"train"); } catch(...) { rejected=true; }
+    require(rejected,"negative completion speed bonus accepted");
+    puf_ini_put(&ini,"env.completion_time_bonus","5"); rejected=false;
+    try { retro_configure(&ini,"train"); } catch(...) { rejected=true; }
+    require(rejected,"speed bonus omitted from reward clipping bound");
+    puf_ini_put(&ini,"env.completion_time_bonus","0");
+    puf_ini_put(&ini,"env.coin_reward","-1"); rejected=false;
+    try { retro_configure(&ini,"train"); } catch(...) { rejected=true; }
+    require(rejected,"negative coin reward accepted");
+    puf_ini_put(&ini,"env.coin_reward","0");
+    puf_ini_put(&ini,"env.idle_penalty","-1"); rejected=false;
+    try { retro_configure(&ini,"train"); } catch(...) { rejected=true; }
+    require(rejected,"negative idle penalty accepted");
+    puf_ini_put(&ini,"env.idle_penalty","0");
+    puf_ini_put(&ini,"env.idle_grace_decisions","1.5"); rejected=false;
+    try { retro_configure(&ini,"train"); } catch(...) { rejected=true; }
+    require(rejected,"fractional idle grace accepted");
+    puf_ini_put(&ini,"env.idle_grace_decisions","8");
+    puf_ini_put(&ini,"env.area_transition_reward","-1"); rejected=false;
+    try { retro_configure(&ini,"train"); } catch(...) { rejected=true; }
+    require(rejected,"negative area transition reward accepted");
+    puf_ini_put(&ini,"env.area_transition_reward","0");
     puf_ini_put(&ini,"base.load_model_path","None"); puf_ini_put(&ini,"env.reward_scale","2"); rejected=false;
     try { retro_configure(&ini,"sweep"); } catch(...) { rejected=true; }
     require(rejected,"reward clipping regression accepted");
@@ -63,14 +116,112 @@ static void config_tests() {
     try { retro_configure(&ini,"train"); } catch(...) { rejected=true; }
     require(rejected,"checkpoint clipping regression accepted");
     puf_ini_put(&ini,"env.checkpoint_reward","0.125");
-    puf_ini_put(&ini,"env.reward_scale","0.0625"); puf_ini_put(&ini,"env.frameskip","4"); rejected=false;
+    puf_ini_put(&ini,"env.reward_scale","0.0625"); puf_ini_put(&ini,"env.frameskip","4");
+    puf_ini_put(&ini,"train.reward_clip","0");
+    puf_ini_put(&ini,"env.spawn_levels","1-1");
+    puf_ini_put(&ini,"env.completion_time_bonus","159");
+    puf_ini_put(&ini,"sweep.metric","speed");
+    retro_configure(&ini,"sweep");
+    require(puf_ini_get(&ini,"train","reward_clip")==0&&puf_ini_get(&ini,"env","frameskip")==4
+        &&!strcmp(puf_ini_get_str(&ini,"env","spawn_levels"),"1-1"),"sweep overwrote the selected task");
+    puf_ini_put(&ini,"env.spawn_levels","1-1,2-3"); retro_configure(&ini,"sweep");
+    puf_ini_put(&ini,"train.reward_clip","-1"); rejected=false;
     try { retro_configure(&ini,"sweep"); } catch(...) { rejected=true; }
-    require(rejected,"changed control contract accepted");
+    require(rejected,"negative reward clip accepted");
+    puf_ini_put(&ini,"train.reward_clip","0");
+    puf_ini_put(&ini,"env.frameskip","1.5"); rejected=false;
+    try { retro_configure(&ini,"sweep"); } catch(...) { rejected=true; }
+    require(rejected,"fractional frameskip accepted");
     puf_ini_free(&ini);
-    printf("PASS: coupled gamma, equal budgets, valid shapes, fresh trials and fixed ROM controls\n");
+    printf("PASS: coupled gamma, fixed budgets, explicit warm starts, selected levels/controls, optional clipping\n");
+}
+
+static void speed_reward_tests() {
+    Env e={}; e.potential_gamma=0.997764528f; e.completion_reward=10;
+    e.completion_time_bonus=5; e.death_penalty=1; e.checkpoint_reward=0.125f;
+    e.coin_reward=0.1f; e.idle_penalty=0.02f; e.area_transition_reward=0.05f; e.idle_grace_decisions=8;
+    e.reward_scale=0.0625f;
+    auto cleared=[&](int frames,int points=0) {
+        return retro_rom_reward(&e,0,0,1,false,true,points,0,retro_clear_speed(frames,3000));
+    };
+    require(cleared(1000)>cleared(2000)&&cleared(2000)>cleared(3000),"faster clears do not pay more");
+    require(cleared(1000)==cleared(1000,999999),"Mario points still affect speed reward");
+    require(cleared(3000)==0.625f&&cleared(4000)==0.625f,"late clear loses its completion reward");
+    require(retro_clear_speed(0,3000)==1&&retro_clear_speed(-1,3000)==1,"speed bonus exceeds its bound");
+    require(retro_rom_reward(&e,0,0,0,false,false,999999)==0,"idling/points pays reward");
+    require(retro_rom_reward(&e,0,0,0,false,false,0,0,1)==0,"speed bonus paid without clearing");
+    require(retro_coin_delta(10,11)==1&&retro_coin_delta(99,0)==1,"coin counter delta incorrect");
+    require(retro_coin_delta(12,11)==0&&retro_coin_delta(98,5)==7,"coin loss/wrap handling incorrect");
+    require(retro_rom_reward(&e,0,0,0,false,false,0,0,0,1)==0.00625f,"coin-only reward incorrect");
+    require(retro_rom_reward(&e,0,0,0,false,false,0,0,0,-60)==0,"coin loss paid as a wrapped reward");
+    require(retro_rom_reward(&e,0,0,0,false,false,999999,0,0,0)==0,"Mario points still pay with score_scale=0");
+    require(retro_rom_reward(&e,0,0,0,false,false,0,0,0,0,1)==-0.00125f,"idle penalty incorrect");
+    require(retro_rom_reward(&e,0,0,0,false,false,0,0,0,0,0)==0,"idle reward changed without idle event");
+    require(retro_rom_reward(&e,0,0,0,false,false,0,0,0,0,0,1)==0.003125f,"area transition reward incorrect");
+    unsigned char area_state[2048]={};
+    area_state[0x0770]=1; area_state[0x0772]=3; area_state[0x000e]=8;
+    area_state[0x075f]=0; area_state[0x075c]=0; area_state[0x0760]=0;
+    area_state[0x00e7]=0x34; area_state[0x00e8]=0x80;
+    Env areas={}; areas.last_area_key=retro_area_key(area_state);
+    areas.area_transition_key_count=1; areas.area_transition_keys[0]=areas.last_area_key;
+    unsigned int start_area=areas.last_area_key;
+    area_state[0x0760]=1; area_state[0x00e7]=0x78;
+    require(retro_record_area_transition(&areas,area_state)==2,"novel area transition not recorded");
+    require(areas.episode_area_transitions==1&&areas.episode_area_rewards==1,"area transition diagnostics incorrect");
+    require(retro_record_area_transition(&areas,area_state)==0,"stationary area double-counted");
+    area_state[0x0760]=0; area_state[0x00e7]=0x34;
+    require(retro_record_area_transition(&areas,area_state)==1,"return area transition not logged");
+    require(retro_area_key(area_state)==start_area,"area key changed unexpectedly");
+    require(areas.episode_area_transitions==2&&areas.episode_area_rewards==1,"repeated destination paid again");
+    area_state[0x000e]=0x0b;
+    area_state[0x0760]=2; area_state[0x00e7]=0x99;
+    require(retro_record_area_transition(&areas,area_state)==0,"non-playable transition was rewarded");
+    area_state[0x000e]=8;
+    Env full={}; full.last_area_key=start_area; full.area_transition_key_count=256;
+    full.area_transition_keys[0]=start_area;
+    for(int i=1;i<256;i++) full.area_transition_keys[i]=0x10000000u+(unsigned)i;
+    require(retro_record_area_transition(&full,area_state)==1&&full.episode_area_rewards==0,
+        "full area frontier turned an unremembered destination into a reward");
+    int streak=0;
+    for(int i=0;i<8;i++) require(retro_idle_event(&streak,100,100,0,false,8,false)==0,"idle grace charged early");
+    require(streak==8,"idle grace streak not tracked");
+    require(retro_idle_event(&streak,100,100,0,false,8,false)==1,"idle grace never charged");
+    require(retro_idle_event(&streak,100,100,0,false,8,false)==1,"idle charge is not per decision");
+    require(retro_idle_event(&streak,100,101,0,false,8,false)==0&&streak==0,"movement did not reset idle streak");
+    require(retro_idle_event(&streak,101,101,1,false,8,false)==0&&streak==0,"coin pickup did not reset idle streak");
+    require(retro_idle_event(&streak,101,101,0,true,8,false)==0&&streak==0,"level advance did not reset idle streak");
+    streak=20;
+    require(retro_idle_event(&streak,101,101,0,false,8,true)==0&&streak==0,"terminal event charged idle penalty");
+    require(retro_rom_reward(&e,0,0,0,true,true,0)==-0.0625f,"death penalty changed");
+    require(retro_rom_reward(&e,0,0,0,false,false,0,1)==0.0078125f,"incorrect progress scale");
+    require(cleared(3000)>retro_rom_reward(&e,0,0,0,true,true,0,27),"full-level partial progress beats a clear");
+    Log log={}; log.n=10; log.clears=2; log.clear_frame_sum=3600; log.coin_events=12; log.idle_steps=34;
+    Dict metrics={}; puf_log(&log,&metrics);
+    require(dict_get(&metrics,"clear_frames")==1800,"clear time denominator includes failed episodes");
+    require(dict_get(&metrics,"coin_events")==12&&dict_get(&metrics,"idle_steps")==34,"reward diagnostics missing");
+    dict_clear(&metrics); log.clears=0; log.clear_frame_sum=0; puf_log(&log,&metrics);
+    require(dict_get(&metrics,"clear_frames")==0,"no-clear metric must be finite");
+    dict_clear(&metrics);
+    puts("PASS: faster clears win; points/stalling do not pay; bounded clear-only bonus; conditional clear-time metric");
 }
 
 static void panel_tests() {
+    require(retro_panel_objective("speed",2,2,0,0,1600,3600)
+        >retro_panel_objective("speed",2,2,1,9999,1700,3600),"speed ignores clear time or rewards distance");
+    for(int clears=0;clears<64;clears++)
+        require(retro_panel_objective("speed",clears+1,64,0,0,3600,3600)
+            >retro_panel_objective("speed",clears,64,1,9999,clears?1:0,3600),
+            "fast partial success outranks an additional clear");
+    require(retro_panel_objective("speed",0,2,0,0,0,3600)==0,"failure gets a survival/speed bonus");
+    require(retro_panel_objective("speed",0,2,0.5,0,0,3600)>0,"no-clear progress tie-break missing");
+    require(retro_panel_distance(40,20)==0&&retro_panel_distance(40,4040)==4000,"distance must be relative, nonnegative and uncapped");
+    require(retro_panel_objective("distance",0,64,0.2,680)==680,"distance selection ignored");
+    require(retro_panel_objective("distance",8,64,0.2,680)==680,"clears contaminated distance objective");
+    require(retro_panel_objective("perf",1,64,0.2,680)==retro_panel_score(1,64,0.2),"perf objective changed");
+    require(retro_panel_objective("score",1,64,0.2,680)==retro_panel_score(1,64,0.2),"score alias changed");
+    bool rejected=false;
+    try { retro_panel_objective("typo",0,64,0.2,680); } catch(...) { rejected=true; }
+    require(rejected,"unknown metric accepted");
     float row[65]={}; row[63]=10; row[64]=10000;
     require(retro_panel_action(row,0,true)==63,"value head mistaken for an action");
     memset(row,0,sizeof(row)); row[0]=1000; row[64]=10000;
@@ -80,9 +231,9 @@ static void panel_tests() {
     require(retro_panel_score(0,64,0)==0,"empty panel gets a positive score");
     for(int clears=0;clears<64;clears++)
         require(retro_panel_score(clears+1,64,0)>retro_panel_score(clears,64,1),"progress can outweigh an additional clear");
-    printf("PASS: panel score strictly prioritizes clears, then bounded progress; no score/coins/survival input\n");
+    printf("PASS: distance objective is forward pixels; perf/score remain clear-first; unknown metrics rejected\n");
 }
 int main() {
-    try { reward_tests(); config_tests(); panel_tests(); return 0; }
+    try { reward_tests(); speed_reward_tests(); config_tests(); panel_tests(); return 0; }
     catch(const std::exception& e) { fprintf(stderr,"FAIL: %s\n",e.what()); return 1; }
 }

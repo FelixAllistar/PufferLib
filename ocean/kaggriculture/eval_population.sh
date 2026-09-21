@@ -331,6 +331,22 @@ if ! "${KAG_PYTHON:-python3}" ocean/kaggriculture/eval_observation_versions.py \
 fi
 mapfile -t kag_observation_versions < "$kag_versions_file"
 rm -f "$kag_versions_file"
+if [[ $(printf '%s\n' "${kag_observation_versions[@]}" | sort -u) != 3 ]]; then
+    printf '%s\n' 'The current evaluator requires a fresh v3 population.' >&2
+    exit 1
+fi
+if [[ -z $kag_hidden_size ]]; then
+    kag_contract=$("${KAG_PYTHON:-python3}" ocean/kaggriculture/eval_observation_versions.py \
+        contract "${kag_paths[0]}") || exit 1
+    read -r _ _ _ _ kag_hidden_size kag_num_layers _ <<< "$kag_contract"
+    kag_arch_args+=("policy.hidden_size=$kag_hidden_size" "policy.num_layers=$kag_num_layers"
+        "vec.frozen_bank_hidden_size=$kag_hidden_size" "vec.frozen_bank_num_layers=$kag_num_layers")
+fi
+# Constructors use safe v3 defaults. The native loader binds each real controller.
+kag_arch_args+=(env.macro_mode=3 env.macro_executor_version=0
+    env.frozen_macro_mode=-1 env.frozen_macro_executor_version=-1
+    env.macro_decision_interval=1 env.frozen_macro_decision_interval=-1
+    env.macro_score_features=0 env.frozen_macro_score_features=-1)
 declare -A kag_seen_name=()
 # A payoff is reusable only under the same simulator/evaluator build and reset
 # configuration. Prefixing policy hashes with that context keeps the cache
@@ -361,7 +377,8 @@ for kag_path in "${kag_paths[@]}"; do
     kag_seen_name["$kag_name"]=1
     kag_names+=("$kag_name")
     kag_version=${kag_observation_versions[${#kag_hashes[@]}]}
-    kag_hashes+=("$kag_eval_context:obs$kag_version:$(sha256sum "$kag_path" | cut -d' ' -f1)")
+    kag_policy_identity=$("${KAG_PYTHON:-python3}" ocean/kaggriculture/policy_identity.py keys "$kag_path") || exit 1
+    kag_hashes+=("$kag_eval_context:$kag_policy_identity")
 done
 
 if ((kag_focal_count >= kag_count)); then

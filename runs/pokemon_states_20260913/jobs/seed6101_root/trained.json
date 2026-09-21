@@ -1,0 +1,84 @@
+{
+  "checkpoints": [
+    {
+      "config_sha256": "9c72731b26406530a96706b03fd637c3cdb5341a24c565845ecca12c82e4c8a4",
+      "path": "/home/felix/puffertank/pufferlib/runs/pokemon_states_20260913/jobs/seed6101_root/checkpoints/pokemon/seed6101_root/0000000005242880.bin",
+      "sha256": "7ef889046a77e8cd09871dd1598df855eb5bcf9dbbb94d3b8a7109526b525bdc",
+      "steps": 5242880,
+      "train_seconds": 34.807204484939575
+    },
+    {
+      "config_sha256": "9c72731b26406530a96706b03fd637c3cdb5341a24c565845ecca12c82e4c8a4",
+      "path": "/home/felix/puffertank/pufferlib/runs/pokemon_states_20260913/jobs/seed6101_root/checkpoints/pokemon/seed6101_root/0000000010485760.bin",
+      "sha256": "2735548ae3dcb48e43496cf61e1627fdf8c2c0d9de2cefd033e5d9e0de741d29",
+      "steps": 10485760,
+      "train_seconds": 75.48099565505981
+    },
+    {
+      "config_sha256": "9c72731b26406530a96706b03fd637c3cdb5341a24c565845ecca12c82e4c8a4",
+      "path": "/home/felix/puffertank/pufferlib/runs/pokemon_states_20260913/jobs/seed6101_root/checkpoints/pokemon/seed6101_root/0000000015728640.bin",
+      "sha256": "0e2a8d82ca0c92078da179eddf9c3c60cdd1e62874011ab2f7fed8babdeb6cbc",
+      "steps": 15728640,
+      "train_seconds": 105.1805305480957
+    },
+    {
+      "config_sha256": "9c72731b26406530a96706b03fd637c3cdb5341a24c565845ecca12c82e4c8a4",
+      "path": "/home/felix/puffertank/pufferlib/runs/pokemon_states_20260913/jobs/seed6101_root/checkpoints/pokemon/seed6101_root/0000000019922944.bin",
+      "sha256": "31897087054ef9f6241811b1c3bcc299d41307d63f0c09636cdf5ce5295b84ca",
+      "steps": 19922944,
+      "train_seconds": 129.4412968158722
+    }
+  ],
+  "telemetry": {
+    "env/endgame_fraction": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "env/midgame_fraction": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "env/opening_fraction": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "env/reset_episode_fraction": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "env/reset_score": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "env/reset_step_fraction": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "env/root_score": [
+      0.5759993374347687,
+      0.5811478032006158,
+      0.6128689348697662,
+      0.6175136499934726,
+      0.594480037689209
+    ]
+  },
+  "wall_seconds": 136.51552171300136
+}
