@@ -164,3 +164,28 @@ the histories have 1 vs 12 unique commits. No branch switch, merge, commit or
 push was performed during this diagnosis. Choose a scoped Kaggriculture/shared
 trainer transfer or an explicit full merge; never force-checkout or reset the
 dirty trees just to change the displayed branch name.
+
+## Approved whole-branch merge completed
+
+The user selected the whole development-branch merge and authorized pushing
+`5c` after stopping the remote runs. Merge commit `5b06b9b50` has parents
+`6abfb8dd4` (old `5c`) and `c551347ee` (development plus the multi-intent/BC
+work). Conflicting older Retro/runtime files use the newer development port;
+non-conflicting `5c` ARPG additions remain. The old generated `retro` binary
+remains on disk but is no longer tracked, matching the development branch.
+
+The main `/home/felix/puffertank/pufferlib` checkout is now on `5c`. Its 39
+unrelated modified files and 177 originally untracked files were restored and
+verified against their original Git blob hashes. They remain uncommitted (or
+unchanged where already included by `5c`); they are not swept into the push.
+Older local Kaggriculture drafts are superseded by the new implementation, with
+the complete pre-switch working tree retained in stash
+`2c6ca31eead833a219d3585d19e5ac4b0e648226` and the file/patch archive directory
+`/home/felix/puffertank/backups/5c-merge-20260921.YzvPXa`.
+
+Merged-code checks: `make -C ocean/kaggriculture CC=clang
+BUILD=build/merge_5c_20260921 -j2 native-test multi-executor-test` passed,
+including strict controller/observation contracts, action feasibility,
+PLACE/shed parity, rewards, episode metrics, and multi-executor rollout.
+Build/deployment shell syntax checks passed. This merge does not change the
+remote installed binary, rewards, reset settings, or training configuration.
