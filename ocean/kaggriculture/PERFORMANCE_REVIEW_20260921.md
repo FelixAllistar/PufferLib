@@ -154,6 +154,72 @@ H512/L3 BC checkpoints. Neither change is guaranteed neutral to learning.
 - Keep the old runtime archive and all replay tapes/checkpoints. Do not replace
   the active binary/config while a trainer is running.
 
+### Reproducible fixed-state sampler diagnostic
+
+`tests/bench_kag_sampling.cu` includes the real BF16 production sampler and
+GPU-environment sources. Run `bash
+ocean/kaggriculture/deploy_20260921/bench_sampling.sh RESET_BANK` from a GPU
+checkout. This builds a separate binary, refuses to run if a compute process
+is already active, and bounds each invocation to 180 seconds. It never edits
+the live configuration or replaces `puffer`.
+
+It compares 2,048 and 4,096 rows, fresh states and evenly spaced real replay
+reset states, and controllers 2/1 and 2/2 within the same new executable.
+Each case uses fixed sinusoidal logits, identical Philox seeds, three warmups,
+and twelve timed repeats. CUDA events time graph-captured sampling only;
+RNG initialization and restoration of pristine base masks are outside the
+timed region. Layouts are one combined sampler launch versus learner plus
+eight frozen-bank launches with the production 0.75 frozen fraction.
+Actions, masks, log probabilities, values, and final RNG state must be
+byte-identical across layouts.
+
+This isolates sampler launch geometry under fixed inputs, **not** a measured
+end-to-end PPO speedup, trained-policy distribution, or optimization already
+implemented in the trainer. It excludes neural forwards, decoder/environment
+execution, and PPO. Controller 2/1 here still uses the new executable's kernel
+resource footprint; it is not a rerun of the archived old executable.
+
+### Measured diagnostic results (RTX 5060 Ti, September 21)
+
+Completed in the user's `ssh_tmux` / `kag-bc` window after their runs stopped.
+Raw remote log: `qualification/sampler_20260921.6Si3oi/results.log`.
+The bank has 78,864 records; sampled states cover steps 0–718 and 1–16 units
+per player, averaging 9.89 units at 2,048 rows and 9.88 at 4,096 rows.
+Fresh states all have one unit. Timings below are median CUDA milliseconds
+per complete set of rows, **excluding neural forward and environment step**.
+
+| Rows | Fixture | 2/1, nine launches | 2/2, nine launches | 2/2, one launch | Sampling speed ratio |
+| --- | --- | ---: | ---: | ---: | ---: |
+| 2,048 | Fresh | 1.607 | 24.185 | 4.220 | 5.73x |
+| 2,048 | Replay resets | 1.835 | 265.310 | 35.229 | 7.53x |
+| 4,096 | Fresh | 2.231 | 29.254 | 4.261 | 6.86x |
+| 4,096 | Replay resets | 2.529 | 286.643 | 35.973 | 7.97x |
+
+All eight controller/fixture/row-count comparisons passed exact batched versus
+banked parity for actions, prefix masks, log probabilities, values and final
+Philox state. At 2,048 replay rows the new banked sampler repeats ranged from
+264.999–265.594 ms, versus 35.142–35.318 ms combined. These are fixed-state,
+fixed-logit measurements, not actual live-policy trajectories. They therefore
+do not predict a 7.5x full-training improvement or explain every millisecond
+of the earlier training logs.
+`cuobjdump` confirms the diagnostic's sampler has the same 127 registers and
+24,560-byte stack as the installed production sampler.
+
+This promotes **bank-wide sampling after separate neural forwards** to a
+well-supported first optimization candidate. Production still uses separate
+decoder output allocations per bank; collecting those logits has a cost that
+this diagnostic excludes. Preserve row/RNG mapping, heterogeneous frozen
+network support, graph capture and archived masks when implementing it.
+Even the combined new sampler remains much slower than 2/1 on these fixtures,
+so capacity scans and planner complexity remain important second targets.
+Decoder-local plan reuse independently targets the environment timer.
+
+No runtime optimization was installed during this diagnostic. The production
+binary and config remain unchanged, and the bounded benchmark left no GPU
+training process running. Existing native-header narrowing and sweep-path
+truncation compiler warnings were visible; compilation and all benchmark
+parity checks completed successfully.
+
 ## Git handoff status at inspection
 
 `pufferlib-multi-intent` is a detached worktree at `39f7993c5`, with the new
