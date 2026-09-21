@@ -45,14 +45,14 @@
 #define KAG_OBSERVATION_EGOCENTRIC 1
 #define PUFFER_EPISODE_PROGRESS_OBS_INDEX 3
 
-/* Complete unit commands retain every operation/item. Market commands combine
- * operation, item, and a practical binary quantity. Repeated ordered slots can
- * express every useful exact quantity through the 100-tile/shed limits. */
+/* Policy ABI 4: complete unit commands and exact market quantities 1..100.
+ * Orders exceeding 100 can use repeated slots; offline projection reports
+ * such orders as unsupported rather than silently changing their ordering. */
 #define KG_POLICY_UNIT_COMMANDS 44
 #define KG_POLICY_MARKET_SLOTS 10
 #define KG_POLICY_MARKET_CONTINUE_ACTIONS 2
 #define KG_POLICY_MARKET_COMMANDS 21
-#define KG_POLICY_MARKET_QUANTITIES 8
+#define KG_POLICY_MARKET_QUANTITIES KAG_EXACT_MARKET_QUANTITIES
 #define KG_POLICY_MARKET_QUANTITY_COMMANDS 19
 #define KG_POLICY_MARKET_HEADS (3 * KG_POLICY_MARKET_SLOTS)
 #define KG_POLICY_MARKET_HEAD_OFFSET KG_POLICY_UNIT_HEADS
@@ -67,14 +67,14 @@
     (KG_POLICY_MARKET_MASK_OFFSET \
         + KG_POLICY_MARKET_SLOTS * KG_POLICY_MARKET_SLOT_MASK_SIZE)
 
-/* Optional native macro controller.  Macro mode deliberately reuses the
- * existing 44-way unit heads instead of changing NUM_ATNS or OBS_SIZE, so
- * primitive checkpoints and the normal environment ABI remain byte-for-byte
- * compatible.  Mode 1 is the original fixed-planner macro path.  Mode 2 is
+/* Optional native macro controllers share the 44-way prefix head storage.
+ * Controller and policy versions MUST match; shared shape does not imply
+ * checkpoint compatibility. Mode 1 is the original planner path. Mode 2 is
  * the structured option path. Mode 3 is the clean task path: every live unit
  * head requests one mechanical job class/region, the ordinary conditional
  * market queue remains policy-controlled, and deterministic code only
- * assigns workers and routes them. */
+ * assigns workers and routes them. Executor 2 (mode 2 only) is the new
+ * multi-intent strategy plus automatic-chores controller. */
 #define KAG_MACRO_MODE_LEGACY 1
 #define KAG_MACRO_MODE_STRUCTURED 2
 #define KAG_MACRO_MODE_TASKS 3
@@ -151,8 +151,11 @@ enum {
 #define ACT_SIZES { \
     44, 44, 44, 44, 44, 44, 44, 44, 44, \
     44, 44, 44, 44, 44, 44, 44, 44, \
-    2, 21, 8, 2, 21, 8, 2, 21, 8, 2, 21, 8, 2, 21, 8, \
-    2, 21, 8, 2, 21, 8, 2, 21, 8, 2, 21, 8, 2, 21, 8}
+    2, 21, KG_POLICY_MARKET_QUANTITIES, 2, 21, KG_POLICY_MARKET_QUANTITIES, \
+    2, 21, KG_POLICY_MARKET_QUANTITIES, 2, 21, KG_POLICY_MARKET_QUANTITIES, \
+    2, 21, KG_POLICY_MARKET_QUANTITIES, 2, 21, KG_POLICY_MARKET_QUANTITIES, \
+    2, 21, KG_POLICY_MARKET_QUANTITIES, 2, 21, KG_POLICY_MARKET_QUANTITIES, \
+    2, 21, KG_POLICY_MARKET_QUANTITIES, 2, 21, KG_POLICY_MARKET_QUANTITIES}
 static const int KG_ACTION_SIZES[NUM_ATNS] = ACT_SIZES;
 #define PUFFER_CONDITIONAL_MARKET_QUEUE 1
 #define PUFFER_CONDITIONAL_PREFIX_HEADS KG_POLICY_UNIT_HEADS
@@ -166,14 +169,14 @@ static_assert(OBS_SIZE == KAG_ENTITY_OBS_SIZE, "Kaggriculture observation ABI ch
 static_assert(KG_POLICY_MARKET_SLOTS <= KG_MAX_MARKET_ORDERS,
     "market slots exceed core order capacity");
 static_assert(NUM_ATNS == 47, "Kaggriculture action head count changed");
-static_assert(KG_POLICY_ACTION_MASK_SIZE == 1058,
+static_assert(KG_POLICY_ACTION_MASK_SIZE == KAG_ALL_LOGITS,
     "Kaggriculture action mask ABI changed");
 #else
 _Static_assert(OBS_SIZE == KAG_ENTITY_OBS_SIZE, "Kaggriculture observation ABI changed");
 _Static_assert(KG_POLICY_MARKET_SLOTS <= KG_MAX_MARKET_ORDERS,
     "market slots exceed core order capacity");
 _Static_assert(NUM_ATNS == 47, "Kaggriculture action head count changed");
-_Static_assert(KG_POLICY_ACTION_MASK_SIZE == 1058,
+_Static_assert(KG_POLICY_ACTION_MASK_SIZE == KAG_ALL_LOGITS,
     "Kaggriculture action mask ABI changed");
 #endif
 
@@ -484,6 +487,8 @@ struct Env {
 /* Forward declarations are needed because the observation and mask writers
  * live before the detailed market decoder below. */
 KG_HD static inline int kag_explicit_legal(const Env* env, int player_id, int macro_id);
+KG_HD static inline int kag_multi_capacity(const KGState* game, int player_id,
+    int intent, int quadrant);
 KG_HD static inline int kag_agent_executor_version(const Env* env, int player_id) {
     if (env->controller[player_id].valid) return env->controller[player_id].executor;
     return env->frozen_macro_executor_version >= 0 && env->agents[player_id].policy != 0
@@ -1631,7 +1636,7 @@ KG_HD static inline int kag_market_action_id(int op, int item, int n) {
 
 KG_HD static inline int kag_market_quantity_spec(int id) {
     if ((unsigned)id >= KG_POLICY_MARKET_QUANTITIES) id = 0;
-    return id < 6 ? id + 1 : id == 6 ? 8 : 10;
+    return id + 1;
 }
 
 KG_HD static inline int kag_market_quantity_id(int n) {
@@ -1700,6 +1705,16 @@ KG_HD static inline int kag_unit_action_legal(const KGState* game, const KGPlaye
         return kg_is_shed_adjacent(&pos, game->config.board_size)
             && unit->inventory_order_count > 0;
     }
+    if (spec.op == KG_OP_PLACE) {
+        if ((unsigned)spec.arg >= KG_NUM_ITEMS || unit->inventory[spec.arg] <= 0) return 0;
+        if (spec.arg >= KG_ITEM_GOOSE && spec.arg <= KG_ITEM_SHEEP) {
+            int animal = spec.arg - KG_ITEM_GOOSE;
+            if (tile->kind == KG_ANIMAL_DEFS[animal].structure
+                    && tile->animal == KG_ANIMAL_INVALID) return 1;
+        }
+        return kg_is_shed_adjacent(&pos, game->config.board_size)
+            && game->config.shed_capacity - kg_shed_total(player) > 0;
+    }
     if (tile->kind == KG_TILE_LOCKED) return 0;
     if (spec.op == KG_OP_PLANT) {
         return spec.arg >= 0 && spec.arg < KG_NUM_CROPS
@@ -1728,17 +1743,6 @@ KG_HD static inline int kag_unit_action_legal(const KGState* game, const KGPlaye
     if (spec.op == KG_OP_DIG) {
         return tile->kind != KG_TILE_EMPTY && tile->kind != KG_TILE_LOCKED
             && !kg_is_animal_tile(tile);
-    }
-    if (spec.op == KG_OP_PLACE) {
-        if (spec.arg >= KG_ITEM_GOOSE && spec.arg <= KG_ITEM_SHEEP) {
-            int animal = spec.arg - KG_ITEM_GOOSE;
-            return tile->kind == KG_ANIMAL_DEFS[animal].structure
-                && tile->animal == KG_ANIMAL_INVALID
-                && unit->inventory[spec.arg] > 0;
-        }
-        return kg_is_shed_adjacent(&pos, game->config.board_size)
-            && unit->inventory[spec.arg] > 0
-            && game->config.shed_capacity - kg_shed_total(player) > 0;
     }
     if (spec.op == KG_OP_FEED) {
         return kg_is_animal_tile(tile) && !tile->fed_today
@@ -2414,6 +2418,12 @@ KG_HD static inline void kag_write_unit_mask(const KGState* game, const KGPlayer
         }
         if (unit->inventory_order_count > 0) mask[KG_U_DROP] = 1;
     }
+    /* PLACE falls back to the shed even from a locked access tile. Animal
+     * placement in matching empty housing takes precedence over that return. */
+    for (int item = 0; item < KG_NUM_ITEMS; item++) {
+        if (kag_unit_action_legal(game, player, unit_id,
+                (KGPolicyUnitSpec){KG_OP_PLACE, item, 1})) mask[KG_U_PLACE + item] = 1;
+    }
     if (tile->kind == KG_TILE_LOCKED) return;
     if (tile->kind == KG_TILE_EMPTY) {
         for (int crop = 0; crop < KG_NUM_CROPS; crop++) {
@@ -2444,22 +2454,6 @@ KG_HD static inline void kag_write_unit_mask(const KGState* game, const KGPlayer
     if (tile->kind != KG_TILE_EMPTY && tile->kind != KG_TILE_LOCKED
             && !kg_is_animal_tile(tile)) {
         mask[KG_U_SINGLE + 5] = 1; /* DIG */
-    }
-    int shed_room = adjacent
-        ? game->config.shed_capacity - kg_shed_total(player) : 0;
-    for (int item = 0; item < KG_NUM_ITEMS; item++) {
-        int legal = 0;
-        if (item >= KG_ITEM_GOOSE && item <= KG_ITEM_SHEEP) {
-            int animal = item - KG_ITEM_GOOSE;
-            legal = tile->kind == KG_ANIMAL_DEFS[animal].structure
-                && tile->animal == KG_ANIMAL_INVALID
-                && unit->inventory[item] > 0;
-        } else {
-            legal = shed_room > 0 && unit->inventory[item] > 0;
-        }
-        if (legal) {
-            mask[KG_U_PLACE + item] = 1;
-        }
     }
 }
 
@@ -2520,6 +2514,8 @@ KG_HD static inline void kag_write_market_slots(const Env* env,
     }
 }
 
+KG_HD static inline void kag_multi_write_mask(Env* env, int player_id);
+
 KG_HD static inline void kag_write_mask(Env* env, int player_id) {
     kag_update_land_buy_delay(env, player_id);
     Agent* agent = &env->agents[player_id];
@@ -2529,6 +2525,10 @@ KG_HD static inline void kag_write_mask(Env* env, int player_id) {
     if (mask == NULL) return;
     memset(mask, 0, KG_POLICY_ACTION_MASK_SIZE);
     int macro_mode = kag_agent_macro_mode(env, player_id);
+    if (macro_mode == 2 && kag_agent_executor_version(env, player_id) == 2) {
+        kag_multi_write_mask(env, player_id);
+        return;
+    }
     if (macro_mode == KAG_MACRO_MODE_TASKS) {
         int controlled = player->unit_count < KG_POLICY_UNIT_HEADS
             ? player->unit_count : KG_POLICY_UNIT_HEADS;
@@ -4799,10 +4799,18 @@ KG_HD static inline void kag_decode_task_action(KGAction* action,
 }
 
 #include "explicit_executor.h"
+#include "multi_executor.h"
+
+KG_HD static inline void kag_decode_multi_action(KGAction* action,
+    const Agent* agent, const KGState* game, int player_id, Env* env);
 
 KG_HD static inline void kag_decode_macro_action(KGAction* action,
         const Agent* agent, const KGState* game, int player_id, Env* env) {
     int macro_mode = kag_agent_macro_mode(env, player_id);
+    if (macro_mode == 2 && kag_agent_executor_version(env, player_id) == 2) {
+        kag_decode_multi_action(action, agent, game, player_id, env);
+        return;
+    }
     int macro_id;
     int quantity;
     int target_quadrant;
@@ -4876,6 +4884,7 @@ KG_HD static inline void kag_decode_policy_action(KGAction* action,
 }
 
 #include "action_feasibility.h"
+#include "multi_market.h"
 
 /* A hinge opportunity is driven only by randomized town/shop demand. It is
  * present once the no-production inventory deficit crosses the product's
@@ -4975,8 +4984,8 @@ void puf_init(Env* env, Dict* kwargs) {
     }
     env->land_buy_min_days = (int)land_days;
     env->macro_mode = kag_reward_integer(kwargs, "macro_mode", 3, 0, 3);
-    env->macro_executor_version = kag_reward_integer(kwargs, "macro_executor_version", 0, 0, 1);
-    env->frozen_macro_executor_version = kag_reward_integer(kwargs, "frozen_macro_executor_version", -1, -1, 1);
+    env->macro_executor_version = kag_reward_integer(kwargs, "macro_executor_version", 0, 0, 2);
+    env->frozen_macro_executor_version = kag_reward_integer(kwargs, "frozen_macro_executor_version", -1, -1, 2);
     env->observation_version = dict_find(kwargs, "observation_version")
         ? (int)dict_get(kwargs, "observation_version") : KAG_OBSERVATION_ENTITIES;
     env->frozen_observation_version = dict_find(kwargs, "frozen_observation_version")
@@ -5002,8 +5011,10 @@ void puf_init(Env* env, Dict* kwargs) {
         ? env->macro_executor_version : env->frozen_macro_executor_version;
     if ((env->macro_executor_version && env->macro_mode != 1 && env->macro_mode != 2)
             || (frozen_executor && frozen_mode != 1 && frozen_mode != 2)
+            || (env->macro_executor_version == 2 && env->macro_mode != 2)
+            || (frozen_executor == 2 && frozen_mode != 2)
             || env->frozen_macro_decision_interval == 0) {
-        fprintf(stderr, "Executor 1 applies to macro modes 1/2; modes 0/3 have their own decoders. Frozen interval must be -1 or positive.\n");
+        fprintf(stderr, "Executor 1 applies to modes 1/2; executor 2 to mode 2 only. Modes 0/3 require executor 0. Frozen interval must be -1 or positive.\n");
         exit(1);
     }
     if (env->macro_decision_interval < 1

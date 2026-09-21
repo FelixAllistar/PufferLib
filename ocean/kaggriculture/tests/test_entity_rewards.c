@@ -123,7 +123,7 @@ static void quotes(void) {
     for (int item = 0; item < 9; item++) for (unsigned i = 0; i < sizeof(stocks)/sizeof(stocks[0]); i++) {
         g->market.inventory[item] = stocks[i]; kg_refresh_prices(g); kag_update_quote_cache(e, item);
         for (int bin = 0; bin < 8; bin++) for (int bulk = 0; bulk < 2; bulk++) {
-            int n = bulk ? kag_bulk_quote_quantity(bin) : kag_market_quantity_spec(bin);
+            int n = bulk ? kag_bulk_quote_quantity(bin) : kag_order_quote_quantity(bin);
             KGState copy = *g; copy.players[0].shed[item] = n;
             int before = copy.players[0].money;
             for (int j = 0; j < n; j++) {

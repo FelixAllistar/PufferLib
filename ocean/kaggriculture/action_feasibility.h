@@ -24,7 +24,8 @@ typedef struct {
     int land_used;
     int land_ready;
     int prepared;
-    unsigned char opening_quantity[8];
+    int wheat_out_of_shed;
+    unsigned char opening_quantity[KG_POLICY_MARKET_QUANTITIES];
 } KagActionMaskState;
 
 KG_HD static inline int kag_mask_shed_total(const KagActionMaskState* s) {
@@ -70,7 +71,9 @@ KG_HD static inline void kag_mask_prepare_market(KagActionMaskState* s) {
     Agent preview = env->agents[s->player];
     preview.actions = s->choices;
     KGAction work;
-    if (s->mode == 3) kag_decode_task_action(&work, &preview, g, s->player);
+    if (s->mode == 2 && kag_agent_executor_version(env, s->player) == 2)
+        kag_multi_work(&work, &preview, g, s->player);
+    else if (s->mode == 3) kag_decode_task_action(&work, &preview, g, s->player);
     else kag_decode_action(&work, &preview, g, s->player);
     int count = work.hand_count + 1;
     if (count > p->unit_count) count = p->unit_count;
@@ -84,16 +87,19 @@ KG_HD static inline void kag_mask_prepare_market(KagActionMaskState* s) {
             int n = a->n > 0 ? a->n : 1;
             if (n > s->shed[item]) n = s->shed[item];
             s->shed[item] -= n;
+            if (item == KG_ITEM_WHEAT) s->wheat_out_of_shed += n;
         } else if (a->op == KG_OP_DROP) {
             for (int i = 0; i < unit->inventory_order_count; i++) {
                 item = unit->inventory_order[i];
                 int n = unit->inventory[item];
                 int room = g->config.shed_capacity - kag_mask_shed_total(s);
                 if (n > room) n = room;
-                if (n > 0) s->shed[item] += n;
+                if (n > 0) {
+                    s->shed[item] += n;
+                    if (item == KG_ITEM_WHEAT) s->wheat_out_of_shed -= n;
+                }
             }
-        } else if (a->op == KG_OP_PLACE && (unsigned)item < KG_NUM_ITEMS
-                && p->tiles[kg_tile_index(unit->x, unit->y)].kind != KG_TILE_LOCKED) {
+        } else if (a->op == KG_OP_PLACE && (unsigned)item < KG_NUM_ITEMS) {
             const KGTile* tile = &p->tiles[kg_tile_index(unit->x, unit->y)];
             if (item >= KG_ITEM_GOOSE && tile->kind == KG_ANIMAL_DEFS[item - KG_ITEM_GOOSE].structure
                     && tile->animal == KG_ANIMAL_INVALID) continue; /* places livestock */
@@ -101,7 +107,10 @@ KG_HD static inline void kag_mask_prepare_market(KagActionMaskState* s) {
             int room = g->config.shed_capacity - kag_mask_shed_total(s);
             if (n > room) n = room;
             if (n > unit->inventory[item]) n = unit->inventory[item];
-            if (n > 0) s->shed[item] += n;
+            if (n > 0) {
+                s->shed[item] += n;
+                if (item == KG_ITEM_WHEAT) s->wheat_out_of_shed -= n;
+            }
         }
     }
     s->prepared = 1;
@@ -138,7 +147,7 @@ KG_HD static inline int kag_mask_market_capacity(const KagActionMaskState* s, in
     }
     if (spec.op == KG_MARKET_BUY_PRODUCT) {
         int cost = 0, n = 0;
-        while (n < room && n < 10) {
+        while (n < room && n < KG_POLICY_MARKET_QUANTITIES) {
             int price = kg_market_price(spec.item, s->inventory[spec.item] - n - 1);
             if (price > s->cash - cost) break;
             cost += price; n++;
@@ -185,7 +194,48 @@ KG_HD static inline void kag_action_mask_before(KagActionMaskState* s,
     const KGState* g = &env->game_storage;
     const KGPlayer* p = &g->players[s->player];
     if (head < KG_POLICY_UNIT_HEADS) {
-        if (s->mode == 2 && (head == KAG_MACRO_QUANTITY_HEAD || head == KAG_MACRO_TARGET_HEAD)) {
+        if (s->mode == 2 && kag_agent_executor_version(env, s->player) == 2) {
+            unsigned char* out = mask + head * KG_POLICY_UNIT_COMMANDS;
+            if (head >= KAG_MULTI_SLOTS * 3) return;
+            int slot = head / 3, node = head % 3, stopped = 0, reserved = 0;
+            int seeds_reserved[KG_NUM_CROPS] = {0};
+            for (int prev = 0; prev < slot; prev++) {
+                int intent = (int)s->choices[3*prev];
+                if (!intent) { stopped = 1; break; }
+                int n = 1 + (int)s->choices[3*prev+1];
+                reserved += n;
+                if (intent >= KAG_MULTI_PLANT && intent < KAG_MULTI_COOP)
+                    seeds_reserved[intent-1] += n;
+            }
+            memset(out, 0, KG_POLICY_UNIT_COMMANDS);
+            if (stopped || (node && s->choices[3*slot] == 0)) { out[0] = 1; return; }
+            int workers = p->unit_count - reserved;
+            if (node == 0) {
+                out[0] = 1;
+                for (int intent = 1; intent < KAG_MULTI_INTENTS; intent++) {
+                    int cap = kag_multi_capacity(g,s->player,intent,0);
+                    if (intent < KAG_MULTI_COOP && p->seeds[intent-1] <= seeds_reserved[intent-1]) cap = 0;
+                    out[intent] = workers > 0 && cap > 0;
+                }
+            } else {
+                int intent = (int)s->choices[3*slot];
+                int cap = kag_multi_capacity(g,s->player,intent,0);
+                if (intent > 0 && intent < KAG_MULTI_COOP) {
+                    int available = p->seeds[intent-1] - seeds_reserved[intent-1];
+                    if (cap > available) cap = available;
+                }
+                if (cap > workers) cap = workers;
+                if (node == 1) {
+                    for (int q = 0; q < 44; q++) out[q] = q < cap;
+                } else {
+                    out[0] = 1;
+                    for (int q = 1; q < 5; q++)
+                        out[q] = kag_multi_capacity(g,s->player,intent,kag_macro_target_from_bin(q))
+                            >= 1 + (int)s->choices[head-1];
+                }
+                out[0] = 1;
+            }
+        } else if (s->mode == 2 && (head == KAG_MACRO_QUANTITY_HEAD || head == KAG_MACRO_TARGET_HEAD)) {
             int macro = (int)s->choices[0];
             int explicit_executor = kag_agent_executor_version(env, s->player);
             int planting = macro >= KAG_MACRO_PLANT_BASE && macro < KAG_MACRO_PLANT_BASE + KG_NUM_CROPS;
@@ -235,7 +285,7 @@ KG_HD static inline void kag_action_mask_before(KagActionMaskState* s,
         }
         return;
     }
-    if (s->mode == 1 || s->mode == 2) return;
+    if (s->mode == 1 || (s->mode == 2 && kag_agent_executor_version(env,s->player) != 2)) return;
     if (!s->prepared) kag_mask_prepare_market(s);
     int relative = head - KG_POLICY_UNIT_HEADS;
     int slot = relative / 3, node = relative % 3;
@@ -249,7 +299,7 @@ KG_HD static inline void kag_action_mask_before(KagActionMaskState* s,
         int opening = !s->mode && env->opening_turns > g->step && env->agents[s->player].policy == 0;
         if (opening) {
             memcpy(forced, out, sizeof(forced));
-            memcpy(s->opening_quantity, out + 23, 8);
+            memcpy(s->opening_quantity, out + 23, KG_POLICY_MARKET_QUANTITIES);
         }
         for (int command = 0; command < KG_POLICY_MARKET_COMMANDS; command++) {
             out[2 + command] = !stopped && kag_mask_market_capacity(s, command) > 0
@@ -260,7 +310,7 @@ KG_HD static inline void kag_action_mask_before(KagActionMaskState* s,
         out[1] = any && (!opening || forced[1]);
         if (opening && out[1] && !forced[0]) out[0] = 0;
         if (!any) out[2] = 1; /* inert command fallback after forced STOP */
-        memset(out + 23, 0, 8); out[23] = 1;
+        memset(out + 23, 0, KG_POLICY_MARKET_QUANTITIES); out[23] = 1;
     } else if (node == 2) {
         int command = (int)s->choices[head - 1];
         int cap = stopped || s->choices[head - 2] == 0 ? 0 : kag_mask_market_capacity(s, command);
@@ -268,7 +318,7 @@ KG_HD static inline void kag_action_mask_before(KagActionMaskState* s,
         /* Opening quantities were captured by the base mask. Ordinary masks
          * are recomputed from the selected command, not a union over items. */
         int any = 0;
-        for (int q = 0; q < 8; q++) {
+        for (int q = 0; q < KG_POLICY_MARKET_QUANTITIES; q++) {
             out[23 + q] = kag_market_quantity_spec(q) <= cap && (!opening || s->opening_quantity[q]);
             any |= out[23 + q];
         }
@@ -292,11 +342,12 @@ KG_HD static inline void kag_action_mask_commit(KagActionMaskState* s, int head,
         }
         return;
     }
-    if (s->mode == 1 || s->mode == 2) return;
+    if (s->mode == 1 || (s->mode == 2 && kag_agent_executor_version(s->env,s->player) != 2)) return;
     int node = (head - KG_POLICY_UNIT_HEADS) % 3;
     if (node == 1 && s->choices[head - 1] == 1 && action >= KG_POLICY_MARKET_QUANTITY_COMMANDS)
         kag_mask_market_commit(s, action, 1);
-    if (node == 2 && s->choices[head - 2] == 1)
+    if (node == 2 && s->choices[head - 2] == 1
+            && s->choices[head - 1] < KG_POLICY_MARKET_QUANTITY_COMMANDS)
         kag_mask_market_commit(s, (int)s->choices[head - 1], kag_market_quantity_spec(action));
 }
 

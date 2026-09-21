@@ -20,7 +20,7 @@
 } while (0)
 
 enum {
-    ADAPTER_CASES = 14,
+    ADAPTER_CASES = 16,
     ADAPTER_STEPS = 1440,
     ADAPTER_ROWS = 2 * ADAPTER_CASES,
 };
@@ -77,6 +77,31 @@ static void random_policy_actions(float* actions, uint32_t* rng) {
     }
 }
 
+/* Exercise useful conditional 2/2 requests as well as malformed inputs.
+ * This samples the CPU prefix masks only; identical actions are sent to CUDA.
+ * GPU policy sampling itself is a separate qualification gate. */
+static void masked_multi_actions(Env* env, int player, uint32_t* rng) {
+    kag_write_mask(env, player);
+    unsigned char* mask = env->agents[player].action_mask;
+    float* actions = env->agents[player].actions;
+    KagActionMaskState prefix;
+    kag_action_mask_begin(&prefix, env, player);
+    int offset = 0;
+    for (int head = 0; head < NUM_ATNS; head++) {
+        kag_action_mask_before(&prefix, head, mask);
+        int count = 0;
+        for (int a = 0; a < KG_ACTION_SIZES[head]; a++) count += mask[offset + a] != 0;
+        int choice = count ? (int)(adapter_rng(rng) % (uint32_t)count) : 0;
+        int selected = 0;
+        for (int a = 0; a < KG_ACTION_SIZES[head]; a++) {
+            if (mask[offset + a] && choice-- == 0) { selected = a; break; }
+        }
+        actions[head] = (float)selected;
+        kag_action_mask_commit(&prefix, head, selected);
+        offset += KG_ACTION_SIZES[head];
+    }
+}
+
 static void configure_case(Env* env, int case_id, obs_t* observations,
         float* actions, float* rewards, float* terminals,
         unsigned char* masks) {
@@ -94,6 +119,13 @@ static void configure_case(Env* env, int case_id, obs_t* observations,
     env->frozen_macro_mode = -1;
     env->macro_decision_interval = env->macro_mode == 1 ? 4 : 1;
     env->macro_executor_version = case_id == 10 ? 0 : executors[case_id % 6];
+    if (case_id >= 14) {
+        env->macro_mode = 2;
+        env->macro_executor_version = 2;
+        env->macro_decision_interval = 1;
+        env->policy_market_slots = 10;
+        env->land_buy_min_days = case_id == 14 ? 0 : 2;
+    }
     env->frozen_macro_decision_interval = env->frozen_macro_score_features = -1;
     env->macro_score_features = case_id % 2;
     env->frozen_macro_executor_version = -1;
@@ -104,6 +136,10 @@ static void configure_case(Env* env, int case_id, obs_t* observations,
         : case_id == 8 ? 26 : 0;
     env->reset_opening_prob = case_id == 1 ? 0.5f
         : case_id == 8 ? 1.0f : 0.0f;
+    if (case_id == 15) {
+        env->reset_opening_turns = 26;
+        env->reset_opening_prob = 1.0f;
+    }
     env->reward = {0.13f, 0.41f, 0.25f, case_id % 2 ? 0.0f : 0.7f,
         0.9993f, 1.0f, 0.8f, 0.25f, 0.3f,
         case_id % 2, (case_id / 2) % 2, 1.0f, 0.05f, 0.25f, 0.05f, 3, 15, -1};
@@ -126,6 +162,8 @@ static void configure_case(Env* env, int case_id, obs_t* observations,
         KAG_BOT_SCRIPT_BASE + KG_SCRIPT_MOON,
         KAG_BOT_NONE,
         KAG_BOT_NONE,
+        KAG_BOT_NONE,
+        KAG_BOT_ADAPTIVE_BASE + KAG_ADAPTIVE_STRUCTURED,
     };
     env->bot_opponent = bots[case_id];
     if (bots[case_id] != KAG_BOT_NONE) {
@@ -149,6 +187,7 @@ static void configure_case(Env* env, int case_id, obs_t* observations,
     config.episode_steps = case_id == 0 ? 2 : case_id == 10 ? 720 : 31 + 7 * case_id;
     config.starting_money = case_id % 4 == 0 ? 500 : 3000 + 97 * case_id;
     config.max_market_orders_per_turn = 1 + case_id % KG_MAX_MARKET_ORDERS;
+    if (case_id >= 14) config.max_market_orders_per_turn = 10;
     config.shed_capacity = case_id % 4 == 0 ? 1
         : case_id % 4 == 1 ? 7 : 100;
     config.weed_spawn_chance = case_id % 4 == 0 ? 0.0
@@ -165,6 +204,12 @@ static void configure_case(Env* env, int case_id, obs_t* observations,
             kg_do_hire(&env->game_storage, farm);
             kg_set_player_tile(farm, 44, KG_TILE_PASTURE);
             kg_inventory_add(&farm->units[0], KG_ITEM_COW, 1);
+            if (case_id >= 14) {
+                kg_do_hire(&env->game_storage, farm);
+                kg_do_hire(&env->game_storage, farm);
+                for (int crop = 0; crop < KG_NUM_CROPS; crop++) farm->seeds[crop] = 4;
+                farm->shed[KG_ITEM_WHEAT] = 12;
+            }
         }
     }
     /* A deterministic one-transition episode also exercises the shortest
@@ -356,7 +401,10 @@ int main(void) {
 
     for (int step = 0; step < ADAPTER_STEPS; step++) {
         for (int i = 0; i < ADAPTER_CASES; i++) {
-            if (i == 0 || i == 10) {
+            if (i >= 14 && step % 2 == 0) {
+                masked_multi_actions(&cpu[i], 0, &rng[i]);
+                masked_multi_actions(&cpu[i], 1, &rng[i]);
+            } else if (i == 0 || i == 10) {
                 std::memset(cpu_actions + (size_t)(2 * i) * NUM_ATNS, 0,
                     2 * NUM_ATNS * sizeof(float));
             } else {
@@ -458,6 +506,11 @@ int main(void) {
             cpu[0].log.reset_games);
         return 1;
     }
+    if (cpu[14].log.n <= 0.0f || cpu[14].log.reset_games != 0.0f
+            || cpu[15].log.n <= 0.0f || cpu[15].log.reset_games != cpu[15].log.n) {
+        std::fprintf(stderr, "multi-intent root/reset rollout cases failed\n");
+        return 1;
+    }
 
     if (cpu[10].log.milk_units != 0.0f
             || cpu[10].log.successful_animal_places != 0.0f
@@ -477,7 +530,8 @@ int main(void) {
     CUDA_OK(cudaFree(d_envs));
     std::printf(
         "Kaggriculture CUDA adapter: PASS (%d adversarial modes x %d turns; "
-        "state/mask/reset exact; float obs/reward/log tolerance checked)\n",
+        "including 2/2 root/reset; state/mask/reset exact; "
+        "float obs/reward/log tolerance checked)\n",
         ADAPTER_CASES, ADAPTER_STEPS);
     return 0;
 }

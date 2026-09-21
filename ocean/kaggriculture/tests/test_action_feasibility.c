@@ -50,20 +50,20 @@ static void market_prefix(void) {
     p->shed[KG_ITEM_WHEAT] = 3; p->money = 0;
     begin(e, &s); order(&s, 0, KG_M_SELL + KG_ITEM_WHEAT, 3);
     kag_action_mask_before(&s, 20, masks[0]);
-    assert(!masks[0][779 + 2 + KG_M_SELL + KG_ITEM_WHEAT]);
+    assert(!kag_market_slot_mask(masks[0], 1)[2 + KG_M_SELL + KG_ITEM_WHEAT]);
     assert(s.shed[KG_ITEM_WHEAT] == 0 && s.cash > 0 && p->shed[KG_ITEM_WHEAT] == 3);
-    assert(masks[0][779 + 2]); /* Selling can fund a subsequent seed purchase. */
+    assert(kag_market_slot_mask(masks[0], 1)[2]); /* Selling can fund a subsequent seed purchase. */
     int price = KG_CROP_DEFS[KG_WHEAT].seed_cost;
     p->shed[KG_ITEM_WHEAT] = 0; p->money = 2 * price;
     begin(e, &s); order(&s, 0, 0, 2);
     assert(masks[0][748 + 23] && masks[0][748 + 24] && !masks[0][748 + 25]);
     kag_action_mask_before(&s, 20, masks[0]);
-    assert(!masks[0][779 + 1]); /* No money, stock, or feasible subsequent order. */
+    assert(!kag_market_slot_mask(masks[0], 1)[1]); /* No money, stock, or feasible subsequent order. */
     p->shed[KG_ITEM_WHEAT] = e->game_storage.config.shed_capacity;
     p->money = 1000;
     begin(e, &s); order(&s, 0, KG_M_SELL + KG_ITEM_WHEAT, 2);
     kag_action_mask_before(&s, 20, masks[0]);
-    assert(masks[0][779 + 2 + KG_M_PRODUCT]); /* Freed shed capacity. */
+    assert(kag_market_slot_mask(masks[0], 1)[2 + KG_M_PRODUCT]); /* Freed shed capacity. */
     e->game_storage.hour = e->game_storage.config.turns_per_day - 1;
     begin(e, &s); kag_action_mask_before(&s, 17, masks[0]);
     assert(!masks[0][748 + 2 + KG_M_HIRE]);
@@ -82,6 +82,17 @@ static void deposits_and_workers(void) {
     order(&s, 0, KG_M_SELL + KG_ITEM_MILK, 4);
     assert(s.shed[KG_ITEM_MILK] == 0 && p->shed[KG_ITEM_MILK] == 0);
     assert(p->units[0].inventory[KG_ITEM_MILK] == 4); /* Preview is read-only. */
+    p->units[0].x = 5; p->units[0].y = 5;
+    assert(p->tiles[kg_tile_index(5, 5)].kind == KG_TILE_LOCKED);
+    kg_inventory_add(&p->units[0], KG_ITEM_COW, 1);
+    begin(e, &s);
+    assert(masks[0][KG_U_PLACE + KG_ITEM_COW]);
+    assert(masks[0][KG_U_PLACE + KG_ITEM_MILK]);
+    assert(kag_unit_action_legal(&e->game_storage, p, 0,
+        (KGPolicyUnitSpec){KG_OP_PLACE, KG_ITEM_COW, 1}));
+    kag_action_mask_commit(&s, 0, KG_U_PLACE + KG_ITEM_MILK);
+    order(&s, 0, KG_M_SELL + KG_ITEM_MILK, 1);
+    assert(p->shed[KG_ITEM_MILK] == 0 && p->units[0].inventory[KG_ITEM_MILK] == 4);
     p->units[0].x = 0; p->units[0].y = 0;
     kg_new_plant(p, 0, KG_WHEAT, 0, 24);
     kg_inventory_add(&p->units[0], KG_ITEM_FERTILIZER, 2);

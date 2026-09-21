@@ -1,6 +1,9 @@
 #pragma once
 
-KG_HD static inline int kag_market_quantity_spec(int id);
+/* Observation v3 quotes are fixed, independently of the policy action ABI. */
+KG_HD static inline int kag_order_quote_quantity(int id) {
+    return id < 6 ? id + 1 : id == 6 ? 8 : 10;
+}
 
 KG_HD static inline int kag_bulk_quote_quantity(int bin) {
     switch (bin) {
@@ -17,7 +20,7 @@ KG_HD static inline void kag_update_quote_cache(Env* env, int item) {
     int order_bin = 0, bulk_bin = 0;
     for (int n = 1; n <= 100; n++) {
         proceeds += kg_market_price(item, inventory + n - 1);
-        if (order_bin < 8 && n == kag_market_quantity_spec(order_bin)) {
+        if (order_bin < 8 && n == kag_order_quote_quantity(order_bin)) {
             c->quotes[order_bin] = proceeds / 10000.0f;
             c->quotes[8 + order_bin] = kg_market_price(item, inventory + n) / 1000.0f;
             order_bin++;
@@ -227,7 +230,9 @@ KG_HD static inline void kag_write_observation_with_summaries(Env* env, int pid,
     float* task = out + KAG_TASK_OFFSET;
     int mode = kag_agent_macro_mode(env, pid);
     for (int t = 0; t < KAG_TASK_COUNT; t++) {
-        if (mode == 1 || mode == 2) {
+        if (mode == 2 && kag_agent_executor_version(env,pid) == 2) {
+            task[t] = t == 0 || kag_multi_capacity(game,pid,t,0) > 0;
+        } else if (mode == 1 || mode == 2) {
             task[t] = kag_macro_candidate_legal(env, pid, t)
                 ? kag_agent_macro_scores(env, pid) ? kag_macro_candidate_score(env, pid, t) / 10000.0f : 1.0f
                 : 0.0f;
