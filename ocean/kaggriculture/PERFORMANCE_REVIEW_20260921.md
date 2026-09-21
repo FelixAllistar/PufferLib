@@ -1,5 +1,11 @@
 # Kaggriculture 2/2 performance review
 
+Follow-up: the proposed execution optimizations are now implemented and have
+passed matched rollout/checkpoint tests. See
+[PERFORMANCE_OPTIMIZATION_20260921.md](PERFORMANCE_OPTIMIZATION_20260921.md)
+for the 2.632x end-to-end result and qualification scope. The measurements and
+inspection notes below describe the original pre-optimization runtime.
+
 Purpose: optimize execution while preserving the new controller's capabilities
 and learning semantics. This is a diagnosis/handoff, not an optimization patch.
 Do not shrink the policy, remove resets, simplify strategic decisions, or alter

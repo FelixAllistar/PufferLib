@@ -17,7 +17,20 @@ enum {
     KAG_MULTI_DELIVER_ITEM = 16, /* + inventory item (12) */
     KAG_MULTI_DELIVER_ALL = 28
 };
-typedef struct { int x, y, priority, op, arg, request; } KagMultiJob;
+// Coordinates/enums/request ids are small; priorities are currently -2..4.
+// Preserve signs, job capacity, iteration order and tie breaks while halving
+// the per-thread jobs array from 19,680 to 9,840 bytes. This is internal
+// scratch only: no serialized state, checkpoint or policy ABI is changed.
+typedef struct { int16_t x, y, priority, op, arg, request; } KagMultiJob;
+#ifdef __cplusplus
+static_assert(KG_MAX_BOARD_SIZE <= INT16_MAX && KG_OP_CARE <= INT16_MAX
+    && KG_NUM_ITEMS <= INT16_MAX && KAG_MULTI_SLOTS <= INT16_MAX
+    && sizeof(KagMultiJob) == 12, "multi-job scratch field bounds/layout");
+#else
+_Static_assert(KG_MAX_BOARD_SIZE <= INT16_MAX && KG_OP_CARE <= INT16_MAX
+    && KG_NUM_ITEMS <= INT16_MAX && KAG_MULTI_SLOTS <= INT16_MAX
+    && sizeof(KagMultiJob) == 12, "multi-job scratch field bounds/layout");
+#endif
 
 KG_HD static inline int kag_multi_cargo(const KGUnitState* u, int intent) {
     if (intent >= KAG_MULTI_DELIVER_ITEM && intent < KAG_MULTI_DELIVER_ALL)
@@ -79,10 +92,14 @@ KG_HD static inline void kag_multi_write_mask(Env* env, int p) {
     unsigned char* mask = env->agents[p].action_mask;
     const KGState* g = &env->game_storage;
     for (int h = 0; h < KG_POLICY_UNIT_HEADS; h++) mask[h * 44] = 1;
+    // All slots start from the same state; reservations belong to the later
+    // prefix mask, not this shared base-capacity calculation.
+    for (int intent = 1; intent < KAG_MULTI_INTENTS; intent++) {
+        unsigned char available = kag_multi_capacity(g, p, intent, 0) > 0;
+        for (int s = 0; s < KAG_MULTI_SLOTS; s++) mask[3 * s * 44 + intent] = available;
+    }
     for (int s = 0; s < KAG_MULTI_SLOTS; s++) {
         unsigned char* out = mask + 3 * s * 44;
-        for (int intent = 1; intent < KAG_MULTI_INTENTS; intent++)
-            out[intent] = kag_multi_capacity(g, p, intent, 0) > 0;
         for (int q = 0; q < 44; q++) out[44 + q] = 1;
         for (int q = 1; q < 5; q++)
             out[88 + q] = (g->players[p].unlocked_mask & kag_macro_target_from_bin(q)) != 0;
@@ -97,7 +114,8 @@ KG_HD static inline void kag_multi_write_mask(Env* env, int p) {
 KG_HD static inline void kag_multi_add(KagMultiJob* jobs, int* count,
         int x, int y, int priority, int op, int arg, int request) {
     if (*count < KAG_MULTI_MAX_JOBS)
-        jobs[(*count)++] = (KagMultiJob){x, y, priority, op, arg, request};
+        jobs[(*count)++] = (KagMultiJob){(int16_t)x, (int16_t)y, (int16_t)priority,
+            (int16_t)op, (int16_t)arg, (int16_t)request};
 }
 
 /* This function never buys/sells anything and never mutates Env. The market

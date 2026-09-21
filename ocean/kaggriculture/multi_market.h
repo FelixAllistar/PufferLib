@@ -11,7 +11,7 @@ KG_HD static inline void kag_decode_multi_action(KGAction* action,
     KagActionMaskState prefix;
     kag_action_mask_begin(&prefix, env, p);
     memcpy(prefix.choices, agent->actions, sizeof(prefix.choices));
-    kag_mask_prepare_market(&prefix);
+    kag_mask_prepare_market_from_work(&prefix, action);
     int limit = kag_policy_market_slot_limit(env);
     if (limit > game->config.max_market_orders_per_turn) limit = game->config.max_market_orders_per_turn;
     for (int slot = 0; slot < limit; slot++) {
