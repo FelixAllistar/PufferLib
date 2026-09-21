@@ -11,7 +11,13 @@ typedef struct {
     int mode;
     float choices[NUM_ATNS];
     int task_used[KAG_TASK_COUNT];
-    int task_capacity[KAG_TASK_COUNT];
+    // Controller-specific immutable capacities share storage. Reservations
+    // remain separate and are still recomputed from the sampled prefix.
+    union {
+        int task_capacity[KAG_TASK_COUNT];
+        int multi_capacity[KAG_MULTI_INTENTS];
+    };
+    int multi_capacity_ready;
     int empty_used[4];
     int empty_capacity[4];
     int seeds_used[KG_NUM_CROPS];
@@ -57,7 +63,8 @@ KG_HD static inline void kag_action_mask_begin(KagActionMaskState* s,
  * execution. Replay those effects in worker order, including inventory-order
  * overflow, without copying or mutating a game. Other workers' newly harvested
  * goods cannot appear in the shed until a later action/day boundary. */
-KG_HD static inline void kag_mask_prepare_market(KagActionMaskState* s) {
+KG_HD static inline void kag_mask_prepare_market_from_work(KagActionMaskState* s,
+        const KGAction* work) {
     const Env* env = s->env;
     const KGState* g = &env->game_storage;
     const KGPlayer* p = &g->players[s->player];
@@ -68,18 +75,11 @@ KG_HD static inline void kag_mask_prepare_market(KagActionMaskState* s) {
     s->land_ready = kag_land_buy_delay_ready(env, s->player);
     memcpy(s->shed, p->shed, sizeof(s->shed));
     memcpy(s->inventory, g->market.inventory, sizeof(s->inventory));
-    Agent preview = env->agents[s->player];
-    preview.actions = s->choices;
-    KGAction work;
-    if (s->mode == 2 && kag_agent_executor_version(env, s->player) == 2)
-        kag_multi_work(&work, &preview, g, s->player);
-    else if (s->mode == 3) kag_decode_task_action(&work, &preview, g, s->player);
-    else kag_decode_action(&work, &preview, g, s->player);
-    int count = work.hand_count + 1;
+    int count = work->hand_count + 1;
     if (count > p->unit_count) count = p->unit_count;
     for (int u = 0; u < count; u++) {
         const KGUnitState* unit = &p->units[u];
-        const KGUnitAction* a = u ? &work.hands[u - 1] : &work.farmer;
+        const KGUnitAction* a = u ? &work->hands[u - 1] : &work->farmer;
         KGPosition pos = {unit->x, unit->y};
         if (!kg_is_shed_adjacent(&pos, g->config.board_size)) continue;
         int item = a->arg;
@@ -114,6 +114,18 @@ KG_HD static inline void kag_mask_prepare_market(KagActionMaskState* s) {
         }
     }
     s->prepared = 1;
+}
+
+KG_HD static inline void kag_mask_prepare_market(KagActionMaskState* s) {
+    Agent preview = s->env->agents[s->player];
+    preview.actions = s->choices;
+    const KGState* g = &s->env->game_storage;
+    KGAction work;
+    if (s->mode == 2 && kag_agent_executor_version(s->env, s->player) == 2)
+        kag_multi_work(&work, &preview, g, s->player);
+    else if (s->mode == 3) kag_decode_task_action(&work, &preview, g, s->player);
+    else kag_decode_action(&work, &preview, g, s->player);
+    kag_mask_prepare_market_from_work(s, &work);
 }
 
 /* Quantity feasibility at the observed prices plus this player's own prefix.
@@ -209,17 +221,22 @@ KG_HD static inline void kag_action_mask_before(KagActionMaskState* s,
             }
             memset(out, 0, KG_POLICY_UNIT_COMMANDS);
             if (stopped || (node && s->choices[3*slot] == 0)) { out[0] = 1; return; }
+            if (!s->multi_capacity_ready) {
+                for (int intent = 1; intent < KAG_MULTI_INTENTS; intent++)
+                    s->multi_capacity[intent] = kag_multi_capacity(g, s->player, intent, 0);
+                s->multi_capacity_ready = 1;
+            }
             int workers = p->unit_count - reserved;
             if (node == 0) {
                 out[0] = 1;
                 for (int intent = 1; intent < KAG_MULTI_INTENTS; intent++) {
-                    int cap = kag_multi_capacity(g,s->player,intent,0);
+                    int cap = s->multi_capacity[intent];
                     if (intent < KAG_MULTI_COOP && p->seeds[intent-1] <= seeds_reserved[intent-1]) cap = 0;
                     out[intent] = workers > 0 && cap > 0;
                 }
             } else {
                 int intent = (int)s->choices[3*slot];
-                int cap = kag_multi_capacity(g,s->player,intent,0);
+                int cap = s->multi_capacity[intent];
                 if (intent > 0 && intent < KAG_MULTI_COOP) {
                     int available = p->seeds[intent-1] - seeds_reserved[intent-1];
                     if (cap > available) cap = available;

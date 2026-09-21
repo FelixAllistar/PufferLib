@@ -571,6 +571,11 @@ typedef struct PuffeRL {
     bool is_continuous;  // True if all action dimensions are continuous (size==1)
     PrecisionTensor* buffer_states;  // Per-buffer states for contiguous access
     PolicyActivations* buffer_activations;  // Per-buffer inference activations
+#ifdef PUFFER_PREFIX_DEPENDENT_MASK
+    // Buffer-disjoint rows, reused only after sampling on that buffer's stream.
+    // Opponent networks may differ in H/L; their decoder widths must agree.
+    PrecisionTensor sampling_logits;
+#endif
     RolloutBuf rollouts;
     RolloutBuf train_rollouts;  // Pre-allocated transposed copy for train_impl
     EnvBuf env;
@@ -937,6 +942,9 @@ void pufferl_forward(PuffeRL* pufferl, int buf, int t, cudaStream_t stream,
     // Per-bank forward: layout[b]..layout[b+1) within each buffer chunk.
     int num_banks = 1 + pufferl->num_frozen_banks;
     long act_cols = env.actions.shape[1];
+#ifdef PUFFER_PREFIX_DEPENDENT_MASK
+    bool batch_sampling = !pufferl->is_continuous && num_banks > 1;
+#endif
     for (int b = 0; b < num_banks; b++) {
         int bank_off = layout[b];
         int bank_end = layout[b + 1];
@@ -983,6 +991,17 @@ void pufferl_forward(PuffeRL* pufferl, int buf, int t, cudaStream_t stream,
 
         PrecisionTensor dec_puf = policy_forward(p_bank, *w_bank, *a_bank, obs_b, *s_bank, stream);
 
+#ifdef PUFFER_PREFIX_DEPENDENT_MASK
+        if (batch_sampling) {
+            long cols = pufferl->sampling_logits.shape[1];
+            assert(dec_puf.shape[1] == cols);
+            cudaMemcpyAsync(pufferl->sampling_logits.data + (long)sub_start * cols,
+                dec_puf.data, (size_t)bank_size * cols * sizeof(precision_t),
+                cudaMemcpyDeviceToDevice, stream);
+            continue;
+        }
+#endif
+
         PrecisionTensor p_logstd = {};
         if (pufferl->is_continuous) {
             DecoderWeights* dw = (DecoderWeights*)w_bank->decoder;
@@ -1005,6 +1024,24 @@ void pufferl_forward(PuffeRL* pufferl, int buf, int t, cudaStream_t stream,
                 env.actions.data + (long)sub_start * act_cols,
                 act_b.data, numel(act_b.shape));
     }
+
+#ifdef PUFFER_PREFIX_DEPENDENT_MASK
+    if (batch_sampling) {
+        long cols = pufferl->sampling_logits.shape[1];
+        PrecisionTensor logits = {
+            .data = pufferl->sampling_logits.data + (long)start * cols,
+            .shape = {block_size, cols}};
+        PrecisionTensor actions = puf_slice(rollouts.actions, t, start, block_size);
+        PrecisionTensor logprobs = puf_slice(rollouts.logprobs, t, start, block_size);
+        PrecisionTensor values = puf_slice(rollouts.values, t, start, block_size);
+        sample_logits<<<grid_size(block_size), BLOCK_SIZE, 0, stream>>>(
+            logits, {}, pufferl->act_sizes_puf, actions.data, logprobs.data, values.data,
+            pufferl->rng_states[buf], env.action_mask.data + (long)start * mask_stride,
+            mask_stride, deterministic, vec->sampling_envs, vec->sampling_rows, start);
+        cast<<<grid_size(numel(actions.shape)), BLOCK_SIZE, 0, stream>>>(
+            env.actions.data + (long)start * act_cols, actions.data, numel(actions.shape));
+    }
+#endif
 
     // Conditional masks depend on the sampled worker/market prefix. Archiving
     // before sampling would give PPO a different distribution from the actor.
@@ -2843,6 +2880,12 @@ PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx) {
         alloc_register(acts, &pufferl->buffer_states[i]);
     }
     int mask_size = pufferl->vec->action_mask_size;
+#ifdef PUFFER_PREFIX_DEPENDENT_MASK
+    if (!is_continuous && vec->num_banks > 1) {
+        pufferl->sampling_logits = {.shape = {total_agents, decoder_output_size + 1}};
+        alloc_register(acts, &pufferl->sampling_logits);
+    }
+#endif
     int rollout_horizon = hypers.async ? 2 * horizon : horizon;
     register_rollout_buffers(pufferl->rollouts,
         acts, rollout_horizon, total_agents, input_size, num_action_heads, mask_size);
