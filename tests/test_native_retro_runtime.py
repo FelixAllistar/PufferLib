@@ -55,7 +55,7 @@ def interrupted_run(binary, root, asynchronous, sig, agents=64):
         assert sidecar.is_file(), "missing checkpoint configuration"
         assert not list(filename.parent.glob("*.tmp.*")), "unpublished checkpoint"
         evaluator = Path("build/retro_batch/sweep_eval").resolve()
-        result = subprocess.run([str(evaluator), str(filename), "--frames", "16",
+        result = subprocess.run([str(evaluator), str(filename), "--levels", "all", "--frames", "16",
                                  "--repeats", "1", "--workers", "1", "--deterministic"],
                                 capture_output=True, text=True, timeout=120)
         assert result.returncode == 0, result.stdout + result.stderr

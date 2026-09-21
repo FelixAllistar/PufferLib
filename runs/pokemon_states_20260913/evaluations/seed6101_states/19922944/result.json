@@ -1,0 +1,78 @@
+{
+  "contract": {
+    "checkpoint_sha256": "52c51181c0c06a5949cb8e90eb346f17016bb86153aac71290243792a853e0fc",
+    "config_sha256": "40b1c262b28921510dd716ae7b270a63c664a7dd5cbe06ad543b24091052c47f",
+    "evaluator_sha256": "79cfa0b824660ea6e61bba4cb9c0f01ab9b30772ff739aa9b6eb9e4e139d48f6",
+    "games": 64,
+    "panel": [
+      {
+        "config_sha256": "7590a17fbe36d25902f9bf675a275e903d49888dea800e6f4eed8dc0086782a4",
+        "flag_byte": 476,
+        "flag_encoding": "raw uint8 0/1 (Pokemon is not normalized)",
+        "hidden_size": 128,
+        "num_layers": 2,
+        "path": "/home/felix/puffertank/pufferlib/runs/pokemon_states_20260913/inputs/holdout0/0000000099614720.bin",
+        "sha256": "949c52205378f2d3b51ff6a19cf99292f57ce6d3f6ac265c25078de88fd01f31",
+        "source": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/inputs/holdout/0/0000000099614720.bin",
+        "source_config_sha256": "5d178a16e591e6a772cfc3e9e9c30fbda6241352d13cf54977d6468578c3ca52",
+        "source_sha256": "3a9329902c916df1be9d160d94fe8a5cfaca4de2783ac5070f7c18945f4abb7f"
+      },
+      {
+        "config_sha256": "56a652895f5dccfaacc1d49e84204e59439faa3058eca2bd5be862df1c1826cb",
+        "flag_byte": 476,
+        "flag_encoding": "raw uint8 0/1 (Pokemon is not normalized)",
+        "hidden_size": 128,
+        "num_layers": 2,
+        "path": "/home/felix/puffertank/pufferlib/runs/pokemon_states_20260913/inputs/holdout1/0000000099614720.bin",
+        "sha256": "a6e06f9ef48900daa655a5c4bf9e7c170a0bd6cae498079be64ec849923ee58e",
+        "source": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/inputs/holdout/1/0000000099614720.bin",
+        "source_config_sha256": "662989d01a0fdccc69fc06c0e6957dc1dc594b2c22d24b92a6cc2101efcc8a55",
+        "source_sha256": "04dd6f694176c8c07271d55ee63a4e2c56d67168eb3b7d81205613e869a0e567"
+      },
+      {
+        "config_sha256": "f57fe1b1e4fc547f3d61badb49d4233b0e703195fb4f0916e4dc80d2cb369674",
+        "flag_byte": 476,
+        "flag_encoding": "raw uint8 0/1 (Pokemon is not normalized)",
+        "hidden_size": 128,
+        "num_layers": 2,
+        "path": "/home/felix/puffertank/pufferlib/runs/pokemon_states_20260913/inputs/holdout2/0000000099614720.bin",
+        "sha256": "3cb49774407a2d76a93e158c1c6d0a59ce170314a732d2504b79fa17ba3112d4",
+        "source": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/inputs/holdout/2/0000000099614720.bin",
+        "source_config_sha256": "b1d1c65995ada24c6809fdbdedf69f1cb09b9d51c85974bf523e87d200f1175e",
+        "source_sha256": "ae7a70509ef4fd964bb88f04566ed1fcf2b187a279c4016cac0f770817f97f08"
+      },
+      {
+        "config_sha256": "ff26d7cb1e6d60f4c3fc4e1747f5b2a650ae907ce075ac4bb9b0373316409850",
+        "flag_byte": 476,
+        "flag_encoding": "raw uint8 0/1 (Pokemon is not normalized)",
+        "hidden_size": 128,
+        "num_layers": 2,
+        "path": "/home/felix/puffertank/pufferlib/runs/pokemon_states_20260913/inputs/holdout3/0000000099614720.bin",
+        "sha256": "6e1191fbd2c02baf3c428fbfa8fe776527b764af4bc9d2d90a25649bd1b3bf2b",
+        "source": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/inputs/holdout/3/0000000099614720.bin",
+        "source_config_sha256": "84e40ffb837c2c10f0c5424a200d4314a7e5abf33c40ed6e435c166d94c9d097",
+        "source_sha256": "a82c5fc32661d36bf19bc10ba213fd82c0cf19c5fc9a8d94d279dddd2eb42e53"
+      }
+    ],
+    "seeds": [
+      17101,
+      17102
+    ]
+  },
+  "games": 512,
+  "payoffs": {
+    "17101/0": 0.859375,
+    "17101/1": 0.9375,
+    "17101/2": 0.546875,
+    "17101/3": 0.875,
+    "17102/0": 0.78125,
+    "17102/1": 0.890625,
+    "17102/2": 0.609375,
+    "17102/3": 0.859375
+  },
+  "score": 0.794921875,
+  "teams": {
+    "80,103,112,125,131,145": 512
+  },
+  "wall_seconds": 15.602433537998877
+}

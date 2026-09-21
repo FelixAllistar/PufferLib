@@ -1,0 +1,154 @@
+{
+  "args": {
+    "evaluator": "/home/felix/puffertank/pufferlib/build/pokemon/pokemon_behavior",
+    "games": 2,
+    "generations": 2,
+    "holdout": [
+      "/home/felix/puffertank/pufferlib/runs/pokemon_qd_selfplay_long_20260912/candidates/g0001_c000/checkpoints/pokemon/g0001_c000_1789266948658864509/0000000099614720.bin",
+      "/home/felix/puffertank/pufferlib/runs/pokemon_qd_selfplay_long_20260912/candidates/g0001_c001/checkpoints/pokemon/g0001_c001_1789267371889153202/0000000099614720.bin",
+      "/home/felix/puffertank/pufferlib/runs/pokemon_qd_selfplay_long_20260912/candidates/g0001_c002/checkpoints/pokemon/g0001_c002_1789268912955093782/0000000099614720.bin",
+      "/home/felix/puffertank/pufferlib/runs/pokemon_qd_selfplay_long_20260912/candidates/g0001_c003/checkpoints/pokemon/g0001_c003_1789270768298090036/0000000099614720.bin"
+    ],
+    "out": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_smoke_20260913",
+    "panel": "/home/felix/puffertank/pufferlib/runs/pokemon_qd_selfplay_long_20260912/generations/g0001/panel.json",
+    "parent": "/home/felix/puffertank/pufferlib/runs/pokemon_qd_selfplay_long_20260912/candidates/g0000_control/checkpoints/pokemon/g0000_control_1789266489107356907/0000000099614720.bin",
+    "seed": 601,
+    "train_steps": 1048576,
+    "trainer": "/home/felix/puffertank/pufferlib/build/pokemon/puffer_behavior",
+    "warmstart": [
+      "/home/felix/puffertank/pufferlib/runs/pokemon_behavior_manual_20260913/seed101_control/checkpoints/pokemon/seed101_control/0000000099614720.bin",
+      "/home/felix/puffertank/pufferlib/runs/pokemon_behavior_manual_20260913/seed101_sleep_plus/checkpoints/pokemon/seed101_sleep_plus/0000000099614720.bin",
+      "/home/felix/puffertank/pufferlib/runs/pokemon_behavior_manual_20260913/seed101_sleep_minus/checkpoints/pokemon/seed101_sleep_minus/0000000099614720.bin",
+      "/home/felix/puffertank/pufferlib/runs/pokemon_behavior_manual_20260913/seed101_paralysis_plus/checkpoints/pokemon/seed101_paralysis_plus/0000000099614720.bin",
+      "/home/felix/puffertank/pufferlib/runs/pokemon_behavior_manual_20260913/seed101_paralysis_minus/checkpoints/pokemon/seed101_paralysis_minus/0000000099614720.bin"
+    ]
+  },
+  "files": {
+    "/home/felix/puffertank/pufferlib/build/pokemon/pokemon_behavior": "d5cd497c332b02066ca5711cd4e69f175ad39778198ff91316e97cabe64c07d3",
+    "/home/felix/puffertank/pufferlib/build/pokemon/puffer_behavior": "5bc13649808ed3cfa18776a2dac561322e6fe69b998865a37d4ee9028951673f",
+    "/home/felix/puffertank/pufferlib/config/default.ini": "d3ec0010804342ee993d0d43ca72d29cbdf9dc5320146b99b9002675daa63a88",
+    "/home/felix/puffertank/pufferlib/config/pokemon.ini": "d960dddf8768ce6b61dea981b2c45a268b95681fe8dca5ee3ff568fcd1bc8a3f",
+    "/home/felix/puffertank/pufferlib/ocean/pokemon/behavior.h": "28b63f333fb7d19f10fa7472f076686d1b9a95f7faf85d1ccdd9d13ed40de6b0",
+    "/home/felix/puffertank/pufferlib/ocean/pokemon/behavior_experiment.py": "0df67da17528b09555d3ad12c39b4318abd74b6dc0895ccec3505d0da8d3fa4d",
+    "/home/felix/puffertank/pufferlib/ocean/pokemon/bridge.h": "519089fefbe6bdeeb5c5f15fd789a187910a243c2b3cfdd1b411f1d0b680218b",
+    "/home/felix/puffertank/pufferlib/ocean/pokemon/bridge.zig": "03e97dc096342b0b02023deed365a71f03add6d0bb97cebad9c2cb2754404e2c",
+    "/home/felix/puffertank/pufferlib/ocean/pokemon/catalog_meta.h": "7c53f1f2bfc3f0d2ebf60596ea582789e030914aa4aedb35e963ea7690a0ab12",
+    "/home/felix/puffertank/pufferlib/ocean/pokemon/cma_qd.py": "f20687c5271b843f95ff73abc8e1e91bbc8a5e084f138f56f26cdcd23d019000",
+    "/home/felix/puffertank/pufferlib/ocean/pokemon/data/catalog.json": "3a88a3cf83460054ad11e02a5fcb6ac7c700e9279416c630171a3747922fca9f",
+    "/home/felix/puffertank/pufferlib/ocean/pokemon/event_qd.py": "4035c55f817d734cc2a40b5faf32e471de86a8f775619a8dc5b5d997413d95cc",
+    "/home/felix/puffertank/pufferlib/ocean/pokemon/personality.h": "b041ec80abbfdf0a05914530a212578643deb3dfe2d85c91678bbde283dc5628",
+    "/home/felix/puffertank/pufferlib/ocean/pokemon/pokemon.h": "dea4a127f51d08d3da2048a0f1b9641006b66365d6e97b1604bc47a9a97c766a",
+    "/home/felix/puffertank/pufferlib/ocean/pokemon/pokemon_base.h": "6b885e95d6f487694885f177d48e9f99c563dc2e13f3427c2adbafdeee7537b3",
+    "/home/felix/puffertank/pufferlib/ocean/pokemon/pokemon_core.h": "839c9325ed263d1002fc65c6ad2e7af13e04db11ce346135c555a85c4eda477e",
+    "/home/felix/puffertank/pufferlib/ocean/pokemon/policy_view.h": "b79760977e939f0c0cd7effb3ad39c79773403c56af75c603cf638c2ad29d801",
+    "/home/felix/puffertank/pufferlib/ocean/pokemon/profile.h": "ba5ae45170c515324805fb12223469f840c102d75d761f0d44896232ec8ab2bf",
+    "/home/felix/puffertank/pufferlib/ocean/pokemon/qd.py": "e2e0716161dcc827a9d2c651e0ebb95f5bbe89a7b983deaaae83f28e4f580bbf",
+    "/home/felix/puffertank/pufferlib/ocean/pokemon/species_labels.h": "b845e6caddb3550f63065cfc64514100e02c5554646a2c9b4f86ac27a69fd559",
+    "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_smoke_20260913/inputs/holdout/0/0000000099614720.bin": "3a9329902c916df1be9d160d94fe8a5cfaca4de2783ac5070f7c18945f4abb7f",
+    "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_smoke_20260913/inputs/holdout/0/config.ini": "5d178a16e591e6a772cfc3e9e9c30fbda6241352d13cf54977d6468578c3ca52",
+    "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_smoke_20260913/inputs/holdout/1/0000000099614720.bin": "04dd6f694176c8c07271d55ee63a4e2c56d67168eb3b7d81205613e869a0e567",
+    "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_smoke_20260913/inputs/holdout/1/config.ini": "662989d01a0fdccc69fc06c0e6957dc1dc594b2c22d24b92a6cc2101efcc8a55",
+    "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_smoke_20260913/inputs/holdout/2/0000000099614720.bin": "ae7a70509ef4fd964bb88f04566ed1fcf2b187a279c4016cac0f770817f97f08",
+    "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_smoke_20260913/inputs/holdout/2/config.ini": "b1d1c65995ada24c6809fdbdedf69f1cb09b9d51c85974bf523e87d200f1175e",
+    "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_smoke_20260913/inputs/holdout/3/0000000099614720.bin": "a82c5fc32661d36bf19bc10ba213fd82c0cf19c5fc9a8d94d279dddd2eb42e53",
+    "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_smoke_20260913/inputs/holdout/3/config.ini": "84e40ffb837c2c10f0c5424a200d4314a7e5abf33c40ed6e435c166d94c9d097",
+    "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_smoke_20260913/inputs/initial/0000000099614720.bin": "9eaab6e98045294ba81722d7e8574fd7e8d9d0972745481b12a83ff2b271616c",
+    "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_smoke_20260913/inputs/initial/config.ini": "08534b38a8ff183423e42a04cfbc0849431f20b73d26a9775accf32bd6dbf8f0",
+    "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_smoke_20260913/inputs/selection/0/0000000005242880.bin": "9c855e733b7b08fb9f54016239f1d21a982e24c47ecb3d755a70f2a5e3e0fa01",
+    "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_smoke_20260913/inputs/selection/0/config.ini": "fdc9456e8e904b90912d2413bfd28feaa1bbf4cd68ccc3268bdb571fff2584c3",
+    "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_smoke_20260913/inputs/selection/1/0000000099614720.bin": "8f6e3de065ddd6cde24e2e53cbcb9d3a2206558f962f0571f1eaee835f55a7ee",
+    "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_smoke_20260913/inputs/selection/1/config.ini": "a714e4e1a3d15e3ae8bb99edeea7cd132d68800185a76d233ef150843b415cee",
+    "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_smoke_20260913/inputs/selection/2/0000000099614720.bin": "dda4492e1d9b82d4a9b7b423f125b7419f3014e4cecd9b45d049291d21e30b45",
+    "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_smoke_20260913/inputs/selection/2/config.ini": "dad8430e0c5da721632eaef93187fbf202b4f3ae92d8e1f5b1237a1017fb22e9",
+    "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_smoke_20260913/inputs/selection/3/0000000099614720.bin": "9eaab6e98045294ba81722d7e8574fd7e8d9d0972745481b12a83ff2b271616c",
+    "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_smoke_20260913/inputs/selection/3/config.ini": "08534b38a8ff183423e42a04cfbc0849431f20b73d26a9775accf32bd6dbf8f0",
+    "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_smoke_20260913/inputs/warm00/0000000099614720.bin": "1b88d32641ff3af65e3c7dbc2c794b184f4fa530545b014eb67494ddc8b724a9",
+    "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_smoke_20260913/inputs/warm00/config.ini": "23e7aeed0a190c15ebbebaabfae865b5044319e58a19b307220de4c0a490c7b1",
+    "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_smoke_20260913/inputs/warm01/0000000099614720.bin": "98774fb9a081be641b06040987c4d6dd92a0e80fbdc23549cd6c0b49110ba1fc",
+    "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_smoke_20260913/inputs/warm01/config.ini": "efb0b325a3045b9c56e1c5501e59b7f4f03f62cf63a028bbf02e81805233da89",
+    "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_smoke_20260913/inputs/warm02/0000000099614720.bin": "3a8c772203707b89c351c502c5010bec4371524a67777b35dc61a3049ec1ee30",
+    "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_smoke_20260913/inputs/warm02/config.ini": "0f82c9ace6953f7bf894120fc62e9ea38a758dc6e68b3ecd411897d8a0f3ca04",
+    "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_smoke_20260913/inputs/warm03/0000000099614720.bin": "d806236df24cf87a1bf1f5c7475e83cc456fb17ad47682048fe1a5718ecec801",
+    "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_smoke_20260913/inputs/warm03/config.ini": "f7b330b3fb23fdb099dc91ab6f28c61b6fe487c0443811c2046ff9b5db97b8c3",
+    "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_smoke_20260913/inputs/warm04/0000000099614720.bin": "90752d95c8211de031fcaae029c8c0204ea40f7e67c98daad2588fc0ceceb944",
+    "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_smoke_20260913/inputs/warm04/config.ini": "da116b4785180f525dc0c3c6bceb6ba0668029df5a9b16b9396472e8e27306f2",
+    "/home/felix/puffertank/pufferlib/runs/pokemon_qd_selfplay_long_20260912/generations/g0001/panel.json": "7425a2dc4dc0f0d07f8db309ad138c11e6bf8623e358ccca96c2d53b6709e6f2"
+  },
+  "initial": {
+    "checkpoint": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_smoke_20260913/inputs/initial/0000000099614720.bin",
+    "checkpoint_sha256": "9eaab6e98045294ba81722d7e8574fd7e8d9d0972745481b12a83ff2b271616c",
+    "config_sha256": "08534b38a8ff183423e42a04cfbc0849431f20b73d26a9775accf32bd6dbf8f0",
+    "id": "initial"
+  },
+  "panels": {
+    "holdout": [
+      {
+        "path": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_smoke_20260913/inputs/holdout/0/0000000099614720.bin",
+        "team": "None"
+      },
+      {
+        "path": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_smoke_20260913/inputs/holdout/1/0000000099614720.bin",
+        "team": "None"
+      },
+      {
+        "path": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_smoke_20260913/inputs/holdout/2/0000000099614720.bin",
+        "team": "None"
+      },
+      {
+        "path": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_smoke_20260913/inputs/holdout/3/0000000099614720.bin",
+        "team": "None"
+      }
+    ],
+    "selection": [
+      {
+        "path": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_smoke_20260913/inputs/selection/0/0000000005242880.bin",
+        "team": "None"
+      },
+      {
+        "path": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_smoke_20260913/inputs/selection/1/0000000099614720.bin",
+        "team": "None"
+      },
+      {
+        "path": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_smoke_20260913/inputs/selection/2/0000000099614720.bin",
+        "team": "None"
+      },
+      {
+        "path": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_smoke_20260913/inputs/selection/3/0000000099614720.bin",
+        "team": "None"
+      }
+    ]
+  },
+  "version": 1,
+  "warmstarts": [
+    {
+      "checkpoint": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_smoke_20260913/inputs/warm00/0000000099614720.bin",
+      "checkpoint_sha256": "1b88d32641ff3af65e3c7dbc2c794b184f4fa530545b014eb67494ddc8b724a9",
+      "config_sha256": "23e7aeed0a190c15ebbebaabfae865b5044319e58a19b307220de4c0a490c7b1",
+      "id": "warm00"
+    },
+    {
+      "checkpoint": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_smoke_20260913/inputs/warm01/0000000099614720.bin",
+      "checkpoint_sha256": "98774fb9a081be641b06040987c4d6dd92a0e80fbdc23549cd6c0b49110ba1fc",
+      "config_sha256": "efb0b325a3045b9c56e1c5501e59b7f4f03f62cf63a028bbf02e81805233da89",
+      "id": "warm01"
+    },
+    {
+      "checkpoint": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_smoke_20260913/inputs/warm02/0000000099614720.bin",
+      "checkpoint_sha256": "3a8c772203707b89c351c502c5010bec4371524a67777b35dc61a3049ec1ee30",
+      "config_sha256": "0f82c9ace6953f7bf894120fc62e9ea38a758dc6e68b3ecd411897d8a0f3ca04",
+      "id": "warm02"
+    },
+    {
+      "checkpoint": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_smoke_20260913/inputs/warm03/0000000099614720.bin",
+      "checkpoint_sha256": "d806236df24cf87a1bf1f5c7475e83cc456fb17ad47682048fe1a5718ecec801",
+      "config_sha256": "f7b330b3fb23fdb099dc91ab6f28c61b6fe487c0443811c2046ff9b5db97b8c3",
+      "id": "warm03"
+    },
+    {
+      "checkpoint": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_smoke_20260913/inputs/warm04/0000000099614720.bin",
+      "checkpoint_sha256": "90752d95c8211de031fcaae029c8c0204ea40f7e67c98daad2588fc0ceceb944",
+      "config_sha256": "da116b4785180f525dc0c3c6bceb6ba0668029df5a9b16b9396472e8e27306f2",
+      "id": "warm04"
+    }
+  ]
+}

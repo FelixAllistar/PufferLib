@@ -5,7 +5,7 @@ import csv
 import hashlib
 from pathlib import Path
 
-from eval_observation_versions import observation_version, executor_version
+from eval_observation_versions import observation_version, executor_version, behavior_key
 
 
 def digest(path):
@@ -14,6 +14,8 @@ def digest(path):
 
 
 def identity(path):
+    if observation_version(path) == 3:
+        return f'v3:{behavior_key(path)}:{digest(path)}'
     version = executor_version(path)
     contract = f':exec{version}' if version else ''
     return f'obs{observation_version(path)}{contract}:{digest(path)}'
@@ -56,7 +58,17 @@ def main():
     meta = sub.add_parser('weights')
     meta.add_argument('--manifest', required=True)
     meta.add_argument('--meta', required=True)
+    keys = sub.add_parser('keys')
+    keys.add_argument('paths', nargs='+')
+    same = sub.add_parser('same')
+    same.add_argument('left')
+    same.add_argument('right')
     args = parser.parse_args()
+    if args.command == 'keys':
+        print('\n'.join(identity(path) for path in args.paths))
+        return
+    if args.command == 'same':
+        raise SystemExit(0 if identity(args.left) == identity(args.right) else 1)
     if args.command == 'dedup':
         kept, focal, aliases = deduplicate(args.paths, args.focal_count)
         with open(args.aliases, 'w') as stream:

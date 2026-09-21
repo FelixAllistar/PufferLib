@@ -1,0 +1,271 @@
+{
+  "completed_jobs": 5,
+  "conditions": {
+    "control": {
+      "behavior_events_by_seed": [
+        [
+          0.6875,
+          0.5625
+        ]
+      ],
+      "behavior_events_matched_control_delta_mean": [
+        0.0,
+        0.0
+      ],
+      "behavior_events_matched_control_deltas": [
+        [
+          0.0,
+          0.0
+        ]
+      ],
+      "behavior_events_mean": [
+        0.6875,
+        0.5625
+      ],
+      "opponent_behavior_events_by_seed": [
+        [
+          0.3125,
+          0.875
+        ]
+      ],
+      "opponent_behavior_events_matched_control_delta_mean": [
+        0.0,
+        0.0
+      ],
+      "opponent_behavior_events_matched_control_deltas": [
+        [
+          0.0,
+          0.0
+        ]
+      ],
+      "opponent_behavior_events_mean": [
+        0.3125,
+        0.875
+      ],
+      "quality_by_seed": [
+        0.8125
+      ],
+      "quality_matched_control_delta_mean": 0.0,
+      "quality_matched_control_deltas": [
+        0.0
+      ],
+      "quality_mean": 0.8125,
+      "seeds": [
+        101
+      ]
+    },
+    "paralysis_minus": {
+      "behavior_events_by_seed": [
+        [
+          0.6875,
+          0.4375
+        ]
+      ],
+      "behavior_events_matched_control_delta_mean": [
+        0.0,
+        -0.125
+      ],
+      "behavior_events_matched_control_deltas": [
+        [
+          0.0,
+          -0.125
+        ]
+      ],
+      "behavior_events_mean": [
+        0.6875,
+        0.4375
+      ],
+      "opponent_behavior_events_by_seed": [
+        [
+          0.3125,
+          0.875
+        ]
+      ],
+      "opponent_behavior_events_matched_control_delta_mean": [
+        0.0,
+        0.0
+      ],
+      "opponent_behavior_events_matched_control_deltas": [
+        [
+          0.0,
+          0.0
+        ]
+      ],
+      "opponent_behavior_events_mean": [
+        0.3125,
+        0.875
+      ],
+      "quality_by_seed": [
+        0.8125
+      ],
+      "quality_matched_control_delta_mean": 0.0,
+      "quality_matched_control_deltas": [
+        0.0
+      ],
+      "quality_mean": 0.8125,
+      "seeds": [
+        101
+      ]
+    },
+    "paralysis_plus": {
+      "behavior_events_by_seed": [
+        [
+          0.6875,
+          0.375
+        ]
+      ],
+      "behavior_events_matched_control_delta_mean": [
+        0.0,
+        -0.1875
+      ],
+      "behavior_events_matched_control_deltas": [
+        [
+          0.0,
+          -0.1875
+        ]
+      ],
+      "behavior_events_mean": [
+        0.6875,
+        0.375
+      ],
+      "opponent_behavior_events_by_seed": [
+        [
+          0.3125,
+          0.625
+        ]
+      ],
+      "opponent_behavior_events_matched_control_delta_mean": [
+        0.0,
+        -0.25
+      ],
+      "opponent_behavior_events_matched_control_deltas": [
+        [
+          0.0,
+          -0.25
+        ]
+      ],
+      "opponent_behavior_events_mean": [
+        0.3125,
+        0.625
+      ],
+      "quality_by_seed": [
+        0.8125
+      ],
+      "quality_matched_control_delta_mean": 0.0,
+      "quality_matched_control_deltas": [
+        0.0
+      ],
+      "quality_mean": 0.8125,
+      "seeds": [
+        101
+      ]
+    },
+    "sleep_minus": {
+      "behavior_events_by_seed": [
+        [
+          0.6875,
+          0.4375
+        ]
+      ],
+      "behavior_events_matched_control_delta_mean": [
+        0.0,
+        -0.125
+      ],
+      "behavior_events_matched_control_deltas": [
+        [
+          0.0,
+          -0.125
+        ]
+      ],
+      "behavior_events_mean": [
+        0.6875,
+        0.4375
+      ],
+      "opponent_behavior_events_by_seed": [
+        [
+          0.3125,
+          0.5625
+        ]
+      ],
+      "opponent_behavior_events_matched_control_delta_mean": [
+        0.0,
+        -0.3125
+      ],
+      "opponent_behavior_events_matched_control_deltas": [
+        [
+          0.0,
+          -0.3125
+        ]
+      ],
+      "opponent_behavior_events_mean": [
+        0.3125,
+        0.5625
+      ],
+      "quality_by_seed": [
+        0.8125
+      ],
+      "quality_matched_control_delta_mean": 0.0,
+      "quality_matched_control_deltas": [
+        0.0
+      ],
+      "quality_mean": 0.8125,
+      "seeds": [
+        101
+      ]
+    },
+    "sleep_plus": {
+      "behavior_events_by_seed": [
+        [
+          0.6875,
+          0.375
+        ]
+      ],
+      "behavior_events_matched_control_delta_mean": [
+        0.0,
+        -0.1875
+      ],
+      "behavior_events_matched_control_deltas": [
+        [
+          0.0,
+          -0.1875
+        ]
+      ],
+      "behavior_events_mean": [
+        0.6875,
+        0.375
+      ],
+      "opponent_behavior_events_by_seed": [
+        [
+          0.3125,
+          0.5625
+        ]
+      ],
+      "opponent_behavior_events_matched_control_delta_mean": [
+        0.0,
+        -0.3125
+      ],
+      "opponent_behavior_events_matched_control_deltas": [
+        [
+          0.0,
+          -0.3125
+        ]
+      ],
+      "opponent_behavior_events_mean": [
+        0.3125,
+        0.5625
+      ],
+      "quality_by_seed": [
+        0.8125
+      ],
+      "quality_matched_control_delta_mean": 0.0,
+      "quality_matched_control_deltas": [
+        0.0
+      ],
+      "quality_mean": 0.8125,
+      "seeds": [
+        101
+      ]
+    }
+  },
+  "note": "Fixed manual conditions; win score and events reported separately. Three training seeds are exploratory, not proof of a reliable effect."
+}

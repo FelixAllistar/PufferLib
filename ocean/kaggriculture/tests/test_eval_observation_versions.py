@@ -13,6 +13,61 @@ spec.loader.exec_module(evaluation)
 
 
 class ObservationEvaluationTests(unittest.TestCase):
+    def fresh_model(self, root, name='fresh.bin', mode=3, executor=0, ema=False):
+        path = root / name
+        contract = dict(zip(evaluation.FRESH_TAGS, (3, 3, executor, 32, 3, 8, mode, 1, 0)))
+        for model in (path, Path(f'{path}.emag')) if ema else (path,):
+            model.write_bytes(b'weights')
+            for tag, value in contract.items():
+                Path(f'{model}.{tag}').write_text(f'{value}\n')
+        return path
+
+    def test_all_six_fresh_controllers_share_one_native_matrix(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            policies = []
+            for i, (mode, executor) in enumerate(((0, 0), (1, 0), (1, 1), (2, 0), (2, 1), (3, 0))):
+                path = self.fresh_model(root, f'{i}.bin', mode, executor)
+                self.assertEqual(evaluation.observation_version(path), 3)
+                self.assertEqual(evaluation.executor_version(path), executor)
+                policies.append(evaluation.Policy(i, str(i), str(path), 3, executor,
+                    mode, 1, 0, 32, 3, 8))
+            manifest = root / 'manifest.tsv'
+            evaluation.write_manifest(manifest, policies)
+            self.assertEqual(evaluation.read_manifest(manifest), policies)
+            jobs = list(evaluation.matrix_jobs(policies))
+            self.assertEqual(len(jobs), 1)
+            self.assertEqual(jobs[0][0], 'matrix')
+            self.assertEqual(len(jobs[0][1]), 6)
+
+    def test_bundle_copy_preserves_all_raw_and_ema_tags_and_rejects_overwrite(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = self.fresh_model(root, mode=1, executor=1, ema=True)
+            destination = root / 'league.bin'
+            evaluation.copy_fresh_checkpoint(source, destination)
+            for suffix in ('', '.emag'):
+                self.assertEqual(evaluation.fresh_contract(f'{source}{suffix}'),
+                                 evaluation.fresh_contract(f'{destination}{suffix}'))
+            with self.assertRaises(ValueError):
+                evaluation.copy_fresh_checkpoint(source, destination)
+            Path(f'{source}.emag.macro_score_features').write_text('1\n')
+            with self.assertRaises(ValueError):
+                evaluation.copy_fresh_checkpoint(source, root / 'invalid.bin')
+            self.assertFalse((root / 'invalid.bin').exists())
+
+    def test_fresh_metadata_never_falls_back_to_logs_or_invents_missing_tags(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = self.fresh_model(root)
+            Path(f'{source}.macro_mode').unlink()
+            with self.assertRaises(ValueError):
+                evaluation.observation_version(source)
+            Path(f'{source}.macro_mode').write_text('3\n')
+            Path(f'{source}.executor_version').write_text('1\n')
+            with self.assertRaises(ValueError):
+                evaluation.fresh_contract(source)
+
     def test_executor_sidecar_overrides_reused_log(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

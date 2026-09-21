@@ -70,6 +70,15 @@ while [ $i -lt ${#args[@]} ]; do
 done
 
 if [ "$ENV" = "retro" ]; then
+    export RETRO_OBS_SCALE=${RETRO_OBS_SCALE:-4}
+    case "$RETRO_OBS_SCALE" in
+        2|4) ;;
+        *) echo "Error: RETRO_OBS_SCALE must be 2 or 4" >&2; exit 1 ;;
+    esac
+    case "${RETRO_CNN_FUSED:-1}" in
+        0|1) ;;
+        *) echo "Error: RETRO_CNN_FUSED must be 0 or 1" >&2; exit 1 ;;
+    esac
     if [ "${RETRO_LEGACY:-0}" = "1" ]; then
         echo "Legacy retro backends are retired; only full-screen ROM observations are supported" >&2
         exit 1
@@ -269,6 +278,8 @@ elif [ -d "ocean/$ENV" ]; then
     SRC_DIR="ocean/$ENV"
     if [ "$ENV" = "retro" ]; then
         EXTRA_CFLAGS+=(-DPUFFER_RETRO_CNN)
+        EXTRA_CFLAGS+=("-DRETRO_OBS_SCALE=$RETRO_OBS_SCALE")
+        EXTRA_CFLAGS+=("-DRETRO_CNN_FUSED=${RETRO_CNN_FUSED:-1}")
         EXTRA_LDFLAGS+=(-ldl)
         EXTRA_SRC+=" ocean/retro/nes_emu/*.cpp"
         INCLUDES+=(-I./ocean/retro/nes_emu -I./ocean/retro)
@@ -399,7 +410,7 @@ if [ "$ENV" = "retro" ] && [ "${RETRO_LEGACY:-0}" = "1" ]; then
     fi
     SMBCORE_NVCC=("${SMBCORE_OBJS[@]}")
 fi
-if { [ "$ENV" = "retro" ]; } && [ "${RETRO_LEGACY:-0}" != "1" ] && [ "$MODE" != "local" ]; then
+if [ "$ENV" = "retro" ] && [ "${RETRO_LEGACY:-0}" != "1" ] && [ "$MODE" != "local" ]; then
     # Compile/cache the emulator with the host compiler. nvcc only needs to
     # compile the policy and thin environment wrapper, not thirty emulator TUs.
     make -C ocean/retro library sweep-tools -j2
@@ -408,8 +419,6 @@ if { [ "$ENV" = "retro" ]; } && [ "${RETRO_LEGACY:-0}" != "1" ] && [ "$MODE" != 
         make -C ocean/retro/batch all
         EXTRA_SRC="build/retro_batch/libquicknes_batch.a"
         EXTRA_CFLAGS+=(-DRETRO_DEFAULT_CPU_BLOCKS)
-        if [ "$ENV" = "retro" ]; then OUTPUT_NAME="retro"; fi
-        NATIVE_OUTPUT_NAME="${NATIVE_OUTPUT_NAME:-puffer_retro_batch}"
     fi
 fi
 # Every Goofspiel entry point must use the same observation/action ABI.
@@ -510,8 +519,7 @@ elif [ "$MODE" = "web" ]; then
     exit 0
 elif [ "$MODE" = "cpu" ]; then
     ENV_HEADER="$SRC_DIR/$ENV.h"
-    OBS_HEADER="$ENV_HEADER"
-    if ! grep -q 'typedef[[:space:]].*obs_t' "$OBS_HEADER" 2>/dev/null; then
+    if ! grep -q 'typedef[[:space:]].*obs_t' "$ENV_HEADER" 2>/dev/null; then
         echo "Error: $ENV_HEADER must typedef obs_t for standalone eval"
         exit 1
     fi
@@ -560,8 +568,7 @@ ARCH=${NVCC_ARCH:-native}
 
 ENV_HEADER="$SRC_DIR/$ENV.h"
 mkdir -p build
-OBS_HEADER="$ENV_HEADER"
-if ! grep -q 'typedef[[:space:]].*obs_t' "$OBS_HEADER" 2>/dev/null; then
+if ! grep -q 'typedef[[:space:]].*obs_t' "$ENV_HEADER" 2>/dev/null; then
     echo "Error: $ENV_HEADER must typedef obs_t"
     exit 1
 fi
@@ -593,8 +600,12 @@ if [ "$MODE" = "encoder_test" ]; then
     fi
     echo "Compiling $ENV encoder test ($ARCH)..."
     RETRO_TEST_FLAGS=()
+    if [ "$ENV" = "retro" ]; then
+        # Exercise the same host observation SIMD path as native training.
+        RETRO_TEST_FLAGS+=(-Xcompiler=-march=native)
+    fi
     if [ "$ENV" = "retro" ] && [ "${RETRO_TEST_BF16:-0}" = "1" ]; then
-        RETRO_TEST_FLAGS=(-DRETRO_TEST_BF16)
+        RETRO_TEST_FLAGS+=(-DRETRO_TEST_BF16)
     fi
     $NVCC $NVCC_OPT -arch=$ARCH -std=c++17 \
         -I. -Isrc -I"ocean/$ENV" -Ivendor \
@@ -647,6 +658,15 @@ if [ "$MODE" = "native" ]; then
     if [ "$ENV" = "retro" ]; then
         RETRO_HOST_FLAG=(-Xcompiler=-march=native)
     fi
+    NATIVE_LINK_OUTPUT="${NATIVE_OUTPUT_NAME:-puffer}"
+    RETRO_LAUNCHER_STAGE=""
+    if [ "$ENV" = "retro" ] && [ "$NATIVE_LINK_OUTPUT" = "puffer" ]; then
+        # Compile both entry points before publishing either one. Rename the
+        # finished binaries so rebuilding never writes through a running job's
+        # executable. Explicit candidate output names leave the launchers alone.
+        RETRO_LAUNCHER_STAGE="$(mktemp -d ./build/retro-launchers.XXXXXX)"
+        NATIVE_LINK_OUTPUT="$RETRO_LAUNCHER_STAGE/puffer"
+    fi
     $NVCC $NVCC_OPT -arch=$ARCH -std=c++17 \
         -I. -Isrc -I$SRC_DIR -Ivendor \
         "${INCLUDES[@]}" \
@@ -669,8 +689,22 @@ if [ "$MODE" = "native" ]; then
         "${EXTRA_LDFLAGS[@]}" \
         -lcudart -lnccl -lnvidia-ml -lcublas -lcusolver -lcurand \
         -lm -lpthread $OMP_LIB "${STANDALONE_LDFLAGS[@]}" \
-        -o "${NATIVE_OUTPUT_NAME:-puffer}"
-    echo "Built: ./${NATIVE_OUTPUT_NAME:-puffer}"
+        -o "$NATIVE_LINK_OUTPUT"
+    if [ -n "$RETRO_LAUNCHER_STAGE" ]; then
+        if [ "${HEADLESS:-0}" != "1" ]; then
+            OUTPUT_NAME="$RETRO_LAUNCHER_STAGE/retro" bash "$0" retro --fast
+            mv -f -- "$RETRO_LAUNCHER_STAGE/retro" retro
+        fi
+        mv -f -- "$RETRO_LAUNCHER_STAGE/puffer" puffer
+        rmdir -- "$RETRO_LAUNCHER_STAGE"
+        if [ "${HEADLESS:-0}" != "1" ]; then
+            echo "Built: ./puffer + ./retro"
+        else
+            echo "Built: ./puffer"
+        fi
+    else
+        echo "Built: ./${NATIVE_OUTPUT_NAME:-puffer}"
+    fi
     if { [ "$ENV" = "kaggriculture" ] || [ "$ENV" = "pokemon" ]; } && [ "${HEADLESS:-0}" != "1" ]; then
         bash "$0" "$ENV" --fast
     fi

@@ -1,5 +1,6 @@
 #define _POSIX_C_SOURCE 200809L
 #include "../pokemon.h"
+#include "fixtures.h"
 #include <sys/wait.h>
 
 static void invalid(const char* team) {
@@ -25,7 +26,7 @@ int main(void) {
         game.draft = mode;
         for (int episode = 0; episode < 32; episode++) {
             pk_game_reset(&game);
-            while (game.picks < 6) {
+            while (game.phase != PK_PHASE_BATTLE) {
                 int legal = 0;
                 for (int a = 0; a < PK_ACTIONS; a++) legal += game.masks[0][a];
                 assert(legal == 1);
@@ -34,7 +35,7 @@ int main(void) {
                 int b = pk_random_action(game.masks[1], &game.rng);
                 pk_game_step(&game, a, b);
             }
-            for (int i = 0; i < 6; i++) assert(game.teams[0][i] == expected[i]);
+            for (int i = 0; i < 6; i++) assert(pk_test_matches(game.teams[0][i],expected[i]));
             assert(game.invalid_actions == 0);
         }
     }
@@ -65,21 +66,21 @@ int main(void) {
         pk_parse_fixed_team(&partial,1,"required:445,512,392,522");
         for (int trial = 0; trial < 32; trial++) {
             pk_game_reset(&partial);
-            while (partial.picks < 6) {
+            while (partial.phase != PK_PHASE_BATTLE) {
                 int a = pk_random_action(partial.masks[0],&partial.rng);
-                if (!partial.selecting_set) for (int j = 0; j < 149; j++)
+                if (partial.phase==PK_PHASE_SPECIES) for (int j = 0; j < 149; j++)
                     if (partial.masks[0][j] && pk_required_set(&partial,0,j+1) < 0) { a=j; break; }
                 pk_game_step(&partial,a,pk_random_action(partial.masks[1],&partial.rng));
             }
             assert(!partial.invalid_actions);
             for (int i = 0; i < count; i++) {
                 int found = 0;
-                for (int j = 0; j < 6; j++) found += partial.teams[0][j] == expected[i];
+                for (int j = 0; j < 6; j++) found += pk_test_matches(partial.teams[0][j],expected[i]);
                 assert(found == 1);
             }
             for (int i = 0; i < 4; i++) {
                 int found = 0;
-                for (int j = 0; j < 6; j++) found += partial.teams[1][j] == partial.fixed_team[1][i];
+                for (int j = 0; j < 6; j++) found += pk_test_matches(partial.teams[1][j],partial.fixed_team[1][i]);
                 assert(found == 1);
             }
         }
@@ -88,7 +89,7 @@ int main(void) {
     // Opt-in logging stops at its cap without truncating existing content.
     Env env = {0};
     env.game = game;
-    for (int p = 0; p < 2; p++) for (int i = 0; i < 6; i++) env.game.teams[p][i] = expected[i];
+    for (int p = 0; p < 2; p++) for (int i = 0; i < 6; i++) env.game.teams[p][i] = pk_test_catalog_mon(expected[i]);
     char path[] = "/tmp/pokemon-team-log-XXXXXX";
     int fd = mkstemp(path);
     assert(fd >= 0);

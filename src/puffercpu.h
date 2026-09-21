@@ -655,6 +655,9 @@ void free_mingru(MinGRU* layer) {
     free(layer);
 }
 
+#include "../ocean/kaggriculture/entity_cpu.h"
+#include "../ocean/pokemon/semantic_cpu.h"
+
 // PufferNet: default policy matching the native backend Policy in models.cu.
 // Architecture: Linear encoder -> N x MinGRU -> Linear decoder (fused value).
 // Weight file order (matches policy_weights_create reg_params call order):
@@ -664,6 +667,8 @@ void free_mingru(MinGRU* layer) {
 //   mingru weights[0..num_layers-1] (3*hidden_dim x hidden_dim each)
 typedef struct PufferNet PufferNet;
 struct PufferNet {
+    KagCpuPolicy* kag;
+    PKCpuPolicy* pokemon;
     int num_agents;
     float* obs;
     Linear* encoder;
@@ -701,6 +706,27 @@ PufferNet* make_puffernet(Weights* weights, int num_agents, int input_dim,
     return net;
 }
 
+static inline PufferNet* make_kag_entity_puffernet(Weights* weights, int batch,
+        int hidden, int layers, int alignment, int logit_sizes[], int num_actions) {
+    PufferNet* net = (PufferNet*)calloc(1, sizeof(PufferNet));
+    net->num_agents = batch;
+    net->num_actions = num_actions;
+    net->obs = (float*)calloc((size_t)batch * KAG_ENTITY_OBS_SIZE, sizeof(float));
+    net->kag = kag_cpu_make(weights, batch, hidden, layers, alignment);
+    net->mingru = net->kag->mingru;
+    net->multidiscrete = make_multidiscrete(batch, logit_sizes, num_actions);
+    return net;
+}
+static inline PufferNet* make_pokemon_puffernet(Weights* weights,int batch,int hidden,int layers) {
+    PufferNet* net=(PufferNet*)calloc(1,sizeof(*net));
+    net->num_agents=batch;net->num_actions=1;
+    net->obs=(float*)calloc((size_t)batch*648,sizeof(float));
+    net->pokemon=pk_cpu_make(weights,batch,hidden,layers);
+    net->mingru=net->pokemon->mingru;
+    int sizes[]={168};net->multidiscrete=make_multidiscrete(batch,sizes,1);
+    return net;
+}
+
 void _gaussian_mean(float* input, float* output, int batch_size, int num_actions) {
     for (int b = 0; b < batch_size; b++) {
         // +1 skips the value head fused into the decoder output
@@ -711,6 +737,25 @@ void _gaussian_mean(float* input, float* output, int batch_size, int num_actions
 }
 
 void forward_puffernet(PufferNet* net, float* observations, float* actions) {
+    if(net->pokemon) {
+        float* logits=pk_cpu_forward(net->pokemon,observations);
+        for(int b=0;b<net->num_agents;b++) {
+            float maximum=-INFINITY,sum=0,probability[168]={0};int last=-1;
+            for(int a=0;a<168;a++)if(observations[b*648+480+a]) {
+                if(!isfinite(logits[b*169+a])) {fprintf(stderr,"Non-finite Pokemon CPU logit\n");exit(1);}
+                maximum=fmaxf(maximum,logits[b*169+a]);last=a;
+            }
+            if(last<0) {fprintf(stderr,"Empty Pokemon CPU action mask\n");exit(1);}
+            for(int a=0;a<168;a++)if(observations[b*648+480+a])sum+=probability[a]=expf(logits[b*169+a]-maximum);
+            double sample=rand()/((double)RAND_MAX+1)*sum;actions[b]=(float)last;
+            for(int a=0;a<168;a++)if(probability[a]) {sample-=probability[a];if(sample<0) {actions[b]=(float)a;break;}}
+        }
+        return;
+    }
+    if (net->kag) {
+        softmax_multidiscrete(net->multidiscrete, kag_cpu_forward(net->kag, observations), actions);
+        return;
+    }
     linear(net->encoder, observations);
     mingru(net->mingru, net->encoder->output);
     linear(net->decoder, net->mingru->output);
@@ -725,7 +770,9 @@ void free_puffernet(PufferNet* net) {
     free(net->obs);
     free(net->encoder);
     free(net->decoder);
-    free_mingru(net->mingru);
+    if (net->kag) kag_cpu_free(net->kag);
+    else if(net->pokemon)pk_cpu_free(net->pokemon);
+    else free_mingru(net->mingru);
     if (net->multidiscrete) {
         free(net->multidiscrete->logit_sizes);
         free(net->multidiscrete);
@@ -736,6 +783,7 @@ void free_puffernet(PufferNet* net) {
 #ifdef PUFFERCPU_EVAL_MAIN
 
 #include "ini.h"
+#include "kag_observation_contract.h"
 #include <dirent.h>
 #include <sys/stat.h>
 #include <time.h>
@@ -819,6 +867,11 @@ int main(int argc, char** argv) {
     const char* env_name = argv[1];
     Ini ini = {0};
     puf_ini_load_env(&ini, env_name, argc - 2, argv + 2);
+#ifdef KAG_REWARD_V2_AVAILABLE
+    kag_reward_bind_train_config(puf_ini_section(&ini, "env", 0),
+        puf_ini_get_float(&ini, "train", "gamma"),
+        puf_ini_get_float(&ini, "train", "reward_clip"));
+#endif
 
     if (sizeof(obs_t) != sizeof(float)) {
         fprintf(stderr, "cpu eval currently requires float observations\n");
@@ -827,6 +880,10 @@ int main(int argc, char** argv) {
 
     char path_buf[1024];
     const char* path = puf_model_path(&ini, env_name, path_buf, sizeof(path_buf));
+#ifdef KG_POLICY_UNIT_HEADS
+    KagObservationContract cpu_contract = kag_checkpoint_contract(path);
+    kag_observation_restore(&ini, cpu_contract);
+#endif
     Weights* weights = load_weights(path);
     if (!weights) {
         puf_ini_free(&ini);
@@ -836,8 +893,10 @@ int main(int argc, char** argv) {
     int act_sizes[] = ACT_SIZES;
     int num_actions = (int)(sizeof(act_sizes) / sizeof(act_sizes[0]));
 
+#ifndef KG_POLICY_UNIT_HEADS
     int hidden_size = (int)puf_ini_get(&ini, "policy", "hidden_size");
     int num_layers = (int)puf_ini_get(&ini, "policy", "num_layers");
+#endif
 
     Env env = {0};
     env.rng = 0;
@@ -861,17 +920,39 @@ int main(int argc, char** argv) {
     }
     puf_reset(&env);
 
+#ifdef KG_POLICY_UNIT_HEADS
+    PufferNet* net = make_kag_entity_puffernet(weights, env.num_agents,
+        cpu_contract.hidden, cpu_contract.layers, cpu_contract.alignment, act_sizes, num_actions);
+#elif defined(PK_ABI_VERSION)
+    PufferNet* net=make_pokemon_puffernet(weights,env.num_agents,hidden_size,num_layers);
+#else
     PufferNet* net = make_puffernet(weights, env.num_agents, OBS_SIZE,
         hidden_size, num_layers, act_sizes, num_actions);
+#endif
 
     int frame = 0;
     puf_render(&env);
     while (!WindowShouldClose()) {
+#ifdef KG_POLICY_UNIT_HEADS
+        // Kaggriculture must sample every simulation turn, using exactly the
+        // same prefix masks as training. Repeating an unmasked action for four
+        // turns silently changes controller semantics.
+        const float* logits = kag_cpu_forward(net->kag, (const float*)observations);
+        for (int player = 0; player < env.num_agents; player++)
+            kag_sample_cpu_logits(&env, player, logits + player * (KAG_ALL_LOGITS + 1), 0);
+#else
         if (frame % 4 == 0) {
             forward_puffernet(net, observations, actions);
         }
+#endif
         frame = (frame + 1) % 4;
         puf_step(&env);
+#ifdef KG_POLICY_UNIT_HEADS
+        if (terminals[0]) {
+            memset(net->mingru->state, 0, (size_t)net->mingru->num_layers
+                * env.num_agents * net->mingru->hidden_size * sizeof(float));
+        }
+#endif
         puf_render(&env);
     }
 

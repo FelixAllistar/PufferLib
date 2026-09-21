@@ -1,0 +1,15 @@
+{
+  "checkpoint": "/home/felix/puffertank/pufferlib/runs/pokemon_qd_selfplay_long_20260912/candidates/g0000_c002/checkpoints/pokemon/g0000_c002_1789265453080398754/0000000099614720.bin",
+  "checkpoint_sha256": "dda4492e1d9b82d4a9b7b423f125b7419f3014e4cecd9b45d049291d21e30b45",
+  "config_sha256": "dad8430e0c5da721632eaef93187fbf202b4f3ae92d8e1f5b1237a1017fb22e9",
+  "id": "g0000_c002",
+  "parent": "/home/felix/puffertank/pufferlib/runs/pokemon_qd_selfplay_long_20260912/candidates/seed/checkpoints/pokemon/seed_1789263411277120264/0000000099614720.bin",
+  "train_seed": 43,
+  "weights": [
+    0.2655261913243449,
+    0.23913407658006214,
+    0.021742742820143858,
+    0.3234903508338989,
+    0.1501066384415502
+  ]
+}

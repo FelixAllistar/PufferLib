@@ -1,6 +1,9 @@
 const std = @import("std");
 const pkmn = @import("pkmn");
 const catalog = @import("catalog.zig");
+const freepick = @import("freepick_rules.zig");
+const ACTIONS = 168;
+const OBS = 648;
 const Battle = pkmn.gen1.Battle(pkmn.gen1.PRNG);
 const State = struct {
     battle: Battle,
@@ -10,6 +13,11 @@ const State = struct {
     moves: [2][6][4]u8 = @splat(@splat(@splat(0))),
     last_move: [2]u8 = @splat(0),
     last_actor: [2]u8 = @splat(0),
+    // Public successful events, keyed internally by persistent party identity.
+    // These are reward/report counters only; never policy observations.
+    acting: u8 = 2,
+    early_sleep: [2]u8 = @splat(0),
+    paralysis_mask: [2]u8 = @splat(0),
 };
 comptime {
     std.debug.assert(@sizeOf(State) <= 512 and @alignOf(State) <= 8);
@@ -26,6 +34,7 @@ const Events = struct {
         const p = @intFromEnum(id.player);
         const i = id.id - 1;
         const m = @intFromEnum(args[1]);
+        self.s.acting = @intCast(p);
         self.s.last_move[p] = m;
         self.s.last_actor[p] = id.id;
         for (&self.s.moves[p][i]) |*known| {
@@ -64,7 +73,21 @@ const Events = struct {
     pub fn prepare(_: Events, _: anytype) error{}!void {}
     pub fn resisted(_: Events, _: anytype) error{}!void {}
     pub fn start(_: Events, _: anytype) error{}!void {}
-    pub fn status(_: Events, _: anytype) error{}!void {}
+    pub fn status(self: Events, args: anytype) error{}!void {
+        // Switching an already-statused Pokemon logs Silent, not a new event.
+        if (args[2] == .Silent) return;
+        if (args.len >= 4) {
+            if (args[3] == pkmn.gen1.Move.Rest) return;
+        }
+        const target = @intFromEnum(args[0].player);
+        const actor = self.s.acting;
+        if (actor > 1 or actor == target or args[0].id < 1 or args[0].id > 6) return;
+        const bits: u8 = args[1];
+        if (bits & 7 != 0 and self.s.battle.turn <= 5) self.s.early_sleep[actor] = 1;
+        if (bits & 64 != 0) {
+            self.s.paralysis_mask[actor] |= @as(u8, 1) << @as(u3, @intCast(args[0].id - 1));
+        }
+    }
     pub fn supereffective(_: Events, _: anytype) error{}!void {}
     pub fn tie(_: Events, _: anytype) error{}!void {}
     pub fn transform(_: Events, _: anytype) error{}!void {}
@@ -73,6 +96,7 @@ const Events = struct {
 };
 
 fn advance(s: *State, c1: pkmn.Choice, c2: pkmn.Choice) c_int {
+    s.acting = 2;
     s.last_move = @splat(0);
     s.last_actor = @splat(0);
     var options = pkmn.battle.options(Events{ .s = s }, pkmn.gen1.chance.NULL, pkmn.gen1.calc.NULL);
@@ -93,6 +117,50 @@ export fn pk_start(raw: *align(8) [512]u8, seed: u64, teams: *const [12]u16) c_i
     s.* = .{ .battle = pkmn.gen1.helpers.Battle.init(seed, mons[0..6], mons[6..12]) };
     return advance(s, .{}, .{});
 }
+const FreeMon = extern struct { species: u8, moves: [4]u8 };
+fn legalMon(mon: FreeMon) bool {
+    if (mon.species < 1 or mon.species > 149 or mon.moves[0] == 0) return false;
+    var ended = false;
+    for (mon.moves, 0..) |m, i| {
+        if (m == 0) { ended = true; continue; }
+        if (ended or m > 164 or (freepick.legal_moves[mon.species][m / 64] & (@as(u64, 1) << @as(u6, @intCast(m % 64)))) == 0) return false;
+        for (mon.moves[0..i]) |previous| if (previous == m) { return false; };
+    }
+    for (freepick.forbidden) |bad| {
+        if (bad.species != mon.species) continue;
+        var count: u8 = 0;
+        for (bad.moves[0..bad.count]) |m| for (mon.moves) |chosen| {
+            if (chosen == m) count += 1;
+        };
+        if (count == bad.count) return false;
+    }
+    return true;
+}
+export fn pk_start_free(raw: *align(8) [512]u8, seed: u64, teams: *const [12]FreeMon) c_int {
+    var mons: [12]pkmn.gen1.helpers.Pokemon = undefined;
+    var moves: [12][4]pkmn.gen1.Move = undefined;
+    for (teams, 0..) |mon, i| {
+        if (!legalMon(mon)) return 4;
+        for (teams[(i / 6) * 6 .. i]) |previous| if (previous.species == mon.species) { return 4; };
+        var count: usize = 0;
+        for (mon.moves, 0..) |m, j| {
+            if (m == 0) break;
+            moves[i][j] = @enumFromInt(m); count += 1;
+        }
+        mons[i] = .{.species = @enumFromInt(mon.species), .moves = moves[i][0..count]};
+    }
+    @memset(raw, 0);
+    const s: *State = @ptrCast(raw);
+    s.* = .{.battle = pkmn.gen1.helpers.Battle.init(seed, mons[0..6], mons[6..12])};
+    return advance(s, .{}, .{});
+}
+export fn pk_move_engine_info(move: c_int, out: *[6]u16) void {
+    @memset(out, 0);
+    if (move < 1 or move > 165) return;
+    const id: pkmn.gen1.Move = @enumFromInt(move);
+    const m = pkmn.gen1.Move.get(id);
+    out.* = .{m.bp, m.accuracy, @intFromEnum(m.type), @intFromEnum(m.effect), pkmn.gen1.Move.pp(id), @intFromEnum(m.target)};
+}
 fn action(s: *const State, p: usize, c: pkmn.Choice) usize {
     return switch (c.type) {
         .Pass => 10,
@@ -104,7 +172,7 @@ fn choices(s: *const State, p: usize, out: *[pkmn.CHOICES_SIZE]pkmn.Choice) u8 {
     if (s.result.type != .None) return 0;
     return s.battle.choices(@enumFromInt(p), if (p == 0) s.result.p1 else s.result.p2, out);
 }
-export fn pk_mask(raw: *align(8) const [512]u8, player: c_int, out: *[160]u8) void {
+export fn pk_mask(raw: *align(8) const [512]u8, player: c_int, out: *[ACTIONS]u8) void {
     @memset(out, 0);
     if (player < 0 or player > 1) return;
     const s: *const State = @ptrCast(raw);
@@ -136,12 +204,12 @@ fn status(bits: u8) u8 {
     return 0;
 }
 fn scaled(v: u16) u8 { return @intCast(@min(v / 4, 255)); }
-export fn pk_observe(raw: *align(8) const [512]u8, player: c_int, out: *[640]u8) void {
+export fn pk_observe(raw: *align(8) const [512]u8, player: c_int, out: *[OBS]u8) void {
     @memset(out, 0);
     if (player < 0 or player > 1) return;
     const s: *const State = @ptrCast(raw);
     const observer: usize = @intCast(player);
-    out[0] = 1; // Battle phase.
+    out[0] = 2; // Battle phase (species=0, individual moves=1).
     out[2] = @intCast(@min(s.battle.turn, 255));
     out[3] = @intCast(s.battle.turn >> 8);
     for (0..2) |relative| {
@@ -193,11 +261,28 @@ export fn pk_observe(raw: *align(8) const [512]u8, player: c_int, out: *[640]u8)
             out[base + 27] = scaled(a.stats.spc);
         }
     }
-    pk_mask(raw, player, out[480..640]);
+    pk_mask(raw, player, out[480..OBS]);
 }
 export fn pk_turn(raw: *align(8) const [512]u8) c_int {
     const s: *const State = @ptrCast(raw);
     return s.battle.turn;
+}
+// Resample only future chance draws, never existing hidden durations or reveals.
+export fn pk_reseed(raw: *align(8) [512]u8, seed: u64) void {
+    const s: *State = @ptrCast(raw);
+    var rand = pkmn.gen1.PRNG.init(seed);
+    s.battle.rng = .{ .src = .{ .seed = rand.newSeed() } };
+}
+// Cumulative episode measures: early opponent sleep (0/1), distinct opponents
+// successfully paralyzed (0..6). Repeated status/cure/switch cycles cannot grow
+// the distinct count. Reward normalization/caps live in behavior.h.
+export fn pk_behavior(raw: *align(8) const [512]u8, player: c_int, out: *[2]f32) void {
+    @memset(out, 0);
+    if (player < 0 or player > 1) return;
+    const s: *const State = @ptrCast(raw);
+    const p: usize = @intCast(player);
+    out[0] = @floatFromInt(s.early_sleep[p]);
+    out[1] = @floatFromInt(@popCount(s.paralysis_mask[p]));
 }
 export fn pk_species(set: c_int) c_int {
     if (set < 0 or set >= catalog.sets.len) return 0;
@@ -245,8 +330,8 @@ test "private state and random counters do not leak" {
     var raw: [512]u8 align(8) = undefined;
     const teams = [12]u16{445,392,511,365,421,231, 445,392,511,365,421,231};
     try std.testing.expectEqual(0, pk_start(&raw, 1, &teams));
-    var before: [640]u8 = undefined;
-    var after: [640]u8 = undefined;
+    var before: [OBS]u8 = undefined;
+    var after: [OBS]u8 = undefined;
     const s: *State = @ptrCast(&raw);
     pk_observe(&raw, 0, &before);
     s.battle.sides[1].pokemon[1].moves[0].id = .Splash;
@@ -288,4 +373,50 @@ test "event recorder preserves upstream battle transitions" {
             try std.testing.expectEqual(@as(c_int, @intFromEnum(result.type)), actual);
         }
     }
+}
+
+test "behavior events exclude Rest and status reannouncements and cap identities" {
+    const teams = [12]u16{445,392,511,365,421,231, 389,526,470,328,336,429};
+    var raw: [512]u8 align(8) = undefined;
+    try std.testing.expectEqual(0, pk_start(&raw, 73, &teams));
+    const s: *State = @ptrCast(&raw);
+    const log = Events{ .s = s };
+    const a = s.battle.active(.P1);
+    var b = s.battle.active(.P2);
+    var values: [2]f32 = undefined;
+    try log.move(.{ a, pkmn.gen1.Move.ThunderWave, b });
+    try log.status(.{ b, @as(u8,64), .Silent });
+    pk_behavior(&raw,0,&values);
+    try std.testing.expectEqual(@as(f32,0),values[1]);
+    try log.status(.{ b, @as(u8,64), .None });
+    try log.status(.{ b, @as(u8,64), .None }); // cured/reinflicted same identity
+    pk_behavior(&raw,0,&values);
+    try std.testing.expectEqual(@as(f32,1),values[1]);
+    b.id=2;
+    try log.status(.{ b, @as(u8,64), .None });
+    pk_behavior(&raw,0,&values);
+    try std.testing.expectEqual(@as(f32,2),values[1]);
+    try log.status(.{ b, @as(u8,2), .From, pkmn.gen1.Move.Rest });
+    pk_behavior(&raw,0,&values);
+    try std.testing.expectEqual(@as(f32,0),values[0]);
+    s.battle.turn=6;
+    try log.move(.{ a, pkmn.gen1.Move.SleepPowder, b });
+    try log.status(.{ b, @as(u8,2), .From, pkmn.gen1.Move.SleepPowder });
+    pk_behavior(&raw,0,&values);
+    try std.testing.expectEqual(@as(f32,0),values[0]);
+    s.battle.turn=5;
+    try log.status(.{ b, @as(u8,2), .From, pkmn.gen1.Move.SleepPowder });
+    pk_behavior(&raw,0,&values);
+    try std.testing.expectEqual(@as(f32,1),values[0]);
+    pk_behavior(&raw,1,&values);
+    try std.testing.expectEqualSlices(f32,&.{0,0},&values);
+    // A move event alone (miss, immunity, clause rejection) earns nothing.
+    try std.testing.expectEqual(0, pk_start(&raw, 73, &teams));
+    try log.move(.{ a, pkmn.gen1.Move.SleepPowder, b });
+    pk_behavior(&raw,0,&values);
+    try std.testing.expectEqualSlices(f32,&.{0,0},&values);
+    // Self-inflicted sleep never credits the opponent.
+    try log.status(.{ a, @as(u8,2), .From, pkmn.gen1.Move.Rest });
+    pk_behavior(&raw,0,&values);
+    try std.testing.expectEqualSlices(f32,&.{0,0},&values);
 }

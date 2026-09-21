@@ -1,0 +1,14 @@
+{
+  "actual_steps": 99614720,
+  "checkpoint": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/jobs/g02_c00/checkpoints/pokemon/g02_c00/0000000099614720.bin",
+  "checkpoint_sha256": "0799ac317a6c110592336b7bb77b48718e0d33f95a882d72d8b9b30f02f89edb",
+  "config_sha256": "0e562ff48512e8b765f1f2713acb35ce886472d553aa105288b5234e3e383592",
+  "id": "g02_c00",
+  "parent": "/home/felix/puffertank/pufferlib/runs/pokemon_event_qd_gen2_20260913/jobs/g01_c03/checkpoints/pokemon/g01_c03/0000000099614720.bin",
+  "requested_steps": 100000000,
+  "train_seed": 4602,
+  "weights": [
+    -0.2783372511032415,
+    -0.2216627488967585
+  ]
+}

@@ -4,7 +4,7 @@ BUILD := build
 LIB := $(BUILD)/libkaggriculture.so
 CFLAGS ?= -O3 -std=c17 -Wall -Wextra -Werror -fPIC
 
-.PHONY: all lib parity state-bank-test counterfactual-test top-bot-parity cuda-core cuda-adapter bc bench hotpath adapter observation-test eval metagame native-test test clean
+.PHONY: all lib parity state-bank-test counterfactual-test top-bot-parity cuda-core cuda-adapter bc bench hotpath adapter observation-test land-delay-test entity-reward-test entity-policy-test eval metagame native-test test clean
 
 all: lib
 
@@ -13,7 +13,7 @@ lib: $(LIB)
 $(BUILD):
 	mkdir -p $(BUILD)
 
-$(LIB): kag_policy_view.c kaggriculture.h kaggriculture_core.c kaggriculture_core.h | $(BUILD)
+$(LIB): kag_policy_view.c $(wildcard *.h) kaggriculture_core.c | $(BUILD)
 	$(CC) $(CFLAGS) -I$(ROOT) -I$(ROOT)/src -I$(ROOT)/vendor \
 		-I$(ROOT)/raylib-5.5_linux_amd64/include -shared kag_policy_view.c \
 		$(ROOT)/raylib-5.5_linux_amd64/lib/libraylib.a \
@@ -62,7 +62,16 @@ $(BUILD)/test_cuda_adapter: tests/test_cuda_adapter.cu kaggriculture.cu \
 		$(ROOT)/raylib-5.5_linux_amd64/lib/libraylib.a \
 		-lGL -lm -lpthread -o $(BUILD)/test_cuda_adapter
 
-$(BUILD)/kag_bc: kag_bc.cu kaggriculture.h kaggriculture_core.h \
+BC_ENTITY_SOURCES = $(sort $(wildcard *.h) kaggriculture_core.c kaggriculture_encoder.cu kag_bc_replay.c entity_bc_labels.py multi_intent_labels.py multi_bc_labels.py build_entity_bc_dataset.py replay_native.py $(ROOT)/src/kag_observation_contract.h)
+BC_ENTITY_HASH = $(shell sha256sum $(BC_ENTITY_SOURCES) | sha256sum | cut -c1-16)
+
+$(BUILD)/libbc_replay.so: Makefile $(BC_ENTITY_SOURCES) $(ROOT)/src/ini.h | $(BUILD)
+	$(CC) -O2 -std=c17 -shared -fPIC -DKAG_BC_SOURCE_HASH=0x$(BC_ENTITY_HASH)ULL \
+		-I$(ROOT) -I$(ROOT)/src -I$(ROOT)/vendor -I$(ROOT)/raylib-5.5_linux_amd64/include \
+		kag_bc_replay.c $(ROOT)/raylib-5.5_linux_amd64/lib/libraylib.a \
+		-lGL -lm -lpthread -o $@
+
+$(BUILD)/kag_bc: Makefile $(BC_ENTITY_SOURCES) kag_bc.cu kaggriculture.h land_buy_delay.h kaggriculture_core.h \
 		kaggriculture_core.c kaggriculture_bots.h \
 		kaggriculture_public_bots.h kaggriculture_tape_data.h \
 		kaggriculture_public_extra_tapes.h \
@@ -70,13 +79,22 @@ $(BUILD)/kag_bc: kag_bc.cu kaggriculture.h kaggriculture_core.h \
 		$(ROOT)/src/pufferl_preamble.h $(ROOT)/src/algo.cu | $(BUILD)
 	$${CUDA_HOME:-$${CUDA_PATH:-/usr/local/cuda}}/bin/nvcc \
 		-O2 --threads 0 -arch=$${NVCC_ARCH:-native} -std=c++17 \
+		-DKAG_BC_SOURCE_HASH=0x$(BC_ENTITY_HASH)ULL \
 		-I$(ROOT) -I$(ROOT)/src -I$(ROOT)/vendor \
 		-I$(ROOT)/raylib-5.5_linux_amd64/include \
 		kag_bc.cu $(ROOT)/raylib-5.5_linux_amd64/lib/libraylib.a \
 		-lGL -lm -lpthread -lcudart -lcublas -lcurand -o $(BUILD)/kag_bc
 
 bc: $(BUILD)/kag_bc
-	$(BUILD)/kag_bc bc.steps=26 bc.epochs=200
+
+multi-executor-test: $(BUILD)/test_multi_executor
+	$(BUILD)/test_multi_executor
+
+$(BUILD)/test_multi_executor: tests/test_multi_executor.c $(wildcard *.h) kaggriculture_core.c | $(BUILD)
+	$(CC) -O1 -std=c17 -Wall -Wextra -Werror \
+		-I$(ROOT) -I$(ROOT)/src -I$(ROOT)/vendor -I$(ROOT)/raylib-5.5_linux_amd64/include \
+		tests/test_multi_executor.c $(ROOT)/raylib-5.5_linux_amd64/lib/libraylib.a \
+		-lGL -lm -lpthread -o $@
 
 adapter: $(BUILD)/test_adapter
 	$(BUILD)/test_adapter
@@ -102,7 +120,75 @@ metagame: | $(BUILD)
 	$(CC) -O3 -std=c17 -Wall -Wextra -Werror metagame.c -lm \
 		-o $(BUILD)/kaggriculture_metagame
 
-native-test: adapter observation-test
+land-delay-test: $(BUILD)/test_land_buy_delay
+	$(BUILD)/test_land_buy_delay
+
+$(BUILD)/test_land_buy_delay: tests/test_land_buy_delay.c $(wildcard *.h) kaggriculture_core.c | $(BUILD)
+	$(CC) -O1 -std=c17 -Wall -Wextra -Werror \
+		-I$(ROOT) -I$(ROOT)/src -I$(ROOT)/vendor -I$(ROOT)/raylib-5.5_linux_amd64/include \
+		tests/test_land_buy_delay.c $(ROOT)/raylib-5.5_linux_amd64/lib/libraylib.a \
+		-lGL -lm -lpthread -o $@
+
+entity-reward-test: $(BUILD)/test_entity_rewards
+	$(BUILD)/test_entity_rewards
+
+entity-policy-test: $(BUILD)/test_entity_policy
+	$(BUILD)/test_entity_policy
+
+$(BUILD)/test_entity_policy: $(ROOT)/tests/test_kag_entity_policy.cu $(wildcard *.h) \
+		kaggriculture_encoder.cu $(ROOT)/src/algo.cu $(ROOT)/src/puffercpu.h \
+		$(ROOT)/src/ocean.cu $(ROOT)/src/pufferl_preamble.h | $(BUILD)
+	$${CUDA_HOME:-$${CUDA_PATH:-/usr/local/cuda}}/bin/nvcc \
+		-O2 --threads 2 -arch=$${NVCC_ARCH:-native} -std=c++17 \
+		-I$(ROOT) -I$(ROOT)/src -I$(ROOT)/vendor -I$(ROOT)/raylib-5.5_linux_amd64/include \
+		$(ROOT)/tests/test_kag_entity_policy.cu $(ROOT)/raylib-5.5_linux_amd64/lib/libraylib.a \
+		-lcudart -lcublas -lcusolver -lcurand -lGL -lm -lpthread -o $@
+
+$(BUILD)/test_entity_rewards: tests/test_entity_rewards.c $(wildcard *.h) kaggriculture_core.c | $(BUILD)
+	$(CC) -O1 -std=c17 -Wall -Wextra -Werror \
+		-I$(ROOT) -I$(ROOT)/src -I$(ROOT)/vendor -I$(ROOT)/raylib-5.5_linux_amd64/include \
+		tests/test_entity_rewards.c $(ROOT)/raylib-5.5_linux_amd64/lib/libraylib.a \
+		-lGL -lm -lpthread -o $@
+
+action-feasibility-test: $(BUILD)/test_action_feasibility
+	$(BUILD)/test_action_feasibility
+
+$(BUILD)/test_action_feasibility: tests/test_action_feasibility.c $(wildcard *.h) kaggriculture_core.c | $(BUILD)
+	$(CC) -O1 -std=c17 -Wall -Wextra -Werror \
+		-I$(ROOT) -I$(ROOT)/src -I$(ROOT)/vendor -I$(ROOT)/raylib-5.5_linux_amd64/include \
+		tests/test_action_feasibility.c $(ROOT)/raylib-5.5_linux_amd64/lib/libraylib.a \
+		-lGL -lm -lpthread -o $@
+
+sampling-test: $(BUILD)/test_kag_sampling
+	$(BUILD)/test_kag_sampling
+
+$(BUILD)/test_kag_sampling: $(ROOT)/tests/test_kag_sampling.cu $(wildcard *.h) \
+		$(ROOT)/src/pufferl.cu $(ROOT)/src/algo.cu | $(BUILD)
+	$${CUDA_HOME:-$${CUDA_PATH:-/usr/local/cuda}}/bin/nvcc \
+		-O1 --threads 2 -arch=$${NVCC_ARCH:-native} -std=c++17 -Xcompiler=-fopenmp \
+		-I$(ROOT) -I$(ROOT)/src -I$(ROOT)/vendor -I$(ROOT)/raylib-5.5_linux_amd64/include \
+		-I$${CUDA_HOME:-/usr/local/cuda}/include/cccl $${NCCL_IFLAG:-} \
+		$(ROOT)/tests/test_kag_sampling.cu $(ROOT)/raylib-5.5_linux_amd64/lib/libraylib.a \
+		$${NCCL_LFLAG:-} -lcudart -lnccl -lnvidia-ml -lcublas -lcusolver -lcurand \
+		-lGL -lm -lpthread -lgomp -o $@
+
+$(BUILD)/test_episode_metrics: tests/test_episode_metrics.c $(wildcard *.h) kaggriculture_core.c | $(BUILD)
+	$(CC) -O1 -std=c17 -Wall -Wextra -Werror \
+		-I$(ROOT) -I$(ROOT)/src -I$(ROOT)/vendor -I$(ROOT)/raylib-5.5_linux_amd64/include \
+		tests/test_episode_metrics.c $(ROOT)/raylib-5.5_linux_amd64/lib/libraylib.a \
+		-lGL -lm -lpthread -o $@
+
+workflow-test: $(BUILD)/test_episode_metrics
+	$(BUILD)/test_episode_metrics
+	python3 tests/test_dense_launcher.py
+
+place-shed-test: $(BUILD)/test_place_shed
+	$(BUILD)/test_place_shed
+
+$(BUILD)/test_place_shed: tests/test_place_shed.c kaggriculture_core.c kaggriculture_core.h | $(BUILD)
+	$(CC) -O2 -std=c17 -Wall -Wextra -Werror $< -lm -o $@
+
+native-test: adapter observation-test land-delay-test entity-reward-test action-feasibility-test workflow-test place-shed-test
 
 test: native-test parity
 

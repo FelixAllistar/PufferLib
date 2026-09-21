@@ -5,10 +5,25 @@ import tempfile
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from policy_identity import deduplicate, aggregated_weights
+from policy_identity import deduplicate, aggregated_weights, identity
+from eval_observation_versions import FRESH_TAGS
 
 
 class IdentityTests(unittest.TestCase):
+    def test_all_fresh_controller_metadata_is_part_of_identity(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            paths = [root / f'{i}.bin' for i in range(4)]
+            for path in paths:
+                path.write_bytes(b'same weights')
+                for tag, value in zip(FRESH_TAGS, (3, 3, 0, 32, 3, 8, 1, 1, 0)):
+                    Path(f'{path}.{tag}').write_text(str(value))
+            Path(f'{paths[1]}.macro_mode').write_text('2')
+            Path(f'{paths[2]}.macro_decision_interval').write_text('4')
+            Path(f'{paths[3]}.macro_score_features').write_text('1')
+            self.assertEqual(len({identity(path) for path in paths}), 4)
+            self.assertEqual(len(deduplicate(paths)[0]), 4)
+
     def model(self, root, name, content, version=1):
         path = root / name
         path.write_bytes(content)

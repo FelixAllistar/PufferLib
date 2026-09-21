@@ -13,13 +13,13 @@ static void verify(Env& e,const float* obs) {
     const short* pal=e.reset_image?e.start->palette:fr.palette;
     int pitch=e.reset_image?256:fr.pitch;
     for(int i=0;i<OBS_SIZE;i++) assert(std::isfinite(obs[i]));
-    for(int y=0;y<120;y++) for(int x=0;x<128;x++) {
+    for(int y=0;y<RETRO_WINDOW_H;y++) for(int x=0;x<RETRO_WINDOW_W;x++) {
         float sum=0;
-        for(int dy=0;dy<2;dy++) for(int dx=0;dx<2;dx++) {
-            const auto& c=Nes_Emu::nes_colors[pal[p[(2*y+dy)*pitch+2*x+dx]]&(Nes_Emu::color_table_size-1)];
+        for(int dy=0;dy<RETRO_OBS_SCALE;dy++) for(int dx=0;dx<RETRO_OBS_SCALE;dx++) {
+            const auto& c=Nes_Emu::nes_colors[pal[p[(RETRO_OBS_SCALE*y+dy)*pitch+RETRO_OBS_SCALE*x+dx]]&(Nes_Emu::color_table_size-1)];
             sum+=retro_luma(c.red,c.green,c.blue);
         }
-        assert(obs[112+y*128+x]==sum/4);
+        assert(obs[112+y*RETRO_WINDOW_W+x]==sum/(RETRO_OBS_SCALE*RETRO_OBS_SCALE));
     }
 }
 static void preview(Env& e,const float* obs,const char* path) {
@@ -28,14 +28,15 @@ static void preview(Env& e,const float* obs,const char* path) {
     for(int y=0;y<480;y++) for(int x=0;x<512;x++) {
         const auto& c=Nes_Emu::nes_colors[fr.palette[fr.pixels[(y/2)*fr.pitch+x/2]]&(Nes_Emu::color_table_size-1)];
         rgb[y*1024+x]=Color{c.red,c.green,c.blue,255};
-        unsigned char v=(unsigned char)std::lround(obs[112+(y/4)*128+x/4]*255);
+        constexpr int cell=2*RETRO_OBS_SCALE;
+        unsigned char v=(unsigned char)std::lround(obs[112+(y/cell)*RETRO_WINDOW_W+x/cell]*255);
         rgb[y*1024+512+x]=Color{v,v,v,255};
     }
     Image image={rgb.data(),1024,480,1,PIXELFORMAT_UNCOMPRESSED_R8G8B8A8};
     assert(ExportImage(image,path));
 }
 int main(int argc,char** argv) {
-    static_assert(OBS_SIZE==15472,"full-screen observation ABI");
+    static_assert(OBS_SIZE==112+RETRO_WINDOW_W*RETRO_WINDOW_H,"full-screen observation ABI");
     Dict a={}; dict_set_str(&a,"spawn_levels","all"); dict_set_str(&a,"cpu_backend","reference");
     dict_set_str(&a,"render_backend","reference"); dict_set(&a,"max_frames",128);
     Dict b={}; dict_set_str(&b,"spawn_levels","all"); dict_set_str(&b,"cpu_backend","blocks");

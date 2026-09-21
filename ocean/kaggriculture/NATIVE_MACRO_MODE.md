@@ -66,12 +66,17 @@ sticky turns would silently multiply purchases, hires, planting, and sales.
 
 ## Mode 3: PPO-owned task controller
 
-Select `macro_mode = 3` to use the task controller. A leftover
+Historical pre-entity-v3 builds: select `macro_mode = 3` to use the task controller. A leftover
 `macro_executor_version = 1` is automatically treated as 0 for task policies;
 it does not select a legacy planner. Mode 3 has its own decoder. The same
 normalization applies independently to task-mode frozen opponents, while
 mode-2 opponents retain their selected executor. Saved task checkpoint
 executor metadata is 0 regardless of a leftover mode-2 flag.
+
+Current entity-v3 builds validate the controller pair instead: select mode 3
+with executor 0 explicitly. Mode 2 supports executors 0, 1 and 2; mode 2 /
+executor 2 is the new multi-intent controller. Do not rely on the historical
+normalization above when launching a current model.
 
 `macro_mode = 3` removes the remaining generic-farm strategy from the
 executor. The 17 existing unit heads become an ordered set of task requests;
