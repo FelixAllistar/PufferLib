@@ -1,7 +1,8 @@
 #pragma once
 
 /* Fresh policy ABI. All observations are floats; scaling never clips values. */
-#define KAG_POLICY_VERSION 3
+#define KAG_POLICY_VERSION 5
+#define KAG_EXACT_MARKET_QUANTITIES 100
 #define KAG_OBSERVATION_ENTITIES 3
 #define KAG_GLOBAL_OFFSET 0
 #define KAG_GLOBAL_FEATURES 128
@@ -19,7 +20,7 @@
 #define KAG_ENTITY_OBS_SIZE 1424
 #define KAG_FUSION_WIDTH (64 + 9 * 32 + 8 * 32 + 17 * 16)
 #define KAG_TASK_LOGITS (17 * 44)
-#define KAG_MARKET_LOGITS (10 * (2 + 21 + 8))
+#define KAG_MARKET_LOGITS (10 * (2 + 21 + KAG_EXACT_MARKET_QUANTITIES))
 #define KAG_ALL_LOGITS (KAG_TASK_LOGITS + KAG_MARKET_LOGITS)
 #define KAG_OBS_RESET_SOURCE_INDEX 31
 /* The trainer/optimizer flattens matrices without inter-tensor gaps. Pad the

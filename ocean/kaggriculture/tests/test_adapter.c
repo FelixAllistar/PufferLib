@@ -7,7 +7,7 @@
 _Static_assert(NUM_ATNS == 47, "Kaggriculture action head count changed");
 _Static_assert(KG_POLICY_MARKET_SLOTS == 10,
     "Kaggriculture market head count changed");
-_Static_assert(KG_POLICY_ACTION_MASK_SIZE == 1058,
+_Static_assert(KG_POLICY_ACTION_MASK_SIZE == KAG_ALL_LOGITS,
     "Kaggriculture action mask changed");
 
 static void assert_rule_regressions(void) {

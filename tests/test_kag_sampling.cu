@@ -25,13 +25,14 @@ static bool visited(const float* actions, int h) {
     return node != 2 || actions[h - 1] < KG_POLICY_MARKET_QUANTITY_COMMANDS;
 }
 int main(void) {
-    constexpr int B = 12, A = KG_POLICY_ACTION_MASK_SIZE, F = A + 1, P = (A + 7) / 8;
-    std::vector<Env> envs(6);
+    constexpr int CASES = 7, B = 2 * CASES;
+    constexpr int A = KG_POLICY_ACTION_MASK_SIZE, F = A + 1, P = (A + 7) / 8;
+    std::vector<Env> envs(CASES);
     std::vector<int> rows(B), sizes(KG_ACTION_SIZES, KG_ACTION_SIZES + NUM_ATNS);
     std::vector<unsigned char> base_masks(B * A);
     std::vector<float> logits(B * F), cpu_actions(B * NUM_ATNS);
-    const int modes[] = {0,1,1,2,2,3}, executors[] = {0,0,1,0,1,0};
-    for (int e = 0; e < 6; e++) {
+    const int modes[] = {0,1,1,2,2,3,2}, executors[] = {0,0,1,0,1,0,2};
+    for (int e = 0; e < CASES; e++) {
         Env& env = envs[e]; KGConfig cfg; kg_config_default(&cfg); kg_init(&env.game_storage, &cfg);
         env.num_agents = 2; env.macro_mode = modes[e]; env.macro_executor_version = executors[e];
         env.frozen_macro_mode = env.frozen_macro_executor_version = -1;
@@ -54,8 +55,9 @@ int main(void) {
         kag_write_mask(env, seat);
         for (int a = 0; a < A; a++) logits[row * F + a] = sinf((a * 17 + row) * 0.73f);
         for (int slot = 0; slot < 10; slot++) {
-            logits[row * F + 748 + 31 * slot + 1] = 4; // Explore several market slots.
-            logits[row * F + 748 + 31 * slot + 2 + KG_M_SELL + KG_ITEM_FERTILIZER] = 20;
+            int market = KG_POLICY_MARKET_MASK_OFFSET + KG_POLICY_MARKET_SLOT_MASK_SIZE * slot;
+            logits[row * F + market + 1] = 4; // Explore several market slots.
+            logits[row * F + market + KG_POLICY_MARKET_CONTINUE_ACTIONS + KG_M_SELL + KG_ITEM_FERTILIZER] = 20;
         } // The highest raw logit is an empty sale and must NEVER be sampled.
     }
     Env* d_envs = device(envs); int* d_rows = device(rows); int* d_sizes = device(sizes);
@@ -132,7 +134,7 @@ int main(void) {
             }
         }
         assert(nonzero > 30); assert(fabsf(losses[LOSS_EMAG_KL]) < 1e-6f);
-        printf("actor/PPO %s: six modes, permuted rows, CPU/GPU exact masks/actions, archived-prefix ratio=1, finite visited-only gradients PASS\n",
+        printf("actor/PPO %s: seven controllers including 2/2, permuted rows, CPU/GPU exact masks/actions, archived-prefix ratio=1, finite visited-only gradients PASS\n",
             deterministic ? "greedy" : "stochastic");
     }
     checked(cudaDeviceReset());

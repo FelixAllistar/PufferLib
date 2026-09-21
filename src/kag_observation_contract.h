@@ -26,8 +26,9 @@ typedef struct {
 } KagObservationContract;
 
 static inline int kag_controller_valid(int mode, int executor) {
-    return mode >= 0 && mode <= 3 && executor >= 0 && executor <= 1
-        && (!executor || mode == 1 || mode == 2);
+    return mode >= 0 && mode <= 3 && executor >= 0 && executor <= 2
+        && (!executor || mode == 1 || mode == 2)
+        && (executor != 2 || mode == 2);
 }
 
 static inline int kag_contract_int(Dict* env, const char* key, int fallback,
@@ -44,7 +45,7 @@ static inline int kag_contract_int(Dict* env, const char* key, int fallback,
 static inline void kag_check_controller(int mode, int executor, int frozen) {
     if (kag_controller_valid(mode, executor)) return;
     fprintf(stderr, "Incompatible Kaggriculture %scontroller: macro_mode=%d, executor=%d. "
-        "Modes 0 and 3 require executor 0; executor 1 only works with modes 1/2. "
+        "Modes 0/3 require executor 0; executor 1 works with modes 1/2; executor 2 with mode 2 only. "
         "Set env.%smacro_executor_version=0%s.\n",
         frozen ? "frozen " : "learner ", mode, executor, frozen ? "frozen_" : "",
         frozen ? " or set BOTH frozen_macro_mode and frozen_macro_executor_version to -1 to inherit" : "");
@@ -75,9 +76,9 @@ static inline KagObservationContract kag_observation_contract(Ini* ini) {
         exit(1);
     }
     result.mode = kag_contract_int(env, "macro_mode", 3, 0, 3);
-    result.executor = kag_contract_int(env, "macro_executor_version", 0, 0, 1);
+    result.executor = kag_contract_int(env, "macro_executor_version", 0, 0, 2);
     result.frozen_mode = kag_contract_int(env, "frozen_macro_mode", -1, -1, 3);
-    result.frozen_executor = kag_contract_int(env, "frozen_macro_executor_version", -1, -1, 1);
+    result.frozen_executor = kag_contract_int(env, "frozen_macro_executor_version", -1, -1, 2);
     result.interval = kag_contract_int(env, "macro_decision_interval", 1, 1, 1000000);
     result.frozen_interval = kag_contract_int(env, "frozen_macro_decision_interval", -1, -1, 1000000);
     if (result.frozen_interval == 0) {

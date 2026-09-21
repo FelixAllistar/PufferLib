@@ -94,10 +94,10 @@ static void metadata(void) {
     assert(kag_checkpoint_integer(checkpoint, ".hidden_size") == 256);
     c.hidden = 128; expect_rejected(checkpoint, c); c.hidden = 256;
     char path[1100]; snprintf(path, sizeof(path), "%s.policy_version", checkpoint);
-    FILE* f = fopen(path, "w"); assert(f); fputs("1\n", f); fclose(f); expect_rejected(checkpoint, c);
+    FILE* f = fopen(path, "w"); assert(f); fputs("3\n", f); fclose(f); expect_rejected(checkpoint, c);
     const char* suffixes[] = {".obs_version", ".executor_version", ".policy_version", ".hidden_size", ".num_layers", ".param_alignment",
         ".macro_mode", ".macro_decision_interval", ".macro_score_features"};
-    for (int mode = 0; mode <= 3; mode++) for (int executor = 0; executor <= 1; executor++) {
+    for (int mode = 0; mode <= 3; mode++) for (int executor = 0; executor <= 2; executor++) {
         if (!kag_controller_valid(mode, executor)) continue;
         c.mode = mode; c.executor = executor; c.interval = mode == 1 ? 4 : 1;
         c.score_features = mode % 2;

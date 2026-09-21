@@ -1,15 +1,12 @@
-// Standalone behavioral-cloning trainer for Kaggriculture.
-// Two modes:
-//   gen   - run bc.games seeded prefixes where both players use a strong bot
-//           (bc.bot selects the expert profile below) and write bc.steps of
-//           (obs, expert action-heads, packed mask) to bc.data.
-//   train - load bc.data and minimize -log pi(a_expert | obs) over the whole
-//           dataset with mini-batch SGD on the same MinGRU policy as training.
-// Usage: ./kag_bc gen bc.games=200 bc.bot=1 bc.data=file
-//        ./kag_bc train bc.data=file bc.epochs=2000 bc.lr=5e-5
+// Entity-v3 recurrent BC with optional supervised expert-return critic loss.
+// Build data with build_entity_bc_dataset.py. Legacy byte gen/DAgger modes
+// remain below as historical code but are disabled at the CLI boundary.
+// Usage: kag_bc bc.mode=train bc.profile=... bc.data=... bc.verify_only=1
+//        kag_bc bc.mode=train bc.profile=... bc.data=... bc.value_coef=0.1
 
 #include "kaggriculture.h"
 #include "ini.h"
+#include "bc_entity.h"
 
 #include <cublas_v2.h>
 #include <cuda_runtime.h>
@@ -55,7 +52,25 @@ typedef struct {
     uint32_t steps;
 } KagBCHeader;
 
-#define KAG_BC_STATS 16
+#define KAG_BC_STATS 24
+
+/* Monte-Carlo expert returns, in the SAME reward units as PPO. Normalizing
+ * the loss (not the targets) by train-only return variance avoids letting
+ * cash/reward scale swamp CE. NaN marks terminal/padded rows. */
+__global__ void kag_bc_value_loss_kernel(const precision_t* logits,
+        const float* targets, float* gradient, float* stats, int rows,
+        int action_logits, float coefficient, float variance, int valid) {
+    int row = blockIdx.x * blockDim.x + threadIdx.x;
+    if (row >= rows || !isfinite(targets[row])) return;
+    float target = targets[row];
+    float error = to_float(logits[row * (action_logits + 1) + action_logits]) - target;
+    gradient[row] = coefficient * error / (variance * (float)valid);
+    atomicAdd(stats + 16, 1.0f);
+    atomicAdd(stats + 17, error * error);
+    atomicAdd(stats + 18, error);
+    atomicAdd(stats + 19, target);
+    atomicAdd(stats + 20, target * target);
+}
 
 __device__ __forceinline__ bool kag_bc_head_active(
         const float* actions, int action_base, int head) {
@@ -98,7 +113,7 @@ __global__ void kag_bc_loss_kernel(
         float opening_weight, float root_weight, float argmax_margin,
         float opening_argmax_coef, int task_mode) {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    if (idx >= rows || (int)expert[idx * num_atns] < 0) return;
+    if (idx >= rows) return;
     int logits_base = idx * (A_total + 1);
     int mask_base = idx * mask_stride;
     int offset = 0;
@@ -120,7 +135,8 @@ __global__ void kag_bc_loss_kernel(
             offset += A;
             continue;
         }
-        if (expert_action < 0 || expert_action >= A
+        if (expert_action < 0) { offset += A; continue; }
+        if (expert_action >= A
                 || !puf_mask_bit(mask, mask_base, offset + expert_action)) {
             exact = 0;
             offset += A;
@@ -191,7 +207,10 @@ __global__ void kag_bc_loss_kernel(
         }
         offset += A;
     }
-    if (stats) {
+    if (stats && active > 0) {
+        atomicAdd(stats + 21, 1.0f);
+        if (opening) atomicAdd(stats + 22, 1.0f);
+        if (root) atomicAdd(stats + 23, 1.0f);
         atomicAdd(stats, loss);
         atomicAdd(stats + 1, (float)active);
         atomicAdd(stats + 2, (float)correct);
@@ -741,8 +760,15 @@ static int bc_train(Ini* ini) {
     const char* out_path = puf_ini_get_str(ini, "bc", "output");
     const char* load_path = puf_ini_get_str(ini, "bc", "load_model_path");
     int validation_games = (int)puf_ini_get(ini, "bc", "validation_games");
+    float value_coef = (float)puf_ini_get(ini, "bc", "value_coef");
+    int verify_only = (int)puf_ini_get(ini, "bc", "verify_only");
+    KagObservationContract contract = kag_observation_contract(ini);
     int zero_reset_source = (int)puf_ini_get(
         ini, "bc", "zero_reset_source");
+    if (zero_reset_source || !isfinite(value_coef) || value_coef < 0) {
+        fprintf(stderr, "v3 requires zero_reset_source=0 and finite value_coef>=0\n");
+        return 1;
+    }
     float anchor_l2 = (float)puf_ini_get(ini, "bc", "anchor_l2");
     int opening_steps = (int)puf_ini_get(ini, "bc", "opening_steps");
     float opening_weight = (float)puf_ini_get(ini, "bc", "opening_weight");
@@ -756,6 +782,7 @@ static int bc_train(Ini* ini) {
     float macro_class_weight_cap = (float)puf_ini_get(
         ini, "bc", "macro_class_weight_cap");
     int task_mode = (int)puf_ini_get(ini, "bc", "task_mode");
+    if (task_mode) { fprintf(stderr, "The v3 BC pilot uses mode 2, not task labels\n"); return 1; }
     float task_class_balance = (float)puf_ini_get(
         ini, "bc", "task_class_balance");
     float task_class_weight_cap = (float)puf_ini_get(
@@ -788,45 +815,132 @@ static int bc_train(Ini* ini) {
 
     FILE* fp = fopen(data_path, "rb");
     if (!fp) { perror(data_path); return 1; }
-    KagBCHeader header;
+    KagEntityBCHeader header;
     if (fread(&header, sizeof(header), 1, fp) != 1
             || header.magic != KAG_BC_MAGIC
-            || header.version != KAG_BC_VERSION) {
+            || header.version != 3) {
         fprintf(stderr,
-            "bad or legacy BC dataset header; regenerate with bc.mode=gen\n");
+            "bad or legacy BC dataset; regenerate with build_entity_bc_dataset.py\n");
+        fclose(fp);
         return 1;
+    }
+    Env* check_env = (Env*)calloc(1, sizeof(Env));
+    if (!check_env) { fclose(fp); return 1; }
+    uint64_t semantics = kag_bc_configure(check_env, ini, NULL);
+    double gamma = check_env->reward.gamma;
+    unsigned expected_steps = (unsigned)check_env->game_storage.config.episode_steps;
+    free(check_env);
+    if (sizeof(header) != 88 || header.obs_bytes != sizeof(obs_t)
+            || header.observation_version != 3 || header.policy_version != KAG_POLICY_VERSION
+            || header.macro_mode != (unsigned)contract.mode
+            || header.executor != (unsigned)contract.executor
+            || header.interval != (unsigned)contract.interval
+            || header.score_features != (unsigned)contract.score_features
+            || !KAG_BC_SOURCE_HASH || header.source_hash != KAG_BC_SOURCE_HASH
+            || header.semantics_hash != semantics || header.gamma != gamma) {
+        fprintf(stderr, "BC encoder/controller/source/reward/gamma contract mismatch; regenerate data or match its profile\n");
+        fclose(fp); return 1;
     }
     uint32_t count = header.count, row_obs = header.row_obs,
         row_expert = header.row_expert, row_mask = header.row_mask;
     int games = (int)header.games;
     int sequence_steps = (int)header.steps;
     if (opening_steps > sequence_steps) opening_steps = sequence_steps;
-    if (games < 2 || sequence_steps < 1
-            || count != (uint32_t)(games * sequence_steps)
+    if (games < 2 || sequence_steps < 2 || header.steps != expected_steps
+            || (uint64_t)count != (uint64_t)games * sequence_steps
+            || count > INT_MAX || (uint64_t)count * row_obs > SIZE_MAX / sizeof(obs_t)
             || row_obs != OBS_SIZE || row_expert != NUM_ATNS
             || row_mask != (KG_POLICY_ACTION_MASK_SIZE + 7) / 8) {
-        fprintf(stderr, "invalid BC v2 dimensions\n");
+        fprintf(stderr, "invalid BC v3 dimensions\n");
+        fclose(fp);
         return 1;
     }
-    if (validation_games <= 0) validation_games = games / 5;
-    if (validation_games < 1) validation_games = 1;
-    if (validation_games >= games) validation_games = games - 1;
+    if (header.validation_games < 1 || header.validation_games >= header.games
+            || (validation_games > 0 && validation_games != (int)header.validation_games)) {
+        fprintf(stderr, "validation_games must be 0 (use dataset split) or match header\n");
+        fclose(fp); return 1;
+    }
+    validation_games = (int)header.validation_games;
     int train_games = games - validation_games;
     if (batch > train_games) batch = train_games;
-    obs_t* obs = (obs_t*)malloc((size_t)count * row_obs);
+    uint64_t expected_bytes = sizeof(header) + (uint64_t)count *
+        (row_obs * sizeof(obs_t) + row_expert * sizeof(float) + row_mask + sizeof(float));
+    if (fseek(fp, 0, SEEK_END) || (uint64_t)ftell(fp) != expected_bytes
+            || fseek(fp, sizeof(header), SEEK_SET)) {
+        fprintf(stderr, "truncated or oversized BC dataset\n"); fclose(fp); return 1;
+    }
+    obs_t* obs = (obs_t*)malloc((size_t)count * row_obs * sizeof(obs_t));
     float* expert = (float*)malloc((size_t)count * row_expert * sizeof(float));
     unsigned char* mask = (unsigned char*)malloc((size_t)count * row_mask);
-    if (!obs || !expert || !mask) { perror("malloc"); return 1; }
-    bool read_ok = fread(obs, 1, (size_t)count * row_obs, fp)
+    float* returns = (float*)malloc((size_t)count * sizeof(float));
+    if (!obs || !expert || !mask || !returns) { perror("malloc"); fclose(fp); return 1; }
+    bool read_ok = fread(obs, sizeof(obs_t), (size_t)count * row_obs, fp)
             == (size_t)count * row_obs
         && fread(expert, sizeof(float), (size_t)count * row_expert, fp)
             == (size_t)count * row_expert
         && fread(mask, 1, (size_t)count * row_mask, fp)
-            == (size_t)count * row_mask;
+            == (size_t)count * row_mask
+        && fread(returns, sizeof(float), count, fp) == count;
     fclose(fp);
     if (!read_ok) {
         fprintf(stderr, "truncated BC dataset: %s\n", data_path);
         return 1;
+    }
+    double return_mean = 0, return_m2 = 0;
+    int return_count = 0, labeled_train = 0, labeled_val = 0;
+    int sizes[] = ACT_SIZES;
+    for (uint32_t row = 0; row < count; row++) {
+        bool terminal = row % sequence_steps == (unsigned)sequence_steps - 1;
+        if ((terminal ? !isnan(returns[row]) : !isfinite(returns[row]))) {
+            fprintf(stderr, "invalid return target at row %u\n", row); return 1;
+        }
+        bool train = row < (unsigned)(train_games * sequence_steps);
+        if (!terminal && train) {
+            return_count++;
+            double delta = returns[row] - return_mean;
+            return_mean += delta / return_count;
+            return_m2 += delta * (returns[row] - return_mean);
+        }
+        for (uint32_t f = 0; f < row_obs; f++) {
+            if (!isfinite(obs[(size_t)row * row_obs + f])) {
+                fprintf(stderr, "nonfinite observation at row %u\n", row); return 1;
+            }
+        }
+        int offset = 0;
+        bool labeled = false;
+        for (uint32_t head = 0; head < row_expert; head++) {
+            float action = expert[(size_t)row * row_expert + head];
+            if (!isfinite(action) || action < -1 || action >= sizes[head]
+                    || action != (int)action
+                    || (action >= 0 && !(mask[(size_t)row * row_mask
+                        + (offset + (int)action) / 8] & (1u << ((offset + (int)action) % 8))))) {
+                fprintf(stderr, "invalid/masked expert at row %u head %u\n", row, head); return 1;
+            }
+            if (terminal && action != -1) {
+                fprintf(stderr, "terminal action must be unlabeled\n"); return 1;
+            }
+            labeled |= action >= 0;
+            offset += sizes[head];
+        }
+        if (labeled) {
+            if (train) labeled_train++; else labeled_val++;
+        }
+    }
+    if (!labeled_train || !labeled_val) {
+        fprintf(stderr, "BC requires actor labels in both train and held-out episodes\n"); return 1;
+    }
+    float return_variance = (float)fmax(1.0, return_m2 / return_count);
+    printf("BC v3 preflight: labels=%d/%d train/holdout gamma=%.9g value_coef=%g return_mean=%g variance=%g source=%016llx\n",
+        labeled_train, labeled_val, gamma, value_coef, return_mean, return_variance,
+        (unsigned long long)header.source_hash);
+    if (load_path && load_path[0] && strcmp(load_path, "None"))
+        kag_executor_check_load(load_path, contract, 0);
+    if (verify_only) {
+        free(obs); free(expert); free(mask); free(returns);
+        return 0;
+    }
+    if (access(out_path, F_OK) == 0) {
+        fprintf(stderr, "Refusing to overwrite existing checkpoint: %s\n", out_path); return 1;
     }
     printf("BC train: %d games x %d steps (%d train/%d validation), "
         "batch=%d epochs=%d lr=%g hidden=%d layers=%d "
@@ -877,7 +991,7 @@ static int bc_train(Ini* ini) {
     }
     cudaMemcpy(act_sizes_puf.data, act_sizes, sizeof(act_sizes),
         cudaMemcpyHostToDevice);
-    uint64_t seed = 42;
+    uint64_t seed = (uint64_t)(uint32_t)bc_seed;
     policy_init_weights(&policy, weights, &seed, 0);
     cudaDeviceSynchronize();
     /* Seed the float master from initialized bf16 params, then optionally
@@ -908,12 +1022,6 @@ static int bc_train(Ini* ini) {
             (size_t)params.total_elems * sizeof(float),
             cudaMemcpyDeviceToHost);
     }
-    if (zero_reset_source) {
-        for (int h = 0; h < hidden; h++) {
-            host_anchor[(size_t)h * OBS_SIZE
-                + KAG_OBS_RESET_SOURCE_INDEX] = 0.0f;
-        }
-    }
     cudaMemcpy(master_weights.data, host_anchor,
         (size_t)params.total_elems * sizeof(float), cudaMemcpyHostToDevice);
     cast<<<grid_size((int)params.total_elems), BLOCK_SIZE, 0, bc_stream>>>(
@@ -924,12 +1032,14 @@ static int bc_train(Ini* ini) {
     int A_total = act_n;
     precision_t* d_obs = (precision_t*)xcuda(
         (size_t)batch_rows * OBS_SIZE * sizeof(precision_t));
-    obs_t* h_obs_chunk = (obs_t*)malloc((size_t)batch_rows * OBS_SIZE);
+    obs_t* h_obs_chunk = (obs_t*)malloc((size_t)batch_rows * OBS_SIZE * sizeof(obs_t));
+    float* h_return_chunk = (float*)malloc((size_t)batch_rows * sizeof(float));
+    float* d_returns = (float*)xcuda((size_t)batch_rows * sizeof(float));
     float* h_expert_chunk = (float*)malloc(
         (size_t)batch_rows * NUM_ATNS * sizeof(float));
     unsigned char* h_mask_chunk = (unsigned char*)malloc(
         (size_t)batch_rows * packed_stride);
-    obs_t* d_obs_raw = (obs_t*)xcuda((size_t)batch_rows * OBS_SIZE);
+    obs_t* d_obs_raw = (obs_t*)xcuda((size_t)batch_rows * OBS_SIZE * sizeof(obs_t));
     float* d_expert = (float*)xcuda(
         (size_t)batch_rows * NUM_ATNS * sizeof(float));
     unsigned char* d_mask = (unsigned char*)xcuda(
@@ -943,20 +1053,16 @@ static int bc_train(Ini* ini) {
     float* detail_acc = detailed_stats
         ? (float*)xcuda((size_t)detail_size * sizeof(float)) : NULL;
 
-    PrecisionTensor obs_t = {.data = d_obs,
+    PrecisionTensor obs_tensor = {.data = d_obs,
         .shape = {batch, sequence_steps, OBS_SIZE}};
     PrecisionTensor terminals = {.data = (precision_t*)xcuda(
         (size_t)batch_rows * sizeof(precision_t)),
         .shape = {batch, sequence_steps}};
 
-    /* Shuffle once before splitting so validation is held out by episode, then
-     * reshuffle only the training prefix each epoch. */
+    /* The builder's immutable episode split is already train-prefix/holdout-tail.
+     * Only shuffle that training prefix; never resplit by row or random seed. */
     uint32_t* order = (uint32_t*)malloc((size_t)games * sizeof(uint32_t));
     for (int i = 0; i < games; i++) order[i] = (uint32_t)i;
-    for (int i = games - 1; i > 0; i--) {
-        int j = (int)(bc_rand() % (uint32_t)(i + 1));
-        uint32_t tmp = order[i]; order[i] = order[j]; order[j] = tmp;
-    }
     /* Mode-2 intent labels and mode-3 task labels are highly imbalanced.
      * Mode 2 balances head zero only inside the opening window. Mode 3 uses
      * one shared class histogram over every labeled task head and timestep;
@@ -1039,9 +1145,10 @@ static int bc_train(Ini* ini) {
 
     auto run_chunk = [&](int order_start, int B, bool update,
             float host_stats[KAG_BC_STATS], float* host_detail) -> bool {
-        memset(h_obs_chunk, 0, (size_t)batch_rows * OBS_SIZE);
+        memset(h_obs_chunk, 0, (size_t)batch_rows * OBS_SIZE * sizeof(obs_t));
         memset(h_mask_chunk, 0, (size_t)batch_rows * packed_stride);
         for (int row = 0; row < batch_rows; row++) {
+            h_return_chunk[row] = NAN;
             for (int h = 0; h < NUM_ATNS; h++) {
                 h_expert_chunk[(size_t)row * NUM_ATNS + h] = -1.0f;
             }
@@ -1051,8 +1158,9 @@ static int bc_train(Ini* ini) {
             for (int t = 0; t < sequence_steps; t++) {
                 size_t source = (size_t)game * sequence_steps + t;
                 size_t dest = (size_t)sequence * sequence_steps + t;
+                h_return_chunk[dest] = returns[source];
                 memcpy(h_obs_chunk + dest * OBS_SIZE,
-                    obs + source * OBS_SIZE, OBS_SIZE);
+                    obs + source * OBS_SIZE, OBS_SIZE * sizeof(obs_t));
                 memcpy(h_expert_chunk + dest * NUM_ATNS,
                     expert + source * NUM_ATNS,
                     NUM_ATNS * sizeof(float));
@@ -1061,7 +1169,9 @@ static int bc_train(Ini* ini) {
             }
         }
         cudaMemcpyAsync(d_obs_raw, h_obs_chunk,
-            (size_t)batch_rows * OBS_SIZE, cudaMemcpyHostToDevice, bc_stream);
+            (size_t)batch_rows * OBS_SIZE * sizeof(obs_t), cudaMemcpyHostToDevice, bc_stream);
+        cudaMemcpyAsync(d_returns, h_return_chunk, (size_t)batch_rows * sizeof(float),
+            cudaMemcpyHostToDevice, bc_stream);
         cudaMemcpyAsync(d_expert, h_expert_chunk,
             (size_t)batch_rows * NUM_ATNS * sizeof(float),
             cudaMemcpyHostToDevice, bc_stream);
@@ -1085,7 +1195,7 @@ static int bc_train(Ini* ini) {
         cudaMemsetAsync(terminals.data, 0,
             numel(terminals.shape) * sizeof(precision_t), bc_stream);
         PrecisionTensor dec_out = policy_forward_train(&policy, weights,
-            train_acts, obs_t, state, terminals, bc_stream);
+            train_acts, obs_tensor, state, terminals, bc_stream);
         PrecisionTensor dec_flat = *puf_squeeze(&dec_out, 0);
         /* Normalize by rows that actually carry a label.  Decision-filtered
          * datasets intentionally retain every recurrent observation while
@@ -1094,7 +1204,10 @@ static int bc_train(Ini* ini) {
          * hundreds of times smaller than configured. */
         float valid_weight = 0.0f;
         for (int row = 0; row < B * sequence_steps; row++) {
-            if ((int)h_expert_chunk[(size_t)row * NUM_ATNS] < 0) continue;
+            bool labeled = false;
+            for (int h = 0; h < NUM_ATNS; h++)
+                labeled |= h_expert_chunk[(size_t)row * NUM_ATNS + h] >= 0;
+            if (!labeled) continue;
             int sequence_step = row % sequence_steps;
             valid_weight += sequence_step == 0 ? root_weight
                 : (sequence_step < opening_steps ? opening_weight : 1.0f);
@@ -1108,6 +1221,9 @@ static int bc_train(Ini* ini) {
             A_total, num_atns, packed_stride, sequence_steps, opening_steps,
             opening_weight, root_weight, argmax_margin,
             opening_argmax_coef, task_mode);
+        kag_bc_value_loss_kernel<<<grid_size(batch_rows), BLOCK_SIZE, 0, bc_stream>>>(
+            dec_flat.data, d_returns, grad_value, stats_acc, batch_rows, A_total,
+            value_coef, return_variance, B * (sequence_steps - 1));
         if (cudaGetLastError() != cudaSuccess) return false;
         if (update) {
             FloatTensor grad_logits_t = {.data = grad_logits,
@@ -1141,7 +1257,8 @@ static int bc_train(Ini* ini) {
             grad_off += ne;
         }
         for (long i = 0; i < params.total_elems; i++) {
-            float g = __bfloat162float(host_grad_bf[i]);
+            float g = to_float(host_grad_bf[i]);
+            if (!isfinite(g)) { fprintf(stderr, "Nonfinite BC gradient\n"); return false; }
             if (anchor_l2 > 0.0f) {
                 g += anchor_l2 * (host_master[i] - host_anchor[i]);
             }
@@ -1220,6 +1337,16 @@ static int bc_train(Ini* ini) {
                 val_post_rows ? val_stats[8] / (float)val_post_rows : 0.0f,
                 val_stats[9] > 0.0f ? val_stats[10] / val_stats[9] : 0.0f,
                 val_post_rows ? val_stats[11] / (float)val_post_rows : 0.0f);
+            double n = fmax(1.0f, val_stats[16]);
+            double target_var = val_stats[20] / n - pow(val_stats[19] / n, 2);
+            double error_var = val_stats[17] / n - pow(val_stats[18] / n, 2);
+            printf("BC supervised: train_rows=%.0f val_rows=%.0f train_ce=%g val_ce=%g val_exact=%g "
+                "train_value_rmse=%g val_value_rmse=%g val_value_ev=%g value_coef=%g\n",
+                train_stats[21], val_stats[21], train_stats[0] / fmaxf(1, train_stats[21]),
+                val_stats[0] / fmaxf(1, val_stats[21]), val_stats[3] / fmaxf(1, val_stats[21]),
+                sqrt(train_stats[17] / fmaxf(1, train_stats[16])), sqrt(val_stats[17] / n),
+                target_var > 1e-8 ? 1 - error_var / target_var : NAN, value_coef);
+            fflush(stdout);
         }
     }
 
@@ -1265,14 +1392,17 @@ static int bc_train(Ini* ini) {
     int64_t nbytes = numel(master_weights.shape) * sizeof(float);
     float* host = (float*)malloc((size_t)nbytes);
     cudaMemcpy(host, master_weights.data, nbytes, cudaMemcpyDeviceToHost);
-    FILE* out = fopen(out_path, "wb");
+    FILE* out = fopen(out_path, "wbx");
     if (!out) { perror(out_path); return 1; }
-    fwrite(host, 1, (size_t)nbytes, out);
-    fclose(out);
+    if (fwrite(host, 1, (size_t)nbytes, out) != (size_t)nbytes || fclose(out)) {
+        fprintf(stderr, "BC checkpoint write failed\n"); return 1;
+    }
+    kag_observation_save_contract(out_path, contract);
     free(host);
     printf("BC anchor saved to %s (%lld bytes)\n", out_path,
         (long long)nbytes);
-    free(order); free(obs); free(expert); free(mask);
+    free(order); free(obs); free(expert); free(mask); free(returns);
+    free(h_return_chunk); cudaFree(d_returns);
     free(macro_counts); free(macro_weights); cudaFree(d_macro_weights);
     free(host_grad_bf); free(host_master); free(host_mom);
     free(h_obs_chunk); free(h_expert_chunk); free(h_mask_chunk);
@@ -1282,12 +1412,19 @@ static int bc_train(Ini* ini) {
 int main(int argc, char** argv) {
     Ini ini = {0};
     puf_ini_load_env(&ini, "kaggriculture", argc - 1, argv + 1);
+    const char* profile = puf_ini_get_str(&ini, "bc", "profile");
+    if (profile && profile[0] && strcmp(profile, "None")) {
+        /* Copy: loading the profile can replace strings inside the INI. */
+        char path[8192]; snprintf(path, sizeof(path), "%s", profile);
+        puf_ini_load_file(&ini, path);
+        for (int i = 1; i < argc; i++) puf_ini_apply_arg(&ini, "base", argv[i], i);
+    }
     const char* mode = puf_ini_get_str(&ini, "bc", "mode");
     if (mode && strcmp(mode, "gen") == 0) {
-        return bc_gen(&ini);
+        fprintf(stderr, "Legacy byte-data generator is disabled for entity v3; use build_entity_bc_dataset.py\n"); return 1;
     }
     if (mode && strcmp(mode, "gen_dagger") == 0) {
-        return bc_gen_dagger(&ini);
+        fprintf(stderr, "Legacy DAgger generator is not entity-v3 compatible\n"); return 1;
     }
     if (mode && strcmp(mode, "train") == 0) {
         return bc_train(&ini);

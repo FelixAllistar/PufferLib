@@ -25,6 +25,16 @@ pufferlib/extensions/hip/
 !ocean/pokemon/tests/test_league.py
 !pufferlib/metagame.py
 # Kaggriculture competition adapters are source, not generated Python glue.
+!ocean/kaggriculture/prepare_bc_replays.py
+!ocean/kaggriculture/build_entity_bc_dataset.py
+!ocean/kaggriculture/entity_bc_labels.py
+!ocean/kaggriculture/multi_intent_labels.py
+!ocean/kaggriculture/multi_bc_labels.py
+!ocean/kaggriculture/audit_multi_coverage.py
+!ocean/kaggriculture/deploy_20260921/summarize_pilot.py
+!ocean/kaggriculture/tests/test_multi_bc.py
+!ocean/kaggriculture/tests/test_entity_bc.py
+!ocean/kaggriculture/tests/test_prepare_bc_replays.py
 !ocean/kaggriculture/expansion_experiment.py
 !ocean/kaggriculture/confirm_expansion.py
 !ocean/kaggriculture/profit_ablation.py
@@ -232,6 +242,8 @@ box2d*/
 /test_retro_encoder
 /retro
 /retro_batch
+# User-supplied cartridge, imported locally; do not add new ROMs to git.
+/ocean/retro/roms/smb1_ntsc.nes
 /pokemon
 /arpg
 /bomberman

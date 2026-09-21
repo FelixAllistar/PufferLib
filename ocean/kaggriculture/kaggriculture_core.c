@@ -928,6 +928,35 @@ KG_HD static void kg_apply_unit_action(KGState* state, KGPlayer* player, int idx
         return;
     }
 
+    /* PLACE can return a carried item to the owned shed from any of its
+     * access tiles, including the three initially locked corners. Match the
+     * upstream interpreter: animal placement first, shed fallback second,
+     * then the LOCKED guard for operations which mutate the standing tile. */
+    if (action->op == KG_OP_PLACE) {
+        int item = action->arg;
+        if (item >= KG_ITEM_GOOSE && item <= KG_ITEM_SHEEP
+                && tile->kind == KG_ANIMAL_DEFS[item - KG_ITEM_GOOSE].structure
+                && tile->animal == KG_ANIMAL_INVALID) {
+            int animal = item - KG_ITEM_GOOSE;
+            if (kg_inventory_take(unit, item, 1)) {
+                kg_new_animal(player, kg_tile_index(x, y), animal, state->day);
+                state->placed_animals[player_id]++;
+            }
+            return;
+        }
+        if (kg_is_shed_adjacent(&pos, state->config.board_size)
+                && item >= 0 && item < KG_NUM_ITEMS) {
+            int n = action->n > 0 ? action->n : 1;
+            int room = state->config.shed_capacity - kg_shed_total(player);
+            if (n > unit->inventory[item]) n = unit->inventory[item];
+            if (n > room) n = room;
+            if (n > 0 && kg_inventory_take(unit, item, n)) {
+                player->shed[item] += n;
+            }
+        }
+        return;
+    }
+
     if (tile->kind == KG_TILE_LOCKED) {
         return;
     }
@@ -1027,31 +1056,6 @@ KG_HD static void kg_apply_unit_action(KGState* state, KGPlayer* player, int idx
         int desired = action->op == KG_OP_BUILD_COOP ? KG_TILE_COOP : KG_TILE_PASTURE;
         if (tile->kind == KG_TILE_EMPTY) {
             kg_set_player_tile(player, kg_tile_index(x, y), desired);
-        }
-        return;
-    }
-
-    if (action->op == KG_OP_PLACE) {
-        int item = action->arg;
-        if (item >= KG_ITEM_GOOSE && item <= KG_ITEM_SHEEP
-                && tile->kind == KG_ANIMAL_DEFS[item - KG_ITEM_GOOSE].structure
-                && tile->animal == KG_ANIMAL_INVALID) {
-            int animal = item - KG_ITEM_GOOSE;
-            if (kg_inventory_take(unit, item, 1)) {
-                kg_new_animal(player, kg_tile_index(x, y), animal, state->day);
-                state->placed_animals[player_id]++;
-            }
-            return;
-        }
-        if (kg_is_shed_adjacent(&pos, state->config.board_size)
-                && item >= 0 && item < KG_NUM_ITEMS) {
-            int n = action->n > 0 ? action->n : 1;
-            int room = state->config.shed_capacity - kg_shed_total(player);
-            if (n > unit->inventory[item]) n = unit->inventory[item];
-            if (n > room) n = room;
-            if (n > 0 && kg_inventory_take(unit, item, n)) {
-                player->shed[item] += n;
-            }
         }
         return;
     }
