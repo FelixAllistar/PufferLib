@@ -600,6 +600,62 @@ void checkpoint_test(const char* checkpoint, int graphs, const char* data, const
     free(packed);
 }
 
+void reward_clip_test(float clip, int graphs) {
+    Ini ini = {};
+    puf_ini_load_env(&ini, "kaggriculture", 0, NULL);
+    puf_ini_put(&ini, "vec.total_agents", "8");
+    puf_ini_put(&ini, "vec.num_buffers", "1");
+    puf_ini_put(&ini, "vec.num_policies", "1");
+    puf_ini_put(&ini, "base.async", "0");
+    puf_ini_put(&ini, "base.load_model_path", "None");
+    puf_ini_put(&ini, "selfplay.enabled", "0");
+    puf_ini_put(&ini, "policy.hidden_size", "32");
+    puf_ini_put(&ini, "policy.num_layers", "1");
+    puf_ini_put(&ini, "train.horizon", "8");
+    puf_ini_put(&ini, "train.minibatch_size", "64");
+    dict_set(puf_ini_section(&ini, "train", 0), "reward_clip", clip);
+    TrainContext context = {.rank = 0, .world_size = 1, .gpu_id = 0};
+    PuffeRL* p = create_pufferl(&ini, &context);
+    assert(p->hypers.reward_clip == clip);
+    // Isolate the real transpose/clipping stage, without optimizer updates.
+    p->hypers.replay_ratio = 0;
+    precision_t input[64], output[64];
+    for (int i = 0; i < 64; i++) {
+        input[i] = from_float((i - 32) / 4.0f);
+    }
+    cudaMemcpy(p->rollouts.rewards.data, input, sizeof(input), cudaMemcpyHostToDevice);
+    sync_test();
+    cudaStream_t stream = p->train_stream;
+    if (graphs) {
+        assert(cudaStreamBeginCapture(stream, cudaStreamCaptureModeGlobal) == cudaSuccess);
+    }
+    train_epoch_gpu(p, p->rollouts, 0, stream);
+    if (graphs) {
+        cudaGraph_t graph;
+        cudaGraphExec_t executable;
+        assert(cudaStreamEndCapture(stream, &graph) == cudaSuccess);
+        assert(cudaGraphInstantiate(&executable, graph, NULL, NULL, 0) == cudaSuccess);
+        assert(cudaGraphLaunch(executable, stream) == cudaSuccess);
+        sync_test();
+        cudaGraphExecDestroy(executable);
+        cudaGraphDestroy(graph);
+    }
+    sync_test();
+    cudaMemcpy(output, p->train_rollouts.rewards.data, sizeof(output), cudaMemcpyDeviceToHost);
+    for (int b = 0; b < 8; b++) {
+        for (int t = 0; t < 8; t++) {
+            float expected = to_float(input[t * 8 + b]);
+            if (clip > 0) {
+                expected = fmaxf(-clip, fminf(clip, expected));
+            }
+            assert(to_float(output[b * 8 + t]) == expected);
+        }
+    }
+    close_pufferl(p);
+    puf_ini_free(&ini);
+    printf("reward clip PASS: clip=%g graphs=%d\n", clip, graphs);
+}
+
 int main(int argc, char** argv) {
     assert(argc == 6);
     if (!strcmp(argv[1], "sampler")) {
@@ -608,6 +664,8 @@ int main(int argc, char** argv) {
         network_test(atoi(argv[2]), atoi(argv[3]), atoi(argv[4]), argv[5]);
     } else if (!strcmp(argv[1], "checkpoint")) {
         checkpoint_test(argv[2], atoi(argv[3]), argv[4], argv[5]);
+    } else if (!strcmp(argv[1], "reward_clip")) {
+        reward_clip_test(atof(argv[2]), atoi(argv[3]));
     } else {
         assert(!strcmp(argv[1], "adapter"));
         adapter_test(atoi(argv[2]), atoi(argv[3]), atoi(argv[4]), atoi(argv[5]));

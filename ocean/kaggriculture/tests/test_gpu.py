@@ -100,3 +100,12 @@ def test_native_train_warm_start_and_update(tmp_path, async_mode, graphs):
     _, updated = train("updated", 12288, load=source)
     assert len(updated) == len(original) and updated != original
     assert source.read_bytes() == original
+
+
+@pytest.mark.parametrize("clip", [0, 1, 2.5])
+@pytest.mark.parametrize("graphs", [0, 1])
+def test_trainer_reward_clipping(binary, clip, graphs):
+    result = subprocess.run([str(binary), "reward_clip", str(clip), str(graphs), "0", "0"],
+        cwd=ROOT, text=True, capture_output=True, timeout=120)
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "reward clip PASS" in result.stdout
