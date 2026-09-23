@@ -1,183 +1,200 @@
-# Kaggriculture migration
+# Kaggriculture on upstream PufferLib 5.0
 
-This contains the rule simulator, standalone 2/2 policy contract and upstream
-GPU adapter/sampler integration. The current config is a **qualification profile**
-using upstream's stock network, not the old entity encoder or a tuned baseline.
-Keep using the preserved old runtime for existing checkpoints and experiments
-until the remaining migration boundaries below are qualified.
+This is the training port onto upstream revision `6ffa5b10d`, not the accumulated
+5c trainer. It supports the current **2/2 controller, entity observation v3,
+policy ABI 5**: 1,424 observations, 47 heads, 1,978 action logits and the entity
+encoder with separate actor/value branches around upstream MinGRU.
 
-`core.h` combines the old simulator's declarations and implementation into one
-header, following `SKILL_ISSUES.md` and the header-owned implementation pattern
-in `ocean/trianglepath/trianglepath.h`. Its host/device qualifiers follow the
-pattern in `ocean/robot_arm/robot_arm.h`. No shared trainer file is changed by
-this port. The rule core has no PufferLib, rendering, policy, or reward dependency.
+## Start training
 
-The native rules, structured worker/market actions, seeded daily randomness,
-cash/production counters, JSON snapshots, reactive reference bot, and resumable
-state layout are preserved. This includes the PLACE-to-shed fix at locked shed
-corners and simultaneous market quoting. Reset-bank state format remains version
-1 with the same layout; this does **not** establish neural checkpoint compatibility.
-
-The old implicit repair of invalid configuration is replaced by assertions.
-Valid settings retain their behavior. Gameplay legality checks still implement
-invalid actions as no-ops; snapshot import validation still rejects malformed
-input without modifying the destination. Neither is a config-repair fallback.
-
-## Controller and observations
-
-`policy.h` consolidates the current 2/2 executor, entity observations and mask
-rules into one implementation header, following `SKILL_ISSUES.md`. It depends
-only on the rule core, not the old trainer, renderer, rewards, bots or `Agent`
-layout. The caller owns the game and action/observation buffers. Single-use
-helpers and unused farm-summary work are removed; worker ordering and tie
-breaks are preserved. No planner strategy or learning algorithm is changed.
-
-This port supports controller 2/2 with score features off, observation v3 and
-policy ABI 5: 1,424 float observations, 47 action heads and 1,978 logits. Five
-concurrent intent/count/region requests share workers with automatic chores;
-the ordered market queue retains exact quantities 1-100 and feed overrides.
-Raw mode, 2/1, retired modes 1/3, frozen-bank metadata and opening curricula are
-not included in this commit. Existing models still require the old runtime.
-
-`KagPolicy` contains only controller settings, quote caches and observation
-history. Initialize it with explicit `market_slots` (1-10), `max_hands` (1-16),
-and `land_buy_min_days` (normally zero). The controller assumes the competition
-10x10 board; the independent rule core still supports smaller boards.
-Call `kag_policy_reset` after a fresh or restored game, then `kag_policy_step`
-once after each transition, including the terminal one. Episode cash/time,
-coverage/idle sums and producer peaks remain observable even without shaped
-rewards. They do not themselves issue rewards or preload a critic.
-
-`kag_write_observation`, `kag_write_mask` and `kag_decode_multi_action` expose
-the standalone contract. The legacy environment writes observations before
-refreshing the base masks; retain that order when integrating the optional
-land-delay history. The CPU sampler preserves deterministic/stochastic actions
-and its RNG advancement. Prefix `begin/before/commit` functions track worker,
-seed, cash and shed reservations without consulting hidden opponent orders.
-The GPU sampler calls these environment-side rules before each categorical draw
-and saves the selected-prefix masks in the existing rollout buffer. Unvisited
-market heads store action zero and a singleton mask, consume no RNG and have
-probability one, zero entropy and zero gradient under the **unchanged upstream
-PPO loss**. Forced singleton worker heads still consume their legacy RNG draw.
-Masks use the ordinary upstream precision tensor; no bitpacking was added.
-
-## Upstream GPU adapter
-
-Build with `NVCC_ARCH=sm_120 bash build.sh kaggriculture --cu` on Vast (choose
-the architecture appropriate to another GPU). The `--cu` flag is required;
-there is no native CPU trainer adapter or renderer yet. The standalone CPU
-rule/controller tests remain available.
-
-`kaggriculture.cu` follows `ocean/admiral/admiral.cu`: a device batch of games,
-one learner row per controlled seat, bound CUDA stream and separate step and
-observation kernels. It uses the existing `puf_*` API without modifying
-`src/pufferenv.h`. `src/pufferl.cu` gains only the sampler's game/row context
-and a Kaggriculture-specific prefix-mask hook. No network, loss, optimizer,
-advantage calculation, scheduling or shared environment API is replaced.
-
-`env.num_agents=2` controls both seats with the learner (mirror play, **not** a
-checkpoint league). With `env.num_agents=1`, `env.learner_seat=0` or `1` faces
-`env.bot_policy=0` (pass) or `1` (the native reactive rule bot). Use separate
-evaluation invocations per bot: upstream's post-training bot ladder does not
-switch GPU bot policies, and its multi-policy/selfplay guard remains intact.
-
-The adapter uses the competition's default game rules, fresh starts only,
-and one explicit reward: on termination,
-`reward_money * (ending_cash - starting_cash) / 3000`. This is not the old
-shaped reward mix. Stock upstream still clips these rewards to `[-1, 1]` before
-learning; a clipping decision is required before meaningful cash optimization.
-Logged cash and episode returns are the **unclipped environment values**.
-The provided short config is for wiring checks, not a production training run.
-
-At termination it emits the terminal reward/flag, records the finished game,
-resets the game/controller history and writes the next episode's observation.
-An explicit reset also clears logs and reward/terminal buffers. Episode seeds
-advance via a per-game LCG initialized from the game index, rather than keeping
-the same daily randomness forever. This is a new adapter seeding schedule,
-not a claim of identical legacy training trajectories.
-
-## Checks
+On the prepared Vast install:
 
 ```bash
-uv run --no-project --with pytest python -m pytest -q \
-    ocean/kaggriculture/tests/test_core.py ocean/kaggriculture/tests/test_policy.py
-
-# Optional migration comparison against the preserved source checkout:
-KAGGRICULTURE_REFERENCE_ROOT=/path/to/old/PufferLib \
-    uv run --no-project --with pytest python -m pytest -q \
-    ocean/kaggriculture/tests/test_core.py ocean/kaggriculture/tests/test_policy.py
+cd /workspace/PufferLib
+./puffer train
 ```
 
-Tests compile optimized and AddressSanitizer/UndefinedBehaviorSanitizer builds.
-They independently check market quotes, cow maturity/care, PLACE-to-shed, seed
-reservations, neglect, terminal timing, snapshot round trips, and Python's RNG.
-The optional old/new comparison checks full-state byte hashes at 69,024
-transitions across 96 episodes, plus 2,784 daily JSON snapshots. It covers
-random/invalid structured actions and the reactive bot, two resets per seed,
-board sizes 4–10, two cash budgets, two shed capacities, weeds on/off, and free
-or paid hiring. No GPU work occurs in these tests.
+The environment is compiled into the binary: do **not** append `kaggriculture`.
+To rebuild: `NVCC_ARCH=sm_120 bash build.sh kaggriculture --cu`.
+The ready profile loads `saved/kaggriculture/initial_bc_critic.bin`, uses terminal
+cash gain only, a trainable critic, replay resets and frozen league opponents.
+The 300M-step run is not automatically launched by installation.
 
-`tests/test_core.c` also contains a CUDA kernel for compile qualification with
-NVCC (`-x cu -c`). Compilation alone is not GPU execution/parity qualification.
-The existing old-tree `parity.py` can target a shared library built from this
-header; it has also passed against the installed Kaggle 1.32.7 interpreter.
+Settings selected for the first upstream run:
 
-Controller tests cover concurrent chores/strategy, shared seeds/housing, exact
-ordered trades, same-turn shed transfers, safe delivery overflow, feed controls,
-fertilizer-before-water, explicit harvest/wait, queue/hand limits, optional land
-delay, quote-cache invalidation and reward-independent observation history.
-The optional old/new comparison checks hashes of both players' observations,
-base/prefix masks, chosen actions, decoded commands and full resulting states,
-plus exact sampling RNG state: 8,876 transitions / 17,752 player decisions over
-12 full games and 64 constructed farm starts. These are synthetic fixtures,
-not replay-dataset coverage measurements. Both optimized and sanitized builds
-pass. `tests/policy_compile.cu` also compiles the controller/observation/mask
-path for `sm_80`; no GPU execution or speedup is claimed.
+| Setting | Value |
+|---|---|
+| Model | H256, 2 recurrent layers, 1,082,200 parameters |
+| Initialization | Existing BC actor + terminal-return critic |
+| Terminal reward | `4.71806717 * (ending_cash - episode_start_cash) / 3000` |
+| Other rewards / clipping | All zero / disabled |
+| Gamma | 0.999817491, matching critic targets |
+| Replay resets | Probability 0.8; 78,864-state bank |
+| Physical agent rows | 1,024: 640 learner, four banks of 96 opponents |
+| Games | 512; 75% checkpoint games, 25% learner-mirror games |
+| Rollout / minibatch | 256 steps / 8,192 transitions |
+| RNN state | Carried across rollouts; reset on episode boundaries |
+| PPO | Upstream losses, Muon, GAE, async pipeline; LR 0.0003 |
 
-`tests/test_gpu.cu` includes the actual upstream trainer, so its tests exercise
-the production sampler, importance/log-prob cache and PPO gradient kernel.
-The opt-in runner is (omit the trainer variable to run only the 20 kernel/adapter
-checks):
+These are a qualified starting configuration, **not** an optimum transferred
+from the old trainer. The horizon is shorter than the former 720; carrying
+state preserves memory, not the full 720-step backpropagation window.
+Upstream counts all physical agent rows in its step budget. At this league
+split, 300M nominal steps contain approximately 187.5M learner transitions.
+Minibatch *sequences* (`minibatch_size / horizon`) must divide the learner-row
+count. Rollout masks are ordinary precision tensors, not bitpacked.
+
+`reset_fraction` measures completed logged episodes, not necessarily the
+configured draw probability: continuations are shorter. `root_money` and
+`reset_money` separate genuine starts and continuations. Production/action
+metrics exclude activity inherited from bank states. During critic-only offline
+fitting, the encoder and actor stay frozen while the value branch trains.
+During PPO both actor and critic train normally.
+
+For the earlier shaped-reward experiment with actor-only BC:
 
 ```bash
-KAGGRICULTURE_GPU_TEST_BINARY=build/kag_gpu_test_fp32 \
-KAGGRICULTURE_TRAIN_TEST_BINARY=build/kag_adapter_fp32 \
-    uv run --no-project --with pytest python -m pytest -q \
-    ocean/kaggriculture/tests/test_gpu.py
+uv run --no-project python ocean/kaggriculture/run.py train --profile shaped
 ```
 
-Compile the test with the same includes, libraries, precision and environment
-defines as the native build, substituting `ocean/kaggriculture/tests/test_gpu.cu` for
-`src/pufferl.cu` and omitting `PUFFERLIB_BUILD_MAIN`. Repeat in BF16. The tests
-cover single/both seats, odd row offsets, CUDA graph/non-graph execution,
-CPU-reconstructed prefix masks and categorical probabilities, exact Philox
-advancement, inactive-head entropy/gradient and two full episodes plus a
-late-state termination fixture. They are not enabled by a normal CPU test run.
-Four native trainer cases additionally check finite changing weights and exact
-zero-learning-rate warm starts in sync/async and graph/non-graph modes. These
-tiny stock-network runs qualify wiring, not learning quality or throughput.
+The shaped profile restores the earlier land/crop/animal high-water bonuses,
+alive reward and dense quality reward. It does not enable PBRS. Terminal reward
+units, observations and controller semantics are unchanged.
 
-Qualification on Vast's RTX 5060 Ti (`sm_120`): **24/24 pass in FP32 and 24/24
-in BF16**. The separate upstream Chain Reaction warm-start suite also passes
-**19/19 in each precision**. No local GPU was used. The original runtime is
-still required for legacy experiments; this does not qualify the missing
-entity network, resets, BC or checkpoint leagues.
+## Evaluation and checkpoint league
 
-## Remaining integration
+Use the runner for reset-free evaluation; native post-training evaluation is
+disabled in the starting config so it cannot inherit training reset states.
 
-Port and qualify the entity encoder/decoder and checkpoint identity. The
-adapter currently uses the stock network intentionally, not a silent fallback.
-Resolve terminal-cash clipping explicitly before training: stock upstream clamps
-rewards to `[-1, 1]`. Replay resets, BC/value initialization, checkpoint identity,
-external leagues and GPU multi-policy execution remain separate changes.
-No old PPO loss, optimizer, eMAG, QD, packed masks, or performance experiment is
-included here.
+```bash
+uv run --no-project python ocean/kaggriculture/run.py eval \
+    --base.load_model_path=checkpoints/kaggriculture/RUN/CHECKPOINT.bin \
+    --env.bot_policy=1 --env.learner_seat=0
+```
 
-## Source baseline
+Repeat with seat 1 and bot 0 (pass). Bot 1 is the native reactive rules bot,
+not a top competition agent. Evaluation is stochastic, as in upstream's sampler.
+A direct native `match` needs two checkpoints, two agents per game and resets off;
+the league runner sets these correctly and balances both seats.
 
-Preserved `5c` checkout at `3fa5d14cc`, as inspected on 2026-09-23:
+The prepared league retains the seven compatible legacy models and the legacy
+training mixture, explicitly tagged as such. Its weights are **not claimed to
+be a newly evaluated upstream PSRO solution**. Four fixed banks approximate that
+mixture by seeded systematic resampling. Opponent weights stay fixed within a
+run; leave `selfplay.opp_timeout_steps=0`. Mid-game bank replacement is not part
+of the qualified workflow.
 
-- `kaggriculture_core.h` SHA-256:
-  `1fe79cff3b3c64d40f301ac308d2c93e2772d0022a71b894ad4daf612e4fa9a8`
-- `kaggriculture_core.c` SHA-256:
-  `bd221961767f0954983bdc6a798ddee09d914cefe594125f0fdd6dbbc803e150`
+All payoff collection, Nash solving and champion selection live in `run.py`,
+outside PPO. To add a finished run, evaluate missing pairs, promote the empirical
+champion in the registry and refresh the next run's banks:
+
+```bash
+uv run --no-project python ocean/kaggriculture/run.py league-add \
+    --name candidate_1 --checkpoint checkpoints/kaggriculture/RUN/CHECKPOINT.bin
+uv run --no-project --with numpy --with scipy python ocean/kaggriculture/run.py \
+    league-eval --games 64 --bots
+uv run --no-project --with numpy python ocean/kaggriculture/run.py \
+    league-sample --banks 4 --seed 708
+```
+
+`league-eval` caches completed pair results, so an interrupted matrix resumes.
+It updates the registry's champion automatically, not the actor initializer in
+your training config. To continue that champion, explicitly override
+`--base.load_model_path=PATH`. Small match counts are noisy; promotion is an
+empirical ranking, not proof of stronger competition play. `league-add` accepts
+only this qualified H256/L2 contract; file size alone does not establish the
+semantics of an arbitrary imported checkpoint.
+
+## Offline BC and critic fitting
+
+The preserved expanded dataset contains **442 training + 76 held-out games**.
+No replay parsing was repeated for this migration. The installed terminal and
+shaped data links reuse the immutable original files; do not delete `legacy`.
+
+```bash
+uv run --no-project python ocean/kaggriculture/run.py build-bc --arch sm_120
+uv run --no-project python ocean/kaggriculture/run.py bc \
+    --bc.output=saved/kaggriculture/new_actor.bin
+uv run --no-project python ocean/kaggriculture/run.py critic \
+    --base.load_model_path=saved/kaggriculture/new_actor.bin \
+    --bc.output=saved/kaggriculture/new_actor_critic.bin
+# Or simultaneous actor CE + value regression:
+uv run --no-project python ocean/kaggriculture/run.py bc-critic \
+    --bc.output=saved/kaggriculture/new_joint.bin
+```
+
+The native offline application uses the actual upstream encoder/MinGRU/decoder
+vtables. It does not instantiate a simulator or alter PPO. Actor loss is masked
+conditional cross-entropy, normalized by labeled rows. Value targets are expert
+Monte Carlo returns in PPO reward units; only the MSE loss is divided by
+training-return variance. Critic-only fitting changes only the value branch.
+Actor-only fitting leaves value-branch weights untouched, although shared
+features can change its predictions. The immutable episode split is retained.
+
+The standalone offline optimizer is Adam; it is not the old actor-BC SGD
+optimizer and is **not** a replacement for upstream PPO's Muon. The selected
+initializer remains the existing qualified checkpoint, not a newly retrained
+one. Dataset metadata checks controller settings and, for value training,
+reward units/gamma before launching. Outputs refuse overwrite and receive
+provenance JSON. `bc.max_batches=0` uses all games; nonzero is a smoke-test limiter.
+
+New replay collection/relabeling and Kaggle export tools remain preserved in the
+legacy install. They have not been folded into the new trainer. Existing data
+and checkpoint loading do not imply new raw replay parsers were ported.
+
+## Shared-code boundary
+
+Following `SKILL_ISSUES.md`, simulator, controller, observations, rewards,
+resets, entity network, offline tools and league orchestration stay under
+`ocean/kaggriculture`. Shared runtime changes are limited to:
+
+- `src/ocean.cu`: seven lines of existing custom-network vtable dispatch.
+- `src/pufferl.cu`: warm loading, optional reward clipping, prefix-sampler
+  context, GPU policy-row hookup, initial opponent paths, and selecting only
+  learner rows (including initial recurrent states) for PPO.
+
+The row-selection fix is data routing: frozen-opponent behavior is not used as
+learner experience. `src/algo.cu`, Muon, PPO/advantage/value losses, MinGRU
+implementation, async scheduling and `src/pufferenv.h` remain upstream.
+The sampler retains action/mask/log-prob/RNG parity. Market heads not reached
+by the selected prefix use singleton masks and probability one in the stock loss.
+
+No eMAG, QD, packed rollout masks, old trainer accumulation or optimizer/loss
+experiments were imported. Raw/2/1 controllers, renderer, CPU trainer adapter,
+opening curriculum and optional historical environments remain in the preserved
+legacy trees; they are not silently interpreted as the new 2/2 configuration.
+
+## Qualification
+
+CPU checks (no GPU execution):
+
+```bash
+uv run --no-project --with pytest --with numpy --with scipy python -m pytest -q \
+    ocean/kaggriculture/tests/test_core.py ocean/kaggriculture/tests/test_policy.py \
+    ocean/kaggriculture/tests/test_profiles.py ocean/kaggriculture/tests/test_league.py
+```
+
+Optional legacy comparison uses `KAGGRICULTURE_REFERENCE_ROOT=/path/to/legacy`.
+Optimized and ASan/UBSan traces cover rules, observations, decoded commands,
+conditional masks and exact sampler RNG state. The standalone rule core also
+passed interpreter parity against the installed Kaggle 1.32.7 rules.
+
+GPU suites are opt-in: `test_gpu.py`, `test_network.py`, `test_bc.py`,
+`tests/test_train_checkpoint.py` and `tests/test_train_policy_rows.py`. They
+exercise real native kernels, graphs, recurrent carry, sync/async warm loading,
+frozen-bank invariance, reset baselines, rewards, independent NumPy network
+gradients and real checkpoint recurrence in FP32 and BF16. Tests leave no model
+promoted. Complete scripts/logs live in the migration qualification artifacts;
+tiny test throughput must not be presented as production training throughput.
+
+Production-size qualification on Vast's RTX 5060 Ti: the 1,024-row async profile
+completed 1,048,576 steps at about 9.4 GiB, with a measured steady interval near
+15.9K physical steps/s. Total wall time was 143 seconds including graph capture;
+the dashboard excludes capture time and its final async drain shows a misleading
+SPS spike. A 2,048-row synchronous comparison held the model and horizon fixed
+but reached only 13.7–13.8K steady SPS at about 10.3 GiB, so it was not selected.
+These short runs qualify operation, not convergence or a speedup over legacy.
+
+The preserved legacy champion also completed a reset-free, balanced-seat native
+match against `terminal_final`: 28/32 wins, mean learner cash 91,106. This is a
+checkpoint/match sanity check, not a newly selected champion or leaderboard result.
