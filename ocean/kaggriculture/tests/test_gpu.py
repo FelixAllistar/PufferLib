@@ -109,3 +109,13 @@ def test_trainer_reward_clipping(binary, clip, graphs):
         cwd=ROOT, text=True, capture_output=True, timeout=120)
     assert result.returncode == 0, result.stdout + result.stderr
     assert "reward clip PASS" in result.stdout
+
+
+@pytest.mark.parametrize("probability", [0, 0.4, 1])
+@pytest.mark.parametrize("graphs", [0, 1])
+@pytest.mark.parametrize("agents", [1, 2])
+def test_replay_bank_resets_and_inherited_metrics(binary, tmp_path, probability, graphs, agents):
+    result = subprocess.run([str(binary), "reset_bank", str(probability), str(graphs),
+        str(agents), str(tmp_path)], cwd=ROOT, text=True, capture_output=True, timeout=120)
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "reset bank PASS" in result.stdout

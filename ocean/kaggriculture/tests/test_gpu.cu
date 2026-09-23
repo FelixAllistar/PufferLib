@@ -35,6 +35,8 @@ Dict settings(int agents, int seat, int bot) {
     dict_set(&d, "max_hands", 16);
     dict_set(&d, "land_buy_min_days", 0);
     dict_set(&d, "reward_money", 4.71806717);
+    dict_set(&d, "reset_state_prob", 0);
+    dict_set_str(&d, "reset_state_bank", "None");
     return d;
 }
 
@@ -382,7 +384,8 @@ void adapter_test(int agents, int seat, int bot, int graphs) {
                     env->log.n++;
                     env->log.score += env->game.players[player].money;
                     env->log.episode_return += expected_reward;
-                    env->log.episode_length += env->game.step;
+                    env->log.episode_length +=
+                        env->game.step - env->policy.history[player].start_step;
                     finished++;
                 }
             }
@@ -656,6 +659,145 @@ void reward_clip_test(float clip, int graphs) {
     printf("reward clip PASS: clip=%g graphs=%d\n", clip, graphs);
 }
 
+void reset_bank_test(float probability, int graphs, int agents, const char* directory) {
+    int games = 8, rows = games * agents;
+    KGState records[3];
+    for (int i = 0; i < 3; i++) {
+        KGConfig config;
+        kg_config_default(&config);
+        config.seed = 917 + i;
+        kg_init(records + i, &config);
+        records[i].step = i * 240;
+        records[i].day = records[i].step / 24;
+        for (int p = 0; p < 2; p++) {
+            records[i].players[p].money = 30000 + i * 10000;
+            records[i].production_units[p] = 150;
+            records[i].production_product_units[p][0] = 100;
+            records[i].production_product_units[p][6] = 50;
+            records[i].planted_crops[p] = 10;
+            records[i].placed_animals[p] = 5;
+            records[i].neglect_deaths[p] = 2;
+        }
+    }
+    char path[2048];
+    snprintf(path, sizeof(path), "%s/bank.kgb", directory);
+    FILE* file = fopen(path, "wb");
+    KagStateBankHeader header = {{'K', 'G', 'R', 'S', 'T', 'B', '1', 0}, 1,
+        KG_STATE_SERIALIZATION_VERSION, sizeof(KGState), 3, 0};
+    assert(file && fwrite(&header, sizeof(header), 1, file) == 1);
+    assert(fwrite(records, sizeof(KGState), 3, file) == 3);
+    fclose(file);
+    Dict kwargs = settings(agents, 1, 0);
+    dict_set(&kwargs, "reset_state_prob", probability);
+    dict_set_str(&kwargs, "reset_state_bank", probability ? path : "/nonexistent/unused.kgb");
+    float* observations = (float*)managed(rows * OBS_SIZE * sizeof(float));
+    float* actions = (float*)managed(rows * NUM_ATNS * sizeof(float));
+    float* rewards = (float*)managed(rows * sizeof(float));
+    float* terminals = (float*)managed(rows * sizeof(float));
+    Env* envs = puf_vec_create(rows, &kwargs, observations, actions, rewards, terminals);
+    Env host[8];
+    assert(cudaMemcpy(host, envs, sizeof(host), cudaMemcpyDeviceToHost) == cudaSuccess);
+    unsigned int rng[8];
+    for (int i = 0; i < games; i++) {
+        rng[i] = host[i].rng;
+    }
+    cudaStream_t stream;
+    cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking);
+    puf_bind_stream(stream);
+    cudaGraph_t graph;
+    cudaGraphExec_t executable;
+    if (graphs) {
+        cudaStreamBeginCapture(stream, cudaStreamCaptureModeGlobal);
+        puf_reset(envs);
+        cudaStreamEndCapture(stream, &graph);
+        cudaGraphInstantiate(&executable, graph, NULL, NULL, 0);
+    }
+    int bank_draws = 0, selected[3] = {0};
+    for (int iteration = 0; iteration < 128; iteration++) {
+        if (graphs) {
+            cudaGraphLaunch(executable, stream);
+        } else {
+            puf_reset(envs);
+        }
+        sync_test();
+        cudaMemcpy(host, envs, sizeof(host), cudaMemcpyDeviceToHost);
+        for (int i = 0; i < games; i++) {
+            rng[i] = 1664525u * rng[i] + 1013904223u;
+            int source = (rng[i] >> 8) < (uint32_t)(probability * 16777216);
+            KGState expected;
+            if (source) {
+                rng[i] = 1664525u * rng[i] + 1013904223u;
+                int index = rng[i] % 3;
+                expected = records[index];
+                selected[index]++;
+            } else {
+                KGConfig config;
+                kg_config_default(&config);
+                config.seed = rng[i];
+                kg_init(&expected, &config);
+            }
+            assert(!memcmp(&host[i].game, &expected, sizeof(KGState)));
+            assert(host[i].rng == rng[i] && host[i].policy.reset_source == source);
+            assert(host[i].log.n == 0);
+            bank_draws += source;
+            for (int a = 0; a < agents; a++) {
+                int p = agents == 2 ? a : 1, row = i * agents + a;
+                assert(host[i].policy.history[p].start_cash == expected.players[p].money);
+                assert(host[i].policy.history[p].start_step == expected.step);
+                assert(host[i].policy.history[p].coverage_sum == 0);
+                assert(rewards[row] == 0 && terminals[row] == 0);
+                assert(observations[row * OBS_SIZE + 33] ==
+                       host[i].policy.history[p].start_cash / 100000.0f);
+            }
+        }
+    }
+    if (probability > 0) {
+        assert(selected[0] && selected[1] && selected[2]);
+    }
+    assert(fabsf(bank_draws / 1024.0f - probability) < 0.06f);
+    // End a continuation with +6000 cash. Inherited production is not new production.
+    for (int i = 0; i < games; i++) {
+        host[i].game.step = 718;
+        host[i].game.day = 29;
+        host[i].game.hour = 22;
+        for (int p = 0; p < 2; p++) {
+            host[i].game.players[p].money += 6000;
+        }
+    }
+    cudaMemcpy(envs, host, sizeof(host), cudaMemcpyHostToDevice);
+    puf_step(envs);
+    sync_test();
+    Env completed[8];
+    cudaMemcpy(completed, envs, sizeof(completed), cudaMemcpyDeviceToHost);
+    for (int i = 0; i < games; i++) {
+        Log* log = &completed[i].log;
+        assert(log->n == agents && log->cash_gain == agents * 6000);
+        assert(log->episode_length == agents * (719 - host[i].policy.history[0].start_step));
+        assert(log->production_units == 0 && log->crop_units == 0 && log->animal_units == 0);
+        assert(log->plants == 0 && log->animal_places == 0 && log->neglect_deaths == 0);
+        assert(log->land_purchases == 0);
+        assert(log->reset_games == agents * host[i].policy.reset_source);
+        assert(log->root_games + log->reset_games == agents);
+        Dict metrics = {};
+        Log mean = *log;
+        for (int j = 0; j < sizeof(Log) / sizeof(float); j++) {
+            ((float*)&mean)[j] /= log->n;
+        }
+        puf_log(&mean, &metrics);
+        const char* gain_key = host[i].policy.reset_source ? "reset_cash_gain" : "root_cash_gain";
+        assert(dict_get(&metrics, gain_key) == 6000);
+        dict_clear(&metrics);
+        for (int a = 0; a < agents; a++) {
+            int row = i * agents + a;
+            close_float(rewards[row], 2 * host[i].reward_money);
+            assert(terminals[row] == 1);
+        }
+    }
+    puf_close(envs);
+    printf("reset bank PASS: probability=%g graphs=%d agents=%d bank_draws=%d\n", probability,
+        graphs, agents, bank_draws);
+}
+
 int main(int argc, char** argv) {
     assert(argc == 6);
     if (!strcmp(argv[1], "sampler")) {
@@ -666,6 +808,8 @@ int main(int argc, char** argv) {
         checkpoint_test(argv[2], atoi(argv[3]), argv[4], argv[5]);
     } else if (!strcmp(argv[1], "reward_clip")) {
         reward_clip_test(atof(argv[2]), atoi(argv[3]));
+    } else if (!strcmp(argv[1], "reset_bank")) {
+        reset_bank_test(atof(argv[2]), atoi(argv[3]), atoi(argv[4]), argv[5]);
     } else {
         assert(!strcmp(argv[1], "adapter"));
         adapter_test(atoi(argv[2]), atoi(argv[3]), atoi(argv[4]), atoi(argv[5]));

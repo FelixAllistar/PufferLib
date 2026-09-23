@@ -16,7 +16,15 @@ struct Log {
     float episode_return, episode_length, draw_rate;
     float production_units, crop_units, animal_units;
     float plants, animal_places, land_purchases, neglect_deaths;
+    float start_money, start_plots, ending_plots;
+    float root_games, reset_games, root_money, reset_money;
+    float root_cash_gain, reset_cash_gain, root_steps, reset_steps;
     float n;
+};
+
+struct KagStartMetrics {
+    uint32_t production, crop, animal, plants, animal_places, deaths;
+    int plots;
 };
 
 struct Env {
@@ -28,6 +36,10 @@ struct Env {
     KagPolicy policy;
     int bot_policy, learner_seat;
     float reward_money;
+    KGState* reset_states;
+    int reset_count;
+    float reset_probability;
+    KagStartMetrics start[KG_NUM_PLAYERS];
 };
 
 struct {
@@ -37,13 +49,38 @@ struct {
     float* rewards;
     float* terminals;
     cudaStream_t stream;
+    KGState* reset_states;
 } kag_gpu;
 
 KG_HD void kag_reset_episode(Env* env) {
     env->rng = 1664525u * env->rng + 1013904223u;
-    env->game.config.seed = env->rng;
-    kg_reset(&env->game);
-    kag_policy_reset(&env->policy, &env->game, 0);
+    int source =
+        env->reset_count > 0 && (env->rng >> 8) < (uint32_t)(env->reset_probability * 16777216.0f);
+    if (source) {
+        env->rng = 1664525u * env->rng + 1013904223u;
+        env->game = env->reset_states[env->rng % env->reset_count];
+    } else {
+        env->game.config.seed = env->rng;
+        kg_reset(&env->game);
+    }
+    kag_policy_reset(&env->policy, &env->game, source);
+    for (int p = 0; p < KG_NUM_PLAYERS; p++) {
+        KGState* g = &env->game;
+        env->start[p] = {
+            .production = g->production_units[p],
+            .plants = g->planted_crops[p],
+            .animal_places = g->placed_animals[p],
+            .deaths = g->neglect_deaths[p],
+            .plots = kag_popcount(g->players[p].unlocked_mask),
+        };
+        for (int item = 0; item < KG_NUM_PRODUCTS; item++) {
+            if (item < KG_NUM_CROPS) {
+                env->start[p].crop += g->production_product_units[p][item];
+            } else {
+                env->start[p].animal += g->production_product_units[p][item];
+            }
+        }
+    }
 }
 
 void puf_init(Env* env, Dict* kwargs) {
@@ -51,6 +88,7 @@ void puf_init(Env* env, Dict* kwargs) {
     env->bot_policy = dict_get(kwargs, "bot_policy");
     env->learner_seat = dict_get(kwargs, "learner_seat");
     env->reward_money = dict_get(kwargs, "reward_money");
+    env->reset_probability = dict_get(kwargs, "reset_state_prob");
     env->policy = (KagPolicy){
         .market_slots = (int)dict_get(kwargs, "market_slots"),
         .max_hands = (int)dict_get(kwargs, "max_hands"),
@@ -60,12 +98,22 @@ void puf_init(Env* env, Dict* kwargs) {
     assert(env->bot_policy == 0 || env->bot_policy == 1);
     assert(env->learner_seat == 0 || env->learner_seat == 1);
     assert(isfinite(env->reward_money) && env->reward_money >= 0);
+    assert(isfinite(env->reset_probability) && env->reset_probability >= 0 &&
+           env->reset_probability <= 1);
     KGConfig config;
     kg_config_default(&config);
     config.seed = env->rng;
     kg_init(&env->game, &config);
     kag_policy_reset(&env->policy, &env->game, 0);
+    env->start[0].plots = env->start[1].plots = 1;
 }
+
+struct KagStateBankHeader {
+    char magic[8];
+    uint32_t version, state_version, state_size, count;
+    uint64_t reserved;
+};
+static_assert(sizeof(KagStateBankHeader) == 32, "Reset bank header ABI changed");
 
 Env* puf_vec_create(int total_agents, Dict* kwargs, obs_t* observations, float* actions,
     float* rewards, float* terminals) {
@@ -79,11 +127,40 @@ Env* puf_vec_create(int total_agents, Dict* kwargs, obs_t* observations, float* 
         host[i].rng = i;
         puf_init(&host[i], kwargs);
     }
+    KGState* bank = NULL;
+    if (host[0].reset_probability > 0) {
+        const char* path = dict_get_str(kwargs, "reset_state_bank");
+        FILE* file = fopen(path, "rb");
+        KagStateBankHeader header;
+        assert(file && fread(&header, sizeof(header), 1, file) == 1);
+        assert(!memcmp(header.magic, "KGRSTB1\0", 8) && header.version == 1);
+        assert(header.state_version == KG_STATE_SERIALIZATION_VERSION &&
+               header.state_size == sizeof(KGState) && header.count > 0 && !header.reserved);
+        size_t bytes = (size_t)header.count * sizeof(KGState);
+        KGState* records = (KGState*)malloc(bytes);
+        assert(records && fread(records, sizeof(KGState), header.count, file) == header.count);
+        assert(fgetc(file) == EOF);
+        fclose(file);
+        for (uint32_t i = 0; i < header.count; i++) {
+            assert(kg_state_snapshot_valid(records + i) && !records[i].done);
+            // Config seed is last; every rule before it must match this build.
+            assert(!memcmp(&records[i].config, &host[0].game.config, offsetof(KGConfig, seed)));
+        }
+        assert(cudaMalloc((void**)&bank, bytes) == cudaSuccess);
+        assert(cudaMemcpy(bank, records, bytes, cudaMemcpyHostToDevice) == cudaSuccess);
+        free(records);
+        for (int i = 0; i < num_games; i++) {
+            host[i].reset_states = bank;
+            host[i].reset_count = header.count;
+        }
+        printf("Loaded %u replay reset states from %s (prob=%.3f)\n", header.count, path,
+            host[0].reset_probability);
+    }
     Env* envs = NULL;
     assert(cudaMalloc((void**)&envs, num_games * sizeof(Env)) == cudaSuccess);
     assert(cudaMemcpy(envs, host, num_games * sizeof(Env), cudaMemcpyHostToDevice) == cudaSuccess);
     free(host);
-    kag_gpu = {num_games, observations, actions, rewards, terminals, 0};
+    kag_gpu = {num_games, observations, actions, rewards, terminals, 0, bank};
     return envs;
 }
 
@@ -143,6 +220,8 @@ __global__ void kag_step_kernel(
         int money = game->players[player].money;
         int opponent_money = game->players[1 - player].money;
         int gain = money - env->policy.history[player].start_cash;
+        int steps = game->step - env->policy.history[player].start_step;
+        KagStartMetrics* start = &env->start[player];
         // Terminal-only cash gain, in units of the initial 3,000 cash budget.
         rewards[row] = env->reward_money * gain / game->config.starting_money;
         Log* log = &env->log;
@@ -151,9 +230,9 @@ __global__ void kag_step_kernel(
         log->opponent_score += opponent_money;
         log->cash_gain += gain;
         log->episode_return += rewards[row];
-        log->episode_length += game->step;
+        log->episode_length += steps;
         log->draw_rate += money == opponent_money;
-        log->production_units += game->production_units[player];
+        log->production_units += game->production_units[player] - start->production;
         for (int product = 0; product < KG_NUM_PRODUCTS; product++) {
             if (product < KG_NUM_CROPS) {
                 log->crop_units += game->production_product_units[player][product];
@@ -161,10 +240,27 @@ __global__ void kag_step_kernel(
                 log->animal_units += game->production_product_units[player][product];
             }
         }
-        log->plants += game->planted_crops[player];
-        log->animal_places += game->placed_animals[player];
-        log->land_purchases += kag_popcount(game->players[player].unlocked_mask) - 1;
-        log->neglect_deaths += game->neglect_deaths[player];
+        log->crop_units -= start->crop;
+        log->animal_units -= start->animal;
+        log->plants += game->planted_crops[player] - start->plants;
+        log->animal_places += game->placed_animals[player] - start->animal_places;
+        int plots = kag_popcount(game->players[player].unlocked_mask);
+        log->land_purchases += plots - start->plots;
+        log->neglect_deaths += game->neglect_deaths[player] - start->deaths;
+        log->start_money += env->policy.history[player].start_cash;
+        log->start_plots += start->plots;
+        log->ending_plots += plots;
+        if (env->policy.reset_source) {
+            log->reset_games++;
+            log->reset_money += money;
+            log->reset_cash_gain += gain;
+            log->reset_steps += steps;
+        } else {
+            log->root_games++;
+            log->root_money += money;
+            log->root_cash_gain += gain;
+            log->root_steps += steps;
+        }
         log->n++;
     }
     if (game->done) {
@@ -204,6 +300,18 @@ void puf_log(Log* log, Dict* out) {
     dict_set(out, "animal_places", log->animal_places);
     dict_set(out, "land_purchases", log->land_purchases);
     dict_set(out, "neglect_deaths", log->neglect_deaths);
+    dict_set(out, "start_money", log->start_money);
+    dict_set(out, "start_plots", log->start_plots);
+    dict_set(out, "ending_plots", log->ending_plots);
+    dict_set(out, "reset_fraction", log->reset_games);
+    dict_set(out, "root_fraction", log->root_games);
+    dict_set(out, "root_money", log->root_games ? log->root_money / log->root_games : 0);
+    dict_set(out, "reset_money", log->reset_games ? log->reset_money / log->reset_games : 0);
+    dict_set(out, "root_cash_gain", log->root_games ? log->root_cash_gain / log->root_games : 0);
+    dict_set(
+        out, "reset_cash_gain", log->reset_games ? log->reset_cash_gain / log->reset_games : 0);
+    dict_set(out, "root_steps", log->root_games ? log->root_steps / log->root_games : 0);
+    dict_set(out, "reset_steps", log->reset_games ? log->reset_steps / log->reset_games : 0);
 }
 
 void puf_render(Env* envs) {
@@ -211,6 +319,7 @@ void puf_render(Env* envs) {
 }
 
 void puf_close(Env* envs) {
+    assert(cudaFree(kag_gpu.reset_states) == cudaSuccess);
     assert(cudaFree(envs) == cudaSuccess);
     kag_gpu = {};
 }
