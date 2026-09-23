@@ -639,9 +639,9 @@ __global__ void sample_logits(
         int mask_base = idx * mask_stride;
 #ifdef PUFFER_KAGGRICULTURE
         int row = row_start + idx;
-        int agents = sampling_envs->num_agents;
-        Env* kag_env = sampling_envs + row / agents;
-        int player = agents == 2 ? row % agents : kag_env->learner_seat;
+        int seat_row = sampling_envs->sampling_rows[row];
+        Env* kag_env = sampling_envs + seat_row / 2;
+        int player = seat_row % 2;
         unsigned char prefix_mask[KG_POLICY_ACTION_MASK_SIZE];
         KagActionMaskState prefix;
         kag_write_mask(&kag_env->policy, &kag_env->game, player, prefix_mask);
@@ -1010,6 +1010,9 @@ static void env_setup(PuffeRL* p, VecEnv* vec, Dict* vk, Dict* ek) {
         cudaMemset(vec->log_scratch, 0, sizeof(Log));
         vec->policy_layout[0] = 0;
         vec->policy_layout[1] = vec->agents_per_buf;
+#ifdef PUFFER_KAGGRICULTURE
+        kag_assign_policies(vec->envs, vk, vec->policy_layout);
+#endif
         return;
     }
     int total_agents = vec->total_agents;
@@ -1894,10 +1897,12 @@ PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx) {
     if (num_policies < 1) {
         num_policies = 1;
     }
-    // GPU envs have no per-env tags / frozen layout — selfplay and match stay CPU-only.
+#ifndef PUFFER_KAGGRICULTURE
+    // Other GPU envs do not yet implement frozen-policy row layouts.
     assert(!(PUF_BACKEND == PUF_GPU
             && (num_policies > 1 || puf_ini_get(ini, "selfplay", "enabled")))
         && "GPU env backend does not support selfplay or multi-policy (match)");
+#endif
 
     // Discrete action layout. Continuous dims are size 1. Mask width is act_n.
     int num_action_heads = NUM_ATNS;
@@ -3103,11 +3108,28 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
         long current_step = pufferl->global_step * pufferl->hypers.world_size;
 
         selfplay_add_checkpoint(&selfplay, initial_checkpoint);
+        const char* initial = puf_ini_get_str(ini, "selfplay", "initial_opponents");
+        FILE* opponents = NULL;
+        if (strcmp(initial, "None") != 0) {
+            opponents = fopen(initial, "r");
+            assert(opponents && "cannot open selfplay.initial_opponents");
+        }
         for (int s = 0; s < selfplay.num_hist; s++) {
             SelfplayHist* hist = &selfplay.hist[s];
             hist->policy_idx = s + 1;
-            pufferl_load_policy(pufferl, hist->policy_idx, selfplay_sample(&selfplay));
+            char path[SELFPLAY_PATH_MAX];
+            if (opponents) {
+                assert(fgets(path, sizeof(path), opponents) && "one path required per frozen bank");
+                path[strcspn(path, "\r\n")] = 0;
+                assert(path[0]);
+            }
+            pufferl_load_policy(pufferl, hist->policy_idx,
+                opponents ? path : selfplay_sample(&selfplay));
             hist->opp_started_step = current_step;
+        }
+        if (opponents) {
+            assert(fgetc(opponents) == EOF && "too many paths in selfplay.initial_opponents");
+            fclose(opponents);
         }
     }
 

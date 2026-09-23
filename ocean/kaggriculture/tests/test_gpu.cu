@@ -90,6 +90,12 @@ void sampler_test(int agents, int seat, int split, int graphs) {
         kag_policy_reset(&host[i].policy, &host[i].game, 0);
     }
     memcpy(device, host, games * sizeof(Env));
+    int* row_map = (int*)managed(rows * sizeof(int));
+    device[0].sampling_rows = row_map;
+    for (int r = 0; r < rows; r++) {
+        int source = split ? (r * 5 + 3) % rows : r;
+        row_map[r] = 2 * (source / agents) + (agents == 2 ? source % 2 : seat);
+    }
     precision_t* logits = (precision_t*)managed(rows * cols * sizeof(precision_t));
     precision_t* masks = (precision_t*)managed(rows * KAG_ALL_LOGITS * sizeof(precision_t));
     precision_t* lp = (precision_t*)managed(rows * sizeof(precision_t));
@@ -144,8 +150,8 @@ void sampler_test(int agents, int seat, int split, int graphs) {
     assert(!memcmp(actions, dispatched, rows * NUM_ATNS * sizeof(float)));
     int inactive_count = 0, quantity_count = 0, hire_count = 0, stop_count = 0;
     for (int r = 0; r < rows; r++) {
-        Env* env = host + r / agents;
-        int player = agents == 2 ? r % 2 : seat;
+        Env* env = host + row_map[r] / 2;
+        int player = row_map[r] % 2;
         unsigned char mask[KAG_ALL_LOGITS];
         kag_write_mask(&env->policy, &env->game, player, mask);
         KagActionMaskState prefix;
@@ -301,8 +307,9 @@ void sampler_test(int agents, int seat, int split, int graphs) {
         rows, agents, seat, split, graphs, inactive_count, quantity_count, hire_count, stop_count);
 }
 
-void adapter_test(int agents, int seat, int bot, int graphs, bool shaped = false) {
-    int games = 3, rows = games * agents;
+void adapter_test(int agents, int seat, int bot, int graphs, bool shaped = false, int policies = 1,
+    float fraction = 0) {
+    int games = policies == 1 ? 3 : 16, rows = games * agents;
     Dict kwargs = settings(agents, seat, bot);
     if (shaped) {
         dict_set(&kwargs, "reward_growth_land", 2.24835181);
@@ -316,6 +323,14 @@ void adapter_test(int agents, int seat, int bot, int graphs, bool shaped = false
     float* rewards = (float*)managed(rows * sizeof(float));
     float* terminals = (float*)managed(rows * sizeof(float));
     Env* envs = puf_vec_create(rows, &kwargs, observations, actions, rewards, terminals);
+    int layout[6] = {0, rows};
+    if (policies > 1) {
+        Dict vec = {};
+        dict_set(&vec, "num_policies", policies);
+        dict_set(&vec, "hist_policy_percent", fraction);
+        kag_assign_policies(envs, &vec, layout);
+        dict_clear(&vec);
+    }
     Env* host = (Env*)calloc(games, sizeof(Env));
     Env* actual = (Env*)calloc(games, sizeof(Env));
     cudaStream_t stream;
@@ -324,6 +339,20 @@ void adapter_test(int agents, int seat, int bot, int graphs, bool shaped = false
     puf_reset(envs);
     sync_test();
     assert(cudaMemcpy(host, envs, games * sizeof(Env), cudaMemcpyDeviceToHost) == cudaSuccess);
+    int* row_map = (int*)malloc(rows * sizeof(int));
+    cudaMemcpy(row_map, host[0].sampling_rows, rows * sizeof(int), cudaMemcpyDeviceToHost);
+    int seats[6][2] = {0};
+    for (int i = 0; i < games; i++) {
+        for (int a = 0; a < agents; a++) {
+            int row = host[i].rows[a], policy = host[i].agents[a].policy;
+            assert(row >= layout[policy] && row < layout[policy + 1]);
+            assert(row_map[row] == 2 * i + (agents == 2 ? a : seat));
+            seats[policy][a]++;
+        }
+    }
+    for (int p = 1; p < policies; p++) {
+        assert(seats[p][0] == seats[p][1] && seats[p][0] > 0);
+    }
     // A reset must actually reset I/O, not leave garbage or a terminal flag.
     for (int r = 0; r < rows; r++) {
         assert(rewards[r] == 0 && terminals[r] == 0);
@@ -359,8 +388,8 @@ void adapter_test(int agents, int seat, int bot, int graphs, bool shaped = false
             logits[j] = ((t * 13 + j * 19) % 37 - 18) / 8.0f;
         }
         for (int r = 0; r < rows; r++) {
-            Env* env = host + r / agents;
-            int player = agents == 2 ? r % 2 : seat;
+            Env* env = host + row_map[r] / 2;
+            int player = row_map[r] % 2;
             kag_sample_cpu_logits(&env->policy, &env->game, player, logits, 0, &sampling_rng,
                 actions + r * NUM_ATNS, mask);
         }
@@ -377,7 +406,7 @@ void adapter_test(int agents, int seat, int bot, int graphs, bool shaped = false
             KGAction pair[2] = {0};
             for (int a = 0; a < agents; a++) {
                 int player = agents == 2 ? a : seat;
-                kag_decode_multi_action(&pair[player], actions + (i * agents + a) * NUM_ATNS,
+                kag_decode_multi_action(&pair[player], actions + env->rows[a] * NUM_ATNS,
                     &env->game, player, &env->policy);
             }
             if (agents == 1 && bot) {
@@ -386,7 +415,7 @@ void adapter_test(int agents, int seat, int bot, int graphs, bool shaped = false
             kg_step(&env->game, pair);
             kag_policy_step(&env->policy, &env->game);
             for (int a = 0; a < agents; a++) {
-                int row = i * agents + a, player = agents == 2 ? a : seat;
+                int row = env->rows[a], player = agents == 2 ? a : seat;
                 assert(terminals[row] == env->game.done);
                 float expected_reward = env->game.done
                                             ? env->reward_money *
@@ -427,14 +456,19 @@ void adapter_test(int agents, int seat, int bot, int graphs, bool shaped = false
                 close_float(rewards[row], expected_reward);
                 above_one += rewards[row] > 1;
                 nonterminal_rewards += !env->game.done && rewards[row] != 0;
-                if (env->game.done) {
+                if (env->game.done && env->agents[a].policy == 0) {
                     env->log.n++;
                     env->log.score += env->game.players[player].money;
                     env->log.episode_return += r->total;
                     env->log.episode_length +=
                         env->game.step - env->policy.history[player].start_step;
+                    int money = env->game.players[player].money;
+                    int enemy = env->game.players[1 - player].money;
+                    float win = money > enemy ? 1 : (money == enemy ? 0.5f : 0);
+                    env->log.policy_0_score += win;
+                    env->log.policy_1_score += 1 - win;
                     finished++;
-                } else if (shaped) {
+                } else if (shaped && !env->game.done) {
                     for (int j = 0; j < 3; j++) {
                         close_float(actual[i].reward[player].growth[j], r->growth[j]);
                     }
@@ -451,8 +485,11 @@ void adapter_test(int agents, int seat, int bot, int graphs, bool shaped = false
             close_float(actual[i].log.score, env->log.score);
             close_float(actual[i].log.episode_return, env->log.episode_return);
             close_float(actual[i].log.episode_length, env->log.episode_length);
+            close_float(actual[i].log.policy_0_score, env->log.policy_0_score);
+            close_float(actual[i].log.policy_1_score, env->log.policy_1_score);
+            close_float(actual[i].log.checkpoint_fraction, env->tag ? env->log.n : 0);
             for (int a = 0; a < agents; a++) {
-                int row = i * agents + a, player = agents == 2 ? a : seat;
+                int row = env->rows[a], player = agents == 2 ? a : seat;
                 kag_write_observation(&env->policy, &env->game, player, observation);
                 for (int j = 0; j < OBS_SIZE; j++) {
                     close_float(observations[row * OBS_SIZE + j], observation[j]);
@@ -460,7 +497,8 @@ void adapter_test(int agents, int seat, int bot, int graphs, bool shaped = false
             }
         }
     }
-    assert(finished == 7 * agents && above_one > 0);
+    int first = (host[0].agents[0].policy == 0) + (agents == 2 && host[0].agents[1].policy == 0);
+    assert(finished == 2 * layout[1] + first && above_one > 0);
     assert(shaped ? nonterminal_rewards > 0 : nonterminal_rewards == 0);
     puf_reset(envs);
     sync_test();
@@ -472,8 +510,55 @@ void adapter_test(int agents, int seat, int bot, int graphs, bool shaped = false
         assert(rewards[r] == 0 && terminals[r] == 0);
     }
     puf_close(envs);
+    free(row_map);
     printf("adapter PASS: agents=%d seat=%d bot=%d graphs=%d transitions=%d episodes=%d\n", agents,
         seat, bot, graphs, games * 1440, finished);
+}
+
+void league_train_test(int graphs) {
+    Ini ini = {};
+    puf_ini_load_env(&ini, "kaggriculture", 0, NULL);
+    const char* keys[] = {"vec.total_agents", "vec.num_policies", "vec.hist_policy_percent",
+        "vec.hist_policy_hidden_size", "vec.hist_policy_num_layers", "env.num_agents",
+        "policy.hidden_size", "policy.num_layers", "train.horizon", "train.minibatch_size",
+        "train.replay_ratio", "train.learning_rate", "train.anneal_lr", "base.async",
+        "base.reset_every_horizon", "env.reset_state_prob", "selfplay.enabled"};
+    const char* values[] = {"32", "3", "0.5", "32", "2", "2", "32", "2", "16", "128", "1", "0.001",
+        "0", "0", "0", "0", "0"};
+    for (int i = 0; i < sizeof(keys) / sizeof(*keys); i++) {
+        puf_ini_put(&ini, keys[i], values[i]);
+    }
+    puf_ini_put(&ini, "base.cudagraphs", graphs ? "1" : "-1");
+    TrainContext context = {.rank = 0, .world_size = 1, .gpu_id = 0};
+    PuffeRL* p = create_pufferl(&ini, &context);
+    assert(p->train_rollouts.observations.shape[0] == 24);
+    size_t bytes = numel(p->policies[0].param.shape) * sizeof(precision_t);
+    precision_t* original = (precision_t*)malloc(bytes);
+    precision_t* actual = (precision_t*)malloc(bytes);
+    cudaMemcpy(original, p->policies[0].param.data, bytes, cudaMemcpyDeviceToHost);
+    for (int bank = 1; bank < 3; bank++) {
+        cudaMemcpy(p->policies[bank].param.data, original, bytes, cudaMemcpyHostToDevice);
+        assert(p->policies[bank].frozen);
+    }
+    for (int epoch = 0; epoch < 4; epoch++) {
+        rollouts(p);
+        train_impl(p, NULL);
+    }
+    sync_test();
+    cudaMemcpy(actual, p->policies[0].param.data, bytes, cudaMemcpyDeviceToHost);
+    assert(memcmp(actual, original, bytes));
+    for (int i = 0; i < bytes / sizeof(precision_t); i++) {
+        assert(isfinite(to_float(actual[i])));
+    }
+    for (int bank = 1; bank < 3; bank++) {
+        cudaMemcpy(actual, p->policies[bank].param.data, bytes, cudaMemcpyDeviceToHost);
+        assert(!memcmp(actual, original, bytes));
+    }
+    free(original);
+    free(actual);
+    close_pufferl(p);
+    puf_ini_free(&ini);
+    printf("league train PASS: graphs=%d learner changed, opponents unchanged\n", graphs);
 }
 
 void dump_tensor(const char* directory, const char* name, Prec tensor) {
@@ -666,6 +751,7 @@ void reward_clip_test(float clip, int graphs) {
     puf_ini_put(&ini, "base.async", "0");
     puf_ini_put(&ini, "base.load_model_path", "None");
     puf_ini_put(&ini, "selfplay.enabled", "0");
+    puf_ini_put(&ini, "env.reset_state_prob", "0");
     puf_ini_put(&ini, "policy.hidden_size", "32");
     puf_ini_put(&ini, "policy.num_layers", "1");
     puf_ini_put(&ini, "train.horizon", "8");
@@ -866,6 +952,10 @@ int main(int argc, char** argv) {
         reset_bank_test(atof(argv[2]), atoi(argv[3]), atoi(argv[4]), argv[5]);
     } else if (!strcmp(argv[1], "shaped")) {
         adapter_test(atoi(argv[2]), atoi(argv[3]), atoi(argv[4]), atoi(argv[5]), true);
+    } else if (!strcmp(argv[1], "league")) {
+        adapter_test(2, 0, 0, atoi(argv[5]), true, atoi(argv[2]), atof(argv[3]));
+    } else if (!strcmp(argv[1], "league_train")) {
+        league_train_test(atoi(argv[2]));
     } else {
         assert(!strcmp(argv[1], "adapter"));
         adapter_test(atoi(argv[2]), atoi(argv[3]), atoi(argv[4]), atoi(argv[5]));

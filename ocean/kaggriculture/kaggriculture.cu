@@ -21,6 +21,7 @@ struct Log {
     float root_cash_gain, reset_cash_gain, root_steps, reset_steps;
     float terminal_cash_reward, growth_land_reward, growth_crop_reward, growth_animal_reward;
     float alive_reward, dense_quality_reward;
+    float policy_0_score, policy_1_score, checkpoint_fraction;
     float n;
 };
 
@@ -38,6 +39,8 @@ struct Env {
     Log log;
     Agent agents[KG_NUM_PLAYERS];
     int num_agents, tag, boundary_reached;
+    int rows[KG_NUM_PLAYERS];
+    int* sampling_rows;
     unsigned int rng;
     KGState game;
     KagPolicy policy;
@@ -150,11 +153,23 @@ Env* puf_vec_create(int total_agents, Dict* kwargs, obs_t* observations, float* 
     assert(total_agents > 0 && total_agents % num_agents == 0);
     int num_games = total_agents / num_agents;
     Env* host = (Env*)calloc(num_games, sizeof(Env));
+    int* rows = (int*)malloc(total_agents * sizeof(int));
+    int* sampling_rows = NULL;
+    assert(cudaMalloc((void**)&sampling_rows, total_agents * sizeof(int)) == cudaSuccess);
     assert(host);
     for (int i = 0; i < num_games; i++) {
         host[i].rng = i;
         puf_init(&host[i], kwargs);
+        host[i].sampling_rows = sampling_rows;
+        for (int a = 0; a < num_agents; a++) {
+            int row = i * num_agents + a;
+            host[i].rows[a] = row;
+            rows[row] = 2 * i + (num_agents == 2 ? a : host[i].learner_seat);
+        }
     }
+    assert(cudaMemcpy(sampling_rows, rows, total_agents * sizeof(int), cudaMemcpyHostToDevice) ==
+           cudaSuccess);
+    free(rows);
     KGState* bank = NULL;
     if (host[0].reset_probability > 0) {
         const char* path = dict_get_str(kwargs, "reset_state_bank");
@@ -192,6 +207,58 @@ Env* puf_vec_create(int total_agents, Dict* kwargs, obs_t* observations, float* 
     return envs;
 }
 
+// Group physical rows by policy, as the CPU env_setup path does. Games keep
+// their own seat order; both observation/action IO and prefix sampling use it.
+void kag_assign_policies(Env* envs, Dict* kwargs, int* layout) {
+    int policies = dict_get(kwargs, "num_policies");
+    if (policies <= 1) {
+        return;
+    }
+    int games = kag_gpu.num_games;
+    float fraction = dict_get(kwargs, "hist_policy_percent");
+    int frozen_start = games - (int)(fraction * games);
+    assert(fraction > 0 && fraction <= 1 && games - frozen_start >= policies - 1);
+    Env* host = (Env*)malloc(games * sizeof(Env));
+    assert(cudaMemcpy(host, envs, games * sizeof(Env), cudaMemcpyDeviceToHost) == cudaSuccess);
+    assert(host[0].num_agents == 2 && "checkpoint opponents need env.num_agents=2");
+    int* counts = (int*)calloc(policies, sizeof(int));
+    int* rows = (int*)malloc(2 * games * sizeof(int));
+    for (int i = 0; i < games; i++) {
+        if (i >= frozen_start) {
+            int index = i - frozen_start;
+            int opponent_seat = (index / (policies - 1)) % 2;
+            host[i].tag = 1 + index % (policies - 1);
+            host[i].agents[opponent_seat].policy = host[i].tag;
+        }
+        for (int a = 0; a < 2; a++) {
+            counts[host[i].agents[a].policy]++;
+        }
+    }
+    layout[0] = 0;
+    for (int p = 0; p < policies; p++) {
+        layout[p + 1] = layout[p] + counts[p];
+        counts[p] = layout[p];
+    }
+    for (int i = 0; i < games; i++) {
+        for (int a = 0; a < 2; a++) {
+            int row = counts[host[i].agents[a].policy]++;
+            host[i].rows[a] = row;
+            rows[row] = 2 * i + a;
+        }
+    }
+    assert(cudaMemcpy(host[0].sampling_rows, rows, 2 * games * sizeof(int),
+               cudaMemcpyHostToDevice) == cudaSuccess);
+    assert(cudaMemcpy(envs, host, games * sizeof(Env), cudaMemcpyHostToDevice) == cudaSuccess);
+    printf("GPU policy rows:");
+    for (int p = 0; p < policies; p++) {
+        printf(" %d:%d", p, layout[p + 1] - layout[p]);
+    }
+    printf(" (checkpoint games %.3f, balanced seats)\n", fraction);
+    free(rows);
+    free(counts);
+    free(host);
+}
+
 void puf_bind_stream(cudaStream_t stream) {
     kag_gpu.stream = stream;
 }
@@ -208,7 +275,7 @@ __global__ void kag_observe_kernel(
         kag_reset_episode(env);
     }
     for (int a = 0; a < env->num_agents; a++) {
-        int row = i * env->num_agents + a;
+        int row = env->rows[a];
         int player = env->num_agents == 2 ? a : env->learner_seat;
         if (reset) {
             rewards[row] = terminals[row] = 0;
@@ -233,8 +300,8 @@ __global__ void kag_step_kernel(
     KGAction commands[KG_NUM_PLAYERS] = {0};
     for (int a = 0; a < env->num_agents; a++) {
         int player = env->num_agents == 2 ? a : env->learner_seat;
-        kag_decode_multi_action(&commands[player],
-            actions + (long)(i * env->num_agents + a) * NUM_ATNS, game, player, &env->policy);
+        kag_decode_multi_action(
+            &commands[player], actions + (long)env->rows[a] * NUM_ATNS, game, player, &env->policy);
     }
     if (env->num_agents == 1 && env->bot_policy == 1) {
         kg_rule_action(game, 1 - env->learner_seat, &commands[1 - env->learner_seat]);
@@ -242,7 +309,7 @@ __global__ void kag_step_kernel(
     kg_step(game, commands);
     kag_policy_step(&env->policy, game);
     for (int a = 0; a < env->num_agents; a++) {
-        int row = i * env->num_agents + a;
+        int row = env->rows[a];
         int player = env->num_agents == 2 ? a : env->learner_seat;
         KagObservationState* s = &env->policy.history[player];
         KagRewards* r = &env->reward[player];
@@ -276,7 +343,7 @@ __global__ void kag_step_kernel(
         r->quality += quality;
         r->total += rewards[row];
         terminals[row] = game->done;
-        if (!game->done) {
+        if (!game->done || env->agents[a].policy != 0) {
             continue;
         }
         int money = game->players[player].money;
@@ -285,7 +352,11 @@ __global__ void kag_step_kernel(
         int steps = game->step - env->policy.history[player].start_step;
         KagStartMetrics* start = &env->start[player];
         Log* log = &env->log;
-        log->perf += money > opponent_money ? 1 : (money == opponent_money ? 0.5f : 0);
+        float win = money > opponent_money ? 1 : (money == opponent_money ? 0.5f : 0);
+        log->perf += win;
+        log->policy_0_score += win;
+        log->policy_1_score += 1 - win;
+        log->checkpoint_fraction += env->tag > 0;
         log->score += money;
         log->opponent_score += opponent_money;
         log->cash_gain += gain;
@@ -352,6 +423,9 @@ void puf_step(Env* envs) {
 
 void puf_log(Log* log, Dict* out) {
     dict_set(out, "perf", log->perf);
+    dict_set(out, "policy_0_score", log->policy_0_score);
+    dict_set(out, "policy_1_score", log->policy_1_score);
+    dict_set(out, "checkpoint_fraction", log->checkpoint_fraction);
     dict_set(out, "score", log->score);
     dict_set(out, "opponent_score", log->opponent_score);
     dict_set(out, "cash_gain", log->cash_gain);
@@ -390,6 +464,10 @@ void puf_render(Env* envs) {
 }
 
 void puf_close(Env* envs) {
+    int* sampling_rows;
+    assert(cudaMemcpy(&sampling_rows, &envs->sampling_rows, sizeof(sampling_rows),
+               cudaMemcpyDeviceToHost) == cudaSuccess);
+    assert(cudaFree(sampling_rows) == cudaSuccess);
     assert(cudaFree(kag_gpu.reset_states) == cudaSuccess);
     assert(cudaFree(envs) == cudaSuccess);
     kag_gpu = {};

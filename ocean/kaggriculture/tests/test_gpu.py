@@ -42,7 +42,8 @@ def test_gpu_adapter_matches_cpu_rules_and_controller(binary, agents, seat, bot,
 
 
 @pytest.mark.parametrize("async_mode,graphs", [(0, -1), (0, 1), (1, -1), (1, 1)])
-def test_native_train_warm_start_and_update(tmp_path, async_mode, graphs):
+@pytest.mark.parametrize("selfplay", [0, 1])
+def test_native_train_warm_start_and_update(tmp_path, async_mode, graphs, selfplay):
     name = os.environ.get("KAGGRICULTURE_TRAIN_TEST_BINARY")
     if name is None:
         pytest.skip("set KAGGRICULTURE_TRAIN_TEST_BINARY on an idle GPU")
@@ -56,18 +57,22 @@ def test_native_train_warm_start_and_update(tmp_path, async_mode, graphs):
         "base.cudagraphs": graphs,
         "base.eval_episodes": 0,
         "base.seed": 73,
-        "selfplay.enabled": 0,
+        "selfplay.enabled": selfplay,
+        "selfplay.initial_opponents": "None",
+        "selfplay.opp_timeout_steps": 0,
         "selfplay.eval_bot_games": 0,
         "selfplay.eval_games": 0,
         "vec.total_agents": 16,
         "vec.num_buffers": 1,
-        "vec.num_policies": 1,
+        "vec.num_policies": 3 if selfplay else 1,
+        "vec.hist_policy_percent": 0.5,
         "env.num_agents": 2,
+        "env.reset_state_prob": 0,
         "policy.hidden_size": 32,
         "policy.num_layers": 1,
         "train.gpus": 1,
         "train.horizon": 16,
-        "train.minibatch_size": 256,
+        "train.minibatch_size": 64 if selfplay else 256,
         "train.replay_ratio": 1,
         "train.learning_rate": 0.001,
         "train.anneal_lr": 0,
@@ -95,6 +100,10 @@ def test_native_train_warm_start_and_update(tmp_path, async_mode, graphs):
         return checkpoints[-1], data
 
     source, original = train("source", 256, lr=0)
+    if selfplay:
+        manifest = tmp_path / "opponents.txt"
+        manifest.write_text(f"{source}\n{source}\n")
+        options["selfplay.initial_opponents"] = manifest
     _, loaded = train("loaded", 512, load=source, lr=0)
     assert loaded == original
     _, updated = train("updated", 12288, load=source)
@@ -128,3 +137,20 @@ def test_earlier_shaped_rewards(binary, agents, seat, bot, graphs):
         cwd=ROOT, text=True, capture_output=True, timeout=180)
     assert result.returncode == 0, result.stdout + result.stderr
     assert "adapter PASS" in result.stdout
+
+
+@pytest.mark.parametrize("policies,fraction", [(2, 0.5), (3, 0.5), (5, 0.5), (2, 1)])
+@pytest.mark.parametrize("graphs", [0, 1])
+def test_gpu_league_seats_io_and_learner_metrics(binary, policies, fraction, graphs):
+    result = subprocess.run([str(binary), "league", str(policies), str(fraction), "0",
+        str(graphs)], cwd=ROOT, text=True, capture_output=True, timeout=240)
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "adapter PASS" in result.stdout
+
+
+@pytest.mark.parametrize("graphs", [0, 1])
+def test_gpu_league_updates_only_learner(binary, graphs):
+    result = subprocess.run([str(binary), "league_train", str(graphs), "0", "0", "0"],
+        cwd=ROOT, text=True, capture_output=True, timeout=120)
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "league train PASS" in result.stdout
