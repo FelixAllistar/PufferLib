@@ -370,10 +370,12 @@ void adapter_test(int agents, int seat, int bot, int graphs) {
             for (int a = 0; a < agents; a++) {
                 int row = i * agents + a, player = agents == 2 ? a : seat;
                 assert(terminals[row] == env->game.done);
-                float expected_reward = env->game.done ? env->reward_money *
-                        (env->game.players[player].money - env->policy.history[player].start_cash) /
-                        env->game.config.starting_money
-                                                       : 0;
+                float expected_reward = env->game.done
+                                            ? env->reward_money *
+                                                  (env->game.players[player].money -
+                                                      env->policy.history[player].start_cash) /
+                                                  env->game.config.starting_money
+                                            : 0;
                 close_float(rewards[row], expected_reward);
                 above_one += rewards[row] > 1;
                 if (env->game.done) {
@@ -417,10 +419,195 @@ void adapter_test(int agents, int seat, int bot, int graphs) {
         seat, bot, graphs, games * 1440, finished);
 }
 
+void dump_tensor(const char* directory, const char* name, Prec tensor) {
+    long n = numel(tensor.shape);
+    precision_t* host = (precision_t*)malloc(n * sizeof(precision_t));
+    float* values = (float*)malloc(n * sizeof(float));
+    assert(cudaMemcpy(host, tensor.data, n * sizeof(precision_t), cudaMemcpyDeviceToHost) ==
+           cudaSuccess);
+    for (long i = 0; i < n; i++) {
+        values[i] = to_float(host[i]);
+    }
+    char path[2048];
+    snprintf(path, sizeof(path), "%s/%s.f32", directory, name);
+    FILE* file = fopen(path, "wb");
+    assert(file && fwrite(values, sizeof(float), n, file) == n);
+    fclose(file);
+    free(values);
+    free(host);
+}
+
+// Exercise the custom vtables independently of the unchanged recurrent core.
+// Python reconstructs packing, matrix products and every gradient independently.
+void network_test(int hidden, int graphs, int loss, const char* directory) {
+    int rows = 5;
+    cublas_init_handle();
+    Arch arch = build_arch(OBS_SIZE, hidden, 1, KAG_ALL_LOGITS, false, 1);
+    void* enc = arch.encoder.create_weights(&arch.encoder);
+    void* dec = arch.decoder.create_weights(&arch.decoder);
+    assert(!((DecoderWeights*)dec)->continuous);
+    assert(!((DecoderWeights*)dec)->logstd.data);
+    assert(((DecoderWeights*)dec)->hidden_dim == hidden);
+    assert(((DecoderWeights*)dec)->output_dim == KAG_ALL_LOGITS);
+    Allocator params = {}, grads = {}, acts = {};
+    arch.encoder.reg_params(enc, &params);
+    arch.decoder.reg_params(dec, &params);
+    KagEncoderActs ea = {};
+    KagDecoderActs da = {};
+    arch.encoder.reg_train(enc, &ea, &acts, &grads, rows);
+    arch.decoder.reg_train(dec, &da, &acts, &grads, rows);
+    Prec obs = {.shape = {rows, OBS_SIZE}};
+    Float gl = {.shape = {rows, KAG_ALL_LOGITS}}, gv = {.shape = {rows, 1}};
+    alloc_register(&acts, &obs);
+    alloc_register(&acts, &gl);
+    alloc_register(&acts, &gv);
+    alloc_create(&params);
+    alloc_create(&grads);
+    alloc_create(&acts);
+    assert(params.total_bytes == grads.total_bytes);
+    assert(params.total_bytes == params.total_elems * sizeof(precision_t));
+    cudaStream_t stream;
+    assert(cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking) == cudaSuccess);
+    ulong seed = 73;
+    arch.encoder.init_weights(enc, &seed, stream);
+    arch.decoder.init_weights(dec, &seed, stream);
+    precision_t host_obs[5 * OBS_SIZE];
+    float host_gl[5 * KAG_ALL_LOGITS], host_gv[5];
+    for (int i = 0; i < rows * OBS_SIZE; i++) {
+        host_obs[i] = from_float(((i * 37) % 127 - 63) / 32.0f);
+    }
+    for (int i = 0; i < rows * KAG_ALL_LOGITS; i++) {
+        host_gl[i] = loss == 2 ? 0 : ((i * 17) % 31 - 15) / 128.0f;
+    }
+    for (int i = 0; i < rows; i++) {
+        host_gv[i] = loss == 1 ? 0 : (i - 2) / 16.0f;
+    }
+    cudaMemcpy(obs.data, host_obs, sizeof(host_obs), cudaMemcpyHostToDevice);
+    cudaMemcpy(gl.data, host_gl, sizeof(host_gl), cudaMemcpyHostToDevice);
+    cudaMemcpy(gv.data, host_gv, sizeof(host_gv), cudaMemcpyHostToDevice);
+    sync_test();
+    if (graphs) {
+        assert(cudaStreamBeginCapture(stream, cudaStreamCaptureModeGlobal) == cudaSuccess);
+    }
+    Prec encoded = arch.encoder.forward(enc, &ea, obs, stream);
+    Prec decoded = arch.decoder.forward(dec, &da, encoded, stream);
+    Prec upstream = arch.decoder.backward(dec, &da, gl, {}, gv, stream);
+    arch.encoder.backward(enc, &ea, upstream, stream);
+    if (graphs) {
+        cudaGraph_t graph;
+        cudaGraphExec_t executable;
+        assert(cudaStreamEndCapture(stream, &graph) == cudaSuccess);
+        assert(cudaGraphInstantiate(&executable, graph, NULL, NULL, 0) == cudaSuccess);
+        assert(cudaGraphLaunch(executable, stream) == cudaSuccess);
+        sync_test();
+        cudaGraphExecDestroy(executable);
+        cudaGraphDestroy(graph);
+    }
+    sync_test();
+    dump_tensor(directory, "weights", {(precision_t*)params.mem, {params.total_elems}});
+    dump_tensor(directory, "gradients", {(precision_t*)grads.mem, {grads.total_elems}});
+    dump_tensor(directory, "observations", obs);
+    dump_tensor(directory, "encoded", encoded);
+    dump_tensor(directory, "decoded", decoded);
+    dump_tensor(directory, "upstream", upstream);
+    printf("network PASS: precision_bytes=%zu hidden=%d graphs=%d loss=%d\n", sizeof(precision_t),
+        hidden, graphs, loss);
+    cudaFree(params.mem);
+    cudaFree(grads.mem);
+    cudaFree(acts.mem);
+    free(params.regs);
+    free(grads.regs);
+    free(acts.regs);
+    free(enc);
+    free(dec);
+    cudaStreamDestroy(stream);
+}
+
+void checkpoint_test(const char* checkpoint, int graphs, const char* data, const char* directory) {
+    int steps = 32, hidden = 256, layers = 2;
+    cublas_init_handle();
+    Arch arch = build_arch(OBS_SIZE, hidden, layers, KAG_ALL_LOGITS, false, 1);
+    Allocator params = {}, acts = {};
+    Weights weights = weights_create(&arch, &params);
+    Activations activation = arch_reg_rollout(&arch, weights, &acts, 1);
+    Prec observations = {.shape = {steps, OBS_SIZE}};
+    Prec state = {.shape = {layers, 1, hidden}};
+    Prec outputs = {.shape = {steps, KAG_ALL_LOGITS + 1}};
+    Prec states = {.shape = {steps, layers, hidden}};
+    alloc_register(&acts, &observations);
+    alloc_register(&acts, &state);
+    alloc_register(&acts, &outputs);
+    alloc_register(&acts, &states);
+    alloc_create(&params);
+    alloc_create(&acts);
+    Prec flat = {.data = (precision_t*)params.mem, .shape = {params.total_elems}};
+    Float master;
+    master_weights_setup(&master, &flat, false, 0);
+    FILE* file = fopen(checkpoint, "rb");
+    assert(file && fseek(file, 0, SEEK_END) == 0);
+    assert(ftell(file) == params.total_elems * sizeof(float));
+    fclose(file);
+    puf_load_weights_into(master, flat, 0, checkpoint);
+    float* host = (float*)malloc(steps * OBS_SIZE * sizeof(float));
+    precision_t* packed = (precision_t*)malloc(steps * OBS_SIZE * sizeof(precision_t));
+    file = fopen(data, "rb");
+    uint32_t header[22];
+    assert(file && fread(header, sizeof(header), 1, file) == 1);
+    assert(header[1] == 3 && header[3] == OBS_SIZE && header[8] == sizeof(float));
+    assert(header[9] == 3 && header[10] == 5 && header[11] == 2 && header[12] == 2);
+    assert(fread(host, sizeof(float), steps * OBS_SIZE, file) == steps * OBS_SIZE);
+    fclose(file);
+    for (int i = 0; i < steps * OBS_SIZE; i++) {
+        packed[i] = from_float(host[i]);
+    }
+    cudaMemcpy(
+        observations.data, packed, steps * OBS_SIZE * sizeof(precision_t), cudaMemcpyHostToDevice);
+    cudaStream_t stream;
+    assert(cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking) == cudaSuccess);
+    sync_test();
+    if (graphs) {
+        assert(cudaStreamBeginCapture(stream, cudaStreamCaptureModeGlobal) == cudaSuccess);
+    }
+    for (int t = 0; t < steps; t++) {
+        if (t % 16 == 0) {
+            cudaMemsetAsync(state.data, 0, layers * hidden * sizeof(precision_t), stream);
+        }
+        Prec obs = {.data = observations.data + t * OBS_SIZE, .shape = {1, OBS_SIZE}};
+        Prec output = arch_forward(&arch, weights, activation, obs, state, stream);
+        cudaMemcpyAsync(outputs.data + t * (KAG_ALL_LOGITS + 1), output.data,
+            (KAG_ALL_LOGITS + 1) * sizeof(precision_t), cudaMemcpyDeviceToDevice, stream);
+        cudaMemcpyAsync(states.data + t * layers * hidden, state.data,
+            layers * hidden * sizeof(precision_t), cudaMemcpyDeviceToDevice, stream);
+    }
+    if (graphs) {
+        cudaGraph_t graph;
+        cudaGraphExec_t executable;
+        assert(cudaStreamEndCapture(stream, &graph) == cudaSuccess);
+        assert(cudaGraphInstantiate(&executable, graph, NULL, NULL, 0) == cudaSuccess);
+        assert(cudaGraphLaunch(executable, stream) == cudaSuccess);
+        sync_test();
+        cudaGraphExecDestroy(executable);
+        cudaGraphDestroy(graph);
+    }
+    sync_test();
+    dump_tensor(directory, "weights", flat);
+    dump_tensor(directory, "observations", observations);
+    dump_tensor(directory, "decoded", outputs);
+    dump_tensor(directory, "states", states);
+    printf("checkpoint PASS: precision_bytes=%zu parameters=%ld\n", sizeof(precision_t),
+        params.total_elems);
+    free(host);
+    free(packed);
+}
+
 int main(int argc, char** argv) {
     assert(argc == 6);
     if (!strcmp(argv[1], "sampler")) {
         sampler_test(atoi(argv[2]), atoi(argv[3]), atoi(argv[4]), atoi(argv[5]));
+    } else if (!strcmp(argv[1], "network")) {
+        network_test(atoi(argv[2]), atoi(argv[3]), atoi(argv[4]), argv[5]);
+    } else if (!strcmp(argv[1], "checkpoint")) {
+        checkpoint_test(argv[2], atoi(argv[3]), argv[4], argv[5]);
     } else {
         assert(!strcmp(argv[1], "adapter"));
         adapter_test(atoi(argv[2]), atoi(argv[3]), atoi(argv[4]), atoi(argv[5]));
