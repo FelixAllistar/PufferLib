@@ -37,6 +37,15 @@ Dict settings(int agents, int seat, int bot) {
     dict_set(&d, "reward_money", 4.71806717);
     dict_set(&d, "reset_state_prob", 0);
     dict_set_str(&d, "reset_state_bank", "None");
+    dict_set(&d, "reward_growth_land", 0);
+    dict_set(&d, "reward_growth_crop", 0);
+    dict_set(&d, "reward_growth_animal", 0);
+    dict_set(&d, "reward_alive_daily", 0);
+    dict_set(&d, "reward_quality_scale", 0);
+    dict_set(&d, "reward_quality_idle_cost", 0.529286027);
+    dict_set(&d, "reward_target_plots", 3);
+    dict_set(&d, "reward_target_crops", 45);
+    dict_set(&d, "reward_target_animals", 15);
     return d;
 }
 
@@ -292,9 +301,16 @@ void sampler_test(int agents, int seat, int split, int graphs) {
         rows, agents, seat, split, graphs, inactive_count, quantity_count, hire_count, stop_count);
 }
 
-void adapter_test(int agents, int seat, int bot, int graphs) {
+void adapter_test(int agents, int seat, int bot, int graphs, bool shaped = false) {
     int games = 3, rows = games * agents;
     Dict kwargs = settings(agents, seat, bot);
+    if (shaped) {
+        dict_set(&kwargs, "reward_growth_land", 2.24835181);
+        dict_set(&kwargs, "reward_growth_crop", 1.91340375);
+        dict_set(&kwargs, "reward_growth_animal", 3.10535836);
+        dict_set(&kwargs, "reward_alive_daily", 0.272244662);
+        dict_set(&kwargs, "reward_quality_scale", 0.19905287);
+    }
     obs_t* observations = (obs_t*)managed(rows * OBS_SIZE * sizeof(obs_t));
     float* actions = (float*)managed(rows * NUM_ATNS * sizeof(float));
     float* rewards = (float*)managed(rows * sizeof(float));
@@ -337,7 +353,7 @@ void adapter_test(int agents, int seat, int bot, int graphs) {
     float logits[KAG_ALL_LOGITS], observation[OBS_SIZE];
     unsigned char mask[KAG_ALL_LOGITS];
     unsigned int sampling_rng = 123;
-    int finished = 0, above_one = 0;
+    int finished = 0, above_one = 0, nonterminal_rewards = 0;
     for (int t = 0; t < 1440; t++) {
         for (int j = 0; j < KAG_ALL_LOGITS; j++) {
             logits[j] = ((t * 13 + j * 19) % 37 - 18) / 8.0f;
@@ -378,15 +394,52 @@ void adapter_test(int agents, int seat, int bot, int graphs) {
                                                       env->policy.history[player].start_cash) /
                                                   env->game.config.starting_money
                                             : 0;
+                // Original no-PBRS mix, reconstructed independently of GPU reward state.
+                KagRewards* r = &env->reward[player];
+                if (shaped) {
+                    float coverage, idle;
+                    int crops, animals;
+                    kag_quality_components(&env->game, player, &coverage, &idle, &crops, &animals);
+                    int counts[] = {
+                        kag_popcount(env->game.players[player].unlocked_mask), crops, animals};
+                    float bonuses[3];
+                    for (int j = 0; j < 3; j++) {
+                        int previous = r->peaks[j];
+                        r->peaks[j] = counts[j] > previous ? counts[j] : previous;
+                        int cap = env->targets[j];
+                        bonuses[j] = env->growth[j] * ((r->peaks[j] < cap ? r->peaks[j] : cap) -
+                                                          (previous < cap ? previous : cap));
+                        r->growth[j] += bonuses[j];
+                    }
+                    float alive = ((float)(crops < 45 ? crops : 45) / 45 +
+                                      (float)(animals < 15 ? animals : 15) / 15) *
+                                  env->alive_daily / 48;
+                    float quality =
+                        env->quality_scale * (coverage - env->quality_idle_cost * idle) / 720;
+                    float cash = expected_reward;
+                    expected_reward = bonuses[0] + bonuses[1] + bonuses[2] + alive;
+                    expected_reward += cash;
+                    expected_reward += quality;
+                    r->alive += alive;
+                    r->quality += quality;
+                }
+                r->total += expected_reward;
                 close_float(rewards[row], expected_reward);
                 above_one += rewards[row] > 1;
+                nonterminal_rewards += !env->game.done && rewards[row] != 0;
                 if (env->game.done) {
                     env->log.n++;
                     env->log.score += env->game.players[player].money;
-                    env->log.episode_return += expected_reward;
+                    env->log.episode_return += r->total;
                     env->log.episode_length +=
                         env->game.step - env->policy.history[player].start_step;
                     finished++;
+                } else if (shaped) {
+                    for (int j = 0; j < 3; j++) {
+                        close_float(actual[i].reward[player].growth[j], r->growth[j]);
+                    }
+                    close_float(actual[i].reward[player].alive, r->alive);
+                    close_float(actual[i].reward[player].quality, r->quality);
                 }
             }
             if (env->game.done) {
@@ -408,6 +461,7 @@ void adapter_test(int agents, int seat, int bot, int graphs) {
         }
     }
     assert(finished == 7 * agents && above_one > 0);
+    assert(shaped ? nonterminal_rewards > 0 : nonterminal_rewards == 0);
     puf_reset(envs);
     sync_test();
     assert(cudaMemcpy(actual, envs, games * sizeof(Env), cudaMemcpyDeviceToHost) == cudaSuccess);
@@ -810,6 +864,8 @@ int main(int argc, char** argv) {
         reward_clip_test(atof(argv[2]), atoi(argv[3]));
     } else if (!strcmp(argv[1], "reset_bank")) {
         reset_bank_test(atof(argv[2]), atoi(argv[3]), atoi(argv[4]), argv[5]);
+    } else if (!strcmp(argv[1], "shaped")) {
+        adapter_test(atoi(argv[2]), atoi(argv[3]), atoi(argv[4]), atoi(argv[5]), true);
     } else {
         assert(!strcmp(argv[1], "adapter"));
         adapter_test(atoi(argv[2]), atoi(argv[3]), atoi(argv[4]), atoi(argv[5]));

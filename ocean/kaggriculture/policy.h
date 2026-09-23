@@ -89,6 +89,8 @@ typedef struct {
     int start_cash, start_step;
     float coverage_sum, idle_sum;
     int peak_plots, peak_crops, peak_animals;
+    float coverage, idle;
+    int crops, animals;
 } KagObservationState;
 
 typedef struct {
@@ -412,8 +414,9 @@ KG_HD void kag_policy_reset(KagPolicy* policy, const KGState* game, int reset_so
         *s = (KagObservationState){0};
         s->start_cash = game->players[p].money;
         s->start_step = game->step;
-        float coverage, idle;
-        kag_quality_components(game, p, &coverage, &idle, &s->peak_crops, &s->peak_animals);
+        kag_quality_components(game, p, &s->coverage, &s->idle, &s->crops, &s->animals);
+        s->peak_crops = s->crops;
+        s->peak_animals = s->animals;
         s->peak_plots = kag_popcount(game->players[p].unlocked_mask);
         policy->land_fill_mask[p] = 0;
         policy->land_fill_step[p] = -1;
@@ -425,20 +428,18 @@ KG_HD void kag_policy_reset(KagPolicy* policy, const KGState* game, int reset_so
 KG_HD void kag_policy_step(KagPolicy* policy, const KGState* game) {
     for (int p = 0; p < KG_NUM_PLAYERS; p++) {
         KagObservationState* s = &policy->history[p];
-        float coverage, idle;
-        int crops, animals;
-        kag_quality_components(game, p, &coverage, &idle, &crops, &animals);
-        s->coverage_sum += coverage;
-        s->idle_sum += idle;
+        kag_quality_components(game, p, &s->coverage, &s->idle, &s->crops, &s->animals);
+        s->coverage_sum += s->coverage;
+        s->idle_sum += s->idle;
         int plots = kag_popcount(game->players[p].unlocked_mask);
         if (plots > s->peak_plots) {
             s->peak_plots = plots;
         }
-        if (crops > s->peak_crops) {
-            s->peak_crops = crops;
+        if (s->crops > s->peak_crops) {
+            s->peak_crops = s->crops;
         }
-        if (animals > s->peak_animals) {
-            s->peak_animals = animals;
+        if (s->animals > s->peak_animals) {
+            s->peak_animals = s->animals;
         }
     }
 }

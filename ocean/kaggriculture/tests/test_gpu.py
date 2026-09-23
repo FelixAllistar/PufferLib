@@ -119,3 +119,12 @@ def test_replay_bank_resets_and_inherited_metrics(binary, tmp_path, probability,
         str(agents), str(tmp_path)], cwd=ROOT, text=True, capture_output=True, timeout=120)
     assert result.returncode == 0, result.stdout + result.stderr
     assert "reset bank PASS" in result.stdout
+
+
+@pytest.mark.parametrize("agents,seat,bot", [(2, 0, 0), (1, 0, 0), (1, 0, 1), (1, 1, 1)])
+@pytest.mark.parametrize("graphs", [0, 1])
+def test_earlier_shaped_rewards(binary, agents, seat, bot, graphs):
+    result = subprocess.run([str(binary), "shaped", str(agents), str(seat), str(bot), str(graphs)],
+        cwd=ROOT, text=True, capture_output=True, timeout=180)
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "adapter PASS" in result.stdout

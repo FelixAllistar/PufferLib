@@ -19,12 +19,19 @@ struct Log {
     float start_money, start_plots, ending_plots;
     float root_games, reset_games, root_money, reset_money;
     float root_cash_gain, reset_cash_gain, root_steps, reset_steps;
+    float terminal_cash_reward, growth_land_reward, growth_crop_reward, growth_animal_reward;
+    float alive_reward, dense_quality_reward;
     float n;
 };
 
 struct KagStartMetrics {
     uint32_t production, crop, animal, plants, animal_places, deaths;
     int plots;
+};
+
+struct KagRewards {
+    int peaks[3];
+    float growth[3], alive, quality, total;
 };
 
 struct Env {
@@ -40,6 +47,9 @@ struct Env {
     int reset_count;
     float reset_probability;
     KagStartMetrics start[KG_NUM_PLAYERS];
+    float growth[3], alive_daily, quality_scale, quality_idle_cost;
+    int targets[3];
+    KagRewards reward[KG_NUM_PLAYERS];
 };
 
 struct {
@@ -66,6 +76,8 @@ KG_HD void kag_reset_episode(Env* env) {
     kag_policy_reset(&env->policy, &env->game, source);
     for (int p = 0; p < KG_NUM_PLAYERS; p++) {
         KGState* g = &env->game;
+        KagObservationState* s = &env->policy.history[p];
+        env->reward[p] = {.peaks = {s->peak_plots, s->peak_crops, s->peak_animals}};
         env->start[p] = {
             .production = g->production_units[p],
             .plants = g->planted_crops[p],
@@ -89,6 +101,21 @@ void puf_init(Env* env, Dict* kwargs) {
     env->learner_seat = dict_get(kwargs, "learner_seat");
     env->reward_money = dict_get(kwargs, "reward_money");
     env->reset_probability = dict_get(kwargs, "reset_state_prob");
+    const char* growth[] = {"reward_growth_land", "reward_growth_crop", "reward_growth_animal"};
+    const char* targets[] = {"reward_target_plots", "reward_target_crops", "reward_target_animals"};
+    for (int i = 0; i < 3; i++) {
+        env->growth[i] = dict_get(kwargs, growth[i]);
+        env->targets[i] = dict_get(kwargs, targets[i]);
+        assert(isfinite(env->growth[i]) && env->growth[i] >= 0);
+        assert(env->targets[i] >= 0 && env->targets[i] <= KG_MAX_TILES);
+    }
+    assert(env->targets[0] >= 1 && env->targets[0] <= 4);
+    env->alive_daily = dict_get(kwargs, "reward_alive_daily");
+    env->quality_scale = dict_get(kwargs, "reward_quality_scale");
+    env->quality_idle_cost = dict_get(kwargs, "reward_quality_idle_cost");
+    assert(isfinite(env->alive_daily) && env->alive_daily >= 0);
+    assert(isfinite(env->quality_scale) && env->quality_scale >= 0);
+    assert(env->quality_idle_cost >= 0 && env->quality_idle_cost <= 1);
     env->policy = (KagPolicy){
         .market_slots = (int)dict_get(kwargs, "market_slots"),
         .max_hands = (int)dict_get(kwargs, "max_hands"),
@@ -106,6 +133,7 @@ void puf_init(Env* env, Dict* kwargs) {
     kg_init(&env->game, &config);
     kag_policy_reset(&env->policy, &env->game, 0);
     env->start[0].plots = env->start[1].plots = 1;
+    env->reward[0].peaks[0] = env->reward[1].peaks[0] = 1;
 }
 
 struct KagStateBankHeader {
@@ -190,6 +218,10 @@ __global__ void kag_observe_kernel(
     }
 }
 
+KG_HD int kag_reward_cap(int n, int cap) {
+    return n < cap ? n : cap;
+}
+
 __global__ void kag_step_kernel(
     Env* envs, const float* actions, float* rewards, float* terminals, int num_games) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
@@ -211,25 +243,59 @@ __global__ void kag_step_kernel(
     kag_policy_step(&env->policy, game);
     for (int a = 0; a < env->num_agents; a++) {
         int row = i * env->num_agents + a;
-        rewards[row] = 0;
+        int player = env->num_agents == 2 ? a : env->learner_seat;
+        KagObservationState* s = &env->policy.history[player];
+        KagRewards* r = &env->reward[player];
+        int peaks[] = {s->peak_plots, s->peak_crops, s->peak_animals};
+        float growth = 0;
+        for (int j = 0; j < 3; j++) {
+            float bonus = env->growth[j] * (kag_reward_cap(peaks[j], env->targets[j]) -
+                                               kag_reward_cap(r->peaks[j], env->targets[j]));
+            r->growth[j] += bonus;
+            growth += bonus;
+            r->peaks[j] = peaks[j];
+        }
+        int active = (env->targets[1] > 0) + (env->targets[2] > 0);
+        float alive = env->targets[1] > 0
+                          ? (float)kag_reward_cap(s->crops, env->targets[1]) / env->targets[1]
+                          : 0;
+        alive += env->targets[2] > 0
+                     ? (float)kag_reward_cap(s->animals, env->targets[2]) / env->targets[2]
+                     : 0;
+        alive = active ? env->alive_daily * alive / (active * game->config.turns_per_day) : 0;
+        float quality = env->quality_scale * (s->coverage - env->quality_idle_cost * s->idle) /
+                        game->config.episode_steps;
+        float cash = game->done
+                         ? env->reward_money * (game->players[player].money - s->start_cash) /
+                               game->config.starting_money
+                         : 0;
+        rewards[row] = growth + alive;
+        rewards[row] += cash;
+        rewards[row] += quality;
+        r->alive += alive;
+        r->quality += quality;
+        r->total += rewards[row];
         terminals[row] = game->done;
         if (!game->done) {
             continue;
         }
-        int player = env->num_agents == 2 ? a : env->learner_seat;
         int money = game->players[player].money;
         int opponent_money = game->players[1 - player].money;
         int gain = money - env->policy.history[player].start_cash;
         int steps = game->step - env->policy.history[player].start_step;
         KagStartMetrics* start = &env->start[player];
-        // Terminal-only cash gain, in units of the initial 3,000 cash budget.
-        rewards[row] = env->reward_money * gain / game->config.starting_money;
         Log* log = &env->log;
         log->perf += money > opponent_money ? 1 : (money == opponent_money ? 0.5f : 0);
         log->score += money;
         log->opponent_score += opponent_money;
         log->cash_gain += gain;
-        log->episode_return += rewards[row];
+        log->episode_return += r->total;
+        log->terminal_cash_reward += cash;
+        log->growth_land_reward += r->growth[0];
+        log->growth_crop_reward += r->growth[1];
+        log->growth_animal_reward += r->growth[2];
+        log->alive_reward += r->alive;
+        log->dense_quality_reward += r->quality;
         log->episode_length += steps;
         log->draw_rate += money == opponent_money;
         log->production_units += game->production_units[player] - start->production;
@@ -290,7 +356,12 @@ void puf_log(Log* log, Dict* out) {
     dict_set(out, "opponent_score", log->opponent_score);
     dict_set(out, "cash_gain", log->cash_gain);
     dict_set(out, "episode_return", log->episode_return);
-    dict_set(out, "terminal_cash_reward", log->episode_return);
+    dict_set(out, "terminal_cash_reward", log->terminal_cash_reward);
+    dict_set(out, "growth_land_reward", log->growth_land_reward);
+    dict_set(out, "growth_crop_reward", log->growth_crop_reward);
+    dict_set(out, "growth_animal_reward", log->growth_animal_reward);
+    dict_set(out, "alive_reward", log->alive_reward);
+    dict_set(out, "dense_quality_reward", log->dense_quality_reward);
     dict_set(out, "episode_length", log->episode_length);
     dict_set(out, "draw_rate", log->draw_rate);
     dict_set(out, "production_units", log->production_units);
