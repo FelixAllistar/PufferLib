@@ -9,11 +9,13 @@ import argparse
 import configparser
 import hashlib
 import json
+import os
 from pathlib import Path
 import re
 import shlex
 import shutil
 import subprocess
+import struct
 import time
 
 
@@ -152,8 +154,12 @@ def league_command(args):
 
         assert args.banks > 0 and league["strategy"], "evaluate the complete matrix first"
         names = list(league["strategy"])
-        chosen = np.random.default_rng(args.seed).choice(names, args.banks,
-            p=[league["strategy"][name] for name in names])
+        # Systematic resampling represents the mixture with less bank-count noise.
+        rng = np.random.default_rng(args.seed)
+        points = (rng.random() + np.arange(args.banks)) / args.banks
+        indices = np.searchsorted(np.cumsum([league["strategy"][name] for name in names]), points)
+        chosen = np.asarray(names)[indices]
+        rng.shuffle(chosen)
         output = args.opponents.resolve()
         output.parent.mkdir(parents=True, exist_ok=True)
         output.write_text("".join(str((path.parent / league["models"][name]["path"]).resolve())
@@ -164,10 +170,39 @@ def league_command(args):
     return 0
 
 
+def validate_dataset(path, config, mode):
+    with path.open("rb") as stream:
+        header = struct.unpack("<16I2Qd", stream.read(88))
+    metadata = json.loads(path.with_suffix(".json").read_text())
+    assert metadata["format"] == "kaggriculture_entity_bc_v3"
+    assert metadata["source_hash"] == f"{header[16]:016x}"
+    assert metadata["semantics_hash"] == f"{header[17]:016x}"
+    assert metadata["train_games"] + metadata["validation_games"] == header[6]
+    source = configparser.ConfigParser(interpolation=None)
+    source.read_string(metadata["profile"])
+    for old, new in [("policy_market_slots", "market_slots"),
+        ("policy_max_hands", "max_hands"), ("land_buy_min_days", "land_buy_min_days")]:
+        assert source.getint("env", old) == config.getint("env", new), f"controller mismatch: {new}"
+    if mode != "bc":
+        assert abs(header[-1] - config.getfloat("train", "gamma")) < 1e-8, "gamma mismatch"
+        assert source.getfloat("train", "reward_clip") == 0
+        assert config.getfloat("train", "reward_clip") == 0
+        assert source.getfloat("env", "reward_money_timing") == 0
+        assert source.getfloat("env", "reward_pbrs_scale") == 0
+        for key in ["growth_land", "growth_crop", "growth_animal", "alive_daily", "quality_scale",
+            "quality_idle_cost", "target_plots", "target_crops", "target_animals", "money"]:
+            original = "reward_money_scale" if key == "money" else f"reward_{key}"
+            assert abs(source.getfloat("env", original) - config.getfloat("env", f"reward_{key}")) \
+                < 1e-7, f"expert-return reward mismatch: {key}"
+    return {"source_hash": metadata["source_hash"], "semantics_hash": metadata["semantics_hash"],
+        "train_games": metadata["train_games"], "validation_games": metadata["validation_games"],
+        "gamma": header[-1], "teacher": metadata["teacher"]}
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("mode", choices=["train", "eval", "match", "sweep", "league-add",
-        "league-eval", "league-sample"])
+        "league-eval", "league-sample", "build-bc", "bc", "critic", "bc-critic"])
     parser.add_argument("--profile", choices=["terminal", "shaped"], default="terminal")
     parser.add_argument("--binary", type=Path, default=ROOT / "puffer")
     parser.add_argument("--dry-run", action="store_true")
@@ -180,10 +215,33 @@ def main():
     parser.add_argument("--bots", action="store_true")
     parser.add_argument("--opponents", type=Path,
         default=ROOT / "saved/kaggriculture/initial_opponents.txt")
+    parser.add_argument("--bc-binary", type=Path, default=ROOT / "build/kag_bc")
+    parser.add_argument("--arch", default=os.environ.get("NVCC_ARCH", "native"))
+    parser.add_argument("--precision", choices=["fp32", "bf16"], default="bf16")
     args, overrides = parser.parse_known_args()
     if args.mode.startswith("league-"):
         assert not overrides and not args.dry_run, "league commands take explicit arguments"
         return league_command(args)
+    if args.mode == "build-bc":
+        cuda = Path(os.environ.get("CUDA_HOME", "/usr/local/cuda"))
+        command = [str(cuda / "bin/nvcc"), "-O2", "--threads", "2", f"-arch={args.arch}",
+            "-std=c++17", "-I.", "-Isrc", "-Ivendor", "-Iraylib-5.5_linux_amd64/include",
+            f"-I{cuda}/include/cccl", "-DPUFFER_KAGGRICULTURE", "-DENV_NAME=kaggriculture",
+            '-DPUFFER_ENV_NAME="kaggriculture"',
+            '-DENV_HEADER="ocean/kaggriculture/kaggriculture.cu"',
+            "-Xcompiler=-fopenmp", "-Xcompiler=-Wno-narrowing", "--diag-suppress=2361",
+            "--diag-suppress=111", "--diag-suppress=128", "ocean/kaggriculture/bc.cu",
+            "raylib-5.5_linux_amd64/lib/libraylib.a", f"-L{cuda}/lib64", "-lcudart", "-lnccl",
+            "-lnvidia-ml", "-lcublas", "-lcusolver", "-lcurand", "-lm", "-lpthread", "-lomp5",
+            "-lGL", "-o", str(args.bc_binary.resolve())]
+        if args.precision == "fp32":
+            command.append("-DPRECISION_FLOAT")
+        print(shlex.join(command), flush=True)
+        if args.dry_run:
+            return 0
+        assert not overrides
+        args.bc_binary.parent.mkdir(parents=True, exist_ok=True)
+        return subprocess.run(command, cwd=ROOT).returncode
     config = configparser.ConfigParser(interpolation=None)
     with Path(__file__).with_name("profiles").joinpath(f"{args.profile}.ini").open() as stream:
         config.read_file(stream)
@@ -197,6 +255,32 @@ def main():
         command.append("--selfplay.enabled=0")
         command.append("--vec.num_policies=1")
     command += overrides
+    if args.mode in ("bc", "critic", "bc-critic"):
+        command = [str(args.bc_binary.resolve())] + command[2:]
+        mode = {"bc": "actor", "critic": "critic", "bc-critic": "joint"}[args.mode]
+        command.append(f"--bc.mode={mode}")
+        settings = configparser.ConfigParser(interpolation=None)
+        settings.read([ROOT / "config/default.ini", ROOT / "config/kaggriculture.ini"])
+        for option in command[1:]:
+            key, value = option.removeprefix("--").split("=", 1)
+            section, key = key.split(".", 1)
+            settings[section][key] = value
+        if not args.dry_run:
+            provenance = validate_dataset(ROOT / settings["bc"]["data"], settings, args.mode)
+            output = ROOT / settings["bc"]["output"]
+            assert not output.exists(), "refusing to overwrite a checkpoint"
+            output.parent.mkdir(parents=True, exist_ok=True)
+            print(shlex.join(command), flush=True)
+            result = subprocess.run(command, cwd=ROOT)
+            if result.returncode == 0:
+                contract = dict(CONTRACT, hidden=settings.getint("policy", "hidden_size"),
+                    layers=settings.getint("policy", "num_layers"),
+                    parameters=output.stat().st_size // 4)
+                provenance.update({"contract": contract, "mode": mode,
+                    "sha256": hashlib.sha256(output.read_bytes()).hexdigest(),
+                    "command": command, "offline_optimizer": "Adam"})
+                output.with_suffix(".json").write_text(json.dumps(provenance, indent=2) + "\n")
+            return result.returncode
     print(shlex.join(command), flush=True)
     if not args.dry_run:
         return subprocess.run(command, cwd=ROOT).returncode
