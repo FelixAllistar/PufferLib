@@ -24,6 +24,7 @@ def test_profile_uses_native_overrides(profile, mode):
     suffix = "initial_bc_critic.bin" if profile == "terminal" else "initial_bc.bin"
     assert f"--base.load_model_path=saved/kaggriculture/{suffix}" in command
     assert ("--env.reset_state_prob=0" in command) == (mode in ("eval", "match"))
+    assert ("--headless" in command) == (mode in ("eval", "match"))
     if profile == "terminal":
         for key in ["growth_land", "growth_crop", "growth_animal", "alive_daily", "quality_scale"]:
             assert f"--env.reward_{key}=0" in command

@@ -74,7 +74,7 @@ def evaluate(binary, directory, first, second, games, seed, bot=None, seat=0):
         "env.reset_state_prob": 0, "train.horizon": 64, "train.minibatch_size": 64,
         "sweep.metric": "score",
     }
-    command = [str(binary.resolve()), "match" if second else "eval"]
+    command = [str(binary.resolve()), "match" if second else "eval", "--headless"]
     command += [f"--{key}={value}" for key, value in options.items()]
     directory.parent.mkdir(parents=True, exist_ok=True)
     print(shlex.join(command), flush=True)
@@ -249,6 +249,7 @@ def main():
     command += [f"--{section}.{key}={value}"
         for section in config.sections() for key, value in config[section].items()]
     if args.mode in ("eval", "match"):
+        command.append("--headless")
         command.append("--env.reset_state_prob=0")
         command.append("--base.eval_episodes=64")
         command.append(f"--env.num_agents={2 if args.mode == 'match' else 1}")
