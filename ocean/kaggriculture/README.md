@@ -1,9 +1,10 @@
 # Kaggriculture migration
 
-This contains the rule simulator and standalone 2/2 policy contract, not yet a
-trainable upstream environment.
-There is deliberately no `kaggriculture.h` adapter or training config here yet.
-Keep using the preserved old runtime for existing checkpoints and experiments.
+This contains the rule simulator, standalone 2/2 policy contract and upstream
+GPU adapter/sampler integration. The current config is a **qualification profile**
+using upstream's stock network, not the old entity encoder or a tuned baseline.
+Keep using the preserved old runtime for existing checkpoints and experiments
+until the remaining migration boundaries below are qualified.
 
 `core.h` combines the old simulator's declarations and implementation into one
 header, following `SKILL_ISSUES.md` and the header-owned implementation pattern
@@ -53,9 +54,47 @@ refreshing the base masks; retain that order when integrating the optional
 land-delay history. The CPU sampler preserves deterministic/stochastic actions
 and its RNG advancement. Prefix `begin/before/commit` functions track worker,
 seed, cash and shed reservations without consulting hidden opponent orders.
-These environment-side mask functions are **not wired into upstream training**.
-The sampled-prefix masks and unvisited-head probabilities still need correct
-rollout/sampler integration before any PPO run is meaningful.
+The GPU sampler calls these environment-side rules before each categorical draw
+and saves the selected-prefix masks in the existing rollout buffer. Unvisited
+market heads store action zero and a singleton mask, consume no RNG and have
+probability one, zero entropy and zero gradient under the **unchanged upstream
+PPO loss**. Forced singleton worker heads still consume their legacy RNG draw.
+Masks use the ordinary upstream precision tensor; no bitpacking was added.
+
+## Upstream GPU adapter
+
+Build with `NVCC_ARCH=sm_120 bash build.sh kaggriculture --cu` on Vast (choose
+the architecture appropriate to another GPU). The `--cu` flag is required;
+there is no native CPU trainer adapter or renderer yet. The standalone CPU
+rule/controller tests remain available.
+
+`kaggriculture.cu` follows `ocean/admiral/admiral.cu`: a device batch of games,
+one learner row per controlled seat, bound CUDA stream and separate step and
+observation kernels. It uses the existing `puf_*` API without modifying
+`src/pufferenv.h`. `src/pufferl.cu` gains only the sampler's game/row context
+and a Kaggriculture-specific prefix-mask hook. No network, loss, optimizer,
+advantage calculation, scheduling or shared environment API is replaced.
+
+`env.num_agents=2` controls both seats with the learner (mirror play, **not** a
+checkpoint league). With `env.num_agents=1`, `env.learner_seat=0` or `1` faces
+`env.bot_policy=0` (pass) or `1` (the native reactive rule bot). Use separate
+evaluation invocations per bot: upstream's post-training bot ladder does not
+switch GPU bot policies, and its multi-policy/selfplay guard remains intact.
+
+The adapter uses the competition's default game rules, fresh starts only,
+and one explicit reward: on termination,
+`reward_money * (ending_cash - starting_cash) / 3000`. This is not the old
+shaped reward mix. Stock upstream still clips these rewards to `[-1, 1]` before
+learning; a clipping decision is required before meaningful cash optimization.
+Logged cash and episode returns are the **unclipped environment values**.
+The provided short config is for wiring checks, not a production training run.
+
+At termination it emits the terminal reward/flag, records the finished game,
+resets the game/controller history and writes the next episode's observation.
+An explicit reset also clears logs and reward/terminal buffers. Episode seeds
+advance via a per-game LCG initialized from the game index, rather than keeping
+the same daily randomness forever. This is a new adapter seeding schedule,
+not a claim of identical legacy training trajectories.
 
 ## Checks
 
@@ -95,11 +134,39 @@ not replay-dataset coverage measurements. Both optimized and sanitized builds
 pass. `tests/policy_compile.cu` also compiles the controller/observation/mask
 path for `sm_80`; no GPU execution or speedup is claimed.
 
+`tests/test_gpu.cu` includes the actual upstream trainer, so its tests exercise
+the production sampler, importance/log-prob cache and PPO gradient kernel.
+The opt-in runner is (omit the trainer variable to run only the 20 kernel/adapter
+checks):
+
+```bash
+KAGGRICULTURE_GPU_TEST_BINARY=build/kag_gpu_test_fp32 \
+KAGGRICULTURE_TRAIN_TEST_BINARY=build/kag_adapter_fp32 \
+    uv run --no-project --with pytest python -m pytest -q \
+    ocean/kaggriculture/tests/test_gpu.py
+```
+
+Compile the test with the same includes, libraries, precision and environment
+defines as the native build, substituting `ocean/kaggriculture/tests/test_gpu.cu` for
+`src/pufferl.cu` and omitting `PUFFERLIB_BUILD_MAIN`. Repeat in BF16. The tests
+cover single/both seats, odd row offsets, CUDA graph/non-graph execution,
+CPU-reconstructed prefix masks and categorical probabilities, exact Philox
+advancement, inactive-head entropy/gradient and two full episodes plus a
+late-state termination fixture. They are not enabled by a normal CPU test run.
+Four native trainer cases additionally check finite changing weights and exact
+zero-learning-rate warm starts in sync/async and graph/non-graph modes. These
+tiny stock-network runs qualify wiring, not learning quality or throughput.
+
+Qualification on Vast's RTX 5060 Ti (`sm_120`): **24/24 pass in FP32 and 24/24
+in BF16**. The separate upstream Chain Reaction warm-start suite also passes
+**19/19 in each precision**. No local GPU was used. The original runtime is
+still required for legacy experiments; this does not qualify the missing
+entity network, resets, BC or checkpoint leagues.
+
 ## Remaining integration
 
-Add the upstream `puf_*` environment adapter, entity network and the
-prefix-dependent action sampling/log-prob integration. Environment-side mask
-rules are now present; upstream's generic sampler alone is not sufficient.
+Port and qualify the entity encoder/decoder and checkpoint identity. The
+adapter currently uses the stock network intentionally, not a silent fallback.
 Resolve terminal-cash clipping explicitly before training: stock upstream clamps
 rewards to `[-1, 1]`. Replay resets, BC/value initialization, checkpoint identity,
 external leagues and GPU multi-policy execution remain separate changes.

@@ -599,7 +599,7 @@ __global__ void sample_logits(
         precision_t* value_out,    // (B,)
         curandStatePhilox4_32_10_t* rng_states,
         precision_t* action_mask,  // (B, A_total); always allocated
-        int mask_stride) {
+        int mask_stride, Env* sampling_envs, int row_start) {
     int B = dec_out.shape[0];
     int fused_cols = dec_out.shape[1];
     int num_atns = NUM_ATNS;
@@ -636,8 +636,33 @@ __global__ void sample_logits(
     } else {
         int logits_offset = 0;
         int mask_base = idx * mask_stride;
+#ifdef PUFFER_KAGGRICULTURE
+        int row = row_start + idx;
+        int agents = sampling_envs->num_agents;
+        Env* kag_env = sampling_envs + row / agents;
+        int player = agents == 2 ? row % agents : kag_env->learner_seat;
+        unsigned char prefix_mask[KG_POLICY_ACTION_MASK_SIZE];
+        KagActionMaskState prefix;
+        kag_write_mask(&kag_env->policy, &kag_env->game, player, prefix_mask);
+        kag_action_mask_begin(&prefix, &kag_env->game, &kag_env->policy, player);
+#endif
         for (int h = 0; h < num_atns; h++) {
             int A = act_sizes[h];
+#ifdef PUFFER_KAGGRICULTURE
+            kag_action_mask_before(&prefix, h, prefix_mask);
+            int active = kag_action_head_active(prefix.choices, h);
+            // Unvisited heads have probability 1, zero entropy and zero PPO
+            // gradient under the ordinary loss; do not consume sampling RNG.
+            for (int a = 0; a < A; a++) {
+                action_mask[mask_base + logits_offset + a] = from_float(
+                    active ? prefix_mask[logits_offset + a] : a == 0);
+            }
+            if (!active) {
+                actions[idx * num_atns + h] = env_actions[idx * num_atns + h] = 0;
+                logits_offset += A;
+                continue;
+            }
+#endif
             float cache[PPO_MAX_HEAD_A];
             float logsumexp = ppo_discrete_logsumexp(
                 logits, logits_base, logits_offset, A, action_mask, mask_base, cache);
@@ -680,6 +705,9 @@ __global__ void sample_logits(
             float action = (float)sampled;
             actions[aidx] = action;
             env_actions[aidx] = action;
+#ifdef PUFFER_KAGGRICULTURE
+            kag_action_mask_commit(&prefix, h, sampled);
+#endif
 #ifdef PUFFER_NETHACK
             int verb = (int)actions[idx * num_atns];
             int used = nethack_head_used(verb, h);
@@ -873,7 +901,7 @@ static void pufferl_forward_step(PuffeRL* pufferl, int buf, int t,
             act_b.data, env->actions.data + (long)sub * act_cols,
             lp_b.data, val_b.data,
             pufferl->rng_states[buf] + off,
-            mask_b.data, mask_stride);
+            mask_b.data, mask_stride, pufferl->vec->envs, sub);
     }
 }
 

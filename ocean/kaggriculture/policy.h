@@ -1274,6 +1274,23 @@ KG_HD void kag_decode_multi_action(
     action->market_count = written;
 }
 
+KG_HD int kag_action_head_active(const float* choices, int head) {
+    if (head < KG_POLICY_UNIT_HEADS) {
+        return 1;
+    }
+    int slot = (head - KG_POLICY_UNIT_HEADS) / 3;
+    int node = (head - KG_POLICY_UNIT_HEADS) % 3;
+    for (int prev = 0; prev < slot; prev++) {
+        if (choices[KG_POLICY_UNIT_HEADS + 3 * prev] != 1) {
+            return 0;
+        }
+    }
+    if (node && choices[KG_POLICY_UNIT_HEADS + 3 * slot] != 1) {
+        return 0;
+    }
+    return node != 2 || choices[head - 1] < KG_POLICY_MARKET_QUANTITY_COMMANDS;
+}
+
 void kag_sample_cpu_logits(KagPolicy* policy, const KGState* game, int player, const float* logits,
     int deterministic, unsigned int* rng, float* actions, unsigned char* mask) {
     const int sizes[KAG_ACTION_HEADS] = KAG_ACTION_SIZES;
@@ -1284,22 +1301,8 @@ void kag_sample_cpu_logits(KagPolicy* policy, const KGState* game, int player, c
     for (int h = 0; h < KAG_ACTION_HEADS; h++) {
         int size = sizes[h];
         kag_action_mask_before(&state, h, mask);
-        int active = 1;
-        if (h >= KG_POLICY_UNIT_HEADS) {
-            int slot = (h - KG_POLICY_UNIT_HEADS) / 3;
-            int node = (h - KG_POLICY_UNIT_HEADS) % 3;
-            for (int prev = 0; prev < slot; prev++) {
-                active &= state.choices[KG_POLICY_UNIT_HEADS + 3 * prev] == 1;
-            }
-            if (node) {
-                active &= state.choices[KG_POLICY_UNIT_HEADS + 3 * slot] == 1;
-            }
-            if (node == 2) {
-                active &= state.choices[h - 1] < KG_POLICY_MARKET_QUANTITY_COMMANDS;
-            }
-        }
         int selected = 0;
-        if (active) {
+        if (kag_action_head_active(state.choices, h)) {
             float maximum = -INFINITY, sum = 0;
             for (int a = 0; a < size; a++) {
                 if (mask[offset + a]) {
