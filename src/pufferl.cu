@@ -253,6 +253,9 @@ void alloc_register(Allocator* a, Long* t) {
 void alloc_register(Allocator* a, Int* t) {
     _alloc_register(a, (void**)&t->data, t->shape, sizeof(int));
 }
+void alloc_register(Allocator* a, Byte* t) {
+    _alloc_register(a, (void**)&t->data, t->shape, sizeof(unsigned char));
+}
 
 void alloc_create(Allocator* alloc) {
     assert(cudaMalloc(&alloc->mem, alloc->total_bytes) == cudaSuccess
@@ -347,6 +350,11 @@ typedef struct ObsTensor {
 // Each rollout buffer manages a constant subset of environments
 // Simulation + inference overlap across buffers
 // Note: experimental async path adds an extra slot dimension.
+#if PUF_PACKED_MASK
+typedef Byte RolloutMask;
+#else
+typedef Prec RolloutMask;
+#endif
 struct RolloutBuf {
     Prec observations;  // (horizon, agents, input_size)
     Prec initial_states;
@@ -355,7 +363,7 @@ struct RolloutBuf {
     Prec logprobs;      // ...
     Prec rewards;
     Prec terminals;
-    Prec action_mask;   // (horizon, agents, mask_size)
+    RolloutMask action_mask;  // Binary-only envs may opt into packed archival storage.
 };
 
 // Buffers are initialized as raw structs with only shape information.
@@ -370,15 +378,19 @@ void register_rollout_buffers(RolloutBuf* bufs, Allocator* alloc,
     bufs->logprobs     = {.shape = {T, B}};
     bufs->rewards      = {.shape = {T, B}};
     bufs->terminals    = {.shape = {T, B}};
-    bufs->action_mask  = {.shape = {T, B, mask_size}};
+#if PUF_PACKED_MASK
+    mask_size = (mask_size + 7) / 8;
+#endif
+    bufs->action_mask = {.shape = {T, B, mask_size}};
     Prec* prec_fields[] = {
         &bufs->observations, &bufs->values, &bufs->logprobs,
-        &bufs->rewards, &bufs->terminals, &bufs->action_mask,
+        &bufs->rewards, &bufs->terminals,
     };
     for (int i = 0; i < (int)(sizeof(prec_fields) / sizeof(prec_fields[0])); i++) {
         alloc_register(alloc, prec_fields[i]);
     }
     alloc_register(alloc, &bufs->actions);
+    alloc_register(alloc, &bufs->action_mask);
 }
 
 // Rank-2 or rank-3 time-major tensor. F==0 means rank-2 (zero-terminated shape);
@@ -401,6 +413,11 @@ Float puf_time_view(Float p, int start_t, int T) {
         .data = p.data + (long)start_t * B * stride_f,
         .shape = {T, B, F},
     };
+}
+
+Byte puf_time_view(Byte p, int start_t, int T) {
+    return {.data = p.data + (long)start_t * p.shape[1] * p.shape[2],
+        .shape = {T, p.shape[1], p.shape[2]}};
 }
 
 RolloutBuf rollout_time_view(RolloutBuf* base, int start_t, int T) {
@@ -537,6 +554,8 @@ typedef struct PuffeRL {
     RolloutBuf train_rollouts;  // Pre-allocated transposed copy for train_impl
     EnvBuf env;
     Prec sampling_logits;  // Discrete policies share sampling, not inference or RNG.
+    Prec sampling_mask;    // One step, only for packed rollout masks.
+    Prec minibatch_mask;   // Unpacked before the unchanged PPO kernels.
     TrainGraph train_buf;
     Prec train_state;  // (L, A, H) carry in env order; graph reads with dest_off
     cudaGraphExec_t* rollout_graphs;  // CPU: [slots][horizon][num_buffers]
@@ -811,6 +830,24 @@ Float puf_slice(Float p, int t, int start, int count) {
     };
 }
 
+__global__ void pack_action_mask(unsigned char* bits, const precision_t* mask,
+        int rows, int width) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    int stride = (width + 7) / 8;
+    if (idx >= rows * stride) {
+        return;
+    }
+    int row = idx / stride;
+    int start = idx % stride * 8;
+    unsigned char byte = 0;
+    for (int bit = 0; bit < 8 && start + bit < width; bit++) {
+        float value = to_float(mask[row * width + start + bit]);
+        assert(value == 0 || value == 1);
+        byte |= (value != 0) << bit;
+    }
+    bits[idx] = byte;
+}
+
 static void pufferl_forward_step(PuffeRL* pufferl, int buf, int t,
         cudaStream_t stream) {
     Hypers* hypers = &pufferl->hypers;
@@ -847,9 +884,14 @@ static void pufferl_forward_step(PuffeRL* pufferl, int buf, int t,
         term_dst.data, env->terminals.data + start, block_size);
 
     // Mask always allocated (env-written or synthetic all-ones). Continuous ignores it in sample.
-    int mask_size = rollouts.action_mask.shape[2];
+    int mask_size = env->action_mask.shape[1];
     int mask_stride = mask_size;
+#if PUF_PACKED_MASK
+    Prec mask_slice = {.data = pufferl->sampling_mask.data + (long)start * mask_size,
+        .shape = {block_size, mask_size}};
+#else
     Prec mask_slice = puf_slice(rollouts.action_mask, t, start, block_size);
+#endif
     cast<<<grid_size(block_size * mask_size), BLOCK_SIZE, 0, stream>>>(
         mask_slice.data,
         env->action_mask.data + (long)start * mask_size,
@@ -876,7 +918,8 @@ static void pufferl_forward_step(PuffeRL* pufferl, int buf, int t,
         Float act_b = puf_slice(rollouts.actions,      t, sub, n);
         Prec lp_b   = puf_slice(rollouts.logprobs,     t, sub, n);
         Prec val_b  = puf_slice(rollouts.values,       t, sub, n);
-        Prec mask_b = puf_slice(rollouts.action_mask,  t, sub, n);
+        Prec mask_b = {.data = mask_slice.data + (long)off * mask_size,
+            .shape = {n, mask_size}};
 
         // Per-policy state is compact (n agents); local index 0..n-1.
         int state_n = (int)st->shape[0] * n * (int)st->shape[2];
@@ -925,6 +968,12 @@ static void pufferl_forward_step(PuffeRL* pufferl, int buf, int t,
             env->actions.data + (long)start * act_cols, logprobs.data, values.data,
             pufferl->rng_states[buf], mask_slice.data, mask_stride, vec->envs, start);
     }
+#if PUF_PACKED_MASK
+    int packed = rollouts.action_mask.shape[2];
+    pack_action_mask<<<grid_size(block_size * packed), BLOCK_SIZE, 0, stream>>>(
+        rollouts.action_mask.data + ((long)t * hypers->total_agents + start) * packed,
+        mask_slice.data, block_size, mask_size);
+#endif
 }
 
 void pufferl_forward(PuffeRL* pufferl, int buf, int t, cudaStream_t stream) {
@@ -1499,6 +1548,29 @@ __global__ void transpose_102(float* dst, const float* src,
 }
 #endif
 
+__global__ void transpose_102(unsigned char* dst, const unsigned char* src,
+        int A, int B, int C, int primary, int stride) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx >= A * B * C) {
+        return;
+    }
+    int a = idx / (B * C);
+    int b = idx / C % B;
+    int c = idx % C;
+    int row = b / primary * stride + b % primary;
+    dst[(b * A + a) * C + c] = src[(a * (B / primary * stride) + row) * C + c];
+}
+
+__global__ void unpack_action_mask(precision_t* mask, const unsigned char* bits,
+        int rows, int width) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx < rows * width) {
+        int row = idx / width;
+        int col = idx % width;
+        mask[idx] = from_float((bits[row * ((width + 7) / 8) + col / 8] >> (col % 8)) & 1);
+    }
+}
+
 // Cosine decay base → min over t in [0, T). Double for t/T (float loses
 // precision past 2^24). Caller passes epoch and total train epochs.
 float cosine_annealing(float base, float min_v, long t, long T) {
@@ -1588,7 +1660,15 @@ static void train_epoch_gpu(PuffeRL* pufferl, RolloutBuf src, int slot,
         graph.mb_terminals = slice_rows(rollouts->terminals, dest_off, Nmb);
         graph.mb_rewards = slice_rows(rollouts->rewards, dest_off, Nmb);
         graph.mb_values = slice_rows(rollouts->values, dest_off, Nmb);
+#if PUF_PACKED_MASK
+        graph.mb_action_mask = pufferl->minibatch_mask;
+        int width = graph.mb_action_mask.shape[2];
+        unpack_action_mask<<<grid_size(Nmb * Tmb * width), BLOCK_SIZE, 0, stream>>>(
+            graph.mb_action_mask.data, rollouts->action_mask.data + (long)dest_off * Tmb * mask_c,
+            Nmb * Tmb, width);
+#else
         graph.mb_action_mask = slice_rows(rollouts->action_mask, dest_off, Nmb);
+#endif
         graph.mb_state = pufferl->train_state;
         DecoderWeights* dw_train = (DecoderWeights*)primary->weights.decoder;
         Prec p_logstd = {};
@@ -2004,6 +2084,13 @@ PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx) {
 
     Allocator* acts = &pufferl->activ_alloc;
     Allocator* grads = &pufferl->grads_alloc;
+#if PUF_PACKED_MASK
+    assert(!is_continuous);
+    pufferl->sampling_mask = {.shape = {total_agents, act_n}};
+    pufferl->minibatch_mask = {.shape = {minibatch_segments, horizon, act_n}};
+    alloc_register(acts, &pufferl->sampling_mask);
+    alloc_register(acts, &pufferl->minibatch_mask);
+#endif
 
     // All policies: policies[0] trainable, rest historical/frozen (rollout-only).
     int hist_hidden = dict_get(&vec_kwargs, "hist_policy_hidden_size");

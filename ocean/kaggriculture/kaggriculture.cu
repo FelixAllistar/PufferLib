@@ -1,6 +1,7 @@
 #pragma once
 
 #define PUF_BACKEND PUF_GPU
+#define PUF_PACKED_MASK 1
 #include <cuda_runtime.h>
 #include "policy.h"
 typedef float obs_t;

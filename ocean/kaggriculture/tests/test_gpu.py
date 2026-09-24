@@ -154,3 +154,12 @@ def test_gpu_league_updates_only_learner(binary, graphs):
         cwd=ROOT, text=True, capture_output=True, timeout=120)
     assert result.returncode == 0, result.stdout + result.stderr
     assert "league train PASS" in result.stdout
+
+
+@pytest.mark.parametrize("width", [1, 7, 8, 9, 255, 256, 1978, 2051])
+@pytest.mark.parametrize("buffers", [1, 2])
+def test_packed_masks_lossless_with_learner_gather(binary, width, buffers):
+    result = subprocess.run([str(binary), "mask_storage", str(width), str(buffers), "0", "0"],
+        cwd=ROOT, text=True, capture_output=True, timeout=120)
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "mask storage PASS" in result.stdout

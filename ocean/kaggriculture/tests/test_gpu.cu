@@ -938,6 +938,38 @@ void reset_bank_test(float probability, int graphs, int agents, const char* dire
         graphs, agents, bank_draws);
 }
 
+void mask_storage_test(int width, int buffers) {
+    int T = 3, physical = 32, primary = 20, B = primary * buffers;
+    int rows = T * physical * buffers, packed = (width + 7) / 8;
+    precision_t* mask = (precision_t*)managed(rows * width * sizeof(precision_t));
+    unsigned char* bits = (unsigned char*)managed(rows * packed);
+    unsigned char* gathered = (unsigned char*)managed(T * B * packed);
+    precision_t* unpacked = (precision_t*)managed(T * B * width * sizeof(precision_t));
+    for (int i = 0; i < rows * width; i++) {
+        mask[i] = from_float((i % 17) < 9);
+    }
+    pack_action_mask<<<grid_size(rows * packed), BLOCK_SIZE>>>(bits, mask, rows, width);
+    transpose_102<<<grid_size(T * B * packed), BLOCK_SIZE>>>(
+        gathered, bits, T, B, packed, primary, physical);
+    unpack_action_mask<<<grid_size(T * B * width), BLOCK_SIZE>>>(unpacked, gathered, T * B, width);
+    sync_test();
+    for (int b = 0; b < B; b++) {
+        int source = b / primary * physical + b % primary;
+        for (int t = 0; t < T; t++) {
+            for (int c = 0; c < width; c++) {
+                int idx = ((t * physical * buffers + source) * width + c);
+                assert(to_float(unpacked[(b * T + t) * width + c]) == to_float(mask[idx]));
+            }
+        }
+    }
+    if (width % 8) {
+        for (int row = 0; row < rows; row++) {
+            assert((bits[row * packed + packed - 1] >> (width % 8)) == 0);
+        }
+    }
+    printf("mask storage PASS: width=%d buffers=%d\n", width, buffers);
+}
+
 int main(int argc, char** argv) {
     assert(argc == 6);
     if (!strcmp(argv[1], "sampler")) {
@@ -956,6 +988,8 @@ int main(int argc, char** argv) {
         adapter_test(2, 0, 0, atoi(argv[5]), true, atoi(argv[2]), atof(argv[3]));
     } else if (!strcmp(argv[1], "league_train")) {
         league_train_test(atoi(argv[2]));
+    } else if (!strcmp(argv[1], "mask_storage")) {
+        mask_storage_test(atoi(argv[2]), atoi(argv[3]));
     } else {
         assert(!strcmp(argv[1], "adapter"));
         adapter_test(atoi(argv[2]), atoi(argv[3]), atoi(argv[4]), atoi(argv[5]));
