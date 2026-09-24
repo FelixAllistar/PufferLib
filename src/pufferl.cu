@@ -2785,6 +2785,11 @@ void run_sweep(Ini* ini, const char* exe_path) {
 
         float min_v = dict_get(dict, "min");
         float max_v = dict_get(dict, "max");
+        if (min_v == max_v) {
+            assert((float)puf_ini_get(ini, params[n_params].section,
+                params[n_params].key) == min_v && "fixed sweep range must match config");
+            continue;
+        }
         const char* scale_s = dict_get_str(dict, "scale");
         float scale;
         if (strcmp(scale_s, "auto") == 0) {
@@ -2805,6 +2810,7 @@ void run_sweep(Ini* ini, const char* exe_path) {
         n_params++;
     }
     space->num = n_params;
+    assert(n_params > 0 && "sweep requires at least one varying parameter; use train otherwise");
 
     int max_runs = puf_ini_get(ini, "sweep", "max_runs");
     int downsample = puf_ini_get(ini, "sweep", "downsample");
