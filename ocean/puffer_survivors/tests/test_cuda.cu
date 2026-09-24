@@ -86,6 +86,10 @@ int main() {
     assert(terminal == 1.0f);
     assert(std::fabs(reward - 0.875f) < 1e-5f);
     assert(log.n == 1.0f);
+    int num_agents = 0;
+    CUDA_CHECK(cudaMemcpy(&num_agents, &envs[0].num_agents,
+        sizeof(num_agents), cudaMemcpyDeviceToHost));
+    assert(num_agents == 1);
     assert(log.perf == 1.0f);
     assert(log.survived == 1.0f);
     assert(log.episode_length == 2.0f);

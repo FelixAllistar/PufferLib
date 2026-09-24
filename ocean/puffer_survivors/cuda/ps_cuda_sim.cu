@@ -262,6 +262,7 @@ static inline void ps_cuda_free(PSCudaSim* sim) {
 __global__ void ps_reset_all_kernel(PSCudaSim sim, uint32_t seed) {
     int env = blockIdx.x * blockDim.x + threadIdx.x;
     if (env >= sim.num_envs) return;
+    sim.native_envs[env].num_agents = 1;
     uint32_t s = seed ? seed : 1u;
     uint32_t x = s ^ (0x9e3779b9u * (uint32_t)(env + 1));
     x ^= x >> 16;

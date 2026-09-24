@@ -3,8 +3,8 @@
 Status: **in progress**, not a completed conversion of every environment.
 
 Canonical repository: `https://github.com/FelixAllistar/PufferLib.git`.
-Canonical development branch: `5.0`, published through `63e61d07b` (Puffer
-Survivors). Further ports and clean-clone qualification remain in progress.
+Canonical development branch: `5.0`, published on GitHub. Further ports and
+clean-clone qualification remain in progress; check branch HEAD for updates.
 
 ## Source of truth and preservation
 
@@ -135,3 +135,12 @@ their final 5.0 implementations must not be overwritten by older copies.
   CPU/GPU transitions across all reward modes and edge-case cell ranges/heights.
   CPU optimized/sanitized legacy trace tests also pass. FP32 GPU trainer builds
   and completes 2,048 steps with async and CUDA graphs. No shared-core edits.
+- Follow-up GPU logging audit found missing device `num_agents` metadata in
+  the new Survivors/TrianglePath adapters: simulation/rewards worked but native
+  environment metrics were blank. Both reset paths now initialize it; creation
+  also finishes default-stream initialization before a non-default stream may
+  use the vector. TrianglePath differential tests and trainer metric tests with
+  graphs on/off pass. Survivors metadata and trainer-metric reruns are pending:
+  a new local Bomberman run was detected, so the pending GPU-test launcher was
+  stopped without touching that run. `tests/test_gpu_env_metrics.py` supplies
+  four opt-in native regression cases for the next idle-GPU window.

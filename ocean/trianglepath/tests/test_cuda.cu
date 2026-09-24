@@ -127,6 +127,7 @@ void run_case(int height, int lo, int hi, int mode) {
             TEST_ENVS * sizeof(Env), cudaMemcpyDeviceToHost));
 
         for (int e = 0; e < TEST_ENVS; e++) {
+            assert(gpu_logs[e].num_agents == 1);
             fail_bytes("observation", e, step,
                 cpu_obs + (size_t)e * OBS_SIZE,
                 gpu_obs + (size_t)e * OBS_SIZE, OBS_SIZE);

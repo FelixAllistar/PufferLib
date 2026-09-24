@@ -51,9 +51,10 @@ __device__ __forceinline__ uint32_t tp_gpu_random(uint32_t* rng) {
     return x;
 }
 
-__global__ static void tp_reset_kernel(TPSim sim, uint32_t seed) {
+__global__ static void tp_reset_kernel(TPSim sim, Env* envs, uint32_t seed) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i >= sim.count) return;
+    envs[i].num_agents = 1;
     sim.row[i] = 0;
     sim.col[i] = 0;
     sim.total[i] = 0;
@@ -186,6 +187,7 @@ Env* puf_vec_create(int total_agents, Dict* kwargs, obs_t* observations,
     Env* envs = NULL;
     assert(cudaMalloc(&envs, total_agents * sizeof(Env)) == cudaSuccess);
     assert(cudaMemset(envs, 0, total_agents * sizeof(Env)) == cudaSuccess);
+    assert(cudaStreamSynchronize(0) == cudaSuccess);
     return envs;
 }
 
@@ -195,7 +197,7 @@ void puf_bind_stream(cudaStream_t stream) {
 
 void puf_reset(Env* envs) {
     int grid = (g_sim.count + TP_CUDA_BLOCK - 1) / TP_CUDA_BLOCK;
-    tp_reset_kernel<<<grid, TP_CUDA_BLOCK, 0, tp_stream>>>(g_sim, h_tp_config.base_seed);
+    tp_reset_kernel<<<grid, TP_CUDA_BLOCK, 0, tp_stream>>>(g_sim, envs, h_tp_config.base_seed);
     tp_observe_kernel<<<grid, TP_CUDA_BLOCK, 0, tp_stream>>>(g_sim);
     assert(cudaGetLastError() == cudaSuccess);
 }

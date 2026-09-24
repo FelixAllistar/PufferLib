@@ -23,6 +23,7 @@ Env* puf_vec_create(int total_agents, Dict* kwargs, obs_t* observations,
         (size_t)total_agents * sizeof(Env)) == cudaSuccess);
     assert(cudaMemset(ps_gpu.native_envs, 0,
         (size_t)total_agents * sizeof(Env)) == cudaSuccess);
+    assert(cudaStreamSynchronize(0) == cudaSuccess);
     return ps_gpu.native_envs;
 }
 
