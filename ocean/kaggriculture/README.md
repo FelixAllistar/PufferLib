@@ -5,7 +5,62 @@ This is the training port onto upstream revision `6ffa5b10d`, not the accumulate
 policy ABI 5**: 1,424 observations, 47 heads, 1,978 action logits and the entity
 encoder with separate actor/value branches around upstream MinGRU.
 
-## Start training
+## Current starting configuration
+
+The canonical fork is `FelixAllistar/PufferLib`, branch `5.0`. The current
+`config/kaggriculture.ini` is the actor-only BC sweep configuration, not the
+earlier critic-initialized run described below: H256/L2, 30M nominal steps,
+500 completed trials, no learning-rate or entropy annealing. Rewards, rollout,
+minibatch, replay ratio and resource settings are searched. Model dimensions
+and step budget use fixed sweep ranges; rebuild this branch before using them.
+Other environments retain upstream's architecture and budget searches.
+
+Use `./puffer_cpu sweep` after the build and asset transfer below. Do not use
+`run.py --profile terminal` for this sweep: that explicitly selects the older
+critic initializer and reward/gamma settings. Failed workers count as Protein
+failure observations and are retried, up to 1,000 cumulative failures; a killed
+parent process or hung worker is not automatically resumed. The final training
+window's `root_money` is the search metric, not a held-out league evaluation.
+
+The current config has no external initial opponents. Its four fixed opponent
+banks start from the same BC initializer; the saved seven-member league is
+available separately, not automatically selected by the sweep.
+
+## Build and assets on a new Vast box
+
+```bash
+git clone --branch 5.0 https://github.com/FelixAllistar/PufferLib.git
+cd PufferLib
+CUDA_HOME=/usr/local/cuda NVCC_ARCH=sm_120 bash build.sh kaggriculture puffer_cpu
+```
+
+Use an image with CUDA (including `nvcc`), NCCL development files and the system
+build dependencies listed by upstream. SM120 is for the current Blackwell
+machines; select the actual GPU architecture on other machines. No training
+starts during the build. A GPU simulator is a separate `--cu` build.
+
+Weights and datasets are not supplied by cloning Git. Transfer the following
+from the existing `/workspace/PufferLib` install, preserving relative paths:
+
+- `saved/kaggriculture/`: actor/critic initializers, provenance JSON, league
+  registry and its copied checkpoint pool. The active initializer is
+  `initial_bc.bin` (4,328,800 bytes), SHA256
+  `b114e8feded577dae233b4a036c15aaeb447bbb482c432cbb95b79f198703f88`.
+- `data/kaggriculture/`: reset bank and offline datasets plus metadata.
+  Dereference source symlinks during transfer (`rsync -aL`), since some still
+  point into the preserved legacy install. `reset.kgb` is required for the
+  configured resets; offline `.bc` files are only required for new BC fitting.
+
+Verify transferred files with SHA256 against the source before training. Do not
+copy the old binary or global `default.ini` onto the new clone. The checked-in
+environment config already includes the current remote sweep settings.
+
+```bash
+ulimit -c 0
+./puffer_cpu sweep
+```
+
+## Earlier qualified terminal-critic profile
 
 On the prepared Vast install:
 
@@ -22,7 +77,7 @@ Both use the same simulator/controller/rewards and CUDA inference/PPO. The CPU
 adapter uploads game/policy snapshots for prefix-dependent GPU sampling.
 `--cpu` is upstream's standalone play/eval build flag, not the CPU-simulation
 trainer flag. Neither adapter currently ports the interactive renderer.
-The ready profile loads `saved/kaggriculture/initial_bc_critic.bin`, uses terminal
+The explicit terminal profile loads `saved/kaggriculture/initial_bc_critic.bin`, uses terminal
 cash gain only, a trainable critic, replay resets and frozen league opponents.
 The 300M-step run is not automatically launched by installation.
 
@@ -169,8 +224,8 @@ implementation, async scheduling and `src/pufferenv.h` remain upstream.
 The sampler retains action/mask/log-prob/RNG parity. Market heads not reached
 by the selected prefix use singleton masks and probability one in the stock loss.
 
-No eMAG, QD, packed rollout masks, old trainer accumulation or optimizer/loss
-experiments were imported. Raw/2/1 controllers, renderer, CPU trainer adapter,
+No eMAG, QD, old trainer accumulation or optimizer/loss
+experiments were imported. Raw/2/1 controllers, renderer,
 opening curriculum and optional historical environments remain in the preserved
 legacy trees; they are not silently interpreted as the new 2/2 configuration.
 

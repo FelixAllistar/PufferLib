@@ -10,6 +10,36 @@ import struct
 import pytest
 
 
+def test_actor_sweep_keeps_architecture_budget_and_annealing_fixed():
+    root = Path(__file__).resolve().parents[3]
+    config = configparser.ConfigParser(interpolation=None)
+    config.read([root / "config/default.ini", root / "config/kaggriculture.ini"])
+    assert config["base"]["load_model_path"] == "saved/kaggriculture/initial_bc.bin"
+    assert config.getint("sweep", "max_runs") == 500
+    for section, key, value in [("policy", "hidden_size", 256),
+            ("policy", "num_layers", 2), ("train", "total_timesteps", 30000000)]:
+        assert config.getint(section, key) == value
+        assert config.getfloat(f"sweep.{section}.{key}", "min") == value
+        assert config.getfloat(f"sweep.{section}.{key}", "max") == value
+    for key in ["anneal_lr", "anneal_ent_coef"]:
+        assert config.getint("train", key) == 0
+        assert f"sweep.train.{key}" not in config
+    varying = 0
+    for section in config.sections():
+        if not section.startswith("sweep."):
+            continue
+        target, key = section[6:].rsplit(".", 1)
+        lo = config.getfloat(section, "min")
+        hi = config.getfloat(section, "max")
+        assert lo <= config.getfloat(target, key) <= hi
+        varying += lo != hi
+    assert varying == 28
+    defaults = configparser.ConfigParser(interpolation=None)
+    defaults.read(root / "config/default.ini")
+    assert defaults.getfloat("sweep.policy.hidden_size", "min") != defaults.getfloat(
+        "sweep.policy.hidden_size", "max")
+
+
 @pytest.mark.parametrize("profile", ["terminal", "shaped"])
 @pytest.mark.parametrize("mode", ["train", "eval", "match", "sweep"])
 def test_profile_uses_native_overrides(profile, mode):
