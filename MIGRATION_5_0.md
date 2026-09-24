@@ -64,7 +64,7 @@ their final 5.0 implementations must not be overwritten by older copies.
 | Puffer Survivors | Missing. Port current environment, controls/viewer, renderer/assets and tests. |
 | Retro | Missing. Port emulator/practice/sweep tooling and full-screen CNN through the 5.0 network interfaces. Preserve ROMs locally; document external assets. |
 | RetroArch | Missing. Audit standalone integration and dependencies; do not mark complete merely by copying its README. |
-| Shenaniguns | Missing. Port environment and custom network/build integration. |
+| Shenaniguns | CPU simulator, native config, generic viewer and playable demo ported. Adapter tests/sanitizers and 2,048-step async GPU-learner smoke pass. Uses the standard upstream network; deployment-game parity remains a separate external test. |
 | Shenaniguns3D | Missing. Port environment and custom encoder, CPU/GPU paths and tests. |
 | WebNav | Missing. Port native/browser/Bend workflows; obey its family build/memory rules. |
 | WebNav DOM | Missing. Port environment and encoder against current WebNav contracts. |
@@ -118,3 +118,8 @@ their final 5.0 implementations must not be overwritten by older copies.
   on SM61. Four-dimensional structural search is retained with fixed ranges.
   Existing data generators are preserved; a previously documented QSNA fetch
   script was absent in the source inventory and is explicitly not advertised.
+- Shenaniguns: regression tests reproduced legacy reset erasure of final rewards
+  and terminal flags. Fixed within the environment, also clearing stale rewards
+  on timeout. Tests/ASan/UBSan pass, playable demo and generic viewer build,
+  eight short headless episodes and a 2,048-step FP32 async training smoke pass.
+  No shared-core edits. Interactive controls were built, not visually exercised.
