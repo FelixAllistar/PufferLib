@@ -54,11 +54,11 @@ their final 5.0 implementations must not be overwritten by older copies.
 
 | Environment | Conversion status / remaining work |
 | --- | --- |
-| Kaggriculture | CPU/GPU 2/2 simulator, entity network, masks, reset bank, BC/critic and league workflows qualified previously. Carry current actor-only sweep config into Git; finish replay/data, exporter/submission and renderer workflow audit. |
+| Kaggriculture | CPU/GPU 2/2 simulator, entity network, masks, reset bank, BC/critic and league workflows qualified previously. Current actor-only sweep config and new-box build/asset instructions are in Git; finish replay/data, exporter/submission and renderer workflow audit. |
 | TrianglePath | CPU port present; audit original GPU adapter, solver/viewer and tests for full coverage. |
 | Bomberman | CPU simulator/curriculum, masks and upstream viewer ported; CPU tests/sanitizers and FP32 CUDA-learner smoke pass. GPU simulator, richer viewer/league workflows and exact old-checkpoint inference parity remain. |
 | Goofspiel | Missing. Port simulator/observations, CPU/GPU adapters, exact exploitability/opponent tooling and tests. |
-| Abyss | Missing. Port simulator, generated scenario/collider assets, viewer and tests. |
+| Abyss | CPU simulator, generated scenario/collider data and calibration tools ported. Mechanics tests/sanitizers, standalone headless evaluation and async GPU-learner smoke pass. Legacy renderer was a no-op; external raw calibration captures remain user assets. |
 | ARPG | Missing. Preserve latest source/assets; port adapter/build/viewer and test contracts. |
 | Pokemon | Missing. Audit emulator dependencies, environment/model interfaces and personality/experiment tooling. |
 | Puffer Survivors | Missing. Port current environment, controls/viewer, renderer/assets and tests. |
@@ -108,3 +108,13 @@ their final 5.0 implementations must not be overwritten by older copies.
   16,384-step CPU-simulator / GPU-learner smoke with async enabled. Outputs are
   under `build/conversion/`, separate from all user runs. No shared source or
   build-script changes were needed for this CPU port.
+- Fixed sweep bounds are now environment-local: three native tests pass,
+  including two checkpoint-initialized trials with fixed architecture/budget.
+  Seventeen Kaggriculture profile/league tests pass with the current actor-only
+  config. No loss or optimizer changes were introduced.
+- Abyss: simulator differs from `5c` only by observation typedef placement.
+  Mechanics tests and ASan/UBSan pass; standalone evaluator completes four
+  32-step episodes. Native FP32 build and 2,048-step async training smoke pass
+  on SM61. Four-dimensional structural search is retained with fixed ranges.
+  Existing data generators are preserved; a previously documented QSNA fetch
+  script was absent in the source inventory and is explicitly not advertised.

@@ -1,0 +1,30 @@
+{
+  "source": "/mnt/c/Users/sunde/projects/Sanderling/runs/20260721-212155153/events.jsonl",
+  "episodes": 28,
+  "complete_episodes": 28,
+  "rooms": 84,
+  "frames": 3873,
+  "hostile_names": {
+    "Striking Damavik": 1406,
+    "Sparkneedle Tessella": 1044,
+    "Strikeneedle Tessella": 1032,
+    "Ephialtes Lancer": 855,
+    "Emberneedle Tessella": 530,
+    "Lucid Escort": 274,
+    "Attacker Pacifier Disparu Troop": 268,
+    "Lucifer Echo": 210,
+    "Devoted Hunter": 198,
+    "Lucifer Fury": 145,
+    "Lucid Aegis": 136,
+    "Lucifer Dramiel": 130,
+    "Lucifer Swordspine": 126,
+    "Blastneedle Tessella": 117,
+    "Sparklance Tessella": 88,
+    "Blastlance Tessella": 61,
+    "Emberlance Tessella": 41,
+    "Strikelance Tessella": 37,
+    "Emberlance": 2,
+    "Strikelance": 1,
+    "Strikeneedle": 1
+  }
+}

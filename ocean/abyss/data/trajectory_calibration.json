@@ -1,0 +1,751 @@
+{
+  "Anchoring Damavik": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Anchoring Vila Damavik": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Arrester Marshal Disparu Troop": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Arrester Pacifier Disparu Troop": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Assault Enforcer Disparu Troop": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Attacker Marshal Disparu Troop": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Attacker Pacifier Disparu Troop": {
+    "orbit_speed_scale": 1.25,
+    "physical_speed_samples": 74,
+    "radial_gain": 0.6120279498909839,
+    "radial_samples": 15,
+    "tangential_samples": 87
+  },
+  "Bathyic Abyssal Overmind": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Benthic Abyssal Overmind": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Blastgrip Tessera": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Blastlance Tessella": {
+    "orbit_speed_scale": 1.1477142336312471,
+    "physical_speed_samples": 18,
+    "radial_gain": 0.6273795361832176,
+    "radial_samples": 6,
+    "tangential_samples": 20
+  },
+  "Blastneedle Tessella": {
+    "orbit_speed_scale": 1.232858061919837,
+    "physical_speed_samples": 25,
+    "radial_gain": 0.6732143261632801,
+    "radial_samples": 3,
+    "tangential_samples": 40
+  },
+  "Blinding Leshak": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Blinding Vila Damavik": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Devoted Fisher": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Devoted Herald": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Devoted Hunter": {
+    "orbit_speed_scale": 1.2045836991718226,
+    "physical_speed_samples": 46,
+    "radial_gain": 0.687486159689539,
+    "radial_samples": 2,
+    "tangential_samples": 60
+  },
+  "Devoted Knight": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Devoted Lookout": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Devoted Priest": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Devoted Smith": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Devoted Torchbearer": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Devoted Trapper": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Drainer Enforcer Disparu Troop": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Drainer Marshal Disparu Troop": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Drainer Pacifier Disparu Troop": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Drifter Assault Battleship": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Drifter Command Battleship": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Drifter Entanglement Cruiser": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Drifter Foothold Battleship": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Drifter Frontline Battleship": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Drifter Nullcharge Cruiser": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Drifter Nullwarp Cruiser": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Drifter Rearguard Battleship": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Drifter Vanguard Battleship": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Elite Lucifer Cynabal": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Elite Lucifer Dramiel": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Embergrip Tessera": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Emberlance Tessella": {
+    "orbit_speed_scale": 1.068202067594337,
+    "physical_speed_samples": 9,
+    "radial_gain": 0.6635959668815228,
+    "radial_samples": 3,
+    "tangential_samples": 12
+  },
+  "Emberneedle Tessella": {
+    "orbit_speed_scale": 1.2212752270754477,
+    "physical_speed_samples": 122,
+    "radial_gain": 0.44990186158212775,
+    "radial_samples": 42,
+    "tangential_samples": 162
+  },
+  "Endobenthic Abyssal Overmind": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Ephialtes Confuser": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Ephialtes Dissipator": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Ephialtes Entangler": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Ephialtes Illuminator": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Ephialtes Lancer": {
+    "orbit_speed_scale": 1.25,
+    "physical_speed_samples": 219,
+    "radial_gain": 0.5182947346346891,
+    "radial_samples": 48,
+    "tangential_samples": 245
+  },
+  "Ephialtes Obfuscator": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Ephialtes Spearfisher": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Fieldweaver Tessella": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Fogcaster Tessella": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Gazedimmer Tessella": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Ghosting Damavik": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Ghosting Kikimora": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Ghosting Vila Damavik": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Hadal Abyssal Overmind": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Harrowing Vedmak": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Harrowing Vila Vedmak": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Lucid Aegis": {
+    "orbit_speed_scale": 1.1325544550343802,
+    "physical_speed_samples": 27,
+    "radial_gain": 0.6808254306467778,
+    "radial_samples": 3,
+    "tangential_samples": 36
+  },
+  "Lucid Deepwatcher": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Lucid Escort": {
+    "orbit_speed_scale": 1.108009719895843,
+    "physical_speed_samples": 59,
+    "radial_gain": 0.6713159662824545,
+    "radial_samples": 9,
+    "tangential_samples": 75
+  },
+  "Lucid Firewatcher": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Lucid Preserver": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Lucid Sentinel": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Lucid Upholder": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Lucid Warden": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Lucid Watchman": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Lucifer Burst": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Lucifer Cynabal": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Lucifer Dramiel": {
+    "orbit_speed_scale": 1.25,
+    "physical_speed_samples": 38,
+    "radial_gain": 0.6480451282877565,
+    "radial_samples": 7,
+    "tangential_samples": 41
+  },
+  "Lucifer Echo": {
+    "orbit_speed_scale": 1.25,
+    "physical_speed_samples": 57,
+    "radial_gain": 0.6459020540644203,
+    "radial_samples": 7,
+    "tangential_samples": 63
+  },
+  "Lucifer Fury": {
+    "orbit_speed_scale": 1.25,
+    "physical_speed_samples": 39,
+    "radial_gain": 0.6740159594518839,
+    "radial_samples": 5,
+    "tangential_samples": 44
+  },
+  "Lucifer Ixion": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Lucifer Medusa": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Lucifer Swordspine": {
+    "orbit_speed_scale": 1.25,
+    "physical_speed_samples": 37,
+    "radial_gain": 0.5993253922001048,
+    "radial_samples": 12,
+    "tangential_samples": 40
+  },
+  "Marker Enforcer Disparu Troop": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Marker Pacifier Disparu Troop": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Photic Abyssal Overmind": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Plateforger Tessella": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Renewing Leshak": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Renewing Rodiva": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Shining Drekavac": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Shining Vila Damavik": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Skybreaker Disparu Troop": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Snarecaster Tessella": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Sparkgrip Tessera": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Sparklance Tessella": {
+    "orbit_speed_scale": 1.0135371532837796,
+    "physical_speed_samples": 21,
+    "radial_gain": 0.6443281072735089,
+    "radial_samples": 5,
+    "tangential_samples": 26
+  },
+  "Sparkneedle Tessella": {
+    "orbit_speed_scale": 1.25,
+    "physical_speed_samples": 274,
+    "radial_gain": 0.39725524166359993,
+    "radial_samples": 69,
+    "tangential_samples": 322
+  },
+  "Spotlighter Tessella": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Starving Damavik": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Starving Leshak": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Starving Vedmak": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Stormbringer Disparu Troop": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Strikegrip Tessera": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Strikelance Tessella": {
+    "orbit_speed_scale": 0.9528793058011451,
+    "physical_speed_samples": 10,
+    "radial_gain": 0.6964286845286471,
+    "radial_samples": 1,
+    "tangential_samples": 13
+  },
+  "Strikeneedle Tessella": {
+    "orbit_speed_scale": 1.25,
+    "physical_speed_samples": 267,
+    "radial_gain": 0.4329793791109419,
+    "radial_samples": 63,
+    "tangential_samples": 342
+  },
+  "Striking Damavik": {
+    "orbit_speed_scale": 1.25,
+    "physical_speed_samples": 400,
+    "radial_gain": 0.5674517520323374,
+    "radial_samples": 47,
+    "tangential_samples": 439
+  },
+  "Striking Drekavac": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Striking Kikimora": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Striking Leshak": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Striking Vila Damavik": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Tangling Damavik": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Tangling Kikimora": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Tangling Leshak": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Tangling Vila Damavik": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Thunderchild Disparu Troop": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Twilit Abyssal Overmind": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  },
+  "Vila Swarmer": {
+    "orbit_speed_scale": 1.0,
+    "physical_speed_samples": 0,
+    "radial_gain": 0.7,
+    "radial_samples": 0,
+    "tangential_samples": 0
+  }
+}
