@@ -179,6 +179,11 @@ elif [ "$ENV" = "impulse_wars" ]; then
     if [ -z "${MODE:-}" ] || [ "$MODE" = "native" ] || [ "$MODE" = "profile" ]; then
         EXTRA_SRC="ocean/impulse_wars/impulse_wars_api.c"
     fi
+elif [ "$ENV" = "arpg" ]; then
+    SRC_DIR="ocean/$ENV"
+    BOX3D_DIR=${BOX3D_DIR:-../box3d}
+    INCLUDES+=(-I"$BOX3D_DIR/include")
+    LINK_ARCHIVES+=("$BOX3D_DIR/build/src/libbox3d.a")
 elif [ "$ENV" = "nethack" ]; then
     SRC_DIR="ocean/$ENV"
     EXTRA_CFLAGS+=(-DPUFFER_NETHACK)

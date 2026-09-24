@@ -59,7 +59,7 @@ their final 5.0 implementations must not be overwritten by older copies.
 | Bomberman | CPU simulator/curriculum, masks and play/watch viewer ported; CPU tests/sanitizers and FP32 CUDA-learner smoke pass. GPU simulator, league workflows and exact old/new checkpoint inference parity remain. |
 | Goofspiel | CPU simulator/masks, renderer and standalone exact evaluator ported and tested; 4-bank async training smoke passes. GPU adapters/evaluator, exact-response refresh/persistence and exploitability-driven sweeps remain. |
 | Abyss | CPU simulator, generated scenario/collider data and calibration tools ported. Mechanics tests/sanitizers, standalone headless evaluation and async GPU-learner smoke pass. Legacy renderer was a no-op; external raw calibration captures remain user assets. |
-| ARPG | Missing. Preserve latest source/assets; port adapter/build/viewer and test contracts. |
+| ARPG | Latest CPU simulator/world/save/viewer/art ported; mechanics, Frontier, Reach, viewer and native CPU-under-NVCC tests pass. Async FP32 training smoke passes. GPU simulator and interactive visual qualification remain. |
 | Pokemon | Missing. Audit emulator dependencies, environment/model interfaces and personality/experiment tooling. |
 | Puffer Survivors | CPU/GPU adapters, shared simulator, config, play/watch viewer and art ported. CPU sanitizers, CUDA mechanics/stream/recreation checks, FP32 CPU/GPU async training (GPU graphs on/off), and viewer checkpoint inference pass. Interactive visual qualification and remote BF16 testing remain. |
 | Retro | Missing. Port emulator/practice/sweep tooling and full-screen CNN through the 5.0 network interfaces. Preserve ROMs locally; document external assets. |
@@ -88,6 +88,15 @@ their final 5.0 implementations must not be overwritten by older copies.
   replaced workflows rather than advertising them as working 5.0 features.
 
 ## Verification log
+
+- ARPG CPU port preserves the gameplay/world/render source and original art
+  from `5c`; adapter changes place `obs_t` before the 5.0 Agent definition and
+  update viewer inference/config calls. Box3D revision
+  `c4a414fcfe612a704dcd06ce921348d441271fc7` is pinned in the environment README.
+  Root `build.sh` adds five lines of ARPG dependency registration only. Native
+  SM61 FP32 training completes 1,024 steps with async, two buffers, 16 agents
+  and short episodes. CPU-under-NVCC mechanics and renderer compilation pass;
+  camera/orders/pet-head/checkpoint tests run headlessly against the art files.
 
 - 2026-09-24: inventory complete at the refs above. Twelve fork-only
   environments are absent from the converted tree. Kaggriculture and
