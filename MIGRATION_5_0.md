@@ -78,8 +78,8 @@ their final 5.0 implementations must not be overwritten by older copies.
 | ARPG | Latest CPU simulator/world/save/viewer/art ported; mechanics, Frontier, Reach, viewer and native CPU-under-NVCC tests pass. Async FP32 training smoke passes. GPU simulator and interactive visual qualification remain. |
 | Pokemon | Engine/core/data, semantic CPU model, standalone evaluator and offline state-bank tools ported. Bridge/game, old/new model parity, adapter/input/fixed-team and state-bank tests pass. Native setup/CUDA model, reset scheduling, league/experiment integration and visual qualification remain; generic training explicitly blocked. |
 | Puffer Survivors | CPU/GPU adapters, shared simulator, config, play/watch viewer and art ported. CPU sanitizers, CUDA mechanics/stream/recreation checks, FP32 CPU/GPU async training (GPU graphs on/off), and viewer checkpoint inference pass. Interactive visual qualification and remote BF16 testing remain. |
-| Retro | Missing. Port emulator/practice/sweep tooling and full-screen CNN through the 5.0 network interfaces. Preserve ROMs locally; document external assets. |
-| RetroArch | Audit confirms `5c` contains only a README alias to Retro, not an independent implementation. Preserve the alias when the Retro build/workflow is ported. |
+| Retro | CPU emulator, compiled-ROM generator, practice/playback helpers and differential suites ported. Reference and compiled tests pass; 131 emulator source files match `5c` exactly. Full-screen CNN, trainer/viewer, sweep panels and config remain unported; generic training explicitly blocked. User ROM stays ignored/local. |
+| RetroArch | Restored documentation alias to Retro; `5c` has no independent implementation. |
 | Shenaniguns | CPU simulator, native config, generic viewer and playable demo ported. Adapter tests/sanitizers and 2,048-step async GPU-learner smoke pass. Uses the standard upstream network; deployment-game parity remains a separate external test. |
 | Shenaniguns3D | Missing. Port environment and custom encoder, CPU/GPU paths and tests. |
 | WebNav | Missing. Port native/browser/Bend workflows; obey its family build/memory rules. |
