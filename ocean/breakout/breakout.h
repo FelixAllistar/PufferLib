@@ -14,6 +14,10 @@ typedef float obs_t;
 #endif
 #include "pufferenv.h"
 
+#ifdef PUFFER_TUI_CAPTURE
+#include "puffer_tui.h"
+#endif
+
 #define ACT_SIZES {3}
 typedef Env Breakout;
 
@@ -634,6 +638,9 @@ void puf_render(Breakout* env) {
 
     DrawText(TextFormat("Score: %i", env->score), 10, 10, 20, WHITE);
     DrawText(TextFormat("Balls: %i", env->num_balls), client->width - 80, 10, 20, WHITE);
+#ifdef PUFFER_TUI_CAPTURE
+    ptui_capture(env->width, env->height);
+#endif
     EndDrawing();
     puf_web_vsync();
 

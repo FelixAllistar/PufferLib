@@ -63,12 +63,12 @@ their final 5.0 implementations must not be overwritten by older copies.
 | Pokemon | Missing. Audit emulator dependencies, environment/model interfaces and personality/experiment tooling. |
 | Puffer Survivors | CPU/GPU adapters, shared simulator, config, play/watch viewer and art ported. CPU sanitizers, CUDA mechanics/stream/recreation checks, FP32 CPU/GPU async training (GPU graphs on/off), and viewer checkpoint inference pass. Interactive visual qualification and remote BF16 testing remain. |
 | Retro | Missing. Port emulator/practice/sweep tooling and full-screen CNN through the 5.0 network interfaces. Preserve ROMs locally; document external assets. |
-| RetroArch | Missing. Audit standalone integration and dependencies; do not mark complete merely by copying its README. |
+| RetroArch | Audit confirms `5c` contains only a README alias to Retro, not an independent implementation. Preserve the alias when the Retro build/workflow is ported. |
 | Shenaniguns | CPU simulator, native config, generic viewer and playable demo ported. Adapter tests/sanitizers and 2,048-step async GPU-learner smoke pass. Uses the standard upstream network; deployment-game parity remains a separate external test. |
 | Shenaniguns3D | Missing. Port environment and custom encoder, CPU/GPU paths and tests. |
 | WebNav | Missing. Port native/browser/Bend workflows; obey its family build/memory rules. |
 | WebNav DOM | Missing. Port environment and encoder against current WebNav contracts. |
-| Breakout | Review the fork's one modified environment file against finalized upstream. |
+| Breakout | Fork delta is solely optional TUI frame capture; restored without altering upstream gameplay. Capture protocol tests and executable build pass; real GL/terminal rendering remains unqualified. |
 | Robocode | Review the fork's two modified environment files against finalized upstream. |
 
 ## Other source/workflow inventory
