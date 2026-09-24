@@ -16,6 +16,12 @@ cd /workspace/PufferLib
 
 The environment is compiled into the binary: do **not** append `kaggriculture`.
 To rebuild: `NVCC_ARCH=sm_120 bash build.sh kaggriculture --cu`.
+For a separate CPU-simulation/GPU-training binary, use
+`NVCC_ARCH=sm_120 bash build.sh kaggriculture puffer_cpu`, then `./puffer_cpu train`.
+Both use the same simulator/controller/rewards and CUDA inference/PPO. The CPU
+adapter uploads game/policy snapshots for prefix-dependent GPU sampling.
+`--cpu` is upstream's standalone play/eval build flag, not the CPU-simulation
+trainer flag. Neither adapter currently ports the interactive renderer.
 The ready profile loads `saved/kaggriculture/initial_bc_critic.bin`, uses terminal
 cash gain only, a trainable critic, replay resets and frozen league opponents.
 The 300M-step run is not automatically launched by installation.
@@ -42,7 +48,11 @@ state preserves memory, not the full 720-step backpropagation window.
 Upstream counts all physical agent rows in its step budget. At this league
 split, 300M nominal steps contain approximately 187.5M learner transitions.
 Minibatch *sequences* (`minibatch_size / horizon`) must divide the learner-row
-count. Rollout masks are ordinary precision tensors, not bitpacked.
+count. Binary rollout masks are losslessly bitpacked (248 bytes per row), then
+expanded for each minibatch before the unchanged upstream PPO kernels. Other
+environments retain dense masks unless they explicitly opt into binary packing.
+Discrete league banks retain separate inference, weights, recurrence and RNG;
+their logits are gathered for one batched sampling launch per environment buffer.
 
 `reset_fraction` measures completed logged episodes, not necessarily the
 configured draw probability: continuations are shorter. `root_money` and

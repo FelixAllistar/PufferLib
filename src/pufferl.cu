@@ -859,6 +859,10 @@ static void pufferl_forward_step(PuffeRL* pufferl, int buf, int t,
     }
     EnvBuf* env = &pufferl->env;
     VecEnv* vec = pufferl->vec;
+    Env* sampling_envs = vec->envs;
+#ifdef PUFFER_KAGGRICULTURE
+    sampling_envs = kag_sampling_envs(vec->envs);
+#endif
     int block_size = hypers->total_agents / hypers->num_buffers;
     int start = buf * block_size;
     int* layout = vec->policy_layout;
@@ -954,7 +958,7 @@ static void pufferl_forward_step(PuffeRL* pufferl, int buf, int t,
             act_b.data, env->actions.data + (long)sub * act_cols,
             lp_b.data, val_b.data,
             pufferl->rng_states[buf] + off,
-            mask_b.data, mask_stride, pufferl->vec->envs, sub);
+            mask_b.data, mask_stride, sampling_envs, sub);
     }
     if (batch_sampling) {
         int cols = pufferl->sampling_logits.shape[1];
@@ -966,7 +970,7 @@ static void pufferl_forward_step(PuffeRL* pufferl, int buf, int t,
         sample_logits<<<grid_size(block_size), BLOCK_SIZE, 0, stream>>>(
             dec, {}, pufferl->act_sizes, actions.data,
             env->actions.data + (long)start * act_cols, logprobs.data, values.data,
-            pufferl->rng_states[buf], mask_slice.data, mask_stride, vec->envs, start);
+            pufferl->rng_states[buf], mask_slice.data, mask_stride, sampling_envs, start);
     }
 #if PUF_PACKED_MASK
     int packed = rollouts.action_mask.shape[2];
@@ -1080,7 +1084,7 @@ static void env_setup(PuffeRL* p, VecEnv* vec, Dict* vk, Dict* ek) {
         cudaMemset(vec->log_scratch, 0, sizeof(Log));
         vec->policy_layout[0] = 0;
         vec->policy_layout[1] = vec->agents_per_buf;
-#ifdef PUFFER_KAGGRICULTURE
+#if defined(PUFFER_KAGGRICULTURE) && PUF_BACKEND == PUF_GPU
         kag_assign_policies(vec->envs, vk, vec->policy_layout);
 #endif
         return;
@@ -1206,6 +1210,9 @@ static void cpu_upload(PuffeRL* p, int start, int n, cudaStream_t stream) {
     cudaMemcpyAsync(e->action_mask.data + (size_t)start * mask,
         v->action_mask + (size_t)start * mask,
         n * mask * sizeof(unsigned char), cudaMemcpyHostToDevice, stream);
+#if defined(PUFFER_KAGGRICULTURE) && PUF_BACKEND == PUF_CPU
+    kag_upload_sampling(v->envs, v->observations, start, n, stream);
+#endif
 }
 
 // CPU worker handshake. Atomic on worker_state[]; calloc leaves BUF_STARTING.
