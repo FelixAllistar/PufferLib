@@ -536,6 +536,7 @@ typedef struct PuffeRL {
     RolloutBuf rollouts;
     RolloutBuf train_rollouts;  // Pre-allocated transposed copy for train_impl
     EnvBuf env;
+    Prec sampling_logits;  // Discrete policies share sampling, not inference or RNG.
     TrainGraph train_buf;
     Prec train_state;  // (L, A, H) carry in env order; graph reads with dest_off
     cudaGraphExec_t* rollout_graphs;  // CPU: [slots][horizon][num_buffers]
@@ -856,6 +857,7 @@ static void pufferl_forward_step(PuffeRL* pufferl, int buf, int t,
 
     // Per-policy forward: layout[b]..layout[b+1) within each buffer chunk.
     long act_cols = env->actions.shape[1];
+    bool batch_sampling = pufferl->sampling_logits.data != NULL;
     for (int b = 0; b < pufferl->num_policies; b++) {
         int off = layout[b];
         int n = layout[b + 1] - off;
@@ -890,6 +892,13 @@ static void pufferl_forward_step(PuffeRL* pufferl, int buf, int t,
 
         Prec dec = arch_forward(&pol->arch, *w, *acts, obs_b, *st, stream);
 
+        if (batch_sampling) {
+            cudaMemcpyAsync(pufferl->sampling_logits.data + (long)sub * dec.shape[1],
+                dec.data, n * dec.shape[1] * sizeof(precision_t),
+                cudaMemcpyDeviceToDevice, stream);
+            continue;
+        }
+
         Prec p_logstd = {};
         DecoderWeights* dw = (DecoderWeights*)w->decoder;
         if (dw->continuous) {
@@ -903,6 +912,18 @@ static void pufferl_forward_step(PuffeRL* pufferl, int buf, int t,
             lp_b.data, val_b.data,
             pufferl->rng_states[buf] + off,
             mask_b.data, mask_stride, pufferl->vec->envs, sub);
+    }
+    if (batch_sampling) {
+        int cols = pufferl->sampling_logits.shape[1];
+        Prec dec = {.data = pufferl->sampling_logits.data + (long)start * cols,
+            .shape = {block_size, cols}};
+        Float actions = puf_slice(rollouts.actions, t, start, block_size);
+        Prec logprobs = puf_slice(rollouts.logprobs, t, start, block_size);
+        Prec values = puf_slice(rollouts.values, t, start, block_size);
+        sample_logits<<<grid_size(block_size), BLOCK_SIZE, 0, stream>>>(
+            dec, {}, pufferl->act_sizes, actions.data,
+            env->actions.data + (long)start * act_cols, logprobs.data, values.data,
+            pufferl->rng_states[buf], mask_slice.data, mask_stride, vec->envs, start);
     }
 }
 
@@ -1991,6 +2012,10 @@ PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx) {
     assert(!(pufferl->num_policies > 1 && (hist_hidden <= 0 || hist_layers <= 0))
         && "num_policies > 1 requires hist_policy_hidden_size and hist_policy_num_layers > 0");
     pufferl->policies = (Policy*)calloc(1, pufferl->num_policies * sizeof(Policy));
+    if (pufferl->num_policies > 1 && !is_continuous) {
+        pufferl->sampling_logits = {.shape = {total_agents, decoder_output_size + 1}};
+        alloc_register(acts, &pufferl->sampling_logits);
+    }
 
     for (int b = 0; b < pufferl->num_policies; b++) {
         Policy* pol = &pufferl->policies[b];
