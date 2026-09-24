@@ -57,7 +57,7 @@ their final 5.0 implementations must not be overwritten by older copies.
 | Kaggriculture | CPU/GPU 2/2 simulator, entity network, masks, reset bank, BC/critic and league workflows qualified previously. Current actor-only sweep config and new-box build/asset instructions are in Git; finish replay/data, exporter/submission and renderer workflow audit. |
 | TrianglePath | CPU/GPU adapters and shared exact solver ported. CPU legacy traces/sanitizers and 12-case GPU differential suite pass. No renderer existed in the legacy header. |
 | Bomberman | CPU simulator/curriculum, masks and play/watch viewer ported; CPU tests/sanitizers and FP32 CUDA-learner smoke pass. GPU simulator, league workflows and exact old/new checkpoint inference parity remain. |
-| Goofspiel | Missing. Port simulator/observations, CPU/GPU adapters, exact exploitability/opponent tooling and tests. |
+| Goofspiel | CPU simulator/masks, renderer and standalone exact evaluator ported and tested; 4-bank async training smoke passes. GPU adapters/evaluator, exact-response refresh/persistence and exploitability-driven sweeps remain. |
 | Abyss | CPU simulator, generated scenario/collider data and calibration tools ported. Mechanics tests/sanitizers, standalone headless evaluation and async GPU-learner smoke pass. Legacy renderer was a no-op; external raw calibration captures remain user assets. |
 | ARPG | Missing. Preserve latest source/assets; port adapter/build/viewer and test contracts. |
 | Pokemon | Missing. Audit emulator dependencies, environment/model interfaces and personality/experiment tooling. |

@@ -1,0 +1,216 @@
+#include "../goofspiel.h"
+
+#include <assert.h>
+#include <stdio.h>
+#include <string.h>
+
+static void bind_env(Env* env, obs_t* observations, float* actions,
+        float* rewards, float* terminals, unsigned char* masks) {
+    for (int p = 0; p < env->num_agents; p++) {
+        env->agents[p].observations = observations + p * OBS_SIZE;
+        env->agents[p].actions = actions + p;
+        env->agents[p].rewards = rewards + p;
+        env->agents[p].terminals = terminals + p;
+        env->agents[p].action_mask = masks + p * GS_MAX_CARDS;
+    }
+}
+
+static Env make_env(void) {
+    Env env = {0};
+    env.cfg.num_players = 2;
+    env.cfg.num_cards = 3;
+    env.cfg.num_turns = 3;
+    env.cfg.prize_order = GS_PRIZES_ASCENDING;
+    env.cfg.information = GS_INFO_PERFECT;
+    env.cfg.egocentric = 1;
+    env.cfg.return_type = GS_RETURN_WIN_LOSS;
+    env.cfg.tie_rule = GS_TIE_DISCARD;
+    env.cfg.auto_forced_last = 1;
+    env.cfg.full_hand = 7;
+    env.cfg.total_points = 6;
+    env.num_agents = 2;
+    env.rng = gs_mix32(123);
+    return env;
+}
+
+static void test_observation_views(void) {
+    Env env = make_env();
+    obs_t observations[2 * OBS_SIZE] = {0};
+    float actions[2] = {0};
+    float rewards[2] = {0};
+    float terminals[2] = {0};
+    unsigned char masks[2 * GS_MAX_CARDS] = {0};
+    bind_env(&env, observations, actions, rewards, terminals, masks);
+    puf_reset(&env);
+
+    env.state.hands[0] = 1u << 0;
+    env.state.hands[1] = 1u << 2;
+    env.state.scores[0] = 3;
+    env.state.scores[1] = 5;
+    gs_observe(&env);
+
+    obs_t* p0 = observations;
+    obs_t* p1 = observations + OBS_SIZE;
+    assert(p0[GS_O_HANDS + 0] == 1);
+    assert(p0[GS_O_HANDS + GS_MAX_CARDS + 2] == 1);
+    assert(p1[GS_O_HANDS + 2] == 1);
+    assert(p1[GS_O_HANDS + GS_MAX_CARDS + 0] == 1);
+    assert(p0[GS_O_SCORES] == 3 && p0[GS_O_SCORES + 2] == 5);
+    assert(p1[GS_O_SCORES] == 5 && p1[GS_O_SCORES + 2] == 3);
+
+    env.cfg.information = GS_INFO_HIDDEN_BIDS;
+    gs_observe(&env);
+    for (int card = 0; card < GS_MAX_CARDS; card++) {
+        assert(p0[GS_O_HANDS + GS_MAX_CARDS + card] == 0);
+        assert(p1[GS_O_HANDS + GS_MAX_CARDS + card] == 0);
+    }
+
+    env.cfg.egocentric = 0;
+    gs_observe(&env);
+    assert(p0[GS_O_SELF] == 1 && p0[GS_O_SELF + 1] == 0);
+    assert(p1[GS_O_SELF] == 0 && p1[GS_O_SELF + 1] == 1);
+    assert(p1[GS_O_HANDS + 0] == 0);
+    assert(p1[GS_O_HANDS + GS_MAX_CARDS + 2] == 1);
+}
+
+static void test_masks_and_terminal_reset(void) {
+    Env env = make_env();
+    obs_t observations[2 * OBS_SIZE] = {0};
+    float actions[2] = {0};
+    float rewards[2] = {0};
+    float terminals[2] = {0};
+    unsigned char masks[2 * GS_MAX_CARDS] = {0};
+    bind_env(&env, observations, actions, rewards, terminals, masks);
+    puf_reset(&env);
+
+    for (int p = 0; p < 2; p++) {
+        assert(masks[p * GS_MAX_CARDS + 0] == 1);
+        assert(masks[p * GS_MAX_CARDS + 1] == 1);
+        assert(masks[p * GS_MAX_CARDS + 2] == 1);
+        assert(masks[p * GS_MAX_CARDS + 3] == 0);
+    }
+
+    actions[0] = 2;
+    actions[1] = 1;
+    puf_step(&env);
+    assert(masks[2] == 0 && masks[GS_MAX_CARDS + 1] == 0);
+    assert(terminals[0] == 0 && terminals[1] == 0);
+
+    actions[0] = 1;
+    actions[1] = 2;
+    puf_step(&env);
+    assert(terminals[0] == 1 && terminals[1] == 1);
+    assert(rewards[0] != 0 || rewards[1] != 0);
+    assert(env.state.round == 0);
+    assert(env.state.hands[0] == env.cfg.full_hand);
+    assert(env.state.hands[1] == env.cfg.full_hand);
+    for (int p = 0; p < 2; p++) {
+        assert(masks[p * GS_MAX_CARDS + 0] == 1);
+        assert(masks[p * GS_MAX_CARDS + 1] == 1);
+        assert(masks[p * GS_MAX_CARDS + 2] == 1);
+    }
+    assert(env.log.n == 1.0f);
+    assert(env.log.episode_length == 2.0f);
+}
+
+static void test_open_spiel_observation(void) {
+    Env env = make_env();
+    obs_t observations[2 * OBS_SIZE] = {0};
+    float actions[2] = {0};
+    float rewards[2] = {0};
+    float terminals[2] = {0};
+    unsigned char masks[2 * GS_MAX_CARDS] = {0};
+    bind_env(&env, observations, actions, rewards, terminals, masks);
+    puf_reset(&env);
+    env.cfg.open_spiel_obs = 1;
+    env.cfg.egocentric = 0;
+    env.state.round = 1;
+    env.state.prizes[0] = 0;
+    env.state.prizes[1] = 1;
+    env.state.scores[0] = 3;
+    env.state.scores[1] = 5;
+    env.state.hands[0] = 1u << 0;
+    env.state.hands[1] = 1u << 2;
+    gs_observe(&env);
+
+    // n=3: 2*7 score bins, 3*3 prize history, 2*3 hands, 2 seats.
+    assert(gs_open_spiel_obs_size(&env.cfg) == 31);
+    assert(observations[3] == 1);
+    assert(observations[7 + 5] == 1);
+    assert(observations[14 + 0] == 1);
+    assert(observations[14 + 3 + 1] == 1);
+    assert(observations[23 + 0] == 1);
+    assert(observations[23 + 3 + 2] == 1);
+    assert(observations[29] == 1);
+    assert(observations[OBS_SIZE + 5] == 1);
+    assert(observations[OBS_SIZE + 7 + 3] == 1);
+    assert(observations[OBS_SIZE + 23 + 2] == 1);
+    assert(observations[OBS_SIZE + 23 + 3 + 0] == 1);
+    assert(observations[OBS_SIZE + 30] == 1);
+}
+
+static void test_exact_responder_seats(void) {
+    for (int responder = 0; responder < 2; responder++) {
+        Env env = make_env();
+        env.cfg.auto_forced_last = 0;
+        env.agents[responder].policy = 1;
+        env.tag = 1;
+        obs_t observations[2 * OBS_SIZE] = {0};
+        float actions[2] = {2, 2}, rewards[2] = {0}, terminals[2] = {0};
+        unsigned char masks[2 * GS_MAX_CARDS] = {0};
+        bind_env(&env, observations, actions, rewards, terminals, masks);
+        puf_reset(&env);
+        uint8_t first[] = {0};
+        uint8_t second[9] = {0};
+        // First response rank=0, learner rank=2: child node must be 2.
+        second[2] = 1;
+        gs_exact_enabled = gs_exact_count = gs_exact_banks = 1;
+        gs_exact_tables[0].decisions = 2;
+        gs_exact_tables[0].actions[0] = first;
+        gs_exact_tables[0].actions[1] = second;
+        puf_step(&env);
+        assert(env.state.last_bids[responder] == 0);
+        assert(env.state.last_bids[1 - responder] == 2);
+        assert(env.exact_node == 2 && env.exact_depth == 1);
+        actions[responder] = 2;
+        actions[1 - responder] = 0;
+        puf_step(&env);
+        assert(env.state.last_bids[responder] == 1);
+        assert(env.state.last_bids[1 - responder] == 0);
+    }
+    gs_exact_enabled = gs_exact_count = gs_exact_banks = 0;
+    memset(gs_exact_tables, 0, sizeof(gs_exact_tables));
+}
+
+int main(void) {
+    Ini ini = {0};
+    puf_ini_load_file(&ini, "../../config/goofspiel.ini");
+    Dict* vk = puf_ini_section(&ini, "vec", 0);
+    Dict* ek = puf_ini_section(&ini, "env", 0);
+    dict_set(vk, "total_agents", 128);
+    dict_set(vk, "num_buffers", 2);
+    int count, starts[2], counts[2];
+    Env* envs = my_vec_init(&count, starts, counts, vk, ek);
+    assert(count == 64 && starts[0] == 0 && starts[1] == 32);
+    for (int buf = 0; buf < 2; buf++) {
+        int policies[5] = {0};
+        assert(counts[buf] == 32);
+        for (int e = starts[buf]; e < starts[buf] + counts[buf]; e++) {
+            for (int p = 0; p < 2; p++) {
+                policies[envs[e].agents[p].policy]++;
+            }
+        }
+        assert(policies[0] == 48);
+        for (int p = 1; p < 5; p++) assert(policies[p] == 4);
+    }
+    free(envs);
+    puf_ini_free(&ini);
+    assert(GS_COMPACT_OBS_SIZE == 27);
+    assert(OBS_SIZE == 48);
+    test_observation_views();
+    test_open_spiel_observation();
+    test_masks_and_terminal_reset();
+    test_exact_responder_seats();
+    printf("goofspiel adapter tests passed\n");
+    return 0;
+}
