@@ -11,7 +11,7 @@ LIB := $(BUILD)/libquicknes.a
 INCLUDES := -I$(ROOT)/src -I$(ROOT)/raylib-5.5_linux_amd64/include -I. -Ines_emu
 LDLIBS := $(ROOT)/raylib-5.5_linux_amd64/lib/libraylib.a -lGL -ldl -lm -pthread -fopenmp
 
-.PHONY: library test batch-test resolution policy-test policy-legacy-test encoder-test
+.PHONY: library batch-library test batch-test resolution policy-test policy-legacy-test encoder-test
 encoder-test: library
 	clang -O2 -std=c11 -ffp-contract=off -I$(ROOT)/src -DRETRO_OBS_SCALE=$(RETRO_OBS_SCALE) \
 		-DRETRO_CUDA_REFERENCE -c tests/test_policy_cpu.c -o $(BUILD)/cpu_reference.o
@@ -37,6 +37,7 @@ policy-legacy-test: policy-test
 	test "$$($(BUILD)/test_policy_cpu)" = "$$($(BUILD)/test_policy_legacy)"
 
 library: $(LIB)
+batch-library: $(BATCH)/libquicknes_batch.a
 $(BUILD)/%.o: nes_emu/%.cpp
 	@mkdir -p $(BUILD)
 	$(CXX) $(CXXFLAGS) -MMD -MP -Ines_emu -c $< -o $@

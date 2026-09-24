@@ -179,6 +179,10 @@ elif [ "$ENV" = "impulse_wars" ]; then
     if [ -z "${MODE:-}" ] || [ "$MODE" = "native" ] || [ "$MODE" = "profile" ]; then
         EXTRA_SRC="ocean/impulse_wars/impulse_wars_api.c"
     fi
+elif [ "$ENV" = "retro" ]; then
+    SRC_DIR="ocean/$ENV"
+    make -C "$SRC_DIR" -j2 batch-library
+    LINK_ARCHIVES+=("build/retro_batch/libquicknes_batch.a")
 elif [ "$ENV" = "arpg" ]; then
     SRC_DIR="ocean/$ENV"
     BOX3D_DIR=${BOX3D_DIR:-../box3d}

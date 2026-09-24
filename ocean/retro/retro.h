@@ -859,7 +859,7 @@ static void my_vec_close(Env* envs) {
 #define MY_VEC_INIT
 #define MY_VEC_CLOSE
 #endif
-#if (defined(__CUDACC__) && defined(PUFFERLIB_BUILD_MAIN)) || defined(PUFFERCPU_EVAL_MAIN)
-#error "Retro CNN/trainer integration is not ported yet; use ocean/retro simulator tests"
+#if defined(PUFFERCPU_EVAL_MAIN)
+#error "Retro standalone viewer integration is not ported yet; use ocean/retro simulator tests"
 #endif
 #endif

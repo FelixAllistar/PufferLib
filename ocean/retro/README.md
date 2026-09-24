@@ -2,9 +2,9 @@
 
 Conversion is in progress. The full-screen SMB1 simulator, QuickNES source,
 compiled-ROM block generator, natural-life playback helpers and practice
-controller replay are preserved from `5c` at `036cf4251`. Native training and
-policy evaluation are explicitly blocked until native integration is qualified;
-do not substitute the generic MLP or use an incompatible checkpoint.
+controller replay are preserved from `5c` at `036cf4251`. Native FP32 training
+is available with the matching CNN; the standalone viewer is still blocked.
+Do not substitute the generic MLP or use an incompatible checkpoint.
 
 ## Local assets and simulator tests
 
@@ -61,7 +61,7 @@ use the 5.0 encoder interface and upstream recurrent network/head. Parameter
 ordering is unchanged. CPU output traces match the legacy model exactly at
 both supported image resolutions, including recurrent resets. The scale-4
 FP32 CUDA suite passes feature-map, recurrent-output, numerical-gradient and
-borrowed-input/CUDA-graph checks. BF16 and native training remain unqualified.
+borrowed-input/CUDA-graph checks. BF16 remains unqualified.
 
 ```sh
 make -C ocean/retro policy-test
@@ -74,10 +74,28 @@ The legacy comparison requires the preserved checkout and its original CPU
 inference header. `encoder-test` builds the CUDA test; the following command
 runs it. Use a separate `BUILD` directory when changing `RETRO_OBS_SCALE`.
 
+## Native training
+
+```sh
+bash build.sh retro --float
+./puffer train retro
+```
+
+The build generates compiled-ROM blocks from the local cartridge and links
+QuickNES. Simulation runs on CPU; the CNN and upstream trainer run on GPU.
+The config preserves the legacy 256×2 pipe-exit practice setup and rewards,
+but not its custom optimizer or retired priority-replay settings. The old
+speed-ranked sweep panel is not integrated yet.
+
+Isolated FP32 smoke tests completed 1,024 steps with a small network and graphs
+off, and 2,048 steps with the 256×2 network, graphs on and 64-frame timeouts.
+Both used asynchronous training with two buffers, finite losses and saved final
+checkpoints. These establish execution, not learning quality or throughput.
+
 ## Remaining conversion
 
-Native trainer/build integration, the play/watch inspector, learned-checkpoint qualification, speed
-evaluation panels, sweep integration and training configuration still need
+The play/watch inspector, learned-checkpoint qualification, speed
+evaluation panels and sweep integration still need
 porting and qualification. The original documentation and experiment assets
 remain in `archive/5c-before-unification-20260924`; their old CLI/build commands
 are not instructions for this 5.0 checkout. The network port adds only the
