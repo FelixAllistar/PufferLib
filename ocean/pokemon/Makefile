@@ -6,9 +6,28 @@ LDLIBS := $(BUILD)/libpokemon.a -lm
 CPPFLAGS := -I$(ROOT)/src -I$(ROOT)/raylib-5.5_linux_amd64/include
 RAYLIB := $(ROOT)/raylib-5.5_linux_amd64/lib/libraylib.a -lGL -lpthread -ldl -lrt
 
-.PHONY: engine test sanitize benchmark semantic-test semantic-legacy-test viewer adapter-test
+.PHONY: engine test sanitize benchmark semantic-test semantic-legacy-test viewer adapter-test state-tools state-test
 engine:
 	bash build_engine.sh
+
+state-tools: engine
+	$(CC) $(CPPFLAGS) $(CFLAGS) collect_states.c $(LDLIBS) $(RAYLIB) -o $(BUILD)/collect_states
+	$(CC) $(CPPFLAGS) $(CFLAGS) audit_states.c $(LDLIBS) -o $(BUILD)/audit_states
+
+state-test: state-tools
+	$(CC) $(CPPFLAGS) $(CFLAGS) tests/test_state_bank.c $(LDLIBS) $(RAYLIB) -o $(BUILD)/test_state_bank
+	$(BUILD)/test_state_bank
+	@set -e; bank_dir=$$(mktemp -d /tmp/pokemon-bank-test-XXXXXX); \
+		trap 'rm -f "$$bank_dir/first.bin" "$$bank_dir/repeat.bin"; rmdir "$$bank_dir"' EXIT; \
+		cd $(ROOT); \
+		./build/pokemon/collect_states "$$bank_dir/first.bin" 128 871 random random; \
+		./build/pokemon/audit_states "$$bank_dir/first.bin" 871 128 2; \
+		./build/pokemon/collect_states "$$bank_dir/repeat.bin" 128 871 random random; \
+		cmp "$$bank_dir/first.bin" "$$bank_dir/repeat.bin"; \
+		status=0; ASAN_OPTIONS=exitcode=99 ./build/pokemon/audit_states \
+			"$$bank_dir/first.bin" 872 128 2 || status=$$?; test "$$status" -eq 1; \
+		status=0; ASAN_OPTIONS=exitcode=99 ./build/pokemon/collect_states \
+			"$$bank_dir/first.bin" 128 871 random random || status=$$?; test "$$status" -eq 1
 
 viewer: engine
 	$(CC) $(CPPFLAGS) $(CFLAGS) pokemon.c $(LDLIBS) $(RAYLIB) -o $(BUILD)/viewer

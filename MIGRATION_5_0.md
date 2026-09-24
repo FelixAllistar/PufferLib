@@ -31,6 +31,14 @@ existing build patterns, keep changes atomic, preserve simulator behavior,
 and keep shared-core changes minimal. Do not restore the old custom
 losses/optimizer/trainer merely to compile an old environment.
 
+Pokémon offline state-bank qualification: a 128-game random-policy collection
+produces 1,024 states across all three phases, with byte-identical repeated
+collection. Audits check provenance and sampling caps; malformed input and
+overwrite attempts are rejected. State restoration/adapter tests cover 1,112
+completed games and pass ASan/UBSan. The port also fixes the legacy auditor's
+allocation leak on failed provenance checks. These tests do not qualify
+native trainer reset scheduling or archived-policy collection quality.
+
 ## Completion gates
 
 1. Every fork-owned environment and relevant modification has a disposition
@@ -60,7 +68,7 @@ their final 5.0 implementations must not be overwritten by older copies.
 | Goofspiel | CPU simulator/masks, renderer and standalone exact evaluator ported and tested; 4-bank async training smoke passes. GPU adapters/evaluator, exact-response refresh/persistence and exploitability-driven sweeps remain. |
 | Abyss | CPU simulator, generated scenario/collider data and calibration tools ported. Mechanics tests/sanitizers, standalone headless evaluation and async GPU-learner smoke pass. Legacy renderer was a no-op; external raw calibration captures remain user assets. |
 | ARPG | Latest CPU simulator/world/save/viewer/art ported; mechanics, Frontier, Reach, viewer and native CPU-under-NVCC tests pass. Async FP32 training smoke passes. GPU simulator and interactive visual qualification remain. |
-| Pokemon | Engine/core/data, semantic CPU model and standalone evaluator ported. Bridge/game, old/new model parity and adapter/input/fixed-team tests pass. Native setup/CUDA model, reset scheduling, league/experiment integration and visual qualification remain; generic training explicitly blocked. |
+| Pokemon | Engine/core/data, semantic CPU model, standalone evaluator and offline state-bank tools ported. Bridge/game, old/new model parity, adapter/input/fixed-team and state-bank tests pass. Native setup/CUDA model, reset scheduling, league/experiment integration and visual qualification remain; generic training explicitly blocked. |
 | Puffer Survivors | CPU/GPU adapters, shared simulator, config, play/watch viewer and art ported. CPU sanitizers, CUDA mechanics/stream/recreation checks, FP32 CPU/GPU async training (GPU graphs on/off), and viewer checkpoint inference pass. Interactive visual qualification and remote BF16 testing remain. |
 | Retro | Missing. Port emulator/practice/sweep tooling and full-screen CNN through the 5.0 network interfaces. Preserve ROMs locally; document external assets. |
 | RetroArch | Audit confirms `5c` contains only a README alias to Retro, not an independent implementation. Preserve the alias when the Retro build/workflow is ported. |

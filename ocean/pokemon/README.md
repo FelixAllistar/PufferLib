@@ -55,6 +55,24 @@ actions, team/lead constraints, alternating seats and profile output. `--emag`
 can evaluate preserved legacy `.emag` weights; it does not add EMAg training.
 Window controls and visual output still need interactive qualification.
 
+Offline state-bank collection and auditing are available independently of the
+trainer:
+
+```sh
+make -C ocean/pokemon state-tools state-test
+./build/pokemon/collect_states NEW_BANK.bin 128 871 random random
+./build/pokemon/audit_states NEW_BANK.bin 871 128 2
+```
+
+Replace the two `random` entries with compatible checkpoint paths for archive
+collection. The audit takes the collection seed, game count and policy count;
+it verifies provenance, per-game sampling limits and phase partitions. The
+collector refuses to overwrite an existing bank. Tests cover file corruption,
+deterministic restoration, masks, reset flags, rewards and episode clocks,
+plus repeatable collection and invalid-provenance rejection. Generated banks
+are external binary assets, not Git source. This does not yet enable reset
+scheduling in the 5.0 trainer.
+
 Not ready for training yet: semantic CUDA network integration, native adapter
 setup callbacks, state/core-reset and league/experiment workflows still need
 porting. `config/pokemon.ini` preserves the old profile for evaluation and is
