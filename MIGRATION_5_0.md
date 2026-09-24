@@ -56,7 +56,7 @@ their final 5.0 implementations must not be overwritten by older copies.
 | --- | --- |
 | Kaggriculture | CPU/GPU 2/2 simulator, entity network, masks, reset bank, BC/critic and league workflows qualified previously. Carry current actor-only sweep config into Git; finish replay/data, exporter/submission and renderer workflow audit. |
 | TrianglePath | CPU port present; audit original GPU adapter, solver/viewer and tests for full coverage. |
-| Bomberman | Missing from converted tree. Port latest simulator/curriculum, CPU/GPU adapters, masks, viewer and selfplay config. |
+| Bomberman | CPU simulator/curriculum, masks and upstream viewer ported; CPU tests/sanitizers and FP32 CUDA-learner smoke pass. GPU simulator, richer viewer/league workflows and exact old-checkpoint inference parity remain. |
 | Goofspiel | Missing. Port simulator/observations, CPU/GPU adapters, exact exploitability/opponent tooling and tests. |
 | Abyss | Missing. Port simulator, generated scenario/collider assets, viewer and tests. |
 | ARPG | Missing. Preserve latest source/assets; port adapter/build/viewer and test contracts. |
@@ -98,3 +98,13 @@ their final 5.0 implementations must not be overwritten by older copies.
   recorded separately in `artifacts/kag_bc_sweep_20260924.vNn5z4` outside this
   checkout. Do not copy its modified global sweep defaults wholesale: other
   environments must retain their normal upstream architecture sweeps.
+- Bomberman first port: simulator/constants blobs match `5c` exactly. Simulator
+  and adapter tests pass with ASan/UBSan, including config loading, action-mask
+  binding, terminal outputs and upstream match-score keys. Upstream standalone
+  viewer builds and completes eight headless episodes both with random actions
+  and the saved H128/L2 legacy champion (252,800 weights). This is load/execute
+  compatibility, not proof of identical old/new inference or learning quality.
+- Bomberman native FP32 trainer builds for local SM61 and completes a bounded
+  16,384-step CPU-simulator / GPU-learner smoke with async enabled. Outputs are
+  under `build/conversion/`, separate from all user runs. No shared source or
+  build-script changes were needed for this CPU port.
