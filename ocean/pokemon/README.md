@@ -9,6 +9,7 @@ The current source defines ABI 3, 168 actions and **648 observation bytes**.
 make -C ocean/pokemon test
 make -C ocean/pokemon sanitize
 make -C ocean/pokemon semantic-test
+make -C ocean/pokemon viewer adapter-test
 make -C ocean/pokemon benchmark
 ```
 
@@ -38,9 +39,27 @@ That optional test compiles the old CPU implementation separately and compares
 exact output-trace digests with identical weights, inputs and resets. Local
 scalar builds match; this does not establish CPU/GPU numerical parity.
 
-Not ready for training yet: the 5.0 environment adapter, semantic CUDA
-network integration, viewer, state/core-reset and league/experiment workflows
-still need porting. Do not substitute the generic MLP for the semantic model
+The standalone semantic evaluator and adapter tests are now available:
+
+```sh
+./build/pokemon/viewer eval random random --games=32 --profile
+./build/pokemon/viewer eval PATH_A.bin PATH_B.bin --games=256
+./build/pokemon/viewer matrix PATH_A.bin PATH_B.bin PATH_C.bin --games=256
+./build/pokemon/viewer watch PATH_A.bin random
+```
+
+Run from the repository root. Checkpoints need a sibling `config.ini` or the
+matching run config under `logs/pokemon/`, with semantic policy/ABI version 3
+and matching rules hash. The evaluator supports deterministic/stochastic
+actions, team/lead constraints, alternating seats and profile output. `--emag`
+can evaluate preserved legacy `.emag` weights; it does not add EMAg training.
+Window controls and visual output still need interactive qualification.
+
+Not ready for training yet: semantic CUDA network integration, native adapter
+setup callbacks, state/core-reset and league/experiment workflows still need
+porting. `config/pokemon.ini` preserves the old profile for evaluation and is
+not a working 5.0 training config. Generic native/CPU trainer entry points
+explicitly fail during this stage. Do not substitute the generic MLP for the semantic model
 or load old checkpoints through a different architecture. Full legacy source,
 generator scripts and experiment documentation remain in
 `archive/5c-before-unification-20260924` while these ports proceed.
