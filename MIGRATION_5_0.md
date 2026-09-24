@@ -69,7 +69,7 @@ their final 5.0 implementations must not be overwritten by older copies.
 | WebNav | Missing. Port native/browser/Bend workflows; obey its family build/memory rules. |
 | WebNav DOM | Missing. Port environment and encoder against current WebNav contracts. |
 | Breakout | Fork delta is solely optional TUI frame capture; restored without altering upstream gameplay. Capture protocol tests and executable build pass; real GL/terminal rendering remains unqualified. |
-| Robocode | Review the fork's two modified environment files against finalized upstream. |
+| Robocode | Upstream simulator/config preserved; fork play/watch CLI and H radar toggle restored. CPU inference/bot/mirror/reset tests and sanitizers pass; interactive rendering remains unqualified. |
 
 ## Other source/workflow inventory
 
