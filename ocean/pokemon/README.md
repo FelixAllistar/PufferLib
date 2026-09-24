@@ -8,6 +8,7 @@ The current source defines ABI 3, 168 actions and **648 observation bytes**.
 ```sh
 make -C ocean/pokemon test
 make -C ocean/pokemon sanitize
+make -C ocean/pokemon semantic-test
 make -C ocean/pokemon benchmark
 ```
 
@@ -24,7 +25,20 @@ legal actions, no engine errors, repeatable observations/masks/results and
 distinct species. Sanitizer builds instrument the C wrapper; Zig uses
 ReleaseSafe checks rather than C sanitizers.
 
-Not ready for training yet: the 5.0 environment adapter, semantic CPU/CUDA
+The semantic CPU model and mechanics tables are also preserved unchanged.
+`semantic-test` checks serialized weights, batched versus independent inference,
+and finite recurrent outputs through all draft/battle phases at H16/L1 and
+H32/L2. To compare against a preserved old checkout, run:
+
+```sh
+make -C ocean/pokemon semantic-legacy-test LEGACY_CPU=/absolute/old/src/puffercpu.h
+```
+
+That optional test compiles the old CPU implementation separately and compares
+exact output-trace digests with identical weights, inputs and resets. Local
+scalar builds match; this does not establish CPU/GPU numerical parity.
+
+Not ready for training yet: the 5.0 environment adapter, semantic CUDA
 network integration, viewer, state/core-reset and league/experiment workflows
 still need porting. Do not substitute the generic MLP for the semantic model
 or load old checkpoints through a different architecture. Full legacy source,

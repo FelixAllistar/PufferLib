@@ -4,7 +4,7 @@ CC := clang
 CFLAGS ?= -O2 -g -std=c11 -Wall -Wextra -Wno-unused-function
 LDLIBS := $(BUILD)/libpokemon.a -lm
 
-.PHONY: engine test sanitize benchmark
+.PHONY: engine test sanitize benchmark semantic-test semantic-legacy-test
 engine:
 	bash build_engine.sh
 
@@ -20,3 +20,13 @@ benchmark: engine
 	$(CC) $(CFLAGS) benchmark.c $(LDLIBS) -o $(BUILD)/benchmark
 	$(BUILD)/benchmark 1000 0
 	$(BUILD)/benchmark 1000 1
+
+semantic-test: engine
+	$(CC) $(CFLAGS) -I$(ROOT)/src tests/test_semantic_cpu.c $(LDLIBS) -o $(BUILD)/test_semantic_cpu
+	$(BUILD)/test_semantic_cpu
+
+semantic-legacy-test: semantic-test
+	test -n "$(LEGACY_CPU)"
+	$(CC) $(CFLAGS) -I$(ROOT)/src -DPK_LEGACY_CPU='"$(LEGACY_CPU)"' \
+		tests/test_semantic_cpu.c $(LDLIBS) -o $(BUILD)/test_semantic_legacy
+	test "$$($(BUILD)/test_semantic_cpu)" = "$$($(BUILD)/test_semantic_legacy)"
