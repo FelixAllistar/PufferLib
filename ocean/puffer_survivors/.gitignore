@@ -1,0 +1,6 @@
+/tests/test_cpu
+/tests/test_cpu_san
+/tests/test_cuda
+/tests/bench_cpu
+/tests/bench_cuda
+/build/

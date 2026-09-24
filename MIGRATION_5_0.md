@@ -61,7 +61,7 @@ their final 5.0 implementations must not be overwritten by older copies.
 | Abyss | CPU simulator, generated scenario/collider data and calibration tools ported. Mechanics tests/sanitizers, standalone headless evaluation and async GPU-learner smoke pass. Legacy renderer was a no-op; external raw calibration captures remain user assets. |
 | ARPG | Missing. Preserve latest source/assets; port adapter/build/viewer and test contracts. |
 | Pokemon | Missing. Audit emulator dependencies, environment/model interfaces and personality/experiment tooling. |
-| Puffer Survivors | Missing. Port current environment, controls/viewer, renderer/assets and tests. |
+| Puffer Survivors | CPU/GPU adapters, shared simulator, config, play/watch viewer and art ported. CPU sanitizers, CUDA mechanics/stream/recreation checks, FP32 CPU/GPU async training (GPU graphs on/off), and viewer checkpoint inference pass. Interactive visual qualification and remote BF16 testing remain. |
 | Retro | Missing. Port emulator/practice/sweep tooling and full-screen CNN through the 5.0 network interfaces. Preserve ROMs locally; document external assets. |
 | RetroArch | Missing. Audit standalone integration and dependencies; do not mark complete merely by copying its README. |
 | Shenaniguns | CPU simulator, native config, generic viewer and playable demo ported. Adapter tests/sanitizers and 2,048-step async GPU-learner smoke pass. Uses the standard upstream network; deployment-game parity remains a separate external test. |
@@ -123,3 +123,11 @@ their final 5.0 implementations must not be overwritten by older copies.
   on timeout. Tests/ASan/UBSan pass, playable demo and generic viewer build,
   eight short headless episodes and a 2,048-step FP32 async training smoke pass.
   No shared-core edits. Interactive controls were built, not visually exercised.
+- Puffer Survivors: replaced the legacy vector wrapper with the native GPU
+  create/bind-stream/step API. CPU-under-NVCC now selects CPU state explicitly;
+  the old compiler-detection macro incorrectly selected GPU state. Gameplay
+  formulas and assets are preserved. Tests include 20,000 CPU steps, sanitizers,
+  GPU reward/terminal semantics, non-default streams and vector recreation.
+  Both trainers complete 2,048-step async FP32 runs; GPU simulation additionally
+  passes CUDA graphs. The separate play/watch viewer uses upstream CPU inference
+  and loads the new trainer checkpoint. No shared-core/build changes.
