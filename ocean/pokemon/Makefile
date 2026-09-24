@@ -4,11 +4,20 @@ CC := clang
 CFLAGS ?= -O2 -g -std=c11 -Wall -Wextra -Wno-unused-function
 LDLIBS := $(BUILD)/libpokemon.a -lm
 CPPFLAGS := -I$(ROOT)/src -I$(ROOT)/raylib-5.5_linux_amd64/include
-RAYLIB := $(ROOT)/raylib-5.5_linux_amd64/lib/libraylib.a -lGL -lpthread -ldl -lrt
+RAYLIB := $(ROOT)/raylib-5.5_linux_amd64/lib/libraylib.a -lGL -lpthread -ldl -lrt -lm
 
-.PHONY: engine test sanitize benchmark semantic-test semantic-legacy-test viewer adapter-test state-tools state-test
+.PHONY: engine test sanitize benchmark semantic-test semantic-legacy-test viewer adapter-test state-tools state-test core-test validate
 engine:
 	bash build_engine.sh
+
+validate: engine
+	npm install --prefix $(BUILD)/validation --ignore-scripts --no-audit --no-fund pokemon-showdown@0.11.11
+	node import_sets.cjs --check
+	node generate_freepick.cjs --check --reuse-audit
+
+core-test: engine
+	$(CC) $(CPPFLAGS) $(CFLAGS) -fopenmp tests/test_core_deck.c $(LDLIBS) $(RAYLIB) -o $(BUILD)/test_core_deck
+	cd $(ROOT) && ./build/pokemon/test_core_deck
 
 state-tools: engine
 	$(CC) $(CPPFLAGS) $(CFLAGS) collect_states.c $(LDLIBS) $(RAYLIB) -o $(BUILD)/collect_states

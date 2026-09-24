@@ -39,6 +39,14 @@ completed games and pass ASan/UBSan. The port also fixes the legacy auditor's
 allocation leak on failed provenance checks. These tests do not qualify
 native trainer reset scheduling or archived-policy collection quality.
 
+Pokémon data regeneration is now preserved and checked against Showdown
+0.11.11 and the pinned engine. Validation reproduced 556 catalog variants and
+the generated semantic/legality tables using the fingerprint-checked saved
+audit. It caught and corrected an added newline in the pinned source JSON;
+that snapshot now matches `5c` byte for byte. Core-deck unit tests check all
+540,274 triples and identical one/four-worker trajectories, with direct
+environment callback fixtures rather than native trainer integration.
+
 ## Completion gates
 
 1. Every fork-owned environment and relevant modification has a disposition

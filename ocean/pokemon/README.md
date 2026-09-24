@@ -73,6 +73,29 @@ plus repeatable collection and invalid-provenance rejection. Generated banks
 are external binary assets, not Git source. This does not yet enable reset
 scheduling in the 5.0 trainer.
 
+The pinned data generators can also be checked without rewriting their outputs:
+
+```sh
+make -C ocean/pokemon validate
+make -C ocean/pokemon core-test
+```
+
+`validate` needs Node/npm and installs Pokémon Showdown 0.11.11 under ignored
+`build/pokemon/validation/`, with install scripts disabled. It validates the
+556 sourced set variants and checks generated free-pick tables against the
+saved exhaustive legality audit. Audit reuse verifies the validator-source
+fingerprint, source hashes and move pools; it does not rerun all 2,931,585 set
+combinations. To rerun those, use `node ocean/pokemon/generate_freepick.cjs
+--check` without `--reuse-audit`. Do not use `import_sets.cjs --refresh` unless
+deliberately replacing the pinned source dataset.
+
+`core-test` requires OpenMP (for Clang, install its OpenMP development library).
+It checks all 540,274 species triples, private core masks, expert-team binding
+and equal trajectories with one versus four workers. It invokes preserved
+environment callbacks directly with metadata-only expert fixtures, not a 5.0
+training run. Removed legacy config keys exist only in the test fixture;
+native reset/league scheduling remains unported.
+
 Not ready for training yet: semantic CUDA network integration, native adapter
 setup callbacks, state/core-reset and league/experiment workflows still need
 porting. `config/pokemon.ini` preserves the old profile for evaluation and is
