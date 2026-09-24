@@ -12,6 +12,17 @@ ADAPTER_INCLUDES := -I$(ROOT) -I$(ROOT)/src -I$(ROOT)/vendor -I$(ROOT)/raylib-5.
 
 all: test
 
+viewer: | $(BUILD)
+	$(CC) $(ADAPTER_INCLUDES) -O2 -std=gnu11 bomberman.c \
+		$(ROOT)/raylib-5.5_linux_amd64/lib/libraylib.a \
+		-lm -lGL -ldl -lpthread -o $(BUILD)/viewer
+
+viewer-test: | $(BUILD)
+	$(CC) $(ADAPTER_INCLUDES) -O2 -std=gnu11 test_viewer.c \
+		$(ROOT)/raylib-5.5_linux_amd64/lib/libraylib.a \
+		-lm -lGL -ldl -lpthread -o $(BUILD)/test_viewer
+	cd $(ROOT) && ./ocean/bomberman/$(BUILD)/test_viewer $(CHECKPOINT)
+
 test: test_sim adapter
 	./test_sim
 

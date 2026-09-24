@@ -56,7 +56,7 @@ their final 5.0 implementations must not be overwritten by older copies.
 | --- | --- |
 | Kaggriculture | CPU/GPU 2/2 simulator, entity network, masks, reset bank, BC/critic and league workflows qualified previously. Current actor-only sweep config and new-box build/asset instructions are in Git; finish replay/data, exporter/submission and renderer workflow audit. |
 | TrianglePath | CPU/GPU adapters and shared exact solver ported. CPU legacy traces/sanitizers and 12-case GPU differential suite pass. No renderer existed in the legacy header. |
-| Bomberman | CPU simulator/curriculum, masks and upstream viewer ported; CPU tests/sanitizers and FP32 CUDA-learner smoke pass. GPU simulator, richer viewer/league workflows and exact old-checkpoint inference parity remain. |
+| Bomberman | CPU simulator/curriculum, masks and play/watch viewer ported; CPU tests/sanitizers and FP32 CUDA-learner smoke pass. GPU simulator, league workflows and exact old/new checkpoint inference parity remain. |
 | Goofspiel | Missing. Port simulator/observations, CPU/GPU adapters, exact exploitability/opponent tooling and tests. |
 | Abyss | CPU simulator, generated scenario/collider data and calibration tools ported. Mechanics tests/sanitizers, standalone headless evaluation and async GPU-learner smoke pass. Legacy renderer was a no-op; external raw calibration captures remain user assets. |
 | ARPG | Missing. Preserve latest source/assets; port adapter/build/viewer and test contracts. |
@@ -140,7 +140,12 @@ their final 5.0 implementations must not be overwritten by older copies.
   environment metrics were blank. Both reset paths now initialize it; creation
   also finishes default-stream initialization before a non-default stream may
   use the vector. TrianglePath differential tests and trainer metric tests with
-  graphs on/off pass. Survivors metadata and trainer-metric reruns are pending:
-  a new local Bomberman run was detected, so the pending GPU-test launcher was
-  stopped without touching that run. `tests/test_gpu_env_metrics.py` supplies
-  four opt-in native regression cases for the next idle-GPU window.
+  graphs on/off pass. After local training stopped, Survivors CUDA parity and
+  all four native trainer-metric regressions passed (both environments, graphs
+  on/off). Tests are opt-in in `tests/test_gpu_env_metrics.py`.
+- Bomberman play/watch now uses upstream masked CPU inference, including two
+  separately loaded policies. Tests pass with the old H128/L2 champion and new
+  trainer checkpoint: legal actions, joint/separate logits and recurrent resets.
+  A four-game old-checkpoint headless mirror match completes. Saved-config
+  lookup handles absolute paths and alternate checkpoint roots. No core edits;
+  interactive graphics and exact old/new network parity remain unqualified.
