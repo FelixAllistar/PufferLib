@@ -7,6 +7,12 @@
 typedef uint8_t obs_t;
 #include "pufferenv.h"
 
+#ifdef __CUDACC__
+#define TP_HD __host__ __device__
+#else
+#define TP_HD
+#endif
+
 #define TP_MAX_H 64
 #define TP_MAX_CELLS ((TP_MAX_H * (TP_MAX_H + 1)) / 2)
 #define NUM_ATNS 1
@@ -70,7 +76,7 @@ uint32_t tp_random(uint32_t* rng) {
     return x;
 }
 
-int tp_cell_index(int row, int col) {
+TP_HD int tp_cell_index(int row, int col) {
     return row * (row + 1) / 2 + col;
 }
 
@@ -117,24 +123,24 @@ void tp_step(TPState* state, const TPConfig* cfg, int action) {
 }
 
 // Shared backward DP for the evaluation oracle and optimal path recovery.
-void tp_solve(const TPState* state, const TPConfig* cfg, int* dp) {
-    for (int col = 0; col < cfg->height; col++) {
-        int i = tp_cell_index(cfg->height - 1, col);
-        dp[i] = state->cells[i];
+TP_HD void tp_solve(const uint8_t* cells, int height, int* dp) {
+    for (int col = 0; col < height; col++) {
+        int i = tp_cell_index(height - 1, col);
+        dp[i] = cells[i];
     }
-    for (int row = cfg->height - 2; row >= 0; row--) {
+    for (int row = height - 2; row >= 0; row--) {
         for (int col = 0; col <= row; col++) {
             int left = dp[tp_cell_index(row + 1, col)];
             int right = dp[tp_cell_index(row + 1, col + 1)];
             int i = tp_cell_index(row, col);
-            dp[i] = state->cells[i] + (left > right ? left : right);
+            dp[i] = cells[i] + (left > right ? left : right);
         }
     }
 }
 
 int tp_optimal_total(const TPState* state, const TPConfig* cfg) {
     int dp[TP_MAX_CELLS];
-    tp_solve(state, cfg, dp);
+    tp_solve(state->cells, cfg->height, dp);
     return dp[0];
 }
 
@@ -143,7 +149,7 @@ int tp_optimal_action(const TPState* state, const TPConfig* cfg, int row, int co
         return TP_LEFT;
     }
     int dp[TP_MAX_CELLS];
-    tp_solve(state, cfg, dp);
+    tp_solve(state->cells, cfg->height, dp);
     int left = dp[tp_cell_index(row + 1, col)];
     int right = dp[tp_cell_index(row + 1, col + 1)];
     return right > left ? TP_RIGHT : TP_LEFT;
@@ -172,6 +178,7 @@ void puf_init(Env* env, Dict* kwargs) {
     env->agents[0].action_mask = NULL;
 }
 
+#if PUF_BACKEND == PUF_CPU
 void puf_reset(Env* env) {
     env->agents[0].rewards[0] = 0;
     env->agents[0].terminals[0] = 0;
@@ -211,6 +218,8 @@ void puf_step(Env* env) {
     tp_observe(&env->state, &env->cfg, agent->observations);
 }
 
+#endif
+
 void puf_log(Log* log, Dict* out) {
     dict_set(out, "perf", log->perf);
     dict_set(out, "score", log->score);
@@ -219,8 +228,10 @@ void puf_log(Log* log, Dict* out) {
     dict_set(out, "episode_length", log->episode_length);
 }
 
+#if PUF_BACKEND == PUF_CPU
 void puf_close(Env* env) {
 }
+#endif
 
 void puf_render(Env* env) {
 }

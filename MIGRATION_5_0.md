@@ -3,8 +3,8 @@
 Status: **in progress**, not a completed conversion of every environment.
 
 Canonical repository: `https://github.com/FelixAllistar/PufferLib.git`.
-Canonical development branch: `5.0`. Publication and clean-clone qualification
-are still pending. Do not assume GitHub currently contains this working tree.
+Canonical development branch: `5.0`, published through `63e61d07b` (Puffer
+Survivors). Further ports and clean-clone qualification remain in progress.
 
 ## Source of truth and preservation
 
@@ -55,7 +55,7 @@ their final 5.0 implementations must not be overwritten by older copies.
 | Environment | Conversion status / remaining work |
 | --- | --- |
 | Kaggriculture | CPU/GPU 2/2 simulator, entity network, masks, reset bank, BC/critic and league workflows qualified previously. Current actor-only sweep config and new-box build/asset instructions are in Git; finish replay/data, exporter/submission and renderer workflow audit. |
-| TrianglePath | CPU port present; audit original GPU adapter, solver/viewer and tests for full coverage. |
+| TrianglePath | CPU/GPU adapters and shared exact solver ported. CPU legacy traces/sanitizers and 12-case GPU differential suite pass. No renderer existed in the legacy header. |
 | Bomberman | CPU simulator/curriculum, masks and upstream viewer ported; CPU tests/sanitizers and FP32 CUDA-learner smoke pass. GPU simulator, richer viewer/league workflows and exact old-checkpoint inference parity remain. |
 | Goofspiel | Missing. Port simulator/observations, CPU/GPU adapters, exact exploitability/opponent tooling and tests. |
 | Abyss | CPU simulator, generated scenario/collider data and calibration tools ported. Mechanics tests/sanitizers, standalone headless evaluation and async GPU-learner smoke pass. Legacy renderer was a no-op; external raw calibration captures remain user assets. |
@@ -131,3 +131,7 @@ their final 5.0 implementations must not be overwritten by older copies.
   Both trainers complete 2,048-step async FP32 runs; GPU simulation additionally
   passes CUDA graphs. The separate play/watch viewer uses upstream CPU inference
   and loads the new trainer checkpoint. No shared-core/build changes.
+- TrianglePath GPU: native adapter and shared DP oracle pass 49,152 compared
+  CPU/GPU transitions across all reward modes and edge-case cell ranges/heights.
+  CPU optimized/sanitized legacy trace tests also pass. FP32 GPU trainer builds
+  and completes 2,048 steps with async and CUDA graphs. No shared-core edits.
