@@ -3,7 +3,7 @@
 Conversion is in progress. The full-screen SMB1 simulator, QuickNES source,
 compiled-ROM block generator, natural-life playback helpers and practice
 controller replay are preserved from `5c` at `036cf4251`. Native training and
-policy evaluation are explicitly blocked until the custom CNN is ported;
+policy evaluation are explicitly blocked until native integration is qualified;
 do not substitute the generic MLP or use an incompatible checkpoint.
 
 ## Local assets and simulator tests
@@ -54,14 +54,35 @@ UBSAN_OPTIONS=halt_on_error=1 make -C ocean/retro -j2 test \
   CXXFLAGS='-O1 -g -std=c++17 -fsanitize=address,undefined -fno-omit-frame-pointer'
 ```
 
+## Network qualification
+
+The preserved three-convolution image branch, RAM branch and fusion layer now
+use the 5.0 encoder interface and upstream recurrent network/head. Parameter
+ordering is unchanged. CPU output traces match the legacy model exactly at
+both supported image resolutions, including recurrent resets. The scale-4
+FP32 CUDA suite passes feature-map, recurrent-output, numerical-gradient and
+borrowed-input/CUDA-graph checks. BF16 and native training remain unqualified.
+
+```sh
+make -C ocean/retro policy-test
+make -C ocean/retro policy-legacy-test LEGACY_POLICY=/path/to/legacy/ocean/retro/retro_policy_cpu.h
+make -C ocean/retro encoder-test
+./build/retro/test_encoder
+```
+
+The legacy comparison requires the preserved checkout and its original CPU
+inference header. `encoder-test` builds the CUDA test; the following command
+runs it. Use a separate `BUILD` directory when changing `RETRO_OBS_SCALE`.
+
 ## Remaining conversion
 
-The matching CUDA/CPU CNN, play/watch inspector, checkpoint loading, speed
+Native trainer/build integration, the play/watch inspector, learned-checkpoint qualification, speed
 evaluation panels, sweep integration and training configuration still need
 porting and qualification. The original documentation and experiment assets
 remain in `archive/5c-before-unification-20260924`; their old CLI/build commands
-are not instructions for this 5.0 checkout. No shared trainer changes have
-been made for this simulator port.
+are not instructions for this 5.0 checkout. The network port adds only the
+standard custom-encoder registration to `src/ocean.cu`; it changes no shared
+loss, optimizer or rollout logic.
 
 QuickNES-derived source retains its original copyright notices and LGPL-2.1+
 terms; a license copy is in `nes_emu/COPYING`. Individual third-party files

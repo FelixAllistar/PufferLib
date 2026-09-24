@@ -11,7 +11,31 @@ LIB := $(BUILD)/libquicknes.a
 INCLUDES := -I$(ROOT)/src -I$(ROOT)/raylib-5.5_linux_amd64/include -I. -Ines_emu
 LDLIBS := $(ROOT)/raylib-5.5_linux_amd64/lib/libraylib.a -lGL -ldl -lm -pthread -fopenmp
 
-.PHONY: library test batch-test resolution
+.PHONY: library test batch-test resolution policy-test policy-legacy-test encoder-test
+encoder-test: library
+	clang -O2 -std=c11 -ffp-contract=off -I$(ROOT)/src -DRETRO_OBS_SCALE=$(RETRO_OBS_SCALE) \
+		-DRETRO_CUDA_REFERENCE -c tests/test_policy_cpu.c -o $(BUILD)/cpu_reference.o
+	$${CUDA_HOME:-/usr/local/cuda}/bin/nvcc -O2 --threads 2 -arch=$${NVCC_ARCH:-native} \
+		-std=c++17 -I$(ROOT) -I$(ROOT)/src -I$(ROOT)/vendor $(INCLUDES) \
+		-DRETRO_OBS_SCALE=$(RETRO_OBS_SCALE) -Xcompiler=-fopenmp,-Wno-narrowing,-Wno-multichar \
+		--diag-suppress 550 --diag-suppress 68 --diag-suppress 2361 --diag-suppress 1422 \
+		tests/test_encoder.cu $(BUILD)/cpu_reference.o $(LIB) $(filter-out -pthread -fopenmp,$(LDLIBS)) \
+		-lpthread -lgomp \
+		-lcudart -lcublas -lcusolver -lcurand -lnccl -lnvidia-ml -o $(BUILD)/test_encoder
+
+policy-test:
+	@mkdir -p $(BUILD)
+	clang -O2 -std=c11 -ffp-contract=off -I$(ROOT)/src -DRETRO_OBS_SCALE=$(RETRO_OBS_SCALE) \
+		tests/test_policy_cpu.c -lm -o $(BUILD)/test_policy_cpu
+	$(BUILD)/test_policy_cpu
+
+policy-legacy-test: policy-test
+	test -n "$(LEGACY_POLICY)"
+	$(CXX) -O2 -std=c++17 -ffp-contract=off -I$(dir $(LEGACY_POLICY))/../../src \
+		-DRETRO_OBS_SCALE=$(RETRO_OBS_SCALE) -DRETRO_LEGACY_POLICY='"$(LEGACY_POLICY)"' \
+		-x c++ tests/test_policy_cpu.c -lm -o $(BUILD)/test_policy_legacy
+	test "$$($(BUILD)/test_policy_cpu)" = "$$($(BUILD)/test_policy_legacy)"
+
 library: $(LIB)
 $(BUILD)/%.o: nes_emu/%.cpp
 	@mkdir -p $(BUILD)

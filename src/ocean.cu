@@ -54,6 +54,9 @@ __device__ static const float OSRS_ITEM_OBS_TABLE_DEV
 #ifdef PUFFER_KAGGRICULTURE
 #include "../ocean/kaggriculture/network.cu"
 #endif
+#ifdef PUFFER_RETRO
+#include "../ocean/retro/retro_encoder.cu"
+#endif
 
 // Override encoder vtable when this env has a custom net. No-op otherwise.
 static void create_custom_encoder(Encoder* enc) {
@@ -61,6 +64,8 @@ static void create_custom_encoder(Encoder* enc) {
     create_nethack_encoder(enc);
 #elif defined(PUFFER_KAGGRICULTURE)
     create_kaggriculture_encoder(enc);
+#elif defined(PUFFER_RETRO)
+    create_retro_encoder(enc);
 #elif defined(PUFFER_CRAFTAX)
     create_craftax_encoder(enc);
 #elif defined(PUFFER_NMMO3)
