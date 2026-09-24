@@ -7,6 +7,7 @@ interpreter. This is an execution optimization, not a source port of SMB logic.
 Operation/flag/bus ordering below follows ../nes_emu/Nes_Cpu.cpp (LGPL-2.1+).
 """
 import argparse
+import re
 from pathlib import Path
 
 
@@ -296,8 +297,13 @@ def main():
     parser.add_argument('--page-bits', type=int, choices=range(8,16), default=10)
     args = parser.parse_args()
     rom = args.rom.read_bytes()
-    if len(rom) != 40976 or fnv(rom) != 0x31d802e3779199da:
-        raise SystemExit('requires the fingerprint-validated SMB1 iNES ROM')
+    identity = (Path(__file__).resolve().parent.parent / 'retro_rom_identity.h').read_text()
+    allowed = {int(h, 16) for h in re.findall(
+        r'^#define RETRO_SMB1_NTSC_(?:INES|NES2)_FNV (0x[0-9a-f]+)ull$', identity, re.M)}
+    if len(allowed) != 2:
+        raise SystemExit('invalid shared NTSC ROM identity definitions')
+    if len(rom) != 40976 or fnv(rom) not in allowed:
+        raise SystemExit('requires verified SMB1 World/NTSC ROM; PAL/modified images are rejected')
     prg = rom[16:32784]
     code, count, coverage, cases = generate(prg, args.page_bits)
     args.output.mkdir(parents=True, exist_ok=True)

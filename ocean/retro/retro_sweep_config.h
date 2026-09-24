@@ -5,7 +5,7 @@
 #include <stdexcept>
 
 // Called after native CLI overrides are applied, including in each clean
-// sweep worker. Keep learner and potential-shaping discounts coupled.
+// sweep worker. Rewards contain only explicitly configured event terms.
 static void retro_configure(Ini* ini, const char* mode) {
     // Persist the actual execution engine in checkpoint/sweep sidecars.
     if(!dict_find(puf_ini_section(ini,"env",0),"cpu_backend")) {
@@ -18,8 +18,7 @@ static void retro_configure(Ini* ini, const char* mode) {
     double gamma=puf_ini_get(ini,"train","gamma");
     if(!std::isfinite(gamma)||gamma<=0||gamma>=1)
         throw std::runtime_error("retro: train.gamma must be between 0 and 1");
-    char value[64]; snprintf(value,sizeof(value),"%.17g",gamma);
-    puf_ini_put(ini,"env.potential_gamma",value);
+    char value[64];
     double scale=puf_ini_get(ini,"env","reward_scale");
     double completion=puf_ini_get(ini,"env","completion_reward");
     DictItem* speed_option=dict_find(puf_ini_section(ini,"env",0),"completion_time_bonus");
@@ -28,8 +27,11 @@ static void retro_configure(Ini* ini, const char* mode) {
     double coin=coin_option?coin_option->value:0;
     DictItem* idle_option=dict_find(puf_ini_section(ini,"env",0),"idle_penalty");
     double idle=idle_option?idle_option->value:0;
-    DictItem* area_option=dict_find(puf_ini_section(ini,"env",0),"area_transition_reward");
-    double area=area_option?area_option->value:0;
+    for(const char* key:{"area_transition_reward","area_transition_timer_bonus"}) {
+        DictItem* option=dict_find(puf_ini_section(ini,"env",0),key);
+        if(option&&option->value!=0)
+            throw std::runtime_error("retro: area transition rewards removed; legacy options must be zero");
+    }
     DictItem* grace_option=dict_find(puf_ini_section(ini,"env",0),"idle_grace_decisions");
     double grace=grace_option?grace_option->value:8;
     double death=puf_ini_get(ini,"env","death_penalty");
@@ -41,14 +43,16 @@ static void retro_configure(Ini* ini, const char* mode) {
     if(!std::isfinite(spacing)||spacing<1||spacing>3400||spacing!=floor(spacing)
         ||!std::isfinite(checkpoint)||checkpoint<0
         ||!std::isfinite(coin)||coin<0||!std::isfinite(idle)||idle<0
-        ||!std::isfinite(area)||area<0
         ||!std::isfinite(grace)||grace<0||grace>100000||grace!=floor(grace))
         throw std::runtime_error("retro: invalid checkpoint/coin/idle/area reward configuration");
     // Coin deltas are bounded to the two-digit ROM counter; idle and confirmed
     // area transitions emit at most one event per native frame. The skip
     // multiplier is conservative for clip safety when frameskip changes.
-    double upper=scale*(1+skip*(completion+speed+ceil(3400/spacing)*checkpoint+99*coin+idle+area)+999999*score);
-    double lower=scale*(1+death+idle);
+    DictItem* segment_option=dict_find(puf_ini_section(ini,"env",0),"pipe_segment_bonus");
+    double segment=segment_option?segment_option->value:0;
+    if(!std::isfinite(segment)||segment<0) throw std::runtime_error("retro: invalid pipe segment bonus");
+    double upper=scale*(skip*(completion+speed+ceil(3400/spacing)*checkpoint+99*coin+idle+segment)+999999*score);
+    double lower=scale*(death+idle);
     if(!std::isfinite(clip)||clip<0)
         throw std::runtime_error("retro: reward_clip must be finite and nonnegative (0 disables clipping)");
     if(!std::isfinite(scale)||scale<=0||!std::isfinite(completion)||completion<0
@@ -98,15 +102,20 @@ static double retro_panel_distance(int start_x,int furthest_x) {
     return std::max(0.0,(double)furthest_x-start_x);
 }
 static double retro_panel_objective(const char* metric,int clears,int attempts,
-        double mean_progress,double mean_distance,double mean_clear_frames=0,int frame_budget=3600) {
+        double mean_progress,double mean_distance,double mean_clear_frames=0,int frame_budget=3600,
+        int best_clear_frames=0) {
     if(!strcmp(metric,"speed")) {
         if(frame_budget<1||!std::isfinite(mean_clear_frames)||mean_clear_frames<0
-            ||mean_clear_frames>frame_budget||(clears>0&&mean_clear_frames==0))
+            ||mean_clear_frames>frame_budget||attempts<1||clears<0||clears>attempts
+            ||(clears>0&&(mean_clear_frames==0||best_clear_frames<1
+                ||best_clear_frames>mean_clear_frames))
+            ||(clears==0&&(mean_clear_frames!=0||best_clear_frames!=0)))
             throw std::runtime_error("retro panel: invalid clear time");
-        // A single extra clear always wins. Among equally reliable policies,
-        // prefer fewer native frames; if none clear, use bounded progress.
-        double tie=clears>0?1.0-mean_clear_frames/frame_budget:mean_progress;
-        return retro_panel_score(clears,attempts,tie);
+        // Speedrun objective v2: any one-frame PB improvement wins over
+        // the entire mean-time tie-break. Clear count never enters ranking.
+        // Zero clears rank below even a last-frame finish; no progress credit.
+        if(!clears) return -1;
+        return frame_budget-best_clear_frames+0.5*(1.0-mean_clear_frames/frame_budget);
     }
     if(!strcmp(metric,"distance")) {
         if(!std::isfinite(mean_distance)||mean_distance<0||attempts<1)

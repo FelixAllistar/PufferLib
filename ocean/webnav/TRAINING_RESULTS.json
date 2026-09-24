@@ -1,0 +1,1065 @@
+{
+  "date": "2026-09-22",
+  "scope": "12 bounded CPU Bend generator presets of 125 registered task names; no full MiniWoB parity claim",
+  "evaluation": "Greedy learned policy; 100 episodes/task on separate high-bit reset seeds. Finite lexicons/templates recur. Longer-budget results reuse this development evaluation set.",
+  "browser_evaluation": "Pinned original MiniWoB generators; five tasks, 20 episodes/task, seeds 100000..100019, real CDP clicks, controlled 250-ms clock. Small transfer smoke test, not a complete benchmark.",
+  "comparison_limits": "One training seed per configuration; no confidence across training seeds. Concurrent CPU checks/shared machine load make wall times approximate. Five-million-step runs restart from scratch and are not continuations.",
+  "task_sampling": "The two-draw LCG/modulo picker partitions even/odd task IDs per environment. Four default environments cover all twelve tasks, but individual streams see six. Aggregate training success is episode-weighted, unlike balanced per-task evaluation.",
+  "evidence": {
+    "laws": {
+      "combined_task_lane": 110,
+      "legacy_pilot_separate": 6,
+      "limitation": "Includes small generator mapping assertions; not full state validity, observation noninterference or browser-equivalence proofs."
+    },
+    "integration": {
+      "instances": 1536,
+      "transitions": 61440,
+      "result": "PASS",
+      "log": "build/webnav/training/tests.log"
+    },
+    "public_scripted_solvability": {
+      "episodes": 12000,
+      "successes": 12000,
+      "learned_policy": false,
+      "log": "build/webnav/training/expert.jsonl"
+    },
+    "native_regressions": {
+      "result": "PASS",
+      "log": "build/webnav/training/ablation_20260922/regressions.log"
+    },
+    "cpu_environment_feature_benchmark": [
+      {
+        "potion": 0,
+        "steps": 32000,
+        "episodes_started": 11449,
+        "load_seconds": 0.000013,
+        "bend_step_seconds": 0.202131,
+        "autoreset_batch_seconds": 0.123461,
+        "public_view_features_seconds": 0.180545,
+        "combined_measured_sps": 63223.989,
+        "peak_rss_kib": 4804,
+        "feature_floats": 12392,
+        "scope": "single CPU thread; 32 lanes; mixed task generators/actions; excludes policy, GPU copies, browser and action-selection overhead"
+      },
+      {
+        "potion": 1,
+        "steps": 32000,
+        "episodes_started": 11449,
+        "load_seconds": 0.068392,
+        "bend_step_seconds": 0.204685,
+        "autoreset_batch_seconds": 0.124173,
+        "public_view_features_seconds": 0.263589,
+        "combined_measured_sps": 54013.262,
+        "peak_rss_kib": 39792,
+        "feature_floats": 12392,
+        "scope": "single CPU thread; 32 lanes; mixed task generators/actions; excludes policy, GPU copies, browser and action-selection overhead"
+      }
+    ],
+    "sampling_diagnostic": {
+      "checkpoint_label": "lexical5m",
+      "sampling_seed": 73,
+      "per_task": [
+        {
+          "task": "login-user",
+          "episodes": 100,
+          "success": 0,
+          "success_rate": 0,
+          "timeouts": 100,
+          "invalid": 0,
+          "actions": 4000,
+          "mean_reward": -1,
+          "first_seed": 2147583648,
+          "controller": "learned-sampled"
+        },
+        {
+          "task": "read-table",
+          "episodes": 100,
+          "success": 0,
+          "success_rate": 0,
+          "timeouts": 100,
+          "invalid": 0,
+          "actions": 4000,
+          "mean_reward": -1,
+          "first_seed": 2147583648,
+          "controller": "learned-sampled"
+        }
+      ]
+    },
+    "hardware": {
+      "cpu": "Intel Core i5-7400, 4 exposed logical CPUs under WSL",
+      "gpu": "NVIDIA GeForce GTX 1060 3GB"
+    },
+    "training_config": {
+      "base_seed": 73,
+      "train_seed": 42,
+      "env_seed": 17,
+      "total_agents": 128,
+      "num_buffers": 2,
+      "num_threads": 2,
+      "horizon": 16,
+      "minibatch_size": 1024,
+      "learning_rate": 0.003,
+      "entropy_coefficient": 0.01,
+      "gamma": 0.95,
+      "replay_ratio": 1,
+      "hidden_size": 128,
+      "recurrent_layers": 2,
+      "task_mask": 4095,
+      "step_ms": 250
+    }
+  },
+  "experiments": [
+    {
+      "label": "lexical",
+      "checkpoint": "build/webnav/training/ablation_20260922/lexical/webnav_dom/1790060814857/0000000001998848.bin",
+      "contract": {
+        "schema": "webnav-training-v1",
+        "source_sha256": "041ed6fc6f6bd0ecf2d6bd1736c470c91b0fd880b671bbf8d80249f2ce5085e8",
+        "version": 1,
+        "features": 12392,
+        "actions": 35,
+        "potion": 0,
+        "hidden": 128,
+        "layers": 2,
+        "seed": 17,
+        "task_mask": 4095,
+        "tokenizer": "ordered-utf8-byte-bits-v1",
+        "semantic_profile": "disabled"
+      },
+      "steps": 1998848,
+      "training_wall_seconds": 87.22,
+      "aggregate_training_sps": 22917.312542994725,
+      "episodes": 1200,
+      "successes": 824,
+      "success_rate": 0.6866666666666666,
+      "per_task": [
+        {
+          "task": "click-button",
+          "episodes": 100,
+          "success": 94,
+          "success_rate": 0.94,
+          "timeouts": 5,
+          "invalid": 0,
+          "actions": 320,
+          "mean_reward": 0.851,
+          "first_seed": 2147583648,
+          "controller": "learned-greedy"
+        },
+        {
+          "task": "click-link",
+          "episodes": 100,
+          "success": 92,
+          "success_rate": 0.92,
+          "timeouts": 8,
+          "invalid": 0,
+          "actions": 427,
+          "mean_reward": 0.81325,
+          "first_seed": 2147583648,
+          "controller": "learned-greedy"
+        },
+        {
+          "task": "focus-text",
+          "episodes": 100,
+          "success": 100,
+          "success_rate": 1,
+          "timeouts": 0,
+          "invalid": 0,
+          "actions": 100,
+          "mean_reward": 0.975,
+          "first_seed": 2147583648,
+          "controller": "learned-greedy"
+        },
+        {
+          "task": "click-button-sequence",
+          "episodes": 100,
+          "success": 100,
+          "success_rate": 1,
+          "timeouts": 0,
+          "invalid": 0,
+          "actions": 200,
+          "mean_reward": 0.95,
+          "first_seed": 2147583648,
+          "controller": "learned-greedy"
+        },
+        {
+          "task": "choose-list",
+          "episodes": 100,
+          "success": 42,
+          "success_rate": 0.42,
+          "timeouts": 58,
+          "invalid": 0,
+          "actions": 2473,
+          "mean_reward": -0.19825,
+          "first_seed": 2147583648,
+          "controller": "learned-greedy"
+        },
+        {
+          "task": "click-checkboxes",
+          "episodes": 100,
+          "success": 43,
+          "success_rate": 0.43,
+          "timeouts": 0,
+          "invalid": 0,
+          "actions": 265,
+          "mean_reward": 0.54995,
+          "first_seed": 2147583648,
+          "controller": "learned-greedy"
+        },
+        {
+          "task": "click-option",
+          "episodes": 100,
+          "success": 73,
+          "success_rate": 0.73,
+          "timeouts": 26,
+          "invalid": 0,
+          "actions": 1354,
+          "mean_reward": 0.382,
+          "first_seed": 2147583648,
+          "controller": "learned-greedy"
+        },
+        {
+          "task": "enter-text",
+          "episodes": 100,
+          "success": 100,
+          "success_rate": 1,
+          "timeouts": 0,
+          "invalid": 0,
+          "actions": 300,
+          "mean_reward": 0.925,
+          "first_seed": 2147583648,
+          "controller": "learned-greedy"
+        },
+        {
+          "task": "login-user",
+          "episodes": 100,
+          "success": 0,
+          "success_rate": 0,
+          "timeouts": 100,
+          "invalid": 0,
+          "actions": 4000,
+          "mean_reward": -1,
+          "first_seed": 2147583648,
+          "controller": "learned-greedy"
+        },
+        {
+          "task": "read-table",
+          "episodes": 100,
+          "success": 0,
+          "success_rate": 0,
+          "timeouts": 100,
+          "invalid": 0,
+          "actions": 4000,
+          "mean_reward": -1,
+          "first_seed": 2147583648,
+          "controller": "learned-greedy"
+        },
+        {
+          "task": "navigate-tree",
+          "episodes": 100,
+          "success": 96,
+          "success_rate": 0.96,
+          "timeouts": 4,
+          "invalid": 0,
+          "actions": 311,
+          "mean_reward": 0.88225,
+          "first_seed": 2147583648,
+          "controller": "learned-greedy"
+        },
+        {
+          "task": "use-autocomplete-nodelay",
+          "episodes": 100,
+          "success": 84,
+          "success_rate": 0.84,
+          "timeouts": 2,
+          "invalid": 0,
+          "actions": 432,
+          "mean_reward": 0.607,
+          "first_seed": 2147583648,
+          "controller": "learned-greedy"
+        }
+      ],
+      "browser": [
+        {
+          "task": "click-button",
+          "episodes": 20,
+          "success": 20,
+          "success_rate": 1,
+          "raw_reward_mean": 1,
+          "timed_reward_mean": 0.975,
+          "mean_steps": 1,
+          "timeouts": 0,
+          "controller": "learned-greedy"
+        },
+        {
+          "task": "click-link",
+          "episodes": 20,
+          "success": 19,
+          "success_rate": 0.95,
+          "raw_reward_mean": 0.9,
+          "timed_reward_mean": 0.87625,
+          "mean_steps": 1.05,
+          "timeouts": 0,
+          "controller": "learned-greedy"
+        },
+        {
+          "task": "focus-text",
+          "episodes": 20,
+          "success": 20,
+          "success_rate": 1,
+          "raw_reward_mean": 1,
+          "timed_reward_mean": 0.975,
+          "mean_steps": 1,
+          "timeouts": 0,
+          "controller": "learned-greedy"
+        },
+        {
+          "task": "click-checkboxes",
+          "episodes": 20,
+          "success": 11,
+          "success_rate": 0.55,
+          "raw_reward_mean": 0.561667,
+          "timed_reward_mean": 0.512833,
+          "mean_steps": 5.75,
+          "timeouts": 1,
+          "controller": "learned-greedy"
+        },
+        {
+          "task": "click-option",
+          "episodes": 20,
+          "success": 14,
+          "success_rate": 0.7,
+          "raw_reward_mean": 0.4,
+          "timed_reward_mean": 0.3375,
+          "mean_steps": 12.6,
+          "timeouts": 5,
+          "controller": "learned-greedy"
+        }
+      ],
+      "cpu_cuda_policy_parity": [
+        {
+          "cpu_cuda_policy_parity": "PASS",
+          "steps": 64,
+          "terminal_resets": 8,
+          "max_logit_error": 0.00000858306885
+        }
+      ]
+    },
+    {
+      "label": "potion",
+      "checkpoint": "build/webnav/training/ablation_20260922/potion/webnav_dom/1790061000386/0000000001998848.bin",
+      "contract": {
+        "schema": "webnav-training-v1",
+        "source_sha256": "041ed6fc6f6bd0ecf2d6bd1736c470c91b0fd880b671bbf8d80249f2ce5085e8",
+        "version": 1,
+        "features": 12392,
+        "actions": 35,
+        "potion": 1,
+        "hidden": 128,
+        "layers": 2,
+        "seed": 17,
+        "task_mask": 4095,
+        "tokenizer": "ordered-utf8-byte-bits-v1",
+        "semantic_profile": "potion-8m-30192f937c6e10f3-fixed32-v1"
+      },
+      "steps": 1998848,
+      "training_wall_seconds": 104.3,
+      "aggregate_training_sps": 19164.410354745927,
+      "episodes": 1200,
+      "successes": 770,
+      "success_rate": 0.6416666666666667,
+      "per_task": [
+        {
+          "task": "click-button",
+          "episodes": 100,
+          "success": 97,
+          "success_rate": 0.97,
+          "timeouts": 0,
+          "invalid": 0,
+          "actions": 100,
+          "mean_reward": 0.91575,
+          "first_seed": 2147583648,
+          "controller": "learned-greedy"
+        },
+        {
+          "task": "click-link",
+          "episodes": 100,
+          "success": 97,
+          "success_rate": 0.97,
+          "timeouts": 0,
+          "invalid": 0,
+          "actions": 100,
+          "mean_reward": 0.91575,
+          "first_seed": 2147583648,
+          "controller": "learned-greedy"
+        },
+        {
+          "task": "focus-text",
+          "episodes": 100,
+          "success": 100,
+          "success_rate": 1,
+          "timeouts": 0,
+          "invalid": 0,
+          "actions": 100,
+          "mean_reward": 0.975,
+          "first_seed": 2147583648,
+          "controller": "learned-greedy"
+        },
+        {
+          "task": "click-button-sequence",
+          "episodes": 100,
+          "success": 0,
+          "success_rate": 0,
+          "timeouts": 100,
+          "invalid": 0,
+          "actions": 4000,
+          "mean_reward": -1,
+          "first_seed": 2147583648,
+          "controller": "learned-greedy"
+        },
+        {
+          "task": "choose-list",
+          "episodes": 100,
+          "success": 59,
+          "success_rate": 0.59,
+          "timeouts": 36,
+          "invalid": 0,
+          "actions": 1632,
+          "mean_reward": 0.14375,
+          "first_seed": 2147583648,
+          "controller": "learned-greedy"
+        },
+        {
+          "task": "click-checkboxes",
+          "episodes": 100,
+          "success": 40,
+          "success_rate": 0.4,
+          "timeouts": 0,
+          "invalid": 0,
+          "actions": 255,
+          "mean_reward": 0.516008,
+          "first_seed": 2147583648,
+          "controller": "learned-greedy"
+        },
+        {
+          "task": "click-option",
+          "episodes": 100,
+          "success": 90,
+          "success_rate": 0.9,
+          "timeouts": 2,
+          "invalid": 0,
+          "actions": 428,
+          "mean_reward": 0.7165,
+          "first_seed": 2147583648,
+          "controller": "learned-greedy"
+        },
+        {
+          "task": "enter-text",
+          "episodes": 100,
+          "success": 100,
+          "success_rate": 1,
+          "timeouts": 0,
+          "invalid": 0,
+          "actions": 300,
+          "mean_reward": 0.925,
+          "first_seed": 2147583648,
+          "controller": "learned-greedy"
+        },
+        {
+          "task": "login-user",
+          "episodes": 100,
+          "success": 0,
+          "success_rate": 0,
+          "timeouts": 100,
+          "invalid": 0,
+          "actions": 4000,
+          "mean_reward": -1,
+          "first_seed": 2147583648,
+          "controller": "learned-greedy"
+        },
+        {
+          "task": "read-table",
+          "episodes": 100,
+          "success": 0,
+          "success_rate": 0,
+          "timeouts": 100,
+          "invalid": 0,
+          "actions": 4000,
+          "mean_reward": -1,
+          "first_seed": 2147583648,
+          "controller": "learned-greedy"
+        },
+        {
+          "task": "navigate-tree",
+          "episodes": 100,
+          "success": 97,
+          "success_rate": 0.97,
+          "timeouts": 3,
+          "invalid": 0,
+          "actions": 268,
+          "mean_reward": 0.903,
+          "first_seed": 2147583648,
+          "controller": "learned-greedy"
+        },
+        {
+          "task": "use-autocomplete-nodelay",
+          "episodes": 100,
+          "success": 90,
+          "success_rate": 0.9,
+          "timeouts": 2,
+          "invalid": 0,
+          "actions": 428,
+          "mean_reward": 0.72175,
+          "first_seed": 2147583648,
+          "controller": "learned-greedy"
+        }
+      ],
+      "browser": [
+        {
+          "task": "click-button",
+          "episodes": 20,
+          "success": 20,
+          "success_rate": 1,
+          "raw_reward_mean": 1,
+          "timed_reward_mean": 0.975,
+          "mean_steps": 1,
+          "timeouts": 0,
+          "controller": "learned-greedy"
+        },
+        {
+          "task": "click-link",
+          "episodes": 20,
+          "success": 20,
+          "success_rate": 1,
+          "raw_reward_mean": 1,
+          "timed_reward_mean": 0.975,
+          "mean_steps": 1,
+          "timeouts": 0,
+          "controller": "learned-greedy"
+        },
+        {
+          "task": "focus-text",
+          "episodes": 20,
+          "success": 20,
+          "success_rate": 1,
+          "raw_reward_mean": 1,
+          "timed_reward_mean": 0.975,
+          "mean_steps": 1,
+          "timeouts": 0,
+          "controller": "learned-greedy"
+        },
+        {
+          "task": "click-checkboxes",
+          "episodes": 20,
+          "success": 8,
+          "success_rate": 0.4,
+          "raw_reward_mean": 0.491667,
+          "timed_reward_mean": 0.449708,
+          "mean_steps": 5.3,
+          "timeouts": 1,
+          "controller": "learned-greedy"
+        },
+        {
+          "task": "click-option",
+          "episodes": 20,
+          "success": 17,
+          "success_rate": 0.85,
+          "raw_reward_mean": 0.7,
+          "timed_reward_mean": 0.63875,
+          "mean_steps": 2.75,
+          "timeouts": 0,
+          "controller": "learned-greedy"
+        }
+      ],
+      "cpu_cuda_policy_parity": [
+        {
+          "cpu_cuda_policy_parity": "PASS",
+          "steps": 64,
+          "terminal_resets": 5,
+          "max_logit_error": 0.0000152587891
+        }
+      ]
+    },
+    {
+      "label": "lexical5m",
+      "checkpoint": "build/webnav/training/ablation_20260922/lexical5m/webnav_dom/1790061155070/0000000004999168.bin",
+      "contract": {
+        "schema": "webnav-training-v1",
+        "source_sha256": "041ed6fc6f6bd0ecf2d6bd1736c470c91b0fd880b671bbf8d80249f2ce5085e8",
+        "version": 1,
+        "features": 12392,
+        "actions": 35,
+        "potion": 0,
+        "hidden": 128,
+        "layers": 2,
+        "seed": 17,
+        "task_mask": 4095,
+        "tokenizer": "ordered-utf8-byte-bits-v1",
+        "semantic_profile": "disabled"
+      },
+      "steps": 4999168,
+      "training_wall_seconds": 365.96,
+      "aggregate_training_sps": 13660.421904033228,
+      "episodes": 1200,
+      "successes": 969,
+      "success_rate": 0.8075,
+      "per_task": [
+        {
+          "task": "click-button",
+          "episodes": 100,
+          "success": 100,
+          "success_rate": 1,
+          "timeouts": 0,
+          "invalid": 0,
+          "actions": 100,
+          "mean_reward": 0.975,
+          "first_seed": 2147583648,
+          "controller": "learned-greedy"
+        },
+        {
+          "task": "click-link",
+          "episodes": 100,
+          "success": 100,
+          "success_rate": 1,
+          "timeouts": 0,
+          "invalid": 0,
+          "actions": 100,
+          "mean_reward": 0.975,
+          "first_seed": 2147583648,
+          "controller": "learned-greedy"
+        },
+        {
+          "task": "focus-text",
+          "episodes": 100,
+          "success": 100,
+          "success_rate": 1,
+          "timeouts": 0,
+          "invalid": 0,
+          "actions": 100,
+          "mean_reward": 0.975,
+          "first_seed": 2147583648,
+          "controller": "learned-greedy"
+        },
+        {
+          "task": "click-button-sequence",
+          "episodes": 100,
+          "success": 100,
+          "success_rate": 1,
+          "timeouts": 0,
+          "invalid": 0,
+          "actions": 200,
+          "mean_reward": 0.95,
+          "first_seed": 2147583648,
+          "controller": "learned-greedy"
+        },
+        {
+          "task": "choose-list",
+          "episodes": 100,
+          "success": 71,
+          "success_rate": 0.71,
+          "timeouts": 29,
+          "invalid": 0,
+          "actions": 1282,
+          "mean_reward": 0.3895,
+          "first_seed": 2147583648,
+          "controller": "learned-greedy"
+        },
+        {
+          "task": "click-checkboxes",
+          "episodes": 100,
+          "success": 98,
+          "success_rate": 0.98,
+          "timeouts": 0,
+          "invalid": 0,
+          "actions": 313,
+          "mean_reward": 0.916083,
+          "first_seed": 2147583648,
+          "controller": "learned-greedy"
+        },
+        {
+          "task": "click-option",
+          "episodes": 100,
+          "success": 100,
+          "success_rate": 1,
+          "timeouts": 0,
+          "invalid": 0,
+          "actions": 200,
+          "mean_reward": 0.95,
+          "first_seed": 2147583648,
+          "controller": "learned-greedy"
+        },
+        {
+          "task": "enter-text",
+          "episodes": 100,
+          "success": 100,
+          "success_rate": 1,
+          "timeouts": 0,
+          "invalid": 0,
+          "actions": 300,
+          "mean_reward": 0.925,
+          "first_seed": 2147583648,
+          "controller": "learned-greedy"
+        },
+        {
+          "task": "login-user",
+          "episodes": 100,
+          "success": 0,
+          "success_rate": 0,
+          "timeouts": 100,
+          "invalid": 0,
+          "actions": 4000,
+          "mean_reward": -1,
+          "first_seed": 2147583648,
+          "controller": "learned-greedy"
+        },
+        {
+          "task": "read-table",
+          "episodes": 100,
+          "success": 0,
+          "success_rate": 0,
+          "timeouts": 100,
+          "invalid": 0,
+          "actions": 4000,
+          "mean_reward": -1,
+          "first_seed": 2147583648,
+          "controller": "learned-greedy"
+        },
+        {
+          "task": "navigate-tree",
+          "episodes": 100,
+          "success": 100,
+          "success_rate": 1,
+          "timeouts": 0,
+          "invalid": 0,
+          "actions": 149,
+          "mean_reward": 0.96275,
+          "first_seed": 2147583648,
+          "controller": "learned-greedy"
+        },
+        {
+          "task": "use-autocomplete-nodelay",
+          "episodes": 100,
+          "success": 100,
+          "success_rate": 1,
+          "timeouts": 0,
+          "invalid": 0,
+          "actions": 351,
+          "mean_reward": 0.91225,
+          "first_seed": 2147583648,
+          "controller": "learned-greedy"
+        }
+      ],
+      "browser": [
+        {
+          "task": "click-button",
+          "episodes": 20,
+          "success": 20,
+          "success_rate": 1,
+          "raw_reward_mean": 1,
+          "timed_reward_mean": 0.975,
+          "mean_steps": 1,
+          "timeouts": 0,
+          "controller": "learned-greedy"
+        },
+        {
+          "task": "click-link",
+          "episodes": 20,
+          "success": 20,
+          "success_rate": 1,
+          "raw_reward_mean": 1,
+          "timed_reward_mean": 0.975,
+          "mean_steps": 1,
+          "timeouts": 0,
+          "controller": "learned-greedy"
+        },
+        {
+          "task": "focus-text",
+          "episodes": 20,
+          "success": 20,
+          "success_rate": 1,
+          "raw_reward_mean": 1,
+          "timed_reward_mean": 0.975,
+          "mean_steps": 1,
+          "timeouts": 0,
+          "controller": "learned-greedy"
+        },
+        {
+          "task": "click-checkboxes",
+          "episodes": 20,
+          "success": 19,
+          "success_rate": 0.95,
+          "raw_reward_mean": 0.983333,
+          "timed_reward_mean": 0.909583,
+          "mean_steps": 3,
+          "timeouts": 0,
+          "controller": "learned-greedy"
+        },
+        {
+          "task": "click-option",
+          "episodes": 20,
+          "success": 20,
+          "success_rate": 1,
+          "raw_reward_mean": 1,
+          "timed_reward_mean": 0.95,
+          "mean_steps": 2,
+          "timeouts": 0,
+          "controller": "learned-greedy"
+        }
+      ],
+      "cpu_cuda_policy_parity": [
+        {
+          "cpu_cuda_policy_parity": "PASS",
+          "steps": 64,
+          "terminal_resets": 11,
+          "max_logit_error": 0.0000171661377
+        }
+      ]
+    },
+    {
+      "label": "potion5m",
+      "checkpoint": "build/webnav/training/ablation_20260922/potion5m/webnav_dom/1790061521868/0000000004999168.bin",
+      "contract": {
+        "schema": "webnav-training-v1",
+        "source_sha256": "041ed6fc6f6bd0ecf2d6bd1736c470c91b0fd880b671bbf8d80249f2ce5085e8",
+        "version": 1,
+        "features": 12392,
+        "actions": 35,
+        "potion": 1,
+        "hidden": 128,
+        "layers": 2,
+        "seed": 17,
+        "task_mask": 4095,
+        "tokenizer": "ordered-utf8-byte-bits-v1",
+        "semantic_profile": "potion-8m-30192f937c6e10f3-fixed32-v1"
+      },
+      "steps": 4999168,
+      "training_wall_seconds": 259.71,
+      "aggregate_training_sps": 19249.039313079975,
+      "episodes": 1200,
+      "successes": 969,
+      "success_rate": 0.8075,
+      "per_task": [
+        {
+          "task": "click-button",
+          "episodes": 100,
+          "success": 100,
+          "success_rate": 1,
+          "timeouts": 0,
+          "invalid": 0,
+          "actions": 100,
+          "mean_reward": 0.975,
+          "first_seed": 2147583648,
+          "sample_seed": 0,
+          "controller": "learned-greedy"
+        },
+        {
+          "task": "click-link",
+          "episodes": 100,
+          "success": 100,
+          "success_rate": 1,
+          "timeouts": 0,
+          "invalid": 0,
+          "actions": 100,
+          "mean_reward": 0.975,
+          "first_seed": 2147583648,
+          "sample_seed": 0,
+          "controller": "learned-greedy"
+        },
+        {
+          "task": "focus-text",
+          "episodes": 100,
+          "success": 100,
+          "success_rate": 1,
+          "timeouts": 0,
+          "invalid": 0,
+          "actions": 100,
+          "mean_reward": 0.975,
+          "first_seed": 2147583648,
+          "sample_seed": 0,
+          "controller": "learned-greedy"
+        },
+        {
+          "task": "click-button-sequence",
+          "episodes": 100,
+          "success": 100,
+          "success_rate": 1,
+          "timeouts": 0,
+          "invalid": 0,
+          "actions": 200,
+          "mean_reward": 0.95,
+          "first_seed": 2147583648,
+          "sample_seed": 0,
+          "controller": "learned-greedy"
+        },
+        {
+          "task": "choose-list",
+          "episodes": 100,
+          "success": 71,
+          "success_rate": 0.71,
+          "timeouts": 29,
+          "invalid": 0,
+          "actions": 1282,
+          "mean_reward": 0.3895,
+          "first_seed": 2147583648,
+          "sample_seed": 0,
+          "controller": "learned-greedy"
+        },
+        {
+          "task": "click-checkboxes",
+          "episodes": 100,
+          "success": 98,
+          "success_rate": 0.98,
+          "timeouts": 0,
+          "invalid": 0,
+          "actions": 313,
+          "mean_reward": 0.916,
+          "first_seed": 2147583648,
+          "sample_seed": 0,
+          "controller": "learned-greedy"
+        },
+        {
+          "task": "click-option",
+          "episodes": 100,
+          "success": 100,
+          "success_rate": 1,
+          "timeouts": 0,
+          "invalid": 0,
+          "actions": 200,
+          "mean_reward": 0.95,
+          "first_seed": 2147583648,
+          "sample_seed": 0,
+          "controller": "learned-greedy"
+        },
+        {
+          "task": "enter-text",
+          "episodes": 100,
+          "success": 100,
+          "success_rate": 1,
+          "timeouts": 0,
+          "invalid": 0,
+          "actions": 300,
+          "mean_reward": 0.925,
+          "first_seed": 2147583648,
+          "sample_seed": 0,
+          "controller": "learned-greedy"
+        },
+        {
+          "task": "login-user",
+          "episodes": 100,
+          "success": 0,
+          "success_rate": 0,
+          "timeouts": 100,
+          "invalid": 0,
+          "actions": 4000,
+          "mean_reward": -1,
+          "first_seed": 2147583648,
+          "sample_seed": 0,
+          "controller": "learned-greedy"
+        },
+        {
+          "task": "read-table",
+          "episodes": 100,
+          "success": 0,
+          "success_rate": 0,
+          "timeouts": 100,
+          "invalid": 0,
+          "actions": 4000,
+          "mean_reward": -1,
+          "first_seed": 2147583648,
+          "sample_seed": 0,
+          "controller": "learned-greedy"
+        },
+        {
+          "task": "navigate-tree",
+          "episodes": 100,
+          "success": 100,
+          "success_rate": 1,
+          "timeouts": 0,
+          "invalid": 0,
+          "actions": 149,
+          "mean_reward": 0.96275,
+          "first_seed": 2147583648,
+          "sample_seed": 0,
+          "controller": "learned-greedy"
+        },
+        {
+          "task": "use-autocomplete-nodelay",
+          "episodes": 100,
+          "success": 100,
+          "success_rate": 1,
+          "timeouts": 0,
+          "invalid": 0,
+          "actions": 351,
+          "mean_reward": 0.91225,
+          "first_seed": 2147583648,
+          "sample_seed": 0,
+          "controller": "learned-greedy"
+        }
+      ],
+      "browser": [
+        {
+          "task": "click-button",
+          "episodes": 20,
+          "success": 20,
+          "success_rate": 1,
+          "raw_reward_mean": 1,
+          "timed_reward_mean": 0.975,
+          "mean_steps": 1,
+          "timeouts": 0,
+          "controller": "learned-greedy"
+        },
+        {
+          "task": "click-link",
+          "episodes": 20,
+          "success": 20,
+          "success_rate": 1,
+          "raw_reward_mean": 1,
+          "timed_reward_mean": 0.975,
+          "mean_steps": 1,
+          "timeouts": 0,
+          "controller": "learned-greedy"
+        },
+        {
+          "task": "focus-text",
+          "episodes": 20,
+          "success": 20,
+          "success_rate": 1,
+          "raw_reward_mean": 1,
+          "timed_reward_mean": 0.975,
+          "mean_steps": 1,
+          "timeouts": 0,
+          "controller": "learned-greedy"
+        },
+        {
+          "task": "click-checkboxes",
+          "episodes": 20,
+          "success": 19,
+          "success_rate": 0.95,
+          "raw_reward_mean": 0.98,
+          "timed_reward_mean": 0.9075,
+          "mean_steps": 3,
+          "timeouts": 0,
+          "controller": "learned-greedy"
+        },
+        {
+          "task": "click-option",
+          "episodes": 20,
+          "success": 20,
+          "success_rate": 1,
+          "raw_reward_mean": 1,
+          "timed_reward_mean": 0.95,
+          "mean_steps": 2,
+          "timeouts": 0,
+          "controller": "learned-greedy"
+        }
+      ],
+      "cpu_cuda_policy_parity": [
+        {
+          "cpu_cuda_policy_parity": "PASS",
+          "steps": 64,
+          "terminal_resets": 11,
+          "max_logit_error": 0.0000267028809
+        }
+      ]
+    }
+  ]
+}

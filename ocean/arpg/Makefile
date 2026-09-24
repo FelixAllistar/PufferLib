@@ -7,7 +7,7 @@ CFLAGS ?= -O2 -g -std=gnu11 -Wall -Wextra -Wno-unused-function -Wno-unused-param
 LDLIBS := $(BOX3D)/build/src/libbox3d.a -lm -lpthread
 NVCC := $${CUDA_HOME:-$${CUDA_PATH:-/usr/local/cuda}}/bin/nvcc
 
-.PHONY: test sanitize cuda-test native-cpu-test viewer-test frontier-test
+.PHONY: test sanitize cuda-test native-cpu-test viewer-test viewer-cpp-test frontier-test reach-test
 $(BUILD):
 	mkdir -p $(BUILD)
 test: | $(BUILD)
@@ -16,6 +16,10 @@ test: | $(BUILD)
 sanitize:
 	$(MAKE) test BUILD=$(BUILD)/sanitize CFLAGS="-O1 -g -std=gnu11 -fsanitize=address,undefined -fno-omit-frame-pointer"
 	$(MAKE) frontier-test BUILD=$(BUILD)/sanitize CFLAGS="-O1 -g -std=gnu11 -fsanitize=address,undefined -fno-omit-frame-pointer"
+	$(MAKE) reach-test BUILD=$(BUILD)/sanitize CFLAGS="-O1 -g -std=gnu11 -fsanitize=address,undefined -fno-omit-frame-pointer"
+reach-test: | $(BUILD)
+	$(CC) $(CFLAGS) $(INCLUDES) tests/test_reach.c $(LDLIBS) -o $(BUILD)/test_reach
+	cd $(ROOT) && $(abspath $(BUILD)/test_reach)
 frontier-test: | $(BUILD)
 	$(CC) $(CFLAGS) $(INCLUDES) tests/test_frontier.c $(LDLIBS) -o $(BUILD)/test_frontier
 	cd $(ROOT) && $(abspath $(BUILD)/test_frontier)
@@ -27,6 +31,9 @@ cuda-test: | $(BUILD)
 	$(NVCC) -O2 -std=c++17 \
 		-arch=$${NVCC_ARCH:-native} $(INCLUDES) tests/test_cuda.cu -o $(BUILD)/test_cuda
 	cd $(ROOT) && $(abspath $(BUILD)/test_cuda)
+viewer-cpp-test: | $(BUILD)
+	$(NVCC) -O0 -std=c++17 -arch=$${NVCC_ARCH:-native} $(INCLUDES) \
+		-c tests/test_render_cpp.cu -o $(BUILD)/test_render_cpp.o
 native-cpu-test: | $(BUILD)
 	$(NVCC) -x cu -O1 -std=c++17 -arch=$${NVCC_ARCH:-native} $(INCLUDES) \
 		-c tests/test_sim.c -o $(BUILD)/test_native_cpu.o

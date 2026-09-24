@@ -6,6 +6,7 @@
 #define PS_DEBUG_COUNTS 1
 #include "../puffer_survivors.h"
 #include "test_enemy_scans.h"
+#include "test_weapon_areas.h"
 
 static void assert_finite_observation(const float* obs) {
     for (int i = 0; i < PS_OBS_SIZE; i++) {
@@ -114,6 +115,7 @@ int main(void) {
     assert(PS_OBS_SIZE == 337);
     assert_finite_observation(observations);
     ps_test_enemy_scans(&env, 0);
+    ps_test_weapon_areas(&env, 0);
     assert(ps_geometry_shape_overlaps_circle(PS_SHAPE_AABB,
         4.0f, 0.0f, 0.0f, 4.65f, 4.65f, 0.5f));
     assert(!ps_geometry_shape_overlaps_circle(PS_SHAPE_AABB,
@@ -160,19 +162,10 @@ int main(void) {
     assert(fabsf(observations[obstacle_slot] - 3.0f / observe_radius) < 1e-5f);
     assert(fabsf(observations[obstacle_slot + 1] - 1.0f / observe_radius) < 1e-5f);
 
-    // Glacier must survive dense swap-removal, and Spikes must emit the
-    // intended radial counts with a range-derived lifetime.
+    // Glacier must survive dense swap-removal.
     int obstacle_count = env.cfg.obstacle_count;
     env.cfg.obstacle_count = 0;
     env.area_bonus = 0.0f;
-    for (int level = 1; level <= 4; level++) {
-        ps_clear_entities(&env, 0);
-        ps_cast_spikes(&env, 0, level);
-        assert(env.projectile_count == (4 << (level - 1)));
-        int ttl = (int)ceilf(env.cfg.spike_range / env.cfg.spike_speed);
-        for (int k = 0; k < env.projectile_count; k++)
-            assert(env.projectiles.ttl[env.projectiles.dense[k]] == ttl);
-    }
     ps_clear_entities(&env, 0);
     env.nearest_enemy = -1;
     int glacier_kill = ps_spawn_enemy(&env, 0) - 1;

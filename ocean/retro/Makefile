@@ -35,4 +35,4 @@ $(BUILD)/sweep_eval: sweep_eval.cpp retro.h retro_obs.h retro_sweep_config.h ret
 sweep-tools: $(BUILD)/sweep_eval
 .PHONY: resolution
 resolution:
-$(BUILD)/test_retro $(BUILD)/test_sweep $(BUILD)/reference_probe $(BUILD)/sweep_eval: resolution retro_resolution.h
+$(BUILD)/test_retro $(BUILD)/test_sweep $(BUILD)/reference_probe $(BUILD)/sweep_eval: resolution retro_resolution.h retro_timing.h retro_rom_identity.h

@@ -1,5 +1,35 @@
 # Hearthwild sprite atlases
 
+## Lanternlight / build 5
+
+[Fauna and enemy frames](reach-fauna-v5.png): 8×4, 1774×887 RGBA, original
+hare, deer, spore toad and slate boar designs. Generated with the **built-in image
+generation tool**, using `reach-keepers-v4.png` only as a style reference.
+Original output and alpha are preserved; older sheets are untouched.
+[Full prompt and inspiration notes](lantern-prompts.md).
+[Lantern preview](lantern-preview.png) is captured from the running viewer,
+not an image-generated scene or UI.
+
+## Reach build 4
+
+Generated with the **built-in image generation tool**, not the CLI fallback:
+
+- [Companion frames](reach-companions-v4.png): Wisp, Fang, Aegis, Porter; 8×4, 1774×887 RGBA.
+- [Keeper/specialist/enemy frames](reach-keepers-v4.png): keeper, Burrower, Ember, thornling; 8×4, 1774×887 RGBA. A second built-in edit corrected an Ember flame crossing a cell gutter.
+- [Biome decorations](reach-biomes-v4.png): 16 trees, rocks and understory objects; 1254×1254 RGBA.
+
+The [exact generation and correction prompts](reach-prompts.md) include reference
+assets. Original base/expansion sheets remain unchanged. `ar_sprite_sheet.h`
+imports the new PNGs without image rewriting, finds transparent gutters, and
+uses shared row-scale and foot pivots for the eight-frame strips.
+
+[Reach preview](reach-preview.png) is a running-game capture developed through
+normal production. [World atlas preview](reach-map-preview.png) is a runtime
+visual-test capture with a scout placed in several regions; it is not AI-generated
+UI, a walked route, or evidence of fully simulated remote combat.
+
+## Original assets
+
 Saved asset: [hearthwild-atlas.png](hearthwild-atlas.png).
 
 Generated with the built-in image generation tool (not the CLI fallback), then

@@ -750,6 +750,7 @@ static int bc_gen_dagger(Ini* ini) {
 }
 
 static int bc_train(Ini* ini) {
+    const bool critic_only = strcmp(puf_ini_get_str(ini, "bc", "mode"), "critic") == 0;
     const char* data_path = puf_ini_get_str(ini, "bc", "data");
     int bc_epochs = (int)puf_ini_get(ini, "bc", "epochs");
     float bc_lr = (float)puf_ini_get(ini, "bc", "learning_rate");
@@ -762,6 +763,9 @@ static int bc_train(Ini* ini) {
     int validation_games = (int)puf_ini_get(ini, "bc", "validation_games");
     float value_coef = (float)puf_ini_get(ini, "bc", "value_coef");
     int verify_only = (int)puf_ini_get(ini, "bc", "verify_only");
+    if (critic_only && !(value_coef > 0.0f)) {
+        fprintf(stderr, "bc.mode=critic requires bc.value_coef>0\n"); return 1;
+    }
     KagObservationContract contract = kag_observation_contract(ini);
     int zero_reset_source = (int)puf_ini_get(
         ini, "bc", "zero_reset_source");
@@ -981,6 +985,21 @@ static int bc_train(Ini* ini) {
     create_allocator_or_die("grads", &grads);
     create_allocator_or_die("acts", &acts);
     precision_t* param_puf = (precision_t*)params.mem;
+    if (params.total_bytes != params.total_elems * (long)sizeof(precision_t)
+            || grads.total_bytes != grads.total_elems * (long)sizeof(precision_t)
+            || params.num_regs != grads.num_regs || params.total_elems != grads.total_elems) {
+        fprintf(stderr, "BC requires matching gap-free parameter/gradient storage\n"); return 1;
+    }
+    KagMLPWeights* critic = &((KagDecoderWeights*)weights.decoder)->branch[2];
+    const long critic_begin[2] = {critic->w1.data - param_puf, critic->w2.data - param_puf};
+    const long critic_end[2] = {critic_begin[0] + numel(critic->w1.shape),
+                              critic_begin[1] + numel(critic->w2.shape)};
+    auto is_critic_parameter = [&](long i) {
+        return (i >= critic_begin[0] && i < critic_end[0])
+            || (i >= critic_begin[1] && i < critic_end[1]);
+    };
+    if (critic_only) printf("CRITIC_ONLY Adam lr=%g frozen_encoder_actor=1 ranges=%ld:%ld,%ld:%ld\n",
+        bc_lr, critic_begin[0], critic_end[0], critic_begin[1], critic_end[1]);
     FloatTensor master_weights = {
         .data = (float*)xcuda((size_t)params.total_elems * sizeof(float)),
         .shape = {params.total_elems}};
@@ -1138,6 +1157,8 @@ static int bc_train(Ini* ini) {
         (size_t)params.total_elems * sizeof(float));
     float* host_mom = (float*)calloc((size_t)params.total_elems,
         sizeof(float));
+    float* critic_second = critic_only ? (float*)calloc((size_t)params.total_elems, sizeof(float)) : NULL;
+    long critic_updates = 0;
     float mom = (float)puf_ini_get(ini, "bc", "momentum");
     if (mom <= 0.0f || mom >= 1.0f) mom = 0.9f;
     int report_interval = (int)puf_ini_get(ini, "bc", "report_interval");
@@ -1226,12 +1247,23 @@ static int bc_train(Ini* ini) {
             value_coef, return_variance, B * (sequence_steps - 1));
         if (cudaGetLastError() != cudaSuccess) return false;
         if (update) {
+            // Retain actor statistics, but never backpropagate actor CE in this mode.
+            if (critic_only) cudaMemsetAsync(grad_logits, 0,
+                (size_t)batch_rows * A_total * sizeof(float), bc_stream);
             FloatTensor grad_logits_t = {.data = grad_logits,
                 .shape = {batch, sequence_steps, A_total}};
             FloatTensor grad_value_t = {.data = grad_value,
                 .shape = {batch, sequence_steps}};
-            policy_backward(&policy, weights, train_acts, grad_logits_t,
-                FloatTensor(), grad_value_t, bc_stream);
+            if (critic_only) {
+                // The recurrent encoder is frozen; don't run its backward pass.
+                policy.decoder.backward(weights.decoder, train_acts.decoder,
+                    *puf_squeeze(&grad_logits_t, 0), FloatTensor(),
+                    *puf_squeeze(&grad_value_t, 0), bc_stream);
+                puf_dw_join(bc_stream);
+            } else {
+                policy_backward(&policy, weights, train_acts, grad_logits_t,
+                    FloatTensor(), grad_value_t, bc_stream);
+            }
         }
         if (cudaStreamSynchronize(bc_stream) != cudaSuccess) return false;
         cudaMemcpy(host_stats, stats_acc, KAG_BC_STATS * sizeof(float),
@@ -1248,7 +1280,7 @@ static int bc_train(Ini* ini) {
         long grad_off = 0;
         for (int r = 0; r < params.num_regs; r++) {
             long ne = numel(params.regs[r].shape);
-            if (ne > 0) {
+            if (ne > 0 && (!critic_only || is_critic_parameter(grad_off))) {
                 precision_t* gr = *(precision_t**)grads.regs[r].data_ptr;
                 cudaMemcpy(host_grad_bf + grad_off, gr,
                     (size_t)ne * sizeof(precision_t),
@@ -1256,14 +1288,27 @@ static int bc_train(Ini* ini) {
             }
             grad_off += ne;
         }
+        if (critic_only) critic_updates++;
+        const double critic_bias1 = 1.0 - pow(0.9, (double)critic_updates);
+        const double critic_bias2 = 1.0 - pow(0.999, (double)critic_updates);
         for (long i = 0; i < params.total_elems; i++) {
+            // Freeze weights AND optimizer state outside the two value-branch matrices.
+            if (critic_only && !is_critic_parameter(i)) continue;
             float g = to_float(host_grad_bf[i]);
             if (!isfinite(g)) { fprintf(stderr, "Nonfinite BC gradient\n"); return false; }
             if (anchor_l2 > 0.0f) {
                 g += anchor_l2 * (host_master[i] - host_anchor[i]);
             }
-            host_mom[i] = mom * host_mom[i] + g;
-            host_master[i] -= bc_lr * host_mom[i];
+            if (critic_only) {
+                host_mom[i] = 0.9f * host_mom[i] + 0.1f * g;
+                critic_second[i] = 0.999f * critic_second[i] + 0.001f * g * g;
+                host_master[i] -= bc_lr * (host_mom[i] / critic_bias1)
+                    / (sqrt(critic_second[i] / critic_bias2) + 1e-8);
+            } else {
+                host_mom[i] = mom * host_mom[i] + g;
+                host_master[i] -= bc_lr * host_mom[i];
+            }
+            if (!isfinite(host_master[i])) { fprintf(stderr, "Nonfinite BC weight\n"); return false; }
         }
         cudaMemcpyAsync(master_weights.data, host_master,
             (size_t)params.total_elems * sizeof(float),
@@ -1340,6 +1385,10 @@ static int bc_train(Ini* ini) {
             double n = fmax(1.0f, val_stats[16]);
             double target_var = val_stats[20] / n - pow(val_stats[19] / n, 2);
             double error_var = val_stats[17] / n - pow(val_stats[18] / n, 2);
+            if (critic_only) printf("CRITIC_GATE val_rmse=%g constant_train_mean_rmse=%g val_ev=%g\n",
+                sqrt(val_stats[17] / n),
+                sqrt(fmax(0.0, val_stats[20] / n - 2 * return_mean * val_stats[19] / n + return_mean * return_mean)),
+                target_var > 1e-8 ? 1 - error_var / target_var : NAN);
             printf("BC supervised: train_rows=%.0f val_rows=%.0f train_ce=%g val_ce=%g val_exact=%g "
                 "train_value_rmse=%g val_value_rmse=%g val_value_ev=%g value_coef=%g\n",
                 train_stats[21], val_stats[21], train_stats[0] / fmaxf(1, train_stats[21]),
@@ -1392,6 +1441,18 @@ static int bc_train(Ini* ini) {
     int64_t nbytes = numel(master_weights.shape) * sizeof(float);
     float* host = (float*)malloc((size_t)nbytes);
     cudaMemcpy(host, master_weights.data, nbytes, cudaMemcpyDeviceToHost);
+    if (critic_only) {
+        long changed = 0;
+        for (long i = 0; i < params.total_elems; i++) {
+            if (!isfinite(host[i])) { fprintf(stderr, "Nonfinite critic checkpoint\n"); return 1; }
+            bool differs = memcmp(host + i, host_anchor + i, sizeof(float)) != 0;
+            if (differs && !is_critic_parameter(i)) {
+                fprintf(stderr, "Critic fitting changed frozen actor/encoder parameter %ld\n", i); return 1;
+            }
+            changed += differs;
+        }
+        printf("CRITIC_FREEZE_PASS changed_value_parameters=%ld actor_encoder_bitwise_unchanged=1\n", changed);
+    }
     FILE* out = fopen(out_path, "wbx");
     if (!out) { perror(out_path); return 1; }
     if (fwrite(host, 1, (size_t)nbytes, out) != (size_t)nbytes || fclose(out)) {
@@ -1405,6 +1466,7 @@ static int bc_train(Ini* ini) {
     free(h_return_chunk); cudaFree(d_returns);
     free(macro_counts); free(macro_weights); cudaFree(d_macro_weights);
     free(host_grad_bf); free(host_master); free(host_mom);
+    free(critic_second);
     free(h_obs_chunk); free(h_expert_chunk); free(h_mask_chunk);
     return 0;
 }
@@ -1426,9 +1488,9 @@ int main(int argc, char** argv) {
     if (mode && strcmp(mode, "gen_dagger") == 0) {
         fprintf(stderr, "Legacy DAgger generator is not entity-v3 compatible\n"); return 1;
     }
-    if (mode && strcmp(mode, "train") == 0) {
+    if (mode && (strcmp(mode, "train") == 0 || strcmp(mode, "critic") == 0)) {
         return bc_train(&ini);
     }
-    fprintf(stderr, "usage: kag_bc bc.mode=gen|gen_dagger|train ...\n");
+    fprintf(stderr, "usage: kag_bc bc.mode=train|critic ...\n");
     return 1;
 }

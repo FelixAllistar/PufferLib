@@ -164,7 +164,7 @@ static void ar_load_config(ARPG* env, ARControls* controls) {
         .class_wisp = ar_binding_from_ini_opt(&g_controls_ini, "keys", "class_wisp", KEY_Z),
         .class_fang = ar_binding_from_ini_opt(&g_controls_ini, "keys", "class_fang", KEY_X),
         .class_aegis = ar_binding_from_ini_opt(&g_controls_ini, "keys", "class_aegis", KEY_C),
-        .class_mule = ar_binding_from_ini_opt(&g_controls_ini, "keys", "class_mule", KEY_M),
+        .class_mule = ar_binding_from_ini_opt(&g_controls_ini, "keys", "class_mule", KEY_U),
         .order_follow = ar_binding_from_ini_opt(&g_controls_ini, "keys", "order_follow", KEY_ONE),
         .order_attack = ar_binding_from_ini_opt(&g_controls_ini, "keys", "order_attack", KEY_TWO),
         .order_guard = ar_binding_from_ini_opt(&g_controls_ini, "keys", "order_guard", KEY_THREE),
@@ -191,10 +191,10 @@ static int ar_read_move_mask(ARControls* controls) {
 // Action layout mirrors ar_steer_player (screen-relative): 0 idle, 1 up,
 // 2 down, 3 left, 4 right, 5 up-left, 6 up-right, 7 down-left, 8 down-right.
 static float ar_read_move_action(int mask) {
-    int up = (mask & 1) != 0;
-    int down = (mask & 2) != 0;
-    int left = (mask & 4) != 0;
-    int right = (mask & 8) != 0;
+    int up = (mask & 1) != 0 && !(mask & 2);
+    int down = (mask & 2) != 0 && !(mask & 1);
+    int left = (mask & 4) != 0 && !(mask & 8);
+    int right = (mask & 8) != 0 && !(mask & 4);
 
     if (up && left) return 5.0f;
     if (up && right) return 6.0f;
@@ -302,10 +302,15 @@ static void ar_policy_step(PufferNet* net,float* obs,float* actions,int determin
 
 static int ar_pick_pet(ARPG* e,ARClient* c,Vector2 mouse) {
     int found=-1;float best=1e9f;
-    for(int p=0;p<AR_MAX_PETS;p++)if(e->pets.active[p]) {
+    Vector2 badges[AR_MAX_PETS];ar_pet_badges(c,e,badges);
+    for(int p=0;p<AR_MAX_PETS;p++)if(e->pets.active[p] && !e->pets.dormant[p]) {
         Vector2 at=ar_iso(c,e->pets.x[p],e->pets.y[p],0);
-        Rectangle hit={at.x-23*c->zoom,at.y-48*c->zoom,46*c->zoom,55*c->zoom};
+        float radius=fmaxf(17,25*c->zoom);
+        Rectangle hit={at.x-radius,at.y-57*c->zoom,radius*2,64*c->zoom};
         float d=(mouse.x-at.x)*(mouse.x-at.x)+(mouse.y-at.y+20*c->zoom)*(mouse.y-at.y+20*c->zoom);
+        if(ar_geometry_dist2(mouse.x,mouse.y,badges[p].x,badges[p].y)<144) {
+            d-=1e6f;if(d<best){best=d;found=p;}continue;
+        }
         if(CheckCollisionPointRec(mouse,hit) && d<best){best=d;found=p;}
     }
     return found;
@@ -313,6 +318,17 @@ static int ar_pick_pet(ARPG* e,ARClient* c,Vector2 mouse) {
 
 static void ar_context_order(ARPG* e,ARClient* c,Vector2 mouse,int attack_move) {
     Vector2 goal=ar_unproject(c,mouse);int command=attack_move ? AR_CMD_ATTACK : AR_CMD_MOVE;
+    ar_sync_selection(c,e);
+    if(!c->selected_mask) {
+        if(e->direct_pet>=0)c->selected_mask=1u<<e->direct_pet;
+        else {
+            if(ar_geometry_floor(e->dungeon,e->cfg.arena_size,goal.x,goal.y)) {
+                c->move_target=1;c->move_x=goal.x;c->move_y=goal.y;
+                ar_notice(c,"Keeper destination set. WASD cancels walking; companions keep their assignments.");
+            } else ar_notice(c,"Choose reachable ground. Select a companion (1-8) to give it an order.");
+            return;
+        }
+    }
     int target=-1;
     for(int n=0;n<AR_MAX_NESTS;n++)if(e->nest_active[n]) {
         Vector2 at=ar_iso(c,e->nest_x[n],e->nest_y[n],0);
@@ -342,14 +358,6 @@ static void ar_context_order(ARPG* e,ARClient* c,Vector2 mouse,int attack_move) 
     }
     if(target<0 && (tile==AR_TILE_ROCK || tile==AR_TILE_FOREST))command=AR_CMD_WORK;
     uint32_t mask=c->selected_mask;
-    if(!mask) {
-        // Contextual defaults never pull individually assigned workers off a job.
-        for(int p=0;p<AR_MAX_PETS;p++)if(e->pets.active[p] && e->pets.command[p]==AR_CMD_AUTO) {
-            if(command==AR_CMD_GATHER && e->pets.kind[p]==AR_PET_MULE){mask=1u<<p;break;}
-            if(command==AR_CMD_WORK && e->pets.kind[p]>=AR_PET_BURROWER){mask=1u<<p;break;}
-            if((command==AR_CMD_MOVE || command==AR_CMD_ATTACK) && e->pets.kind[p]!=AR_PET_MULE && e->pets.kind[p]!=AR_PET_EMBER)mask|=1u<<p;
-        }
-    }
     int issued=0;
     for(int p=0;p<AR_MAX_PETS;p++)if((mask&(1u<<p)) && e->pets.active[p]) {
         if(command==AR_CMD_WORK && e->pets.kind[p]<AR_PET_BURROWER)continue;
@@ -363,21 +371,16 @@ static void ar_context_order(ARPG* e,ARClient* c,Vector2 mouse,int attack_move) 
 }
 
 static int ar_move_toward(ARPG* e,float tx,float ty) {
+    e->guide_keeper=0;
     float dx=tx-e->px,dy=ty-e->py;
-    if(dx*dx+dy*dy<0.5f)return 0;
+    if(dx*dx+dy*dy<0.025f)return 0;
     if(!ar_nav_visible(e->dungeon,e->cfg.arena_size,e->px,e->py,tx,ty)) {
         float nx,ny;if(!ar_nav_next(e->dungeon,e->cfg.arena_size,e->px,e->py,tx,ty,&nx,&ny))return 0;
         dx=nx-e->px;dy=ny-e->py;if(dx*dx+dy*dy<0.01f)return 0;
     }
-    float best=-2;int result=0;
-    float length=sqrtf(dx*dx+dy*dy);dx/=length;dy/=length;
-    for(int action=1;action<AR_MOVE_ACTION_COUNT;action++) {
-        float vx,vy;ar_move_dir(action,&vx,&vy);
-        if(!ar_geometry_floor(e->dungeon,e->cfg.arena_size,e->px+vx*0.7f,e->py+vy*0.7f))continue;
-        float score=dx*vx+dy*vy;
-        if(score>best){best=score;result=action;}
-    }
-    return result;
+    float length=hypotf(dx,dy),speed=fminf(1,(length-.08f)/(e->cfg.player_speed*AR_DT));
+    e->guide_keeper=1;e->guide_dx=dx/length*speed;e->guide_dy=dy/length*speed;
+    return 1;
 }
 
 int main(int argc,char** argv) {
@@ -465,7 +468,8 @@ int main(int argc,char** argv) {
             if(!watch && !bounded)ar_world_begin(&e);
             human_order=AR_ORDER_FOLLOW;client->build_kind=-1;client->selected_pet=-1;
             client->camera_free=0;client->cam_x=e.px;client->cam_y=e.py;client->origin_x=client->origin_y=0;
-            client->selected_mask=0;client->targeting_nuke=0;client->dragging=0;
+            client->selected_mask=0;client->targeting_nuke=0;client->dragging=0;client->map_open=0;
+            client->map_cache_span=0;
             memset(client->groups,0,sizeof(client->groups));
             client->ui_summon=0;client->ui_ability=0;
             memset(actions,0,sizeof(actions));
@@ -480,13 +484,38 @@ int main(int argc,char** argv) {
         if(ar_binding_pressed(controls.autoplay) || client->ui_toggle) {
             client->ui_toggle=0;
             if(net) {
+                if(e.direct_pet>=0)ar_drive_selected(client,&e,1);
                 client->autoplay=!client->autoplay;ar_reset_policy(net);
                 memset(actions,0,sizeof(actions));client->move_target=0;
                 client->ui_summon=0;client->ui_ability=0;client->build_kind=-1;
             }
             else ar_notice(client,"No RL checkpoint loaded. Scripted pet assist is active; train arpg for RL control.");
         }
-        if(IsKeyPressed(KEY_P)) {
+        if(IsKeyPressed(KEY_M) || client->ui_map) {
+            client->ui_map=0;
+            if(e.campaign) {
+                client->map_open=!client->map_open;client->dragging=0;client->move_target=0;
+                if(client->map_open) {
+                    int p=e.direct_pet;
+                    client->map_x=((ARWorld*)e.campaign)->origin_x+(p>=0 ? e.pets.x[p] : e.px)/ar_world_cell(&e);
+                    client->map_y=((ARWorld*)e.campaign)->origin_y+(p>=0 ? e.pets.y[p] : e.py)/ar_world_cell(&e);
+                }
+            } else ar_notice(client,"World atlas is available in play mode. This is the bounded training arena.");
+        }
+        if(IsKeyPressed(KEY_ESCAPE)) {
+            client->map_open=0;client->build_kind=-1;client->targeting_nuke=0;
+            client->selected_mask=0;client->dragging=0;client->move_target=0;
+        }
+        if(!client->autoplay) {
+            if(!IsKeyDown(KEY_LEFT_ALT) && !IsKeyDown(KEY_RIGHT_ALT))for(int p=0;p<AR_MAX_PETS;p++)if(IsKeyPressed(KEY_ONE+p)) {
+                ar_select_pet(client,&e,p,IsKeyDown(KEY_LEFT_SHIFT)||IsKeyDown(KEY_RIGHT_SHIFT));
+                if(e.pets.active[p])ar_notice(client,TextFormat("Selected #%d %s / F6 drive / RMB order / Shift+number add",p+1,AR_PET_NAMES[e.pets.kind[p]]));
+            }
+            if(IsKeyPressed(KEY_ZERO))ar_drive_selected(client,&e,1);
+            if(IsKeyPressed(KEY_F6) || client->ui_drive){client->ui_drive=0;ar_drive_selected(client,&e,0);}
+        }
+        if(!client->autoplay && IsKeyPressed(KEY_P)) {
+            if(e.direct_pet>=0 && (!client->selected_mask || client->selected_mask&(1u<<e.direct_pet)))ar_drive_selected(client,&e,1);
             for(int p=0;p<AR_MAX_PETS;p++)if(!client->selected_mask || (client->selected_mask&(1u<<p))) {
                 client->task_override[p]=-1;ar_command_pet(&e,0,p,AR_CMD_AUTO,e.pets.x[p],e.pets.y[p]);
             }
@@ -494,26 +523,34 @@ int main(int argc,char** argv) {
             ar_notice(client,net ? "Pet policy restored; manual task overrides cleared." : "Scripted companion assist restored. No RL checkpoint loaded.");
         }
         Vector2 mouse=GetMousePosition();
-        int in_world=mouse.y>76 && mouse.y<GetScreenHeight()-150 &&
-            !CheckCollisionPointRec(mouse,(Rectangle){23,97,298,103}) &&
-            !CheckCollisionPointRec(mouse,(Rectangle){GetScreenWidth()-181.0f,88,162,186});
-        if(in_world && !client->autoplay && IsMouseButtonPressed(MOUSE_BUTTON_RIGHT))
-            ar_context_order(&e,client,mouse,IsKeyDown(KEY_LEFT_CONTROL));
+        int in_world=ar_world_pointer(client,mouse,GetScreenWidth(),GetScreenHeight());
+        if(in_world && !client->autoplay && IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) {
+            if(client->build_kind>=0 || client->targeting_nuke){client->build_kind=-1;client->targeting_nuke=0;}
+            else ar_context_order(&e,client,mouse,IsKeyDown(KEY_LEFT_CONTROL));
+        }
         if(!client->autoplay) {
+            if(!client->map_open) {
             if(ar_binding_pressed(controls.class_wisp))e.pick_class=AR_PET_WISP;
             if(ar_binding_pressed(controls.class_fang))e.pick_class=AR_PET_FANG;
             if(ar_binding_pressed(controls.class_aegis))e.pick_class=AR_PET_AEGIS;
             if(ar_binding_pressed(controls.class_mule))e.pick_class=AR_PET_MULE;
-            if(ar_binding_pressed(controls.order_follow)){human_order=AR_ORDER_FOLLOW;e.rally_active=0;}
-            if(ar_binding_pressed(controls.order_attack))human_order=AR_ORDER_ATTACK;
-            if(ar_binding_pressed(controls.order_guard))human_order=AR_ORDER_GUARD;
-            if(ar_binding_pressed(controls.order_focus))human_order=AR_ORDER_FOCUS;
-            if(ar_binding_pressed(controls.summon))actions[1]=(float)e.pick_class+1;
+            if(IsKeyDown(KEY_LEFT_ALT) || IsKeyDown(KEY_RIGHT_ALT)) {
+                if(ar_binding_pressed(controls.order_follow)){human_order=AR_ORDER_FOLLOW;e.rally_active=0;}
+                if(ar_binding_pressed(controls.order_attack))human_order=AR_ORDER_ATTACK;
+                if(ar_binding_pressed(controls.order_guard))human_order=AR_ORDER_GUARD;
+                if(ar_binding_pressed(controls.order_focus))human_order=AR_ORDER_FOCUS;
+            }
+            if(ar_binding_pressed(controls.summon)) {
+                if(e.keeper_dormant)ar_notice(client,"0 returns to the keeper. Summoning and construction originate there.");
+                else actions[1]=(float)e.pick_class+1;
+            }
             if(client->ui_summon){actions[1]=(float)client->ui_summon;e.pick_class=client->ui_summon-1;client->ui_summon=0;}
             if(client->ui_ability){actions[3]=(float)client->ui_ability;client->ui_ability=0;}
-            if(ar_binding_pressed(controls.dash))actions[3]=1;
-            if(ar_binding_pressed(controls.nova))actions[3]=2;
-            if(ar_binding_pressed(controls.frost))actions[3]=3;
+            if(e.direct_pet<0) {
+                if(ar_binding_pressed(controls.dash))actions[3]=1;
+                if(ar_binding_pressed(controls.nova))actions[3]=2;
+                if(ar_binding_pressed(controls.frost))actions[3]=3;
+            }
             if(ar_binding_pressed(controls.build_totem))client->build_kind=AR_BUILD_TOTEM;
             if(ar_binding_pressed(controls.build_wall))client->build_kind=AR_BUILD_WALL;
             if(ar_binding_pressed(controls.build_harvester))client->build_kind=AR_BUILD_HARVESTER;
@@ -522,10 +559,12 @@ int main(int argc,char** argv) {
             if(IsKeyPressed(KEY_N)){client->targeting_nuke=!client->targeting_nuke;client->build_kind=-1;}
             if(IsKeyPressed(KEY_BACKSPACE)){client->build_kind=-1;client->targeting_nuke=0;client->selected_mask=0;}
             if(IsKeyPressed(KEY_DELETE)) {
+                int driver=e.direct_pet;
                 for(int p=0;p<AR_MAX_PETS;p++)if((client->selected_mask&(1u<<p)) && e.pets.active[p]) {
                     e.shards+=e.cfg.summon_cost[e.pets.kind[p]]*0.5f;ar_free_pet(&e,0,p);client->task_override[p]=-1;
                 }
                 client->selected_mask=0;ar_notice(client,"Selected summons released. Half their aether cost was returned.");
+                if(driver>=0 && e.direct_pet<0)ar_drive_selected(client,&e,1);
             }
             for(int g=0;g<4;g++)if(IsKeyPressed(KEY_F1+g)) {
                 if(IsKeyDown(KEY_LEFT_CONTROL)){client->groups[g]=client->selected_mask;ar_notice(client,"Control group stored.");}
@@ -542,6 +581,7 @@ int main(int argc,char** argv) {
                     if(ar_geometry_dist2(e.px,e.py,world.x,world.y)>144)
                         ar_notice(client,"Move closer to build here (12-unit construction reach).");
                     else if(ar_build_at(&e,0,client->build_kind,world.x,world.y)>=0) {
+                        ar_notice(client,"Outpost established. Your network is growing.");
                         if(!IsKeyDown(KEY_LEFT_SHIFT) && !IsKeyDown(KEY_RIGHT_SHIFT))client->build_kind=-1;
                         ar_compute_observations(&e,0);
                     }
@@ -556,7 +596,7 @@ int main(int argc,char** argv) {
                 if(dx*dx+dy*dy>64) {
                     if(!additive)client->selected_mask=0;
                     Rectangle box={fminf(mouse.x,client->drag_start.x),fminf(mouse.y,client->drag_start.y),fabsf(dx),fabsf(dy)};
-                    for(int p=0;p<AR_MAX_PETS;p++)if(e.pets.active[p]) {
+                    for(int p=0;p<AR_MAX_PETS;p++)if(e.pets.active[p] && !e.pets.dormant[p]) {
                         Vector2 at=ar_iso(client,e.pets.x[p],e.pets.y[p],0.6f);
                         if(CheckCollisionPointRec(at,box))client->selected_mask|=1u<<p;
                     }
@@ -564,21 +604,31 @@ int main(int argc,char** argv) {
                     int p=ar_pick_pet(&e,client,mouse);
                     if(p>=0)ar_select_pet(client,&e,p,additive);
                     else if(in_world) {
-                        Vector2 world=ar_unproject(client,mouse);
-                        client->selected_mask=0;client->move_target=1;client->move_x=world.x;client->move_y=world.y;
+                        if(!additive)client->selected_mask=0;
                     }
                 }
                 client->dragging=0;ar_sync_selection(client,&e);
             }
-            int movement=ar_read_move_mask(&controls);
+            }
+            int movement=client->map_open || client->paused ? 0 : ar_read_move_mask(&controls);
             if(movement)client->move_target=0;
             actions[0]=ar_read_move_action(movement);
-            if(client->move_target){actions[0]=(float)ar_move_toward(&e,client->move_x,client->move_y);if(!actions[0])client->move_target=0;}
+            e.guide_keeper=0;e.direct_dx=e.direct_dy=0;e.direct_work=0;
+            if(e.direct_pet>=0) {
+                ar_move_dir((int)actions[0],&e.direct_dx,&e.direct_dy);
+                e.direct_work=!client->paused && !client->map_open && ar_binding_down(controls.nova);
+                if(e.direct_dx || e.direct_dy){e.direct_aim_x=e.direct_dx;e.direct_aim_y=e.direct_dy;}
+                actions[0]=0;
+            }
             actions[2]=(float)human_order;
         }
         if(!client->paused)accumulator+=frame_dt;
         int steps=0;
         while(accumulator>=AR_FAST_SIM_DT && steps<AR_FAST_MAX_CATCHUP_STEPS && !client->paused) {
+            if(!client->autoplay && e.direct_pet<0 && client->move_target) {
+                actions[0]=(float)ar_move_toward(&e,client->move_x,client->move_y);
+                if(!actions[0])client->move_target=0;
+            }
             for(int p=0;p<AR_MAX_PETS;p++)actions[5+p]=0;
             if(net) {
                 float predicted[NUM_ATNS]={0};ar_policy_step(net,obs,predicted,deterministic);
@@ -587,7 +637,9 @@ int main(int argc,char** argv) {
             }
             for(int p=0;p<AR_MAX_PETS;p++)if(client->task_override[p]>=0)actions[5+p]=(float)client->task_override[p];
             int respawns=e.campaign ? ((ARWorld*)e.campaign)->respawns : 0;
+            int old_driver=e.direct_pet;
             c_step(&e);accumulator-=AR_FAST_SIM_DT;steps++;
+            if(old_driver>=0 && e.direct_pet<0)ar_drive_selected(client,&e,1);
             if(e.campaign && ((ARWorld*)e.campaign)->respawns>respawns) {
                 client->move_target=0;client->camera_free=0;
                 ar_notice(client,"Returned to your lodge. Recovery costs 5 aether; your industry remains.");

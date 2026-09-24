@@ -4996,15 +4996,17 @@ EvalResult run_eval(Ini* ini, TrainContext* ctx, int mode, int verbose) {
             }
             result.score = (float)dict_get(&log, "env/slot_0_score");
             result.draw = (float)dict_get(&log, "env/draw_rate");
-            /* Kaggriculture now exposes cash separately from potential. Keep
-             * generic match mode compatible with environments that still
-             * publish only score/opponent_score. */
-            result.money = (float)(dict_find(&log, "env/money")
-                ? dict_get(&log, "env/money")
-                : dict_get(&log, "env/score"));
-            result.opponent_money = (float)(dict_find(&log, "env/opponent_money")
-                ? dict_get(&log, "env/opponent_money")
-                : dict_get(&log, "env/opponent_score"));
+            /* Cash metrics are optional in a generic match. Bomberman emits
+             * outcome scores but has no opponent cash or opponent_score. */
+            if (dict_find(&log, "env/money")
+                    && dict_find(&log, "env/opponent_money")) {
+                result.money = (float)dict_get(&log, "env/money");
+                result.opponent_money = (float)dict_get(&log, "env/opponent_money");
+            } else if (dict_find(&log, "env/score")
+                    && dict_find(&log, "env/opponent_score")) {
+                result.money = (float)dict_get(&log, "env/score");
+                result.opponent_money = (float)dict_get(&log, "env/opponent_score");
+            }
             result.games = (int)n;
             break;
         }

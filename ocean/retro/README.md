@@ -1,38 +1,65 @@
 # Retro: full-screen SMB1
 
-Retro runs the SMB1 ROM. The current default observation is 64×60 luminance (4×4 means of the native 256×240 screen), plus 112 RAM features: 3,952 inputs. `./build.sh retro` builds this resolution; `RETRO_OBS_SCALE=2 ./build.sh retro` selects 128×120. Resolution is compile-time, with no runtime dispatch. Different resolutions require separate checkpoints. Actions are held for `env.frameskip` native frames (currently four).
+**Current experiment:** fixed return-pipe black-screen practice start.
+See [PRACTICE.md](PRACTICE.md). Times are segment times, not full-run RTA;
+`--full-run` in the viewer/evaluator restores the ordinary level start.
 
-The current speed-reward experiment uses the user's 64×60 model and four-frame
+**NTSC migration (2026-09-20):** the active user-supplied cartridge is now
+`roms/smb1_ntsc.nes`, SMB1 World/NTSC with a NES 2.0 header (SHA-1
+`33d23c2f2cfa4c9efec87f7bc1321ce3ce6c89bd`). Its PRG/CHR exactly match the
+[standard NTSC iNES release](https://tasvideos.org/1G#GameVersions), SHA-1
+`ea343f4e445a9050d4b4fbac2c77d0693b1d0922`. Both verified wrappers are
+accepted; PAL/modified images are rejected by the environment and block generator.
+The old PAL ROM remains untouched at `roms/smb1.nes`. Its old timing logs are
+**not comparable** to current NTSC results. See the [original audit](TIMING_AUDIT_20260920.md).
+
+Retro runs the SMB1 ROM. The current default observation is 64×60 luminance (4×4 means of the native 256×240 screen), plus 112 RAM features: 3,952 inputs. `./build.sh retro` builds this resolution; `RETRO_OBS_SCALE=2 ./build.sh retro` selects 128×120. Resolution is compile-time, with no runtime dispatch. Different resolutions require separate checkpoints. Actions are held for `env.frameskip` native frames (currently one).
+
+The current speed-reward experiment uses the user's 64×60 model and one-frame
 actions. Rebuild it with `RETRO_OBS_SCALE=4 ./build.sh retro`. Its fresh outputs
-go to `checkpoints/retro_cnn_64x60_speed`, separate from earlier point-reward
-runs (some of which used 64×60 despite their directory name).
+go to `checkpoints/retro_cnn_64x60_pb`, separate from the pinned parent's
+`retro_cnn_64x60_finetune` directory. See [FINETUNE.md](FINETUNE.md) for the current
+fixed-parent sweep and winner-confirmation procedure.
 
 ### Speed-oriented rewards
 
-Current config rewards new 128-pixel frontier checkpoints (+0.0078125), a new
-level clear (+0.625), and an additional `0.3125 * max(0, 1 - clear_frames/3000)`
-on that clear. Each newly collected coin pays +0.00625; Mario points remain
-disabled. After eight decisions with no X movement, coin pickup, level advance,
-or terminal event, an idle decision costs 0.00125. Existing potential-based
-shaping remains, and all reward terms share `reward_scale`. The idle charge is
-per decision (not per native frame), so it also works predictably with
-`frameskip=4`. `completion_time_bonus=0`, `coin_reward=0`, and
-`idle_penalty=0` restore the corresponding old terms.
+The 1-1 configuration pays `completion_reward` (currently 0) plus
+`completion_time_bonus * clamp((3000 - clear_frames) / 1800, 0, 1)`, all multiplied by
+`reward_scale=0.0625`. The range is configurable through
+`completion_time_min_frames=1200` and `completion_time_max_frames=3000`.
+These are shaping anchors, not measured speed records. Inside the range,
+each saved native frame adds `completion_time_bonus * reward_scale / 1800` reward; the timeout does not change
+that slope. Both range options default to zero for the old budget-normalized
+formula. Checkpoint, point, coin, idle and area rewards are zero in the current
+config. Potential shaping has been removed; HUD timer extras are disabled, and
+enabling them alongside RTA completion is rejected. Two optional 1-1 pipe
+segment bonuses (currently disabled for fine-tuning) pay
+`pipe_segment_bonus * clamp(1 - segment_frames/600, 0, 1)` before scaling.
+They measure reset to first confirmed underground arrival, then underground
+arrival to confirmed return to the initial overworld. Each pays once even
+though the overworld destination was already visited. Weights and durations
+are configured by `pipe_segment_bonus` and `pipe_segment_frames`.
 
 `env/clear_frames` is mean NES frames per cleared level among completed
-episodes (0 if none cleared), measured between level transitions. It includes
-the ROM's flag/transition sequence but excludes subsequent waiting after the
-clear. Read it alongside clear rate and deaths: episode length alone includes
-time spent after a successful clear. No episode, emulator or playback boundary
-was changed by these reward adjustments. `env/coin_events` reports positive
-coin-counter increments, while `env/idle_steps` reports charged anti-stall
+episodes (0 if none cleared). With `completion_on_rta_split=1`, the reward
+uses the exact same event and frame count as the viewer/dashboard split:
+playable reset through the next-level black-screen edge, including pipes,
+flag descent, timer conversion and fireworks. It excludes the 1-2 entrance.
+The final game win still completes on the ROM win event. Legacy modes remain:
+with RTA completion disabled, `completion_on_next_playable=1` waits through
+the next level's entrance, and both options zero selects first flag contact.
+The two options cannot both be enabled. With `terminate_on_clear=1`, the
+episode ends and pays on that exact frame, including inside a frameskip block. Continuing playback
+does not earn a second clear at the following level load. `env/coin_events` reports positive
+coin-counter increments since reset; `env/hud_coins` reports the ending ROM
+counter including coins inherited from a snapshot. `env/idle_steps` counts idle
 decisions, both averaged over completed episodes. `env/area_transitions`
 reports confirmed same-level area loads (the generic signal for pipes, doors,
-vines, and underwater entrances); `env/area_transition_rewards` reports how
-many of those destinations were novel and reward-eligible. The config leaves
-`area_transition_reward=0` while this signal is inspected; set, for example,
-`env.area_transition_reward=0.05` to enable a small raw reward once per novel
-destination per episode.
+vines, and underwater entrances); `env/novel_areas` counts newly visited
+destinations. Both are diagnostics, not reward payments. Generic area rewards
+and their HUD timer extra have been deleted. Nonzero legacy area-reward
+options are rejected. The former `area_transition_rewards` name was misleading
+because it counted destinations even with the reward disabled.
 
 ## Normal use
 
@@ -41,7 +68,81 @@ OMP_WAIT_POLICY=PASSIVE ./puffer train retro
 ./retro watch latest --inspect
 ```
 
-Config uses `load_model_path = None` for fresh training on 1-1, with checkpoints under `checkpoints/retro_cnn_64x60_speed/retro`. Training and watch read the same directory; `watch latest` does not fall back to older folders. To warm-start compatible weights, explicitly set `base.load_model_path=latest`. This does not restore optimizer state. Graceful Ctrl-C saves at the next safe boundary; SIGKILL cannot save.
+Both viewers show frame-derived NTSC RTA (`native frames / 60.0988138974405`), the last
+level split and an average of completed attempts from the selected starting
+level. Failure/timeout durations never dilute this average. The regular
+viewer also shows the reward-finish time (identical in RTA completion mode).
+The live clock is not a completed result; use the frozen **Finished** split
+when comparing with the same split convention. Averages persist across
+resets for the viewer session; training averages cover each logging window.
+
+Timing follows [periwinkle's SMB1 LiveSplit autosplitter](https://github.com/periwinkle9/smb-autosplitter/blob/main/SuperMarioBros.asl):
+start on entry into player control, normal level splits at the black-screen
+timer edge, warp-zone splits at the next entrance, final finish on the 8-4
+axe/victory event. The community's [SMB1 timing guide](https://www.speedrun.com/smb1/guides/frxdu)
+starts RTA when TIME first appears in 1-1; title-screen time is excluded.
+Reset preparation measures any offset between the autosplitter start and
+the saved state (currently zero for all 32 prepared starts). The 1-1 reset is
+byte-identical to an unmodified cold boot followed by START, including
+CPU/PPU/APU state, RNG and the image. No RAM is written to prepare 1-1.
+We still emulate the intro once, then restore that exact timed start; no
+timed frames are skipped on reset. The old next-playable clock includes
+additional 1-2 entrance time. Reference
+timers that split at level start or add a reaction delay use different
+boundaries. A later-level savestate begins a segment, not a full run from 1-1.
+
+These are frame-derived simulation times: they include every
+emulated frame, including lag and loading. Host pauses, fast-forward and
+slow inference do not count. This permits training at any throughput; it
+does not make a policy/savestate run a human leaderboard submission.
+
+Dashboard and saved run-log fields (displayed before other environment statistics):
+
+- `env/rta_seconds`: mean first RTA split in seconds, completed attempts only.
+- `env/rta_frames`: the same conditional mean in native frames.
+- `env/rta_clear_rate`: fraction of ended episodes reaching that split.
+- `env/rta_valid`: 1 with the verified NTSC ROM/core; this is not leaderboard
+  eligibility. Old `rta_seconds` logs from the PAL ROM are invalid comparisons.
+- `env/clear_seconds`: mean time to the configured reward-finish endpoint;
+  equal to `rta_seconds` for single-clear training in split completion mode.
+
+With no successful splits the numeric mean is zero and the rate is zero;
+the viewer shows `--`. Do not interpret that as a zero-time completion.
+Training aggregates sums/counts across environments before dividing, so
+lanes with different completion counts have the correct weight. Use a single
+starting level when comparing policies' splits. The update is
+a few scalar operations per frame plus a division when logging, with no
+extra policy inference or frame rendering. `completion_on_rta_split` opts
+the reward and terminal boundary into this same timing event.
+
+For a reproducible headless split trace (argmax policy; requires frameskip 1):
+
+```sh
+./retro watch latest --timing
+```
+
+This prints CSV at pipe-entry routines, playable area arrivals, flag contact,
+next-level load, `rta_split`, and the selected clear endpoint.
+It includes native frames/RTA seconds, HUD TIME, the HUD countdown
+divider, the interval counter, reward, and both total and rewarded area events.
+`nes_frames` comes from the emulator's own video scheduler, checked against
+the wrapper frame count on every step of the audit.
+It uses the current viewer config, reports the selected checkpoint/config,
+and stops at the RTA split (next playable level in that legacy mode), death,
+or 6000 frames. The interval counter
+alone is not a prediction of the next transition: other ROM state also gates
+it. Compare the same event when using a reference run. HUD TIME pauses during
+animations and cannot be converted to total frames by a fixed multiplier.
+NTSC active play is tested at 24 frames per HUD unit and 21 frames per
+interval-counter cycle; they are separate clocks.
+
+Config uses `load_model_path = latest` to continue training on 1-1, with checkpoints under `checkpoints/retro_cnn_64x60_speed/retro`. Training and watch read the same directory; `watch latest` does not fall back to older folders. For a fresh run use `base.load_model_path=None`. Warm starts do not restore optimizer state. Graceful Ctrl-C saves at the next safe boundary; SIGKILL cannot save. Running trainers/viewers retain their startup config and binary: restart them after changes.
+
+Existing checkpoints were trained with PAL game physics/timers. Their shapes
+still load, but NTSC performance must be remeasured and may need fine-tuning.
+To evaluate an old checkpoint on the new ROM, pass `--config config/retro.ini`
+to `sweep_eval`; its old sidecar otherwise selects the now-rejected PAL ROM.
+Do not compare archived PAL clear times with the new NTSC measurements.
 
 For a speed sweep on the configured starts (currently 1-1):
 
@@ -50,9 +151,9 @@ OMP_WAIT_POLICY=PASSIVE ./puffer sweep retro
 ```
 
 `speed` ranks clear count first and mean native frames per clear second; when
-no attempts clear, forward progress breaks ties. It uses the level transition
-time, including the flag/countdown/fireworks sequence, just like the current
-completion time bonus. `distance` selects mean nonnegative forward pixels;
+no attempts clear, forward progress breaks ties. It uses the configured
+completion endpoint, matching the completion reward timing.
+`distance` selects mean nonnegative forward pixels;
 `perf` (alias `score`) ranks clears then bounded progress. The console's
 generic `score=` field contains the selected objective, not shaped reward.
 Each checkpoint's panel respects its recorded `spawn_levels` and `frameskip`.
@@ -109,7 +210,9 @@ OMP_WAIT_POLICY=PASSIVE python3 tests/test_native_retro_runtime.py ./puffer
 
 The normal native build produces `./puffer` and the matching `./retro` viewer, including the inspector. Both are compiled before either is replaced, and replacement leaves an already-running trainer on its original executable. `HEADLESS=1` skips the viewer. `NATIVE_OUTPUT_NAME=puffer_retro_cnn_candidate ./build.sh retro` builds an isolated trainer without replacing either normal entry point; `OUTPUT_NAME=retro_candidate ./build.sh retro --fast` does the same for the viewer. There is no launch wrapper or automatic fresh/latest switching.
 
-The config uses asynchronous rollouts, compiled ROM CPU blocks, full-screen wide rendering, and two 128-wide recurrent layers. All 32 level starts are supported; the current training start is 1-1. Agent, worker, horizon, and minibatch settings remain experiment-specific in `config/retro.ini`.
+The config uses asynchronous rollouts, compiled ROM CPU blocks, full-screen wide rendering, and two 128-wide recurrent layers. All 32 level starts are supported; the current training start is 1-1.
+
+By default training plays through flags into the next level until death, the final win, or `env.max_frames`. Set `env.terminate_on_clear=1` (current `config/retro.ini` default) to end the episode at the first flag/castle clear instead, which matches the sweep panel. Set it back to `env.terminate_on_clear=0` to keep the old continue-through behavior. The viewer keeps natural-life continuation unless `--single-life` is passed. Agent, worker, horizon, and minibatch settings remain experiment-specific in `config/retro.ini`.
 
 ## Network
 

@@ -1,0 +1,173 @@
+{
+  "date": "2026-09-22",
+  "compiler": "stock Bend 2.0.6 CPU",
+  "laws": 14,
+  "native_transitions": 110592,
+  "browser": [
+    {
+      "task": "click-tab",
+      "episodes": 20,
+      "actions": 176,
+      "scripted_successes": 12,
+      "state_reward_conformance": "PASS",
+      "preset": "matched original instances; CDP clicks; settled animations; controlled clock"
+    },
+    {
+      "task": "click-tab-2",
+      "episodes": 20,
+      "actions": 194,
+      "scripted_successes": 12,
+      "state_reward_conformance": "PASS",
+      "preset": "matched original instances; CDP clicks; settled animations; controlled clock"
+    },
+    {
+      "task": "click-tab-2-easy",
+      "episodes": 20,
+      "actions": 176,
+      "scripted_successes": 12,
+      "state_reward_conformance": "PASS",
+      "preset": "matched original instances; CDP clicks; settled animations; controlled clock"
+    },
+    {
+      "task": "click-tab-2-medium",
+      "episodes": 20,
+      "actions": 176,
+      "scripted_successes": 13,
+      "state_reward_conformance": "PASS",
+      "preset": "matched original instances; CDP clicks; settled animations; controlled clock"
+    },
+    {
+      "task": "click-tab-2-hard",
+      "episodes": 20,
+      "actions": 360,
+      "scripted_successes": 13,
+      "state_reward_conformance": "PASS",
+      "preset": "matched original instances; CDP clicks; settled animations; controlled clock"
+    },
+    {
+      "task": "click-collapsible",
+      "episodes": 20,
+      "actions": 188,
+      "scripted_successes": 12,
+      "state_reward_conformance": "PASS",
+      "preset": "matched original instances; CDP clicks; settled animations; controlled clock"
+    },
+    {
+      "task": "click-collapsible-nodelay",
+      "episodes": 20,
+      "actions": 188,
+      "scripted_successes": 12,
+      "state_reward_conformance": "PASS",
+      "preset": "matched original instances; CDP clicks; settled animations; controlled clock"
+    },
+    {
+      "task": "click-collapsible-2",
+      "episodes": 20,
+      "actions": 203,
+      "scripted_successes": 12,
+      "state_reward_conformance": "PASS",
+      "preset": "matched original instances; CDP clicks; settled animations; controlled clock"
+    },
+    {
+      "task": "click-collapsible-2-nodelay",
+      "episodes": 20,
+      "actions": 203,
+      "scripted_successes": 12,
+      "state_reward_conformance": "PASS",
+      "preset": "matched original instances; CDP clicks; settled animations; controlled clock"
+    }
+  ],
+  "public_scripted": [
+    {
+      "task": "click-tab",
+      "episodes": 1000,
+      "successes": 1000,
+      "timeouts": 0,
+      "actions": 1000,
+      "controller": "public-scripted; not learned RL"
+    },
+    {
+      "task": "click-tab-2",
+      "episodes": 1000,
+      "successes": 1000,
+      "timeouts": 0,
+      "actions": 2665,
+      "controller": "public-scripted; not learned RL"
+    },
+    {
+      "task": "click-tab-2-easy",
+      "episodes": 1000,
+      "successes": 1000,
+      "timeouts": 0,
+      "actions": 1000,
+      "controller": "public-scripted; not learned RL"
+    },
+    {
+      "task": "click-tab-2-medium",
+      "episodes": 1000,
+      "successes": 1000,
+      "timeouts": 0,
+      "actions": 1499,
+      "controller": "public-scripted; not learned RL"
+    },
+    {
+      "task": "click-tab-2-hard",
+      "episodes": 1000,
+      "successes": 1000,
+      "timeouts": 0,
+      "actions": 3250,
+      "controller": "public-scripted; not learned RL"
+    },
+    {
+      "task": "click-collapsible",
+      "episodes": 1000,
+      "successes": 1000,
+      "timeouts": 0,
+      "actions": 2000,
+      "controller": "public-scripted; not learned RL"
+    },
+    {
+      "task": "click-collapsible-nodelay",
+      "episodes": 1000,
+      "successes": 1000,
+      "timeouts": 0,
+      "actions": 2000,
+      "controller": "public-scripted; not learned RL"
+    },
+    {
+      "task": "click-collapsible-2",
+      "episodes": 1000,
+      "successes": 1000,
+      "timeouts": 0,
+      "actions": 2998,
+      "controller": "public-scripted; not learned RL"
+    },
+    {
+      "task": "click-collapsible-2-nodelay",
+      "episodes": 1000,
+      "successes": 1000,
+      "timeouts": 0,
+      "actions": 2998,
+      "controller": "public-scripted; not learned RL"
+    }
+  ],
+  "source_sha256": {
+    "Generate.bend": "b80c8c800a64ceeed45883f30bcd0782d73feb6e23daa12e90fa275a17966858",
+    "LAWS.bend": "7617c4a3d8dce22a15712f0aa3461c12573e867b3a855b04e0aa5d974e21f9bf",
+    "Main.bend": "6aec06db526e6994080bea7131894ba797e0e3521567b928b9940465e12aa163",
+    "Model.bend": "500fd76e55ffd0a4886eec7192997f7f92c9c8bd7233b61c9de39afe2f1ae814",
+    "PROOF.bend": "8aaf139769c1dd8dc87a30a4e6318023b0697ba7cf6f4dcd37a8c403e62624ae",
+    "Wire.bend": "440573759168eadd246072b1168e51005eae2e38b031185f247e4f1754b05a1f",
+    "bridge.c": "53c30f4890c5a38d55b3cff17db5c121c45ae1aa83f25427f0e4b232ecd0ea22",
+    "browser.js": "0a0ee1e5615baaf922a01299ac294c228dda9ffc99910f9ad1b5250950588c15",
+    "browser_oracle.c": "2f523cd4d27ef8ea02bb95c4c542871d1ecc95c7a10c7910b1ca73f0709b3a66",
+    "family_api.c": "346c48b570046ab696cc91a35e8cfd9602710e97db957291df05724e3e98bbb0",
+    "test_panels.c": "c29f9045816a93d3c54ba52e47d72f4c395460459937d1de9cc5b5b34f909376"
+  },
+  "limitations": [
+    "Settled animation event preset; no intermediate animation/scheduler equivalence.",
+    "Generated lexicon/layout is a documented subset, not source RNG/distribution parity.",
+    "Public views project actionable nodes, ordinal geometry and visible labels; no full DOM/text content fidelity.",
+    "Family runtime is usable natively; not wired into webnav_dom v1 PPO checkpoints."
+  ]
+}

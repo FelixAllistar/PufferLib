@@ -23,6 +23,10 @@ static void scalar_tests() {
     std::set<int> masks;
     for(int i=0;i<64;i++) { int m=retro_action_mask(i); masks.insert(m); require(retro_mask_action(m)==i,"controller roundtrip"); }
     require(masks.size()==64&&masks.count(64|3)&&masks.count(3),"missing button combinations");
+    require(retro_ntsc_rom_fingerprint(RETRO_SMB1_NTSC_INES_FNV)
+        &&retro_ntsc_rom_fingerprint(RETRO_SMB1_NTSC_NES2_FNV),"verified NTSC header variants rejected");
+    require(!retro_ntsc_rom_fingerprint(0x31d802e3779199daull)
+        &&!retro_ntsc_rom_fingerprint(0),"PAL/unrecognized ROM accepted as NTSC");
     unsigned char m[2048]={}; m[0x14]=1; m[0x1b]=0x30; m[0x1d]=3;
     require(robs_flagget(m),"flagpole slot 5 missing");
     m[0x1b]=0x2f; require(!robs_flagget(m),"vine mistaken for flag");
@@ -49,9 +53,10 @@ static void level_and_reset_tests(Dict* cfg) {
         require(retro_observation_matches_reference(&e,obs),"reset observation differs from staged reference");
         require(e.emu->chr_cache_identity()==rom.seed.chr_cache_identity(),"reset detached immutable CHR cache");
         require(e.world==i/4+1&&e.stage==i%4+1,"wrong level label");
+        require(e.start->rta_offset_frames==0,"saved playable reset differs from autosplitter RTA start");
         int selected=retro_start_area(rom,e.world,e.stage);
-        int base=rom.cart.prg()[0x9cb4-0x8000+e.world-1];
-        if(rom.cart.prg()[0x9cbc-0x8000+base+selected]==0x29) selected++;
+        int base=rom.cart.prg()[RETRO_WORLD_OFFSETS-0x8000+e.world-1];
+        if(rom.cart.prg()[RETRO_AREA_OFFSETS-0x8000+base+selected]==0x29) selected++;
         require(e.area==selected+1,"wrong level area");
         data.insert(e.start->data);
         float reset_obs[OBS_SIZE]; memcpy(reset_obs,obs,sizeof(obs));
@@ -84,10 +89,88 @@ static void level_and_reset_tests(Dict* cfg) {
         if(moving) require(e.log.deaths==1&&e.log.checkpoints>=2,"run-right trajectory missed checkpoints/death");
         else require(e.log.truncations==1&&e.log.checkpoints==0,"idle timeout earns milestones");
     }
-    require(returns[1]>returns[0],"actual ROM exploration loses to camping");
+        require(returns[1]>returns[0],"actual ROM exploration loses to camping");
     printf("PASS: ROM idle return %.8f; run-right/death return %.8f\n",returns[0],returns[1]);
+    // With every event weight disabled, moving, idling, death and timeout
+    // must all be exactly zero, including the terminal/reset transition.
+    e.completion_reward=e.completion_time_bonus=e.pipe_segment_bonus=0;
+    e.death_penalty=e.checkpoint_reward=e.score_scale=e.coin_reward=0;
+    e.idle_penalty=0;
+    e.completion_time_target_bonus=0;
+    for(int moving=0;moving<2;moving++) {
+        puf_reset(&e); e.log={}; done=0;
+        act=moving?retro_mask_action(RETRO_BTN_RIGHT|RETRO_BTN_B):0;
+        while(!done) {
+            puf_step(&e);
+            require(rew==0,"implicit movement/terminal reward remains with every weight zero");
+        }
+        require(e.log.episode_return==0,"zero-weight episode has nonzero return");
+    }
+    puts("PASS: no implicit reward on movement, idling, death or timeout");
     puf_close(&e);
     printf("PASS: 32 starts (%zu level data pointers), exact reset images, single-level spawn, horizon and return\n",data.size());
+}
+static void natural_start_timing_tests() {
+    Dict cfg={}; dict_set_str(&cfg,"spawn_levels","1-1");
+    Env e={}; puf_init(&e,&cfg); puf_reset(&e);
+    Nes_Emu raw; retro_check(raw.set_cart(&retro_rom().cart));
+    std::vector<unsigned char> pixels(Nes_Emu::buffer_width*256);
+    raw.set_pixels(pixels.data()+8*Nes_Emu::buffer_width,Nes_Emu::buffer_width);
+    const unsigned char* m=raw.low_mem();
+    bool title=false,started=false;
+    for(int i=0;i<600;i++) {
+        retro_check(raw.emulate_frame(0));
+        if(i>30&&m[0x770]==0&&m[0x772]==3) { title=true; break; }
+    }
+    require(title,"unmodified cold boot did not reach title");
+    unsigned long title_frame=raw.video_frame_count();
+    retro_check(raw.emulate_frame(RETRO_BTN_START));
+    for(int i=0;i<1200;i++) {
+        int previous=m[0xe];
+        retro_check(raw.emulate_frame(0));
+        if(m[0x770]==1&&m[0x772]>=3&&m[0xe]==8&&previous<8) { started=true; break; }
+    }
+    require(started&&robs_time(m)==400&&robs_x(m)==40,"normal new game has wrong RTA start state");
+    require(e.start->rta_offset_frames==0&&e.tick==0,"intro skip dropped timed frames");
+    if(saved(*e.emu)!=saved(raw)) {
+        auto prepared=saved(*e.emu),natural=saved(raw);
+        fprintf(stderr,"start mismatch: core frames %lu/%lu, sizes %zu/%zu\n",
+            e.emu->video_frame_count(),raw.video_frame_count(),prepared.size(),natural.size());
+        int reported=0;
+        for(int i=0;i<2048;i++) if(e.emu->low_mem()[i]!=m[i]&&reported++<16)
+            fprintf(stderr,"RAM %04x prepared=%02x natural=%02x\n",i,e.emu->low_mem()[i],m[i]);
+        reported=0;
+        for(size_t i=0;i<std::min(prepared.size(),natural.size());i++) if(prepared[i]!=natural[i]&&reported++<16)
+            fprintf(stderr,"state offset %zu prepared=%02x natural=%02x\n",i,(unsigned char)prepared[i],(unsigned char)natural[i]);
+        throw std::runtime_error("saved start changes CPU/PPU/APU/RAM/RNG relative to a normal new game");
+    }
+    const auto& frame=raw.frame();
+    for(int y=0;y<240;y++) for(int x=0;x<256;x++)
+        require(e.start->palette[e.start->pixels[y*256+x]]==frame.palette[frame.pixels[y*frame.pitch+x]],
+            "saved start screenshot differs from natural RTA start");
+    unsigned long start_frame=raw.video_frame_count();
+    int last_time=400,last_decrement=0,last_bus_reset=0,decrements=0,bus_resets=0;
+    for(int f=1;f<=168;f++) {
+        int old_bus=m[0x77f];
+        retro_check(raw.emulate_frame(0)); retro_frame(&e,0);
+        require(saved(*e.emu)==saved(raw),"post-intro continuation differs from cold-boot game");
+        require(raw.video_frame_count()-start_frame==(unsigned long)f,"NES video counter differs from elapsed frames");
+        int time=robs_time(m);
+        if(time!=last_time) {
+            require(time==last_time-1,"HUD countdown skipped a unit");
+            if(last_decrement) require(f-last_decrement==24,"HUD timer is not NTSC 24-frame timing");
+            last_time=time; last_decrement=f; decrements++;
+        }
+        if(m[0x77f]>old_bus) {
+            require(old_bus==0&&m[0x77f]==20,"frame-rule interval is not NTSC 21-frame timing");
+            if(last_bus_reset) require(f-last_bus_reset==21,"frame-rule interval changed");
+            last_bus_reset=f; bus_resets++;
+        }
+    }
+    require(decrements>=6&&bus_resets>=7,"insufficient active timer samples");
+    printf("PASS: unmodified cold boot == saved RTA start at frame %lu (%lu after START), offset=0; HUD=24f, bus=21f\n",
+        start_frame,start_frame-title_frame);
+    puf_close(&e); dict_clear(&cfg);
 }
 static void core_parity_tests() {
     RetroRom& rom=retro_rom();
@@ -218,13 +301,65 @@ static void playback_tests(Dict* cfg) {
     puf_close(&e);
     puts("PASS: training/single-life death boundaries and bounded inspector resets unchanged");
 }
+static void practice_tests() {
+    Dict cfg={}; dict_set_str(&cfg,"spawn_levels","1-1");
+    dict_set_str(&cfg,"practice_replay","ocean/retro/practice/pipe_exit.inputs");
+    dict_set(&cfg,"terminate_on_clear",1); dict_set(&cfg,"completion_on_rta_split",1);
+    dict_set(&cfg,"completion_time_min_frames",0); dict_set(&cfg,"completion_time_max_frames",1800);
+    dict_set(&cfg,"max_frames",1800); dict_set(&cfg,"completion_reward",0);
+    dict_set(&cfg,"completion_time_bonus",16); dict_set(&cfg,"death_penalty",0);
+    dict_set(&cfg,"checkpoint_reward",0); dict_set(&cfg,"reward_scale",0.0625);
+    Env e={}; puf_init(&e,&cfg);
+    std::vector<float> obs(OBS_SIZE); float action=0,reward=0,done=0;
+    e.agents[0]={obs.data(),&action,&reward,&done,nullptr,0}; puf_reset(&e);
+    require(e.practice&&e.tick==0&&e.rta.start_offset==0,"practice did not reset segment clock");
+    require(e.time==376&&e.emu->low_mem()[0x77f]==19,"practice modified HUD/bus phase");
+    require(e.coins==7&&e.episode_coin_events==0,"saved HUD coins counted as fresh pickups");
+    for(int i=0;i<256*240;i++) require(e.start->palette[e.start->pixels[i]]==15,"practice image is not black");
+    auto snapshot=saved(*e.emu); auto reset_obs=obs;
+    Nes_Emu raw; retro_check(raw.set_cart(&retro_rom().cart));
+    std::vector<unsigned char> pixels(Nes_Emu::buffer_width*256);
+    raw.set_pixels(pixels.data()+8*Nes_Emu::buffer_width,Nes_Emu::buffer_width);
+    raw.set_idle_skip(false); raw.load_state(retro_rom().starts[0]->state);
+    FILE* file=fopen("ocean/retro/practice/pipe_exit.inputs","r");
+    require(file,"missing practice fixture"); unsigned long long hash; int count,mask;
+    require(fscanf(file,"RETRO_PRACTICE_V1 %llx %d",&hash,&count)==2,"bad fixture header");
+    for(int i=0;i<count;i++) { require(fscanf(file,"%d",&mask)==1,"truncated fixture"); retro_check(raw.emulate_frame(mask)); }
+    fclose(file);
+    require(saved(raw)==snapshot,"practice snapshot differs from uninterrupted reference prefix");
+    bool emerged=false;
+    for(int i=0;i<300;i++) {
+        action=retro_mask_action(RETRO_BTN_RIGHT|RETRO_BTN_B|((i%48>=10)?RETRO_BTN_A:0));
+        retro_check(raw.emulate_frame(retro_action_mask((int)action))); puf_step(&e);
+        require(!done&&saved(raw)==saved(*e.emu),"practice continuation changed emulated state");
+        require(reward==0,"nonterminal practice transition paid reward with event weights disabled");
+        emerged |= e.x_pos>2600&&e.emu->low_mem()[0xe]==8;
+    }
+    require(emerged,"practice never emerged from the pipe");
+    puf_reset(&e);
+    require(saved(*e.emu)==snapshot&&obs==reset_obs,"practice reset state/image drifted");
+    e.max_frames=1; puf_step(&e);
+    require(done&&e.log.episode_length==1,"practice timeout frame accounting changed");
+    Dict metrics={}; puf_log(&e.log,&metrics);
+    require(dict_find(&metrics,"segment_seconds")&&!dict_find(&metrics,"rta_seconds")
+        &&dict_get(&metrics,"rta_valid")==0,"practice mislabeled as full-run RTA");
+    require(dict_get(&metrics,"hud_coins")==7&&dict_get(&metrics,"coin_events")==0,
+        "HUD coins and new pickups not separated");
+    require(!dict_find(&metrics,"area_transition_rewards")&&dict_find(&metrics,"novel_areas"),
+        "transition event counter still labeled as reward");
+    dict_clear(&metrics);
+    // Log includes only the terminal episode, not the earlier manual-reset prefix.
+    // Reset counters above discard that unfinished attempt, so it records one frame.
+    puf_close(&e); dict_clear(&cfg);
+    puts("PASS: black-screen practice exact prefix/state/image, natural emergence, repeatable resets");
+}
 int main(int argc,char** argv) {
     try {
         scalar_tests();
         Dict cfg={}; dict_set_str(&cfg,"spawn_levels","all"); dict_set(&cfg,"frameskip",1);
         playback_tests(&cfg);
         if(argc!=2||strcmp(argv[1],"--playback-only")) {
-            level_and_reset_tests(&cfg); core_parity_tests(); vector_tests(&cfg);
+            natural_start_timing_tests(); level_and_reset_tests(&cfg); core_parity_tests(); vector_tests(&cfg); practice_tests();
         }
         dict_clear(&cfg);
         return 0;

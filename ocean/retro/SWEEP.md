@@ -1,5 +1,12 @@
 # ROM training sweep
 
+The active config now evaluates a fixed pipe-exit practice segment, not a
+full level; see [PRACTICE.md](PRACTICE.md). Never compare its scores/times
+against archived full-level panels. Use `--full-run` for transfer evaluation.
+
+The current fine-tuning preset, pinned parent, measured baseline, and staged
+hillclimb procedure are documented in [FINETUNE.md](FINETUNE.md).
+
 ## Current sweep contract (2026-09-18)
 
 `./puffer sweep retro` now respects `env.spawn_levels` and `env.frameskip`.
@@ -27,22 +34,38 @@ With `sweep.goal=maximize`, available objectives are:
 
 | Metric | Ranking |
 | --- | --- |
-| `speed` | More clears, then fewer native frames per successful clear |
+| `speed` | Fastest individual clear, then mean successful frames; clear rate ignored |
 | `perf` / `score` | More clears, then bounded forward progress |
 | `distance` | Mean nonnegative forward pixels in the original area |
 
-For speed, with `N` attempts, `C` clears, budget `B`, and mean successful clear
-time `T`, the score is `100 * (C + 0.5 * (1 - T/B)) / N`. If no attempts clear,
-bounded mean progress replaces the speed tie-breaker. One additional clear
-outweighs all timing improvements; failures earn no survival-time bonus. Shaped
-reward does not enter the evaluation score, so larger reward weights cannot
-directly inflate the ranking.
+Speed objective v2 (2026-09-22): with budget `B`, fastest successful frames `P`,
+and mean successful frames `T`, rank is `B - P + 0.5 * (1 - T/B)`; zero clears
+get -1. One saved PB frame outweighs the entire mean-time tie-break. There is
+no clear-rate, survival or partial-progress contribution. The rank is not a
+time, percentage, Mario score or training reward. The new `retro_speed` line
+prints actual best/mean RTA seconds, best frames, clears and PB hits before
+the generic native `sweep run=... score=...` line. No-clear times print NA.
 
-Clear time is the ROM's level transition, **not first flag contact**. Like the
-existing completion time bonus, it includes flag descent, castle entry, timer
-conversion and fireworks. A higher HUD timer at the flag need not imply an
-earlier next-level transition. Training continues past clears until its normal
-episode boundary; evaluation stops at the first source-level clear.
+Old archived speed scores around 91–100 used a reliability-first formula and
+are **not comparable** to v2 scores (around 1118 for a 1882-frame PB at budget
+3000). Raw per-attempt frames remain valid. Use `report_sweep.py` to rank old
+panels by PB then mean without overwriting their historical scores.
+Compare equal attempt counts, budgets, ROMs, tasks and seeds. Best-of-N is
+noisy and rewards rare fast runs intentionally; confirm discoveries with
+fresh seeds. Speed across different starting levels is not comparable;
+the speedrun preset evaluates only 1-1.
+
+With `completion_on_rta_split=1` (current config), clear time is the exact
+viewer/dashboard split: the next-level black-screen edge, after countdown
+and fireworks but before the next-level entrance. Legacy mode
+`completion_on_next_playable=1` waits through that entrance; both options zero
+uses first flag contact, or level transition for castle/warp levels.
+Only compare clear-frame measurements with the same endpoint.
+The current ROM/core are both NTSC. Archived PAL results are not comparable;
+see [timing audit](TIMING_AUDIT_20260920.md). To test a PAL-trained checkpoint
+on NTSC, explicitly pass `--config config/retro.ini` rather than its old sidecar.
+Training with `env.terminate_on_clear=0` continues past clears until its normal
+episode boundary; with `env.terminate_on_clear=1` it stops at the first clear like evaluation. Evaluation always stops at the first source-level clear.
 
 ```sh
 ./build/retro_batch/sweep_eval PATH.bin --metric speed
@@ -103,8 +126,8 @@ shorter budgets above satisfy this.
 | `train.horizon` | 64, 128, 256 | Recurrent rollout/unroll length |
 | `train.replay_ratio` | 1–4, integer | Learning work per collected batch |
 
-The native launcher couples the potential-shaping discount to the sampled
-`train.gamma`; there is no independent shaping-gamma sweep.
+`train.gamma` controls learner credit assignment only; potential shaping
+and its separate environment discount have been removed.
 
 ROM execution, all 32 starts, one-frame controls, all 64 button combinations,
 reward ratios/scale, policy architecture and vector hardware settings stay
@@ -120,14 +143,12 @@ hint, **not a hard timeout**. Slow trials still finish their step budget.
 
 ## Rewards and clipping
 
-`env.reward_scale=1/16` multiplies completion, death, score and potential
-shaping together, preserving their ratios. With the default weights:
-
-- Completion contributes +0.625, and death −0.0625.
-- Shaping is `(gamma * Phi(next) - Phi(previous)) / 16`, with zero terminal
-  potential and `Phi(x)=clamp(x/3400, 0, 1)`.
-- The total lies within [−0.125, +0.6875]. The enabled ±1 reward clip therefore
-  leaves it unchanged.
+`env.reward_scale` multiplies all explicit event rewards together. Potential
+shaping has been removed: movement, pipe coordinate resets and episode ends
+no longer add any implicit reward or deduction. Only configured death and
+idle penalties can contribute negative reward. With both at zero and all
+bonus weights nonnegative, each step and episode return is nonnegative.
+Checkpoint bonuses still pay once per newly explored distance interval.
 
 The launcher refuses a scale/weight combination whose conservative bound
 exceeds the configured clip. Do not reintroduce component-wise normalization

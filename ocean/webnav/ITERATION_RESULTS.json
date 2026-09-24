@@ -1,0 +1,349 @@
+{
+  "date": "2026-09-20",
+  "miniwob": {
+    "revision": "33c3b4ddef8c6eb67c57a29663d844b1eda7e614",
+    "archive_sha256": "dffc87414e5081b282fc54aefad7c3f4406f3a10dcb5923dfd9babdcf9aa60e9",
+    "dependencies_sha256": {
+      "LICENSE": "fd6529fb8f648d4130fd969e3d7fc740c9992a0bd94a1998f52555a873311511",
+      "miniwob/html/core/core.js": "db8f489ab947a3194b99e718bce5e59ea9aaf0a3c35410d8c9c79e56e6123d14",
+      "miniwob/html/core/core.css": "795f8e686125b71e89a21ffe9e03406c6498f1e135175ba63321f3051a720042",
+      "miniwob/html/core/d3.v3.min.js": "8ca4da6691fb142cd76283014e887e7c3e61e3b63eff9ebb08eeb5c51d56aafb",
+      "miniwob/html/core/jquery-ui/jquery-ui.min.js": "28ce75d953678c4942df47a11707a15e3c756021cf89090e3e6aa7ad6b6971c3",
+      "miniwob/html/core/jquery-ui/external/jquery/jquery.js": "430f36f9b5f21aae8cc9dca6a81c4d3d84da5175eaedcf2fdc2c226302cb3575",
+      "miniwob/html/common/ui_utils.js": "65301ee11f483df7e9114f3fac2e2938e8b56933fecbed36bce310e2d8d90368"
+    },
+    "laws": 22,
+    "pilot_laws": 6,
+    "native_exhaustive_checkbox_cases": 5456,
+    "oracle": [
+      {
+        "task": "click-button",
+        "episodes": 1000,
+        "actions": 1102,
+        "full_credit": 587,
+        "positive_partial": 0,
+        "nonpositive": 213,
+        "timeouts": 200,
+        "state_reward_conformance": "PASS",
+        "clock": "controlled logical milliseconds",
+        "reset": "upstream-generated matched instance",
+        "scope": "click/wait controls; checked/focus/outcome/raw and timed reward; not full DOM or generator parity"
+      },
+      {
+        "task": "click-checkboxes",
+        "episodes": 1000,
+        "actions": 2703,
+        "full_credit": 443,
+        "positive_partial": 96,
+        "nonpositive": 261,
+        "timeouts": 200,
+        "state_reward_conformance": "PASS",
+        "clock": "controlled logical milliseconds",
+        "reset": "upstream-generated matched instance",
+        "scope": "click/wait controls; checked/focus/outcome/raw and timed reward; not full DOM or generator parity"
+      },
+      {
+        "task": "click-link",
+        "episodes": 1000,
+        "actions": 1000,
+        "full_credit": 462,
+        "positive_partial": 0,
+        "nonpositive": 338,
+        "timeouts": 200,
+        "state_reward_conformance": "PASS",
+        "clock": "controlled logical milliseconds",
+        "reset": "upstream-generated matched instance",
+        "scope": "click/wait controls; checked/focus/outcome/raw and timed reward; not full DOM or generator parity"
+      },
+      {
+        "task": "focus-text",
+        "episodes": 1000,
+        "actions": 1000,
+        "full_credit": 800,
+        "positive_partial": 0,
+        "nonpositive": 0,
+        "timeouts": 200,
+        "state_reward_conformance": "PASS",
+        "clock": "controlled logical milliseconds",
+        "reset": "upstream-generated matched instance",
+        "scope": "click/wait controls; checked/focus/outcome/raw and timed reward; not full DOM or generator parity"
+      },
+      {
+        "task": "click-option",
+        "episodes": 1000,
+        "actions": 2234,
+        "full_credit": 454,
+        "positive_partial": 0,
+        "nonpositive": 346,
+        "timeouts": 200,
+        "state_reward_conformance": "PASS",
+        "clock": "controlled logical milliseconds",
+        "reset": "upstream-generated matched instance",
+        "scope": "click/wait controls; checked/focus/outcome/raw and timed reward; not full DOM or generator parity"
+      }
+    ],
+    "observation": "Complete normalized DOM-v2 projection compared using imported initial text/geometry plus Bend-predicted mutable state",
+    "clock": "Controlled logical milliseconds, replacing Date and timer scheduling; original task reward callback retained",
+    "learned_policy_evaluation": false,
+    "generator_parity": false,
+    "full_suite_parity": false,
+    "trace_export": {
+      "episodes": 100,
+      "transitions": 263,
+      "path": "build/webnav/traces/click-checkboxes.jsonl",
+      "sha256": "6f9657c70291d38dd2d38e360ddbafd61adb66d4cb891e36b692a50a95ff0659",
+      "controller": "scripted public-label/adversarial schedules"
+    },
+    "reward_model": "Pure Bend raw/time-adjusted F32 arithmetic; 1e-6 tolerance against original JavaScript reward, independent host elapsed counter",
+    "deadline_tests": "Click/wait at 9999/10000 ms, expired clicks through UINT32_MAX, terminal reward/time absorption, positive and negative rewards",
+    "proof_mutation_test": "Changing toggle to alter a goal was rejected by toggle_preserves_goal; production model unchanged",
+    "form_generation": {
+      "version": 1,
+      "implementation": "stock CPU Bend Generate.bend and Wire.bend",
+      "tasks": [
+        "click-checkboxes",
+        "click-option"
+      ],
+      "same_rng_as_upstream": false,
+      "layout_model": false,
+      "native_forms_tested": 8192,
+      "exhaustive_radio_transitions": 3448,
+      "oracle": [
+        {
+          "task": "click-checkboxes",
+          "episodes": 1000,
+          "actions": 2665,
+          "full_credit": 441,
+          "positive_partial": 106,
+          "nonpositive": 253,
+          "timeouts": 200,
+          "state_reward_conformance": "PASS",
+          "clock": "controlled logical milliseconds",
+          "reset": "Bend-generated form in original task HTML",
+          "scope": "click/wait controls; checked/focus/outcome/raw and timed reward; not full DOM or generator parity"
+        },
+        {
+          "task": "click-option",
+          "episodes": 1000,
+          "actions": 2197,
+          "full_credit": 433,
+          "positive_partial": 0,
+          "nonpositive": 367,
+          "timeouts": 200,
+          "state_reward_conformance": "PASS",
+          "clock": "controlled logical milliseconds",
+          "reset": "Bend-generated form in original task HTML",
+          "scope": "click/wait controls; checked/focus/outcome/raw and timed reward; not full DOM or generator parity"
+        }
+      ],
+      "public_exports": [
+        "build/webnav/checkbox-forms.jsonl",
+        "build/webnav/radio-forms.jsonl"
+      ],
+      "benchmark": {
+        "scope": "warm single-thread CPU Bend plus C transport; no browser, encoder, observation packing or policy; active click-only transitions",
+        "generated_forms": 1181728,
+        "generation_seconds": 3.003166,
+        "forms_per_second": 393494.122,
+        "transitions": 2858048,
+        "transition_seconds": 3.000018,
+        "transitions_per_second": 952676.951
+      },
+      "laws_evidence": "build/webnav/forms-proof.log",
+      "trace": {
+        "path": "build/webnav/generated-traces.jsonl",
+        "episodes": 100,
+        "transitions": 221,
+        "sha256": "c757fe28d42b31b0c5ce07595ac0238b60bae9af72aee890c0f5fc5b375b8396",
+        "source": "Bend-generated radio forms / original HTML handlers / scripted public-label schedules"
+      },
+      "proof_mutation_test": "Inverting radio assignment rejected by radio_value_sets_radio; production model unchanged"
+    },
+    "text_task_followup": "TEXT_TASK_RESULTS.json",
+    "current_task_models": 12,
+    "current_laws": 95,
+    "task_expansion_followup": "TASK_EXPANSION_RESULTS.json"
+  },
+  "text": {
+    "parity": {
+      "tokenizer_parity": "PASS",
+      "reference": "Hugging Face Rust tokenizers 0.23.2",
+      "cases": 1120,
+      "vector_reference": "independent JS normalized sum",
+      "max_vector_error": 0,
+      "unicode": "ICU",
+      "token_cap": 512
+    },
+    "sanitizers": "AddressSanitizer and UndefinedBehaviorSanitizer passed encoder/cache tests",
+    "cache": "Unicode lookup, duplicate IDs, misses, wrong model fingerprint and corrupted content rejection passed",
+    "benchmark": {
+      "scope": "single-thread native corpus benchmark; repeated warm corpus after cache construction",
+      "strings": 268,
+      "input_bytes": 5080,
+      "iterations": 10000,
+      "model_load_seconds": 0.144142,
+      "cache_load_seconds": 0.000461,
+      "peak_rss_kib": 38808,
+      "encode_us": {
+        "mean": 4.110462,
+        "p50": 1.600012,
+        "p95": 7.199997
+      },
+      "cache_hit_us": {
+        "mean": 0.17518,
+        "p50": 0.200002,
+        "p95": 0.300002
+      },
+      "truncated_encodes": 0,
+      "page_workload_us": [
+        {
+          "nodes": 32,
+          "all_encode": 177.45864,
+          "all_hit": 5.31398,
+          "approximately_10_percent_reencode": 15.91897
+        },
+        {
+          "nodes": 128,
+          "all_encode": 628.45873,
+          "all_hit": 19.80196,
+          "approximately_10_percent_reencode": 104.01479
+        },
+        {
+          "nodes": 512,
+          "all_encode": 1850.08125,
+          "all_hit": 75.49184,
+          "approximately_10_percent_reencode": 241.49851
+        }
+      ]
+    },
+    "corpus_sha256": "234e3172a566d87fe1f3c5bddaa45035ecc5b50d433506f086ad482e32bfaa28",
+    "cache_sha256": "2d45a12688a0c39573a606d3cb246a57ea411d1c42ada104121b6107a6053415",
+    "model_revision": "bf8b056651a2c21b8d2565580b8569da283cab23",
+    "tokenizer_sha256": "e67e803f624fb4d67dea1c730d06e1067e1b14d830e2c2202569e3ef0f70bb50",
+    "weights_sha256": "f65d0f325faadc1e121c319e2faa41170d3fa07d8c89abd48ca5358d9a223de2",
+    "runtime": "Native C + ICU 74.2; one CPU thread; i5-7400; Clang 19 -O3",
+    "reference_tool": "tokenizers 0.23.2 Rust Node binding; no Python",
+    "limits": [
+      "268 short distinct strings from four initial-page snapshots; repeated warm benchmark, not a general-site performance estimate",
+      "Initial site corpus was captured before the visible-control-priority extractor revision",
+      "No contextual-model accuracy comparison or RL integration yet",
+      "Cache-load timing is warm OS-cache load; no cold-storage latency claim"
+    ]
+  },
+  "capture": {
+    "schema": 2,
+    "pages": [
+      {
+        "name": "books",
+        "url": "https://books.toscrape.com/",
+        "title": "All products | Books to Scrape - Sandbox",
+        "accepted": true,
+        "reason": "nonempty page; behavioral coverage and rights not established",
+        "nodes": 128,
+        "omitted": 143,
+        "truncated": 1,
+        "sha256": "5a818a1bd8299bf8900a457a1af326cd761df58e00c6972311a2fce31d307816"
+      },
+      {
+        "name": "adafruit",
+        "url": "https://www.adafruit.com/",
+        "title": "Adafruit Industries, Unique & fun DIY electronics and kits",
+        "accepted": true,
+        "reason": "nonempty page; behavioral coverage and rights not established",
+        "nodes": 128,
+        "omitted": 181,
+        "truncated": 0,
+        "sha256": "be351c7add653f813b1118ad972f8444d97158a5e18c14f97ddfd706d9022719"
+      },
+      {
+        "name": "allbirds",
+        "url": "https://www.allbirds.com/",
+        "title": "Allbirds: Comfortable, Sustainable Shoes & Apparel",
+        "accepted": true,
+        "reason": "nonempty page; behavioral coverage and rights not established",
+        "nodes": 128,
+        "omitted": 574,
+        "truncated": 0,
+        "sha256": "02c2252347b82e19fa5c4a838c7249881c940096aacd9b487edee004a1b0943b"
+      },
+      {
+        "name": "gutenberg",
+        "url": "https://www.gutenberg.org/ebooks/1342",
+        "title": "Pride and Prejudice by Jane Austen | Project Gutenberg",
+        "accepted": true,
+        "reason": "nonempty page; behavioral coverage and rights not established",
+        "nodes": 128,
+        "omitted": 30,
+        "truncated": 0,
+        "sha256": "e6f469d9be8c69ae43ea6bd2bafc372e7ba7efbd7cecb1fa79af4d538ffb3322"
+      },
+      {
+        "name": "amazon",
+        "url": "https://www.amazon.com/",
+        "title": "",
+        "accepted": false,
+        "reason": "empty snapshot; excluded",
+        "nodes": 0,
+        "omitted": 0,
+        "truncated": 0,
+        "sha256": "b452ec6977c8c7752d03bc38fb34424974da09e0560797fb838420480131d19a"
+      }
+    ],
+    "unique_strings": 268
+  },
+  "dom": {
+    "version": 2,
+    "quality_profiles": 4,
+    "tests": "roles/names, quality degradation, hidden-node exclusion, value whitespace, control priority, malformed-version/duplicate-reference rejection"
+  },
+  "pilot_regression": {
+    "native": "102400 transitions plus concurrent callers and adapter checks passed",
+    "browser": {
+      "backend": "chromium",
+      "policy": "expert",
+      "episodes": 30,
+      "transitions": 93,
+      "seconds": 0.637478,
+      "reset_seconds": 0.076721,
+      "action_seconds": 0.357095,
+      "observation_seconds": 0.198417,
+      "bend_batch_seconds": 0.002744,
+      "conformance": "PASS",
+      "button": [
+        5,
+        5
+      ],
+      "checkbox": [
+        16,
+        16
+      ],
+      "text": [
+        9,
+        9
+      ]
+    }
+  },
+  "sources_sha256": {
+    "ocean/webnav/text_encoder.c": "e943b77aa08b819952a21d2e3d1808f69042816ef9965837929f3f4a75165a95",
+    "ocean/webnav/text_cache.c": "8fda0e32c7b596ea70f43d0cb4a1485f33e59a84e987fed83ba1eed5209636e3",
+    "ocean/webnav/dom.c": "8605fa9819c9453e0caf611474f725653172274edf2a7280d6579b818e264a7b",
+    "ocean/webnav/web/dom_snapshot.js": "7ca1f394218985c17f71ccb3c6c4ab5827814e1bc92a9fc6d7c369765156482e",
+    "ocean/webnav/miniwob/Widgets.bend": "94c785b649c9e2825895e244ed6b71b90bd64bbfce0f499f60e3e89c0e2e65c7",
+    "ocean/webnav/miniwob/Wire.bend": "013526e568caf3e9c13a2229f72747213bc1cd23c4c8e23a33c4ea781f7336e3",
+    "ocean/webnav/miniwob/LAWS.bend": "437bc869d9bb5ce36ff49ad27a18d91602a2bab11ce0fe2d6c8374e193d2cbde",
+    "ocean/webnav/miniwob/PROOF.bend": "0b965c396f125ec7300330091130851299de34fb80aa6af1c7bdf7431df49d6e",
+    "ocean/webnav/miniwob/oracle.c": "38915253fc8408522134ce1ce459b5477959a9f6613dae33b44c81a55e4c4079",
+    "ocean/webnav/tests/test_miniwob.c": "643156ca5eedcb5f1e56daf5c8e7c2cfc0bb6e41cf2496729e52418d515d974b",
+    "ocean/webnav/bridge.c": "60063555c5e3e7d8052ed4168607fdedc444da7d8684660ffb4df8449b07e090",
+    "ocean/webnav/miniwob/Generate.bend": "8afeaaa4583f0fc3be55314707738ec82e803ed588cd2a3353d15176060344a2",
+    "ocean/webnav/miniwob/forms.c": "224bf6182d71163384af0680f8bbc9d71b1863c0a081573d0589f895be75c523",
+    "ocean/webnav/tests/test_generated.c": "372c69698a85e4b5e7592f9a5320b4d49dab09b30a6c4bcc7dff8b8f3e0c96c7",
+    "ocean/webnav/tools/bench_forms.c": "87b0dae624ff75cf47b8ef47259253b1156d01b1672e7ddd5a5c334ccf912bab"
+  },
+  "training_followup": {
+    "date": "2026-09-22",
+    "report": "TRAINING_RESULTS.json",
+    "documentation": "TRAINING.md",
+    "note": "Earlier counts below are historical component runs. Current combined task proof entry has 110 laws; twelve bounded generator presets are wired to webnav_dom, with original-page learned evaluation for five tasks."
+  }
+}

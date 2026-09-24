@@ -59,6 +59,14 @@ AR_SIM_FN float ar_clampf(float v, float lo, float hi) {
     return v < lo ? lo : (v > hi ? hi : v);
 }
 
+AR_SIM_FN int ar_keeper_present(ARSim* sim) {
+#ifdef AR_GPU_SIM
+    (void)sim;return 1;
+#else
+    return !sim->keeper_dormant;
+#endif
+}
+
 AR_SIM_FN uint32_t ar_rand_u32(ARSim* sim, int env) {
     (void)env;
     uint32_t x = AR_P(sim, env, rng) ? AR_P(sim, env, rng) : 1u;
@@ -155,6 +163,7 @@ AR_SIM_FN void ar_free_enemy(ARSim* sim, int env, int slot) {
 
 AR_SIM_FN void ar_free_pet(ARSim* sim, int env, int slot) {
 #ifndef AR_GPU_SIM
+    if(sim->direct_pet==slot){sim->direct_pet=-1;sim->direct_dx=sim->direct_dy=0;sim->direct_work=0;}
     if (B3_IS_NULL(sim->pet_body[slot]) == false) {
         b3DestroyBody(sim->pet_body[slot]);
         sim->pet_body[slot] = b3_nullBodyId;
@@ -264,6 +273,7 @@ AR_SIM_FN int ar_spawn_enemy(ARSim* sim, int env, int kind, float x, float y,
 
 AR_SIM_FN int ar_summon_pet(ARSim* sim, int env, int cls) {
     ARConfig* cfg = &sim->cfg;
+    if(!ar_keeper_present(sim))return -1;
     if (cls < 0 || cls >= AR_PET_CLASS_COUNT) cls = AR_PET_WISP;
     if (AR_P(sim, env, pets_alive) >= cfg->pet_cap) return -1;
 
@@ -363,21 +373,22 @@ AR_SIM_FN int ar_nearest_enemy(ARSim* sim, int env, float x, float y,
 // Steering. Velocities are written here; the move authority applies them.
 // -----------------------------------------------------------------------------
 
+AR_SIM_FN void ar_move_dir(int move,float* dx,float* dy);
+
 AR_SIM_FN void ar_steer_player(ARSim* sim, int env) {
     ARConfig* cfg = &sim->cfg;
+#ifndef AR_GPU_SIM
+    if(sim->keeper_dormant || sim->direct_pet>=0) {sim->pvx=sim->pvy=0;return;}
+#endif
     int move = (int)ar_clampf(AR_ACTIONS(sim, env)[0], 0.0f,
         (float)(AR_MOVE_ACTION_COUNT - 1));
     // Screen-relative (camera never rotates): 0 idle, 1 up, 2 down, 3 left,
     // 4 right, 5 up-left, 6 up-right, 7 down-left, 8 down-right. The 2:1 iso
     // projection maps screen-up to world (-1,-1), hence the rotated table.
-    const float dx_tbl[AR_MOVE_ACTION_COUNT] = {0.0f,
-        -0.70710678f, 0.70710678f, -0.70710678f, 0.70710678f,
-        -1.0f, 0.0f, 0.0f, 1.0f};
-    const float dy_tbl[AR_MOVE_ACTION_COUNT] = {0.0f,
-        -0.70710678f, 0.70710678f, 0.70710678f, -0.70710678f,
-        0.0f, -1.0f, 1.0f, 0.0f};
-    float vx = dx_tbl[move];
-    float vy = dy_tbl[move];
+    float vx,vy;ar_move_dir(move,&vx,&vy);
+#ifndef AR_GPU_SIM
+    if(sim->guide_keeper){vx=sim->guide_dx;vy=sim->guide_dy;}
+#endif
     float tm = ar_tile_speed(ar_tile_at(AR_DUN(sim, env), cfg->arena_size,
         AR_P(sim, env, px), AR_P(sim, env, py)));
     AR_P(sim, env, pvx) = vx * cfg->player_speed * tm;
@@ -393,7 +404,8 @@ AR_SIM_FN void ar_seek(ARSim* sim, int env, float x, float y,
     float dx = tx-x, dy = ty-y, d2 = dx*dx+dy*dy;
     if (d2 <= stop*stop) return;
     if(pet_slot>=0 && !ar_nav_visible(AR_DUN(sim,env),sim->cfg.arena_size,x,y,tx,ty)) {
-        if(AR_PET(sim,env,pet_slot,nav_tick)<=AR_P(sim,env,tick)) {
+        if(AR_PET(sim,env,pet_slot,nav_tick)<=AR_P(sim,env,tick) ||
+                ar_geometry_dist2(x,y,AR_PET(sim,env,pet_slot,nav_x),AR_PET(sim,env,pet_slot,nav_y))<0.36f) {
             float nx=x,ny=y;
             ar_nav_next(AR_DUN(sim,env),sim->cfg.arena_size,x,y,tx,ty,&nx,&ny);
             AR_PET(sim,env,pet_slot,nav_x)=nx; AR_PET(sim,env,pet_slot,nav_y)=ny;
@@ -403,6 +415,7 @@ AR_SIM_FN void ar_seek(ARSim* sim, int env, float x, float y,
         d2=dx*dx+dy*dy;
         if(d2<0.02f)return;
     }
+    speed=fminf(speed,fmaxf(0,(sqrtf(ar_geometry_dist2(x,y,tx,ty))-stop)/AR_DT));
     float inv = 1.0f/sqrtf(fmaxf(d2, 0.0001f));
     dx *= inv; dy *= inv;
     float best = -2.0f;
@@ -482,6 +495,14 @@ AR_SIM_FN int ar_terraform(ARSim* sim,int env,float x,float y,float radius,int m
     return changed;
 }
 
+AR_SIM_FN void ar_refine_pet(ARSim* sim,int env,int p,float x,float y) {
+    if(AR_PET(sim,env,p,work_cd)>0 || AR_P(sim,env,shards)<2)return;
+    for(int b=0;b<AR_MAX_BUILDINGS;b++)if(AR_BUILD(sim,env,b,active) && AR_BUILD(sim,env,b,kind)==AR_BUILD_HARVESTER &&
+            ar_geometry_dist2(x,y,AR_BUILD(sim,env,b,x),AR_BUILD(sim,env,b,y))<9) {
+        AR_P(sim,env,shards)-=2;AR_P(sim,env,cores)+=1;AR_PET(sim,env,p,work_cd)=8;break;
+    }
+}
+
 AR_SIM_FN void ar_steer_pets(ARSim* sim, int env) {
     ARConfig* cfg=&sim->cfg;
     float ax=AR_P(sim,env,rally_active) ? AR_P(sim,env,rally_x) : AR_P(sim,env,px);
@@ -494,6 +515,24 @@ AR_SIM_FN void ar_steer_pets(ARSim* sim, int env) {
         float x=AR_PET(sim,env,p,x),y=AR_PET(sim,env,p,y);
         float gx=AR_PET(sim,env,p,goal_x),gy=AR_PET(sim,env,p,goal_y);
         AR_PET(sim,env,p,work_cd)=fmaxf(0,AR_PET(sim,env,p,work_cd)-AR_DT);
+#ifndef AR_GPU_SIM
+        if(sim->direct_pet==p && (cmd==AR_CMD_HOLD || sim->direct_work || fabsf(sim->direct_dx)+fabsf(sim->direct_dy)>0.01f)) {
+            float tm=ar_tile_speed(ar_tile_at(sim->dungeon,cfg->arena_size,x,y));
+            sim->pets.vx[p]=sim->direct_dx*sim->pets.spd[p]*tm;
+            sim->pets.vy[p]=sim->direct_dy*sim->pets.spd[p]*tm;
+            sim->pets.goal_x[p]=x;sim->pets.goal_y[p]=y;sim->pets.command[p]=AR_CMD_HOLD;
+            sim->pets.target[p]=sim->pets.dmg[p]>0 ? ar_nearest_enemy(sim,0,x,y,9) : -1;
+            sim->pets.ntarget[p]=sim->pets.dmg[p]>0 && sim->pets.target[p]<0 ? ar_nearest_nest(sim,0,x,y,9) : -1;
+            if(sim->direct_work && cls>=AR_PET_BURROWER && sim->pets.work_cd[p]<=0) {
+                float dx=sim->direct_aim_x,dy=sim->direct_aim_y;
+                if(fabsf(dx)+fabsf(dy)<0.1f){dx=0.7071f;dy=0.7071f;}
+                int changed=ar_terraform(sim,0,x+dx*1.5f,y+dy*1.5f,cls==AR_PET_EMBER ? 2.0f : 1.6f,cls==AR_PET_EMBER);
+                sim->shards+=changed*0.25f;sim->pets.work_cd[p]=1;
+            }
+            if(cls==AR_PET_EMBER && !sim->direct_work)ar_refine_pet(sim,env,p,x,y);
+            continue;
+        }
+#endif
         if(task==AR_TASK_WORK && cmd==AR_CMD_AUTO && (cls==AR_PET_BURROWER || cls==AR_PET_EMBER)) {
             float cell=cfg->arena_size/AR_DUN_W,half=cfg->arena_size*0.5f,best=65;
             int cx=(int)floorf((x+half)/cell),cy=(int)floorf((y+half)/cell),found=0;
@@ -583,7 +622,7 @@ AR_SIM_FN void ar_steer_pets(ARSim* sim, int env) {
                 foe=ar_nearest_enemy(sim,env,gx,gy,9);
                 if(foe<0)foe=ar_nearest_enemy(sim,env,x,y,25);
                 if(foe<0 && ar_geometry_dist2(x,y,gx,gy)<4)
-                    ar_command_pet(sim,env,p,AR_CMD_AUTO,x,y);
+                    ar_command_pet(sim,env,p,AR_CMD_HOLD,x,y);
             }
         } else if(task==AR_TASK_HOLD) {
             tx=x;ty=y;
@@ -605,13 +644,15 @@ AR_SIM_FN void ar_steer_pets(ARSim* sim, int env) {
             }
         }
         // Manual Move/Hold beside an extractor also enables refining.
-        if(cls==AR_PET_EMBER && cmd!=AR_CMD_WORK && AR_PET(sim,env,p,work_cd)<=0 && AR_P(sim,env,shards)>=2) {
-            for(int b=0;b<AR_MAX_BUILDINGS;b++)if(AR_BUILD(sim,env,b,active) && AR_BUILD(sim,env,b,kind)==AR_BUILD_HARVESTER &&
-                    ar_geometry_dist2(x,y,AR_BUILD(sim,env,b,x),AR_BUILD(sim,env,b,y))<9) {
-                AR_P(sim,env,shards)-=2;AR_P(sim,env,cores)+=1;AR_PET(sim,env,p,work_cd)=8;break;
-            }
-        }
+        if(cls==AR_PET_EMBER && cmd!=AR_CMD_WORK)ar_refine_pet(sim,env,p,x,y);
         if(AR_PET(sim,env,p,dmg)<=0){foe=-1;nest=-1;}
+        if(cmd==AR_CMD_AUTO && task==AR_TASK_ESCORT && cls!=AR_PET_EMBER && !retreat && foe<0 && nest<0) {
+            // Stable formation slots keep idle companions distinguishable and
+            // prevent every escort trying to occupy the same stopping point.
+            float angle=(float)p*2.39996323f,spread=cfg->pet_follow_distance+0.7f;
+            tx=ax+cosf(angle)*spread;ty=ay+sinf(angle)*spread;stop=0.4f;
+            if(!ar_geometry_floor(AR_DUN(sim,env),cfg->arena_size,tx,ty)){tx=ax;ty=ay;stop=cfg->pet_follow_distance;}
+        }
         if(foe>=0){tx=AR_ENEMY(sim,env,foe,x);ty=AR_ENEMY(sim,env,foe,y);stop=cfg->pet_attack_range;}
         else if(nest>=0){tx=AR_NEST(sim,env,nest,x);ty=AR_NEST(sim,env,nest,y);stop=cfg->nest_radius+0.65f;}
         AR_PET(sim,env,p,target)=foe; AR_PET(sim,env,p,ntarget)=nest;
@@ -663,7 +704,7 @@ AR_SIM_FN void ar_dungeon_collide(ARSim* sim, int env) {
     ARConfig* cfg = &sim->cfg;
     const uint8_t* dun = AR_DUN(sim, env);
     float x = AR_P(sim, env, px), y = AR_P(sim, env, py);
-    if (ar_geometry_collide_dungeon(dun, cfg->arena_size, &x, &y,
+    if (ar_keeper_present(sim) && ar_geometry_collide_dungeon(dun, cfg->arena_size, &x, &y,
             cfg->player_radius)) {
         AR_P(sim, env, px) = x;
         AR_P(sim, env, py) = y;
@@ -704,7 +745,7 @@ AR_SIM_FN void ar_dungeon_collide(ARSim* sim, int env) {
         float by = AR_BUILD(sim, env, b, y);
         float br = AR_BUILD(sim, env, b, rad);
         float x = AR_P(sim, env, px), y = AR_P(sim, env, py);
-        if (ar_geometry_push_out_circle(&x, &y, bx, by,
+        if (ar_keeper_present(sim) && ar_geometry_push_out_circle(&x, &y, bx, by,
                 br + cfg->player_radius)) {
             AR_P(sim, env, px) = x;
             AR_P(sim, env, py) = y;
@@ -907,7 +948,7 @@ AR_SIM_FN void ar_move_authority(ARSim* sim, int env) {
 #ifdef AR_GPU_SIM
     ar_gpu_move_authority(sim, env);
 #else
-    ar_phys_set_velocity(sim->player_body, AR_P(sim, env, pvx),
+    if(!sim->keeper_dormant)ar_phys_set_velocity(sim->player_body, AR_P(sim, env, pvx),
         AR_P(sim, env, pvy));
     for (int i = 0; i < AR_MAX_PETS; i++) {
         if (!AR_PET(sim, env, i, active) || AR_PET(sim, env, i, dormant)) continue;
@@ -923,9 +964,11 @@ AR_SIM_FN void ar_move_authority(ARSim* sim, int env) {
     ar_phys_step(sim->world);
 
     float x, y;
-    ar_phys_position(sim->player_body, &x, &y);
-    AR_P(sim, env, px) = x;
-    AR_P(sim, env, py) = y;
+    if(!sim->keeper_dormant) {
+        ar_phys_position(sim->player_body, &x, &y);
+        AR_P(sim, env, px) = x;
+        AR_P(sim, env, py) = y;
+    }
     for (int i = 0; i < AR_MAX_PETS; i++) {
         if (!AR_PET(sim, env, i, active) || AR_PET(sim, env, i, dormant)) continue;
         ar_phys_position(sim->pet_body[i], &x, &y);
@@ -998,7 +1041,7 @@ AR_SIM_FN void ar_combat(ARSim* sim, int env) {
     // a swarming horde into one hit per window.
     if (AR_P(sim, env, invuln_timer) > 0) {
         AR_P(sim, env, invuln_timer) -= 1;
-    } else {
+    } else if(ar_keeper_present(sim)) {
         int count = AR_P(sim, env, enemy_count);
         for (int k = 0; k < count; k++) {
             int i = AR_ENEMY(sim, env, k, dense);
@@ -1554,7 +1597,7 @@ AR_SIM_FN float ar_fbm(uint32_t seed, float x, float y) {
 
 // A coordinate-addressable generator: no per-chunk RNG, borders, or generation
 // order dependence. Broad landforms -> domain warp -> biome -> water -> details.
-AR_SIM_FN uint8_t ar_terrain_tile(uint32_t seed,int gx,int gy) {
+AR_SIM_FN uint8_t ar_terrain_tile_v1(uint32_t seed,int gx,int gy) {
     float x=(float)gx+0.5f,y=(float)gy+0.5f;
     float wx=x+(ar_vnoise(seed^31u,x*0.018f,y*0.018f)-0.5f)*22;
     float wy=y+(ar_vnoise(seed^79u,x*0.018f+8,y*0.018f)-0.5f)*22;
@@ -1575,6 +1618,58 @@ AR_SIM_FN uint8_t ar_terrain_tile(uint32_t seed,int gx,int gy) {
     else if(d<width+2.5f)tile=AR_TILE_SAND;
     // The only authored constraint is the one starter sanctuary.
     if(x*x+y*y<100)tile=AR_TILE_GRASS;
+    return tile;
+}
+
+typedef enum {AR_BIOME_MEADOW,AR_BIOME_PINE,AR_BIOME_AUTUMN,AR_BIOME_MARSH,AR_BIOME_DUNES,AR_BIOME_HIGHLAND,AR_BIOME_COUNT} ARBiome;
+
+// Climate lives at a much larger scale than decoration. Sampling the same
+// world coordinate gives the same biome regardless of travel/load order.
+AR_SIM_FN int ar_biome(uint32_t seed,float x,float y) {
+    if(x*x+y*y<22*22)return AR_BIOME_MEADOW;
+    float warp=(ar_vnoise(seed^7121u,x*0.007f,y*0.007f)-0.5f)*38;
+    float heat=ar_vnoise(seed^127u,(x+warp)*0.009f+2.1f,(y-warp)*0.009f-5.2f);
+    float rain=ar_vnoise(seed^331u,x*0.011f-7.3f,y*0.011f+2.8f);
+    float upland=ar_vnoise(seed^911u,x*0.009f+3,y*0.009f-4);
+    if(heat<0.31f)return AR_BIOME_PINE;
+    if(rain<0.32f && heat>0.47f)return AR_BIOME_DUNES;
+    if(rain>0.69f)return AR_BIOME_MARSH;
+    if(upland>0.69f)return AR_BIOME_HIGHLAND;
+    if(heat>0.60f)return AR_BIOME_AUTUMN;
+    return AR_BIOME_MEADOW;
+}
+
+AR_SIM_FN uint8_t ar_terrain_tile(uint32_t seed,int gx,int gy) {
+    float x=(float)gx+0.5f,y=(float)gy+0.5f;
+    float wx=x+(ar_vnoise(seed^31u,x*0.009f,y*0.009f)-0.5f)*42;
+    float wy=y+(ar_vnoise(seed^79u,x*0.009f+8,y*0.009f)-0.5f)*42;
+    float land=ar_fbm(seed,wx*0.006f+4.3f,wy*0.006f-6.7f);
+    float ridge=1-fabsf(ar_vnoise(seed^1697u,wx*0.013f,wy*0.013f)*2-1);
+    float elevation=land*0.78f+ridge*0.22f;
+    float cover=ar_fbm(seed^0x9e3779b9u,wx*0.034f,wy*0.034f);
+    int biome=ar_biome(seed,x,y);
+    float woods=biome==AR_BIOME_PINE ? 0.45f : biome==AR_BIOME_AUTUMN ? 0.48f :
+        biome==AR_BIOME_DUNES ? 0.82f : biome==AR_BIOME_HIGHLAND ? 0.68f : 0.58f;
+    uint8_t tile=cover>woods ? AR_TILE_FOREST : AR_TILE_GRASS;
+    if(biome==AR_BIOME_DUNES && cover<0.64f)tile=AR_TILE_SAND;
+    if(elevation>(biome==AR_BIOME_HIGHLAND ? 0.67f : 0.77f))tile=AR_TILE_ROCK;
+    if(land<0.25f)tile=AR_TILE_DEEP;
+    else if(land<0.28f)tile=AR_TILE_SHALLOW;
+    else if(land<0.31f)tile=AR_TILE_SAND;
+    // Broad warped contours create winding regional valleys without a repeated
+    // stripe direction or chunk-local seams. This is authored terrain, not a
+    // hydrology solver. Wetland tributaries add smaller channels and islands.
+    float river=fabsf(ar_vnoise(seed^913u,wx*.005f,wy*.005f)-.5f)*145;
+    float width=1.15f+ar_vnoise(seed^723u,wx*.013f,wy*.013f)*1.5f;
+    if(biome==AR_BIOME_MARSH) {
+        float tributary=fabsf(ar_fbm(seed^611u,wx*0.01f,wy*0.01f)-0.5f)*115;
+        river=fminf(river,tributary);width+=0.6f;
+    }
+    int ford=ar_vnoise(seed^518u,wx*.043f,wy*.043f)>.66f;
+    if(river<width)tile=ford ? AR_TILE_SHALLOW : AR_TILE_DEEP;
+    else if(river<width+1.4f)tile=AR_TILE_SHALLOW;
+    else if(river<width+2.6f)tile=AR_TILE_SAND;
+    if(x*x+y*y<13*13)tile=AR_TILE_GRASS;
     return tile;
 }
 
@@ -1636,10 +1731,10 @@ AR_SIM_FN void ar_move_dir(int move, float* dx, float* dy) {
     if (move < 0 || move >= AR_MOVE_ACTION_COUNT) move = 0;
     const float dx_tbl[AR_MOVE_ACTION_COUNT] = {0.0f,
         -0.70710678f, 0.70710678f, -0.70710678f, 0.70710678f,
-        -1.0f, 0.0f, 0.0f, 1.0f};
+        -0.94868330f, -0.31622777f, 0.31622777f, 0.94868330f};
     const float dy_tbl[AR_MOVE_ACTION_COUNT] = {0.0f,
         -0.70710678f, 0.70710678f, 0.70710678f, -0.70710678f,
-        0.0f, -1.0f, 1.0f, 0.0f};
+        -0.31622777f, -0.94868330f, 0.94868330f, 0.31622777f};
     *dx = dx_tbl[move];
     *dy = dy_tbl[move];
 }
@@ -1683,6 +1778,9 @@ AR_SIM_FN void ar_abilities(ARSim* sim, int env) {
 
     int ab = (int)ar_clampf(AR_ACTIONS(sim, env)[3], 0.0f,
         (float)(AR_ABILITY_ACTION_COUNT - 1));
+#ifndef AR_GPU_SIM
+    if(sim->keeper_dormant || sim->direct_pet>=0)ab=AR_ABILITY_NONE;
+#endif
     if (ab == AR_ABILITY_DASH && AR_P(sim, env, dash_cd) <= 0.0f) {
         float dx, dy;
         ar_move_dir((int)ar_clampf(AR_ACTIONS(sim, env)[0], 0.0f,
@@ -1787,6 +1885,10 @@ AR_SIM_FN void ar_reset_env(ARSim* sim, int env) {
 #ifndef AR_GPU_SIM
     // Fresh world per episode: walls, player, and pillars are re-created, and
     // every enemy/pet body from the previous episode dies with the old world.
+    sim->direct_pet=-1;sim->direct_work=0;sim->keeper_dormant=0;sim->terrain_version=2;
+    sim->direct_dx=sim->direct_dy=0;
+    sim->direct_aim_x=sim->direct_aim_y=.70710678f;
+    sim->guide_keeper=0;sim->guide_dx=sim->guide_dy=0;
     if (B3_IS_NULL(sim->world) == false) {
 #ifdef _OPENMP
 #pragma omp critical(ar_world_lifecycle)

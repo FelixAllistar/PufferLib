@@ -1,10 +1,54 @@
-# Hearthwild / ARPG — Frontier
+# Hearthwild / ARPG — The Reach
 
 A companion-led homestead and summoner game. Pets handle recurring work; buildings
-anchor your outposts. The v3 frontier is a playable systems slice, not an
-AAA-complete campaign.
+anchor your outposts. The Reach (Lanternlight viewer, observation ABI 3) adds direct
+companion control, frame animation, climate regions and a world atlas. It is a
+playable systems slice, not an AAA-complete campaign.
 
-![A developed frontier homestead](assets/frontier-preview.png)
+![A developed Reach homestead](assets/reach-preview.png)
+
+## Lanternlight visual pass
+
+F7 (or the button below the minimap) cycles **Unlit → Daylight → Dusk → Moonlight**.
+Start with `ARPG_LIGHTING=2 ./arpg play --no-save` to preview dusk, or use `0`
+to disable lighting and projected shadows. These are fixed art-direction presets,
+not a gameplay day/night cycle. Daylight is the default.
+
+The viewer adds separate directional sprite shadows, warm lodge/lantern/machinery
+lights, cool crystal glows, wind-bent trees, drifting seeds and nighttime fireflies.
+Only the smooth light layer is half resolution; the world and HUD stay at native
+resolution. The HUD is never darkened. Light maps and terrain minimaps are cached
+until their inputs change; the light target resizes with the window. If render
+targets fail, the game falls back to unlit world rendering.
+
+Hares and deer are decorative wildlife with world-seeded, tile-local animation;
+they are not new combat targets, harvestable resources, or simulated populations.
+Spore toads inhabit autumn/marsh enemy spawn regions; animated slate boars replace
+the old static heavy sprite. These are visual variants of the existing light/heavy
+enemy roles, not new AI behavior. Sparse weathered waystones mark the landscape.
+The selected-companion inspector shows identity, health, order and control state.
+
+Everything in this pass lives in the CPU viewer. CUDA/headless training has no
+lighting, wildlife, or rendering allocations. The observation/action ABI and saves
+are unchanged. Lighting is inexpensive 2D illumination: point lights do not cast
+occlusion shadows, and terrain cliffs do not participate in the sprite shadow pass.
+
+[Dusk runtime preview](assets/lantern-preview.png) ·
+[new creature frames and generation prompt](assets/lantern-prompts.md).
+
+Visual regression (requires a display; create the output directory first):
+
+```sh
+make -C ocean/arpg viewer-test BUILD=/tmp/arpg-lantern-tests \
+  SHOT='--lantern /tmp/arpg-lantern-tests'
+```
+
+This checks all four modes, window resizing, render-target fallback, paused nature
+animation and byte-for-byte unchanged simulation state across repeated rendering.
+The regular viewer tests also validate all 32 new frames and UI click exclusion.
+
+The [regional atlas](assets/reach-map-preview.png) shows a visual-test expedition;
+its separate visited patches are test placements, not a recorded walking route.
 
 ## Play and save
 
@@ -28,6 +72,11 @@ existing parent directory. R requires a second press within four seconds; a save
 campaign is archived before replacement. Invalid/incompatible saves are rejected
 without overwriting them. Saves are versioned, checksummed, and replaced atomically.
 
+Existing frontier saves keep their original terrain generator, including newly
+visited chunks: this update does not redraw an established world. A fresh
+`--no-save` session previews the new regional generator safely; use `--new` when
+you want to archive the old campaign and begin a permanent new Reach.
+
 Pausing stops all production. Distant outposts continue producing while the game
 is running; there is **no catch-up for time spent with the application closed**.
 In campaign play, death returns the keeper to the lodge for up to 5 aether, without
@@ -43,36 +92,53 @@ No trained v3 policy is bundled; older checkpoints require retraining.
 
 | Input | Effect |
 | --- | --- |
-| WASD / arrows, or left-click ground | Move the keeper; click movement uses terrain navigation |
-| Click a pet/card | Select that companion |
+| WASD / arrows | Move the keeper, or the explicitly driven companion |
+| 1–8, click a pet's number, or click its card | Select exactly one companion; clicking it again keeps it selected |
+| F6 / Drive button | Drive the selected single companion; press again to return to keeper |
+| 0 | Return control and the live region to the keeper; leave the pet at its assignment |
+| E while driving Burrower / Ember | Dig / melt in the last movement direction; combat and Porter gathering remain automatic at close range |
 | Drag a box / Shift-click | Select several / add or remove a companion |
 | Right-click a seam | Assign selected companions to that specific renewable deposit |
 | Right-click a camp or enemy | Attack that target; camp orders prioritize its core |
-| Right-click ground | Move selected pets, then hold the destination |
+| Right-click ground | Move selected pets, then hold; with no selection, navigate the keeper there |
+| Left-click empty ground | Clear selection without moving anyone |
 | Ctrl-right-click ground | Attack-move |
 | Right-click rock/forest | Burrower/Ember work a corridor toward that point |
 | Task buttons | Assist, Gather, Escort, Hunt, Hold, Home, or ongoing Terrain work |
 | P | Clear selected pets' overrides; with no selection, restore all automatic assistance |
 | Ctrl+F1–F4 / F1–F4 | Store / recall a selection group |
 | Delete | Release selected summons; refund half their aether cost |
-| 1 / 2 / 3 / 4 | Follow / Advance / Hold / Focus for automatically controlled combat pets |
+| Alt+1 / Alt+2 / Alt+3 / Alt+4 | Follow / Advance / Hold / Focus for automatically controlled combat pets |
 | G / V / B | Place ward tower / barricade / extractor |
 | J / O | Place Starfire launcher / bridge |
 | Shift-click while placing | Keep the construction tool selected for another placement |
 | Backspace | Cancel placement/targeting and clear selection |
+| Escape | Close atlas and cancel selection/placement; does not quit the game |
 | Summon buttons | Summon a class; hovering works even on locked or unaffordable buttons |
-| Z/X/C/M, then Space | Select Wisp/Fang/Aegis/Porter and summon; Space also repeats the last clicked summon class |
-| Q / E / F | Dash / Nova / Frost |
+| Z/X/C/U, then Space | Select Wisp/Fang/Aegis/Porter and summon; Space also repeats the last clicked summon class |
+| Q / E / F while controlling keeper | Dash / Nova / Frost |
 | N, then left-click | Fire a ready Starfire launcher at the chosen position |
 | Wheel / middle-drag / Home | Zoom / pan / resume camera follow |
+| M / click minimap | Open world atlas; wheel zoom, right/middle-drag pan, Home center |
 | Tab / T / H | Pause / toggle model keeper control / debug hitboxes |
 | F5 / R twice | Save / archive and start a new homestead |
+| F7 / button below minimap | Cycle viewer-only lighting presets; Unlit disables projected shadows |
 
-A right-click with nothing selected chooses an available porter for a seam, a
-terrain specialist for digging, or unassigned fighters for movement/combat.
-It does not pull individually assigned workers off their jobs. Selected pets'
-command lines show numbered destinations. Individual commands take precedence
-over the optional model and older general tasks; P releases that override.
+Selection and driving are separate and visible in the control panel. Selecting
+another pet does not silently take control of it: F6 does that. Only selected
+pets receive right-click orders; an empty selection addresses the driven actor,
+not the whole squad. WASD interrupts that actor's route. Selected pets' command
+lines show numbered destinations. Individual commands take precedence over the
+optional model and older general tasks; P releases that override.
+
+Driving a companion streams around it while the keeper and assigned workers
+remain at their real world positions. A save made during an expedition restores
+around the keeper; the distant pet remains available by its card/number and F6.
+Summoning and construction still originate at the keeper. Combat/extraction near
+the driven pet and distant production continue; selecting a pet alone never
+changes simulation focus. The atlas previews uncharted terrain dimly and marks
+known camps, outposts and companions. It is not an omniscient resource search,
+full fog-of-war system, fast-travel interface or remote build tool.
 
 Manual Move/Hold orders remain where issued. Assigned workers can be sent to
 different deposits and continue working when you leave. Automatic gathering
@@ -136,10 +202,24 @@ ordinary Wisp/Fang commands and simulation ticks, without directly invoking dama
 ## World generation and persistence
 
 `ar_terrain_tile(seed, world_x, world_y)` is coordinate-addressable: broad
-landforms, domain warping, moisture, continuous rivers, shallows and procedural
+landforms, domain warping, climate, winding contour rivers, shallows and procedural
 fords come before decorative details. There is no generated rock border or
 cross-shaped road stamped across every region. Decoration also uses world keys,
 so rebasing does not reshuffle trees.
+
+Six broad regions—clover meadow, pine, amber woodland, marsh, dunes and
+highlands—control terrain cover, colors and decoration. Shared vertex shading
+softens tile boundaries; spaced tree placement, fading canopies, rock relief and
+small understory improve readability. Ground samples/colors and atlas previews
+are cached. The generator is not a drainage, erosion or water-volume simulation.
+
+The keeper, six companion classes and basic thorn enemy have eight actual
+sprite poses each: idle, four gait frames, and three action poses. Gait advances
+with movement, stops while paused, and preserves facing at rest. The importer
+detects transparent gutters and shares scale/foot pivots across a strip, instead
+of resizing every pose to its independent alpha bounds. The sprites are still
+mirrored three-quarter views, not eight-direction animation sets; the large
+brute and structures retain their earlier assets.
 
 The architectural reference is Sean Murray's
 [Building Worlds Using Math(s), GDC 2017](https://www.gdcvault.com/play/1024514/Building-Worlds-Using).
@@ -148,7 +228,7 @@ mathematically authored, explorable terrain—not a port of No Man's Sky or a cl
 to reproduce the talk's implementation.
 
 The CPU campaign keeps 16×16 persistent chunks around a 64×64 live simulation
-window. Crossing the inner 16-cell threshold rebases local physics/camera
+window around the keeper or driven companion. Crossing the inner 16-cell threshold rebases local physics/camera
 coordinates while preserving world positions. Visited terrain, deposits,
 buildings, cleared camps, surviving enemies and companion assignments persist.
 More terrain is rendered beyond the live window, avoiding an artificial visual
@@ -164,8 +244,10 @@ Remote production and dispatched-unit movement advance at one-second resolution.
 A manually stationed worker is not teleported along with the keeper. Unassigned
 escorts may phase back to their summoner when rebasing would strand them.
 **Offscreen combat and excavation are suspended** until those regions are live.
-A full multi-region simulation, scalable world index and queued RTS orders remain
-future work.
+Chunk lookup now uses a hash index, including negative world coordinates and
+loaded saves. Entity records are still linear arrays. A full multi-region
+simulation, spatially indexed entities, bounded caches and queued RTS orders
+remain future work.
 
 ## RL contract — observation version 3
 
@@ -223,10 +305,12 @@ match the policy configuration.
 ```sh
 make -C ocean/arpg test
 make -C ocean/arpg frontier-test
+make -C ocean/arpg reach-test
 make -C ocean/arpg sanitize
 make -C ocean/arpg cuda-test
 make -C ocean/arpg native-cpu-test
 make -C ocean/arpg viewer-test
+make -C ocean/arpg viewer-cpp-test
 ```
 
 Tests cover quiet starts on 12 seeds, long mixed-action runs, rewards/resets,
@@ -234,13 +318,27 @@ odd-sized CUDA pools, independent model tasks, camera projection/inversion,
 screen-space context orders, actual camp combat, long-wall navigation, sustained
 tunneling, bridges, refinery and artillery costs, exploration/return persistence,
 remote production and dispatch/recall, save round-trips, and corruption rejection.
-Sanitizers cover both the shared simulation and frontier persistence.
+The Reach tests also cover isolated pet driving beyond 100 world units, keeper
+and worker positions, possession save/load, returning to distant companions,
+driver death/release, direct digging/refining, legacy generation, 450 indexed
+chunks, biome coverage, opposed keys, screen-relative diagonals, continuous
+click-to-walk arrival, numbered pick targets and 64 distinct imported frames.
+Sanitizers cover the shared simulation, frontier persistence and Reach controls.
 
 `ARPG_SEED=42 ARPG_SHOT=/absolute/path.png ARPG_SHOT_FRAME=360 ./arpg play`
 captures the real viewer and disables campaign save I/O. The optional
 `viewer-test SHOT=/absolute/path.png` builds a homestead through normal production.
 
-The [original and expansion atlases, provenance and final prompts](assets/README.md)
+`make -C ocean/arpg viewer-test SHOT='--reach /existing/output/directory'`
+captures all six biomes, the atlas and the runtime animation strips, and prints
+render timings. This is an explicit visual fixture: it summons the six classes
+and places a scout in each biome to exercise streaming without waiting for travel.
+
+Rendering stays at native window resolution. Four-sample antialiasing is opt-in
+with `ARPG_MSAA=1`; it is expensive on software GL, while sprite/font edges
+already have alpha. Ground and shadow passes are batched independently of sprites.
+
+The [atlases, provenance and final prompts](assets/README.md)
 are project-local. Terrain, water, placement previews and effects are rendered
 procedurally.
 

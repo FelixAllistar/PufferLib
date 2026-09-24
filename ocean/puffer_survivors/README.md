@@ -39,9 +39,9 @@ Always run from the repo root so `config/`, `checkpoints/`, and
 `resources/puffer_survivors/` resolve.
 
 `watch` uses the **same** `PS_FAST_RENDER` viewer as human play. Policy
-architecture (`hidden_size` / `num_layers`) is inferred from the checkpoint
-file size, so a tiny new run is not broken by an unrelated larger model still
-sitting in the tree — `latest` is simply the newest `.bin` by ctime.
+architecture (`hidden_size` / `num_layers`) comes from the `[policy]` section
+of `config/puffer_survivors.ini` and must match the checkpoint. `latest` is
+simply the newest `.bin` by ctime.
 
 Controls: WASD/arrows to move (human), Shift to dash, `A`/`D` or left/right to select an
 upgrade, Space to confirm, and `1`/`2`/`3` for direct card choice. `R` restarts,
@@ -72,6 +72,22 @@ Enemy/weapon tuning and the wave tables are list-valued `[env]` config entries
 as well. The INI is required for play, CPU training, CUDA training, and WASM;
 a missing or invalid value fails fast.
 
+## Weapon coverage and visuals
+
+Every starter weapon has a crowd footprint: Bubble pops into a splash on its
+final impact (4x its projectile radius), Whirlpool bursts around the player,
+Orbit sweeps pearl-sized areas, Poison Oil leaves persistent pools, Sonar
+hits a wide disk, Glacier hits a cone, and Spikes fires a radial fan. Spikes
+scales linearly from 8 shots at level 1 to 64 at level 8; piercing still comes
+from its existing level/Pierce upgrades. Bubble radius growth and Area upgrades
+also enlarge its splash. Burst rings are visual only; they do not hit twice.
+
+The play/watch backdrop uses one drifting water layer, distant reef, and
+submerged debris, all scrolling with the same interpolated camera. Ground
+effects render beneath obstacles and pickups. Hitboxes default off; `H` still
+toggles them. The observation/action layouts are unchanged, but weapon tuning
+changes gameplay, so old policies may need retraining.
+
 ## Performance measurements
 
 Build the standalone native GPU simulation benchmark with:
@@ -81,8 +97,8 @@ make -C ocean/puffer_survivors NVCC=/usr/local/cuda/bin/nvcc bench-cuda
 ./ocean/puffer_survivors/tests/bench_cuda 5120 2000 200 3
 ```
 
-It reports raw simulation throughput and the real wrapper throughput including
-episode-log packing. Remaining arguments use normal `section.key=value`
+It reports raw simulation throughput and the real `puf_envs_step` wrapper
+throughput. Remaining arguments use normal `section.key=value`
 overrides, so hot-path A/B tests are reproducible:
 
 ```bash
@@ -133,6 +149,7 @@ make -C ocean/puffer_survivors cuda-test
 ```
 
 `cuda-test` requires a usable NVIDIA driver. CPU and CUDA tests cover inactive
-enemy slots on both sides of the dense/capacity scan threshold, as well as
-terminal rewards and dash behavior. The CPU test also checks pool invariants
-over 20,000 steps.
+enemy slots on both sides of the dense/capacity scan threshold, terminal rewards,
+dash behavior, Bubble splash on circle/AABB targets (including Area scaling,
+kills, and a full visual-effect pool), and weapon counts/radii across all levels.
+The CPU test also checks pool invariants over 20,000 steps.

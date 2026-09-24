@@ -42,10 +42,10 @@ int main() {
     API(get_memory_data); API(get_memory_size); API(unload_game); API(deinit);
     set_environment(environment); set_video_refresh(video); set_audio_sample(sound);
     set_audio_sample_batch(batch); set_input_poll(poll); set_input_state(input); init();
-    std::vector<unsigned char> bytes(40976); FILE* f=fopen("ocean/retro/roms/smb1.nes","rb");
+    std::vector<unsigned char> bytes(40976); FILE* f=fopen(RETRO_SMB1_ROM_PATH,"rb");
     if(!f||fread(bytes.data(),1,bytes.size(),f)!=bytes.size()) return 2;
     fclose(f);
-    retro_game_info game={"ocean/retro/roms/smb1.nes",bytes.data(),bytes.size(),nullptr};
+    retro_game_info game={RETRO_SMB1_ROM_PATH,bytes.data(),bytes.size(),nullptr};
     if(!load_game(&game)) return 3;
     auto m=(unsigned char*)get_memory_data(RETRO_MEMORY_SYSTEM_RAM);
     printf("reference RAM size=%zu\n",get_memory_size(RETRO_MEMORY_SYSTEM_RAM));

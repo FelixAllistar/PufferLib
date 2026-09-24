@@ -12,6 +12,14 @@ Camera regression fix; coordinate-stable streamed terrain; saved world edits and
 outposts; independent pet commands and selection groups; eight companion slots;
 renewable extraction; Burrower/Ember terrain work; mobile refining; bridges;
 Starfire artillery; coarse distant production/movement; and CPU/CUDA tests.
+The Reach pass adds numbered single-pet selection and WASD possession, independent
+keeper/worker positions across scouting trips, a zoomable world atlas, six climate
+regions, eight-frame creature strips, stable animation pivots, continuous click
+steering, wider navigation clearance, chunk hashing and terrain-version-safe saves.
+Lanternlight adds viewer-only lighting presets, projected sprite shadows, cached
+light/minimap layers, animated ambient wildlife and light/heavy enemy skins,
+wind/motes/waystones, and a selected-companion inspector. It does not add new
+enemy behaviors, simulated animal ecology, or point-light occlusion.
 These are working mechanics, not a claim that the following stages are complete.
 
 ## 1. Make the early loop consistently pleasant
@@ -48,8 +56,8 @@ and geography, not just the number of identical extractors.
 
 ## 3. Make the frontier support lasting consequences
 
-- Replace linear world-record searches with spatial indexing and bounded caches.
-- Stream active regions around multiple work sites, not only the keeper.
+- Extend the new chunk hash index to spatially indexed entity records and bounded caches.
+- Stream several work sites concurrently; currently only the keeper OR driven pet has a live region.
 - Implement background excavation and a clear policy for distant combat before
   promising fully simulated remote colonies or offline catch-up.
 - Add biome-specific resource/encounter rules, readable landmarks and scouting.

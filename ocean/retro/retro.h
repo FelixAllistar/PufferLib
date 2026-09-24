@@ -10,6 +10,8 @@
 #endif
 #include "pufferenv.h"
 #include "retro_obs.h"
+#include "retro_timing.h"
+#include "retro_rom_identity.h"
 #include "nes_emu/Nes_Emu.h"
 #include "nes_emu/Nes_State.h"
 #include "nes_emu/Data_Reader.h"
@@ -47,9 +49,10 @@ struct Log {
     float perf, score, episode_return, episode_length, distance, flag, deaths, coins;
     float truncations, frames, decisions, clears, warps;
     float progress_pixels, checkpoints, clear_frame_sum;
+    float rta_frame_sum, rta_count, practice;
     // `coins` is the ending ROM counter; these fields count reward events.
     float coin_events, idle_steps;
-    float area_transitions, area_transition_rewards;
+    float area_transitions, novel_areas;
     float level_episodes[32], level_clears[32];
     float n;
 };
@@ -57,13 +60,15 @@ struct RetroStart {
     Nes_State state;
     unsigned char pixels[256*240];
     short palette[256];
-    int world, stage, area, data, x;
+    int world, stage, area, data, x, rta_offset_frames;
 };
 struct RetroRom {
     Nes_Cart cart;
     Nes_Emu seed;
     Nes_State title;
     std::unique_ptr<RetroStart> starts[32];
+    std::unique_ptr<RetroStart> practice_start;
+    std::string practice_replay;
     std::string path;
     std::mutex mutex;
     bool loaded = false;
@@ -75,6 +80,10 @@ struct RetroDisplay {
     unsigned char pixels[256*240];
     short palette[256];
     bool valid;
+    // Viewer-only results survive an automatic reset; never enter observations.
+    int last_clear_frames, last_clear_time, last_clear_level;
+    int last_rta_frames, last_rta_total_frames, last_rta_level;
+    unsigned long long rta_frame_sums[32], rta_counts[32];
 };
 // Episode-local frontiers, keyed by source level and actual loaded area data.
 // The ROM's upcoming pipe destination ($0750) is not a stable area identity.
@@ -86,20 +95,27 @@ struct Env {
     unsigned int rng;
     int tick, world, stage, area, x_pos, x_pos_max, score, coins, time, life;
     int has_flag, is_dead, frameskip, max_frames, spawn_n, cur_spawn, spawn_pin;
+    int terminate_on_clear;
+    int completion_on_rta_split, completion_on_next_playable, pending_clear_level;
+    int pipe_phase, underground_start_tick, pipe_segment_frames;
+    unsigned int pipe_start_key;
+    float pipe_segment_bonus;
     unsigned char spawn_w[32], spawn_l[32];
     int episode_spawn, episode_clears, episode_warps, last_frames;
     int level_start_tick, episode_clear_frames;
+    RetroRtaClock rta;
+    int completion_time_min_frames, completion_time_max_frames;
     int idle_streak, episode_idle_steps, episode_coin_events;
-    int episode_area_transitions, episode_area_rewards, area_transition_key_count;
+    int episode_area_transitions, episode_novel_areas, area_transition_key_count;
     unsigned int rewarded_levels;
-    float episode_return, potential_gamma, completion_reward, death_penalty, score_scale, reward_scale;
-    float checkpoint_reward, completion_time_bonus, coin_reward, idle_penalty, area_transition_reward;
-    float area_transition_timer_bonus, completion_time_target_bonus, completion_time_target_max;
-    int area_transition_timer_1, area_transition_timer_2, completion_time_target;
+    float episode_return, completion_reward, death_penalty, score_scale, reward_scale;
+    float checkpoint_reward, completion_time_bonus, coin_reward, idle_penalty;
+    float completion_time_target_bonus, completion_time_target_max;
+    int completion_time_target;
     int checkpoint_distance, idle_grace_decisions, progress_pixels, episode_decisions, frontier_count;
     unsigned int last_area_key, area_transition_keys[256];
     RetroFrontier frontiers[256];
-    bool emu_ok, emu_owned, full_render, reset_image, last_truncated, rom_blocks;
+    bool emu_ok, emu_owned, full_render, reset_image, last_truncated, rom_blocks, practice;
     Nes_Emu* emu;
     RetroVecArena* arena;
     const RetroStart* start;
@@ -154,8 +170,8 @@ static void retro_load_rom_locked(RetroRom& rom,const char* path) {
         throw std::runtime_error("retro: supported SMB1 iNES ROM required");
     unsigned long long hash=14695981039346656037ull;
     for(unsigned char b:bytes) hash=(hash^b)*1099511628211ull;
-    if(hash!=0x31d802e3779199daull)
-        throw std::runtime_error("retro: ROM differs from validated SMB1 NTSC image (see README SHA-256)");
+    if(!retro_ntsc_rom_fingerprint(hash))
+        throw std::runtime_error("retro: SMB1 World/NTSC ROM required (verified iNES or NES 2.0); PAL/modified ROMs are rejected");
     rom.fingerprint=hash;
     Mem_File_Reader reader(bytes.data(),(long)bytes.size());
     retro_check(rom.cart.load_ines(reader));
@@ -170,12 +186,12 @@ static void retro_load_rom_locked(RetroRom& rom,const char* path) {
     }
     if(!ready||rom.seed.error_count()) throw std::runtime_error("retro: ROM did not reach title menu without unsupported opcodes");
     rom.seed.save_state(&rom.title); rom.path=path; rom.loaded=true;
-    fprintf(stderr,"[retro] ROM %s fingerprint=%016llx mapper=0 NTSC; original CPU/PPU/APU\n",path,hash);
+    fprintf(stderr,"[retro] ROM %s fingerprint=%016llx mapper=0 World/NTSC; %.8f fps\n",path,hash,RETRO_NTSC_FPS);
 }
 static int retro_start_area(const RetroRom& rom,int w,int l) {
     const unsigned char* prg=rom.cart.prg();
-    int base=prg[0x9cb4-0x8000+w-1],area=0;
-    for(int s=1;s<l;s++) { if(prg[0x9cbc-0x8000+base+area]==0x29) area++; area++; }
+    int base=prg[RETRO_WORLD_OFFSETS-0x8000+w-1],area=0;
+    for(int s=1;s<l;s++) { if(prg[RETRO_AREA_OFFSETS-0x8000+base+area]==0x29) area++; area++; }
     return area;
 }
 static void retro_prepare_start_locked(RetroRom& rom,int w,int l) {
@@ -184,22 +200,31 @@ static void retro_prepare_start_locked(RetroRom& rom,int w,int l) {
     Nes_Emu& emu=rom.seed;
     emu.load_state(rom.title); retro_bind_pixels(&emu);
     unsigned char* m=emu.low_mem(); int area=retro_start_area(rom,w,l);
-    // Reset setup only: ROM menu code resolves the area and runs the entrance.
-    m[0x75f]=w-1; m[0x75c]=l-1; m[0x760]=area;
+    // 1-1 follows a completely unmodified new game from the title screen.
+    // Other starts are explicit practice segments, not full-run RTA starts.
+    if(w!=1||l!=1) { m[0x75f]=w-1; m[0x75c]=l-1; m[0x760]=area; }
     retro_check(emu.emulate_frame(RETRO_BTN_START,0));
     bool ready=false;
+    int rta_start_frame=-1;
     for(int i=0;i<1200;i++) {
+        int old_routine=m[0xe];
         retro_check(emu.emulate_frame(0,0));
-        if(m[0x770]==1&&m[0x772]==3&&m[0xe]==8&&robs_time(m)>0) { ready=true; break; }
+        if(rta_start_frame<0&&m[0x770]==1&&m[0x772]>=3&&m[0xe]==8&&old_routine<8)
+            rta_start_frame=i;
+        if(m[0x770]==1&&m[0x772]==3&&m[0xe]==8&&robs_time(m)>0) {
+            if(rta_start_frame<0) throw std::runtime_error("retro: RTA start was not observed while preparing reset");
+            start->rta_offset_frames=i-rta_start_frame;
+            ready=true; break;
+        }
     }
-    int base=rom.cart.prg()[0x9cb4-0x8000+w-1];
-    int expected=rom.cart.prg()[0x9cbc-0x8000+base+area];
+    int base=rom.cart.prg()[RETRO_WORLD_OFFSETS-0x8000+w-1];
+    int expected=rom.cart.prg()[RETRO_AREA_OFFSETS-0x8000+base+area];
     // Underground stages begin with a ROM-controlled pipe intermission.
     // By the first controllable frame, the ROM has entered the following area.
-    if(expected==0x29) { area++; expected=rom.cart.prg()[0x9cbc-0x8000+base+area]; }
+    if(expected==0x29) { area++; expected=rom.cart.prg()[RETRO_AREA_OFFSETS-0x8000+base+area]; }
     const unsigned char* prg=rom.cart.prg();
-    int offset=prg[0x9d28-0x8000+((expected>>5)&3)]+(expected&31);
-    int expected_data=prg[0x9d2c - 0x8000 + offset]+256*prg[0x9d4e - 0x8000 + offset]+2;
+    int offset=prg[RETRO_AREA_DATA_OFFSETS-0x8000+((expected>>5)&3)]+(expected&31);
+    int expected_data=prg[RETRO_AREA_DATA_LOW-0x8000+offset]+256*prg[RETRO_AREA_DATA_HIGH-0x8000+offset]+2;
     // $0750 is also the upcoming pipe destination and can already differ.
     // Validate the actual loaded level-data pointer, not that warp pointer.
     if(!ready||emu.error_count()||robs_world(m)!=w||robs_stage(m)!=l||m[0x760]!=area||m[0xe7]+256*m[0xe8]!=expected_data) {
@@ -238,7 +263,7 @@ static bool retro_area_key_seen(const Env* e,unsigned int key) {
     return false;
 }
 // Return 0 for no confirmed event, 1 for a repeated destination, and 2 for a
-// novel destination that may receive area_transition_reward. A destination
+// novel destination, for diagnostics only. A destination
 // is confirmed only after the ROM is back in its ordinary playable state.
 static int retro_record_area_transition(Env* e,const unsigned char* m) {
     if(!retro_playable_area_state(m)) return 0;
@@ -256,12 +281,12 @@ static int retro_record_area_transition(Env* e,const unsigned char* m) {
         // Keep logging transitions after the bounded frontier fills, but do
         // not turn an unremembered destination into a repeatable reward farm.
         return 1;
-    e->episode_area_rewards++;
+    e->episode_novel_areas++;
     return 2;
 }
 static int retro_progress(Env* e,unsigned int key,int x) {
     // Bound coordinate-wrap/glitch jackpots without changing ROM execution.
-    x=std::max(0,std::min((int)RETRO_POT_XMAX,x));
+    x=std::max(0,std::min(3400,x)); // Bound checkpoint distance per area.
     for(int i=0;i<e->frontier_count;i++) if(e->frontiers[i].key==key) {
         int novel=std::max(0,x-e->frontiers[i].x);
         e->frontiers[i].x=std::max(x,e->frontiers[i].x);
@@ -374,33 +399,101 @@ static void retro_compute_obs_real(const Env* e,obs_t* obs) {
 #endif
 }
 static double retro_option(Dict* cfg,const char* key,double fallback) { DictItem* i=dict_find(cfg,key); return i?i->value:fallback; }
+// Replay controller inputs once, then cache an exact state/image for cheap
+// resets. No position, timer, velocity, RNG or bus-phase RAM is edited.
+static void retro_prepare_practice_locked(RetroRom& rom,const char* path) {
+    if(rom.practice_start) {
+        if(rom.practice_replay!=path) throw std::runtime_error("retro: one practice replay per process");
+        return;
+    }
+    FILE* file=fopen(path,"r");
+    if(!file) throw std::runtime_error("retro: cannot open practice_replay");
+    unsigned long long identity=0; int count=0;
+    if(fscanf(file,"RETRO_PRACTICE_V1 %llx %d",&identity,&count)!=2
+        ||identity!=rom.fingerprint||count<1||count>6000) {
+        fclose(file); throw std::runtime_error("retro: invalid practice replay header/ROM identity");
+    }
+    auto& emu=rom.seed;
+    emu.load_state(rom.starts[0]->state); retro_bind_pixels(&emu);
+    bool side_pipe=false,underground=false;
+    for(int i=0;i<count;i++) {
+        int buttons=-1;
+        if(fscanf(file,"%d",&buttons)!=1||buttons<0||buttons>255||(buttons&12)) {
+            fclose(file); throw std::runtime_error("retro: invalid/truncated practice controller replay");
+        }
+        retro_check(emu.emulate_frame(buttons,0));
+        const auto* ram=emu.low_mem();
+        underground |= ram[0xe]==8&&(ram[0xe7]+256*ram[0xe8])!=rom.starts[0]->data;
+        if(underground&&ram[0xe]==2) side_pipe=true;
+    }
+    char trailing=0;
+    bool extra=fscanf(file," %c",&trailing)==1;
+    fclose(file);
+    const auto* m=emu.low_mem(); const auto& frame=emu.frame();
+    bool black=true;
+    for(int y=0;y<240;y++) for(int x=0;x<256;x++)
+        black &= frame.palette[frame.pixels[y*frame.pitch+x]]==0x0f;
+    if(extra||emu.error_count()||!side_pipe||!black||robs_world(m)!=1||robs_stage(m)!=1)
+        throw std::runtime_error("retro: practice replay must end on the return-pipe black screen in 1-1");
+    std::unique_ptr<RetroStart> start(new RetroStart{});
+    emu.save_state(&start->state);
+    for(int y=0;y<240;y++) memcpy(start->pixels+y*256,frame.pixels+y*frame.pitch,256);
+    memcpy(start->palette,frame.palette,sizeof(start->palette));
+    start->world=1; start->stage=1; start->area=robs_area(m);
+    start->data=m[0xe7]+256*m[0xe8]; start->x=robs_x(m);
+    start->rta_offset_frames=0; // Segment clock, deliberately NOT a full-run RTA.
+    rom.practice_start=std::move(start); rom.practice_replay=path;
+    fprintf(stderr,"[retro] PRACTICE return-pipe black screen after %d prefix frames; segment clock starts at zero\n",count);
+}
 void puf_init(Env* e,Dict* cfg) {
     Nes_Emu* supplied=e->emu; RetroVecArena* arena=e->arena; unsigned int seed=e->rng;
     memset(e,0,sizeof(*e)); e->num_agents=1; e->rng=seed?seed:0x9e3779b9u; e->emu=supplied; e->arena=arena;
     e->frameskip=retro_option(cfg,"frameskip",1); e->max_frames=retro_option(cfg,"max_frames",30000);
-    e->potential_gamma=retro_option(cfg,"potential_gamma",0.997);
+    double terminate_on_clear=retro_option(cfg,"terminate_on_clear",0);
+    if(terminate_on_clear!=0&&terminate_on_clear!=1)
+        throw std::runtime_error("retro: terminate_on_clear must be 0 or 1");
+    e->terminate_on_clear=(int)terminate_on_clear;
+    double rta_split=retro_option(cfg,"completion_on_rta_split",0);
+    double next_playable=retro_option(cfg,"completion_on_next_playable",0);
+    if((rta_split!=0&&rta_split!=1)||(next_playable!=0&&next_playable!=1)
+        ||(rta_split&&next_playable))
+        throw std::runtime_error("retro: select only one completion endpoint: RTA split or next playable (0/1)");
+    e->completion_on_rta_split=(int)rta_split;
+    double segment_frames=retro_option(cfg,"pipe_segment_frames",600);
+    e->pipe_segment_bonus=retro_option(cfg,"pipe_segment_bonus",0);
+    if((next_playable!=0&&next_playable!=1)||!std::isfinite(segment_frames)
+        ||segment_frames<1||segment_frames>10000000||segment_frames!=floor(segment_frames)
+        ||!std::isfinite(e->pipe_segment_bonus)||e->pipe_segment_bonus<0)
+        throw std::runtime_error("retro: invalid RTA/pipe segment configuration");
+    e->completion_on_next_playable=(int)next_playable;
+    e->pipe_segment_frames=(int)segment_frames;
     e->completion_reward=retro_option(cfg,"completion_reward",10); e->death_penalty=retro_option(cfg,"death_penalty",0.125);
     e->completion_time_bonus=retro_option(cfg,"completion_time_bonus",0);
+    double fast=retro_option(cfg,"completion_time_min_frames",0);
+    double slow=retro_option(cfg,"completion_time_max_frames",0);
+    if(!std::isfinite(fast)||!std::isfinite(slow)||fast<0||slow<0
+        ||fast!=floor(fast)||slow!=floor(slow)||fast>10000000||slow>10000000
+        ||(slow==0?fast!=0:slow<=fast))
+        throw std::runtime_error("retro: completion frame range requires 0 <= min < max (or both zero)");
+    e->completion_time_min_frames=(int)fast;
+    e->completion_time_max_frames=(int)slow;
     if(!std::isfinite(e->completion_time_bonus)||e->completion_time_bonus<0)
         throw std::runtime_error("retro: completion_time_bonus must be finite and nonnegative");
     e->coin_reward=retro_option(cfg,"coin_reward",0);
     e->idle_penalty=retro_option(cfg,"idle_penalty",0);
-    e->area_transition_reward=retro_option(cfg,"area_transition_reward",0);
-    e->area_transition_timer_bonus=retro_option(cfg,"area_transition_timer_bonus",0);
+    for(const char* key:{"area_transition_reward","area_transition_timer_bonus"})
+        if(retro_option(cfg,key,0)!=0)
+            throw std::runtime_error("retro: area transition rewards were removed; legacy options must be zero");
     e->completion_time_target_bonus=retro_option(cfg,"completion_time_target_bonus",0);
     e->completion_time_target_max=retro_option(cfg,"completion_time_target_max",0);
-    e->area_transition_timer_1=(int)retro_option(cfg,"area_transition_timer_1",0);
-    e->area_transition_timer_2=(int)retro_option(cfg,"area_transition_timer_2",0);
     e->completion_time_target=(int)retro_option(cfg,"completion_time_target",0);
+    if(e->completion_on_rta_split&&e->completion_time_target_bonus!=0)
+        throw std::runtime_error("retro: RTA rewards require area_transition_timer_bonus=0 and completion_time_target_bonus=0; HUD TIME is not elapsed time");
     double idle_grace=retro_option(cfg,"idle_grace_decisions",8);
     if(!std::isfinite(e->coin_reward)||e->coin_reward<0
         ||!std::isfinite(e->idle_penalty)||e->idle_penalty<0
-        ||!std::isfinite(e->area_transition_reward)||e->area_transition_reward<0
-        ||!std::isfinite(e->area_transition_timer_bonus)||e->area_transition_timer_bonus<0
         ||!std::isfinite(e->completion_time_target_bonus)||e->completion_time_target_bonus<0
         ||!std::isfinite(e->completion_time_target_max)||e->completion_time_target_max<0
-        ||e->area_transition_timer_1<0||e->area_transition_timer_1>999
-        ||e->area_transition_timer_2<0||e->area_transition_timer_2>999
         ||e->completion_time_target<0||e->completion_time_target>999
         ||!std::isfinite(idle_grace)||idle_grace<0||idle_grace>100000
         ||idle_grace!=floor(idle_grace))
@@ -408,16 +501,16 @@ void puf_init(Env* e,Dict* cfg) {
     e->idle_grace_decisions=(int)idle_grace;
     double spacing=retro_option(cfg,"checkpoint_distance",128);
     e->checkpoint_reward=retro_option(cfg,"checkpoint_reward",0.125);
-    if(!std::isfinite(spacing)||spacing<1||spacing>RETRO_POT_XMAX||spacing!=floor(spacing)
+    if(!std::isfinite(spacing)||spacing<1||spacing>3400||spacing!=floor(spacing)
         ||!std::isfinite(e->checkpoint_reward)||e->checkpoint_reward<0)
         throw std::runtime_error("retro: invalid checkpoint_distance/checkpoint_reward");
     e->checkpoint_distance=(int)spacing;
     e->reward_scale=retro_option(cfg,"reward_scale",0.0625);
     e->score_scale=retro_option(cfg,"score_scale",0); e->full_render=retro_option(cfg,"full_render",0)!=0;
     const char* full=getenv("RETRO_FULL_RENDER"); if(full&&strcmp(full,"0")) e->full_render=true;
-    if(e->frameskip<1||e->frameskip>16||e->max_frames<1||!(e->potential_gamma>0&&e->potential_gamma<=1)
+    if(e->frameskip<1||e->frameskip>16||e->max_frames<1
         ||!std::isfinite(e->reward_scale)||e->reward_scale<=0)
-        throw std::runtime_error("retro: invalid frameskip, max_frames, or potential_gamma");
+        throw std::runtime_error("retro: invalid frameskip, max_frames, or reward_scale");
     DictItem* be=dict_find(cfg,"backend");
     if(be&&be->str&&strcmp(be->str,"quicknes")) throw std::runtime_error("retro: ROM-only build; legacy port requires RETRO_LEGACY=1");
     DictItem* cpu=dict_find(cfg,"cpu_backend");
@@ -429,11 +522,19 @@ void puf_init(Env* e,Dict* cfg) {
     e->rom_blocks=cpu&&cpu->str&&!strcmp(cpu->str,"blocks");
 #endif
     DictItem* sp=dict_find(cfg,"spawn_levels"); retro_parse_spawns(e,sp&&sp->str?sp->str:"all");
-    DictItem* rp=dict_find(cfg,"rom_path"); const char* path=rp&&rp->str?rp->str:"ocean/retro/roms/smb1.nes";
+    DictItem* rp=dict_find(cfg,"rom_path"); const char* path=rp&&rp->str?rp->str:RETRO_SMB1_ROM_PATH;
     RetroRom& rom=retro_rom();
     std::lock_guard<std::mutex> lock(rom.mutex);
     retro_load_rom_locked(rom,path);
     for(int i=0;i<e->spawn_n;i++) retro_prepare_start_locked(rom,e->spawn_w[i],e->spawn_l[i]);
+    DictItem* practice=dict_find(cfg,"practice_replay");
+    e->practice=practice&&practice->str&&*practice->str&&strcmp(practice->str,"None");
+    if(e->practice) {
+        if(e->spawn_n!=1||e->spawn_w[0]!=1||e->spawn_l[0]!=1||!e->completion_on_rta_split
+            ||!e->terminate_on_clear||e->pipe_segment_bonus!=0||e->completion_time_min_frames!=0)
+            throw std::runtime_error("retro: practice requires only 1-1, RTA split, terminate_on_clear=1, pipe bonus=0 and min frames=0");
+        retro_prepare_practice_locked(rom,practice->str);
+    }
     if(!e->emu) { e->emu=new Nes_Emu(); e->emu_owned=true; }
     retro_check(e->emu->set_cart(&rom.cart,&rom.seed));
     e->emu->set_idle_skip(retro_option(cfg,"idle_loop_skip",1)!=0);
@@ -452,7 +553,7 @@ void puf_init(Env* e,Dict* cfg) {
 void puf_reset(Env* e) {
     retro_pick_spawn(e);
     int id=retro_level_id(e->spawn_w[e->cur_spawn],e->spawn_l[e->cur_spawn]);
-    e->start=retro_rom().starts[id].get();
+    e->start=e->practice?retro_rom().practice_start.get():retro_rom().starts[id].get();
     if(!e->start) throw std::runtime_error("retro: unprepared level start");
     e->emu->load_state(e->start->state); e->reset_image=true; retro_sync_from_emu(e);
     // State restore remaps the cartridge and invalidates the specialization.
@@ -461,8 +562,11 @@ void puf_reset(Env* e) {
     e->x_pos_max=e->x_pos; e->tick=0; e->episode_return=0; e->episode_clears=0; e->episode_warps=0;
     e->rewarded_levels=0; e->episode_spawn=id;
     e->level_start_tick=0; e->episode_clear_frames=0;
+    retro_rta_reset(&e->rta,e->world,e->stage,e->start->rta_offset_frames);
+    e->pending_clear_level=-1; e->pipe_phase=0; e->underground_start_tick=0;
+    e->pipe_start_key=retro_area_key(e->emu->low_mem());
     e->idle_streak=0; e->episode_idle_steps=0; e->episode_coin_events=0;
-    e->episode_area_transitions=0; e->episode_area_rewards=0;
+    e->episode_area_transitions=0; e->episode_novel_areas=0;
     e->area_transition_key_count=0; e->last_area_key=retro_area_key(e->emu->low_mem());
     if(e->last_area_key!=0xffffffffu)
         e->area_transition_keys[e->area_transition_key_count++]=e->last_area_key;
@@ -492,8 +596,15 @@ static bool retro_level_advance(int ow,int ol,int w,int l) { return retro_level_
 // A bounded speed bonus paid only for a new clear. No per-step cost that
 // could be avoided by dying, and no reward for merely running down the clock.
 // NES frames (not decisions) keep the meaning independent of frameskip.
-static float retro_clear_speed(int elapsed_frames,int budget_frames) {
-    return std::max(0.0f,std::min(1.0f,1.0f-(float)elapsed_frames/budget_frames));
+static float retro_clear_speed(int elapsed_frames,int budget_frames,int fast_frames=0,int slow_frames=0) {
+    if(slow_frames==0) slow_frames=budget_frames;
+    return std::max(0.0f,std::min(1.0f,
+        (float)(slow_frames-elapsed_frames)/(slow_frames-fast_frames)));
+}
+// The ROM enters FlagpoleSlide immediately on contact, before time conversion
+// and fireworks. Vine climbing uses a different game-engine routine.
+static bool retro_flag_contact(const unsigned char* m) {
+    return m[0x770]==1&&m[0x772]==3&&m[0xe]==4;
 }
 // The ROM stores coins as a two-digit decimal counter. A reset/death can make
 // the counter decrease, but that is never an earned negative reward.
@@ -513,92 +624,123 @@ static int retro_idle_event(int* streak,int before_x,int after_x,int coin_delta,
     *streak=std::max(0,*streak+1);
     return *streak>grace ? 1 : 0;
 }
-static float retro_rom_reward(const Env* e,float old_potential,float next_potential,
-        int advances,bool dead,bool done,int score_delta,int checkpoints=0,float clear_speed=0,
-        int coin_delta=0,int idle_events=0,int area_transition_rewards=0,
-        float area_transition_time_bonus=0,float completion_target_bonus=0) {
-    float reward=(done?0:e->potential_gamma*next_potential)-old_potential;
-    reward+=advances*e->completion_reward-(dead?e->death_penalty:0);
+static float retro_rom_reward(const Env* e,int advances,bool dead,int score_delta,int checkpoints=0,float clear_speed=0,
+        int coin_delta=0,int idle_events=0,float completion_target_bonus=0) {
+    float reward=advances*e->completion_reward-(dead?e->death_penalty:0);
     reward+=e->completion_time_bonus*std::max(0.0f,std::min((float)advances,clear_speed));
     reward+=std::max(0,score_delta)*e->score_scale;
     // `coin_delta` is already normalized by retro_coin_delta; do not run a
     // signed reward delta through the wrap detector a second time.
     reward+=std::max(0,std::min(99,coin_delta))*e->coin_reward;
     reward-=std::max(0,idle_events)*e->idle_penalty;
-    reward+=std::max(0,area_transition_rewards)*e->area_transition_reward;
-    reward+=std::max(0.0f,area_transition_time_bonus)*e->area_transition_timer_bonus;
     reward+=std::max(0.0f,completion_target_bonus)*e->completion_time_target_bonus;
-    // Earned checkpoints are base rewards, never cancelled by terminal PBRS.
     reward+=checkpoints*e->checkpoint_reward;
     return reward*e->reward_scale;
 }
-// Training ends an episode at the first death. Standalone playback can let
-// the ROM finish its death animation, spend a life, and respawn naturally.
+// Training ends an episode at the first death, the final win, the frame
+// budget, or -- when terminate_on_clear=1 -- the configured clear endpoint.
+// Standalone playback can let the ROM finish its death animation, spend a
+// life, and respawn naturally.
 static void retro_step(Env* e,bool continue_lives) {
+    if(e->practice) e->log.practice=1;
     int action=std::max(0,std::min(63,(int)e->agents[0].actions[0]));
     unsigned char buttons=retro_action_mask(action);
-    float old_potential=retro_potential(e->x_pos);
     int old_score=e->score, old_coins=e->coins, old_x=e->x_pos;
-    bool dead=false,death_end=false,won=false,meaningful_event=false;
-    int advances=0,checkpoints=0,life_losses=0,area_transition_rewards=0; e->last_frames=0;
-    float clear_speed=0, area_transition_time_bonus=0, completion_target_bonus=0;
+    bool dead=false,death_end=false,won=false,meaningful_event=false,saw_clear=false;
+    int advances=0,checkpoints=0,life_losses=0; e->last_frames=0;
+    float clear_speed=0, completion_target_bonus=0;
+    float segment_reward=0;
     for(int f=0;f<e->frameskip;f++) {
         const unsigned char* m=e->emu->low_mem(); int ow=robs_world(m),ol=robs_stage(m),mode=m[0x770];
         int old_life=robs_life(m);
+        int old_routine=m[0xe];
+        int old_screen_timer=m[0x7a0];
         retro_frame(e,buttons,e->full_render||f+1==e->frameskip||e->tick+1>=e->max_frames);
         e->tick++; e->last_frames++;
+        bool rta_split=retro_rta_update(&e->rta,e->tick,m,old_routine,old_screen_timer,mode);
+        if(rta_split&&e->display) {
+            int level=e->rta.split_level;
+            e->display->last_rta_frames=e->rta.split_frames;
+            e->display->last_rta_total_frames=e->rta.split_total_frames;
+            e->display->last_rta_level=level;
+            // Only first splits have the same reset start as dashboard samples.
+            if(e->rta.split_total_frames==e->rta.first_split_frames&&level>=0&&level<32) {
+                e->display->rta_frame_sums[level]+=e->rta.first_split_frames;
+                e->display->rta_counts[level]++;
+            }
+        }
         checkpoints+=retro_track_progress(e);
         int area_event=retro_record_area_transition(e,m);
-        if(area_event) meaningful_event=true;
-        if(area_event==2) {
-            // The timer is the HUD's native TIME value (e.g. 385), not NES
-            // frames. Every transition keeps its base reward and gets a
-            // smooth fraction of the configured fast-route bonus.
-            int milestone=e->episode_area_rewards;
-            int target=milestone==1?e->area_transition_timer_1:
-                (milestone==2?e->area_transition_timer_2:0);
-            area_transition_rewards++;
-            if(target>0) area_transition_time_bonus +=
-                std::max(0.0f,std::min(1.0f,(float)robs_time(m)/target));
+        // Explicit 1-1 route events, independent of the novelty frontier.
+        // Pay only after a confirmed arrival, once for each leg of the route.
+        if(ow==1&&ol==1&&e->episode_spawn==0) {
+            if(e->pipe_phase==0&&old_routine==8&&m[0xe]==3) e->pipe_phase=1;
+            if(area_event&&e->pipe_phase==1&&e->last_area_key!=e->pipe_start_key) {
+                segment_reward+=e->pipe_segment_bonus*retro_clear_speed(e->tick,e->pipe_segment_frames);
+                e->underground_start_tick=e->tick; e->pipe_phase=2;
+            } else if(area_event&&e->pipe_phase==2&&e->last_area_key==e->pipe_start_key) {
+                segment_reward+=e->pipe_segment_bonus*retro_clear_speed(e->tick-e->underground_start_tick,e->pipe_segment_frames);
+                e->pipe_phase=3;
+            }
         }
-        bool clear=retro_level_advance(ow,ol,robs_world(m),robs_stage(m))||(mode!=2&&m[0x770]==2);
+        if(area_event) meaningful_event=true;
+        bool level_advance=retro_level_advance(ow,ol,robs_world(m),robs_stage(m))||(mode!=2&&m[0x770]==2);
+        if(e->completion_on_next_playable&&level_advance&&e->pending_clear_level<0)
+            e->pending_clear_level=retro_level_id(ow,ol);
+        bool clear=e->completion_on_rta_split ? rta_split : (e->completion_on_next_playable
+            ? (e->pending_clear_level>=0&&(retro_playable_area_state(m)||m[0x770]==2))
+            : (level_advance||retro_flag_contact(m)));
         if(clear) meaningful_event=true;
-        int id=retro_level_id(ow,ol);
+        int id=e->completion_on_rta_split ? e->rta.split_level :
+            (e->completion_on_next_playable?e->pending_clear_level:retro_level_id(ow,ol));
         if(clear&&id>=0&&!(e->rewarded_levels&(1u<<id))) {
             e->rewarded_levels|=1u<<id; advances++; e->episode_clears++; e->log.level_clears[id]++;
-            int clear_frames=e->tick-e->level_start_tick;
+            int clear_frames=e->completion_on_rta_split?e->rta.split_frames:e->tick-e->level_start_tick;
+            if(e->display) {
+                e->display->last_clear_frames=clear_frames;
+                e->display->last_clear_time=robs_time(m);
+                e->display->last_clear_level=id;
+            }
             e->episode_clear_frames+=clear_frames;
-            clear_speed+=retro_clear_speed(clear_frames,e->max_frames);
+            clear_speed+=retro_clear_speed(clear_frames,e->max_frames,
+                e->completion_time_min_frames,e->completion_time_max_frames);
             // Extra HUD-time shaping, interpolated from target to target_max.
             if(e->completion_time_target>0 && e->completion_time_target_max>e->completion_time_target)
                 completion_target_bonus=std::max(0.0f,std::min(1.0f,
                     (float)(robs_time(m)-e->completion_time_target) /
                     (e->completion_time_target_max-e->completion_time_target)));
-            if(robs_world(m)>ow+(ol==4)||(robs_world(m)==ow&&robs_stage(m)>ol+1)) e->episode_warps++;
+            int source_world=id/4+1,source_stage=id%4+1;
+            if(robs_world(m)>source_world+(source_stage==4)
+                ||(robs_world(m)==source_world&&robs_stage(m)>source_stage+1)) e->episode_warps++;
         }
-        if(clear) e->level_start_tick=e->tick;
+        if(clear) saw_clear=true;
+        if(e->completion_on_rta_split) {
+            if(clear) e->level_start_tick=e->tick;
+        } else if(e->completion_on_next_playable) {
+            if(clear) { e->level_start_tick=e->tick; e->pending_clear_level=-1; }
+        } else if(level_advance) e->level_start_tick=e->tick;
         dead=robs_dead(m)||robs_gameover(m); won=ow==8&&mode!=2&&m[0x770]==2;
         if(continue_lives&&old_life!=255&&(robs_gameover(m)||robs_life(m)<old_life)) life_losses++;
         death_end=continue_lives?robs_gameover(m):dead;
-        if(death_end||won||e->tick>=e->max_frames) break;
+        bool clear_stop=e->terminate_on_clear&&saw_clear;
+        if(death_end||won||clear_stop||e->tick>=e->max_frames) break;
     }
     retro_sync_from_emu(e); e->x_pos_max=std::max(e->x_pos_max,e->x_pos);
-    e->last_truncated=e->tick>=e->max_frames&&!death_end&&!won;
-    bool done=death_end||won||e->last_truncated;
+    bool cleared=e->terminate_on_clear&&saw_clear;
+    e->last_truncated=e->tick>=e->max_frames&&!death_end&&!won&&!cleared;
+    bool done=death_end||won||cleared||e->last_truncated;
     // A terminal reset can look like the 99->0 counter wrap. Never turn a
-    // death/win (or a decreasing clear transition) into a coin pickup.
-    int coin_delta=(dead||won||(meaningful_event&&e->coins<old_coins))
+    // death/win/clear (or a decreasing clear transition) into a coin pickup.
+    int coin_delta=(dead||won||cleared||(meaningful_event&&e->coins<old_coins))
         ? 0 : retro_coin_delta(old_coins,e->coins);
     int idle_event=retro_idle_event(&e->idle_streak,old_x,e->x_pos,coin_delta,
-        meaningful_event,e->idle_grace_decisions,dead||won);
+        meaningful_event,e->idle_grace_decisions,dead||won||cleared);
     e->episode_coin_events+=coin_delta;
     e->episode_idle_steps+=idle_event;
-    // Finite-horizon task; all task terminals have zero potential. Area
-    // transitions retain the complete potential difference (no omitted edge).
-    float reward=retro_rom_reward(e,old_potential,retro_potential(e->x_pos),advances,
-        continue_lives?life_losses>0:dead,done,e->score-old_score,checkpoints,clear_speed,
-        coin_delta,idle_event,area_transition_rewards,area_transition_time_bonus,
-        completion_target_bonus);
+    float reward=retro_rom_reward(e,advances,
+        continue_lives?life_losses>0:dead,e->score-old_score,checkpoints,clear_speed,
+        coin_delta,idle_event,completion_target_bonus);
+    reward+=segment_reward*e->reward_scale;
     e->episode_return+=reward; e->episode_decisions++;
     if(continue_lives) e->log.deaths+=life_losses;
     if(done) {
@@ -609,10 +751,14 @@ static void retro_step(Env* e,bool continue_lives) {
         e->log.score+=e->score; e->log.distance+=e->x_pos_max; e->log.coins+=e->coins;
         e->log.flag+=e->episode_clears>0; e->log.clears+=e->episode_clears; e->log.perf+=e->episode_clears>0;
         e->log.clear_frame_sum+=e->episode_clear_frames;
+        if(e->rta.first_split_frames>0) {
+            e->log.rta_frame_sum+=e->rta.first_split_frames;
+            e->log.rta_count++;
+        }
         e->log.coin_events+=e->episode_coin_events;
         e->log.idle_steps+=e->episode_idle_steps;
         e->log.area_transitions+=e->episode_area_transitions;
-        e->log.area_transition_rewards+=e->episode_area_rewards;
+        e->log.novel_areas+=e->episode_novel_areas;
         if(!continue_lives) e->log.deaths+=dead;
         e->log.truncations+=e->last_truncated; e->log.warps+=e->episode_warps;
         e->log.level_episodes[e->episode_spawn]++; e->boundary_reached=1;
@@ -622,12 +768,23 @@ static void retro_step(Env* e,bool continue_lives) {
 }
 void puf_step(Env* e) { retro_step(e,false); }
 void puf_log(Log* log,Dict* out) {
+    // Ratio of sums: failed/unfinished attempts add neither frames nor a
+    // sample. Normalization by episode count cancels out. Put these first so
+    // the terminal dashboard shows them even with only a few rows available.
+    double rta_frames=log->rta_count>0?log->rta_frame_sum/log->rta_count:0;
+    // Never publish PAL-on-NTSC simulation times as valid speedrun results.
+    bool practice=log->practice>0;
+    dict_set(out,practice?"segment_seconds":RETRO_RTA_COMPARABLE?"rta_seconds":"sim_seconds",retro_frame_seconds(rta_frames));
+    dict_set(out,practice?"segment_clear_rate":RETRO_RTA_COMPARABLE?"rta_clear_rate":"split_clear_rate",log->rta_count);
+    dict_set(out,practice?"segment_frames":RETRO_RTA_COMPARABLE?"rta_frames":"split_frames",rta_frames);
+    dict_set(out,"rta_valid",!practice&&RETRO_RTA_COMPARABLE?1:0);
+    dict_set(out,"clear_seconds",log->clears>0?retro_frame_seconds(log->clear_frame_sum/log->clears):0);
 #define RETRO_LOG(name) dict_set(out,#name,log->name)
     RETRO_LOG(perf); RETRO_LOG(score); RETRO_LOG(episode_return); RETRO_LOG(episode_length);
-    RETRO_LOG(distance); RETRO_LOG(flag); RETRO_LOG(deaths); RETRO_LOG(coins);
+    RETRO_LOG(distance); RETRO_LOG(flag); RETRO_LOG(deaths); dict_set(out,"hud_coins",log->coins);
     RETRO_LOG(truncations); RETRO_LOG(frames); RETRO_LOG(decisions); RETRO_LOG(clears); RETRO_LOG(warps);
     RETRO_LOG(progress_pixels); RETRO_LOG(checkpoints); RETRO_LOG(coin_events); RETRO_LOG(idle_steps);
-    RETRO_LOG(area_transitions); RETRO_LOG(area_transition_rewards);
+    RETRO_LOG(area_transitions); RETRO_LOG(novel_areas);
     // All raw Log fields are divided by episode count before this hook.
     // The ratio below is therefore frames per cleared level, not per episode.
     dict_set(out,"clear_frames",log->clears>0?log->clear_frame_sum/log->clears:0);
@@ -642,7 +799,7 @@ void puf_close(Env* e) {
     e->emu=nullptr; delete e->display; e->display=nullptr;
 }
 void puf_render(Env* e) {
-    if(!IsWindowReady()) { InitWindow(768,720,"Retro / original SMB1 ROM"); SetTargetFPS(60/e->frameskip); }
+    if(!IsWindowReady()) { InitWindow(768,874,"Retro / original SMB1 ROM"); SetTargetFPS(60/e->frameskip); }
     if(!e->display) e->display=new RetroDisplay{};
     if(!e->reset_image&&!e->display->valid) {
         BeginDrawing(); ClearBackground(BLACK); EndDrawing(); return;
@@ -656,7 +813,30 @@ void puf_render(Env* e) {
     }
     if(!texture.id) { Image im={rgb,256,240,1,PIXELFORMAT_UNCOMPRESSED_R8G8B8A8}; texture=LoadTextureFromImage(im); }
     UpdateTexture(texture,rgb); BeginDrawing(); ClearBackground(BLACK);
-    DrawTextureEx(texture,(Vector2){0,0},0,3,WHITE); EndDrawing();
+    DrawTextureEx(texture,(Vector2){0,0},0,3,WHITE);
+    char clock[64],segment[64]; int elapsed=retro_rta_elapsed(e->rta,e->tick);
+    retro_clock_text(clock,sizeof(clock),elapsed);
+    DrawText(TextFormat("Live %s  %s   %df   TIME %d",e->practice?"SEGMENT":RETRO_RTA_COMPARABLE?"RTA":"SIM",clock,elapsed,e->time),12,730,26,RAYWHITE);
+    if(e->display->last_rta_frames) {
+        int id=e->display->last_rta_level;
+        retro_clock_text(clock,sizeof(clock),e->display->last_rta_total_frames);
+        retro_clock_text(segment,sizeof(segment),e->display->last_rta_frames);
+        DrawText(TextFormat("Finished %d-%d: %s   (segment %s)",id/4+1,id%4+1,clock,segment),12,765,20,GREEN);
+    } else DrawText("Finished split: -- (still running)",12,765,20,GRAY);
+    int source=e->episode_spawn; unsigned long long samples=e->display->rta_counts[source];
+    if(samples) {
+        retro_clock_text(clock,sizeof(clock),(double)e->display->rta_frame_sums[source]/samples);
+        DrawText(TextFormat("%d-%d completed avg: %s   (%llu runs)",source/4+1,source%4+1,clock,samples),12,793,20,YELLOW);
+    } else DrawText("Completed avg: -- (0 runs)",12,793,20,GRAY);
+    if(e->display->last_clear_frames) {
+        retro_clock_text(clock,sizeof(clock),e->display->last_clear_frames);
+        int id=e->display->last_clear_level;
+        DrawText(TextFormat("Reward finish %d-%d: %s / %df",id/4+1,id%4+1,
+            clock,e->display->last_clear_frames),12,823,18,LIGHTGRAY);
+    }
+    DrawText(e->practice?"PIPE-EXIT PRACTICE | segment time, NOT full-run RTA | R resets":RETRO_RTA_COMPARABLE?"NTSC RTA | black-screen splits | R restarts":
+        "PAL ROM + NTSC core: NOT speedrun RTA | R restarts",12,852,14,RETRO_RTA_COMPARABLE?GRAY:ORANGE);
+    EndDrawing();
 }
 #ifdef PUFFERLIB_BUILD_MAIN
 static Env* my_vec_init(int* num_envs,int* starts,int* counts,Dict* vec,Dict* cfg) {

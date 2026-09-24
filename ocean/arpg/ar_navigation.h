@@ -11,7 +11,12 @@ AR_NAV_FN int ar_nav_visible(const uint8_t* tiles,float size,float x,float y,flo
     int steps=(int)(d*3)+1;
     for(int i=1;i<=steps;i++) {
         float a=(float)i/steps;
-        if(!ar_geometry_floor(tiles,size,x+(tx-x)*a,y+(ty-y)*a))return 0;
+        float px=x+(tx-x)*a,py=y+(ty-y)*a;
+        float r=0.46f*size/AR_DUN_W,ox=0,oy=0;
+        if(d>0.0001f){ox=-(ty-y)*r/d;oy=(tx-x)*r/d;}
+        if(!ar_geometry_floor(tiles,size,px,py) ||
+            !ar_geometry_floor(tiles,size,px+ox,py+oy) ||
+            !ar_geometry_floor(tiles,size,px-ox,py-oy))return 0;
     }
     return 1;
 }

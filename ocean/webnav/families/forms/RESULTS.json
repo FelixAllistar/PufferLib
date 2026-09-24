@@ -1,0 +1,158 @@
+{
+  "date": "2026-09-23",
+  "compiler": "stock Bend 2.0.6 CPU",
+  "laws": 5,
+  "native_transitions": 17,
+  "browser": [
+    {
+      "task": "enter-text-dynamic",
+      "episodes": 20,
+      "actions": 84,
+      "scripted_successes": 16,
+      "differential": "PASS",
+      "preset": "pinned original HTML, seeded instances, controlled clock and CDP input"
+    },
+    {
+      "task": "enter-text-2",
+      "episodes": 20,
+      "actions": 84,
+      "scripted_successes": 16,
+      "differential": "PASS",
+      "preset": "pinned original HTML, seeded instances, controlled clock and CDP input"
+    },
+    {
+      "task": "enter-password",
+      "episodes": 20,
+      "actions": 132,
+      "scripted_successes": 16,
+      "differential": "PASS",
+      "preset": "pinned original HTML, seeded instances, controlled clock and CDP input"
+    },
+    {
+      "task": "text-transform",
+      "episodes": 20,
+      "actions": 84,
+      "scripted_successes": 16,
+      "differential": "PASS",
+      "preset": "pinned original HTML, seeded instances, controlled clock and CDP input"
+    },
+    {
+      "task": "copy-paste",
+      "episodes": 20,
+      "actions": 132,
+      "scripted_successes": 16,
+      "differential": "PASS",
+      "preset": "pinned original HTML, seeded instances, controlled clock and CDP input"
+    },
+    {
+      "task": "copy-paste-2",
+      "episodes": 20,
+      "actions": 132,
+      "scripted_successes": 16,
+      "differential": "PASS",
+      "preset": "pinned original HTML, seeded instances, controlled clock and CDP input"
+    },
+    {
+      "task": "read-table-2",
+      "episodes": 20,
+      "actions": 132,
+      "scripted_successes": 16,
+      "differential": "PASS",
+      "preset": "pinned original HTML, seeded instances, controlled clock and CDP input"
+    },
+    {
+      "task": "login-user-popup",
+      "episodes": 20,
+      "actions": 128,
+      "scripted_successes": 13,
+      "differential": "PASS",
+      "preset": "pinned original HTML, seeded instances, controlled clock and CDP input"
+    }
+  ],
+  "public_scripted": [
+    {
+      "task": "enter-text-dynamic",
+      "episodes": 1000,
+      "successes": 1000,
+      "timeouts": 0,
+      "actions": 3000,
+      "controller": "public-scripted; not learned RL"
+    },
+    {
+      "task": "enter-text-2",
+      "episodes": 1000,
+      "successes": 1000,
+      "timeouts": 0,
+      "actions": 3000,
+      "controller": "public-scripted; not learned RL"
+    },
+    {
+      "task": "enter-password",
+      "episodes": 1000,
+      "successes": 1000,
+      "timeouts": 0,
+      "actions": 5000,
+      "controller": "public-scripted; not learned RL"
+    },
+    {
+      "task": "text-transform",
+      "episodes": 1000,
+      "successes": 1000,
+      "timeouts": 0,
+      "actions": 3000,
+      "controller": "public-scripted; not learned RL"
+    },
+    {
+      "task": "copy-paste",
+      "episodes": 1000,
+      "successes": 1000,
+      "timeouts": 0,
+      "actions": 3000,
+      "controller": "public-scripted; not learned RL"
+    },
+    {
+      "task": "copy-paste-2",
+      "episodes": 1000,
+      "successes": 1000,
+      "timeouts": 0,
+      "actions": 3000,
+      "controller": "public-scripted; not learned RL"
+    },
+    {
+      "task": "read-table-2",
+      "episodes": 1000,
+      "successes": 1000,
+      "timeouts": 0,
+      "actions": 5000,
+      "controller": "public-scripted; not learned RL"
+    },
+    {
+      "task": "login-user-popup",
+      "episodes": 1000,
+      "successes": 1000,
+      "timeouts": 0,
+      "actions": 5502,
+      "controller": "public-scripted; not learned RL"
+    }
+  ],
+  "source_sha256": {
+    "Generate.bend": "977ab138628771c30bf4ccb52461310acb44db70d544c28b53e3adfe2da9a41b",
+    "LAWS.bend": "32788c27b925d88c28912e731ef6a21b09358f77ee7dbd3f12242b10a18812de",
+    "Main.bend": "6aec06db526e6994080bea7131894ba797e0e3521567b928b9940465e12aa163",
+    "Model.bend": "f7df9bd1c252bf1bacf6138e379467a41df4839db14ef9df3f3935c165affb94",
+    "PROOF.bend": "e6c7b445f355d5d4d5e0857260090b14c82dbe66805ce883c8a60936abb56771",
+    "Wire.bend": "7a59d64fa3178cb36e8acb6ae66b3f11175931c07b27859c59db06a52a1420e9",
+    "bridge.c": "c169a2625cf9c81e88182aa6f4377df3812ba1c6634fbd1c676c8a5931418f61",
+    "browser.js": "8b10cfc8da73ff7698d604b01c880777904dfe0f2596c0a9124b725a66f92cd7",
+    "browser_oracle.c": "0c5e105d57ec7ea2aa4fac04fdfcbf7a6f6328fbe4b00474a3bef96fadb030fa",
+    "family_api.c": "65c987a8ddbfad6d6be1a11d2ca1a4b489ca3bfb761038834d2010559ba409c5",
+    "public_controller.h": "768017cb0a6d4ffef8155a036f711b06b5e65995c7dd80ca3c4092978d83bb77",
+    "test_forms.c": "aa0ed18a66027680d8325740d11f34f4a10402513e05bceff8fe62c7304b23fe"
+  },
+  "limitations": [
+    "Bounded ASCII text editing and controlled logical clock; no arbitrary browser/IME fidelity.",
+    "Finite generated vocabulary, table rows and layouts, not original generator distribution parity.",
+    "Public-view solver inserts observed copy text directly; browser conformance separately exercises clipboard shortcuts.",
+    "Family-v2 runtime not integrated into legacy twelve-task PPO profile."
+  ]
+}

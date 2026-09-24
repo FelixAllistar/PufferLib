@@ -60,6 +60,11 @@ struct Env {
     int tag, boundary_reached;
     void* client;
     void* campaign; // Optional persistent CPU viewer world; training stays bounded.
+    // Human possession is local input, not a learned action or saved order.
+    int direct_pet, direct_work, keeper_dormant, terrain_version;
+    float direct_dx, direct_dy, direct_aim_x, direct_aim_y;
+    int guide_keeper;
+    float guide_dx,guide_dy;
     int num_agents;
     uint32_t rng;
 
