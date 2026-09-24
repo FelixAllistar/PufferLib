@@ -39,6 +39,21 @@ level starts, rewards, terminal/reset behavior, practice restoration and
 natural-life playback; CPU block tests also compare instructions, complete
 emulator states and all observation pixels.
 
+Two small emulator fixes accompany the port: pixel-word accesses declare
+byte alignment, and audio snapshots initialize their two unused bytes. The
+latter prevents serialized reset states from depending on stack contents;
+neither changes game rules, rewards or observation construction. Regression
+tests check alignment and serialize the same audio state into differently
+prefilled destinations.
+
+For a fully instrumented reference build in a separate output directory:
+
+```sh
+UBSAN_OPTIONS=halt_on_error=1 make -C ocean/retro -j2 test \
+  BUILD=../../build/retro_sanitize \
+  CXXFLAGS='-O1 -g -std=c++17 -fsanitize=address,undefined -fno-omit-frame-pointer'
+```
+
 ## Remaining conversion
 
 The matching CUDA/CPU CNN, play/watch inspector, checkpoint loading, speed

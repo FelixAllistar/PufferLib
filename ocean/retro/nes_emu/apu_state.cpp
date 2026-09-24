@@ -75,6 +75,8 @@ struct apu_reflection
 
 void Nes_Apu::save_state( apu_state_t* state ) const
 {
+	state->square1.unused2[0] = 0;
+	state->square2.unused2[0] = 0;
 	for ( int i = 0; i < osc_count * 4; i++ )
 	{
 		int index = i >> 2;

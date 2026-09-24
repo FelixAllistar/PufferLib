@@ -3,6 +3,7 @@
 #include "retro_playback.h"
 #include "observation_reference.h"
 #include "nes_emu/abstract_file.h"
+#include "nes_emu/Nes_Apu.h"
 #include <omp.h>
 #include <set>
 
@@ -45,6 +46,13 @@ static void level_and_reset_tests(Dict* cfg) {
     Env e={}; e.rng=73; puf_init(&e,cfg);
     float obs[OBS_SIZE],act=0,rew=0,done=0;
     e.agents[0]={obs,&act,&rew,&done,nullptr,0}; e.spawn_pin=1;
+    static_assert(alignof(unaligned_uint32_t)==1,"pixel words must permit byte alignment");
+    // Snapshot padding must not depend on the destination's previous contents.
+    apu_state_t audio_a,audio_b;
+    memset(&audio_a,0x55,sizeof(audio_a)); memset(&audio_b,0xaa,sizeof(audio_b));
+    Nes_Apu audio;
+    audio.reset(); audio.save_state(&audio_a); audio.save_state(&audio_b);
+    require(!memcmp(&audio_a,&audio_b,sizeof(audio_a)),"audio snapshot has uninitialized bytes");
     RetroRom& rom=retro_rom();
     require(e.emu->chr_cache_identity()==rom.seed.chr_cache_identity(),"CHR cache not shared");
     std::set<int> data;
@@ -63,7 +71,18 @@ static void level_and_reset_tests(Dict* cfg) {
         auto reset_state=saved(*e.emu);
         for(int f=0;f<17;f++) retro_frame(&e,RETRO_BTN_RIGHT|RETRO_BTN_A);
         puf_reset(&e);
-        require(saved(*e.emu)==reset_state,"reset state mismatch");
+        auto restored=saved(*e.emu);
+        if(restored!=reset_state) {
+            fprintf(stderr,"reset mismatch level=%d-%d bytes=%zu/%zu\n",
+                i/4+1,i%4+1,reset_state.size(),restored.size());
+            int differences=0;
+            for(size_t j=0;j<std::min(reset_state.size(),restored.size());j++) {
+                if(reset_state[j]!=restored[j] && differences++<16)
+                    fprintf(stderr,"byte %zu: %02x -> %02x\n",j,
+                        (unsigned char)reset_state[j],(unsigned char)restored[j]);
+            }
+        }
+        require(restored==reset_state,"reset state mismatch");
         require(!memcmp(obs,reset_obs,sizeof(obs)),"reset observation contains stale framebuffer");
     }
     require(data.size()>20,"stage labels alias level data");
