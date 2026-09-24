@@ -1,0 +1,289 @@
+{
+  "date": "2026-09-20",
+  "upstream_commit": "33c3b4ddef8c6eb67c57a29663d844b1eda7e614",
+  "runtime": "stock Bend 2.0.6 CPU, C bridge, Chromium CDP oracle",
+  "training": {
+    "rl_steps": 0,
+    "encoder_finetuning_steps": 0,
+    "meaning": "Scripted conformance, not learned-policy accuracy; existing training/watch adapter remains the three-task pilot"
+  },
+  "coverage": {
+    "bounded_task_models": 12,
+    "registered_task_html_pages": 125,
+    "full_suite_parity": false,
+    "independent_bend_generators": 2,
+    "laws": 95,
+    "law_breakdown": {
+      "widget_generator": 22,
+      "text": 12,
+      "sequence_select": 25,
+      "tree": 22,
+      "autocomplete": 14
+    },
+    "legacy_pilot_laws_separate": 6
+  },
+  "validation": {
+    "proof": "PASS",
+    "build": "PASS",
+    "regression_exit_code": 0,
+    "commands": [
+      "bash ocean/webnav/miniwob/build.sh",
+      "make -f ocean/webnav/Makefile -o miniwob test-first-wave test-dom"
+    ],
+    "log": "build/webnav/task-expansion/regression.log",
+    "native_checks": [
+      "PASS: 5456 exhaustive checkbox target/state cases (2..6 controls), reversible toggles, invalid targets, outcome absorption, reward/deadline boundaries and 32 independent lanes",
+      "PASS: 8192 Bend-generated forms, deterministic reset independent of previous row, label/instruction contracts, public-label solving; 3448 exhaustive radio transitions",
+      "PASS: 8184 exhaustive ASCII edit/selection cases; maximum field, unrelated field, unfocused/invalid action, exact submit, terminal/deadline and mixed-lane routing",
+      "PASS: 26 malformed ABI rows rejected before runtime entry",
+      "PASS: 8184 exhaustive ASCII edit/selection cases; maximum field, unrelated field, unfocused/invalid action, exact submit, terminal/deadline and mixed-lane routing",
+      "sequence-select independent native spec and Bend differential: PASS",
+      "PASS: tag-9 tree validation, visibility, expand/collapse, leaf stop, ancestor bubbling, deadline/reset, rewards and 32 lanes",
+      "PASS: tag-10 autocomplete validation, source filtering, menu boundaries, selection, exact goals, deadline/reset and 32 lanes",
+      "PASS: all 11 task tags coexist across 32 lanes; independent two-step state/reward transitions",
+      "PASS: 26 malformed ABI rows rejected before runtime entry",
+      "PASS: DOM roles, name provenance, quality tiers, whitespace, hidden-text exclusion, visible-control priority, table-row relationships, scoped external popups, bounds and malformed schema rejection"
+    ],
+    "episodes": 8400,
+    "actions": 20011,
+    "directed_fixtures": 6,
+    "fixture_actions": 11,
+    "browser_results": [
+      {
+        "task": "click-button",
+        "episodes": 1000,
+        "actions": 1102,
+        "full_credit": 587,
+        "positive_partial": 0,
+        "nonpositive": 213,
+        "timeouts": 200,
+        "state_reward_conformance": "PASS",
+        "clock": "controlled logical milliseconds",
+        "reset": "upstream-generated matched instance",
+        "scope": "click/wait controls; checked/focus/outcome/raw and timed reward; not full DOM or generator parity"
+      },
+      {
+        "task": "click-checkboxes",
+        "episodes": 1000,
+        "actions": 2703,
+        "full_credit": 443,
+        "positive_partial": 96,
+        "nonpositive": 261,
+        "timeouts": 200,
+        "state_reward_conformance": "PASS",
+        "clock": "controlled logical milliseconds",
+        "reset": "upstream-generated matched instance",
+        "scope": "click/wait controls; checked/focus/outcome/raw and timed reward; not full DOM or generator parity"
+      },
+      {
+        "task": "click-link",
+        "episodes": 1000,
+        "actions": 1000,
+        "full_credit": 462,
+        "positive_partial": 0,
+        "nonpositive": 338,
+        "timeouts": 200,
+        "state_reward_conformance": "PASS",
+        "clock": "controlled logical milliseconds",
+        "reset": "upstream-generated matched instance",
+        "scope": "click/wait controls; checked/focus/outcome/raw and timed reward; not full DOM or generator parity"
+      },
+      {
+        "task": "focus-text",
+        "episodes": 1000,
+        "actions": 1000,
+        "full_credit": 800,
+        "positive_partial": 0,
+        "nonpositive": 0,
+        "timeouts": 200,
+        "state_reward_conformance": "PASS",
+        "clock": "controlled logical milliseconds",
+        "reset": "upstream-generated matched instance",
+        "scope": "click/wait controls; checked/focus/outcome/raw and timed reward; not full DOM or generator parity"
+      },
+      {
+        "task": "click-option",
+        "episodes": 1000,
+        "actions": 2234,
+        "full_credit": 454,
+        "positive_partial": 0,
+        "nonpositive": 346,
+        "timeouts": 200,
+        "state_reward_conformance": "PASS",
+        "clock": "controlled logical milliseconds",
+        "reset": "upstream-generated matched instance",
+        "scope": "click/wait controls; checked/focus/outcome/raw and timed reward; not full DOM or generator parity"
+      },
+      {
+        "task": "click-checkboxes",
+        "episodes": 1000,
+        "actions": 2665,
+        "full_credit": 441,
+        "positive_partial": 106,
+        "nonpositive": 253,
+        "timeouts": 200,
+        "state_reward_conformance": "PASS",
+        "clock": "controlled logical milliseconds",
+        "reset": "Bend-generated form in original task HTML",
+        "scope": "click/wait controls; checked/focus/outcome/raw and timed reward; not full DOM or generator parity"
+      },
+      {
+        "task": "click-option",
+        "episodes": 1000,
+        "actions": 2197,
+        "full_credit": 433,
+        "positive_partial": 0,
+        "nonpositive": 367,
+        "timeouts": 200,
+        "state_reward_conformance": "PASS",
+        "clock": "controlled logical milliseconds",
+        "reset": "Bend-generated form in original task HTML",
+        "scope": "click/wait controls; checked/focus/outcome/raw and timed reward; not full DOM or generator parity"
+      },
+      {
+        "task": "enter-text",
+        "episodes": 200,
+        "actions": 1093,
+        "success": 133,
+        "wrong": 34,
+        "timeouts": 33,
+        "conformance": "PASS",
+        "preset": "ASCII focus-end/insert/edit/submit v1; one field <=64 or two <=32 characters",
+        "scope": "original seeded HTML, real CDP input and keys, complete DOM-v2 projection, caret/selection and reward; controlled clock; no generator or unrestricted-input parity"
+      },
+      {
+        "task": "login-user",
+        "episodes": 200,
+        "actions": 1854,
+        "success": 133,
+        "wrong": 34,
+        "timeouts": 33,
+        "conformance": "PASS",
+        "preset": "ASCII focus-end/insert/edit/submit v1; one field <=64 or two <=32 characters",
+        "scope": "original seeded HTML, real CDP input and keys, complete DOM-v2 projection, caret/selection and reward; controlled clock; no generator or unrestricted-input parity"
+      },
+      {
+        "task": "read-table",
+        "episodes": 200,
+        "actions": 1093,
+        "success": 133,
+        "wrong": 34,
+        "timeouts": 33,
+        "conformance": "PASS",
+        "preset": "ASCII focus-end/insert/edit/submit v1; one field <=64 or two <=32 characters",
+        "scope": "original seeded HTML, real CDP input and keys, complete DOM-v2 projection, caret/selection and reward; controlled clock; no generator or unrestricted-input parity"
+      },
+      {
+        "tasks": {
+          "click-button-sequence": {
+            "episodes": 200,
+            "actions": 633,
+            "success": 127,
+            "wrong": 40,
+            "timeouts": 33
+          },
+          "choose-list": {
+            "episodes": 200,
+            "actions": 600,
+            "success": 75,
+            "wrong": 58,
+            "timeouts": 67
+          }
+        },
+        "fixture_actions": {
+          "click-button-sequence": 5,
+          "choose-list": 3
+        },
+        "directed_fixtures": {
+          "overlap": 1,
+          "fully_occluded_timeout": 1,
+          "duplicate_labels": 1
+        },
+        "conformance": "PASS",
+        "scope": "original seeded HTML, real CDP coordinates/mouse/key events, controlled clock, row state and rewards; button event-target overlap, fully occluded timeout, and text-equivalent duplicate options covered; no full DOM, static option DOM policy projection, or unrestricted generator parity"
+      },
+      {
+        "task": "navigate-tree",
+        "episodes": 200,
+        "actions": 762,
+        "success": 129,
+        "wrong": 31,
+        "timeouts": 40,
+        "directed_fixtures": 3,
+        "fixture_actions": 3,
+        "conformance": "PASS",
+        "scope": "original seeded instances, real label clicks, tree topology/expansion/visibility and rewards; three custom initial fixtures using original handlers; controlled clock; no full DOM, hitarea/blank-LI or generator parity"
+      },
+      {
+        "task": "use-autocomplete-nodelay",
+        "episodes": 200,
+        "actions": 1075,
+        "success": 120,
+        "wrong": 55,
+        "timeouts": 25,
+        "conformance": "PASS",
+        "scope": "original seeded goals/handlers, real CDP input/keys/menu clicks, field/caret/focus/menu count/active/term and reward; controlled clock and settled zero-delay callbacks; fresh widget each reset; no full DOM, generator, arbitrary mouse or wall-clock parity"
+      }
+    ],
+    "negative_proof_check": "Replacing tree folder toggle with identity rejected wrong_folder_expands_and_runs; production unchanged"
+  },
+  "limitations": [
+    "Bounded matched-instance state/reward presets, not full generator/DOM/wrapper parity",
+    "Logical clocks, autocomplete fresh widget and settled callbacks; see miniwob/EXPANSION.md",
+    "Private ABI rows contain targets and are not policy inputs",
+    "No new training, encoder benchmarks or task throughput measurements in this expansion"
+  ],
+  "sources_sha256": {
+    "ocean/webnav/bridge.c": "62340865292e8d00944d8410fa7673e0b1fb7d2641e1774877fb1b6f4672dd86",
+    "ocean/webnav/Makefile": "9273f64d1298435d1e3cb6d86568df0100c3b2e930cd86dd91a62ecad30b5c14",
+    "ocean/webnav/web/dom_snapshot.js": "d725e9e2f23b3c9ca245f6d046b70d43c675feaa548d9623576456f610aba867",
+    "ocean/webnav/tests/test_dom.c": "7ee69ed7cbc16c2e71dc2cca75eddfb6df1d1fb3e933fa0b118073bdfa8ba82b",
+    "ocean/webnav/tests/test_task_routing.c": "2b9da45ce09c42c80eb80c9a5ee9787e441a2bab485c8aec90424b992c569934",
+    "ocean/webnav/tests/test_miniwob_boundary.c": "1749823df54a3db33abbaabae07643bdd7df8358d81056197d7038fd0343976d",
+    "ocean/webnav/miniwob/Generate.bend": "8afeaaa4583f0fc3be55314707738ec82e803ed588cd2a3353d15176060344a2",
+    "ocean/webnav/miniwob/LAWS.bend": "437bc869d9bb5ce36ff49ad27a18d91602a2bab11ce0fe2d6c8374e193d2cbde",
+    "ocean/webnav/miniwob/Main.bend": "864ec38dcd9c45ec2b374b1bf5ff73346e061623239c89c583f8669873619795",
+    "ocean/webnav/miniwob/PROOF.bend": "3bbcb497c9263b7dda858786c0791f4dd4e78e6656ba51f29b140f5306d280e2",
+    "ocean/webnav/miniwob/Text.bend": "48a1fe2e2253bd6e8514e8cac67ae1127770177dad04e1339a93150aa0bde756",
+    "ocean/webnav/miniwob/TextLAWS.bend": "9fb318fdcf6a8c12cc4cdcfb7deab1384725aaee014ea4dc6c65a0945a59f043",
+    "ocean/webnav/miniwob/TextPROOF.bend": "1a21dc67970f64b7bfbaa81dea80d8f80b250ae70900574a902fd5831012b982",
+    "ocean/webnav/miniwob/TextWire.bend": "032776bb917bbf8d33d600553c3de931a28aadaf71f3dbbf00647a47553b0bb4",
+    "ocean/webnav/miniwob/Widgets.bend": "94c785b649c9e2825895e244ed6b71b90bd64bbfce0f499f60e3e89c0e2e65c7",
+    "ocean/webnav/miniwob/Wire.bend": "d1207deab0f5a88622b8b44b8446ae495f4ac4e1b7ba2f3d2b3e6aaea1cf67a6",
+    "ocean/webnav/miniwob/autocomplete_oracle.c": "6b3e3fd20f0fea3c6bf546c2fe66599e90157f1dbc0d4106b109d0520b97d562",
+    "ocean/webnav/miniwob/build.sh": "079ecfeaecf896aa08707e82343c1b21a91d76429ddbd3b61e4881fe209386c6",
+    "ocean/webnav/miniwob/forms.c": "224bf6182d71163384af0680f8bbc9d71b1863c0a081573d0589f895be75c523",
+    "ocean/webnav/miniwob/oracle.c": "38915253fc8408522134ce1ce459b5477959a9f6613dae33b44c81a55e4c4079",
+    "ocean/webnav/miniwob/sequence_select_oracle.c": "4ebe4140ac396f8c2f7300192bbee41716963a5837472312ef1a15d8ba287e0e",
+    "ocean/webnav/miniwob/text_oracle.c": "1e51462d2707b12a97ef4194740d69a60253c235eefe4430493c694a30cdad7b",
+    "ocean/webnav/miniwob/tree_oracle.c": "84c78ef38d6f51798a66085bea8bb8bfa12a6dfdc86c43d0a8a62866834b9dfb",
+    "ocean/webnav/miniwob/sequence_select/LAWS.bend": "32208afea009ba012abda3179a5cb85a8d3cbeaa6caa8fae41549b0f727b0323",
+    "ocean/webnav/miniwob/sequence_select/Main.bend": "c7e5c59e838e50abb23d62df517a81f9521dac961b389493f1db4403298d1dda",
+    "ocean/webnav/miniwob/sequence_select/Model.bend": "3be7906ffbf0803290e68dc66ba0f95291de75ee85e3385807fdb7c182957113",
+    "ocean/webnav/miniwob/sequence_select/PROOF.bend": "bae8609d2a8c0f37396a9edc9a4e0c81c2a9c8b0ce1b3cce7284d3da5424fa4d",
+    "ocean/webnav/miniwob/sequence_select/Wire.bend": "f68ba5696b4098b1616aa6329189483f2c3d45fd2fde9d9ede2b809d1bd6501a",
+    "ocean/webnav/miniwob/sequence_select/build.sh": "403eabb8ade2b158d1c8ed48f691d2ff2b2d8007afc1c7237dd00049cd7fb59a",
+    "ocean/webnav/miniwob/sequence_select/read.c": "8ef503fe340ed17ab5fd9e161ad8a6f0ea035949dee61f76d096c1d3e03e02b2",
+    "ocean/webnav/miniwob/sequence_select/test_native.c": "c5edd5b3a31d00e9ea7b044bb7d6f90c6acde88ad27086de9daddbbd05b542dc",
+    "ocean/webnav/miniwob/sequence_select/validation.h": "f06b971ac09da71cc65b851e645bda0d2722e20b315a87f57a9f4499b8b9fc5d",
+    "ocean/webnav/miniwob/sequence_select/write.c": "a376d75e6e5fc5aad7d44116999bb06e3b4a14678cf962d5cf1557951b3031cb",
+    "ocean/webnav/miniwob/tree/LAWS.bend": "79d90fee8b189ebb7bd448e2758890c599f8774fd8d6e841f496f501b36d1c9f",
+    "ocean/webnav/miniwob/tree/Main.bend": "2ff870b4e832cdeba9d1a39dc68817dcf2d2326855d3b7bef4199b1c429436a3",
+    "ocean/webnav/miniwob/tree/PROOF.bend": "201e951c59a6175a7d1836675b36c769d167377cbc0472f85fa054420cab5bb7",
+    "ocean/webnav/miniwob/tree/Tree.bend": "ae59d3824cb0e8fb1aea4d2811f41b627d16071fc08190c63432cfe360c450f4",
+    "ocean/webnav/miniwob/tree/Wire.bend": "5db660da1bd5c5a97cebfc404be51f6c6c7857ba73a30cac4bce5969150b91ee",
+    "ocean/webnav/miniwob/tree/bridge.c": "274a42ff622bd6e77b003c9211aa4f673e36109f75fd2c6e929af0d64e6c3c4f",
+    "ocean/webnav/miniwob/tree/build.sh": "0509f3d3759e8596b33d5f40e5eef62b4b2127eb8c9ba3f1420699b28ee1c5ba",
+    "ocean/webnav/miniwob/tree/test_tree.c": "2c9578962f3170ce3329bea30f518287820d6670973d9123c967cdaea45c966a",
+    "ocean/webnav/miniwob/tree/validation.h": "ed258a57d244e1c59c35fad30c741f30d07545247adc2df1a3bc784286938d58",
+    "ocean/webnav/miniwob/autocomplete/Countries.bend": "5ec89198e5736248b82d387265ce400c21090511003a4201612250738bedd290",
+    "ocean/webnav/miniwob/autocomplete/LAWS.bend": "8c33a14869b5bf91e143c24da15176781c9e44d8c40f10edaa85c020c2c75ab8",
+    "ocean/webnav/miniwob/autocomplete/Main.bend": "1d25b5d14c9713f50629f2cbb3048ce4518c0df205bf477b9d4f50ce6129160a",
+    "ocean/webnav/miniwob/autocomplete/Model.bend": "13590284a4fdfb33afbf1cbdd825712bdcc4e45cb3df44f3102614cd1feb7eef",
+    "ocean/webnav/miniwob/autocomplete/PROOF.bend": "75c3fccc0e89fb03153adae228d0f9de66ce4549e03c2de15796b3bc76867cd4",
+    "ocean/webnav/miniwob/autocomplete/Wire.bend": "deb0a625a8aea500369906ba57614ff460783d99046249157a6ec1b5309ec0a4",
+    "ocean/webnav/miniwob/autocomplete/test_autocomplete.c": "677dec74186d4d9e7390c1fd96bd2f2914c476244a92b1bb763bbbd0f9004b8f",
+    "ocean/webnav/miniwob/autocomplete/test_bridge.c": "70f7d9cd6ba07da854df1fec33d4ba62026c38bd465c286f697634240562bb0c",
+    "ocean/webnav/miniwob/autocomplete/validation.h": "824c799e62567ef7b2ce7741df49598ae7208d31bcbd57d399b1320452a2b00e"
+  }
+}

@@ -1,0 +1,325 @@
+{
+  "recorded_date": "2026-09-20",
+  "scope": "Three fixed-layout task templates; normalized DOM observations; stock CPU Bend simulation. No original MiniWoB or unseen-template evaluation.",
+  "platform": {
+    "cpu": "Intel Core i5-7400 @ 3.00GHz",
+    "gpu": "NVIDIA GeForce GTX 1060 3GB",
+    "bend": "2.0.6",
+    "environment_backend": "CPU",
+    "training_backend": "native C/CUDA float32",
+    "chromium": "153.0.8010.52"
+  },
+  "checkpoint": {
+    "path": "build/webnav/pilot.bin",
+    "sha256": "e2b3d4f25bac8b52751e5bad1f0840a2f201bbbdc7457460c35f9a4c840b9dc8",
+    "bytes": 728064,
+    "hidden_size": 128,
+    "num_layers": 2,
+    "observation_features": 640,
+    "actions": 13,
+    "contract_sha256": "ae88502c564a80c4e7251e67c8fd36091baaf09319e3b1d99e8555972fdb5b0b"
+  },
+  "training": {
+    "run_id": "webnav_cpu_v2",
+    "agent_steps": 14974976,
+    "logged_uptime_seconds": 97.39679169654846,
+    "seed": 42,
+    "demonstrations": false,
+    "reward": "sparse terminal success/failure",
+    "config": "config/webnav.ini",
+    "resolved_config_local": "build/webnav/logs/webnav/webnav_cpu_v2.ini",
+    "total_agents": 1024,
+    "num_buffers": 2,
+    "num_threads": 2,
+    "async": 0,
+    "learning_rate": 0.015,
+    "replay_ratio": 2,
+    "entropy_coefficient": 0.005
+  },
+  "evaluation": {
+    "first_seed": 100000,
+    "episodes": 1000,
+    "selection": "Local pilot checkpoint selected after a few exploratory training runs; evaluation seeds are not an untouched final test set.",
+    "policy": "masked argmax",
+    "native": {
+      "backend": "bend-cpu",
+      "policy": "checkpoint",
+      "episodes": 1000,
+      "transitions": 4865,
+      "seconds": 1.106379,
+      "reset_seconds": 0,
+      "action_seconds": 0,
+      "observation_seconds": 0,
+      "bend_batch_seconds": 0.103441,
+      "conformance": "not-applicable",
+      "button": [
+        332,
+        332
+      ],
+      "checkbox": [
+        180,
+        327
+      ],
+      "text": [
+        341,
+        341
+      ]
+    },
+    "browser": {
+      "backend": "chromium",
+      "policy": "checkpoint",
+      "episodes": 1000,
+      "transitions": 4865,
+      "seconds": 13.525119,
+      "reset_seconds": 1.173555,
+      "action_seconds": 7.481722,
+      "observation_seconds": 3.588871,
+      "bend_batch_seconds": 0.127957,
+      "conformance": "PASS",
+      "button": [
+        332,
+        332
+      ],
+      "checkbox": [
+        180,
+        327
+      ],
+      "text": [
+        341,
+        341
+      ]
+    }
+  },
+  "verification": {
+    "native_spec_transitions": 102400,
+    "concurrent_callers": 4,
+    "terminal_absorption": "Bend proof checked; model-level only",
+    "puffer_env": {
+      "puffer_env": "PASS",
+      "batch": 32,
+      "steps": 2359488,
+      "episodes": 361928,
+      "seconds": 3.000001,
+      "steps_per_second": 786496,
+      "checksum": 368673
+    },
+    "cpu_cuda": {
+      "cpu_cuda_policy_parity": "PASS",
+      "steps": 64,
+      "terminal_resets": 13,
+      "max_logit_error": 0.0000419616699
+    },
+    "browser_cases": [
+      {
+        "backend": "chromium",
+        "policy": "mixed",
+        "episodes": 300,
+        "transitions": 1616,
+        "seconds": 3.485293,
+        "reset_seconds": 0.341829,
+        "action_seconds": 1.87227,
+        "observation_seconds": 1.203779,
+        "bend_batch_seconds": 0.037936,
+        "conformance": "PASS",
+        "button": [
+          62,
+          98
+        ],
+        "checkbox": [
+          47,
+          96
+        ],
+        "text": [
+          54,
+          106
+        ]
+      },
+      {
+        "backend": "chromium",
+        "policy": "expert",
+        "episodes": 90,
+        "transitions": 234,
+        "seconds": 0.682799,
+        "reset_seconds": 0.108482,
+        "action_seconds": 0.387394,
+        "observation_seconds": 0.175538,
+        "bend_batch_seconds": 0.005383,
+        "conformance": "PASS",
+        "button": [
+          32,
+          32
+        ],
+        "checkbox": [
+          27,
+          27
+        ],
+        "text": [
+          31,
+          31
+        ]
+      },
+      {
+        "backend": "chromium",
+        "policy": "script:1,6,11,11,7,5",
+        "episodes": 1,
+        "transitions": 6,
+        "seconds": 0.022837,
+        "reset_seconds": 0.003287,
+        "action_seconds": 0.014261,
+        "observation_seconds": 0.004947,
+        "bend_batch_seconds": 0.000125,
+        "conformance": "PASS",
+        "button": [
+          0,
+          0
+        ],
+        "checkbox": [
+          0,
+          0
+        ],
+        "text": [
+          0,
+          1
+        ]
+      },
+      {
+        "backend": "chromium",
+        "policy": "script:1,6,7,8,10,9,1,10,10,10,6,7,12",
+        "episodes": 1,
+        "transitions": 13,
+        "seconds": 0.098649,
+        "reset_seconds": 0.003999,
+        "action_seconds": 0.075532,
+        "observation_seconds": 0.018395,
+        "bend_batch_seconds": 0.000418,
+        "conformance": "PASS",
+        "button": [
+          0,
+          0
+        ],
+        "checkbox": [
+          0,
+          0
+        ],
+        "text": [
+          0,
+          1
+        ]
+      },
+      {
+        "backend": "chromium",
+        "policy": "script:6,7,10,2,3,4,1,7,6,12",
+        "episodes": 1,
+        "transitions": 10,
+        "seconds": 0.032394,
+        "reset_seconds": 0.005065,
+        "action_seconds": 0.018416,
+        "observation_seconds": 0.008374,
+        "bend_batch_seconds": 0.000196,
+        "conformance": "PASS",
+        "button": [
+          0,
+          0
+        ],
+        "checkbox": [
+          0,
+          0
+        ],
+        "text": [
+          0,
+          1
+        ]
+      },
+      {
+        "backend": "chromium",
+        "policy": "script:11,7,6,11,12",
+        "episodes": 1,
+        "transitions": 5,
+        "seconds": 0.016412,
+        "reset_seconds": 0.002672,
+        "action_seconds": 0.009165,
+        "observation_seconds": 0.004158,
+        "bend_batch_seconds": 0.000113,
+        "conformance": "PASS",
+        "button": [
+          0,
+          0
+        ],
+        "checkbox": [
+          0,
+          0
+        ],
+        "text": [
+          0,
+          1
+        ]
+      },
+      {
+        "backend": "chromium",
+        "policy": "script:0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0",
+        "episodes": 1,
+        "transitions": 16,
+        "seconds": 0.015924,
+        "reset_seconds": 0.002545,
+        "action_seconds": 0.000002,
+        "observation_seconds": 0.012797,
+        "bend_batch_seconds": 0.000234,
+        "conformance": "PASS",
+        "button": [
+          0,
+          0
+        ],
+        "checkbox": [
+          0,
+          0
+        ],
+        "text": [
+          0,
+          1
+        ]
+      },
+      {
+        "backend": "chromium",
+        "policy": "script:2,10,8,4,14,11,9,7,12",
+        "episodes": 1,
+        "transitions": 9,
+        "seconds": 0.023433,
+        "reset_seconds": 0.003364,
+        "action_seconds": 0.012364,
+        "observation_seconds": 0.007073,
+        "bend_batch_seconds": 0.000352,
+        "conformance": "PASS",
+        "button": [
+          0,
+          0
+        ],
+        "checkbox": [
+          0,
+          1
+        ],
+        "text": [
+          0,
+          0
+        ]
+      }
+    ],
+    "native_configuration": "Valid configuration accepted; invalid lane count rejected"
+  },
+  "measurement_limits": [
+    "Single local environment benchmark sample; initialization excluded.",
+    "Batched simulation and sequential browser evaluation are different workloads, not a controlled speedup comparison.",
+    "Limited vocabulary, fixed layout, three task templates; no general web, pixel, or original MiniWoB claims."
+  ],
+  "source_sha256": {
+    "build/webnav/webnav_generated.c": "043754d9dd4b6ad577b3032ec3360802a2f6a1f8b0a09fee11175d9469def388",
+    "ocean/webnav/bend/Game.bend": "99caa31d6fe4841d55b59d05068065818f43748ce1d552d4584221ac1d62f92e",
+    "ocean/webnav/bend/LAWS.bend": "d9aee8faf5bdb3559b4210a2b1738286bb5de24b5b1b390eceae70c6c084215b",
+    "ocean/webnav/bend/Main.bend": "aaad52b51936aca4949e43783ccd6737e8f5f60cc6c43732ab9bfb37d57ece5b",
+    "ocean/webnav/bend/PROOF.bend": "06d6f8085c856b04409291369866ac48d60b33ed6363fad51c18367be43b902e",
+    "ocean/webnav/bend/read.c": "3fb2b6d6897481893fd54f254da5ca7773666bd4d2705f362111b87e69c1ed12",
+    "ocean/webnav/bend/write.c": "d1efb330fa74f93d31da4a345939a795a5b8114c222404ff06519639c99792ca",
+    "ocean/webnav/bridge.c": "5170999ed4d9e32ab8f5cb875ca1617d9180544ecb40badfbc0d12d7a50e791f",
+    "ocean/webnav/bridge.h": "feb51747b076ff0a67836c05db07f9342422b54c19ffd039a9da00d5a2740f50",
+    "ocean/webnav/observation.h": "2c2578c1f92bed06c704348cc538c76e61fb701fb50f4792745a45c41c7d3ce5"
+  }
+}

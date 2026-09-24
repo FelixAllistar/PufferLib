@@ -1,0 +1,15 @@
+# retro_panel_v2 frames=1800 repeats=8 seed=20260907 deterministic=0 levels=1-1 frameskip=1
+level	replicate	clear	progress	frames	clear_frames
+1-1	0	1	0.0494117647	1164	1164
+1-1	1	1	0.0494117647	1164	1164
+1-1	2	1	0.0494117647	1080	1080
+1-1	3	1	0.0494117647	1227	1227
+1-1	4	1	0.0494117647	1059	1059
+1-1	5	1	0.0494117647	1122	1122
+1-1	6	1	0.0494117647	1059	1059
+1-1	7	1	0.0494117647	1185	1185
+# score=741.185417 clears=8 attempts=8 progress=0.0494117647 frames=9060
+# metric=speed distance=168 units=forward_pixels
+# clear_frames=1132.5 clear_rate=1
+# speed_objective=2 best_frames=1059 best_seconds=17.620980038095 mean_seconds=18.843965904762 best_count=2
+# timing_scope=segment practice_replay=ocean/retro/practice/pipe_exit.inputs

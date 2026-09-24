@@ -44,8 +44,11 @@ def fresh_contract(checkpoint):
             raise ValueError(f"Invalid integer in {sidecar}: {value!r}")
         result[tag] = int(value)
     mode, executor = result['macro_mode'], result['executor_version']
-    if (result['policy_version'] != 3 or result['obs_version'] != 3
-            or (mode, executor) not in ((0, 0), (1, 0), (1, 1), (2, 0), (2, 1), (3, 0))
+    controllers = ((0, 0), (1, 0), (1, 1), (2, 0), (2, 1), (3, 0))
+    if result['policy_version'] == 5:
+        controllers += ((2, 2),)
+    if (result['policy_version'] not in (3, 5) or result['obs_version'] != 3
+            or (mode, executor) not in controllers
             or result['macro_decision_interval'] < 1
             or (mode != 1 and result['macro_decision_interval'] != 1)
             or result['macro_score_features'] not in (0, 1)

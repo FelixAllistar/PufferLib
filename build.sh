@@ -219,6 +219,24 @@ elif [ "$ENV" = "impulse_wars" ]; then
     download "$BOX2D_NAME" "$BOX2D_URL/$BOX2D_NAME.tar.gz"
     INCLUDES+=(-I./$BOX2D_NAME/include -I./$BOX2D_NAME/src)
     LINK_ARCHIVES+=("./$BOX2D_NAME/libbox2d.a")
+elif [ "$ENV" = "webnav_dom" ]; then
+    SRC_DIR="ocean/$ENV"
+    if [ "$MODE" = "web" ] || [ "$USE_GPU_ENV" = "1" ]; then
+        echo "webnav_dom uses stock Bend CPU environments" >&2
+        exit 1
+    fi
+    bash ocean/webnav/training_build.sh
+    LINK_ARCHIVES+=("build/webnav/libtraining.a" "build/webnav/libminiwob.a")
+    EXTRA_LDFLAGS+=("build/webnav/libtraining.a" "build/webnav/libminiwob.a" "-licuuc")
+elif [ "$ENV" = "webnav" ]; then
+    SRC_DIR="ocean/$ENV"
+    if [ "$MODE" = "web" ] || [ "$USE_GPU_ENV" = "1" ]; then
+        echo "webnav uses stock Bend CPU; browser assets live in ocean/webnav/web" >&2
+        exit 1
+    fi
+    bash ocean/webnav/build.sh
+    LINK_ARCHIVES+=("build/webnav/libwebnav.a")
+    EXTRA_LDFLAGS+=("build/webnav/libwebnav.a")
 elif [ "$ENV" = "pokemon" ]; then
     SRC_DIR="ocean/$ENV"
     if [ "$MODE" = "web" ] || [ "$USE_GPU_ENV" = "1" ]; then

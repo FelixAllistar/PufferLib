@@ -126,6 +126,9 @@ public:
 	// incompatible.
 	unsigned long error_count() const { return emu.error_count; }
 
+	// Read-only video scheduler counter, for independent wrapper-clock audits.
+	unsigned long video_frame_count() const { return emu.nes.frame_count; }
+
 // Sound
 
 	// Set sample rate and use a custom sound buffer instead of the default

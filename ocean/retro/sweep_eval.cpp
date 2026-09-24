@@ -21,10 +21,11 @@ int main(int argc,char** argv) {
         if(argc<2) throw std::runtime_error("usage: build/retro/sweep_eval CHECKPOINT [--config INI] [--levels CSV|all] [--frameskip N] [--metric speed|distance|perf] [--frames 3600] [--repeats 2] [--seed 20260907] [--workers 4] [--output TSV] [--deterministic]");
         std::string config=std::string(argv[1])+".ini",output;
         std::string levels_override,metric_override,skip_override;
-        int frames=3600,repeats=2,workers=4; unsigned seed=20260907; bool deterministic=false;
+        int frames=3600,repeats=2,workers=4; unsigned seed=20260907; bool deterministic=false,full_run=false;
         for(int i=2;i<argc;i++) {
             std::string arg=argv[i];
             if(arg=="--deterministic") { deterministic=true; continue; }
+            if(arg=="--full-run") { full_run=true; continue; }
             if(i+1==argc) throw std::runtime_error("missing panel option value");
             const char* value=argv[++i];
             if(arg=="--config") config=value;
@@ -42,7 +43,15 @@ int main(int argc,char** argv) {
             throw std::runtime_error("panel limits: frames 1..30000, repeats 1..32, workers 1..64");
         if(!std::filesystem::exists(config))
             throw std::runtime_error("checkpoint config missing; pass --config logs/retro/RUN.ini for an older checkpoint");
-        Ini ini={}; puf_ini_load_env(&ini,"retro",0,nullptr); puf_ini_load_file(&ini,config.c_str());
+        Ini ini={}; puf_ini_load_env(&ini,"retro",0,nullptr);
+        // Older full-run checkpoint sidecars predate practice_replay. They
+        // must not silently inherit today's active practice start.
+        puf_ini_set(puf_ini_section(&ini,"env",0),"practice_replay","None");
+        puf_ini_load_file(&ini,config.c_str());
+        if(full_run) puf_ini_set(puf_ini_section(&ini,"env",0),"practice_replay","None");
+        DictItem* practice_option=dict_find(puf_ini_section(&ini,"env",0),"practice_replay");
+        bool practice=practice_option&&practice_option->str&&*practice_option->str&&strcmp(practice_option->str,"None");
+        std::string practice_path=practice?practice_option->str:"None";
         // Preserve the task/control timing recorded with the checkpoint.
         // Explicit overrides support separate all-level transfer diagnostics.
         if(!levels_override.empty()) puf_ini_put(&ini,"env.spawn_levels",levels_override.c_str());
@@ -118,17 +127,21 @@ int main(int argc,char** argv) {
             }
         }
         if(failure) std::rethrow_exception(failure);
-        int clears=0; long executed=0; double mean_progress=0,mean_distance=0,clear_frame_sum=0;
+        int clears=0,best_clear_frames=0; long executed=0; double mean_progress=0,mean_distance=0,clear_frame_sum=0;
         for(int i=0;i<n;i++) {
             clears+=cleared[i]; executed+=elapsed[i];
             clear_frame_sum+=clear_frames[i];
+            if(cleared[i]&&(!best_clear_frames||clear_frames[i]<best_clear_frames))
+                best_clear_frames=clear_frames[i];
             int start=retro_rom().starts[level_ids[i%level_count]]->x;
             mean_distance+=retro_panel_distance(start,furthest[i])/n;
             progress[i]=retro_panel_progress(start,furthest[i]); mean_progress+=progress[i]/n;
         }
         mean_progress=std::max(0.0,std::min(1.0,mean_progress));
         double mean_clear_frames=clears?clear_frame_sum/clears:0;
-        double score=retro_panel_objective(metric,clears,n,mean_progress,mean_distance,mean_clear_frames,frames);
+        double score=retro_panel_objective(metric,clears,n,mean_progress,mean_distance,mean_clear_frames,frames,best_clear_frames);
+        int best_count=0;
+        for(int i=0;i<n;i++) best_count+=cleared[i]&&clear_frames[i]==best_clear_frames;
         if(!output.empty()) {
             std::string temporary=output+".tmp"; FILE* file=fopen(temporary.c_str(),"w");
             if(!file) throw std::runtime_error("cannot write panel report");
@@ -143,9 +156,16 @@ int main(int argc,char** argv) {
             fprintf(file,"# score=%.9g clears=%d attempts=%d progress=%.9g frames=%ld\n",score,clears,n,mean_progress,executed);
             fprintf(file,"# metric=%s distance=%.9g units=forward_pixels\n",metric,mean_distance);
             fprintf(file,"# clear_frames=%.9g clear_rate=%.9g\n",mean_clear_frames,(double)clears/n);
+            fprintf(file,"# speed_objective=2 best_frames=%d best_seconds=%.12f mean_seconds=%.12f best_count=%d\n",
+                best_clear_frames,retro_frame_seconds(best_clear_frames),retro_frame_seconds(mean_clear_frames),best_count);
+            fprintf(file,"# timing_scope=%s practice_replay=%s\n",practice?"segment":"full_level",practice_path.c_str());
             bool failed=ferror(file)!=0; if(fclose(file)) failed=true;
             if(failed||rename(temporary.c_str(),output.c_str())) throw std::runtime_error("cannot publish panel report");
         }
+        if(clears) printf("retro_speed best_frames=%d best_%s_seconds=%.12f mean_%s_seconds=%.12f clears=%d/%d best_hits=%d speed_objective=2 timing_scope=%s\n",
+            best_clear_frames,practice?"segment":"rta",retro_frame_seconds(best_clear_frames),practice?"segment":"rta",retro_frame_seconds(mean_clear_frames),clears,n,best_count,practice?"segment":"full_level");
+        else printf("retro_speed best_frames=NA best_%s_seconds=NA mean_%s_seconds=NA clears=0/%d best_hits=0 speed_objective=2 timing_scope=%s\n",
+            practice?"segment":"rta",practice?"segment":"rta",n,practice?"segment":"full_level");
         printf("retro_panel version=1 score=%.9g clears=%d attempts=%d progress=%.9g frames=%ld seed=%u deterministic=%d metric=%s distance=%.9g clear_frames=%.9g levels=%s frameskip=%d\n",
             score,clears,n,mean_progress,executed,seed,deterministic,metric,mean_distance,
             mean_clear_frames,puf_ini_get_str(&ini,"env","spawn_levels"),(int)skip);

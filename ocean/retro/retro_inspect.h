@@ -133,8 +133,18 @@ static int retro_inspect(Env& e,RetroPolicy* net,float* obs,float* action,
         DrawText(TextFormat("FULL SCREEN %dx%d  |  %s  |  decision %ld  |  level %d-%d  |  tick %d  |  %d Hz",
             RETRO_WINDOW_W,RETRO_WINDOW_H,paused?"PAUSED":"RUNNING",decision,e.world,e.stage,e.tick,fps),16,10,18,RAYWHITE);
         DrawText("P/Space pause   N advance one decision   R reset   1/2/3 = 15/30/60 Hz   F12 save PNG + inputs   Esc close",16,37,16,LIGHTGRAY);
-        DrawText("Entire NES framebuffer: 256 x 240 RGB",16,64,18,RAYWHITE);
+        char clock[64]; int elapsed=retro_rta_elapsed(e.rta,e.tick);
+        retro_clock_text(clock,sizeof(clock),elapsed);
+        DrawText(TextFormat("%s %s / %df",e.practice?"Live SEGMENT":RETRO_RTA_COMPARABLE?"Live RTA":"SIM (not RTA)",clock,elapsed),16,64,18,RAYWHITE);
         DrawTextureEx(texture,Vector2{16,88},0,2,WHITE);
+        if(e.display->last_rta_frames) {
+            char mean[64]="--";
+            retro_clock_text(clock,sizeof(clock),e.display->last_rta_total_frames);
+            int source=e.episode_spawn; unsigned long long count=e.display->rta_counts[source];
+            if(count) retro_clock_text(mean,sizeof(mean),(double)e.display->rta_frame_sums[source]/count);
+            DrawText(TextFormat("Finished %d-%d %s | avg %s (%llu)",e.display->last_rta_level/4+1,
+                e.display->last_rta_level%4+1,clock,mean,count),16,574,16,GREEN);
+        } else DrawText("Finished split: -- (still running)",16,574,16,GRAY);
         DrawText(TextFormat("ACTUAL POLICY INPUT: %d x %d luma",RETRO_WINDOW_W,RETRO_WINDOW_H),550,64,18,RAYWHITE);
         const int cell=512/RETRO_WINDOW_W;
         for(int y=0;y<RETRO_WINDOW_H;y++) for(int x=0;x<RETRO_WINDOW_W;x++) {
@@ -181,8 +191,10 @@ static int retro_inspect(Env& e,RetroPolicy* net,float* obs,float* action,
         DrawText(TextFormat("Powerup: dx %+.3f dy %+.3f type %.3f active %.0f",obs[104],obs[105],obs[106],obs[107]),808,776,12,LIGHTGRAY);
         DrawText(TextFormat("Fireball 0: dx %+.3f dy %+.3f",obs[108],obs[109]),808,808,14,LIGHTGRAY);
         DrawText(TextFormat("Fireball 1: dx %+.3f dy %+.3f",obs[110],obs[111]),808,834,14,LIGHTGRAY);
-        DrawText(net?"A checkpoint replay, not a live training lane. Pausing does not advance the emulator or recurrent policy.":
-            "Manual observation preview; no policy loaded. Arrows move, X=A/jump, Z=B/run. P/Space pause, N single-step.",16,880,14,GRAY);
+        DrawText(e.practice?"PIPE-EXIT PRACTICE: segment timing only, NOT full-run RTA.":!RETRO_RTA_COMPARABLE?"PAL ROM + NTSC core: simulated timing only, NOT speedrun RTA. Pausing does not advance simulation.":
+            net?"A checkpoint replay, not a live training lane. Pausing does not advance the emulator or recurrent policy.":
+            "Manual observation preview; no policy loaded. Arrows move, X=A/jump, Z=B/run. P/Space pause, N single-step.",
+            16,880,14,RETRO_RTA_COMPARABLE?GRAY:ORANGE);
         EndDrawing();
         if(dump) retro_inspect_dump(e,obs,(int)*action,decision);
         if(snapshot) {

@@ -32,10 +32,12 @@ typedef struct {
 
 typedef struct {
     uint32_t seed;
+    int terrain_version;
     int32_t origin_x,origin_y;
     double home_x,home_y;
     ARWorldChunk* chunks;
     int chunk_count,chunk_capacity;
+    int *chunk_index,chunk_index_capacity;
     ARWorldEntity *resources,*buildings,*nests,*enemies;
     int resource_count,resource_capacity,building_count,building_capacity;
     int nest_count,nest_capacity,enemy_count,enemy_capacity;
@@ -72,12 +74,43 @@ static inline void ar_world_ids_clear(ARWorld* w) {
     for(int n=0;n<AR_MAX_ENEMIES;n++)w->enemy_id[n]=-1;
 }
 
+static inline void ar_world_index_rebuild(ARWorld* w,int minimum) {
+    int cap=64;while(cap<minimum)cap*=2;
+    int* index=(int*)calloc((size_t)cap,sizeof(int));if(!index)abort();
+    for(int i=0;i<w->chunk_count;i++) {
+        unsigned slot=ar_hash_xy(0x71a3u,w->chunks[i].x,w->chunks[i].y)&(unsigned)(cap-1);
+        while(index[slot])slot=(slot+1)&(unsigned)(cap-1);
+        index[slot]=i+1;
+    }
+    free(w->chunk_index);w->chunk_index=index;w->chunk_index_capacity=cap;
+}
+static inline int ar_world_chunk_id(ARWorld* w,int cx,int cy) {
+    if(!w->chunk_index_capacity) {
+        if(!w->chunk_count)return -1;
+        ar_world_index_rebuild(w,w->chunk_count*2+1);
+    }
+    unsigned mask=(unsigned)(w->chunk_index_capacity-1),slot=ar_hash_xy(0x71a3u,cx,cy)&mask;
+    while(w->chunk_index[slot]) {
+        int i=w->chunk_index[slot]-1;
+        if(w->chunks[i].x==cx && w->chunks[i].y==cy)return i;
+        slot=(slot+1)&mask;
+    }
+    return -1;
+}
+static inline uint8_t ar_world_generated_tile(ARWorld* w,int gx,int gy) {
+    return w->terrain_version==1 ? ar_terrain_tile_v1(w->seed,gx,gy) : ar_terrain_tile(w->seed,gx,gy);
+}
+
 static inline ARWorldChunk* ar_world_chunk(ARPG* e,ARWorld* w,int cx,int cy,int populate) {
-    for(int i=0;i<w->chunk_count;i++)if(w->chunks[i].x==cx && w->chunks[i].y==cy)return w->chunks+i;
+    int existing=ar_world_chunk_id(w,cx,cy);if(existing>=0)return w->chunks+existing;
+    if((w->chunk_count+1)*2>=w->chunk_index_capacity)ar_world_index_rebuild(w,(w->chunk_count+1)*4);
     w->chunks=(ARWorldChunk*)ar_world_grow(w->chunks,&w->chunk_capacity,w->chunk_count+1,sizeof(*w->chunks));
     ARWorldChunk* c=w->chunks+w->chunk_count++;memset(c,0,sizeof(*c));c->x=cx;c->y=cy;
+    unsigned mask=(unsigned)(w->chunk_index_capacity-1),slot=ar_hash_xy(0x71a3u,cx,cy)&mask;
+    while(w->chunk_index[slot])slot=(slot+1)&mask;
+    w->chunk_index[slot]=w->chunk_count;
     for(int y=0;y<AR_CHUNK_SIZE;y++)for(int x=0;x<AR_CHUNK_SIZE;x++)
-        c->tiles[y*AR_CHUNK_SIZE+x]=ar_terrain_tile(w->seed,cx*AR_CHUNK_SIZE+x,cy*AR_CHUNK_SIZE+y);
+        c->tiles[y*AR_CHUNK_SIZE+x]=ar_world_generated_tile(w,cx*AR_CHUNK_SIZE+x,cy*AR_CHUNK_SIZE+y);
     if(!populate)return c;
     uint32_t hash=ar_hash_xy(w->seed^0x13a73u,cx,cy);
     float cell=ar_world_cell(e);
@@ -117,9 +150,9 @@ static inline uint8_t ar_world_sample(ARPG* e,int x,int y) {
     ARWorld* w=(ARWorld*)e->campaign;if(!w)return AR_TILE_ROCK;
     int gx=w->origin_x+x-AR_DUN_W/2,gy=w->origin_y+y-AR_DUN_H/2;
     int cx=(int)floor((double)gx/AR_CHUNK_SIZE),cy=(int)floor((double)gy/AR_CHUNK_SIZE);
-    for(int i=0;i<w->chunk_count;i++)if(w->chunks[i].x==cx && w->chunks[i].y==cy)
-        return w->chunks[i].tiles[(gy-cy*AR_CHUNK_SIZE)*AR_CHUNK_SIZE+gx-cx*AR_CHUNK_SIZE];
-    return ar_terrain_tile(w->seed,gx,gy);
+    int i=ar_world_chunk_id(w,cx,cy);
+    if(i>=0)return w->chunks[i].tiles[(gy-cy*AR_CHUNK_SIZE)*AR_CHUNK_SIZE+gx-cx*AR_CHUNK_SIZE];
+    return ar_world_generated_tile(w,gx,gy);
 }
 
 static inline void ar_world_capture(ARPG* e) {
@@ -179,7 +212,8 @@ static inline void ar_world_activate(ARPG* e) {
     ar_world_tiles(e,w,0,1);ar_world_ids_clear(w);
     if(!B3_IS_NULL(e->world))b3DestroyWorld(e->world);
     e->world=ar_phys_create_world(&e->cfg);
-    e->player_body=ar_phys_dynamic_body(e->world,e->px,e->py,e->cfg.player_radius,4);
+    e->keeper_dormant=!ar_world_inside(e,w,ox+e->px,oy+e->py);
+    e->player_body=e->keeper_dormant ? b3_nullBodyId : ar_phys_dynamic_body(e->world,e->px,e->py,e->cfg.player_radius,4);
     for(int i=0;i<AR_MAX_OBSTACLES;i++){e->obstacle_active[i]=0;e->obstacle_body[i]=b3_nullBodyId;}
     for(int n=0;n<AR_MAX_SHARDS;n++)e->shard_active[n]=0;
     for(int b=0;b<AR_MAX_BUILDINGS;b++)e->build_active[b]=0;
@@ -238,13 +272,13 @@ static inline void ar_world_activate(ARPG* e) {
 static inline void ar_world_begin(ARPG* e) {
     if(e->campaign)return;
     ARWorld* w=(ARWorld*)calloc(1,sizeof(*w));if(!w)abort();e->campaign=w;
-    w->seed=e->dungeon_seed;w->home_x=e->home_x;w->home_y=e->home_y;
+    w->seed=e->dungeon_seed;w->terrain_version=e->terrain_version;w->home_x=e->home_x;w->home_y=e->home_y;
     for(int p=0;p<AR_MAX_PETS;p++)w->task_override[p]=-1;
     ar_world_ids_clear(w);ar_world_capture(e);
 }
 static inline void ar_world_close(ARPG* e) {
     ARWorld* w=(ARWorld*)e->campaign;if(!w)return;
-    free(w->chunks);free(w->resources);free(w->buildings);free(w->nests);free(w->enemies);free(w);e->campaign=NULL;
+    free(w->chunk_index);free(w->chunks);free(w->resources);free(w->buildings);free(w->nests);free(w->enemies);free(w);e->campaign=NULL;
 }
 static inline void ar_world_shift(ARPG* e,int dx,int dy) {
     ARWorld* w=(ARWorld*)e->campaign;if(!w || (!dx && !dy))return;
@@ -252,6 +286,23 @@ static inline void ar_world_shift(ARPG* e,int dx,int dy) {
     float sx=dx*ar_world_cell(e),sy=dy*ar_world_cell(e);
     e->px-=sx;e->py-=sy;e->rally_x-=sx;e->rally_y-=sy;e->blast_x-=sx;e->blast_y-=sy;
     ar_world_activate(e);
+}
+
+static inline void ar_world_follow_actor(ARPG* e) {
+    if(!e->campaign)return;
+    int p=e->direct_pet;
+    float fx=p>=0 && e->pets.active[p] ? e->pets.x[p] : e->px;
+    float fy=p>=0 && e->pets.active[p] ? e->pets.y[p] : e->py;
+    float stride=AR_CHUNK_SIZE*ar_world_cell(e);
+    int dx=fabsf(fx)>stride ? (int)floorf((fx+stride*0.5f)/stride)*AR_CHUNK_SIZE : 0;
+    int dy=fabsf(fy)>stride ? (int)floorf((fy+stride*0.5f)/stride)*AR_CHUNK_SIZE : 0;
+    if(dx||dy)ar_world_shift(e,dx,dy);
+}
+static inline int ar_world_drive(ARPG* e,int pet) {
+    if(pet<-1 || pet>=AR_MAX_PETS || (pet>=0 && !e->pets.active[pet]))return 0;
+    e->direct_pet=pet;e->direct_dx=e->direct_dy=0;e->direct_work=0;e->guide_keeper=0;
+    if(pet>=0)ar_command_pet(e,0,pet,AR_CMD_HOLD,e->pets.x[pet],e->pets.y[pet]);
+    ar_world_follow_actor(e);return 1;
 }
 
 static inline int ar_world_id_loaded(const int* ids,int count,int id) {
@@ -375,13 +426,11 @@ static inline void ar_world_step(ARPG* e) {
     ARWorld* w=(ARWorld*)e->campaign;if(!w)return;
     if(e->hp<=0) {
         e->hp=e->max_hp;e->shards=fmaxf(0,e->shards-5);e->px=e->home_x;e->py=e->home_y;
+        e->direct_pet=-1;
         e->invuln_timer=120;e->agents[0].terminals[0]=0;w->respawns++;
-        ar_phys_teleport(e->player_body,e->px,e->py);
+        if(!B3_IS_NULL(e->player_body))ar_phys_teleport(e->player_body,e->px,e->py);
     }
-    float stride=AR_CHUNK_SIZE*ar_world_cell(e);
-    int dx=fabsf(e->px)>stride ? (int)floorf((e->px+stride*0.5f)/stride)*AR_CHUNK_SIZE : 0;
-    int dy=fabsf(e->py)>stride ? (int)floorf((e->py+stride*0.5f)/stride)*AR_CHUNK_SIZE : 0;
-    if(dx || dy)ar_world_shift(e,dx,dy);
+    ar_world_follow_actor(e);
     // A manually dispatched pet can leave without dragging the keeper's window
     // along with it. Transfer it to coarse navigation at the edge, retaining its
     // slot and world-space destination until it comes back into the live area.
@@ -423,7 +472,7 @@ static inline uint64_t ar_world_checksum(ARWorldSaveHeader h,ARWorld* w) {
 }
 static inline int ar_world_save(ARPG* e,const char* path) {
     ARWorld* w=(ARWorld*)e->campaign;if(!w || strlen(path)>4000)return 0;
-    ar_world_capture(e);ARWorldSaveHeader h={0};memcpy(h.magic,"HWFRONT",8);h.version=1;h.schema=AR_OBS_VERSION;
+    ar_world_capture(e);ARWorldSaveHeader h={0};memcpy(h.magic,"HWFRONT",8);h.version=(uint32_t)w->terrain_version;h.schema=AR_OBS_VERSION;
     h.seed=w->seed;h.rng=e->rng;h.origin_x=w->origin_x;h.origin_y=w->origin_y;
     h.counts[0]=w->chunk_count;h.counts[1]=w->resource_count;h.counts[2]=w->building_count;
     h.counts[3]=w->nest_count;h.counts[4]=w->enemy_count;
@@ -432,6 +481,13 @@ static inline int ar_world_save(ARPG* e,const char* path) {
     h.arena_size=e->cfg.arena_size;h.hp=e->hp;h.shards=e->shards;h.cores=e->cores;h.harvested=e->harvested;
     h.summon_cd=fmaxf(0,e->summon_cd);h.dash_cd=fmaxf(0,e->dash_cd);h.nova_cd=fmaxf(0,e->nova_cd);h.frost_cd=fmaxf(0,e->frost_cd);
     h.player_x=ar_world_ox(e,w)+e->px;h.player_y=ar_world_oy(e,w)+e->py;h.home_x=w->home_x;h.home_y=w->home_y;
+    // Possession is transient. Restore around the keeper without moving either
+    // actor or rebasing the running world just to perform an autosave.
+    if(e->keeper_dormant) {
+        double stride=AR_CHUNK_SIZE*ar_world_cell(e);
+        h.origin_x=(int32_t)(floor(h.player_x/stride+0.5)*AR_CHUNK_SIZE);
+        h.origin_y=(int32_t)(floor(h.player_y/stride+0.5)*AR_CHUNK_SIZE);
+    }
     h.rally_x=ar_world_ox(e,w)+e->rally_x;h.rally_y=ar_world_oy(e,w)+e->rally_y;
     h.checksum=ar_world_checksum(h,w);
     char temp[4096];snprintf(temp,sizeof(temp),"%s.tmp.XXXXXX",path);
@@ -459,7 +515,7 @@ static inline int ar_world_entity_valid(ARWorldEntity r,int kinds) {
 static inline int ar_world_load(ARPG* e,const char* path) {
     FILE* file=fopen(path,"rb");if(!file)return errno==ENOENT ? 0 : -1;
     ARWorldSaveHeader h={0};int ok=fread(&h,sizeof(h),1,file)==1;
-    if(!ok || memcmp(h.magic,"HWFRONT",8) || h.version!=1 || h.schema!=AR_OBS_VERSION ||
+    if(!ok || memcmp(h.magic,"HWFRONT",8) || (h.version!=1 && h.version!=2) || h.schema!=AR_OBS_VERSION ||
             !isfinite(h.arena_size) || fabsf(h.arena_size-e->cfg.arena_size)>0.0001f ||
             h.origin_x%AR_CHUNK_SIZE || h.origin_y%AR_CHUNK_SIZE ||
             h.origin_x<-100000000 || h.origin_x>100000000 || h.origin_y<-100000000 || h.origin_y>100000000) {fclose(file);return -1;}
@@ -474,7 +530,7 @@ static inline int ar_world_load(ARPG* e,const char* path) {
             fabs(h.player_x-(double)h.origin_x*ar_world_cell(e))>e->cfg.arena_size ||
             fabs(h.player_y-(double)h.origin_y*ar_world_cell(e))>e->cfg.arena_size) {fclose(file);return -1;}
     ARWorld* w=(ARWorld*)calloc(1,sizeof(*w));if(!w){fclose(file);return -1;}
-    w->seed=h.seed;w->origin_x=h.origin_x;w->origin_y=h.origin_y;w->home_x=h.home_x;w->home_y=h.home_y;w->respawns=h.respawns;
+    w->seed=h.seed;w->terrain_version=(int)h.version;w->origin_x=h.origin_x;w->origin_y=h.origin_y;w->home_x=h.home_x;w->home_y=h.home_y;w->respawns=h.respawns;
     for(int p=0;p<AR_MAX_PETS;p++)w->task_override[p]=h.task_override[p];
     w->chunk_count=w->chunk_capacity=h.counts[0];w->resource_count=w->resource_capacity=h.counts[1];
     w->building_count=w->building_capacity=h.counts[2];w->nest_count=w->nest_capacity=h.counts[3];w->enemy_count=w->enemy_capacity=h.counts[4];
@@ -509,6 +565,7 @@ static inline int ar_world_load(ARPG* e,const char* path) {
         free(w->chunks);free(w->resources);free(w->buildings);free(w->nests);free(w->enemies);free(w);return -1;
     }
     ar_world_close(e);e->campaign=w;ar_world_ids_clear(w);e->dungeon_seed=h.seed;e->rng=h.rng;e->tick=h.tick;
+    e->terrain_version=(int)h.version;e->direct_pet=-1;e->direct_dx=e->direct_dy=0;e->direct_work=0;e->guide_keeper=0;
     e->hp=h.hp;e->shards=h.shards;e->cores=h.cores;e->harvested=h.harvested;e->camps_cleared=h.camps;e->order=h.order;
     e->summon_cd=h.summon_cd;e->dash_cd=h.dash_cd;e->nova_cd=h.nova_cd;e->frost_cd=h.frost_cd;
     e->px=(float)(h.player_x-ar_world_ox(e,w));e->py=(float)(h.player_y-ar_world_oy(e,w));

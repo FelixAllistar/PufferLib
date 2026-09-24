@@ -44,6 +44,11 @@ static float retro_sweep_score(const char* checkpoint, Ini* ini) {
     float score=NAN; int results=0; char line[1024];
     if(stream) {
         while(fgets(line,sizeof(line),stream)) {
+            // Keep the human-readable PB/mean/clear summary visible instead
+            // of swallowing it behind the generic native sweep score field.
+            // Native sweep workers suppress ordinary stdout; stderr remains
+            // visible in the parent console beside its per-trial rank line.
+            if(!strncmp(line,"retro_speed ",12)) { fputs(line,stderr); fflush(stderr); }
             float value;
             if(sscanf(line,"retro_panel version=1 score=%f",&value)==1) { score=value; results++; }
         }

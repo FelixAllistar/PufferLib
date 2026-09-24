@@ -1125,7 +1125,7 @@ PS_SIM_FN void ps_spawn_area(PSSim* sim, int env, int type, float x, float y, fl
 
     int i = ps_find_free_slot(sim, env, PS_AREA_ACTIVE(sim, env), PS_AREA_STORAGE_CAP, &PS_P(sim, env, next_area_slot));
 
-    ps_push_out_obstacles(sim, env, &x, &y, radius, 0);
+    if (damage > 0.0f) ps_push_out_obstacles(sim, env, &x, &y, radius, 0);
     PS_AREA(sim, env, i, type) = (uint8_t)type;
     PS_AREA(sim, env, i, x) = x;
     PS_AREA(sim, env, i, y) = y;
@@ -1308,6 +1308,27 @@ PS_SIM_FN void ps_update_enemies(PSSim* sim, int env) {
     }
 }
 
+PS_SIM_FN void ps_damage_radius(PSSim* sim, int env, float x, float y,
+    float radius, float damage, float knockback);
+
+PS_SIM_FN void ps_hit_projectile(PSSim* sim, int env, int i, int enemy) {
+    float damage = PS_PROJECTILE(sim, env, i, damage);
+    if (PS_PROJECTILE(sim, env, i, type) == PS_WEAPON_BUBBLE
+            && PS_PROJECTILE(sim, env, i, pierce) == 0) {
+        float x = PS_PROJECTILE(sim, env, i, x);
+        float y = PS_PROJECTILE(sim, env, i, y);
+        // The final impact pops; its stored radius carries level/Area scaling.
+        float radius = 4.0f * PS_PROJECTILE(sim, env, i, radius);
+        ps_damage_radius(sim, env, x, y, radius, damage, 0.0f);
+        ps_spawn_area(sim, env, PS_WEAPON_BUBBLE, x, y, radius, 0.0f,
+            PS_BUBBLE_POP_TTL, PS_BUBBLE_POP_TTL);
+    } else {
+        ps_damage_enemy(sim, env, enemy, damage);
+    }
+    if (PS_PROJECTILE(sim, env, i, pierce) <= 0) ps_deactivate_projectile(sim, env, i);
+    else PS_PROJECTILE(sim, env, i, pierce)--;
+}
+
 PS_SIM_FN void ps_update_projectiles(PSSim* sim, int env) {
     float half = 0.5f * sim->cfg.arena_size;
     float px = PS_P(sim, env, px);
@@ -1361,9 +1382,7 @@ PS_SIM_FN void ps_update_projectiles(PSSim* sim, int env) {
                             PS_ENEMY(sim, env, eidx, half_width),
                             PS_ENEMY(sim, env, eidx, half_height),
                             PS_PROJECTILE(sim, env, i, radius))) continue;
-                    ps_damage_enemy(sim, env, eidx, PS_PROJECTILE(sim, env, i, damage));
-                    if (PS_PROJECTILE(sim, env, i, pierce) <= 0) ps_deactivate_projectile(sim, env, i);
-                    else PS_PROJECTILE(sim, env, i, pierce)--;
+                    ps_hit_projectile(sim, env, i, eidx);
                     break;
                 }
             }
@@ -1376,9 +1395,7 @@ PS_SIM_FN void ps_update_projectiles(PSSim* sim, int env) {
                     PS_PROJECTILE(sim, env, i, y) - PS_ENEMY(sim, env, eidx, y),
                     PS_ENEMY(sim, env, eidx, radius), PS_ENEMY(sim, env, eidx, half_width),
                     PS_ENEMY(sim, env, eidx, half_height), PS_PROJECTILE(sim, env, i, radius))) continue;
-            ps_damage_enemy(sim, env, eidx, PS_PROJECTILE(sim, env, i, damage));
-            if (PS_PROJECTILE(sim, env, i, pierce) <= 0) ps_deactivate_projectile(sim, env, i);
-            else PS_PROJECTILE(sim, env, i, pierce)--;
+            ps_hit_projectile(sim, env, i, eidx);
         }
         if (PS_PROJECTILE(sim, env, i, active)) k++;
     }
@@ -1556,7 +1573,7 @@ PS_SIM_FN void ps_cast_bubble(PSSim* sim, int env, int level) {
     if (target < 0) return;
     int shots = 1 + level / 3;
     float damage = ps_weapon_damage(sim, env, PS_WEAPON_BUBBLE, level, 1);
-    float radius = ps_geometry_weapon_radius(&sim->cfg, PS_WEAPON_BUBBLE, 0)
+    float radius = ps_geometry_weapon_radius(&sim->cfg, PS_WEAPON_BUBBLE, level - 1)
         * (1.0f + PS_P(sim, env, area_bonus));
     int pierce = PS_P(sim, env, pierce_bonus) + level / 4;
     for (int i = 0; i < shots; i++) {
@@ -1693,7 +1710,7 @@ PS_SIM_FN void ps_cast_glacier(PSSim* sim, int env, int level) {
 }
 
 PS_SIM_FN void ps_cast_spikes(PSSim* sim, int env, int level) {
-    int n = 4 << (level - 1);
+    int n = 8 * level;
     float dmg = ps_weapon_damage(sim, env, PS_WEAPON_SPIKES, level, 0);
     float radius = ps_geometry_weapon_radius(&sim->cfg, PS_WEAPON_SPIKES, level)
         * (1.0f + PS_P(sim, env, area_bonus));

@@ -26,13 +26,13 @@ static inline const char* ps_upgrade_name(int type) {
 
 static inline const char* ps_upgrade_description(int type) {
     switch (type) {
-        case PS_UPGRADE_BUBBLE: return "Faster bubbles\nthat pop harder.";
+        case PS_UPGRADE_BUBBLE: return "Bubbles pop into\na crowd splash.";
         case PS_UPGRADE_WHIRLPOOL: return "Bigger burst\nand knockback.";
         case PS_UPGRADE_ORBIT: return "More pearls for\nclose defense.";
         case PS_UPGRADE_INK: return "Poison pools and\na longer trail.";
         case PS_UPGRADE_SONAR: return "Huge pulse when\nswarmed.";
         case PS_UPGRADE_GLACIER: return "Cone of cold that\nslows enemies.";
-        case PS_UPGRADE_SPIKES: return "Spikes burst out\nin all directions.";
+        case PS_UPGRADE_SPIKES: return "Wider radial fans\nof sharp spikes.";
         case PS_UPGRADE_SPEED: return "Move faster out\nof danger.";
         case PS_UPGRADE_MAGNET: return "Pull XP and hearts\nfrom farther away.";
         case PS_UPGRADE_HEALTH: return "Gain max HP and\nheal now.";
@@ -70,11 +70,9 @@ typedef struct {
     int fast_ink_loaded;
     Texture2D fast_water_caustics;
     Texture2D fast_water_silhouettes;
-    Texture2D fast_water_props;
     Texture2D fast_obstacle_debris;
     int fast_water_caustics_loaded;
     int fast_water_silhouettes_loaded;
-    int fast_water_props_loaded;
     int fast_obstacle_debris_loaded;
     float fast_frame_ms;
     float fast_update_ms;
@@ -387,118 +385,56 @@ static inline void ps_draw_fast_obstacle_debris(PufferSurvivors* env, int varian
     }
 }
 
+static inline void ps_draw_water_layer(Texture2D texture, Vector2 offset,
+        float size, int w, int h, Color tint) {
+    float u = (size - w) * 0.5f + offset.x;
+    float v = (size - h) * 0.5f + offset.y;
+    Rectangle src = {fmodf(u, 2.0f * size) * texture.width / size,
+        fmodf(v, 2.0f * size) * texture.height / size,
+        w * texture.width / size, h * texture.height / size};
+    DrawTexturePro(texture, src, (Rectangle){0, 0, (float)w, (float)h},
+        (Vector2){0, 0}, 0, tint);
+}
+
 static inline void ps_draw_fast_background(PufferSurvivors* env, float scale, int w, int h) {
     PSClient* client = ps_client(env);
-    ClearBackground((Color){8, 58, 77, 255});
+    ClearBackground((Color){8, 81, 105, 255});
 
     float now = (float)GetTime();
-    float viewport = fmaxf((float)w, (float)h);
-    // Scale-independent camera phase: world units only, not screen scale.
-    // Previous scale*0.0024 made sin argument explode when window scaled, causing strobe.
-    float camera_phase_x = env->px * 0.028f;
-    float camera_phase_y = env->py * 0.022f;
-    // True parallax: background moves opposite camera at a fraction of scale.
-    // Each layer gets its own parallax factor for depth without extra textures.
-    float parallax_base_x = -env->px * scale;
-    float parallax_base_y = -env->py * scale;
+    Vector2 origin = ps_screen(env, 0, 0, scale, w, h);
+    Vector2 camera = {w * 0.5f - origin.x, h * 0.5f - origin.y};
 
-    if (client->fast_water_caustics_loaded) {
-        float size = viewport * 3.0f;
-        float parallax = 0.025f;
-        float x = ((float)w - size) * 0.5f + parallax_base_x * parallax
-            + 14.0f * sinf(now * 0.035f + camera_phase_x)
-            + 5.0f * sinf(now * 0.018f + camera_phase_y);
-        float y = ((float)h - size) * 0.5f + parallax_base_y * parallax
-            + 10.0f * sinf(now * 0.030f + camera_phase_y + 1.7f)
-            + 4.0f * sinf(now * 0.015f + camera_phase_x);
-        Rectangle src = {0.0f, 0.0f,
-            (float)client->fast_water_caustics.width,
-            (float)client->fast_water_caustics.height};
-        Rectangle dst = {x, y, size, size};
-        DrawTexturePro(client->fast_water_caustics, src, dst,
-            (Vector2){0.0f, 0.0f}, 0.0f, (Color){255, 255, 255, 130});
+    // One continuous water surface, then far reef and nearer seabed debris.
+    // Mirrored wrapping joins the non-tileable art without hard cut edges.
+    // All layers share the interpolated camera; only the water itself drifts.
+    if (client->fast_water_caustics_loaded)
+        ps_draw_water_layer(client->fast_water_caustics,
+            (Vector2){camera.x * 0.06f + now * 0.6f, camera.y * 0.06f + now * 0.3f},
+            112.0f * scale, w, h, (Color){174, 213, 230, 125});
+    if (client->fast_water_silhouettes_loaded)
+        ps_draw_water_layer(client->fast_water_silhouettes,
+            (Vector2){camera.x * 0.12f, camera.y * 0.12f},
+            96.0f * scale, w, h, (Color){57, 137, 150, 80});
+    if (client->fast_obstacle_debris_loaded)
+        ps_draw_water_layer(client->fast_obstacle_debris,
+            (Vector2){camera.x * 0.28f, camera.y * 0.28f},
+            96.0f * scale, w, h, (Color){91, 159, 170, 65});
+    DrawRectangleGradientV(0, 0, w, h, (Color){8, 65, 84, 0}, (Color){3, 30, 49, 55});
 
-        BeginBlendMode(BLEND_ADDITIVE);
-        DrawTexturePro(client->fast_water_caustics, src, dst,
-            (Vector2){0.0f, 0.0f}, 0.0f, (Color){112, 220, 224, 18});
-        EndBlendMode();
-
-        size = viewport * 3.0f;
-        parallax = 0.035f;
-        x = ((float)w - size) * 0.5f + parallax_base_x * parallax
-            - 16.0f * sinf(now * 0.014f + camera_phase_x * 0.7f + 0.8f);
-        y = ((float)h - size) * 0.5f + parallax_base_y * parallax
-            + 12.0f * sinf(now * 0.012f + camera_phase_y * 0.6f + 2.1f);
-        src = (Rectangle){0.0f, 0.0f,
-            (float)client->fast_water_caustics.width,
-            (float)client->fast_water_caustics.height};
-        dst = (Rectangle){x, y, size, size};
-        DrawTexturePro(client->fast_water_caustics, src, dst,
-            (Vector2){0.0f, 0.0f}, 0.0f, (Color){115, 208, 216, 28});
-    }
-
-    if (client->fast_water_props_loaded) {
-        float size = viewport * 3.0f;
-        float parallax = 0.042f;
-        float x = ((float)w - size) * 0.5f + parallax_base_x * parallax
-            + 18.0f * sinf(now * 0.008f + camera_phase_x * 0.25f + 2.4f);
-        float y = ((float)h - size) * 0.5f + parallax_base_y * parallax
-            + 12.0f * sinf(now * 0.007f + camera_phase_y * 0.22f + 0.6f);
-        Rectangle src = {0.0f, 0.0f,
-            (float)client->fast_water_props.width,
-            (float)client->fast_water_props.height};
-        Rectangle dst = {x, y, size, size};
-        DrawTexturePro(client->fast_water_props, src, dst,
-            (Vector2){0.0f, 0.0f}, 0.0f, (Color){220, 225, 204, 110});
-    }
-
-    if (client->fast_water_silhouettes_loaded) {
-        float size = viewport * 3.0f;
-        float parallax = 0.065f;
-        float x = ((float)w - size) * 0.5f + parallax_base_x * parallax
-            + 18.0f * sinf(now * 0.014f + camera_phase_x * 0.55f + 0.4f);
-        float y = ((float)h - size) * 0.5f + parallax_base_y * parallax
-            + 12.0f * sinf(now * 0.010f + camera_phase_y * 0.45f + 1.2f);
-        Rectangle src = {0.0f, 0.0f,
-            (float)client->fast_water_silhouettes.width,
-            (float)client->fast_water_silhouettes.height};
-        Rectangle dst = {x, y, size, size};
-        DrawTexturePro(client->fast_water_silhouettes, src, dst,
-            (Vector2){0.0f, 0.0f}, 0.0f, (Color){32, 118, 122, 120});
-    }
-
-    // Constant marine snow - 3 depths, always falling, parallax gives volume.
-    // No image gen needed: pure procedural circles with size/alpha/speed tied to depth.
-    {
-        struct { float parallax; float fall; float drift; float size0; int count; unsigned char alpha0; } layers[3] = {
-            {0.04f, 0.45f, 0.6f, 0.70f, 75, 22},
-            {0.12f, 0.95f, 1.2f, 1.05f, 60, 42},
-            {0.24f, 1.65f, 2.0f, 1.55f, 40, 68},
-        };
-        for (int L = 0; L < 3; L++) {
-            float drift_x = parallax_base_x * layers[L].parallax + now * layers[L].drift * 0.7f;
-            float drift_y = parallax_base_y * layers[L].parallax * 0.5f + now * layers[L].fall * 6.0f;
-            for (int i = 0; i < layers[L].count; i++) {
-                // Deterministic hash for position, wobble with time
-                float hx = (float)((i * 173 + L * 997) % 997);
-                float hy = (float)((i * 277 + L * 991) % 991);
-                float wobble_x = sinf(now * (0.4f + L * 0.12f) + i * 1.7f) * (1.2f + L * 0.6f);
-                float wobble_y = cosf(now * (0.3f + L * 0.08f) + i * 2.1f) * 0.6f;
-                float x = fmodf(hx + drift_x + wobble_x, (float)w + 48.0f) - 24.0f;
-                float y = fmodf(hy + drift_y + wobble_y, (float)h + 48.0f) - 24.0f;
-                if (x < -24.0f) x += (float)w + 48.0f;
-                if (y < -24.0f) y += (float)h + 48.0f;
-                float r = layers[L].size0 + (i % 3) * 0.32f;
-                // Far layer more blurred/dim, near more crisp/bright
-                unsigned char a = layers[L].alpha0 + (i % 3) * 8;
-                // Add subtle blue-white variation
-                unsigned char b = 224 + (L * 6) + (i % 3) * 4;
-                DrawCircleV((Vector2){x, y}, r, (Color){138, 226, b, a});
-                // Near layer gets tiny highlight
-                if (L == 2 && (i % 4 == 0)) {
-                    DrawCircleV((Vector2){x + r * 0.22f, y - r * 0.18f}, r * 0.35f, (Color){255, 255, 255, (unsigned char)(a * 0.45f)});
-                }
-            }
+    // Normalized seeds keep marine snow spread across any window size.
+    for (int layer = 0; layer < 2; layer++) {
+        float parallax = 0.12f + 0.16f * layer;
+        float drift_x = -camera.x * parallax + now * (0.5f + layer);
+        float drift_y = -camera.y * parallax + now * (3.0f + 4.0f * layer);
+        float width = w + 48.0f, height = h + 48.0f;
+        for (int i = 0; i < 60 - 20 * layer; i++) {
+            float x = (float)((i * 173 + layer * 317) % 997) / 997.0f * width + drift_x;
+            float y = (float)((i * 277 + layer * 113) % 991) / 991.0f * height + drift_y;
+            x -= floorf(x / width) * width + 24.0f;
+            y -= floorf(y / height) * height + 24.0f;
+            float r = 0.8f + layer * 0.45f + (i % 3) * 0.2f;
+            DrawCircleV((Vector2){x, y}, r,
+                (Color){158, 224, 237, (unsigned char)(24 + layer * 22 + (i % 3) * 6)});
         }
     }
 }
@@ -596,16 +532,31 @@ static inline void ps_draw_area(PufferSurvivors* env, int i, float scale, int w,
         DrawCircleLines((int)p.x, (int)p.y, r, (Color){35, 18, 56, 210});
 #endif
     } else if (type == PS_WEAPON_WHIRLPOOL) {
-        DrawCircleV(p, r, (Color){15, 95, 133, 55});
-        DrawRing(p, r * 0.38f, r * 0.46f, 20.0f + env->tick * 7.0f, 300.0f + env->tick * 7.0f, 36, (Color){98, 226, 255, 150});
-        DrawRing(p, r * 0.68f, r * 0.75f, 210.0f - env->tick * 5.0f, 520.0f - env->tick * 5.0f, 40, (Color){45, 171, 255, 120});
+        float life = (float)env->areas.ttl[i] / env->cfg.whirlpool_ttl;
+        DrawCircleV(p, r, (Color){37, 146, 188, (unsigned char)(30 * life)});
+        DrawRing(p, r * 0.94f, r, 0, 360, 48, (Color){115, 232, 255, (unsigned char)(150 * life)});
+        DrawRing(p, r * 0.38f, r * 0.46f, 20.0f + env->tick * 7.0f, 300.0f + env->tick * 7.0f, 36, (Color){98, 226, 255, (unsigned char)(180 * life)});
+        DrawRing(p, r * 0.68f, r * 0.75f, 210.0f - env->tick * 5.0f, 520.0f - env->tick * 5.0f, 40, (Color){45, 171, 255, (unsigned char)(160 * life)});
     } else if (type == PS_WEAPON_SONAR) {
-        DrawRing(p, r * (0.55f + 0.18f * pulse), r * (0.58f + 0.18f * pulse), 0, 360, 64, (Color){165, 252, 255, 185});
-        DrawRing(p, r * 0.90f, r * 0.93f, 0, 360, 64, (Color){72, 198, 255, 100});
+        float life = (float)env->areas.ttl[i] / env->cfg.sonar_ttl;
+        float wave = r * (1.0f - 0.75f * life);
+        DrawRing(p, wave * 0.94f, wave, 0, 360, 64, (Color){165, 252, 255, (unsigned char)(220 * life)});
+        DrawRing(p, r * 0.98f, r, 0, 360, 64, (Color){72, 198, 255, (unsigned char)(140 * life)});
+    } else if (type == PS_WEAPON_BUBBLE) {
+        float life = (float)env->areas.ttl[i] / PS_BUBBLE_POP_TTL;
+        float wave = r * (1.0f - 0.3f * life);
+        DrawCircleV(p, r, (Color){157, 235, 255, (unsigned char)(28 * life)});
+        DrawRing(p, wave * 0.90f, wave, 0, 360, 32, (Color){189, 246, 255, (unsigned char)(220 * life)});
+        for (int b = 0; b < 6; b++) {
+            float a = b * PI / 3.0f + i;
+            DrawCircleV((Vector2){p.x + cosf(a) * wave, p.y + sinf(a) * wave},
+                r * 0.09f * life, (Color){221, 252, 255, (unsigned char)(220 * life)});
+        }
     } else {
         DrawCircleV(p, r, c);
         DrawCircleLines((int)p.x, (int)p.y, r, ps_alpha(c, 150));
     }
+    if (env->show_hitboxes) DrawCircleLines((int)p.x, (int)p.y, r, ps_alpha(c, 190));
 }
 
 static inline void ps_draw_projectile(PufferSurvivors* env, int i, float scale, int w, int h) {
@@ -614,9 +565,8 @@ static inline void ps_draw_projectile(PufferSurvivors* env, int i, float scale, 
     if (p.x + r < 0.0f || p.x - r > (float)w || p.y + r < 0.0f || p.y - r > (float)h) return;
 
     Vector2 tail = {p.x - env->projectiles.vx[i] * scale * 2.5f, p.y - env->projectiles.vy[i] * scale * 2.5f};
-    DrawLineEx(tail, p, fmaxf(2.0f, r * 0.35f), (Color){115, 231, 255, 105});
-    DrawCircleLines((int)p.x, (int)p.y, r * 1.25f, (Color){115, 231, 255, 80});
     if (env->projectiles.type[i] == PS_WEAPON_SPIKES) {
+        DrawLineEx(tail, p, fmaxf(2.0f, r * 0.4f), (Color){255, 211, 110, 115});
         float inv_speed = 1.0f / sqrtf(env->projectiles.vx[i] * env->projectiles.vx[i]
             + env->projectiles.vy[i] * env->projectiles.vy[i]);
         Vector2 dir = {env->projectiles.vx[i] * inv_speed,
@@ -625,11 +575,13 @@ static inline void ps_draw_projectile(PufferSurvivors* env, int i, float scale, 
         Vector2 tip = {p.x + dir.x * r * 2.0f, p.y + dir.y * r * 2.0f};
         Vector2 base = {p.x - dir.x * r * 0.8f, p.y - dir.y * r * 0.8f};
         DrawTriangle(tip,
-            (Vector2){base.x + side.x * r * 0.8f, base.y + side.y * r * 0.8f},
             (Vector2){base.x - side.x * r * 0.8f, base.y - side.y * r * 0.8f},
+            (Vector2){base.x + side.x * r * 0.8f, base.y + side.y * r * 0.8f},
             (Color){255, 223, 120, 255});
         return;
     }
+    DrawLineEx(tail, p, fmaxf(2.0f, r * 0.35f), (Color){115, 231, 255, 105});
+    DrawCircleLines((int)p.x, (int)p.y, r * 1.25f, (Color){115, 231, 255, 80});
     float travel_angle = atan2f(env->projectiles.vy[i], env->projectiles.vx[i]) * 57.2958f;
     // The atlas bubble points left (large bubble at the leading edge), so its
     // zero-rotation forward vector is 180 degrees.
@@ -644,7 +596,7 @@ static inline void ps_draw_weapon_orbits(PufferSurvivors* env, float scale, int 
     int count = 1 + level / 2;
     float orbit_r = (env->cfg.weapon_orbit_distance
         + env->cfg.weapon_orbit_distance_per_level * (float)level)
-        * (1.0f + 0.5f * env->area_bonus);
+        * (1.0f + env->cfg.orbit_area_distance_bonus * env->area_bonus);
     float hit_r = ps_geometry_weapon_radius(&env->cfg, PS_WEAPON_ORBIT, level)
         * (1.0f + env->area_bonus);
     for (int i = 0; i < count; i++) {
@@ -652,8 +604,9 @@ static inline void ps_draw_weapon_orbits(PufferSurvivors* env, float scale, int 
         float x = env->px + cosf(a) * orbit_r;
         float y = env->py + sinf(a) * orbit_r;
         Vector2 p = ps_screen(env, x, y, scale, w, h);
-        DrawCircleV(p, hit_r * scale * 1.15f, (Color){255, 224, 90, 70});
-        ps_draw_sprite_ex(env, PS_SPRITE_ORB, x, y, hit_r, 3.2f, 0.0f, 0, GOLD);
+        DrawCircleV(p, hit_r * scale, (Color){255, 224, 90, 35});
+        DrawCircleLines((int)p.x, (int)p.y, hit_r * scale, (Color){255, 224, 130, 150});
+        ps_draw_sprite_ex(env, PS_SPRITE_ORB, x, y, hit_r, 2.2f, 0.0f, 0, GOLD);
     }
 }
 
@@ -663,11 +616,13 @@ static inline void ps_draw_frost_cone(PufferSurvivors* env, float scale, int w, 
     float range = env->cfg.frost_range * (1.0f + env->area_bonus) * scale;
     float half = env->cfg.frost_half_angle * 57.2958f;
     float aim = env->frost_aim * 57.2958f;
-    float alpha = 150.0f * env->weapon_active[PS_WEAPON_GLACIER];
+    float alpha = env->weapon_active[PS_WEAPON_GLACIER];
     DrawCircleSector(origin, range, aim - half, aim + half, 48,
-        (Color){150, 226, 255, (unsigned char)alpha});
+        (Color){150, 226, 255, (unsigned char)(38 * alpha)});
+    DrawRing(origin, range * 0.97f, range, aim - half, aim + half, 48,
+        (Color){210, 245, 255, (unsigned char)(180 * alpha)});
     DrawCircleSectorLines(origin, range, aim - half, aim + half, 48,
-        (Color){210, 245, 255, (unsigned char)(alpha * 0.7f)});
+        (Color){210, 245, 255, (unsigned char)(85 * alpha)});
 }
 
 static inline void ps_draw_enemy(PufferSurvivors* env, int i, float scale, int w, int h) {
@@ -1203,31 +1158,23 @@ static inline void c_render(PufferSurvivors* env) {
         client->fast_water_silhouettes = ps_load_project_texture(
             "resources/puffer_survivors/fast_water_silhouettes_bright.png",
             "../../resources/puffer_survivors/fast_water_silhouettes_bright.png");
-        client->fast_water_props = ps_load_project_texture(
-            "resources/puffer_survivors/fast_water_props.png",
-            "../../resources/puffer_survivors/fast_water_props.png");
         client->fast_obstacle_debris = ps_load_project_texture(
             "resources/puffer_survivors/fast_obstacle_debris.png",
             "../../resources/puffer_survivors/fast_obstacle_debris.png");
         client->fast_water_caustics_loaded = client->fast_water_caustics.id != 0;
         client->fast_water_silhouettes_loaded = client->fast_water_silhouettes.id != 0;
-        client->fast_water_props_loaded = client->fast_water_props.id != 0;
         client->fast_obstacle_debris_loaded = client->fast_obstacle_debris.id != 0;
         if (client->fast_water_caustics_loaded) {
             SetTextureFilter(client->fast_water_caustics, TEXTURE_FILTER_BILINEAR);
-            SetTextureWrap(client->fast_water_caustics, TEXTURE_WRAP_REPEAT);
+            SetTextureWrap(client->fast_water_caustics, TEXTURE_WRAP_MIRROR_REPEAT);
         }
         if (client->fast_water_silhouettes_loaded) {
-            SetTextureFilter(client->fast_water_silhouettes, TEXTURE_FILTER_POINT);
-            SetTextureWrap(client->fast_water_silhouettes, TEXTURE_WRAP_REPEAT);
-        }
-        if (client->fast_water_props_loaded) {
-            SetTextureFilter(client->fast_water_props, TEXTURE_FILTER_POINT);
-            SetTextureWrap(client->fast_water_props, TEXTURE_WRAP_REPEAT);
+            SetTextureFilter(client->fast_water_silhouettes, TEXTURE_FILTER_BILINEAR);
+            SetTextureWrap(client->fast_water_silhouettes, TEXTURE_WRAP_MIRROR_REPEAT);
         }
         if (client->fast_obstacle_debris_loaded) {
             SetTextureFilter(client->fast_obstacle_debris, TEXTURE_FILTER_POINT);
-            SetTextureWrap(client->fast_obstacle_debris, TEXTURE_WRAP_CLAMP);
+            SetTextureWrap(client->fast_obstacle_debris, TEXTURE_WRAP_MIRROR_REPEAT);
         }
 #endif
         const char* path = "resources/puffer_survivors/sprites.png";
@@ -1276,6 +1223,10 @@ static inline void c_render(PufferSurvivors* env) {
     render_client->render_h = sh;
     render_client->render_scale = scale;
     ps_draw_water(env, scale, sw, sh);
+
+    for (int k = 0; k < env->area_count; k++)
+        ps_draw_area(env, env->areas.dense[k], scale, sw, sh);
+    ps_draw_frost_cone(env, scale, sw, sh);
 
     for (int i = 0; i < env->cfg.obstacle_count; i++) {
         Vector2 p = ps_screen(env, env->obstacles.x[i], env->obstacles.y[i], scale, sw, sh);
@@ -1332,13 +1283,7 @@ static inline void c_render(PufferSurvivors* env) {
         if (env->show_hitboxes) DrawCircleLines((int)p.x, (int)p.y, env->cfg.pickup_radius * scale, (Color){64, 220, 255, 120});
     }
 
-    for (int k = 0; k < env->area_count; k++) {
-        int i = env->areas.dense[k];
-        ps_draw_area(env, i, scale, sw, sh);
-    }
-
     ps_draw_weapon_orbits(env, scale, sw, sh);
-    ps_draw_frost_cone(env, scale, sw, sh);
 
     for (int k = 0; k < env->projectile_count; k++) {
         int i = env->projectiles.dense[k];
@@ -1504,7 +1449,6 @@ static inline void c_close(PufferSurvivors* env) {
         if (client->fast_ink_loaded) UnloadTexture(client->fast_ink);
         if (client->fast_water_caustics_loaded) UnloadTexture(client->fast_water_caustics);
         if (client->fast_water_silhouettes_loaded) UnloadTexture(client->fast_water_silhouettes);
-        if (client->fast_water_props_loaded) UnloadTexture(client->fast_water_props);
         if (client->fast_obstacle_debris_loaded) UnloadTexture(client->fast_obstacle_debris);
 #endif
         if (client->moving_anchor_loaded) UnloadTexture(client->moving_anchor);

@@ -43,6 +43,8 @@ def main():
             assert all(0 < int(row["frames"]) <= 17 for row in rows), rows
             assert all(int(row["clear_frames"]) == 0 for row in rows if row["clear"] == "0"), rows
             assert f"attempts={len(expected) * repeats}" in result.stdout, result.stdout
+            assert "best_rta_seconds=NA mean_rta_seconds=NA clears=0/" in result.stdout, result.stdout
+            assert "speed_objective=2" in result.stdout, result.stdout
             print(f"PASS {name}: {len(rows)} attempts, frameskip={skip}, native budget=17", flush=True)
         for options in (["--frameskip", "0"], ["--frameskip", "1.5"], ["--levels", "9-1"], ["--metric", "typo"]):
             result = subprocess.run(base + options, capture_output=True, text=True, timeout=30)

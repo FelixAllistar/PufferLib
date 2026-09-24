@@ -93,20 +93,6 @@ static inline int retro_kill_scan(const uint8_t *m, unsigned char *pid,
     return kills;
 }
 
-// Potential-based progress shaping (Ng-Harada-Russell '99): F = g*P(x')-P(x)
-// with P(x) = clamp(x/XMAX) in [0,1]. Telescopes over the episode, so the
-// optimal policy is unchanged; retreat is penalized symmetrically (unlike
-// max-tracking). gamma MUST equal the learner's train.gamma (policy
-// invariance also requires complete transition differences and zero terminal
-// potential, as implemented by the ROM wrapper. The legacy reward below does
-// not satisfy these boundary conditions.
-#define RETRO_POT_XMAX 3400.0f
-static inline float retro_potential(int x){
-    float v = (float)x / RETRO_POT_XMAX;
-    if(v < 0) v = 0; if(v > 1) v = 1;
-    return v;
-}
-
 // Fills o[0 .. RETRO_EGO_SIZE+RETRO_ENT_SIZE). m = 2KB NES RAM. Pure RAM.
 static inline void retro_ego_ent(float *o, const uint8_t *m, const RetroScalars *s){
     for(int i=0;i<RETRO_EGO_SIZE+RETRO_ENT_SIZE;i++) o[i]=0;
@@ -220,18 +206,14 @@ static inline void retro_ego_ent(float *o, const uint8_t *m, const RetroScalars 
 }
 
 // Shared step reward. pr = values before the action's frames, cu = after.
-// Progress is potential-based (telescoping, see retro_potential); gamma is
-// the learner discount (must match train.gamma). x_max is logging-only.
+// Explicit event rewards only; x_max is logging-only.
 // Sparse-event weights come from rw (config [env], defaults = the original
 // hardcoded values). w_idle>0 additionally penalizes steps that make no
 // forward progress during normal gameplay (anti sit-still; default 0).
 static inline float retro_reward(const RetroScalars *pr, const RetroScalars *cu,
-        int *x_max_io, int dying, int dead, int flag_edge, float gamma,
+        int *x_max_io, int dying, int dead, int flag_edge,
         const RetroWeights *rw){
     float reward = 0;
-    if(cu->world == pr->world && cu->stage == pr->stage && cu->area == pr->area){
-        reward += gamma * retro_potential(cu->x_pos) - retro_potential(pr->x_pos);
-    }
     if(cu->x_pos > *x_max_io){
         *x_max_io = cu->x_pos;
     }

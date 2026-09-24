@@ -13,6 +13,7 @@ goof*
 # hipified cuda extensions dir [HIP/ROCM]
 pufferlib/extensions/hip/
 *.py
+!ocean/retro/report_sweep.py
 !ocean/pokemon/behavior_experiment.py
 !ocean/pokemon/event_qd.py
 !ocean/pokemon/tests/test_event_qd.py
@@ -25,6 +26,10 @@ pufferlib/extensions/hip/
 !ocean/pokemon/tests/test_league.py
 !pufferlib/metagame.py
 # Kaggriculture competition adapters are source, not generated Python glue.
+!ocean/kaggriculture/package_entity_model.py
+!ocean/kaggriculture/submission/entity_agent.py
+!ocean/kaggriculture/submission/test_entity_export.py
+!ocean/kaggriculture/submission/test_entity_kaggle.py
 !ocean/kaggriculture/prepare_bc_replays.py
 !ocean/kaggriculture/build_entity_bc_dataset.py
 !ocean/kaggriculture/entity_bc_labels.py
@@ -311,3 +316,15 @@ ocean/kaggriculture/submission/*.tar.gz
 # Native Pokemon state-bank experiment and its runner tests.
 !ocean/pokemon/state_experiment.py
 !ocean/pokemon/tests/test_state_experiment.py
+
+# Kaggriculture replay opening diagnostics.
+!ocean/kaggriculture/audit_bc_openings.py
+!ocean/kaggriculture/tests/test_bc_openings.py
+!ocean/kaggriculture/run_expanded_bc.py
+!ocean/kaggriculture/verify_critic_checkpoint.py
+!ocean/kaggriculture/run_critic_matrix.py
+!ocean/kaggriculture/run_terminal_critic.py
+!ocean/kaggriculture/continue_terminal_300m.py
+!ocean/kaggriculture/prepare_terminal_league.py
+!ocean/kaggriculture/select_shaped_response.py
+!ocean/kaggriculture/tests/test_critic_matrix.py

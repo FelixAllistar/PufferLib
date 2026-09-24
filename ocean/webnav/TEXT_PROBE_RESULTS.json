@@ -1,0 +1,38 @@
+{
+  "scope": "ASCII development probe; not upstream tokenizer parity or web-agent accuracy",
+  "vocabulary": 29528,
+  "dimensions": 256,
+  "weights_bytes": 30236760,
+  "cases": 24,
+  "hashed_token_top1": 14,
+  "potion_top1": 16,
+  "iterations": 100000,
+  "hashed_token_us_per_string": 1.264609,
+  "potion_us_per_string": 1.405032,
+  "cached_vector_materialize_us": 0.141252,
+  "load_and_checks_seconds": 0.069876,
+  "checksum": 1042.157593,
+  "model": {
+    "id": "minishlab/potion-base-8M",
+    "revision": "bf8b056651a2c21b8d2565580b8569da283cab23",
+    "weights_sha256": "f65d0f325faadc1e121c319e2faa41170d3fa07d8c89abd48ca5358d9a223de2",
+    "tokenizer_sha256": "e67e803f624fb4d67dea1c730d06e1067e1b14d830e2c2202569e3ef0f70bb50",
+    "license_as_listed": "MIT"
+  },
+  "hardware": {
+    "cpu": "Intel Core i5-7400 @ 3.00GHz",
+    "compiler": "clang-19 -O3",
+    "threads": 1
+  },
+  "cases_sha256": "19786fda18e49a3a98ada4034ee2e90937aa933a1c0a0cdbfb065eee16722b3b",
+  "probe_sha256": "a9491e41547c3c187cc3e138b69722f54c17232307ea498f1a1c2e518f18af3c",
+  "limitations": [
+    "Single warm run over 24 short hand-authored strings repeated 100000 times; working set is cache-friendly.",
+    "ASCII-only tokenizer subset; no upstream tokenizer parity established.",
+    "Both encode timings include tokenization, pooling, normalization, and consuming all output dimensions.",
+    "Cached materialization excludes string lookup, hashing, cache eviction, and cache misses.",
+    "Diagnostic nearest-label top-1 is not web-agent accuracy or representative semantic retrieval accuracy.",
+    "Static pooled vectors discard order; retain exact text/number/order features.",
+    "No model training; not integrated into the RL policy or browser extension."
+  ]
+}

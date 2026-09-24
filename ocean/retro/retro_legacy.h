@@ -277,12 +277,11 @@ struct Env {
     int has_flag, is_dead;
     int frameskip;
     int window_w, window_h;
-    float potential_gamma; // must equal train.gamma (PBRS invariance)
     RetroWeights rw;       // sparse-event reward weights ([env] config)
     // Curriculum: per-episode spawn level ([env] spawn_levels: '' = 1-1 only
     // (default, byte-identical to pre-curriculum behavior); 'all' = every
     // world/stage; or CSV like '1-1,1-2,2-1'). Prevents 1-1 overfitting and
-    // forces transferable skills; PBRS potential is already per-area gated.
+    // forces transferable skills.
     int spawn_n;
     unsigned char spawn_w[40], spawn_l[40];
     int cur_spawn;
@@ -506,7 +505,6 @@ void puf_init(Env* env, Dict* kwargs){
     env->use_fast = (be_it && be_it->str && strcmp(be_it->str,"fast")==0) ? 1 : 0;
     it=dict_find(kwargs,"frameskip"); env->frameskip = it? (int)it->value : 4;
     it=dict_find(kwargs,"gravity"); env->gravity = it? (float)it->value : 0.52f;
-    it=dict_find(kwargs,"potential_gamma"); env->potential_gamma = it? (float)it->value : 0.99f;
     // Sparse-event reward weights ([env] in the env ini). Defaults reproduce
     // the original hardcoded values exactly.
     it=dict_find(kwargs,"score_scale"); env->rw.score = it? (float)it->value : 0.01f;
@@ -796,7 +794,7 @@ void puf_step(Env* env){
     }
     reward = retro_reward(&prev, &cur, &env->x_pos_max,
         smb_is_dying(env->emu), smb_is_dead(env->emu),
-        smb_flag_get(env->emu) && !env->has_flag, env->potential_gamma, &env->rw);
+        smb_flag_get(env->emu) && !env->has_flag, &env->rw);
     if (froze) reward -= 1.0f;
     done = smb_is_dead(env->emu) || smb_is_game_over(env->emu) || smb_flag_get(env->emu) || env->tick>4000 || froze;
     if(done){

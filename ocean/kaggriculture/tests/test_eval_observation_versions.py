@@ -13,6 +13,19 @@ spec.loader.exec_module(evaluation)
 
 
 class ObservationEvaluationTests(unittest.TestCase):
+    def test_policy5_multi_executor_bundle(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = self.fresh_model(root, mode=2, executor=2)
+            with self.assertRaises(ValueError):
+                evaluation.fresh_contract(source)
+            Path(f'{source}.policy_version').write_text('5\n')
+            evaluation.copy_fresh_checkpoint(source, root / 'copy.bin')
+            self.assertEqual(evaluation.fresh_contract(root / 'copy.bin')['executor_version'], 2)
+            Path(f'{source}.macro_mode').write_text('3\n')
+            with self.assertRaises(ValueError):
+                evaluation.fresh_contract(source)
+
     def fresh_model(self, root, name='fresh.bin', mode=3, executor=0, ema=False):
         path = root / name
         contract = dict(zip(evaluation.FRESH_TAGS, (3, 3, executor, 32, 3, 8, mode, 1, 0)))

@@ -8,9 +8,11 @@
 #include "../puffer_survivors.h"
 #include "../puffer_survivors.cu"
 #include "test_enemy_scans.h"
+#include "test_weapon_areas.h"
 
 __global__ void test_enemy_scans_kernel(PSCudaSim sim) {
     ps_test_enemy_scans(&sim, 0);
+    ps_test_weapon_areas(&sim, 0);
 }
 
 #define CUDA_CHECK(call) do { \

@@ -1,0 +1,7 @@
+{
+  "bc_critic": "qualification/critic_matrix_20260923/matrix_v1/bc_critic.bin",
+  "bc_log": "qualification/critic_matrix_20260923/matrix_v1/bc_critic.log",
+  "raw": "qualification/critic_matrix_20260923/matrix_v1/raw_seed42.bin",
+  "raw_critic": "qualification/critic_matrix_20260923/matrix_v1/raw_critic_refined.bin",
+  "raw_log": "qualification/critic_matrix_20260923/matrix_v1/raw_critic_refined.log"
+}

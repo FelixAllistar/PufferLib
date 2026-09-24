@@ -18,6 +18,8 @@ static double now() { return std::chrono::duration<double>(std::chrono::steady_c
 static void usage() {
     fprintf(stderr,"retro play [level] [--inspect] [--single-life]\nretro watch [PATH.bin|latest] [level|--level LEVEL] [--random] [--single-life] [--deterministic] [--inspect|--inspect-check]\n"
         "  LEVEL: 1-1 through 8-4 (default 1-1); lives/respawns continue naturally unless --single-life\n"
+        "  --timing: headless deterministic split CSV through the reward/RTA finish (frameskip=1)\n"
+        "  --full-run: ignore practice spawn and start the ordinary level; practice otherwise resets each attempt\n"
         "retro levels\nretro bench [envs=512] [steps=512] [workers=4] [frameskip=1] [levels=all] [random|right|mixed] [idle_loop_skip=1] [reference|blocks] [reference|wide]\n"
         "retro replay INPUT.txt [level=1-1]  # one integer NES button mask (0..255) per frame\n");
 }
@@ -79,6 +81,56 @@ static unsigned char human_buttons() {
         | (IsKeyDown(KEY_UP)?16:0) | (IsKeyDown(KEY_DOWN)?32:0)
         | (IsKeyDown(KEY_LEFT)?64:0) | (IsKeyDown(KEY_RIGHT)?128:0);
 }
+static void retro_timing_audit(Env* e,RetroPolicy* net,float* obs,float* action) {
+    if(e->frameskip!=1) throw std::runtime_error("--timing requires env.frameskip=1 for exact per-frame events");
+    fprintf(stderr,"Timing uses current viewer config: area rewards REMOVED; completion base=%g frame bonus=%g range=%d..%d; HUD extra=%g range=%d..%g\n",
+        e->completion_reward,e->completion_time_bonus,
+        e->completion_time_min_frames,e->completion_time_max_frames,e->completion_time_target_bonus,
+        e->completion_time_target,e->completion_time_target_max);
+    if(e->completion_time_target_bonus>0&&e->completion_time_target_max<=e->completion_time_target)
+        fprintf(stderr,"NOTE: inverted/equal HUD completion range disables its extra bonus.\n");
+    fprintf(stderr,"NTSC frame-derived RTA: %.8f fps, autosplitter black-screen convention, reset offset=%d frames\n",
+        RETRO_NTSC_FPS,e->rta.start_offset);
+    if(e->practice) fprintf(stderr,"PRACTICE: elapsed times are segment-only, NOT full-run RTA.\n");
+    if(!RETRO_RTA_COMPARABLE)
+        fprintf(stderr,"NOT SPEEDRUN RTA: the supported ROM is PAL, but this core schedules NTSC frames.\n");
+    fprintf(stderr,"Reward endpoint: %s\n",e->completion_on_rta_split?"autosplitter-style split":
+        e->completion_on_next_playable?"next playable":"flag/level advance (legacy)");
+    unsigned long core_start=e->emu->video_frame_count();
+    printf("event,frames,seconds,hud_time,routine,x,area_events,novel_destinations,hud_divider,bus_phase,reward,rta_frames,rta_seconds,nes_frames\n");
+    auto row=[&](const char* event) {
+        const auto* m=e->emu->low_mem();
+        int rta_frames=retro_rta_elapsed(e->rta,e->tick);
+        printf("%s,%d,%.6f,%d,%d,%d,%d,%d,%d,%d,%.9g,%d,%.6f,%lu\n",event,e->tick,retro_frame_seconds(e->tick),
+            e->time,m[0xe],e->x_pos,e->episode_area_transitions,e->episode_novel_areas,
+            m[0x787],m[0x77f],e->agents[0].rewards[0],rta_frames,retro_frame_seconds(rta_frames),
+            e->emu->video_frame_count()-core_start);
+    };
+    row("start");
+    for(int frame=0;frame<6000;frame++) {
+        const auto* m=e->emu->low_mem();
+        int old_state=m[0xe],old_areas=e->episode_area_transitions,old_clears=e->episode_clears;
+        int old_world=e->world,old_stage=e->stage;
+        int old_split=e->rta.previous_split_tick;
+        retro_policy_act(net,obs,action,true);
+        puf_step(e);
+        if(e->agents[0].terminals[0]) { row("episode_reset"); break; }
+        if(e->emu->video_frame_count()-core_start!=(unsigned long)e->tick)
+            throw std::runtime_error("RTA audit: wrapper frames disagree with NES video scheduler");
+        if(m[0xe]!=old_state) row(m[0xe]==3?"down_pipe_entry":m[0xe]==2?"side_pipe_entry":"routine_change");
+        if(e->episode_area_transitions!=old_areas) row("area_playable");
+        if(e->rta.previous_split_tick!=old_split) {
+            row("rta_split");
+            if(!e->completion_on_rta_split&&!e->completion_on_next_playable) break;
+        }
+        if(e->episode_clears!=old_clears) { row("clear"); if(e->completion_on_next_playable||e->completion_on_rta_split) break; }
+        if(e->world!=old_world||e->stage!=old_stage) {
+            row("next_level_load");
+        }
+        if(e->is_dead) { row("death"); break; }
+        if(frame==5999) row("audit_limit");
+    }
+}
 int main(int argc,char** argv) {
     try {
         Ini ini={0}; puf_ini_load_env(&ini,RETRO_ENV_NAME,0,nullptr);
@@ -87,7 +139,8 @@ int main(int argc,char** argv) {
         if(!strcmp(mode,"bench")) return bench(argc,argv,&ini);
         bool watch=!strcmp(mode,"watch"),replay=!strcmp(mode,"replay"),levels=!strcmp(mode,"levels");
         if(!watch&&!replay&&!levels&&strcmp(mode,"play")) { usage(); return 1; }
-        bool random=false,deterministic=false,inspect=false,inspect_check=false,single_life=false;
+        bool random=false,deterministic=false,inspect=false,inspect_check=false,single_life=false,timing=false;
+        bool full_run=false;
         const char* inspect_snapshot=nullptr;
         const char* selected_level=nullptr;
         const char* checkpoint="latest";
@@ -103,7 +156,9 @@ int main(int argc,char** argv) {
                 selected_level=argv[i];
             }
             else if(!strcmp(argv[i],"--single-life")) single_life=true;
+            else if(!strcmp(argv[i],"--full-run")) full_run=true;
             else if(!strcmp(argv[i],"--deterministic")) deterministic=true;
+            else if(!strcmp(argv[i],"--timing")) timing=deterministic=true;
             else if(!strcmp(argv[i],"--inspect")) inspect=true;
             else if(!strcmp(argv[i],"--inspect-check")) inspect=inspect_check=true;
             else if(!strcmp(argv[i],"--inspect-snapshot")) {
@@ -117,13 +172,30 @@ int main(int argc,char** argv) {
         if(random&&selected_level) throw std::runtime_error("--random cannot be combined with an explicit starting level");
         if(inspect&&!watch&&strcmp(mode,"play")) throw std::runtime_error("--inspect requires watch or play mode");
         if(inspect_check&&inspect_snapshot) throw std::runtime_error("--inspect-check and --inspect-snapshot are mutually exclusive");
+        if(timing&&(!watch||single_life||inspect||random))
+            throw std::runtime_error("--timing requires watch with one level and natural continuation");
+        if(full_run||levels) puf_ini_set(puf_ini_section(&ini,"env",0),"practice_replay","None");
+        if(full_run) {
+            puf_ini_put(&ini,"env.max_frames","3000");
+            puf_ini_put(&ini,"env.completion_time_max_frames","3000");
+        }
+        DictItem* practice_option=dict_find(puf_ini_section(&ini,"env",0),"practice_replay");
+        bool practice=practice_option&&practice_option->str&&*practice_option->str&&strcmp(practice_option->str,"None");
+        if(practice&&!timing) single_life=true;
         // Bound episodes only in the explicit regression mode, to exercise
         // reset images and recurrent resets even with a competent checkpoint.
         if(inspect_check) puf_ini_put(&ini,"env.max_frames","128");
-        else if(!single_life) puf_ini_put(&ini,"env.max_frames",std::to_string(INT_MAX).c_str());
+        else if(!single_life&&!practice) {
+            puf_ini_put(&ini,"env.max_frames",std::to_string(INT_MAX).c_str());
+            // Training may stop at the first flag via terminate_on_clear.
+            // The viewer keeps the ROM natural-life continuation by default;
+            // use --single-life for training-style clear/death boundaries.
+            puf_ini_put(&ini,"env.terminate_on_clear","0");
+        }
         puf_ini_put(&ini,"env.spawn_levels",levels||random?"all":selected_level?selected_level:"1-1");
         Env env={}; float obs[OBS_SIZE]={0},action=0,reward=0,terminal=0;
         env.rng=73; puf_init(&env,puf_ini_section(&ini,"env",0));
+        if(timing&&practice) env.terminate_on_clear=false;
         env.agents[0].observations=obs; env.agents[0].actions=&action;
         env.agents[0].rewards=&reward; env.agents[0].terminals=&terminal; puf_reset(&env);
         if(levels) {
@@ -161,6 +233,11 @@ int main(int argc,char** argv) {
         fprintf(stderr,"Playback: start %d-%d; %s\n",env.world,env.stage,
             single_life?"single-life training episodes":"natural lives (new game on game over; R restarts)");
         RetroPlayback playback={single_life,false};
+        if(timing) {
+            retro_timing_audit(&env,net,obs,&action);
+            puf_close(&env); free_retro_policy(net); free(weights); puf_ini_free(&ini);
+            return 0;
+        }
         bool display=(getenv("DISPLAY")&&*getenv("DISPLAY"))||(getenv("WAYLAND_DISPLAY")&&*getenv("WAYLAND_DISPLAY"));
         if(inspect) {
             if(!display&&!inspect_check) throw std::runtime_error("--inspect needs a display; use --inspect-check for headless validation");

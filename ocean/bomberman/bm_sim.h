@@ -980,9 +980,15 @@ BM_HD void bm_check_done(BMMatch* m, const BMConfig* cfg,
     m->done = 1;
     if (alive_count == 1) {
         m->winner = last;
-        rewards[last] += cfg->reward_win;
-        m->agents[last].ep_return += cfg->reward_win;
-        m->agents[last].ep_score += cfg->reward_win;
+        // In this two-player arena, a survivor earns the terminal win reward
+        // only by being credited with killing the opponent. Surviving an
+        // opponent's own-bomb death is still a rules win, but gives no win
+        // bonus that could teach the learner to wait for suicides.
+        if (m->agents[last].kills > 0) {
+            rewards[last] += cfg->reward_win;
+            m->agents[last].ep_return += cfg->reward_win;
+            m->agents[last].ep_score += cfg->reward_win;
+        }
     } else {
         m->winner = -1;
         if (timeout && alive_count > 1) {

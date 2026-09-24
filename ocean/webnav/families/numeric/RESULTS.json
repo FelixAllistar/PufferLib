@@ -1,0 +1,158 @@
+{
+  "date": "2026-09-23",
+  "compiler": "stock Bend 2.0.6 CPU",
+  "laws": 32,
+  "native": "PASS: nine tasks, eight lanes, hidden-target noninterference, generated success paths, feedback, reward deadlines; explicit empty-even and empty odd-even regressions",
+  "browser": [
+    {
+      "task": "ascending-numbers",
+      "episodes": 20,
+      "state_reward_projection_conformance": "PASS",
+      "preset": "matched original instances; controlled draws/clock; CDP actions"
+    },
+    {
+      "task": "find-greatest",
+      "episodes": 20,
+      "state_reward_projection_conformance": "PASS",
+      "preset": "matched original instances; controlled draws/clock; CDP actions"
+    },
+    {
+      "task": "generate-number",
+      "episodes": 20,
+      "state_reward_projection_conformance": "PASS",
+      "preset": "matched original instances; controlled draws/clock; CDP actions"
+    },
+    {
+      "task": "guess-number",
+      "episodes": 20,
+      "state_reward_projection_conformance": "PASS",
+      "preset": "matched original instances; controlled draws/clock; CDP actions"
+    },
+    {
+      "task": "hot-cold",
+      "episodes": 20,
+      "state_reward_projection_conformance": "PASS",
+      "preset": "matched original instances; controlled draws/clock; CDP actions"
+    },
+    {
+      "task": "number-checkboxes",
+      "episodes": 20,
+      "state_reward_projection_conformance": "PASS",
+      "preset": "matched original instances; controlled draws/clock; CDP actions"
+    },
+    {
+      "task": "odd-or-even",
+      "episodes": 20,
+      "state_reward_projection_conformance": "PASS",
+      "preset": "matched original instances; controlled draws/clock; CDP actions"
+    },
+    {
+      "task": "simple-algebra",
+      "episodes": 20,
+      "state_reward_projection_conformance": "PASS",
+      "preset": "matched original instances; controlled draws/clock; CDP actions"
+    },
+    {
+      "task": "simple-arithmetic",
+      "episodes": 20,
+      "state_reward_projection_conformance": "PASS",
+      "preset": "matched original instances; controlled draws/clock; CDP actions"
+    }
+  ],
+  "public_solvability": [
+    {
+      "task": "ascending-numbers",
+      "episodes": 1000,
+      "successes": 1000,
+      "timeouts": 0,
+      "actions": 5000,
+      "controller": "public-scripted; not learned RL"
+    },
+    {
+      "task": "find-greatest",
+      "episodes": 1000,
+      "successes": 1000,
+      "timeouts": 0,
+      "actions": 4557,
+      "controller": "public-scripted; not learned RL"
+    },
+    {
+      "task": "generate-number",
+      "episodes": 1000,
+      "successes": 1000,
+      "timeouts": 0,
+      "actions": 2928,
+      "controller": "public-scripted; not learned RL"
+    },
+    {
+      "task": "guess-number",
+      "episodes": 1000,
+      "successes": 1000,
+      "timeouts": 0,
+      "actions": 7739,
+      "controller": "public-scripted; not learned RL"
+    },
+    {
+      "task": "hot-cold",
+      "episodes": 1000,
+      "successes": 1000,
+      "timeouts": 0,
+      "actions": 9047,
+      "controller": "public-scripted; not learned RL"
+    },
+    {
+      "task": "number-checkboxes",
+      "episodes": 1000,
+      "successes": 1000,
+      "timeouts": 0,
+      "actions": 13646,
+      "controller": "public-scripted; not learned RL"
+    },
+    {
+      "task": "odd-or-even",
+      "episodes": 1000,
+      "successes": 1000,
+      "timeouts": 0,
+      "actions": 4000,
+      "controller": "public-scripted; not learned RL"
+    },
+    {
+      "task": "simple-algebra",
+      "episodes": 1000,
+      "successes": 1000,
+      "timeouts": 0,
+      "actions": 2000,
+      "controller": "public-scripted; not learned RL"
+    },
+    {
+      "task": "simple-arithmetic",
+      "episodes": 1000,
+      "successes": 1000,
+      "timeouts": 0,
+      "actions": 2000,
+      "controller": "public-scripted; not learned RL"
+    }
+  ],
+  "source_sha256": {
+    "Generate.bend": "98b13980e0f5791be03bcdcf66136a9adc68805b68ff3bd8628d0b245afe341f",
+    "LAWS.bend": "ba5683c621d4ee475b3c9c32365d6f7d132e3422098c39575745b6967aa646b8",
+    "Main.bend": "754da8d9312741e4d2889857851daacb6a4dc61b8f5b922e06483b4ab6bf051f",
+    "Model.bend": "c6ec7d980986d7af0b689d9900788e243d43f3a984abfadb1a871ea850d92d9c",
+    "PROOF.bend": "15555dd4772b31a1ba87ca82539fcfa27f18632734b710f07c5093c4aafcabdd",
+    "Wire.bend": "f21cc13c392060d689522ba37384a5840318cf825c5db4ba7b2c47d6d831eb65",
+    "bridge.c": "2dc2c5f2b8623c368eec86f021e32d20eb4d11925bc692c3b1b871e96c46a893",
+    "browser.js": "2fce3fbe8ff9ff1e5da7d2e9200098102fc052b401b085e9c333f60a46588b2f",
+    "browser_oracle.c": "4d8b08b1cd88705b8eb4a0f38f3ffd58ba637ab2bffd1559aa822b7f105ba6c3",
+    "family_api.c": "6b69b052da2681dba7444d411c3868603cb0f68e147edf51ee20743d99f3fe6e",
+    "public_controller.h": "c6af5b88e4d26b952fec951cbdd00270607e0b67c4e4736601a554f38575d1c9",
+    "public_hotcold.h": "7f29e6b41925c2d32bb0bbd7c2dd8dfd3f65690a4950cbdcd7c6c6edb3ed4be4",
+    "test_numeric.c": "8108ef128805ae0e41aa0311c5bbf73507e0bd12fef89d4ddb42c18325682b6d"
+  },
+  "limitations": [
+    "Bounded independent generators; not original randomization or layout distribution parity.",
+    "Browser comparisons use matched original instances and controlled logical clock; generate-number candidate draws are controlled.",
+    "Number-checkboxes solver knows the ten fixed original example glyphs; this does not establish general image understanding.",
+    "Public scripted solvers are not trained RL performance; family-v2 is not yet integrated into legacy twelve-task PPO profile.",
+    "No full DOM/AX, arbitrary pointer geometry, or complete browser parity claim."
+  ]
+}

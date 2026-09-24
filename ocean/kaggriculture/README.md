@@ -534,6 +534,10 @@ port.
 
 ## Kaggle submission
 
+For **entity-v3 / policy-v5 / mode 2 executor 2** checkpoints, use
+`package_entity_model.py`, not the legacy exporter described below. See
+[the 2/2 export qualification and commands](ENTITY_EXPORT_20260922.md).
+
 Kaggriculture submissions need a Kaggle-compatible `main.py` and model at the
 archive root. `submission/main.py` mirrors the v2 observation, masks, MinGRU,
 and 1/255 input normalization. The current crop champion package is

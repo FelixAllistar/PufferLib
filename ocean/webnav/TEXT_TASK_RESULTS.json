@@ -1,0 +1,79 @@
+{
+  "date": "2026-09-20",
+  "runtime": "stock Bend 2.0.6 CPU; native C transport/CDP test harness; no Python or Bend GPU",
+  "upstream_revision": "33c3b4ddef8c6eb67c57a29663d844b1eda7e614",
+  "text_laws": 12,
+  "total_new_task_lane_laws": 34,
+  "legacy_pilot_laws": 6,
+  "native_edit_selection_cases": 8184,
+  "boundaries": "single 64 / dual 32; unrelated-field preservation; unfocused and invalid actions; exact multi-field submit; terminal/deadline; mixed old/new lanes",
+  "proof_mutation": "Discarding inserted payload rejected by selected_all_replacement",
+  "browser": [
+    {
+      "task": "enter-text",
+      "episodes": 200,
+      "actions": 1093,
+      "success": 133,
+      "wrong": 34,
+      "timeouts": 33,
+      "conformance": "PASS",
+      "preset": "ASCII focus-end/insert/edit/submit v1; one field <=64 or two <=32 characters",
+      "scope": "original seeded HTML, real CDP input and keys, complete DOM-v2 projection, caret/selection and reward; controlled clock; no generator or unrestricted-input parity"
+    },
+    {
+      "task": "login-user",
+      "episodes": 200,
+      "actions": 1854,
+      "success": 133,
+      "wrong": 34,
+      "timeouts": 33,
+      "conformance": "PASS",
+      "preset": "ASCII focus-end/insert/edit/submit v1; one field <=64 or two <=32 characters",
+      "scope": "original seeded HTML, real CDP input and keys, complete DOM-v2 projection, caret/selection and reward; controlled clock; no generator or unrestricted-input parity"
+    },
+    {
+      "task": "read-table",
+      "episodes": 200,
+      "actions": 1093,
+      "success": 133,
+      "wrong": 34,
+      "timeouts": 33,
+      "conformance": "PASS",
+      "preset": "ASCII focus-end/insert/edit/submit v1; one field <=64 or two <=32 characters",
+      "scope": "original seeded HTML, real CDP input and keys, complete DOM-v2 projection, caret/selection and reward; controlled clock; no generator or unrestricted-input parity"
+    }
+  ],
+  "total_browser_episodes": 600,
+  "total_browser_actions": 4040,
+  "public_dom": "TABLE/TR contexts retain row-parent relationships; full DOM projection compared; selection endpoints checked separately",
+  "limits": [
+    "bounded printable ASCII preset only",
+    "controlled logical clock",
+    "original browser-generated instances; no independent generator for these tasks",
+    "no new policy training or trainer integration",
+    "selection endpoints not yet in policy DOM-v2 schema",
+    "scripted schedules and development seeds; not learned-policy or held-out evaluation"
+  ],
+  "evidence": "build/webnav/text-forms/",
+  "sources_sha256": {
+    "ocean/webnav/miniwob/Text.bend": "48a1fe2e2253bd6e8514e8cac67ae1127770177dad04e1339a93150aa0bde756",
+    "ocean/webnav/miniwob/TextWire.bend": "032776bb917bbf8d33d600553c3de931a28aadaf71f3dbbf00647a47553b0bb4",
+    "ocean/webnav/miniwob/TextLAWS.bend": "9fb318fdcf6a8c12cc4cdcfb7deab1384725aaee014ea4dc6c65a0945a59f043",
+    "ocean/webnav/miniwob/TextPROOF.bend": "1a21dc67970f64b7bfbaa81dea80d8f80b250ae70900574a902fd5831012b982",
+    "ocean/webnav/miniwob/text_oracle.c": "1e51462d2707b12a97ef4194740d69a60253c235eefe4430493c694a30cdad7b",
+    "ocean/webnav/miniwob/Wire.bend": "e29167682b5578ec2d2ab65cccb3183e99d7bac7013064dad7504adbc23de2c6",
+    "ocean/webnav/miniwob/PROOF.bend": "69d1c1f8d8f5e7363fabc477af05666dbd3bf394fcd2f0153849dd79251c1e66",
+    "ocean/webnav/bridge.c": "9a30e41aa014796f5c54913333423e8e2ca0857240d84b5acd762c33f1300233",
+    "ocean/webnav/web/dom_snapshot.js": "877e7d21f7b028dbf833fd8e9d4520e80267fbdedeffc059fb12a12653682271",
+    "ocean/webnav/tests/test_text_forms.c": "b611d957d9c30224775adc57b1653bc7894ee9edcf02a8a0f6df8c0f7596ef9b",
+    "ocean/webnav/tests/test_dom.c": "429c9732a0db5feb511b1aaa7221834ca7ffc4dcf55c509bc606dae1be03eca3"
+  },
+  "existing_suite_regression": {
+    "modes": 7,
+    "episodes": 7000,
+    "actions": 12901,
+    "conformance": "PASS",
+    "native_widgets_and_generators": "PASS",
+    "log": "build/webnav/text-forms/full-regression.log"
+  }
+}

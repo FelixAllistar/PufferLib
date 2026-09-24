@@ -34,6 +34,9 @@ Nes_Ppu_Impl::Nes_Ppu_Impl()
 	tile_cache_mem = NULL;
 	wide_tiles = NULL;
 	ppu_state_t::unused = 0;
+	// Reserved snapshot bytes are not emulated state. Initialize them so
+	// independent cold boots and saved-state starts compare deterministically.
+	memset( ppu_state_t::unused2, 0, sizeof ppu_state_t::unused2 );
 
 	mmc24_enabled = false;
 	mmc24_latched[0] = 0;

@@ -37,6 +37,7 @@ struct Log {
     // Accumulate s0 * num_agents once per finished match (see bm_end_episode).
     float slot_0_score;
     float slot_1_score;
+    float slot_0_clean_score;
     float draw_rate;
     float slot_0_kills;
     float slot_0_self_kills;
@@ -96,6 +97,7 @@ void puf_log(Log* log, Dict* out) {
     dict_set(out, "deaths", log->deaths);
     dict_set(out, "slot_0_score", log->slot_0_score);
     dict_set(out, "slot_1_score", log->slot_1_score);
+    dict_set(out, "slot_0_clean_score", log->slot_0_clean_score);
     dict_set(out, "draw_rate", log->draw_rate);
     dict_set(out, "slot_0_kills", log->slot_0_kills);
     dict_set(out, "slot_0_self_kills", log->slot_0_self_kills);
@@ -107,9 +109,15 @@ void puf_log(Log* log, Dict* out) {
 
 BM_HD void bm_log_match(Log* log, const BMMatch* match, int outcome) {
     float s0 = (outcome > 0) ? 1.0f : (outcome < 0) ? 0.0f : 0.5f;
+    // Sweep score counts wins only when slot 0 was credited with a kill;
+    // draws keep their usual half point. A rules win after an opponent
+    // suicide remains visible in slot_0_score, but cannot rank a policy up.
+    float clean_s0 = outcome == 0 ? 0.5f
+        : outcome > 0 && match->agents[0].kills > 0 ? 1.0f : 0.0f;
     float na = (float)match->num_agents;
     log->slot_0_score += s0 * na;
     log->slot_1_score += (1.0f - s0) * na;
+    log->slot_0_clean_score += clean_s0 * na;
     if (outcome == 0) log->draw_rate += na;
     // perf tracks slot-0 win rate the same way
     log->perf += s0 * na;

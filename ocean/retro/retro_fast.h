@@ -830,7 +830,7 @@ static void puf_step_fast(Env* env) {
         && !robs_dying(m) && !robs_dead(m) && !robs_flagget(m)) ? 1 : 0;
     reward = retro_reward(&prev, &cur, &env->x_pos_max,
         robs_dying(m), robs_dead(m),
-        robs_flagget(m) && !env->has_flag, env->potential_gamma, &env->rw);
+        robs_flagget(m) && !env->has_flag, &env->rw);
     if (froze) reward -= 1.0f;
     done = robs_dead(m) || robs_gameover(m) || robs_flagget(m) || env->tick > 4000 || froze;
     if (done) {
