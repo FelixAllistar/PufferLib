@@ -99,9 +99,12 @@ native reset/league scheduling remains unported.
 The semantic CUDA encoder/decoder source is now ported to 5.0 tensor types.
 `make -C ocean/pokemon encoder-test` builds and runs an isolated FP32 component
 test against the preserved CPU model (three rows, four synthetic observation
-batches). It checks encoder outputs and all 168 action logits plus value.
-This does not yet qualify gradients, recurrent training, real-game GPU
-observations, CUDA graphs or BF16.
+batches). It checks encoder outputs and all 168 action logits plus value,
+matching parameter/gradient layout, finite gradients, and 172 centered numerical
+derivatives across all twelve parameter tensors and the decoder's hidden-state
+input. Tests include draft, move-selection and battle-specific candidate paths.
+This does not yet qualify recurrent training, real-game GPU observations,
+CUDA graphs or BF16.
 
 The decoder needs the current observation to identify candidate moves/species.
 Upstream's decoder API only supplies the recurrent hidden state. The component
