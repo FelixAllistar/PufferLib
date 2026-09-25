@@ -240,6 +240,23 @@ sidecars exist, each 32,433,200 bytes; sidecar transfer/hash verification and
 the source-tape inventory remain outstanding. Bulk transfer remains deferred
 while the sweep runs. No remote config, binary or process was changed.
 
+Subsequently, both raw-intent sidecars and all 518 referenced gzip tapes were
+copied with a 4 MiB/s transfer limit into ignored local `data/kaggriculture/`.
+The sidecar SHA256 values match the remote source:
+`terminal.intents.jsonl.gz` = `c29ab9dc562ed186192258f8d516fc034b2bb3156c614be00461863cbfd4717b`,
+`expanded.intents.jsonl.gz` = `e3e99765d384b17eab0b1d2431bd3c2f06b89777dfc6019e2cd92ce1f7712aad`.
+The distinct hashes confirm they must not be deduplicated by size alone.
+The tapes total 19,013,957 bytes. Source/destination sorted `filename SHA256`
+lists have identical SHA256 `16816ba4ec0bea759c897f799c380b75ef3e2318f061dd098c1e8c305a5f0738`.
+Every tape decompresses and its episode ID, source hash and declared complete
+frame count match the copied metadata. Original metadata remains unmodified:
+resolve each record's tape basename under local `data/kaggriculture/tapes/`.
+The first expert episode (109848551) also passes canonical `build_game`,
+including terminal replay validation and generation of 720 observation rows.
+This is not yet full-corpus qualification or proof of expert action coverage;
+an all-518 replay/relabel check was started separately. Bulk `.bc` and reset
+bank transfer remains pending. No datasets, models or private tapes enter Git.
+
 - Review fork changes in `build.sh`, `src/`, `pufferlib/`, `tests/`, `scripts/`
   and `tui/` by functionality; do not transplant the old shared runtime.
 - Reconcile 32 modified/added configuration files. Old names such as frozen
