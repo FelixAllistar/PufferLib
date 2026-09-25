@@ -204,17 +204,10 @@ KG_HD int kag_reward_cap(int n, int cap) {
     return n < cap ? n : cap;
 }
 
-KG_HD void kag_step(Env* env) {
+// Replay builders supply expert primitive commands; PPO supplies decoded macros.
+// Keep the terminal state available to the caller before any episode reset.
+KG_HD void kag_apply_actions(Env* env, const KGAction* commands) {
     KGState* game = &env->game;
-    KGAction commands[KG_NUM_PLAYERS] = {0};
-    for (int a = 0; a < env->num_agents; a++) {
-        int player = env->num_agents == 2 ? a : env->learner_seat;
-        kag_decode_multi_action(
-            &commands[player], env->agents[a].actions, game, player, &env->policy);
-    }
-    if (env->num_agents == 1 && env->bot_policy == 1) {
-        kg_rule_action(game, 1 - env->learner_seat, &commands[1 - env->learner_seat]);
-    }
     kg_step(game, commands);
     kag_policy_step(&env->policy, game);
     for (int a = 0; a < env->num_agents; a++) {
@@ -309,6 +302,20 @@ KG_HD void kag_step(Env* env) {
         }
         log->n++;
     }
+}
+
+KG_HD void kag_step(Env* env) {
+    KGState* game = &env->game;
+    KGAction commands[KG_NUM_PLAYERS] = {0};
+    for (int a = 0; a < env->num_agents; a++) {
+        int player = env->num_agents == 2 ? a : env->learner_seat;
+        kag_decode_multi_action(
+            &commands[player], env->agents[a].actions, game, player, &env->policy);
+    }
+    if (env->num_agents == 1 && env->bot_policy == 1) {
+        kg_rule_action(game, 1 - env->learner_seat, &commands[1 - env->learner_seat]);
+    }
+    kag_apply_actions(env, commands);
     if (game->done) {
         kag_reset_episode(env);
     }

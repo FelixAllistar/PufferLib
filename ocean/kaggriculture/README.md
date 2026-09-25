@@ -240,6 +240,18 @@ Remote replay collection, controller relabeling/dataset construction and Kaggle
 export still need migration from the legacy install. Existing data/checkpoint
 loading does not qualify those remaining workflows.
 
+The environment now exposes `kag_apply_actions`: it executes both players'
+primitive commands, advances policy observation history and computes the same
+stateful rewards/logs as training, but leaves terminal state intact. The normal
+macro `kag_step` decodes commands, calls it, and resets finished episodes as
+before. Offline callers must supply projected macro history separately; this
+entry point does not infer expert intent or make tapes BC-ready by itself.
+The extraction matches the pre-change trace over 2,048 steps/64 terminal
+transitions with one/two learning agents and terminal-only/shaped rewards.
+Direct-primitive versus macro stepping passes optimized and sanitizer tests;
+the host-under-NVCC test matches too. GPU execution of this refactor has not
+yet been requalified.
+
 ## Shared-code boundary
 
 Following `SKILL_ISSUES.md`, simulator, controller, observations, rewards,
