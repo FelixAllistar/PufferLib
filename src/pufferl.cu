@@ -3188,14 +3188,18 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
             && "selfplay requires vec.num_policies in 2..SELFPLAY_MAX_HIST+1");
         assert(puf_ini_get(ini, "vec", "hist_policy_percent") > 0
             && "selfplay requires vec.hist_policy_percent > 0");
-        // Pool opps are this run's checkpoints; hist arch must match policy.
-        char hb[32], lb[32];
-        snprintf(hb, sizeof(hb), "%d",
-            (int)puf_ini_get(ini, "policy", "hidden_size"));
-        snprintf(lb, sizeof(lb), "%d",
-            (int)puf_ini_get(ini, "policy", "num_layers"));
-        puf_ini_put(ini, "vec.hist_policy_hidden_size", hb);
-        puf_ini_put(ini, "vec.hist_policy_num_layers", lb);
+        // Fixed external banks may differ; rotating pool entries are learner snapshots.
+        bool fixed = strcmp(puf_ini_get_str(ini, "selfplay", "initial_opponents"), "None")
+            && puf_ini_get(ini, "selfplay", "opp_timeout_steps") == 0;
+        if (!fixed) {
+            char hb[32], lb[32];
+            snprintf(hb, sizeof(hb), "%d",
+                (int)puf_ini_get(ini, "policy", "hidden_size"));
+            snprintf(lb, sizeof(lb), "%d",
+                (int)puf_ini_get(ini, "policy", "num_layers"));
+            puf_ini_put(ini, "vec.hist_policy_hidden_size", hb);
+            puf_ini_put(ini, "vec.hist_policy_num_layers", lb);
+        }
         double ladder[SELFPLAY_MAX_LADDER];
         assert((puf_ini_get(ini, "selfplay", "eval_bot_games") <= 0
             || puf_ini_get_list(ini, "selfplay", "eval_bots", ladder,

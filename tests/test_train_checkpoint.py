@@ -88,6 +88,29 @@ def test_no_checkpoint_preserves_seeded_initialization(binary, source, tmp_path)
     assert first.read_bytes() != source.read_bytes()
 
 
+@pytest.mark.parametrize("graphs", [-1, 1])
+def test_fixed_opponents_keep_separate_architecture(binary, source, tmp_path, graphs):
+    opponents = tmp_path / "opponents.txt"
+    opponents.write_text(str(source) + "\n")
+    before = source.read_bytes()
+    run = train(binary, tmp_path, "different_arch", **{
+        "base.cudagraphs": graphs,
+        "policy.hidden_size": 16,
+        "policy.num_layers": 2,
+        "vec.hist_policy_hidden_size": 32,
+        "vec.hist_policy_num_layers": 1,
+        "selfplay.initial_opponents": opponents,
+        "selfplay.opp_timeout_steps": 0,
+        "train.total_timesteps": 512,
+        "train.learning_rate": 0.001,
+    })
+    initial = (run / "0000000000000000.bin").read_bytes()
+    trained = (run / "0000000000000512.bin").read_bytes()
+    assert len(initial) == len(trained) and len(initial) != len(before)
+    assert initial != trained
+    assert source.read_bytes() == before
+
+
 @pytest.mark.parametrize("async_mode", [0, 1])
 @pytest.mark.parametrize("graphs", [-1, 1])
 @pytest.mark.parametrize("selfplay", [0, 1])

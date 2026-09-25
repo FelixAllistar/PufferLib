@@ -143,6 +143,15 @@ and completes four games; a 256-step native continuation from explicit cursor
 18/12 succeeds. This resumes weights and the assignment schedule, not optimizer
 state, in-flight games or recurrent memory. Named expert-bank loading remains.
 
+Fixed-bank architecture prerequisite: training no longer overwrites explicit
+`vec.hist_policy_hidden_size/num_layers` when `selfplay.initial_opponents` is
+provided and `opp_timeout_steps=0`. Rotating/current-run opponents retain the
+upstream learner-matching architecture. All 21 native checkpoint tests pass on
+SM61 FP32, including H16/L2 learner updates against an immutable H32/L1 opponent,
+graphs off/on, weight-loading/seed checks and async/sync regressions. This uses
+the existing frozen-policy allocator/loader, not a new loss or population
+algorithm. Pokémon named-team assignment/manifest integration remains pending.
+
 - Finalized upstream base: `6ffa5b10dbbbe4d1e8288367c7d9d3acd3bad4a2`.
 - Qualified Kaggriculture runtime before unification: `1c30e3c2f`.
 - Custom environment/source inventory: `5c` at `036cf4251`.
