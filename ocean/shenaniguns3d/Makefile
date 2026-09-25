@@ -6,7 +6,15 @@ CFLAGS ?= -O2 -g -std=gnu11
 CPPFLAGS := -I$(ROOT)/src -I$(ROOT)/raylib-5.5_linux_amd64/include -I$(BOX3D)/include -I.
 LDLIBS := $(BOX3D)/build/src/libbox3d.a $(ROOT)/raylib-5.5_linux_amd64/lib/libraylib.a -lGL -lm -ldl -lpthread
 
-.PHONY: test sanitize encoder-test viewer
+.PHONY: test sanitize encoder-test viewer gpu-test
+gpu-test:
+	@mkdir -p $(BUILD)
+	$(CC) -O2 -std=gnu11 $(CPPFLAGS) -c character.c -o $(BUILD)/character.o
+	$${CUDA_HOME:-/usr/local/cuda}/bin/nvcc -O2 --threads 2 -arch=$${NVCC_ARCH:-native} \
+		-std=c++17 -I$(ROOT) $(CPPFLAGS) -Xcompiler=-Wno-narrowing \
+		--diag-suppress 2361 tests/test_gpu.cu $(BUILD)/character.o $(LDLIBS) \
+		-o $(BUILD)/test_gpu
+	$(BUILD)/test_gpu
 viewer:
 	@mkdir -p $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) shenaniguns3d.c character.c $(LDLIBS) -o $(BUILD)/viewer

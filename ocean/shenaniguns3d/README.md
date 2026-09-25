@@ -90,4 +90,18 @@ rendering still needs visual qualification.
 The simulator uses one physics substep while the original game uses four;
 sharing the controller does not establish exact deployment parity. The
 legacy GPU simulator uses specialized physics rather than general Box3D.
-Its port and differential qualification remain unfinished.
+Its source and legacy differential suite are preserved unchanged (apart from
+test include paths), but its old GPU lifecycle API is not yet wired into 5.0.
+Do not use `build.sh --cu` for this environment yet. Establish the baseline with:
+
+```sh
+make -C ocean/shenaniguns3d gpu-test
+```
+
+The baseline passes course/geometry, timeout, random reset, sensor overlap,
+goal and airborne/crouched reset checks. Static sensor errors are at most
+`2.98e-8` in the reported probes. During the rollout, maximum position drift is
+`0.5288019` (legacy limit `0.75`) and maximum observation difference is `1`.
+This is bounded-drift qualification, not exact Box3D trajectory equivalence.
+The 5.0 GPU adapter, stream/graph behavior and native GPU training still need
+implementation and testing.
