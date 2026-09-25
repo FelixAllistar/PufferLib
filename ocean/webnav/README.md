@@ -117,3 +117,24 @@ when it changes. These are frozen text features, not a critic or policy model.
 Parity is not semantic competence: the preserved 24-case development probe
 misses eight examples, including negation, ordering, and translation direction.
 The DOM training environment and its learned encoder still need conversion.
+
+## DOM policy adapter: partial conversion
+
+The original `training.c` public-view, legal-action and feature adapter is
+preserved, together with the checkpoint-sidecar code. `training_policy.c` now
+uses upstream 5.0 CPU inference. This does not register a trainable environment
+or add checkpoint hooks to the shared trainer.
+
+`make -C ocean/webnav training-policy-test` needs Clang 19, AVX2/FMA and ICU,
+but no Bend runtime or downloaded model. It creates a synthetic H16/L2 test
+checkpoint under `build/webnav/training/` with semantic features disabled.
+Across 128 recurrent steps and ten resets, actions and all policy/value logits
+match legacy CPU inference bit-for-bit (trace `7c4dac1667d333bc`). Sanitizer
+checks pass. This does not establish GPU parity or learned policy quality.
+
+The sidecar reader checks the compiled source hash as well as the feature and
+architecture contract. The standalone test uses the development hash default;
+production source-hash generation and checkpoint integration remain pending.
+The complete legacy simulator's fresh source build is also still unqualified:
+local bounded compilation has exceeded the available memory allowance. Its
+models and generators have not been replaced with simplified versions.

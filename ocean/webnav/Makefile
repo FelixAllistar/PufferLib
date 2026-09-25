@@ -30,6 +30,20 @@ dom-test: $(BUILD)/test_dom
 text-test:
 	cd $(ROOT) && mkdir -p build/webnav && bash ocean/webnav/tools/text_tests.sh
 
+.PHONY: training-policy-test
+TRAINING_POLICY_SOURCES := tests/test_training_policy_cpu.c training_policy.c \
+    training.c training_contract.c text_encoder.c $(ROOT)/vendor/cJSON.c
+
+$(BUILD)/test_training_policy_cpu: $(TRAINING_POLICY_SOURCES) training_policy.h \
+        training.h training_contract.h text_encoder.h miniwob/training/countries.h \
+        $(ROOT)/src/puffercpu.c
+	mkdir -p $(BUILD)/training
+	$(CC) $(CFLAGS) -mavx2 -mfma $(INCLUDES) $(TRAINING_POLICY_SOURCES) \
+	    -licuuc -lpthread -lm -o $@
+
+training-policy-test: $(BUILD)/test_training_policy_cpu
+	cd $(ROOT) && build/webnav/test_training_policy_cpu
+
 bridge:
 	bash build.sh
 
