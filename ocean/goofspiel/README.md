@@ -46,6 +46,21 @@ truncated games. Uniform-policy known values and truncated-file rejection
 also pass (12 tests per checkpoint). Larger games and other precisions have
 not been qualified. Exact enumeration grows rapidly with game size.
 
+The legacy behavior-distance report is now a subcommand of the same binary:
+
+```bash
+./ocean/goofspiel/build/exploit_gpu behavior A.bin B.bin uniform \
+    --policy.hidden_size=32 --policy.num_layers=2
+```
+
+It emits exact exploitability per checkpoint and pairwise Jensen–Shannon
+divergence (base 2), its square-root distance, and total variation. These are
+equally averaged over enumerated decision histories, not weighted by their
+frequency under either policy. All checkpoints must share the supplied
+architecture and game rules. The additional behavior test checks identical
+policies, symmetry, bounds, square-root consistency, and CPU exploitability
+agreement. This report alone is not population selection or PSRO.
+
 Still pending: GPU simulation, trainer exact-response pool refresh and
 checkpoint persistence, and exploitability-driven sweep orchestration.
 The legacy offline response-pool writer/loader passes a native-checkpoint
