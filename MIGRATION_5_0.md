@@ -176,9 +176,28 @@ legacy league-management/search scripts. Those scripts still need disposition.
 - The latest multi-intent merge is already an ancestor of the inventoried `5c`.
   The separate detached multi-intent checkout is not the development target.
 
-Work happens in the existing converted worktree until the ports are verified.
-The usual local `pufferlib` checkout remains on `5c` during this phase. Its
-tracked/untracked assets must be preserved when switching it to `5.0`.
+As of 2026-09-25 the normal `/home/felix/puffertank/pufferlib` checkout is the
+canonical development worktree on `5.0`. The former `pufferlib-upstream-5.0`
+worktree is detached at `1f958fd3b` and retained for recovery, not ongoing edits.
+The local switch was preceded by checking that no training process was running,
+archiving all eight ignored-source collisions, and saving the three dirty
+Bomberman files in stash plus permanent recovery branch
+`archive/5c-local-before-main-5.0-20260925`. The Bomberman simulator matches that
+saved local version exactly. The verified archive is
+`/home/felix/puffertank/main-conversion-backup.VCB2Oi/local-overlaps.tar.gz`,
+SHA256 `28db0c003f05802350755e435311f73bbd83ac99641c1eb68f1149f0505c34cb`.
+The old `puffer` executable is also retained there as `puffer-legacy`.
+
+The normal checkout's `./puffer` is rebuilt from 5.0 for Bomberman (FP32 SM61);
+a 2,048-step async CPU-simulator/GPU-learner smoke passes. This is not a new
+long training run. Kaggriculture saved models and locally preserved replay/BC
+inputs were copied without overwriting existing files and content-compared;
+`saved/kaggriculture/main_opponents.txt` resolves paths to this checkout.
+The bulk remote reset/BC datasets are still pending transfer. Legacy binaries,
+historical artifacts and ignored experiment sources remain on disk, often
+shown as untracked under upstream's ignore rules. They are preserved assets,
+not proof of current executability; rebuild an environment before using its
+old standalone binary. Remaining environment/workflow gates still apply.
 The running Vast sweep must not be stopped, rebuilt underneath, or silently
 changed by this conversion. Remote synchronization happens at a safe boundary.
 
