@@ -141,6 +141,13 @@ beside the temporary clone; the remote sweep was not accessed or modified.
 
 ### Configuration and standalone evaluation audit
 
+Kaggriculture replay preparation now uses the canonical standalone `core.h`
+through the preserved ctypes bridge. Exact-identity inventory, state index,
+and primitive-tape cache tools are restored; eight tests include a freshly
+compiled core/cache roundtrip and corrupted-terminal rejection. This is not
+new official-corpus qualification. Remote fetching, macro relabeling/dataset
+construction and submission/export remain pending, separate from BC fitting.
+
 The 32 fork-modified configuration paths have these dispositions:
 
 - Native environment configs now exist for Abyss, ARPG, Bomberman, Goofspiel,

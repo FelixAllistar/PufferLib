@@ -203,9 +203,42 @@ one. Dataset metadata checks controller settings and, for value training,
 reward units/gamma before launching. Outputs refuse overwrite and receive
 provenance JSON. `bc.max_batches=0` uses all games; nonzero is a smoke-test limiter.
 
-New replay collection/relabeling and Kaggle export tools remain preserved in the
-legacy install. They have not been folded into the new trainer. Existing data
-and checkpoint loading do not imply new raw replay parsers were ported.
+Replay inventory, state indexing and primitive-tape caching are now available
+locally, independently of the trainer:
+
+```sh
+mkdir -p build/kaggriculture
+cc -x c -O2 -shared -fPIC ocean/kaggriculture/core.h -lm \
+    -o build/kaggriculture/replay_core.so
+uv run --no-project python ocean/kaggriculture/prepare_bc_replays.py REPLAY_ZIP_DIRECTORY \
+    --output=build/kaggriculture/inventory_v1
+```
+
+The first pass reads small metadata prefixes and reports exact display/agent
+identities, game counts and an episode-level train/holdout split. It does not
+infer leaderboard rank or merge similar-looking names. To cache a bounded
+sample, use a new output directory and add `--teacher='EXACT DISPLAY NAME'`,
+`--cache-limit=64` and `--lib=build/kaggriculture/replay_core.so`. Optionally
+filter the exact submission name with `--agent-name`. The default replay
+module filter remains `1.32.7`, not a claim about the latest upstream version.
+
+Every newly cached tape must reproduce all supplied official frames and final
+cash before publication. Cache keys include archive CRC and core-library hash;
+reuse reruns the primitive actions and checks terminal cash. These tapes are
+explicitly **not BC-ready**: they contain both primitive action streams, not
+observations, macro labels, returns or serialized native states. Relabel them
+for the chosen controller/reward contract before training. A state index is
+likewise a reference into source replay data, not a resumable reset bank.
+
+Eight tests pass, covering deduplication, split/identity handling, invalid
+episodes, cache publication/reuse, and a freshly compiled native-core cache
+roundtrip. The latter uses generated frames; it is an ABI/cache integration
+test, not an independent official replay-parity qualification. No new official
+replay corpus was downloaded or fully processed during this port.
+
+Remote replay collection, controller relabeling/dataset construction and Kaggle
+export still need migration from the legacy install. Existing data/checkpoint
+loading does not qualify those remaining workflows.
 
 ## Shared-code boundary
 
