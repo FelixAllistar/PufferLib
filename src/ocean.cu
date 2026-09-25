@@ -57,6 +57,9 @@ __device__ static const float OSRS_ITEM_OBS_TABLE_DEV
 #ifdef PUFFER_RETRO
 #include "../ocean/retro/retro_encoder.cu"
 #endif
+#ifdef PUFFER_SHENANIGUNS3D
+#include "../ocean/shenaniguns3d/encoder.cu"
+#endif
 
 // Override encoder vtable when this env has a custom net. No-op otherwise.
 static void create_custom_encoder(Encoder* enc) {
@@ -66,6 +69,8 @@ static void create_custom_encoder(Encoder* enc) {
     create_kaggriculture_encoder(enc);
 #elif defined(PUFFER_RETRO)
     create_retro_encoder(enc);
+#elif defined(PUFFER_SHENANIGUNS3D)
+    create_shenaniguns3d_encoder(enc);
 #elif defined(PUFFER_CRAFTAX)
     create_craftax_encoder(enc);
 #elif defined(PUFFER_NMMO3)

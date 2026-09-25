@@ -3,7 +3,7 @@
 The CPU navigation simulator is preserved from `5c` at `036cf4251`, with its
 391 float observations and five action heads (5/3/3/2/2). The only adapter
 change moves `obs_t` before the upstream environment API include. Native
-training is explicitly blocked until the custom sensor encoder is ported;
+training is explicitly blocked until build/config integration is qualified;
 the generic MLP is not checkpoint-compatible.
 
 ## Dependencies and tests
@@ -18,6 +18,7 @@ cmake -S ../box3d -B ../box3d/build -DCMAKE_BUILD_TYPE=Release \
 cmake --build ../box3d/build --parallel 2
 make -C ocean/shenaniguns3d test
 make -C ocean/shenaniguns3d sanitize
+make -C ocean/shenaniguns3d encoder-test
 ```
 
 Do not clone over or change an existing dirty dependency. Set `BOX3D` for a
@@ -26,6 +27,15 @@ course modes and difficulties, checking observation/reward determinism,
 finite outputs and automatic resets over 9,216 transitions.
 Both optimized and ASan/UBSan builds pass. The sanitizer target instruments
 the environment/controller, not the separately built Box3D archive.
+
+The custom sensor encoder is now under `encoder.cu`, registered through the
+standard `src/ocean.cu` extension point. It preserves the circular depth-map
+convolution, 3D occupancy convolution and scalar branch. The FP32 CUDA test
+passes CPU-reference encoder/full recurrent-policy forward comparisons,
+eleven encoder parameter probes and four decoder/MinGRU numerical-gradient
+probes. Training-chain tests use upstream network forward/backward with
+explicit output cotangents, not a custom PPO loss. BF16 and end-to-end native
+training remain unqualified.
 
 The formerly unversioned sibling `pd64/character.c` and `character.h` are now
 preserved here byte-for-byte. Their original attribution identifies the C
@@ -38,5 +48,5 @@ Source snapshot SHA-256:
 The simulator uses one physics substep while the original game uses four;
 sharing the controller does not establish exact deployment parity. The
 legacy GPU simulator uses specialized physics rather than general Box3D.
-Its port, differential qualification, custom network, standalone policy
+Its port, differential qualification, standalone policy
 viewer and training configuration remain unfinished.
