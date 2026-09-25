@@ -53,6 +53,38 @@ clean-clone qualification remain in progress; check branch HEAD for updates.
 
 ## Source of truth and preservation
 
+### Committed shared-core audit (2026-09-25)
+
+Compared committed `4039919df` with upstream 5.0
+`6ffa5b10dbbbe4d1e8288367c7d9d3acd3bad4a2`, excluding working-tree
+changes. Only two files under `src/` differ: `ocean.cu` (+17 lines) and
+`pufferl.cu` (+237/-32). All other tracked upstream `src/` files are unchanged,
+including `algo.cu`. This does not mean training behavior is unchanged:
+
+| Change | Purpose and behavioral scope |
+| --- | --- |
+| Custom network registration | Select Kaggriculture, Retro and Shenaniguns3D environment networks; Kaggriculture also supplies a decoder. |
+| Kaggriculture prefix sampling | Recompute legality after each selected action head; inactive heads use action zero without consuming RNG. Rules remain environment-owned, but the sampler has Kaggriculture-specific calls. CPU sampling uploads required state; GPU setup assigns player/policy rows. |
+| Learner-only rollout gathering | Exclude frozen-opponent rows from PPO inputs, recurrent state storage and minibatch counts. This is a training-data correction, not merely a speed optimization. |
+| Batched discrete sampling | Gather per-bank logits, then sample all rows together. Neural inference remains per bank. Intended to preserve actions, masks and row RNG while reducing launches. |
+| Optional packed masks | Archive binary masks in bytes and unpack minibatches before PPO. Changes storage and adds kernels, not intended legality or loss semantics. |
+| Configurable reward clamp | Replace hard-coded [-1, 1] clipping with `train.reward_clip`; default 1 preserves upstream clipping, zero disables it. Non-default settings change reward targets. |
+| Training checkpoint initialization | Load learner weights before self-play initialization; optimizer and step count start fresh. This is not full training-state resume. |
+| Initial frozen opponents | Load one explicit checkpoint per bank from a text file. This seeds opponents; it is not a restored PSRO/PFSP population manager. |
+| Fixed sweep dimensions | Skip equal min/max ranges after checking they match the configured value; require at least one varying dimension. |
+
+Outside `src/`, `build.sh` adds environment dependency/link registration for
+WebNav, Retro, Shenaniguns3D and ARPG. `config/default.ini` adds the reward-clamp
+and initial-opponent settings plus checkpoint documentation. Other non-ocean
+changes are environment configs, assets, tools, tests, TUI and documentation.
+No old custom optimizer or loss implementation is included in this diff.
+
+The proposed generic GPU setup callback is **not part of this committed
+audit**: it remains an uncommitted replacement for the existing Kaggriculture
+special case, pending user approval. Pokémon observation-aware decoder wiring
+and continuous legacy population retention also remain unfinished. Counts are
+source-diff evidence, not performance or learning-quality qualification.
+
 - Finalized upstream base: `6ffa5b10dbbbe4d1e8288367c7d9d3acd3bad4a2`.
 - Qualified Kaggriculture runtime before unification: `1c30e3c2f`.
 - Custom environment/source inventory: `5c` at `036cf4251`.
