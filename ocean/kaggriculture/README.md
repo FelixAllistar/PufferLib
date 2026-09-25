@@ -249,8 +249,18 @@ entry point does not infer expert intent or make tapes BC-ready by itself.
 The extraction matches the pre-change trace over 2,048 steps/64 terminal
 transitions with one/two learning agents and terminal-only/shaped rewards.
 Direct-primitive versus macro stepping passes optimized and sanitizer tests;
-the host-under-NVCC test matches too. GPU execution of this refactor has not
-yet been requalified.
+the host-under-NVCC test matches too. The independent GPU transition test
+passes 2,048 CPU/GPU steps and 64 episode endings, alternating graph replay
+and ordinary launches on a non-default stream. Native game states are
+byte-identical; rewards, observations and logs agree within 2e-5 relative-plus-
+absolute tolerance. It supplies fixed actions and does not qualify the sampler,
+full trainer, BC projection quality or throughput.
+
+```sh
+nvcc -O2 -std=c++17 -arch=sm_61 -Isrc -Iraylib-5.5_linux_amd64/include \
+    ocean/kaggriculture/tests/test_reward_gpu.cu -o build/kaggriculture/test_reward_gpu
+./build/kaggriculture/test_reward_gpu
+```
 
 ## Shared-code boundary
 
