@@ -1,0 +1,293 @@
+{
+  "date": "2026-09-23",
+  "compiler": "stock Bend 2.0.6 CPU; 6 GiB cgroup limit, zero swap",
+  "laws": 9,
+  "reused_laws": "Existing widget laws included by PROOF.bend",
+  "native_transitions": 460800,
+  "browser": [
+    {
+      "task": "click-test",
+      "data_mode": 0,
+      "episodes": 20,
+      "actions": 176,
+      "scripted_successes": 16,
+      "state_reward_conformance": "PASS",
+      "preset": "matched original instances; CDP clicks; unobscured control clicks; controlled clock"
+    },
+    {
+      "task": "click-test",
+      "data_mode": 1,
+      "episodes": 20,
+      "actions": 176,
+      "scripted_successes": 16,
+      "state_reward_conformance": "PASS",
+      "preset": "matched original instances; CDP clicks; unobscured control clicks; controlled clock"
+    },
+    {
+      "task": "click-test-2",
+      "data_mode": 0,
+      "episodes": 20,
+      "actions": 176,
+      "scripted_successes": 12,
+      "state_reward_conformance": "PASS",
+      "preset": "matched original instances; CDP clicks; unobscured control clicks; controlled clock"
+    },
+    {
+      "task": "click-test-2",
+      "data_mode": 1,
+      "episodes": 20,
+      "actions": 176,
+      "scripted_successes": 12,
+      "state_reward_conformance": "PASS",
+      "preset": "matched original instances; CDP clicks; unobscured control clicks; controlled clock"
+    },
+    {
+      "task": "click-test-transfer",
+      "data_mode": 0,
+      "episodes": 20,
+      "actions": 176,
+      "scripted_successes": 12,
+      "state_reward_conformance": "PASS",
+      "preset": "matched original instances; CDP clicks; unobscured control clicks; controlled clock"
+    },
+    {
+      "task": "click-test-transfer",
+      "data_mode": 1,
+      "episodes": 20,
+      "actions": 176,
+      "scripted_successes": 12,
+      "state_reward_conformance": "PASS",
+      "preset": "matched original instances; CDP clicks; unobscured control clicks; controlled clock"
+    },
+    {
+      "task": "click-dialog",
+      "data_mode": 0,
+      "episodes": 20,
+      "actions": 176,
+      "scripted_successes": 16,
+      "state_reward_conformance": "PASS",
+      "preset": "matched original instances; CDP clicks; unobscured control clicks; controlled clock"
+    },
+    {
+      "task": "click-dialog",
+      "data_mode": 1,
+      "episodes": 20,
+      "actions": 176,
+      "scripted_successes": 16,
+      "state_reward_conformance": "PASS",
+      "preset": "matched original instances; CDP clicks; unobscured control clicks; controlled clock"
+    },
+    {
+      "task": "click-dialog-2",
+      "data_mode": 0,
+      "episodes": 20,
+      "actions": 176,
+      "scripted_successes": 12,
+      "state_reward_conformance": "PASS",
+      "preset": "matched original instances; CDP clicks; unobscured control clicks; controlled clock"
+    },
+    {
+      "task": "click-dialog-2",
+      "data_mode": 1,
+      "episodes": 20,
+      "actions": 176,
+      "scripted_successes": 12,
+      "state_reward_conformance": "PASS",
+      "preset": "matched original instances; CDP clicks; unobscured control clicks; controlled clock"
+    },
+    {
+      "task": "click-widget",
+      "data_mode": 0,
+      "episodes": 20,
+      "actions": 176,
+      "scripted_successes": 12,
+      "state_reward_conformance": "PASS",
+      "preset": "matched original instances; CDP clicks; unobscured control clicks; controlled clock"
+    },
+    {
+      "task": "click-widget",
+      "data_mode": 1,
+      "episodes": 20,
+      "actions": 176,
+      "scripted_successes": 12,
+      "state_reward_conformance": "PASS",
+      "preset": "matched original instances; CDP clicks; unobscured control clicks; controlled clock"
+    },
+    {
+      "task": "focus-text-2",
+      "data_mode": 0,
+      "episodes": 20,
+      "actions": 176,
+      "scripted_successes": 12,
+      "state_reward_conformance": "PASS",
+      "preset": "matched original instances; CDP clicks; unobscured control clicks; controlled clock"
+    },
+    {
+      "task": "focus-text-2",
+      "data_mode": 1,
+      "episodes": 20,
+      "actions": 176,
+      "scripted_successes": 12,
+      "state_reward_conformance": "PASS",
+      "preset": "matched original instances; CDP clicks; unobscured control clicks; controlled clock"
+    },
+    {
+      "task": "click-checkboxes-transfer",
+      "data_mode": 0,
+      "episodes": 20,
+      "actions": 208,
+      "scripted_successes": 12,
+      "state_reward_conformance": "PASS",
+      "preset": "matched original instances; CDP clicks; unobscured control clicks; controlled clock"
+    },
+    {
+      "task": "click-checkboxes-transfer",
+      "data_mode": 1,
+      "episodes": 20,
+      "actions": 239,
+      "scripted_successes": 12,
+      "state_reward_conformance": "PASS",
+      "preset": "matched original instances; CDP clicks; unobscured control clicks; controlled clock"
+    },
+    {
+      "task": "click-checkboxes-large",
+      "data_mode": 0,
+      "episodes": 20,
+      "actions": 447,
+      "scripted_successes": 12,
+      "state_reward_conformance": "PASS",
+      "preset": "matched original instances; CDP clicks; unobscured control clicks; controlled clock"
+    },
+    {
+      "task": "click-checkboxes-large",
+      "data_mode": 1,
+      "episodes": 20,
+      "actions": 447,
+      "scripted_successes": 12,
+      "state_reward_conformance": "PASS",
+      "preset": "matched original instances; CDP clicks; unobscured control clicks; controlled clock"
+    },
+    {
+      "task": "click-checkboxes-soft",
+      "data_mode": 0,
+      "episodes": 20,
+      "actions": 227,
+      "scripted_successes": 12,
+      "state_reward_conformance": "PASS",
+      "preset": "matched original instances; CDP clicks; unobscured control clicks; controlled clock"
+    },
+    {
+      "task": "click-checkboxes-soft",
+      "data_mode": 1,
+      "episodes": 20,
+      "actions": 227,
+      "scripted_successes": 12,
+      "state_reward_conformance": "PASS",
+      "preset": "matched original instances; CDP clicks; unobscured control clicks; controlled clock"
+    }
+  ],
+  "public_scripted": [
+    {
+      "task": "click-test",
+      "episodes": 1000,
+      "successes": 1000,
+      "timeouts": 0,
+      "actions": 1000,
+      "controller": "public-scripted; not learned RL"
+    },
+    {
+      "task": "click-test-2",
+      "episodes": 1000,
+      "successes": 1000,
+      "timeouts": 0,
+      "actions": 1000,
+      "controller": "public-scripted; not learned RL"
+    },
+    {
+      "task": "click-test-transfer",
+      "episodes": 1000,
+      "successes": 1000,
+      "timeouts": 0,
+      "actions": 1000,
+      "controller": "public-scripted; not learned RL"
+    },
+    {
+      "task": "click-dialog",
+      "episodes": 1000,
+      "successes": 1000,
+      "timeouts": 0,
+      "actions": 1000,
+      "controller": "public-scripted; not learned RL"
+    },
+    {
+      "task": "click-dialog-2",
+      "episodes": 1000,
+      "successes": 1000,
+      "timeouts": 0,
+      "actions": 1000,
+      "controller": "public-scripted; not learned RL"
+    },
+    {
+      "task": "click-widget",
+      "episodes": 1000,
+      "successes": 1000,
+      "timeouts": 0,
+      "actions": 1000,
+      "controller": "public-scripted; not learned RL"
+    },
+    {
+      "task": "focus-text-2",
+      "episodes": 1000,
+      "successes": 1000,
+      "timeouts": 0,
+      "actions": 1000,
+      "controller": "public-scripted; not learned RL"
+    },
+    {
+      "task": "click-checkboxes-transfer",
+      "episodes": 1000,
+      "successes": 1000,
+      "timeouts": 0,
+      "actions": 2495,
+      "controller": "public-scripted; not learned RL"
+    },
+    {
+      "task": "click-checkboxes-large",
+      "episodes": 1000,
+      "successes": 1000,
+      "timeouts": 0,
+      "actions": 9447,
+      "controller": "public-scripted; not learned RL"
+    },
+    {
+      "task": "click-checkboxes-soft",
+      "episodes": 1000,
+      "successes": 1000,
+      "timeouts": 0,
+      "actions": 3961,
+      "controller": "public-scripted; not learned RL"
+    }
+  ],
+  "source_sha256": {
+    "Generate.bend": "d757f5258fa11f1fa55e929eaae9a884988c305e38cc8a97cf00721172626bdc",
+    "LAWS.bend": "990139fc65de136dce65e90b1387374c0e9098b53d6ac1e8014a3a56135f73dc",
+    "Main.bend": "754da8d9312741e4d2889857851daacb6a4dc61b8f5b922e06483b4ab6bf051f",
+    "Model.bend": "7f61b7124b0a855d29ea28675ddad5e0da4135177ad73d397e833ebd5baba62d",
+    "PROOF.bend": "c01832410da4f737372f5a7d51538ad565e064dc38f93d9550b0f09fa45648ee",
+    "Synonyms.bend": "001f5a428f37bd3c0e3a9b93af523d814376756a2150f8bbed80c2aa218e4a95",
+    "Wire.bend": "714aec46a3ac9e333604be4024a10387e1ce7fe5eaaa5526c32f8fff6f95aae4",
+    "bridge.c": "3f1661326bb6b7966595adeb51f72752081e3789286011e77ef94ee87ded19e5",
+    "browser.js": "d69550ba6aad419ba0ab6e363d5ed04625b9fbf0a53687b09ee775fc3b163dca",
+    "browser_oracle.c": "fa8b9fbcbc7e7fd947deaca178d96d3965c263c6871f098a76ece78ac0a5a57d",
+    "expert_synonyms.h": "072b9b96371fe67a08c11025222fd607bfbd7f5ff66b2f4f650301b7aaba91c8",
+    "family_api.c": "bd64067d0362208e381d4cf9153926c232981f03cf3dac8e651d5bc46af05df9",
+    "test_click.c": "b3fea40f10682ede061b15e732973ba6719dee24622573fa90265f441fd92f46"
+  },
+  "limitations": [
+    "Unobscured control-click preset with logical clock; no unrestricted coordinate/scheduler parity.",
+    "Finite ASCII lexicon and simple layout; not original generator distribution parity.",
+    "Public actionable-node projection, not full DOM/AX fidelity.",
+    "Family-v2 runtime is not yet integrated into twelve-task PPO profile."
+  ],
+  "generator_constraints": "Source-derived control counts, focus ordinals, mode-dependent target ranges and deadlines checked at all 10240 resets"
+}
