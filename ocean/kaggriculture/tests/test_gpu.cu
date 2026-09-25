@@ -328,7 +328,7 @@ void adapter_test(int agents, int seat, int bot, int graphs, bool shaped = false
         Dict vec = {};
         dict_set(&vec, "num_policies", policies);
         dict_set(&vec, "hist_policy_percent", fraction);
-        kag_assign_policies(envs, &vec, layout);
+        puf_gpu_setup(envs, &vec, layout, NULL);
         dict_clear(&vec);
     }
     Env* host = (Env*)calloc(games, sizeof(Env));

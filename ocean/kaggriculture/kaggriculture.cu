@@ -1,6 +1,7 @@
 #pragma once
 
 #define PUF_BACKEND PUF_GPU
+#define PUF_GPU_SETUP
 #include <cuda_runtime.h>
 typedef float obs_t;
 #include "kaggriculture.h"
@@ -66,7 +67,7 @@ Env* puf_vec_create(int total_agents, Dict* kwargs, obs_t* observations, float* 
 
 // Group physical rows by policy, as the CPU env_setup path does. Games keep
 // their own seat order; both observation/action IO and prefix sampling use it.
-void kag_assign_policies(Env* envs, Dict* kwargs, int* layout) {
+void puf_gpu_setup(Env* envs, Dict* kwargs, int* layout, unsigned char* masks) {
     int policies = dict_get(kwargs, "num_policies");
     if (policies <= 1) {
         return;

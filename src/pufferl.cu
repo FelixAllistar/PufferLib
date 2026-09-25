@@ -1084,8 +1084,8 @@ static void env_setup(PuffeRL* p, VecEnv* vec, Dict* vk, Dict* ek) {
         cudaMemset(vec->log_scratch, 0, sizeof(Log));
         vec->policy_layout[0] = 0;
         vec->policy_layout[1] = vec->agents_per_buf;
-#if defined(PUFFER_KAGGRICULTURE) && PUF_BACKEND == PUF_GPU
-        kag_assign_policies(vec->envs, vk, vec->policy_layout);
+#ifdef PUF_GPU_SETUP
+        puf_gpu_setup(vec->envs, vk, vec->policy_layout, p->env.action_mask.data);
 #endif
         return;
     }
@@ -2005,7 +2005,7 @@ PuffeRL* create_pufferl(Ini* ini, TrainContext* ctx) {
     if (num_policies < 1) {
         num_policies = 1;
     }
-#ifndef PUFFER_KAGGRICULTURE
+#ifndef PUF_GPU_SETUP
     // Other GPU envs do not yet implement frozen-policy row layouts.
     assert(!(PUF_BACKEND == PUF_GPU
             && (num_policies > 1 || puf_ini_get(ini, "selfplay", "enabled")))
