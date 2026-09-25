@@ -30,6 +30,22 @@ available separately, not automatically selected by the sweep.
 
 ### Rebuilding indexed reset banks
 
+The preserved standalone differential suite now shares `replay_native.py`
+instead of carrying a second ctypes/action ABI. After compiling the rule
+library below, run:
+
+```sh
+uv run --no-project --with kaggle-environments==1.32.7 \
+    python ocean/kaggriculture/parity.py --lib ocean/kaggriculture/build/libkaggriculture.so
+```
+
+Scripted/randomized actions, animal care/fertilizer/unfed yield, crop lifetime,
+locked-tile movement and scarcity pricing checks pass against that official
+package. This core-level suite uses some nondefault game rules for coverage;
+it does not mean the native training adapter supports those configuration keys.
+`--replay FILE.json` checks an archived game strictly. The legacy `--bench`
+is retained but unqualified as a matched throughput comparison.
+
 The historical HTTP archive collector is available as
 `refresh_daily_replays.py` (planning unless `--download` is passed), with
 `refresh_reset_archives.py` providing date-range download-budget/disk-reserve

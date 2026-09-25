@@ -52,6 +52,8 @@ def load_core(path):
     lib.kg_create.argtypes = [ctypes.POINTER(CConfig)]
     lib.kg_create.restype = ctypes.c_void_p
     lib.kg_destroy.argtypes = [ctypes.c_void_p]
+    lib.kg_reset.argtypes = [ctypes.c_void_p]
+    lib.kg_reset.restype = None
     lib.kg_done.argtypes = [ctypes.c_void_p]
     lib.kg_done.restype = ctypes.c_int
     lib.kg_state_step.argtypes = [ctypes.c_void_p]

@@ -134,6 +134,29 @@ their final 5.0 implementations must not be overwritten by older copies.
 
 ## Other source/workflow inventory
 
+### Ignored experiment dispositions
+
+- `compare_fixed_continuations.py` and its test are historical executor0/obs1
+  EMAg ablations. Their explicit ABI checks, magnet checkpoint and `emag_kl_coef`
+  knobs target the retired trainer. Preserve in the verified ignored-source
+  backup; do not restore custom losses to make this experiment executable.
+- `sweep_macro_memory.py` and its test are a fixed legacy frozen-bank grid
+  (`frozen_bank_pct=.75`, old league commands/EMAg sidecars). Native Protein is
+  the active sweep path. The historical experiment is preserved, not relabeled
+  as a compatible current sweep.
+- `pokemon/qd_selfplay.py` imports the old `cma_qd` search and generation-panel
+  machinery. The user explicitly deferred QD experiments; preserve its source
+  without restoring that search/trainer integration as a conversion requirement.
+- Goofspiel's `train_population.sh` includes exact-response refresh and EMAg;
+  its evaluator wrapper invokes retired CLI/keys. Behavior analysis is ported,
+  but native population training and exact-response refresh are still pending,
+  not silently replaced by ordinary selfplay.
+- Kaggriculture's ignored `parity.py` is now ported, sharing the canonical
+  replay bridge rather than duplicated ABI definitions. All scripted/randomized,
+  animal, crop-lifetime, locked-worker and market-hinge checks pass against
+  official 1.32.7. Historical benchmark mode is not a qualified matched speed
+  comparison. This does not establish arbitrary expert-replay compatibility.
+
 The legacy `scripts/goofspiel_behavior.py` was ignored in the main checkout,
 not contained in the archived `5c` ref. It is now explicitly ported from that
 local file, with grouping/selection tests and an actual native report-to-CLI
