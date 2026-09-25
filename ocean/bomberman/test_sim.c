@@ -743,9 +743,52 @@ static void test_curriculum_board_bounds(void) {
     }
 }
 
+static void test_approach_reward(void) {
+    BMMatch m;
+    BMConfig cfg;
+    for (int scenario = 0; scenario < 5; scenario++) {
+        clear_arena(&m, &cfg, 2, 91);
+        cfg.frames_per_cell = 1;
+        cfg.reward_approach = scenario == 1 ? 0 : 0.25f;
+        cfg.reward_approach_horizon = 400;
+        m.agents[0].x = 2;
+        m.agents[0].y = 3;
+        m.agents[1].x = 8;
+        m.agents[1].y = 3;
+        bm_reset_approach_records(&m);
+        if (scenario == 2) m.tick = 400;
+        if (scenario == 3) m.curriculum_stage = 0;
+        int actions[2] = {BM_ACT_RIGHT, BM_ACT_STAY};
+        if (scenario == 4) {
+            actions[0] = BM_ACT_STAY;
+            actions[1] = BM_ACT_LEFT;
+        }
+        float rewards[2], terminals[2];
+        bm_step_match(&m, &cfg, actions, rewards, terminals);
+        float expected = scenario == 0 ? 0.25f / (m.width + m.height - 2) : 0;
+        CHECK(fabsf(rewards[0] - expected) < 1e-7f,
+            "approach reward requires own progress, enabled horizon and full game");
+        CHECK(fabsf(m.agents[0].ep_approach_reward - expected) < 1e-7f,
+            "approach reward is logged separately");
+        if (scenario != 0) continue;
+        actions[0] = BM_ACT_LEFT;
+        bm_step_match(&m, &cfg, actions, rewards, terminals);
+        CHECK(rewards[0] == 0, "backtracking does not pay approach reward");
+        actions[0] = BM_ACT_RIGHT;
+        bm_step_match(&m, &cfg, actions, rewards, terminals);
+        CHECK(rewards[0] == 0, "revisiting distance record does not pay twice");
+        bm_step_match(&m, &cfg, actions, rewards, terminals);
+        CHECK(rewards[0] > 0 && rewards[0] < expected,
+            "new later record pays a discounted approach reward");
+        CHECK(m.agents[0].ep_approach_reward <= cfg.reward_approach,
+            "approach reward stays within episode cap");
+    }
+}
+
 int main(void) {
     printf("bomberman reworked simulator tests\n");
     test_layout();
+    test_approach_reward();
     test_map_and_canonical_spawns();
     test_bomb_timer_exact();
     test_timer_bounds();

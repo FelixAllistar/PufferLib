@@ -42,7 +42,8 @@ The legacy implementation remains in the
 
 The viewer test now checks 1,024 steps and at least 32 recurrent resets.
 With the legacy H128/L2 checkpoint from run `1790155830168`, step `999948288`,
-the archived viewer and this viewer both produce trace `a6abf6d2c490a11f`.
+the archived viewer and the port at `215e8ffc2` both produce trace
+`a6abf6d2c490a11f` (before importing the newer approach-reward defaults).
 The trace includes observations, joint logits/value, joint/separate sampled
 actions, rewards and terminals. This is exact parity for the tested rollout,
 not a claim that two categorical implementations match at every rounding edge.
@@ -50,6 +51,14 @@ The test can include an archived viewer using
 `-DBM_LEGACY_VIEWER='"/legacy/ocean/bomberman/bomberman.c"'`, its original include paths,
 and matching run config. The legacy resolver expects run logs beneath its
 working directory even when given an absolute checkpoint path.
+
+The newer local approach-reward implementation is also preserved. Defaults
+now match that local edit: `reward_kill=0.2`, `reward_approach=0.25` and
+`reward_approach_horizon=400`. Opening moves pay only for new personal
+closest-distance records, with a linearly declining time weight. Earlier
+curriculum stages do not receive this reward. Set `reward_approach=0` to
+disable it; old run configs without this key inherit the current default.
+CPU unit/sanitizer tests and the GPU differential suite pass after this port.
 
 ## GPU simulator
 

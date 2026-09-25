@@ -33,6 +33,8 @@ typedef struct {
     float reward_win;
     float reward_alive;
     float reward_timeout;      // each survivor on a timeout draw
+    float reward_approach;     // per-match cap for early close-distance shaping
+    int reward_approach_horizon;
     float reward_bomb_threat;  // bonus only when a bomb earns a credited kill
     float reward_bomb_escape;  // bonus when that credited kill also leaves its owner alive
     float reward_curriculum_aim;      // one-shot: plant a bomb that reaches the foe
@@ -55,8 +57,10 @@ typedef struct {
     int move_cd;               // blocked steps before the next movement
     int bombs_out;
     int invuln;
+    int approach_best_distance;
     float ep_return;
     float ep_score;
+    float ep_approach_reward;
     int kills;
     int self_kills;
     int soft_breaks;
@@ -104,6 +108,26 @@ typedef struct {
 // ---- small helpers -------------------------------------------------------
 BM_HD int bm_min_i(int a, int b) { return a < b ? a : b; }
 BM_HD int bm_max_i(int a, int b) { return a > b ? a : b; }
+BM_HD int bm_position_distance(int ax, int ay, int bx, int by) {
+    int dx = ax > bx ? ax - bx : bx - ax;
+    int dy = ay > by ? ay - by : by - ay;
+    return dx + dy;
+}
+BM_HD int bm_agent_distance(const BMAgent* a, const BMAgent* b) {
+    return bm_position_distance(a->x, a->y, b->x, b->y);
+}
+BM_HD void bm_reset_approach_records(BMMatch* m) {
+    int max_dist = bm_max_i(1, m->width + m->height - 2);
+    for (int a = 0; a < m->num_agents; a++) {
+        int nearest = max_dist;
+        for (int b = 0; b < m->num_agents; b++) {
+            if (a == b || !m->agents[b].alive) continue;
+            nearest = bm_min_i(nearest,
+                bm_agent_distance(&m->agents[a], &m->agents[b]));
+        }
+        m->agents[a].approach_best_distance = nearest;
+    }
+}
 BM_HD int bm_clamp_i(int x, int lo, int hi) {
     return x < lo ? lo : (x > hi ? hi : x);
 }
@@ -156,6 +180,8 @@ BM_H BMConfig bm_default_config(void) {
     c.reward_win = 0.0f;
     c.reward_alive = -0.001f;
     c.reward_timeout = -0.30f;
+    c.reward_approach = 0.0f;
+    c.reward_approach_horizon = 400;
     c.reward_bomb_threat = 0.05f;
     c.reward_bomb_escape = 0.30f;
     c.reward_curriculum_aim = 0.15f;
@@ -326,6 +352,7 @@ BM_HD void bm_reset_match(BMMatch* m, const BMConfig* cfg, uint32_t seed) {
         ag->bombs_out = 0;
         ag->invuln = BM_SPAWN_INVULN;
     }
+    bm_reset_approach_records(m);
 }
 
 BM_HD void bm_refresh_danger(BMMatch* m);
@@ -1013,7 +1040,13 @@ BM_HD void bm_step_match(BMMatch* m, const BMConfig* cfg,
     }
 
     m->tick += 1;
+    int old_x[BM_MAX_AGENTS];
+    int old_y[BM_MAX_AGENTS];
+    uint8_t was_alive[BM_MAX_AGENTS];
     for (int a = 0; a < m->num_agents; a++) {
+        old_x[a] = m->agents[a].x;
+        old_y[a] = m->agents[a].y;
+        was_alive[a] = (uint8_t)m->agents[a].alive;
         rewards[a] = 0.0f;
         terminals[a] = 0.0f;
         if (m->agents[a].alive && cfg->reward_alive != 0.0f) {
@@ -1045,6 +1078,42 @@ BM_HD void bm_step_match(BMMatch* m, const BMConfig* cfg,
     }
 
     bm_resolve_actions(m, cfg, actions, rewards);
+
+    // Pay a bounded, one-time bonus when the agent's own move sets a new
+    // closest-distance record. Measuring both distances against the opponents'
+    // post-move positions avoids rewarding an agent just because a foe moved
+    // closer. The record prevents circling/backtracking from farming reward.
+    int full_game = m->curriculum_stage < 0
+        || m->curriculum_stage == BM_CURRICULUM_STAGES - 1;
+    int horizon = cfg->reward_approach_horizon;
+    if (full_game && cfg->reward_approach > 0.0f && horizon > 0
+            && m->tick <= horizon) {
+        float early_weight = 1.0f
+            - (float)(m->tick - 1) / (float)horizon;
+        float max_dist = (float)bm_max_i(1, m->width + m->height - 2);
+        for (int a = 0; a < m->num_agents; a++) {
+            BMAgent* agent = &m->agents[a];
+            if (!was_alive[a] || !agent->alive) continue;
+            int before = m->width + m->height;
+            int after = m->width + m->height;
+            for (int b = 0; b < m->num_agents; b++) {
+                if (b == a || !m->agents[b].alive) continue;
+                before = bm_min_i(before, bm_position_distance(
+                    old_x[a], old_y[a], m->agents[b].x, m->agents[b].y));
+                after = bm_min_i(after, bm_agent_distance(agent, &m->agents[b]));
+            }
+            int own_progress = before - after;
+            int record_progress = agent->approach_best_distance - after;
+            int credited_progress = bm_min_i(own_progress, record_progress);
+            if (credited_progress <= 0) continue;
+            float shaped = cfg->reward_approach * early_weight
+                * (float)credited_progress / max_dist;
+            rewards[a] += shaped;
+            agent->ep_return += shaped;
+            agent->ep_approach_reward += shaped;
+            agent->approach_best_distance = after;
+        }
+    }
 
     if (safe_escape_bomb_now) {
         m->curriculum_aimed = 1;

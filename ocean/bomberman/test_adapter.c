@@ -9,7 +9,9 @@ int main(int argc, char** argv) {
     Env configured = {0};
     puf_init(&configured, puf_ini_section(&ini, "env", 0));
     assert(configured.num_agents == 2 && configured.cfg.width == 13);
-    assert(configured.cfg.reward_kill == 1 && configured.cfg.max_ticks == 1600);
+    assert(configured.cfg.reward_kill == 0.2f && configured.cfg.max_ticks == 1600);
+    assert(configured.cfg.reward_approach == 0.25f);
+    assert(configured.cfg.reward_approach_horizon == 400);
     assert(configured.agents[0].policy == 0 && configured.agents[1].policy == 1);
     puf_ini_free(&ini);
     Env env = {0};

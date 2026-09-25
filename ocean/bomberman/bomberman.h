@@ -23,6 +23,7 @@ struct Log {
     float score;           // sum of ep_score
     float episode_return;
     float episode_length;
+    float approach_reward;
     float kills;
     float self_kills;
     float soft_breaks;
@@ -66,6 +67,8 @@ static inline void bm_load_config(BMConfig* cfg, Dict* kwargs) {
     cfg->reward_win = (float)dict_get(kwargs, "reward_win");
     cfg->reward_alive = (float)dict_get(kwargs, "reward_alive");
     cfg->reward_timeout = (float)dict_get(kwargs, "reward_timeout");
+    cfg->reward_approach = (float)dict_get(kwargs, "reward_approach");
+    cfg->reward_approach_horizon = (int)dict_get(kwargs, "reward_approach_horizon");
     cfg->reward_bomb_threat = (float)dict_get(kwargs, "reward_bomb_threat");
     cfg->reward_bomb_escape = (float)dict_get(kwargs, "reward_bomb_escape");
     cfg->reward_curriculum_aim = (float)dict_get(kwargs, "reward_curriculum_aim");
@@ -85,6 +88,7 @@ void puf_log(Log* log, Dict* out) {
     dict_set(out, "score", log->score);
     dict_set(out, "episode_return", log->episode_return);
     dict_set(out, "episode_length", log->episode_length);
+    dict_set(out, "approach_reward", log->approach_reward);
     dict_set(out, "kills", log->kills);
     dict_set(out, "self_kills", log->self_kills);
     dict_set(out, "soft_breaks", log->soft_breaks);
@@ -144,6 +148,7 @@ BM_HD void bm_log_match(Log* log, const BMMatch* match, int outcome) {
         log->score += ag->ep_score;
         log->episode_return += ag->ep_return;
         log->episode_length += (float)match->tick;
+        log->approach_reward += ag->ep_approach_reward;
         log->kills += (float)ag->kills;
         log->self_kills += (float)ag->self_kills;
         log->soft_breaks += (float)ag->soft_breaks;
@@ -280,6 +285,8 @@ void puf_reset(Env* env) {
             / (float)BM_CURRICULUM_STAGES;
     }
     bm_apply_reverse_curriculum(&env->match, &env->cfg, progress);
+    // Curriculum layouts can move the players after bm_reset_match.
+    bm_reset_approach_records(&env->match);
     // Advance rng so consecutive resets differ.
     env->rng = bm_xorshift(&seed);
     for (int a = 0; a < env->num_agents; a++) {
