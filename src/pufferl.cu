@@ -1293,6 +1293,9 @@ static void* vec_thread_main(void* arg) {
             for (int i = env_start; i < env_start + env_count; i++) {
                 puf_step(&envs[i]);
             }
+#ifdef PUF_CPU_POST_STEP
+            PUF_CPU_POST_STEP(envs + env_start, env_count);
+#endif
             clock_gettime(CLOCK_MONOTONIC, &t1);
             my_accum[PROF_ENV] += (t1.tv_sec - t0.tv_sec) * 1000.0f
                 + (t1.tv_nsec - t0.tv_nsec) / 1e6f;
@@ -1320,6 +1323,9 @@ static void env_restart(PuffeRL* p) {
         for (int i = 0; i < vec->size; i++) {
             puf_reset(&vec->envs[i]);
         }
+#ifdef PUF_CPU_POST_STEP
+        PUF_CPU_POST_STEP(vec->envs, vec->size);
+#endif
         cpu_upload(p, 0, vec->total_agents, p->default_stream);
     }
     for (int b = 0; b < p->num_policies; b++) {
@@ -3087,6 +3093,9 @@ static EvalResult eval_loop(Ini* ini, PuffeRL* p, int mode, int verbose,
 }
 
 static PuffeRL* eval_make(Ini* ini, TrainContext* ctx, int mode, int render) {
+#ifdef PUF_CONFIGURE
+    PUF_CONFIGURE(ini, "eval");
+#endif
     int match = mode == EVAL_MATCH;
     long eval_agents = puf_ini_get(ini, "base", "eval_agents");
     if (render) {
@@ -3166,6 +3175,9 @@ EvalResult run_eval(Ini* ini, TrainContext* ctx, int mode, int verbose,
 }
 
 TrainResult run_train(Ini* ini, TrainContext* ctx) {
+#ifdef PUF_CONFIGURE
+    PUF_CONFIGURE(ini, "train");
+#endif
     int use_selfplay = puf_ini_get(ini, "selfplay", "enabled");
     if (!use_selfplay) {
         puf_ini_put(ini, "vec.num_policies", "1");
