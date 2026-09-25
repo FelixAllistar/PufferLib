@@ -129,8 +129,10 @@ or add checkpoint hooks to the shared trainer.
 but no Bend runtime or downloaded model. It creates a synthetic H16/L2 test
 checkpoint under `build/webnav/training/` with semantic features disabled.
 Across 128 recurrent steps and ten resets, actions and all policy/value logits
-match legacy CPU inference bit-for-bit (trace `7c4dac1667d333bc`). Sanitizer
-checks pass. This does not establish GPU parity or learned policy quality.
+match legacy CPU inference bit-for-bit (trace `7c4dac1667d333bc`). Twelve negative
+cases check source/version/dimension mismatches, invalid architecture settings,
+and wrong weight-file sizes. Sanitizer checks pass. This does not establish
+GPU parity or learned policy quality.
 
 The sidecar reader checks the compiled source hash as well as the feature and
 architecture contract. The standalone test uses the development hash default;
