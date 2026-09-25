@@ -34,6 +34,56 @@ def archive(path, episodes):
 
 
 class ReplayPrepTests(unittest.TestCase):
+    def test_official_collection_filters_versions_and_reuses_downloads(self):
+        refs = [f"kaggle/kaggriculture-episodes-2026-09-{day}" for day in (19, 20, 21)]
+        listing = [{"ref": ref} for ref in refs] + [
+            {"ref": "someone/kaggriculture-episodes-2026-09-22"},
+            {"ref": "kaggle/../../bad"}]
+        downloads = []
+
+        def cli(command, **kwargs):
+            if command[2] == "list":
+                return subprocess.CompletedProcess(command, 0, stdout=json.dumps(listing))
+            ref = command[3]
+            downloads.append(ref)
+            path = pathlib.Path(command[-1]) / (ref.split("/")[1] + ".zip")
+            games = [episode(1, version="1.32.6")]
+            if ref != refs[2]:
+                games.append(episode(2))
+            archive(path, games)
+            return subprocess.CompletedProcess(command, 0)
+
+        with tempfile.TemporaryDirectory() as directory, mock.patch.object(
+            prep.subprocess, "run", side_effect=cli):
+            root = pathlib.Path(directory)
+            selected, report = prep.fetch_days(root, 2, 3, "1.32.7")
+            self.assertEqual(downloads, list(reversed(refs)))
+            self.assertEqual([r["compatible_episodes"] for r in report], [0, 1, 1])
+            self.assertEqual(len(selected), 2)
+            downloads.clear()
+            again, report = prep.fetch_days(root, 2, 3, "1.32.7")
+            self.assertEqual(again, selected)
+            self.assertEqual(downloads, [])
+            self.assertTrue(all(r["reused"] for r in report))
+            with self.assertRaisesRegex(ValueError, "requested 3"):
+                prep.fetch_days(root, 3, 3, "1.32.7")
+
+    def test_failed_download_is_not_published(self):
+        ref = "kaggle/kaggriculture-episodes-2026-09-21"
+
+        def cli(command, **kwargs):
+            if command[2] == "list":
+                return subprocess.CompletedProcess(command, 0, stdout=json.dumps([{"ref": ref}]))
+            (pathlib.Path(command[-1]) / "partial.zip").write_bytes(b"partial")
+            raise subprocess.CalledProcessError(1, command)
+
+        with tempfile.TemporaryDirectory() as directory, mock.patch.object(
+            prep.subprocess, "run", side_effect=cli):
+            root = pathlib.Path(directory)
+            with self.assertRaises(subprocess.CalledProcessError):
+                prep.fetch_days(root, 1, 1, "1.32.7")
+            self.assertEqual(list(root.iterdir()), [])
+
     def test_current_native_core_cache_roundtrip(self):
         # Generated native frames test the ABI/cache path, not official rule parity.
         with tempfile.TemporaryDirectory() as directory:

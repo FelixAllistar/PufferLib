@@ -261,14 +261,37 @@ observations, macro labels, returns or serialized native states. Relabel them
 for the chosen controller/reward contract before training. A state index is
 likewise a reference into source replay data, not a resumable reset bank.
 
-Eight tests pass, covering deduplication, split/identity handling, invalid
+Ten tests pass, covering collection/reuse, failed-download cleanup,
+deduplication, split/identity handling, invalid
 episodes, cache publication/reuse, and a freshly compiled native-core cache
 roundtrip. The latter uses generated frames; it is an ABI/cache integration
 test, not an independent official replay-parity qualification. No new official
 replay corpus was downloaded or fully processed during this port.
 
-Remote replay collection still needs migration from the legacy install; local
-Kaggle export is described below, with official-runtime qualification pending.
+The old factory's collection stage is available as an explicit option:
+
+```sh
+uv run --no-project --with kaggle python ocean/kaggriculture/prepare_bc_replays.py \
+    --fetch-days=2 --probe-days=7 --exact-version=1.32.7 \
+    --download-dir=data/kaggriculture/raw --output=build/kaggriculture/inventory_v2
+```
+
+This requires the Kaggle CLI's normal authentication. It queries one page of
+up to 200 updated official daily datasets, examines dated refs newest-first,
+and downloads at most `--probe-days` candidates until `--fetch-days` archives
+contain compatible replay metadata. Mixed-version archives contribute only
+matching games; checking the first JSON alone would be insufficient. Existing
+ZIPs are reused, incomplete downloads are not published, and archives from
+other owners are excluded. A shortage fails explicitly rather than broadening
+the version filter. The inventory records refs, reuse and per-archive counts.
+
+Downloads are never implicit. `--cache-limit` bounds full replay parsing, not
+archive download size: even a small cache may require large ZIPs. Collection
+tests use a mocked CLI; no fresh official archives were downloaded during this
+port. CLI flags were checked against the installed client. The retired factory's
+reward fitting and legacy training commands are not invoked; use the canonical
+dataset builder and `run.py` fitting workflow instead. Multi-teacher factory
+orchestration and submission-revision stability screening remain unported.
 
 The environment now exposes `kag_apply_actions`: it executes both players'
 primitive commands, advances policy observation history and computes the same

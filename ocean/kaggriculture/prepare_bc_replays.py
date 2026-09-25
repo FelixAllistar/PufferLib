@@ -26,6 +26,7 @@ import os
 import pathlib
 import re
 import statistics
+import subprocess
 import tempfile
 import zipfile
 
@@ -99,6 +100,41 @@ def catalog(paths, *, version="1.32.7", fraction=0.15, seed=20260920):
                         continue
                     rows[key] = row
     return list(rows.values()), dict(counts)
+
+
+def fetch_days(directory, days, probes, version, kaggle="kaggle"):
+    listing = subprocess.run([kaggle, "datasets", "list", "--user", "kaggle",
+        "-s", "kaggriculture-episodes", "--sort-by", "updated", "--page-size", "200",
+        "--format", "json"], check=True, capture_output=True, text=True)
+    pattern = r"kaggle/kaggriculture-episodes-\d{4}-\d{2}-\d{2}"
+    refs = sorted({str(row.get("ref", "")) for row in json.loads(listing.stdout)
+        if re.fullmatch(pattern, str(row.get("ref", "")))}, reverse=True)[:probes]
+    directory.mkdir(parents=True, exist_ok=True)
+    selected, report = [], []
+    for ref in refs:
+        slug = ref.split("/")[1]
+        archive = directory / f"{slug}.zip"
+        reused = archive.exists()
+        if not reused:
+            with tempfile.TemporaryDirectory(prefix="download-", dir=directory) as temporary:
+                subprocess.run([kaggle, "datasets", "download", ref, "-p", temporary], check=True)
+                downloaded = pathlib.Path(temporary) / archive.name
+                assert downloaded.is_file(), f"missing downloaded archive: {ref}"
+                # Publish only a completed CLI download; never overwrite another collector.
+                with zipfile.ZipFile(downloaded) as bundle:
+                    assert bundle.namelist(), f"empty archive: {ref}"
+                os.link(downloaded, archive)
+        # Inspect every member's prefix, not just the first replay's version.
+        rows, counts = catalog([archive], version=version)
+        item = dict(ref=ref, archive=str(archive.resolve()), reused=reused,
+            compatible_episodes=len({row["episode_id"] for row in rows}), counts=counts)
+        report.append(item)
+        print(json.dumps(item), flush=True)
+        if rows:
+            selected.append(archive)
+            if len(selected) == days:
+                return selected, report
+    raise ValueError(f"found {len(selected)} compatible daily archives; requested {days}")
 
 
 def summarize(rows):
@@ -238,9 +274,14 @@ def write_outputs(directory, rows, counts, cache_rows, rejected, options):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("inputs", nargs="+")
+    parser.add_argument("inputs", nargs="*")
     parser.add_argument("--output", required=True, type=pathlib.Path)
     parser.add_argument("--exact-version", default="1.32.7")
+    parser.add_argument("--fetch-days", type=int, default=0,
+        help="explicitly download this many compatible official daily archives")
+    parser.add_argument("--probe-days", type=int, default=14)
+    parser.add_argument("--download-dir", type=pathlib.Path)
+    parser.add_argument("--kaggle", default="kaggle", help="Kaggle CLI executable")
     parser.add_argument("--holdout-fraction", type=float, default=0.15)
     parser.add_argument("--seed", type=int, default=20260920)
     parser.add_argument("--teacher", help="exact display name; cache only this identity")
@@ -257,7 +298,19 @@ def main():
         parser.error("caching requires --teacher and --lib")
     if args.output.exists():
         parser.error("output already exists; use a new inventory directory")
-    rows, counts = catalog(identities._expand(args.inputs), version=args.exact_version,
+    if args.fetch_days < 0 or args.probe_days < args.fetch_days:
+        parser.error("require 0 <= fetch-days <= probe-days")
+    if args.fetch_days and not args.download_dir:
+        parser.error("fetching requires --download-dir")
+    if not args.inputs and not args.fetch_days:
+        parser.error("provide local archives or explicitly request --fetch-days")
+    paths = identities._expand(args.inputs) if args.inputs else []
+    fetched = []
+    if args.fetch_days:
+        downloads, fetched = fetch_days(args.download_dir, args.fetch_days,
+            args.probe_days, args.exact_version, args.kaggle)
+        paths = [*paths, *downloads]
+    rows, counts = catalog(paths, version=args.exact_version,
                            fraction=args.holdout_fraction, seed=args.seed)
     if not rows:
         parser.error("no compatible replay metadata found")
@@ -290,6 +343,7 @@ def main():
             print(json.dumps(item), flush=True)
     options = {key: str(value) if isinstance(value, pathlib.Path) else value
                for key, value in vars(args).items()}
+    options["fetched_archives"] = fetched
     report = write_outputs(args.output, rows, counts, cached, rejected, options)
     print(json.dumps({"unique_episodes": report["unique_episodes"],
                       "top_identities": report["identities"][:12], "cached": len(cached),
