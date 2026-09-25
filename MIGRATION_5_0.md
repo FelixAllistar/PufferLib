@@ -53,7 +53,22 @@ clean-clone qualification remain in progress; check branch HEAD for updates.
 
 ## Source of truth and preservation
 
-### Current shared-core audit (2026-09-25)
+### All-row trainer comparison baseline (2026-09-25)
+
+The learner-only gathering change (`49fdefa67`) is reverted for comparison with
+upstream's all-policy-row training. PPO now receives frozen-opponent transitions
+as well as learner transitions, for both actor and critic updates. Opponent
+weights still do not train. Physical row indexing, train-buffer sizes, carry
+layout and minibatch counts follow upstream again. Horizon and PPO/optimizer
+math are unchanged; the amount of training work and memory per rollout increases
+when opponent rows are present. This is an experiment, not a claim of better
+learning. Packed binary masks remain enabled and their transpose covers all rows.
+
+The opt-in row-layout and packed-mask tests now check this restored contract.
+Existing historical qualification below predates this revert; GPU runtime and
+learning comparisons must be rerun before promoting a replacement binary.
+
+### Pre-ablation shared-core audit (2026-09-25)
 
 At committed `6d68a7c91`, compared with upstream
 `6ffa5b10dbbbe4d1e8288367c7d9d3acd3bad4a2`, exactly three `src/` files differ:

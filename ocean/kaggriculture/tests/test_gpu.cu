@@ -531,7 +531,7 @@ void league_train_test(int graphs) {
     puf_ini_put(&ini, "base.cudagraphs", graphs ? "1" : "-1");
     TrainContext context = {.rank = 0, .world_size = 1, .gpu_id = 0};
     PuffeRL* p = create_pufferl(&ini, &context);
-    assert(p->train_rollouts.observations.shape[0] == 24);
+    assert(p->train_rollouts.observations.shape[0] == 32);
     size_t bytes = numel(p->policies[0].param.shape) * sizeof(precision_t);
     precision_t* original = (precision_t*)malloc(bytes);
     precision_t* actual = (precision_t*)malloc(bytes);
@@ -939,25 +939,24 @@ void reset_bank_test(float probability, int graphs, int agents, const char* dire
 }
 
 void mask_storage_test(int width, int buffers) {
-    int T = 3, physical = 32, primary = 20, B = primary * buffers;
+    int T = 3, physical = 32, B = physical * buffers;
     int rows = T * physical * buffers, packed = (width + 7) / 8;
     precision_t* mask = (precision_t*)managed(rows * width * sizeof(precision_t));
     unsigned char* bits = (unsigned char*)managed(rows * packed);
-    unsigned char* gathered = (unsigned char*)managed(T * B * packed);
+    unsigned char* transposed = (unsigned char*)managed(T * B * packed);
     precision_t* unpacked = (precision_t*)managed(T * B * width * sizeof(precision_t));
     for (int i = 0; i < rows * width; i++) {
         mask[i] = from_float((i % 17) < 9);
     }
     pack_action_mask<<<grid_size(rows * packed), BLOCK_SIZE>>>(bits, mask, rows, width);
     transpose_102<<<grid_size(T * B * packed), BLOCK_SIZE>>>(
-        gathered, bits, T, B, packed, primary, physical);
-    unpack_action_mask<<<grid_size(T * B * width), BLOCK_SIZE>>>(unpacked, gathered, T * B, width);
+        transposed, bits, T, B, packed);
+    unpack_action_mask<<<grid_size(T * B * width), BLOCK_SIZE>>>(unpacked, transposed, T * B, width);
     sync_test();
     for (int b = 0; b < B; b++) {
-        int source = b / primary * physical + b % primary;
         for (int t = 0; t < T; t++) {
             for (int c = 0; c < width; c++) {
-                int idx = ((t * physical * buffers + source) * width + c);
+                int idx = (t * B + b) * width + c;
                 assert(to_float(unpacked[(b * T + t) * width + c]) == to_float(mask[idx]));
             }
         }

@@ -11,7 +11,7 @@ import pytest
 @pytest.mark.parametrize("buffers", [1, 2])
 @pytest.mark.parametrize("async_mode", [0, 1])
 @pytest.mark.parametrize("graphs", [0, 1])
-def test_only_learner_rows_enter_ppo(policies, buffers, async_mode, graphs):
+def test_all_policy_rows_enter_ppo(policies, buffers, async_mode, graphs):
     binary = os.environ.get("PUFFER_POLICY_ROWS_TEST_BINARY")
     if binary is None:
         pytest.skip("set PUFFER_POLICY_ROWS_TEST_BINARY on an idle GPU")
