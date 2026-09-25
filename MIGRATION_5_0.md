@@ -421,8 +421,11 @@ are now published for source preservation. Original files match the main
 checkout byte-for-byte; the new launcher uses the shared WebNav compiler lock
 and existing kernel resource guard. Its shell syntax passes and an unconfined
 invocation is rejected before compilation. Fresh combined code generation
-remains blocked by the previously observed safe-memory limit; no new compiler
-attempt or relaxed cap is claimed. This is intentionally an unfinished port,
+remains unqualified. Two subsequent guarded Nat-dispatch experiments passed
+the proofs but timed out during code generation after five minutes, with
+3.4/3.5 GiB peak memory and no swap. Neither produced fresh generated C; the
+experimental changes were reverted. See the MiniWoB README for the preserved
+baseline and next investigation. This is intentionally an unfinished port,
 not a reduced-task replacement or native-training qualification.
 
 Historical HTTP daily-archive refresh and its date/budget wrapper are ported

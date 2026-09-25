@@ -45,3 +45,24 @@ hit the 4 GiB cap during conversion; do not remove the cap to work around it.
 Outputs and source hashes are under ignored
 `build/webnav/`. Browser oracles and the complete training workflow still need
 porting; native tests alone do not certify original-browser parity or learning.
+
+## Guarded dispatch experiment, 2026-09-25
+
+Two fresh attempts used the command above, including its 4 GiB/no-swap limit
+and five-minute timeout. Both passed `PROOF.bend`, then timed out during C
+generation with exit 137; neither emitted a new generated C file. The systemd
+journal reported 3.4 GiB and 3.5 GiB peak memory, respectively, with no swap.
+No compiler processes remained afterward.
+
+The first attempt changed only top-level task/reset dispatch from U32 to Nat.
+The second also changed text and autocomplete action dispatch. Unlike the
+standalone click-family workaround, these changes did not qualify the combined
+build within the guard. They were reverted, not published as an optimization.
+Next investigate the remaining dispatch/compiler expansion or compilation-unit
+boundaries; do not repeat these exact attempts or raise resource limits.
+
+The preserved legacy library separately passed the 3,072 mixed-reset test with
+fingerprint `5c17842608693d14`. This is a comparison baseline, not fresh-build
+evidence. Its original library and the experimental patch remain locally under
+ignored `build/webnav/` as `libminiwob_legacy_dispatch.a` and
+`dispatch-experiment-20260925.patch`.
