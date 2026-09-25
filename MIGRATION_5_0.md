@@ -105,6 +105,40 @@ their final 5.0 implementations must not be overwritten by older copies.
 
 ## Verification log
 
+### Published clean-clone qualification
+
+On 2026-09-24, a fresh shallow HTTPS clone of GitHub `5.0` at `72e8b9d4a`
+was built in `/tmp/pufferlib-5.0-clean.wgS0ew/repo`. No source, Raylib, model,
+or dataset was copied from the development checkout. Root `build.sh` fetched
+Raylib 5.5 itself. Both native FP32 CPU-simulator/GPU-learner builds succeeded:
+
+```sh
+git clone --depth 1 --single-branch --branch 5.0 \
+    https://github.com/FelixAllistar/PufferLib.git
+cd PufferLib
+CUDA_HOME=/usr/local/cuda NVCC_ARCH=sm_61 bash build.sh bomberman puffer_bomberman --float
+CUDA_HOME=/usr/local/cuda NVCC_ARCH=sm_61 bash build.sh kaggriculture puffer_kaggriculture --float
+```
+
+Host dependencies were Ubuntu GCC 13.3, Clang 18.1.3, CUDA 12.6, ccache 4.9.1
+and existing system graphics/NCCL/OpenMP development libraries. This is a
+clean repository test, not a bare OS provisioning test. Select the target GPU
+architecture and precision appropriately; SM61/FP32 is the local GTX 1060.
+
+Bomberman `make test` passed. The compiled binary completed a fresh 2,048-step
+async smoke (64 agents, two buffers/threads, H32/L1, horizon/minibatch 16,
+32-tick games, no selfplay, `base.cudagraphs=-1`) and saved both checkpoints.
+Kaggriculture's rule-regression and Python-compatible RNG tests passed in
+optimized and ASan/UBSan builds: four tests, no skips. Reference-checkout parity
+tests were deliberately not selected. Tracked source/config files remained
+unchanged; only generated binaries appeared as untracked files.
+
+This also verifies those paths build without the uncommitted generic GPU
+setup hook. It does not qualify every environment on a clean clone, BF16,
+Kaggriculture training without its external assets, or deployment on a new
+Vast host. Those broader gates remain open. Local evidence logs are retained
+beside the temporary clone; the remote sweep was not accessed or modified.
+
 ### Configuration and standalone evaluation audit
 
 The 32 fork-modified configuration paths have these dispositions:
