@@ -311,8 +311,25 @@ qualify a bounded sample before processing a large corpus.
 Label regressions and an end-to-end synthetic two-game publication test cover
 packed masks, terminal rows, holdout layout, config validation and overwrite
 rejection. The synthetic pass games do not establish real expert label coverage,
-nonzero expert-return accuracy, full trainer consumption or policy quality.
-Official-corpus qualification and a new offline training smoke remain pending.
+nonzero expert-return accuracy or policy quality.
+
+The opt-in FP32 GPU smoke feeds the published dataset through `run.py` into the
+native offline trainer at H32/L1. It saves an initial checkpoint, reloads it for
+one update in each of actor-only, critic-only and joint modes, evaluates the
+holdout and checks finite weights and provenance. Actor-only leaves the critic
+branch byte-identical; critic-only leaves all other weights byte-identical;
+joint changes both. Run it with:
+
+```sh
+uv run --no-project python ocean/kaggriculture/run.py build-bc \
+    --arch sm_61 --precision fp32 --bc-binary build/kag_bc_fp32
+KAG_BC_BINARY=build/kag_bc_fp32 uv run --no-project --with pytest --with numpy \
+    python -m pytest -q ocean/kaggriculture/tests/test_dataset_publication.py
+```
+
+Choose the build architecture for your GPU. Without `KAG_BC_BINARY`, only the
+CPU publication test runs. Official-corpus qualification, useful H256/L2
+training and BF16 qualification remain pending for newly generated datasets.
 
 ## Shared-code boundary
 

@@ -6,8 +6,10 @@ Kaggriculture BC label/dataset tooling now targets the canonical native 2/2
 bridge: observed multi-request strategies, teacher-prefix masks, stateful
 expert returns, immutable episode holdout and raw-intent sidecars are preserved.
 Resolved native config metadata coexists with legacy dataset loading. Synthetic
-publication and label regression tests cover the data contract; official expert
-corpus coverage and a new offline training smoke are not yet qualified. This
+publication and label regression tests cover the data contract. An opt-in SM61
+FP32 H32/L1 smoke checks checkpoint reload, holdout evaluation and weight-update
+boundaries for actor-only, critic-only and joint fitting. Official expert corpus
+coverage and useful large-model retraining are not yet qualified. This
 port changes only `ocean/kaggriculture` and documentation, not the shared trainer.
 
 Canonical repository: `https://github.com/FelixAllistar/PufferLib.git`.

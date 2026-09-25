@@ -1,7 +1,9 @@
 import configparser
 import gzip
 import json
+import os
 from pathlib import Path
+import re
 import struct
 import subprocess
 import sys
@@ -16,7 +18,8 @@ import build_entity_bc_dataset as dataset
 import run as runner
 
 
-def test_native_dataset_publication(tmp_path):
+@pytest.fixture
+def published_dataset(tmp_path):
     library = tmp_path / "bridge.so"
     subprocess.run(["cc", "-O2", "-shared", "-fPIC", "-Isrc",
         "-Iraylib-5.5_linux_amd64/include", "-DKAG_BC_SOURCE_HASH=123ULL",
@@ -40,6 +43,11 @@ def test_native_dataset_publication(tmp_path):
         "--profile", str(HERE / "profiles/terminal.ini"), "--output", str(output)]
     result = subprocess.run(command, cwd=ROOT, capture_output=True, text=True)
     assert result.returncode == 0, result.stdout + result.stderr
+    return output, command
+
+
+def test_native_dataset_publication(published_dataset):
+    output, command = published_dataset
     header = dataset.HEADER.unpack(output.read_bytes()[:88])
     assert header[6:8] == (2, 720) and header[15] == 1
     assert header[16] == 123
@@ -82,3 +90,38 @@ def test_native_dataset_publication(tmp_path):
     before = output.read_bytes()
     assert subprocess.run(command, cwd=ROOT, capture_output=True).returncode != 0
     assert output.read_bytes() == before
+
+
+@pytest.mark.skipif(not os.environ.get("KAG_BC_BINARY"), reason="requires native FP32 GPU BC binary")
+def test_native_offline_training(published_dataset, tmp_path):
+    dataset_path, _ = published_dataset
+    checkpoints = {}
+    for name, mode, epochs in [("initial", "bc", 0), ("actor", "bc", 1),
+        ("critic", "critic", 1), ("joint", "bc-critic", 1)]:
+        output = tmp_path / f"{name}.bin"
+        initial_path = "None" if name == "initial" else str(tmp_path / "initial.bin")
+        command = [sys.executable, str(HERE / "run.py"), mode,
+            "--bc-binary", os.environ["KAG_BC_BINARY"], f"--base.load_model_path={initial_path}",
+            "--base.seed=707", "--policy.hidden_size=32", "--policy.num_layers=1",
+            f"--bc.data={dataset_path}", f"--bc.output={output}",
+            f"--bc.epochs={epochs}", "--bc.batch=1", "--bc.max_batches=0"]
+        result = subprocess.run(command, cwd=ROOT, capture_output=True, text=True, timeout=120)
+        (tmp_path / f"{name}.log").write_text(result.stdout + result.stderr)
+        assert result.returncode == 0, result.stdout + result.stderr
+        assert "split=holdout" in result.stdout
+        assert f"{epochs} updates)" in result.stdout
+        begin, end = map(int, re.search(r"critic_range=(\d+):(\d+)", result.stdout).groups())
+        checkpoints[name] = np.fromfile(output, dtype="<f4")
+        assert np.isfinite(checkpoints[name]).all()
+        provenance = json.loads(output.with_suffix(".json").read_text())
+        assert provenance["train_games"] == provenance["validation_games"] == 1
+        assert provenance["contract"]["hidden"] == 32
+    initial = checkpoints["initial"]
+    assert np.array_equal(checkpoints["actor"][begin:end], initial[begin:end])
+    outside = np.ones(initial.size, dtype=bool)
+    outside[begin:end] = False
+    assert np.array_equal(checkpoints["critic"][outside], initial[outside])
+    assert np.any(checkpoints["actor"][outside] != initial[outside])
+    assert np.any(checkpoints["critic"][begin:end] != initial[begin:end])
+    assert np.any(checkpoints["joint"][outside] != initial[outside])
+    assert np.any(checkpoints["joint"][begin:end] != initial[begin:end])
