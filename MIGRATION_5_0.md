@@ -191,6 +191,13 @@ no remote data copy, rebuild, configuration edit or deployment was performed.
 
 ## Verification log
 
+Historical HTTP daily-archive refresh and its date/budget wrapper are ported
+inside Kaggriculture, without trainer dependencies. Seven mocked-network tests
+verify date filtering, resumed download offsets, no-overwrite ZIP publication,
+and download-budget/disk-reserve refusal before transfer. Live endpoints and
+HTTP 416 completion remain unqualified; advertised-size preflight is not a
+streaming hard cap. No live downloads or remote changes were performed.
+
 The indexed Kaggriculture reset-bank builder is restored against the canonical
 rule core. Native-generated replay tests verify header/serialization ABI,
 snapshot restore, late-mismatch whole-episode rejection and overwrite refusal.

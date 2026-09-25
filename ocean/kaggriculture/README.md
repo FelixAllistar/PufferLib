@@ -30,6 +30,20 @@ available separately, not automatically selected by the sweep.
 
 ### Rebuilding indexed reset banks
 
+The historical HTTP archive collector is available as
+`refresh_daily_replays.py` (planning unless `--download` is passed), with
+`refresh_reset_archives.py` providing date-range download-budget/disk-reserve
+preflight checks and ZIP episode-count checks. Both keep archives compressed
+under `ROOT/raw/SLUG/SLUG.zip`. The bounded helper downloads when invoked;
+it has no dry-run flag. Use its `--help` before selecting a destination.
+Seven mocked-network tests cover date selection, resume offsets, ZIP checks,
+no-overwrite publication and preflight refusal. Live endpoint availability,
+HTTP 416 completion and large transfers are not qualified here. Budget checks
+trust the server's advertised size; they are not a hard streaming byte cap.
+ZIP publication checks structure, not every member's CRC; replay parsing and
+parity checks remain required. The alternative Kaggle-CLI collection path in
+`prepare_bc_replays.py` remains available.
+
 `build_replay_state_bank.py` replays indexed episodes through the canonical
 `core.h`, checks every frame, and verifies each selected state's serialized
 round-trip and next step. Build a standalone rule library and supply an index
