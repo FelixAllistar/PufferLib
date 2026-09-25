@@ -137,6 +137,17 @@ from the existing `/workspace/PufferLib` install, preserving relative paths:
   point into the preserved legacy install. `reset.kgb` is required for the
   configured resets; offline `.bc` files are only required for new BC fitting.
 
+The five legacy data files alone do not preserve the relabeling inputs.
+Both BC JSON manifests reference `multi_intent_sidecar` outside this directory:
+legacy `qualification/critic_matrix_20260923/terminal_only_v1/terminal.intents.jsonl.gz`
+and `qualification/bc_expansion_20260923/remote_run.CPV5Ma/comparison/expanded.intents.jsonl.gz`.
+Both were present at 32,433,200 bytes on 2026-09-25; equal sizes do not establish
+equal contents. Preserve these separately with checksums and record their new
+locations without overwriting original provenance. Individual record `tape`
+paths also reference legacy inputs; rebuilding labels requires those tapes or
+their source replays. Existing `.bc` fitting does not imply those inputs have
+been transferred. Do not remove the legacy install on that basis.
+
 Verify transferred files with SHA256 against the source before training. Do not
 copy the old binary or global `default.ini` onto the new clone. The checked-in
 environment config already includes the current remote sweep settings.
