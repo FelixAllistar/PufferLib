@@ -223,3 +223,45 @@ two H16/L1 generated experts with distinct teams/leads, graphs off/on and legali
 expert files remain unchanged and curriculum drafts complete. Core/assignment
 tests also preserve identical one/four-worker trajectories. Reproduce with
 `POKEMON_TRAIN_BINARY=build/pokemon/native_train uv run --no-project --with pytest python -m pytest -q ocean/pokemon/tests/test_native_training.py`.
+
+### Sequential round-robin workflow
+
+`league.sh` / `freeleague.mjs` now target the native 5.0 trainer. They keep
+explicit per-member budgets, fixed opponents within each stint, sequential
+publication, frozen anchors, retry/resume, balanced-seat evaluation and live
+dashboard logging. This is not PFSP, QD or a custom optimizer. Later members
+face versions published by earlier members; interrupted stints retry against
+their saved opponent snapshot. Optimizer and in-flight episode state are not
+resumed.
+
+```bash
+./build.sh pokemon build/pokemon/puffer_native --float
+make -C ocean/pokemon viewer
+./ocean/pokemon/league.sh create leagues/pokemon/native5 \
+    --master /absolute/path/to/compatible/weights.bin --new-policies 2 \
+    --steps 1048576 --defer-init --binary build/pokemon/puffer_native
+./ocean/pokemon/league.sh train leagues/pokemon/native5 --live
+./ocean/pokemon/league.sh eval leagues/pokemon/native5 --games 128
+./ocean/pokemon/league.sh export leagues/pokemon/native5
+```
+
+Use a new directory. State version 4 rejects old version-3 league state without
+modifying it; import compatible checkpoints as seeds or frozen `--anchor`
+members instead. `--master None` initializes independent random policies.
+`--teams smogon` or `--teams experts-three` restores the old species/lead
+presets while still learning moves. Retired trainer options such as EMAg and
+PFSP are rejected rather than silently passed through. The exporter writes
+both `native.ini` and its ordered `.opponents` file for the current loader.
+
+Tests cover interruption/retry, checkpoint immutability, exact budgets, live
+PTY output, export order and old-state rejection. A real two-member H16/L1
+run completes two rounds, native opponent loading and balanced-seat evaluation:
+
+```bash
+node --test ocean/pokemon/tests/test_freeleague.mjs
+POKEMON_TRAIN_BINARY=build/pokemon/puffer_native \
+    node --test ocean/pokemon/tests/test_freeleague.mjs
+```
+
+The second command requires an idle GPU and the freshly built semantic viewer.
+It is a workflow smoke test, not evidence of playing-strength improvement.
