@@ -180,18 +180,21 @@ def validate_dataset(path, config, mode):
     assert metadata["train_games"] + metadata["validation_games"] == header[6]
     source = configparser.ConfigParser(interpolation=None)
     source.read_string(metadata["profile"])
+    native = metadata.get("profile_schema") == "native5.0"
     for old, new in [("policy_market_slots", "market_slots"),
         ("policy_max_hands", "max_hands"), ("land_buy_min_days", "land_buy_min_days")]:
-        assert source.getint("env", old) == config.getint("env", new), f"controller mismatch: {new}"
+        assert source.getint("env", new if native else old) == config.getint("env", new), \
+            f"controller mismatch: {new}"
     if mode != "bc":
         assert abs(header[-1] - config.getfloat("train", "gamma")) < 1e-8, "gamma mismatch"
         assert source.getfloat("train", "reward_clip") == 0
         assert config.getfloat("train", "reward_clip") == 0
-        assert source.getfloat("env", "reward_money_timing") == 0
-        assert source.getfloat("env", "reward_pbrs_scale") == 0
+        if not native:
+            assert source.getfloat("env", "reward_money_timing") == 0
+            assert source.getfloat("env", "reward_pbrs_scale") == 0
         for key in ["growth_land", "growth_crop", "growth_animal", "alive_daily", "quality_scale",
             "quality_idle_cost", "target_plots", "target_crops", "target_animals", "money"]:
-            original = "reward_money_scale" if key == "money" else f"reward_{key}"
+            original = "reward_money_scale" if key == "money" and not native else f"reward_{key}"
             assert abs(source.getfloat("env", original) - config.getfloat("env", f"reward_{key}")) \
                 < 1e-7, f"expert-return reward mismatch: {key}"
     return {"source_hash": metadata["source_hash"], "semantics_hash": metadata["semantics_hash"],

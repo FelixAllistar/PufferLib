@@ -2,6 +2,14 @@
 
 Status: **in progress**, not a completed conversion of every environment.
 
+Kaggriculture BC label/dataset tooling now targets the canonical native 2/2
+bridge: observed multi-request strategies, teacher-prefix masks, stateful
+expert returns, immutable episode holdout and raw-intent sidecars are preserved.
+Resolved native config metadata coexists with legacy dataset loading. Synthetic
+publication and label regression tests cover the data contract; official expert
+corpus coverage and a new offline training smoke are not yet qualified. This
+port changes only `ocean/kaggriculture` and documentation, not the shared trainer.
+
 Canonical repository: `https://github.com/FelixAllistar/PufferLib.git`.
 Canonical development branch: `5.0`, published on GitHub. Further ports and
 clean-clone qualification remain in progress; check branch HEAD for updates.

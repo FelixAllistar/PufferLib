@@ -236,9 +236,8 @@ roundtrip. The latter uses generated frames; it is an ABI/cache integration
 test, not an independent official replay-parity qualification. No new official
 replay corpus was downloaded or fully processed during this port.
 
-Remote replay collection, controller relabeling/dataset construction and Kaggle
-export still need migration from the legacy install. Existing data/checkpoint
-loading does not qualify those remaining workflows.
+Remote replay collection and Kaggle export still need migration from the legacy
+install. Existing data/checkpoint loading does not qualify those workflows.
 
 The environment now exposes `kag_apply_actions`: it executes both players'
 primitive commands, advances policy observation history and computes the same
@@ -281,9 +280,39 @@ and does not load reset banks or opponent networks.
 
 Two 720-frame rule-bot replays pass exact state comparison, terminal-only cash
 reward checks, mask/observation checks and ASan/UBSan. These are synthetic
-integration fixtures, not proof of official expert label coverage. The Python
-label projection and complete v3 dataset publication pipeline remain to port;
-the bridge alone does not produce a trainable dataset.
+integration fixtures, not proof of official expert label coverage.
+
+Build a versioned v3 dataset from the prepared tape manifest with:
+
+```sh
+uv run --no-project --with numpy python ocean/kaggriculture/build_entity_bc_dataset.py \
+    --manifest=build/kaggriculture/inventory_v1/summary.json \
+    --lib=ocean/kaggriculture/build/kag_bc_replay.so \
+    --teacher='EXACT DISPLAY NAME' \
+    --profile=ocean/kaggriculture/profiles/terminal.ini \
+    --output=build/kaggriculture/teacher_terminal_v1.bc
+```
+
+The builder preserves the manifest's episode-level holdout, projects observed
+strategic actions onto the current 2/2 controller, and stores teacher-prefix
+masks. Ambiguous or unrepresentable labels remain unsupervised rather than
+being guessed. Original primitive actions are retained in the compressed
+intent sidecar. Returns use the native stateful rewards and profile gamma;
+terminal observations have no actor labels and NaN value targets.
+
+The metadata records the fully resolved config and native source/semantics
+fingerprints. Actor-only BC can reuse labels with different rewards/gamma;
+critic or joint pretraining requires matching return settings. Both require
+matching controller settings. Publication refuses existing output paths; the
+three-file bundle is not transactionally atomic, so interrupted outputs must
+not be used. This inherited builder holds the dataset and annotations in RAM:
+qualify a bounded sample before processing a large corpus.
+
+Label regressions and an end-to-end synthetic two-game publication test cover
+packed masks, terminal rows, holdout layout, config validation and overwrite
+rejection. The synthetic pass games do not establish real expert label coverage,
+nonzero expert-return accuracy, full trainer consumption or policy quality.
+Official-corpus qualification and a new offline training smoke remain pending.
 
 ## Shared-code boundary
 
