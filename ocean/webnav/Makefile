@@ -26,6 +26,10 @@ $(BUILD)/test_dom: $(DOM_SOURCES) dom.h cdp.h web/dom_snapshot.js
 dom-test: $(BUILD)/test_dom
 	cd $(ROOT) && build/webnav/test_dom
 
+.PHONY: text-test
+text-test:
+	cd $(ROOT) && mkdir -p build/webnav && bash ocean/webnav/tools/text_tests.sh
+
 bridge:
 	bash build.sh
 

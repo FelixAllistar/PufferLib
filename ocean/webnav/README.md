@@ -90,3 +90,30 @@ locally constructed page and checks roles, label provenance, whitespace,
 hidden-text exclusion, control priority, table relationships, popup scoping,
 and malformed-schema rejection. Do not use the unsandboxed CDP launcher on
 untrusted sites.
+
+## Text encoder and cache
+
+`make -C ocean/webnav text-test` builds the preserved native Unicode WordPiece
+encoder and exact-string vector cache. It requires Clang 19, ICU development
+headers/libraries, Node, npm, curl, and SHA-256 tools. Only reference generation
+uses Node; runtime encoding remains native C. The script downloads the pinned
+Potion tokenizer and embedding table, verifies SHA-256, and installs the pinned
+Rust tokenizer Node binding (0.23.2) under ignored `build/webnav/reference/`.
+
+Model: `minishlab/potion-base-8M`, revision
+`bf8b056651a2c21b8d2565580b8569da283cab23`. Required non-Git assets:
+
+| File under `build/webnav/reference/` | SHA-256 |
+| --- | --- |
+| `potion-tokenizer.json` | `e67e803f624fb4d67dea1c730d06e1067e1b14d830e2c2202569e3ef0f70bb50` |
+| `potion-model.safetensors` | `f65d0f325faadc1e121c319e2faa41170d3fa07d8c89abd48ca5358d9a223de2` |
+
+Fresh qualification passes 1,120 reference cases with exact token IDs and zero
+vector error against the independent normalized-sum reference. Cache tests
+check exact Unicode lookup, duplicate IDs, misses, and profile/content mismatch
+rejection. Cache files include the ICU major version and must be regenerated
+when it changes. These are frozen text features, not a critic or policy model.
+
+Parity is not semantic competence: the preserved 24-case development probe
+misses eight examples, including negation, ordering, and translation direction.
+The DOM training environment and its learned encoder still need conversion.
