@@ -26,7 +26,18 @@ local native-snapshot tests. The installed official Python package 1.32.7 also
 completes eight full file-runner games (both seats, seeds 7/42 and both sampling
 modes) with the zero-weight fixture. This is local package compatibility, not
 policy-quality evidence. Hosted competition container ABI/execution and selected
-learned-checkpoint qualification remain unproven.
+learned-policy competition behavior remain unproven. The preserved league
+champion does pass native-versus-NumPy FP32 inference on synthetic observations:
+max logit/state errors 0.000106812/0.000030518 with graphs off/on.
+
+The canonical local worktree now has a downloaded copy of the remote saved-model
+bundle: two initializers and seven league checkpoints, all matching recorded
+SHA256 hashes and 4,328,800-byte H256/L2 sizes. No model is committed. A separate
+`local_opponents.txt` resolves the sampled league into this worktree; the copied
+remote opponent list and training defaults are preserved. The remote sweep was
+confirmed active and not changed. Its 7.1 GiB data bundle still uses legacy
+symlinks and has not been copied locally. New-box instructions now require
+dereferenced transfer, checksum validation and local opponent-list regeneration.
 
 Canonical repository: `https://github.com/FelixAllistar/PufferLib.git`.
 Canonical development branch: `5.0`, published on GitHub. Further ports and

@@ -55,6 +55,37 @@ Verify transferred files with SHA256 against the source before training. Do not
 copy the old binary or global `default.ini` onto the new clone. The checked-in
 environment config already includes the current remote sweep settings.
 
+At a safe transfer boundary, make a checksum inventory on the source (reading
+the full datasets is substantial I/O; don't do this under an active sweep):
+
+```sh
+cd /workspace/PufferLib
+mkdir -p build
+find -L saved/kaggriculture data/kaggriculture -type f -print0 \
+    | sort -z | xargs -0 sha256sum > build/kag-assets.sha256
+```
+
+Transfer both directories with `rsync -aL`, plus `build/kag-assets.sha256`, into
+the fresh clone without overwriting existing assets. From the new clone root,
+run `sha256sum -c build/kag-assets.sha256`. A plain symlink-preserving copy can
+appear complete while still depending on the old `legacy` directory.
+
+`league.json` references its pool with portable relative paths, but
+`initial_opponents.txt` contains machine-specific absolute paths. Regenerate a
+separate list after transfer:
+
+```sh
+uv run --no-project --with numpy python ocean/kaggriculture/run.py league-sample \
+    --banks 4 --seed 708 --opponents saved/kaggriculture/local_opponents.txt
+```
+
+For a league run, explicitly set
+`--selfplay.initial_opponents=saved/kaggriculture/local_opponents.txt`.
+This is a fresh sample of the preserved strategy, not necessarily the identical
+four-bank allocation from the old machine. Do not enable it silently for the
+current sweep, which deliberately uses `initial_opponents=None`. Both asset
+directories are Git-ignored; cloning alone never supplies them.
+
 ```bash
 ulimit -c 0
 ./puffer_cpu sweep
@@ -380,8 +411,13 @@ KAGGRICULTURE_GPU_TEST_BINARY=build/kag_export_gpu_test \
 
 Set `KAG_EXPORT_CHECKPOINT` to an existing raw H256/L2 checkpoint to test it
 instead of generated weights. GPU tests skip unless the oracle path is supplied;
-they explicitly require FP32. Selected learned-checkpoint and BF16 comparisons
-remain pending. The full-state oracle is test-only and is never bundled.
+they explicitly require FP32. The preserved seven-model league's champion,
+`run_terminal_league_continue_300m_v1_0000000299335680` (SHA256 prefix
+`691825ac9c6c`), also passes this comparison: maximum logit error 0.000106812
+and recurrent-state error 0.000030518 across both inputs and graph modes.
+This checks synthetic observation sequences, not official-match behavior or
+action parity at near-tied logits. BF16 remains unqualified. The full-state
+oracle is test-only and is never bundled.
 
 Create an archive locally, using the saved config from the checkpoint's run:
 

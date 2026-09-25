@@ -175,6 +175,8 @@ ocean/impulse_wars/include/
 ocean/antibody/generated/
 
 # Data
+/data/kaggriculture/
+/saved/kaggriculture/
 resources/drive/data/*
 resources/drive/binaries/*
 resources/boxoban/levels/
