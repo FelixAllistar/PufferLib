@@ -6,7 +6,10 @@ CFLAGS ?= -O2 -g -std=gnu11
 CPPFLAGS := -I$(ROOT)/src -I$(ROOT)/raylib-5.5_linux_amd64/include -I$(BOX3D)/include -I.
 LDLIBS := $(BOX3D)/build/src/libbox3d.a $(ROOT)/raylib-5.5_linux_amd64/lib/libraylib.a -lGL -lm -ldl -lpthread
 
-.PHONY: test sanitize encoder-test
+.PHONY: test sanitize encoder-test viewer
+viewer:
+	@mkdir -p $(BUILD)
+	$(CC) $(CFLAGS) $(CPPFLAGS) shenaniguns3d.c character.c $(LDLIBS) -o $(BUILD)/viewer
 encoder-test:
 	@mkdir -p $(BUILD)
 	$(CC) -O2 -std=gnu11 $(CPPFLAGS) -c character.c -o $(BUILD)/character.o

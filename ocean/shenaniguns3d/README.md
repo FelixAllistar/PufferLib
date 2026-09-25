@@ -66,8 +66,28 @@ Source snapshot SHA-256:
 - `character.c`: `0db4023c191f649532de6ef343754b6cb98e4d92cd657c67fc9595231a24c01b`
 - `character.h`: `411954928be6557ae29276133bf655e4275d25148a80f2964156c85c83517d26`
 
+## Standalone viewer/evaluator
+
+```sh
+make -C ocean/shenaniguns3d viewer
+./build/shenaniguns3d/viewer play
+./build/shenaniguns3d/viewer --eval /path/to/checkpoint.bin 32 --deterministic
+./build/shenaniguns3d/viewer --sense-check
+./build/shenaniguns3d/viewer --check
+./build/shenaniguns3d/viewer --random-check
+```
+
+The standalone spatial encoder is preserved; recurrent inference and action
+selection use upstream CPU inference. Evaluation reads the current config's
+architecture and task settings; use the checkpoint's matching settings.
+The evaluator returns 1 if not every requested episode succeeds, even when
+execution itself is healthy. The short smoke-trained checkpoint solved 0/2
+episodes, with byte-identical deterministic trace output from old/new viewers.
+ASan/UBSan reported no errors on that evaluation. Sensor/crouch-clearance,
+scripted-goal and 32-variant three-episode randomized audits pass. Interactive
+rendering still needs visual qualification.
+
 The simulator uses one physics substep while the original game uses four;
 sharing the controller does not establish exact deployment parity. The
 legacy GPU simulator uses specialized physics rather than general Box3D.
-Its port, differential qualification, standalone policy
-viewer remain unfinished.
+Its port and differential qualification remain unfinished.
