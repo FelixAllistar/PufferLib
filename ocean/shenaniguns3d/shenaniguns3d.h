@@ -1,3 +1,4 @@
+#pragma once
 // Shenanigans 3D — FPS navigation gym ON BOX3D PHYSICS.
 //
 // The sim IS the deployment stack: pd64/character.{h,c} (s&box-style
@@ -1213,6 +1214,7 @@ void puf_init(Env* env, Dict* kwargs) {
         (int)it->value : OCCUPANCY_UPDATE_INTERVAL;
 }
 
+#if PUF_BACKEND == PUF_CPU
 void puf_reset(Shenanigans3D* env) {
     if (env->course_mode == COURSE_MODE_RANDOM_EVERY_RESET && env->tick > 0) {
 #pragma omp critical(s3d_world_rebuild)
@@ -1254,6 +1256,8 @@ void puf_reset(Shenanigans3D* env) {
     compute_observations(env);
 }
 
+#endif
+
 void puf_log(Log* log, Dict* out) {
     dict_set(out, "perf", log->perf);
     dict_set(out, "episode_return", log->episode_return);
@@ -1262,6 +1266,7 @@ void puf_log(Log* log, Dict* out) {
     dict_set(out, "n", log->n);
 }
 
+#if PUF_BACKEND == PUF_CPU
 void puf_close(Shenanigans3D* env) {
     if (B3_IS_NULL(env->world) == false) {
         b3DestroyWorld(env->world);
@@ -1382,6 +1387,7 @@ void puf_step(Shenanigans3D* env) {
     compute_observations(env);
 }
 
+#endif
 // ---------------------------------------------------------------------------
 // Render
 // ---------------------------------------------------------------------------

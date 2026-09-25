@@ -10,11 +10,11 @@
 #ifndef PUFFER_SHENANIGUNS3D_GPU_CU
 #define PUFFER_SHENANIGUNS3D_GPU_CU
 
-#ifndef PUFFER_GPU_ENV
-#error "shenaniguns3d.cu requires build.sh shenaniguns3d --gpu"
-#endif
-
+#define PUF_BACKEND PUF_GPU
+#define PUFFER_GPU_ENV
 #include <cuda_runtime.h>
+typedef float obs_t;
+#include "shenaniguns3d.h"
 
 #include <cmath>
 #include <cstdint>
@@ -1659,6 +1659,7 @@ __device__ void s3d_end_episode(S3DGpuSim sim, int i, float perf_score) {
 __global__ static void s3d_init_kernel(S3DGpuSim sim) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i >= sim.count) return;
+    sim.envs[i].num_agents = 1;
     sim.rng[i] = (uint32_t)i;
     sim.tick[i] = 0;
     s3d_set_fixed_course(&sim.courses[i]);
@@ -1770,7 +1771,14 @@ static void s3d_unregister_native(Env* envs) {
     if (native) *native = {};
 }
 
-static Env* puf_envs_create(int total_agents, Dict* env_kwargs) {
+static cudaStream_t s3d_stream;
+
+void puf_bind_stream(cudaStream_t stream) {
+    s3d_stream = stream;
+}
+
+Env* puf_vec_create(int total_agents, Dict* env_kwargs, obs_t* observations,
+        float* actions, float* rewards, float* terminals) {
     S3DNative* native = nullptr;
     for (int i = 0; i < 8; i++) {
         if (s3d_native[i].envs == nullptr) {
@@ -1785,6 +1793,10 @@ static Env* puf_envs_create(int total_agents, Dict* env_kwargs) {
     *native = {};
     S3DGpuSim& sim = native->sim;
     sim.count = total_agents;
+    sim.observations = observations;
+    sim.actions = actions;
+    sim.rewards = rewards;
+    sim.terminals = terminals;
     sim.cfg = s3d_gpu_config(env_kwargs);
     s3d_gpu_alloc((void**)&sim.envs, (size_t)total_agents * sizeof(Env),
                   "allocate Env shells");
@@ -1837,49 +1849,35 @@ static Env* puf_envs_create(int total_agents, Dict* env_kwargs) {
     native->envs = sim.envs;
     s3d_init_kernel<<<s3d_gpu_grid(total_agents), S3D_GPU_BLOCK_SIZE>>>(sim);
     s3d_gpu_check_launch("initialize device environments");
+    s3d_gpu_check(cudaStreamSynchronize(0), "finish initialization");
     return sim.envs;
 }
 
-static void puf_envs_reset(Env* envs, obs_t* observations, float* rewards,
-                           float* terminals, int total_agents) {
+void puf_reset(Env* envs) {
     S3DNative* native = s3d_find_native(envs);
-    if (!native || total_agents != native->sim.count) std::abort();
+    assert(native);
     S3DGpuSim& sim = native->sim;
-    sim.observations = observations;
-    sim.rewards = rewards;
-    sim.terminals = terminals;
-    s3d_reset_kernel<<<s3d_gpu_grid(total_agents), S3D_GPU_BLOCK_SIZE>>>(
+    int total_agents = sim.count;
+    s3d_reset_kernel<<<s3d_gpu_grid(total_agents), S3D_GPU_BLOCK_SIZE, 0, s3d_stream>>>(
         sim, total_agents);
     s3d_gpu_check_launch("reset device environments");
-    s3d_gpu_check(cudaMemset(rewards, 0, (size_t)total_agents * sizeof(float)),
+    s3d_gpu_check(cudaMemsetAsync(sim.rewards, 0, (size_t)total_agents * sizeof(float), s3d_stream),
                   "clear reset rewards");
-    s3d_gpu_check(cudaMemset(terminals, 0,
-                             (size_t)total_agents * sizeof(float)),
+    s3d_gpu_check(cudaMemsetAsync(sim.terminals, 0,
+                             (size_t)total_agents * sizeof(float), s3d_stream),
                   "clear reset terminals");
 }
 
-static void puf_envs_step(Env* envs, const float* actions, obs_t* observations,
-                          float* rewards, float* terminals, int start, int count,
-                          cudaStream_t stream) {
+void puf_step(Env* envs) {
     S3DNative* native = s3d_find_native(envs);
-    if (!native || start < 0 || count < 0 || start + count > native->sim.count)
-        std::abort();
-    if (start != 0 || count != native->sim.count) {
-        std::fprintf(stderr,
-                     "shenaniguns3d GPU requires full-batch stepping\n");
-        std::exit(1);
-    }
+    assert(native);
     S3DGpuSim& sim = native->sim;
-    sim.actions = actions;
-    sim.observations = observations;
-    sim.rewards = rewards;
-    sim.terminals = terminals;
-    s3d_step_kernel<<<s3d_gpu_grid(count), S3D_GPU_BLOCK_SIZE, 0, stream>>>(
-        sim, start, count);
+    s3d_step_kernel<<<s3d_gpu_grid(sim.count), S3D_GPU_BLOCK_SIZE, 0, s3d_stream>>>(
+        sim, 0, sim.count);
     s3d_gpu_check_launch("step device environments");
 }
 
-static void puf_envs_close(Env* envs) {
+void puf_close(Env* envs) {
     S3DNative* native = s3d_find_native(envs);
     if (!native) return;
     s3d_gpu_check(cudaDeviceSynchronize(), "finish device environments");

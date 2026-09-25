@@ -11,9 +11,37 @@
 #include <cstdlib>
 #include <cstring>
 
-#define PUFFER_GPU_ENV
-#include "../shenaniguns3d.h"
 #include "../shenaniguns3d.cu"
+
+extern "C" void s3d_reference_reset(Env*);
+extern "C" void s3d_reference_step(Env*);
+extern "C" void s3d_reference_close(Env*);
+
+// Keep the original differential fixtures while driving the new lifecycle API.
+static Env* puf_envs_create(int count, Dict* kwargs) {
+    return puf_vec_create(count, kwargs, NULL, NULL, NULL, NULL);
+}
+static void puf_envs_reset(Env* envs, obs_t* obs, float* rewards, float* terminals, int count) {
+    S3DGpuSim& sim = s3d_find_native(envs)->sim;
+    assert(sim.count == count);
+    sim.observations = obs;
+    sim.rewards = rewards;
+    sim.terminals = terminals;
+    puf_bind_stream(0);
+    puf_reset(envs);
+}
+static void puf_envs_step(Env* envs, const float* actions, obs_t* obs,
+        float* rewards, float* terminals, int start, int count, cudaStream_t stream) {
+    S3DGpuSim& sim = s3d_find_native(envs)->sim;
+    assert(start == 0 && count == sim.count);
+    sim.actions = actions;
+    sim.observations = obs;
+    sim.rewards = rewards;
+    sim.terminals = terminals;
+    puf_bind_stream(stream);
+    puf_step(envs);
+}
+static void puf_envs_close(Env* envs) { puf_close(envs); }
 
 static void gpu_test_check(cudaError_t error, const char* what) {
     if (error != cudaSuccess) {
@@ -148,7 +176,7 @@ static void check_course_parity_case(int course_mode, int difficulty, int stage)
         }
     }
     puf_envs_close(gpu_envs);
-    for (int i = 0; i < count; i++) puf_close(&cpu[i]);
+    for (int i = 0; i < count; i++) s3d_reference_close(&cpu[i]);
     dict_clear(&kwargs);
 }
 
@@ -184,7 +212,7 @@ static void check_timeout_trace() {
     cpu.agents[0].actions = cpu_actions;
     cpu.agents[0].rewards = &cpu_reward;
     cpu.agents[0].terminals = &cpu_terminal;
-    puf_reset(&cpu);
+    s3d_reference_reset(&cpu);
 
     Env* gpu_envs = puf_envs_create(1, &kwargs);
     S3DNative* native = s3d_find_native(gpu_envs);
@@ -211,7 +239,7 @@ static void check_timeout_trace() {
     float gpu_reward = 0.0f;
     float gpu_terminal = 0.0f;
     for (int step = 1; step <= 3; step++) {
-        puf_step(&cpu);
+        s3d_reference_step(&cpu);
         puf_envs_step(gpu_envs, gpu_actions, gpu_obs, gpu_rewards,
                       gpu_terminals, 0, 1, 0);
         gpu_test_check(cudaDeviceSynchronize(), "synchronize timeout step");
@@ -259,7 +287,7 @@ static void check_timeout_trace() {
     cudaFree(gpu_actions);
     cudaFree(gpu_rewards);
     cudaFree(gpu_terminals);
-    puf_close(&cpu);
+    s3d_reference_close(&cpu);
     dict_clear(&kwargs);
 }
 
@@ -285,7 +313,7 @@ static void check_random_reset_parity() {
         cpu_actions[i][0] = 2.0f;
         cpu_actions[i][1] = 1.0f;
         cpu_actions[i][2] = 1.0f;
-        puf_reset(&cpu[i]);
+        s3d_reference_reset(&cpu[i]);
     }
 
     Env* gpu_envs = puf_envs_create(count, &kwargs);
@@ -311,8 +339,8 @@ static void check_random_reset_parity() {
     puf_envs_step(gpu_envs, gpu_actions, gpu_obs, gpu_rewards, gpu_terminals,
                   0, count, 0);
     gpu_test_check(cudaDeviceSynchronize(), "synchronize random reset step");
-    for (int i = 0; i < count; i++) puf_step(&cpu[i]);
-    for (int i = 0; i < count; i++) puf_reset(&cpu[i]);
+    for (int i = 0; i < count; i++) s3d_reference_step(&cpu[i]);
+    for (int i = 0; i < count; i++) s3d_reference_reset(&cpu[i]);
     puf_envs_reset(gpu_envs, gpu_obs, gpu_rewards, gpu_terminals, count);
     gpu_test_check(cudaDeviceSynchronize(), "synchronize random course reset");
 
@@ -329,7 +357,7 @@ static void check_random_reset_parity() {
     std::printf("shenaniguns3d GPU random reset parity PASS\n");
 
     puf_envs_close(gpu_envs);
-    for (int i = 0; i < count; i++) puf_close(&cpu[i]);
+    for (int i = 0; i < count; i++) s3d_reference_close(&cpu[i]);
     cudaFree(gpu_obs);
     cudaFree(gpu_actions);
     cudaFree(gpu_rewards);
@@ -355,7 +383,7 @@ static void print_sensor_probe(const char* name, int course_mode,
     cpu.agents[0].actions = cpu_actions;
     cpu.agents[0].rewards = &cpu_reward;
     cpu.agents[0].terminals = &cpu_terminal;
-    puf_reset(&cpu);
+    s3d_reference_reset(&cpu);
 
     Env* gpu_envs = puf_envs_create(1, &kwargs);
     obs_t* gpu_obs = nullptr;
@@ -407,7 +435,7 @@ static void print_sensor_probe(const char* name, int course_mode,
     cudaFree(gpu_obs);
     cudaFree(gpu_rewards);
     cudaFree(gpu_terminals);
-    puf_close(&cpu);
+    s3d_reference_close(&cpu);
     dict_clear(&kwargs);
 }
 
@@ -559,7 +587,7 @@ static void check_sensor_initial_overlap() {
 
     cudaFree(gpu_out);
     puf_envs_close(gpu_envs);
-    puf_close(&cpu);
+    s3d_reference_close(&cpu);
     dict_clear(&kwargs);
 }
 
@@ -579,7 +607,7 @@ static void check_jump_penalty_config() {
     }
     std::printf("shenaniguns3d jump penalty configuration PASS\n");
 
-    puf_close(&cpu);
+    s3d_reference_close(&cpu);
     dict_clear(&kwargs);
 }
 
@@ -607,7 +635,7 @@ int main() {
     cpu.agents[0].actions = cpu_actions;
     cpu.agents[0].rewards = &cpu_reward;
     cpu.agents[0].terminals = &cpu_terminal;
-    puf_reset(&cpu);
+    s3d_reference_reset(&cpu);
 
     Env* gpu_envs = puf_envs_create(1, &kwargs);
     obs_t* gpu_obs = nullptr;
@@ -678,7 +706,7 @@ int main() {
         gpu_test_check(cudaMemcpy(gpu_actions, cpu_actions,
                                   sizeof(cpu_actions), cudaMemcpyHostToDevice),
                        "copy GPU action");
-        puf_step(&cpu);
+        s3d_reference_step(&cpu);
         puf_envs_step(gpu_envs, gpu_actions, gpu_obs, gpu_rewards,
                       gpu_terminals, 0, 1, 0);
         gpu_test_check(cudaDeviceSynchronize(), "synchronize GPU step");
@@ -778,7 +806,7 @@ int main() {
                    "set goal course");
     cpu_reward = 0.0f;
     cpu_terminal = 0.0f;
-    puf_reset(&cpu);
+    s3d_reference_reset(&cpu);
     puf_envs_reset(gpu_envs, gpu_obs, gpu_rewards, gpu_terminals, 1);
     gpu_test_check(cudaDeviceSynchronize(), "synchronize goal reset");
     std::memset(cpu_actions, 0, sizeof(cpu_actions));
@@ -788,7 +816,7 @@ int main() {
     gpu_test_check(cudaMemcpy(gpu_actions, cpu_actions,
                               sizeof(cpu_actions), cudaMemcpyHostToDevice),
                    "copy goal action");
-    puf_step(&cpu);
+    s3d_reference_step(&cpu);
     puf_envs_step(gpu_envs, gpu_actions, gpu_obs, gpu_rewards,
                   gpu_terminals, 0, 1, 0);
     gpu_test_check(cudaDeviceSynchronize(), "synchronize goal step");
@@ -836,7 +864,7 @@ int main() {
 
     // Reset from an airborne state. This catches stale jump cooldown and
     // grounded flags, as well as reset APIs that leave old outputs visible.
-    puf_reset(&cpu);
+    s3d_reference_reset(&cpu);
     puf_envs_reset(gpu_envs, gpu_obs, gpu_rewards, gpu_terminals, 1);
     gpu_test_check(cudaDeviceSynchronize(), "synchronize reset before jump");
     cpu_reward = 0.0f;
@@ -848,7 +876,7 @@ int main() {
     gpu_test_check(cudaMemcpy(gpu_actions, cpu_actions,
                               sizeof(cpu_actions), cudaMemcpyHostToDevice),
                    "copy landing action");
-    puf_step(&cpu);
+    s3d_reference_step(&cpu);
     puf_envs_step(gpu_envs, gpu_actions, gpu_obs, gpu_rewards,
                   gpu_terminals, 0, 1, 0);
     gpu_test_check(cudaDeviceSynchronize(), "synchronize landing before jump");
@@ -856,14 +884,14 @@ int main() {
     gpu_test_check(cudaMemcpy(gpu_actions, cpu_actions,
                               sizeof(cpu_actions), cudaMemcpyHostToDevice),
                    "copy jump action");
-    puf_step(&cpu);
+    s3d_reference_step(&cpu);
     puf_envs_step(gpu_envs, gpu_actions, gpu_obs, gpu_rewards,
                   gpu_terminals, 0, 1, 0);
     gpu_test_check(cudaDeviceSynchronize(), "synchronize airborne state");
 
     cpu_reward = 0.0f;
     cpu_terminal = 0.0f;
-    puf_reset(&cpu);
+    s3d_reference_reset(&cpu);
     puf_envs_reset(gpu_envs, gpu_obs, gpu_rewards, gpu_terminals, 1);
     gpu_test_check(cudaDeviceSynchronize(), "synchronize airborne reset");
     gpu_test_check(cudaMemcpy(gpu_host_obs, gpu_obs,
@@ -891,7 +919,7 @@ int main() {
     gpu_test_check(cudaMemcpy(gpu_actions, cpu_actions,
                               sizeof(cpu_actions), cudaMemcpyHostToDevice),
                    "copy crouch reset landing action");
-    puf_step(&cpu);
+    s3d_reference_step(&cpu);
     puf_envs_step(gpu_envs, gpu_actions, gpu_obs, gpu_rewards,
                   gpu_terminals, 0, 1, 0);
     gpu_test_check(cudaDeviceSynchronize(), "synchronize crouch reset landing");
@@ -899,7 +927,7 @@ int main() {
     gpu_test_check(cudaMemcpy(gpu_actions, cpu_actions,
                               sizeof(cpu_actions), cudaMemcpyHostToDevice),
                    "copy crouch action");
-    puf_step(&cpu);
+    s3d_reference_step(&cpu);
     puf_envs_step(gpu_envs, gpu_actions, gpu_obs, gpu_rewards,
                   gpu_terminals, 0, 1, 0);
     gpu_test_check(cudaDeviceSynchronize(), "synchronize crouch state");
@@ -909,7 +937,7 @@ int main() {
     }
     cpu_reward = 0.0f;
     cpu_terminal = 0.0f;
-    puf_reset(&cpu);
+    s3d_reference_reset(&cpu);
     puf_envs_reset(gpu_envs, gpu_obs, gpu_rewards, gpu_terminals, 1);
     gpu_test_check(cudaDeviceSynchronize(), "synchronize crouched reset");
     gpu_test_check(cudaMemcpy(gpu_host_obs, gpu_obs,
@@ -941,6 +969,6 @@ int main() {
     cudaFree(gpu_actions);
     cudaFree(gpu_rewards);
     cudaFree(gpu_terminals);
-    puf_close(&cpu);
+    s3d_reference_close(&cpu);
     return 0;
 }

@@ -90,9 +90,10 @@ rendering still needs visual qualification.
 The simulator uses one physics substep while the original game uses four;
 sharing the controller does not establish exact deployment parity. The
 legacy GPU simulator uses specialized physics rather than general Box3D.
-Its source and legacy differential suite are preserved unchanged (apart from
-test include paths), but its old GPU lifecycle API is not yet wired into 5.0.
-Do not use `build.sh --cu` for this environment yet. Establish the baseline with:
+The specialized solver is preserved, with lifecycle entry points adapted to
+5.0. Creation binds the trainer buffers and initializes agent-count metadata;
+reset/step use the supplied CUDA stream. The differential suite uses a separate
+CPU reference object and drives those new entry points. Run it with:
 
 ```sh
 make -C ocean/shenaniguns3d gpu-test
@@ -103,5 +104,16 @@ goal and airborne/crouched reset checks. Static sensor errors are at most
 `2.98e-8` in the reported probes. During the rollout, maximum position drift is
 `0.5288019` (legacy limit `0.75`) and maximum observation difference is `1`.
 This is bounded-drift qualification, not exact Box3D trajectory equivalence.
-The 5.0 GPU adapter, stream/graph behavior and native GPU training still need
-implementation and testing.
+Native FP32 GPU training is available:
+
+```sh
+bash build.sh shenaniguns3d --cu --float
+./puffer train --vec.num_buffers=1
+```
+
+GPU stepping requires one buffer. Matched 4,096-step tests with 64 agents,
+horizon 16 and 32-step episodes passed with CUDA graphs on/off, producing
+byte-identical final checkpoints and matching episode metrics. CPU regression
+tests still pass. This does not establish learning quality, BF16 support or
+equivalence to Box3D beyond the bounded-drift checks above. GPU rendering is
+not implemented; use the CPU standalone viewer for visual playback.

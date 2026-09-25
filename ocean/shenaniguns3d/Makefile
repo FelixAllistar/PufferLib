@@ -10,9 +10,10 @@ LDLIBS := $(BOX3D)/build/src/libbox3d.a $(ROOT)/raylib-5.5_linux_amd64/lib/libra
 gpu-test:
 	@mkdir -p $(BUILD)
 	$(CC) -O2 -std=gnu11 $(CPPFLAGS) -c character.c -o $(BUILD)/character.o
+	$(CC) -O2 -std=gnu11 $(CPPFLAGS) -c tests/cpu_reference.c -o $(BUILD)/cpu_reference.o
 	$${CUDA_HOME:-/usr/local/cuda}/bin/nvcc -O2 --threads 2 -arch=$${NVCC_ARCH:-native} \
 		-std=c++17 -I$(ROOT) $(CPPFLAGS) -Xcompiler=-Wno-narrowing \
-		--diag-suppress 2361 tests/test_gpu.cu $(BUILD)/character.o $(LDLIBS) \
+		--diag-suppress 2361 tests/test_gpu.cu $(BUILD)/character.o $(BUILD)/cpu_reference.o $(LDLIBS) \
 		-o $(BUILD)/test_gpu
 	$(BUILD)/test_gpu
 viewer:
