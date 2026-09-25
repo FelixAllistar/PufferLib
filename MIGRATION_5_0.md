@@ -241,6 +241,16 @@ KAGGRICULTURE_OFFICIAL_PARITY=1 uv run --no-project --with pytest \
     ocean/kaggriculture/tests/test_core.py -k official_market
 ```
 
+The same opt-in suite with `-k official` also runs two complete 720-frame
+starter-versus-starter games (seeds 7 and 42) in the installed official 1.32.7
+environment and compares every public/private snapshot and terminal money
+against the native core. Both match exactly. The real indexed-bank CLI then
+consumes those official frames, checks all 720 frames again, and publishes
+three restored/next-step-verified states at turns 0, 360 and 718 per game.
+All three opt-in tests pass. This is bounded current-version official-game
+parity, not expert-strategy coverage, large-archive qualification or evidence
+that historical incompatible replays can safely be accepted.
+
 ### Published clean-clone qualification
 
 On 2026-09-24, a fresh shallow HTTPS clone of GitHub `5.0` at `72e8b9d4a`

@@ -2,10 +2,13 @@ import os
 import ctypes
 import hashlib
 import importlib
+import importlib.metadata
+import json
 from pathlib import Path
 import random
 import shutil
 import subprocess
+import sys
 
 import pytest
 
@@ -32,6 +35,60 @@ def test_official_market_prices(tmp_path):
             expected = official.market_price(item, inventory)
             actual = native.kg_market_price(product, inventory)
             assert actual == expected, (item, inventory, expected, actual, digest)
+
+
+@pytest.mark.parametrize("seed", [7, 42])
+def test_official_full_game(tmp_path, seed):
+    if os.environ.get("KAGGRICULTURE_OFFICIAL_PARITY") != "1":
+        pytest.skip("set KAGGRICULTURE_OFFICIAL_PARITY=1 with kaggle-environments installed")
+    from kaggle_environments import make
+    from ocean.kaggriculture import replay_native as bridge
+    official = importlib.import_module("kaggle_environments.envs.kaggriculture.kaggriculture")
+    library = tmp_path / 'core.so'
+    subprocess.run(['cc', '-x', 'c', '-O2', '-shared', '-fPIC', str(HEADER),
+                    '-lm', '-o', str(library)], check=True, capture_output=True)
+    native = bridge.load_core(library)
+    config = bridge.CConfig()
+    native.kg_config_default(ctypes.byref(config))
+    config.seed = seed
+    state = native.kg_create(ctypes.byref(config))
+    env = make('kaggriculture', configuration={'seed': seed, 'episodeSteps': 720}, debug=True)
+    env.reset()
+    try:
+        for turn in range(720):
+            expected = bridge.canonical_replay_frame(env.state)
+            actual = bridge.c_snapshot(native, state)
+            assert not bridge.first_difference(expected, actual), (
+                seed, turn, bridge.first_difference(expected, actual))
+            if turn == 719:
+                break
+            actions = [official.starter_agent(record.observation) for record in env.state]
+            native.kg_step(state, (bridge.CAction * 2)(*(bridge.c_action(a) for a in actions)))
+            env.step(actions)
+        assert all(record.status == 'DONE' for record in env.state)
+        assert native.kg_done(state)
+        assert [native.kg_player_money(state, p) for p in range(2)] == [
+            record.reward for record in env.state]
+        replay = tmp_path / 'official.json'
+        replay.write_text(json.dumps(dict(name='kaggriculture',
+            module_version=importlib.metadata.version('kaggle-environments'),
+            configuration=dict(env.configuration), info={'EpisodeId': seed, 'seed': seed},
+            statuses=[record.status for record in env.state],
+            rewards=[record.reward for record in env.state], steps=env.steps)))
+        index = tmp_path / 'index.tsv'
+        index.write_text('source\tepisode_id\tturn\tplayer\tstate_key\n' + ''.join(
+            f'{replay}\t{seed}\t{turn}\t0\t{seed}:{turn}:0\n' for turn in (0, 360, 718)))
+        bank = tmp_path / 'official.kgb'
+        subprocess.run([sys.executable,
+            str(ROOT / 'ocean/kaggriculture/build_replay_state_bank.py'), str(replay),
+            '--index', str(index), '--output', str(bank), '--lib', str(library)],
+            check=True, capture_output=True, text=True, timeout=60)
+        report = json.loads(Path(f'{bank}.summary.json').read_text())
+        assert report['record_count'] == 3
+        assert report['counts']['parity_frames'] == 720
+        assert report['counts']['resume_checks'] == 3
+    finally:
+        native.kg_destroy(state)
 
 
 @pytest.fixture(params=[False, True], ids=["optimized", "sanitized"])
