@@ -3,7 +3,7 @@
 Conversion is in progress. The full-screen SMB1 simulator, QuickNES source,
 compiled-ROM block generator, natural-life playback helpers and practice
 controller replay are preserved from `5c` at `036cf4251`. Native FP32 training
-is available with the matching CNN; the standalone viewer is still blocked.
+is available with the matching CNN, along with the standalone play/watch viewer.
 Do not substitute the generic MLP or use an incompatible checkpoint.
 
 ## Local assets and simulator tests
@@ -78,7 +78,7 @@ runs it. Use a separate `BUILD` directory when changing `RETRO_OBS_SCALE`.
 
 ```sh
 bash build.sh retro --float
-./puffer train retro
+./puffer train
 ```
 
 The build generates compiled-ROM blocks from the local cartridge and links
@@ -92,9 +92,28 @@ off, and 2,048 steps with the 256×2 network, graphs on and 64-frame timeouts.
 Both used asynchronous training with two buffers, finite losses and saved final
 checkpoints. These establish execution, not learning quality or throughput.
 
+## Play/watch and policy inspection
+
+```sh
+make -C ocean/retro viewer
+./build/retro/viewer play --inspect
+./build/retro/viewer watch /path/to/checkpoint.bin --deterministic --inspect-check
+```
+
+The viewer preserves natural-life playback, manual controls, replay tapes,
+timing output and the full-screen input inspector. `--inspect-check` runs
+600 headless decisions with short episodes and verifies the policy's image
+against source pixels through resets. A legacy 256×2 learned checkpoint
+passes this check. Interactive rendering still needs visual qualification.
+The checkpoint must match the architecture in `config/retro.ini`; `latest`
+searches that config's checkpoint directory. See `viewer --help` for controls.
+
+CPU inference is compiled as C and connected to the C++ emulator through
+`retro_policy_api.c`; no upstream CPU inference changes are required.
+
 ## Remaining conversion
 
-The play/watch inspector, learned-checkpoint qualification, speed
+Interactive visual qualification, BF16 qualification, speed
 evaluation panels and sweep integration still need
 porting and qualification. The original documentation and experiment assets
 remain in `archive/5c-before-unification-20260924`; their old CLI/build commands

@@ -11,7 +11,15 @@ LIB := $(BUILD)/libquicknes.a
 INCLUDES := -I$(ROOT)/src -I$(ROOT)/raylib-5.5_linux_amd64/include -I. -Ines_emu
 LDLIBS := $(ROOT)/raylib-5.5_linux_amd64/lib/libraylib.a -lGL -ldl -lm -pthread -fopenmp
 
-.PHONY: library batch-library test batch-test resolution policy-test policy-legacy-test encoder-test
+.PHONY: library batch-library viewer test batch-test resolution policy-test policy-legacy-test encoder-test
+viewer: $(BUILD)/viewer
+$(BUILD)/retro_policy_api.o: retro_policy_api.c retro_policy_cpu.h retro_policy_shape.h $(ROOT)/src/puffercpu.c resolution
+	@mkdir -p $(BUILD)
+	clang -O2 -std=c11 -I$(ROOT)/src -DRETRO_OBS_SCALE=$(RETRO_OBS_SCALE) -c $< -o $@
+$(BUILD)/viewer: retro.c retro_inspect.h retro.h retro_playback.h $(BUILD)/retro_policy_api.o $(BATCH)/libquicknes_batch.a resolution
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -x c++ $< -x none $(BUILD)/retro_policy_api.o \
+		$(BATCH)/libquicknes_batch.a $(LDLIBS) -o $@
+
 encoder-test: library
 	clang -O2 -std=c11 -ffp-contract=off -I$(ROOT)/src -DRETRO_OBS_SCALE=$(RETRO_OBS_SCALE) \
 		-DRETRO_CUDA_REFERENCE -c tests/test_policy_cpu.c -o $(BUILD)/cpu_reference.o
