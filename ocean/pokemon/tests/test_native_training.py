@@ -11,7 +11,8 @@ ROOT = Path(__file__).resolve().parents[3]
 
 @pytest.mark.skipif(not os.environ.get("POKEMON_TRAIN_BINARY"), reason="requires native GPU binary")
 @pytest.mark.parametrize("graphs", [-1, 1])
-def test_named_experts(tmp_path, graphs):
+@pytest.mark.parametrize("learner_arch", [(8, 1), (64, 2)])
+def test_named_experts(tmp_path, graphs, learner_arch):
     binary = Path(os.environ["POKEMON_TRAIN_BINARY"]).resolve()
 
     def train(name, **overrides):
@@ -58,10 +59,13 @@ def test_named_experts(tmp_path, graphs):
     directory, output = train("learner", **{
         "env.native_league": native, "env.expert_fraction": .5,
         "env.force_core_combos": 1, "env.core_pool": "1,2,3,4",
-        "policy.hidden_size": 8, "train.total_timesteps": 2048})
+        "policy.hidden_size": learner_arch[0], "policy.num_layers": learner_arch[1],
+        "train.total_timesteps": 2048})
     saved.read(directory / "config.ini")
     assert saved["vec"]["num_policies"] == "3"
     assert saved["vec"]["hist_policy_hidden_size"] == "16"
+    assert int(saved["policy"]["hidden_size"]) == learner_arch[0]
+    assert int(saved["policy"]["num_layers"]) == learner_arch[1]
     assert saved["selfplay"]["opp_timeout_steps"] == "0"
     assert "2 frozen bank slots" in output
     assert int(saved["env"]["core_next_drafted"]) > 0

@@ -188,8 +188,8 @@ initialization; only learner seats receive curriculum cores. Setting
 `expert_fraction=0` disables the roster. Use external evaluation to compare
 members; the retired league manager is not implicitly restored.
 
-Qualification: native 2,048-step H8/L1 learners run against two H16/L1 generated
-experts with distinct teams/leads, graphs off/on and legality auditing. Original
+Qualification: native 2,048-step H8/L1 and configured H64/L2 learners run against
+two H16/L1 generated experts with distinct teams/leads, graphs off/on and legality auditing. Original
 expert files remain unchanged and curriculum drafts complete. Core/assignment
 tests also preserve identical one/four-worker trajectories. Reproduce with
 `POKEMON_TRAIN_BINARY=build/pokemon/native_train uv run --no-project --with pytest python -m pytest -q ocean/pokemon/tests/test_native_training.py`.
