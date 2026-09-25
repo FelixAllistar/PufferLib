@@ -179,6 +179,9 @@ elif [ "$ENV" = "impulse_wars" ]; then
     if [ -z "${MODE:-}" ] || [ "$MODE" = "native" ] || [ "$MODE" = "profile" ]; then
         EXTRA_SRC="ocean/impulse_wars/impulse_wars_api.c"
     fi
+elif [ "$ENV" = "webnav" ]; then
+    SRC_DIR="ocean/$ENV"
+    LINK_ARCHIVES+=("build/webnav/libwebnav.a")
 elif [ "$ENV" = "retro" ]; then
     SRC_DIR="ocean/$ENV"
     make -C "$SRC_DIR" -j2 batch-library

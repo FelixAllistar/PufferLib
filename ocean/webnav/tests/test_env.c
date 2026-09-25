@@ -6,6 +6,22 @@
 
 static double now(void){struct timespec t;clock_gettime(CLOCK_MONOTONIC,&t);return t.tv_sec+t.tv_nsec*1e-9;}
 int main(void) {
+    DictItem items[] = {
+        {.key = "total_agents", .value = 128},
+        {.key = "num_buffers", .value = 2},
+    };
+    Dict vk = {.items = items, .size = 2, .cap = 2};
+    int count, starts[2], counts[2];
+    Env* batch = my_vec_init(&count, starts, counts, &vk, NULL);
+    assert(count == 4 && starts[0] == 0 && starts[1] == 2);
+    assert(counts[0] == 2 && counts[1] == 2);
+    for (int e = 0; e < count; e++) {
+        assert(batch[e].num_agents == WEBNAV_BATCH && batch[e].rng == (unsigned)e);
+        for (int a = 0; a < WEBNAV_BATCH; a++) {
+            assert(batch[e].agents[a].policy == 0);
+        }
+    }
+    free(batch);
     Env env={0};env.rng=12345;
     float obs[32][OBS_SIZE],actions[32],rewards[32],terminals[32];
     unsigned char masks[32][13];

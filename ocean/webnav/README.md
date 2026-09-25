@@ -26,11 +26,24 @@ against an independent specification with four concurrent callers, followed
 by adapter checks for legal masks, terminal rewards and automatic resets.
 These tests do not establish browser parity or learned policy quality.
 
+## Native training
+
+After building the bridge, `bash build.sh webnav` links the CPU simulator to
+the GPU learner. The environment uses the existing vector initializer hook;
+total agents must be divisible by `32 * num_buffers`. The trainer supplies
+the 13-entry action masks through its existing CPU mask interface. No custom
+loss, optimizer or shared trainer changes are needed. The Bend runtime
+serializes calls, so additional CPU workers do not parallelize Bend execution.
+
+The original H128/L2 pilot config is retained, starting fresh rather than
+loading an unrelated checkpoint. An SM61 FP32 qualification completed 4,096
+training steps with H32/L1, 64 agents, two buffers, async and CUDA graphs,
+finite losses, episode metrics and a saved checkpoint. This is a training
+integration smoke test, not evidence of task mastery or production throughput.
+
 ## Remaining conversion
 
-Native 5.0 training is explicitly disabled until the 32-lane batch and action
-mask integration is ported. The legacy configure hook is not consumed by
-upstream 5.0. Browser evaluation, policy tools, MiniWoB families and WebNav DOM
-remain separate pending ports; none are replaced by this smaller pilot.
+Browser evaluation, policy tools, MiniWoB families and WebNav DOM remain
+separate pending ports; none are replaced by this smaller pilot.
 Family builds have their own stricter serialized build rules and must not use
 this pilot build command.

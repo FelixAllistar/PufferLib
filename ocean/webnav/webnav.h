@@ -3,23 +3,11 @@ typedef float obs_t;
 #include "pufferenv.h"
 #include "bridge.h"
 #include "observation.h"
+#include <assert.h>
 
 #define OBS_SIZE WEBNAV_FEATURES
 #define ACT_SIZES {WEBNAV_ACTIONS}
 #define NUM_ATNS 1
-static void webnav_configure(Ini *ini,const char *mode) {
-    int count=(int)puf_ini_get(ini,"vec","total_agents");
-    int buffers=(int)puf_ini_get(ini,"vec","num_buffers");
-    if(buffers<1||count<WEBNAV_BATCH*buffers||count%(WEBNAV_BATCH*buffers)) {
-        fprintf(stderr,"webnav requires vec.total_agents divisible by 32 * vec.num_buffers\n");
-        exit(1);
-    }
-    if(!strcmp(mode,"trace")) {
-        fprintf(stderr,"webnav uses 32 independent lanes per environment; use its evaluate/test_policy tools for traces\n");
-        exit(1);
-    }
-}
-#define PUF_CONFIGURE webnav_configure
 struct Log { float perf, score, episode_length, n; };
 struct Env {
     Log log;
@@ -47,6 +35,26 @@ void puf_init(Env *env, Dict *kwargs) {
     env->num_agents=WEBNAV_BATCH;
     memset(env->words,0,sizeof env->words);
     for(int i=0;i<WEBNAV_BATCH;i++)env->agents[i].policy=0;
+}
+
+#define MY_VEC_INIT
+Env* my_vec_init(int* size, int* starts, int* counts, Dict* vk, Dict* ek) {
+    int total = dict_get(vk, "total_agents");
+    int buffers = dict_get(vk, "num_buffers");
+    assert(buffers > 0 && total >= WEBNAV_BATCH * buffers);
+    assert(total % (WEBNAV_BATCH * buffers) == 0);
+    *size = total / WEBNAV_BATCH;
+    int per_buffer = *size / buffers;
+    Env* envs = (Env*)calloc(*size, sizeof(Env));
+    for (int buf = 0; buf < buffers; buf++) {
+        starts[buf] = buf * per_buffer;
+        counts[buf] = per_buffer;
+    }
+    for (int e = 0; e < *size; e++) {
+        envs[e].rng = e;
+        puf_init(envs + e, ek);
+    }
+    return envs;
 }
 void puf_reset(Env *env) {
     for(int i=0;i<WEBNAV_BATCH;i++) {
@@ -90,6 +98,6 @@ void puf_log(Log *log, Dict *out) {
 void puf_render(Env *env) { (void)env; }
 void puf_close(Env *env) { (void)env; }
 
-#if defined(PUFFERLIB_BUILD_MAIN) || defined(PUFFERCPU_EVAL_MAIN)
-#error "WebNav native mask/batch integration is pending; use simulator tests"
+#if defined(PUFFERCPU_EVAL_MAIN)
+#error "WebNav browser/policy evaluator port is pending; use simulator tests"
 #endif
