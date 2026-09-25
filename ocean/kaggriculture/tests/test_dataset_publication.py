@@ -93,6 +93,32 @@ def test_native_dataset_publication(published_dataset):
     assert output.read_bytes() == before
 
 
+def test_relocated_dataset_metadata(published_dataset, tmp_path):
+    output, command = published_dataset
+    metadata = json.loads(output.with_suffix(".json").read_text())
+    for record in metadata["records"]:
+        record["tape"] = "/old-host/missing/" + Path(record["tape"]).name
+    source = tmp_path / "transferred.json"
+    source.write_text(json.dumps(metadata))
+    before = source.read_bytes()
+    command = command.copy()
+    command[command.index("--manifest") + 1] = str(source)
+    rebuilt = tmp_path / "rebuilt.bc"
+    command[command.index("--output") + 1] = str(rebuilt)
+    command += ["--tape-root", str(tmp_path)]
+    result = subprocess.run(command, cwd=ROOT, capture_output=True, text=True)
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert rebuilt.read_bytes() == output.read_bytes()
+    assert source.read_bytes() == before
+    records = json.loads(rebuilt.with_suffix(".json").read_text())["records"]
+    assert all(Path(r["tape"]).parent == tmp_path for r in records)
+    metadata["records"][0]["source_sha256"] = "wrong-source"
+    source.write_text(json.dumps(metadata))
+    command[command.index("--output") + 1] = str(tmp_path / "rejected.bc")
+    result = subprocess.run(command, cwd=ROOT, capture_output=True, text=True)
+    assert result.returncode != 0 and "tape source mismatch" in result.stderr
+
+
 @pytest.mark.skipif(not os.environ.get("KAG_BC_BINARY"), reason="requires native FP32 GPU BC binary")
 def test_native_offline_training(published_dataset, tmp_path):
     dataset_path, _ = published_dataset

@@ -155,6 +155,8 @@ def build_game(lib, tape, seat, profile, annotate=None):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--manifest", type=pathlib.Path, required=True)
+    parser.add_argument("--tape-root", type=pathlib.Path,
+        help="resolve tape basenames here after transferring to another host")
     parser.add_argument("--profile", type=pathlib.Path, required=True)
     parser.add_argument("--lib", type=pathlib.Path, required=True)
     parser.add_argument("--teacher", required=True)
@@ -164,7 +166,12 @@ def main():
     if args.output.exists() or args.output.with_suffix(".json").exists() or multi_path.exists():
         parser.error("output already exists; choose a new versioned path")
     manifest = json.loads(args.manifest.read_text())
-    entries = sorted(manifest["cache"], key=lambda x: (x["split"] == "holdout", x["episode_id"]))
+    if "cache" in manifest:
+        entries = manifest["cache"]
+    else:
+        assert manifest["format"] == "kaggriculture_entity_bc_v3"
+        entries = [dict(r, path=r["tape"]) for r in manifest["records"]]
+    entries = sorted(entries, key=lambda x: (x["split"] == "holdout", x["episode_id"]))
     if {e["split"] for e in entries} != {"train", "holdout"}:
         parser.error("both train and holdout episodes are required")
     if len({e["episode_id"] for e in entries}) != len(entries):
@@ -179,8 +186,14 @@ def main():
     reference_contract = None
     annotations = []
     for entry in entries:
-        with gzip.open(entry["path"], "rt") as stream:
+        path = pathlib.Path(entry["path"])
+        if args.tape_root:
+            path = args.tape_root / path.name
+        with gzip.open(path, "rt") as stream:
             tape = json.load(stream)
+        assert str(tape["info"]["EpisodeId"]) == str(entry["episode_id"])
+        if "source_sha256" in entry:
+            assert tape["source_sha256"] == entry["source_sha256"], "tape source mismatch"
         names = tape["info"]["TeamNames"]
         if names.count(args.teacher) != 1:
             raise ValueError(f"teacher must uniquely identify one seat: {names}")
@@ -192,7 +205,8 @@ def main():
         reference_contract = contract
         games.append(game)
         records.append(dict(episode_id=entry["episode_id"], split=entry["split"], player=seat,
-                            tape=entry["path"], source_sha256=tape["source_sha256"], labels=dict(game[6])))
+                            tape=str(path.resolve()), source_sha256=tape["source_sha256"],
+                            labels=dict(game[6])))
         print(f"{len(games)}/{len(entries)} episode={entry['episode_id']} labels={dict(game[6])}", flush=True)
     steps, semantics, gamma = reference_contract
     validation = sum(e["split"] == "holdout" for e in entries)

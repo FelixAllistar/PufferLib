@@ -453,6 +453,27 @@ being guessed. Original primitive actions are retained in the compressed
 intent sidecar. Returns use the native stateful rewards and profile gamma;
 terminal observations have no actor labels and NaN value targets.
 
+After moving hosts, the builder also accepts existing v3 dataset metadata as
+`--manifest`. Use `--tape-root` to locate the copied tapes by basename without
+editing their original provenance. For the preserved expert inputs:
+
+```sh
+uv run --no-project --with numpy python ocean/kaggriculture/build_entity_bc_dataset.py \
+    --manifest=data/kaggriculture/terminal.json \
+    --tape-root=data/kaggriculture/tapes \
+    --lib=ocean/kaggriculture/build/kag_bc_replay.so \
+    --teacher=Majkel1337 --profile=ocean/kaggriculture/profiles/terminal.ini \
+    --output=build/kaggriculture/relabeled_terminal_v1.bc
+```
+
+Episode IDs and recorded source hashes must match the tapes. The old split is
+preserved, but labels/returns are rebuilt from the current code and explicit
+profile; old metadata is not a substitute for that profile. Original metadata
+is untouched and the new metadata records the actual resolved tape paths.
+A two-game native regression rebuilds an identical binary after relocation
+and rejects a mismatched source hash. This is not full-corpus or GPU training
+qualification.
+
 The metadata records the fully resolved config and native source/semantics
 fingerprints. Actor-only BC can reuse labels with different rewards/gamma;
 critic or joint pretraining requires matching return settings. Both require

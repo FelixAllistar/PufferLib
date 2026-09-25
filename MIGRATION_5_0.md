@@ -257,6 +257,13 @@ This is not yet full-corpus qualification or proof of expert action coverage;
 an all-518 replay/relabel check was started separately. Bulk `.bc` and reset
 bank transfer remains pending. No datasets, models or private tapes enter Git.
 
+The environment-local BC builder now accepts preserved v3 dataset metadata
+and `--tape-root` for relocated inputs. It preserves episode splits, checks
+episode/source identity, records new resolved paths and leaves original
+metadata untouched. Two native publication tests pass, including byte-identical
+binary rebuilding after relocation and rejection of mismatched provenance;
+the opt-in GPU fitting test was skipped. No shared-core changes are involved.
+
 - Review fork changes in `build.sh`, `src/`, `pufferlib/`, `tests/`, `scripts/`
   and `tui/` by functionality; do not transplant the old shared runtime.
 - Reconcile 32 modified/added configuration files. Old names such as frozen
