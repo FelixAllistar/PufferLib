@@ -152,6 +152,33 @@ The live main checkout audit found only the three dirty Bomberman files;
 their simulator edits and reward defaults are preserved in `2f54dc508`.
 The other migration gates and non-config workflow inventory remain open.
 
+The standalone `scripts/export_onnx.py` and `scripts/verify_onnx.py` are ported
+for standard discrete Linear/MinGRU/Linear policies. They do not export custom
+entity/CNN/semantic networks or continuous log-standard-deviation heads.
+Hidden size must be divisible by eight so native tensor alignment has no gaps;
+wrong-size and partial-float weight files are rejected. Schema preprocessing
+uses current environment headers, not the old hardcoded action counts.
+Architecture dimensions come from config unless explicitly overridden: use
+the checkpoint's recorded dimensions, not whatever a later sweep selected.
+
+```sh
+uv run --no-project --with onnx --with onnxruntime python scripts/export_onnx.py \
+    bomberman --checkpoint=CHECKPOINT.bin --hidden-size=128 --num-layers=2 \
+    --output=build/bomberman.onnx
+uv run --no-project --with onnx --with onnxruntime python scripts/verify_onnx.py \
+    build/bomberman.onnx --steps=32 --batch-size=3 --tolerance=0.0001
+```
+
+These commands also require the local Torch/NumPy environment (qualification:
+Torch 2.13.0+cu126, ONNX 1.23.0, ONNX Runtime 1.30.0). The export is inference
+only. Callers must zero recurrent state for terminated rows and apply the
+environment's masks/sampler; the ONNX graph does neither automatically.
+Synthetic 32-step recurrent math, including partial batch resets, agrees with
+`src/puffercpu.c` within 1e-6. The learned Bomberman H128/L2 checkpoint exports
+and passes 32-step dynamic-batch ONNX checking at 1e-4 absolute tolerance:
+max logits 9.16e-5, value 1.24e-5, carry 5.92e-5. It does not pass 1e-5 absolute
+on these random inputs. No native trainer or optimizer changes are involved.
+
 - ARPG CPU port preserves the gameplay/world/render source and original art
   from `5c`; adapter changes place `obs_t` before the 5.0 Agent definition and
   update viewer inference/config calls. Box3D revision
