@@ -3165,9 +3165,9 @@ EvalResult run_eval(Ini* ini, TrainContext* ctx, int mode, int verbose,
         if (p && p->policies) {
             nparams = numel(p->policies[0].master_weights.shape);
         }
-        printf("CUDA_EVAL env=%s score=%.6f perf=%.6f games=%d params=%ld\n",
+        printf("CUDA_EVAL env=%s score=%.6f perf=%.6f games=%d params=%ld draw=%.6f\n",
             puf_ini_get_str(ini, "base", "env_name"),
-            r.score, r.perf, r.games, nparams);
+            r.score, r.perf, r.games, nparams, r.draw);
         fflush(stdout);
     }
     close_pufferl(p);

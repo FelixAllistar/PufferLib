@@ -73,6 +73,12 @@ Goofspiel workflow orchestration remains inside their environment directories.
 This is not an unchanged trainer: learner-row selection and non-default reward
 clipping affect the data/targets, even though the loss/optimizer code is stock.
 
+After this audited revision, population evaluation adds one output-only change
+in `src/pufferl.cu`: `CUDA_EVAL` prints `EvalResult.draw`, already calculated by
+native matches. The two changed lines do not modify evaluation or training
+arithmetic. Goofspiel's all-pairs reports consume this field without parsing
+dashboard text; real headless population evaluations qualify that path.
+
 Fresh FP32 SM61 builds at this revision pass all 21 native checkpoint tests
 (`tests/test_train_checkpoint.py`): seeded initialization, learner loading before
 pool initialization, immutable fixed opponents with different architectures,
@@ -319,9 +325,13 @@ their final 5.0 implementations must not be overwritten by older copies.
   with independent exact-response histories. Supported historical PPO settings
   remain; EMAg is deliberately omitted. Nine tests pass, including two real
   1,024-step 64×1 member runs with changed weights and exact-pool sidecars.
-  The legacy all-pairs payoff/draw/cycle evaluation wrapper still invokes retired
-  CLI/keys and is not launched automatically. Standalone exact/behavior analysis
-  is available; the population evaluation wrapper remains a conversion gate.
+  The population evaluator now uses native headless matches and the standalone
+  exact/behavior solver. Best/all/scan/jsd modes pass with mocked known-cycle
+  fixtures and two real native populations. It excludes EMAg sidecars and
+  does not modify training or promote policies. A two-line shared print change
+  adds already-computed match draw rate to `CUDA_EVAL`; match calculations and
+  losses/optimizers are unchanged. Rendered GPU evaluation separately exposes
+  an unfinished host-probe close path; headless population evaluation passes.
 - Kaggriculture's ignored `parity.py` is now ported, sharing the canonical
   replay bridge rather than duplicated ABI definitions. All scripted/randomized,
   animal, crop-lifetime, locked-worker and market-hinge checks pass against

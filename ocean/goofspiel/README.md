@@ -157,18 +157,48 @@ stops the launcher. Run IDs, seeds, checkpoint root and fresh initialization are
 owned by the launcher and cannot be overridden in the trailing arguments.
 Other native settings override its defaults.
 
-Training does not automatically launch the unported legacy `eval_population.sh`.
-Use the exact evaluator and behavior report documented above on selected
-checkpoints; the old all-pairs payoff/draw/cycle wrapper remains pending.
+Training does not automatically launch population evaluation. Run it explicitly
+after training, using the same architecture and game rules:
+
+```bash
+GOOFSPIEL_TRAIN_BINARY=./puffer_goofspiel_gpu \
+    bash ocean/goofspiel/eval_population.sh population64x1 262144 0.002 best
+```
+
+The four positional arguments are prefix, minimum games per directed match,
+cycle threshold above 0.5, and mode. `best` selects the least exploitable saved
+checkpoint per seed; `all` matches every checkpoint; `scan` only writes exact
+exploitabilities; `jsd` writes the behavior-distance report. Selection reads
+`.bin` files, never retired `.emag` sidecars. Trailing native settings apply to
+both the solver and matches; default architecture is 64×1. Use
+`GOOFSPIEL_EXACT_GPU` for a different solver executable and `GOOFSPIEL_LOG_DIR`
+for a different report root. Reusing a report prefix replaces its TSV reports,
+not checkpoints. Headless native matches average both player orderings; draws
+are reported separately. Rollout boundaries can exceed the requested game
+budget. Cycles are sampled candidates, not statistical significance claims.
+
+Build a current trainer: its `CUDA_EVAL` result now includes the already-computed
+match draw rate. Older binaries without that field are rejected. No match
+calculation or PPO/optimizer implementation changed. Ordinary rendered GPU
+evaluation still needs qualification: the host probe's close currently hits
+the GPU-vector free path; the population wrapper explicitly uses `--headless`.
+
 Eight launcher contract tests and two real 1,024-step 64×1 member runs pass:
 initial seeds differ, weights update, frozen-bank shapes follow the learner,
 and every checkpoint has an exact-response sidecar. Reproduce with:
 
 ```bash
 GOOFSPIEL_TRAIN_BINARY=./puffer_goofspiel_gpu \
+GOOFSPIEL_EXACT_GPU=./ocean/goofspiel/build/exploit_gpu \
     uv run --no-project --with pytest \
     python -m pytest -q ocean/goofspiel/tests/test_population.py
 ```
+
+Evaluation tests cover all four modes, checkpoint selection, single-checkpoint
+members, a known three-policy cycle, EMAg exclusion and subprocess failures.
+All four modes also pass against the two real native populations, including
+complementary payoff entries and symmetric, bounded draw matrices. The native
+match budget is only 32 games in these tests, not a policy-quality evaluation.
 
 ### Exact-exploitability sweeps
 
