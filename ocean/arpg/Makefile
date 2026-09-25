@@ -7,6 +7,12 @@ CFLAGS ?= -O2 -g -std=gnu11 -Wall -Wextra -Wno-unused-function -Wno-unused-param
 LDLIBS := $(BOX3D)/build/src/libbox3d.a -lm -lpthread
 NVCC := $${CUDA_HOME:-$${CUDA_PATH:-/usr/local/cuda}}/bin/nvcc
 
+.PHONY: gpu-test
+gpu-test: | $(BUILD)
+	$(NVCC) -O2 -std=c++17 -arch=$${NVCC_ARCH:-native} $(INCLUDES) \
+		tests/test_cuda.cu -o $(BUILD)/test_cuda
+	cd $(ROOT) && $(abspath $(BUILD)/test_cuda)
+
 .PHONY: test sanitize native-cpu-test viewer viewer-test viewer-cpp-test frontier-test reach-test
 $(BUILD):
 	mkdir -p $(BUILD)

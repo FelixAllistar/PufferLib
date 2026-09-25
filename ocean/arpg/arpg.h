@@ -1,7 +1,6 @@
 #pragma once
 
-// Native 5.0 CPU adapter over the Box3D-backed simulator.
-// GPU simulation is a separate pending port; see README.md.
+// Native 5.0 adapters: Box3D CPU simulation or analytic CUDA simulation.
 
 typedef float obs_t;
 #include "pufferenv.h"
@@ -216,6 +215,11 @@ void puf_close(Env* env) {
 // state lives in the ARCudaSim SoA blob (see cuda/ar_cuda_sim.cu).
 struct Env {
     Log log;
+    int num_agents;
+    unsigned rng;
+    Agent agents[1];
+    int tag;
+    int boundary_reached;
 };
 
 void puf_render(Env* env) {

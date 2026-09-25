@@ -4,7 +4,8 @@
 
 CPU simulation, persistent worlds, viewer source and original art are preserved
 from `5c` at `036cf4251`. Root build registration only adds Box3D includes and
-linkage; there are no ARPG trainer/loss changes. GPU simulation is still pending.
+linkage; there are no ARPG trainer/loss changes. The analytic GPU simulator
+also uses the native vector API.
 
 Build the pinned Box3D dependency beside your PufferLib clone (or set
 `BOX3D_DIR` for root builds and `BOX3D` for environment Make targets):
@@ -318,8 +319,23 @@ CUDA_HOME=/usr/local/cuda ./build.sh arpg puffer_arpg --float
 ./puffer_arpg train
 ```
 
-The legacy CUDA simulator has not yet been ported to the new vector API.
-Do not use `--cu` for ARPG yet. Old priority-replay settings are not carried
+The CUDA simulator uses the native create/reset/step/close and stream API:
+
+```sh
+NVCC_ARCH=sm_61 make -C ocean/arpg gpu-test
+CUDA_HOME=/usr/local/cuda NVCC_ARCH=sm_61 ./build.sh arpg puffer_arpg_gpu --cu --float
+./puffer_arpg_gpu train --vec.num_buffers=1 --vec.num_policies=1 --selfplay.enabled=0
+```
+
+The local GPU suite covers 17 simultaneous environments, odd pool dimensions,
+idle production, all eight pet-task heads, finite observations, terminal resets,
+non-default-stream graph replay, log metadata and vector recreation. It does not
+prove CPU/GPU physics parity or trained-policy transfer. GPU rendering is not
+implemented; use the CPU viewer. The persistent campaign remains CPU-only.
+A 1,024-step SM61 FP32 GPU-simulator training smoke completes with finite
+dashboard losses and saved checkpoints (H32/L1, horizon 16, graphs disabled).
+
+Old priority-replay settings are not carried
 into the upstream optimizer. On the GTX 1060 also set `NVCC_ARCH=sm_61`.
 Checkpoint shape is validated before inference. Hidden size and layer count must
 match the policy configuration.
