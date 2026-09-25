@@ -1,9 +1,11 @@
 # WebNav family infrastructure: 5.0 conversion
 
 The ABI v2 loader, stock Bend transport, serialized incremental builder and
-resource guards are preserved from `5c`. Task directories, registry and public
-controllers are still pending their individual ports; the three-task pilot
-is not a replacement for them.
+resource guards are preserved from `5c`. The panel family and shared public
+scripted runner are ported. Other task implementations and the registry are
+still pending; their controller headers are retained as runner dependencies,
+not evidence that those families are qualified. The three-task pilot is not
+a replacement for the task families.
 
 Read `AGENTS.md` and `BUILD_SAFETY.md` before family work. Every actual family
 build must go through `node ocean/webnav/families/build.cjs FAMILY --test`.
