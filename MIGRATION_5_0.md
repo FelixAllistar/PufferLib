@@ -205,6 +205,26 @@ large-corpus qualification remains. Legacy resume metadata lacks archive content
 changed sources require a new output directory. Failed output bundles are not
 atomically published and must not replace an existing known-good bank.
 
+Official archived-replay check: local episodes `90956870` and `90951851`
+(module 1.32.6, 720 frames each) both fail the first resumed transition:
+official `market.prices.CARROT=36`, native `35`. A freshly compiled legacy
+`kaggriculture_core.c` produces the identical mismatch. Thus this specific
+failure predates the port; its underlying cause is not established here.
+Strict mode aborts; skip-incompatible mode rejects both complete episodes,
+publishing zero records rather than treating them as verified reset states.
+Do not use that empty diagnostic bank for training. Logs/summaries and both
+compiled cores are retained locally in `/tmp/kag-official-bank.eIUDsn`.
+
+The two original replay assets were copied without overwriting into ignored
+`data/kaggriculture/replays/` and hashes verified:
+
+- `top_90956870.json`: `28e07c4ccd73a6770d8adf679dad29633106958ef97cac0d3328563786d685da`
+- `top_90951851.json`: `4cf4d92563b96f3c0e001264b763137b398b7d87359b62a02406f5fd9eab7d2b`
+
+They are preserved diagnostic fixtures, not newly approved training data.
+The remote reset/BC dataset bundle remains untransferred; existence of the
+local `data/kaggriculture` directory alone does not satisfy that asset gate.
+
 ### Published clean-clone qualification
 
 On 2026-09-24, a fresh shallow HTTPS clone of GitHub `5.0` at `72e8b9d4a`
