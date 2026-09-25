@@ -225,6 +225,22 @@ They are preserved diagnostic fixtures, not newly approved training data.
 The remote reset/BC dataset bundle remains untransferred; existence of the
 local `data/kaggriculture` directory alone does not satisfy that asset gate.
 
+Follow-up pricing qualification against installed `kaggle-environments==1.32.7`
+(environment source SHA256
+`bc8a54879ef02c7ea64b8b333d6a976f0ea65c4949149d01f463f23bccee653e`):
+all nine default products at inventories 0 through 20,000 match native prices
+exactly (180,009 comparisons). The official function returns 35 for carrot
+inventory 9,999, unlike the preserved 1.32.6 replay's 36. This establishes
+agreement for current default pricing, not whole-game official parity or
+the exact historical reason for the archived replay mismatch. No rules changed.
+The opt-in regression can be reproduced from the repository root:
+
+```sh
+KAGGRICULTURE_OFFICIAL_PARITY=1 uv run --no-project --with pytest \
+    --with kaggle-environments==1.32.7 python -m pytest -qs \
+    ocean/kaggriculture/tests/test_core.py -k official_market
+```
+
 ### Published clean-clone qualification
 
 On 2026-09-24, a fresh shallow HTTPS clone of GitHub `5.0` at `72e8b9d4a`

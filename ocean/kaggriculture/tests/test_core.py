@@ -1,4 +1,7 @@
 import os
+import ctypes
+import hashlib
+import importlib
 from pathlib import Path
 import random
 import shutil
@@ -10,6 +13,25 @@ import pytest
 ROOT = Path(__file__).resolve().parents[3]
 SOURCE = Path(__file__).with_suffix(".c")
 HEADER = ROOT / "ocean/kaggriculture/core.h"
+
+
+def test_official_market_prices(tmp_path):
+    if os.environ.get("KAGGRICULTURE_OFFICIAL_PARITY") != "1":
+        pytest.skip("set KAGGRICULTURE_OFFICIAL_PARITY=1 with kaggle-environments installed")
+    official = importlib.import_module("kaggle_environments.envs.kaggriculture.kaggriculture")
+    library = tmp_path / "core.so"
+    subprocess.run(["cc", "-x", "c", "-O2", "-shared", "-fPIC", str(HEADER),
+                    "-lm", "-o", str(library)], check=True, capture_output=True)
+    native = ctypes.CDLL(str(library))
+    native.kg_market_price.argtypes = [ctypes.c_int, ctypes.c_int]
+    native.kg_market_price.restype = ctypes.c_int
+    digest = hashlib.sha256(Path(official.__file__).read_bytes()).hexdigest()
+    print(f"official environment source SHA256={digest}")
+    for product, item in enumerate(official.PRODUCTS):
+        for inventory in range(20001):
+            expected = official.market_price(item, inventory)
+            actual = native.kg_market_price(product, inventory)
+            assert actual == expected, (item, inventory, expected, actual, digest)
 
 
 @pytest.fixture(params=[False, True], ids=["optimized", "sanitized"])
