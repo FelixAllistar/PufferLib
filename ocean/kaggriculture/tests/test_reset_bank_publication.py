@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 import subprocess
 import sys
+import zipfile
 
 import pytest
 
@@ -11,6 +12,8 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 import build_replay_state_bank as bank
 import replay_native as native
+import build_diverse_reset_bank as diverse
+import audit_diverse_reset_bank as audit
 
 
 @pytest.mark.parametrize("corrupt", [False, True])
@@ -76,3 +79,29 @@ def test_native_bank_publication(tmp_path, corrupt):
         assert report["skipped"]["parity_incompatible_episode"] == 1
     with pytest.raises(FileExistsError):
         bank.build_bank(args)
+    archive = tmp_path / 'kaggriculture-episodes-2026-09-11.zip'
+    with zipfile.ZipFile(archive, 'w') as stream:
+        stream.writestr('episode.json', json.dumps(episode))
+    options = dict(output=str(tmp_path / 'diverse'), episodes_per_day=1,
+                   holdout_date='2026-09-12', lib_sha256='fixture',
+                   reserve_gib=0, lib=str(library))
+    summary = diverse.process_archive((str(archive), options))
+    assert diverse.process_archive((str(archive), options)) == summary
+    report = diverse.merge(options, [summary])
+    split = diverse.split_for('7', 123, '2026-09-11', '2026-09-12')
+    name = 'full' if split == 'train' else split
+    path = Path(report['banks'][name]['path'])
+    expected = {name: getattr(cfg, name) for name, _ in native.CConfig._fields_
+                if name != 'seed'}
+    if corrupt:
+        assert report['banks'][name]['states'] == 0
+        with pytest.raises(ValueError, match='empty bank'):
+            audit.audit_bank(path, lib, expected)
+    else:
+        result, seeds, episodes = audit.audit_bank(path, lib, expected)
+        assert result['states'] == 2 and seeds == {'123'} and episodes == {'7'}
+        damaged = bytearray(path.read_bytes())
+        damaged[-1] ^= 1
+        path.write_bytes(damaged)
+        with pytest.raises(ValueError, match='checksum mismatch'):
+            audit.audit_bank(path, lib, expected)

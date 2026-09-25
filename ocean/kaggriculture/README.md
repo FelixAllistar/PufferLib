@@ -50,8 +50,30 @@ mismatch discards all selected snapshots from that episode. An all-rejected
 input can produce an empty bank; inspect `record_count` before configuring it
 for training, whose loader requires a nonempty bank. Two native-generated
 regression cases qualify serialization and late-mismatch rejection, not official
-expert replay compatibility. Multi-day diverse-shard orchestration and its
-auditor are still pending ports.
+expert replay compatibility.
+
+For multiple dated daily archives, `build_diverse_reset_bank.py` retains the
+legacy eight temporal anchors plus up to four scenario anchors per game,
+seed-group holdouts, whole-episode parity rejection and incremental shard reuse:
+
+```sh
+uv run --no-project python ocean/kaggriculture/build_diverse_reset_bank.py DAILY.zip \
+    --output NEW_DIRECTORY --jobs 2 --holdout-date YYYY-MM-DD
+uv run --no-project python ocean/kaggriculture/audit_diverse_reset_bank.py \
+    --directory NEW_DIRECTORY --config config/kaggriculture.ini --min-full-states 1
+```
+
+Use actual `kaggriculture-episodes-YYYY-MM-DD.zip` names and an intentional
+holdout boundary. The auditor checks native defaults (the trainer does not
+apply old game-rule overrides), manifests, per-state hashes, deserialization,
+nonterminal turns and split leakage, and writes `audit.json`. Empty auxiliary
+banks are allowed; `full.kgb` must be nonempty. Nine tests cover selection,
+reuse, merging and native-generated archive-to-bank-to-audit behavior.
+Large official replay corpora and fresh multi-process runs remain unqualified.
+Do not change archives in place: legacy resume metadata binds archive size,
+library hash and selection settings, not archive content hashes. Use a fresh
+output directory for changed sources. Bank/manifest pairs are separate renames,
+not a transactional bundle; run the auditor before using completed outputs.
 
 ```bash
 git clone --branch 5.0 https://github.com/FelixAllistar/PufferLib.git

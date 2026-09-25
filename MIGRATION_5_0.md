@@ -195,7 +195,12 @@ The indexed Kaggriculture reset-bank builder is restored against the canonical
 rule core. Native-generated replay tests verify header/serialization ABI,
 snapshot restore, late-mismatch whole-episode rejection and overwrite refusal.
 This is not new official-replay parity evidence. Multi-day diverse-bank building
-and audit remain separate pending workflows; failed output bundles are not
+and its auditor are now ported with nine unit/native-generated checks, including
+seed splits, incremental merge, late mismatch rejection and payload corruption.
+The auditor follows native default game rules and permits empty auxiliary banks,
+not an empty training bank. Fresh multiprocessing and official large-corpus
+qualification remain. Legacy resume metadata lacks archive content hashes;
+changed sources require a new output directory. Failed output bundles are not
 atomically published and must not replace an existing known-good bank.
 
 ### Published clean-clone qualification
