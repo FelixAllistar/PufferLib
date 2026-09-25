@@ -43,7 +43,33 @@ integration smoke test, not evidence of task mastery or production throughput.
 
 ## Remaining conversion
 
-Browser evaluation, policy tools, MiniWoB families and WebNav DOM remain
+The pilot evaluator uses upstream CPU inference and the preserved browser
+page/CDP transport. From the repository root:
+
+```sh
+make -C ocean/webnav evaluator
+bash ocean/webnav/setup_browser.sh
+make -C ocean/webnav browser-test
+build/webnav/evaluate native 300 - 128 2 100000 expert
+# Supply the checkpoint's actual hidden size and layer count:
+build/webnav/evaluate browser 100 checkpoint.bin 128 2
+```
+
+`WEBNAV_CHROME` can point to an existing browser executable. The setup script
+pins Chrome for Testing 153.0.8010.52 and verifies the downloaded archive's
+SHA-256. `watch` replaces `browser` for graphical playback, with a headed
+browser installed using `setup_browser.sh headed`; visual playback is not yet
+qualified in this conversion. The CDP launcher uses `--no-sandbox`: these
+commands are intended for the repository's trusted local pilot page only.
+
+Qualification: 300 mixed and 90 expert browser episodes plus six scripted
+edge cases pass observation/outcome conformance against Bend. The expert
+solves 300/300 native episodes. The new H32/L1 smoke checkpoint passes browser
+conformance for 32 episodes; its deterministic native action/state traces
+match legacy CPU inference byte-for-byte across 300 episodes. This does not
+establish floating-point logit parity or trained policy quality.
+
+Remaining policy workflow helpers, MiniWoB families and WebNav DOM remain
 separate pending ports; none are replaced by this smaller pilot.
 Family builds have their own stricter serialized build rules and must not use
 this pilot build command.

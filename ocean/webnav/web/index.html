@@ -1,0 +1,79 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Bend WebNav pilot</title>
+<style>
+* { box-sizing:border-box; }
+body { margin:0; font:16px sans-serif; }
+#instruction { position:absolute;left:16px;top:8px;margin:0; }
+.widget { position:absolute;left:16px;width:128px;height:24px;margin:0; }
+input[type=checkbox] { appearance:none;border:1px solid #555;background:white; }
+input[type=checkbox]:checked { background:#59b; }
+.label { position:absolute;left:160px;height:24px;pointer-events:none; }
+</style>
+<p id="instruction"></p>
+<div id="area"></div>
+<script>
+'use strict';
+(() => {
+  let task, target, done, result, steps;
+  const node = i => document.getElementById('node'+i);
+  const finish = success => {if(!done){done=1;result=success?1:2;}};
+  function submit() {
+    if(task===1) {
+      let checked=0;
+      for(let i=0;i<4;i++)if(node(i).checked)checked|=1<<(node(i).getAttribute('aria-label').charCodeAt(0)-97);
+      finish(checked===target);
+    } else {
+      finish(node(0).value===String.fromCharCode(97+target%4,97+Math.floor(target/4)));
+    }
+  }
+  function reset(spec) {
+    task=spec.task;target=spec.target;done=0;result=0;steps=0;
+    const order=spec.order;
+    document.getElementById('instruction').textContent=task===0?'Click '+String.fromCharCode(97+target):task===1?'Check '+[0,1,2,3].filter(i=>target&(1<<i)).map(i=>String.fromCharCode(97+i)).join(''):'Type '+String.fromCharCode(97+target%4,97+Math.floor(target/4));
+    const area=document.getElementById('area');area.replaceChildren();
+    for(let i=0;i<5;i++) {
+      if(task===0&&i===4 || task===2&&i!==0&&i!==4)continue;
+      const label=String.fromCharCode(97+(i+order)%4);
+      const role=i===4||task===0?'button':task===1?'checkbox':'textbox';
+      const el=document.createElement(role==='button'?'button':'input');
+      el.id='node'+i;el.className='widget';el.style.top=(48+32*i)+'px';
+      const name=i===4?'s':role==='textbox'?'t':label;
+      el.setAttribute('aria-label',name);
+      if(role==='button') {
+        el.type='button';el.textContent=i===4?'Submit':label;
+        el.addEventListener('click',()=>task===0?finish(label.charCodeAt(0)-97===target):submit());
+      } else if(role==='checkbox') {
+        el.type='checkbox';
+        const caption=document.createElement('span');caption.className='label';caption.style.top=el.style.top;caption.textContent=label;area.append(caption);
+      } else {
+        el.type='text';el.maxLength=2;
+        // This pilot's editing contract is append/backspace at the end.
+        el.addEventListener('click',()=>el.setSelectionRange(el.value.length,el.value.length));
+        el.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();submit();}});
+      }
+      area.append(el);
+    }
+    document.activeElement?.blur();
+  }
+  document.addEventListener('keydown',e=>{
+    if(e.key!=='Tab')return;
+    const widgets=[...document.querySelectorAll('.widget')];
+    if(document.activeElement===widgets.at(-1)){e.preventDefault();widgets[0].focus();}
+  });
+  function observe() {
+    const obs=Array(128).fill(0);
+    [...document.getElementById('instruction').textContent].forEach((c,i)=>obs[i]=c.charCodeAt(0));
+    for(let i=0;i<5;i++) {
+      const el=node(i);if(!el)continue;
+      const b=el.getBoundingClientRect(),at=32+i*16;
+      const role=el.tagName==='BUTTON'?1:el.type==='checkbox'?2:3;
+      const values=[1,role,0,b.x,b.y,b.width,b.height,el.checked?1:0,el===document.activeElement?1:0,el.disabled?0:1,el.getAttribute('aria-label').charCodeAt(0),0,0,0,role===3?(el.value.charCodeAt(0)||0):0,role===3?(el.value.charCodeAt(1)||0):0];
+      values.forEach((v,j)=>obs[at+j]=v);
+    }
+    return {obs,done,result,steps};
+  }
+  window.webnav={reset,observe,tick(){if(!done){steps++;if(steps>=16)finish(false);}else steps++;return observe();}};
+  reset({task:0,target:0,order:0});
+})();
+</script>
