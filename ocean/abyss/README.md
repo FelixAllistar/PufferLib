@@ -31,6 +31,12 @@ Data sources:
 - `data/recorded/episodes.json`: 28 runs / 84 rooms and initial layouts.
 - `data/recorded/frames.jsonl`: local raw native-vector calibration input (gitignored).
 - `data/trajectory_calibration.json`: robust, speed-bounded pursuit/orbit fits.
+
+`tools/fetch_qsna_spawns.py` preserves the historical snapshot fetcher. It
+overwrites snapshot JSON and generated Markdown in `--data-dir`; use a new
+directory to inspect a refresh before replacing tracked data. Regenerating
+Markdown from the checked-in snapshots is byte-identical. Live API retrieval
+has not been requalified by this port.
 - `SPEC.md`: sourced weather, cloud, pylon, fit, and action semantics.
 
 Regenerate the compact calibration data with:
