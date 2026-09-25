@@ -5,6 +5,7 @@ from pathlib import Path
 import subprocess
 import sys
 import zipfile
+import hashlib
 
 import pytest
 
@@ -105,3 +106,67 @@ def test_native_bank_publication(tmp_path, corrupt):
         path.write_bytes(damaged)
         with pytest.raises(ValueError, match='checksum mismatch'):
             audit.audit_bank(path, lib, expected)
+
+
+def test_multiprocess_cli_and_audit(tmp_path):
+    library = tmp_path / 'core.so'
+    subprocess.run(['cc', '-x', 'c', '-O2', '-shared', '-fPIC',
+                    str(ROOT / 'core.h'), '-lm', '-o', str(library)], check=True)
+    lib = native.load_core(library)
+    seeds = [next(seed for seed in range(100) if diverse.split_for(
+        'unused', seed, '2026-09-10', '2026-09-12') == split)
+        for split in ('train', 'holdout')]
+    seeds.append(101)
+    archives = []
+    for index, seed in enumerate(seeds):
+        episode = dict(name='kaggriculture', module_version='1.32.7', id=index,
+                       configuration=dict(seed=seed), statuses=['DONE', 'DONE'],
+                       rewards=[0, 0], steps=[])
+        cfg = native.replay_config(episode)
+        state = lib.kg_create(ctypes.byref(cfg))
+        actions = (native.CAction * 2)(native.c_action({}), native.c_action({}))
+        try:
+            for turn in range(cfg.episode_steps):
+                if turn:
+                    lib.kg_step(state, actions)
+                snapshot = native.c_snapshot(lib, state)
+                frame = []
+                for player in range(2):
+                    observation = {key: snapshot[key] for key in
+                                   ('step', 'day', 'hour', 'farms', 'market', 'town')}
+                    observation['private'] = snapshot['privates'][player]
+                    frame.append(dict(observation=observation, action={},
+                        status='DONE' if snapshot['done'] else 'ACTIVE'))
+                episode['steps'].append(frame)
+            assert lib.kg_done(state)
+            episode['rewards'] = [lib.kg_player_money(state, p) for p in range(2)]
+        finally:
+            lib.kg_destroy(state)
+        archive = tmp_path / f'kaggriculture-episodes-2026-09-{10 + index}.zip'
+        with zipfile.ZipFile(archive, 'w', compression=zipfile.ZIP_DEFLATED) as stream:
+            stream.writestr('episode.json', json.dumps(episode))
+        archives.append(str(archive))
+    snapshots = []
+    for jobs in (1, 2):
+        output = tmp_path / f'workers{jobs}'
+        command = [sys.executable, str(ROOT / 'build_diverse_reset_bank.py'), *archives,
+                   '--output', str(output), '--lib', str(library), '--jobs', str(jobs),
+                   '--episodes-per-day', '1', '--holdout-date', '2026-09-12',
+                   '--reserve-gib', '0', '--min-full-states', '8']
+        subprocess.run(command, check=True, capture_output=True, text=True, timeout=120)
+        subprocess.run([sys.executable, str(ROOT / 'audit_diverse_reset_bank.py'),
+                        '--directory', str(output), '--lib', str(library),
+                        '--config', str(ROOT.parents[1] / 'config/kaggriculture.ini'),
+                        '--min-full-states', '8'],
+                       check=True, capture_output=True, text=True, timeout=120)
+        report = json.loads((output / 'audit.json').read_text())
+        assert report['passed']
+        for split in ('full', 'holdout', 'future'):
+            assert 8 <= report['banks'][split]['states'] <= 12
+        files = sorted(output.glob('*.kgb')) + sorted(output.glob('*.manifest.tsv'))
+        before = {path.name: hashlib.sha256(path.read_bytes()).hexdigest() for path in files}
+        # Same-input resume must preserve every published bank and manifest byte.
+        subprocess.run(command, check=True, capture_output=True, text=True, timeout=120)
+        assert before == {path.name: hashlib.sha256(path.read_bytes()).hexdigest() for path in files}
+        snapshots.append(before)
+    assert snapshots[0] == snapshots[1]

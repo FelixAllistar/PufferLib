@@ -67,9 +67,12 @@ Use actual `kaggriculture-episodes-YYYY-MM-DD.zip` names and an intentional
 holdout boundary. The auditor checks native defaults (the trainer does not
 apply old game-rule overrides), manifests, per-state hashes, deserialization,
 nonterminal turns and split leakage, and writes `audit.json`. Empty auxiliary
-banks are allowed; `full.kgb` must be nonempty. Nine tests cover selection,
+banks are allowed; `full.kgb` must be nonempty. Ten tests cover selection,
 reuse, merging and native-generated archive-to-bank-to-audit behavior.
-Large official replay corpora and fresh multi-process runs remain unqualified.
+The real builder/auditor CLI passes with three complete 720-frame generated
+games covering train, holdout and future splits. One/two-worker banks and
+manifests are byte-identical, including after same-input resume. Large official
+replay corpora remain unqualified; generated games are not official parity data.
 Do not change archives in place: legacy resume metadata binds archive size,
 library hash and selection settings, not archive content hashes. Use a fresh
 output directory for changed sources. Bank/manifest pairs are separate renames,

@@ -195,11 +195,13 @@ The indexed Kaggriculture reset-bank builder is restored against the canonical
 rule core. Native-generated replay tests verify header/serialization ABI,
 snapshot restore, late-mismatch whole-episode rejection and overwrite refusal.
 This is not new official-replay parity evidence. Multi-day diverse-bank building
-and its auditor are now ported with nine unit/native-generated checks, including
+and its auditor are now ported with ten unit/native-generated checks, including
 seed splits, incremental merge, late mismatch rejection and payload corruption.
 The auditor follows native default game rules and permits empty auxiliary banks,
-not an empty training bank. Fresh multiprocessing and official large-corpus
-qualification remain. Legacy resume metadata lacks archive content hashes;
+not an empty training bank. The actual builder/auditor CLI processes three full
+720-frame generated games into all three splits; one/two-worker outputs and
+same-input resumes are byte-identical for banks and manifests. Official
+large-corpus qualification remains. Legacy resume metadata lacks archive content hashes;
 changed sources require a new output directory. Failed output bundles are not
 atomically published and must not replace an existing known-good bank.
 
