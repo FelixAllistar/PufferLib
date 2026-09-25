@@ -140,6 +140,18 @@ local file, with grouping/selection tests and an actual native report-to-CLI
 smoke. This confirms why ignored source/workflow files must be inventoried
 before replacing the main checkout; recovery Git refs alone are insufficient.
 
+The subsequent ignored-source audit found 22 files under the source/workflow
+roots (excluding build/vendor/reference/dependency trees). All 22 have a local
+tar backup at `/home/felix/puffertank/ignored-source-preservation.RSzjfX/ignored-source.tar.gz`,
+SHA256 `e8f079fa4c326882b650b9ebf310fb174ccd2008456aa9048fab77e4ef6ed90f`;
+`tar --diff` against the original files passed. This is local recovery, not a
+published or portable dependency. The Abyss snapshot fetcher and Retro palette
+generator are now tracked and reproduce their checked-in outputs exactly.
+The remaining ignored Kaggriculture reset-bank/continuation/legacy-executor
+tools, Pokémon QD script and Goofspiel population wrappers still need explicit
+dispositions. Excluded directories and non-source asset formats require their
+own inventory; this audit is not a complete backup of the old checkout.
+
 ### Non-Git asset handoff
 
 These assets are not supplied by cloning `5.0`. Keep source installations until
