@@ -53,7 +53,45 @@ clean-clone qualification remain in progress; check branch HEAD for updates.
 
 ## Source of truth and preservation
 
-### Committed shared-core audit (2026-09-25)
+### Current shared-core audit (2026-09-25)
+
+At committed `6d68a7c91`, compared with upstream
+`6ffa5b10dbbbe4d1e8288367c7d9d3acd3bad4a2`, exactly three `src/` files differ:
+
+| File | Added / removed lines | Scope |
+| --- | --- | --- |
+| `src/algo.cu` | +7 / -0 | Optional decoder observation binding at inference/training; no changes to loss or optimizer implementations. |
+| `src/ocean.cu` | +24 / -0 | Custom environment network registration. |
+| `src/pufferl.cu` | +270 / -40 | Sampling/mask storage, learner-only gathering, reward clamp, checkpoint/opponent loading, fixed sweep dimensions, and optional environment lifecycle hooks. |
+| `build.sh` | +29 / -1 | Environment build/dependency registration. |
+
+The earlier audit below explains the sampling/storage/training-data changes.
+Subsequent optional hooks configure environments, finish CPU reset assignments,
+bind GPU masks/policy rows, save environment checkpoint metadata and restore
+environment sidecars after a resolved learner checkpoint load. Pokémon and
+Goofspiel workflow orchestration remains inside their environment directories.
+This is not an unchanged trainer: learner-row selection and non-default reward
+clipping affect the data/targets, even though the loss/optimizer code is stock.
+
+Fresh FP32 SM61 builds at this revision pass all 21 native checkpoint tests
+(`tests/test_train_checkpoint.py`): seeded initialization, learner loading before
+pool initialization, immutable fixed opponents with different architectures,
+weight updates, and first-update sync/async agreement, with graphs off/on.
+All three native Bomberman fixed-dimension sweep regressions pass as well:
+two trials retain their checkpoint architecture and exact step budget, fixed
+ranges must match configured values, and an all-fixed space is rejected as
+not a search.
+These tests do not establish throughput, learning-quality equivalence, BF16,
+or multi-GPU qualification. No running remote job was changed.
+
+Reproduce the source audit without loading environment code:
+
+```sh
+git diff --numstat 6ffa5b10dbbbe4d1e8288367c7d9d3acd3bad4a2 HEAD -- src build.sh
+git diff 6ffa5b10dbbbe4d1e8288367c7d9d3acd3bad4a2 HEAD -- src/algo.cu
+```
+
+### Historical shared-core audit (2026-09-25)
 
 Compared committed `4039919df` with upstream 5.0
 `6ffa5b10dbbbe4d1e8288367c7d9d3acd3bad4a2`, excluding working-tree
