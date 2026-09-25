@@ -151,6 +151,9 @@ void puf_step(Env* envs) {
 }
 
 void puf_close(Env* envs) {
+    if (IsWindowReady()) {
+        CloseWindow();
+    }
     int* sampling_rows;
     assert(cudaMemcpy(&sampling_rows, &envs->sampling_rows, sizeof(sampling_rows),
                cudaMemcpyDeviceToHost) == cudaSuccess);

@@ -359,8 +359,213 @@ void puf_log(Log* log, Dict* out) {
     dict_set(out, "reset_steps", log->reset_games ? log->reset_steps / log->reset_games : 0);
 }
 
-void puf_render(Env* envs) {
-    assert(0 && "Kaggriculture renderer is not ported; use headless train/eval");
+Vector2 kag_v2(int x, int y) {
+    return (Vector2){(float)x, (float)y};
+}
+
+Rectangle kag_rect(int x, int y, int width, int height) {
+    return (Rectangle){(float)x, (float)y, (float)width, (float)height};
+}
+
+void kag_draw_crop_icon(int crop, int cx, int cy, int size) {
+    if (crop == KG_WHEAT) {
+        DrawLineEx(kag_v2(cx, cy + size/3), kag_v2(cx, cy - size/3), 3, (Color){111,75,33,255});
+        for (int i = -1; i <= 1; i++) {
+            DrawCircle(cx + i*5, cy - size/4 + abs(i)*5, 4, (Color){240,195,55,255});
+        }
+    } else if (crop == KG_CARROT) {
+        DrawTriangle(kag_v2(cx-7, cy-5), kag_v2(cx+7, cy-5), kag_v2(cx, cy+15),
+            (Color){244,125,32,255});
+        DrawLine(cx, cy-5, cx-6, cy-14, (Color){52,133,62,255});
+        DrawLine(cx, cy-5, cx+7, cy-14, (Color){52,133,62,255});
+    } else if (crop == KG_TOMATO) {
+        DrawCircle(cx, cy+2, size*.26f, (Color){216,55,45,255});
+        DrawTriangle(kag_v2(cx, cy-10), kag_v2(cx-8, cy-2), kag_v2(cx+8, cy-2),
+            (Color){51,125,54,255});
+    } else if (crop == KG_STRAWBERRY) {
+        DrawTriangle(kag_v2(cx-10, cy-7), kag_v2(cx+10, cy-7), kag_v2(cx, cy+15),
+            (Color){225,50,72,255});
+        DrawCircle(cx, cy-6, 7, (Color){225,50,72,255});
+        DrawLine(cx, cy-8, cx, cy-15, (Color){45,125,55,255});
+    } else {
+        DrawCircle(cx, cy, size*.29f, (Color){49,137,70,255});
+        DrawCircleLines(cx, cy, size*.29f, (Color){24,84,44,255});
+        DrawLine(cx-5, cy-size/4, cx-5, cy+size/4, (Color){140,190,70,255});
+        DrawLine(cx+5, cy-size/4, cx+5, cy+size/4, (Color){140,190,70,255});
+    }
+}
+
+void kag_draw_tile(const KGTile* tile, int px, int py, int cell,
+        int checker) {
+    Color soil = checker ? (Color){193,143,91,255} : (Color){203,153,99,255};
+    if (tile->kind == KG_TILE_LOCKED) {
+        DrawRectangle(px, py, cell-1, cell-1, (Color){104,105,100,255});
+        BeginScissorMode(px, py, cell-1, cell-1);
+        for (int d = -cell; d < cell*2; d += 14) {
+            DrawLine(px+d, py, px+d-cell, py+cell, (Color){72,74,71,150});
+        }
+        EndScissorMode();
+    } else {
+        DrawRectangle(px, py, cell-1, cell-1, soil);
+        for (int row = 8; row < cell; row += 10) {
+            DrawLine(px+4, py+row, px+cell-5, py+row-2, (Color){163,111,70,100});
+        }
+    }
+    DrawRectangleLines(px, py, cell, cell, (Color){83,112,70,255});
+    int cx = px + cell/2;
+    int cy = py + cell/2;
+    if (tile->kind == KG_TILE_PLANT) {
+        kag_draw_crop_icon(tile->crop, cx, cy, cell);
+        if (tile->watered_today) DrawCircle(px+cell-8, py+8, 4, (Color){52,151,220,255});
+        if (tile->yield_units) {
+            DrawText(TextFormat("%d", tile->yield_units), px+3, py+2, 11, (Color){56,38,24,255});
+        }
+    } else if (tile->kind == KG_TILE_WEED) {
+        for (int i = -2; i <= 2; i++) {
+            DrawLine(cx, cy+12, cx+i*5, cy-10+abs(i)*3, (Color){35,91,42,255});
+        }
+    } else if (tile->kind == KG_TILE_COOP || tile->kind == KG_TILE_PASTURE) {
+        Color building = tile->kind == KG_TILE_COOP
+            ? (Color){205,150,77,255} : (Color){102,157,80,255};
+        DrawRectangle(cx-15, cy-12, 30, 25, building);
+        DrawTriangle(kag_v2(cx-18, cy-12), kag_v2(cx+18, cy-12), kag_v2(cx, cy-24),
+            (Color){130,67,43,255});
+        if (tile->animal >= 0) {
+            const char* glyph = tile->animal == KG_GOOSE ? "G" : tile->animal == KG_COW ? "C" : "S";
+            DrawCircle(cx, cy, 11, RAYWHITE);
+            DrawText(glyph, cx-4, cy-7, 14, (Color){44,39,34,255});
+            if (tile->fed_today) DrawCircle(px+cell-8, py+8, 4, (Color){72,176,86,255});
+        }
+    }
+}
+
+void kag_draw_worker(int cx, int cy, int id, int selected) {
+    int offset_x = ((id % 3) - 1) * 8;
+    int offset_y = ((id / 3) % 3 - 1) * 6;
+    cx += offset_x;
+    cy += offset_y;
+    Color shirt = id == 0 ? (Color){210,58,53,255} : (Color){43,119,194,255};
+    DrawCircle(cx, cy-6, 5, (Color){245,200,151,255});
+    DrawRectangle(cx-5, cy-1, 10, 12, shirt);
+    if (selected) DrawCircleLines(cx, cy+1, 13, GOLD);
+}
+
+void kag_render_farm(const KGState* game, int player,
+        int origin_x, int origin_y, int cell, int selected_unit) {
+    const KGPlayer* farm = &game->players[player];
+    for (int y = 0; y < game->config.board_size; y++) {
+        for (int x = 0; x < game->config.board_size; x++) {
+            const KGTile* tile = &farm->tiles[y * KG_MAX_BOARD_SIZE + x];
+            kag_draw_tile(tile, origin_x+x*cell, origin_y+y*cell, cell, (x+y)&1);
+        }
+    }
+    int half = game->config.board_size/2;
+    DrawRectangleLinesEx(kag_rect(origin_x, origin_y, cell*10, cell*10), 3, (Color){83,61,39,255});
+    DrawLineEx(kag_v2(origin_x+half*cell, origin_y),
+        kag_v2(origin_x+half*cell, origin_y+10*cell), 3, (Color){91,65,42,255});
+    DrawLineEx(kag_v2(origin_x, origin_y+half*cell),
+        kag_v2(origin_x+10*cell, origin_y+half*cell), 3, (Color){91,65,42,255});
+
+    int shed_x = origin_x + half*cell - 18;
+    int shed_y = origin_y + half*cell - 18;
+    DrawRectangle(shed_x, shed_y, 36, 36, (Color){173,67,47,255});
+    DrawTriangle(kag_v2(shed_x-5, shed_y), kag_v2(shed_x+41, shed_y),
+        kag_v2(shed_x+18, shed_y-17), (Color){108,48,36,255});
+    DrawRectangle(shed_x+13, shed_y+17, 10, 19, (Color){91,52,35,255});
+
+    for (int unit = farm->unit_count-1; unit >= 0; unit--) {
+        const KGUnitState* worker = &farm->units[unit];
+        kag_draw_worker(origin_x+worker->x*cell+cell/2,
+            origin_y+worker->y*cell+cell/2, unit, selected_unit == unit);
+    }
+}
+
+void kag_render_inventory(const KGState* game, int player,
+        int x, int y, int width, const char* name) {
+    const KGPlayer* farm = &game->players[player];
+    DrawRectangleRounded(kag_rect(x, y, width, 218), .04f, 6, (Color){240,214,164,255});
+    DrawRectangleRoundedLines(kag_rect(x, y, width, 218), .04f, 6, (Color){114,82,47,255});
+    DrawText(TextFormat("P%d  %s", player+1, name ? name : "agent"),
+        x+15, y+12, 20, (Color){45,36,27,255});
+    DrawText(TextFormat("$%d   hands %d   land %d/4", farm->money,
+        farm->hand_count, __builtin_popcount((unsigned)farm->unlocked_mask)),
+        x+15, y+38, 18, (Color){71,49,29,255});
+    DrawText("SHED", x+15, y+69, 14, (Color){105,73,39,255});
+    for (int item = 0; item < KG_NUM_PRODUCTS; item++) {
+        int col = item % 3;
+        int row = item / 3;
+        const char* label = KG_PRODUCT_NAMES[item];
+        DrawRectangle(x+15+col*(width-30)/3, y+89+row*33,
+            (width-42)/3, 27, (Color){216,181,127,255});
+        DrawText(TextFormat("%.4s %d", label, farm->shed[item]),
+            x+21+col*(width-30)/3, y+95+row*33, 13, (Color){55,42,29,255});
+    }
+    DrawText("SEEDS", x+15, y+190, 13, (Color){105,73,39,255});
+    DrawText(TextFormat("W%d C%d T%d S%d M%d", farm->seeds[0], farm->seeds[1],
+        farm->seeds[2], farm->seeds[3], farm->seeds[4]), x+75, y+190, 13, (Color){55,42,29,255});
+}
+
+void kag_render_town(const KGState* game, int x, int y, int width) {
+    DrawRectangleRounded(kag_rect(x, y, width, 490), .04f, 6, (Color){219,181,151,255});
+    DrawRectangleRoundedLines(kag_rect(x, y, width, 490), .04f, 6, (Color){105,69,50,255});
+    DrawText("KAGGRICULTURE", x+56, y+22, 24, (Color){73,43,30,255});
+    DrawText(TextFormat("DAY %02d / 30", game->day+1), x+103, y+66, 22, (Color){73,43,30,255});
+    DrawText(TextFormat("TURN %02d / 24", game->hour+1), x+96, y+94, 18, (Color){92,57,36,255});
+    DrawRectangle(x+20, y+132, width-40, 2, (Color){155,107,78,255});
+    DrawText("MARKET", x+20, y+151, 17, (Color){73,43,30,255});
+    for (int item = 0; item < KG_NUM_PRODUCTS; item++) {
+        int col = item / 5;
+        int row = item % 5;
+        DrawText(TextFormat("%-5.5s $%d", KG_PRODUCT_NAMES[item], game->market.prices[item]),
+            x+20+col*165, y+180+row*25, 14, (Color){58,44,34,255});
+    }
+    DrawText("TOWN SHOPS", x+20, y+322, 17, (Color){73,43,30,255});
+    if (!game->shop_count) DrawText("Town center only", x+20, y+350, 14, (Color){92,68,52,255});
+    for (int shop = 0; shop < game->shop_count && shop < 5; shop++) {
+        DrawText(KG_SHOP_NAMES[game->unlocked_shops[shop]], x+20,
+            y+348+shop*23, 14, (Color){58,44,34,255});
+    }
+}
+
+void kag_render_game(const KGState* game) {
+    if (!IsWindowReady()) {
+        InitWindow(1440, 900, "PufferLib Kaggriculture");
+        assert(IsWindowReady());
+        SetTargetFPS(12);
+    }
+    BeginDrawing();
+    ClearBackground((Color){132,172,103,255});
+    DrawRectangle(0, 0, 1440, 60, (Color){24,42,35,255});
+    DrawText("PUFFERLIB KAGGRICULTURE", 24, 16, 25, RAYWHITE);
+    DrawText(TextFormat("step %d   ESC quit", game->step),
+        1100, 20, 16, (Color){210,226,211,255});
+    for (int p = 0; p < 2; p++) {
+        int x = p ? 920 : 20;
+        DrawText(TextFormat("P%d   $%d", p + 1, game->players[p].money),
+            x, 72, 20, (Color){39,50,31,255});
+        kag_render_farm(game, p, x, 100, 50, -1);
+        kag_render_inventory(game, p, x, 625, 500, "policy / opponent");
+    }
+    kag_render_town(game, 540, 100, 360);
+    DrawRectangleRounded((Rectangle){540,625,360,218}, .04f, 6, (Color){237,221,183,255});
+    DrawText("WHAT TO WATCH", 560, 645, 18, (Color){70,50,33,255});
+    DrawText("Workers, production and deliveries", 560, 678, 15, (Color){70,50,33,255});
+    DrawText("Blue dot = watered; green = fed", 560, 715, 14, (Color){70,50,33,255});
+    DrawText("Number = available harvest yield", 560, 750, 14, (Color){70,50,33,255});
+    DrawText("Display updates once per rollout", 560, 790, 14, (Color){70,50,33,255});
+    DrawText("Native simulator state; ESC quits evaluation", 20, 872, 14, (Color){29,55,38,255});
+    EndDrawing();
+}
+
+void puf_render(Env* env) {
+#if PUF_BACKEND == PUF_GPU
+    KGState game;
+    assert(cudaDeviceSynchronize() == cudaSuccess);
+    assert(cudaMemcpy(&game, &env->game, sizeof(game), cudaMemcpyDeviceToHost) == cudaSuccess);
+    kag_render_game(&game);
+#else
+    kag_render_game(&env->game);
+#endif
 }
 
 #if PUF_BACKEND == PUF_CPU
@@ -457,6 +662,9 @@ void puf_close(Env* env) {
 }
 
 void my_vec_close(Env* envs) {
+    if (IsWindowReady()) {
+        CloseWindow();
+    }
     free(kag_cpu.reset_states);
 #ifdef __CUDACC__
     assert(cudaFree(kag_cpu.device_envs) == cudaSuccess);

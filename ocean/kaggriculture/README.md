@@ -107,7 +107,7 @@ For a separate CPU-simulation/GPU-training binary, use
 Both use the same simulator/controller/rewards and CUDA inference/PPO. The CPU
 adapter uploads game/policy snapshots for prefix-dependent GPU sampling.
 `--cpu` is upstream's standalone play/eval build flag, not the CPU-simulation
-trainer flag. Neither adapter currently ports the interactive renderer.
+trainer flag. Both adapters now expose the read-only Raylib renderer described below.
 The explicit terminal profile loads `saved/kaggriculture/initial_bc_critic.bin`, uses terminal
 cash gain only, a trainable critic, replay resets and frozen league opponents.
 The 300M-step run is not automatically launched by installation.
@@ -311,7 +311,9 @@ full trainer, BC projection quality or throughput.
 
 ```sh
 nvcc -O2 -std=c++17 -arch=sm_61 -Isrc -Iraylib-5.5_linux_amd64/include \
-    ocean/kaggriculture/tests/test_reward_gpu.cu -o build/kaggriculture/test_reward_gpu
+    ocean/kaggriculture/tests/test_reward_gpu.cu \
+    raylib-5.5_linux_amd64/lib/libraylib.a -lGL -lpthread -ldl -lm \
+    -o build/kaggriculture/test_reward_gpu
 ./build/kaggriculture/test_reward_gpu
 ```
 
@@ -487,6 +489,37 @@ timing. Both paths run both seats/seeds, verify packaged file hashes and record
 the installed version and environment-source hash. Neither uploads anything or
 changes the archive's `official_runtime_verified=false` metadata: local success
 does not certify the hosted competition runtime.
+
+## Read-only rendering
+
+Native non-headless `eval`/`match` now draws both farms, workers, crops/animals,
+inventories, markets and shops using the ported Raylib renderer. It opens a
+window only when rendering is requested. CPU evaluation reads the current game;
+GPU evaluation synchronizes and copies one game to host. No rendering state is
+added to `Env`, and training/headless evaluation never call this path. The
+environment cleanup closes the window. All changes stay under this environment.
+
+The upstream evaluation loop draws once per rollout, not once per game turn.
+Use a short `train.horizon` for smoother viewing; it changes evaluation batching,
+not checkpoint weights. ESC exits. The old pause/single-step help was removed
+because those controls are not implemented by this loop. This is a state viewer,
+not a port of the legacy manual-play CLI or a standalone CPU entity-policy loader.
+
+Explicit hidden-window tests require a working display/OpenGL context:
+
+```sh
+make -C ocean/kaggriculture render-test
+make -C ocean/kaggriculture render-gpu-test \
+    NVCC=/usr/local/cuda/bin/nvcc CUDA_ARCH=sm_61
+```
+
+The fixture covers every crop/animal icon, verifies game-state bytes are
+unchanged, exports a screenshot and checks window cleanup. Local CPU/GPU
+screenshots match exactly and were visually reviewed. Locked-tile stripes are
+clipped to their cells, fixing an old drawing overflow. Replay bridge and
+optimized/sanitized reward regressions also pass. Those standalone tests now
+link Raylib like the native trainer; the submission bridge remains independent
+of Raylib because it includes only `policy.h`/`core.h`.
 
 ## Shared-code boundary
 

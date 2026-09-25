@@ -23,7 +23,8 @@ def published_dataset(tmp_path):
     library = tmp_path / "bridge.so"
     subprocess.run(["cc", "-O2", "-shared", "-fPIC", "-Isrc",
         "-Iraylib-5.5_linux_amd64/include", "-DKAG_BC_SOURCE_HASH=123ULL",
-        str(HERE / "kag_bc_replay.c"), "-lm", "-o", str(library)], cwd=ROOT, check=True)
+        str(HERE / "kag_bc_replay.c"), "raylib-5.5_linux_amd64/lib/libraylib.a",
+        "-lGL", "-lpthread", "-ldl", "-lm", "-o", str(library)], cwd=ROOT, check=True)
     entries = []
     for episode, split in [("fixture1", "train"), ("fixture2", "holdout")]:
         tape = dict(configuration={"episodeSteps": 720, "seed": 123},

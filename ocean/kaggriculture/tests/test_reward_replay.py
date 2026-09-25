@@ -17,7 +17,9 @@ def test_primitive_application_matches_training(tmp_path, sanitize):
         subprocess.run(["cc", "-std=c11", *flags,
             *(["-DREPLAY_API"] if primitive else []),
             "-Isrc", "-Iocean/kaggriculture", "-Iraylib-5.5_linux_amd64/include",
-            str(Path(__file__).with_suffix(".c")), "-lm", "-o", str(binary)],
+            str(Path(__file__).with_suffix(".c")),
+            "raylib-5.5_linux_amd64/lib/libraylib.a", "-lGL", "-lpthread", "-ldl",
+            "-lm", "-o", str(binary)],
             cwd=ROOT, check=True, capture_output=True)
         result = subprocess.run([str(binary)], cwd=ROOT, check=True,
             capture_output=True, text=True, timeout=60)

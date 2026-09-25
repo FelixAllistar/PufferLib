@@ -39,6 +39,14 @@ confirmed active and not changed. Its 7.1 GiB data bundle still uses legacy
 symlinks and has not been copied locally. New-box instructions now require
 dereferenced transfer, checksum validation and local opponent-list regeneration.
 
+Kaggriculture's CPU/GPU native evaluation renderer is restored in the environment.
+Hidden-window tests exercise Raylib/OpenGL, export visually reviewed identical
+CPU/GPU screenshots, verify unchanged game-state bytes and close the window.
+The drawing callback adds no per-environment state or shared trainer changes.
+Replay/reward regression builds now link Raylib; the submission controller does
+not. Native rendering updates once per rollout; legacy manual-play controls and
+standalone CPU entity-policy loading are still separate unfinished workflows.
+
 Canonical repository: `https://github.com/FelixAllistar/PufferLib.git`.
 Canonical development branch: `5.0`, published on GitHub. Further ports and
 clean-clone qualification remain in progress; check branch HEAD for updates.
