@@ -60,6 +60,35 @@ curriculum stages do not receive this reward. Set `reward_approach=0` to
 disable it; old run configs without this key inherit the current default.
 CPU unit/sanitizer tests and the GPU differential suite pass after this port.
 
+## Fixed champion (CPU simulator)
+
+The legacy league listed one champion, run `1790155830168`, step `999948288`.
+Copy its checkpoint into the path listed in `initial_opponents.txt`; keep its
+run config beside the checkpoint as `config.ini` for the standalone viewer.
+These files are ignored assets, not supplied by a fresh Git clone.
+The checkpoint is 1,011,200 bytes, H128/L2, SHA-256:
+`4e9097812e2ccdce2bf1fb18881bda373541b7c1d42ec570022631c7b47ca87e`.
+
+```sh
+./build.sh bomberman puffer_bomberman --float
+./puffer_bomberman train --vec.num_policies=2 --vec.hist_policy_percent=1 \
+    --selfplay.enabled=1 \
+    --selfplay.initial_opponents=ocean/bomberman/initial_opponents.txt \
+    --selfplay.opp_timeout_steps=0 --selfplay.eval_games=0
+```
+
+This starts a fresh learner against the fixed champion in every game;
+`hist_policy_percent` measures games, not agent rows. The learner is seat 0.
+It is not the old PFSP league: initial opponents are not permanent pool
+members, and timed swaps sample this run's checkpoint pool instead. Keep
+the timeout at zero to retain the champion. End-of-run pool evaluation also
+uses that run's pool, not necessarily the fixed champion; use an explicit
+`match` with `base.load_enemy_model_path` for champion evaluation.
+The default config remains fresh mirror selfplay without this opt-in command.
+The CPU simulator / FP32 GPU learner completes a 4,096-step H128/L2 async
+smoke with two buffers, two threads and this frozen bank. This qualifies
+loading/training, not learning quality or legacy PFSP equivalence.
+
 ## GPU simulator
 
 The legacy CUDA simulator now uses upstream's vector create/reset/step/close
@@ -81,6 +110,7 @@ observations/rewards/logs pass their existing floating-point tolerances.
 Native FP32 training completes 2,048 steps with CUDA graphs off and on;
 the two runs save byte-identical final weights. These are smoke tests, not
 learning-performance benchmarks.
+The disabled run uses `base.cudagraphs=-1`; both `0` and `1` enable graphs.
 
 Limitations preserved from the old GPU path: reverse curriculum and rendering
 are unavailable, and it does not bind CPU-style legal-action masks. The current
