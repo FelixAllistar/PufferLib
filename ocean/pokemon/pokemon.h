@@ -1,5 +1,5 @@
 #pragma once
-#if defined(PUFFERLIB_BUILD_MAIN) || defined(PUFFERCPU_EVAL_MAIN)
+#if defined(PUFFERCPU_EVAL_MAIN)
 #error "Pokemon generic entry points are not ported; build the semantic evaluator with make -C ocean/pokemon viewer"
 #endif
 /* The original adapter is unchanged in pokemon_base.h. Keeping the optional

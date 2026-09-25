@@ -109,6 +109,19 @@ unfinished; the callback alone does not make the environment trainable.
 Legacy continuous PFSP is explicitly excluded by the user; fixed saved
 opponents and external evaluation remain, not PFSP retention/resampling.
 
+Pokémon configuration/post-step hooks were additionally approved. Commit
+`984b48050` adds twelve guarded lines: configure before train/eval setup and
+complete CPU resets after the worker loop and initial reset, before upload.
+Only Pokémon currently defines these hooks. Build registration links the
+pinned engine and selects the semantic CPU viewer; encoder/decoder registration
+uses the existing custom-network pattern. Native H16/L1 FP32 training passes
+2,048 steps with graphs off/on, 16 rows/two workers, four-species forced cores
+and legality auditing. CPU evaluation completes two random-policy games.
+The config removes retired optimizer/PFSP keys and uses synchronous core
+scheduling. Named expert banks fail explicitly until their loader is ported;
+state-bank training qualification, checkpoint curriculum cursors and broader
+native evaluation remain unfinished. No performance/learning-quality claim.
+
 - Finalized upstream base: `6ffa5b10dbbbe4d1e8288367c7d9d3acd3bad4a2`.
 - Qualified Kaggriculture runtime before unification: `1c30e3c2f`.
 - Custom environment/source inventory: `5c` at `036cf4251`.

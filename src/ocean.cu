@@ -57,6 +57,9 @@ __device__ static const float OSRS_ITEM_OBS_TABLE_DEV
 #ifdef PUFFER_RETRO
 #include "../ocean/retro/retro_encoder.cu"
 #endif
+#ifdef PUFFER_POKEMON
+#include "../ocean/pokemon/pokemon_encoder.cu"
+#endif
 #ifdef PUFFER_SHENANIGUNS3D
 #include "../ocean/shenaniguns3d/encoder.cu"
 #endif
@@ -69,6 +72,8 @@ static void create_custom_encoder(Encoder* enc) {
     create_kaggriculture_encoder(enc);
 #elif defined(PUFFER_RETRO)
     create_retro_encoder(enc);
+#elif defined(PUFFER_POKEMON)
+    create_pokemon_encoder(enc);
 #elif defined(PUFFER_SHENANIGUNS3D)
     create_shenaniguns3d_encoder(enc);
 #elif defined(PUFFER_CRAFTAX)
@@ -103,6 +108,8 @@ static void create_custom_decoder(Decoder* dec) {
     create_nethack_decoder(dec);
 #elif defined(PUFFER_KAGGRICULTURE)
     create_kaggriculture_decoder(dec);
+#elif defined(PUFFER_POKEMON)
+    create_pokemon_decoder(dec);
 #else
     (void)dec;
 #endif

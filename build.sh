@@ -179,6 +179,10 @@ elif [ "$ENV" = "impulse_wars" ]; then
     if [ -z "${MODE:-}" ] || [ "$MODE" = "native" ] || [ "$MODE" = "profile" ]; then
         EXTRA_SRC="ocean/impulse_wars/impulse_wars_api.c"
     fi
+elif [ "$ENV" = "pokemon" ]; then
+    SRC_DIR="ocean/$ENV"
+    bash "$SRC_DIR/build_engine.sh"
+    LINK_ARCHIVES+=("build/pokemon/libpokemon.a")
 elif [ "$ENV" = "webnav" ]; then
     SRC_DIR="ocean/$ENV"
     LINK_ARCHIVES+=("build/webnav/libwebnav.a")
@@ -298,7 +302,7 @@ if [ "$MODE" = "cpu" ]; then
     STANDALONE_SOURCE="src/puffercpu.c"
     STANDALONE_DEFINES=()
     case "$ENV" in
-        osrs_*|nethack)
+        osrs_*|nethack|pokemon)
             STANDALONE_SOURCE="$SRC_FILE"
             ;;
         *)

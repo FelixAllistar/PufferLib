@@ -115,11 +115,22 @@ recurrence is replaced with fixed hidden inputs to isolate decoder behavior.
 This does not qualify end-to-end Pokémon training. Default decoders leave the
 callback null; a Goofspiel four-bank GPU graph training smoke still passes.
 
-Not ready for training yet: semantic CUDA network integration, native adapter
-setup callbacks, state/core-reset and league/experiment workflows still need
-porting. `config/pokemon.ini` preserves the old profile for evaluation and is
-not a working 5.0 training config. Generic native/CPU trainer entry points
-explicitly fail during this stage. Do not substitute the generic MLP for the semantic model
+Native training now builds with `./build.sh pokemon puffer_pokemon --float`;
+run `./puffer_pokemon train`. The normal build also builds/links the pinned
+engine. `./build.sh pokemon pokemon_viewer --cpu` selects the semantic CPU
+evaluator, not the generic MLP viewer. Optional environment configuration and
+post-step hooks initialize the curriculum and complete resets after workers
+finish, before observations are uploaded. Core coverage requires one buffer,
+synchronous rollout, and recurrent carry; the config now reflects this and
+removes retired EMAg/PFSP/priority-replay keys.
+
+Local SM61 FP32 H16/L1 training completes 2,048 steps with graphs off/on,
+16 player rows, two CPU workers, a four-species core pool and legality auditing
+enabled. Drafts complete, rewards/losses are finite and a checkpoint is saved.
+This does not qualify default-scale performance or learning quality. Native
+named expert banks are explicitly blocked pending their loader port; state-bank
+training, curriculum-cursor checkpointing and full league/experiment workflows
+remain unfinished. Do not substitute the generic MLP for the semantic model
 or load old checkpoints through a different architecture. Full legacy source,
 generator scripts and experiment documentation remain in
 `archive/5c-before-unification-20260924` while these ports proceed.

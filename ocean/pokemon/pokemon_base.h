@@ -32,6 +32,9 @@ static inline void pk_native_configure(Ini* ini, const char* mode) {
     if (strcmp(mode,"train")) return;
     DictItem* item = dict_find(puf_ini_section(ini,"env",0),"native_league");
     if (strcmp(mode,"train") || !item || !item->str || !*item->str || !strcmp(item->str,"None")) return;
+#ifdef PUFFERLIB_BUILD_MAIN
+    assert(0 && "Pokemon named expert-bank loading is not yet ported; use native_league=None");
+#endif
     DictItem* fraction_option=dict_find(puf_ini_section(ini,"env",0),"expert_fraction");
     double fraction=fraction_option?fraction_option->value:1;
     if(!isfinite(fraction) || fraction<0 || fraction>1) {
