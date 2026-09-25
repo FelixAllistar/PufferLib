@@ -6,6 +6,19 @@ LDLIBS := $(BUILD)/libpokemon.a -lm
 CPPFLAGS := -I$(ROOT)/src -I$(ROOT)/raylib-5.5_linux_amd64/include
 RAYLIB := $(ROOT)/raylib-5.5_linux_amd64/lib/libraylib.a -lGL -lpthread -ldl -lrt -lm
 
+.PHONY: encoder-test
+encoder-test:
+	@mkdir -p $(BUILD)
+	$(CC) -O2 -std=c11 -I$(ROOT)/src -c tests/semantic_gpu_reference.c \
+		-o $(BUILD)/semantic_gpu_reference.o
+	$${CUDA_HOME:-/usr/local/cuda}/bin/nvcc -O2 --threads 2 -arch=$${NVCC_ARCH:-native} \
+		-std=c++17 -I$(ROOT) -I$(ROOT)/src -I$(ROOT)/vendor $(CPPFLAGS) \
+		-Xcompiler=-fopenmp,-Wno-narrowing --diag-suppress 2361 \
+		tests/test_encoder.cu $(BUILD)/semantic_gpu_reference.o $(RAYLIB) \
+		-lgomp -lcudart -lcublas -lcusolver -lcurand -lnccl -lnvidia-ml \
+		-o $(BUILD)/test_encoder
+	$(BUILD)/test_encoder
+
 .PHONY: engine test sanitize benchmark semantic-test semantic-legacy-test viewer adapter-test state-tools state-test core-test validate
 engine:
 	bash build_engine.sh

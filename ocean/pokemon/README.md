@@ -96,6 +96,19 @@ environment callbacks directly with metadata-only expert fixtures, not a 5.0
 training run. Removed legacy config keys exist only in the test fixture;
 native reset/league scheduling remains unported.
 
+The semantic CUDA encoder/decoder source is now ported to 5.0 tensor types.
+`make -C ocean/pokemon encoder-test` builds and runs an isolated FP32 component
+test against the preserved CPU model (three rows, four synthetic observation
+batches). It checks encoder outputs and all 168 action logits plus value.
+This does not yet qualify gradients, recurrent training, real-game GPU
+observations, CUDA graphs or BF16.
+
+The decoder needs the current observation to identify candidate moves/species.
+Upstream's decoder API only supplies the recurrent hidden state. The component
+test explicitly binds observations; the network is deliberately not registered
+with the native trainer until that integration is resolved. No shared-core
+changes were made for this source port.
+
 Not ready for training yet: semantic CUDA network integration, native adapter
 setup callbacks, state/core-reset and league/experiment workflows still need
 porting. `config/pokemon.ini` preserves the old profile for evaluation and is
