@@ -129,7 +129,7 @@ Local SM61 FP32 H16/L1 training completes 2,048 steps with graphs off/on,
 enabled. Drafts complete, rewards/losses are finite and a checkpoint is saved.
 This does not qualify default-scale performance or learning quality. Native
 named expert banks are explicitly blocked pending their loader port;
-curriculum-cursor checkpointing and full league/experiment workflows
+full league/experiment workflows
 remain unfinished. Do not substitute the generic MLP for the semantic model
 or load old checkpoints through a different architecture. Full legacy source,
 generator scripts and experiment documentation remain in
@@ -143,3 +143,19 @@ always disables snapshot resets and forced-core drafting, even when training
 config points to an unavailable bank; the regression test checks this without
 opening the bank. This is simulator/loading evidence, not policy strength or
 qualification of an existing user-collected bank.
+
+Native checkpoint saves now invoke Pokémon's metadata writer. Each `.bin`
+gets a `.bin.ini` with that snapshot's `core_next_assigned` and
+`core_next_drafted`; parent `config.ini` retains the latest config for semantic
+CPU evaluation. Transfer weights together with their metadata. To continue
+the curriculum, explicitly pass those two values as `env.core_start_assigned`
+and `env.core_start_drafted` alongside `base.load_model_path`, using the same
+core pool/seed and model dimensions. This is weight/curriculum continuation,
+not restoration of optimizer state, in-flight games or recurrent memory.
+Assigned-but-unfinished drafts are not replayed automatically.
+
+A native run with four checkpoint saves preserves earlier cursors (12 assigned)
+while the final snapshot records 18 assigned/12 drafted. The CPU semantic
+evaluator loads the final checkpoint and completes four games. A subsequent
+256-step native run starts from that explicit cursor and advances it. The
+metadata regression also verifies later saves do not overwrite earlier sidecars.

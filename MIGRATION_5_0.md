@@ -133,6 +133,16 @@ path and reports zero reset/core fractions. Adapter, input-contract and
 fixed-team tests pass, including the new evaluation configuration regression.
 This does not certify user banks, learning quality or curriculum checkpointing.
 
+Pokémon checkpoint follow-up wires the existing optional metadata hook after
+both native save sites (six guarded trainer lines, no weight-format changes).
+Environment code writes snapshot-specific `.bin.ini` files plus parent
+`config.ini`; tests ensure a later save does not replace an earlier cursor.
+Four native saves preserve assigned counts 12/12/12/18, with 12 completed
+drafts at the final snapshot. The semantic CPU evaluator loads that checkpoint
+and completes four games; a 256-step native continuation from explicit cursor
+18/12 succeeds. This resumes weights and the assignment schedule, not optimizer
+state, in-flight games or recurrent memory. Named expert-bank loading remains.
+
 - Finalized upstream base: `6ffa5b10dbbbe4d1e8288367c7d9d3acd3bad4a2`.
 - Qualified Kaggriculture runtime before unification: `1c30e3c2f`.
 - Custom environment/source inventory: `5c` at `036cf4251`.

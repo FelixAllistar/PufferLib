@@ -248,20 +248,22 @@ static inline void pk_checkpoint_config(const char* checkpoint, Ini* ini) {
         snprintf(value,sizeof(value),"%llu",(unsigned long long)pk_core_deck.drafted);
         puf_ini_set(puf_ini_section(ini,"env",0),"core_next_drafted",value);
     }
-    char path[4096], temporary[4100];
-    snprintf(path, sizeof(path), "%s", checkpoint);
-    char* slash = strrchr(path, '/');
-    if (!slash || (size_t)(slash - path) + 16 >= sizeof(path)) abort();
+    // Keep each snapshot's cursor; parent config remains the viewer's architecture metadata.
+    char paths[2][4096];
+    assert(snprintf(paths[0], sizeof(paths[0]), "%s.ini", checkpoint) < sizeof(paths[0]));
+    snprintf(paths[1], sizeof(paths[1]), "%s", checkpoint);
+    char* slash = strrchr(paths[1], '/');
+    assert(slash && (size_t)(slash - paths[1]) + 16 < sizeof(paths[1]));
     strcpy(slash + 1, "config.ini");
-    snprintf(temporary, sizeof(temporary), "%s.tmp", path);
-    FILE* fp = fopen(temporary, "w");
-    if (!fp) { perror("Pokemon checkpoint config"); exit(1); }
-    puf_ini_write(fp, ini);
-    int failed = ferror(fp);
-    if (fclose(fp) != 0) failed = 1;
-    if (failed || rename(temporary, path)) {
-        fprintf(stderr, "Could not save Pokemon checkpoint config %s\n", path);
-        exit(1);
+    for (int i = 0; i < 2; i++) {
+        char temporary[4100];
+        snprintf(temporary, sizeof(temporary), "%.4095s.tmp", paths[i]);
+        FILE* fp = fopen(temporary, "w");
+        assert(fp);
+        puf_ini_write(fp, ini);
+        assert(!ferror(fp));
+        assert(fclose(fp) == 0);
+        assert(rename(temporary, paths[i]) == 0);
     }
 }
 #define PUF_CHECKPOINT_HOOK(checkpoint, ini) pk_checkpoint_config(checkpoint, ini)
