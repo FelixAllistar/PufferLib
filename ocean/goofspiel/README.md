@@ -179,9 +179,22 @@ budget. Cycles are sampled candidates, not statistical significance claims.
 
 Build a current trainer: its `CUDA_EVAL` result now includes the already-computed
 match draw rate. Older binaries without that field are rejected. No match
-calculation or PPO/optimizer implementation changed. Ordinary rendered GPU
-evaluation still needs qualification: the host probe's close currently hits
-the GPU-vector free path; the population wrapper explicitly uses `--headless`.
+calculation or PPO/optimizer implementation changed. The population wrapper
+explicitly uses `--headless`.
+
+The GPU environment now handles the renderer's host-only agent-count probe
+without trying to free it as device memory. The GPU parity suite reproduces
+that init/close lifecycle before every vector creation. Its optional hidden
+Raylib window also verifies unchanged device environment bytes, a 980×276
+screenshot and clean window shutdown:
+
+```bash
+ocean/goofspiel/build/test_gpu build/goofspiel-render.png
+```
+
+Run after `make ... test-gpu`, with a working display. The screenshot was
+visually reviewed under WSL/Mesa. This is environment-renderer/lifecycle
+evidence, not full native interactive-viewer or BF16 qualification.
 
 Eight launcher contract tests and two real 1,024-step 64×1 member runs pass:
 initial seeds differ, weights update, frozen-bank shapes follow the learner,

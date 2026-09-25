@@ -7,7 +7,8 @@ void* managed(size_t bytes) {
     return ptr;
 }
 
-int main(void) {
+int main(int argc, char** argv) {
+    assert(argc == 1 || argc == 2);
     Ini ini = {};
     puf_ini_load_file(&ini, "config/default.ini");
     puf_ini_load_file(&ini, "config/goofspiel.ini");
@@ -22,6 +23,13 @@ int main(void) {
     cudaStream_t stream;
     assert(cudaStreamCreate(&stream) == cudaSuccess);
     for (int scenario = 0; scenario < 4; scenario++) {
+        // Native rendered evaluation probes agent count on the host before
+        // creating the GPU vector. Closing that probe must not cudaFree it.
+        Env probe = {};
+        puf_init(&probe, ek);
+        assert(probe.num_agents == 2 && gs_gpu.games == 0);
+        puf_close(&probe);
+        assert(cudaGetLastError() == cudaSuccess);
         int policies = scenario == 0 ? 1 : 5;
         int exact = scenario >= 2;
         dict_set(vk, "num_policies", policies);
@@ -131,7 +139,22 @@ int main(void) {
             cudaGraphExecDestroy(executable);
             cudaGraphDestroy(graph);
         }
+        if (argc == 2 && scenario == 3) {
+            SetConfigFlags(FLAG_WINDOW_HIDDEN);
+            puf_render(gpu);
+            assert(IsWindowReady());
+            puf_render(gpu);
+            Image screenshot = LoadImageFromScreen();
+            assert(screenshot.width == 980 && screenshot.height == 276);
+            assert(ExportImage(screenshot, argv[1]));
+            UnloadImage(screenshot);
+            Env rendered[rows / 2];
+            assert(cudaMemcpy(rendered, gpu, sizeof(rendered),
+                cudaMemcpyDeviceToHost) == cudaSuccess);
+            assert(memcmp(actual, rendered, sizeof(actual)) == 0);
+        }
         puf_close(gpu);
+        assert(!IsWindowReady());
         for (int i = 0; i < gs_exact_count; i++) {
             gs_exact_table_clear(gs_exact_tables + i);
         }

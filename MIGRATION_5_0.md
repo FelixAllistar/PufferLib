@@ -330,8 +330,12 @@ their final 5.0 implementations must not be overwritten by older copies.
   fixtures and two real native populations. It excludes EMAg sidecars and
   does not modify training or promote policies. A two-line shared print change
   adds already-computed match draw rate to `CUDA_EVAL`; match calculations and
-  losses/optimizers are unchanged. Rendered GPU evaluation separately exposes
-  an unfinished host-probe close path; headless population evaluation passes.
+  losses/optimizers are unchanged. The separately exposed GPU host-probe close
+  bug is now fixed inside the environment: a regression reproduces the old
+  assertion, and the fix passes all 65,536 parity transitions. An optional hidden
+  window test verifies byte-identical device state, screenshot export and clean
+  close; its WSL/Mesa screenshot was reviewed. Full native interactive viewing
+  and BF16 remain unqualified.
 - Kaggriculture's ignored `parity.py` is now ported, sharing the canonical
   replay bridge rather than duplicated ABI definitions. All scripted/randomized,
   animal, crop-lifetime, locked-worker and market-hinge checks pass against

@@ -131,6 +131,10 @@ void puf_render(Env* envs) {
 }
 
 void puf_close(Env* envs) {
+    // The native renderer first initializes/closes a host-only agent-count probe.
+    if (gs_gpu.games == 0) {
+        return;
+    }
     if (gs_gpu.viewer.client) {
         CloseWindow();
         free(gs_gpu.viewer.client);
