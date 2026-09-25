@@ -92,7 +92,6 @@ set, without enforcing `--minimum-distance`. Groups use transitive similarity,
 not an all-pairs distance bound. This does not modify training or a live league.
 Unit/CLI tests and a native-checkpoint report-to-selection smoke pass.
 
-Still pending: exploitability-driven sweep orchestration.
 The legacy offline response-pool writer/loader passes a native-checkpoint
 round-trip test: populate a three-slot reservoir with seven responses, save
 and restore all table bytes, continue eight more updates identically, then
@@ -134,9 +133,38 @@ GOOFSPIEL_EXACT_GPU_TRAIN_BINARY=./puffer_goofspiel_gpu \
     python -m pytest -q ocean/goofspiel/tests/test_native_training.py
 ```
 
-Do not interpret a standard
-upstream sweep's return metric as exploitability. The old robust-training
-workflow remains preserved in `archive/5c-before-unification-20260924`.
+### Exact-exploitability sweeps
+
+The environment publishes `exploitability` (latest saved checkpoint) and
+`best_exploitability` (minimum across checkpoints saved in this run). Select
+either metric explicitly; ordinary `score` is still game points, not exact
+exploitability. Smaller is better. The checkpoint hook measures the metric
+even when exact-response opponents are disabled, without creating table pools.
+When they are enabled, it reuses the response solver's result.
+
+```bash
+./puffer_goofspiel_gpu sweep \
+    --sweep.metric=best_exploitability --sweep.goal=minimize \
+    --sweep.downsample=1 --sweep.max_runs=40 --sweep.gpus=1 \
+    --base.eval_episodes=0 --selfplay.eval_games=0 --selfplay.eval_bot_games=0
+```
+
+Disable sampled post-training evaluations for this metric: they evaluate a
+different objective. A single returned metric avoids bin-averaging checkpoint
+measurements. `base.checkpoint_interval` controls measurement frequency, so
+use the same interval when comparing trials. `Exact checkpoint:` output names
+each measured model; models are retained, not automatically promoted. A resumed
+run measures its initial checkpoint afresh rather than importing a prior best.
+For standalone checkpoint evaluation use `exploit_gpu`, not `puffer eval`
+with an exact metric selected.
+
+The Goofspiel sweep ranges include its starting horizon/lambda/clip values and
+cap width at the solver's supported 256; other ranges remain upstream's.
+This restores the objective, not the old EMAg optimizer or its search space.
+Four two-trial native sweep tests compare Protein's returned latest/best scores
+against the standalone solver on every saved checkpoint, both with and without
+exact-response opponents. Enable them with `GOOFSPIEL_EXACT_GPU_TRAIN_BINARY`
+and `GOOFSPIEL_EXACT_GPU` when running `test_native_training.py`.
 
 Verification: core/adapter/exact-solver tests pass with ASan/UBSan; a bounded
 4,096-step async FP32 training run with four frozen banks completes. The

@@ -72,6 +72,9 @@ static int gs_exact_count;
 static uint64_t gs_exact_seen;
 static int gs_exact_restored;
 static float gs_exact_current_prob;
+static int gs_measure_exploitability;
+static double gs_exploitability = NAN;
+static double gs_best_exploitability = INFINITY;
 
 #if PUF_BACKEND == PUF_GPU
 struct GSDeviceExact {
@@ -272,6 +275,10 @@ Env* my_vec_init(int* size, int* starts, int* counts, Dict* vk, Dict* ek) {
 }
 
 void puf_log(Log* log, Dict* out) {
+    if (isfinite(gs_exploitability)) {
+        dict_set(out, "exploitability", gs_exploitability);
+        dict_set(out, "best_exploitability", gs_best_exploitability);
+    }
     dict_set(out, "perf", log->perf);
     dict_set(out, "score", log->score);
     dict_set(out, "episode_return", log->episode_return);
@@ -431,19 +438,38 @@ void gs_configure(Ini* ini, const char* mode) {
     gs_exact_count = 0;
     gs_exact_seen = 0;
     gs_exact_restored = 0;
+    gs_exploitability = NAN;
+    gs_best_exploitability = INFINITY;
+    const char* metric = puf_ini_get_str(ini, "sweep", "metric");
+    if (strncmp(metric, "env/", 4) == 0) {
+        metric += 4;
+    }
+    gs_measure_exploitability = strcmp(metric, "exploitability") == 0
+        || strcmp(metric, "best_exploitability") == 0;
     gs_exact_training = strcmp(mode, "train") == 0;
+    if (gs_measure_exploitability) {
+        assert(gs_exact_training && "use the standalone solver for exact checkpoint evaluation");
+        assert(puf_ini_get(ini, "base", "eval_episodes") == 0);
+        assert(puf_ini_get(ini, "selfplay", "eval_games") == 0);
+        assert(puf_ini_get(ini, "selfplay", "eval_bot_games") == 0);
+        assert(puf_ini_get(ini, "sweep", "downsample") == 1);
+        assert(strcmp(puf_ini_get_str(ini, "sweep", "goal"), "minimize") == 0);
+    }
     if (!gs_exact_training) {
         // Ordinary evaluation uses one policy; match setup subsequently assigns two.
         puf_ini_put(ini, "vec.num_policies", "1");
         puf_ini_put(ini, "vec.hist_policy_percent", "0");
         return;
     }
-    if (!puf_ini_get(ini, "env", "exact_exploiter")) {
+    int exact = puf_ini_get(ini, "env", "exact_exploiter");
+    if (!exact && !gs_measure_exploitability) {
         return;
     }
-    assert(puf_ini_get(ini, "selfplay", "enabled"));
-    int banks = puf_ini_get(ini, "env", "exact_exploiter_banks");
-    assert(banks > 0 && banks < puf_ini_get(ini, "vec", "num_policies"));
+    if (exact) {
+        assert(puf_ini_get(ini, "selfplay", "enabled"));
+        int banks = puf_ini_get(ini, "env", "exact_exploiter_banks");
+        assert(banks > 0 && banks < puf_ini_get(ini, "vec", "num_policies"));
+    }
     assert(puf_ini_get(ini, "env", "information") == GS_INFO_PERFECT);
     assert(GS_NUM_CARDS <= GS_EXACT_MAX_CARDS);
 }
@@ -462,21 +488,34 @@ void gs_load_hook(const char* checkpoint, Ini* ini) {
 #define PUF_LOAD_HOOK(checkpoint, ini) gs_load_hook(checkpoint, ini)
 
 void gs_checkpoint_hook(const char* checkpoint, Ini* ini) {
-    if (!gs_exact_enabled) {
+    if (!gs_exact_enabled && !gs_measure_exploitability) {
         return;
     }
-    if (gs_exact_restored) {
+    double exploitability = NAN;
+    if (!gs_exact_enabled || gs_exact_restored) {
         gs_exact_restored = 0;
+        if (gs_measure_exploitability) {
+            exploitability = gs_cuda_exploit(checkpoint, ini, NULL, NULL);
+        }
     } else {
         uint64_t nodes = 0;
         double milliseconds = 0;
-        double exploitability = gs_cuda_pool_response(checkpoint, ini,
+        exploitability = gs_cuda_pool_response(checkpoint, ini,
             gs_exact_tables, &gs_exact_count, gs_exact_history, &gs_exact_seen,
             &nodes, &milliseconds);
         printf("Exact response: exploitability=%.9f pool=%d/%d seen=%llu "
             "nodes=%llu milliseconds=%.3f\n", exploitability, gs_exact_count,
             gs_exact_history, (unsigned long long)gs_exact_seen,
             (unsigned long long)nodes, milliseconds);
+    }
+    if (isfinite(exploitability)) {
+        gs_exploitability = exploitability;
+        gs_best_exploitability = fmin(gs_best_exploitability, exploitability);
+        printf("Exact checkpoint: exploitability=%.9f best_exploitability=%.9f path=%s\n",
+            exploitability, gs_best_exploitability, checkpoint);
+    }
+    if (!gs_exact_enabled) {
+        return;
     }
     gs_exact_pool_save(checkpoint, gs_exact_tables, gs_exact_count,
         gs_exact_history, gs_exact_seen);
