@@ -61,6 +61,15 @@ architecture and game rules. The additional behavior test checks identical
 policies, symmetry, bounds, square-root consistency, and CPU exploitability
 agreement. This report alone is not population selection or PSRO.
 
+Use `scripts/goofspiel_behavior.py REPORT.tsv --strategy=farthest --max-policies=16`
+to group similar policies and select representatives. It writes `_groups.tsv`
+and `_selected.tsv` beside the report, replacing those outputs if reused.
+`best` orders by lowest exploitability subject to minimum distance; `farthest`
+starts with the least exploitable policy and maximizes distance to the selected
+set, without enforcing `--minimum-distance`. Groups use transitive similarity,
+not an all-pairs distance bound. This does not modify training or a live league.
+Unit/CLI tests and a native-checkpoint report-to-selection smoke pass.
+
 Still pending: GPU simulation, trainer exact-response pool refresh and
 checkpoint persistence, and exploitability-driven sweep orchestration.
 The legacy offline response-pool writer/loader passes a native-checkpoint
