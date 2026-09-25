@@ -79,11 +79,28 @@ and initial-opponent settings plus checkpoint documentation. Other non-ocean
 changes are environment configs, assets, tools, tests, TUI and documentation.
 No old custom optimizer or loss implementation is included in this diff.
 
-The proposed generic GPU setup callback is **not part of this committed
-audit**: it remains an uncommitted replacement for the existing Kaggriculture
-special case, pending user approval. Pokémon observation-aware decoder wiring
-and continuous legacy population retention also remain unfinished. Counts are
+The generic GPU setup callback was not part of this historical committed
+audit. The user subsequently approved it and Pokémon observation binding,
+and declined PFSP restoration. Counts are
 source-diff evidence, not performance or learning-quality qualification.
+
+### Approved GPU setup port (2026-09-25)
+
+Commit `1acc12528` replaces the Kaggriculture-specific setup call with optional
+`PUF_GPU_SETUP` / `puf_gpu_setup`, passing the mask buffer and policy layout.
+Mask and player-assignment logic remains inside the environment. Kaggriculture
+five-policy CPU/GPU adapter parity passes 23,040 transitions each with graphs
+off/on. No loss or optimizer implementation changed.
+
+Goofspiel uses that hook for legal-card masks and policy-grouped IO, sharing
+CPU policy assignment. Its GPU test covers 32,768 game transitions, exact
+observations/masks/rewards/terminals and final state/log/RNG equality, one/five
+policies, non-default stream and vector recreation. CPU tests and ASan/UBSan
+pass; FP32 GPU native training completes 4,096 steps with graphs off/on and
+four frozen banks. Exact-response training orchestration remains unfinished.
+Pokémon native observation binding is approved but still to be implemented.
+Legacy continuous PFSP is explicitly excluded by the user; fixed saved
+opponents and external evaluation remain, not PFSP retention/resampling.
 
 - Finalized upstream base: `6ffa5b10dbbbe4d1e8288367c7d9d3acd3bad4a2`.
 - Qualified Kaggriculture runtime before unification: `1c30e3c2f`.
@@ -442,7 +459,8 @@ The 32 fork-modified configuration paths have these dispositions:
 - `config/bomberman_league.ini` listed one champion. Its path is preserved in
   `ocean/bomberman/initial_opponents.txt`, with transfer/hash instructions in
   the environment README. Fixed-opponent training is qualified; permanent
-  retention in a rotating PFSP pool is not equivalent and remains pending.
+  retention in a rotating PFSP pool is not equivalent and was explicitly
+  declined by the user; it is no longer a conversion requirement.
 - `config/kaggriculture_clean.ini` and `config/kaggriculture_long.ini` are
   historical experiment presets containing legacy trainer keys and old
   checkpoint paths. Recover them from the archive ref for provenance; do not

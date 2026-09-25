@@ -16,8 +16,11 @@ make -C ocean/goofspiel test sanitize viewer exploit
 ```
 
 Run commands from the repository root. Omit `--float` on GPUs supporting the
-default precision. This trainer uses CPU simulation and GPU inference/PPO;
-the GPU-simulation adapter is still pending. The standalone evaluator uses
+default precision. This trainer uses CPU simulation and GPU inference/PPO.
+For GPU simulation, build with `./build.sh goofspiel puffer_goofspiel_gpu --cu --float`.
+The GPU adapter uses the optional environment setup hook to bind legal-card
+masks and group player rows by policy. Keep `vec.num_buffers=1` for GPU simulation.
+The standalone evaluator uses
 CPU inference and supports perfect-information, zero-sum games up to five
 cards (the default compiled observation/action ABI is four cards).
 
@@ -25,6 +28,14 @@ The config retains the old ordinary gameplay and supported PPO settings, with
 upstream selfplay-pool keys. Old EMAg, priority-replay and epoch-sampling
 settings are not imported into the new optimizer. This is not an identical
 training algorithm to the old fork.
+
+`make -C ocean/goofspiel test-gpu NVCC=/usr/local/cuda/bin/nvcc CUDA_ARCH=sm_61`
+checks 32,768 game transitions across single-policy and four-frozen-bank
+layouts, on a non-default CUDA stream. Observations, legal masks, rewards,
+terminals, final state, logs and RNG match host execution exactly. CPU tests
+and sanitizers pass; native FP32 GPU training completes 4,096 steps with graphs
+off/on and four frozen banks. These are correctness/smoke checks, not learning
+quality, performance scaling, BF16 or interactive-renderer qualification.
 
 The standalone CUDA exact evaluator is also available without any trainer
 or GPU-simulator hook changes:

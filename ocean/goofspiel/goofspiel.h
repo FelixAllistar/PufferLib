@@ -187,15 +187,26 @@ void puf_init(Env* env, Dict* kwargs) {
 }
 
 #define MY_VEC_INIT
+void gs_assign_policies(Env* envs, int games, Dict* vk) {
+    int policies = dict_get(vk, "num_policies");
+    int frozen_start = games - (int)(games * dict_get(vk, "hist_policy_percent"));
+    for (int e = 0; e < games; e++) {
+        int bank = policies > 1 && e >= frozen_start
+            ? 1 + (e - frozen_start) % (policies - 1) : 0;
+        envs[e].tag = bank;
+        for (int p = 0; p < envs[e].num_agents; p++) {
+            envs[e].agents[p].policy = p == 0 ? 0 : bank;
+        }
+    }
+}
+
 Env* my_vec_init(int* size, int* starts, int* counts, Dict* vk, Dict* ek) {
     int total = dict_get(vk, "total_agents");
     int buffers = dict_get(vk, "num_buffers");
     int players = dict_get(ek, "num_players");
-    int policies = dict_get(vk, "num_policies");
     assert(total % (players * buffers) == 0);
     int games = total / players;
     int per_buffer = games / buffers;
-    int frozen_start = per_buffer - (int)(per_buffer * dict_get(vk, "hist_policy_percent"));
     Env* envs = (Env*)calloc(games, sizeof(Env));
     for (int buf = 0; buf < buffers; buf++) {
         starts[buf] = buf * per_buffer;
@@ -205,13 +216,8 @@ Env* my_vec_init(int* size, int* starts, int* counts, Dict* vk, Dict* ek) {
             Env* env = envs + index;
             env->rng = index;
             puf_init(env, ek);
-            int bank = policies > 1 && e >= frozen_start
-                ? 1 + (e - frozen_start) % (policies - 1) : 0;
-            env->tag = bank;
-            for (int p = 0; p < players; p++) {
-                env->agents[p].policy = p == 0 ? 0 : bank;
-            }
         }
+        gs_assign_policies(envs + starts[buf], per_buffer, vk);
     }
     *size = games;
     return envs;
@@ -230,6 +236,7 @@ void puf_log(Log* log, Dict* out) {
     dict_set(out, "draw_rate", log->draw_rate);
 }
 
+#if PUF_BACKEND == PUF_CPU
 void puf_reset(Env* env) {
     for (int p = 0; p < env->num_agents; p++) {
         env->agents[p].rewards[0] = 0.0f;
@@ -237,6 +244,7 @@ void puf_reset(Env* env) {
     }
     gs_reset_state(env, gs_exact_count, gs_exact_current_prob);
 }
+#endif
 
 GS_ENV_HD static inline void gs_log_game(Env* env, const float* returns) {
     int max_score = -1;
@@ -343,6 +351,7 @@ GS_ENV_HD static inline int gs_transition(Env* env, const uint8_t* response,
     return 1;
 }
 
+#if PUF_BACKEND == PUF_CPU
 void puf_step(Env* env) {
     const GSExactTable* table = gs_exact_tables + env->exact_table;
     int exact = gs_exact_enabled && env->exact_table < gs_exact_count
@@ -364,8 +373,9 @@ void puf_close(Env* env) {
         env->client = NULL;
     }
 }
+#endif
 
-void puf_render(Env* env) {
+void gs_render(Env* env) {
     if (!env->client) {
         env->client = (Client*)calloc(1, sizeof(Client));
         env->client->width = 980;
@@ -418,3 +428,9 @@ void puf_render(Env* env) {
     }
     EndDrawing();
 }
+
+#if PUF_BACKEND == PUF_CPU
+void puf_render(Env* env) {
+    gs_render(env);
+}
+#endif

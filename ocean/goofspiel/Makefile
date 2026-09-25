@@ -7,7 +7,7 @@ CPPFLAGS := -D_POSIX_C_SOURCE=200809L -I$(ROOT) -I$(ROOT)/src -I$(ROOT)/vendor -
 CFLAGS ?= -O2 -g -std=c11 -Wall -Wextra -Wno-unused-function -Wno-unused-parameter
 LDLIBS := $(ROOT)/raylib-5.5_linux_amd64/lib/libraylib.a -lGL -lm -lpthread -ldl -lrt
 
-.PHONY: test sanitize clean viewer exploit exploit-gpu
+.PHONY: test sanitize clean viewer exploit exploit-gpu test-gpu
 
 $(BUILD):
 	mkdir -p $(BUILD)
@@ -21,6 +21,12 @@ exploit: | $(BUILD)
 exploit-gpu: | $(BUILD)
 	$(NVCC) -O2 -arch=$(CUDA_ARCH) -std=c++17 -I$(ROOT)/src \
 		goofspiel_exploit.cu -lcublas -o $(BUILD)/exploit_gpu
+
+test-gpu: | $(BUILD)
+	$(NVCC) -O2 -arch=$(CUDA_ARCH) -std=c++17 $(CPPFLAGS) \
+		-Xcompiler=-Wno-narrowing --diag-suppress=2361 tests/test_gpu.cu \
+		$(LDLIBS) -o $(BUILD)/test_gpu
+	cd $(ROOT) && ocean/goofspiel/$(BUILD)/test_gpu
 
 $(BUILD)/test_exact_pool: tests/test_exact_pool.cu goofspiel_exploit.cu | $(BUILD)
 	$(NVCC) -O2 -arch=$(CUDA_ARCH) -std=c++17 -I$(ROOT)/src \
