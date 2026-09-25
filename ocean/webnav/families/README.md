@@ -1,9 +1,9 @@
 # WebNav family infrastructure: 5.0 conversion
 
 The ABI v2 loader, stock Bend transport, serialized incremental builder and
-resource guards are preserved from `5c`. The panel family and shared public
+resource guards are preserved from `5c`. The panel/menu families and shared public
 scripted runner are ported. Other task implementations and the registry are
-still pending; their controller headers are retained as runner dependencies,
+still pending; other controller headers are retained as runner dependencies,
 not evidence that those families are qualified. The three-task pilot is not
 a replacement for the task families.
 
@@ -18,11 +18,10 @@ Bun. The default compiler wrapper reads Bend from `$HOME/.bend` (`BEND_HOME`)
 and Bun from `$HOME/.bun/bin/bun` (`BUN_BIN`). Generated files and libraries
 remain under `build/webnav/families/`, not in Git.
 
-The cached Bend guide required by `AGENTS.md` is currently preserved at
-`/home/felix/puffertank/pufferlib/build/webnav/task-expansion/bend-guide-families.txt`.
-It must be carried into the canonical checkout's corresponding build path
-before the old checkout is retired; dependency/source provenance remains part
-of the full WebNav asset audit.
+The cached Bend guide required by `AGENTS.md` is preserved in both local
+checkouts at `build/webnav/task-expansion/bend-guide-families.txt`. A new clone
+can obtain the guide with `bend guide` using the pinned stock 2.0.6 compiler;
+dependency/source provenance remains part of the full WebNav asset audit.
 
 Qualification on 2026-09-24:
 

@@ -1,0 +1,58 @@
+{
+  "date": "2026-09-23",
+  "compiler": "stock Bend 2.0.6 CPU",
+  "laws": 13,
+  "native_cases": 833,
+  "browser": [
+    {
+      "task": "click-menu",
+      "episodes": 24,
+      "state_reward_visibility_conformance": "PASS",
+      "preset": "matched original instances; settled jQuery hover/click; controlled clock"
+    },
+    {
+      "task": "click-menu-2",
+      "episodes": 24,
+      "state_reward_visibility_conformance": "PASS",
+      "preset": "matched original instances; settled jQuery hover/click; controlled clock"
+    }
+  ],
+  "public_scripted": [
+    {
+      "task": "click-menu",
+      "episodes": 1000,
+      "successes": 1000,
+      "timeouts": 0,
+      "actions": 2166,
+      "controller": "public-scripted; not learned RL"
+    },
+    {
+      "task": "click-menu-2",
+      "episodes": 1000,
+      "successes": 1000,
+      "timeouts": 0,
+      "actions": 2583,
+      "controller": "public-scripted; not learned RL"
+    }
+  ],
+  "source_sha256": {
+    "Generate.bend": "3d932c746619c58dad40a0fd9c479144b3d6cdabd1bc3673ad6f7acbb0b7f7d9",
+    "LAWS.bend": "42d4d296ffd7f253d9e174a844cb0b46c6aa219a0482caf45e544587112b9979",
+    "Main.bend": "6aec06db526e6994080bea7131894ba797e0e3521567b928b9940465e12aa163",
+    "Model.bend": "8e58089ebeff4982647fad28c698ce33a35fa85b7340c85788a057bbd64aba73",
+    "PROOF.bend": "fc43aa451a6e341b4223c71384871fe896a9f354380124d9096c111dec1df29f",
+    "Wire.bend": "d94555969da9f8bf7d471a8cadca28bf8341ed91073918eb684db46a63c0d8dd",
+    "bridge.c": "b319266672f088205f79d3a25f32ef941f466b56a7c5caadf23d69e980c3cca0",
+    "browser.js": "49e029116b2815f697a3d0fad1fa5d8cc85425658412a6a0fa61c82dbeade513",
+    "browser_oracle.c": "08c9118b2dfcc576bf1cb1ad296f1fa4b7fbd3da14095af98e11f7e47bb26b1f",
+    "family_api.c": "e35c87e8254be78f5e2dafb2ca10a34bdc4a7b6c7175094cdfa0dca6383e6bc2",
+    "public_controller.h": "c038e10748ebd973b1e9fcb99940940cc417095b551b0d3074656cb164b61d84",
+    "test_menus.c": "39bbb3b15812eaaffae3d7a43cb137904009b6baaae4ef4c9968af3bb90fdc07"
+  },
+  "limitations": [
+    "Settled jQuery event preset (350ms real settling with controlled logical clock); no animation-in-flight/scheduler parity.",
+    "Bounded generated trees and labels, not original RNG/distribution parity.",
+    "Public actionable-node projection and simplified geometry, not full DOM/AX fidelity.",
+    "Family-v2 runtime not yet wired into legacy twelve-task PPO profile."
+  ]
+}
