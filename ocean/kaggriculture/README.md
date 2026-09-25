@@ -405,8 +405,29 @@ Local tests cover both sampling variants, unpacking, loading/executing without
 overwrite protection. They use a small zero-weight model and native-generated
 observations, not a learned policy or the official runner. Build on compatible
 Linux x86-64: the local shared library's system ABI is not yet qualified in the
-official Kaggle container. Official-runtime validation and selected-model
+official Kaggle container. Competition-container validation and selected-model
 evaluation are required before considering these archives competition-ready.
+
+The local official Python package (`kaggle-environments==1.32.7`, Kaggriculture
+source SHA256 `bc8a54879ef02c7ea64b8b333d6a976f0ea65c4949149d01f463f23bccee653e`)
+does complete eight full 720-frame file-runner games: deterministic/stochastic
+archives, seeds 7/42 and both seats versus pass. Both players finish `DONE`,
+without agent errors. These use the small zero-weight test checkpoint, not a
+champion; they establish loading/observation compatibility, not policy strength
+or equivalence to whatever package the competition currently runs.
+
+To test an unpacked archive in a uv environment containing that pinned package:
+
+```sh
+uv run --no-project python ocean/kaggriculture/submission/test_entity_kaggle.py \
+    UNPACKED_ARCHIVE_DIRECTORY --runner
+```
+
+Omit `--runner` for direct calls using the package's source loader and per-action
+timing. Both paths run both seats/seeds, verify packaged file hashes and record
+the installed version and environment-source hash. Neither uploads anything or
+changes the archive's `official_runtime_verified=false` metadata: local success
+does not certify the hosted competition runtime.
 
 ## Shared-code boundary
 

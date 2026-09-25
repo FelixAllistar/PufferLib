@@ -22,7 +22,11 @@ selected learned-checkpoint qualification remain unfinished; the oracle is
 test-only. Local archive packaging now validates explicit canonical config and
 checkpoint shape, records hashes, supports deterministic/stochastic sampling and
 refuses overwrite. Both variants load without `__file__` and return actions in
-local native-snapshot tests. Official container ABI and execution remain unproven.
+local native-snapshot tests. The installed official Python package 1.32.7 also
+completes eight full file-runner games (both seats, seeds 7/42 and both sampling
+modes) with the zero-weight fixture. This is local package compatibility, not
+policy-quality evidence. Hosted competition container ABI/execution and selected
+learned-checkpoint qualification remain unproven.
 
 Canonical repository: `https://github.com/FelixAllistar/PufferLib.git`.
 Canonical development branch: `5.0`, published on GitHub. Further ports and
