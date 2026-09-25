@@ -16,6 +16,16 @@ $(BUILD)/evaluate: $(EVAL_SOURCES) policy.h cdp.h observation.h $(BUILD)/libwebn
 browser-test: evaluator
 	bash tests/browser_cases.sh
 
+.PHONY: dom-test
+DOM_SOURCES := tests/test_dom.c dom.c cdp.c $(ROOT)/vendor/cJSON.c
+
+$(BUILD)/test_dom: $(DOM_SOURCES) dom.h cdp.h web/dom_snapshot.js
+	mkdir -p $(BUILD)
+	$(CC) $(CFLAGS) $(INCLUDES) $(DOM_SOURCES) -lm -o $@
+
+dom-test: $(BUILD)/test_dom
+	cd $(ROOT) && build/webnav/test_dom
+
 bridge:
 	bash build.sh
 

@@ -69,7 +69,24 @@ conformance for 32 episodes; its deterministic native action/state traces
 match legacy CPU inference byte-for-byte across 300 episodes. This does not
 establish floating-point logit parity or trained policy quality.
 
-Remaining policy workflow helpers, MiniWoB families and WebNav DOM remain
+All five existing standalone MiniWoB families and the coverage registry are
+ported under `families/`; their qualification is documented there. Remaining
+policy workflow helpers and the legacy MiniWoB training integration are
 separate pending ports; none are replaced by this smaller pilot.
 Family builds have their own stricter serialized build rules and must not use
 this pilot build command.
+
+## Public DOM observations
+
+The existing DOM-v2 projection and C parser are preserved in `web/dom_snapshot.js`
+and `dom.c`. This is a bounded public observation, not a complete browser
+accessibility tree: at most 128 nodes, with explicit omitted/truncated counts,
+four observation-quality tiers, and opt-in scopes for external widget popups.
+It is not yet the converted WebNav DOM training environment or encoder.
+
+After browser setup, run `make -C ocean/webnav dom-test` from the repository
+root. `WEBNAV_CHROME` can select an existing browser. The test uses only a
+locally constructed page and checks roles, label provenance, whitespace,
+hidden-text exclusion, control priority, table relationships, popup scoping,
+and malformed-schema rejection. Do not use the unsandboxed CDP launcher on
+untrusted sites.
