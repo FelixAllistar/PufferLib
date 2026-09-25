@@ -133,6 +133,24 @@ one and four workers: three clears, best 1,605 frames, mean 1,661 frames.
 The action-layout/sampling and metric-ordering unit tests also pass. This
 standalone panel is not yet connected to native Protein sweep scoring.
 
+## Recreating the practice tape
+
+```sh
+make -C ocean/retro capture
+./build/retro/capture_practice /path/to/parent.bin /path/to/new.inputs
+```
+
+This runs the parent from the ordinary 1-1 start with the original seeded
+sampled-action stream, recording real controller inputs until the first
+return-pipe black frame. It never edits ROM RAM and refuses an existing output
+path. The parent must match `config/retro.ini`'s network architecture and must
+actually reach the pipe; an arbitrary practice-trained model may not.
+
+Qualification used the preserved `sweep_1790050031940_0012` parent: the resulting
+823-frame tape matches `practice/pipe_exit.inputs` byte-for-byte. Its capture
+state is TIME 376, routine 2, bus phase 19 and X 208. Replay files contain no
+ROM bytes; their header binds them to the verified cartridge fingerprint.
+
 ## Remaining conversion
 
 Interactive visual qualification, BF16 qualification and automatic speed
@@ -142,6 +160,11 @@ remain in `archive/5c-before-unification-20260924`; their old CLI/build commands
 are not instructions for this 5.0 checkout. The network port adds only the
 standard custom-encoder registration to `src/ocean.cu`; it changes no shared
 loss, optimizer or rollout logic.
+
+Upstream's trainer has no equivalent of the legacy `PUF_SWEEP_SCORE` callback.
+Connecting the standalone speed panel to Protein therefore needs a separately
+reviewed integration decision; ordinary training scores are not substitutes
+for this fixed-panel speed objective.
 
 QuickNES-derived source retains its original copyright notices and LGPL-2.1+
 terms; a license copy is in `nes_emu/COPYING`. Individual third-party files

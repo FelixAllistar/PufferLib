@@ -12,7 +12,11 @@ INCLUDES := -I$(ROOT)/src -I$(ROOT)/raylib-5.5_linux_amd64/include -I. -Ines_emu
 LDLIBS := $(ROOT)/raylib-5.5_linux_amd64/lib/libraylib.a -lGL -ldl -lm -pthread -fopenmp
 
 .PHONY: library batch-library viewer test batch-test resolution policy-test policy-legacy-test encoder-test
-.PHONY: panel panel-test
+.PHONY: panel panel-test capture
+capture: $(BUILD)/capture_practice
+$(BUILD)/capture_practice: capture_practice.cpp retro_sweep_config.h retro.h $(BUILD)/retro_policy_api.o $(BATCH)/libquicknes_batch.a resolution
+	$(CXX) $(CXXFLAGS) $(INCLUDES) $< $(BUILD)/retro_policy_api.o \
+		$(BATCH)/libquicknes_batch.a $(LDLIBS) -o $@
 panel-test:
 	@mkdir -p $(BUILD)
 	$(CXX) -O2 -std=c++17 -I$(ROOT)/src tests/test_panel.cpp -o $(BUILD)/test_panel
