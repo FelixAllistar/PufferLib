@@ -1,11 +1,13 @@
 ROOT := ../..
 BUILD := build
 CC := clang
+NVCC ?= nvcc
+CUDA_ARCH ?= native
 CPPFLAGS := -D_POSIX_C_SOURCE=200809L -I$(ROOT) -I$(ROOT)/src -I$(ROOT)/vendor -I$(ROOT)/raylib-5.5_linux_amd64/include
 CFLAGS ?= -O2 -g -std=c11 -Wall -Wextra -Wno-unused-function -Wno-unused-parameter
 LDLIBS := $(ROOT)/raylib-5.5_linux_amd64/lib/libraylib.a -lGL -lm -lpthread -ldl -lrt
 
-.PHONY: test sanitize clean viewer exploit
+.PHONY: test sanitize clean viewer exploit exploit-gpu
 
 $(BUILD):
 	mkdir -p $(BUILD)
@@ -15,6 +17,10 @@ viewer: | $(BUILD)
 
 exploit: | $(BUILD)
 	$(CC) $(CPPFLAGS) $(CFLAGS) goofspiel_exploit.c $(LDLIBS) -o $(BUILD)/exploit
+
+exploit-gpu: | $(BUILD)
+	$(NVCC) -O2 -arch=$(CUDA_ARCH) -std=c++17 -I$(ROOT)/src \
+		goofspiel_exploit.cu -lcublas -o $(BUILD)/exploit_gpu
 
 $(BUILD)/test_%: tests/test_%.c goofspiel.h goofspiel_core.h goofspiel_obs.h goofspiel_exploit.c goofspiel_exploit.h | $(BUILD)
 	$(CC) $(CPPFLAGS) $(CFLAGS) $< $(LDLIBS) -o $@
