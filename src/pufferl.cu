@@ -3233,6 +3233,9 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
         snprintf(initial_checkpoint, sizeof(initial_checkpoint),
             "%s/%016ld.bin", checkpoint_dir, pufferl->global_step);
         puf_save_weights(pufferl, initial_checkpoint);
+#ifdef PUF_CHECKPOINT_HOOK
+        PUF_CHECKPOINT_HOOK(initial_checkpoint, ini);
+#endif
         selfplay.num_hist = pufferl->num_policies - 1;
         assert(selfplay.num_hist > 0 && selfplay.num_hist <= SELFPLAY_MAX_HIST
             && "selfplay requires num_policies in 2..SELFPLAY_MAX_HIST+1");
@@ -3328,6 +3331,9 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
                 "%s/%016ld.bin", checkpoint_dir, pufferl->global_step);
             if (ctx->artifact_owner || use_selfplay) {
                 puf_save_weights(pufferl, saved_checkpoint);
+#ifdef PUF_CHECKPOINT_HOOK
+                PUF_CHECKPOINT_HOOK(saved_checkpoint, ini);
+#endif
             }
             if (ctx->artifact_owner) {
                 snprintf(final_checkpoint, sizeof(final_checkpoint),
