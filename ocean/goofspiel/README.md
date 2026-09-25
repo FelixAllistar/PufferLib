@@ -48,10 +48,18 @@ not been qualified. Exact enumeration grows rapidly with game size.
 
 Still pending: GPU simulation, trainer exact-response pool refresh and
 checkpoint persistence, and exploitability-driven sweep orchestration.
-The CUDA source preserves the legacy offline response-pool writer/loader,
-but its persistence path has not yet been qualified on this port. Its
-sidecar format does not fingerprint every game-rule setting; do not reuse
-response tables across different rules.
+The legacy offline response-pool writer/loader passes a native-checkpoint
+round-trip test: populate a three-slot reservoir with seven responses, save
+and restore all table bytes, continue eight more updates identically, then
+reload over populated tables. This does not integrate refresh into training.
+Its sidecar format does not fingerprint every game-rule setting; do not reuse
+response tables across different rules. Run the test with an H32/L2 checkpoint:
+
+```bash
+make -C ocean/goofspiel build/test_exact_pool NVCC=/usr/local/cuda/bin/nvcc CUDA_ARCH=sm_61
+pool_test_dir=$(mktemp -d)
+./ocean/goofspiel/build/test_exact_pool PATH.bin "$pool_test_dir/checkpoint"
+```
 `env.exact_exploiter=1` explicitly fails until that integration is ported;
 ordinary frozen-checkpoint selfplay works. Do not interpret a standard
 upstream sweep's return metric as exploitability. The old robust-training

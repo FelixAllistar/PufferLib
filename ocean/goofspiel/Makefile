@@ -22,6 +22,10 @@ exploit-gpu: | $(BUILD)
 	$(NVCC) -O2 -arch=$(CUDA_ARCH) -std=c++17 -I$(ROOT)/src \
 		goofspiel_exploit.cu -lcublas -o $(BUILD)/exploit_gpu
 
+$(BUILD)/test_exact_pool: tests/test_exact_pool.cu goofspiel_exploit.cu | $(BUILD)
+	$(NVCC) -O2 -arch=$(CUDA_ARCH) -std=c++17 -I$(ROOT)/src \
+		$< -lcublas -o $@
+
 $(BUILD)/test_%: tests/test_%.c goofspiel.h goofspiel_core.h goofspiel_obs.h goofspiel_exploit.c goofspiel_exploit.h | $(BUILD)
 	$(CC) $(CPPFLAGS) $(CFLAGS) $< $(LDLIBS) -o $@
 
