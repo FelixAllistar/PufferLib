@@ -6,6 +6,10 @@ BUILD = build/webnav/families/tests
 FAMILY ?= panels
 EPISODES ?= 20
 
+.PHONY: registry
+registry:
+	node $(DIR)/registry.cjs
+
 .PHONY: public-check test
 build/webnav/families/runner: $(DIR)/runner.c $(DIR)/common/loader.c $(DIR)/common/loader.h $(DIR)/common/family_api.h $(wildcard $(DIR)/*/public*.h) $(DIR)/click/expert_synonyms.h
 	mkdir -p build/webnav/families

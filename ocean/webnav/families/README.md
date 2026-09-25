@@ -3,8 +3,17 @@
 The ABI v2 loader, stock Bend transport, serialized incremental builder and
 resource guards are preserved from `5c`. All five existing standalone families
 (panel/menu/forms/numeric/click) and the shared public scripted runner are ported.
-The registry and legacy training/runtime workflows still need conversion.
+The historical coverage registry is restored; legacy training/runtime workflows
+still need conversion.
 The three-task pilot is not a replacement for the task families.
+
+`make -f ocean/webnav/families/Makefile registry` validates the 125 registered
+task entries. `node ocean/webnav/families/registry.cjs --verify-source` also
+checks all 130 HTML fingerprints against the reference installed by
+`ocean/webnav/setup_miniwob.sh`. The latter check passed on 2026-09-24.
+Registry `legacy-bounded` entries describe the preserved 5c work, not completed
+5.0 runtime ports. Planned families remain planned; this migration does not
+claim to implement tasks that were never implemented in the original fork.
 
 Read `AGENTS.md` and `BUILD_SAFETY.md` before family work. Every actual family
 build must go through `node ocean/webnav/families/build.cjs FAMILY --test`.
