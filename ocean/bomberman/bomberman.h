@@ -449,9 +449,14 @@ void puf_render(Env* env) { (void)env; }
 #endif // BM_HEADLESS
 
 #else
-// GPU builds: Env is a log shell only; match state lives in bomberman.cu
+// GPU builds: one log shell per match; state lives in bomberman.cu.
 struct Env {
     Log log;
+    int num_agents;
+    unsigned rng;
+    Agent agents[BM_MAX_AGENTS];
+    int tag;
+    int boundary_reached;
 };
 
 void puf_render(Env* env) { (void)env; }

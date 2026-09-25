@@ -5,10 +5,18 @@ CC ?= clang
 CFLAGS ?= -O2 -g -std=c11 -Wall -Wextra -Werror -Wno-unused-function
 FAST_CFLAGS ?= -O3 -DNDEBUG -std=c11 -Wall -Wextra -Wno-unused-function -march=native
 ROOT := ../..
+NVCC ?= nvcc
+CUDA_ARCH ?= native
 BUILD ?= build
 ADAPTER_INCLUDES := -I$(ROOT) -I$(ROOT)/src -I$(ROOT)/vendor -I$(ROOT)/raylib-5.5_linux_amd64/include
 
 .PHONY: all test sanitize bench clean adapter
+
+.PHONY: gpu-test
+gpu-test: | $(BUILD)
+	$(NVCC) -O2 -arch=$(CUDA_ARCH) -std=c++17 -DBM_HEADLESS \
+		$(ADAPTER_INCLUDES) test_cuda.cu -o $(BUILD)/test_cuda
+	cd $(ROOT) && ocean/bomberman/$(BUILD)/test_cuda
 
 all: test
 

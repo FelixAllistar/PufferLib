@@ -35,8 +35,35 @@ identical stochastic action sequences across versions are not promised.
 Headless inference tests pass with old and new checkpoints; interactive window
 behavior still needs visual qualification.
 
-The default config starts fresh with mirror selfplay. Frozen-league presets,
-exact old/new checkpoint inference parity, and the CUDA
-simulator adapter remain migration work; do not treat this first CPU port as
-qualification of those paths. The legacy implementation remains in the
+The default config starts fresh with mirror selfplay. Frozen-league presets
+and exact old/new checkpoint inference parity remain migration work.
+The legacy implementation remains in the
 `archive/5c-before-unification-20260924` recovery ref.
+
+## GPU simulator
+
+The legacy CUDA simulator now uses upstream's vector create/reset/step/close
+API and bound stream. One log shell represents one match; each shell reports
+its agent count for the upstream log reducer. No shared runtime changes are
+needed for this single-policy path.
+
+```sh
+make -C ocean/bomberman gpu-test NVCC=/usr/local/cuda/bin/nvcc CUDA_ARCH=sm_61
+./build.sh bomberman puffer_bomberman_gpu --cu --float
+./puffer_bomberman_gpu train --vec.num_buffers=1 --vec.num_policies=1 \
+    --selfplay.enabled=0 --env.reverse_curriculum=0
+```
+
+The SM61 suite checks 4,096 match transitions against the CPU simulator,
+including two/four agents, immediate/longer episode limits, non-default streams,
+recreation, log metadata and CUDA graph replay. Match states are byte-identical;
+observations/rewards/logs pass their existing floating-point tolerances.
+Native FP32 training completes 2,048 steps with CUDA graphs off and on;
+the two runs save byte-identical final weights. These are smoke tests, not
+learning-performance benchmarks.
+
+Limitations preserved from the old GPU path: reverse curriculum and rendering
+are unavailable, and it does not bind CPU-style legal-action masks. The current
+trainer also rejects frozen-opponent/multi-policy GPU use without a policy-row
+setup hook. CPU mode remains the default and retains its masks/curriculum.
+Do not use the GPU path as a matched masked-CPU training comparison.
