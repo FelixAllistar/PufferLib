@@ -1513,6 +1513,6 @@ void puf_render(Shenanigans3D* env) {
 }
 #endif
 
-#if defined(PUFFERLIB_BUILD_MAIN) || defined(PUFFERCPU_EVAL_MAIN)
-#error "Shenaniguns3D custom network integration is pending; use environment tests"
+#if defined(PUFFERCPU_EVAL_MAIN)
+#error "Shenaniguns3D standalone custom-network viewer is not ported yet"
 #endif

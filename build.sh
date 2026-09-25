@@ -183,6 +183,12 @@ elif [ "$ENV" = "retro" ]; then
     SRC_DIR="ocean/$ENV"
     make -C "$SRC_DIR" -j2 batch-library
     LINK_ARCHIVES+=("build/retro_batch/libquicknes_batch.a")
+elif [ "$ENV" = "shenaniguns3d" ]; then
+    SRC_DIR="ocean/$ENV"
+    BOX3D_DIR=${BOX3D_DIR:-../box3d}
+    INCLUDES+=(-I"$BOX3D_DIR/include")
+    EXTRA_SRC="$SRC_DIR/character.c"
+    LINK_ARCHIVES+=("$BOX3D_DIR/build/src/libbox3d.a")
 elif [ "$ENV" = "arpg" ]; then
     SRC_DIR="ocean/$ENV"
     BOX3D_DIR=${BOX3D_DIR:-../box3d}
