@@ -13,7 +13,7 @@ Build the pinned Box3D dependency beside your PufferLib clone (or set
 ```sh
 git clone https://github.com/FelixAllistar/box3d.git ../box3d
 git -C ../box3d checkout --detach c4a414fcfe612a704dcd06ce921348d441271fc7
-cmake -S ../box3d -B ../box3d/build -DCMAKE_BUILD_TYPE=Release \\
+cmake -S ../box3d -B ../box3d/build -DCMAKE_BUILD_TYPE=Release \
     -DBOX3D_SAMPLES=OFF -DBOX3D_UNIT_TESTS=OFF
 cmake --build ../box3d/build --parallel 2
 ```

@@ -283,6 +283,32 @@ that historical incompatible replays can safely be accepted.
 
 ### Published clean-clone qualification
 
+The independent HTTPS clone was subsequently fast-forwarded to published
+`9fa9bea99`. No development-tree sources, model weights or datasets were copied
+into it. Additional qualification from that clone:
+
+- `make test sanitize` passes for Abyss, Goofspiel, Puffer Survivors and
+  Shenaniguns.
+- Box3D was freshly cloned from its documented public repository and checked
+  out at `c4a414fcfe612a704dcd06ce921348d441271fc7`. Its Release static library
+  builds with samples/tests disabled. This exposed a doubled shell continuation
+  in the ARPG instructions, now corrected.
+- ARPG simulator, Frontier and Reach tests pass, each normally and under
+  ASan/UBSan. Shenaniguns3D passes 9,216 transitions/72 paired episodes both
+  normally and under sanitizers. The separately built Box3D library itself
+  was not sanitizer-instrumented.
+- TrianglePath reports two passes and two intentional legacy-reference skips.
+- The selected replay-preparation, reset-bank, archive-refresh, BC-label,
+  payoff and behavior-selection suites report 48 passes plus two subtests.
+- Goofspiel standalone CPU/CUDA exact evaluators build from published source;
+  all 13 generated-checkpoint/uniform/behavior tests pass on local SM61 FP32.
+
+Afterward `git diff --exit-code` is clean; the only untracked root files are
+the two native binaries built during the earlier qualification. Environment
+build artifacts are ignored. CPU suite logs are retained alongside the clone.
+This expands clean-clone evidence, but does not establish bare-OS provisioning,
+all-environment native training, interactive rendering, BF16 or remote cutover.
+
 On 2026-09-24, a fresh shallow HTTPS clone of GitHub `5.0` at `72e8b9d4a`
 was built in `/tmp/pufferlib-5.0-clean.wgS0ew/repo`. No source, Raylib, model,
 or dataset was copied from the development checkout. Root `build.sh` fetched
