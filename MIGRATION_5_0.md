@@ -134,6 +134,29 @@ their final 5.0 implementations must not be overwritten by older copies.
 
 ## Other source/workflow inventory
 
+### Non-Git asset handoff
+
+These assets are not supplied by cloning `5.0`. Keep source installations until
+the destination files and their checksums are verified; never replace a user's
+existing files with an unverified bulk copy. Use the environment-specific
+instructions linked below rather than copying old binaries or whole configs.
+
+| Asset | Canonical destination / source procedure | Current evidence |
+| --- | --- | --- |
+| Kaggriculture initializers and league | `saved/kaggriculture/`; [transfer and league-path instructions](ocean/kaggriculture/README.md#build-and-assets-on-a-new-vast-box) | Nine local models match saved provenance. Regenerate absolute opponent paths on each host. |
+| Kaggriculture reset and BC data | `data/kaggriculture/{reset.kgb,shaped.bc,shaped.json,terminal.bc,terminal.json}` | Remote files still symlink into `legacy/`, totaling 7.1 GiB. Local canonical data directory is absent. Dereference and checksum at a quiet boundary; this transfer is not complete. |
+| Bomberman champion and its config | `checkpoints/bomberman/1790155830168/{0000000999948288.bin,config.ini}`; [champion instructions](ocean/bomberman/README.md#fixed-champion-cpu-simulator) | Both are present locally. Checkpoint SHA256 `4e9097812e2ccdce2bf1fb18881bda373541b7c1d42ec570022631c7b47ca87e`; paired config SHA256 `9d07e2ed74af2c66d68e72b1ef6b69a416b4cd3e4540b5650cac6ab0f13b2ddb`. |
+| Retro cartridge | User-supplied `ocean/retro/roms/smb1_ntsc.nes`; [accepted identities](ocean/retro/README.md#local-assets-and-simulator-tests) | Local 40,976-byte cartridge has accepted SHA1 `33d23c2f2cfa4c9efec87f7bc1321ce3ce6c89bd`; SHA256 `0b3d9e1f01ed1668205bab34d6c82b0e281456e137352e4f36a9b2cfa3b66dea`. ROM bytes and generated ROM-derived code stay out of Git. |
+| WebNav text model/tokenizer | Ignored `build/webnav/reference/`; pinned fetch/checksum procedure in [WebNav README](ocean/webnav/README.md) | Public reproducible download, not a required copy from the old checkout. Browser executable and system dependencies are separate prerequisites. |
+| Pokémon state banks / trained models | Regenerate banks with [offline collection tools](ocean/pokemon/README.md), or transfer explicit selected compatible files with their provenance | Source data and pinned engine are in the port; this is not a ROM environment. Smoke-generated banks do not replace user-trained assets or prove native reset integration. |
+| Abyss raw calibration recordings | Optional ignored `ocean/abyss/data/recorded/frames.jsonl`; [data provenance](ocean/abyss/README.md) | Runtime catalog/scenario data is tracked. Raw user recordings are needed only for reproducing calibration, not ordinary training. |
+
+This is the identified runtime-asset handoff, not an exhaustive archive of all
+historical checkpoints, replay collections or private captures. Those remain
+preserved in the source installs pending final inventory. A read-only remote
+process check confirmed sweep PID 2601722 and trial-38 child PID 2711504 live;
+no remote data copy, rebuild, configuration edit or deployment was performed.
+
 - Review fork changes in `build.sh`, `src/`, `pufferlib/`, `tests/`, `scripts/`
   and `tui/` by functionality; do not transplant the old shared runtime.
 - Reconcile 32 modified/added configuration files. Old names such as frozen
