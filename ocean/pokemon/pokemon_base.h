@@ -32,9 +32,6 @@ static inline void pk_native_configure(Ini* ini, const char* mode) {
     if (strcmp(mode,"train")) return;
     DictItem* item = dict_find(puf_ini_section(ini,"env",0),"native_league");
     if (strcmp(mode,"train") || !item || !item->str || !*item->str || !strcmp(item->str,"None")) return;
-#ifdef PUFFERLIB_BUILD_MAIN
-    assert(0 && "Pokemon named expert-bank loading is not yet ported; use native_league=None");
-#endif
     DictItem* fraction_option=dict_find(puf_ini_section(ini,"env",0),"expert_fraction");
     double fraction=fraction_option?fraction_option->value:1;
     if(!isfinite(fraction) || fraction<0 || fraction>1) {
@@ -43,8 +40,8 @@ static inline void pk_native_configure(Ini* ini, const char* mode) {
     // The non-expert share plays the current policy, not frozen history.
     puf_ini_put(ini,"selfplay.enabled","0");
     if(fraction==0) {
-        puf_ini_put(ini,"vec.num_frozen_banks","0");
-        puf_ini_put(ini,"vec.frozen_bank_pct","0");
+        puf_ini_put(ini,"vec.num_policies","1");
+        puf_ini_put(ini,"vec.hist_policy_percent","0");
         printf("Pokemon native league: expert_fraction=0; current-policy self-play only\n");
         return;
     }
@@ -89,22 +86,30 @@ static inline void pk_native_configure(Ini* ini, const char* mode) {
         }
         puf_ini_free(&saved);
     }
+    const char* opponents = puf_ini_get_str(&manifest, "native", "opponents");
+    FILE* list = fopen(opponents, "r");
+    assert(list && "native.opponents must name a checkpoint list in bank order");
+    for (int b = 0; b < count; b++) {
+        char path[4096];
+        assert(fgets(path, sizeof(path), list));
+        path[strcspn(path, "\r\n")] = 0;
+        assert(!strcmp(path, pk_native_banks[b].path) && "opponent list/bank mismatch");
+    }
+    assert(fgetc(list) == EOF);
+    fclose(list);
+    puf_ini_put(ini, "selfplay.initial_opponents", opponents);
+    puf_ini_put(ini, "selfplay.enabled", "1");
     char value[32];
-    snprintf(value,sizeof(value),"%d",count); puf_ini_put(ini,"vec.num_frozen_banks",value);
-    snprintf(value,sizeof(value),"%d",hidden); puf_ini_put(ini,"vec.frozen_bank_hidden_size",value);
-    snprintf(value,sizeof(value),"%d",layers); puf_ini_put(ini,"vec.frozen_bank_num_layers",value);
+    snprintf(value,sizeof(value),"%d",count + 1); puf_ini_put(ini,"vec.num_policies",value);
+    snprintf(value,sizeof(value),"%d",hidden); puf_ini_put(ini,"vec.hist_policy_hidden_size",value);
+    snprintf(value,sizeof(value),"%d",layers); puf_ini_put(ini,"vec.hist_policy_num_layers",value);
     puf_ini_put(ini,"base.async","0");
-    snprintf(value,sizeof(value),"%.17g",fraction); puf_ini_put(ini,"vec.frozen_bank_pct",value);
-    puf_ini_put(ini,"vec.seat_balance","0");
-    puf_ini_put(ini,"selfplay.opponent_pool",pk_native_banks[0].path);
-    puf_ini_put(ini,"selfplay.opponent_pool_weights","1");
-    puf_ini_put(ini,"selfplay.opponent_league","None");
+    snprintf(value,sizeof(value),"%.17g",fraction); puf_ini_put(ini,"vec.hist_policy_percent",value);
     puf_ini_put(ini,"base.load_enemy_model_path","None");
-    puf_ini_put(ini,"selfplay.opponent_pool_prob","1");
     puf_ini_put(ini,"selfplay.opp_timeout_steps","0"); // immutable banks for this run
     puf_ini_put(ini,"selfplay.eval_pool_size","0");
+    puf_ini_put(ini,"selfplay.eval_games","0");
     puf_ini_put(ini,"env.team_selection","1");
-    puf_ini_put(ini,"train.epoch_sampling","1"); puf_ini_put(ini,"train.prio_alpha","0"); puf_ini_put(ini,"train.prio_beta0","0");
     pk_native_count=count;
     pk_native_fraction=fraction;
     printf("Pokemon native league: %d frozen bank slots; expert_env_fraction=%.9g current_selfplay_env_fraction=%.9g; only learner trains\n",
@@ -567,6 +572,39 @@ void puf_init(Env* env, Dict* kwargs) {
     memset(&env->log, 0, sizeof(env->log));
     for (int p = 0; p < 2; p++) env->agents[p].policy = p;
 }
+#define MY_VEC_INIT
+Env* my_vec_init(int* size, int* starts, int* counts, Dict* vk, Dict* ek) {
+    int total = dict_get(vk, "total_agents");
+    int buffers = dict_get(vk, "num_buffers");
+    int policies = dict_get(vk, "num_policies");
+    assert(total > 0 && buffers > 0 && total % (2 * buffers) == 0);
+    int games = total / 2;
+    int per_buffer = games / buffers;
+    int frozen_start = per_buffer - (int)(per_buffer * dict_get(vk, "hist_policy_percent"));
+    Env* envs = (Env*)calloc(games, sizeof(Env));
+    for (int buf = 0; buf < buffers; buf++) {
+        starts[buf] = buf * per_buffer;
+        counts[buf] = per_buffer;
+        for (int e = 0; e < per_buffer; e++) {
+            int index = starts[buf] + e;
+            Env* env = envs + index;
+            env->rng = index;
+            puf_init(env, ek);
+            int bank = policies > 1 && e >= frozen_start
+                ? 1 + (e - frozen_start) % (policies - 1) : 0;
+            env->tag = bank;
+            env->agents[0].policy = 0;
+            env->agents[1].policy = bank;
+            if (pk_native_count && bank) {
+                pk_parse_fixed_team(&env->game, 1, pk_native_banks[bank - 1].team);
+                pk_parse_lead(&env->game, 1, pk_native_banks[bank - 1].lead);
+            }
+        }
+    }
+    *size = games;
+    return envs;
+}
+
 static inline void pk_episode_start(Env* env) {
     env->episode_steps=0;
     env->reset_bucket=-1;

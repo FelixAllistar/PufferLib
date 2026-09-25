@@ -18,7 +18,10 @@ static void pk_test_native_cleanup(void) {
         snprintf(path,sizeof(path),"%s/member%d/config.ini",pk_test_native_root,i);unlink(path);
         snprintf(path,sizeof(path),"%s/member%d",pk_test_native_root,i);rmdir(path);
     }
-    for(int n=2;n<=3;n++) {snprintf(path,sizeof(path),"%s/native%d.ini",pk_test_native_root,n);unlink(path);}
+    for(int n=2;n<=3;n++) {
+        snprintf(path,sizeof(path),"%s/native%d.ini",pk_test_native_root,n);unlink(path);
+        snprintf(path,sizeof(path),"%s/opponents%d.txt",pk_test_native_root,n);unlink(path);
+    }
     rmdir(pk_test_native_root);
 }
 static const char* pk_test_native_manifest(int count) {
@@ -38,8 +41,12 @@ static const char* pk_test_native_manifest(int count) {
         for(int n=2;n<=3;n++) {
             snprintf(manifests[n-2],sizeof(manifests[0]),"%s/native%d.ini",pk_test_native_root,n);
             FILE* f=fopen(manifests[n-2],"w");assert(f);
-            fprintf(f,"[native]\nbanks=%d\nhidden_size=128\nnum_layers=2\nrules_sha=%s\n",n,PK_RULES_SHA);
+            fprintf(f,"[native]\nbanks=%d\nhidden_size=128\nnum_layers=2\nrules_sha=%s\nopponents=%s/opponents%d.txt\n",n,PK_RULES_SHA,pk_test_native_root,n);
             for(int i=0;i<n;i++)fprintf(f,"[bank.%d]\npath=%s/member%d/weights.bin\nteam=%s\nlead=%s\n",i,pk_test_native_root,i,teams[i],leads[i]);
+            assert(!fclose(f));
+            snprintf(path,sizeof(path),"%s/opponents%d.txt",pk_test_native_root,n);
+            f=fopen(path,"w");assert(f);
+            for(int i=0;i<n;i++)fprintf(f,"%s/member%d/weights.bin\n",pk_test_native_root,i);
             assert(!fclose(f));
         }
         atexit(pk_test_native_cleanup);

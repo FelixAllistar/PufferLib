@@ -152,6 +152,18 @@ graphs off/on, weight-loading/seed checks and async/sync regressions. This uses
 the existing frozen-policy allocator/loader, not a new loss or population
 algorithm. Pokémon named-team assignment/manifest integration remains pending.
 
+Pokémon fixed named-roster integration now uses only environment changes:
+manifest validation selects existing `selfplay.initial_opponents`, explicit
+historical architecture and timeout zero; `MY_VEC_INIT` assigns banks and their
+prescribed teams/leads before resets. The manifest names the ordered checkpoint
+text file, validated against all bank paths. Old optimizer/league config keys
+are no longer injected. Core tests pass, including one/four-worker deterministic
+trajectories and native vector assignments. Two GPU integration cases pass:
+H8/L1 learner versus two generated H16/L1 experts with distinct team bindings,
+2,048 steps, graphs off/on, legality auditing and completed curriculum drafts;
+expert files remain unchanged. This restores fixed opponents, not PFSP or the
+legacy league-management/search scripts. Those scripts still need disposition.
+
 - Finalized upstream base: `6ffa5b10dbbbe4d1e8288367c7d9d3acd3bad4a2`.
 - Qualified Kaggriculture runtime before unification: `1c30e3c2f`.
 - Custom environment/source inventory: `5c` at `036cf4251`.

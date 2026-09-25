@@ -128,8 +128,7 @@ Local SM61 FP32 H16/L1 training completes 2,048 steps with graphs off/on,
 16 player rows, two CPU workers, a four-species core pool and legality auditing
 enabled. Drafts complete, rewards/losses are finite and a checkpoint is saved.
 This does not qualify default-scale performance or learning quality. Native
-named expert banks are explicitly blocked pending their loader port;
-full league/experiment workflows
+full league/experiment orchestration workflows
 remain unfinished. Do not substitute the generic MLP for the semantic model
 or load old checkpoints through a different architecture. Full legacy source,
 generator scripts and experiment documentation remain in
@@ -159,3 +158,38 @@ while the final snapshot records 18 assigned/12 drafted. The CPU semantic
 evaluator loads the final checkpoint and completes four games. A subsequent
 256-step native run starts from that explicit cursor and advances it. The
 metadata regression also verifies later saves do not overwrite earlier sidecars.
+
+### Fixed named opponents
+
+Set `env.native_league` to an INI manifest and `env.expert_fraction` to the
+fraction of games facing those opponents. The remaining games use the current
+learner on both seats. This is a fixed roster, not PFSP: opponent weights never
+refresh during the run. All opponents share one architecture, which may differ
+from the learner. Example manifest (paths resolve from the launch directory):
+
+```ini
+[native]
+banks = 1
+hidden_size = 128
+num_layers = 2
+rules_sha = COPY_FROM_OPPONENT_CONFIG
+opponents = saved/pokemon/opponents.txt
+[bank.0]
+path = saved/pokemon/expert/model.bin
+team = species:65,128,143
+lead = 65
+```
+
+`opponents.txt` contains exactly one checkpoint path per line in bank order,
+matching each `bank.N.path`. Each checkpoint's parent `config.ini` must match
+its declared architecture, rules, ABI, prescribed team and lead. The environment
+validates this before loading and binds each team's constraints during vector
+initialization; only learner seats receive curriculum cores. Setting
+`expert_fraction=0` disables the roster. Use external evaluation to compare
+members; the retired league manager is not implicitly restored.
+
+Qualification: native 2,048-step H8/L1 learners run against two H16/L1 generated
+experts with distinct teams/leads, graphs off/on and legality auditing. Original
+expert files remain unchanged and curriculum drafts complete. Core/assignment
+tests also preserve identical one/four-worker trajectories. Reproduce with
+`POKEMON_TRAIN_BINARY=build/pokemon/native_train uv run --no-project --with pytest python -m pytest -q ocean/pokemon/tests/test_native_training.py`.

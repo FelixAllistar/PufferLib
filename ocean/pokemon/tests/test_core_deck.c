@@ -212,8 +212,26 @@ static uint64_t mixture_trajectory(int threads, double probability) {
     char value[32]; snprintf(value,sizeof(value),"%.9g",probability);
     puf_ini_put(&ini,"env.force_core_prob",value);
     pk_configure(&ini,"train");
-    assert(pk_native_count==3 && puf_ini_get(&ini,"vec","frozen_bank_pct")==.5);
-    assert(puf_ini_get(&ini,"selfplay","enabled")==0);
+    assert(pk_native_count==3 && puf_ini_get(&ini,"vec","hist_policy_percent")==.5);
+    assert(puf_ini_get(&ini,"selfplay","enabled")==1);
+    int size, starts[1], counts[1];
+    Env* native = my_vec_init(&size, starts, counts,
+        puf_ini_section(&ini,"vec",0), puf_ini_section(&ini,"env",0));
+    assert(size==N && starts[0]==0 && counts[0]==N);
+    for(int i=0;i<N;i++) {
+        int bank=i<N/2?0:1+(i-N/2)%3;
+        assert(native[i].tag==bank && native[i].agents[0].policy==0);
+        assert(native[i].agents[1].policy==bank);
+        if(bank) {
+            PKGame expected={0};
+            pk_parse_fixed_team(&expected,1,pk_native_banks[bank-1].team);
+            pk_parse_lead(&expected,1,pk_native_banks[bank-1].lead);
+            assert(!memcmp(native[i].game.fixed_team[1], expected.fixed_team[1],
+                sizeof(expected.fixed_team[1])));
+            assert(native[i].game.fixed_lead[1]==expected.fixed_lead[1]);
+        }
+    }
+    free(native);
     Env* envs=(Env*)calloc(N,sizeof(Env)); Buffer b[N][2]; uint64_t rng[N];
     assert(envs);
     for(int i=0;i<N;i++) {
@@ -312,7 +330,7 @@ static uint64_t mixture_trajectory(int threads, double probability) {
     // Fraction zero disables expert loading and leaves pure current-policy play.
     puf_ini_put(&ini,"env.expert_fraction","0");
     pk_configure(&ini,"train"); assert(!pk_native_count && !pk_native_fraction);
-    assert(puf_ini_get(&ini,"vec","num_frozen_banks")==0);
+    assert(puf_ini_get(&ini,"vec","num_policies")==1);
     pk_core_free(&pk_core_deck); puf_ini_free(&ini);
     return hash;
 }
