@@ -236,8 +236,8 @@ roundtrip. The latter uses generated frames; it is an ABI/cache integration
 test, not an independent official replay-parity qualification. No new official
 replay corpus was downloaded or fully processed during this port.
 
-Remote replay collection and Kaggle export still need migration from the legacy
-install. Existing data/checkpoint loading does not qualify those workflows.
+Remote replay collection still needs migration from the legacy install; local
+Kaggle export is described below, with official-runtime qualification pending.
 
 The environment now exposes `kag_apply_actions`: it executes both players'
 primitive commands, advances policy observation history and computes the same
@@ -331,13 +331,13 @@ Choose the build architecture for your GPU. Without `KAG_BC_BINARY`, only the
 CPU publication test runs. Official-corpus qualification, useful H256/L2
 training and BF16 qualification remain pending for newly generated datasets.
 
-## Submission adapter (partial port)
+## Submission export (local qualification)
 
 The public-observation controller is ported under `submission/`. Build it with
 `make -C ocean/kaggriculture submission-bridge`; it needs only the native rule
 and policy headers, libc and libm, not the trainer, CUDA or Raylib. It currently
 targets the standard 2/2 controller with 10 market slots, 16 hands and no land
-purchase delay. A packaging tool must validate that contract before export.
+purchase delay. The packaging tool validates that contract before export.
 
 ```sh
 uv run --no-project --with pytest --with numpy python -m pytest -q \
@@ -380,10 +380,33 @@ KAGGRICULTURE_GPU_TEST_BINARY=build/kag_export_gpu_test \
 
 Set `KAG_EXPORT_CHECKPOINT` to an existing raw H256/L2 checkpoint to test it
 instead of generated weights. GPU tests skip unless the oracle path is supplied;
-they explicitly require FP32. A learned checkpoint, BF16 comparison, archive
-packaging, metadata validation and official Kaggle execution remain pending.
-Do not treat the adapter build alone as a submission-ready export. The full-state
-oracle is test-only and must never be bundled with a submitted agent.
+they explicitly require FP32. Selected learned-checkpoint and BF16 comparisons
+remain pending. The full-state oracle is test-only and is never bundled.
+
+Create an archive locally, using the saved config from the checkpoint's run:
+
+```sh
+uv run --no-project --with numpy python ocean/kaggriculture/submission/package.py \
+    --checkpoint=checkpoints/kaggriculture/RUN/CHECKPOINT.bin \
+    --config=logs/kaggriculture/RUN.start.ini \
+    --sampling=deterministic --output=artifacts/candidate_deterministic.tar.gz
+```
+
+Use `--sampling=stochastic` and a distinct output name for the stochastic agent.
+The packager does not infer checkpoint identity or submit anything to Kaggle.
+It checks finite weights, exact architecture size and canonical controller
+settings, compiles the bridge, and publishes a four-file archive without
+overwriting an existing file. Metadata includes weight/library/source hashes,
+sampling mode and the supplied config's hash. The caller must supply the actual
+run config; a matching file size alone cannot establish checkpoint semantics.
+
+Local tests cover both sampling variants, unpacking, loading/executing without
+`__file__`, repeated-frame caching, metadata hashes, mismatch rejection and
+overwrite protection. They use a small zero-weight model and native-generated
+observations, not a learned policy or the official runner. Build on compatible
+Linux x86-64: the local shared library's system ABI is not yet qualified in the
+official Kaggle container. Official-runtime validation and selected-model
+evaluation are required before considering these archives competition-ready.
 
 ## Shared-code boundary
 

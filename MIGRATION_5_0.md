@@ -18,8 +18,11 @@ qualify 2,876 transitions and both seats against full native state for exact
 observations, actions, masks and RNG. NumPy inference additionally matches native
 H256/L2 FP32 outputs and recurrent states within 1.2e-7 across two generated
 weight sets, 32 steps, resets and graphs off/on. Official Kaggle execution,
-selected learned-checkpoint qualification and archive packaging remain unfinished;
-the oracle is test-only.
+selected learned-checkpoint qualification remain unfinished; the oracle is
+test-only. Local archive packaging now validates explicit canonical config and
+checkpoint shape, records hashes, supports deterministic/stochastic sampling and
+refuses overwrite. Both variants load without `__file__` and return actions in
+local native-snapshot tests. Official container ABI and execution remain unproven.
 
 Canonical repository: `https://github.com/FelixAllistar/PufferLib.git`.
 Canonical development branch: `5.0`, published on GitHub. Further ports and
