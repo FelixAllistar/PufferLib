@@ -17,6 +17,19 @@ void* retro_cpu_load(const char* path, int hidden, int layers) {
     return cpu;
 }
 
+// Independent recurrent/scratch state; source weights must outlive the clones.
+void* retro_cpu_clone(void* source, int hidden, int layers) {
+    RetroCpu* cpu = calloc(1, sizeof(RetroCpu));
+    Weights cursor = *((RetroCpu*)source)->weights;
+    cursor.idx = 0;
+    cpu->policy = make_retro_policy(&cursor, hidden, layers);
+    return cpu;
+}
+
+const float* retro_cpu_logits(void* policy, const float* obs) {
+    return retro_policy_logits(((RetroCpu*)policy)->policy, obs);
+}
+
 void retro_cpu_act(void* policy, float* obs, float* action, bool deterministic) {
     RetroCpu* cpu = policy;
     retro_policy_act(cpu->policy, obs, action, deterministic);

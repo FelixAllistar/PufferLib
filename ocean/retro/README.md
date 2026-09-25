@@ -111,10 +111,32 @@ searches that config's checkpoint directory. See `viewer --help` for controls.
 CPU inference is compiled as C and connected to the C++ emulator through
 `retro_policy_api.c`; no upstream CPU inference changes are required.
 
+## Repeatable checkpoint panel
+
+```sh
+make -C ocean/retro panel panel-test
+./build/retro/sweep_eval /path/to/checkpoint.bin --config /path/to/run.ini \
+  --metric speed --frames 1800 --repeats 4 --workers 4 --output /tmp/retro_panel.tsv
+```
+
+Use the checkpoint's actual configuration, not a different current experiment.
+The panel preserves per-attempt random seeds across worker counts, shares
+read-only weights, and gives each attempt independent recurrent state.
+`speed` ranks best clear time first, then mean successful time; it does not
+reward clear rate. `perf` ranks clear count before forward progress, and
+`distance` measures forward pixels. Practice times are labelled segment times,
+not full-run RTA. `--full-run` disables practice and `--levels all` selects all
+32 starts. `--deterministic` uses argmax actions.
+
+A learned 256×2 checkpoint produced byte-identical four-attempt reports with
+one and four workers: three clears, best 1,605 frames, mean 1,661 frames.
+The action-layout/sampling and metric-ordering unit tests also pass. This
+standalone panel is not yet connected to native Protein sweep scoring.
+
 ## Remaining conversion
 
-Interactive visual qualification, BF16 qualification, speed
-evaluation panels and sweep integration still need
+Interactive visual qualification, BF16 qualification and automatic speed
+sweep integration still need
 porting and qualification. The original documentation and experiment assets
 remain in `archive/5c-before-unification-20260924`; their old CLI/build commands
 are not instructions for this 5.0 checkout. The network port adds only the
