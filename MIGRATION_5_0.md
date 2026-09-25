@@ -315,10 +315,13 @@ their final 5.0 implementations must not be overwritten by older copies.
 - `pokemon/qd_selfplay.py` imports the old `cma_qd` search and generation-panel
   machinery. The user explicitly deferred QD experiments; preserve its source
   without restoring that search/trainer integration as a conversion requirement.
-- Goofspiel's `train_population.sh` includes exact-response refresh and EMAg;
-  its evaluator wrapper invokes retired CLI/keys. Behavior analysis is ported,
-  but native population training and exact-response refresh are still pending,
-  not silently replaced by ordinary selfplay.
+- Goofspiel's `train_population.sh` is now ported to sequential native runs
+  with independent exact-response histories. Supported historical PPO settings
+  remain; EMAg is deliberately omitted. Nine tests pass, including two real
+  1,024-step 64×1 member runs with changed weights and exact-pool sidecars.
+  The legacy all-pairs payoff/draw/cycle evaluation wrapper still invokes retired
+  CLI/keys and is not launched automatically. Standalone exact/behavior analysis
+  is available; the population evaluation wrapper remains a conversion gate.
 - Kaggriculture's ignored `parity.py` is now ported, sharing the canonical
   replay bridge rather than duplicated ABI definitions. All scripted/randomized,
   animal, crop-lifetime, locked-worker and market-hinge checks pass against

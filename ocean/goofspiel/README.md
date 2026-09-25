@@ -133,6 +133,43 @@ GOOFSPIEL_EXACT_GPU_TRAIN_BINARY=./puffer_goofspiel_gpu \
     python -m pytest -q ocean/goofspiel/tests/test_native_training.py
 ```
 
+### Independent seeded population training
+
+The environment-local launcher runs independent seeds sequentially, with the
+normal native dashboard visible. It uses the legacy population's supported PPO
+hyperparameters and 64×1 architecture, but **not** its EMAg losses or optimizer.
+Each member builds its own checkpoint selfplay/exact-response history; members
+do not train against each other. This is not PFSP or population promotion.
+
+```bash
+GOOFSPIEL_TRAIN_BINARY=./puffer_goofspiel \
+    bash ocean/goofspiel/train_population.sh 16 1001 population64x1
+# Optional native settings follow count, first seed and prefix:
+GOOFSPIEL_TRAIN_BINARY=./puffer_goofspiel_gpu \
+    bash ocean/goofspiel/train_population.sh 4 2001 trial \
+    --train.total_timesteps=2000000 --env.exact_exploiter_history=32
+```
+
+The default budget is eight million steps per member. Override the checkpoint
+root with `GOOFSPIEL_CHECKPOINT_DIR`. All destination run directories are checked
+before training starts; existing runs are not overwritten. A failed member
+stops the launcher. Run IDs, seeds, checkpoint root and fresh initialization are
+owned by the launcher and cannot be overridden in the trailing arguments.
+Other native settings override its defaults.
+
+Training does not automatically launch the unported legacy `eval_population.sh`.
+Use the exact evaluator and behavior report documented above on selected
+checkpoints; the old all-pairs payoff/draw/cycle wrapper remains pending.
+Eight launcher contract tests and two real 1,024-step 64×1 member runs pass:
+initial seeds differ, weights update, frozen-bank shapes follow the learner,
+and every checkpoint has an exact-response sidecar. Reproduce with:
+
+```bash
+GOOFSPIEL_TRAIN_BINARY=./puffer_goofspiel_gpu \
+    uv run --no-project --with pytest \
+    python -m pytest -q ocean/goofspiel/tests/test_population.py
+```
+
 ### Exact-exploitability sweeps
 
 The environment publishes `exploitability` (latest saved checkpoint) and
