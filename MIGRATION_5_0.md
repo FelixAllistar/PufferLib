@@ -105,6 +105,53 @@ their final 5.0 implementations must not be overwritten by older copies.
 
 ## Verification log
 
+### Configuration and standalone evaluation audit
+
+The 32 fork-modified configuration paths have these dispositions:
+
+- Native environment configs now exist for Abyss, ARPG, Bomberman, Goofspiel,
+  Kaggriculture, Pokémon, Puffer Survivors, Retro, Shenaniguns3D, TrianglePath
+  and WebNav. Presence is not full qualification: Pokémon training and the
+  legacy WebNav training integration remain pending as recorded above.
+- `config/default.ini` keeps upstream defaults except the previously ported
+  initial-opponent manifest/reward-clamp settings and a weights-only loading
+  comment. Old custom loss/optimizer defaults are not reinstated.
+- `config/bomberman_league.ini` listed one champion. Its path is preserved in
+  `ocean/bomberman/initial_opponents.txt`, with transfer/hash instructions in
+  the environment README. Fixed-opponent training is qualified; permanent
+  retention in a rotating PFSP pool is not equivalent and remains pending.
+- `config/kaggriculture_clean.ini` and `config/kaggriculture_long.ini` are
+  historical experiment presets containing legacy trainer keys and old
+  checkpoint paths. Recover them from the archive ref for provenance; do not
+  advertise them as native 5.0 launch configs or restore their optimizer knobs.
+- `config/webnav_dom.ini` remains pending with the native DOM training port.
+- All `config/kaggriculture.ini.bak*` and `config/retro.ini.bak` are historical
+  snapshots retained in `archive/5c-before-unification-20260924`, not active
+  configurations to copy over the finalized runtime.
+
+`scripts/payoff_matrix.py` now invokes the environment-compiled native binary
+with `match --headless`, evaluates both seat orientations, and emits CSV/JSON
+payoffs and simple three-policy cycles. It does not train, promote, or update
+a league. Example from the repository root:
+
+```sh
+uv run --no-project python scripts/payoff_matrix.py bomberman CHECKPOINT_DIRECTORY \
+    --binary=./puffer_bomberman --games=256 --count=4 \
+    --output=build/bomberman_payoffs
+```
+
+Use matching model architectures and the intended environment settings;
+repeat `--override=section.key=value` as needed. Actual games per orientation
+are recorded separately from requested games. Scores use native six-decimal
+output; draw rates are dashboard-rounded to three decimals. Diagonal scores
+are conventional 0.5, not measured self-matches. Output prefixes are replaced
+if reused. Unit tests and a real two-checkpoint, two-seat, 64-total-game
+Bomberman smoke pass; short-episode smoke scores are not quality evaluations.
+
+The live main checkout audit found only the three dirty Bomberman files;
+their simulator edits and reward defaults are preserved in `2f54dc508`.
+The other migration gates and non-config workflow inventory remain open.
+
 - ARPG CPU port preserves the gameplay/world/render source and original art
   from `5c`; adapter changes place `obs_t` before the 5.0 Agent definition and
   update viewer inference/config calls. Box3D revision
