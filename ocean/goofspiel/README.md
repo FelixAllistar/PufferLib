@@ -37,6 +37,16 @@ and sanitizers pass; native FP32 GPU training completes 4,096 steps with graphs
 off/on and four frozen banks. These are correctness/smoke checks, not learning
 quality, performance scaling, BF16 or interactive-renderer qualification.
 
+The published trainer also builds from the independent GitHub checkout at
+`2e39262cc`. Its 4,096-step, four-bank smoke passes with graphs off/on and
+verifies that training changes checkpoint weights. Reproduce on an idle GPU:
+
+```bash
+GOOFSPIEL_TRAIN_BINARY=./puffer_goofspiel_gpu \
+    uv run --no-project --with pytest \
+    python -m pytest -q ocean/goofspiel/tests/test_native_training.py
+```
+
 The standalone CUDA exact evaluator is also available without any trainer
 or GPU-simulator hook changes:
 
@@ -81,7 +91,7 @@ set, without enforcing `--minimum-distance`. Groups use transitive similarity,
 not an all-pairs distance bound. This does not modify training or a live league.
 Unit/CLI tests and a native-checkpoint report-to-selection smoke pass.
 
-Still pending: GPU simulation, trainer exact-response pool refresh and
+Still pending: trainer exact-response pool refresh and
 checkpoint persistence, and exploitability-driven sweep orchestration.
 The legacy offline response-pool writer/loader passes a native-checkpoint
 round-trip test: populate a three-slot reservoir with seven responses, save
