@@ -28,6 +28,31 @@ available separately, not automatically selected by the sweep.
 
 ## Build and assets on a new Vast box
 
+### Rebuilding indexed reset banks
+
+`build_replay_state_bank.py` replays indexed episodes through the canonical
+`core.h`, checks every frame, and verifies each selected state's serialized
+round-trip and next step. Build a standalone rule library and supply an index
+from `index_replay_states.py`:
+
+```sh
+mkdir -p ocean/kaggriculture/build
+cc -x c -O2 -shared -fPIC ocean/kaggriculture/core.h -lm \
+    -o ocean/kaggriculture/build/libkaggriculture.so
+uv run --no-project python ocean/kaggriculture/build_replay_state_bank.py REPLAYS.zip \
+    --index SELECTED.tsv --output NEW_BANK.kgb --skip-incompatible-episodes
+```
+
+The bank, manifest and summary must not already exist. Publication is not an
+atomic three-file transaction: an interrupted or failed build can leave partial
+outputs; retain the previous bank and use a fresh output path. A late frame
+mismatch discards all selected snapshots from that episode. An all-rejected
+input can produce an empty bank; inspect `record_count` before configuring it
+for training, whose loader requires a nonempty bank. Two native-generated
+regression cases qualify serialization and late-mismatch rejection, not official
+expert replay compatibility. Multi-day diverse-shard orchestration and its
+auditor are still pending ports.
+
 ```bash
 git clone --branch 5.0 https://github.com/FelixAllistar/PufferLib.git
 cd PufferLib

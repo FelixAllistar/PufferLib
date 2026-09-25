@@ -191,6 +191,13 @@ no remote data copy, rebuild, configuration edit or deployment was performed.
 
 ## Verification log
 
+The indexed Kaggriculture reset-bank builder is restored against the canonical
+rule core. Native-generated replay tests verify header/serialization ABI,
+snapshot restore, late-mismatch whole-episode rejection and overwrite refusal.
+This is not new official-replay parity evidence. Multi-day diverse-bank building
+and audit remain separate pending workflows; failed output bundles are not
+atomically published and must not replace an existing known-good bank.
+
 ### Published clean-clone qualification
 
 On 2026-09-24, a fresh shallow HTTPS clone of GitHub `5.0` at `72e8b9d4a`
