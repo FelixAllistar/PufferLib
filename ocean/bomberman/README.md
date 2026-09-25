@@ -36,9 +36,20 @@ Headless inference tests pass with old and new checkpoints; interactive window
 behavior still needs visual qualification.
 
 The default config starts fresh with mirror selfplay. Frozen-league presets
-and exact old/new checkpoint inference parity remain migration work.
+remain migration work.
 The legacy implementation remains in the
 `archive/5c-before-unification-20260924` recovery ref.
+
+The viewer test now checks 1,024 steps and at least 32 recurrent resets.
+With the legacy H128/L2 checkpoint from run `1790155830168`, step `999948288`,
+the archived viewer and this viewer both produce trace `a6abf6d2c490a11f`.
+The trace includes observations, joint logits/value, joint/separate sampled
+actions, rewards and terminals. This is exact parity for the tested rollout,
+not a claim that two categorical implementations match at every rounding edge.
+The test can include an archived viewer using
+`-DBM_LEGACY_VIEWER='"/legacy/ocean/bomberman/bomberman.c"'`, its original include paths,
+and matching run config. The legacy resolver expects run logs beneath its
+working directory even when given an absolute checkpoint path.
 
 ## GPU simulator
 
