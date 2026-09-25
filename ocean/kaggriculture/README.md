@@ -352,11 +352,38 @@ and sampling RNG. Repeated observation reads preserve history; midgame startup
 without history is rejected. These are native-generated snapshots and supplied
 random logits, not official Kaggle runtime or learned-network qualification.
 
-The legacy NumPy entity inference module is preserved alongside the adapter.
-Its current upstream checkpoint/logit parity, archive packaging, metadata
-validation and official Kaggle execution still need qualification. Do not treat
-the adapter build alone as a submission-ready export. The full-state oracle is
-test-only and must never be bundled with a submitted agent.
+The preserved NumPy entity inference module passes H256/L2 FP32 comparison
+against the actual native encoder/MinGRU/decoder: 32-step sequences with resets
+at steps 0 and 16, two generated parameter sets, and CUDA graphs off/on. Both
+the 1,979 outputs (including value) and recurrent state differ by at most
+1.2e-7 in this qualification. Generated weights include nonzero biases; this
+checks parameter layout and inference math, not a selected trained policy.
+
+Build the existing GPU oracle with the same flags as the native offline build,
+substituting `tests/test_gpu.cu` for `bc.cu`. The tested local FP32 command is:
+
+```sh
+/usr/local/cuda/bin/nvcc -O2 --threads 2 -arch=sm_61 -std=c++17 \
+    -I. -Isrc -Ivendor -Iraylib-5.5_linux_amd64/include \
+    -I/usr/local/cuda/include/cccl -DPUFFER_KAGGRICULTURE -DENV_NAME=kaggriculture \
+    '-DPUFFER_ENV_NAME="kaggriculture"' \
+    '-DENV_HEADER="ocean/kaggriculture/kaggriculture.cu"' -DPRECISION_FLOAT \
+    -Xcompiler=-fopenmp -Xcompiler=-Wno-narrowing --diag-suppress=2361 \
+    --diag-suppress=111 --diag-suppress=128 ocean/kaggriculture/tests/test_gpu.cu \
+    raylib-5.5_linux_amd64/lib/libraylib.a -L/usr/local/cuda/lib64 \
+    -lcudart -lnccl -lnvidia-ml -lcublas -lcusolver -lcurand -lm -lpthread -lomp5 \
+    -lGL -o build/kag_export_gpu_test
+KAGGRICULTURE_GPU_TEST_BINARY=build/kag_export_gpu_test \
+    uv run --no-project --with pytest --with numpy python -m pytest -qs \
+    ocean/kaggriculture/submission/test_entity_network_export.py
+```
+
+Set `KAG_EXPORT_CHECKPOINT` to an existing raw H256/L2 checkpoint to test it
+instead of generated weights. GPU tests skip unless the oracle path is supplied;
+they explicitly require FP32. A learned checkpoint, BF16 comparison, archive
+packaging, metadata validation and official Kaggle execution remain pending.
+Do not treat the adapter build alone as a submission-ready export. The full-state
+oracle is test-only and must never be bundled with a submitted agent.
 
 ## Shared-code boundary
 

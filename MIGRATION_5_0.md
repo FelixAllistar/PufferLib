@@ -15,8 +15,11 @@ port changes only `ocean/kaggriculture` and documentation, not the shared traine
 Kaggriculture's public-state submission controller now uses `policy.h` directly,
 without retired trainer fields. Two seeds in deterministic/stochastic modes
 qualify 2,876 transitions and both seats against full native state for exact
-observations, actions, masks and RNG. Official Kaggle execution, learned-network
-export parity and archive packaging remain unfinished; the oracle is test-only.
+observations, actions, masks and RNG. NumPy inference additionally matches native
+H256/L2 FP32 outputs and recurrent states within 1.2e-7 across two generated
+weight sets, 32 steps, resets and graphs off/on. Official Kaggle execution,
+selected learned-checkpoint qualification and archive packaging remain unfinished;
+the oracle is test-only.
 
 Canonical repository: `https://github.com/FelixAllistar/PufferLib.git`.
 Canonical development branch: `5.0`, published on GitHub. Further ports and
