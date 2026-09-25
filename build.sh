@@ -179,6 +179,12 @@ elif [ "$ENV" = "impulse_wars" ]; then
     if [ -z "${MODE:-}" ] || [ "$MODE" = "native" ] || [ "$MODE" = "profile" ]; then
         EXTRA_SRC="ocean/impulse_wars/impulse_wars_api.c"
     fi
+elif [ "$ENV" = "goofspiel" ]; then
+    SRC_DIR="ocean/$ENV"
+    if [ -z "${MODE:-}" ] || [ "$MODE" = "native" ]; then
+        EXTRA_SRC="$SRC_DIR/goofspiel_exploit.cu"
+        EXTRA_CFLAGS+=(-DGS_EXPLOIT_NO_MAIN)
+    fi
 elif [ "$ENV" = "pokemon" ]; then
     SRC_DIR="ocean/$ENV"
     bash "$SRC_DIR/build_engine.sh"

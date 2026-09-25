@@ -91,8 +91,8 @@ set, without enforcing `--minimum-distance`. Groups use transitive similarity,
 not an all-pairs distance bound. This does not modify training or a live league.
 Unit/CLI tests and a native-checkpoint report-to-selection smoke pass.
 
-Still pending: trainer exact-response pool refresh and
-checkpoint persistence, and exploitability-driven sweep orchestration.
+Still pending: GPU-simulator exact-response integration and
+exploitability-driven sweep orchestration.
 The legacy offline response-pool writer/loader passes a native-checkpoint
 round-trip test: populate a three-slot reservoir with seven responses, save
 and restore all table bytes, continue eight more updates identically, then
@@ -105,8 +105,30 @@ make -C ocean/goofspiel build/test_exact_pool NVCC=/usr/local/cuda/bin/nvcc CUDA
 pool_test_dir=$(mktemp -d)
 ./ocean/goofspiel/build/test_exact_pool PATH.bin "$pool_test_dir/checkpoint"
 ```
-`env.exact_exploiter=1` explicitly fails until that integration is ported;
-ordinary frozen-checkpoint selfplay works. Do not interpret a standard
+Native CPU-simulator training now supports `env.exact_exploiter=1` with
+selfplay enabled. The first `exact_exploiter_banks` frozen banks use exact
+response actions; other banks retain their neural policies. The CUDA solver
+refreshes the latest response at the initial and subsequent checkpoint saves.
+`exact_exploiter_history` bounds the reservoir, and
+`exact_exploiter_current_prob` controls latest-versus-history sampling per game.
+This is not PFSP or a change to PPO losses/optimizers. Leave it disabled for
+ordinary frozen-checkpoint selfplay; enabling it in GPU simulation still fails.
+
+Each checkpoint has a `.bin.exact` sidecar. Loading weights restores that pool
+when present, preserves it at the new run's initial save, then resumes refreshes.
+A missing sidecar starts a new pool. Use the same game rules and pool capacity
+when continuing; this is not optimizer or in-flight episode restoration.
+Evaluation uses neural policies without substituting response-table actions.
+Four native tests cover sync/async and graphs off/on, pool saturation,
+byte-identical initial restoration, continued refreshes, and post-training eval:
+
+```bash
+GOOFSPIEL_EXACT_TRAIN_BINARY=./puffer_goofspiel \
+    uv run --no-project --with pytest \
+    python -m pytest -q ocean/goofspiel/tests/test_native_training.py
+```
+
+Do not interpret a standard
 upstream sweep's return metric as exploitability. The old robust-training
 workflow remains preserved in `archive/5c-before-unification-20260924`.
 

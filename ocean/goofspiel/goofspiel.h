@@ -65,9 +65,12 @@ struct Env {
 
 static GSExactTable gs_exact_tables[GS_EXACT_POOL_MAX];
 static int gs_exact_enabled;
+static int gs_exact_training = 1;
 static int gs_exact_banks;
 static int gs_exact_history;
 static int gs_exact_count;
+static uint64_t gs_exact_seen;
+static int gs_exact_restored;
 static float gs_exact_current_prob;
 
 static inline int gs_kw(Dict* kwargs, const char* key) {
@@ -161,8 +164,10 @@ void puf_init(Env* env, Dict* kwargs) {
     env->boundary_reached = 0;
     env->client = NULL;
     memset(&env->log, 0, sizeof(env->log));
-    gs_exact_enabled = gs_kw(kwargs, "exact_exploiter");
-    assert(!gs_exact_enabled && "exact-response training orchestration is not yet ported");
+    gs_exact_enabled = gs_exact_training && gs_kw(kwargs, "exact_exploiter");
+#if !defined(PUFFERLIB_BUILD_MAIN) || PUF_BACKEND != PUF_CPU
+    assert(!gs_exact_enabled && "exact-response training requires the native CPU simulator");
+#endif
     gs_exact_banks = gs_kw(kwargs, "exact_exploiter_banks");
     gs_exact_history = gs_kw(kwargs, "exact_exploiter_history");
     gs_exact_current_prob = (float)dict_get(kwargs,
@@ -373,6 +378,67 @@ void puf_close(Env* env) {
         env->client = NULL;
     }
 }
+#endif
+
+#if defined(PUFFERLIB_BUILD_MAIN) && PUF_BACKEND == PUF_CPU
+void gs_configure(Ini* ini, const char* mode) {
+    for (int i = 0; i < gs_exact_count; i++) {
+        gs_exact_table_clear(gs_exact_tables + i);
+    }
+    gs_exact_count = 0;
+    gs_exact_seen = 0;
+    gs_exact_restored = 0;
+    gs_exact_training = strcmp(mode, "train") == 0;
+    if (!gs_exact_training) {
+        // Ordinary evaluation uses one policy; match setup subsequently assigns two.
+        puf_ini_put(ini, "vec.num_policies", "1");
+        puf_ini_put(ini, "vec.hist_policy_percent", "0");
+        return;
+    }
+    if (!puf_ini_get(ini, "env", "exact_exploiter")) {
+        return;
+    }
+    assert(puf_ini_get(ini, "selfplay", "enabled"));
+    int banks = puf_ini_get(ini, "env", "exact_exploiter_banks");
+    assert(banks > 0 && banks < puf_ini_get(ini, "vec", "num_policies"));
+    assert(puf_ini_get(ini, "env", "information") == GS_INFO_PERFECT);
+    assert(GS_NUM_CARDS <= GS_EXACT_MAX_CARDS);
+}
+#define PUF_CONFIGURE(ini, mode) gs_configure(ini, mode)
+
+void gs_load_hook(const char* checkpoint, Ini* ini) {
+    if (!gs_exact_enabled) {
+        return;
+    }
+    gs_exact_restored = gs_exact_pool_load(checkpoint, gs_exact_tables,
+        gs_exact_history, puf_ini_get(ini, "env", "num_cards"),
+        puf_ini_get(ini, "env", "prize_order"), &gs_exact_count, &gs_exact_seen);
+    printf("Exact response restore: pool=%d seen=%llu restored=%d\n",
+        gs_exact_count, (unsigned long long)gs_exact_seen, gs_exact_restored);
+}
+#define PUF_LOAD_HOOK(checkpoint, ini) gs_load_hook(checkpoint, ini)
+
+void gs_checkpoint_hook(const char* checkpoint, Ini* ini) {
+    if (!gs_exact_enabled) {
+        return;
+    }
+    if (gs_exact_restored) {
+        gs_exact_restored = 0;
+    } else {
+        uint64_t nodes = 0;
+        double milliseconds = 0;
+        double exploitability = gs_cuda_pool_response(checkpoint, ini,
+            gs_exact_tables, &gs_exact_count, gs_exact_history, &gs_exact_seen,
+            &nodes, &milliseconds);
+        printf("Exact response: exploitability=%.9f pool=%d/%d seen=%llu "
+            "nodes=%llu milliseconds=%.3f\n", exploitability, gs_exact_count,
+            gs_exact_history, (unsigned long long)gs_exact_seen,
+            (unsigned long long)nodes, milliseconds);
+    }
+    gs_exact_pool_save(checkpoint, gs_exact_tables, gs_exact_count,
+        gs_exact_history, gs_exact_seen);
+}
+#define PUF_CHECKPOINT_HOOK(checkpoint, ini) gs_checkpoint_hook(checkpoint, ini)
 #endif
 
 void gs_render(Env* env) {

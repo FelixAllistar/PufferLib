@@ -3229,6 +3229,9 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
         "load_model_path", load_buf, sizeof(load_buf));
     if (load_path) {
         pufferl_load_policy(pufferl, 0, load_path);
+#ifdef PUF_LOAD_HOOK
+        PUF_LOAD_HOOK(load_path, ini);
+#endif
     }
 
     Selfplay selfplay = {0};
