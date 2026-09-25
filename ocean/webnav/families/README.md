@@ -1,8 +1,8 @@
 # WebNav family infrastructure: 5.0 conversion
 
 The ABI v2 loader, stock Bend transport, serialized incremental builder and
-resource guards are preserved from `5c`. The panel/menu/forms families and shared public
-scripted runner are ported. Other task implementations and the registry are
+resource guards are preserved from `5c`. The panel/menu/forms/numeric families
+and shared public scripted runner are ported. Other task implementations and the registry are
 still pending; other controller headers are retained as runner dependencies,
 not evidence that those families are qualified. The three-task pilot is not
 a replacement for the task families.
