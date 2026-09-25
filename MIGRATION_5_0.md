@@ -98,7 +98,14 @@ observations/masks/rewards/terminals and final state/log/RNG equality, one/five
 policies, non-default stream and vector recreation. CPU tests and ASan/UBSan
 pass; FP32 GPU native training completes 4,096 steps with graphs off/on and
 four frozen banks. Exact-response training orchestration remains unfinished.
-Pokémon native observation binding is approved but still to be implemented.
+Pokémon's approved observation binding is implemented as an optional decoder
+callback (seven added lines in `src/algo.cu`). Both rollout and training paths
+pass the current flattened observation, with no loss/optimizer changes.
+Environment-local tests exercise both architecture entry points using fixed
+hidden inputs: CPU/GPU output parity and 172 numerical derivatives pass across
+four batches. A Goofspiel graph-training smoke verifies the null callback path.
+Pokémon environment setup, recurrent training and reset integration remain
+unfinished; the callback alone does not make the environment trainable.
 Legacy continuous PFSP is explicitly excluded by the user; fixed saved
 opponents and external evaluation remain, not PFSP retention/resampling.
 

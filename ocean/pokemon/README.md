@@ -107,10 +107,13 @@ This does not yet qualify recurrent training, real-game GPU observations,
 CUDA graphs or BF16.
 
 The decoder needs the current observation to identify candidate moves/species.
-Upstream's decoder API only supplies the recurrent hidden state. The component
-test explicitly binds observations; the network is deliberately not registered
-with the native trainer until that integration is resolved. No shared-core
-changes were made for this source port.
+The approved optional `Decoder.bind_observation` callback now supplies it in
+both rollout and training forward paths. The shared change is seven lines in
+`src/algo.cu`; semantic lookup and all model math stay here. Tests exercise both
+real architecture entry points across four batches and all 172 derivatives;
+recurrence is replaced with fixed hidden inputs to isolate decoder behavior.
+This does not qualify end-to-end Pokémon training. Default decoders leave the
+callback null; a Goofspiel four-bank GPU graph training smoke still passes.
 
 Not ready for training yet: semantic CUDA network integration, native adapter
 setup callbacks, state/core-reset and league/experiment workflows still need

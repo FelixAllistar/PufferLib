@@ -43,6 +43,7 @@ struct EncoderActivations {
 
 struct Decoder {
     forward_fn forward;
+    void (*bind_observation)(void* activations, Prec observation);
     decoder_backward_fn backward;
     init_weights_fn init_weights;
     reg_params_fn reg_params;
@@ -914,6 +915,9 @@ Prec arch_forward(Arch* p, Weights& w, Activations& activations,
         w.encoder, activations.encoder, obs, stream);
     Prec h = p->network.forward(
         w.network, enc_out, state, activations.network, stream);
+    if (p->decoder.bind_observation) {
+        p->decoder.bind_observation(activations.decoder, obs);
+    }
     return p->decoder.forward(w.decoder, activations.decoder, h, stream);
 }
 
@@ -1466,6 +1470,9 @@ Prec arch_forward_train(Arch* p, Weights& w,
         activations.encoder, *puf_squeeze(&x, 0), stream);
     h = p->network.forward_train(w.network, *puf_unsqueeze(&h, 0, B, TT),
         state, terminals, activations.network, agent_off, stream);
+    if (p->decoder.bind_observation) {
+        p->decoder.bind_observation(activations.decoder, x);
+    }
     Prec dec_out = p->decoder.forward(
         w.decoder, activations.decoder, *puf_squeeze(&h, 0), stream);
     Prec dec = *puf_unsqueeze(&dec_out, 0, B, TT);

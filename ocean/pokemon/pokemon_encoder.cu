@@ -258,9 +258,9 @@ static Prec pk_decoder_backward(void* weights,void* activations,Float logits,Flo
 }
 static void create_pokemon_decoder(Decoder* dec) {
     dec->forward=pk_decoder_forward;dec->backward=pk_decoder_backward;
+    dec->bind_observation=pk_decoder_bind;
     dec->reg_train=pk_decoder_acts;dec->reg_rollout=pk_decoder_rollout;
     dec->reg_params=pk_decoder_params;dec->init_weights=pk_decoder_init;
     dec->create_weights=pk_decoder_weights;dec->activation_size=sizeof(PKDecoderActs);
-    // Caller must bind this batch's observations with pk_decoder_bind.
-    // Native 5.0 integration is pending; do not register this decoder yet.
+    // Native environment setup/reset integration is still required.
 }

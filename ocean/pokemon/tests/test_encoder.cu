@@ -42,6 +42,17 @@ static void derivative(double numeric, float analytic, int tensor, int index) {
     }
 }
 
+// Isolate decoder semantics from recurrence while exercising the real architecture call.
+static Prec fixed_hidden(void* weights, Prec input, Prec state,
+        void* activations, cudaStream_t stream) {
+    return state;
+}
+
+static Prec fixed_hidden_train(void* weights, Prec input, Prec state,
+        Prec terminals, void* activations, int offset, cudaStream_t stream) {
+    return *puf_unsqueeze(&state, 0, 1, state.shape[0]);
+}
+
 int main() {
     const int B = 3, H = 16;
     cublas_init_handle();
@@ -66,9 +77,32 @@ int main() {
     alloc_register(&acts, &value_grad);
     alloc_register(&acts, &obs);
     alloc_register(&acts, &state);
+    TrainGraph graph = {};
+    graph.mb_actions = {.shape = {1, B, 1}};
+    graph.mb_logprobs = {.shape = {1, B}};
+    graph.mb_action_mask = {.shape = {1, B, 168}};
+    graph.mb_imp = {.shape = {1, B}};
+    graph.mb_gae_v = {.shape = {1, B}};
+    Float logps = {.shape = {B, 168}}, new_lp = {.shape = {B}};
+    Int sizes = {.shape = {1}};
+    alloc_register(&acts, &graph.mb_actions);
+    alloc_register(&acts, &graph.mb_logprobs);
+    alloc_register(&acts, &graph.mb_action_mask);
+    alloc_register(&acts, &graph.mb_imp);
+    alloc_register(&acts, &graph.mb_gae_v);
+    alloc_register(&acts, &logps);
+    alloc_register(&acts, &new_lp);
+    alloc_register(&acts, &sizes);
     alloc_create(&params);
     alloc_create(&acts);
     alloc_create(&grads);
+    int action_count = 168;
+    gpu(cudaMemcpy(sizes.data, &action_count, sizeof(int), cudaMemcpyHostToDevice));
+    gpu(cudaMemset(graph.mb_actions.data, 0, B*sizeof(float)));
+    gpu(cudaMemset(graph.mb_logprobs.data, 0, B*sizeof(float)));
+    float legal[B*168];
+    for (int i = 0; i < B*168; i++) legal[i] = 1;
+    gpu(cudaMemcpy(graph.mb_action_mask.data, legal, sizeof(legal), cudaMemcpyHostToDevice));
     assert(params.num_regs == 12 && grads.num_regs == params.num_regs);
     assert(params.total_bytes == grads.total_bytes);
     assert(params.total_bytes == params.total_elems*sizeof(float));
@@ -119,8 +153,20 @@ int main() {
         gpu(cudaMemcpy(obs.data, input, sizeof(input), cudaMemcpyHostToDevice));
         pk_reference(weights, B, H, input, hidden, expected_enc, expected_dec);
         compare(enc.forward(ew, &ea, obs, 0), expected_enc, B*H);
-        pk_decoder_bind(&da, obs);
-        compare(dec.forward(dw, &da, state, 0), expected_dec, B*169);
+        Arch arch = {.encoder = enc, .decoder = dec,
+            .network = {.forward = fixed_hidden, .forward_train = fixed_hidden_train}};
+        Weights arch_weights = {.encoder = ew, .decoder = dw};
+        Activations arch_acts = {.encoder = &ea, .decoder = &da};
+        da.obs = {};
+        compare(arch_forward(&arch, arch_weights, arch_acts, obs, state, 0),
+            expected_dec, B*169);
+        assert(da.obs.data == obs.data && da.obs.shape[0] == B);
+        da.obs = {};
+        Prec sequence = obs;
+        puf_unsqueeze(&sequence, 0, 1, B);
+        compare(arch_forward_train(&arch, arch_weights, arch_acts, sequence, state,
+            {}, 0, graph, {}, sizes.data, logps.data, new_lp.data, 0), expected_dec, B*169);
+        assert(da.obs.data == obs.data && da.obs.shape[0] == B && da.obs.shape[1] == 648);
         enc.backward(ew, &ea, enc_grad, 0);
         Prec grad_state = dec.backward(dw, &da, logits_grad, {}, value_grad, 0);
         float dh[B*H];
