@@ -73,6 +73,49 @@ static uint64_t gs_exact_seen;
 static int gs_exact_restored;
 static float gs_exact_current_prob;
 
+#if PUF_BACKEND == PUF_GPU
+struct GSDeviceExact {
+    GSExactTable tables[GS_EXACT_POOL_MAX];
+    int count;
+    int banks;
+    float current_prob;
+};
+__device__ GSDeviceExact gs_device_exact;
+static uint8_t* gs_device_actions;
+
+void gs_gpu_exact_upload(void) {
+    assert(cudaDeviceSynchronize() == cudaSuccess);
+    GSDeviceExact upload = {};
+    upload.count = gs_exact_count;
+    upload.banks = gs_exact_banks;
+    upload.current_prob = gs_exact_current_prob;
+    GSExactTable* first = gs_exact_tables;
+    uint64_t stride = 0;
+    for (int d = 0; d < first->decisions; d++) {
+        stride += first->counts[d];
+    }
+    // Allocate every history slot once; captured graphs read the device descriptor.
+    if (!gs_device_actions && stride) {
+        assert(cudaMalloc(&gs_device_actions, stride * gs_exact_history) == cudaSuccess);
+    }
+    for (int i = 0; i < gs_exact_count; i++) {
+        GSExactTable* source = gs_exact_tables + i;
+        GSExactTable* target = upload.tables + i;
+        assert(source->decisions == first->decisions);
+        assert(memcmp(source->counts, first->counts, sizeof(first->counts)) == 0);
+        *target = *source;
+        uint64_t offset = i * stride;
+        for (int d = 0; d < source->decisions; d++) {
+            target->actions[d] = gs_device_actions + offset;
+            assert(cudaMemcpy(target->actions[d], source->actions[d], source->counts[d],
+                cudaMemcpyHostToDevice) == cudaSuccess);
+            offset += source->counts[d];
+        }
+    }
+    assert(cudaMemcpyToSymbol(gs_device_exact, &upload, sizeof(upload)) == cudaSuccess);
+}
+#endif
+
 static inline int gs_kw(Dict* kwargs, const char* key) {
     return (int)dict_get(kwargs, key);
 }
@@ -165,8 +208,8 @@ void puf_init(Env* env, Dict* kwargs) {
     env->client = NULL;
     memset(&env->log, 0, sizeof(env->log));
     gs_exact_enabled = gs_exact_training && gs_kw(kwargs, "exact_exploiter");
-#if !defined(PUFFERLIB_BUILD_MAIN) || PUF_BACKEND != PUF_CPU
-    assert(!gs_exact_enabled && "exact-response training requires the native CPU simulator");
+#if !defined(PUFFERLIB_BUILD_MAIN)
+    assert(!gs_exact_enabled && "exact-response training requires the native trainer");
 #endif
     gs_exact_banks = gs_kw(kwargs, "exact_exploiter_banks");
     gs_exact_history = gs_kw(kwargs, "exact_exploiter_history");
@@ -380,7 +423,7 @@ void puf_close(Env* env) {
 }
 #endif
 
-#if defined(PUFFERLIB_BUILD_MAIN) && PUF_BACKEND == PUF_CPU
+#if defined(PUFFERLIB_BUILD_MAIN)
 void gs_configure(Ini* ini, const char* mode) {
     for (int i = 0; i < gs_exact_count; i++) {
         gs_exact_table_clear(gs_exact_tables + i);
@@ -437,6 +480,9 @@ void gs_checkpoint_hook(const char* checkpoint, Ini* ini) {
     }
     gs_exact_pool_save(checkpoint, gs_exact_tables, gs_exact_count,
         gs_exact_history, gs_exact_seen);
+#if PUF_BACKEND == PUF_GPU
+    gs_gpu_exact_upload();
+#endif
 }
 #define PUF_CHECKPOINT_HOOK(checkpoint, ini) gs_checkpoint_hook(checkpoint, ini)
 #endif

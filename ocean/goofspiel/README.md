@@ -30,8 +30,9 @@ settings are not imported into the new optimizer. This is not an identical
 training algorithm to the old fork.
 
 `make -C ocean/goofspiel test-gpu NVCC=/usr/local/cuda/bin/nvcc CUDA_ARCH=sm_61`
-checks 32,768 game transitions across single-policy and four-frozen-bank
-layouts, on a non-default CUDA stream. Observations, legal masks, rewards,
+checks 65,536 game transitions across single-policy and four-frozen-bank
+layouts, including exact responses with direct launches and CUDA graphs,
+on a non-default CUDA stream. Observations, legal masks, rewards,
 terminals, final state, logs and RNG match host execution exactly. CPU tests
 and sanitizers pass; native FP32 GPU training completes 4,096 steps with graphs
 off/on and four frozen banks. These are correctness/smoke checks, not learning
@@ -91,8 +92,7 @@ set, without enforcing `--minimum-distance`. Groups use transitive similarity,
 not an all-pairs distance bound. This does not modify training or a live league.
 Unit/CLI tests and a native-checkpoint report-to-selection smoke pass.
 
-Still pending: GPU-simulator exact-response integration and
-exploitability-driven sweep orchestration.
+Still pending: exploitability-driven sweep orchestration.
 The legacy offline response-pool writer/loader passes a native-checkpoint
 round-trip test: populate a three-slot reservoir with seven responses, save
 and restore all table bytes, continue eight more updates identically, then
@@ -105,25 +105,31 @@ make -C ocean/goofspiel build/test_exact_pool NVCC=/usr/local/cuda/bin/nvcc CUDA
 pool_test_dir=$(mktemp -d)
 ./ocean/goofspiel/build/test_exact_pool PATH.bin "$pool_test_dir/checkpoint"
 ```
-Native CPU-simulator training now supports `env.exact_exploiter=1` with
+Native CPU/GPU-simulator training supports `env.exact_exploiter=1` with
 selfplay enabled. The first `exact_exploiter_banks` frozen banks use exact
 response actions; other banks retain their neural policies. The CUDA solver
 refreshes the latest response at the initial and subsequent checkpoint saves.
 `exact_exploiter_history` bounds the reservoir, and
 `exact_exploiter_current_prob` controls latest-versus-history sampling per game.
 This is not PFSP or a change to PPO losses/optimizers. Leave it disabled for
-ordinary frozen-checkpoint selfplay; enabling it in GPU simulation still fails.
+ordinary frozen-checkpoint selfplay. GPU simulation preallocates all response
+history slots on the first upload. Refreshes synchronize at checkpoint
+boundaries and update device metadata, so already-captured graphs see new
+tables without retaining freed pointers. The parity test grows and replaces
+the pool after capture, checks that all three test tables are used, and
+compares exact-response traversal indices as well as simulation outputs.
 
 Each checkpoint has a `.bin.exact` sidecar. Loading weights restores that pool
 when present, preserves it at the new run's initial save, then resumes refreshes.
 A missing sidecar starts a new pool. Use the same game rules and pool capacity
 when continuing; this is not optimizer or in-flight episode restoration.
 Evaluation uses neural policies without substituting response-table actions.
-Four native tests cover sync/async and graphs off/on, pool saturation,
+Eight native tests cover CPU/GPU, sync/async and graphs off/on, pool saturation,
 byte-identical initial restoration, continued refreshes, and post-training eval:
 
 ```bash
 GOOFSPIEL_EXACT_TRAIN_BINARY=./puffer_goofspiel \
+GOOFSPIEL_EXACT_GPU_TRAIN_BINARY=./puffer_goofspiel_gpu \
     uv run --no-project --with pytest \
     python -m pytest -q ocean/goofspiel/tests/test_native_training.py
 ```

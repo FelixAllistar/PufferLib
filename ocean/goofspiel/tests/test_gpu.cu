@@ -21,11 +21,21 @@ int main(void) {
     unsigned char* masks = (unsigned char*)managed(rows * GS_NUM_CARDS);
     cudaStream_t stream;
     assert(cudaStreamCreate(&stream) == cudaSuccess);
-    for (int policies = 1; policies <= 5; policies += 4) {
+    for (int scenario = 0; scenario < 4; scenario++) {
+        int policies = scenario == 0 ? 1 : 5;
+        int exact = scenario >= 2;
         dict_set(vk, "num_policies", policies);
         Env* gpu = puf_vec_create(rows, ek, obs, actions, rewards, terminals);
         int layout[6] = {};
         puf_gpu_setup(gpu, vk, layout, masks);
+        gs_exact_count = 0;
+        gs_exact_history = 3;
+        gs_exact_banks = 2;
+        if (exact) {
+            gs_cuda_best_response("uniform", &ini, gs_exact_tables, NULL, NULL);
+            gs_exact_count = 1;
+            gs_gpu_exact_upload();
+        }
         assert(layout[policies] == rows);
         assert(layout[1] == (policies == 1 ? rows : 48));
         Env host[rows / 2];
@@ -45,12 +55,34 @@ int main(void) {
                 a->terminals = reference_terminals + row;
                 a->action_mask = reference_masks + row * GS_NUM_CARDS;
             }
-            gs_reset_state(host + e, 0, 0);
+            gs_reset_state(host + e, gs_exact_count, gs_exact_current_prob);
         }
         puf_bind_stream(stream);
         puf_reset(gpu);
         assert(cudaStreamSynchronize(stream) == cudaSuccess);
+        cudaGraph_t graph = NULL;
+        cudaGraphExec_t executable = NULL;
+        if (scenario == 3) {
+            assert(cudaStreamBeginCapture(stream, cudaStreamCaptureModeGlobal) == cudaSuccess);
+            puf_step(gpu);
+            assert(cudaStreamEndCapture(stream, &graph) == cudaSuccess);
+            assert(cudaGraphInstantiate(&executable, graph, 0) == cudaSuccess);
+        }
+        unsigned int selected_tables = 0;
+        int overridden_actions = 0;
         for (int t = 0; t < 512; t++) {
+            if (exact && t > 0 && t % 128 == 0) {
+                uint8_t* allocation = gs_device_actions;
+                int slot = gs_exact_count < 3 ? gs_exact_count++ : 0;
+                gs_cuda_best_response("uniform", &ini, gs_exact_tables + slot, NULL, NULL);
+                // Change root decisions while retaining valid history-indexed responses.
+                GSExactTable* table = gs_exact_tables + slot;
+                for (uint64_t n = 0; n < table->counts[0]; n++) {
+                    table->actions[0][n] = (table->actions[0][n] + 1) % GS_NUM_CARDS;
+                }
+                gs_gpu_exact_upload();
+                assert(gs_device_actions == allocation);
+            }
             assert(memcmp(obs, reference_obs, sizeof(reference_obs)) == 0);
             assert(memcmp(masks, reference_masks, sizeof(reference_masks)) == 0);
             assert(memcmp(rewards, reference_rewards, sizeof(reference_rewards)) == 0);
@@ -63,11 +95,25 @@ int main(void) {
                 actions[row] = a;
             }
             for (int e = 0; e < rows / 2; e++) {
-                if (gs_transition(host + e, NULL, 0)) {
-                    gs_reset_state(host + e, 0, 0);
+                Env* env = host + e;
+                GSExactTable* table = gs_exact_tables + env->exact_table;
+                int response = exact && env->tag > 0 && env->tag <= gs_exact_banks
+                    && env->exact_depth < table->decisions;
+                if (response) {
+                    selected_tables |= 1u << env->exact_table;
+                    overridden_actions += table->actions[env->exact_depth][env->exact_node]
+                        != env->agents[1].actions[0];
+                }
+                if (gs_transition(env, response ? table->actions[env->exact_depth] : NULL,
+                        response ? table->decisions : 0)) {
+                    gs_reset_state(env, gs_exact_count, gs_exact_current_prob);
                 }
             }
-            puf_step(gpu);
+            if (executable) {
+                assert(cudaGraphLaunch(executable, stream) == cudaSuccess);
+            } else {
+                puf_step(gpu);
+            }
             assert(cudaStreamSynchronize(stream) == cudaSuccess);
         }
         Env actual[rows / 2];
@@ -76,8 +122,20 @@ int main(void) {
             assert(actual[e].rng == host[e].rng);
             assert(memcmp(&actual[e].state, &host[e].state, sizeof(GSState)) == 0);
             assert(memcmp(&actual[e].log, &host[e].log, sizeof(Log)) == 0);
+            assert(actual[e].exact_node == host[e].exact_node);
+            assert(actual[e].exact_depth == host[e].exact_depth);
+            assert(actual[e].exact_table == host[e].exact_table);
+        }
+        assert(!exact || (selected_tables == 7 && overridden_actions > 0));
+        if (executable) {
+            cudaGraphExecDestroy(executable);
+            cudaGraphDestroy(graph);
         }
         puf_close(gpu);
+        for (int i = 0; i < gs_exact_count; i++) {
+            gs_exact_table_clear(gs_exact_tables + i);
+        }
+        gs_exact_count = 0;
     }
     cudaStreamDestroy(stream);
     cudaFree(obs);
@@ -85,5 +143,5 @@ int main(void) {
     cudaFree(rewards);
     cudaFree(terminals);
     cudaFree(masks);
-    puts("PASS GPU masks, policy rows, observations, rewards, resets and RNG");
+    puts("PASS GPU masks, policy rows, observations, rewards, resets, RNG and exact refresh graphs");
 }

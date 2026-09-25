@@ -37,6 +37,8 @@ Env* puf_vec_create(int total_agents, Dict* kwargs, obs_t* observations,
     gs_gpu.actions = actions;
     gs_gpu.rewards = rewards;
     gs_gpu.terminals = terminals;
+    GSDeviceExact empty = {};
+    assert(cudaMemcpyToSymbol(gs_device_exact, &empty, sizeof(empty)) == cudaSuccess);
     return envs;
 }
 
@@ -85,7 +87,7 @@ __global__ void gs_reset_kernel(Env* envs, int games) {
         env->agents[p].rewards[0] = 0;
         env->agents[p].terminals[0] = 0;
     }
-    gs_reset_state(env, 0, 0);
+    gs_reset_state(env, gs_device_exact.count, gs_device_exact.current_prob);
 }
 
 __global__ void gs_step_kernel(Env* envs, int games) {
@@ -93,8 +95,17 @@ __global__ void gs_step_kernel(Env* envs, int games) {
     if (e >= games) {
         return;
     }
-    if (gs_transition(envs + e, NULL, 0)) {
-        gs_reset_state(envs + e, 0, 0);
+    Env* env = envs + e;
+    GSExactTable* table = gs_device_exact.tables + env->exact_table;
+    int exact = env->exact_table < gs_device_exact.count
+        && env->tag > 0 && env->tag <= gs_device_exact.banks
+        && env->exact_depth < table->decisions;
+    if (exact) {
+        assert(env->exact_node < table->counts[env->exact_depth]);
+    }
+    if (gs_transition(env, exact ? table->actions[env->exact_depth] : NULL,
+            exact ? table->decisions : 0)) {
+        gs_reset_state(env, gs_device_exact.count, gs_device_exact.current_prob);
     }
 }
 
@@ -125,5 +136,7 @@ void puf_close(Env* envs) {
         free(gs_gpu.viewer.client);
     }
     assert(cudaFree(envs) == cudaSuccess);
+    assert(cudaFree(gs_device_actions) == cudaSuccess);
+    gs_device_actions = NULL;
     gs_gpu = {};
 }

@@ -24,8 +24,8 @@ exploit-gpu: | $(BUILD)
 
 test-gpu: | $(BUILD)
 	$(NVCC) -O2 -arch=$(CUDA_ARCH) -std=c++17 $(CPPFLAGS) \
-		-Xcompiler=-Wno-narrowing --diag-suppress=2361 tests/test_gpu.cu \
-		$(LDLIBS) -o $(BUILD)/test_gpu
+		-Xcompiler=-Wno-narrowing --diag-suppress=2361 -DGS_EXPLOIT_NO_MAIN \
+		tests/test_gpu.cu goofspiel_exploit.cu -lcublas $(LDLIBS) -o $(BUILD)/test_gpu
 	cd $(ROOT) && ocean/goofspiel/$(BUILD)/test_gpu
 
 $(BUILD)/test_exact_pool: tests/test_exact_pool.cu goofspiel_exploit.cu | $(BUILD)

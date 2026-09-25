@@ -44,16 +44,18 @@ def test_frozen_bank_training(tmp_path, graphs):
     assert checkpoints[0].read_bytes() != checkpoints[-1].read_bytes()
 
 
-@pytest.mark.skipif(not os.environ.get("GOOFSPIEL_EXACT_TRAIN_BINARY"),
-    reason="requires native Goofspiel CPU-simulator trainer")
+@pytest.mark.parametrize("variable,buffers", [
+    ("GOOFSPIEL_EXACT_TRAIN_BINARY", 2), ("GOOFSPIEL_EXACT_GPU_TRAIN_BINARY", 1)])
 @pytest.mark.parametrize("graphs,asynchronous", [(-1, 0), (1, 0), (-1, 1), (1, 1)])
-def test_exact_response_continuation(tmp_path, graphs, asynchronous):
-    binary = Path(os.environ["GOOFSPIEL_EXACT_TRAIN_BINARY"]).resolve()
+def test_exact_response_continuation(tmp_path, graphs, asynchronous, variable, buffers):
+    if variable not in os.environ:
+        pytest.skip(f"set {variable} to enable native training")
+    binary = Path(os.environ[variable]).resolve()
     settings = {
         "base.checkpoint_dir": tmp_path, "base.log_dir": tmp_path / "logs",
         "base.eval_episodes": 4, "base.eval_agents": 16, "base.checkpoint_interval": 1,
         "base.cudagraphs": graphs, "base.async": asynchronous,
-        "vec.total_agents": 64, "vec.num_buffers": 2, "vec.num_threads": 2,
+        "vec.total_agents": 64, "vec.num_buffers": buffers, "vec.num_threads": 2,
         "vec.num_policies": 5, "vec.hist_policy_percent": .5,
         "selfplay.enabled": 1, "selfplay.initial_opponents": "None",
         "selfplay.eval_games": 0, "env.exact_exploiter": 1,
