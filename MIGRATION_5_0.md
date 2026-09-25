@@ -12,6 +12,12 @@ boundaries for actor-only, critic-only and joint fitting. Official expert corpus
 coverage and useful large-model retraining are not yet qualified. This
 port changes only `ocean/kaggriculture` and documentation, not the shared trainer.
 
+Kaggriculture's public-state submission controller now uses `policy.h` directly,
+without retired trainer fields. Two seeds in deterministic/stochastic modes
+qualify 2,876 transitions and both seats against full native state for exact
+observations, actions, masks and RNG. Official Kaggle execution, learned-network
+export parity and archive packaging remain unfinished; the oracle is test-only.
+
 Canonical repository: `https://github.com/FelixAllistar/PufferLib.git`.
 Canonical development branch: `5.0`, published on GitHub. Further ports and
 clean-clone qualification remain in progress; check branch HEAD for updates.

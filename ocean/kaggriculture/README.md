@@ -331,6 +331,33 @@ Choose the build architecture for your GPU. Without `KAG_BC_BINARY`, only the
 CPU publication test runs. Official-corpus qualification, useful H256/L2
 training and BF16 qualification remain pending for newly generated datasets.
 
+## Submission adapter (partial port)
+
+The public-observation controller is ported under `submission/`. Build it with
+`make -C ocean/kaggriculture submission-bridge`; it needs only the native rule
+and policy headers, libc and libm, not the trainer, CUDA or Raylib. It currently
+targets the standard 2/2 controller with 10 market slots, 16 hands and no land
+purchase delay. A packaging tool must validate that contract before export.
+
+```sh
+uv run --no-project --with pytest --with numpy python -m pytest -q \
+    ocean/kaggriculture/submission/test_entity_export.py
+```
+
+Tests reconstruct both players' observations using only public fields and the
+acting player's private inventory. Across two seeds and deterministic/stochastic
+sampling, 2,876 game transitions (5,752 player decisions) match full native
+state exactly for observations, sampled heads, prefix masks, primitive actions
+and sampling RNG. Repeated observation reads preserve history; midgame startup
+without history is rejected. These are native-generated snapshots and supplied
+random logits, not official Kaggle runtime or learned-network qualification.
+
+The legacy NumPy entity inference module is preserved alongside the adapter.
+Its current upstream checkpoint/logit parity, archive packaging, metadata
+validation and official Kaggle execution still need qualification. Do not treat
+the adapter build alone as a submission-ready export. The full-state oracle is
+test-only and must never be bundled with a submitted agent.
+
 ## Shared-code boundary
 
 Following `SKILL_ISSUES.md`, simulator, controller, observations, rewards,
