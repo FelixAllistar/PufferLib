@@ -14,6 +14,10 @@ SHA-1 identities are `33d23c2f2cfa4c9efec87f7bc1321ce3ce6c89bd` (NES 2.0)
 and `ea343f4e445a9050d4b4fbac2c77d0693b1d0922` (iNES). PAL and modified images
 are rejected. No ROM download or ROM bytes are included in this port.
 
+The formerly ignored `nes_emu/gen_nes_ntsc_palette_fixed.py` is now tracked.
+Its stdout reproduces `nes_emu/nes_ntsc_palette_fixed.h` byte-for-byte; this
+generator needs only Python's standard library, not a ROM or emulator build.
+
 With Clang++, OpenMP, Python 3, GNU Make and the repository's Raylib 5.5
 dependency available, run from the repository root:
 
