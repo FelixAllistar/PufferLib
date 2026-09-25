@@ -177,7 +177,11 @@ static inline void pk_configure(Ini* ini, const char* mode) {
     DictItem* core_option=dict_find(puf_ini_section(ini,"env",0),"force_core_combos");
     double core=core_option?core_option->value:0;
     if(core!=0 && core!=1) { fprintf(stderr,"force_core_combos must be 0 or 1\n"); exit(1); }
-    if(strcmp(mode,"train")) { core=0; puf_ini_put(ini,"env.force_core_combos","0"); }
+    if(strcmp(mode,"train")) {
+        core=0;
+        puf_ini_put(ini,"env.force_core_combos","0");
+        puf_ini_put(ini,"env.reset_state_prob","0");
+    }
     if(core) {
         DictItem* probability=dict_find(puf_ini_section(ini,"env",0),"force_core_prob");
         pk_core_probability=probability?probability->value:1;

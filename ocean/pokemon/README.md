@@ -128,9 +128,18 @@ Local SM61 FP32 H16/L1 training completes 2,048 steps with graphs off/on,
 16 player rows, two CPU workers, a four-species core pool and legality auditing
 enabled. Drafts complete, rewards/losses are finite and a checkpoint is saved.
 This does not qualify default-scale performance or learning quality. Native
-named expert banks are explicitly blocked pending their loader port; state-bank
-training, curriculum-cursor checkpointing and full league/experiment workflows
+named expert banks are explicitly blocked pending their loader port;
+curriculum-cursor checkpointing and full league/experiment workflows
 remain unfinished. Do not substitute the generic MLP for the semantic model
 or load old checkpoints through a different architecture. Full legacy source,
 generator scripts and experiment documentation remain in
 `archive/5c-before-unification-20260924` while these ports proceed.
+
+Native reset-bank qualification uses 1,024 audited snapshots from 128 seeded
+random-policy games. A 2,048-step H16/L1 run with reset probability one, graphs
+enabled and legality auditing passes, including all three reset phases.
+The resulting checkpoint reloads for eight native evaluation games. Evaluation
+always disables snapshot resets and forced-core drafting, even when training
+config points to an unavailable bank; the regression test checks this without
+opening the bank. This is simulator/loading evidence, not policy strength or
+qualification of an existing user-collected bank.

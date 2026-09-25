@@ -7,6 +7,16 @@
 #endif
 
 int main(void) {
+    Ini evaluation = {0};
+    puf_ini_load_file(&evaluation, "config/default.ini");
+    puf_ini_load_file(&evaluation, "config/pokemon.ini");
+    puf_ini_put(&evaluation, "env.reset_state_prob", "1");
+    puf_ini_put(&evaluation, "env.reset_state_bank", "/missing/training-only-bank.pks");
+    pk_personality_configure(&evaluation, "eval");
+    assert(puf_ini_get(&evaluation, "env", "reset_state_prob") == 0);
+    assert(puf_ini_get(&evaluation, "env", "force_core_combos") == 0);
+    assert(!pk_state_bank.states && !pk_core_deck.cards);
+    puf_ini_free(&evaluation);
     // Exercise the production viewer forward path, not a second conversion
     // helper. All byte values are exactly representable in float and BF16.
     const int h = 32;

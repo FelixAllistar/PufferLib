@@ -122,6 +122,17 @@ scheduling. Named expert banks fail explicitly until their loader is ported;
 state-bank training qualification, checkpoint curriculum cursors and broader
 native evaluation remain unfinished. No performance/learning-quality claim.
 
+Pokémon reset-bank follow-up: collected/audited 1,024 valid snapshots from 128
+seeded random-policy games, then completed a 2,048-step native H16/L1 run with
+reset probability one, graphs and legality auditing enabled. All three reset
+phases were observed. The saved weights reload and complete eight native
+evaluation games. Fixed an environment-only configuration gap: evaluation now
+disables reset-bank sampling as well as forced-core drafts, consistent with the
+standalone evaluator. Evaluation succeeds with an intentionally missing bank
+path and reports zero reset/core fractions. Adapter, input-contract and
+fixed-team tests pass, including the new evaluation configuration regression.
+This does not certify user banks, learning quality or curriculum checkpointing.
+
 - Finalized upstream base: `6ffa5b10dbbbe4d1e8288367c7d9d3acd3bad4a2`.
 - Qualified Kaggriculture runtime before unification: `1c30e3c2f`.
 - Custom environment/source inventory: `5c` at `036cf4251`.
