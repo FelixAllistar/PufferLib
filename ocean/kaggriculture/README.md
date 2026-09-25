@@ -262,6 +262,29 @@ nvcc -O2 -std=c++17 -arch=sm_61 -Isrc -Iraylib-5.5_linux_amd64/include \
 ./build/kaggriculture/test_reward_gpu
 ```
 
+The CPU BC replay bridge is built with:
+
+```sh
+make -C ocean/kaggriculture replay-bridge replay-test
+```
+
+`ocean/kaggriculture/build/kag_bc_replay.so` exposes the current 2/2 float
+observation/action ABI (1424 observations, 47 heads, 1978 mask bits, policy v5).
+It uses the production decoder, prefix masks and shared primitive rewards.
+Projected teacher heads update observation history, but the original primitive
+action pair advances the game. Decode/work previews do not advance live state.
+The source fingerprint is generated from the bridge, controller, rule core,
+environment and config-interface sources. Reward/controller settings have a
+separate semantics hash; replay seeds do not affect it. Gamma is reported
+separately. It requires default native game rules and `train.reward_clip=0`,
+and does not load reset banks or opponent networks.
+
+Two 720-frame rule-bot replays pass exact state comparison, terminal-only cash
+reward checks, mask/observation checks and ASan/UBSan. These are synthetic
+integration fixtures, not proof of official expert label coverage. The Python
+label projection and complete v3 dataset publication pipeline remain to port;
+the bridge alone does not produce a trainable dataset.
+
 ## Shared-code boundary
 
 Following `SKILL_ISSUES.md`, simulator, controller, observations, rewards,
