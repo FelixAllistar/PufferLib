@@ -134,6 +134,12 @@ their final 5.0 implementations must not be overwritten by older copies.
 
 ## Other source/workflow inventory
 
+The legacy `scripts/goofspiel_behavior.py` was ignored in the main checkout,
+not contained in the archived `5c` ref. It is now explicitly ported from that
+local file, with grouping/selection tests and an actual native report-to-CLI
+smoke. This confirms why ignored source/workflow files must be inventoried
+before replacing the main checkout; recovery Git refs alone are insufficient.
+
 ### Non-Git asset handoff
 
 These assets are not supplied by cloning `5.0`. Keep source installations until
