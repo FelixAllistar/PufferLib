@@ -288,6 +288,7 @@ static inline void pk_validate_checkpoint(const char* checkpoint) {
     puf_ini_free(&saved);
 }
 #define PUF_VALIDATE_CHECKPOINT(path) pk_validate_checkpoint(path)
+#define PUF_LOAD_HOOK(checkpoint, ini) pk_validate_checkpoint(checkpoint)
 
 struct Log {
     float perf, score, episode_return, episode_length;

@@ -3,6 +3,7 @@ import configparser
 import os
 from pathlib import Path
 import subprocess
+import resource
 
 import pytest
 
@@ -71,3 +72,28 @@ def test_named_experts(tmp_path, graphs, learner_arch):
     assert int(saved["env"]["core_next_drafted"]) > 0
     assert (directory / "0000000000002048.bin").is_file()
     assert original == [p.read_bytes() for p in paths]
+
+    # Matching byte count is insufficient: reject stale semantic metadata on load.
+    saved = configparser.ConfigParser()
+    saved.read(directory / "config.ini")
+    saved["env"]["abi_version"] = "2"
+    with (directory / "config.ini").open("w") as stream:
+        saved.write(stream)
+
+    def no_core_dump():
+        resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
+
+    rejected = subprocess.run([str(binary), "train",
+        f"--base.load_model_path={directory / '0000000000002048.bin'}",
+        f"--base.checkpoint_dir={tmp_path / 'rejected'}",
+        f"--base.log_dir={tmp_path / 'rejected_logs'}",
+        "--base.run_id=rejected", "--base.eval_episodes=0",
+        "--vec.total_agents=16", "--vec.num_threads=2",
+        f"--policy.hidden_size={learner_arch[0]}",
+        f"--policy.num_layers={learner_arch[1]}",
+        "--train.horizon=8", "--train.minibatch_size=32",
+        "--train.total_timesteps=128", "--env.force_core_combos=0"],
+        cwd=ROOT, capture_output=True, text=True, timeout=120, preexec_fn=no_core_dump)
+    assert rejected.returncode != 0
+    assert "Incompatible Pokemon checkpoint" in rejected.stderr
+    assert not list((tmp_path / "rejected").rglob("*.bin"))

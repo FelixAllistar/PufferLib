@@ -159,6 +159,36 @@ evaluator loads the final checkpoint and completes four games. A subsequent
 256-step native run starts from that explicit cursor and advances it. The
 metadata regression also verifies later saves do not overwrite earlier sidecars.
 
+### Preserved user models
+
+The local `leagues/pokemon/free4/state.json` identifies 15 current ABI-3,
+128×2 members. All 15 weight/config pairs match their recorded SHA256 values.
+These files are ignored assets, not supplied by a clone. Preserve the state
+file and each member's `current.path` together with its parent `config.ini`;
+transfer only selected pairs when preparing a new host. Build a new fixed-roster
+manifest using destination paths rather than copying the old league manager.
+This preserves trained policies without restoring PFSP or QD orchestration.
+
+The selected master is
+`leagues/pokemon/free4/members/master/r000011-a001/weights.bin`:
+
+- Weights SHA256: `6fdf3a19534b1ae8b614fd14d21e9344c4cfacf05e523921ca6f82a7d72c560b`.
+- Paired config SHA256: `1ea81ac5ba98001bf873995010278b64fade91c8165d4e169bdc6ad370e093ac`.
+- Rules SHA: `3b71ba8b20aad4803f0238df5eb9a4a9f5285a119b00cd953b45901e9f3481d6`.
+
+That master completed a 2,048-step native 128×2 continuation, CUDA graphs on,
+legal-action auditing and post-training evaluation. The smoke output is under
+`build/conversion/checkpoints/pokemon/preserved_free4_master_20260925/`;
+the original weights/config remain unchanged. This is compatibility evidence,
+not a recommendation to replace the master with the short smoke checkpoint.
+
+The older `named_roster/native_two_20260910.ini` instead references ABI-2,
+160-action catalog policies. They remain preserved but cannot be relabeled as
+ABI 3 or used with the current 168-action semantic network. Native learner
+loads now invoke the existing ABI/policy/rules validator through the optional
+load hook; byte-count compatibility alone is insufficient. The integration
+tests reject ABI-2 metadata even when the underlying weight dimensions match.
+
 ### Fixed named opponents
 
 Set `env.native_league` to an INI manifest and `env.expert_fraction` to the
