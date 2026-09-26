@@ -8,9 +8,11 @@ caches are reusable; the official JSON remains compressed in its archive.
 """
 import argparse
 import collections
+from concurrent.futures import ProcessPoolExecutor
 import ctypes as C
 import hashlib
 import json
+import multiprocessing
 import os
 from pathlib import Path
 import tempfile
@@ -94,7 +96,7 @@ def extract(lib, episode, stride):
     try:
         for turn, frame in enumerate(episode['steps']):
             difference = native.first_difference(
-                native.canonical_replay_frame(frame), native.c_snapshot(lib, state))
+                native.canonical_replay_frame(frame, copy=False), native.c_snapshot(lib, state))
             if difference:
                 raise ValueError(f'parity at turn {turn}: {difference}')
             if turn in selected:
@@ -116,11 +118,51 @@ def extract(lib, episode, stride):
         frames=np.array(tape['frames']), seed=np.array(str(config.seed)))
 
 
+def prepare_worker(library, root, digest, stride, split_seed):
+    global worker_lib, worker_root, worker_digest, worker_stride, worker_seed
+    worker_lib = load_library(library)
+    worker_root, worker_digest = root, digest
+    worker_stride, worker_seed = stride, split_seed
+
+
+def cache_game(row):
+    key = f'{row["episode_id"]}_{row["crc32"]}_{worker_digest[:16]}_s{worker_stride}'
+    destination = worker_root / 'games' / f'{key}.npz'
+    cached = destination.exists()
+    try:
+        if cached:
+            with np.load(destination, allow_pickle=False) as saved:
+                seed = str(saved['seed'])
+                sample_count = len(saved['x'])
+        else:
+            with zipfile.ZipFile(row['archive']) as archive:
+                member = archive.getinfo(row['member'])
+                assert f'{member.CRC:08x}' == row['crc32']
+                episode = json.loads(archive.read(member))
+            assert str(episode['info']['EpisodeId']) == row['episode_id']
+            values = extract(worker_lib, episode, worker_stride)
+            seed, sample_count = str(values['seed']), len(values['x'])
+            del episode
+            with tempfile.NamedTemporaryFile(dir=destination.parent, delete=False) as stream:
+                temporary = Path(stream.name)
+                np.savez_compressed(stream, **values)
+            try:
+                os.link(temporary, destination)
+            finally:
+                temporary.unlink()
+        record = dict(episode_id=row['episode_id'], seed=seed,
+            split=group_split(seed, worker_seed), cache=str(destination.relative_to(worker_root)),
+            samples=sample_count, source_archive=row['archive'], source_member=row['member'],
+            crc32=row['crc32'])
+        return record, cached
+    except (AssertionError, ValueError, KeyError, TypeError) as error:
+        return dict(episode_id=row['episode_id'], reason=str(error)), False
+
+
 def build(args):
     root = args.output.resolve()
     root.mkdir(parents=True, exist_ok=True)
-    cache = root / 'games'
-    cache.mkdir(exist_ok=True)
+    (root / 'games').mkdir(exist_ok=True)
     paths = _expand(args.inputs)
     rows, inventory_counts = prep.catalog(paths, version='1.32.7')
     unique = {row['episode_id']: row for row in rows}
@@ -131,49 +173,32 @@ def build(args):
     assert selected, 'No exact-version replay games found'
     library = args.lib.resolve()
     digest = hashlib.sha256(library.read_bytes()).hexdigest()
-    lib = load_library(library)
     manifest = dict(version=VERSION, library_sha256=digest, stride=args.stride,
         feature_names=feature_names(), split_seed=args.seed, selection='outcome-independent hash',
-        archive_inventory=inventory_counts, available_games=len(unique), records=[], rejected=[])
-    start = time.monotonic()
-    for index, row in enumerate(selected):
-        key = f'{row["episode_id"]}_{row["crc32"]}_{digest[:16]}_s{args.stride}'
-        destination = cache / f'{key}.npz'
-        try:
-            if destination.exists():
-                with np.load(destination, allow_pickle=False) as saved:
-                    seed = str(saved['seed'])
-                    sample_count = len(saved['x'])
+        archive_inventory=inventory_counts, available_games=len(unique), workers=args.workers,
+        records=[], rejected=[])
+    start, reused = time.monotonic(), 0
+    print(json.dumps(dict(stage='replay checks', selected=len(selected),
+        workers=args.workers, library_sha256=digest)), flush=True)
+    with ProcessPoolExecutor(max_workers=args.workers, initializer=prepare_worker,
+            initargs=(library, root, digest, args.stride, args.seed),
+            mp_context=multiprocessing.get_context('spawn')) as pool:
+        # Ordered results preserve selection, splits and fitting order across worker counts.
+        for index, (record, cached) in enumerate(pool.map(cache_game, selected)):
+            reused += cached
+            if 'reason' in record:
+                manifest['rejected'].append(record)
+                print(json.dumps(record), flush=True)
             else:
-                with zipfile.ZipFile(row['archive']) as archive:
-                    member = archive.getinfo(row['member'])
-                    assert f'{member.CRC:08x}' == row['crc32']
-                    episode = json.loads(archive.read(member))
-                assert str(episode['info']['EpisodeId']) == row['episode_id']
-                values = extract(lib, episode, args.stride)
-                seed, sample_count = str(values['seed']), len(values['x'])
-                del episode
-                with tempfile.NamedTemporaryFile(dir=cache, delete=False) as stream:
-                    temporary = Path(stream.name)
-                    np.savez_compressed(stream, **values)
-                try:
-                    os.link(temporary, destination)
-                finally:
-                    temporary.unlink()
-            manifest['records'].append(dict(episode_id=row['episode_id'], seed=seed,
-                split=group_split(seed, args.seed), cache=str(destination.relative_to(root)),
-                samples=sample_count, source_archive=row['archive'], source_member=row['member'],
-                crc32=row['crc32']))
-        except (AssertionError, ValueError, KeyError, TypeError) as error:
-            manifest['rejected'].append(dict(episode_id=row['episode_id'], reason=str(error)))
-            print(json.dumps(manifest['rejected'][-1]), flush=True)
-        if (index + 1) % 25 == 0 or index + 1 == len(selected):
-            manifest['elapsed_seconds'] = time.monotonic() - start
-            manifest['complete'] = index + 1 == len(selected)
-            _write_json(root / 'dataset.json', manifest)
-            progress = dict(processed=index+1, accepted=len(manifest['records']),
-                rejected=len(manifest['rejected']), seconds=manifest['elapsed_seconds'])
-            print(json.dumps(progress), flush=True)
+                manifest['records'].append(record)
+            if (index + 1) % 25 == 0 or index + 1 == len(selected):
+                manifest['elapsed_seconds'] = time.monotonic() - start
+                manifest['complete'] = index + 1 == len(selected)
+                _write_json(root / 'dataset.json', manifest)
+                progress = dict(processed=index+1, accepted=len(manifest['records']),
+                    rejected=len(manifest['rejected']), cached=reused,
+                    seconds=manifest['elapsed_seconds'])
+                print(json.dumps(progress), flush=True)
     assert manifest['records'], 'All replay games failed parity'
 
 
@@ -291,6 +316,7 @@ def main():
     dataset.add_argument('--limit', type=int, default=10000)
     dataset.add_argument('--stride', type=int, default=12)
     dataset.add_argument('--seed', type=int, default=73)
+    dataset.add_argument('--workers', type=int, default=1)
     model = commands.add_parser('fit')
     model.add_argument('--dataset', type=Path, required=True)
     model.add_argument('--output', type=Path, required=True)
@@ -298,7 +324,7 @@ def main():
     model.add_argument('--alphas', type=float, nargs='+', default=[.01,.1,1,10,100,1000])
     args = parser.parse_args()
     if args.command == 'build':
-        assert args.stride > 0 and args.limit >= 0
+        assert args.stride > 0 and args.limit >= 0 and args.workers > 0
         build(args)
     else:
         fit(args)

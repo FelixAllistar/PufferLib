@@ -22,7 +22,7 @@ make -C ocean/kaggriculture potential-bridge
 OPENBLAS_NUM_THREADS=1 uv run --no-project --with numpy \
     python ocean/kaggriculture/fit_potential.py build REPLAY_DIRECTORY \
     --lib ocean/kaggriculture/build/potential.so --output NEW_DATA_DIRECTORY \
-    --limit 10000 --stride 12
+    --limit 10000 --stride 12 --workers 8
 OPENBLAS_NUM_THREADS=1 uv run --no-project --with numpy \
     python ocean/kaggriculture/fit_potential.py fit \
     --dataset NEW_DATA_DIRECTORY --output NEW_FIT_DIRECTORY --gamma 0.999989986
@@ -35,6 +35,15 @@ There are 205 features; no fitted coefficients are hand-set as asset rewards.
 One frame per 12 turns plus the last nonterminal frame is the default cache;
 runtime shaping still evaluates every game transition. All frames are checked
 for parity even when only some are retained for fitting.
+
+`--workers` runs independent replay checks in separate CPU processes (default 1).
+Selection, result order, splits and features are identical across worker counts.
+The exact comparison still distinguishes missing keys, list lengths and types
+such as `false`, `0` and `0.0`; expensive difference paths are built only on
+mismatches. `cached` in the progress log counts already-validated reused games.
+`--limit 0` selects every compatible game in the input archives. Cache keys
+include the native library hash, so a changed simulator is revalidated; preserve
+old caches/fits separately when changing that library. No archives are unpacked.
 
 The target is discounted terminal **cash gain / starting money**, with none
 of the alive/growth/quality terms. Both seats and all states from a game share

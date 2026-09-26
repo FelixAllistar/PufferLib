@@ -6,6 +6,7 @@ import resource
 import shlex
 import subprocess
 import sys
+import zipfile
 
 import numpy as np
 import pytest
@@ -61,6 +62,84 @@ def test_game_seed_splits():
     a = [fit.group_split(seed) for seed in range(100)]
     assert set(a) == {'train', 'validation', 'test'}
     assert a == [fit.group_split(seed) for seed in range(100)]
+
+
+def test_exact_comparison_and_readonly_frame():
+    native = fit.native
+    value = {'x': [1, 2.0, True, None, {'a': 'hello', 'b': []}]}
+    assert native.same_value(value, json.loads(json.dumps(value)))
+    assert not native.first_difference(value, json.loads(json.dumps(value)))
+    for left, right, path in [
+            ({'x': [0]}, {'x': [False]}, '$.x[0]'),
+            ({'x': [1]}, {'x': [1.0]}, '$.x[0]'),
+            ({'x': []}, {'x': [None]}, '$.x.length'),
+            ({'x': None}, {}, '$.x'),
+            ({'x': 2}, {'x': 3}, '$.x')]:
+        assert not native.same_value(left, right)
+        assert native.first_difference(left, right)[0][0] == path
+    assert native.first_difference({'x': float('nan')}, {'x': float('nan')})
+    assert native.first_difference(list(range(20)), [100]*20, limit=3) == [
+        ('$[0]', 0, 100), ('$[1]', 1, 100), ('$[2]', 2, 100)]
+    obs = dict(step=0, day=0, hour=0, farms=[], private={}, market={}, town={})
+    frame = [dict(observation=obs, status='ACTIVE') for _ in range(2)]
+    snapshot = native.canonical_replay_frame(frame)
+    view = native.canonical_replay_frame(frame, copy=False)
+    assert native.same_value(snapshot, view)
+    assert view['farms'] is obs['farms']
+    assert snapshot['farms'] is not obs['farms']
+
+
+def test_parallel_preparation_matches_serial_and_reuses_cache(library, tmp_path):
+    # Native-generated games exercise the pipeline, not independent rule parity.
+    source = tmp_path/'replays.zip'
+    with zipfile.ZipFile(source, 'w', compression=zipfile.ZIP_DEFLATED) as archive:
+        for index in range(4):
+            config = fit.native.CConfig()
+            library.kg_config_default(C.byref(config))
+            config.seed = index // 2 + 73
+            state = library.kg_create(C.byref(config))
+            frames = []
+            try:
+                for turn in range(720):
+                    snapshot = fit.native.c_snapshot(library, state)
+                    frame = []
+                    for player in range(2):
+                        obs = {key:snapshot[key] for key in
+                            ['step', 'day', 'hour', 'farms', 'market', 'town']}
+                        obs['private'] = snapshot['privates'][player]
+                        frame.append(dict(observation=obs, action={'farmer':['PASS']},
+                            status='DONE' if snapshot['done'] else 'ACTIVE'))
+                    frames.append(frame)
+                    if turn < 719:
+                        library.kg_step(state, (fit.native.CAction*2)())
+                if index == 3:
+                    frames[500][0]['observation']['private']['shed']['WHEAT'] += 1
+                episode = dict(name='kaggriculture', module_version='1.32.7',
+                    configuration={'episodeSteps':720, 'seed':config.seed},
+                    info={'EpisodeId':index, 'TeamNames':['a','b']},
+                    rewards=[3000,3000], statuses=['DONE','DONE'], steps=frames)
+                archive.writestr(f'{index}.json', json.dumps(episode))
+            finally:
+                library.kg_destroy(state)
+    manifests = []
+    for workers in [1, 2]:
+        output = tmp_path/f'data_{workers}'
+        command = [sys.executable, str(ENV/'fit_potential.py'), 'build', str(source),
+            '--lib', library._name, '--output', str(output), '--workers', str(workers)]
+        subprocess.run(command, check=True, capture_output=True, text=True, timeout=120)
+        manifests.append(json.loads((output/'dataset.json').read_text()))
+        assert len(manifests[-1]['records']) == 3 and len(manifests[-1]['rejected']) == 1
+        assert manifests[-1]['complete']
+        again = subprocess.run(command, check=True, capture_output=True, text=True, timeout=120)
+        assert json.loads(again.stdout.splitlines()[-1])['cached'] == 3
+    assert manifests[0]['records'] == manifests[1]['records']
+    assert manifests[0]['rejected'] == manifests[1]['rejected']
+    for record in manifests[0]['records']:
+        with np.load(tmp_path/'data_1'/record['cache']) as a, \
+                np.load(tmp_path/'data_2'/record['cache']) as b:
+            assert a.files == b.files
+            for key in a.files:
+                assert np.array_equal(a[key], b[key]), key
 
 
 def test_ridge_sweep_is_beta_only():

@@ -188,7 +188,7 @@ def clone_action(action) -> CAction | dict:
     raise TypeError(f"unsupported action type: {type(action)!r}")
 
 
-def canonical_replay_frame(frame):
+def canonical_replay_frame(frame, copy=True):
     obs0 = frame[0]["observation"]
     value = {
         "step": obs0["step"],
@@ -200,7 +200,8 @@ def canonical_replay_frame(frame):
         "market": obs0["market"],
         "town": obs0["town"],
     }
-    return json.loads(json.dumps(value))
+    # Live Kaggle Structs need normalization; parsed JSON can use a read-only view.
+    return json.loads(json.dumps(value)) if copy else value
 
 
 def c_snapshot(lib, state):
@@ -213,7 +214,21 @@ def c_snapshot(lib, state):
         lib.kg_free_string(pointer)
 
 
+def same_value(left, right):
+    if type(left) is not type(right):
+        return False
+    if isinstance(left, dict):
+        return left.keys() == right.keys() and all(
+            same_value(value, right[key]) for key, value in left.items())
+    if isinstance(left, list):
+        return len(left) == len(right) and all(map(same_value, left, right))
+    return left == right
+
+
 def first_difference(left, right, path="$", limit=8):
+    # Most frames match. Allocate paths, sorted keys and diagnostics only on failure.
+    if same_value(left, right):
+        return []
     if type(left) is not type(right):
         return [(path, left, right)]
     if isinstance(left, dict):
