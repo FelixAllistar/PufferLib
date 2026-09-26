@@ -206,7 +206,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("mode", choices=["train", "eval", "match", "sweep", "league-add",
         "league-eval", "league-sample", "build-bc", "bc", "critic", "bc-critic"])
-    parser.add_argument("--profile", choices=["terminal", "shaped"], default="terminal")
+    parser.add_argument("--profile", choices=["terminal", "shaped", "ridge"], default="terminal")
     parser.add_argument("--binary", type=Path, default=ROOT / "puffer")
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--league", type=Path, default=ROOT / "saved/kaggriculture/league.json")
@@ -259,6 +259,25 @@ def main():
         command.append("--selfplay.enabled=0")
         command.append("--vec.num_policies=1")
     command += overrides
+    if args.profile == "ridge":
+        assert args.mode not in ("bc", "critic", "bc-critic"), "Ridge is not BC/critic fitting"
+        if args.mode == "sweep":
+            # INI sections merge, so explicitly freeze every inherited search dimension.
+            # The sole free dimension for this controlled experiment is PBRS strength.
+            settings = configparser.ConfigParser(interpolation=None)
+            settings.read([ROOT / "config/default.ini", ROOT / "config/kaggriculture.ini"])
+            for option in command[2:]:
+                key, value = option.removeprefix("--").split("=", 1)
+                section, key = key.rsplit(".", 1)
+                if section not in settings:
+                    settings.add_section(section)
+                settings[section][key] = value
+            for section in settings.sections():
+                if not section.startswith("sweep.") or section == "sweep.env.potential_beta":
+                    continue
+                target, key = section.removeprefix("sweep.").split(".", 1)
+                value = settings[target][key]
+                command += [f"--{section}.min={value}", f"--{section}.max={value}"]
     if args.mode in ("bc", "critic", "bc-critic"):
         command = [str(args.bc_binary.resolve())] + command[2:]
         mode = {"bc": "actor", "critic": "critic", "bc-critic": "joint"}[args.mode]

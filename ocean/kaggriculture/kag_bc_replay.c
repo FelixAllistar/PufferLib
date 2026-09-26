@@ -25,6 +25,8 @@ KagBCReplay* kag_bc_create(const KGConfig* config, const char* profile) {
     puf_ini_load_file(&ini, profile);
     assert(puf_ini_get(&ini, "train", "reward_clip") == 0);
     Dict* d = puf_ini_section(&ini, "env", 0);
+    DictItem* potential = dict_find(d, "potential_beta");
+    assert((!potential || potential->value == 0) && "Offline BC targets exclude PBRS");
     dict_set(d, "num_agents", 2);
     dict_set(d, "reset_state_prob", 0);
     KagBCReplay* r = (KagBCReplay*)calloc(1, sizeof(*r));

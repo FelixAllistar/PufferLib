@@ -5,6 +5,84 @@ This is the training port onto upstream revision `6ffa5b10d`, not the accumulate
 policy ABI 5**: 1,424 observations, 47 heads, 1,978 action logits and the entity
 encoder with separate actor/value branches around upstream MinGRU.
 
+## Frozen replay ridge potential (opt-in experiment)
+
+`fit_potential.py` fits an independent economic evaluator, not the PPO critic
+or BC actor. It accepts exact-version `1.32.7` archived games from all identities
+and both seats, regardless of outcome. Every replay frame must match the native
+simulator before a game's compact feature cache is accepted. Sources are the
+daily top-episode archives, not an unbiased sample of all competition games.
+
+The current BC initializer used 518 Majkel1337 games from September 17–19:
+442 training and 76 held out. This was an identity/date subset, not a 500-game
+format limit. Ridge does not require costly controller-specific action labels.
+
+```sh
+make -C ocean/kaggriculture potential-bridge
+OPENBLAS_NUM_THREADS=1 uv run --no-project --with numpy \
+    python ocean/kaggriculture/fit_potential.py build REPLAY_DIRECTORY \
+    --lib ocean/kaggriculture/build/potential.so --output NEW_DATA_DIRECTORY \
+    --limit 10000 --stride 12
+OPENBLAS_NUM_THREADS=1 uv run --no-project --with numpy \
+    python ocean/kaggriculture/fit_potential.py fit \
+    --dataset NEW_DATA_DIRECTORY --output NEW_FIT_DIRECTORY --gamma 0.999989986
+```
+
+Features come from the same native `potential.h` in data preparation and live
+rewards: cash, land, workers, maintenance, crops/animals by type and age,
+inventory, prices, public opponent state, and time/support interactions.
+There are 205 features; no fitted coefficients are hand-set as asset rewards.
+One frame per 12 turns plus the last nonterminal frame is the default cache;
+runtime shaping still evaluates every game transition. All frames are checked
+for parity even when only some are retained for fitting.
+
+The target is discounted terminal **cash gain / starting money**, with none
+of the alive/growth/quality terms. Both seats and all states from a game share
+one split, and games with the same initial seed are grouped together. Whole
+games receive equal fitting weight. Train-only normalization and validation
+select ridge alpha; the untouched test split reports early/middle/late errors
+against a cash/time baseline including their interaction. Splits are not
+identity- or date-held-out; domain-shift performance requires separate checks.
+
+Outputs are `potential.bin`, coefficients/normalization/validation/provenance
+in `potential.json`, and a frozen copy of the exact dataset manifest. Cached
+features allow refitting for another gamma without reparsing the replays.
+Different target scaling uses `reward_money` at runtime. Reset-start episodes
+receive the exact discounted starting-cash correction rather than pretending
+every reset started with 3,000. Predictions are frozen for the entire run.
+
+`env.potential_beta=0` (default) disables it. Positive beta adds
+`reward_money * beta * (gamma * phi_next - phi_now)`. Only genuine terminal
+states have zero potential; rollout boundaries do not. The environment uses
+the existing optional configure hook to check model format, gamma agreement
+and `reward_clip=0`. No shared trainer/PPO/optimizer source changes are needed.
+The sum of shaping rewards is logged as `potential_reward` (undiscounted).
+
+After rebuilding current 5.0, a **dry run** for the separate beta-only sweep is:
+
+```sh
+uv run --no-project python ocean/kaggriculture/run.py sweep --profile ridge \
+    --binary ./puffer_cpu --dry-run \
+    --env.potential_path=NEW_FIT_DIRECTORY/potential.bin \
+    --vec.total_agents=256 --train.horizon=512 --train.minibatch_size=512 \
+    --train.total_timesteps=10000000 --sweep.max_runs=30
+```
+
+This profile selects 256x2 actor-only BC, terminal cash, no extra bonuses and
+no annealing/clipping. It freezes **every inherited sweep dimension** to its
+effective configured value and searches only beta in [0,2]; trial zero has
+beta=0. It does not overwrite the working environment/default INIs. Preserve
+the current shaped baseline as a separate comparison. Check the printed full
+command before removing `--dry-run`; fixed dimensions and the configure hook
+require the current branch, not an older binary merely called `puffer_cpu`.
+
+CPU tests cover C/Python prediction parity, malformed model rejection,
+fresh/reset discounted reward cancellation, unchanged simulated transitions,
+group splits, regression/export and the beta-only profile. GPU runtime and
+matched end-to-end throughput checks remain required before installing the
+candidate over the active trainer. Offline prediction error alone does not
+demonstrate improved PPO decisions or game scores.
+
 ## Current starting configuration
 
 The canonical fork is `FelixAllistar/PufferLib`, branch `5.0`. The current

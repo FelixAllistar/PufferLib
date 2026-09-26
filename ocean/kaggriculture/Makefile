@@ -2,7 +2,7 @@ CC ?= cc
 NVCC ?= nvcc
 CUDA_ARCH ?= native
 BUILD ?= build
-REPLAY_SOURCES := core.h policy.h kaggriculture.h kag_bc_replay.c ../../src/ini.h ../../src/pufferenv.h
+REPLAY_SOURCES := core.h policy.h potential.h kaggriculture.h kag_bc_replay.c ../../src/ini.h ../../src/pufferenv.h
 REPLAY_HASH := $(shell sha256sum $(REPLAY_SOURCES) | sha256sum | cut -c1-16)
 INCLUDES := -I../../src -I../../raylib-5.5_linux_amd64/include
 RENDER_LIBS := ../../raylib-5.5_linux_amd64/lib/libraylib.a -lGL -lpthread -ldl
@@ -11,6 +11,11 @@ RENDER_LIBS := ../../raylib-5.5_linux_amd64/lib/libraylib.a -lGL -lpthread -ldl
 replay-bridge: $(BUILD)/kag_bc_replay.so
 
 submission-bridge: $(BUILD)/entity_bridge.so
+
+potential-bridge: $(BUILD)/potential.so
+
+$(BUILD)/potential.so: potential.h core.h | $(BUILD)
+	$(CC) -x c -O2 -shared -fPIC potential.h -lm -o $@
 
 $(BUILD)/entity_bridge.so: submission/entity_bridge.c policy.h core.h | $(BUILD)
 	$(CC) -O2 -shared -fPIC submission/entity_bridge.c -lm -o $@

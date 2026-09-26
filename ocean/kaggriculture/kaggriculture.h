@@ -2,6 +2,7 @@
 
 #define PUF_PACKED_MASK 1
 #include "policy.h"
+#include "potential.h"
 typedef float obs_t;
 #include "pufferenv.h"
 
@@ -18,7 +19,7 @@ struct Log {
     float root_games, reset_games, root_money, reset_money;
     float root_cash_gain, reset_cash_gain, root_steps, reset_steps;
     float terminal_cash_reward, growth_land_reward, growth_crop_reward, growth_animal_reward;
-    float alive_reward, dense_quality_reward;
+    float alive_reward, dense_quality_reward, potential_reward;
     float policy_0_score, policy_1_score, checkpoint_fraction;
     float n;
 };
@@ -30,7 +31,7 @@ typedef struct KagStartMetrics {
 
 typedef struct KagRewards {
     int peaks[3];
-    float growth[3], alive, quality, total;
+    float growth[3], alive, quality, total, potential, last_potential;
 } KagRewards;
 
 struct Env {
@@ -51,7 +52,27 @@ struct Env {
     float growth[3], alive_daily, quality_scale, quality_idle_cost;
     int targets[3];
     KagRewards reward[KG_NUM_PLAYERS];
+    KagPotential potential;
+    float potential_beta;
 };
+
+KagPotential kag_frozen_potential;
+
+void kag_configure_potential(Ini* ini, const char* mode) {
+    Dict* env = puf_ini_section(ini, "env", 0);
+    DictItem* beta = dict_find(env, "potential_beta");
+    if (!beta || beta->value == 0) {
+        return;
+    }
+    assert(isfinite(beta->value) && beta->value > 0);
+    kag_frozen_potential = kag_potential_load(dict_get_str(env, "potential_path"));
+    assert(fabs(kag_frozen_potential.gamma - puf_ini_get(ini, "train", "gamma")) < 1e-8);
+    assert(puf_ini_get(ini, "train", "reward_clip") == 0 && "PBRS requires unclipped rewards");
+    printf("Frozen ridge: %s features=%d gamma=%.9g beta=%.6g\n",
+        dict_get_str(env, "potential_path"), KAG_POTENTIAL_FEATURES,
+        kag_frozen_potential.gamma, beta->value);
+}
+#define PUF_CONFIGURE(ini, mode) kag_configure_potential(ini, mode)
 
 KG_HD void kag_reset_episode(Env* env) {
     env->rng = 1664525u * env->rng + 1013904223u;
@@ -69,6 +90,10 @@ KG_HD void kag_reset_episode(Env* env) {
         KGState* g = &env->game;
         KagObservationState* s = &env->policy.history[p];
         env->reward[p] = (KagRewards){.peaks = {s->peak_plots, s->peak_crops, s->peak_animals}};
+        if (env->potential_beta > 0) {
+            env->reward[p].last_potential = kag_potential_predict(
+                &env->potential, g, p, s->start_cash);
+        }
         env->start[p] = (KagStartMetrics){
             .production = g->production_units[p],
             .plants = g->planted_crops[p],
@@ -87,6 +112,13 @@ KG_HD void kag_reset_episode(Env* env) {
 }
 
 void puf_init(Env* env, Dict* kwargs) {
+    DictItem* beta = dict_find(kwargs, "potential_beta");
+    env->potential_beta = beta ? beta->value : 0;
+    assert(isfinite(env->potential_beta) && env->potential_beta >= 0);
+    if (env->potential_beta > 0) {
+        assert(kag_frozen_potential.version == KAG_POTENTIAL_VERSION);
+        env->potential = kag_frozen_potential;
+    }
     env->num_agents = dict_get(kwargs, "num_agents");
     env->bot_policy = dict_get(kwargs, "bot_policy");
     env->learner_seat = dict_get(kwargs, "learner_seat");
@@ -123,6 +155,12 @@ void puf_init(Env* env, Dict* kwargs) {
     config.seed = env->rng;
     kg_init(&env->game, &config);
     kag_policy_reset(&env->policy, &env->game, 0);
+    if (env->potential_beta > 0) {
+        for (int p = 0; p < KG_NUM_PLAYERS; p++) {
+            env->reward[p].last_potential = kag_potential_predict(
+                &env->potential, &env->game, p, env->policy.history[p].start_cash);
+        }
+    }
     env->start[0].plots = env->start[1].plots = 1;
     env->reward[0].peaks[0] = env->reward[1].peaks[0] = 1;
 }
@@ -241,6 +279,14 @@ KG_HD void kag_apply_actions(Env* env, const KGAction* commands) {
         *agent->rewards = growth + alive;
         *agent->rewards += cash;
         *agent->rewards += quality;
+        if (env->potential_beta > 0) {
+            float phi = kag_potential_predict(&env->potential, game, player, s->start_cash);
+            float shaping = env->potential_beta * env->reward_money *
+                ((float)env->potential.gamma * phi - r->last_potential);
+            *agent->rewards += shaping;
+            r->potential += shaping;
+            r->last_potential = phi;
+        }
         r->alive += alive;
         r->quality += quality;
         r->total += *agent->rewards;
@@ -269,6 +315,7 @@ KG_HD void kag_apply_actions(Env* env, const KGAction* commands) {
         log->growth_animal_reward += r->growth[2];
         log->alive_reward += r->alive;
         log->dense_quality_reward += r->quality;
+        log->potential_reward += r->potential;
         log->episode_length += steps;
         log->draw_rate += money == opponent_money;
         log->production_units += game->production_units[player] - start->production;
@@ -336,6 +383,7 @@ void puf_log(Log* log, Dict* out) {
     dict_set(out, "growth_animal_reward", log->growth_animal_reward);
     dict_set(out, "alive_reward", log->alive_reward);
     dict_set(out, "dense_quality_reward", log->dense_quality_reward);
+    dict_set(out, "potential_reward", log->potential_reward);
     dict_set(out, "episode_length", log->episode_length);
     dict_set(out, "draw_rate", log->draw_rate);
     dict_set(out, "production_units", log->production_units);
