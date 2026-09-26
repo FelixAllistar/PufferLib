@@ -131,6 +131,34 @@ void regressions(void) {
     assert(game.market.inventory[KG_ITEM_WHEAT] == 9997);
     assert(game.exogenous_demand_units[KG_ITEM_WHEAT] == 1);
 
+    // Explicit zero/negative quantities are no-ops, not omitted quantities.
+    int shed_ops[] = {KG_OP_PICKUP, KG_OP_PLACE};
+    for (int op = 0; op < 2; op++) {
+        for (int n = -2; n <= 0; n++) {
+            kg_init(&game, &cfg);
+            game.players[0].shed[KG_ITEM_WHEAT] = 27;
+            kg_inventory_add(game.players[0].units, KG_ITEM_WHEAT, 3);
+            KGState before = game;
+            KGUnitAction command = {shed_ops[op], KG_ITEM_WHEAT, n};
+            kg_apply_unit_action(&game, game.players, 0, &command);
+            assert(!memcmp(&game, &before, sizeof(game)));
+            command.n = 1;
+            kg_apply_unit_action(&game, game.players, 0, &command);
+            assert(game.players[0].shed[KG_ITEM_WHEAT] == (op ? 28 : 26));
+            assert(game.players[0].units[0].inventory[KG_ITEM_WHEAT] == (op ? 2 : 4));
+        }
+    }
+    // A zero request must not steal the last item from a later worker.
+    kg_init(&game, &cfg);
+    kg_do_hire(&game, game.players);
+    game.players[0].shed[KG_ITEM_FERTILIZER] = 1;
+    KGUnitAction pickup = {KG_OP_PICKUP, KG_ITEM_FERTILIZER, 0};
+    kg_apply_unit_action(&game, game.players, 0, &pickup);
+    pickup.n = 1;
+    kg_apply_unit_action(&game, game.players, 1, &pickup);
+    assert(game.players[0].units[0].inventory[KG_ITEM_FERTILIZER] == 0);
+    assert(game.players[0].units[1].inventory[KG_ITEM_FERTILIZER] == 1);
+
     // PLACE-to-shed works at all four access tiles, even locked corners.
     for (int x = 4; x <= 5; x++) {
         for (int y = 4; y <= 5; y++) {

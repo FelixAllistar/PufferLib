@@ -18,6 +18,14 @@ SOURCE = Path(__file__).with_suffix(".c")
 HEADER = ROOT / "ocean/kaggriculture/core.h"
 
 
+def test_shed_quantity_parsing():
+    from ocean.kaggriculture import replay_native as bridge
+    for op in ['PICKUP', 'PLACE']:
+        assert bridge.unit_action([op, 'WHEAT']).n == 1
+        for n in [-3, 0, 1, 7]:
+            assert bridge.unit_action([op, 'WHEAT', n]).n == n
+
+
 def test_official_market_prices(tmp_path):
     if os.environ.get("KAGGRICULTURE_OFFICIAL_PARITY") != "1":
         pytest.skip("set KAGGRICULTURE_OFFICIAL_PARITY=1 with kaggle-environments installed")

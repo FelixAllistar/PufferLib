@@ -1160,7 +1160,7 @@ KG_HD void kg_apply_unit_action(KGState* state, KGPlayer* player, int idx,
 
     if (action->op == KG_OP_PICKUP) {
         int item = action->arg;
-        int n = action->n > 0 ? action->n : 1;
+        int n = action->n;
         int available;
         if (!kg_is_shed_adjacent(&pos, state->config.board_size)
                 || item < 0 || item >= KG_NUM_ITEMS) {
@@ -1196,7 +1196,7 @@ KG_HD void kg_apply_unit_action(KGState* state, KGPlayer* player, int idx,
         }
         if (kg_is_shed_adjacent(&pos, state->config.board_size)
                 && item >= 0 && item < KG_NUM_ITEMS) {
-            int n = action->n > 0 ? action->n : 1;
+            int n = action->n;
             int room = state->config.shed_capacity - kg_shed_total(player);
             if (n > unit->inventory[item]) {
                 n = unit->inventory[item];
