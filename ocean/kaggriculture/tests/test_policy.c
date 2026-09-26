@@ -372,6 +372,21 @@ static void delivery_and_safe_overflow(void) {
     assert(a.hands[0].op != KG_OP_DROP && a.hands[0].op != KG_OP_PLACE);
     kg_apply_unit_action(&e->game_storage, p, 0, &a.farmer);
     assert(p->units[0].inventory[KG_ITEM_WHEAT] == 4); /* never discard excess cargo */
+    // Market reservations must use the same quantity semantics as execution.
+    p->shed[KG_ITEM_WHEAT] = 20;
+    int shed_ops[] = {KG_OP_PICKUP, KG_OP_PLACE};
+    for (int op = 0; op < 2; op++) {
+        for (int n = -2; n <= 2; n++) {
+            KGAction work = {0};
+            work.farmer = (KGUnitAction){shed_ops[op], KG_ITEM_WHEAT, n};
+            begin_prefix(&prefix, e, 0);
+            kag_mask_prepare_market_from_work(&prefix, &work);
+            KGState executed = e->game_storage;
+            kg_apply_unit_action(&executed, executed.players, 0, &work.farmer);
+            assert(prefix.shed[KG_ITEM_WHEAT] == executed.players[0].shed[KG_ITEM_WHEAT]);
+            assert(prefix.wheat_out_of_shed == 20 - prefix.shed[KG_ITEM_WHEAT]);
+        }
+    }
     free(e);
 }
 static void scarce_fertilizer_and_unfed_chores(void) {

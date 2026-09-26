@@ -875,7 +875,10 @@ KG_HD void kag_mask_prepare_market_from_work(KagActionMaskState* s, const KGActi
         }
         int item = a->arg;
         if (a->op == KG_OP_PICKUP && (unsigned)item < KG_NUM_ITEMS) {
-            int n = a->n > 0 ? a->n : 1;
+            int n = a->n;
+            if (n <= 0) {
+                continue;
+            }
             if (n > s->shed[item]) {
                 n = s->shed[item];
             }
@@ -905,7 +908,7 @@ KG_HD void kag_mask_prepare_market_from_work(KagActionMaskState* s, const KGActi
                 && tile->animal == KG_ANIMAL_INVALID) {
                 continue; /* places livestock */
             }
-            int n = a->n > 0 ? a->n : 1;
+            int n = a->n;
             int room = g->config.shed_capacity - kag_mask_shed_total(s);
             if (n > room) {
                 n = room;
