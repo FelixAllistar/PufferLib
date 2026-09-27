@@ -8,6 +8,41 @@ ocean/osrs/data/
 leagues/
 # Build dir
 build/
+saved/
+# Local build outputs (keep source files and experiment scripts visible).
+/arpg
+/bomberman
+/breakout
+/build_cpu
+/cache_data
+/goofspiel
+/goofspiel_behavior_gpu
+/goofspiel_exploit
+/goofspiel_exploit_gpu
+/kaggriculture
+/pokemon
+/puffer
+/puffer_cpu
+/puffer_retro_*
+/puffer_survivors
+/retro
+/robocode
+/seethestars
+/shenaniguns
+/shenaniguns3d
+/test_retro_encoder
+/tui_viewer
+/ocean/puffer_survivors/tests/bench_cuda_capacity_profile
+/ocean/puffer_survivors/tests/bench_cuda_profile
+
+# Generated run/export artifacts; assets stay on disk, outside Git.
+/artifacts/
+/runs/
+/tmp/
+/*.tar.gz
+/ocean/kaggriculture/submission/*.tar.gz
+/ocean/kaggriculture/replays/*.json
+/ocean/kaggriculture/replays/*.trace.tsv
 
 # hipified cuda extensions dir [HIP/ROCM]
 pufferlib/extensions/hip/

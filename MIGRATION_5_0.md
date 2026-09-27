@@ -2,6 +2,112 @@
 
 Status: **in progress**, not a completed conversion of every environment.
 
+## Current repository audit (2026-09-27)
+
+This section supersedes the historical status notes below. After the repository
+cleanup, learner-only gathering was restored at the user's request for publication.
+
+- One local worktree, on `5.0`; no additional checkout is needed.
+- Pre-restoration audit source: `1d3d83d4f`. GitHub was eight commits behind
+  at `432aa4e5f`. The publication includes the intervening ridge and explicit
+  quantity fixes, the cleanup, and restored learner-only gathering.
+- Upstream `5.0`: `6ffa5b10dbbbe4d1e8288367c7d9d3acd3bad4a2`, verified against
+  its remote branch. Counts below compare committed local source to that hash,
+  excluding this documentation/ignore cleanup and uncommitted user work.
+- Outside `ocean/`: 45 changed files, 4,744 inserted / 25 deleted lines.
+  This includes documentation, environment configs, tests, TUI and image assets;
+  it is not 4,744 lines of trainer modifications.
+
+### Shared training-code tally
+
+| File | Added / deleted | Changes |
+| --- | ---: | --- |
+| `src/pufferl.cu` | 235 / 23 | Mask storage/sampling, environment lifecycle hooks, configurable reward clamp, learner checkpoint loading, external opponent initialization, fixed sweep dimensions, eval draw reporting |
+| `src/algo.cu` | 7 / 0 | Optional observation binding for the Pokemon decoder, during inference and training |
+| `src/ocean.cu` | 24 / 0 | Registration of environment-specific encoders/decoders |
+
+After the learner-only restoration, `src/pufferl.cu` is 272 added / 42 deleted
+lines versus the same upstream hash; the other two source-file counts are unchanged.
+
+Those are the only changed `src/` files. There is no custom PPO loss or optimizer
+change in this diff. This does not mean training behavior is identical:
+masking, reward clipping, initialization and opponent selection can all affect it.
+
+The mask changes pack rollout masks into bits, unpack minibatches, and support
+Kaggriculture's prefix-dependent legality. Batched discrete sampling gathers
+policy logits for a shared sampling launch, not shared neural inference or
+shared recurrent trajectories. These remain separate from rollout-row selection.
+The optional lifecycle hooks let environments configure themselves, bind GPU
+masks/policy rows and finish CPU resets; environment-specific logic stays in
+`ocean/`. `build.sh` adds environment build/link registration, and
+`config/default.ini` documents checkpoint loading and adds `initial_opponents`
+and `reward_clip` settings. The remaining outside-ocean files are environment
+configs, resources, utilities, tests, documentation and TUI code.
+
+### Learner-only gathering restored
+
+The training-code and row-test changes from `7e030af2d` have now been reversed:
+only learner rows enter both actor and critic PPO updates. Frozen opponents
+still act, but their transitions are excluded. Gathered masks, recurrent carry,
+training-buffer allocation and minibatch update counts use learner rows.
+Physical environment step accounting and rollout horizon are unchanged.
+Later lifecycle hooks, checkpoint loading, sweep fixes and batched sampling
+remain intact. The older deployed Vast trainer was not copied over local source.
+Vast is a deployed source tree without `.git`, not another repository branch;
+it uses the same learner-only choice, but is not byte-identical canonical source.
+
+Read-only checks on September 27 confirmed the deployed source and binary hashes
+were unchanged and `./puffer_cpu train` was active. The deployed `puffer_cpu`
+includes PBRS; the older deployed `puffer` does not. They must not be treated as
+interchangeable builds of the same current source.
+
+The completed 20M comparison favored learner-only with fixed BC opponents:
+pass/rules/BC opponent evaluation cash was roughly 60.0k/56.9k/59.6k versus
+39.7k/34.6k/47.7k for all-row with the same opponent setup. This was one seed,
+not a general proof. The tested external-champion variants were separate cases.
+The restoration is recorded separately from the ignore-file cleanup.
+
+### What belongs where
+
+- Git: source, tests, build scripts, small reproducible configs and documentation.
+- `build/`: new compiled binaries/libraries; existing root binaries are ignored
+  explicitly, rather than ignoring arbitrary extensionless source files.
+- `saved/`, `checkpoints/`, `leagues/`: model artifacts and local league state,
+  excluded from Git. Ignoring them does not copy, back up or delete them.
+- `data/kaggriculture/`: replay/reset datasets; `artifacts/`, `runs/`, `tmp/`
+  and packaged submission archives are generated output, also ignored.
+- Untracked Python/CUDA experiments, downloaded notebooks/reference code,
+  `main.py`, `submission_main.py` and `v27_agents/` stay visible pending review.
+  They were not silently promoted to production, hidden, moved or deleted.
+- Existing dirty Bomberman/Retro configuration and Retro source edits are user
+  work and were left intact. A clean Git status must not be manufactured by
+  ignoring source or discarding these edits.
+
+### Before renting/reproducing on more GPUs
+
+1. Clone/pull the published `5.0` containing the learner-only restoration.
+   Record that exact hash on each machine; rebuild rather than reuse old binaries.
+2. Transfer only required assets separately: actor-only BC initializer (the
+   current small initializer is **256 x 2**), selected reset bank, frozen ridge
+   model plus metadata if enabled, and explicitly selected opponent checkpoints.
+   Dereference legacy symlinks during transfer and verify hashes. Raw replay
+   archives are needed to rebuild datasets, not to launch an already-built bank.
+3. Preserve the effective config from the selected run. Local defaults, the ridge
+   profile, and manually edited Vast settings are not interchangeable. Check
+   learner/history architecture, opponent list, gamma/model agreement, beta,
+   clipping, reset probability, annealing and inherited sweep dimensions.
+4. Rebuild in the normal checkout: `NVCC_ARCH=sm_120 bash build.sh kaggriculture
+   puffer_cpu` for CPU simulation with CUDA training, or add `--cu` for GPU
+   simulation. `--cpu` selects the standalone CPU application, not this trainer.
+   The executable name alone does not establish its backend or source revision.
+5. Smoke-test checkpoint loading, masks/resets and a short train/eval before
+   launching long sweeps. Independent per-GPU sweeps and one multi-GPU training
+   job are different experiments; multi-GPU parity/scaling is not qualified here.
+
+No existing assets or backups were deleted, and no running Vast job was changed.
+
+## Historical conversion notes
+
 Kaggriculture BC label/dataset tooling now targets the canonical native 2/2
 bridge: observed multi-request strategies, teacher-prefix masks, stateful
 expert returns, immutable episode holdout and raw-intent sidecars are preserved.
@@ -54,6 +160,8 @@ clean-clone qualification remain in progress; check branch HEAD for updates.
 ## Source of truth and preservation
 
 ### All-row trainer comparison baseline (2026-09-25)
+
+Historical comparison only: superseded by the September 27 learner-only restoration.
 
 The learner-only gathering change (`49fdefa67`) is reverted for comparison with
 upstream's all-policy-row training. PPO now receives frozen-opponent transitions
