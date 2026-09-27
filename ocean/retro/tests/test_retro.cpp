@@ -42,6 +42,30 @@ static void scalar_tests() {
     try { retro_parse_spawns(&e,"1-1,9-2"); } catch(...) { rejected=true; }
     require(rejected,"bad spawn silently accepted");
 }
+static void novelty_tests() {
+    Env e={}; unsigned char m[2048]={};
+    m[0x770]=1; m[0x772]=3; m[0xe]=8; m[0xe8]=0x80;
+    e.last_area_key=retro_area_key(m);
+    e.area_transition_keys[e.area_transition_key_count++]=e.last_area_key;
+    require(retro_record_area_transition(&e,m)==0,"starting area earns novelty");
+    m[0xe7]=1; m[0xe]=3;
+    require(retro_record_area_transition(&e,m)==0,"unplayable transition earns novelty");
+    m[0xe]=8;
+    require(retro_record_area_transition(&e,m)==2,"new destination missed");
+    require(retro_record_area_transition(&e,m)==0,"stationary area earns novelty twice");
+    m[0xe7]=0; require(retro_record_area_transition(&e,m)==1,"return to spawn earns novelty");
+    m[0xe7]=1; require(retro_record_area_transition(&e,m)==1,"revisit earns novelty");
+    m[0x75c]=1; m[0xe7]=0;
+    require(retro_record_area_transition(&e,m)==0,"next level entry earns extra novelty");
+    m[0xe7]=1; require(retro_record_area_transition(&e,m)==2,"next level side area missed");
+    m[0xe7]=0; require(retro_record_area_transition(&e,m)==1,"next level starting area not remembered");
+    require(e.episode_novel_areas==2,"novel destination count incorrect");
+    e.novel_area_reward=1; e.reward_scale=0.0625;
+    require(retro_rom_reward(&e,0,false,0,0,0,0,0,0,2)==0.125f,"novel reward scaling incorrect");
+    e.novel_area_reward=0;
+    require(retro_rom_reward(&e,0,false,0,0,0,0,0,0,2)==0,"disabled novelty pays reward");
+    puts("PASS: untimed novelty, revisits, level-entry seeding, reward scaling");
+}
 static void level_and_reset_tests(Dict* cfg) {
     Env e={}; e.rng=73; puf_init(&e,cfg);
     float obs[OBS_SIZE],act=0,rew=0,done=0;
@@ -96,8 +120,9 @@ static void level_and_reset_tests(Dict* cfg) {
     require(frames==9&&e.log.episode_length==9,"extra emulated frames at horizon");
     require(fabs(e.log.episode_return-sum)<1e-6,"episode return is not summed");
     require(e.log.frames==9&&e.log.decisions==3,"episode metrics use rollout windows");
-    // Actual ROM trajectories: a failed exploration attempt should beat idle.
+    // Actual ROM trajectories exercise checkpoint rewards and natural lives.
     retro_parse_spawns(&e,"1-1"); e.cur_spawn=0; e.max_frames=4000; e.frameskip=1;
+    e.death_penalty=0.05f; // Exploration setting: multiple natural deaths must not overwhelm progress.
     float returns[2];
     for(int moving=0;moving<2;moving++) {
         puf_reset(&e); e.log={}; done=0;
@@ -105,14 +130,15 @@ static void level_and_reset_tests(Dict* cfg) {
         act=moving?retro_mask_action(RETRO_BTN_RIGHT|RETRO_BTN_B):0;
         while(!done) puf_step(&e);
         returns[moving]=e.log.episode_return;
-        if(moving) require(e.log.deaths==1&&e.log.checkpoints>=2,"run-right trajectory missed checkpoints/death");
+        if(moving) require(e.log.deaths==3&&e.log.checkpoints>=2,
+            "run-right trajectory missed checkpoints/natural game over");
         else require(e.log.truncations==1&&e.log.checkpoints==0,"idle timeout earns milestones");
     }
-        require(returns[1]>returns[0],"actual ROM exploration loses to camping");
-    printf("PASS: ROM idle return %.8f; run-right/death return %.8f\n",returns[0],returns[1]);
+    require(returns[1]>returns[0],"exploring through natural lives loses to camping");
+    printf("PASS: ROM idle return %.8f; run-right/game-over return %.8f\n",returns[0],returns[1]);
     // With every event weight disabled, moving, idling, death and timeout
     // must all be exactly zero, including the terminal/reset transition.
-    e.completion_reward=e.completion_time_bonus=e.pipe_segment_bonus=0;
+    e.completion_reward=e.completion_time_bonus=e.pipe_segment_bonus=e.novel_area_reward=0;
     e.death_penalty=e.checkpoint_reward=e.score_scale=e.coin_reward=0;
     e.idle_penalty=0;
     e.completion_time_target_bonus=0;
@@ -278,6 +304,7 @@ static void playback_tests(Dict* cfg) {
         int lives=e.life,respawns=0,frames=0; bool saw_death=false,game_over=false;
         RetroPlayback playback;
         while(frames<10000) {
+            bool was_waiting=playback.waiting_respawn;
             bool clear_rnn=retro_playback_step(&e,&playback);
             for(int f=0;f<e.last_frames;f++) retro_check(raw.emulate_frame(RETRO_BTN_RIGHT|RETRO_BTN_B,0));
             frames+=e.last_frames;
@@ -289,27 +316,43 @@ static void playback_tests(Dict* cfg) {
             }
             require(saved(*e.emu)==saved(raw),"playback restored or changed the live ROM before game over");
             require(e.tick==frames&&e.log.n==0&&!e.reset_image,"life loss silently reset the playback episode");
+            require(!clear_rnn,"viewer cleared recurrent state on a native respawn");
             require(std::isfinite(rew),"non-finite playback reward");
             for(float value:obs) require(std::isfinite(value),"non-finite playback input");
             saw_death|=robs_dead(raw.low_mem());
-            if(clear_rnn) {
+            if(was_waiting&&!playback.waiting_respawn) {
                 respawns++;
                 require(e.world==2&&e.stage==1,"respawn returned to the original selected level");
                 require(e.life==lives-respawns,"respawn replenished lives or cleared recurrent state twice");
-                require(raw.low_mem()[0xe]==8&&!robs_dying(raw.low_mem()),"recurrent state cleared during the death animation");
+                require(raw.low_mem()[0xe]==8&&!robs_dying(raw.low_mem()),"respawn marked complete during death animation");
             }
         }
         require(saw_death&&game_over&&respawns==lives,"natural deaths/respawns/game over were not all exercised");
         require(e.log.deaths==lives+1&&e.log.n==1,"playback counted a life loss more than once");
         printf("PASS: playback frameskip=%d: %d raw-ROM-identical frames, %d natural respawns, game-over restart\n",skip,frames,respawns);
     }
-    // The training entry point still ends at the first death and restores all
-    // lives. Playback must never silently change training's episode semantics.
-    puf_reset(&e); e.log={}; e.frameskip=1; done=0; int training_lives=e.life;
-    for(int i=0;i<10000&&!done;i++) puf_step(&e);
-    require(done&&e.log.n==1&&e.log.deaths==1&&e.tick==0&&e.life==training_lives,
-        "training no longer ends at the first death");
-    // Explicit single-life viewing matches that same path.
+    // Training uses the same native life and midpoint-respawn path as ordinary
+    // playback, with no hidden reset at the first death.
+    puf_reset(&e); e.log={}; e.frameskip=4; e.max_frames=10000; done=0;
+    const auto& later=retro_rom().starts[retro_level_id(2,1)]->state;
+    e.emu->load_state(later); e.reset_image=false; retro_sync_from_emu(&e);
+    if(e.rom_blocks) require(e.emu->set_rom_blocks(true),"training test failed to restore compiled ROM blocks");
+    raw.load_state(later);
+    int training_lives=e.life,training_respawns=0;
+    while(!done) {
+        puf_step(&e);
+        for(int f=0;f<e.last_frames;f++) retro_check(raw.emulate_frame(RETRO_BTN_RIGHT|RETRO_BTN_B,0));
+        if(!done) {
+            require(saved(*e.emu)==saved(raw),"training did not preserve natural ROM life state");
+            require(e.log.n==0,"training ended before game over");
+            if(e.life<training_lives) training_respawns=training_lives-e.life;
+        }
+    }
+    require(robs_gameover(raw.low_mem())&&training_respawns==training_lives,
+        "training failed to continue through native respawns");
+    require(e.log.n==1&&e.log.deaths==training_lives+1&&e.tick==0,
+        "training game-over boundary or death count incorrect");
+    // Explicit single-life viewing still offers its original boundary.
     puf_reset(&e); e.log={}; done=0; RetroPlayback single={true,false};
     for(int i=0;i<10000&&!done;i++) retro_playback_step(&e,&single);
     require(done&&e.log.n==1&&e.log.deaths==1&&e.tick==0,"--single-life did not retain training-style resets");
@@ -318,7 +361,7 @@ static void playback_tests(Dict* cfg) {
     for(int i=0;i<3;i++) retro_playback_step(&e,&bounded);
     require(done&&e.log.truncations==1&&e.log.episode_length==9,"bounded inspector playback lost its regression reset");
     puf_close(&e);
-    puts("PASS: training/single-life death boundaries and bounded inspector resets unchanged");
+    puts("PASS: training natural respawns/game over, viewer single-life override and bounded inspector resets");
 }
 static void practice_tests() {
     Dict cfg={}; dict_set_str(&cfg,"spawn_levels","1-1");
@@ -367,6 +410,21 @@ static void practice_tests() {
     require(!dict_find(&metrics,"area_transition_rewards")&&dict_find(&metrics,"novel_areas"),
         "transition event counter still labeled as reward");
     dict_clear(&metrics);
+    // Confirm events inside a four-frame action reach the reward exactly once.
+    e.max_frames=1200; e.frameskip=4; e.novel_area_reward=1;
+    e.completion_time_bonus=0; e.score_scale=0; e.coin_reward=0;
+    for(int trial=0;trial<2;trial++) {
+        puf_reset(&e); done=0; float total=0;
+        for(int i=0;i<75&&!done;i++) {
+            int before=e.episode_novel_areas;
+            action=0; puf_step(&e); total+=reward;
+            require(!done,"novelty practice test terminated unexpectedly");
+            require(reward==(e.episode_novel_areas-before)*0.0625f,
+                "frameskip-4 novelty reward lost or duplicated");
+        }
+        require(e.episode_novel_areas==1&&total==0.0625f,
+            "practice arrival novelty missing or not reset between episodes");
+    }
     // Log includes only the terminal episode, not the earlier manual-reset prefix.
     // Reset counters above discard that unfinished attempt, so it records one frame.
     puf_close(&e); dict_clear(&cfg);
@@ -375,6 +433,7 @@ static void practice_tests() {
 int main(int argc,char** argv) {
     try {
         scalar_tests();
+        novelty_tests();
         Dict cfg={}; dict_set_str(&cfg,"spawn_levels","all"); dict_set(&cfg,"frameskip",1);
         playback_tests(&cfg);
         if(argc!=2||strcmp(argv[1],"--playback-only")) {

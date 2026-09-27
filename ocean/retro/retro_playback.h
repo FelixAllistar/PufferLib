@@ -1,16 +1,15 @@
 #pragma once
 #include "retro.h"
 
-// Viewer-only state. Training always calls puf_step(), whose single-life
-// episode boundary is unchanged. No emulator state is restored on a respawn.
+// Viewer-only state. Training and ordinary viewing both use natural lives;
+// --single-life remains an explicit viewer override.
 struct RetroPlayback {
     bool single_life=false;
     bool waiting_respawn=false;
 };
 
-// Returns whether the viewer should clear its recurrent policy state before
-// choosing the next action. Clear at the new life's first controllable frame,
-// not repeatedly during the ROM's death/entrance animations.
+// Returns whether the viewer should clear recurrent policy state at an episode
+// reset. Midpoint respawns keep the policy state, as in training.
 static bool retro_playback_step(Env* e,RetroPlayback* playback) {
     int previous_life=e->life;
     retro_step(e,!playback->single_life);
@@ -23,7 +22,6 @@ static bool retro_playback_step(Env* e,RetroPlayback* playback) {
     bool ready=m[0x770]==1&&m[0x772]==3&&m[0xe]==8&&!robs_dying(m);
     if(playback->waiting_respawn&&ready) {
         playback->waiting_respawn=false;
-        return true;
     }
     return false;
 }

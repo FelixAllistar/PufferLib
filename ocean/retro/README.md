@@ -58,7 +58,25 @@ UBSAN_OPTIONS=halt_on_error=1 make -C ocean/retro -j2 test \
   CXXFLAGS='-O1 -g -std=c++17 -fsanitize=address,undefined -fno-omit-frame-pointer'
 ```
 
+## Exploration rewards
+
+`env.novel_area_reward` pays once for each new loaded, playable destination
+within a level per episode, independent of HUD time and elapsed frames. It
+defaults to zero when omitted; the exploration config enables raw reward 1
+(0.0625 after `reward_scale`). Starting areas, level-entry areas and revisits
+do not earn this bonus. The `novel_areas` metric counts eligible events even
+when the reward is disabled. Detection runs every native frame, including
+inside frameskip-4 actions. Timed `pipe_segment_bonus` is separate and disabled.
+
+`spawn_levels=all` samples among 32 level starts; it does not always start at
+1-1. `max_frames` counts native frames, not actions, regardless of frameskip.
+Training continues through deaths and level clears. The ROM handles life loss
+and midpoint respawns; a new training episode starts at game over, the final
+win, or the native-frame cap. The distance-based `checkpoint_reward` is only a
+reward milestone and does not create a ROM respawn point.
+
 ## Network qualification
+
 
 The preserved three-convolution image branch, RAM branch and fusion layer now
 use the 5.0 encoder interface and upstream recurrent network/head. Parameter

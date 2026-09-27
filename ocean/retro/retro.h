@@ -109,7 +109,7 @@ struct Env {
     int episode_area_transitions, episode_novel_areas, area_transition_key_count;
     unsigned int rewarded_levels;
     float episode_return, completion_reward, death_penalty, score_scale, reward_scale;
-    float checkpoint_reward, completion_time_bonus, coin_reward, idle_penalty;
+    float checkpoint_reward, completion_time_bonus, coin_reward, idle_penalty, novel_area_reward;
     float completion_time_target_bonus, completion_time_target_max;
     int completion_time_target;
     int checkpoint_distance, idle_grace_decisions, progress_pixels, episode_decisions, frontier_count;
@@ -263,7 +263,7 @@ static bool retro_area_key_seen(const Env* e,unsigned int key) {
     return false;
 }
 // Return 0 for no confirmed event, 1 for a repeated destination, and 2 for a
-// novel destination, for diagnostics only. A destination
+// novel destination eligible for novel_area_reward. A destination
 // is confirmed only after the ROM is back in its ordinary playable state.
 static int retro_record_area_transition(Env* e,const unsigned char* m) {
     if(!retro_playable_area_state(m)) return 0;
@@ -272,7 +272,13 @@ static int retro_record_area_transition(Env* e,const unsigned char* m) {
     unsigned int old_key=e->last_area_key;
     int old_level=old_key==0xffffffffu?-1:(int)(old_key>>24), new_level=(int)(key>>24);
     e->last_area_key=key;
-    if(old_level<0||old_level!=new_level) return 0;
+    if(old_level<0||old_level!=new_level) {
+        // Level entry is covered by completion rewards. Remember its starting
+        // area so returning from a side room cannot farm another novelty bonus.
+        if(!retro_area_key_seen(e,key)&&e->area_transition_key_count<256)
+            e->area_transition_keys[e->area_transition_key_count++]=key;
+        return 0;
+    }
     e->episode_area_transitions++;
     if(retro_area_key_seen(e,key)) return 1;
     if(e->area_transition_key_count<256)
@@ -480,6 +486,9 @@ void puf_init(Env* e,Dict* cfg) {
     if(!std::isfinite(e->completion_time_bonus)||e->completion_time_bonus<0)
         throw std::runtime_error("retro: completion_time_bonus must be finite and nonnegative");
     e->coin_reward=retro_option(cfg,"coin_reward",0);
+    e->novel_area_reward=retro_option(cfg,"novel_area_reward",0);
+    if(!std::isfinite(e->novel_area_reward)||e->novel_area_reward<0)
+        throw std::runtime_error("retro: novel_area_reward must be finite and nonnegative");
     e->idle_penalty=retro_option(cfg,"idle_penalty",0);
     for(const char* key:{"area_transition_reward","area_transition_timer_bonus"})
         if(retro_option(cfg,key,0)!=0)
@@ -625,7 +634,7 @@ static int retro_idle_event(int* streak,int before_x,int after_x,int coin_delta,
     return *streak>grace ? 1 : 0;
 }
 static float retro_rom_reward(const Env* e,int advances,bool dead,int score_delta,int checkpoints=0,float clear_speed=0,
-        int coin_delta=0,int idle_events=0,float completion_target_bonus=0) {
+        int coin_delta=0,int idle_events=0,float completion_target_bonus=0,int novel_areas=0) {
     float reward=advances*e->completion_reward-(dead?e->death_penalty:0);
     reward+=e->completion_time_bonus*std::max(0.0f,std::min((float)advances,clear_speed));
     reward+=std::max(0,score_delta)*e->score_scale;
@@ -635,19 +644,19 @@ static float retro_rom_reward(const Env* e,int advances,bool dead,int score_delt
     reward-=std::max(0,idle_events)*e->idle_penalty;
     reward+=std::max(0.0f,completion_target_bonus)*e->completion_time_target_bonus;
     reward+=checkpoints*e->checkpoint_reward;
+    reward+=std::max(0,novel_areas)*e->novel_area_reward;
     return reward*e->reward_scale;
 }
-// Training ends an episode at the first death, the final win, the frame
-// budget, or -- when terminate_on_clear=1 -- the configured clear endpoint.
-// Standalone playback can let the ROM finish its death animation, spend a
-// life, and respawn naturally.
+// Natural-life episodes end on game over, the final win, the frame budget,
+// or -- when terminate_on_clear=1 -- the configured clear endpoint.
+// The explicit single-life viewer mode still ends on the first death.
 static void retro_step(Env* e,bool continue_lives) {
     if(e->practice) e->log.practice=1;
     int action=std::max(0,std::min(63,(int)e->agents[0].actions[0]));
     unsigned char buttons=retro_action_mask(action);
     int old_score=e->score, old_coins=e->coins, old_x=e->x_pos;
     bool dead=false,death_end=false,won=false,meaningful_event=false,saw_clear=false;
-    int advances=0,checkpoints=0,life_losses=0; e->last_frames=0;
+    int advances=0,checkpoints=0,life_losses=0,novel_areas=0; e->last_frames=0;
     float clear_speed=0, completion_target_bonus=0;
     float segment_reward=0;
     for(int f=0;f<e->frameskip;f++) {
@@ -671,6 +680,7 @@ static void retro_step(Env* e,bool continue_lives) {
         }
         checkpoints+=retro_track_progress(e);
         int area_event=retro_record_area_transition(e,m);
+        novel_areas+=(area_event==2);
         // Explicit 1-1 route events, independent of the novelty frontier.
         // Pay only after a confirmed arrival, once for each leg of the route.
         if(ow==1&&ol==1&&e->episode_spawn==0) {
@@ -739,7 +749,7 @@ static void retro_step(Env* e,bool continue_lives) {
     e->episode_idle_steps+=idle_event;
     float reward=retro_rom_reward(e,advances,
         continue_lives?life_losses>0:dead,e->score-old_score,checkpoints,clear_speed,
-        coin_delta,idle_event,completion_target_bonus);
+        coin_delta,idle_event,completion_target_bonus,novel_areas);
     reward+=segment_reward*e->reward_scale;
     e->episode_return+=reward; e->episode_decisions++;
     if(continue_lives) e->log.deaths+=life_losses;
@@ -766,7 +776,7 @@ static void retro_step(Env* e,bool continue_lives) {
     } else if(e->agents[0].observations) retro_compute_obs_real(e,(obs_t*)e->agents[0].observations);
     e->agents[0].rewards[0]=reward; e->agents[0].terminals[0]=done?1:0;
 }
-void puf_step(Env* e) { retro_step(e,false); }
+void puf_step(Env* e) { retro_step(e,true); }
 void puf_log(Log* log,Dict* out) {
     // Ratio of sums: failed/unfinished attempts add neither frames nor a
     // sample. Normalization by episode count cancels out. Put these first so

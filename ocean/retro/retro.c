@@ -193,9 +193,8 @@ int main(int argc,char** argv) {
         if(inspect_check) puf_ini_put(&ini,"env.max_frames","128");
         else if(!single_life&&!practice) {
             puf_ini_put(&ini,"env.max_frames",std::to_string(INT_MAX).c_str());
-            // Training may stop at the first flag via terminate_on_clear.
-            // The viewer keeps the ROM natural-life continuation by default;
-            // use --single-life for training-style clear/death boundaries.
+            // Keep ordinary viewing unbounded and let the ROM advance through
+            // levels and respawns. --single-life is a viewer-only override.
             puf_ini_put(&ini,"env.terminate_on_clear","0");
         }
         puf_ini_put(&ini,"env.spawn_levels",levels||random?"all":selected_level?selected_level:"1-1");
@@ -237,7 +236,7 @@ int main(int argc,char** argv) {
             fprintf(stderr,"Watching checkpoint: %s (%s actions)\n",path.c_str(),deterministic?"argmax":"sampled");
         }
         fprintf(stderr,"Playback: start %d-%d; %s\n",env.world,env.stage,
-            single_life?"single-life training episodes":"natural lives (new game on game over; R restarts)");
+            single_life?"single-life viewer episodes":"natural lives (new game on game over; R restarts)");
         RetroPlayback playback={single_life,false};
         if(timing) {
             retro_timing_audit(&env,net,obs,&action);
