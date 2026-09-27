@@ -14,13 +14,14 @@ void pattern(Prec tensor, int T, int B, int C) {
     free(host);
 }
 
-void check_rows(Prec tensor, int T, int B, int C) {
+void check_rows(Prec tensor, int T, int B, int C, int primary, int stride) {
     precision_t* host = (precision_t*)malloc(T * B * C * sizeof(precision_t));
     cudaMemcpy(host, tensor.data, T * B * C * sizeof(precision_t), cudaMemcpyDeviceToHost);
     for (int b = 0; b < B; b++) {
+        int source = b / primary * stride + b % primary;
         for (int t = 0; t < T; t++) {
             for (int c = 0; c < C; c++) {
-                assert(to_float(host[(b * T + t) * C + c]) == t * 32 + b);
+                assert(to_float(host[(b * T + t) * C + c]) == t * 32 + source);
             }
         }
     }
@@ -51,7 +52,7 @@ int main(int argc, char** argv) {
     TrainContext context = {.rank = 0, .world_size = 1, .gpu_id = 0};
     PuffeRL* p = create_pufferl(&ini, &context);
     int primary = p->vec->policy_layout[1], stride = 32 / buffers;
-    int B = 32, T = 8;
+    int B = primary * buffers, T = 8;
     printf("train rows: expected=%d actual=%ld policies=%d buffers=%d\n", B,
         p->train_rollouts.observations.shape[0], policies, buffers);
     fflush(stdout);
@@ -63,7 +64,7 @@ int main(int argc, char** argv) {
     for (int buf = 0; buf < buffers; buf++) {
         Prec state = p->policies[0].buffer_states[buf];
         for (int i = 0; i < 2 * primary * 32; i++) {
-            initial[i] = from_float((i / (primary * 32)) * 32 + buf * stride + (i / 32) % primary);
+            initial[i] = from_float((i / (primary * 32)) * 32 + buf * primary + (i / 32) % primary);
         }
         cudaMemcpy(
             state.data, initial, 2 * primary * 32 * sizeof(precision_t), cudaMemcpyHostToDevice);
@@ -82,7 +83,7 @@ int main(int argc, char** argv) {
         actions[i] = 100000 + i / NUM_ATNS;
     }
     cudaMemcpy(source.actions.data, actions, sizeof(actions), cudaMemcpyHostToDevice);
-    p->hypers.replay_ratio = 0; // isolate all-row transpose and carry, no model update
+    p->hypers.replay_ratio = 0; // isolate gathering and carry, no model update
     cudaStream_t stream = p->train_stream;
     assert(cudaDeviceSynchronize() == cudaSuccess);
     if (graphs) {
@@ -98,18 +99,19 @@ int main(int argc, char** argv) {
     }
     assert(cudaDeviceSynchronize() == cudaSuccess);
     RolloutBuf target = p->train_rollouts;
-    check_rows(target.observations, T, B, OBS_SIZE);
-    check_rows(target.values, T, B, 1);
-    check_rows(target.logprobs, T, B, 1);
-    check_rows(target.rewards, T, B, 1);
-    check_rows(target.terminals, T, B, 1);
-    check_rows(target.action_mask, T, B, p->vec->mask_size);
+    check_rows(target.observations, T, B, OBS_SIZE, primary, stride);
+    check_rows(target.values, T, B, 1, primary, stride);
+    check_rows(target.logprobs, T, B, 1, primary, stride);
+    check_rows(target.rewards, T, B, 1, primary, stride);
+    check_rows(target.terminals, T, B, 1, primary, stride);
+    check_rows(target.action_mask, T, B, p->vec->mask_size, primary, stride);
     cudaMemcpy(
         actions, target.actions.data, B * T * NUM_ATNS * sizeof(float), cudaMemcpyDeviceToHost);
     for (int b = 0; b < B; b++) {
+        int physical = b / primary * stride + b % primary;
         for (int t = 0; t < T; t++) {
             for (int c = 0; c < NUM_ATNS; c++) {
-                assert(actions[(b * T + t) * NUM_ATNS + c] == 100000 + t * 32 + b);
+                assert(actions[(b * T + t) * NUM_ATNS + c] == 100000 + t * 32 + physical);
             }
         }
     }
@@ -117,10 +119,7 @@ int main(int argc, char** argv) {
     cudaMemcpy(
         carry, p->train_state.data, 2 * B * 32 * sizeof(precision_t), cudaMemcpyDeviceToHost);
     for (int i = 0; i < 2 * B * 32; i++) {
-        int row = (i / 32) % B;
-        // Upstream snapshots learner carry only; frozen rows start at zero.
-        int expected = row % stride < primary ? (i / (B * 32)) * 32 + row : 0;
-        assert(to_float(carry[i]) == expected);
+        assert(to_float(carry[i]) == (i / (B * 32)) * 32 + (i / 32) % B);
     }
     close_pufferl(p);
     puf_ini_free(&ini);

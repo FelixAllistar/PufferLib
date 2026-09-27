@@ -317,10 +317,10 @@ from the old trainer. The horizon is shorter than the former 720; carrying
 state preserves memory, not the full 720-step backpropagation window.
 Upstream counts all physical agent rows in its step budget. At this league
 split, 300M nominal steps contain approximately 187.5M learner transitions.
-The all-row comparison baseline now trains on opponent rows too, as upstream
-does; it is not a critic-only data merge. Frozen opponent weights remain frozen.
-Minibatch *sequences* (`minibatch_size / horizon`) must divide the physical-row
-count (and the learner-row count when comparing against learner-only gathering).
+Learner-only gathering is restored as of September 27: opponent transitions do
+not train either the actor or critic. Frozen opponent weights remain frozen.
+Minibatch *sequences* (`minibatch_size / horizon`) must divide the learner-row
+count. The earlier all-row comparison remains available in Git history.
 Binary rollout masks are losslessly bitpacked (248 bytes per row), then
 expanded for each minibatch before the unchanged upstream PPO kernels. Other
 environments retain dense masks unless they explicitly opt into binary packing.
