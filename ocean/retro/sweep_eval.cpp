@@ -24,7 +24,7 @@ static long number(const char* text) {
 
 int main(int argc,char** argv) {
     try {
-        if(argc<2) throw std::runtime_error("usage: build/retro/sweep_eval CHECKPOINT [--config INI] [--levels CSV|all] [--frameskip N] [--metric speed|distance|perf] [--frames 3600] [--repeats 2] [--seed 20260907] [--workers 4] [--output TSV] [--deterministic]");
+        if(argc<2) throw std::runtime_error("usage: build/retro/sweep_eval CHECKPOINT [--config INI] [--levels CSV|all] [--frameskip N] [--metric checkpoints|speed|distance|perf] [--frames 3600] [--repeats 2] [--seed 20260907] [--workers 4] [--output TSV] [--deterministic]");
         std::string config=std::string(argv[1])+".ini",output;
         std::string levels_override,metric_override,skip_override;
         int frames=3600,repeats=2,workers=4; unsigned seed=20260907; bool deterministic=false,full_run=false;
@@ -75,6 +75,9 @@ int main(int argc,char** argv) {
             level_ids[i]=retro_level_id(selection.spawn_w[i],selection.spawn_l[i]);
         puf_ini_put(&ini,"env.backend","quicknes"); puf_ini_put(&ini,"env.full_render","0");
         puf_ini_put(&ini,"env.max_frames",std::to_string(frames).c_str());
+        // Score gameplay, not swept reward weights or checkpoint spacing.
+        puf_ini_put(&ini,"env.checkpoint_distance","128");
+        puf_ini_put(&ini,"env.terminate_on_clear","1");
         int hidden=puf_ini_get(&ini,"policy","hidden_size"),layers=puf_ini_get(&ini,"policy","num_layers");
         if(hidden<8||hidden>1024||hidden%8||layers<1||layers>8)
             throw std::runtime_error("invalid checkpoint architecture");
@@ -96,7 +99,7 @@ int main(int argc,char** argv) {
         std::vector<float> obs(n*OBS_SIZE),actions(n),rewards(n),terminals(n);
         std::vector<unsigned> rng(n);
         std::vector<int> cleared(n),elapsed(n),furthest(n),clear_frames(n);
-        std::vector<double> progress(n);
+        std::vector<double> progress(n),checkpoints(n);
         for(int i=0;i<n;i++) {
             Env* e=&envs[i]; e->spawn_pin=1; e->cur_spawn=i%level_count;
             e->agents[0]={obs.data()+i*OBS_SIZE,&actions[i],&rewards[i],&terminals[i],nullptr,0};
@@ -116,7 +119,10 @@ int main(int argc,char** argv) {
                     const float* logits=retro_cpu_logits(net,obs.data()+i*OBS_SIZE);
                     actions[i]=retro_panel_action(logits,retro_random(&rng[i]),deterministic);
                     float before=e->log.level_clears[level];
+                    float before_checkpoints=e->log.checkpoints;
                     puf_step(e); elapsed[i]+=e->last_frames;
+                    checkpoints[i]=terminals[i] ? e->log.checkpoints-before_checkpoints
+                        : e->progress_pixels/e->checkpoint_distance;
                     cleared[i]=e->log.level_clears[level]>before;
                     if(cleared[i]) clear_frames[i]=terminals[i]
                         ?(int)e->log.clear_frame_sum:e->episode_clear_frames;
@@ -133,9 +139,11 @@ int main(int argc,char** argv) {
             }
         }
         if(failure) std::rethrow_exception(failure);
-        int clears=0,best_clear_frames=0; long executed=0; double mean_progress=0,mean_distance=0,clear_frame_sum=0;
+        int clears=0,best_clear_frames=0; long executed=0;
+        double mean_progress=0,mean_distance=0,clear_frame_sum=0,mean_checkpoints=0;
         for(int i=0;i<n;i++) {
             clears+=cleared[i]; executed+=elapsed[i];
+            mean_checkpoints+=checkpoints[i]/n;
             clear_frame_sum+=clear_frames[i];
             if(cleared[i]&&(!best_clear_frames||clear_frames[i]<best_clear_frames))
                 best_clear_frames=clear_frames[i];
@@ -145,7 +153,8 @@ int main(int argc,char** argv) {
         }
         mean_progress=std::max(0.0,std::min(1.0,mean_progress));
         double mean_clear_frames=clears?clear_frame_sum/clears:0;
-        double score=retro_panel_objective(metric,clears,n,mean_progress,mean_distance,mean_clear_frames,frames,best_clear_frames);
+        double score=retro_panel_objective(metric,clears,n,mean_progress,mean_distance,
+            mean_clear_frames,frames,best_clear_frames,mean_checkpoints);
         int best_count=0;
         for(int i=0;i<n;i++) best_count+=cleared[i]&&clear_frames[i]==best_clear_frames;
         if(!output.empty()) {
@@ -153,15 +162,16 @@ int main(int argc,char** argv) {
             if(!file) throw std::runtime_error("cannot write panel report");
             fprintf(file,"# retro_panel_v2 frames=%d repeats=%d seed=%u deterministic=%d levels=%s frameskip=%d\n",
                 frames,repeats,seed,deterministic,puf_ini_get_str(&ini,"env","spawn_levels"),(int)skip);
-            fprintf(file,"level\treplicate\tclear\tprogress\tframes\tclear_frames\n");
+            fprintf(file,"level\treplicate\tclear\tprogress\tframes\tclear_frames\tcheckpoints\n");
             for(int i=0;i<n;i++) {
                 int level=level_ids[i%level_count];
-                fprintf(file,"%d-%d\t%d\t%d\t%.9g\t%d\t%d\n",level/4+1,level%4+1,
-                    i/level_count,cleared[i],progress[i],elapsed[i],clear_frames[i]);
+                fprintf(file,"%d-%d\t%d\t%d\t%.9g\t%d\t%d\t%.9g\n",level/4+1,level%4+1,
+                    i/level_count,cleared[i],progress[i],elapsed[i],clear_frames[i],checkpoints[i]);
             }
             fprintf(file,"# score=%.9g clears=%d attempts=%d progress=%.9g frames=%ld\n",score,clears,n,mean_progress,executed);
             fprintf(file,"# metric=%s distance=%.9g units=forward_pixels\n",metric,mean_distance);
             fprintf(file,"# clear_frames=%.9g clear_rate=%.9g\n",mean_clear_frames,(double)clears/n);
+            fprintf(file,"# checkpoints=%.9g distance_per_checkpoint=128\n",mean_checkpoints);
             fprintf(file,"# speed_objective=2 best_frames=%d best_seconds=%.12f mean_seconds=%.12f best_count=%d\n",
                 best_clear_frames,retro_frame_seconds(best_clear_frames),retro_frame_seconds(mean_clear_frames),best_count);
             fprintf(file,"# timing_scope=%s practice_replay=%s\n",practice?"segment":"full_level",practice_path.c_str());

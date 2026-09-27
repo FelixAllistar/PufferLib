@@ -105,9 +105,9 @@ bash build.sh retro --float
 
 The build generates compiled-ROM blocks from the local cartridge and links
 QuickNES. Simulation runs on CPU; the CNN and upstream trainer run on GPU.
-The config preserves the legacy 256×2 pipe-exit practice setup and rewards,
-but not its custom optimizer or retired priority-replay settings. The old
-speed-ranked sweep panel is not integrated yet.
+The default config now starts fresh 256×2 policies for all-level exploration,
+not the old pipe-exit practice curriculum. It does not use the legacy custom
+optimizer or priority replay.
 
 Isolated FP32 smoke tests completed 1,024 steps with a small network and graphs
 off, and 2,048 steps with the 256×2 network, graphs on and 64-frame timeouts.
@@ -134,6 +134,52 @@ CPU inference is compiled as C and connected to the C++ emulator through
 `retro_policy_api.c`; no upstream CPU inference changes are required.
 
 ## Repeatable checkpoint panel
+
+### Balanced native Protein sweep
+
+`./puffer_retro sweep` (or the Retro-built `./puffer sweep`) now supports an
+opt-in `[panel]` post-training evaluation. The config requests 500 successful
+trials of 30M nominal decisions each, from fresh weights, with 27 varied resource,
+PPO and reward dimensions. Threads/buffers remain 16/4; architecture, observation
+resolution, ROM, frameskip and evaluation protocol do not vary. Invalid/OOM
+samples still fail normally and feed Protein's failure model. Native training
+rounds the decision budget down to complete rollout batches.
+
+Each final checkpoint is evaluated on exactly eight attempts per level, all
+32 levels, fixed per-attempt sampling seeds, four-frame actions and a 30,000
+native-frame budget. Natural lives/midpoint respawns remain enabled; each attempt
+ends at its first source-level clear, game over or timeout. `panel` does not
+balance training resets; it replaces the score sent back to Protein with a
+balanced **evaluation** score. It is not a full-game or warp-route evaluation.
+
+The default objective, `checkpoints`, is mean episode-local forward-frontier
+progress checkpoints (128 pixels each), including failed attempts and additional
+areas, not raw game score or shaped return. Already visited progress cannot pay
+again after respawn. Checkpoint spacing is fixed inside evaluation, independently
+of training reward parameters. This supplies signal before fresh policies clear
+levels. `perf` selects the existing clear-first panel score instead; `speed`
+still means personal-best clear time, **not** average time. The latter objectives
+should not be confused with the fresh-policy progress sweep.
+
+Every final model receives a `.bin.panel.tsv` report with level, replicate,
+clear outcome, elapsed frames and progress checkpoints. Final INI metrics include
+`panel/score`, `panel/clear_rate`, `panel/clear_frames`, `panel/attempts` and
+`panel/checkpoints`. Ordinary training-window `env/*` metrics remain separate.
+Protein receives one panel score and total train-plus-panel cost, regardless of
+`sweep.downsample`. The checkpoint's resolved config is passed to the evaluator;
+the panel does not silently reread new training settings during a sweep.
+
+Set `panel.repeats=0` to disable post-training evaluation. To fine-tune, set
+`base.load_model_path` to one explicit preserved checkpoint, never `latest`.
+Every candidate then starts from that same parent; no automatic hill-climb
+promotion occurs. The default config freezes the inherited model-size and
+step-budget sweep sections explicitly: if changing `train.total_timesteps`, also
+change both bounds of `[sweep.train.total_timesteps]`.
+
+`build.sh retro` also builds the CPU panel. The shared trainer adds only an
+optional post-training evaluation hook, after training workers stop; no loss,
+optimizer, sampler or rollout selection changes are part of this integration.
+Evaluation failure fails the trial instead of falling back to training score.
 
 ```sh
 make -C ocean/retro panel panel-test
@@ -175,8 +221,8 @@ ROM bytes; their header binds them to the verified cartridge fingerprint.
 
 ## Remaining conversion
 
-Interactive visual qualification, BF16 qualification and automatic speed
-sweep integration still need
+Interactive visual qualification, BF16 qualification and average-completion-time
+objective design still need
 porting and qualification. The original documentation and experiment assets
 remain in `archive/5c-before-unification-20260924`; their old CLI/build commands
 are not instructions for this 5.0 checkout. The network port adds only the
@@ -184,9 +230,8 @@ standard custom-encoder registration to `src/ocean.cu`; it changes no shared
 loss, optimizer or rollout logic.
 
 Upstream's trainer has no equivalent of the legacy `PUF_SWEEP_SCORE` callback.
-Connecting the standalone speed panel to Protein therefore needs a separately
-reviewed integration decision; ordinary training scores are not substitutes
-for this fixed-panel speed objective.
+This fork now exposes the optional post-training hook described above, without
+restoring the retired optimizer or using training-window averages as panel scores.
 
 QuickNES-derived source retains its original copyright notices and LGPL-2.1+
 terms; a license copy is in `nes_emu/COPYING`. Individual third-party files

@@ -29,6 +29,12 @@ cleanup, learner-only gathering was restored at the user's request for publicati
 After the learner-only restoration, `src/pufferl.cu` is 272 added / 42 deleted
 lines versus the same upstream hash; the other two source-file counts are unchanged.
 
+The subsequent Retro balanced-sweep integration adds 14 lines to `src/pufferl.cu`:
+an optional post-training evaluation hook that replaces the trial score with one
+environment-owned panel result and includes its elapsed cost. No PPO/optimizer
+math changes. `build.sh` also builds Retro's existing standalone panel; level
+balancing, checkpoint-progress scoring and report handling live in `ocean/retro/`.
+
 Those are the only changed `src/` files. There is no custom PPO loss or optimizer
 change in this diff. This does not mean training behavior is identical:
 masking, reward clipping, initialization and opponent selection can all affect it.

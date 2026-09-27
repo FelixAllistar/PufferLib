@@ -3593,6 +3593,20 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
         }
     }
 
+#ifdef PUF_POST_TRAIN_EVAL
+    if (ctx->artifact_owner && final_checkpoint[0]) {
+        double started = wall_clock();
+        float score;
+        if (PUF_POST_TRAIN_EVAL(ini, final_checkpoint, log_path, &last_log, &score)) {
+            result.cost += wall_clock() - started;
+            result.score = result.scores[0] = score;
+            points = result.points = 1;
+            result.costs[0] = result.cost;
+            result.step_points[0] = result.steps;
+        }
+    }
+#endif
+
     if (ctx->artifact_owner) {
         assert(log_history.size == 0 || dict_find(&last_log, target_key));
         puf_log_history_add(&log_history, &last_log);

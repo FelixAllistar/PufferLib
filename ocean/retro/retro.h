@@ -869,6 +869,10 @@ static void my_vec_close(Env* envs) {
 #define MY_VEC_INIT
 #define MY_VEC_CLOSE
 #endif
+#ifdef PUFFER_RETRO
+#include "retro_sweep_config.h"
+#define PUF_POST_TRAIN_EVAL retro_post_train_eval
+#endif
 #if defined(PUFFERCPU_EVAL_MAIN)
 #error "Retro standalone viewer integration is not ported yet; use ocean/retro simulator tests"
 #endif

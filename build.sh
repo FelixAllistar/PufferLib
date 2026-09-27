@@ -194,7 +194,7 @@ elif [ "$ENV" = "webnav" ]; then
     LINK_ARCHIVES+=("build/webnav/libwebnav.a")
 elif [ "$ENV" = "retro" ]; then
     SRC_DIR="ocean/$ENV"
-    make -C "$SRC_DIR" -j2 batch-library
+    make -C "$SRC_DIR" -j2 batch-library panel
     LINK_ARCHIVES+=("build/retro_batch/libquicknes_batch.a")
 elif [ "$ENV" = "shenaniguns3d" ]; then
     SRC_DIR="ocean/$ENV"
