@@ -5,7 +5,7 @@ pufferlib/puffernet.c
 logs/
 logs_release/
 ocean/osrs/data/
-
+ppufferlib/leagues/
 # Build dir
 build/
 
