@@ -698,6 +698,94 @@ the installed version and environment-source hash. Neither uploads anything or
 changes the archive's `official_runtime_verified=false` metadata: local success
 does not certify the hosted competition runtime.
 
+## Reward-only behavior search (CMA-MAE)
+
+`qd.py` is an environment-local coordinator using `ribs==0.12.0`, not a trainer
+fork or a new PPO loss. Each candidate reloads the same actor-only BC weights;
+it does not inherit an archive elite's weights. BC metadata/hash checks reject
+the critic-pretrained initializer. The five auxiliary reward ranges are in
+`profiles/qd.ini`. Money stays at 1, land reward and PBRS at 0, and reward clipping
+at 0. LR, entropy, gamma, GAE, replay ratio, resets, architecture, agents, horizon
+and minibatch are fixed from the supplied config. Prepare prints the actual fixed
+settings and requires an explicit step budget. This is not a normal Protein sweep.
+
+There are two separate archives: CMA-MAE's adaptive thresholds guide proposals;
+the result archive preserves the highest evaluated money in each behavior cell.
+The default grid has 8x8 cells, with axes:
+
+- **Animal value share:** animal-product production valued at fixed base prices,
+  divided by total production value. Purchased/resold products do not count.
+  This is a ratio of panel-average values, not an average of per-game ratios.
+- **First-animal delay:** average first successful placement time as a fraction
+  of the full episode. Never placing an animal counts as 1 (same as the last
+  turn); `animal_seen` separately reports the fraction of games with a placement.
+  This measures placing an animal, not producing its first output.
+
+Also record second/third-plot delays, ending plots, successful plants and animal
+placements, money and win rate. For training reset starts, event times are relative
+to the remaining episode and prior placements/owned plots have delay 0. Archive
+evaluation always disables resets, uses the same frozen opponents and seeds,
+and balances seats. Cell quality is actual final cash, never shaped return.
+The old pass/basic-rules bots are not used as quality judges.
+
+Build Kaggriculture with the new environment telemetry before preparing the
+experiment. **Nothing is launched by prepare**, and no config defaults are edited:
+
+```sh
+# Selected 2026-09-30: 200M per trial, anneal_lr=0 and anneal_ent_coef=0
+# in config/kaggriculture.ini; keep the remaining PPO settings fixed.
+uv run ocean/kaggriculture/qd.py prepare --binary ./puffer \
+    --config config/kaggriculture.ini --steps 200000000 \
+    --bc saved/kaggriculture/initial_bc.bin \
+    --opponents saved/kaggriculture/sweep_league_20260929/initial_opponents.txt \
+    --output logs/kaggriculture/qd_rewards_200m_20260930
+# Only run this after the current training job finishes:
+uv run ocean/kaggriculture/qd.py run logs/kaggriculture/qd_rewards_200m_20260930 --gpus 0,1
+```
+
+Prepare snapshots the BC weights, opponent panel, config and reward ranges and
+records input hashes, including the binary. Each GPU runs one ordinary native
+train/evaluate process. CMA proposes batches of 10; the two workers drain the
+batch, then update covariance. Training is not synchronized across GPUs. There
+are 500 candidates by default. A reset-free BC evaluation runs once before any
+candidate, both as a baseline and a check that telemetry is available.
+
+The console shows one updating line per GPU (append-only when redirected):
+
+```text
+GPU0 #12 train 18.3M SPS=94000 root$=72000 reset$=off plants=96.2 animals=10.1 plots=2.01
+GPU1 #13 eval2/4 ...
+```
+
+`plants` and `animals` are successful **placements per completed game**, not
+production units or the number currently alive. Training numbers describe the
+latest completed-game window; archive decisions use the separate evaluation
+panel. `reset$=off` means no reset episodes in that window, not zero cash.
+`KAG_QD_METRICS=1` opts the child process into untruncated JSON environment metrics;
+ordinary runs do not print that stream. The coordinator still parses step/SPS
+fields from the existing trainer dashboard. No core changes are needed.
+
+Artifacts: `manifest.json`, `fixed.ini`, `baseline.json`, per-trial configs,
+full native logs, compact metric JSONL, final checkpoints and panel results;
+`elites.json` links each cell to its trial/checkpoint. `status.json` reports
+coverage and best money. `state.pkl` preserves CMA state and outstanding proposals.
+Resume with the same run command. Finished trials are reused; interrupted training
+restarts from BC, while completed training awaiting evaluation is not retrained.
+Ctrl-C/SIGTERM stops this coordinator's children only. One failed worker does not
+stop its peers or become an elite; an entirely failed batch stops for inspection.
+Only load your own `state.pkl` (pickle is not safe for untrusted files).
+
+Archive entries are provisional single-training-seed results. Confirm promising
+elites on new evaluation seeds before promotion; do not silently rotate opponents
+mid-search. Changing inputs/binary requires a new prepared experiment.
+
+CPU-only orchestration tests (fake subprocess workers, no GPU allocation):
+
+```sh
+uv run --no-project --with ribs==0.12.0 --with pytest python -m pytest -q \
+    ocean/kaggriculture/tests/test_qd.py
+```
+
 ## Read-only rendering
 
 Native non-headless `eval`/`match` now draws both farms, workers, crops/animals,

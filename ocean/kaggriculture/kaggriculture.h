@@ -21,13 +21,20 @@ struct Log {
     float terminal_cash_reward, growth_land_reward, growth_crop_reward, growth_animal_reward;
     float alive_reward, dense_quality_reward, potential_reward;
     float policy_0_score, policy_1_score, checkpoint_fraction;
+    float crop_ref_value, animal_ref_value, animal_delay, animal_seen;
+    float plot2_delay, plot3_delay;
     float n;
 };
 
 typedef struct KagStartMetrics {
     uint32_t production, crop, animal, plants, animal_places, deaths;
     int plots;
+    float crop_value, animal_value;
 } KagStartMetrics;
+
+typedef struct KagBehavior {
+    int animal, plot2, plot3;
+} KagBehavior;
 
 typedef struct KagRewards {
     int peaks[3];
@@ -49,6 +56,7 @@ struct Env {
     int reset_count;
     float reset_probability;
     KagStartMetrics start[KG_NUM_PLAYERS];
+    KagBehavior behavior[KG_NUM_PLAYERS];
     float growth[3], alive_daily, quality_scale, quality_idle_cost;
     int targets[3];
     KagRewards reward[KG_NUM_PLAYERS];
@@ -57,8 +65,10 @@ struct Env {
 };
 
 KagPotential kag_frozen_potential;
+int kag_qd_metrics;
 
 void kag_configure_potential(Ini* ini, const char* mode) {
+    kag_qd_metrics = getenv("KAG_QD_METRICS") != NULL;
     Dict* env = puf_ini_section(ini, "env", 0);
     DictItem* beta = dict_find(env, "potential_beta");
     if (!beta || beta->value == 0) {
@@ -101,11 +111,18 @@ KG_HD void kag_reset_episode(Env* env) {
             .deaths = g->neglect_deaths[p],
             .plots = kag_popcount(g->players[p].unlocked_mask),
         };
+        int end = g->config.episode_steps - 1;
+        env->behavior[p] = (KagBehavior){g->placed_animals[p] ? g->step : end,
+            env->start[p].plots >= 2 ? g->step : end,
+            env->start[p].plots >= 3 ? g->step : end};
         for (int item = 0; item < KG_NUM_PRODUCTS; item++) {
+            float value = g->production_product_units[p][item] * KG_MARKET_DEFS[item].base;
             if (item < KG_NUM_CROPS) {
                 env->start[p].crop += g->production_product_units[p][item];
+                env->start[p].crop_value += value;
             } else {
                 env->start[p].animal += g->production_product_units[p][item];
+                env->start[p].animal_value += value;
             }
         }
     }
@@ -163,6 +180,8 @@ void puf_init(Env* env, Dict* kwargs) {
     }
     env->start[0].plots = env->start[1].plots = 1;
     env->reward[0].peaks[0] = env->reward[1].peaks[0] = 1;
+    int end = config.episode_steps - 1;
+    env->behavior[0] = env->behavior[1] = (KagBehavior){end, end, end};
 }
 
 typedef struct KagStateBankHeader {
@@ -253,6 +272,19 @@ KG_HD void kag_apply_actions(Env* env, const KGAction* commands) {
         int player = env->num_agents == 2 ? a : env->learner_seat;
         KagObservationState* s = &env->policy.history[player];
         KagRewards* r = &env->reward[player];
+        KagBehavior* behavior = &env->behavior[player];
+        int end = game->config.episode_steps - 1;
+        int owned_plots = kag_popcount(game->players[player].unlocked_mask);
+        if (behavior->animal == end &&
+                game->placed_animals[player] > env->start[player].animal_places) {
+            behavior->animal = game->step;
+        }
+        if (behavior->plot2 == end && owned_plots >= 2) {
+            behavior->plot2 = game->step;
+        }
+        if (behavior->plot3 == end && owned_plots >= 3) {
+            behavior->plot3 = game->step;
+        }
         int peaks[] = {s->peak_plots, s->peak_crops, s->peak_animals};
         float growth = 0;
         for (int j = 0; j < 3; j++) {
@@ -320,14 +352,26 @@ KG_HD void kag_apply_actions(Env* env, const KGAction* commands) {
         log->draw_rate += money == opponent_money;
         log->production_units += game->production_units[player] - start->production;
         for (int product = 0; product < KG_NUM_PRODUCTS; product++) {
+            float value = game->production_product_units[player][product] *
+                KG_MARKET_DEFS[product].base;
             if (product < KG_NUM_CROPS) {
                 log->crop_units += game->production_product_units[player][product];
+                log->crop_ref_value += value;
             } else {
                 log->animal_units += game->production_product_units[player][product];
+                log->animal_ref_value += value;
             }
         }
         log->crop_units -= start->crop;
         log->animal_units -= start->animal;
+        log->crop_ref_value -= start->crop_value;
+        log->animal_ref_value -= start->animal_value;
+        float duration = end - s->start_step;
+        log->animal_delay += (behavior->animal - s->start_step) / duration;
+        log->animal_seen += game->placed_animals[player] > start->animal_places ||
+            behavior->animal < end;
+        log->plot2_delay += (behavior->plot2 - s->start_step) / duration;
+        log->plot3_delay += (behavior->plot3 - s->start_step) / duration;
         log->plants += game->planted_crops[player] - start->plants;
         log->animal_places += game->placed_animals[player] - start->animal_places;
         int plots = kag_popcount(game->players[player].unlocked_mask);
@@ -405,6 +449,22 @@ void puf_log(Log* log, Dict* out) {
         out, "reset_cash_gain", log->reset_games ? log->reset_cash_gain / log->reset_games : 0);
     dict_set(out, "root_steps", log->root_games ? log->root_steps / log->root_games : 0);
     dict_set(out, "reset_steps", log->reset_games ? log->reset_steps / log->reset_games : 0);
+    // Fixed reference prices: these descriptors do not reward market price manipulation.
+    // Delays are fractions of the episode remaining at reset; 1 means last turn or never.
+    dict_set(out, "crop_ref_value", log->crop_ref_value);
+    dict_set(out, "animal_ref_value", log->animal_ref_value);
+    dict_set(out, "animal_delay", log->animal_delay);
+    dict_set(out, "animal_seen", log->animal_seen);
+    dict_set(out, "plot2_delay", log->plot2_delay);
+    dict_set(out, "plot3_delay", log->plot3_delay);
+    // Opt-in environment telemetry: the trainer's dashboard truncates long metric lists.
+    if (kag_qd_metrics) {
+        printf("KAG_QD_METRICS {");
+        for (int i = 0; i < out->size; i++) {
+            printf("%s\"%s\":%.9g", i ? "," : "", out->items[i].key, out->items[i].value);
+        }
+        puts("}");
+    }
 }
 
 Vector2 kag_v2(int x, int y) {
