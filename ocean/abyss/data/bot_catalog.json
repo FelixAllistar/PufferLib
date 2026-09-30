@@ -1,0 +1,3908 @@
+[
+  {
+    "name": "Attacker Pacifier Disparu Troop",
+    "index": 0,
+    "signature": 150.0,
+    "type_id": 56170,
+    "effects": [],
+    "initial": [
+      1450.0,
+      1450.0,
+      290.0
+    ],
+    "maximum": [
+      1450.0,
+      1450.0,
+      290.0
+    ],
+    "cycle": 1.0,
+    "spool_step": 0,
+    "spool_max": 1,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Blastlance Tessella",
+    "index": 1,
+    "signature": 50.0,
+    "type_id": 47859,
+    "effects": [],
+    "initial": [
+      1100.0,
+      200.0,
+      400.0
+    ],
+    "maximum": [
+      1100.0,
+      200.0,
+      400.0
+    ],
+    "cycle": 2.0,
+    "spool_step": 0,
+    "spool_max": 1,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Blastneedle Tessella",
+    "index": 2,
+    "signature": 50.0,
+    "type_id": 47855,
+    "effects": [],
+    "initial": [
+      550.0,
+      200.0,
+      400.0
+    ],
+    "maximum": [
+      550.0,
+      200.0,
+      400.0
+    ],
+    "cycle": 2.0,
+    "spool_step": 0,
+    "spool_max": 1,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Devoted Hunter",
+    "index": 3,
+    "signature": 49.0,
+    "type_id": 56138,
+    "effects": [],
+    "initial": [
+      2500.0,
+      700.0,
+      675.0
+    ],
+    "maximum": [
+      2500.0,
+      700.0,
+      675.0
+    ],
+    "cycle": 4.5,
+    "spool_step": 0,
+    "spool_max": 1,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Emberlance Tessella",
+    "index": 4,
+    "signature": 50.0,
+    "type_id": 47857,
+    "effects": [],
+    "initial": [
+      200.0,
+      1000.0,
+      450.0
+    ],
+    "maximum": [
+      200.0,
+      1000.0,
+      450.0
+    ],
+    "cycle": 2.0,
+    "spool_step": 0,
+    "spool_max": 1,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Emberneedle Tessella",
+    "index": 5,
+    "signature": 50.0,
+    "type_id": 47848,
+    "effects": [],
+    "initial": [
+      200.0,
+      500.0,
+      450.0
+    ],
+    "maximum": [
+      200.0,
+      500.0,
+      450.0
+    ],
+    "cycle": 2.0,
+    "spool_step": 0,
+    "spool_max": 1,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Ephialtes Lancer",
+    "index": 6,
+    "signature": 150.0,
+    "type_id": 48234,
+    "effects": [],
+    "initial": [
+      2500.0,
+      1500.0,
+      1000.0
+    ],
+    "maximum": [
+      2500.0,
+      1500.0,
+      1000.0
+    ],
+    "cycle": 4.0,
+    "spool_step": 0,
+    "spool_max": 1,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Lucid Aegis",
+    "index": 7,
+    "signature": 70.0,
+    "type_id": 48245,
+    "effects": [],
+    "initial": [
+      0.0,
+      1000.0,
+      1250.0
+    ],
+    "maximum": [
+      0.0,
+      1000.0,
+      1250.0
+    ],
+    "cycle": 2.0,
+    "spool_step": 0,
+    "spool_max": 1,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Lucid Escort",
+    "index": 8,
+    "signature": 70.0,
+    "type_id": 48241,
+    "effects": [],
+    "initial": [
+      0.0,
+      800.0,
+      900.0
+    ],
+    "maximum": [
+      0.0,
+      800.0,
+      900.0
+    ],
+    "cycle": 2.0,
+    "spool_step": 0,
+    "spool_max": 1,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Lucifer Dramiel",
+    "index": 9,
+    "signature": 70.0,
+    "type_id": 56346,
+    "effects": [],
+    "initial": [
+      737.0,
+      737.0,
+      650.0
+    ],
+    "maximum": [
+      737.0,
+      737.0,
+      650.0
+    ],
+    "cycle": 6.0,
+    "spool_step": 0,
+    "spool_max": 1,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Lucifer Echo",
+    "index": 10,
+    "signature": 80.0,
+    "type_id": 56349,
+    "effects": [
+      {
+        "cycle": 5.0,
+        "optimal": 12000,
+        "falloff": 0,
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          -0.4,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "kind": "behaviorWebifier"
+      },
+      {
+        "cycle": 5.0,
+        "optimal": 11250,
+        "falloff": 0,
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          2.0,
+          0.0
+        ],
+        "kind": "behaviorWarpScramble"
+      }
+    ],
+    "initial": [
+      650.0,
+      650.0,
+      650.0
+    ],
+    "maximum": [
+      650.0,
+      650.0,
+      650.0
+    ],
+    "cycle": 6.0,
+    "spool_step": 0,
+    "spool_max": 1,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Lucifer Fury",
+    "index": 11,
+    "signature": 80.0,
+    "type_id": 56348,
+    "effects": [
+      {
+        "cycle": 5.0,
+        "optimal": 8000,
+        "falloff": 6000,
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          25.0
+        ],
+        "kind": "behaviorEnergyNeutralizer"
+      }
+    ],
+    "initial": [
+      700.0,
+      700.0,
+      600.0
+    ],
+    "maximum": [
+      700.0,
+      700.0,
+      600.0
+    ],
+    "cycle": 6.0,
+    "spool_step": 0,
+    "spool_max": 1,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Lucifer Swordspine",
+    "index": 12,
+    "signature": 90.0,
+    "type_id": 56352,
+    "effects": [
+      {
+        "cycle": 5.0,
+        "optimal": 20000,
+        "falloff": 40000,
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.38,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "kind": "behaviorTargetPainter"
+      }
+    ],
+    "initial": [
+      700.0,
+      600.0,
+      600.0
+    ],
+    "maximum": [
+      700.0,
+      600.0,
+      600.0
+    ],
+    "cycle": 6.0,
+    "spool_step": 0,
+    "spool_max": 1,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Sparklance Tessella",
+    "index": 13,
+    "signature": 50.0,
+    "type_id": 47856,
+    "effects": [],
+    "initial": [
+      200.0,
+      1000.0,
+      450.0
+    ],
+    "maximum": [
+      200.0,
+      1000.0,
+      450.0
+    ],
+    "cycle": 2.0,
+    "spool_step": 0,
+    "spool_max": 1,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Sparkneedle Tessella",
+    "index": 14,
+    "signature": 50.0,
+    "type_id": 47847,
+    "effects": [],
+    "initial": [
+      200.0,
+      500.0,
+      450.0
+    ],
+    "maximum": [
+      200.0,
+      500.0,
+      450.0
+    ],
+    "cycle": 2.0,
+    "spool_step": 0,
+    "spool_max": 1,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Strikelance Tessella",
+    "index": 15,
+    "signature": 50.0,
+    "type_id": 47858,
+    "effects": [],
+    "initial": [
+      1100.0,
+      200.0,
+      400.0
+    ],
+    "maximum": [
+      1100.0,
+      200.0,
+      400.0
+    ],
+    "cycle": 2.0,
+    "spool_step": 0,
+    "spool_max": 1,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Strikeneedle Tessella",
+    "index": 16,
+    "signature": 50.0,
+    "type_id": 47849,
+    "effects": [],
+    "initial": [
+      550.0,
+      200.0,
+      400.0
+    ],
+    "maximum": [
+      550.0,
+      200.0,
+      400.0
+    ],
+    "cycle": 2.0,
+    "spool_step": 0,
+    "spool_max": 1,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Striking Damavik",
+    "index": 17,
+    "signature": 192.0,
+    "type_id": 48092,
+    "effects": [],
+    "initial": [
+      500.0,
+      2200.0,
+      650.0
+    ],
+    "maximum": [
+      500.0,
+      2200.0,
+      650.0
+    ],
+    "cycle": 3.5,
+    "spool_step": 0.04,
+    "spool_max": 2.5,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Anchoring Damavik",
+    "index": 18,
+    "signature": 192.0,
+    "type_id": 48089,
+    "effects": [
+      {
+        "cycle": 5.0,
+        "optimal": 9500,
+        "falloff": 0,
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          2.0,
+          0.0
+        ],
+        "kind": "behaviorWarpScramble"
+      }
+    ],
+    "initial": [
+      500.0,
+      2200.0,
+      650.0
+    ],
+    "maximum": [
+      500.0,
+      2200.0,
+      650.0
+    ],
+    "cycle": 3.5,
+    "spool_step": 0.04,
+    "spool_max": 2.5,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Anchoring Vila Damavik",
+    "index": 19,
+    "signature": 192.0,
+    "type_id": 48258,
+    "effects": [
+      {
+        "cycle": 5.0,
+        "optimal": 10000,
+        "falloff": 0,
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          3.0,
+          0.0
+        ],
+        "kind": "behaviorWarpScramble"
+      }
+    ],
+    "initial": [
+      500.0,
+      2200.0,
+      650.0
+    ],
+    "maximum": [
+      500.0,
+      2200.0,
+      650.0
+    ],
+    "cycle": 3.5,
+    "spool_step": 0.01,
+    "spool_max": 2.5,
+    "drone_active": 3,
+    "drone_total": 5,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Arrester Marshal Disparu Troop",
+    "index": 20,
+    "signature": 370.0,
+    "type_id": 56177,
+    "effects": [
+      {
+        "cycle": 5.0,
+        "optimal": 15000,
+        "falloff": 0,
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          -0.5,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "kind": "behaviorWebifier"
+      }
+    ],
+    "initial": [
+      0,
+      2100.0,
+      5200.0
+    ],
+    "maximum": [
+      7500.0,
+      7500.0,
+      5200.0
+    ],
+    "cycle": 1.0,
+    "spool_step": 0,
+    "spool_max": 1,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Arrester Pacifier Disparu Troop",
+    "index": 21,
+    "signature": 150.0,
+    "type_id": 56171,
+    "effects": [
+      {
+        "cycle": 5.0,
+        "optimal": 10000,
+        "falloff": 0,
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          -0.5,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "kind": "behaviorWebifier"
+      }
+    ],
+    "initial": [
+      1450.0,
+      1450.0,
+      290.0
+    ],
+    "maximum": [
+      1450.0,
+      1450.0,
+      290.0
+    ],
+    "cycle": 1.0,
+    "spool_step": 0,
+    "spool_max": 1,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Assault Enforcer Disparu Troop",
+    "index": 22,
+    "signature": 660.0,
+    "type_id": 56174,
+    "effects": [],
+    "initial": [
+      5200.0,
+      5200.0,
+      1050.0
+    ],
+    "maximum": [
+      5200.0,
+      5200.0,
+      1050.0
+    ],
+    "cycle": 1.0,
+    "spool_step": 0,
+    "spool_max": 1,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Attacker Marshal Disparu Troop",
+    "index": 23,
+    "signature": 370.0,
+    "type_id": 56176,
+    "effects": [],
+    "initial": [
+      0,
+      2100.0,
+      5200.0
+    ],
+    "maximum": [
+      7500.0,
+      7500.0,
+      5200.0
+    ],
+    "cycle": 1.0,
+    "spool_step": 0,
+    "spool_max": 1,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Bathyic Abyssal Overmind",
+    "index": 24,
+    "signature": 465.0,
+    "type_id": 47878,
+    "effects": [],
+    "initial": [
+      9000.0,
+      20000.0,
+      10625.0
+    ],
+    "maximum": [
+      9000.0,
+      20000.0,
+      10625.0
+    ],
+    "cycle": 4.28,
+    "spool_step": 0,
+    "spool_max": 1,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Benthic Abyssal Overmind",
+    "index": 25,
+    "signature": 455.0,
+    "type_id": 47880,
+    "effects": [
+      {
+        "cycle": 5.0,
+        "optimal": 15000,
+        "falloff": 0,
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          -0.55,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "kind": "behaviorWebifier"
+      }
+    ],
+    "initial": [
+      11875.0,
+      25750.0,
+      13750.0
+    ],
+    "maximum": [
+      11875.0,
+      25750.0,
+      13750.0
+    ],
+    "cycle": 3.97,
+    "spool_step": 0,
+    "spool_max": 1,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Blastgrip Tessera",
+    "index": 26,
+    "signature": 300.0,
+    "type_id": 48265,
+    "effects": [],
+    "initial": [
+      3000.0,
+      2300.0,
+      2500.0
+    ],
+    "maximum": [
+      3000.0,
+      2300.0,
+      2500.0
+    ],
+    "cycle": 5.0,
+    "spool_step": 0,
+    "spool_max": 1,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Blinding Leshak",
+    "index": 27,
+    "signature": 370.0,
+    "type_id": 48127,
+    "effects": [
+      {
+        "cycle": 10.0,
+        "optimal": 40000,
+        "falloff": 80000,
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          -0.25,
+          -0.25,
+          0.0,
+          0.0
+        ],
+        "kind": "behaviorSensorDampener"
+      }
+    ],
+    "initial": [
+      0,
+      0,
+      3959.0
+    ],
+    "maximum": [
+      5000.0,
+      13000.0,
+      10000.0
+    ],
+    "cycle": 5.0,
+    "spool_step": 0.02,
+    "spool_max": 2.5,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Blinding Vila Damavik",
+    "index": 28,
+    "signature": 192.0,
+    "type_id": 48260,
+    "effects": [
+      {
+        "cycle": 10.0,
+        "optimal": 40000,
+        "falloff": 80000,
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          -0.2,
+          -0.2,
+          0.0,
+          0.0
+        ],
+        "kind": "behaviorSensorDampener"
+      }
+    ],
+    "initial": [
+      500.0,
+      2200.0,
+      650.0
+    ],
+    "maximum": [
+      500.0,
+      2200.0,
+      650.0
+    ],
+    "cycle": 3.5,
+    "spool_step": 0.01,
+    "spool_max": 2.5,
+    "drone_active": 3,
+    "drone_total": 5,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Devoted Fisher",
+    "index": 29,
+    "signature": 49.0,
+    "type_id": 56162,
+    "effects": [
+      {
+        "cycle": 5.0,
+        "optimal": 10000,
+        "falloff": 0,
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          -0.5,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "kind": "behaviorWebifier"
+      }
+    ],
+    "initial": [
+      1500.0,
+      500.0,
+      525.0
+    ],
+    "maximum": [
+      1500.0,
+      500.0,
+      525.0
+    ],
+    "cycle": 5.0,
+    "spool_step": 0,
+    "spool_max": 1,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Devoted Herald",
+    "index": 30,
+    "signature": 49.0,
+    "type_id": 56167,
+    "effects": [
+      {
+        "cycle": 5.0,
+        "optimal": 25000,
+        "falloff": 15000,
+        "values": [
+          -0.203,
+          -0.203,
+          -0.203,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "kind": "npcTrackingDisruptor"
+      },
+      {
+        "cycle": 5.0,
+        "optimal": 25000,
+        "falloff": 15000,
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "kind": "npcGuidanceDisruptor"
+      }
+    ],
+    "initial": [
+      1500.0,
+      500.0,
+      525.0
+    ],
+    "maximum": [
+      1500.0,
+      500.0,
+      525.0
+    ],
+    "cycle": 5.0,
+    "spool_step": 0,
+    "spool_max": 1,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Devoted Knight",
+    "index": 31,
+    "signature": 660.0,
+    "type_id": 56148,
+    "effects": [
+      {
+        "cycle": 10.0,
+        "optimal": 10000,
+        "falloff": 3000,
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          160.0
+        ],
+        "kind": "behaviorEnergyNeutralizer"
+      },
+      {
+        "cycle": 5.0,
+        "optimal": 10000,
+        "falloff": 0,
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          -0.5,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "kind": "behaviorWebifier"
+      }
+    ],
+    "initial": [
+      6500.0,
+      1500.0,
+      2000.0
+    ],
+    "maximum": [
+      6500.0,
+      1500.0,
+      2000.0
+    ],
+    "cycle": 3.5,
+    "spool_step": 0,
+    "spool_max": 1,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Devoted Lookout",
+    "index": 32,
+    "signature": 49.0,
+    "type_id": 56166,
+    "effects": [
+      {
+        "cycle": 10.0,
+        "optimal": 40000,
+        "falloff": 80000,
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          -0.2,
+          -0.2,
+          0.0,
+          0.0
+        ],
+        "kind": "behaviorSensorDampener"
+      }
+    ],
+    "initial": [
+      1500.0,
+      500.0,
+      525.0
+    ],
+    "maximum": [
+      1500.0,
+      500.0,
+      525.0
+    ],
+    "cycle": 5.0,
+    "spool_step": 0,
+    "spool_max": 1,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Devoted Priest",
+    "index": 33,
+    "signature": 49.0,
+    "type_id": 56163,
+    "effects": [],
+    "initial": [
+      1500.0,
+      500.0,
+      525.0
+    ],
+    "maximum": [
+      1500.0,
+      500.0,
+      525.0
+    ],
+    "cycle": 5.0,
+    "spool_step": 0,
+    "spool_max": 1,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Devoted Smith",
+    "index": 34,
+    "signature": 49.0,
+    "type_id": 56165,
+    "effects": [
+      {
+        "cycle": 10.0,
+        "optimal": 8000,
+        "falloff": 5000,
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          120.0
+        ],
+        "kind": "behaviorEnergyNeutralizer"
+      }
+    ],
+    "initial": [
+      1500.0,
+      500.0,
+      525.0
+    ],
+    "maximum": [
+      1500.0,
+      500.0,
+      525.0
+    ],
+    "cycle": 5.0,
+    "spool_step": 0,
+    "spool_max": 1,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Devoted Torchbearer",
+    "index": 35,
+    "signature": 49.0,
+    "type_id": 56168,
+    "effects": [
+      {
+        "cycle": 5.0,
+        "optimal": 50000,
+        "falloff": 10000,
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.35,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "kind": "behaviorTargetPainter"
+      }
+    ],
+    "initial": [
+      1500.0,
+      500.0,
+      525.0
+    ],
+    "maximum": [
+      1500.0,
+      500.0,
+      525.0
+    ],
+    "cycle": 5.0,
+    "spool_step": 0,
+    "spool_max": 1,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Devoted Trapper",
+    "index": 36,
+    "signature": 49.0,
+    "type_id": 56164,
+    "effects": [
+      {
+        "cycle": 5.0,
+        "optimal": 10000,
+        "falloff": 0,
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          2.0,
+          0.0
+        ],
+        "kind": "behaviorWarpScramble"
+      }
+    ],
+    "initial": [
+      1500.0,
+      500.0,
+      525.0
+    ],
+    "maximum": [
+      1500.0,
+      500.0,
+      525.0
+    ],
+    "cycle": 5.0,
+    "spool_step": 0,
+    "spool_max": 1,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Drainer Enforcer Disparu Troop",
+    "index": 37,
+    "signature": 660.0,
+    "type_id": 56175,
+    "effects": [
+      {
+        "cycle": 20.0,
+        "optimal": 10000,
+        "falloff": 5000,
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          360.0
+        ],
+        "kind": "behaviorEnergyNeutralizer"
+      }
+    ],
+    "initial": [
+      5200.0,
+      5200.0,
+      1050.0
+    ],
+    "maximum": [
+      5200.0,
+      5200.0,
+      1050.0
+    ],
+    "cycle": 1.0,
+    "spool_step": 0,
+    "spool_max": 1,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Drainer Marshal Disparu Troop",
+    "index": 38,
+    "signature": 370.0,
+    "type_id": 56178,
+    "effects": [
+      {
+        "cycle": 24.0,
+        "optimal": 30000,
+        "falloff": 20000,
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          400.0
+        ],
+        "kind": "behaviorEnergyNeutralizer"
+      }
+    ],
+    "initial": [
+      0,
+      2100.0,
+      5200.0
+    ],
+    "maximum": [
+      7500.0,
+      7500.0,
+      5200.0
+    ],
+    "cycle": 1.0,
+    "spool_step": 0,
+    "spool_max": 1,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Drainer Pacifier Disparu Troop",
+    "index": 39,
+    "signature": 150.0,
+    "type_id": 56173,
+    "effects": [
+      {
+        "cycle": 8.0,
+        "optimal": 9000,
+        "falloff": 9000,
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          100.0
+        ],
+        "kind": "behaviorEnergyNeutralizer"
+      }
+    ],
+    "initial": [
+      1450.0,
+      1450.0,
+      290.0
+    ],
+    "maximum": [
+      1450.0,
+      1450.0,
+      290.0
+    ],
+    "cycle": 1.0,
+    "spool_step": 0,
+    "spool_max": 1,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Drifter Assault Battleship",
+    "index": 40,
+    "signature": 400.0,
+    "type_id": 47957,
+    "effects": [],
+    "initial": [
+      31904,
+      5596.0,
+      7776.0
+    ],
+    "maximum": [
+      40000.0,
+      10000.0,
+      20000.0
+    ],
+    "cycle": 5.0,
+    "spool_step": 0,
+    "spool_max": 1,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Drifter Command Battleship",
+    "index": 41,
+    "signature": 400.0,
+    "type_id": 56214,
+    "effects": [],
+    "initial": [
+      36800,
+      6875.0,
+      10000.0
+    ],
+    "maximum": [
+      40000.0,
+      10000.0,
+      20000.0
+    ],
+    "cycle": 5.0,
+    "spool_step": 0,
+    "spool_max": 1,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Drifter Entanglement Cruiser",
+    "index": 42,
+    "signature": 400.0,
+    "type_id": 47958,
+    "effects": [
+      {
+        "cycle": 5.0,
+        "optimal": 10000,
+        "falloff": 0,
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          -0.5,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "kind": "behaviorWebifier"
+      }
+    ],
+    "initial": [
+      2436,
+      743.0,
+      2292.0
+    ],
+    "maximum": [
+      10000.0,
+      5000.0,
+      7500.0
+    ],
+    "cycle": 5.0,
+    "spool_step": 0,
+    "spool_max": 1,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Drifter Foothold Battleship",
+    "index": 43,
+    "signature": 400.0,
+    "type_id": 47953,
+    "effects": [],
+    "initial": [
+      3356,
+      431.0,
+      10710.0
+    ],
+    "maximum": [
+      40000.0,
+      10000.0,
+      20000.0
+    ],
+    "cycle": 5.0,
+    "spool_step": 0,
+    "spool_max": 1,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Drifter Frontline Battleship",
+    "index": 44,
+    "signature": 400.0,
+    "type_id": 47955,
+    "effects": [],
+    "initial": [
+      16704,
+      2472.0,
+      9168.0
+    ],
+    "maximum": [
+      40000.0,
+      10000.0,
+      20000.0
+    ],
+    "cycle": 5.0,
+    "spool_step": 0,
+    "spool_max": 1,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Drifter Nullcharge Cruiser",
+    "index": 45,
+    "signature": 400.0,
+    "type_id": 47960,
+    "effects": [
+      {
+        "cycle": 10.0,
+        "optimal": 10000,
+        "falloff": 0,
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          150.0
+        ],
+        "kind": "behaviorEnergyNeutralizer"
+      }
+    ],
+    "initial": [
+      2156,
+      985.0,
+      2188.0
+    ],
+    "maximum": [
+      10000.0,
+      5000.0,
+      7500.0
+    ],
+    "cycle": 5.0,
+    "spool_step": 0,
+    "spool_max": 1,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Drifter Nullwarp Cruiser",
+    "index": 46,
+    "signature": 400.0,
+    "type_id": 47959,
+    "effects": [
+      {
+        "cycle": 5.0,
+        "optimal": 10000,
+        "falloff": 0,
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          2.0,
+          0.0
+        ],
+        "kind": "behaviorWarpScramble"
+      }
+    ],
+    "initial": [
+      2982,
+      694.0,
+      2140.0
+    ],
+    "maximum": [
+      10000.0,
+      5000.0,
+      7500.0
+    ],
+    "cycle": 5.0,
+    "spool_step": 0,
+    "spool_max": 1,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Drifter Rearguard Battleship",
+    "index": 47,
+    "signature": 400.0,
+    "type_id": 47954,
+    "effects": [],
+    "initial": [
+      9112,
+      1617.0,
+      9982.0
+    ],
+    "maximum": [
+      40000.0,
+      10000.0,
+      20000.0
+    ],
+    "cycle": 5.0,
+    "spool_step": 0,
+    "spool_max": 1,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Drifter Vanguard Battleship",
+    "index": 48,
+    "signature": 400.0,
+    "type_id": 47956,
+    "effects": [],
+    "initial": [
+      25016,
+      3770.0,
+      8356.0
+    ],
+    "maximum": [
+      40000.0,
+      10000.0,
+      20000.0
+    ],
+    "cycle": 5.0,
+    "spool_step": 0,
+    "spool_max": 1,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Elite Lucifer Cynabal",
+    "index": 49,
+    "signature": 146.0,
+    "type_id": 56315,
+    "effects": [
+      {
+        "cycle": 10.0,
+        "optimal": 10000,
+        "falloff": 14000,
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          100.0
+        ],
+        "kind": "behaviorEnergyNeutralizer"
+      },
+      {
+        "cycle": 5.0,
+        "optimal": 15000,
+        "falloff": 0,
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          -0.5,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "kind": "behaviorWebifier"
+      }
+    ],
+    "initial": [
+      4368.0,
+      2190.0,
+      2190.0
+    ],
+    "maximum": [
+      4368.0,
+      2190.0,
+      2190.0
+    ],
+    "cycle": 5.0,
+    "spool_step": 0,
+    "spool_max": 1,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Elite Lucifer Dramiel",
+    "index": 50,
+    "signature": 70.0,
+    "type_id": 56347,
+    "effects": [
+      {
+        "cycle": 5.0,
+        "optimal": 12000,
+        "falloff": 0,
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          -0.5,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "kind": "behaviorWebifier"
+      }
+    ],
+    "initial": [
+      1100.0,
+      1100.0,
+      975.0
+    ],
+    "maximum": [
+      1100.0,
+      1100.0,
+      975.0
+    ],
+    "cycle": 6.0,
+    "spool_step": 0,
+    "spool_max": 1,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Embergrip Tessera",
+    "index": 51,
+    "signature": 300.0,
+    "type_id": 48263,
+    "effects": [],
+    "initial": [
+      3000.0,
+      2300.0,
+      2500.0
+    ],
+    "maximum": [
+      3000.0,
+      2300.0,
+      2500.0
+    ],
+    "cycle": 5.0,
+    "spool_step": 0,
+    "spool_max": 1,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Endobenthic Abyssal Overmind",
+    "index": 52,
+    "signature": 455.0,
+    "type_id": 56213,
+    "effects": [
+      {
+        "cycle": 5.0,
+        "optimal": 15000,
+        "falloff": 0,
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          -0.55,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "kind": "behaviorWebifier"
+      }
+    ],
+    "initial": [
+      14850.0,
+      32180.0,
+      17000.0
+    ],
+    "maximum": [
+      14850.0,
+      32180.0,
+      17000.0
+    ],
+    "cycle": 3.97,
+    "spool_step": 0,
+    "spool_max": 1,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Ephialtes Confuser",
+    "index": 53,
+    "signature": 150.0,
+    "type_id": 48240,
+    "effects": [
+      {
+        "cycle": 5.0,
+        "optimal": 30000,
+        "falloff": 15000,
+        "values": [
+          -0.1,
+          -0.1,
+          -0.1,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "kind": "npcTrackingDisruptor"
+      },
+      {
+        "cycle": 5.0,
+        "optimal": 30000,
+        "falloff": 15000,
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "kind": "npcGuidanceDisruptor"
+      }
+    ],
+    "initial": [
+      2500.0,
+      1500.0,
+      1000.0
+    ],
+    "maximum": [
+      2500.0,
+      1500.0,
+      1000.0
+    ],
+    "cycle": 4.0,
+    "spool_step": 0,
+    "spool_max": 1,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Ephialtes Dissipator",
+    "index": 54,
+    "signature": 150.0,
+    "type_id": 48238,
+    "effects": [
+      {
+        "cycle": 10.0,
+        "optimal": 8000,
+        "falloff": 4000,
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          100.0
+        ],
+        "kind": "behaviorEnergyNeutralizer"
+      }
+    ],
+    "initial": [
+      2500.0,
+      1500.0,
+      1000.0
+    ],
+    "maximum": [
+      2500.0,
+      1500.0,
+      1000.0
+    ],
+    "cycle": 4.0,
+    "spool_step": 0,
+    "spool_max": 1,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Ephialtes Entangler",
+    "index": 55,
+    "signature": 150.0,
+    "type_id": 48235,
+    "effects": [
+      {
+        "cycle": 5.0,
+        "optimal": 10000,
+        "falloff": 0,
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          -0.4,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "kind": "behaviorWebifier"
+      }
+    ],
+    "initial": [
+      2500.0,
+      1500.0,
+      1000.0
+    ],
+    "maximum": [
+      2500.0,
+      1500.0,
+      1000.0
+    ],
+    "cycle": 4.0,
+    "spool_step": 0,
+    "spool_max": 1,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Ephialtes Illuminator",
+    "index": 56,
+    "signature": 150.0,
+    "type_id": 48237,
+    "effects": [
+      {
+        "cycle": 5.0,
+        "optimal": 20000,
+        "falloff": 40000,
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.25,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "kind": "behaviorTargetPainter"
+      }
+    ],
+    "initial": [
+      2500.0,
+      1500.0,
+      1000.0
+    ],
+    "maximum": [
+      2500.0,
+      1500.0,
+      1000.0
+    ],
+    "cycle": 4.0,
+    "spool_step": 0,
+    "spool_max": 1,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Ephialtes Obfuscator",
+    "index": 57,
+    "signature": 150.0,
+    "type_id": 48239,
+    "effects": [
+      {
+        "cycle": 5.0,
+        "optimal": 15000,
+        "falloff": 30000,
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          -0.15,
+          -0.15,
+          0.0,
+          0.0
+        ],
+        "kind": "behaviorSensorDampener"
+      }
+    ],
+    "initial": [
+      2500.0,
+      1500.0,
+      1000.0
+    ],
+    "maximum": [
+      2500.0,
+      1500.0,
+      1000.0
+    ],
+    "cycle": 4.0,
+    "spool_step": 0,
+    "spool_max": 1,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Ephialtes Spearfisher",
+    "index": 58,
+    "signature": 150.0,
+    "type_id": 48236,
+    "effects": [
+      {
+        "cycle": 5.0,
+        "optimal": 9000,
+        "falloff": 0,
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          2.0,
+          0.0
+        ],
+        "kind": "behaviorWarpScramble"
+      }
+    ],
+    "initial": [
+      2500.0,
+      1500.0,
+      1000.0
+    ],
+    "maximum": [
+      2500.0,
+      1500.0,
+      1000.0
+    ],
+    "cycle": 4.0,
+    "spool_step": 0,
+    "spool_max": 1,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Fieldweaver Tessella",
+    "index": 59,
+    "signature": 75.0,
+    "type_id": 47850,
+    "effects": [],
+    "initial": [
+      500.0,
+      300.0,
+      500.0
+    ],
+    "maximum": [
+      500.0,
+      300.0,
+      500.0
+    ],
+    "cycle": 1.0,
+    "spool_step": 0,
+    "spool_max": 1,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Fogcaster Tessella",
+    "index": 60,
+    "signature": 50.0,
+    "type_id": 47852,
+    "effects": [
+      {
+        "cycle": 5.0,
+        "optimal": 25000,
+        "falloff": 10000,
+        "values": [
+          -0.1,
+          -0.1,
+          -0.1,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "kind": "npcTrackingDisruptor"
+      },
+      {
+        "cycle": 5.0,
+        "optimal": 25000,
+        "falloff": 10000,
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "kind": "npcGuidanceDisruptor"
+      }
+    ],
+    "initial": [
+      350.0,
+      350.0,
+      300.0
+    ],
+    "maximum": [
+      350.0,
+      350.0,
+      300.0
+    ],
+    "cycle": 4.0,
+    "spool_step": 0,
+    "spool_max": 1,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Gazedimmer Tessella",
+    "index": 61,
+    "signature": 50.0,
+    "type_id": 47853,
+    "effects": [
+      {
+        "cycle": 5.0,
+        "optimal": 20000,
+        "falloff": 20000,
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          -0.15,
+          -0.15,
+          0.0,
+          0.0
+        ],
+        "kind": "behaviorSensorDampener"
+      }
+    ],
+    "initial": [
+      350.0,
+      350.0,
+      350.0
+    ],
+    "maximum": [
+      350.0,
+      350.0,
+      350.0
+    ],
+    "cycle": 4.0,
+    "spool_step": 0,
+    "spool_max": 1,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Ghosting Damavik",
+    "index": 62,
+    "signature": 192.0,
+    "type_id": 48086,
+    "effects": [
+      {
+        "cycle": 5.0,
+        "optimal": 20000,
+        "falloff": 10000,
+        "values": [
+          -0.203,
+          -0.203,
+          -0.203,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "kind": "npcTrackingDisruptor"
+      },
+      {
+        "cycle": 5.0,
+        "optimal": 20000,
+        "falloff": 10000,
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "kind": "npcGuidanceDisruptor"
+      }
+    ],
+    "initial": [
+      500.0,
+      2200.0,
+      650.0
+    ],
+    "maximum": [
+      500.0,
+      2200.0,
+      650.0
+    ],
+    "cycle": 3.5,
+    "spool_step": 0.04,
+    "spool_max": 2.5,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Ghosting Kikimora",
+    "index": 63,
+    "signature": 192.0,
+    "type_id": 56151,
+    "effects": [
+      {
+        "cycle": 5.0,
+        "optimal": 20000,
+        "falloff": 10000,
+        "values": [
+          0.0,
+          0.0,
+          -0.203,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "kind": "npcTrackingDisruptor"
+      },
+      {
+        "cycle": 5.0,
+        "optimal": 20000,
+        "falloff": 10000,
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "kind": "npcGuidanceDisruptor"
+      }
+    ],
+    "initial": [
+      1100.0,
+      2900.0,
+      1300.0
+    ],
+    "maximum": [
+      1100.0,
+      2900.0,
+      1300.0
+    ],
+    "cycle": 3.0,
+    "spool_step": 0.02,
+    "spool_max": 2.5,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Ghosting Vila Damavik",
+    "index": 64,
+    "signature": 192.0,
+    "type_id": 48261,
+    "effects": [
+      {
+        "cycle": 10.0,
+        "optimal": 40000,
+        "falloff": 20000,
+        "values": [
+          -0.2,
+          -0.2,
+          -0.2,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "kind": "npcTrackingDisruptor"
+      },
+      {
+        "cycle": 10.0,
+        "optimal": 40000,
+        "falloff": 20000,
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "kind": "npcGuidanceDisruptor"
+      }
+    ],
+    "initial": [
+      500.0,
+      2200.0,
+      650.0
+    ],
+    "maximum": [
+      500.0,
+      2200.0,
+      650.0
+    ],
+    "cycle": 3.5,
+    "spool_step": 0.01,
+    "spool_max": 2.5,
+    "drone_active": 3,
+    "drone_total": 5,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Hadal Abyssal Overmind",
+    "index": 65,
+    "signature": 455.0,
+    "type_id": 47879,
+    "effects": [],
+    "initial": [
+      11875.0,
+      22500.0,
+      13750.0
+    ],
+    "maximum": [
+      11875.0,
+      22500.0,
+      13750.0
+    ],
+    "cycle": 3.39,
+    "spool_step": 0,
+    "spool_max": 1,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Harrowing Vedmak",
+    "index": 66,
+    "signature": 660.0,
+    "type_id": 48091,
+    "effects": [],
+    "initial": [
+      2000.0,
+      7000.0,
+      3000.0
+    ],
+    "maximum": [
+      2000.0,
+      7000.0,
+      3000.0
+    ],
+    "cycle": 5.0,
+    "spool_step": 0.04,
+    "spool_max": 2.5,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Harrowing Vila Vedmak",
+    "index": 67,
+    "signature": 660.0,
+    "type_id": 48255,
+    "effects": [],
+    "initial": [
+      2000.0,
+      7000.0,
+      3000.0
+    ],
+    "maximum": [
+      2000.0,
+      7000.0,
+      3000.0
+    ],
+    "cycle": 5.0,
+    "spool_step": 0.01,
+    "spool_max": 2.5,
+    "drone_active": 5,
+    "drone_total": 15,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Lucid Deepwatcher",
+    "index": 68,
+    "signature": 400.0,
+    "type_id": 48252,
+    "effects": [
+      {
+        "cycle": 5.0,
+        "optimal": 5000,
+        "falloff": 50000,
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.1,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "kind": "behaviorTargetPainter"
+      }
+    ],
+    "initial": [
+      0.0,
+      10516.0,
+      16407.0
+    ],
+    "maximum": [
+      0.0,
+      22000.0,
+      25000.0
+    ],
+    "cycle": 5.0,
+    "spool_step": 0,
+    "spool_max": 1,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Lucid Firewatcher",
+    "index": 69,
+    "signature": 70.0,
+    "type_id": 48247,
+    "effects": [
+      {
+        "cycle": 5.0,
+        "optimal": 5000,
+        "falloff": 5000,
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          40.0
+        ],
+        "kind": "behaviorEnergyNeutralizer"
+      }
+    ],
+    "initial": [
+      0.0,
+      1000.0,
+      1250.0
+    ],
+    "maximum": [
+      0.0,
+      1000.0,
+      1250.0
+    ],
+    "cycle": 2.0,
+    "spool_step": 0,
+    "spool_max": 1,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Lucid Preserver",
+    "index": 70,
+    "signature": 100.0,
+    "type_id": 48251,
+    "effects": [],
+    "initial": [
+      0.0,
+      1200.0,
+      1100.0
+    ],
+    "maximum": [
+      0.0,
+      1200.0,
+      1100.0
+    ],
+    "cycle": 1.0,
+    "spool_step": 0,
+    "spool_max": 1,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Lucid Sentinel",
+    "index": 71,
+    "signature": 150.0,
+    "type_id": 48250,
+    "effects": [
+      {
+        "cycle": 10.0,
+        "optimal": 12000,
+        "falloff": 6000,
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          150.0
+        ],
+        "kind": "behaviorEnergyNeutralizer"
+      }
+    ],
+    "initial": [
+      0.0,
+      3500.0,
+      3250.0
+    ],
+    "maximum": [
+      0.0,
+      3500.0,
+      3250.0
+    ],
+    "cycle": 5.0,
+    "spool_step": 0,
+    "spool_max": 1,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Lucid Upholder",
+    "index": 72,
+    "signature": 150.0,
+    "type_id": 48249,
+    "effects": [
+      {
+        "cycle": 5.0,
+        "optimal": 10000,
+        "falloff": 0,
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          -0.5,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "kind": "behaviorWebifier"
+      }
+    ],
+    "initial": [
+      0.0,
+      3500.0,
+      3250.0
+    ],
+    "maximum": [
+      0.0,
+      3500.0,
+      3250.0
+    ],
+    "cycle": 5.0,
+    "spool_step": 0,
+    "spool_max": 1,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Lucid Warden",
+    "index": 73,
+    "signature": 70.0,
+    "type_id": 48246,
+    "effects": [
+      {
+        "cycle": 5.0,
+        "optimal": 10000,
+        "falloff": 0,
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          -0.4,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "kind": "behaviorWebifier"
+      }
+    ],
+    "initial": [
+      0.0,
+      800.0,
+      900.0
+    ],
+    "maximum": [
+      0.0,
+      800.0,
+      900.0
+    ],
+    "cycle": 2.0,
+    "spool_step": 0,
+    "spool_max": 1,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Lucid Watchman",
+    "index": 74,
+    "signature": 150.0,
+    "type_id": 48248,
+    "effects": [],
+    "initial": [
+      0.0,
+      3500.0,
+      3250.0
+    ],
+    "maximum": [
+      0.0,
+      3500.0,
+      3250.0
+    ],
+    "cycle": 5.0,
+    "spool_step": 0,
+    "spool_max": 1,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Lucifer Burst",
+    "index": 75,
+    "signature": 100.0,
+    "type_id": 56351,
+    "effects": [],
+    "initial": [
+      700.0,
+      700.0,
+      500.0
+    ],
+    "maximum": [
+      700.0,
+      700.0,
+      500.0
+    ],
+    "cycle": 1.0,
+    "spool_step": 0,
+    "spool_max": 1,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Lucifer Cynabal",
+    "index": 76,
+    "signature": 146.0,
+    "type_id": 56295,
+    "effects": [
+      {
+        "cycle": 10.0,
+        "optimal": 9000,
+        "falloff": 10000,
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          70.0
+        ],
+        "kind": "behaviorEnergyNeutralizer"
+      },
+      {
+        "cycle": 5.0,
+        "optimal": 13000,
+        "falloff": 0,
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          -0.4,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "kind": "behaviorWebifier"
+      }
+    ],
+    "initial": [
+      2912.0,
+      1460.0,
+      1460.0
+    ],
+    "maximum": [
+      2912.0,
+      1460.0,
+      1460.0
+    ],
+    "cycle": 7.0,
+    "spool_step": 0,
+    "spool_max": 1,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Lucifer Ixion",
+    "index": 77,
+    "signature": 125.0,
+    "type_id": 56316,
+    "effects": [
+      {
+        "cycle": 5.0,
+        "optimal": 30000,
+        "falloff": 80000,
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.38,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "kind": "behaviorTargetPainter"
+      },
+      {
+        "cycle": 5.0,
+        "optimal": 40000,
+        "falloff": 50000,
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "kind": "npcGuidanceDisruptor"
+      }
+    ],
+    "initial": [
+      2480.0,
+      1120.0,
+      1120.0
+    ],
+    "maximum": [
+      2480.0,
+      1120.0,
+      1120.0
+    ],
+    "cycle": 20.0,
+    "spool_step": 0,
+    "spool_max": 1,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Lucifer Medusa",
+    "index": 78,
+    "signature": 90.0,
+    "type_id": 56350,
+    "effects": [
+      {
+        "cycle": 5.0,
+        "optimal": 20000,
+        "falloff": 50000,
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          -0.2,
+          -0.2,
+          0.0,
+          0.0
+        ],
+        "kind": "behaviorSensorDampener"
+      }
+    ],
+    "initial": [
+      700.0,
+      600.0,
+      600.0
+    ],
+    "maximum": [
+      700.0,
+      600.0,
+      600.0
+    ],
+    "cycle": 6.0,
+    "spool_step": 0,
+    "spool_max": 1,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Marker Enforcer Disparu Troop",
+    "index": 79,
+    "signature": 660.0,
+    "type_id": 56216,
+    "effects": [
+      {
+        "cycle": 5.0,
+        "optimal": 50000,
+        "falloff": 100000,
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.3,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "kind": "behaviorTargetPainter"
+      }
+    ],
+    "initial": [
+      5200.0,
+      5200.0,
+      1050.0
+    ],
+    "maximum": [
+      5200.0,
+      5200.0,
+      1050.0
+    ],
+    "cycle": 1.0,
+    "spool_step": 0,
+    "spool_max": 1,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Marker Pacifier Disparu Troop",
+    "index": 80,
+    "signature": 150.0,
+    "type_id": 56172,
+    "effects": [
+      {
+        "cycle": 5.0,
+        "optimal": 50000,
+        "falloff": 100000,
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.4,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "kind": "behaviorTargetPainter"
+      }
+    ],
+    "initial": [
+      1450.0,
+      1450.0,
+      290.0
+    ],
+    "maximum": [
+      1450.0,
+      1450.0,
+      290.0
+    ],
+    "cycle": 1.0,
+    "spool_step": 0,
+    "spool_max": 1,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Photic Abyssal Overmind",
+    "index": 81,
+    "signature": 465.0,
+    "type_id": 47876,
+    "effects": [],
+    "initial": [
+      9000.0,
+      10000.0,
+      10625.0
+    ],
+    "maximum": [
+      9000.0,
+      10000.0,
+      10625.0
+    ],
+    "cycle": 4.212,
+    "spool_step": 0,
+    "spool_max": 1,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Plateforger Tessella",
+    "index": 82,
+    "signature": 75.0,
+    "type_id": 47860,
+    "effects": [],
+    "initial": [
+      300.0,
+      500.0,
+      500.0
+    ],
+    "maximum": [
+      300.0,
+      500.0,
+      500.0
+    ],
+    "cycle": 1.0,
+    "spool_step": 0,
+    "spool_max": 1,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Renewing Leshak",
+    "index": 83,
+    "signature": 370.0,
+    "type_id": 48123,
+    "effects": [],
+    "initial": [
+      0,
+      0,
+      3301.0
+    ],
+    "maximum": [
+      5000.0,
+      13000.0,
+      10000.0
+    ],
+    "cycle": 5.0,
+    "spool_step": 0.02,
+    "spool_max": 2.5,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Renewing Rodiva",
+    "index": 84,
+    "signature": 150.0,
+    "type_id": 56159,
+    "effects": [],
+    "initial": [
+      1200.0,
+      4700.0,
+      2400.0
+    ],
+    "maximum": [
+      1200.0,
+      4700.0,
+      2400.0
+    ],
+    "cycle": 5.0,
+    "spool_step": 0.02,
+    "spool_max": 2.5,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Shining Drekavac",
+    "index": 85,
+    "signature": 300.0,
+    "type_id": 56161,
+    "effects": [
+      {
+        "cycle": 5.0,
+        "optimal": 50000,
+        "falloff": 100000,
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.2,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "kind": "behaviorTargetPainter"
+      }
+    ],
+    "initial": [
+      1000,
+      6500.0,
+      800.0
+    ],
+    "maximum": [
+      2700.0,
+      9500.0,
+      6800.0
+    ],
+    "cycle": 5.0,
+    "spool_step": 0.01,
+    "spool_max": 2.5,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Shining Vila Damavik",
+    "index": 86,
+    "signature": 192.0,
+    "type_id": 48259,
+    "effects": [
+      {
+        "cycle": 5.0,
+        "optimal": 50000,
+        "falloff": 100000,
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.35,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "kind": "behaviorTargetPainter"
+      }
+    ],
+    "initial": [
+      500.0,
+      2200.0,
+      650.0
+    ],
+    "maximum": [
+      500.0,
+      2200.0,
+      650.0
+    ],
+    "cycle": 3.5,
+    "spool_step": 0.01,
+    "spool_max": 2.5,
+    "drone_active": 3,
+    "drone_total": 5,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Skybreaker Disparu Troop",
+    "index": 87,
+    "signature": 192.0,
+    "type_id": 56188,
+    "effects": [],
+    "initial": [
+      1600.0,
+      400.0,
+      450.0
+    ],
+    "maximum": [
+      1600.0,
+      400.0,
+      450.0
+    ],
+    "cycle": 6.0,
+    "spool_step": 0,
+    "spool_max": 1,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 43,
+    "vorton_velocity": 190,
+    "vorton_drf": 0.6
+  },
+  {
+    "name": "Snarecaster Tessella",
+    "index": 88,
+    "signature": 50.0,
+    "type_id": 47851,
+    "effects": [
+      {
+        "cycle": 5.0,
+        "optimal": 10000,
+        "falloff": 0,
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          -0.3,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "kind": "behaviorWebifier"
+      }
+    ],
+    "initial": [
+      300.0,
+      300.0,
+      400.0
+    ],
+    "maximum": [
+      300.0,
+      300.0,
+      400.0
+    ],
+    "cycle": 4.0,
+    "spool_step": 0,
+    "spool_max": 1,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Sparkgrip Tessera",
+    "index": 89,
+    "signature": 300.0,
+    "type_id": 48262,
+    "effects": [],
+    "initial": [
+      3000.0,
+      2300.0,
+      2500.0
+    ],
+    "maximum": [
+      3000.0,
+      2300.0,
+      2500.0
+    ],
+    "cycle": 5.0,
+    "spool_step": 0,
+    "spool_max": 1,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Spotlighter Tessella",
+    "index": 90,
+    "signature": 50.0,
+    "type_id": 47854,
+    "effects": [
+      {
+        "cycle": 5.0,
+        "optimal": 30000,
+        "falloff": 20000,
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.2,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "kind": "behaviorTargetPainter"
+      }
+    ],
+    "initial": [
+      350.0,
+      350.0,
+      300.0
+    ],
+    "maximum": [
+      350.0,
+      350.0,
+      300.0
+    ],
+    "cycle": 4.0,
+    "spool_step": 0,
+    "spool_max": 1,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Starving Damavik",
+    "index": 91,
+    "signature": 192.0,
+    "type_id": 48090,
+    "effects": [
+      {
+        "cycle": 8.0,
+        "optimal": 4000,
+        "falloff": 9000,
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          100.0
+        ],
+        "kind": "behaviorEnergyNeutralizer"
+      }
+    ],
+    "initial": [
+      500.0,
+      2200.0,
+      650.0
+    ],
+    "maximum": [
+      500.0,
+      2200.0,
+      650.0
+    ],
+    "cycle": 3.5,
+    "spool_step": 0.04,
+    "spool_max": 2.5,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Starving Leshak",
+    "index": 92,
+    "signature": 370.0,
+    "type_id": 48125,
+    "effects": [
+      {
+        "cycle": 24.0,
+        "optimal": 30000,
+        "falloff": 20000,
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          600.0
+        ],
+        "kind": "behaviorEnergyNeutralizer"
+      }
+    ],
+    "initial": [
+      0,
+      0,
+      3449.0
+    ],
+    "maximum": [
+      5000.0,
+      13000.0,
+      10000.0
+    ],
+    "cycle": 5.0,
+    "spool_step": 0.02,
+    "spool_max": 2.5,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Starving Vedmak",
+    "index": 93,
+    "signature": 660.0,
+    "type_id": 48087,
+    "effects": [
+      {
+        "cycle": 20.0,
+        "optimal": 10000,
+        "falloff": 5000,
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          360.0
+        ],
+        "kind": "behaviorEnergyNeutralizer"
+      }
+    ],
+    "initial": [
+      2000.0,
+      7000.0,
+      3000.0
+    ],
+    "maximum": [
+      2000.0,
+      7000.0,
+      3000.0
+    ],
+    "cycle": 5.0,
+    "spool_step": 0.04,
+    "spool_max": 2.5,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Stormbringer Disparu Troop",
+    "index": 94,
+    "signature": 660.0,
+    "type_id": 56189,
+    "effects": [],
+    "initial": [
+      7500.0,
+      800.0,
+      1300.0
+    ],
+    "maximum": [
+      7500.0,
+      800.0,
+      1300.0
+    ],
+    "cycle": 9.0,
+    "spool_step": 0,
+    "spool_max": 1,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 75,
+    "vorton_velocity": 282,
+    "vorton_drf": 0.65
+  },
+  {
+    "name": "Strikegrip Tessera",
+    "index": 95,
+    "signature": 300.0,
+    "type_id": 48264,
+    "effects": [],
+    "initial": [
+      3000.0,
+      2300.0,
+      2500.0
+    ],
+    "maximum": [
+      3000.0,
+      2300.0,
+      2500.0
+    ],
+    "cycle": 5.0,
+    "spool_step": 0,
+    "spool_max": 1,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Striking Drekavac",
+    "index": 96,
+    "signature": 300.0,
+    "type_id": 56160,
+    "effects": [],
+    "initial": [
+      1000,
+      6500.0,
+      800.0
+    ],
+    "maximum": [
+      2700.0,
+      9500.0,
+      6800.0
+    ],
+    "cycle": 5.0,
+    "spool_step": 0.01,
+    "spool_max": 2.5,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Striking Kikimora",
+    "index": 97,
+    "signature": 192.0,
+    "type_id": 56150,
+    "effects": [],
+    "initial": [
+      1100.0,
+      2900.0,
+      1300.0
+    ],
+    "maximum": [
+      1100.0,
+      2900.0,
+      1300.0
+    ],
+    "cycle": 3.0,
+    "spool_step": 0.02,
+    "spool_max": 2.5,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Striking Leshak",
+    "index": 98,
+    "signature": 370.0,
+    "type_id": 48122,
+    "effects": [],
+    "initial": [
+      0,
+      0,
+      4677.0
+    ],
+    "maximum": [
+      5000.0,
+      13000.0,
+      10000.0
+    ],
+    "cycle": 5.0,
+    "spool_step": 0.02,
+    "spool_max": 2.5,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Striking Vila Damavik",
+    "index": 99,
+    "signature": 192.0,
+    "type_id": 48256,
+    "effects": [],
+    "initial": [
+      500.0,
+      2200.0,
+      650.0
+    ],
+    "maximum": [
+      500.0,
+      2200.0,
+      650.0
+    ],
+    "cycle": 3.5,
+    "spool_step": 0.01,
+    "spool_max": 2.5,
+    "drone_active": 3,
+    "drone_total": 5,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Tangling Damavik",
+    "index": 100,
+    "signature": 192.0,
+    "type_id": 48088,
+    "effects": [
+      {
+        "cycle": 5.0,
+        "optimal": 10000,
+        "falloff": 0,
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          -0.5,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "kind": "behaviorWebifier"
+      }
+    ],
+    "initial": [
+      500.0,
+      2200.0,
+      650.0
+    ],
+    "maximum": [
+      500.0,
+      2200.0,
+      650.0
+    ],
+    "cycle": 3.5,
+    "spool_step": 0.04,
+    "spool_max": 2.5,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Tangling Kikimora",
+    "index": 101,
+    "signature": 192.0,
+    "type_id": 56152,
+    "effects": [
+      {
+        "cycle": 5.0,
+        "optimal": 10000,
+        "falloff": 0,
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          -0.5,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "kind": "behaviorWebifier"
+      }
+    ],
+    "initial": [
+      1100.0,
+      2900.0,
+      1300.0
+    ],
+    "maximum": [
+      1100.0,
+      2900.0,
+      1300.0
+    ],
+    "cycle": 3.0,
+    "spool_step": 0.02,
+    "spool_max": 2.5,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Tangling Leshak",
+    "index": 102,
+    "signature": 370.0,
+    "type_id": 48124,
+    "effects": [
+      {
+        "cycle": 5.0,
+        "optimal": 15000,
+        "falloff": 0,
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          -0.5,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "kind": "behaviorWebifier"
+      }
+    ],
+    "initial": [
+      0,
+      0,
+      2392.0
+    ],
+    "maximum": [
+      5000.0,
+      13000.0,
+      10000.0
+    ],
+    "cycle": 5.0,
+    "spool_step": 0.02,
+    "spool_max": 2.5,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Tangling Vila Damavik",
+    "index": 103,
+    "signature": 192.0,
+    "type_id": 48257,
+    "effects": [
+      {
+        "cycle": 5.0,
+        "optimal": 10000,
+        "falloff": 0,
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          -0.5,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "kind": "behaviorWebifier"
+      }
+    ],
+    "initial": [
+      500.0,
+      2200.0,
+      650.0
+    ],
+    "maximum": [
+      500.0,
+      2200.0,
+      650.0
+    ],
+    "cycle": 3.5,
+    "spool_step": 0.01,
+    "spool_max": 2.5,
+    "drone_active": 3,
+    "drone_total": 5,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Thunderchild Disparu Troop",
+    "index": 104,
+    "signature": 370.0,
+    "type_id": 56200,
+    "effects": [],
+    "initial": [
+      0,
+      0,
+      3461.0
+    ],
+    "maximum": [
+      11500.0,
+      5100.0,
+      7400.0
+    ],
+    "cycle": 15.0,
+    "spool_step": 0,
+    "spool_max": 1,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 130,
+    "vorton_velocity": 177,
+    "vorton_drf": 0.82
+  },
+  {
+    "name": "Twilit Abyssal Overmind",
+    "index": 105,
+    "signature": 465.0,
+    "type_id": 47877,
+    "effects": [],
+    "initial": [
+      9000.0,
+      10000.0,
+      10625.0
+    ],
+    "maximum": [
+      9000.0,
+      10000.0,
+      10625.0
+    ],
+    "cycle": 3.22,
+    "spool_step": 0,
+    "spool_max": 1,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  },
+  {
+    "name": "Vila Swarmer",
+    "index": 106,
+    "signature": 25,
+    "type_id": 48253,
+    "effects": [],
+    "initial": [
+      50,
+      200,
+      100
+    ],
+    "maximum": [
+      50,
+      200,
+      100
+    ],
+    "cycle": 2.0,
+    "spool_step": 0,
+    "spool_max": 1,
+    "drone_active": 0,
+    "drone_total": 0,
+    "vorton_radius": 0,
+    "vorton_velocity": 0,
+    "vorton_drf": 0
+  }
+]

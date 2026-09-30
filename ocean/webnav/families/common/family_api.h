@@ -21,6 +21,8 @@ enum {WF_OTHER=0,WF_BUTTON=1,WF_CHECKBOX=2,WF_INPUT=3,WF_LINK=4,WF_RADIO=5,
       WF_PANEL=12,WF_TEXT=13,WF_SLIDER=14,WF_CANVAS=15,WF_TEXTAREA=16};
 enum {WF_VISIBLE=1,WF_ENABLED=2,WF_CLICKABLE=4,WF_CHECKED=8,WF_FOCUSED=16,
       WF_EXPANDED=32,WF_READONLY=64,WF_SELECTED=128};
+/* Public DOM/AX nodes may be offscreen. WF_VISIBLE is observation data, not a
+ * schema requirement. Each family's action adapter enforces target eligibility. */
 typedef struct {uint32_t offset,length;} WFText;
 typedef struct {
     uint32_t ref,parent,role,flags;

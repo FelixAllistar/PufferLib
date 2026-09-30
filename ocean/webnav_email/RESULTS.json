@@ -1,0 +1,382 @@
+{
+  "date": "2026-09-29",
+  "family": "email",
+  "status": "adapter-validated-short-training-baseline",
+  "reference_commit": "33c3b4ddef8c6eb67c57a29663d844b1eda7e614",
+  "checkpoint": "checkpoints/webnav_email/1790681591815/0000000000999424.bin",
+  "checkpoint_sha256": "90a76cff4b5ec5c7b680faa7025aa381cb61121767593cc2fa4b84b9ae1408bd",
+  "checkpoint_steps": 999424,
+  "config_sha256": "03b613b92aaedad8936a07d72e39e1cbbb8ef91c9ee5e377495c1a5611a9d6db",
+  "policy": "H64/L1; separate per-family policy; greedy evaluation",
+  "sources": {
+    "ocean/webnav_email/browser.js": "6cceacf6ee876a325b5aa379510f321543a2a9d67101363fbe7eaf961f6e1a78",
+    "ocean/webnav_email/browser_eval.c": "6a35a91b8aca811af053e682a4c8c48c2eb54ece5b6b2747e616a394d74286a5",
+    "ocean/webnav_email/native_eval.c": "b9e862d043d270bf53eae8fcaef1d8aec67be4092ec6caa2ee7013dbf04f5789",
+    "ocean/webnav_email/test_env.c": "59dfab954229ffdf76782457701f7438f3e6ce7dedcc87ae6f3a46eb397de43b",
+    "ocean/webnav_email/webnav_email.h": "450a4344f2dd68e16bdee89e2f13b96cda3c9bbe77c073b57ec7e43b10ba88e6"
+  },
+  "validation": [
+    "adapter C regression tests passed",
+    "CUDA trainer compiled under serial 6GiB/no-swap guard",
+    "100 random native episodes per task",
+    "2 random original-page episodes per task",
+    "20 greedy held-out native episodes per task",
+    "5 greedy original-page episodes per task"
+  ],
+  "results": {
+    "random": [
+      {
+        "task": "email-inbox-delete",
+        "episodes": 100,
+        "successes": 31,
+        "full_credit_rate": 0.31,
+        "vector_steps": 2396,
+        "policy": "random"
+      },
+      {
+        "task": "email-inbox-forward-nl-turk",
+        "episodes": 100,
+        "successes": 0,
+        "full_credit_rate": 0.0,
+        "vector_steps": 5716,
+        "policy": "random"
+      },
+      {
+        "task": "email-inbox-forward-nl",
+        "episodes": 100,
+        "successes": 0,
+        "full_credit_rate": 0.0,
+        "vector_steps": 7624,
+        "policy": "random"
+      },
+      {
+        "task": "email-inbox-forward",
+        "episodes": 100,
+        "successes": 0,
+        "full_credit_rate": 0.0,
+        "vector_steps": 7252,
+        "policy": "random"
+      },
+      {
+        "task": "email-inbox-important",
+        "episodes": 100,
+        "successes": 30,
+        "full_credit_rate": 0.3,
+        "vector_steps": 3092,
+        "policy": "random"
+      },
+      {
+        "task": "email-inbox-nl-turk",
+        "episodes": 100,
+        "successes": 3,
+        "full_credit_rate": 0.03,
+        "vector_steps": 3424,
+        "policy": "random"
+      },
+      {
+        "task": "email-inbox-noscroll",
+        "episodes": 100,
+        "successes": 9,
+        "full_credit_rate": 0.09,
+        "vector_steps": 5396,
+        "policy": "random"
+      },
+      {
+        "task": "email-inbox-reply",
+        "episodes": 100,
+        "successes": 0,
+        "full_credit_rate": 0.0,
+        "vector_steps": 6472,
+        "policy": "random"
+      },
+      {
+        "task": "email-inbox-star-reply",
+        "episodes": 100,
+        "successes": 16,
+        "full_credit_rate": 0.16,
+        "vector_steps": 4200,
+        "policy": "random"
+      },
+      {
+        "task": "email-inbox",
+        "episodes": 100,
+        "successes": 8,
+        "full_credit_rate": 0.08,
+        "vector_steps": 3908,
+        "policy": "random"
+      }
+    ],
+    "native_learned": [
+      {
+        "task": "email-inbox-delete",
+        "episodes": 20,
+        "successes": 0,
+        "full_credit_rate": 0.0,
+        "vector_steps": 2400,
+        "policy": "greedy"
+      },
+      {
+        "task": "email-inbox-forward-nl-turk",
+        "episodes": 20,
+        "successes": 0,
+        "full_credit_rate": 0.0,
+        "vector_steps": 2400,
+        "policy": "greedy"
+      },
+      {
+        "task": "email-inbox-forward-nl",
+        "episodes": 20,
+        "successes": 0,
+        "full_credit_rate": 0.0,
+        "vector_steps": 2400,
+        "policy": "greedy"
+      },
+      {
+        "task": "email-inbox-forward",
+        "episodes": 20,
+        "successes": 0,
+        "full_credit_rate": 0.0,
+        "vector_steps": 2400,
+        "policy": "greedy"
+      },
+      {
+        "task": "email-inbox-important",
+        "episodes": 20,
+        "successes": 0,
+        "full_credit_rate": 0.0,
+        "vector_steps": 2400,
+        "policy": "greedy"
+      },
+      {
+        "task": "email-inbox-nl-turk",
+        "episodes": 20,
+        "successes": 0,
+        "full_credit_rate": 0.0,
+        "vector_steps": 2400,
+        "policy": "greedy"
+      },
+      {
+        "task": "email-inbox-noscroll",
+        "episodes": 20,
+        "successes": 0,
+        "full_credit_rate": 0.0,
+        "vector_steps": 2400,
+        "policy": "greedy"
+      },
+      {
+        "task": "email-inbox-reply",
+        "episodes": 20,
+        "successes": 0,
+        "full_credit_rate": 0.0,
+        "vector_steps": 2400,
+        "policy": "greedy"
+      },
+      {
+        "task": "email-inbox-star-reply",
+        "episodes": 20,
+        "successes": 0,
+        "full_credit_rate": 0.0,
+        "vector_steps": 2400,
+        "policy": "greedy"
+      },
+      {
+        "task": "email-inbox",
+        "episodes": 20,
+        "successes": 0,
+        "full_credit_rate": 0.0,
+        "vector_steps": 2400,
+        "policy": "greedy"
+      }
+    ],
+    "browser_smoke": [
+      {
+        "task": "email-inbox-delete",
+        "episodes": 2,
+        "successes": 1,
+        "full_credit_rate": 0.5,
+        "actions": 3,
+        "unhittable": 0,
+        "policy": "random H64/L1; original Chromium pages"
+      },
+      {
+        "task": "email-inbox-forward-nl-turk",
+        "episodes": 2,
+        "successes": 0,
+        "full_credit_rate": 0.0,
+        "actions": 9,
+        "unhittable": 0,
+        "policy": "random H64/L1; original Chromium pages"
+      },
+      {
+        "task": "email-inbox-forward-nl",
+        "episodes": 2,
+        "successes": 0,
+        "full_credit_rate": 0.0,
+        "actions": 147,
+        "unhittable": 0,
+        "policy": "random H64/L1; original Chromium pages"
+      },
+      {
+        "task": "email-inbox-forward",
+        "episodes": 2,
+        "successes": 0,
+        "full_credit_rate": 0.0,
+        "actions": 201,
+        "unhittable": 0,
+        "policy": "random H64/L1; original Chromium pages"
+      },
+      {
+        "task": "email-inbox-important",
+        "episodes": 2,
+        "successes": 0,
+        "full_credit_rate": 0.0,
+        "actions": 98,
+        "unhittable": 0,
+        "policy": "random H64/L1; original Chromium pages"
+      },
+      {
+        "task": "email-inbox-nl-turk",
+        "episodes": 2,
+        "successes": 0,
+        "full_credit_rate": 0.0,
+        "actions": 168,
+        "unhittable": 0,
+        "policy": "random H64/L1; original Chromium pages"
+      },
+      {
+        "task": "email-inbox-noscroll",
+        "episodes": 2,
+        "successes": 0,
+        "full_credit_rate": 0.0,
+        "actions": 97,
+        "unhittable": 0,
+        "policy": "random H64/L1; original Chromium pages"
+      },
+      {
+        "task": "email-inbox-reply",
+        "episodes": 2,
+        "successes": 0,
+        "full_credit_rate": 0.0,
+        "actions": 71,
+        "unhittable": 0,
+        "policy": "random H64/L1; original Chromium pages"
+      },
+      {
+        "task": "email-inbox-star-reply",
+        "episodes": 2,
+        "successes": 0,
+        "full_credit_rate": 0.0,
+        "actions": 42,
+        "unhittable": 0,
+        "policy": "random H64/L1; original Chromium pages"
+      },
+      {
+        "task": "email-inbox",
+        "episodes": 2,
+        "successes": 0,
+        "full_credit_rate": 0.0,
+        "actions": 88,
+        "unhittable": 0,
+        "policy": "random H64/L1; original Chromium pages"
+      }
+    ],
+    "browser_learned": [
+      {
+        "task": "email-inbox-delete",
+        "episodes": 5,
+        "successes": 0,
+        "full_credit_rate": 0.0,
+        "actions": 600,
+        "unhittable": 0,
+        "policy": "greedy H64/L1; original Chromium pages"
+      },
+      {
+        "task": "email-inbox-forward-nl-turk",
+        "episodes": 5,
+        "successes": 0,
+        "full_credit_rate": 0.0,
+        "actions": 600,
+        "unhittable": 0,
+        "policy": "greedy H64/L1; original Chromium pages"
+      },
+      {
+        "task": "email-inbox-forward-nl",
+        "episodes": 5,
+        "successes": 0,
+        "full_credit_rate": 0.0,
+        "actions": 600,
+        "unhittable": 0,
+        "policy": "greedy H64/L1; original Chromium pages"
+      },
+      {
+        "task": "email-inbox-forward",
+        "episodes": 5,
+        "successes": 0,
+        "full_credit_rate": 0.0,
+        "actions": 600,
+        "unhittable": 0,
+        "policy": "greedy H64/L1; original Chromium pages"
+      },
+      {
+        "task": "email-inbox-important",
+        "episodes": 5,
+        "successes": 0,
+        "full_credit_rate": 0.0,
+        "actions": 600,
+        "unhittable": 0,
+        "policy": "greedy H64/L1; original Chromium pages"
+      },
+      {
+        "task": "email-inbox-nl-turk",
+        "episodes": 5,
+        "successes": 0,
+        "full_credit_rate": 0.0,
+        "actions": 600,
+        "unhittable": 0,
+        "policy": "greedy H64/L1; original Chromium pages"
+      },
+      {
+        "task": "email-inbox-noscroll",
+        "episodes": 5,
+        "successes": 0,
+        "full_credit_rate": 0.0,
+        "actions": 600,
+        "unhittable": 0,
+        "policy": "greedy H64/L1; original Chromium pages"
+      },
+      {
+        "task": "email-inbox-reply",
+        "episodes": 5,
+        "successes": 0,
+        "full_credit_rate": 0.0,
+        "actions": 600,
+        "unhittable": 0,
+        "policy": "greedy H64/L1; original Chromium pages"
+      },
+      {
+        "task": "email-inbox-star-reply",
+        "episodes": 5,
+        "successes": 0,
+        "full_credit_rate": 0.0,
+        "actions": 600,
+        "unhittable": 0,
+        "policy": "greedy H64/L1; original Chromium pages"
+      },
+      {
+        "task": "email-inbox",
+        "episodes": 5,
+        "successes": 0,
+        "full_credit_rate": 0.0,
+        "actions": 600,
+        "unhittable": 0,
+        "policy": "greedy H64/L1; original Chromium pages"
+      }
+    ]
+  },
+  "limits": [
+    "bounded Bend generators, not full source-distribution parity",
+    "small pilot training/evaluation; adapter coverage is not solved-task coverage",
+    "controlled clock and bounded action preset",
+    "private model goals and original page goals are not policy inputs"
+  ]
+}

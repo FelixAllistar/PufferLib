@@ -1,0 +1,60 @@
+{
+  "date": "2026-09-29",
+  "reference_commit": "33c3b4ddef8c6eb67c57a29663d844b1eda7e614",
+  "compiler": "stock Bend 2.0.6 CPU; serialized <=6 GiB cgroup; no swap",
+  "laws": 6,
+  "native": {
+    "status": "PASS",
+    "price_paths": 64,
+    "wrong_buys": 63,
+    "public_solves": 64,
+    "public_actions": 1392,
+    "dirty_row_comparisons": 128,
+    "checks": "clock/tick/tie/blank/deadline, reward absorption, answer variation and future-price noninterference"
+  },
+  "browser": {
+    "status": "PASS",
+    "episodes": 20,
+    "actions": 44,
+    "scripted_successes": 6,
+    "preset": "Original-generated prices; clean-page display reset; original ticker and Buy callbacks on controlled 100 ms clock"
+  },
+  "public_scripted": {
+    "status": "PASS",
+    "episodes": 1000,
+    "successes": 1000,
+    "actions": 23835
+  },
+  "limits": [
+    "Clean-page reset: retained price display across original in-page resets unmodeled",
+    "Terminal absorption excludes source price ticks after reward",
+    "Independent bounded generator; source default RNG and wall-clock scheduling parity unverified",
+    "Normalized geometry; no learned policy adapter"
+  ],
+  "full_parity": "unverified",
+  "commands": [
+    "node ocean/webnav/families/build.cjs market --test",
+    "make -f ocean/webnav/families/Makefile browser FAMILY=market EPISODES=20",
+    "make -f ocean/webnav/families/Makefile public-check FAMILY=market EPISODES=1000"
+  ],
+  "build_cache": {
+    "proof": "bbfffadb900cdf39536c21b88af8d8a77816889f87e0fda824f2310c6c71f60c",
+    "runtime": "bc1a495bed4597ce5a3355e7ff51126ccba887d3cc426b9f433be993ec1e82df"
+  },
+  "source_sha256": {
+    "Generate.bend": "9178ed283135b4170717975f5783b2eb8863a0d0417398fb5a58844383fde06e",
+    "LAWS.bend": "2bed37f93ad38466535e7123f7d6397b9ffdb31d4fc0030fcf1f9fedc1d0b7dd",
+    "Main.bend": "6aec06db526e6994080bea7131894ba797e0e3521567b928b9940465e12aa163",
+    "Model.bend": "efd9e6b1926b9d3fa6afaddb7fdb0c26976d7855440680c520ea997961220154",
+    "PROOF.bend": "e3efcf88151906f2c62c24b02e03e817963f3e7229f36d0de35d4620eb101a3b",
+    "Wire.bend": "ae37c4fbc07e5d5744de3ba69a645ce57264f15b7ccaead4043233e721d10b79",
+    "bridge.c": "5f9032dc2d9eece6c20b5a97677068e7816d358ace417f91367e84fda5c24a52",
+    "browser.js": "914a7002a2c7c8593783ae5406941f38bddb6ddcf60735cfc26d69a4fbf4dffc",
+    "browser_oracle.c": "b1a696f46bd2ad72007fda2ff1545aadce9bc821573207e5628acfb1ed36ffbe",
+    "family_api.c": "3688d282dabe1e13e6507ba60219ee0bad4b761616644e7ff8fa8562daa6cc7c",
+    "public_controller.h": "8eb63e72722f987054a691c0ee2d0c029f89a53757a1727e87856ff693838ead",
+    "test_market.c": "454acfc850cdd35ea0882134fa3c67d64405941d7708f511fe63bcec72024fbb",
+    "test_public.c": "6f5231575998e2527cd797798eb85a9ff138361dba5de63fa51362134de62be0",
+    "test_reset.c": "b3eae2742dd73f7f022cc9dca48c9d00781d250747865be7370ab4e8bf66a355"
+  }
+}

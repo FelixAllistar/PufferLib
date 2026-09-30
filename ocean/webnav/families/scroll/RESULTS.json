@@ -1,0 +1,66 @@
+{
+  "date": "2026-09-29",
+  "reference_commit": "33c3b4ddef8c6eb67c57a29663d844b1eda7e614",
+  "compiler": "stock Bend 2.0.6 CPU; serialized <=6 GiB cgroup; no swap",
+  "laws": 17,
+  "native": {
+    "status": "PASS",
+    "dirty_reset_comparisons": 80,
+    "private_view_checks": 20,
+    "checks": "Source scoring and deadlines for all four tasks, native selection anchor, answer punctuation/case, disabled agreement input and generator answer variation"
+  },
+  "browser": {
+    "status": "PASS",
+    "episodes": 80,
+    "scripted_successes": 33,
+    "preset": "Original-generated instances; normalized DOM scroll/select/text actions, queued native scroll settled, controlled logical clock",
+    "schedules": "Correct and wrong answers, scroll directions, selection/deselection in both anchor directions, disabled controls, timeout"
+  },
+  "public_scripted": {
+    "status": "PASS",
+    "episodes": 4000,
+    "successes": 4000,
+    "actions": 9530
+  },
+  "limits": [
+    "Finite names/lorem vocabulary; source-range word counts with normalized generated geometry",
+    "Original option-property API; native Ctrl/Shift-click and keyboard multiselection unverified",
+    "Textarea values are public DOM data; no pixel-only observation claim",
+    "Full source RNG and DOM/layout parity unverified; no learned-policy adapter"
+  ],
+  "full_parity": "unverified",
+  "commands": [
+    "node ocean/webnav/families/build.cjs scroll --test",
+    "make -f ocean/webnav/families/Makefile browser FAMILY=scroll EPISODES=20",
+    "make -f ocean/webnav/families/Makefile public-check FAMILY=scroll EPISODES=1000",
+    "make -f ocean/webnav/families/Makefile test-loader"
+  ],
+  "build_cache": {
+    "proof": "fef41bd4c149b733b77f485595c7add7cef470583a854bbfc73b713efa4e9487",
+    "runtime": "9551cd5702b976cab2a692d794a2037817caab48fe993808ddfec84b3e58792f"
+  },
+  "source_sha256": {
+    "AgreementModel.bend": "607db0d5a736fad6409211f41dc238ad154bff3613a13c1bb7eab509c91816b7",
+    "Generate.bend": "85b3120af03f4fe03cfe0b41484ba3320a384613076b1088e312433b803f6ea1",
+    "LAWS.bend": "d9c2b6310b56de69ac4fcfcdec9db2c78021c14d2ca4ad6488cf6c69d958bb1d",
+    "ListModel.bend": "4fbc49d0842805d4582d576125f65c9d34b1bf831b1a85459e1d470f0018f88c",
+    "Main.bend": "6aec06db526e6994080bea7131894ba797e0e3521567b928b9940465e12aa163",
+    "Model.bend": "4dbbd70f0d45b28b7a61686543b451dfee9762966f61a201f7f8815cf3db8ac6",
+    "OtherWire.bend": "59d71fc0ff9c9e48837251763cd8257da2d21ec7232dfe3e52381debf1abe568",
+    "PROOF.bend": "20a7ccaeab5b39701894c4491e5cc206abb519c33dd0050498af96d1a7e13dc3",
+    "TextModel.bend": "742cd4abac756055fbc3aa18ffa3f0b14a869cf1d14a3595009ea2753f240b22",
+    "Wire.bend": "5489752d3888f9e8996ede53c030c199e3071ace82d66b88a78f431d6da9ed93",
+    "bridge.c": "a8c6963a3c9f25bf5a9fa2e9d6ce203fbf87cecbd4ac2e2ca67492c39ea3556d",
+    "browser.js": "18376386c2421f27b9956d546841b2a837953d7a88c5a996b2ddfbc415246391",
+    "browser_oracle.c": "121a8a6ca400a69dd0d7ceb3abcdf17293162cf67134da01c3172086c09ab40f",
+    "family_api.c": "abe609824df8579b0be10520200cd7980bb3219a37854eaa8a6b766b8a9e8a8f",
+    "public_controller.h": "e78e35aae550b2ae7a8138b32beffe3461862e840e358f2a9f70392847c88342",
+    "test_scroll.c": "8f4f6b91833e9dcb87665254177703c585fcc3768bd64abde66116e75abae293",
+    "test_scroll_reset.c": "55bf99ecfc951c226e9c257ba2a5c26c4b2ebdb1b5c4e0926c183058ee829606"
+  },
+  "shared_source_sha256": {
+    "common/loader.c": "cfca500a817ae44f5053049020771da58a7cff06c1501f82d71cde32897c41ba",
+    "common/family_api.h": "63597a768b176cda9304aa4d49ff72016b55cb00b59ba8a5b54b5cb8479a387b",
+    "tests/test_loader.c": "ce4eb5d771b9123ed3417c31e09cb1da5cf7220f95059465d189758819e6d2ef"
+  }
+}

@@ -20,6 +20,8 @@ def decode_mode_cases(dispatch: Nat, k: U32) -> M.Mode:
   match dispatch:
     case 1n: M.Focus{}
     case 2n: M.Form{}
+    case 3n: M.Options{}
+    case 4n: M.Sequence{}
     case _: M.Direct{}
 
 

@@ -1,0 +1,55 @@
+{
+  "date": "2026-09-29",
+  "reference_commit": "33c3b4ddef8c6eb67c57a29663d844b1eda7e614",
+  "compiler": "stock Bend 2.0.6 CPU; serialized <=6 GiB cgroup; no swap",
+  "laws": 25,
+  "reused_laws": "22 preserved tree laws plus three generator laws, checked in current guarded build",
+  "native": {
+    "status": "PASS",
+    "preserved_oracle": "validation, visibility, expand/collapse, file stop, ancestor bubbling, deadline/reset, rewards and 32 lanes",
+    "generated_public_solves": 256
+  },
+  "browser": {
+    "status": "PASS",
+    "episodes": 100,
+    "actions": 171,
+    "scripted_successes": 65,
+    "collapse_schedules": 16,
+    "preset": "Original-generated trees; CDP span clicks; settled plugin state and controlled logical clock"
+  },
+  "public_scripted": {
+    "status": "PASS",
+    "episodes": 1000,
+    "successes": 1000,
+    "actions": 1750
+  },
+  "new_legacy_ports": [
+    "navigate-tree"
+  ],
+  "limits": [
+    "Eight nodes/depth two; six generated topology presets and finite labels",
+    "Normalized public geometry; hit-area-only clicks and full source RNG parity unverified",
+    "No current learned-policy adapter"
+  ],
+  "full_parity": "unverified",
+  "commands": [
+    "node ocean/webnav/families/build.cjs tree --test",
+    "make -f ocean/webnav/families/Makefile browser FAMILY=tree EPISODES=100",
+    "make -f ocean/webnav/families/Makefile public-check FAMILY=tree EPISODES=1000"
+  ],
+  "build_cache": {
+    "proof": "0792d0acc5d8b512b0024953cc9a6b52b10d014a832997cd7f988dd70af5acce",
+    "runtime": "336ccca893932e7f69d0dcb597f3a882cbc5a679591b997f3186ef438194f947"
+  },
+  "source_sha256": {
+    "Main.bend": "754da8d9312741e4d2889857851daacb6a4dc61b8f5b922e06483b4ab6bf051f",
+    "PROOF.bend": "de73c1ddcf95f128df875f3bfdd597ac8f4295096afd62cd111743868aa76386",
+    "Wire.bend": "8e71a1d0e984b0ddb4bf41b7a8d806e47078b926df8aadff3187a71d6496431a",
+    "bridge.c": "d6e1d5978164420b034eaa702483851926a5108efe41cfcd68fcbb566fe701cb",
+    "browser.js": "1ccae62c46d56bb205fe8e8891a567bb51dde56030dd11c65d14121e1bf09dc4",
+    "browser_oracle.c": "746005b879b4baa3ff03ffc148e395f0de33b17a878f07aa5c3571b8a23eb734",
+    "family_api.c": "8befcecc7e1a533b0a3fcacabae2e0365cfb12cf5b10d3224a1a765115fde735",
+    "public_controller.h": "394e0c20cf37d0b246f86602f8d99683fec8ab539d573cdd9e12c41cbce99608",
+    "test_tree.c": "2a42a854f110c52e7206416d55bd2ebb49b709aa1538fad7231a64670c51f559"
+  }
+}

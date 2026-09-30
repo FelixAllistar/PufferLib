@@ -127,7 +127,7 @@ static void compare_view(WFLoaded *f,const cJSON *snapshot,unsigned task,unsigne
     }
 }
 
-static unsigned submit_ref(unsigned task,unsigned nf){return task==3?nf+2u:task==6?15u:nf+1u;}
+static unsigned submit_ref(unsigned task,unsigned nf){return task==3?nf+2u:task==6?15u:task==10?12u:nf+1u;}
 static void browser_click(WebCdp *c,WFLoaded *f,unsigned task,unsigned ref,unsigned now,unsigned step){
     point_click(c,ref);WFAction a={.kind=WF_CLICK,.target=ref};
     assert(!sync_model(f,now,&a));(void)task;(void)step;
@@ -148,7 +148,7 @@ int main(int argc,char **argv){
     unsigned episodes=argc>1?(unsigned)strtoul(argv[1],NULL,10):2u;if(!episodes||episodes>200u)return 2;
     WFLoaded f;char error[512];if(wf_open(&f,"build/webnav/families/forms/libforms.so",error,sizeof error)){fprintf(stderr,"%s\n",error);return 1;}
     char *script=read_file("ocean/webnav/families/forms/browser.js");unsigned total=0;
-    for(unsigned task=0;task<8;task++){
+    for(unsigned task=0;task<f.api->task_count;task++){
         char file[PATH_MAX],resolved[PATH_MAX],url[PATH_MAX+8];
         snprintf(file,sizeof file,"build/webnav/reference/MiniWoB-plusplus-33c3b4ddef8c6eb67c57a29663d844b1eda7e614/miniwob/html/miniwob/%s.html",f.api->task_names[task]);
         assert(realpath(file,resolved));snprintf(url,sizeof url,"file://%s",resolved);
@@ -190,6 +190,7 @@ int main(int argc,char **argv){
                     for(unsigned i=0;i<f.words[32];i++){
                         const uint32_t *field=f.words+FIELD_BASE+i*FIELD_STRIDE;char value[256];unsigned len=field[4];assert(len<sizeof value);
                         for(unsigned j=0;j<len;j++)value[j]=(char)field[264+j];value[len]=0;
+                        if(task>=8&&ep%5u==1u&&i+1u==f.words[32])snprintf(value,sizeof value,"definitely incorrect");
                         browser_type(&c,&f,i+1u,value,now);step+=3;actions+=3;
                     }
                 }

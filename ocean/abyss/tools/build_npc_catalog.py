@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import math
 import re
 from pathlib import Path
 
@@ -53,6 +54,34 @@ def number(value: str | None) -> float:
         return 0.0
 
 
+def repair_profile(row: dict, remote: bool = False) -> dict:
+    """Preserve repair layer/range; a naked HP/s value is not sufficient."""
+    prefix = "remote" if remote else "local"
+    kind = row.get("rr_type" if remote else "local_rep_type", "").strip()
+    layers = {"Shield": 0, "Shield Booster": 0, "Armor": 1, "Armor Repair": 1}
+    amount = number(row.get("rr_amount" if remote else "local_rep_strength"))
+    duration = number(row.get("rr_rof" if remote else "local_rep_duration"))
+    exported_rate = number(row.get("Remote Repair Per Second" if remote else "Local Repair Per Second"))
+    if not kind:
+        if amount or duration or exported_rate:
+            raise ValueError(f"{row['type']}: {prefix} repair has no layer")
+        layer, rate = -1, 0.0
+    else:
+        if kind not in layers or not math.isfinite(amount) or amount <= 0 or not math.isfinite(duration) or duration <= 0:
+            raise ValueError(f"{row['type']}: invalid {prefix} repair {kind!r}")
+        layer, rate = layers[kind], amount / duration
+        if not math.isclose(rate, exported_rate, rel_tol=1e-6, abs_tol=1e-6):
+            raise ValueError(f"{row['type']}: inconsistent {prefix} repair rate")
+    profile = {f"{prefix}_repair_layer": layer, f"{prefix}_repair_hp_per_s": rate}
+    if remote:
+        for suffix, column in (("optimal_m", "rr_optimal"), ("falloff_m", "rr_falloff")):
+            value = number(row.get(column))
+            if not math.isfinite(value) or value < 0:
+                raise ValueError(f"{row['type']}: invalid remote repair {column}")
+            profile[f"remote_repair_{suffix}"] = value
+    return profile
+
+
 def build(source: Path, destination: Path) -> list[dict]:
     with source.open("r", encoding="utf-8-sig", newline="") as handle:
         rows = list(csv.DictReader(handle))
@@ -98,8 +127,8 @@ def build(source: Path, destination: Path) -> list[dict]:
             for i in range(4)
         ]
         item["neutralizer_gj_per_s"] = number(row.get("GJ Neutralized Per Second"))
-        item["local_repair_hp_per_s"] = number(row.get("Local Repair Per Second"))
-        item["remote_repair_hp_per_s"] = number(row.get("Remote Repair Per Second"))
+        item.update(repair_profile(row))
+        item.update(repair_profile(row, remote=True))
         catalog.append(item)
     destination.parent.mkdir(parents=True, exist_ok=True)
     destination.write_text(json.dumps(catalog, indent=2) + "\n", encoding="utf-8")

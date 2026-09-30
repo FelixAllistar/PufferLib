@@ -6,12 +6,12 @@
   "families": {
     "click": {
       "task_count": 16,
-      "status": "10-family-checked; 6-legacy-bounded",
+      "status": "behavior-checked",
       "library": "build/webnav/families/click/libclick.so"
     },
     "forms": {
-      "task_count": 14,
-      "status": "8-family-checked; 3-legacy-bounded; 3-pending",
+      "task_count": 11,
+      "status": "behavior-checked",
       "library": "build/webnav/families/forms/libforms.so"
     },
     "panels": {
@@ -21,17 +21,17 @@
     },
     "tree": {
       "task_count": 1,
-      "status": "planned",
+      "status": "behavior-checked",
       "library": "build/webnav/families/tree/libtree.so"
     },
     "autocomplete": {
       "task_count": 2,
-      "status": "planned",
+      "status": "behavior-checked",
       "library": "build/webnav/families/autocomplete/libautocomplete.so"
     },
     "calendar": {
       "task_count": 5,
-      "status": "planned",
+      "status": "behavior-checked",
       "library": "build/webnav/families/calendar/libcalendar.so"
     },
     "menus": {
@@ -41,32 +41,32 @@
     },
     "controls": {
       "task_count": 6,
-      "status": "planned",
+      "status": "behavior-checked",
       "library": "build/webnav/families/controls/libcontrols.so"
     },
     "scroll": {
       "task_count": 4,
-      "status": "planned",
+      "status": "behavior-checked",
       "library": "build/webnav/families/scroll/libscroll.so"
     },
     "drag": {
       "task_count": 10,
-      "status": "planned",
+      "status": "behavior-checked",
       "library": "build/webnav/families/drag/libdrag.so"
     },
     "drawing": {
       "task_count": 2,
-      "status": "planned",
+      "status": "behavior-checked",
       "library": "build/webnav/families/drawing/libdrawing.so"
     },
     "geometry": {
       "task_count": 5,
-      "status": "planned",
+      "status": "behavior-checked",
       "library": "build/webnav/families/geometry/libgeometry.so"
     },
     "visual": {
       "task_count": 9,
-      "status": "planned",
+      "status": "behavior-checked",
       "library": "build/webnav/families/visual/libvisual.so"
     },
     "numeric": {
@@ -76,28 +76,48 @@
     },
     "editing": {
       "task_count": 5,
-      "status": "planned",
+      "status": "behavior-checked",
       "library": "build/webnav/families/editing/libediting.so"
     },
     "email": {
       "task_count": 10,
-      "status": "planned",
+      "status": "behavior-checked",
       "library": "build/webnav/families/email/libemail.so"
     },
     "social": {
       "task_count": 3,
-      "status": "planned",
+      "status": "behavior-checked",
       "library": "build/webnav/families/social/libsocial.so"
-    },
-    "workflows": {
-      "task_count": 12,
-      "status": "planned",
-      "library": "build/webnav/families/workflows/libworkflows.so"
     },
     "board": {
       "task_count": 1,
-      "status": "planned",
+      "status": "behavior-checked",
       "library": "build/webnav/families/board/libboard.so"
+    },
+    "composite_forms": {
+      "task_count": 5,
+      "status": "behavior-checked",
+      "library": "build/webnav/families/composite_forms/libcomposite_forms.so"
+    },
+    "travel": {
+      "task_count": 3,
+      "status": "behavior-checked",
+      "library": "build/webnav/families/travel/libtravel.so"
+    },
+    "typed_inputs": {
+      "task_count": 3,
+      "status": "behavior-checked",
+      "library": "build/webnav/families/typed_inputs/libtyped_inputs.so"
+    },
+    "catalog": {
+      "task_count": 3,
+      "status": "behavior-checked",
+      "library": "build/webnav/families/catalog/libcatalog.so"
+    },
+    "market": {
+      "task_count": 1,
+      "status": "behavior-checked",
+      "library": "build/webnav/families/market/libmarket.so"
     }
   },
   "tasks": [
@@ -112,9 +132,10 @@
       "generator": "bounded-cpu-bend",
       "public_adapter": "family-v2",
       "browser_conformance": "matched-original-controls-feedback-reward",
-      "training": "pending",
+      "training": "ppo-native-and-original-page-evaluated",
       "full_parity": "unverified",
-      "evidence": "numeric/RESULTS.json"
+      "evidence": "numeric/RESULTS.json",
+      "training_evidence": "../../webnav_numeric/RESULTS.json"
     },
     {
       "id": 1,
@@ -123,58 +144,58 @@
       "local_task": 0,
       "source": "miniwob/html/miniwob/bisect-angle.html",
       "source_blob_sha": "4b91b6389441c9300ea5792e7038542b90638855",
-      "behavior": "pending",
-      "generator": "pending",
-      "public_adapter": "pending",
-      "browser_conformance": "pending",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-scene-click-quantization-geometry-reward",
       "training": "pending",
       "full_parity": "unverified",
-      "evidence": null
+      "evidence": "geometry/RESULTS.json"
     },
     {
       "id": 2,
       "name": "book-flight",
-      "family": "workflows",
-      "local_task": 0,
+      "family": "travel",
+      "local_task": 1,
       "source": "miniwob/html/miniwob/book-flight.html",
       "source_blob_sha": "8fbc4839af0223c90377c4bcaad16b2ebb9db39d",
-      "behavior": "pending",
-      "generator": "pending",
-      "public_adapter": "pending",
-      "browser_conformance": "pending",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-atomic-flight-fields-ticket-ranking-reward",
       "training": "pending",
       "full_parity": "unverified",
-      "evidence": null
+      "evidence": "travel/RESULTS.json"
     },
     {
       "id": 3,
       "name": "book-flight-nodelay",
-      "family": "workflows",
-      "local_task": 1,
+      "family": "travel",
+      "local_task": 0,
       "source": "miniwob/html/miniwob/book-flight-nodelay.html",
       "source_blob_sha": "06513896e24bdda22381891ee2c85c194e83e240",
-      "behavior": "pending",
-      "generator": "pending",
-      "public_adapter": "pending",
-      "browser_conformance": "pending",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-atomic-flight-fields-ticket-ranking-reward",
       "training": "pending",
       "full_parity": "unverified",
-      "evidence": null
+      "evidence": "travel/RESULTS.json"
     },
     {
       "id": 4,
       "name": "buy-ticket",
-      "family": "workflows",
+      "family": "travel",
       "local_task": 2,
       "source": "miniwob/html/miniwob/buy-ticket.html",
       "source_blob_sha": "38154d6134880ba4ea92de95946d783149071c33",
-      "behavior": "pending",
-      "generator": "pending",
-      "public_adapter": "pending",
-      "browser_conformance": "pending",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-atomic-flight-fields-ticket-ranking-reward",
       "training": "pending",
       "full_parity": "unverified",
-      "evidence": null
+      "evidence": "travel/RESULTS.json"
     },
     {
       "id": 5,
@@ -183,13 +204,13 @@
       "local_task": 0,
       "source": "miniwob/html/miniwob/choose-date.html",
       "source_blob_sha": "2194b35597c50fd5af9701bf9b64a6629c27223f",
-      "behavior": "pending",
-      "generator": "pending",
-      "public_adapter": "pending",
-      "browser_conformance": "pending",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-date-daily-handlers-state-reward",
       "training": "pending",
       "full_parity": "unverified",
-      "evidence": null
+      "evidence": "calendar/RESULTS.json"
     },
     {
       "id": 6,
@@ -198,13 +219,13 @@
       "local_task": 1,
       "source": "miniwob/html/miniwob/choose-date-easy.html",
       "source_blob_sha": "c623c01b80b7bd2d51a8f804812e5fdf6066111e",
-      "behavior": "pending",
-      "generator": "pending",
-      "public_adapter": "pending",
-      "browser_conformance": "pending",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-date-daily-handlers-state-reward",
       "training": "pending",
       "full_parity": "unverified",
-      "evidence": null
+      "evidence": "calendar/RESULTS.json"
     },
     {
       "id": 7,
@@ -213,13 +234,13 @@
       "local_task": 2,
       "source": "miniwob/html/miniwob/choose-date-medium.html",
       "source_blob_sha": "6d54db22cf2ed5d2183349c2104f442a9c618e04",
-      "behavior": "pending",
-      "generator": "pending",
-      "public_adapter": "pending",
-      "browser_conformance": "pending",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-date-daily-handlers-state-reward",
       "training": "pending",
       "full_parity": "unverified",
-      "evidence": null
+      "evidence": "calendar/RESULTS.json"
     },
     {
       "id": 8,
@@ -228,13 +249,13 @@
       "local_task": 3,
       "source": "miniwob/html/miniwob/choose-date-nodelay.html",
       "source_blob_sha": "e625452e745dd0034c4ea9ba9801b8464b98357b",
-      "behavior": "pending",
-      "generator": "pending",
-      "public_adapter": "pending",
-      "browser_conformance": "pending",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-date-daily-handlers-state-reward",
       "training": "pending",
       "full_parity": "unverified",
-      "evidence": null
+      "evidence": "calendar/RESULTS.json"
     },
     {
       "id": 9,
@@ -243,13 +264,13 @@
       "local_task": 0,
       "source": "miniwob/html/miniwob/choose-list.html",
       "source_blob_sha": "654715e9a518b4aebcbe59d81b6be8c90982f157",
-      "behavior": "legacy-bounded",
-      "generator": "legacy-bounded",
-      "public_adapter": "legacy-bounded",
-      "browser_conformance": "legacy-preset",
-      "training": "webnav_dom_v1",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-normalized-controls-valid-hex-state-reward",
+      "training": "pending",
       "full_parity": "unverified",
-      "evidence": "../TRAINING_RESULTS.json"
+      "evidence": "controls/RESULTS.json"
     },
     {
       "id": 10,
@@ -258,13 +279,13 @@
       "local_task": 1,
       "source": "miniwob/html/miniwob/circle-center.html",
       "source_blob_sha": "9263c7b94449f4d985ddf04459b82c09e02dc994",
-      "behavior": "pending",
-      "generator": "pending",
-      "public_adapter": "pending",
-      "browser_conformance": "pending",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-scene-click-quantization-geometry-reward",
       "training": "pending",
       "full_parity": "unverified",
-      "evidence": null
+      "evidence": "geometry/RESULTS.json"
     },
     {
       "id": 11,
@@ -273,13 +294,15 @@
       "local_task": 10,
       "source": "miniwob/html/miniwob/click-button.html",
       "source_blob_sha": "e119ef646711296125a9c86003399fb04fcf1eaa",
-      "behavior": "legacy-bounded",
-      "generator": "legacy-bounded",
-      "public_adapter": "legacy-bounded",
-      "browser_conformance": "legacy-preset",
-      "training": "webnav_dom_v1",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-public-actions-state-reward",
+      "training": "pending",
       "full_parity": "unverified",
-      "evidence": "../TRAINING_RESULTS.json"
+      "evidence": "click/RESULTS.json",
+      "legacy_training": "webnav_dom_v1",
+      "legacy_evidence": "../TRAINING_RESULTS.json"
     },
     {
       "id": 12,
@@ -288,13 +311,15 @@
       "local_task": 15,
       "source": "miniwob/html/miniwob/click-button-sequence.html",
       "source_blob_sha": "1166e267b5e59761f45a3125f1f5d043491a60db",
-      "behavior": "legacy-bounded",
-      "generator": "legacy-bounded",
-      "public_adapter": "legacy-bounded",
-      "browser_conformance": "legacy-preset",
-      "training": "webnav_dom_v1",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-public-actions-state-reward",
+      "training": "pending",
       "full_parity": "unverified",
-      "evidence": "../TRAINING_RESULTS.json"
+      "evidence": "click/RESULTS.json",
+      "legacy_training": "webnav_dom_v1",
+      "legacy_evidence": "../TRAINING_RESULTS.json"
     },
     {
       "id": 13,
@@ -303,13 +328,15 @@
       "local_task": 13,
       "source": "miniwob/html/miniwob/click-checkboxes.html",
       "source_blob_sha": "84d3f10c2d285195ea69ec8e6055ba383a70dc9c",
-      "behavior": "legacy-bounded",
-      "generator": "legacy-bounded",
-      "public_adapter": "legacy-bounded",
-      "browser_conformance": "legacy-preset",
-      "training": "webnav_dom_v1",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-public-actions-state-reward",
+      "training": "pending",
       "full_parity": "unverified",
-      "evidence": "../TRAINING_RESULTS.json"
+      "evidence": "click/RESULTS.json",
+      "legacy_training": "webnav_dom_v1",
+      "legacy_evidence": "../TRAINING_RESULTS.json"
     },
     {
       "id": 14,
@@ -322,9 +349,10 @@
       "generator": "bounded-cpu-bend",
       "public_adapter": "family-v2",
       "browser_conformance": "matched-original-control-clicks",
-      "training": "pending",
+      "training": "webnav_family",
       "full_parity": "unverified",
-      "evidence": "click/RESULTS.json"
+      "evidence": "click/RESULTS.json",
+      "training_evidence": "../../webnav_family/RESULTS.md"
     },
     {
       "id": 15,
@@ -337,9 +365,10 @@
       "generator": "bounded-cpu-bend",
       "public_adapter": "family-v2",
       "browser_conformance": "matched-original-control-clicks",
-      "training": "pending",
+      "training": "webnav_family",
       "full_parity": "unverified",
-      "evidence": "click/RESULTS.json"
+      "evidence": "click/RESULTS.json",
+      "training_evidence": "../../webnav_family/RESULTS.md"
     },
     {
       "id": 16,
@@ -352,9 +381,10 @@
       "generator": "bounded-cpu-bend",
       "public_adapter": "family-v2",
       "browser_conformance": "matched-original-control-clicks",
-      "training": "pending",
+      "training": "webnav_family",
       "full_parity": "unverified",
-      "evidence": "click/RESULTS.json"
+      "evidence": "click/RESULTS.json",
+      "training_evidence": "../../webnav_family/RESULTS.md"
     },
     {
       "id": 17,
@@ -367,9 +397,10 @@
       "generator": "bounded",
       "public_adapter": "family-v2 actionable projection",
       "browser_conformance": "original generated instances; settled CDP preset",
-      "training": "pending",
+      "training": "ppo-native-and-original-page-evaluated",
       "full_parity": "unverified",
-      "evidence": "panels/RESULTS.json"
+      "evidence": "panels/RESULTS.json",
+      "training_evidence": "../../webnav_navigation/RESULTS.json"
     },
     {
       "id": 18,
@@ -382,9 +413,10 @@
       "generator": "bounded",
       "public_adapter": "family-v2 actionable projection",
       "browser_conformance": "original generated instances; settled CDP preset",
-      "training": "pending",
+      "training": "ppo-native-and-original-page-evaluated",
       "full_parity": "unverified",
-      "evidence": "panels/RESULTS.json"
+      "evidence": "panels/RESULTS.json",
+      "training_evidence": "../../webnav_navigation/RESULTS.json"
     },
     {
       "id": 19,
@@ -397,9 +429,10 @@
       "generator": "bounded",
       "public_adapter": "family-v2 actionable projection",
       "browser_conformance": "original generated instances; settled CDP preset",
-      "training": "pending",
+      "training": "ppo-native-and-original-page-evaluated",
       "full_parity": "unverified",
-      "evidence": "panels/RESULTS.json"
+      "evidence": "panels/RESULTS.json",
+      "training_evidence": "../../webnav_navigation/RESULTS.json"
     },
     {
       "id": 20,
@@ -412,9 +445,10 @@
       "generator": "bounded",
       "public_adapter": "family-v2 actionable projection",
       "browser_conformance": "original generated instances; settled CDP preset",
-      "training": "pending",
+      "training": "ppo-native-and-original-page-evaluated",
       "full_parity": "unverified",
-      "evidence": "panels/RESULTS.json"
+      "evidence": "panels/RESULTS.json",
+      "training_evidence": "../../webnav_navigation/RESULTS.json"
     },
     {
       "id": 21,
@@ -423,13 +457,13 @@
       "local_task": 0,
       "source": "miniwob/html/miniwob/click-color.html",
       "source_blob_sha": "acfb34346ea74d24a80e018a29290e8d077a5da5",
-      "behavior": "pending",
-      "generator": "pending",
-      "public_adapter": "pending",
-      "browser_conformance": "pending",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-scene-click-input-state-reward",
       "training": "pending",
       "full_parity": "unverified",
-      "evidence": null
+      "evidence": "visual/RESULTS.json"
     },
     {
       "id": 22,
@@ -442,9 +476,10 @@
       "generator": "bounded-cpu-bend",
       "public_adapter": "family-v2",
       "browser_conformance": "matched-original-control-clicks",
-      "training": "pending",
+      "training": "webnav_family",
       "full_parity": "unverified",
-      "evidence": "click/RESULTS.json"
+      "evidence": "click/RESULTS.json",
+      "training_evidence": "../../webnav_family/RESULTS.md"
     },
     {
       "id": 23,
@@ -457,9 +492,10 @@
       "generator": "bounded-cpu-bend",
       "public_adapter": "family-v2",
       "browser_conformance": "matched-original-control-clicks",
-      "training": "pending",
+      "training": "webnav_family",
       "full_parity": "unverified",
-      "evidence": "click/RESULTS.json"
+      "evidence": "click/RESULTS.json",
+      "training_evidence": "../../webnav_family/RESULTS.md"
     },
     {
       "id": 24,
@@ -468,13 +504,15 @@
       "local_task": 11,
       "source": "miniwob/html/miniwob/click-link.html",
       "source_blob_sha": "05405c4504e0c453e63e3e516763d29eb506c963",
-      "behavior": "legacy-bounded",
-      "generator": "legacy-bounded",
-      "public_adapter": "legacy-bounded",
-      "browser_conformance": "legacy-preset",
-      "training": "webnav_dom_v1",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-public-actions-state-reward",
+      "training": "pending",
       "full_parity": "unverified",
-      "evidence": "../TRAINING_RESULTS.json"
+      "evidence": "click/RESULTS.json",
+      "legacy_training": "webnav_dom_v1",
+      "legacy_evidence": "../TRAINING_RESULTS.json"
     },
     {
       "id": 25,
@@ -487,9 +525,10 @@
       "generator": "bounded-cpu-bend",
       "public_adapter": "family-v2",
       "browser_conformance": "matched-original-settled-hover-click",
-      "training": "pending",
+      "training": "ppo-native-and-original-page-evaluated",
       "full_parity": "unverified",
-      "evidence": "menus/RESULTS.json"
+      "evidence": "menus/RESULTS.json",
+      "training_evidence": "../../webnav_navigation/RESULTS.json"
     },
     {
       "id": 26,
@@ -502,9 +541,10 @@
       "generator": "bounded-cpu-bend",
       "public_adapter": "family-v2",
       "browser_conformance": "matched-original-settled-hover-click",
-      "training": "pending",
+      "training": "ppo-native-and-original-page-evaluated",
       "full_parity": "unverified",
-      "evidence": "menus/RESULTS.json"
+      "evidence": "menus/RESULTS.json",
+      "training_evidence": "../../webnav_navigation/RESULTS.json"
     },
     {
       "id": 27,
@@ -513,13 +553,15 @@
       "local_task": 14,
       "source": "miniwob/html/miniwob/click-option.html",
       "source_blob_sha": "bd00c5c2c88883178b4f5e1fd01bf18a3df7254c",
-      "behavior": "legacy-bounded",
-      "generator": "legacy-bounded",
-      "public_adapter": "legacy-bounded",
-      "browser_conformance": "legacy-preset",
-      "training": "webnav_dom_v1",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-public-actions-state-reward",
+      "training": "pending",
       "full_parity": "unverified",
-      "evidence": "../TRAINING_RESULTS.json"
+      "evidence": "click/RESULTS.json",
+      "legacy_training": "webnav_dom_v1",
+      "legacy_evidence": "../TRAINING_RESULTS.json"
     },
     {
       "id": 28,
@@ -528,13 +570,13 @@
       "local_task": 1,
       "source": "miniwob/html/miniwob/click-pie.html",
       "source_blob_sha": "f137b25b11624c396b853b17ab932c9e87746037",
-      "behavior": "pending",
-      "generator": "pending",
-      "public_adapter": "pending",
-      "browser_conformance": "pending",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-scene-click-input-state-reward",
       "training": "pending",
       "full_parity": "unverified",
-      "evidence": null
+      "evidence": "visual/RESULTS.json"
     },
     {
       "id": 29,
@@ -543,13 +585,13 @@
       "local_task": 2,
       "source": "miniwob/html/miniwob/click-pie-nodelay.html",
       "source_blob_sha": "ae9a83fac05e313dd992fb41b2ed2bf63145f356",
-      "behavior": "pending",
-      "generator": "pending",
-      "public_adapter": "pending",
-      "browser_conformance": "pending",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-scene-click-input-state-reward",
       "training": "pending",
       "full_parity": "unverified",
-      "evidence": null
+      "evidence": "visual/RESULTS.json"
     },
     {
       "id": 30,
@@ -558,13 +600,13 @@
       "local_task": 0,
       "source": "miniwob/html/miniwob/click-scroll-list.html",
       "source_blob_sha": "9807acdb22eec3c16d39528910557ada3703c7ca",
-      "behavior": "pending",
-      "generator": "pending",
-      "public_adapter": "pending",
-      "browser_conformance": "pending",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-normalized-scroll-selection-input-state-reward",
       "training": "pending",
       "full_parity": "unverified",
-      "evidence": null
+      "evidence": "scroll/RESULTS.json"
     },
     {
       "id": 31,
@@ -573,13 +615,13 @@
       "local_task": 3,
       "source": "miniwob/html/miniwob/click-shades.html",
       "source_blob_sha": "c0ad892667ebe7286471a759fcf3cc2f2ee280a1",
-      "behavior": "pending",
-      "generator": "pending",
-      "public_adapter": "pending",
-      "browser_conformance": "pending",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-scene-click-input-state-reward",
       "training": "pending",
       "full_parity": "unverified",
-      "evidence": null
+      "evidence": "visual/RESULTS.json"
     },
     {
       "id": 32,
@@ -588,13 +630,13 @@
       "local_task": 4,
       "source": "miniwob/html/miniwob/click-shape.html",
       "source_blob_sha": "ecf85e6f30ca32a1b0f7a98ab67dd9f8306c1127",
-      "behavior": "pending",
-      "generator": "pending",
-      "public_adapter": "pending",
-      "browser_conformance": "pending",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-scene-click-input-state-reward",
       "training": "pending",
       "full_parity": "unverified",
-      "evidence": null
+      "evidence": "visual/RESULTS.json"
     },
     {
       "id": 33,
@@ -607,9 +649,10 @@
       "generator": "bounded",
       "public_adapter": "family-v2 actionable projection",
       "browser_conformance": "original generated instances; settled CDP preset",
-      "training": "pending",
+      "training": "ppo-native-and-original-page-evaluated",
       "full_parity": "unverified",
-      "evidence": "panels/RESULTS.json"
+      "evidence": "panels/RESULTS.json",
+      "training_evidence": "../../webnav_navigation/RESULTS.json"
     },
     {
       "id": 34,
@@ -622,9 +665,10 @@
       "generator": "bounded",
       "public_adapter": "family-v2 actionable projection",
       "browser_conformance": "original generated instances; settled CDP preset",
-      "training": "pending",
+      "training": "ppo-native-and-original-page-evaluated",
       "full_parity": "unverified",
-      "evidence": "panels/RESULTS.json"
+      "evidence": "panels/RESULTS.json",
+      "training_evidence": "../../webnav_navigation/RESULTS.json"
     },
     {
       "id": 35,
@@ -637,9 +681,10 @@
       "generator": "bounded",
       "public_adapter": "family-v2 actionable projection",
       "browser_conformance": "original generated instances; settled CDP preset",
-      "training": "pending",
+      "training": "ppo-native-and-original-page-evaluated",
       "full_parity": "unverified",
-      "evidence": "panels/RESULTS.json"
+      "evidence": "panels/RESULTS.json",
+      "training_evidence": "../../webnav_navigation/RESULTS.json"
     },
     {
       "id": 36,
@@ -652,9 +697,10 @@
       "generator": "bounded",
       "public_adapter": "family-v2 actionable projection",
       "browser_conformance": "original generated instances; settled CDP preset",
-      "training": "pending",
+      "training": "ppo-native-and-original-page-evaluated",
       "full_parity": "unverified",
-      "evidence": "panels/RESULTS.json"
+      "evidence": "panels/RESULTS.json",
+      "training_evidence": "../../webnav_navigation/RESULTS.json"
     },
     {
       "id": 37,
@@ -667,9 +713,10 @@
       "generator": "bounded",
       "public_adapter": "family-v2 actionable projection",
       "browser_conformance": "original generated instances; settled CDP preset",
-      "training": "pending",
+      "training": "ppo-native-and-original-page-evaluated",
       "full_parity": "unverified",
-      "evidence": "panels/RESULTS.json"
+      "evidence": "panels/RESULTS.json",
+      "training_evidence": "../../webnav_navigation/RESULTS.json"
     },
     {
       "id": 38,
@@ -682,9 +729,10 @@
       "generator": "bounded-cpu-bend",
       "public_adapter": "family-v2",
       "browser_conformance": "matched-original-control-clicks",
-      "training": "pending",
+      "training": "webnav_family",
       "full_parity": "unverified",
-      "evidence": "click/RESULTS.json"
+      "evidence": "click/RESULTS.json",
+      "training_evidence": "../../webnav_family/RESULTS.md"
     },
     {
       "id": 39,
@@ -697,9 +745,10 @@
       "generator": "bounded-cpu-bend",
       "public_adapter": "family-v2",
       "browser_conformance": "matched-original-control-clicks",
-      "training": "pending",
+      "training": "webnav_family",
       "full_parity": "unverified",
-      "evidence": "click/RESULTS.json"
+      "evidence": "click/RESULTS.json",
+      "training_evidence": "../../webnav_family/RESULTS.md"
     },
     {
       "id": 40,
@@ -712,9 +761,10 @@
       "generator": "bounded-cpu-bend",
       "public_adapter": "family-v2",
       "browser_conformance": "matched-original-control-clicks",
-      "training": "pending",
+      "training": "webnav_family",
       "full_parity": "unverified",
-      "evidence": "click/RESULTS.json"
+      "evidence": "click/RESULTS.json",
+      "training_evidence": "../../webnav_family/RESULTS.md"
     },
     {
       "id": 41,
@@ -727,9 +777,10 @@
       "generator": "bounded-cpu-bend",
       "public_adapter": "family-v2",
       "browser_conformance": "matched-original-control-clicks",
-      "training": "pending",
+      "training": "webnav_family",
       "full_parity": "unverified",
-      "evidence": "click/RESULTS.json"
+      "evidence": "click/RESULTS.json",
+      "training_evidence": "../../webnav_family/RESULTS.md"
     },
     {
       "id": 42,
@@ -742,9 +793,10 @@
       "generator": "bounded-cpu-bend",
       "public_adapter": "family-v2",
       "browser_conformance": "matched-original-cdp-text-clipboard-popup",
-      "training": "pending",
+      "training": "webnav_forms",
       "full_parity": "unverified",
-      "evidence": "forms/RESULTS.json"
+      "evidence": "forms/RESULTS.json",
+      "training_evidence": "../../webnav_forms/RESULTS.md"
     },
     {
       "id": 43,
@@ -757,9 +809,10 @@
       "generator": "bounded-cpu-bend",
       "public_adapter": "family-v2",
       "browser_conformance": "matched-original-cdp-text-clipboard-popup",
-      "training": "pending",
+      "training": "webnav_forms",
       "full_parity": "unverified",
-      "evidence": "forms/RESULTS.json"
+      "evidence": "forms/RESULTS.json",
+      "training_evidence": "../../webnav_forms/RESULTS.md"
     },
     {
       "id": 44,
@@ -768,13 +821,13 @@
       "local_task": 5,
       "source": "miniwob/html/miniwob/count-shape.html",
       "source_blob_sha": "c1a4dda17f1b0e32d6d3a322ef4b30982fffcb0a",
-      "behavior": "pending",
-      "generator": "pending",
-      "public_adapter": "pending",
-      "browser_conformance": "pending",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-scene-click-input-state-reward",
       "training": "pending",
       "full_parity": "unverified",
-      "evidence": null
+      "evidence": "visual/RESULTS.json"
     },
     {
       "id": 45,
@@ -783,13 +836,13 @@
       "local_task": 6,
       "source": "miniwob/html/miniwob/count-sides.html",
       "source_blob_sha": "6dcc7f8d5a548129578dcdf9a46e4b03f103c1b4",
-      "behavior": "pending",
-      "generator": "pending",
-      "public_adapter": "pending",
-      "browser_conformance": "pending",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-scene-click-input-state-reward",
       "training": "pending",
       "full_parity": "unverified",
-      "evidence": null
+      "evidence": "visual/RESULTS.json"
     },
     {
       "id": 46,
@@ -798,13 +851,13 @@
       "local_task": 4,
       "source": "miniwob/html/miniwob/daily-calendar.html",
       "source_blob_sha": "452599e95732d4aa2dc5dabdcb558a4f87c98dc0",
-      "behavior": "pending",
-      "generator": "pending",
-      "public_adapter": "pending",
-      "browser_conformance": "pending",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-date-daily-handlers-state-reward",
       "training": "pending",
       "full_parity": "unverified",
-      "evidence": null
+      "evidence": "calendar/RESULTS.json"
     },
     {
       "id": 47,
@@ -813,13 +866,13 @@
       "local_task": 0,
       "source": "miniwob/html/miniwob/drag-box.html",
       "source_blob_sha": "a51cb4b7755058728262a25f130bac90d82173fb",
-      "behavior": "pending",
-      "generator": "pending",
-      "public_adapter": "pending",
-      "browser_conformance": "pending",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-normalized-pointer-state-reward",
       "training": "pending",
       "full_parity": "unverified",
-      "evidence": null
+      "evidence": "drag/RESULTS.json"
     },
     {
       "id": 48,
@@ -828,13 +881,13 @@
       "local_task": 1,
       "source": "miniwob/html/miniwob/drag-circle.html",
       "source_blob_sha": "d58e4f80cf69c1886d2b52af6883730b88dd16a7",
-      "behavior": "pending",
-      "generator": "pending",
-      "public_adapter": "pending",
-      "browser_conformance": "pending",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-normalized-pointer-state-reward",
       "training": "pending",
       "full_parity": "unverified",
-      "evidence": null
+      "evidence": "drag/RESULTS.json"
     },
     {
       "id": 49,
@@ -843,13 +896,13 @@
       "local_task": 2,
       "source": "miniwob/html/miniwob/drag-cube.html",
       "source_blob_sha": "4bd0ade855fa541b5127e8e83489f77d8725ca42",
-      "behavior": "pending",
-      "generator": "pending",
-      "public_adapter": "pending",
-      "browser_conformance": "pending",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-normalized-pointer-state-reward",
       "training": "pending",
       "full_parity": "unverified",
-      "evidence": null
+      "evidence": "drag/RESULTS.json"
     },
     {
       "id": 50,
@@ -858,13 +911,13 @@
       "local_task": 3,
       "source": "miniwob/html/miniwob/drag-items.html",
       "source_blob_sha": "95dd7d015e2dc17d0e5afcf91309e3b49a9be2f1",
-      "behavior": "pending",
-      "generator": "pending",
-      "public_adapter": "pending",
-      "browser_conformance": "pending",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-normalized-pointer-state-reward",
       "training": "pending",
       "full_parity": "unverified",
-      "evidence": null
+      "evidence": "drag/RESULTS.json"
     },
     {
       "id": 51,
@@ -873,13 +926,13 @@
       "local_task": 4,
       "source": "miniwob/html/miniwob/drag-items-grid.html",
       "source_blob_sha": "a562099f3e375cc86219ef2db5a50b5a9a91266e",
-      "behavior": "pending",
-      "generator": "pending",
-      "public_adapter": "pending",
-      "browser_conformance": "pending",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-normalized-pointer-state-reward",
       "training": "pending",
       "full_parity": "unverified",
-      "evidence": null
+      "evidence": "drag/RESULTS.json"
     },
     {
       "id": 52,
@@ -888,13 +941,13 @@
       "local_task": 5,
       "source": "miniwob/html/miniwob/drag-shapes.html",
       "source_blob_sha": "070a88ed46b78fe90ee5e3e98f4916cc02bd6b6f",
-      "behavior": "pending",
-      "generator": "pending",
-      "public_adapter": "pending",
-      "browser_conformance": "pending",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-normalized-pointer-state-reward",
       "training": "pending",
       "full_parity": "unverified",
-      "evidence": null
+      "evidence": "drag/RESULTS.json"
     },
     {
       "id": 53,
@@ -903,13 +956,13 @@
       "local_task": 6,
       "source": "miniwob/html/miniwob/drag-shapes-2.html",
       "source_blob_sha": "e2195a1b90603ae08811c066ae7b535a8e28d272",
-      "behavior": "pending",
-      "generator": "pending",
-      "public_adapter": "pending",
-      "browser_conformance": "pending",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-normalized-pointer-state-reward",
       "training": "pending",
       "full_parity": "unverified",
-      "evidence": null
+      "evidence": "drag/RESULTS.json"
     },
     {
       "id": 54,
@@ -918,13 +971,13 @@
       "local_task": 7,
       "source": "miniwob/html/miniwob/drag-single-shape.html",
       "source_blob_sha": "4d370e09a655aec28f492588cc3ab6fc4bdc16f3",
-      "behavior": "pending",
-      "generator": "pending",
-      "public_adapter": "pending",
-      "browser_conformance": "pending",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-normalized-pointer-state-reward",
       "training": "pending",
       "full_parity": "unverified",
-      "evidence": null
+      "evidence": "drag/RESULTS.json"
     },
     {
       "id": 55,
@@ -933,13 +986,13 @@
       "local_task": 8,
       "source": "miniwob/html/miniwob/drag-sort-numbers.html",
       "source_blob_sha": "8bf5709b791d8aba9c1b969e92ec9f70584f0631",
-      "behavior": "pending",
-      "generator": "pending",
-      "public_adapter": "pending",
-      "browser_conformance": "pending",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-normalized-pointer-state-reward",
       "training": "pending",
       "full_parity": "unverified",
-      "evidence": null
+      "evidence": "drag/RESULTS.json"
     },
     {
       "id": 56,
@@ -948,13 +1001,13 @@
       "local_task": 0,
       "source": "miniwob/html/miniwob/draw-circle.html",
       "source_blob_sha": "c502ba78dd88c4128a93f7ea3be9da792258259c",
-      "behavior": "pending",
-      "generator": "pending",
-      "public_adapter": "pending",
-      "browser_conformance": "pending",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-pointer-stroke-D3-bounds-reward",
       "training": "pending",
       "full_parity": "unverified",
-      "evidence": null
+      "evidence": "drawing/RESULTS.json"
     },
     {
       "id": 57,
@@ -963,13 +1016,13 @@
       "local_task": 1,
       "source": "miniwob/html/miniwob/draw-line.html",
       "source_blob_sha": "eb9352bed52420a44547cebea1f0b5c0eb6adf63",
-      "behavior": "pending",
-      "generator": "pending",
-      "public_adapter": "pending",
-      "browser_conformance": "pending",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-pointer-stroke-D3-bounds-reward",
       "training": "pending",
       "full_parity": "unverified",
-      "evidence": null
+      "evidence": "drawing/RESULTS.json"
     },
     {
       "id": 58,
@@ -978,13 +1031,14 @@
       "local_task": 9,
       "source": "miniwob/html/miniwob/email-inbox.html",
       "source_blob_sha": "c25ce009bdaf4c3062f0599cc5c6e1b60f9e59d0",
-      "behavior": "pending",
-      "generator": "pending",
-      "public_adapter": "pending",
-      "browser_conformance": "pending",
-      "training": "pending",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-cdp-auto-scroll-screen-text-reward",
+      "training": "ppo-native-and-original-page-evaluated",
       "full_parity": "unverified",
-      "evidence": null
+      "evidence": "email/RESULTS.json",
+      "training_evidence": "../../webnav_email/RESULTS.json"
     },
     {
       "id": 59,
@@ -993,13 +1047,14 @@
       "local_task": 0,
       "source": "miniwob/html/miniwob/email-inbox-delete.html",
       "source_blob_sha": "454263adf770695487757fab4318abc0ff7017b8",
-      "behavior": "pending",
-      "generator": "pending",
-      "public_adapter": "pending",
-      "browser_conformance": "pending",
-      "training": "pending",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-cdp-auto-scroll-screen-text-reward",
+      "training": "ppo-native-and-original-page-evaluated",
       "full_parity": "unverified",
-      "evidence": null
+      "evidence": "email/RESULTS.json",
+      "training_evidence": "../../webnav_email/RESULTS.json"
     },
     {
       "id": 60,
@@ -1008,13 +1063,14 @@
       "local_task": 3,
       "source": "miniwob/html/miniwob/email-inbox-forward.html",
       "source_blob_sha": "44a49631bd80eec8db9c9c245dda2cd3d8d51a3b",
-      "behavior": "pending",
-      "generator": "pending",
-      "public_adapter": "pending",
-      "browser_conformance": "pending",
-      "training": "pending",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-cdp-auto-scroll-screen-text-reward",
+      "training": "ppo-native-and-original-page-evaluated",
       "full_parity": "unverified",
-      "evidence": null
+      "evidence": "email/RESULTS.json",
+      "training_evidence": "../../webnav_email/RESULTS.json"
     },
     {
       "id": 61,
@@ -1023,13 +1079,14 @@
       "local_task": 2,
       "source": "miniwob/html/miniwob/email-inbox-forward-nl.html",
       "source_blob_sha": "d6ecc0b3b0e5077ad328b65c2ba694303fb9d9c1",
-      "behavior": "pending",
-      "generator": "pending",
-      "public_adapter": "pending",
-      "browser_conformance": "pending",
-      "training": "pending",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-cdp-auto-scroll-screen-text-reward",
+      "training": "ppo-native-and-original-page-evaluated",
       "full_parity": "unverified",
-      "evidence": null
+      "evidence": "email/RESULTS.json",
+      "training_evidence": "../../webnav_email/RESULTS.json"
     },
     {
       "id": 62,
@@ -1038,13 +1095,14 @@
       "local_task": 1,
       "source": "miniwob/html/miniwob/email-inbox-forward-nl-turk.html",
       "source_blob_sha": "5f5f230a5a657303d1dcea592f395abb1e684919",
-      "behavior": "pending",
-      "generator": "pending",
-      "public_adapter": "pending",
-      "browser_conformance": "pending",
-      "training": "pending",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-cdp-auto-scroll-screen-text-reward",
+      "training": "ppo-native-and-original-page-evaluated",
       "full_parity": "unverified",
-      "evidence": null
+      "evidence": "email/RESULTS.json",
+      "training_evidence": "../../webnav_email/RESULTS.json"
     },
     {
       "id": 63,
@@ -1053,13 +1111,14 @@
       "local_task": 4,
       "source": "miniwob/html/miniwob/email-inbox-important.html",
       "source_blob_sha": "d09f61e2bc04f49f09dc204cbd3ecd2b3d55133b",
-      "behavior": "pending",
-      "generator": "pending",
-      "public_adapter": "pending",
-      "browser_conformance": "pending",
-      "training": "pending",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-cdp-auto-scroll-screen-text-reward",
+      "training": "ppo-native-and-original-page-evaluated",
       "full_parity": "unverified",
-      "evidence": null
+      "evidence": "email/RESULTS.json",
+      "training_evidence": "../../webnav_email/RESULTS.json"
     },
     {
       "id": 64,
@@ -1068,13 +1127,14 @@
       "local_task": 5,
       "source": "miniwob/html/miniwob/email-inbox-nl-turk.html",
       "source_blob_sha": "0be64f52d57eab1759769ccc0be948d73db7e55f",
-      "behavior": "pending",
-      "generator": "pending",
-      "public_adapter": "pending",
-      "browser_conformance": "pending",
-      "training": "pending",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-cdp-auto-scroll-screen-text-reward",
+      "training": "ppo-native-and-original-page-evaluated",
       "full_parity": "unverified",
-      "evidence": null
+      "evidence": "email/RESULTS.json",
+      "training_evidence": "../../webnav_email/RESULTS.json"
     },
     {
       "id": 65,
@@ -1083,13 +1143,14 @@
       "local_task": 6,
       "source": "miniwob/html/miniwob/email-inbox-noscroll.html",
       "source_blob_sha": "ff918de28ea4036a62b6083f9059dcfa178447a5",
-      "behavior": "pending",
-      "generator": "pending",
-      "public_adapter": "pending",
-      "browser_conformance": "pending",
-      "training": "pending",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-cdp-auto-scroll-screen-text-reward",
+      "training": "ppo-native-and-original-page-evaluated",
       "full_parity": "unverified",
-      "evidence": null
+      "evidence": "email/RESULTS.json",
+      "training_evidence": "../../webnav_email/RESULTS.json"
     },
     {
       "id": 66,
@@ -1098,13 +1159,14 @@
       "local_task": 7,
       "source": "miniwob/html/miniwob/email-inbox-reply.html",
       "source_blob_sha": "8449ab3a7e17844528a1ec5dd5d40cd923b26a98",
-      "behavior": "pending",
-      "generator": "pending",
-      "public_adapter": "pending",
-      "browser_conformance": "pending",
-      "training": "pending",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-cdp-auto-scroll-screen-text-reward",
+      "training": "ppo-native-and-original-page-evaluated",
       "full_parity": "unverified",
-      "evidence": null
+      "evidence": "email/RESULTS.json",
+      "training_evidence": "../../webnav_email/RESULTS.json"
     },
     {
       "id": 67,
@@ -1113,28 +1175,29 @@
       "local_task": 8,
       "source": "miniwob/html/miniwob/email-inbox-star-reply.html",
       "source_blob_sha": "4737f57dfe8ab57949b638b080d7aa52dffa7585",
-      "behavior": "pending",
-      "generator": "pending",
-      "public_adapter": "pending",
-      "browser_conformance": "pending",
-      "training": "pending",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-cdp-auto-scroll-screen-text-reward",
+      "training": "ppo-native-and-original-page-evaluated",
       "full_parity": "unverified",
-      "evidence": null
+      "evidence": "email/RESULTS.json",
+      "training_evidence": "../../webnav_email/RESULTS.json"
     },
     {
       "id": 68,
       "name": "enter-date",
-      "family": "forms",
-      "local_task": 11,
+      "family": "typed_inputs",
+      "local_task": 0,
       "source": "miniwob/html/miniwob/enter-date.html",
       "source_blob_sha": "ed11dcf028720ad82678b0c2d4535c086bc271a0",
-      "behavior": "pending",
-      "generator": "pending",
-      "public_adapter": "pending",
-      "browser_conformance": "pending",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-native-values-unicode-buttons-reward",
       "training": "pending",
       "full_parity": "unverified",
-      "evidence": null
+      "evidence": "typed_inputs/RESULTS.json"
     },
     {
       "id": 69,
@@ -1147,9 +1210,10 @@
       "generator": "bounded-cpu-bend",
       "public_adapter": "family-v2",
       "browser_conformance": "matched-original-cdp-text-clipboard-popup",
-      "training": "pending",
+      "training": "webnav_forms",
       "full_parity": "unverified",
-      "evidence": "forms/RESULTS.json"
+      "evidence": "forms/RESULTS.json",
+      "training_evidence": "../../webnav_forms/RESULTS.md"
     },
     {
       "id": 70,
@@ -1158,13 +1222,15 @@
       "local_task": 8,
       "source": "miniwob/html/miniwob/enter-text.html",
       "source_blob_sha": "f2821adad6284bc853f680920691c0034bbb2611",
-      "behavior": "legacy-bounded",
-      "generator": "legacy-bounded",
-      "public_adapter": "legacy-bounded",
-      "browser_conformance": "legacy-preset",
-      "training": "webnav_dom_v1",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-public-actions-state-reward",
+      "training": "pending",
       "full_parity": "unverified",
-      "evidence": "../TRAINING_RESULTS.json"
+      "evidence": "forms/RESULTS.json",
+      "legacy_training": "webnav_dom_v1",
+      "legacy_evidence": "../TRAINING_RESULTS.json"
     },
     {
       "id": 71,
@@ -1177,9 +1243,10 @@
       "generator": "bounded-cpu-bend",
       "public_adapter": "family-v2",
       "browser_conformance": "matched-original-cdp-text-clipboard-popup",
-      "training": "pending",
+      "training": "webnav_forms",
       "full_parity": "unverified",
-      "evidence": "forms/RESULTS.json"
+      "evidence": "forms/RESULTS.json",
+      "training_evidence": "../../webnav_forms/RESULTS.md"
     },
     {
       "id": 72,
@@ -1192,24 +1259,25 @@
       "generator": "bounded-cpu-bend",
       "public_adapter": "family-v2",
       "browser_conformance": "matched-original-cdp-text-clipboard-popup",
-      "training": "pending",
+      "training": "webnav_forms",
       "full_parity": "unverified",
-      "evidence": "forms/RESULTS.json"
+      "evidence": "forms/RESULTS.json",
+      "training_evidence": "../../webnav_forms/RESULTS.md"
     },
     {
       "id": 73,
       "name": "enter-time",
-      "family": "forms",
-      "local_task": 12,
+      "family": "typed_inputs",
+      "local_task": 1,
       "source": "miniwob/html/miniwob/enter-time.html",
       "source_blob_sha": "fcf8ba05dedd6526c3d78d5a63beb6aaf0723ec1",
-      "behavior": "pending",
-      "generator": "pending",
-      "public_adapter": "pending",
-      "browser_conformance": "pending",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-native-values-unicode-buttons-reward",
       "training": "pending",
       "full_parity": "unverified",
-      "evidence": null
+      "evidence": "typed_inputs/RESULTS.json"
     },
     {
       "id": 74,
@@ -1222,9 +1290,10 @@
       "generator": "bounded-cpu-bend",
       "public_adapter": "family-v2",
       "browser_conformance": "matched-original-controls-feedback-reward",
-      "training": "pending",
+      "training": "ppo-native-and-original-page-evaluated",
       "full_parity": "unverified",
-      "evidence": "numeric/RESULTS.json"
+      "evidence": "numeric/RESULTS.json",
+      "training_evidence": "../../webnav_numeric/RESULTS.json"
     },
     {
       "id": 75,
@@ -1233,13 +1302,13 @@
       "local_task": 2,
       "source": "miniwob/html/miniwob/find-midpoint.html",
       "source_blob_sha": "a3e37a4b71a0b9813c05defbca9d60840d98d8b0",
-      "behavior": "pending",
-      "generator": "pending",
-      "public_adapter": "pending",
-      "browser_conformance": "pending",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-scene-click-quantization-geometry-reward",
       "training": "pending",
       "full_parity": "unverified",
-      "evidence": null
+      "evidence": "geometry/RESULTS.json"
     },
     {
       "id": 76,
@@ -1248,13 +1317,13 @@
       "local_task": 0,
       "source": "miniwob/html/miniwob/find-word.html",
       "source_blob_sha": "67191c7d5c09dc31a607118387f7c58bea215fce",
-      "behavior": "pending",
-      "generator": "pending",
-      "public_adapter": "pending",
-      "browser_conformance": "pending",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-selection-format-terminal-state-reward",
       "training": "pending",
       "full_parity": "unverified",
-      "evidence": null
+      "evidence": "editing/RESULTS.json"
     },
     {
       "id": 77,
@@ -1263,13 +1332,15 @@
       "local_task": 12,
       "source": "miniwob/html/miniwob/focus-text.html",
       "source_blob_sha": "d60cc6b414b6f285e32c0e2285f250085ce387cc",
-      "behavior": "legacy-bounded",
-      "generator": "legacy-bounded",
-      "public_adapter": "legacy-bounded",
-      "browser_conformance": "legacy-preset",
-      "training": "webnav_dom_v1",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-public-actions-state-reward",
+      "training": "pending",
       "full_parity": "unverified",
-      "evidence": "../TRAINING_RESULTS.json"
+      "evidence": "click/RESULTS.json",
+      "legacy_training": "webnav_dom_v1",
+      "legacy_evidence": "../TRAINING_RESULTS.json"
     },
     {
       "id": 78,
@@ -1282,54 +1353,55 @@
       "generator": "bounded-cpu-bend",
       "public_adapter": "family-v2",
       "browser_conformance": "matched-original-control-clicks",
-      "training": "pending",
+      "training": "webnav_family",
       "full_parity": "unverified",
-      "evidence": "click/RESULTS.json"
+      "evidence": "click/RESULTS.json",
+      "training_evidence": "../../webnav_family/RESULTS.md"
     },
     {
       "id": 79,
       "name": "form-sequence",
-      "family": "workflows",
-      "local_task": 9,
+      "family": "composite_forms",
+      "local_task": 0,
       "source": "miniwob/html/miniwob/form-sequence.html",
       "source_blob_sha": "1685a8682cd187c873c5459974fe924ac2d4d629",
-      "behavior": "pending",
-      "generator": "pending",
-      "public_adapter": "pending",
-      "browser_conformance": "pending",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-normalized-widgets-state-reward",
       "training": "pending",
       "full_parity": "unverified",
-      "evidence": null
+      "evidence": "composite_forms/RESULTS.json"
     },
     {
       "id": 80,
       "name": "form-sequence-2",
-      "family": "workflows",
-      "local_task": 10,
+      "family": "composite_forms",
+      "local_task": 1,
       "source": "miniwob/html/miniwob/form-sequence-2.html",
       "source_blob_sha": "0b217e56732114d56f2c40d614489f1bc3c15b05",
-      "behavior": "pending",
-      "generator": "pending",
-      "public_adapter": "pending",
-      "browser_conformance": "pending",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-normalized-widgets-state-reward",
       "training": "pending",
       "full_parity": "unverified",
-      "evidence": null
+      "evidence": "composite_forms/RESULTS.json"
     },
     {
       "id": 81,
       "name": "form-sequence-3",
-      "family": "workflows",
-      "local_task": 11,
+      "family": "composite_forms",
+      "local_task": 2,
       "source": "miniwob/html/miniwob/form-sequence-3.html",
       "source_blob_sha": "340dca95b6a0858e8327365b1d373f79ea315088",
-      "behavior": "pending",
-      "generator": "pending",
-      "public_adapter": "pending",
-      "browser_conformance": "pending",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-normalized-widgets-state-reward",
       "training": "pending",
       "full_parity": "unverified",
-      "evidence": null
+      "evidence": "composite_forms/RESULTS.json"
     },
     {
       "id": 82,
@@ -1342,9 +1414,10 @@
       "generator": "bounded-cpu-bend",
       "public_adapter": "family-v2",
       "browser_conformance": "matched-original-controls-feedback-reward",
-      "training": "pending",
+      "training": "ppo-native-and-original-page-evaluated",
       "full_parity": "unverified",
-      "evidence": "numeric/RESULTS.json"
+      "evidence": "numeric/RESULTS.json",
+      "training_evidence": "../../webnav_numeric/RESULTS.json"
     },
     {
       "id": 83,
@@ -1353,13 +1426,13 @@
       "local_task": 3,
       "source": "miniwob/html/miniwob/grid-coordinate.html",
       "source_blob_sha": "149deea6870386df383c3038dc2b4f51aa7173da",
-      "behavior": "pending",
-      "generator": "pending",
-      "public_adapter": "pending",
-      "browser_conformance": "pending",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-scene-click-quantization-geometry-reward",
       "training": "pending",
       "full_parity": "unverified",
-      "evidence": null
+      "evidence": "geometry/RESULTS.json"
     },
     {
       "id": 84,
@@ -1372,9 +1445,10 @@
       "generator": "bounded-cpu-bend",
       "public_adapter": "family-v2",
       "browser_conformance": "matched-original-controls-feedback-reward",
-      "training": "pending",
+      "training": "ppo-native-and-original-page-evaluated",
       "full_parity": "unverified",
-      "evidence": "numeric/RESULTS.json"
+      "evidence": "numeric/RESULTS.json",
+      "training_evidence": "../../webnav_numeric/RESULTS.json"
     },
     {
       "id": 85,
@@ -1383,13 +1457,13 @@
       "local_task": 1,
       "source": "miniwob/html/miniwob/highlight-text.html",
       "source_blob_sha": "fb20a879b23b50e5a417bd5b5642198cfb94bf2a",
-      "behavior": "pending",
-      "generator": "pending",
-      "public_adapter": "pending",
-      "browser_conformance": "pending",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-selection-format-terminal-state-reward",
       "training": "pending",
       "full_parity": "unverified",
-      "evidence": null
+      "evidence": "editing/RESULTS.json"
     },
     {
       "id": 86,
@@ -1398,13 +1472,13 @@
       "local_task": 2,
       "source": "miniwob/html/miniwob/highlight-text-2.html",
       "source_blob_sha": "8f192b1650bd313a781f88bda00f58a4177fca4d",
-      "behavior": "pending",
-      "generator": "pending",
-      "public_adapter": "pending",
-      "browser_conformance": "pending",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-selection-format-terminal-state-reward",
       "training": "pending",
       "full_parity": "unverified",
-      "evidence": null
+      "evidence": "editing/RESULTS.json"
     },
     {
       "id": 87,
@@ -1417,9 +1491,10 @@
       "generator": "bounded-cpu-bend",
       "public_adapter": "family-v2",
       "browser_conformance": "matched-original-controls-feedback-reward",
-      "training": "pending",
+      "training": "ppo-native-and-original-page-evaluated",
       "full_parity": "unverified",
-      "evidence": "numeric/RESULTS.json"
+      "evidence": "numeric/RESULTS.json",
+      "training_evidence": "../../webnav_numeric/RESULTS.json"
     },
     {
       "id": 88,
@@ -1428,13 +1503,13 @@
       "local_task": 7,
       "source": "miniwob/html/miniwob/identify-shape.html",
       "source_blob_sha": "1a98674e7a04a139725b2102abfda73ea75c4ed1",
-      "behavior": "pending",
-      "generator": "pending",
-      "public_adapter": "pending",
-      "browser_conformance": "pending",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-scene-click-input-state-reward",
       "training": "pending",
       "full_parity": "unverified",
-      "evidence": null
+      "evidence": "visual/RESULTS.json"
     },
     {
       "id": 89,
@@ -1443,13 +1518,15 @@
       "local_task": 9,
       "source": "miniwob/html/miniwob/login-user.html",
       "source_blob_sha": "2261a52b40cc76dc366efac1206a9606411f0c96",
-      "behavior": "legacy-bounded",
-      "generator": "legacy-bounded",
-      "public_adapter": "legacy-bounded",
-      "browser_conformance": "legacy-preset",
-      "training": "webnav_dom_v1",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-public-actions-state-reward",
+      "training": "pending",
       "full_parity": "unverified",
-      "evidence": "../TRAINING_RESULTS.json"
+      "evidence": "forms/RESULTS.json",
+      "legacy_training": "webnav_dom_v1",
+      "legacy_evidence": "../TRAINING_RESULTS.json"
     },
     {
       "id": 90,
@@ -1462,39 +1539,40 @@
       "generator": "bounded-cpu-bend",
       "public_adapter": "family-v2",
       "browser_conformance": "matched-original-cdp-text-clipboard-popup",
-      "training": "pending",
+      "training": "webnav_forms",
       "full_parity": "unverified",
-      "evidence": "forms/RESULTS.json"
+      "evidence": "forms/RESULTS.json",
+      "training_evidence": "../../webnav_forms/RESULTS.md"
     },
     {
       "id": 91,
       "name": "multi-layouts",
-      "family": "workflows",
-      "local_task": 7,
+      "family": "composite_forms",
+      "local_task": 3,
       "source": "miniwob/html/miniwob/multi-layouts.html",
       "source_blob_sha": "4017964ad1c4b330355eeee907802955d45e1b92",
-      "behavior": "pending",
-      "generator": "pending",
-      "public_adapter": "pending",
-      "browser_conformance": "pending",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-normalized-widgets-state-reward",
       "training": "pending",
       "full_parity": "unverified",
-      "evidence": null
+      "evidence": "composite_forms/RESULTS.json"
     },
     {
       "id": 92,
       "name": "multi-orderings",
-      "family": "workflows",
-      "local_task": 8,
+      "family": "composite_forms",
+      "local_task": 4,
       "source": "miniwob/html/miniwob/multi-orderings.html",
       "source_blob_sha": "51136afed7d9016825ac804dfcaeca924e80f3b9",
-      "behavior": "pending",
-      "generator": "pending",
-      "public_adapter": "pending",
-      "browser_conformance": "pending",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-normalized-widgets-state-reward",
       "training": "pending",
       "full_parity": "unverified",
-      "evidence": null
+      "evidence": "composite_forms/RESULTS.json"
     },
     {
       "id": 93,
@@ -1503,13 +1581,15 @@
       "local_task": 0,
       "source": "miniwob/html/miniwob/navigate-tree.html",
       "source_blob_sha": "dfca9f3ed3f9d6fcd1ce9820b44e79c7e920ac12",
-      "behavior": "legacy-bounded",
-      "generator": "legacy-bounded",
-      "public_adapter": "legacy-bounded",
-      "browser_conformance": "legacy-preset",
-      "training": "webnav_dom_v1",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-public-actions-state-reward",
+      "training": "pending",
       "full_parity": "unverified",
-      "evidence": "../TRAINING_RESULTS.json"
+      "evidence": "tree/RESULTS.json",
+      "legacy_training": "webnav_dom_v1",
+      "legacy_evidence": "../TRAINING_RESULTS.json"
     },
     {
       "id": 94,
@@ -1522,9 +1602,10 @@
       "generator": "bounded-cpu-bend",
       "public_adapter": "family-v2",
       "browser_conformance": "matched-original-controls-feedback-reward",
-      "training": "pending",
+      "training": "ppo-native-and-original-page-evaluated",
       "full_parity": "unverified",
-      "evidence": "numeric/RESULTS.json"
+      "evidence": "numeric/RESULTS.json",
+      "training_evidence": "../../webnav_numeric/RESULTS.json"
     },
     {
       "id": 95,
@@ -1537,39 +1618,42 @@
       "generator": "bounded-cpu-bend",
       "public_adapter": "family-v2",
       "browser_conformance": "matched-original-controls-feedback-reward",
-      "training": "pending",
+      "training": "ppo-native-and-original-page-evaluated",
       "full_parity": "unverified",
-      "evidence": "numeric/RESULTS.json"
+      "evidence": "numeric/RESULTS.json",
+      "training_evidence": "../../webnav_numeric/RESULTS.json"
     },
     {
       "id": 96,
       "name": "order-food",
-      "family": "workflows",
-      "local_task": 3,
+      "family": "catalog",
+      "local_task": 1,
       "source": "miniwob/html/miniwob/order-food.html",
       "source_blob_sha": "4fff77fbee613f610fa8b6c10b64be39d32c971b",
-      "behavior": "pending",
-      "generator": "pending",
-      "public_adapter": "pending",
-      "browser_conformance": "pending",
-      "training": "pending",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-pagination-quantity-query-result-reward",
+      "training": "ppo-native-and-original-page-evaluated",
       "full_parity": "unverified",
-      "evidence": null
+      "evidence": "catalog/RESULTS.json",
+      "training_evidence": "../../webnav_catalog/RESULTS.json"
     },
     {
       "id": 97,
       "name": "phone-book",
-      "family": "workflows",
-      "local_task": 4,
+      "family": "catalog",
+      "local_task": 0,
       "source": "miniwob/html/miniwob/phone-book.html",
       "source_blob_sha": "5a421ca316f5aa42a62b8ebcbc7ef0e5839d3904",
-      "behavior": "pending",
-      "generator": "pending",
-      "public_adapter": "pending",
-      "browser_conformance": "pending",
-      "training": "pending",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-pagination-quantity-query-result-reward",
+      "training": "ppo-native-and-original-page-evaluated",
       "full_parity": "unverified",
-      "evidence": null
+      "evidence": "catalog/RESULTS.json",
+      "training_evidence": "../../webnav_catalog/RESULTS.json"
     },
     {
       "id": 98,
@@ -1578,13 +1662,15 @@
       "local_task": 10,
       "source": "miniwob/html/miniwob/read-table.html",
       "source_blob_sha": "cc4071bcf6552bdc8471e0f16d374bf5106a43c7",
-      "behavior": "legacy-bounded",
-      "generator": "legacy-bounded",
-      "public_adapter": "legacy-bounded",
-      "browser_conformance": "legacy-preset",
-      "training": "webnav_dom_v1",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-public-actions-state-reward",
+      "training": "pending",
       "full_parity": "unverified",
-      "evidence": "../TRAINING_RESULTS.json"
+      "evidence": "forms/RESULTS.json",
+      "legacy_training": "webnav_dom_v1",
+      "legacy_evidence": "../TRAINING_RESULTS.json"
     },
     {
       "id": 99,
@@ -1597,9 +1683,10 @@
       "generator": "bounded-cpu-bend",
       "public_adapter": "family-v2",
       "browser_conformance": "matched-original-cdp-text-clipboard-popup",
-      "training": "pending",
+      "training": "webnav_forms",
       "full_parity": "unverified",
-      "evidence": "forms/RESULTS.json"
+      "evidence": "forms/RESULTS.json",
+      "training_evidence": "../../webnav_forms/RESULTS.md"
     },
     {
       "id": 100,
@@ -1608,13 +1695,13 @@
       "local_task": 9,
       "source": "miniwob/html/miniwob/resize-textarea.html",
       "source_blob_sha": "4747e5a6dbf0e96bbbf457f0243d44f5c1ac18b8",
-      "behavior": "pending",
-      "generator": "pending",
-      "public_adapter": "pending",
-      "browser_conformance": "pending",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-normalized-pointer-state-reward",
       "training": "pending",
       "full_parity": "unverified",
-      "evidence": null
+      "evidence": "drag/RESULTS.json"
     },
     {
       "id": 101,
@@ -1623,13 +1710,13 @@
       "local_task": 4,
       "source": "miniwob/html/miniwob/right-angle.html",
       "source_blob_sha": "bb353984fe7fec139677de76f1108b3967d3b5c5",
-      "behavior": "pending",
-      "generator": "pending",
-      "public_adapter": "pending",
-      "browser_conformance": "pending",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-scene-click-quantization-geometry-reward",
       "training": "pending",
       "full_parity": "unverified",
-      "evidence": null
+      "evidence": "geometry/RESULTS.json"
     },
     {
       "id": 102,
@@ -1638,13 +1725,13 @@
       "local_task": 1,
       "source": "miniwob/html/miniwob/scroll-text.html",
       "source_blob_sha": "24541279780d4eb52d0a1d952babc60dc99d775b",
-      "behavior": "pending",
-      "generator": "pending",
-      "public_adapter": "pending",
-      "browser_conformance": "pending",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-normalized-scroll-selection-input-state-reward",
       "training": "pending",
       "full_parity": "unverified",
-      "evidence": null
+      "evidence": "scroll/RESULTS.json"
     },
     {
       "id": 103,
@@ -1653,28 +1740,29 @@
       "local_task": 2,
       "source": "miniwob/html/miniwob/scroll-text-2.html",
       "source_blob_sha": "15511b2270cb74c16b57fd70ded2d66500f2c87d",
-      "behavior": "pending",
-      "generator": "pending",
-      "public_adapter": "pending",
-      "browser_conformance": "pending",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-normalized-scroll-selection-input-state-reward",
       "training": "pending",
       "full_parity": "unverified",
-      "evidence": null
+      "evidence": "scroll/RESULTS.json"
     },
     {
       "id": 104,
       "name": "search-engine",
-      "family": "workflows",
-      "local_task": 5,
+      "family": "catalog",
+      "local_task": 2,
       "source": "miniwob/html/miniwob/search-engine.html",
       "source_blob_sha": "513170a64c08a290e89f29927fb97de6cd36e787",
-      "behavior": "pending",
-      "generator": "pending",
-      "public_adapter": "pending",
-      "browser_conformance": "pending",
-      "training": "pending",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-pagination-quantity-query-result-reward",
+      "training": "ppo-native-and-original-page-evaluated",
       "full_parity": "unverified",
-      "evidence": null
+      "evidence": "catalog/RESULTS.json",
+      "training_evidence": "../../webnav_catalog/RESULTS.json"
     },
     {
       "id": 105,
@@ -1683,13 +1771,13 @@
       "local_task": 3,
       "source": "miniwob/html/miniwob/sign-agreement.html",
       "source_blob_sha": "944143699a4a7b9b03e1ee9d174f135f1557feae",
-      "behavior": "pending",
-      "generator": "pending",
-      "public_adapter": "pending",
-      "browser_conformance": "pending",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-normalized-scroll-selection-input-state-reward",
       "training": "pending",
       "full_parity": "unverified",
-      "evidence": null
+      "evidence": "scroll/RESULTS.json"
     },
     {
       "id": 106,
@@ -1702,9 +1790,10 @@
       "generator": "bounded-cpu-bend",
       "public_adapter": "family-v2",
       "browser_conformance": "matched-original-controls-feedback-reward",
-      "training": "pending",
+      "training": "ppo-native-and-original-page-evaluated",
       "full_parity": "unverified",
-      "evidence": "numeric/RESULTS.json"
+      "evidence": "numeric/RESULTS.json",
+      "training_evidence": "../../webnav_numeric/RESULTS.json"
     },
     {
       "id": 107,
@@ -1717,9 +1806,10 @@
       "generator": "bounded-cpu-bend",
       "public_adapter": "family-v2",
       "browser_conformance": "matched-original-controls-feedback-reward",
-      "training": "pending",
+      "training": "ppo-native-and-original-page-evaluated",
       "full_parity": "unverified",
-      "evidence": "numeric/RESULTS.json"
+      "evidence": "numeric/RESULTS.json",
+      "training_evidence": "../../webnav_numeric/RESULTS.json"
     },
     {
       "id": 108,
@@ -1728,13 +1818,13 @@
       "local_task": 0,
       "source": "miniwob/html/miniwob/social-media.html",
       "source_blob_sha": "a25211632eaa5e9d92354f04bf8acf39068378d2",
-      "behavior": "pending",
-      "generator": "pending",
-      "public_adapter": "pending",
-      "browser_conformance": "pending",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-cdp-menu-toggle-state-reward",
       "training": "pending",
       "full_parity": "unverified",
-      "evidence": null
+      "evidence": "social/RESULTS.json"
     },
     {
       "id": 109,
@@ -1743,13 +1833,13 @@
       "local_task": 1,
       "source": "miniwob/html/miniwob/social-media-all.html",
       "source_blob_sha": "05b1ea9d0e957fc9669d2e7940eb743c0d7d2275",
-      "behavior": "pending",
-      "generator": "pending",
-      "public_adapter": "pending",
-      "browser_conformance": "pending",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-cdp-menu-toggle-state-reward",
       "training": "pending",
       "full_parity": "unverified",
-      "evidence": null
+      "evidence": "social/RESULTS.json"
     },
     {
       "id": 110,
@@ -1758,28 +1848,28 @@
       "local_task": 2,
       "source": "miniwob/html/miniwob/social-media-some.html",
       "source_blob_sha": "6297bde5476022f3b9aa87e04a1717f0260443df",
-      "behavior": "pending",
-      "generator": "pending",
-      "public_adapter": "pending",
-      "browser_conformance": "pending",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-cdp-menu-toggle-state-reward",
       "training": "pending",
       "full_parity": "unverified",
-      "evidence": null
+      "evidence": "social/RESULTS.json"
     },
     {
       "id": 111,
       "name": "stock-market",
-      "family": "workflows",
-      "local_task": 6,
+      "family": "market",
+      "local_task": 0,
       "source": "miniwob/html/miniwob/stock-market.html",
       "source_blob_sha": "2ca9ab60446119d7225a910f4202686161f16dc1",
-      "behavior": "pending",
-      "generator": "pending",
-      "public_adapter": "pending",
-      "browser_conformance": "pending",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-price-clock-purchase-reward",
       "training": "pending",
       "full_parity": "unverified",
-      "evidence": null
+      "evidence": "market/RESULTS.json"
     },
     {
       "id": 112,
@@ -1788,13 +1878,13 @@
       "local_task": 4,
       "source": "miniwob/html/miniwob/terminal.html",
       "source_blob_sha": "4e5087cccde52a3f9e55b4fb366268d54114f503",
-      "behavior": "pending",
-      "generator": "pending",
-      "public_adapter": "pending",
-      "browser_conformance": "pending",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-selection-format-terminal-state-reward",
       "training": "pending",
       "full_parity": "unverified",
-      "evidence": null
+      "evidence": "editing/RESULTS.json"
     },
     {
       "id": 113,
@@ -1803,13 +1893,13 @@
       "local_task": 3,
       "source": "miniwob/html/miniwob/text-editor.html",
       "source_blob_sha": "1e8596ea273c3360dd64f3b88e7ea4eed88255c5",
-      "behavior": "pending",
-      "generator": "pending",
-      "public_adapter": "pending",
-      "browser_conformance": "pending",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-selection-format-terminal-state-reward",
       "training": "pending",
       "full_parity": "unverified",
-      "evidence": null
+      "evidence": "editing/RESULTS.json"
     },
     {
       "id": 114,
@@ -1822,9 +1912,10 @@
       "generator": "bounded-cpu-bend",
       "public_adapter": "family-v2",
       "browser_conformance": "matched-original-cdp-text-clipboard-popup",
-      "training": "pending",
+      "training": "webnav_forms",
       "full_parity": "unverified",
-      "evidence": "forms/RESULTS.json"
+      "evidence": "forms/RESULTS.json",
+      "training_evidence": "../../webnav_forms/RESULTS.md"
     },
     {
       "id": 115,
@@ -1833,28 +1924,28 @@
       "local_task": 0,
       "source": "miniwob/html/miniwob/tic-tac-toe.html",
       "source_blob_sha": "24d082bcbee7250a20e42aedb822d681b471bb70",
-      "behavior": "pending",
-      "generator": "pending",
-      "public_adapter": "pending",
-      "browser_conformance": "pending",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-opponent-moves-rng-state-reward",
       "training": "pending",
       "full_parity": "unverified",
-      "evidence": null
+      "evidence": "board/RESULTS.json"
     },
     {
       "id": 116,
       "name": "unicode-test",
-      "family": "forms",
-      "local_task": 13,
+      "family": "typed_inputs",
+      "local_task": 2,
       "source": "miniwob/html/miniwob/unicode-test.html",
       "source_blob_sha": "146fdcb3ab52f7f8a7d7c23db2118011728d7e7a",
-      "behavior": "pending",
-      "generator": "pending",
-      "public_adapter": "pending",
-      "browser_conformance": "pending",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-native-values-unicode-buttons-reward",
       "training": "pending",
       "full_parity": "unverified",
-      "evidence": null
+      "evidence": "typed_inputs/RESULTS.json"
     },
     {
       "id": 117,
@@ -1863,13 +1954,13 @@
       "local_task": 1,
       "source": "miniwob/html/miniwob/use-autocomplete.html",
       "source_blob_sha": "8293aeda26947a4af16147957520285f12571927",
-      "behavior": "pending",
-      "generator": "pending",
-      "public_adapter": "pending",
-      "browser_conformance": "pending",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-text-menu-debounce-state-reward",
       "training": "pending",
       "full_parity": "unverified",
-      "evidence": null
+      "evidence": "autocomplete/RESULTS.json"
     },
     {
       "id": 118,
@@ -1878,13 +1969,15 @@
       "local_task": 0,
       "source": "miniwob/html/miniwob/use-autocomplete-nodelay.html",
       "source_blob_sha": "653b72671b013d1e87cc51d2b80285ba5ae791bc",
-      "behavior": "legacy-bounded",
-      "generator": "legacy-bounded",
-      "public_adapter": "legacy-bounded",
-      "browser_conformance": "legacy-preset",
-      "training": "webnav_dom_v1",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-text-menu-debounce-state-reward",
+      "training": "pending",
       "full_parity": "unverified",
-      "evidence": "../TRAINING_RESULTS.json"
+      "evidence": "autocomplete/RESULTS.json",
+      "legacy_training": "webnav_dom_v1",
+      "legacy_evidence": "../TRAINING_RESULTS.json"
     },
     {
       "id": 119,
@@ -1893,13 +1986,13 @@
       "local_task": 4,
       "source": "miniwob/html/miniwob/use-colorwheel.html",
       "source_blob_sha": "2294c3b715719b9a8e2c7ca2aea453f584e8de95",
-      "behavior": "pending",
-      "generator": "pending",
-      "public_adapter": "pending",
-      "browser_conformance": "pending",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-normalized-controls-valid-hex-state-reward",
       "training": "pending",
       "full_parity": "unverified",
-      "evidence": null
+      "evidence": "controls/RESULTS.json"
     },
     {
       "id": 120,
@@ -1908,13 +2001,13 @@
       "local_task": 5,
       "source": "miniwob/html/miniwob/use-colorwheel-2.html",
       "source_blob_sha": "fd841bdf16124376759ec143aeff391d592f0a76",
-      "behavior": "pending",
-      "generator": "pending",
-      "public_adapter": "pending",
-      "browser_conformance": "pending",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-normalized-controls-valid-hex-state-reward",
       "training": "pending",
       "full_parity": "unverified",
-      "evidence": null
+      "evidence": "controls/RESULTS.json"
     },
     {
       "id": 121,
@@ -1923,13 +2016,13 @@
       "local_task": 1,
       "source": "miniwob/html/miniwob/use-slider.html",
       "source_blob_sha": "07ad6f41c60ea28b0a704ad5d9f238e17f2f0779",
-      "behavior": "pending",
-      "generator": "pending",
-      "public_adapter": "pending",
-      "browser_conformance": "pending",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-normalized-controls-valid-hex-state-reward",
       "training": "pending",
       "full_parity": "unverified",
-      "evidence": null
+      "evidence": "controls/RESULTS.json"
     },
     {
       "id": 122,
@@ -1938,13 +2031,13 @@
       "local_task": 2,
       "source": "miniwob/html/miniwob/use-slider-2.html",
       "source_blob_sha": "c356dd71dba8d5da15f84e37096a6e95450a4e0f",
-      "behavior": "pending",
-      "generator": "pending",
-      "public_adapter": "pending",
-      "browser_conformance": "pending",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-normalized-controls-valid-hex-state-reward",
       "training": "pending",
       "full_parity": "unverified",
-      "evidence": null
+      "evidence": "controls/RESULTS.json"
     },
     {
       "id": 123,
@@ -1953,13 +2046,13 @@
       "local_task": 3,
       "source": "miniwob/html/miniwob/use-spinner.html",
       "source_blob_sha": "8817f023e7012603767cc2223c6141702f8ee1a1",
-      "behavior": "pending",
-      "generator": "pending",
-      "public_adapter": "pending",
-      "browser_conformance": "pending",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-normalized-controls-valid-hex-state-reward",
       "training": "pending",
       "full_parity": "unverified",
-      "evidence": null
+      "evidence": "controls/RESULTS.json"
     },
     {
       "id": 124,
@@ -1968,13 +2061,13 @@
       "local_task": 8,
       "source": "miniwob/html/miniwob/visual-addition.html",
       "source_blob_sha": "c4ce2ed7d779f573ae68f4f9b1f6005270e76727",
-      "behavior": "pending",
-      "generator": "pending",
-      "public_adapter": "pending",
-      "browser_conformance": "pending",
+      "behavior": "checked",
+      "generator": "bounded-cpu-bend",
+      "public_adapter": "family-v2",
+      "browser_conformance": "matched-original-scene-click-input-state-reward",
       "training": "pending",
       "full_parity": "unverified",
-      "evidence": null
+      "evidence": "visual/RESULTS.json"
     }
   ]
 }

@@ -7,6 +7,8 @@ type Mode is Data:
   Direct{}
   Focus{}
   Form{}
+  Options{}
+  Sequence{}
 
 type State is Data:
   S{mode: Mode, nodes: +List<W.Node>, focus: U32, outcome: W.Outcome}
@@ -14,6 +16,7 @@ type State is Data:
 def result(mode: Mode, n: W.Node, nodes: +List<W.Node>) -> W.Outcome:
   match mode:
     case Form{}: W.clicked(W.Checkboxes{}, n, nodes)
+    case Options{}: W.clicked(W.Options{}, n, nodes)
     case _: W.binary(W.goal(n))
 
 def focus(mode: Mode, index: U32) -> U32:
@@ -21,13 +24,22 @@ def focus(mode: Mode, index: U32) -> U32:
     case Focus{}: 0
     case _: (index + 1 : U32)
 
+# Both clicks are recorded, even when the first was wrong. The public focus
+# remembers the first clicked button while the sequence is still running.
+def click_result(mode: Mode, n: W.Node, nodes: +List<W.Node>, +previous: U32, index: U32) -> W.Outcome:
+  match mode:
+    case Sequence{}:
+      Bool.pick(W.Outcome, U32.is_eq(previous, 0), W.Running{},
+        W.binary(U32.is_eq(previous, 1) && U32.is_eq(index, 1)))
+    case _: result(mode, n, nodes)
+
 def active(valid: Bool, +mode: Mode, +nodes: +List<W.Node>, old_focus: U32, +index: U32) -> State:
   match valid:
     case False{}: S{mode, nodes, old_focus, W.Running{}}
     case True{}:
       +i = U32.to_nat(index)
       +n = W.at(nodes, i)
-      S{mode, W.change(n, nodes, i), focus(mode, index), result(mode, n, nodes)}
+      S{mode, W.change(n, nodes, i), focus(mode, index), click_result(mode, n, nodes, old_focus, index)}
 
 def click(s: State, +index: U32) -> State:
   match s:

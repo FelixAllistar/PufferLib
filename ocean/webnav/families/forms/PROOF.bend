@@ -20,3 +20,15 @@ def L.popup_cancel_restores_form(kind, fields, focus, clipboard, mode, seen):
 
 def L.popup_ok_fails(kind, fields, focus, clipboard, mode, seen):
   {==}
+
+def L.legacy_text_exact():
+  {==}
+
+def L.legacy_text_is_case_sensitive():
+  {==}
+
+def L.login_requires_both_credentials():
+  {==}
+
+def L.table_value_exact():
+  {==}

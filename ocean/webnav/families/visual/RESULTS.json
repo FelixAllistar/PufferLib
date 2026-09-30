@@ -1,0 +1,87 @@
+{
+  "date": "2026-09-29",
+  "reference_commit": "33c3b4ddef8c6eb67c57a29663d844b1eda7e614",
+  "compiler": "stock Bend 2.0.6 CPU; serialized <=6 GiB cgroup; no swap",
+  "laws": 26,
+  "native": {
+    "status": "PASS",
+    "color_cases": 32,
+    "pie_cases": 64,
+    "shade_cases": 32,
+    "shape_canvas_addition_cases": 320,
+    "generated_public_cases": 144,
+    "checks": "Independent success/wrong/timeout outcomes; zero counts and exact decimal spelling; dirty versus clean reset; private goal projection independence"
+  },
+  "browser": {
+    "status": "PASS",
+    "episodes": 180,
+    "actions": 307,
+    "scripted_successes": 89,
+    "preset": "Original seeded instances imported only at reset, controlled clock, source click handlers; actual CDP input/submit for addition; settled pie animation; wrong/timeout cases included"
+  },
+  "public_scripted": {
+    "status": "PASS",
+    "episodes": 9000,
+    "successes": 9000,
+    "actions": 22997,
+    "controller": "WFView-only scripted controller, not learned RL"
+  },
+  "limits": [
+    "Explicit public scene descriptors for SVG/CSS/canvas/blocks, not general DOM/AX or pixel encoder",
+    "Independent seeded generators; canvas generator fixed rotation; exact source distributions unverified",
+    "Settled pie animation preset; intermediate hit testing and pixel geometry parity unverified",
+    "Visual addition input bounded to 64 printable ASCII bytes",
+    "No learned policy adapter"
+  ],
+  "full_parity": "unverified",
+  "commands": [
+    "make -f ocean/webnav/families/Makefile browser FAMILY=visual EPISODES=20",
+    "make -f ocean/webnav/families/Makefile public-check FAMILY=visual EPISODES=1000"
+  ],
+  "build_cache": {
+    "proof": "0f32ac74a90cf9b6750d19e0e4777e7e396e4e9406859388278dbb5193652e85",
+    "runtime": "bdfc6b917022e2bb780e0002991279b02a049041cb2f7e4d05f8cc8e4d9fa47e"
+  },
+  "source_sha256": {
+    "AdditionGenerate.bend": "a00788af1328e67adff3299f42944a9a15827e0d6bffaee4f04366ddcf42e8f9",
+    "AdditionLAWS.bend": "0e9e13d4576ac0b391b904ff19e15b0ca6619169032e2689cf49a22938d062c7",
+    "AdditionModel.bend": "90665228643d5a78875600f97bb2e551ef20395e1704721f709a160e47329402",
+    "AdditionPROOF.bend": "fc23eca09a74d923f9bf99b358ef590cbded4476b87482d52ef57e0ba6dc1f66",
+    "AdditionWire.bend": "d5e3a480dcdbcf08fcb51e73ffe155ba405215011cd02713cdeecfcbec444429",
+    "ChoiceGenerate.bend": "ce5f90671eb57ffb92ddcdd71e01bebd8b5d8a85a04dfda10891443787aed16e",
+    "ChoiceLAWS.bend": "bfa23c804516542d233bbb326649abb24d4f3f143c43f49cfa490eddfff93e4c",
+    "ChoiceModel.bend": "0c4d9309151258ad1c3cd1ba668d3374b3967c3acf421d68318b7e6ede153231",
+    "ChoicePROOF.bend": "6648a3e366ca489755cda2c4078921492eaa93d91e9c8d2ae14e7b07edf2deaa",
+    "ChoiceWire.bend": "951a6c9d6bf993a96c821c198226cbb17ea650a66a026e11ece338e449586ae7",
+    "Generate.bend": "b5804b6e3a908b412c22350e66756d151fe60281c01e07020c4a0f06fd4869b0",
+    "LAWS.bend": "fab3deb6eb355671553026f28f3767668ab7ca2ae020cba4036943ec82722166",
+    "Main.bend": "cc1ad0110b16cd3e72ed9c1c2cd90fbd93be366d25d3e3ef9d7e3bd1f7be1c3f",
+    "Model.bend": "9ca94f017b47c20638da79af6665bf34c4771e35bb1c20df86043e3404df8b0c",
+    "PROOF.bend": "01d6ee92295fed6361555e56c06423dee04627e58af0bceddd16eb55e6e02f52",
+    "PieGenerate.bend": "06b09febac50816dc6547da1fed21f38cff43c4541209bb82eb41ba917ce0f3d",
+    "PieLAWS.bend": "f84c36095f8aade6f2596ab6d6dec3ea417aaf0cfcf61f0a7e418589b683033c",
+    "PieModel.bend": "bfcb1c8b1b50916a8aa94f1b41f4d009c8c387b7da76efa55133e119674480fc",
+    "PiePROOF.bend": "3b7c0db6a024dc49f6ac15ee74816db0b909bea77a987bc6c9ff9b709ad376e5",
+    "PieWire.bend": "a6fe6e93f7d00b7928e1bb44799e2a29bb8574a6f917190ca4127bb24d125788",
+    "ShadesGenerate.bend": "bfda01bfc2b857c462e4ae2532c3cf84485d65c3dfc6b9c83bf457e6f6674df3",
+    "ShadesLAWS.bend": "d6fa3b136bd584bfb7aaf07c44d2a636f7005454aa7f8933739ed1deb7980b9b",
+    "ShadesModel.bend": "f8f45d8788585873a608a7b14550dfe69edf8bcd10203b9a4226deecf7fd6f36",
+    "ShadesPROOF.bend": "1d5bd4fac382e8a1aa8b0ce2a75cf48f43135db61d6a57d169f783ac7a010e56",
+    "ShadesWire.bend": "0e625864204cbb0b2543d272e08d5cfae9552f66e7d6ad800d5a248ed3ea0e1d",
+    "ShapeGenerate.bend": "420b0cf0ff568f4e23894ad10179783305887ea6d04b604529a2362ba685443e",
+    "ShapeLAWS.bend": "7b6caa37c128c6ddcb80afd5ee13e828cbe9b5be7a5bfffb9739bb151cfdd96e",
+    "ShapeModel.bend": "ee9f927c2ea6008db9ad8ef7a211dec9b0f5282dc2f40ac45b885fabdf56d413",
+    "ShapePROOF.bend": "11ad75d0895bc511e638a2979011049d08513ee05db731c9ea86dbce85525a0a",
+    "ShapeWire.bend": "ff9742458091c8520737abd0088b674e5596ad98cfbf4f14f81665e2ca37fa8c",
+    "Wire.bend": "cef546b06909752dfa233ea7fecf19f32d2eb189cdb6c9fa7469420f5cd77205",
+    "bridge.c": "e5ff54c622e10d3f39c84f9043e265051107022ce45c8c171b12c13e7e496c9d",
+    "browser.js": "637d844f626e4a67e07173ade58236a089a2e85eb53d5a1375de87ce5d7bf388",
+    "browser_oracle.c": "8ce005a59ecb82d92974b10fbc1d412a95701cb953fa8ef5cf3cb174d0cf64e6",
+    "family_api.c": "3a7696bf9facd8135dbaa48c797a4704eb3f1d30e87475fdc0f1228096561f39",
+    "public_controller.h": "c4786e58c2dde0b3fac772e4fffbe1deccea5a6c94941d9f5aa26e56450814a9",
+    "test_visual.c": "b6fcebe7ed829fe5816d18012754405ed31d060ba172b1a11630c1ccb982c9cd",
+    "test_visual_extra.c": "8c941d480fdc56a1390310f4491439aa74729766bc33c3145ff497ca42673be7",
+    "test_visual_new.c": "e905596b8f229705baa08dfd6eb4376d31119e98eb045022e02eb2fbe583bdbc",
+    "test_visual_public.c": "2487f5fb2d7c59c4a3760df632c2148781af26016b83cac14e0b627b5c5d0955"
+  }
+}

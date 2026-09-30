@@ -57,8 +57,12 @@
       0.25
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": -1,
     "local_repair_hp_per_s": 0.0,
-    "remote_repair_hp_per_s": 0.0
+    "remote_repair_layer": -1,
+    "remote_repair_hp_per_s": 0.0,
+    "remote_repair_optimal_m": 0.0,
+    "remote_repair_falloff_m": 0.0
   },
   {
     "name": "Drifter Assault Battleship",
@@ -118,8 +122,12 @@
       0.25
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": -1,
     "local_repair_hp_per_s": 0.0,
-    "remote_repair_hp_per_s": 0.0
+    "remote_repair_layer": -1,
+    "remote_repair_hp_per_s": 0.0,
+    "remote_repair_optimal_m": 0.0,
+    "remote_repair_falloff_m": 0.0
   },
   {
     "name": "Drifter Command Battleship",
@@ -179,8 +187,12 @@
       0.25
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": -1,
     "local_repair_hp_per_s": 0.0,
-    "remote_repair_hp_per_s": 0.0
+    "remote_repair_layer": -1,
+    "remote_repair_hp_per_s": 0.0,
+    "remote_repair_optimal_m": 0.0,
+    "remote_repair_falloff_m": 0.0
   },
   {
     "name": "Drifter Frontline Battleship",
@@ -240,8 +252,12 @@
       0.25
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": -1,
     "local_repair_hp_per_s": 0.0,
-    "remote_repair_hp_per_s": 0.0
+    "remote_repair_layer": -1,
+    "remote_repair_hp_per_s": 0.0,
+    "remote_repair_optimal_m": 0.0,
+    "remote_repair_falloff_m": 0.0
   },
   {
     "name": "Drifter Rearguard Battleship",
@@ -301,8 +317,12 @@
       0.25
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": -1,
     "local_repair_hp_per_s": 0.0,
-    "remote_repair_hp_per_s": 0.0
+    "remote_repair_layer": -1,
+    "remote_repair_hp_per_s": 0.0,
+    "remote_repair_optimal_m": 0.0,
+    "remote_repair_falloff_m": 0.0
   },
   {
     "name": "Drifter Vanguard Battleship",
@@ -362,8 +382,12 @@
       0.25
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": -1,
     "local_repair_hp_per_s": 0.0,
-    "remote_repair_hp_per_s": 0.0
+    "remote_repair_layer": -1,
+    "remote_repair_hp_per_s": 0.0,
+    "remote_repair_optimal_m": 0.0,
+    "remote_repair_falloff_m": 0.0
   },
   {
     "name": "Drifter Entanglement Cruiser",
@@ -423,8 +447,12 @@
       0.25
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": -1,
     "local_repair_hp_per_s": 0.0,
-    "remote_repair_hp_per_s": 0.0
+    "remote_repair_layer": -1,
+    "remote_repair_hp_per_s": 0.0,
+    "remote_repair_optimal_m": 0.0,
+    "remote_repair_falloff_m": 0.0
   },
   {
     "name": "Drifter Nullwarp Cruiser",
@@ -484,8 +512,12 @@
       0.25
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": -1,
     "local_repair_hp_per_s": 0.0,
-    "remote_repair_hp_per_s": 0.0
+    "remote_repair_layer": -1,
+    "remote_repair_hp_per_s": 0.0,
+    "remote_repair_optimal_m": 0.0,
+    "remote_repair_falloff_m": 0.0
   },
   {
     "name": "Drifter Nullcharge Cruiser",
@@ -545,8 +577,12 @@
       0.25
     ],
     "neutralizer_gj_per_s": 15.0,
+    "local_repair_layer": -1,
     "local_repair_hp_per_s": 0.0,
-    "remote_repair_hp_per_s": 0.0
+    "remote_repair_layer": -1,
+    "remote_repair_hp_per_s": 0.0,
+    "remote_repair_optimal_m": 0.0,
+    "remote_repair_falloff_m": 0.0
   },
   {
     "name": "Devoted Fisher",
@@ -606,8 +642,12 @@
       0.0
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": 0,
     "local_repair_hp_per_s": 12.5,
-    "remote_repair_hp_per_s": 0.0
+    "remote_repair_layer": -1,
+    "remote_repair_hp_per_s": 0.0,
+    "remote_repair_optimal_m": 0.0,
+    "remote_repair_falloff_m": 0.0
   },
   {
     "name": "Devoted Herald",
@@ -667,8 +707,12 @@
       0.0
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": 0,
     "local_repair_hp_per_s": 12.5,
-    "remote_repair_hp_per_s": 0.0
+    "remote_repair_layer": -1,
+    "remote_repair_hp_per_s": 0.0,
+    "remote_repair_optimal_m": 0.0,
+    "remote_repair_falloff_m": 0.0
   },
   {
     "name": "Devoted Hunter",
@@ -728,8 +772,12 @@
       0.0
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": 0,
     "local_repair_hp_per_s": 12.5,
-    "remote_repair_hp_per_s": 0.0
+    "remote_repair_layer": -1,
+    "remote_repair_hp_per_s": 0.0,
+    "remote_repair_optimal_m": 0.0,
+    "remote_repair_falloff_m": 0.0
   },
   {
     "name": "Devoted Knight",
@@ -789,8 +837,12 @@
       0.0
     ],
     "neutralizer_gj_per_s": 16.0,
+    "local_repair_layer": 0,
     "local_repair_hp_per_s": 26.0,
-    "remote_repair_hp_per_s": 0.0
+    "remote_repair_layer": -1,
+    "remote_repair_hp_per_s": 0.0,
+    "remote_repair_optimal_m": 0.0,
+    "remote_repair_falloff_m": 0.0
   },
   {
     "name": "Devoted Lookout",
@@ -850,8 +902,12 @@
       0.0
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": 0,
     "local_repair_hp_per_s": 12.5,
-    "remote_repair_hp_per_s": 0.0
+    "remote_repair_layer": -1,
+    "remote_repair_hp_per_s": 0.0,
+    "remote_repair_optimal_m": 0.0,
+    "remote_repair_falloff_m": 0.0
   },
   {
     "name": "Devoted Priest",
@@ -911,8 +967,12 @@
       0.0
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": 0,
     "local_repair_hp_per_s": 12.5,
-    "remote_repair_hp_per_s": 16.666666666666668
+    "remote_repair_layer": 0,
+    "remote_repair_hp_per_s": 16.666666666666668,
+    "remote_repair_optimal_m": 13000.0,
+    "remote_repair_falloff_m": 4800.0
   },
   {
     "name": "Devoted Smith",
@@ -972,8 +1032,12 @@
       0.0
     ],
     "neutralizer_gj_per_s": 12.0,
+    "local_repair_layer": 0,
     "local_repair_hp_per_s": 12.5,
-    "remote_repair_hp_per_s": 0.0
+    "remote_repair_layer": -1,
+    "remote_repair_hp_per_s": 0.0,
+    "remote_repair_optimal_m": 0.0,
+    "remote_repair_falloff_m": 0.0
   },
   {
     "name": "Devoted Torchbearer",
@@ -1033,8 +1097,12 @@
       0.0
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": 0,
     "local_repair_hp_per_s": 12.5,
-    "remote_repair_hp_per_s": 0.0
+    "remote_repair_layer": -1,
+    "remote_repair_hp_per_s": 0.0,
+    "remote_repair_optimal_m": 0.0,
+    "remote_repair_falloff_m": 0.0
   },
   {
     "name": "Devoted Trapper",
@@ -1094,8 +1162,12 @@
       0.0
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": 0,
     "local_repair_hp_per_s": 12.5,
-    "remote_repair_hp_per_s": 0.0
+    "remote_repair_layer": -1,
+    "remote_repair_hp_per_s": 0.0,
+    "remote_repair_optimal_m": 0.0,
+    "remote_repair_falloff_m": 0.0
   },
   {
     "name": "Elite Lucifer Cynabal",
@@ -1155,8 +1227,12 @@
       0.2727272727272727
     ],
     "neutralizer_gj_per_s": 10.0,
+    "local_repair_layer": 0,
     "local_repair_hp_per_s": 18.77777777777778,
-    "remote_repair_hp_per_s": 0.0
+    "remote_repair_layer": -1,
+    "remote_repair_hp_per_s": 0.0,
+    "remote_repair_optimal_m": 0.0,
+    "remote_repair_falloff_m": 0.0
   },
   {
     "name": "Lucifer Cynabal",
@@ -1216,8 +1292,12 @@
       0.2727272727272727
     ],
     "neutralizer_gj_per_s": 7.0,
+    "local_repair_layer": 0,
     "local_repair_hp_per_s": 15.0,
-    "remote_repair_hp_per_s": 0.0
+    "remote_repair_layer": -1,
+    "remote_repair_hp_per_s": 0.0,
+    "remote_repair_optimal_m": 0.0,
+    "remote_repair_falloff_m": 0.0
   },
   {
     "name": "Lucifer Ixion",
@@ -1277,8 +1357,12 @@
       0.9470338983050848
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": 0,
     "local_repair_hp_per_s": 11.11111111111111,
-    "remote_repair_hp_per_s": 0.0
+    "remote_repair_layer": -1,
+    "remote_repair_hp_per_s": 0.0,
+    "remote_repair_optimal_m": 0.0,
+    "remote_repair_falloff_m": 0.0
   },
   {
     "name": "Elite Lucifer Dramiel",
@@ -1338,8 +1422,12 @@
       0.4069767441860465
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": 0,
     "local_repair_hp_per_s": 9.0,
-    "remote_repair_hp_per_s": 0.0
+    "remote_repair_layer": -1,
+    "remote_repair_hp_per_s": 0.0,
+    "remote_repair_optimal_m": 0.0,
+    "remote_repair_falloff_m": 0.0
   },
   {
     "name": "Lucifer Dramiel",
@@ -1399,8 +1487,12 @@
       0.4861111111111111
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": 0,
     "local_repair_hp_per_s": 7.0,
-    "remote_repair_hp_per_s": 0.0
+    "remote_repair_layer": -1,
+    "remote_repair_hp_per_s": 0.0,
+    "remote_repair_optimal_m": 0.0,
+    "remote_repair_falloff_m": 0.0
   },
   {
     "name": "Lucifer Burst",
@@ -1460,8 +1552,12 @@
       0.0
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": 0,
     "local_repair_hp_per_s": 4.0,
-    "remote_repair_hp_per_s": 12.5
+    "remote_repair_layer": 0,
+    "remote_repair_hp_per_s": 12.5,
+    "remote_repair_optimal_m": 15000.0,
+    "remote_repair_falloff_m": 20000.0
   },
   {
     "name": "Lucifer Echo",
@@ -1521,8 +1617,12 @@
       0.7
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": 0,
     "local_repair_hp_per_s": 7.0,
-    "remote_repair_hp_per_s": 0.0
+    "remote_repair_layer": -1,
+    "remote_repair_hp_per_s": 0.0,
+    "remote_repair_optimal_m": 0.0,
+    "remote_repair_falloff_m": 0.0
   },
   {
     "name": "Lucifer Fury",
@@ -1582,8 +1682,12 @@
       0.7
     ],
     "neutralizer_gj_per_s": 5.0,
+    "local_repair_layer": 0,
     "local_repair_hp_per_s": 7.0,
-    "remote_repair_hp_per_s": 0.0
+    "remote_repair_layer": -1,
+    "remote_repair_hp_per_s": 0.0,
+    "remote_repair_optimal_m": 0.0,
+    "remote_repair_falloff_m": 0.0
   },
   {
     "name": "Lucifer Medusa",
@@ -1643,8 +1747,12 @@
       0.7
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": 0,
     "local_repair_hp_per_s": 7.0,
-    "remote_repair_hp_per_s": 0.0
+    "remote_repair_layer": -1,
+    "remote_repair_hp_per_s": 0.0,
+    "remote_repair_optimal_m": 0.0,
+    "remote_repair_falloff_m": 0.0
   },
   {
     "name": "Lucifer Swordspine",
@@ -1704,8 +1812,12 @@
       0.7
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": 0,
     "local_repair_hp_per_s": 7.0,
-    "remote_repair_hp_per_s": 0.0
+    "remote_repair_layer": -1,
+    "remote_repair_hp_per_s": 0.0,
+    "remote_repair_optimal_m": 0.0,
+    "remote_repair_falloff_m": 0.0
   },
   {
     "name": "Arrester Marshal Disparu Troop",
@@ -1765,8 +1877,12 @@
       1.0
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": -1,
     "local_repair_hp_per_s": 0.0,
-    "remote_repair_hp_per_s": 0.0
+    "remote_repair_layer": -1,
+    "remote_repair_hp_per_s": 0.0,
+    "remote_repair_optimal_m": 0.0,
+    "remote_repair_falloff_m": 0.0
   },
   {
     "name": "Attacker Marshal Disparu Troop",
@@ -1826,8 +1942,12 @@
       0.0
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": -1,
     "local_repair_hp_per_s": 0.0,
-    "remote_repair_hp_per_s": 0.0
+    "remote_repair_layer": -1,
+    "remote_repair_hp_per_s": 0.0,
+    "remote_repair_optimal_m": 0.0,
+    "remote_repair_falloff_m": 0.0
   },
   {
     "name": "Drainer Marshal Disparu Troop",
@@ -1887,8 +2007,12 @@
       0.0
     ],
     "neutralizer_gj_per_s": 16.666666666666668,
+    "local_repair_layer": -1,
     "local_repair_hp_per_s": 0.0,
-    "remote_repair_hp_per_s": 0.0
+    "remote_repair_layer": -1,
+    "remote_repair_hp_per_s": 0.0,
+    "remote_repair_optimal_m": 0.0,
+    "remote_repair_falloff_m": 0.0
   },
   {
     "name": "Arrester Pacifier Disparu Troop",
@@ -1948,8 +2072,12 @@
       0.0
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": 1,
     "local_repair_hp_per_s": 24.0,
-    "remote_repair_hp_per_s": 0.0
+    "remote_repair_layer": -1,
+    "remote_repair_hp_per_s": 0.0,
+    "remote_repair_optimal_m": 0.0,
+    "remote_repair_falloff_m": 0.0
   },
   {
     "name": "Attacker Pacifier Disparu Troop",
@@ -2009,8 +2137,12 @@
       0.0
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": 1,
     "local_repair_hp_per_s": 26.0,
-    "remote_repair_hp_per_s": 0.0
+    "remote_repair_layer": -1,
+    "remote_repair_hp_per_s": 0.0,
+    "remote_repair_optimal_m": 0.0,
+    "remote_repair_falloff_m": 0.0
   },
   {
     "name": "Drainer Pacifier Disparu Troop",
@@ -2070,8 +2202,12 @@
       1.0
     ],
     "neutralizer_gj_per_s": 12.5,
+    "local_repair_layer": 1,
     "local_repair_hp_per_s": 24.0,
-    "remote_repair_hp_per_s": 0.0
+    "remote_repair_layer": -1,
+    "remote_repair_hp_per_s": 0.0,
+    "remote_repair_optimal_m": 0.0,
+    "remote_repair_falloff_m": 0.0
   },
   {
     "name": "Marker Pacifier Disparu Troop",
@@ -2131,8 +2267,12 @@
       0.0
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": 1,
     "local_repair_hp_per_s": 24.0,
-    "remote_repair_hp_per_s": 0.0
+    "remote_repair_layer": -1,
+    "remote_repair_hp_per_s": 0.0,
+    "remote_repair_optimal_m": 0.0,
+    "remote_repair_falloff_m": 0.0
   },
   {
     "name": "Assault Enforcer Disparu Troop",
@@ -2192,8 +2332,12 @@
       0.0
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": 1,
     "local_repair_hp_per_s": 26.666666666666668,
-    "remote_repair_hp_per_s": 0.0
+    "remote_repair_layer": -1,
+    "remote_repair_hp_per_s": 0.0,
+    "remote_repair_optimal_m": 0.0,
+    "remote_repair_falloff_m": 0.0
   },
   {
     "name": "Drainer Enforcer Disparu Troop",
@@ -2253,8 +2397,12 @@
       1.0
     ],
     "neutralizer_gj_per_s": 18.0,
+    "local_repair_layer": 1,
     "local_repair_hp_per_s": 25.0,
-    "remote_repair_hp_per_s": 0.0
+    "remote_repair_layer": -1,
+    "remote_repair_hp_per_s": 0.0,
+    "remote_repair_optimal_m": 0.0,
+    "remote_repair_falloff_m": 0.0
   },
   {
     "name": "Marker Enforcer Disparu Troop",
@@ -2314,8 +2462,12 @@
       0.0
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": 1,
     "local_repair_hp_per_s": 26.666666666666668,
-    "remote_repair_hp_per_s": 0.0
+    "remote_repair_layer": -1,
+    "remote_repair_hp_per_s": 0.0,
+    "remote_repair_optimal_m": 0.0,
+    "remote_repair_falloff_m": 0.0
   },
   {
     "name": "Thunderchild Disparu Troop",
@@ -2375,8 +2527,12 @@
       0.0
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": 0,
     "local_repair_hp_per_s": 43.333333333333336,
-    "remote_repair_hp_per_s": 0.0
+    "remote_repair_layer": -1,
+    "remote_repair_hp_per_s": 0.0,
+    "remote_repair_optimal_m": 0.0,
+    "remote_repair_falloff_m": 0.0
   },
   {
     "name": "Stormbringer Disparu Troop",
@@ -2436,8 +2592,12 @@
       0.0
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": 0,
     "local_repair_hp_per_s": 36.666666666666664,
-    "remote_repair_hp_per_s": 0.0
+    "remote_repair_layer": -1,
+    "remote_repair_hp_per_s": 0.0,
+    "remote_repair_optimal_m": 0.0,
+    "remote_repair_falloff_m": 0.0
   },
   {
     "name": "Skybreaker Disparu Troop",
@@ -2497,8 +2657,12 @@
       0.0
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": 0,
     "local_repair_hp_per_s": 32.0,
-    "remote_repair_hp_per_s": 0.0
+    "remote_repair_layer": -1,
+    "remote_repair_hp_per_s": 0.0,
+    "remote_repair_optimal_m": 0.0,
+    "remote_repair_falloff_m": 0.0
   },
   {
     "name": "Ephialtes Confuser",
@@ -2558,8 +2722,12 @@
       0.09967974379503602
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": -1,
     "local_repair_hp_per_s": 0.0,
-    "remote_repair_hp_per_s": 0.0
+    "remote_repair_layer": -1,
+    "remote_repair_hp_per_s": 0.0,
+    "remote_repair_optimal_m": 0.0,
+    "remote_repair_falloff_m": 0.0
   },
   {
     "name": "Ephialtes Dissipator",
@@ -2619,8 +2787,12 @@
       0.09967974379503602
     ],
     "neutralizer_gj_per_s": 10.0,
+    "local_repair_layer": -1,
     "local_repair_hp_per_s": 0.0,
-    "remote_repair_hp_per_s": 0.0
+    "remote_repair_layer": -1,
+    "remote_repair_hp_per_s": 0.0,
+    "remote_repair_optimal_m": 0.0,
+    "remote_repair_falloff_m": 0.0
   },
   {
     "name": "Ephialtes Entangler",
@@ -2680,8 +2852,12 @@
       0.09967974379503602
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": -1,
     "local_repair_hp_per_s": 0.0,
-    "remote_repair_hp_per_s": 0.0
+    "remote_repair_layer": -1,
+    "remote_repair_hp_per_s": 0.0,
+    "remote_repair_optimal_m": 0.0,
+    "remote_repair_falloff_m": 0.0
   },
   {
     "name": "Ephialtes Illuminator",
@@ -2741,8 +2917,12 @@
       0.09967974379503602
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": -1,
     "local_repair_hp_per_s": 0.0,
-    "remote_repair_hp_per_s": 0.0
+    "remote_repair_layer": -1,
+    "remote_repair_hp_per_s": 0.0,
+    "remote_repair_optimal_m": 0.0,
+    "remote_repair_falloff_m": 0.0
   },
   {
     "name": "Ephialtes Lancer",
@@ -2802,8 +2982,12 @@
       0.0906113537117904
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": -1,
     "local_repair_hp_per_s": 0.0,
-    "remote_repair_hp_per_s": 0.0
+    "remote_repair_layer": -1,
+    "remote_repair_hp_per_s": 0.0,
+    "remote_repair_optimal_m": 0.0,
+    "remote_repair_falloff_m": 0.0
   },
   {
     "name": "Ephialtes Obfuscator",
@@ -2863,8 +3047,12 @@
       0.09967974379503602
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": -1,
     "local_repair_hp_per_s": 0.0,
-    "remote_repair_hp_per_s": 0.0
+    "remote_repair_layer": -1,
+    "remote_repair_hp_per_s": 0.0,
+    "remote_repair_optimal_m": 0.0,
+    "remote_repair_falloff_m": 0.0
   },
   {
     "name": "Ephialtes Spearfisher",
@@ -2924,8 +3112,12 @@
       0.09967974379503602
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": -1,
     "local_repair_hp_per_s": 0.0,
-    "remote_repair_hp_per_s": 0.0
+    "remote_repair_layer": -1,
+    "remote_repair_hp_per_s": 0.0,
+    "remote_repair_optimal_m": 0.0,
+    "remote_repair_falloff_m": 0.0
   },
   {
     "name": "Lucid Deepwatcher",
@@ -2985,8 +3177,12 @@
       0.27011494252873564
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": 1,
     "local_repair_hp_per_s": 7.777777777777778,
-    "remote_repair_hp_per_s": 4.444444444444445
+    "remote_repair_layer": 1,
+    "remote_repair_hp_per_s": 4.444444444444445,
+    "remote_repair_optimal_m": 50000.0,
+    "remote_repair_falloff_m": 50000.0
   },
   {
     "name": "Lucid Aegis",
@@ -3046,8 +3242,12 @@
       0.07396449704142012
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": 1,
     "local_repair_hp_per_s": 6.0,
-    "remote_repair_hp_per_s": 2.142857142857143
+    "remote_repair_layer": 1,
+    "remote_repair_hp_per_s": 2.142857142857143,
+    "remote_repair_optimal_m": 40000.0,
+    "remote_repair_falloff_m": 20000.0
   },
   {
     "name": "Lucid Escort",
@@ -3107,8 +3307,12 @@
       0.07396449704142012
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": 1,
     "local_repair_hp_per_s": 4.0,
-    "remote_repair_hp_per_s": 2.142857142857143
+    "remote_repair_layer": 1,
+    "remote_repair_hp_per_s": 2.142857142857143,
+    "remote_repair_optimal_m": 40000.0,
+    "remote_repair_falloff_m": 20000.0
   },
   {
     "name": "Lucid Preserver",
@@ -3168,8 +3372,12 @@
       0.0
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": 1,
     "local_repair_hp_per_s": 6.0,
-    "remote_repair_hp_per_s": 8.0
+    "remote_repair_layer": 1,
+    "remote_repair_hp_per_s": 8.0,
+    "remote_repair_optimal_m": 20000.0,
+    "remote_repair_falloff_m": 20000.0
   },
   {
     "name": "Lucid Firewatcher",
@@ -3229,8 +3437,12 @@
       0.05555555555555555
     ],
     "neutralizer_gj_per_s": 8.0,
+    "local_repair_layer": 1,
     "local_repair_hp_per_s": 6.0,
-    "remote_repair_hp_per_s": 2.142857142857143
+    "remote_repair_layer": 1,
+    "remote_repair_hp_per_s": 2.142857142857143,
+    "remote_repair_optimal_m": 40000.0,
+    "remote_repair_falloff_m": 20000.0
   },
   {
     "name": "Lucid Warden",
@@ -3290,8 +3502,12 @@
       0.07894736842105263
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": 1,
     "local_repair_hp_per_s": 4.0,
-    "remote_repair_hp_per_s": 2.142857142857143
+    "remote_repair_layer": 1,
+    "remote_repair_hp_per_s": 2.142857142857143,
+    "remote_repair_optimal_m": 40000.0,
+    "remote_repair_falloff_m": 20000.0
   },
   {
     "name": "Lucid Sentinel",
@@ -3351,8 +3567,12 @@
       0.10297766749379653
     ],
     "neutralizer_gj_per_s": 15.0,
+    "local_repair_layer": 1,
     "local_repair_hp_per_s": 8.333333333333334,
-    "remote_repair_hp_per_s": 4.166666666666667
+    "remote_repair_layer": 1,
+    "remote_repair_hp_per_s": 4.166666666666667,
+    "remote_repair_optimal_m": 50000.0,
+    "remote_repair_falloff_m": 30000.0
   },
   {
     "name": "Lucid Upholder",
@@ -3412,8 +3632,12 @@
       0.10297766749379653
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": 1,
     "local_repair_hp_per_s": 8.333333333333334,
-    "remote_repair_hp_per_s": 4.166666666666667
+    "remote_repair_layer": 1,
+    "remote_repair_hp_per_s": 4.166666666666667,
+    "remote_repair_optimal_m": 50000.0,
+    "remote_repair_falloff_m": 30000.0
   },
   {
     "name": "Lucid Watchman",
@@ -3473,8 +3697,12 @@
       0.09904534606205251
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": 1,
     "local_repair_hp_per_s": 8.333333333333334,
-    "remote_repair_hp_per_s": 4.166666666666667
+    "remote_repair_layer": 1,
+    "remote_repair_hp_per_s": 4.166666666666667,
+    "remote_repair_optimal_m": 50000.0,
+    "remote_repair_falloff_m": 30000.0
   },
   {
     "name": "Twilit Abyssal Overmind",
@@ -3534,8 +3762,12 @@
       0.0
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": -1,
     "local_repair_hp_per_s": 0.0,
-    "remote_repair_hp_per_s": 0.0
+    "remote_repair_layer": -1,
+    "remote_repair_hp_per_s": 0.0,
+    "remote_repair_optimal_m": 0.0,
+    "remote_repair_falloff_m": 0.0
   },
   {
     "name": "Photic Abyssal Overmind",
@@ -3595,8 +3827,12 @@
       0.0
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": -1,
     "local_repair_hp_per_s": 0.0,
-    "remote_repair_hp_per_s": 0.0
+    "remote_repair_layer": -1,
+    "remote_repair_hp_per_s": 0.0,
+    "remote_repair_optimal_m": 0.0,
+    "remote_repair_falloff_m": 0.0
   },
   {
     "name": "Bathyic Abyssal Overmind",
@@ -3656,8 +3892,12 @@
       0.0
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": -1,
     "local_repair_hp_per_s": 0.0,
-    "remote_repair_hp_per_s": 0.0
+    "remote_repair_layer": -1,
+    "remote_repair_hp_per_s": 0.0,
+    "remote_repair_optimal_m": 0.0,
+    "remote_repair_falloff_m": 0.0
   },
   {
     "name": "Hadal Abyssal Overmind",
@@ -3717,8 +3957,12 @@
       0.0
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": -1,
     "local_repair_hp_per_s": 0.0,
-    "remote_repair_hp_per_s": 0.0
+    "remote_repair_layer": -1,
+    "remote_repair_hp_per_s": 0.0,
+    "remote_repair_optimal_m": 0.0,
+    "remote_repair_falloff_m": 0.0
   },
   {
     "name": "Benthic Abyssal Overmind",
@@ -3778,8 +4022,12 @@
       0.0
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": -1,
     "local_repair_hp_per_s": 0.0,
-    "remote_repair_hp_per_s": 0.0
+    "remote_repair_layer": -1,
+    "remote_repair_hp_per_s": 0.0,
+    "remote_repair_optimal_m": 0.0,
+    "remote_repair_falloff_m": 0.0
   },
   {
     "name": "Endobenthic Abyssal Overmind",
@@ -3839,8 +4087,12 @@
       0.0
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": -1,
     "local_repair_hp_per_s": 0.0,
-    "remote_repair_hp_per_s": 0.0
+    "remote_repair_layer": -1,
+    "remote_repair_hp_per_s": 0.0,
+    "remote_repair_optimal_m": 0.0,
+    "remote_repair_falloff_m": 0.0
   },
   {
     "name": "Blastgrip Tessera",
@@ -3900,8 +4152,12 @@
       1.0
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": -1,
     "local_repair_hp_per_s": 0.0,
-    "remote_repair_hp_per_s": 0.0
+    "remote_repair_layer": -1,
+    "remote_repair_hp_per_s": 0.0,
+    "remote_repair_optimal_m": 0.0,
+    "remote_repair_falloff_m": 0.0
   },
   {
     "name": "Embergrip Tessera",
@@ -3961,8 +4217,12 @@
       0.0
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": -1,
     "local_repair_hp_per_s": 0.0,
-    "remote_repair_hp_per_s": 0.0
+    "remote_repair_layer": -1,
+    "remote_repair_hp_per_s": 0.0,
+    "remote_repair_optimal_m": 0.0,
+    "remote_repair_falloff_m": 0.0
   },
   {
     "name": "Strikegrip Tessera",
@@ -4022,8 +4282,12 @@
       0.0
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": -1,
     "local_repair_hp_per_s": 0.0,
-    "remote_repair_hp_per_s": 0.0
+    "remote_repair_layer": -1,
+    "remote_repair_hp_per_s": 0.0,
+    "remote_repair_optimal_m": 0.0,
+    "remote_repair_falloff_m": 0.0
   },
   {
     "name": "Sparkgrip Tessera",
@@ -4083,8 +4347,12 @@
       0.0
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": -1,
     "local_repair_hp_per_s": 0.0,
-    "remote_repair_hp_per_s": 0.0
+    "remote_repair_layer": -1,
+    "remote_repair_hp_per_s": 0.0,
+    "remote_repair_optimal_m": 0.0,
+    "remote_repair_falloff_m": 0.0
   },
   {
     "name": "Blastlance Tessella",
@@ -4144,8 +4412,12 @@
       1.0
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": -1,
     "local_repair_hp_per_s": 0.0,
-    "remote_repair_hp_per_s": 0.0
+    "remote_repair_layer": -1,
+    "remote_repair_hp_per_s": 0.0,
+    "remote_repair_optimal_m": 0.0,
+    "remote_repair_falloff_m": 0.0
   },
   {
     "name": "Blastneedle Tessella",
@@ -4205,8 +4477,12 @@
       1.0
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": -1,
     "local_repair_hp_per_s": 0.0,
-    "remote_repair_hp_per_s": 0.0
+    "remote_repair_layer": -1,
+    "remote_repair_hp_per_s": 0.0,
+    "remote_repair_optimal_m": 0.0,
+    "remote_repair_falloff_m": 0.0
   },
   {
     "name": "Emberlance Tessella",
@@ -4266,8 +4542,12 @@
       0.0
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": -1,
     "local_repair_hp_per_s": 0.0,
-    "remote_repair_hp_per_s": 0.0
+    "remote_repair_layer": -1,
+    "remote_repair_hp_per_s": 0.0,
+    "remote_repair_optimal_m": 0.0,
+    "remote_repair_falloff_m": 0.0
   },
   {
     "name": "Emberneedle Tessella",
@@ -4327,8 +4607,12 @@
       0.0
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": -1,
     "local_repair_hp_per_s": 0.0,
-    "remote_repair_hp_per_s": 0.0
+    "remote_repair_layer": -1,
+    "remote_repair_hp_per_s": 0.0,
+    "remote_repair_optimal_m": 0.0,
+    "remote_repair_falloff_m": 0.0
   },
   {
     "name": "Sparklance Tessella",
@@ -4388,8 +4672,12 @@
       0.0
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": -1,
     "local_repair_hp_per_s": 0.0,
-    "remote_repair_hp_per_s": 0.0
+    "remote_repair_layer": -1,
+    "remote_repair_hp_per_s": 0.0,
+    "remote_repair_optimal_m": 0.0,
+    "remote_repair_falloff_m": 0.0
   },
   {
     "name": "Sparkneedle Tessella",
@@ -4449,8 +4737,12 @@
       0.0
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": -1,
     "local_repair_hp_per_s": 0.0,
-    "remote_repair_hp_per_s": 0.0
+    "remote_repair_layer": -1,
+    "remote_repair_hp_per_s": 0.0,
+    "remote_repair_optimal_m": 0.0,
+    "remote_repair_falloff_m": 0.0
   },
   {
     "name": "Strikelance Tessella",
@@ -4510,8 +4802,12 @@
       0.0
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": -1,
     "local_repair_hp_per_s": 0.0,
-    "remote_repair_hp_per_s": 0.0
+    "remote_repair_layer": -1,
+    "remote_repair_hp_per_s": 0.0,
+    "remote_repair_optimal_m": 0.0,
+    "remote_repair_falloff_m": 0.0
   },
   {
     "name": "Strikeneedle Tessella",
@@ -4571,8 +4867,12 @@
       0.0
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": -1,
     "local_repair_hp_per_s": 0.0,
-    "remote_repair_hp_per_s": 0.0
+    "remote_repair_layer": -1,
+    "remote_repair_hp_per_s": 0.0,
+    "remote_repair_optimal_m": 0.0,
+    "remote_repair_falloff_m": 0.0
   },
   {
     "name": "Fieldweaver Tessella",
@@ -4632,8 +4932,12 @@
       0.0
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": -1,
     "local_repair_hp_per_s": 0.0,
-    "remote_repair_hp_per_s": 10.0
+    "remote_repair_layer": 0,
+    "remote_repair_hp_per_s": 10.0,
+    "remote_repair_optimal_m": 7000.0,
+    "remote_repair_falloff_m": 10000.0
   },
   {
     "name": "Plateforger Tessella",
@@ -4693,8 +4997,12 @@
       0.0
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": -1,
     "local_repair_hp_per_s": 0.0,
-    "remote_repair_hp_per_s": 10.0
+    "remote_repair_layer": 1,
+    "remote_repair_hp_per_s": 10.0,
+    "remote_repair_optimal_m": 7000.0,
+    "remote_repair_falloff_m": 10000.0
   },
   {
     "name": "Snarecaster Tessella",
@@ -4754,8 +5062,12 @@
       0.25
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": -1,
     "local_repair_hp_per_s": 0.0,
-    "remote_repair_hp_per_s": 0.0
+    "remote_repair_layer": -1,
+    "remote_repair_hp_per_s": 0.0,
+    "remote_repair_optimal_m": 0.0,
+    "remote_repair_falloff_m": 0.0
   },
   {
     "name": "Spotlighter Tessella",
@@ -4815,8 +5127,12 @@
       0.25
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": -1,
     "local_repair_hp_per_s": 0.0,
-    "remote_repair_hp_per_s": 0.0
+    "remote_repair_layer": -1,
+    "remote_repair_hp_per_s": 0.0,
+    "remote_repair_optimal_m": 0.0,
+    "remote_repair_falloff_m": 0.0
   },
   {
     "name": "Fogcaster Tessella",
@@ -4876,8 +5192,12 @@
       0.25
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": -1,
     "local_repair_hp_per_s": 0.0,
-    "remote_repair_hp_per_s": 0.0
+    "remote_repair_layer": -1,
+    "remote_repair_hp_per_s": 0.0,
+    "remote_repair_optimal_m": 0.0,
+    "remote_repair_falloff_m": 0.0
   },
   {
     "name": "Gazedimmer Tessella",
@@ -4937,8 +5257,12 @@
       0.25
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": -1,
     "local_repair_hp_per_s": 0.0,
-    "remote_repair_hp_per_s": 0.0
+    "remote_repair_layer": -1,
+    "remote_repair_hp_per_s": 0.0,
+    "remote_repair_optimal_m": 0.0,
+    "remote_repair_falloff_m": 0.0
   },
   {
     "name": "Vila Swarmer",
@@ -4998,8 +5322,12 @@
       0.25
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": -1,
     "local_repair_hp_per_s": 0.0,
-    "remote_repair_hp_per_s": 0.0
+    "remote_repair_layer": -1,
+    "remote_repair_hp_per_s": 0.0,
+    "remote_repair_optimal_m": 0.0,
+    "remote_repair_falloff_m": 0.0
   },
   {
     "name": "Harrowing Vila Vedmak",
@@ -5059,8 +5387,12 @@
       0.42424242424242425
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": -1,
     "local_repair_hp_per_s": 0.0,
-    "remote_repair_hp_per_s": 0.0
+    "remote_repair_layer": -1,
+    "remote_repair_hp_per_s": 0.0,
+    "remote_repair_optimal_m": 0.0,
+    "remote_repair_falloff_m": 0.0
   },
   {
     "name": "Anchoring Vila Damavik",
@@ -5120,8 +5452,12 @@
       0.31428571428571433
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": -1,
     "local_repair_hp_per_s": 0.0,
-    "remote_repair_hp_per_s": 0.0
+    "remote_repair_layer": -1,
+    "remote_repair_hp_per_s": 0.0,
+    "remote_repair_optimal_m": 0.0,
+    "remote_repair_falloff_m": 0.0
   },
   {
     "name": "Blinding Vila Damavik",
@@ -5181,8 +5517,12 @@
       0.31428571428571433
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": -1,
     "local_repair_hp_per_s": 0.0,
-    "remote_repair_hp_per_s": 0.0
+    "remote_repair_layer": -1,
+    "remote_repair_hp_per_s": 0.0,
+    "remote_repair_optimal_m": 0.0,
+    "remote_repair_falloff_m": 0.0
   },
   {
     "name": "Ghosting Vila Damavik",
@@ -5242,8 +5582,12 @@
       0.31428571428571433
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": -1,
     "local_repair_hp_per_s": 0.0,
-    "remote_repair_hp_per_s": 0.0
+    "remote_repair_layer": -1,
+    "remote_repair_hp_per_s": 0.0,
+    "remote_repair_optimal_m": 0.0,
+    "remote_repair_falloff_m": 0.0
   },
   {
     "name": "Shining Vila Damavik",
@@ -5303,8 +5647,12 @@
       0.31428571428571433
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": -1,
     "local_repair_hp_per_s": 0.0,
-    "remote_repair_hp_per_s": 0.0
+    "remote_repair_layer": -1,
+    "remote_repair_hp_per_s": 0.0,
+    "remote_repair_optimal_m": 0.0,
+    "remote_repair_falloff_m": 0.0
   },
   {
     "name": "Striking Vila Damavik",
@@ -5364,8 +5712,12 @@
       0.31428571428571433
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": -1,
     "local_repair_hp_per_s": 0.0,
-    "remote_repair_hp_per_s": 0.0
+    "remote_repair_layer": -1,
+    "remote_repair_hp_per_s": 0.0,
+    "remote_repair_optimal_m": 0.0,
+    "remote_repair_falloff_m": 0.0
   },
   {
     "name": "Tangling Vila Damavik",
@@ -5425,8 +5777,12 @@
       0.31428571428571433
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": -1,
     "local_repair_hp_per_s": 0.0,
-    "remote_repair_hp_per_s": 0.0
+    "remote_repair_layer": -1,
+    "remote_repair_hp_per_s": 0.0,
+    "remote_repair_optimal_m": 0.0,
+    "remote_repair_falloff_m": 0.0
   },
   {
     "name": "Anchoring Damavik",
@@ -5486,8 +5842,12 @@
       0.31428571428571433
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": -1,
     "local_repair_hp_per_s": 0.0,
-    "remote_repair_hp_per_s": 13.333333333333334
+    "remote_repair_layer": 1,
+    "remote_repair_hp_per_s": 13.333333333333334,
+    "remote_repair_optimal_m": 14000.0,
+    "remote_repair_falloff_m": 2500.0
   },
   {
     "name": "Ghosting Damavik",
@@ -5547,8 +5907,12 @@
       0.31428571428571433
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": -1,
     "local_repair_hp_per_s": 0.0,
-    "remote_repair_hp_per_s": 13.333333333333334
+    "remote_repair_layer": 1,
+    "remote_repair_hp_per_s": 13.333333333333334,
+    "remote_repair_optimal_m": 14000.0,
+    "remote_repair_falloff_m": 2500.0
   },
   {
     "name": "Starving Damavik",
@@ -5608,8 +5972,12 @@
       0.31428571428571433
     ],
     "neutralizer_gj_per_s": 12.5,
+    "local_repair_layer": -1,
     "local_repair_hp_per_s": 0.0,
-    "remote_repair_hp_per_s": 0.0
+    "remote_repair_layer": -1,
+    "remote_repair_hp_per_s": 0.0,
+    "remote_repair_optimal_m": 0.0,
+    "remote_repair_falloff_m": 0.0
   },
   {
     "name": "Striking Damavik",
@@ -5669,8 +6037,12 @@
       0.31428571428571433
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": -1,
     "local_repair_hp_per_s": 0.0,
-    "remote_repair_hp_per_s": 13.333333333333334
+    "remote_repair_layer": 1,
+    "remote_repair_hp_per_s": 13.333333333333334,
+    "remote_repair_optimal_m": 14000.0,
+    "remote_repair_falloff_m": 2500.0
   },
   {
     "name": "Tangling Damavik",
@@ -5730,8 +6102,12 @@
       0.31428571428571433
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": -1,
     "local_repair_hp_per_s": 0.0,
-    "remote_repair_hp_per_s": 13.333333333333334
+    "remote_repair_layer": 1,
+    "remote_repair_hp_per_s": 13.333333333333334,
+    "remote_repair_optimal_m": 14000.0,
+    "remote_repair_falloff_m": 2500.0
   },
   {
     "name": "Harrowing Vedmak",
@@ -5791,8 +6167,12 @@
       0.42424242424242425
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": -1,
     "local_repair_hp_per_s": 0.0,
-    "remote_repair_hp_per_s": 26.666666666666668
+    "remote_repair_layer": 1,
+    "remote_repair_hp_per_s": 26.666666666666668,
+    "remote_repair_optimal_m": 28000.0,
+    "remote_repair_falloff_m": 25000.0
   },
   {
     "name": "Starving Vedmak",
@@ -5852,8 +6232,12 @@
       0.42424242424242425
     ],
     "neutralizer_gj_per_s": 18.0,
+    "local_repair_layer": -1,
     "local_repair_hp_per_s": 0.0,
-    "remote_repair_hp_per_s": 0.0
+    "remote_repair_layer": -1,
+    "remote_repair_hp_per_s": 0.0,
+    "remote_repair_optimal_m": 0.0,
+    "remote_repair_falloff_m": 0.0
   },
   {
     "name": "Striking Drekavac",
@@ -5913,8 +6297,12 @@
       0.42857142857142855
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": -1,
     "local_repair_hp_per_s": 0.0,
-    "remote_repair_hp_per_s": 34.0
+    "remote_repair_layer": 1,
+    "remote_repair_hp_per_s": 34.0,
+    "remote_repair_optimal_m": 30000.0,
+    "remote_repair_falloff_m": 40000.0
   },
   {
     "name": "Shining Drekavac",
@@ -5974,8 +6362,12 @@
       0.42857142857142855
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": -1,
     "local_repair_hp_per_s": 0.0,
-    "remote_repair_hp_per_s": 34.0
+    "remote_repair_layer": 1,
+    "remote_repair_hp_per_s": 34.0,
+    "remote_repair_optimal_m": 30000.0,
+    "remote_repair_falloff_m": 40000.0
   },
   {
     "name": "Ghosting Kikimora",
@@ -6035,8 +6427,12 @@
       0.32
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": -1,
     "local_repair_hp_per_s": 0.0,
-    "remote_repair_hp_per_s": 20.0
+    "remote_repair_layer": 1,
+    "remote_repair_hp_per_s": 20.0,
+    "remote_repair_optimal_m": 15000.0,
+    "remote_repair_falloff_m": 25000.0
   },
   {
     "name": "Tangling Kikimora",
@@ -6096,8 +6492,12 @@
       0.32
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": -1,
     "local_repair_hp_per_s": 0.0,
-    "remote_repair_hp_per_s": 20.0
+    "remote_repair_layer": 1,
+    "remote_repair_hp_per_s": 20.0,
+    "remote_repair_optimal_m": 15000.0,
+    "remote_repair_falloff_m": 25000.0
   },
   {
     "name": "Striking Kikimora",
@@ -6157,8 +6557,12 @@
       0.32
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": -1,
     "local_repair_hp_per_s": 0.0,
-    "remote_repair_hp_per_s": 20.0
+    "remote_repair_layer": 1,
+    "remote_repair_hp_per_s": 20.0,
+    "remote_repair_optimal_m": 15000.0,
+    "remote_repair_falloff_m": 25000.0
   },
   {
     "name": "Blinding Leshak",
@@ -6218,8 +6622,12 @@
       0.38636363636363635
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": -1,
     "local_repair_hp_per_s": 0.0,
-    "remote_repair_hp_per_s": 37.5
+    "remote_repair_layer": 1,
+    "remote_repair_hp_per_s": 37.5,
+    "remote_repair_optimal_m": 33000.0,
+    "remote_repair_falloff_m": 28000.0
   },
   {
     "name": "Renewing Leshak",
@@ -6279,8 +6687,12 @@
       0.38636363636363635
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": -1,
     "local_repair_hp_per_s": 0.0,
-    "remote_repair_hp_per_s": 75.0
+    "remote_repair_layer": 1,
+    "remote_repair_hp_per_s": 75.0,
+    "remote_repair_optimal_m": 33000.0,
+    "remote_repair_falloff_m": 28000.0
   },
   {
     "name": "Striking Leshak",
@@ -6340,8 +6752,12 @@
       0.38636363636363635
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": -1,
     "local_repair_hp_per_s": 0.0,
-    "remote_repair_hp_per_s": 37.5
+    "remote_repair_layer": 1,
+    "remote_repair_hp_per_s": 37.5,
+    "remote_repair_optimal_m": 33000.0,
+    "remote_repair_falloff_m": 28000.0
   },
   {
     "name": "Tangling Leshak",
@@ -6401,8 +6817,12 @@
       0.38636363636363635
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": -1,
     "local_repair_hp_per_s": 0.0,
-    "remote_repair_hp_per_s": 37.5
+    "remote_repair_layer": 1,
+    "remote_repair_hp_per_s": 37.5,
+    "remote_repair_optimal_m": 33000.0,
+    "remote_repair_falloff_m": 28000.0
   },
   {
     "name": "Starving Leshak",
@@ -6462,8 +6882,12 @@
       0.38636363636363635
     ],
     "neutralizer_gj_per_s": 25.0,
+    "local_repair_layer": -1,
     "local_repair_hp_per_s": 0.0,
-    "remote_repair_hp_per_s": 37.5
+    "remote_repair_layer": 1,
+    "remote_repair_hp_per_s": 37.5,
+    "remote_repair_optimal_m": 33000.0,
+    "remote_repair_falloff_m": 28000.0
   },
   {
     "name": "Renewing Rodiva",
@@ -6523,7 +6947,11 @@
       0.41935483870967744
     ],
     "neutralizer_gj_per_s": 0.0,
+    "local_repair_layer": -1,
     "local_repair_hp_per_s": 0.0,
-    "remote_repair_hp_per_s": 75.0
+    "remote_repair_layer": 1,
+    "remote_repair_hp_per_s": 75.0,
+    "remote_repair_optimal_m": 30000.0,
+    "remote_repair_falloff_m": 40000.0
   }
 ]

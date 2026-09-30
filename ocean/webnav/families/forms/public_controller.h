@@ -83,6 +83,7 @@ static int forms_public_task(const WFView *view, const char *query,
     if (captcha) return 3;
     if (strstr(query, "all upper case")) return 1;
     if (strstr(query, "all lower case")) return 1;
+    if (strstr(query, "Enter the value of ")) return 10;
     if (inputs == 1u) return 0;
     return -1;
 }
@@ -145,6 +146,17 @@ static int forms_public_goal(const WFView *view, const char *query,
     }
     if (task == 6u) {
         const char *label = forms_public_name(view, field);
+        return forms_public_table_value(view, label, goal, goal_length);
+    }
+    if (task == 10u) {
+        const char *key = strstr(query, "Enter the value of ");
+        const char *end = key ? strstr(key + 19u, " into the text field") : NULL;
+        char label[64];
+        if (!end) return -1;
+        key += 19u;
+        size_t n = (size_t)(end - key);
+        if (n + 2u > sizeof label) return -1;
+        memcpy(label, key, n); label[n] = ':'; label[n + 1u] = 0;
         return forms_public_table_value(view, label, goal, goal_length);
     }
     start = forms_public_quoted(query, quoted_index, &length);
@@ -214,6 +226,7 @@ static int forms_public_action(const WFView *view, WFAction *action) {
 
     const WFNode *submit = forms_public_find(view, WF_BUTTON,
                                               task == 7 ? "OK" : "Submit");
+    if (!submit && task == 7) submit = forms_public_find(view, WF_BUTTON, "Login");
     if (!submit || !(submit->flags & WF_ENABLED)) return -1;
     return forms_public_emit_click(action, submit->ref);
 }

@@ -1,0 +1,140 @@
+{
+  "date": "2026-09-29",
+  "reference_commit": "33c3b4ddef8c6eb67c57a29663d844b1eda7e614",
+  "compiler": "stock Bend 2.0.6 CPU; serialized <=6 GiB cgroup, no swap",
+  "laws": 12,
+  "native": {
+    "status": "PASS",
+    "output": "PASS: 641 independent public-query email cases"
+  },
+  "browser": {
+    "status": "PASS",
+    "episodes": 200,
+    "episodes_per_task": 20,
+    "unsupported_bounds": 0,
+    "preset": "Matched original instances imported once at reset; controlled logical clock; original CSS icons preloaded; CDP clicks after automatic scroll into view and CDP text insertion; independent screen/control/text/star/search/raw and timed reward comparisons.",
+    "branches": [
+      "successful task action",
+      "wrong icon or composer text",
+      "timeout",
+      "search result icon bubbling and stale results after cancel",
+      "search navigation",
+      "irrelevant star",
+      "irrelevant trash"
+    ]
+  },
+  "public_scripted": [
+    {
+      "task": "email-inbox-delete",
+      "episodes": 1000,
+      "successes": 1000,
+      "timeouts": 0,
+      "actions": 1000,
+      "controller": "public-scripted; not learned RL"
+    },
+    {
+      "task": "email-inbox-forward-nl-turk",
+      "episodes": 1000,
+      "successes": 1000,
+      "timeouts": 0,
+      "actions": 5000,
+      "controller": "public-scripted; not learned RL"
+    },
+    {
+      "task": "email-inbox-forward-nl",
+      "episodes": 1000,
+      "successes": 1000,
+      "timeouts": 0,
+      "actions": 5000,
+      "controller": "public-scripted; not learned RL"
+    },
+    {
+      "task": "email-inbox-forward",
+      "episodes": 1000,
+      "successes": 1000,
+      "timeouts": 0,
+      "actions": 5000,
+      "controller": "public-scripted; not learned RL"
+    },
+    {
+      "task": "email-inbox-important",
+      "episodes": 1000,
+      "successes": 1000,
+      "timeouts": 0,
+      "actions": 1000,
+      "controller": "public-scripted; not learned RL"
+    },
+    {
+      "task": "email-inbox-nl-turk",
+      "episodes": 1000,
+      "successes": 1000,
+      "timeouts": 0,
+      "actions": 2984,
+      "controller": "public-scripted; not learned RL"
+    },
+    {
+      "task": "email-inbox-noscroll",
+      "episodes": 1000,
+      "successes": 1000,
+      "timeouts": 0,
+      "actions": 2984,
+      "controller": "public-scripted; not learned RL"
+    },
+    {
+      "task": "email-inbox-reply",
+      "episodes": 1000,
+      "successes": 1000,
+      "timeouts": 0,
+      "actions": 5000,
+      "controller": "public-scripted; not learned RL"
+    },
+    {
+      "task": "email-inbox-star-reply",
+      "episodes": 1000,
+      "successes": 1000,
+      "timeouts": 0,
+      "actions": 3060,
+      "controller": "public-scripted; not learned RL"
+    },
+    {
+      "task": "email-inbox",
+      "episodes": 1000,
+      "successes": 1000,
+      "timeouts": 0,
+      "actions": 2984,
+      "controller": "public-scripted; not learned RL"
+    }
+  ],
+  "full_parity": "unverified",
+  "limitations": [
+    "Bounded ASCII, message count and text lengths; original generator/template distributions not reproduced",
+    "Generated sender names are unique; original duplicate names can make the instruction ambiguous",
+    "Generated NL/Turk instructions use canonical forms; their full utterance datasets are pending",
+    "Ref actions abstract viewport scrolling; public geometry is approximate",
+    "Append/backspace/delete/select-all only; arbitrary carets, keyboard and clipboard paths are incomplete",
+    "No learned-policy evaluation"
+  ],
+  "commands": [
+    "node ocean/webnav/families/build.cjs email --test",
+    "make -f ocean/webnav/families/Makefile browser FAMILY=email EPISODES=20",
+    "make -f ocean/webnav/families/Makefile public-check FAMILY=email EPISODES=1000"
+  ],
+  "build_cache": {
+    "proof": "7665a216584bc88697329d5fb6dd866d51db45b9ec0b950bf835ef65d8b471c8",
+    "runtime": "8694ed9e2b27ee09a2eb2dbbaadc38e876290fb961ad0ca9060b7b928580d744"
+  },
+  "source_sha256": {
+    "Generate.bend": "fb3e3c1e0c338f40fa952d3a80d359dc5297c8044b5cb65511fcf7f9b232fcfa",
+    "LAWS.bend": "012448d70a32b52acd9f76d6674c35edbba675335f3085f99206d52a6d6db72f",
+    "Main.bend": "6aec06db526e6994080bea7131894ba797e0e3521567b928b9940465e12aa163",
+    "Model.bend": "8a46ec0fbdd97bc9b5374fb12ff32fe29abd84b4a9d11fab5eb49beb7a2dbf7f",
+    "PROOF.bend": "0cb8a83c7250f1ea714e23bd5c5334d291f1292139fa97127556e3f1186fca69",
+    "Wire.bend": "e480da19238a2b91418186f691bd3c9bdabd6b51345b715434487ea52b5cc697",
+    "bridge.c": "ddf372b898edb74a6938d9105fde3edaa99b06842bac6517c7be426b0616ee0d",
+    "browser.js": "da5064d95380d039fd115a3a127249de5b85358392d79f82f61555a4098e2c16",
+    "browser_oracle.c": "5192fe7fec3a0cdbfaf7c7116d4a9a9776927cf79b7f8f8512467f79621a3b34",
+    "family_api.c": "292aa4b7417f6ad616e22814d2b39e87909a8f9a882ef004008ab786f298ce15",
+    "public_controller.h": "01f96a2c0b6298cd489ec114df9757ee0ae93f0dc5d509d988c36aa0323bf189",
+    "test_email.c": "98ee141da5de261a01ad9d367601bf02f8fb1e3e9ee66bfd943b56a95823389e"
+  }
+}

@@ -1,0 +1,62 @@
+{
+  "date": "2026-09-29",
+  "reference_commit": "33c3b4ddef8c6eb67c57a29663d844b1eda7e614",
+  "compiler": "stock Bend 2.0.6 CPU; serialized <=6 GiB cgroup; no swap",
+  "laws": 10,
+  "native": {
+    "status": "PASS",
+    "successful_generated_cases": 768,
+    "dirty_reset_comparisons": 640,
+    "checks": "Independent empty/wrong/extra-field outcomes, field replacement, source radio quirk, case+trim, exact year, private-view noninterference, deadline and absorption"
+  },
+  "browser": {
+    "status": "PASS",
+    "episodes": 100,
+    "preset": "Original-generated instances; atomic field replacement and normalized original widget handlers; controlled logical clock",
+    "schedules": "Success, wrong slider/button/year, extra checkbox, source radio quirk, timeout"
+  },
+  "public_scripted": {
+    "status": "PASS",
+    "episodes": 5000,
+    "successes": 5000,
+    "actions": 15943
+  },
+  "limits": [
+    "Movie director generator uses 20 source surnames; source RNG distribution not reproduced",
+    "Atomic field replacement, normalized slider/dropdown actions; raw keyboard and pointer gestures unverified",
+    "Normalized public geometry; layout rendering and complete DOM parity unverified",
+    "No learned-policy adapter"
+  ],
+  "full_parity": "unverified",
+  "commands": [
+    "node ocean/webnav/families/build.cjs composite_forms --test",
+    "make -f ocean/webnav/families/Makefile browser FAMILY=composite_forms EPISODES=20",
+    "make -f ocean/webnav/families/Makefile public-check FAMILY=composite_forms EPISODES=1000"
+  ],
+  "build_cache": {
+    "proof": "65a0b94dcb6b8968606a3150a352f1282c9ca3dd15aeb82686a8df24f6e2c2c3",
+    "runtime": "b9e9f792a3f2a36e2ab084badb8831330b7bb061894ba816f0b05d008c5bc17c"
+  },
+  "source_sha256": {
+    "Generate.bend": "34899e4d0e9339044f8902bcf52e3b497c1a7afd5f83d360f319335c10f33ba6",
+    "LAWS.bend": "4cfc1a4bc4b123b1816247a723b69020e9a1ba5172ec14795dbb87181829074d",
+    "Main.bend": "6aec06db526e6994080bea7131894ba797e0e3521567b928b9940465e12aa163",
+    "Model.bend": "51f4721ddcb52967fb9388a227ef04ceaebdcbf188da2471ff1d688ef141f551",
+    "OtherGenerate.bend": "daa512fe856637030bfd88f3d6c27c30f42371a2a2fa0a2b5a4516522b0d506e",
+    "OtherLAWS.bend": "b827bddd577f73525d320447ce61db2c2e0b7ac09853e55705ea3121fc95e825",
+    "OtherModel.bend": "9e95d386e6f3697bdfaab452b8f52119947179c615863cffcc5b19aeb899f477",
+    "OtherPROOF.bend": "9734de0eacb3628b3a1ff70b91901d03e2e848b110b3d4ee8b2dccfa73bdfadd",
+    "OtherWire.bend": "3090b8a8e9ac6f3805f9f002336452b80300e73902a9384b98b787c931695d1f",
+    "PROOF.bend": "8b42ec3bc39f9b9b92d0c650eed77bbded2bef2eaeae652ee0fc755d4f86edab",
+    "Wire.bend": "05a3f91cb146a227cb25dd61e8f974f4b3328a76cc9bfc75d2eb9b3dc796198f",
+    "bridge.c": "431cfd9a42dab8c6f631ba4d9cf5cd7a599fce23bf489de081344eab021e046f",
+    "browser.js": "2982d2484e48048842e1e3e2ac37679dcadc9fe3e24ffdd4f6164c493bbac278",
+    "browser_oracle.c": "119d8732a651244eb41c37fc9b130649909d92d5ab0fc78f1c17fa597b40ba1d",
+    "family_api.c": "88c90a7120a7bcb7d221f9fd664a6a6fa9f16f952185ead0a87014907b240e17",
+    "public_controller.h": "bf6360945f94f9970e0359bbf12fff8d7ee57738fe768dd6499212a95df28bc8",
+    "test_composite_forms.c": "81ea2aaed9fbf94adadb9b2c7851362c897fe5f48871fe1f2bfcc8710d018bb1",
+    "test_edges.c": "92e039286bcd4e57b137037c6228dc17a2a2bcbdd5d7300ad662a769e02ea191",
+    "test_other.c": "32e725c4dfe201a19ca377b4cc48e1b965bba42524e1d202eb141d04846b262e",
+    "test_reset.c": "8c6817d673a34ec5eeb93ef7fae9cc4041ab71ab75e825fdbb437f8f76db68c1"
+  }
+}

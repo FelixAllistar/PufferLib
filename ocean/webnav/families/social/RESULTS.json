@@ -1,0 +1,58 @@
+{
+  "date": "2026-09-29",
+  "reference_commit": "33c3b4ddef8c6eb67c57a29663d844b1eda7e614",
+  "compiler": "stock Bend 2.0.6 CPU; serialized <=6 GiB cgroup; no swap",
+  "laws": 9,
+  "native": {
+    "status": "PASS",
+    "direct_transitions": 512,
+    "multi_post_transitions": 2560,
+    "public_generated_episodes": 768,
+    "checks": "Independent username/action/active-mask outcomes, missing/wrong/extra controls, double-toggle reversal, public goal noninterference"
+  },
+  "browser": {
+    "status": "PASS",
+    "episodes": 60,
+    "actions": 127,
+    "scripted_successes": 16,
+    "preset": "Original-generated instances; CDP clicks after automatic scrolling and original icon preloading; controlled logical clock",
+    "schedules": "Successful and deliberately wrong/missing/extra actions, menu open/close, timeout"
+  },
+  "public_scripted": {
+    "status": "PASS",
+    "episodes": 3000,
+    "successes": 3000,
+    "actions": 7058
+  },
+  "limits": [
+    "Finite generated names/body vocabulary and independent repeated-username distribution",
+    "Normalized public geometry; scrolling visibility and full source RNG parity unverified",
+    "Browser controls use original assets and DOM; real scheduler timing unverified",
+    "No learned-policy adapter"
+  ],
+  "full_parity": "unverified",
+  "commands": [
+    "node ocean/webnav/families/build.cjs social --test",
+    "make -f ocean/webnav/families/Makefile browser FAMILY=social EPISODES=20",
+    "make -f ocean/webnav/families/Makefile public-check FAMILY=social EPISODES=1000"
+  ],
+  "build_cache": {
+    "proof": "50f17c47536a7eea8d3520b2dbf9e5a7cb3f399090a503e90192438aff524783",
+    "runtime": "7e5c8873c9203c0d5c6a520e79b67822f266883853ea1de374f06ad8485fa516"
+  },
+  "source_sha256": {
+    "Generate.bend": "1bd5885c02e45fc57a46c1b6f1725579f7474b48b230fb927daa703bf231afdc",
+    "LAWS.bend": "8eeb06eff33db30f0acbc3cb82860b85a414cc8588d0f889f2f712ca9b17f9db",
+    "Main.bend": "6aec06db526e6994080bea7131894ba797e0e3521567b928b9940465e12aa163",
+    "Model.bend": "592b652d42df28368e2891f066754d6d4da5410f4c9cab31f376b27ba316cb87",
+    "PROOF.bend": "1aa99d691f32248808eec82c92106312b90b2a27b375f750a5e11eaa43c1ac52",
+    "Wire.bend": "1fa5b4a6f49e85ead601ce2367881cbc301e1d6e26bdfbba543ee170adce8949",
+    "bridge.c": "8bff3b8faba87cea5cbdd2f7bf57f6d6ace233326501fb331d9863d663f70ec9",
+    "browser.js": "8a4fec7cc8f91bccce94859382ee1cb359fe6aec6a8774e48b1d68fcc9763300",
+    "browser_oracle.c": "d43e12f6b30f70e5fd55ffe8fc74e55ecf49c487ac2c68eea920202b7bd9f3d4",
+    "family_api.c": "4f4868dfaf7444dc4cc92124458877b0090a626f439cf9b9433ae6b1be3ccab6",
+    "public_controller.h": "9b5d6e290316b2463f8e37fa13c629d71950a4e0697e78ebd75ab224063cfb90",
+    "test_public.c": "f62a2a7cbe03f6cf210e23e195300e99b9a65512b00f505e5b71b906f64c89fc",
+    "test_social.c": "5231796e3191c96cee840fed0895188fe68fa976f9a8c77dce4d27fd1a562629"
+  }
+}

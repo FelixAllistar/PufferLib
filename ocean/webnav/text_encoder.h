@@ -2,6 +2,9 @@
 #define WEBNAV_TEXT_ENCODER_H
 #include <stddef.h>
 #include <stdint.h>
+#ifdef __cplusplus
+extern "C" {
+#endif
 #define WEB_TEXT_DIM 256
 #define WEB_TEXT_TOKENS 512
 #define WEB_TEXT_MAX_BYTES 32768
@@ -15,4 +18,7 @@ WebTextEncoder *web_text_load(const char *tokenizer_path,const char *weights_pat
 void web_text_free(WebTextEncoder *encoder);
 int web_text_tokenize(const WebTextEncoder *encoder,const char *text,size_t bytes,WebTextTokens *out);
 int web_text_encode(const WebTextEncoder *encoder,const char *text,size_t bytes,float out[WEB_TEXT_DIM],WebTextTokens *tokens);
+#ifdef __cplusplus
+}
+#endif
 #endif

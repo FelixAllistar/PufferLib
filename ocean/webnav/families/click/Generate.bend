@@ -1,6 +1,7 @@
 import Base
 import ../panels/Generate.bend as G
 import ./Synonyms.bend as S
+import ./LegacyGenerate.bend as L
 
 def at(xs: +List<String>, index: Nat) -> String:
   match xs index:
@@ -84,6 +85,39 @@ def role_name_cases(dispatch: Nat, k: U32) -> String:
 def role_name(+k: U32) -> String:
   role_name_cases(U32.to_nat(k), k)
 
+# The original checkbox pages draw short alphanumeric labels independently.
+# A changing suffix on a shared prefix made the old native instances too easy
+# to solve by position and gave the policy little reason to compare text.
+def random_char(+x: U32) -> Char:
+  +r = (x % 62 : U32)
+  Char.from_u32(Bool.pick(U32, U32.is_lt(r, 26), (65 + r : U32), Bool.pick(U32, U32.is_lt(r, 52), (97 + r - 26 : U32), (48 + r - 52 : U32))))
+
+def random_text(left: Nat, +seed: U32) -> String:
+  match left:
+    case 0n: SNil{}
+    case 1n+p: SCon{random_char(seed), random_text(p, G.mix((seed + 2654435769 : U32)))}
+
+def random_label(+seed: U32, +index: U32) -> String:
+  +key = G.mix((seed + index * 2654435761 + 7919 : U32))
+  random_text(U32.to_nat((2 + key % 7 : U32)), G.mix(key))
+
+# Rank independent per-control keys.  Exactly `need` controls are selected,
+# while their locations vary across instances rather than forming a run.
+def target_key(+seed: U32, +index: U32) -> U32:
+  G.mix((seed + index * 2246822519 + 3266489917 : U32))
+
+def count_before(left: Nat, +seed: U32, +index: U32, +mine: U32, acc: U32) -> U32:
+  match left:
+    case 0n: acc
+    case 1n+ +p:
+      +j = U32.from_nat(p)
+      +other = target_key(seed, j)
+      +earlier = U32.is_lt(other, mine) || (U32.is_eq(other, mine) && U32.is_lt(j, index))
+      count_before(p, seed, index, mine, (acc + Bool.to_u32(earlier) : U32))
+
+def target_rank(+seed: U32, +index: U32, n: U32) -> U32:
+  count_before(U32.to_nat(n), seed, index, target_key(seed, index), 0)
+
 def label_cases(dispatch: Nat, task: U32, +index: U32, +seed: U32) -> String:
   match dispatch:
     case 0n: "Click Me!"
@@ -93,6 +127,8 @@ def label_cases(dispatch: Nat, task: U32, +index: U32, +seed: U32) -> String:
     case 4n: at(["Close", "Cancel", "OK"], U32.to_nat(index))
     case 6n: ""
     case 9n: synonym(((G.mix(seed) + index) % S.count() : U32), (seed + index : U32))
+    case 7n: random_label(seed, index)
+    case 8n: random_label(seed, index)
     case _: "x" ++ U32.show((G.mix(seed) % 1000 : U32)) ++ "n" ++ U32.show(index)
 
 
@@ -102,9 +138,9 @@ def label(+task: U32, +index: U32, +seed: U32) -> String:
 def wanted_cases(dispatch: Nat, task: U32, +index: U32, +n: U32, +need: U32, +seed: U32, target: U32) -> Bool:
   match dispatch:
     case 5n: U32.is_eq(role(5, index, seed), role(5, target, seed))
-    case 7n: U32.is_lt(((index + G.mix(seed)) % n : U32), need)
-    case 8n: U32.is_lt(((index + G.mix(seed)) % n : U32), need)
-    case 9n: U32.is_lt(((index + G.mix(seed)) % n : U32), need)
+    case 7n: U32.is_lt(target_rank(seed, index, n), need)
+    case 8n: U32.is_lt(target_rank(seed, index, n), need)
+    case 9n: U32.is_lt(target_rank(seed, index, n), need)
     case _: U32.is_eq(index, target)
 
 
@@ -169,7 +205,7 @@ def submit(form: Bool, n: U32, +base: U32, a: Array<U32>) -> Array<U32>:
       a[(pos + 35 : U32)] <- 20
       G.text("Submit", (pos + 4 : U32), a)
 
-def generate(+task: U32, +seed: U32, +mode: U32, +base: U32, a: Array<U32>) -> Array<U32>:
+def generate_current(+task: U32, +seed: U32, +mode: U32, +base: U32, a: Array<U32>) -> Array<U32>:
   +need = required(task, mode, seed)
   +n = count(task, need, (seed + 31 : U32))
   +form = U32.is_ge(task, 7)
@@ -185,3 +221,11 @@ def generate(+task: U32, +seed: U32, +mode: U32, +base: U32, a: Array<U32>) -> A
   a = nodes(U32.to_nat(n), task, n, need, seed, target, base, a)
   a = submit(form, n, base, a)
   G.text(query(task, n, need, seed, target), (base + 768 : U32), a)
+
+def generate_branch(legacy: Bool, task: U32, seed: U32, mode: U32, base: U32, a: Array<U32>) -> Array<U32>:
+  match legacy:
+    case True{}: L.generate(task, seed, mode, base, a)
+    case False{}: generate_current(task, seed, mode, base, a)
+
+def generate(+task: U32, seed: U32, mode: U32, base: U32, a: Array<U32>) -> Array<U32>:
+  generate_branch(U32.is_ge(task, 10), task, seed, mode, base, a)

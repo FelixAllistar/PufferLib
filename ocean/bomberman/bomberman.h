@@ -24,6 +24,12 @@ struct Log {
     float episode_return;
     float episode_length;
     float approach_reward;
+    float near_opponent_ticks;
+    float near_opponent_fraction; // mean per-agent episode fraction of live-opponent ticks
+    float slot_0_near_opponent_ticks;
+    float slot_0_near_opponent_fraction;
+    float near_opponent_reward;
+    float early_kill_reward;
     float kills;
     float self_kills;
     float soft_breaks;
@@ -62,6 +68,11 @@ static inline void bm_load_config(BMConfig* cfg, Dict* kwargs) {
     cfg->reward_soft = (float)dict_get(kwargs, "reward_soft");
     cfg->reward_pickup = (float)dict_get(kwargs, "reward_pickup");
     cfg->reward_kill = (float)dict_get(kwargs, "reward_kill");
+    // Optional for older saved run INIs.
+    if (dict_find(kwargs, "reward_early_kill"))
+        cfg->reward_early_kill = (float)dict_get(kwargs, "reward_early_kill");
+    if (dict_find(kwargs, "reward_near_opponent"))
+        cfg->reward_near_opponent = (float)dict_get(kwargs, "reward_near_opponent");
     cfg->reward_death = (float)dict_get(kwargs, "reward_death");
     cfg->reward_self_kill = (float)dict_get(kwargs, "reward_self_kill");
     cfg->reward_win = (float)dict_get(kwargs, "reward_win");
@@ -89,6 +100,12 @@ void puf_log(Log* log, Dict* out) {
     dict_set(out, "episode_return", log->episode_return);
     dict_set(out, "episode_length", log->episode_length);
     dict_set(out, "approach_reward", log->approach_reward);
+    dict_set(out, "near_opponent_ticks", log->near_opponent_ticks);
+    dict_set(out, "near_opponent_fraction", log->near_opponent_fraction);
+    dict_set(out, "slot_0_near_opponent_ticks", log->slot_0_near_opponent_ticks);
+    dict_set(out, "slot_0_near_opponent_fraction", log->slot_0_near_opponent_fraction);
+    dict_set(out, "near_opponent_reward", log->near_opponent_reward);
+    dict_set(out, "early_kill_reward", log->early_kill_reward);
     dict_set(out, "kills", log->kills);
     dict_set(out, "self_kills", log->self_kills);
     dict_set(out, "soft_breaks", log->soft_breaks);
@@ -127,6 +144,10 @@ BM_HD void bm_log_match(Log* log, const BMMatch* match, int outcome) {
     if (outcome == 0) log->draw_rate += na;
     // perf tracks slot-0 win rate the same way
     log->perf += s0 * na;
+    const BMAgent* first = &match->agents[0];
+    log->slot_0_near_opponent_ticks += first->near_opponent_ticks * na;
+    log->slot_0_near_opponent_fraction += na * (first->opponent_present_ticks > 0
+        ? (float)first->near_opponent_ticks / first->opponent_present_ticks : 0.0f);
     log->slot_0_kills += (float)match->agents[0].kills * na;
     log->slot_0_self_kills += (float)match->agents[0].self_kills * na;
     int opponent_suicides = 0;
@@ -149,6 +170,11 @@ BM_HD void bm_log_match(Log* log, const BMMatch* match, int outcome) {
         log->episode_return += ag->ep_return;
         log->episode_length += (float)match->tick;
         log->approach_reward += ag->ep_approach_reward;
+        log->near_opponent_ticks += ag->near_opponent_ticks;
+        log->near_opponent_fraction += ag->opponent_present_ticks > 0
+            ? (float)ag->near_opponent_ticks / ag->opponent_present_ticks : 0.0f;
+        log->near_opponent_reward += ag->ep_near_reward;
+        log->early_kill_reward += ag->ep_early_kill_reward;
         log->kills += (float)ag->kills;
         log->self_kills += (float)ag->self_kills;
         log->soft_breaks += (float)ag->soft_breaks;

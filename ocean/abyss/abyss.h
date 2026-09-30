@@ -20,7 +20,8 @@ typedef float obs_t;
 #define ABYSS_MAX_OBSTACLES 60
 #define ABYSS_OBS_OBSTACLES 8
 #define ABYSS_OBSTACLE_FEATURES 5
-#define ABYSS_OBS_SIZE (ABYSS_GLOBAL_FEATURES + ABYSS_MAX_ENTITIES*ABYSS_ENTITY_FEATURES + ABYSS_OBS_OBSTACLES*ABYSS_OBSTACLE_FEATURES)
+#define ABYSS_EXTRA_FEATURES 10
+#define ABYSS_OBS_SIZE (ABYSS_EXTRA_FEATURES + ABYSS_GLOBAL_FEATURES + ABYSS_MAX_ENTITIES*ABYSS_ENTITY_FEATURES + ABYSS_OBS_OBSTACLES*ABYSS_OBSTACLE_FEATURES)
 #define ABYSS_ACTION_LANES 6
 #define ABYSS_MAX_CLOUDS 4
 #define OBS_SIZE ABYSS_OBS_SIZE
@@ -42,7 +43,8 @@ enum { INTERACTION_NONE, INTERACTION_OPEN, INTERACTION_ACTIVATE };
 enum { POINTER_NONE, POINTER_OPEN, POINTER_ACTIVATE, POINTER_FOCUS, POINTER_LOCK, POINTER_APPROACH };
 
 typedef struct { float x, y, z; } Vec3;
-#include "generated_scenarios.h"
+#include "generated_combat_catalog.h"
+#include "generated_mechanics.h"
 #include "generated_colliders.h"
 typedef struct { Vec3 center; float radius; } AbyssObstacle;
 typedef struct { Vec3 center, radii; float yaw, pitch; } AbyssCloudLobe;
@@ -60,8 +62,12 @@ typedef struct {
     float turret_dps, missile_dps, missile_range;
     float missile_explosion_radius, missile_explosion_velocity, missile_drf;
     float optimal, falloff, tracking, neutralizer;
+    float local_repair, remote_repair, remote_repair_optimal, remote_repair_falloff;
+    signed char local_repair_layer, remote_repair_layer;
     float effect_range, effect_strength, effect_cycle, effect_cooldown;
     float lock_progress, lock_time;
+    float ewar_cd[4], ewar_active[4], ewar_strength, spool, spool_cd, drone_cd;
+    int parent_index, drone_pending;
 } AbyssEntity;
 
 struct Log {
@@ -82,6 +88,7 @@ struct Log {
     float weapon_cap_spent, weapon_mean_hit_chance;
     float weapon_low_hit_fraction, weapon_damage_dealt;
     float incoming_damage_taken;
+    float npc_local_repaired, npc_remote_repaired;
     float weather_30_rate, weather_50_rate;
     float weather_30_completion_joint_rate, weather_50_completion_joint_rate;
     float weather_30_death_joint_rate, weather_50_death_joint_rate;
@@ -119,6 +126,7 @@ struct Env {
     float shield_recharged;
     float weapon_cap_spent, weapon_hit_chance_sum, weapon_damage_dealt;
     float incoming_damage_taken;
+    float npc_local_repaired, npc_remote_repaired;
     float min_armor_fraction, min_hull_fraction;
     float wasted_rep_amount, total_rep_amount;
     Vec3 ship_pos, ship_vel;
@@ -148,6 +156,10 @@ struct Env {
     float reward_gate_ready_idle, reward_final_gate_ready_idle;
     float reward_weapon_idle_ready;
     float cap_reserve_fraction, rep_urgency_fraction;
+    int encounter_archetype, active_archetype, prop_is_mwd, unknown_npc_index, episode_logs;
+    float ewar_sensor_dropout_probability;
+    float cap_neut_resistance, ewar_strength_variation, ewar_activation_probability;
+    float ewar[8];
     AbyssEntity entities[ABYSS_MAX_ENTITIES];
     AbyssCloud clouds[ABYSS_MAX_CLOUDS];
     AbyssObstacle obstacles[ABYSS_MAX_OBSTACLES];
@@ -372,8 +384,12 @@ static void ab_add_generated_hostile(Env* e, GeneratedSpawn spawn) {
     n->kind=ENTITY_HOSTILE;n->alive=1;n->type_index=spawn.npc;
     n->gate_required=def->gate_required;n->suppressor_vulnerable=def->suppressor_vulnerable;
     n->pos=(Vec3){spawn.position[0],spawn.position[1],spawn.position[2]};
+    n->parent_index=-1;n->spool=1;n->spool_cd=AB_NPC_MECHANICS[spawn.npc].cycle;
+    n->ewar_strength=1+(2*ab_rand(e)-1)*e->ewar_strength_variation;
+    for(int k=0;k<AB_NPC_MECHANICS[spawn.npc].effect_count;k++)n->ewar_cd[k]=ab_rand(e)*AB_NPC_MECHANICS[spawn.npc].effects[k].cycle;
     n->signature=def->signature;n->shield=n->shield_max=def->shield;
     n->armor=n->armor_max=def->armor;n->hull=n->hull_max=def->hull;
+    n->shield=AB_NPC_MECHANICS[spawn.npc].initial[0];n->armor=AB_NPC_MECHANICS[spawn.npc].initial[1];n->hull=AB_NPC_MECHANICS[spawn.npc].initial[2];
     n->max_speed=def->max_speed;n->orbit_speed=def->orbit_speed;n->orbit_range=def->orbit_range;
     n->optimal=def->optimal;n->falloff=def->falloff;n->tracking=def->tracking;
     n->turret_dps=def->turret_dps;n->missile_dps=def->missile_dps;
@@ -381,11 +397,73 @@ static void ab_add_generated_hostile(Env* e, GeneratedSpawn spawn) {
     n->missile_explosion_radius=def->missile_explosion_radius;
     n->missile_explosion_velocity=def->missile_explosion_velocity;
     n->missile_drf=def->missile_drf;n->neutralizer=def->neutralizer;
+    n->local_repair=def->local_repair;n->local_repair_layer=def->local_repair_layer;
+    n->remote_repair=def->remote_repair;n->remote_repair_layer=def->remote_repair_layer;
+    n->remote_repair_optimal=def->remote_repair_optimal;
+    n->remote_repair_falloff=def->remote_repair_falloff;
     memcpy(n->resist[0],def->shield_resist,sizeof(def->shield_resist));
     memcpy(n->resist[1],def->armor_resist,sizeof(def->armor_resist));
     memcpy(n->resist[2],def->hull_resist,sizeof(def->hull_resist));
     memcpy(n->turret_damage_mix,def->turret_damage_mix,sizeof(def->turret_damage_mix));
     memcpy(n->missile_damage_mix,def->missile_damage_mix,sizeof(def->missile_damage_mix));
+}
+
+#include "npc_mechanics.h"
+#define AB_EFFECT(e,c) ((e)->ewar[c])
+
+static float* ab_npc_layer_hp(AbyssEntity* n, int layer) {
+    if(layer==LAYER_SHIELD)return &n->shield;
+    if(layer==LAYER_ARMOR)return &n->armor;
+    if(layer==LAYER_HULL)return &n->hull;
+    return NULL;
+}
+
+static float ab_npc_layer_max(AbyssEntity* n, int layer) {
+    if(layer==LAYER_SHIELD)return n->shield_max;
+    if(layer==LAYER_ARMOR)return n->armor_max;
+    if(layer==LAYER_HULL)return n->hull_max;
+    return 0;
+}
+
+static float ab_repair_npc(AbyssEntity* n, int layer, float amount) {
+    if(!n->alive||n->hull<=0||n->kind!=ENTITY_HOSTILE||amount<=0)return 0;
+    float* hp=ab_npc_layer_hp(n,layer);
+    if(hp==NULL)return 0;
+    float before=*hp;
+    *hp=fminf(ab_npc_layer_max(n,layer),before+amount);
+    return fmaxf(0,*hp-before);
+}
+
+// Constant HP/s approximation of the exported amount/cycle attributes.
+// Repair is layer-specific, independent of player cap, and never revives a death.
+static void ab_step_npc_repairs(Env* e, float seconds) {
+    if(seconds<=0)return;
+    for(int i=0;i<e->entity_count;i++){
+        AbyssEntity* n=&e->entities[i];
+        e->npc_local_repaired+=ab_repair_npc(n,n->local_repair_layer,n->local_repair*seconds);
+    }
+    // Approximate remote-repair AI: each living healer selects one damaged
+    // hostile ally (never itself/cache/player), maximizing missing layer fraction
+    // weighted by range application. Exact live target-selection remains uncalibrated.
+    for(int i=0;i<e->entity_count;i++){
+        AbyssEntity* healer=&e->entities[i];
+        if(!healer->alive||healer->hull<=0||healer->kind!=ENTITY_HOSTILE||healer->remote_repair<=0)continue;
+        int target=-1;float best=0,application=0;
+        for(int j=0;j<e->entity_count;j++){
+            AbyssEntity* n=&e->entities[j];
+            if(j==i||!n->alive||n->hull<=0||n->kind!=ENTITY_HOSTILE)continue;
+            float max_hp=ab_npc_layer_max(n,healer->remote_repair_layer);
+            float* hp=ab_npc_layer_hp(n,healer->remote_repair_layer);
+            if(hp==NULL||max_hp<=0||*hp>=max_hp)continue;
+            float beyond=fmaxf(0,ab_len(ab_sub(n->pos,healer->pos))-healer->remote_repair_optimal);
+            float factor=beyond<=0?1.0f:healer->remote_repair_falloff>0?
+                powf(.5f,(beyond/healer->remote_repair_falloff)*(beyond/healer->remote_repair_falloff)):0;
+            float priority=(1-*hp/max_hp)*factor;
+            if(priority>best){target=j;best=priority;application=factor;}
+        }
+        if(target>=0)e->npc_remote_repaired+=ab_repair_npc(&e->entities[target],
+            healer->remote_repair_layer,healer->remote_repair*seconds*application);
+    }
 }
 
 static void ab_add_tower(Env* e, int kind, float range, float strength, Vec3 position) {
@@ -463,6 +541,7 @@ static void ab_spawn_obstacles(Env* e) {
 
 static void ab_spawn_room(Env* e) {
     memset(e->entities,0,sizeof(e->entities)); e->entity_count=0; e->focus_index=-1;
+    for(int i=0;i<ABYSS_MAX_ENTITIES;i++)e->entities[i].parent_index=-1;
     e->weapon_target_index=-1;e->weapon_desired_target_index=-1;
     e->navigation_target_index=-1;e->cargo_index=-1;e->cache_looted=0;e->cargo_open=0;
     e->interaction_kind=INTERACTION_NONE;e->interaction_target_index=-1;
@@ -473,7 +552,12 @@ static void ab_spawn_room(Env* e) {
     cache->shield=cache->shield_max=250; cache->armor=cache->armor_max=500; cache->hull=cache->hull_max=450;
     AbyssEntity* gate=&e->entities[e->entity_count++]; gate->kind=ENTITY_CONDUIT; gate->alive=1; gate->signature=1000;
     gate->pos=(Vec3){recorded->gate_position[0],recorded->gate_position[1],recorded->gate_position[2]}; gate->radius=5000;
-    for(int i=0;i<recorded->hostile_count;i++)ab_add_generated_hostile(e,recorded->hostiles[i]);
+    for(int c=0;c<7;c++)e->ewar[c]=1;
+    e->ewar[7]=0;
+    e->unknown_npc_index=-1;
+    if(e->filament_tier==0){
+        for(int i=0;i<recorded->hostile_count;i++)ab_add_generated_hostile(e,recorded->hostiles[i]);
+    }else ab_spawn_calm(e,recorded);
     for(int i=0;i<recorded->tower_count;i++)ab_add_recorded_tower(e,recorded->towers[i]);
     ab_assign_policy_slots(e);
     ab_spawn_local_effects(e);
@@ -668,9 +752,18 @@ static void compute_observations(Env* e) {
         o[k++]=1.0f;
         o[k++]=r.x/100000; o[k++]=r.y/100000; o[k++]=r.z/100000;
         o[k++]=n->vel.x/2500; o[k++]=n->vel.y/2500; o[k++]=n->vel.z/2500;
-        o[k++]=ab_len(r)/100000; o[k++]=n->shield_max? n->shield/n->shield_max:0;
+        o[k++]=ab_len(r)/100000;
+        if(n->kind==ENTITY_HOSTILE&&!n->locked){
+            const GeneratedNpcDef*d=&GENERATED_NPCS[n->type_index];
+            float maxima[3]={d->shield,d->armor,d->hull};
+            for(int layer=0;layer<3;layer++)o[k++]=index==e->unknown_npc_index?1:
+                (maxima[layer]>0?AB_NPC_MECHANICS[n->type_index].initial[layer]/maxima[layer]:0);
+        }else{
+        o[k++]=n->shield_max? n->shield/n->shield_max:0;
         o[k++]=n->armor_max? n->armor/n->armor_max:0; o[k++]=n->hull_max? n->hull/n->hull_max:0;
-        o[k++]=n->signature/500; o[k++]=n->type_index/128.0f;
+        }
+        o[k++]=(index==e->unknown_npc_index?50:n->signature)/500;
+        o[k++]=(index==e->unknown_npc_index?127:n->type_index)/128.0f;
     }
     int used[ABYSS_MAX_OBSTACLES]={0};
     for(int slot=0;slot<ABYSS_OBS_OBSTACLES;slot++) {
@@ -681,10 +774,25 @@ static void compute_observations(Env* e) {
         o[k++]=relative.x/100000;o[k++]=relative.y/100000;o[k++]=relative.z/100000;
         o[k++]=obstacle->radius/25000;o[k++]=ab_clip(clearance/100000,-1,1);
     }
+    o[19]=o[20]=o[21]=0; // Live cloud occupancy is not reliably observed.
+    ab_estimate_ewar(e,o+1224);
     ab_compute_action_mask(e);
 }
 
 void puf_init(Env* e, Dict* kwargs) {
+    e->episode_logs=(int)dict_get(kwargs,"episode_logs");
+    e->encounter_archetype=(int)dict_get(kwargs,"encounter_archetype");
+    assert(e->encounter_archetype>=-1&&e->encounter_archetype<(int)CALM_ARCHETYPE_COUNT);
+    e->ewar_sensor_dropout_probability=(float)dict_get(kwargs,"ewar_sensor_dropout_probability");
+    assert(e->ewar_sensor_dropout_probability>=0&&e->ewar_sensor_dropout_probability<=1);
+    e->cap_neut_resistance=(float)dict_get(kwargs,"cap_neut_resistance");
+    e->prop_is_mwd=(int)dict_get(kwargs,"prop_is_mwd");
+    e->ewar_strength_variation=(float)dict_get(kwargs,"ewar_strength_variation");
+    e->ewar_activation_probability=(float)dict_get(kwargs,"ewar_activation_probability");
+    assert(e->cap_neut_resistance>=0&&e->cap_neut_resistance<=1);
+    assert(e->ewar_strength_variation>=0&&e->ewar_strength_variation<=.5f);
+    assert(e->ewar_activation_probability>=0&&e->ewar_activation_probability<=1);
+    assert(dict_get(kwargs,"filament_tier")>=0&&dict_get(kwargs,"filament_tier")<=1);
     e->num_agents=1;
     e->agents[0].policy=0;
     e->agents[0].action_mask=NULL;
@@ -843,6 +951,8 @@ void puf_log(Log* log, Dict* out) {
     dict_set(out,"weapon_low_hit_fraction",log->weapon_low_hit_fraction);
     dict_set(out,"weapon_damage_dealt",log->weapon_damage_dealt);
     dict_set(out,"incoming_damage_taken",log->incoming_damage_taken);
+    dict_set(out,"npc_local_repaired",log->npc_local_repaired);
+    dict_set(out,"npc_remote_repaired",log->npc_remote_repaired);
     dict_set(out,"weather_30_rate",log->weather_30_rate);
     dict_set(out,"weather_50_rate",log->weather_50_rate);
     dict_set(out,"weather_30_completion_joint_rate",
@@ -883,6 +993,7 @@ void puf_reset(Env* e) {
     e->shield_recharged=0;
     e->weapon_cap_spent=e->weapon_hit_chance_sum=0;
     e->weapon_damage_dealt=e->incoming_damage_taken=0;
+    e->npc_local_repaired=e->npc_remote_repaired=0;
     e->wasted_rep_amount=e->total_rep_amount=0;
     int lag_span=e->distance_observation_lag_max_ticks-e->distance_observation_lag_min_ticks+1;
     e->distance_observation_lag_ticks=e->distance_observation_lag_min_ticks+
@@ -917,12 +1028,13 @@ static void ab_finish(Env*e,int success){
     // one additional completed episode outweighs the full speed term.
     float cache_fraction=e->caches_looted/3.0f;
     float perf=1000.0f*success+100.0f*cache_fraction+10.0f*survived+
-        e->rooms_cleared/3.0f+0.001f*speed;
+        e->rooms_cleared/3.0f+0.05f*speed;
     e->log.perf+=perf;e->log.score+=perf;e->log.episode_return+=e->episode_return;
     e->log.episode_length+=e->tick;e->log.completion_rate+=success;
     e->log.survival_rate+=survived;e->log.rooms_cleared+=e->rooms_cleared;
     e->log.caches_looted+=e->caches_looted;
 
+    if(e->episode_logs)printf("ABYSS_EPISODE {\"archetype\":%d,\"weather\":%.2f,\"success\":%d,\"ticks\":%d,\"min_cap\":%.6f,\"min_armor\":%.6f,\"min_hull\":%.6f,\"neut_drained\":%.3f}\n",e->encounter_archetype,e->weather_penalty,success,e->tick,e->min_cap_fraction,e->min_armor_fraction,e->min_hull_fraction,e->neut_cap_drained);
     int dead=!success&&e->hull<=0;
     int timed_out=!success&&!dead&&e->tick>=e->max_steps;
     int threats_alive=ab_gate_targets_alive(e)>0;
@@ -1002,6 +1114,8 @@ static void ab_finish(Env*e,int success){
         e->weapon_low_hit_cycles/(float)e->weapon_cycle_count:0;
     e->log.weapon_damage_dealt+=e->weapon_damage_dealt;
     e->log.incoming_damage_taken+=e->incoming_damage_taken;
+    e->log.npc_local_repaired+=e->npc_local_repaired;
+    e->log.npc_remote_repaired+=e->npc_remote_repaired;
     int weather_30=fabsf(e->weather_penalty-.30f)<.01f;
     int weather_50=fabsf(e->weather_penalty-.50f)<.01f;
     e->log.weather_30_rate+=weather_30;
@@ -1082,14 +1196,14 @@ void puf_step(Env* e) {
         focus_changed=1;
     } else if(pointer_kind==POINTER_NONE&&target_action>=TARGET_LOCK_BASE&&target_action<TARGET_FOCUS_BASE) {
         int index=ab_entity_for_slot(e,target_action-TARGET_LOCK_BASE);
-        if(index>=0){AbyssEntity*n=&e->entities[index];float distance=ab_len(ab_sub(n->pos,e->ship_pos));if(ab_damageable(n)&&!n->locked&&!n->locking&&distance<=e->lock_range){pointer_kind=POINTER_LOCK;pointer_index=index;}}
+        if(index>=0){AbyssEntity*n=&e->entities[index];float distance=ab_len(ab_sub(n->pos,e->ship_pos));if(ab_damageable(n)&&!n->locked&&!n->locking&&distance<=e->lock_range*AB_EFFECT(e,5)){pointer_kind=POINTER_LOCK;pointer_index=index;}}
     } else if(pointer_kind==POINTER_NONE&&target_action>=TARGET_FOCUS_BASE&&target_action<ABYSS_TARGET_ACTIONS) {
         int index=ab_entity_for_slot(e,target_action-TARGET_FOCUS_BASE);
         if(index>=0&&ab_damageable(&e->entities[index])&&e->entities[index].locked&&e->focus_index!=index){pointer_kind=POINTER_FOCUS;pointer_index=index;focus_changed=1;}
     }
     // A lock command is a transaction: once requested, acquisition continues without
     // requiring the policy to repeat Ctrl+click every tick.
-    for(int i=0;i<e->entity_count;i++){AbyssEntity*n=&e->entities[i];if(!n->alive||!n->locking||n->locked)continue;n->lock_progress+=1.0f;if(n->lock_progress>=n->lock_time){n->locking=0;n->locked=1;}}
+    for(int i=0;i<e->entity_count;i++){AbyssEntity*n=&e->entities[i];if(!n->alive||!n->locking||n->locked)continue;n->lock_progress+=AB_EFFECT(e,6);if(n->lock_progress>=n->lock_time){n->locking=0;n->locked=1;}}
     for(int i=0;i<e->entity_count;i++)e->entities[i].focused=i==e->focus_index;
     if(!e->weapon_on&&!weapon_stopped&&!focus_changed&&e->weapon_desired_target_index>=0&&
         e->focus_index==e->weapon_desired_target_index&&
@@ -1121,6 +1235,7 @@ void puf_step(Env* e) {
 
     // Recharge and propulsion activation happen before motion. Propulsion effects
     // persist through a paid cycle after OFF is requested, matching module cycles.
+    ab_step_npc_drones(e);ab_step_ewar(e);
     float recharge_time=e->cap_recharge_time*
         (e->weather_type==WEATHER_ELECTRICAL?.5f:1.0f);
     e->capacitor=ab_capacitor_after_recharge(
@@ -1135,7 +1250,9 @@ void puf_step(Env* e) {
         e->prop_cooldown=fmaxf(0,e->prop_cooldown-1.0f);
         if(e->prop_cooldown<=0)e->prop_on=0;
     }
-    if(e->prop_desired_on&&!e->prop_on){
+    if(e->prop_desired_on&&!e->prop_on
+        &&(!e->prop_is_mwd||e->ewar[7]<=0)
+    ){
         if(e->capacitor>=e->prop_cap_cost){
             ab_spend_capacitor(e,e->prop_cap_cost,rewards,&e->prop_cap_spent);
             e->prop_on=1;
@@ -1147,7 +1264,7 @@ void puf_step(Env* e) {
 
     int target=e->navigation_target_index;
     float tachyon_velocity=ab_cloud_multiplier(e,e->ship_pos,CLOUD_TACHYON,4.0f);
-    float max_speed=(e->prop_on?e->prop_speed:e->base_speed)*e->weather_velocity_multiplier*tachyon_velocity;
+    float max_speed=(e->prop_on?e->prop_speed:e->base_speed)*e->weather_velocity_multiplier*tachyon_velocity*AB_EFFECT(e,3);
     Vec3 desired={0,0,0};
     if(target>=0){
         desired=ab_mul(ab_unit(ab_sub(e->entities[target].pos,e->ship_pos)),max_speed);
@@ -1165,7 +1282,7 @@ void puf_step(Env* e) {
     e->ship_pos=ab_add(e->ship_pos,displacement);
     ab_resolve_obstacles(e,&e->ship_pos,&e->ship_vel,60.0f);
     float player_signature=e->signature*(e->prop_on?e->prop_signature_multiplier:1.0f)*
-        ab_cloud_multiplier(e,e->ship_pos,CLOUD_BIOLUMINESCENCE,4.0f);
+        ab_cloud_multiplier(e,e->ship_pos,CLOUD_BIOLUMINESCENCE,4.0f)*AB_EFFECT(e,4);
     for(int i=0;i<e->entity_count;i++){
         AbyssEntity*n=&e->entities[i];
         if(!n->alive||n->kind!=ENTITY_HOSTILE)continue;
@@ -1192,6 +1309,9 @@ void puf_step(Env* e) {
         }
         float turret_hit=ab_turret_hit_chance(angular,tracking,player_signature,d,
             n->optimal*e->weather_range_multiplier,n->falloff*e->weather_range_multiplier);
+        const NpcMechanics* special=&AB_NPC_MECHANICS[n->type_index];
+        if(special->vorton_radius>0)turret_hit=ab_missile_damage_fraction(player_signature,ab_len(e->ship_vel),special->vorton_radius,special->vorton_velocity,special->vorton_drf,d,n->optimal);
+        turret_hit*=ab_npc_spool(n,d);
         float ship_hp_before=e->shield+e->armor+e->hull;
         ab_damage_layers(n->turret_dps*turret_hit,n->turret_damage_mix,
             &e->shield,&e->armor,&e->hull,e->ship_resist);
@@ -1202,10 +1322,9 @@ void puf_step(Env* e) {
             &e->shield,&e->armor,&e->hull,e->ship_resist);
         e->incoming_damage_taken+=ship_hp_before-
             (e->shield+e->armor+e->hull);
-        float before_neut=e->capacitor;
-        e->capacitor=fmaxf(0,e->capacitor-n->neutralizer);
-        e->neut_cap_drained+=before_neut-e->capacitor;
     }
+
+    ab_step_npc_repairs(e,1.0f);
 
     // Suppressors only affect explicitly eligible drone/missile entities. They
     // cannot damage the player ship or ordinary NPC ships.
@@ -1252,7 +1371,7 @@ void puf_step(Env* e) {
             float d=ab_len(radial);
             Vec3 relative_velocity=ab_sub(n->vel,e->ship_vel);
             float angular=ab_len(ab_cross(radial,relative_velocity))/fmaxf(d*d,1);
-            float tracking=e->weapon_tracking;
+            float tracking=e->weapon_tracking*AB_EFFECT(e,2);
             for(int t=0;t<e->entity_count;t++){
                 AbyssEntity*p=&e->entities[t];
                 if(p->kind==ENTITY_TRACKING_PYLON&&
@@ -1262,8 +1381,8 @@ void puf_step(Env* e) {
             float target_signature=n->signature*
                 ab_cloud_multiplier(e,n->pos,CLOUD_BIOLUMINESCENCE,4.0f);
             float hit=ab_turret_hit_chance(angular,tracking,target_signature,d,
-                e->weapon_optimal*e->weather_range_multiplier,
-                e->weapon_falloff*e->weather_range_multiplier);
+                e->weapon_optimal*e->weather_range_multiplier*AB_EFFECT(e,0),
+                e->weapon_falloff*e->weather_range_multiplier*AB_EFFECT(e,1));
             e->weapon_cycle_count++;
             e->weapon_hit_chance_sum+=hit;
             e->weapon_low_hit_cycles+=hit<.25f;
@@ -1354,7 +1473,7 @@ void puf_step(Env* e) {
             if(pointer_index>=0){
                 AbyssEntity*n=&e->entities[pointer_index];
                 float distance=ab_len(ab_sub(n->pos,e->ship_pos));
-                if(ab_damageable(n)&&!n->locked&&!n->locking&&distance<=e->lock_range){
+                if(ab_damageable(n)&&!n->locked&&!n->locking&&distance<=e->lock_range*AB_EFFECT(e,5)){
                     n->locking=1;
                     if(n->lock_time<=0){
                         float scan=e->scan_resolution*(e->weather_type==WEATHER_EXOTIC?1.5f:1.0f);
@@ -1388,6 +1507,7 @@ void puf_step(Env* e) {
         }
     }
     if(e->cargo_open)rewards[0]+=e->reward_cargo_open;
+    ab_retire_orphan_drones(e);
     if(e->interaction_kind==INTERACTION_ACTIVATE&&e->interaction_target_index==gate&&gate>=0&&
         ab_room_cache_requirement_met(e)&&ab_gate_targets_alive(e)==0&&
         ab_conduit_in_activation_range(e,&e->entities[gate])){

@@ -44,7 +44,7 @@ int wf_reset(WFLoaded *f,uint32_t task,uint32_t seed){
 }
 int wf_view_valid(const WFView *v){
  if(!v||v->version!=WF_ABI_VERSION||v->count>WF_MAX_NODES||v->text_bytes>WF_TEXT_BYTES||!v->deadline_ms||!wf_text_get(v,v->instruction))return 0;
- for(unsigned i=0;i<v->count;i++){const WFNode *n=v->nodes+i;if(!n->ref||n->role>WF_TEXTAREA||!(n->flags&WF_VISIBLE)||!wf_text_get(v,n->name)||!wf_text_get(v,n->value)||
+ for(unsigned i=0;i<v->count;i++){const WFNode *n=v->nodes+i;if(!n->ref||n->role>WF_TEXTAREA||!wf_text_get(v,n->name)||!wf_text_get(v,n->value)||
    !isfinite(n->x)||!isfinite(n->y)||!isfinite(n->width)||!isfinite(n->height)||n->width<0||n->height<0||n->selection_start>n->selection_end||
    !isfinite(n->scroll_x)||!isfinite(n->scroll_y)||!isfinite(n->scroll_max_x)||!isfinite(n->scroll_max_y))return 0;
   for(unsigned j=0;j<i;j++)if(n->ref==v->nodes[j].ref)return 0;

@@ -1,0 +1,89 @@
+{
+  "date": "2026-09-29",
+  "reference_commit": "33c3b4ddef8c6eb67c57a29663d844b1eda7e614",
+  "compiler": "stock Bend 2.0.6 CPU; serialized <=6 GiB cgroup; no swap",
+  "laws": 6,
+  "native": {
+    "status": "PASS",
+    "generated_public_cases": 128,
+    "dirty_row_comparisons": 512,
+    "checks": "Capture/release/replacement, deadline/absorption, source line scoring bug, five small-ring size bands, twelve radial-spread score bands, independent pinned-D3 curve bounds and private goal independence"
+  },
+  "browser": {
+    "status": "PASS",
+    "episodes": 40,
+    "actions": 322,
+    "full_credit": 9,
+    "tasks": [
+      {
+        "task": "draw-circle",
+        "episodes": 20,
+        "actions": 251,
+        "full_credit": 6
+      },
+      {
+        "task": "draw-line",
+        "episodes": 20,
+        "actions": 71,
+        "full_credit": 3
+      }
+    ],
+    "preset": "Original-generated center and instruction imported only at reset; actual CDP pointer capture, release, replacement, move, Submit and timeout; controlled clock"
+  },
+  "public_scripted": {
+    "status": "PASS",
+    "episodes": 2000,
+    "successes": 2000,
+    "actions": 40000,
+    "tasks": [
+      {
+        "task": "draw-circle",
+        "episodes": 1000,
+        "successes": 1000,
+        "actions": 35000
+      },
+      {
+        "task": "draw-line",
+        "episodes": 1000,
+        "successes": 1000,
+        "actions": 5000
+      }
+    ],
+    "criterion": "Full credit raw reward >=0.999; WFView-only controller, not learned RL"
+  },
+  "limits": [
+    "Explicit scene-and-input-history projection, not a general DOM/AX or pixel encoder",
+    "At most 256 samples, single pointer inside the SVG; new down or Submit while held is rejected",
+    "Integer MouseEvent coordinates; independent integer-center generator rather than original continuous distribution",
+    "F32 basis extrema and scoring; F64-equivalent numerical-threshold parity unverified",
+    "No learned policy adapter"
+  ],
+  "full_parity": "unverified",
+  "commands": [
+    "make -f ocean/webnav/families/Makefile browser FAMILY=drawing EPISODES=20",
+    "make -f ocean/webnav/families/Makefile public-check FAMILY=drawing EPISODES=1000"
+  ],
+  "build_cache": {
+    "proof": "5bcf65cf8ad5ebedc12be4b6dbb27e514ef918cd0341416169b8f5c6a04294b0",
+    "runtime": "a17180c6425460dcd002bc95187e3f96b033ded19a29a1ce4908c114caf53159"
+  },
+  "source_sha256": {
+    "Curve.bend": "2d8f0d6c750fb9c133462306a0370d71f828e73079c396710a79a5531fc014f5",
+    "Generate.bend": "e4d31da4145486a8fa5c46d4c502f61e06fdccd291eee53949f436e2885aeddd",
+    "LAWS.bend": "09b79c5953425f98959c53889f77c4c96ad87b0caab01c0b4c9ef3e4858fbe80",
+    "Main.bend": "6aec06db526e6994080bea7131894ba797e0e3521567b928b9940465e12aa163",
+    "Model.bend": "492a9b6c550649b06cc662de305cd4b5691c04a420e8c58b2b5fe44c5ddbb229",
+    "PROOF.bend": "e9b687973ffc97acf23b2985215d403241b23c2a0174c1f076317123cafe41d9",
+    "Points.bend": "5f89e2859dc6dbb6cc76b626b1b7e9ef0bba195c1e28ac7d954afe9c9792eee0",
+    "Scoring.bend": "5ff883ae295dadcb2e464f5b5528fa3ef4b323f283d804878fb6a7994b8f480c",
+    "Wire.bend": "0acac48b31e13fcaf3f403876597d4b23638721771b2deb09ee62705a38864da",
+    "bridge.c": "b2afd9e9083262d2e1735746d46ec5c9ce7ec4bc0b81bd47b77c70218cc04e17",
+    "browser.js": "175d4ff32a06bd2019a3ead6c957c8b705de11393102bfc4dee1b0f2602d55bf",
+    "browser_oracle.c": "15f9a6ad13fa52c734c6ecef36008968077be4c43edb9380cf96136c4150d629",
+    "family_api.c": "1edd8853f3678a145911cf4b641b9066c518faf62c97384dba1e2be338bb2e80",
+    "public_controller.h": "1805e87090fa25a0bf2391ea5ededb774232d9786c24e282b36b0b4560808293",
+    "reference_bounds.cjs": "bf2a32602c1a866649c860be0925eb0d9303e778ab83f96b897e553431245e4a",
+    "test_drawing.c": "5966f4c11c1a9d224e4c047f22bc6ed8844542d2721d57d324251ae87d44f4af",
+    "test_scoring.c": "0469ec5a6c6e2547d699a1861c177ebea9db8ae69a6f18e1f3a740144b119847"
+  }
+}

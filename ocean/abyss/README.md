@@ -7,17 +7,25 @@ The simulator remains CPU-based with a GPU learner; `--cpu` builds the standalon
 headless evaluator. There was no interactive renderer in the legacy environment.
 The port uses typed observations and native inferred masks, without shared-core
 changes. Fresh training is the default; request a saved checkpoint explicitly.
-The four-dimensional structural sweep is retained using fixed ranges for the
-other inherited dimensions. Old custom optimizer/loss settings are not imported.
+The Punisher sweep searches nine bounded dimensions at 100M steps per trial.
+See `SWEEP_PUNISHER.md` for ranges, corrected rewards, and the launch command.
+Other inherited optimizer/loss dimensions are fixed.
 
-The current training config intentionally uses harder scenarios and stronger
-terminal rewards than the original mechanics-test fixture. Tests set that fixture
-explicitly rather than relying on changing training defaults. Reward clipping at
-1 remains enabled, so terminal rewards above 1 are clipped during PPO.
+Training samples the empirical T0 templates uniformly and balances 30/50%
+Electrical weather. Tests use a frozen legacy mechanics fixture. Reward clipping
+at 1 remains enabled; current success/speed/room/loot rewards fit below that
+ceiling together, so completion speed is visible to PPO.
 
-This is an early one-second-tick T0 Abyss environment. It consumes final, post-skill
+This is an early one-second-tick T0/T1 Abyss environment. It consumes final, post-skill
 ship statistics rather than reproducing EVE's fitting and skill system. It is a runnable
 training substrate, not yet a parity-complete EVE simulation.
+
+NPC local shield/armor repair uses continuous HP/s from exported amount/cycle
+attributes. Remote repair supports layer, optimal and falloff with one ally per
+healer, but its target selection is an approximation pending live calibration.
+All 107 catalog entries preserve repair metadata. Tier 0 uses the 28 recorded
+templates; tier 1 samples the 19 Calm encounter families. Both use shared combat
+mechanics and the same observation contract; see [tier controls](TIERS.md).
 
 Data sources:
 
@@ -74,10 +82,11 @@ prioritized as open/activate, weapon focus, explicit targeting, then navigation.
 the non-pointer Enter shortcut and can coexist with that pointer operation. This matches
 the measured live proposal-to-landing median of about 0.95 seconds. There is no
 nearest-hostile shortcut. The observation
-has 1,224 floats and the flattened action mask has 394 entries. Earlier Abyss checkpoints
-are incompatible and must be retrained.
+has 1,234 floats and the flattened action mask has 394 entries for both tiers.
+Legacy 1,224-input weights can be upgraded with `tools/upgrade_checkpoint.py`;
+see [checkpoint migration](TIERS.md#reusing-existing-t0-weights).
 
-The runtime samples one of 28 recorded three-room sequences. It uses the observed hostile
+At tier 0, the runtime samples one of 28 recorded three-room sequences. It uses the observed hostile
 compositions, NPC catalog statistics, cache/conduit XYZ, hostile XYZ, and named support-pylon
 XYZ. Clouds use randomized unions of two to four oriented ellipsoids because their native
 geometry was not identified reliably.
@@ -96,3 +105,6 @@ Native ABI smoke tests are available with:
 make -C ocean/abyss test
 make -C ocean/abyss sanitize
 ```
+
+T0 and T1 now share this environment and combat mechanics. Select
+`--env.filament_tier=0` or `1`. See [tier usage and checkpoint migration](TIERS.md).

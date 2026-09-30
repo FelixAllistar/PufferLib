@@ -60,3 +60,15 @@ law popup_ok_fails:
   for mode: Nat
   for seen: Bool
   {M.press(M.PopupOK{}, M.S{kind, fields, focus, clipboard, True{}, mode, seen, W.Running{}}) == M.S{kind, fields, focus, clipboard, True{}, mode, seen, W.Finished{0, 1, False{}}} : M.State}
+
+law legacy_text_exact:
+  {M.all_correct([T.F{[65, 98], 0n, 0n, [65, 98]}], M.EnterText{}, 0n) == True{} : Bool}
+
+law legacy_text_is_case_sensitive:
+  {M.all_correct([T.F{[97, 98], 0n, 0n, [65, 98]}], M.EnterText{}, 0n) == False{} : Bool}
+
+law login_requires_both_credentials:
+  {M.all_correct([T.F{[65], 0n, 0n, [65]}, T.F{[66], 0n, 0n, [67]}], M.Login{}, 0n) == False{} : Bool}
+
+law table_value_exact:
+  {M.all_correct([T.F{[49, 57], 0n, 0n, [49, 57]}], M.TableOne{}, 0n) == True{} : Bool}

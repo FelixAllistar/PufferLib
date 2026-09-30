@@ -1,5 +1,9 @@
 # Abyss experiments
 
+Current Punisher/repair work: see `SWEEP_PUNISHER.md`. The results below are
+historical runs from before NPC local/remote repair was wired into combat and
+before the current reward normalization; do not treat them as current parity.
+
 All evaluations are stochastic and use the native 5c evaluator. Completion,
 survival, and cache counts are measured over complete three-room episodes.
 Fixed-scenario evaluations repeat the same generated three-room template.

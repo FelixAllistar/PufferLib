@@ -1,0 +1,70 @@
+{
+  "date": "2026-09-29",
+  "reference_commit": "33c3b4ddef8c6eb67c57a29663d844b1eda7e614",
+  "compiler": "stock Bend 2.0.6 CPU; serialized <=6 GiB cgroup; no swap",
+  "laws": 15,
+  "native": {
+    "status": "PASS",
+    "checks": "All ten tasks: independent predicates and partial rewards, pixel quantization, wrong drags, no-move release, clocks, invalid actions, dirty reset, generated variation, private-goal projection independence and public-only solves",
+    "generated_public_cases": 50
+  },
+  "browser": {
+    "status": "PASS",
+    "episodes": 188,
+    "actions": 545,
+    "episodes_per_task": 20,
+    "cube_episodes": 8,
+    "cube_scope": "All six requested faces plus wrong Submit and timeout",
+    "preset": "Original seeded instances imported only at reset; synthetic mouse events through original D3/jQuery/cube handlers; normalized gesture targets, controlled clock and settled cube; exact outcome/reward, SVG geometry tolerance 0.1px"
+  },
+  "public_scripted": {
+    "status": "PASS",
+    "episodes": 10000,
+    "successes": 10000,
+    "actions": 52403,
+    "controller": "WFView and own action history only; not learned RL"
+  },
+  "limits": [
+    "Normalized pointer actions: sortable destination slots, SVG target origins, settled cube faces; not unrestricted raw browser pointer parity",
+    "Independent generators narrow names, positional request templates and shape color selection distributions",
+    "SVG coordinates quantized to original D3 reachable pixel lattice; unsupported out-of-range requests rejected",
+    "Synthetic handler events and normalized public geometry; full DOM/layout/animation parity unverified",
+    "No learned policy adapter"
+  ],
+  "full_parity": "unverified",
+  "commands": [
+    "make -f ocean/webnav/families/Makefile browser FAMILY=drag EPISODES=20",
+    "make -f ocean/webnav/families/Makefile public-check FAMILY=drag EPISODES=1000"
+  ],
+  "build_cache": {
+    "proof": "b81e63a04d26462e532062e7d4046c69321cd2301b7057aa6af7afe1ebb32603",
+    "runtime": "c445cddb0d332bdd3e0e4ba35b268f21a22a118917eab86d556d9e4677c054eb"
+  },
+  "source_sha256": {
+    "CubeGenerate.bend": "bc07985c44396841238eaecdb64f64fe22793a6e0787c239f8c93ae29cae0cc2",
+    "CubeModel.bend": "6166523d58327fbbae095b5d0895768fb87de2d9849253f6cd48e9f1e9905137",
+    "CubeWire.bend": "3757075ad9dd2df6792f79bd4cd2502bf328518a0b54de79d74f293693008a33",
+    "DirectionModel.bend": "f235728a65f416098a981b80260055f1fb4b422046cf5b6f6e9e891eb10b83e0",
+    "Generate.bend": "0fd86aa0bf6f61cd066e14b00785f82fd06201120d40d31c2ff9ef81f33da24c",
+    "LAWS.bend": "508a25b2d765abd4fdb0ef59cf0630df3c1ced06033335b059a95d6ce0ae6516",
+    "Main.bend": "6aec06db526e6994080bea7131894ba797e0e3521567b928b9940465e12aa163",
+    "Model.bend": "0f48c39533a4dbc0a268f2d410fb9cc9f6d9699eeeff0873c53d02c173e4173e",
+    "OtherGenerate.bend": "33f6fcbb736d245dec61073bdeb41071ac0853cacab03c728396c20d98cc0a75",
+    "OtherWire.bend": "f8e5f413b8759079635548c5c040c50699be5fcb4a841abbd9cf5a4add0cb71e",
+    "PROOF.bend": "3b5898f98e930a2288b76a07dd1275231c079ee6785dd974113c9810710edf39",
+    "ResizeModel.bend": "7ae309f2d3db53b0a8f9c562d5663921eb6030fc99e6eaa58b168a0662d476fe",
+    "ShapeGenerate.bend": "75361143489034380e210cd25c6e428c237e6daa35dd042c055b53cc6e016da1",
+    "ShapeModel.bend": "99294a0d0eeef1f6dfd1b8bd040ea88aa4c4494bdc80327ab363414c4fe28fbb",
+    "ShapeWire.bend": "268741838b8889d4a06e25a5d011fd07eb969117ce1848fd1d7c08d47d9fecfb",
+    "SortGenerate.bend": "f9117bf358511399299b11f5eaefd0e044226031921ad356696c7005ae8c7078",
+    "SortModel.bend": "e7d54b11a66496c39f46b79ad455a2f9ee720c41ebe4325d308a7bf6ff18223c",
+    "SortWire.bend": "8b422726b71adca1c6f10820487212237c716fac2f3e4a79e2e62ed59082a3ce",
+    "Wire.bend": "b9b54bd6f8a3eb29596d57efedf0a74c32674650e99aa3066906ffa11f4df6fd",
+    "bridge.c": "c62ecf30e5ad12d6eef57c0ea42f4af4a795aa165755035445d6b1c41faf5d2e",
+    "browser.js": "c8ffbb009a8a3740f0bd56a2ac70b3f3d34686f261835cf27e089b1a4a3f64b2",
+    "browser_oracle.c": "14657fb279ee4a5c39adee13bfd47bde80d08716c6264c0e0b8879286a4049aa",
+    "family_api.c": "4fb0bd646841434ee8816ce3907f53bef2570c8027cc08fbc85a6b378420b5d2",
+    "public_controller.h": "a990a564fa8f8810bd477c58e11d22f457503d5c060ed649349a97383802bf76",
+    "test_drag.c": "acd6c406f746aa5ffaced8f263f02b8be2fb31b8425526ea7c00e5922bb160c3"
+  }
+}

@@ -1,0 +1,72 @@
+{
+  "date": "2026-09-29",
+  "reference_commit": "33c3b4ddef8c6eb67c57a29663d844b1eda7e614",
+  "compiler": "stock Bend 2.0.6 CPU; serialized <=6 GiB cgroup; no swap",
+  "laws": 16,
+  "native": {
+    "status": "PASS",
+    "find_word_cases": 1280,
+    "editor_cases": 2048,
+    "highlight_cases": 2560,
+    "terminal_cases": 2048,
+    "generated_public_cases": 1280,
+    "checks": "Independent outcomes, wrong actions, deadlines, dirty reset, generator variation and private-goal projection independence"
+  },
+  "browser": {
+    "status": "PASS",
+    "episodes": 100,
+    "actions": 260,
+    "scripted_successes": 48,
+    "preset": "Original-generated instances imported only at reset; CDP input, DOM range and Quill selection preset; controlled clock, wrong actions and timeouts included"
+  },
+  "public_scripted": {
+    "status": "PASS",
+    "episodes": 5000,
+    "successes": 5000,
+    "actions": 15238,
+    "controller": "WFView only; not learned RL"
+  },
+  "limits": [
+    "Bounded source vocabulary generators; original distribution parity unverified",
+    "Find-word append input only; highlight uses DOM range offsets rather than pointer drag",
+    "Fixed editor document and per-character formatting; general Quill delta editing and whitespace-equivalent spans unsupported",
+    "Terminal projects latest output rather than complete scrollback",
+    "No learned policy adapter"
+  ],
+  "full_parity": "unverified",
+  "commands": [
+    "make -f ocean/webnav/families/Makefile browser FAMILY=editing EPISODES=20",
+    "make -f ocean/webnav/families/Makefile public-check FAMILY=editing EPISODES=1000"
+  ],
+  "build_cache": {
+    "proof": "4b9734a28efa34009bf1366fc36bc715352cc58f9987eb52947c94e362925494",
+    "runtime": "4a1892b75b20e2e1da7011fa314a9342ee75e77f2bfc20d56c548f8c425dacfa"
+  },
+  "source_sha256": {
+    "Editor.bend": "216342ccd3adc84e960e87b365cd67b4a2116f30f4cdd94dbe536258e60f5eb0",
+    "EditorGenerate.bend": "97fbf3ff9cda3410d60eca303cde85267036de86ebd854c2d50a87ff5c4d9ccf",
+    "EditorWire.bend": "daffb4cf2f566349b3f53adeb7cb593f259bea70ce7dd93b12d752fac1794919",
+    "Generate.bend": "31bbf0b8fb318e11e54faa8902936fe3c7ad047f2ca8b152913dce3105a3aabe",
+    "Highlight.bend": "c551ec852b29a6bff27defabc40aee0cfbbb68ff4ad052f2af0b826fdb3eb403",
+    "HighlightGenerate.bend": "3a9bcb9ba54ff38399670eacdc31aa1bfc8d3ce92e37bf3e1d0852434829b4e9",
+    "HighlightWire.bend": "d77dd08bb409a02e5765897d07914227010de1fb269e6301477336a0ce3df573",
+    "LAWS.bend": "5e8a797d805bf80dc9ad8c8dd8a8fad6e460aa060ae65e6c021c04303e25147e",
+    "Main.bend": "6aec06db526e6994080bea7131894ba797e0e3521567b928b9940465e12aa163",
+    "Model.bend": "20525315539a5d4447f08327e2a82d76364e4a3f86db562565955cebc624b30a",
+    "PROOF.bend": "8a16b268ff008bd95ea02dfb846d1d19972261c4435c27f10510e1eb7b32ab0a",
+    "Terminal.bend": "4b288968d377a99f727cfdc5f2ffc5ff1ebcd029c6033eced67b4ff23169986c",
+    "TerminalGenerate.bend": "70d8013422c8535f7b47e2025dc5fcf11011f7d13e6af7e247aec49feaea2614",
+    "TerminalWire.bend": "bcc8e2a12ad31927616ae847785a766f74f1b37f4e26caaac30dbe00b05ce5d2",
+    "Wire.bend": "0712fc50c2728802d000edb34c4a23d3e029fa29d51e0745a79edf16932a471c",
+    "bridge.c": "4b1d29c5decda7d177fb61b14632e0cf27e145fa0468c9d40346cebd60d65a8c",
+    "browser.js": "c449f93d29a4e58a03dabf6d72a6e909a1310011e674ef17b8b71f9506de4b60",
+    "browser_oracle.c": "ca1bd8b16e87fe645a4925c4945bd0c3e5482afb810b9d67f1df28c6958d46eb",
+    "family_api.c": "e72455b0d5561be260dc0b3d97e39876611b8eb37e9ebc51e8300f1f2e46e2f8",
+    "public_controller.h": "145fb88c142bd12a6fca35343ebdfea306565e48aa4a2ac07fd395c944e7ed7a",
+    "test_editing.c": "e6ea0e2cac68ef2fa092bf6515f6d695aa326d9134fb4ebd95ed2ba4498d6a82",
+    "test_editor.c": "7488821414c39cfb074ebed9348b4de52a2703ec7b2e4ad6eadc5dcea20b3a61",
+    "test_highlight.c": "c21cdea165d208b608d8d123ab49ab565e38d5b39363bd61a2d2bd6a131bf5b3",
+    "test_public.c": "1fdbf48c5c80d17780bda9d561572515ff0447ff1ec725e8ef93812f12bf75b0",
+    "test_terminal.c": "e9a8c765c8ba1076bc032c2df3719c3a8d9fbf865639bf6586009f8ace60c3b5"
+  }
+}

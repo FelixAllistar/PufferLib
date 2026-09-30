@@ -1,0 +1,521 @@
+{
+  "date": "2026-09-29",
+  "reference_commit": "33c3b4ddef8c6eb67c57a29663d844b1eda7e614",
+  "steps_per_run": 2998272,
+  "architecture": "H64/L1, 4104 public features, 129 actions, 283264 parameters",
+  "training_projection": "v1 full-instruction substring name match",
+  "evaluation_projection": "v2 exact case-sensitive quoted link match; all other features unchanged",
+  "training_seconds": {
+    "panels": 106.512,
+    "menus": 102.686
+  },
+  "checkpoints": {
+    "panels": {
+      "path": "checkpoints/webnav_navigation/1790677442296/0000000002998272.bin",
+      "sha256": "8eb329cf09bcb2244df21c05e52fd97f2e3e7a1e85784108ac6d4b07a7063f15"
+    },
+    "menus": {
+      "path": "checkpoints/webnav_navigation/1790677592646/0000000002998272.bin",
+      "sha256": "a89fff3846131cef449c5787444860edd30420e43209aafeca5f17b83adc39f1"
+    }
+  },
+  "eval_sources": {
+    "ocean/webnav_navigation/browser.js": "3898489ca74e8d594a9e63f9d45c0feb29afdf7a4a851048eb3e1c37569c9bed",
+    "ocean/webnav_navigation/browser_eval.c": "c5ed0eec2feed368c66db159cba512e1a173996536cbe4efd69f3d1b367d1199",
+    "ocean/webnav_navigation/native_eval.c": "4c6d61fa8c1066b0c64af0d6bd330c8dfe7da7d58e51b5e07321e55046836e98",
+    "ocean/webnav_navigation/test_env.c": "ca624d467e1ae208f86e9df16c37899959e8a65efa646b3fa202639d356926c5",
+    "ocean/webnav_navigation/webnav_navigation.h": "033bcddea384132cd8162ee6fa56cceeff50ef7f5696e7b4c20c77b1bd23a038"
+  },
+  "results": {
+    "panels_random": [
+      {
+        "task": "click-tab",
+        "episodes": 100,
+        "successes": 28,
+        "full_credit_rate": 0.28,
+        "vector_steps": 140,
+        "policy": "random"
+      },
+      {
+        "task": "click-tab-2",
+        "episodes": 100,
+        "successes": 14,
+        "full_credit_rate": 0.14,
+        "vector_steps": 280,
+        "policy": "random"
+      },
+      {
+        "task": "click-tab-2-easy",
+        "episodes": 100,
+        "successes": 54,
+        "full_credit_rate": 0.54,
+        "vector_steps": 192,
+        "policy": "random"
+      },
+      {
+        "task": "click-tab-2-medium",
+        "episodes": 100,
+        "successes": 32,
+        "full_credit_rate": 0.32,
+        "vector_steps": 160,
+        "policy": "random"
+      },
+      {
+        "task": "click-tab-2-hard",
+        "episodes": 100,
+        "successes": 12,
+        "full_credit_rate": 0.12,
+        "vector_steps": 360,
+        "policy": "random"
+      },
+      {
+        "task": "click-collapsible",
+        "episodes": 100,
+        "successes": 36,
+        "full_credit_rate": 0.36,
+        "vector_steps": 316,
+        "policy": "random"
+      },
+      {
+        "task": "click-collapsible-nodelay",
+        "episodes": 100,
+        "successes": 36,
+        "full_credit_rate": 0.36,
+        "vector_steps": 316,
+        "policy": "random"
+      },
+      {
+        "task": "click-collapsible-2",
+        "episodes": 100,
+        "successes": 13,
+        "full_credit_rate": 0.13,
+        "vector_steps": 480,
+        "policy": "random"
+      },
+      {
+        "task": "click-collapsible-2-nodelay",
+        "episodes": 100,
+        "successes": 17,
+        "full_credit_rate": 0.17,
+        "vector_steps": 480,
+        "policy": "random"
+      }
+    ],
+    "panels_native_fixed": [
+      {
+        "task": "click-tab",
+        "episodes": 100,
+        "successes": 100,
+        "full_credit_rate": 1.0,
+        "vector_steps": 100,
+        "policy": "greedy"
+      },
+      {
+        "task": "click-tab-2",
+        "episodes": 100,
+        "successes": 100,
+        "full_credit_rate": 1.0,
+        "vector_steps": 188,
+        "policy": "greedy"
+      },
+      {
+        "task": "click-tab-2-easy",
+        "episodes": 100,
+        "successes": 100,
+        "full_credit_rate": 1.0,
+        "vector_steps": 100,
+        "policy": "greedy"
+      },
+      {
+        "task": "click-tab-2-medium",
+        "episodes": 100,
+        "successes": 100,
+        "full_credit_rate": 1.0,
+        "vector_steps": 100,
+        "policy": "greedy"
+      },
+      {
+        "task": "click-tab-2-hard",
+        "episodes": 100,
+        "successes": 97,
+        "full_credit_rate": 0.97,
+        "vector_steps": 508,
+        "policy": "greedy"
+      },
+      {
+        "task": "click-collapsible",
+        "episodes": 100,
+        "successes": 100,
+        "full_credit_rate": 1.0,
+        "vector_steps": 200,
+        "policy": "greedy"
+      },
+      {
+        "task": "click-collapsible-nodelay",
+        "episodes": 100,
+        "successes": 100,
+        "full_credit_rate": 1.0,
+        "vector_steps": 200,
+        "policy": "greedy"
+      },
+      {
+        "task": "click-collapsible-2",
+        "episodes": 100,
+        "successes": 100,
+        "full_credit_rate": 1.0,
+        "vector_steps": 300,
+        "policy": "greedy"
+      },
+      {
+        "task": "click-collapsible-2-nodelay",
+        "episodes": 100,
+        "successes": 100,
+        "full_credit_rate": 1.0,
+        "vector_steps": 300,
+        "policy": "greedy"
+      }
+    ],
+    "panels_browser": [
+      {
+        "task": "click-tab",
+        "episodes": 20,
+        "successes": 20,
+        "full_credit_rate": 1.0,
+        "timeouts": 0,
+        "actions": 20,
+        "unhittable": 0,
+        "policy": "greedy H64/L1; original Chromium pages"
+      },
+      {
+        "task": "click-tab-2",
+        "episodes": 20,
+        "successes": 12,
+        "full_credit_rate": 0.6,
+        "timeouts": 0,
+        "actions": 33,
+        "unhittable": 0,
+        "policy": "greedy H64/L1; original Chromium pages"
+      },
+      {
+        "task": "click-tab-2-easy",
+        "episodes": 20,
+        "successes": 19,
+        "full_credit_rate": 0.95,
+        "timeouts": 0,
+        "actions": 20,
+        "unhittable": 0,
+        "policy": "greedy H64/L1; original Chromium pages"
+      },
+      {
+        "task": "click-tab-2-medium",
+        "episodes": 20,
+        "successes": 19,
+        "full_credit_rate": 0.95,
+        "timeouts": 0,
+        "actions": 20,
+        "unhittable": 0,
+        "policy": "greedy H64/L1; original Chromium pages"
+      },
+      {
+        "task": "click-tab-2-hard",
+        "episodes": 20,
+        "successes": 10,
+        "full_credit_rate": 0.5,
+        "timeouts": 0,
+        "actions": 49,
+        "unhittable": 0,
+        "policy": "greedy H64/L1; original Chromium pages"
+      },
+      {
+        "task": "click-collapsible",
+        "episodes": 20,
+        "successes": 20,
+        "full_credit_rate": 1.0,
+        "timeouts": 0,
+        "actions": 40,
+        "unhittable": 0,
+        "policy": "greedy H64/L1; original Chromium pages"
+      },
+      {
+        "task": "click-collapsible-nodelay",
+        "episodes": 20,
+        "successes": 20,
+        "full_credit_rate": 1.0,
+        "timeouts": 0,
+        "actions": 40,
+        "unhittable": 0,
+        "policy": "greedy H64/L1; original Chromium pages"
+      },
+      {
+        "task": "click-collapsible-2",
+        "episodes": 20,
+        "successes": 16,
+        "full_credit_rate": 0.8,
+        "timeouts": 0,
+        "actions": 60,
+        "unhittable": 0,
+        "policy": "greedy H64/L1; original Chromium pages"
+      },
+      {
+        "task": "click-collapsible-2-nodelay",
+        "episodes": 20,
+        "successes": 16,
+        "full_credit_rate": 0.8,
+        "timeouts": 0,
+        "actions": 65,
+        "unhittable": 0,
+        "policy": "greedy H64/L1; original Chromium pages"
+      }
+    ],
+    "panels_browser_fixed": [
+      {
+        "task": "click-tab",
+        "episodes": 20,
+        "successes": 20,
+        "full_credit_rate": 1.0,
+        "timeouts": 0,
+        "actions": 20,
+        "unhittable": 0,
+        "policy": "greedy H64/L1; original Chromium pages"
+      },
+      {
+        "task": "click-tab-2",
+        "episodes": 20,
+        "successes": 19,
+        "full_credit_rate": 0.95,
+        "timeouts": 0,
+        "actions": 46,
+        "unhittable": 0,
+        "policy": "greedy H64/L1; original Chromium pages"
+      },
+      {
+        "task": "click-tab-2-easy",
+        "episodes": 20,
+        "successes": 20,
+        "full_credit_rate": 1.0,
+        "timeouts": 0,
+        "actions": 25,
+        "unhittable": 0,
+        "policy": "greedy H64/L1; original Chromium pages"
+      },
+      {
+        "task": "click-tab-2-medium",
+        "episodes": 20,
+        "successes": 20,
+        "full_credit_rate": 1.0,
+        "timeouts": 0,
+        "actions": 20,
+        "unhittable": 0,
+        "policy": "greedy H64/L1; original Chromium pages"
+      },
+      {
+        "task": "click-tab-2-hard",
+        "episodes": 20,
+        "successes": 13,
+        "full_credit_rate": 0.65,
+        "timeouts": 4,
+        "actions": 357,
+        "unhittable": 0,
+        "policy": "greedy H64/L1; original Chromium pages"
+      },
+      {
+        "task": "click-collapsible",
+        "episodes": 20,
+        "successes": 20,
+        "full_credit_rate": 1.0,
+        "timeouts": 0,
+        "actions": 40,
+        "unhittable": 0,
+        "policy": "greedy H64/L1; original Chromium pages"
+      },
+      {
+        "task": "click-collapsible-nodelay",
+        "episodes": 20,
+        "successes": 20,
+        "full_credit_rate": 1.0,
+        "timeouts": 0,
+        "actions": 40,
+        "unhittable": 0,
+        "policy": "greedy H64/L1; original Chromium pages"
+      },
+      {
+        "task": "click-collapsible-2",
+        "episodes": 20,
+        "successes": 19,
+        "full_credit_rate": 0.95,
+        "timeouts": 0,
+        "actions": 58,
+        "unhittable": 0,
+        "policy": "greedy H64/L1; original Chromium pages"
+      },
+      {
+        "task": "click-collapsible-2-nodelay",
+        "episodes": 20,
+        "successes": 20,
+        "full_credit_rate": 1.0,
+        "timeouts": 0,
+        "actions": 58,
+        "unhittable": 0,
+        "policy": "greedy H64/L1; original Chromium pages"
+      }
+    ],
+    "panels_browser_matched_fixed": [
+      {
+        "task": "click-tab",
+        "episodes": 20,
+        "successes": 20,
+        "full_credit_rate": 1.0,
+        "timeouts": 0,
+        "actions": 20,
+        "unhittable": 0,
+        "policy": "greedy H64/L1; original Chromium pages"
+      },
+      {
+        "task": "click-tab-2",
+        "episodes": 20,
+        "successes": 19,
+        "full_credit_rate": 0.95,
+        "timeouts": 0,
+        "actions": 40,
+        "unhittable": 0,
+        "policy": "greedy H64/L1; original Chromium pages"
+      },
+      {
+        "task": "click-tab-2-easy",
+        "episodes": 20,
+        "successes": 20,
+        "full_credit_rate": 1.0,
+        "timeouts": 0,
+        "actions": 20,
+        "unhittable": 0,
+        "policy": "greedy H64/L1; original Chromium pages"
+      },
+      {
+        "task": "click-tab-2-medium",
+        "episodes": 20,
+        "successes": 20,
+        "full_credit_rate": 1.0,
+        "timeouts": 0,
+        "actions": 20,
+        "unhittable": 0,
+        "policy": "greedy H64/L1; original Chromium pages"
+      },
+      {
+        "task": "click-tab-2-hard",
+        "episodes": 20,
+        "successes": 14,
+        "full_credit_rate": 0.7,
+        "timeouts": 1,
+        "actions": 132,
+        "unhittable": 0,
+        "policy": "greedy H64/L1; original Chromium pages"
+      },
+      {
+        "task": "click-collapsible",
+        "episodes": 20,
+        "successes": 20,
+        "full_credit_rate": 1.0,
+        "timeouts": 0,
+        "actions": 40,
+        "unhittable": 0,
+        "policy": "greedy H64/L1; original Chromium pages"
+      },
+      {
+        "task": "click-collapsible-nodelay",
+        "episodes": 20,
+        "successes": 20,
+        "full_credit_rate": 1.0,
+        "timeouts": 0,
+        "actions": 40,
+        "unhittable": 0,
+        "policy": "greedy H64/L1; original Chromium pages"
+      },
+      {
+        "task": "click-collapsible-2",
+        "episodes": 20,
+        "successes": 20,
+        "full_credit_rate": 1.0,
+        "timeouts": 0,
+        "actions": 65,
+        "unhittable": 0,
+        "policy": "greedy H64/L1; original Chromium pages"
+      },
+      {
+        "task": "click-collapsible-2-nodelay",
+        "episodes": 20,
+        "successes": 18,
+        "full_credit_rate": 0.9,
+        "timeouts": 0,
+        "actions": 67,
+        "unhittable": 0,
+        "policy": "greedy H64/L1; original Chromium pages"
+      }
+    ],
+    "menus_random": [
+      {
+        "task": "click-menu",
+        "episodes": 100,
+        "successes": 16,
+        "full_credit_rate": 0.16,
+        "vector_steps": 268,
+        "policy": "random"
+      },
+      {
+        "task": "click-menu-2",
+        "episodes": 100,
+        "successes": 15,
+        "full_credit_rate": 0.15,
+        "vector_steps": 464,
+        "policy": "random"
+      }
+    ],
+    "menus_native": [
+      {
+        "task": "click-menu",
+        "episodes": 100,
+        "successes": 100,
+        "full_credit_rate": 1.0,
+        "vector_steps": 228,
+        "policy": "greedy"
+      },
+      {
+        "task": "click-menu-2",
+        "episodes": 100,
+        "successes": 100,
+        "full_credit_rate": 1.0,
+        "vector_steps": 268,
+        "policy": "greedy"
+      }
+    ],
+    "menus_browser": [
+      {
+        "task": "click-menu",
+        "episodes": 20,
+        "successes": 17,
+        "full_credit_rate": 0.85,
+        "timeouts": 3,
+        "actions": 152,
+        "unhittable": 0,
+        "policy": "greedy H64/L1; original Chromium pages"
+      },
+      {
+        "task": "click-menu-2",
+        "episodes": 20,
+        "successes": 20,
+        "full_credit_rate": 1.0,
+        "timeouts": 0,
+        "actions": 51,
+        "unhittable": 0,
+        "policy": "greedy H64/L1; original Chromium pages"
+      }
+    ]
+  },
+  "limits": [
+    "bounded native generators; original browser generated independently",
+    "separate panels and menus policies, no mixed-family policy",
+    "20 original-browser episodes per task are a small diagnostic sample",
+    "panel feature fix informed by initial browser diagnostic; fresh panel cohort starts at 300100",
+    "no additional policy training after projection correction",
+    "settled animations, controlled 250 ms action clock, not full browser timing parity"
+  ]
+}

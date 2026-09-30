@@ -75,6 +75,8 @@ policy workflow helpers and the legacy MiniWoB training integration are
 separate pending ports; none are replaced by this smaller pilot.
 Family builds have their own stricter serialized build rules and must not use
 this pilot build command.
+The [benchmark worklist](TODO.md) separates bounded task coverage, trainable
+family integration, and site-level evaluation.
 
 ## Public DOM observations
 
@@ -125,6 +127,15 @@ preserved, together with the checkpoint-sidecar code. `training_policy.c` now
 uses upstream 5.0 CPU inference. This does not register a trainable environment
 or add checkpoint hooks to the shared trainer.
 
+A separate [click-family learning benchmark](../webnav_family/README.md) now
+connects ten family-v2 click tasks to the native trainer and evaluates its
+checkpoint on pinned original Chromium pages. It has its own policy shape and
+checkpoint namespace; it does not register this legacy twelve-task adapter.
+The [forms-family learning benchmark](../webnav_forms/README.md) likewise
+connects eight bounded text/form tasks; its shared checkpoint solves 800/800
+seeded original-browser episodes through a public candidate-text action
+interface. These family adapters remain separate from the full DOM/AX trainer.
+
 `make -C ocean/webnav training-policy-test` needs Clang 19, AVX2/FMA and ICU,
 but no Bend runtime or downloaded model. It creates a synthetic H16/L2 test
 checkpoint under `build/webnav/training/` with semantic features disabled.
@@ -137,6 +148,11 @@ GPU parity or learned policy quality.
 The sidecar reader checks the compiled source hash as well as the feature and
 architecture contract. The standalone test uses the development hash default;
 production source-hash generation and checkpoint integration remain pending.
-The complete legacy simulator's fresh source build is also still unqualified:
-local bounded compilation has exceeded the available memory allowance. Its
-models and generators have not been replaced with simplified versions.
+The old combined simulator build exceeded the bounded compiler allowance.
+Its remaining eleven task names are now ported and checked in smaller
+`click`, `forms`, `tree`, and `autocomplete` family libraries (2026-09-29).
+These preserve/reuse the task models and text editor without requiring that
+combined build. Tree and autocomplete also rerun the preserved independent
+native oracles against freshly compiled family runtimes. The legacy combined
+training/checkpoint workflow is still separate; the new ports do not create
+learned-policy results. See [family coverage](families/registry.json).

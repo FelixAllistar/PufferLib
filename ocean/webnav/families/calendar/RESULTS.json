@@ -1,0 +1,94 @@
+{
+  "date": "2026-09-29",
+  "reference_commit": "33c3b4ddef8c6eb67c57a29663d844b1eda7e614",
+  "compiler": "stock Bend 2.0.6 CPU; serialized <=6 GiB cgroup, no swap",
+  "laws": 18,
+  "native": {
+    "status": "PASS",
+    "output": "calendar source regression passed"
+  },
+  "browser": {
+    "status": "PASS",
+    "episodes": 100,
+    "episodes_per_task": 20,
+    "preset": "Matched original instances; controlled logical clock and 2026-01-01 wall-date origin; settled datepicker animations; DOM events; daily scroll and drag target refs; no native coordinate conformance.",
+    "branches": [
+      "correct submit",
+      "wrong/empty submit",
+      "cancel draft",
+      "timeout"
+    ]
+  },
+  "public_scripted": [
+    {
+      "task": "choose-date",
+      "episodes": 1000,
+      "successes": 1000,
+      "timeouts": 0,
+      "actions": 8583,
+      "controller": "public-scripted; not learned RL"
+    },
+    {
+      "task": "choose-date-easy",
+      "episodes": 1000,
+      "successes": 1000,
+      "timeouts": 0,
+      "actions": 3000,
+      "controller": "public-scripted; not learned RL"
+    },
+    {
+      "task": "choose-date-medium",
+      "episodes": 1000,
+      "successes": 1000,
+      "timeouts": 0,
+      "actions": 3528,
+      "controller": "public-scripted; not learned RL"
+    },
+    {
+      "task": "choose-date-nodelay",
+      "episodes": 1000,
+      "successes": 1000,
+      "timeouts": 0,
+      "actions": 8583,
+      "controller": "public-scripted; not learned RL"
+    },
+    {
+      "task": "daily-calendar",
+      "episodes": 1000,
+      "successes": 1000,
+      "timeouts": 0,
+      "actions": 6000,
+      "controller": "public-scripted; not learned RL"
+    }
+  ],
+  "full_parity": "unverified",
+  "limitations": [
+    "Approximate DOM/geometry and bounded generators, not source-distribution parity",
+    "No datepicker keyboard path; daily input supports append/backspace/select-all only",
+    "Daily drag uses synthetic DOM events; no CDP coordinate comparison",
+    "No learned-policy evaluation"
+  ],
+  "commands": [
+    "node ocean/webnav/families/build.cjs calendar --test",
+    "make -f ocean/webnav/families/Makefile browser FAMILY=calendar EPISODES=20",
+    "make -f ocean/webnav/families/Makefile public-check FAMILY=calendar EPISODES=1000"
+  ],
+  "build_cache": {
+    "proof": "de78671e2a223d5813009e0ce4097bd1de320e45d4938222e304b5e9bad06fd3",
+    "runtime": "3781302c08e6d8d7773fdeee7bbad6c37f63334ff4489970d6b1b4a858f88ed7"
+  },
+  "source_sha256": {
+    "Generate.bend": "abb042aa62c9a51e8c39cb5b1c09ceb1b8bbb022a24cf908a4a92fc60df59348",
+    "LAWS.bend": "841668e601d325a2ebcdb64e5d2780b739f43eaa3d2e7128c8e3d70f2df4a78e",
+    "Main.bend": "6aec06db526e6994080bea7131894ba797e0e3521567b928b9940465e12aa163",
+    "Model.bend": "68f2c2e9c32c7eb4457e2a4af147600ad1404ee345a29b44c6372c2a27458911",
+    "PROOF.bend": "5274d714520a51392018f59f0c11e69214f2ada879b5f7a09a7452c1e225890a",
+    "Wire.bend": "7331433fb154eb04efc45b01626bb96a026a94afde15d058efa05a433830e69f",
+    "bridge.c": "42bfb50c21be26ec4fe744099ce57bc624137fb9561461d09b3c6637a9138ca9",
+    "browser.js": "02f3458a6d181e39d5c82510ea62a47afc1889e7f6b1377884cc8c037426c7a9",
+    "browser_oracle.c": "62db702864c4d7ced3d1744a40b786c83057f6ad1009c8bc92f0863c1187ea76",
+    "family_api.c": "7235cd919617e344c6ad83196b5459db07359f0a9ad942e1c7f9793acc4d326e",
+    "public_controller.h": "f459e2be46284c0c0f303f9de38419e7477009cc8568a15976d6ae29bda9247f",
+    "test_calendar.c": "57f1d79eaca09c760a3578af1568c448c67473dda50c8e7f09f92d2f1fe8d9ed"
+  }
+}

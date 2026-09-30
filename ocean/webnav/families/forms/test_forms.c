@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/prctl.h>
 
 #define ROW 8192u
 #define FIELD_BASE 128u
@@ -10,7 +11,7 @@
 
 static uint32_t *lane(uint32_t *rows,unsigned i){return rows+(size_t)i*ROW;}
 static const uint32_t *field(const uint32_t *r,unsigned i){return r+FIELD_BASE+i*FIELD_STRIDE;}
-static unsigned fields(unsigned task){return task==0||task==1||task==3?1:task==5?4:2;}
+static unsigned fields(unsigned task){return task==0||task==1||task==3||task==8||task==10?1:task==5?4:2;}
 static unsigned deadline(unsigned task){return task==6?20000u:(task==2||task==3||task==7?15000u:10000u);}
 static int units_equal_ascii(const uint32_t *units,const char *text,size_t n){
     for(size_t i=0;i<n;i++)if(units[i]!=(unsigned char)text[i])return 0;
@@ -36,7 +37,7 @@ static void reset(const WFFamily *f,uint32_t *rows,unsigned task,unsigned seed){
     f->batch(rows);
     for(unsigned i=0;i<4;i++)assert(!f->validate(lane(rows,i)));
 }
-static unsigned submit_ref(unsigned task){return task==3?3u:task==6?15u:fields(task)+1u;}
+static unsigned submit_ref(unsigned task){return task==3?3u:task==6?15u:task==10?12u:fields(task)+1u;}
 static void private_goal(const uint32_t *r,unsigned i,char *out){
     const uint32_t *f=field(r,i);unsigned n=f[4];assert(n<256u);
     for(unsigned j=0;j<n;j++){assert(f[264+j]>=32&&f[264+j]<=126);out[j]=(char)f[264+j];}
@@ -57,12 +58,13 @@ static void assert_view_goal_blind(const WFFamily *f,uint32_t *r){
 }
 
 int main(void){
-    const WFFamily *f=webnav_family_v2();assert(f&&f->task_count==8&&f->row_words==ROW&&f->batch_lanes==4);
+    prctl(PR_SET_DUMPABLE,0,0,0,0);
+    const WFFamily *f=webnav_family_v2();assert(f&&f->task_count==11&&f->row_words==ROW&&f->batch_lanes==4);
     static const char *names[]={"enter-text-dynamic","enter-text-2","enter-password","text-transform",
-        "copy-paste","copy-paste-2","read-table-2","login-user-popup"};
+        "copy-paste","copy-paste-2","read-table-2","login-user-popup","enter-text","login-user","read-table"};
     uint32_t *rows=calloc(ROW*4u,sizeof *rows);assert(rows);
     unsigned cases=0;
-    for(unsigned task=0;task<8;task++){
+    for(unsigned task=0;task<11;task++){
         assert(!strcmp(f->task_names[task],names[task]));reset(f,rows,task,0x51u+task);
         uint32_t *r=lane(rows,0);assert(r[12]==deadline(task));assert(!f->validate(r));
         WFView v;assert(!f->observe(r,&v));assert(v.version==WF_ABI_VERSION&&v.deadline_ms==deadline(task));
@@ -94,6 +96,16 @@ int main(void){
         reset(f,rows,task,0x100u+task);r=lane(rows,0);
         send(f,rows,0,WF_WAIT,NULL,0,0,deadline(task));
         assert(r[9]==WF_TIMEOUT&&r[10]==3212836864u);cases++;
+        if(task>=8){
+            reset(f,rows,task,0x700u+task);r=lane(rows,0);
+            unsigned now=100;
+            for(unsigned i=0;i<fields(task);i++)fill(f,rows,i+1u,i,&now);
+            send(f,rows,fields(task),WF_CLICK,NULL,0,0,++now);
+            send(f,rows,0,WF_SELECT_ALL,NULL,0,0,++now);
+            send(f,rows,0,WF_INSERT,"definitely incorrect",0,0,++now);
+            send(f,rows,submit_ref(task),WF_CLICK,NULL,0,0,++now);
+            assert(r[9]==WF_TERMINAL&&r[10]==3212836864u);cases++;
+        }
     }
 
     reset(f,rows,7,0x777u);uint32_t *r=lane(rows,0);
@@ -103,6 +115,6 @@ int main(void){
     assert(r[35]);send(f,rows,r[35],WF_CLICK,NULL,0,0,100);
     assert(r[34]);send(f,rows,fields(7)+4u,WF_CLICK,NULL,0,0,200);
     assert(r[9]==WF_TERMINAL&&r[10]==3212836864u);cases++;
-    free(rows);printf("PASS: %u forms transitions; 8 tasks, exact input, case transform, clipboard, table fields, popup cancel/OK, deadlines, terminal absorption and goal-blind views\n",cases);
+    free(rows);printf("PASS: %u forms cases; 11 tasks, exact input, case transform, clipboard, table fields, popup cancel/OK, wrong credentials/text, deadlines, terminal absorption and goal-blind views\n",cases);
     return 0;
 }

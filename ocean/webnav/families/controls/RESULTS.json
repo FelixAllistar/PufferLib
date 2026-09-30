@@ -1,0 +1,102 @@
+{
+  "date": "2026-09-29",
+  "reference_commit": "33c3b4ddef8c6eb67c57a29663d844b1eda7e614",
+  "compiler": "stock Bend 2.0.6 CPU; serialized <=6 GiB cgroup, no swap",
+  "laws": 17,
+  "native": {
+    "status": "PASS",
+    "output": "PASS: 592 independent controls source checks"
+  },
+  "browser": {
+    "status": "PASS",
+    "episodes": 120,
+    "episodes_per_task": 20,
+    "state_reward_comparisons": 333,
+    "preset": "Matched original instances; controlled logical clock; normalized fractional coordinates dispatched through original jQuery slider/spinner handlers; valid six-digit hex input and Submit; state/value/raw and timed reward comparisons.",
+    "branches": [
+      "solve controls and submit",
+      "submit initial value",
+      "timeout"
+    ]
+  },
+  "public_scripted": [
+    {
+      "task": "choose-list",
+      "episodes": 1000,
+      "successes": 1000,
+      "timeouts": 0,
+      "actions": 1823,
+      "controller": "public-scripted; not learned RL"
+    },
+    {
+      "task": "use-slider",
+      "episodes": 1000,
+      "successes": 1000,
+      "timeouts": 0,
+      "actions": 1933,
+      "controller": "public-scripted; not learned RL"
+    },
+    {
+      "task": "use-slider-2",
+      "episodes": 1000,
+      "successes": 1000,
+      "timeouts": 0,
+      "actions": 3825,
+      "controller": "public-scripted; not learned RL"
+    },
+    {
+      "task": "use-spinner",
+      "episodes": 1000,
+      "successes": 1000,
+      "timeouts": 0,
+      "actions": 6031,
+      "controller": "public-scripted; not learned RL"
+    },
+    {
+      "task": "use-colorwheel",
+      "episodes": 1000,
+      "successes": 1000,
+      "timeouts": 0,
+      "actions": 3000,
+      "controller": "public-scripted; not learned RL"
+    },
+    {
+      "task": "use-colorwheel-2",
+      "episodes": 1000,
+      "successes": 1000,
+      "timeouts": 0,
+      "actions": 3000,
+      "controller": "public-scripted; not learned RL"
+    }
+  ],
+  "full_parity": "unverified",
+  "limitations": [
+    "choose-list generator uses bounded original-name/country subsets",
+    "Native pixel dispatch, handle offsets and spinner long-press acceleration unverified",
+    "Color pointer/HSV picker, malformed input, blur normalization and generator reset persistence are incomplete",
+    "No full DOM/layout/generator parity or learned-policy evaluation"
+  ],
+  "commands": [
+    "node ocean/webnav/families/build.cjs controls --test",
+    "make -f ocean/webnav/families/Makefile browser FAMILY=controls EPISODES=20",
+    "make -f ocean/webnav/families/Makefile public-check FAMILY=controls EPISODES=1000"
+  ],
+  "build_cache": {
+    "proof": "c250290bc7f82289abbf53e6cf2a11b69f4f07c3f096316ebf486595d7c1347e",
+    "runtime": "5ad0e482c6775265f869e479523b318dfb6762cecc2247edeb290570220f706e"
+  },
+  "source_sha256": {
+    "Generate.bend": "bacfeed6ac8e218745e49437974e8d29a185ea2bfce750fea55d2a176228093d",
+    "LAWS.bend": "6f87be427c82304c985af275415ab0cf46f58437abd386dfb39c946ebd078882",
+    "Main.bend": "6aec06db526e6994080bea7131894ba797e0e3521567b928b9940465e12aa163",
+    "Model.bend": "f61cf5b16719e42fef08a7bc5c6b49cf74413b7e9df899332ccf5b513781c158",
+    "PROOF.bend": "c71941095a82a47952330fae5a809b99d0efed60c7c81cead12fe553e5f1f15b",
+    "Wire.bend": "9721da24f893ee8e5ffebfbf9eaf1984622fc10482c070207552544bcdc7d074",
+    "bridge.c": "5309a506e6e19e381e955d559e77ceec2fa2430e840ee1a0afae0ce68f0129c9",
+    "browser.js": "e79fda6514b7408d01fd80ea30ccd001d3bb375cf3d058992547c1fa48eb1605",
+    "browser_oracle.c": "cdeb694c588a0f08155a518c8b96134962099988ea5b82d5e52d4d88656563e5",
+    "family_api.c": "8ca6c94ef13e3fd9c9598d383b3ff33ecba025165410c49eec376a648840ea93",
+    "public_controller.h": "cacfd7273ea935155d6f7d4463bf7ac494212d4e8410885b6f767c79bee5353e",
+    "test_controls.c": "eb8243432dd26067abcba15443b2d21f6178bc481efc8885d8dedcbb3323c0bb"
+  }
+}

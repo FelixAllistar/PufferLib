@@ -15,14 +15,15 @@ void family_forms_batch(uint32_t *words);
 
 static const char *tasks[]={
     "enter-text-dynamic", "enter-text-2", "enter-password", "text-transform",
-    "copy-paste", "copy-paste-2", "read-table-2", "login-user-popup"
+    "copy-paste", "copy-paste-2", "read-table-2", "login-user-popup",
+    "enter-text", "login-user", "read-table"
 };
 
 static unsigned field_count(unsigned task){
-    switch(task){case 0:case 1:case 3:return 1;case 2:case 4:case 6:case 7:return 2;case 5:return 4;default:return 0;}
+    switch(task){case 0:case 1:case 3:case 8:case 10:return 1;case 2:case 4:case 6:case 7:case 9:return 2;case 5:return 4;default:return 0;}
 }
 static unsigned static_count(unsigned task){
-    switch(task){case 0:case 1:case 2:case 4:case 5:return 1;case 3:return 2;case 6:return 13;case 7:return 5;default:return 0;}
+    switch(task){case 0:case 1:case 2:case 4:case 5:case 8:case 9:return 1;case 3:return 2;case 6:return 13;case 7:return 5;case 10:return 11;default:return 0;}
 }
 static unsigned deadline(unsigned task){return task==6?20000u:(task==2||task==3||task==7?15000u:10000u);}
 static int ascii_words(const uint32_t *s,unsigned len,unsigned cap){
@@ -41,7 +42,7 @@ static const uint32_t *field(const uint32_t *r,unsigned i){return r+FIELD_BASE+i
 static const uint32_t *statik(const uint32_t *r,unsigned i){return r+STATIC_BASE+i*STATIC_STRIDE;}
 
 static int valid(const uint32_t *r){
-    if(!r||r[0]!=WF_ABI_VERSION||r[1]>=8u||r[2]>WF_STEP)return -1;
+    if(!r||r[0]!=WF_ABI_VERSION||r[1]>=11u||r[2]>WF_STEP)return -1;
     if(r[2]==WF_RESET)return r[6]>1u?-1:0;
     unsigned task=r[1],nf=field_count(task),ns=static_count(task);
     if(!nf||r[9]>WF_TIMEOUT||r[12]!=deadline(task)||r[32]!=nf||r[38]!=ns||r[33]>nf)return -1;
@@ -137,5 +138,5 @@ static int action(uint32_t *r,const WFAction *a){
     return 0;
 }
 
-static const WFFamily api={WF_ABI_VERSION,ROW,LANES,8,"forms",tasks,valid,family_forms_batch,observe,action};
+static const WFFamily api={WF_ABI_VERSION,ROW,LANES,11,"forms",tasks,valid,family_forms_batch,observe,action};
 WF_EXPORT const WFFamily *webnav_family_v2(void){return &api;}

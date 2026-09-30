@@ -1,0 +1,125 @@
+{
+  "archetypes": [
+    {
+      "name": "angelCartelExpedition",
+      "samples": 53,
+      "min": 2,
+      "max": 3
+    },
+    {
+      "name": "concordFleet",
+      "samples": 69,
+      "min": 1,
+      "max": 3
+    },
+    {
+      "name": "damagedDrifterBsAndSeekers",
+      "samples": 61,
+      "min": 1,
+      "max": 2
+    },
+    {
+      "name": "damagedDrifterFleet",
+      "samples": 62,
+      "min": 2,
+      "max": 2
+    },
+    {
+      "name": "droneBattlecruisers",
+      "samples": 67,
+      "min": 1,
+      "max": 1
+    },
+    {
+      "name": "droneBoss",
+      "samples": 56,
+      "min": 1,
+      "max": 3
+    },
+    {
+      "name": "droneSwarm",
+      "samples": 188,
+      "min": 4,
+      "max": 8
+    },
+    {
+      "name": "rodivaKikimoras",
+      "samples": 75,
+      "min": 1,
+      "max": 2
+    },
+    {
+      "name": "sanshaNation",
+      "samples": 60,
+      "min": 1,
+      "max": 3
+    },
+    {
+      "name": "seekerAndDrifter",
+      "samples": 3,
+      "min": 2,
+      "max": 2
+    },
+    {
+      "name": "seekerSleeperFrigSwarm",
+      "samples": 71,
+      "min": 3,
+      "max": 3
+    },
+    {
+      "name": "malfunctioningSleeperBs",
+      "samples": 14,
+      "min": 1,
+      "max": 1
+    },
+    {
+      "name": "sleeperAndDrifterCruisers",
+      "samples": 62,
+      "min": 2,
+      "max": 2
+    },
+    {
+      "name": "sleeperSwarm",
+      "samples": 96,
+      "min": 1,
+      "max": 3
+    },
+    {
+      "name": "triglavianDroneFleet",
+      "samples": 53,
+      "min": 1,
+      "max": 4
+    },
+    {
+      "name": "damagedTriglavianBattleships",
+      "samples": 56,
+      "min": 1,
+      "max": 2
+    },
+    {
+      "name": "triglavianGangs",
+      "samples": 104,
+      "min": 1,
+      "max": 3
+    },
+    {
+      "name": "triglavianAndRougeDrones",
+      "samples": 38,
+      "min": 4,
+      "max": 5
+    },
+    {
+      "name": "triglavianBattlecruiser",
+      "samples": 24,
+      "min": 1,
+      "max": 1
+    }
+  ],
+  "npcs": 107,
+  "source_hashes": {
+    "ocean/abyss/data/npc_stats.csv": "a960afa927dc4ebecc25b32e004bdeb10f874f2fea306349ca601380c70e2abf",
+    "ocean/abyss/data/npc_types_qsna.json": "11380ad3f219686b7a0ae4ce2b03a52012a6eb0b92425ec96bb66cf8a6ffd32d",
+    "ocean/abyss/data/spawn_stats_qsna.json": "e34a351dd3e9a753a42598b237a9ea84365a96024b6a6b3d3c9064f1ed516091"
+  },
+  "source": "pinned QSNA dogma + CSV; synthetic constrained compositions"
+}

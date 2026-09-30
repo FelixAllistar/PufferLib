@@ -24,7 +24,7 @@ def array(values: list[object]) -> str:
     return "{" + ",".join(f(v) for v in values) + "}"
 
 
-def build(episodes_path: Path, npc_path: Path, calibration_path: Path, output: Path) -> None:
+def build(episodes_path: Path, npc_path: Path, calibration_path: Path, output: Path, include_all: bool = False) -> None:
     episodes = json.loads(episodes_path.read_text(encoding="utf-8"))["episodes"]
     npc_rows = json.loads(npc_path.read_text(encoding="utf-8"))
     npc_by_name = {row["name"]: row for row in npc_rows}
@@ -36,6 +36,8 @@ def build(episodes_path: Path, npc_path: Path, calibration_path: Path, output: P
         for entity in room["entities"]
         if entity["role"] == "HostileNpc"
     })
+    if include_all:
+        observed_names += sorted(set(npc_by_name) - set(observed_names))
     npc_index = {name: index for index, name in enumerate(observed_names)}
 
     lines = [
@@ -45,6 +47,8 @@ def build(episodes_path: Path, npc_path: Path, calibration_path: Path, output: P
         "    float optimal, falloff, tracking, turret_dps, missile_dps, missile_range;",
         "    float missile_explosion_radius, missile_explosion_velocity, missile_drf;",
         "    float neutralizer, radial_gain, orbit_speed_scale;",
+        "    float local_repair, remote_repair, remote_repair_optimal, remote_repair_falloff;",
+        "    signed char local_repair_layer, remote_repair_layer;",
         "    float shield_resist[4], armor_resist[4], hull_resist[4];",
         "    float turret_damage_mix[4], missile_damage_mix[4];",
         "    unsigned char gate_required, suppressor_vulnerable;",
@@ -80,6 +84,11 @@ def build(episodes_path: Path, npc_path: Path, calibration_path: Path, output: P
                 "neutralizer_gj_per_s",
             ))
             + f",{f(movement['radial_gain'])},{f(movement['orbit_speed_scale'])}"
+            + "," + ",".join(f(row[key]) for key in (
+                "local_repair_hp_per_s", "remote_repair_hp_per_s",
+                "remote_repair_optimal_m", "remote_repair_falloff_m",
+            ))
+            + f",{row['local_repair_layer']},{row['remote_repair_layer']}"
             + f",{array(row['shield_resists'])},{array(row['armor_resists'])},"
             + f"{array(row['structure_resists'])},{array(row['turret_damage_mix'])},"
             + f"{array(row['missile_damage_mix'])},1,{vulnerable}}},"
@@ -92,6 +101,8 @@ def build(episodes_path: Path, npc_path: Path, calibration_path: Path, output: P
         for room_index in (1, 2, 3):
             room = rooms[room_index]
             hostiles = [e for e in room["entities"] if e["role"] == "HostileNpc"]
+            if len(hostiles) > 3:
+                raise ValueError("recorded T0 room exceeds GeneratedRoom.hostiles[3]")
             cache = next(e for e in room["entities"] if e["role"] == "LiveCache")
             gates = [e for e in room["entities"] if e["role"] in {"TransferConduit", "OriginConduit"}]
             if not gates:

@@ -1,0 +1,79 @@
+{
+  "date": "2026-09-29",
+  "reference_commit": "33c3b4ddef8c6eb67c57a29663d844b1eda7e614",
+  "compiler": "stock Bend 2.0.6 CPU; serialized <=6 GiB cgroup; no swap",
+  "laws": 30,
+  "reused_laws": "14 preserved autocomplete laws plus 12 shared text laws; 4 new debounce laws",
+  "native": {
+    "status": "PASS",
+    "preserved_oracle": "validation, filtering, menu, editing, exact goals, deadline/reset and 32 lanes",
+    "generated_public_solves": 384,
+    "delayed": "before/exact debounce, stale/replaced suggestions, synchronous arrows, queued reopen, submit cancellation, timeout",
+    "dirty_row_comparisons": 1024
+  },
+  "browser": {
+    "status": "PASS",
+    "episodes": 200,
+    "actions": 990,
+    "scripted_successes": 99,
+    "tasks": [
+      {
+        "task": "use-autocomplete-nodelay",
+        "episodes": 100,
+        "actions": 420,
+        "scripted_successes": 60
+      },
+      {
+        "task": "use-autocomplete",
+        "episodes": 100,
+        "actions": 570,
+        "scripted_successes": 39
+      }
+    ],
+    "preset": "Original-generated constraints, CDP input/menu/keys, original delayed search callbacks on controlled logical clock; includes deliberately wrong and timeout traces"
+  },
+  "public_scripted": {
+    "status": "PASS",
+    "episodes": 2000,
+    "successes": 2000,
+    "actions": 9127
+  },
+  "new_legacy_ports": [
+    "use-autocomplete-nodelay"
+  ],
+  "limits": [
+    "ASCII input up to 64 characters, insertion payload up to 32, at most 64 public suggestions with explicit omission reporting",
+    "Normalized geometry; original 300 ms search callbacks on controlled clock, zero-delay callbacks settled; unrestricted pointer/focus and wall-clock scheduler timing unverified",
+    "No current learned-policy adapter"
+  ],
+  "full_parity": "unverified",
+  "commands": [
+    "node ocean/webnav/families/build.cjs autocomplete --test",
+    "make -f ocean/webnav/families/Makefile browser FAMILY=autocomplete EPISODES=100",
+    "make -f ocean/webnav/families/Makefile public-check FAMILY=autocomplete EPISODES=1000"
+  ],
+  "build_cache": {
+    "proof": "2f5837e567979a3d1d5d2d760ea5a8e4db7cfba0bfc5e233098049be5499320a",
+    "runtime": "42df5a1cc9a709c702421ef1fca586b97203e097560496853ae3f41d5636a38a"
+  },
+  "source_sha256": {
+    "Body.bend": "3d8cbdd34600df37fae9971fcd1555ba09c66a8ce93aefd8b583796040f91c92",
+    "DelayLAWS.bend": "2c4608aa0aacf51bf98907439e7516726a413e8e94b5d28d0050be82714e969f",
+    "DelayPROOF.bend": "1b9f766d52d13091a4b4d9e7a71a4b6ff8402f5fe81dcc315dafd6bdab437e4e",
+    "Delayed.bend": "210263eee1575b1773998edcee63f3fc124d11c175a3ee579c2b5fb798817b75",
+    "Generate.bend": "2c99e6f6186faf3e399b6284025dc4c77839d43c332043ad1464ceb85bf12d39",
+    "Main.bend": "6aec06db526e6994080bea7131894ba797e0e3521567b928b9940465e12aa163",
+    "PROOF.bend": "8ba9cd4f7c6cb33adadfdf4ea264d4a593ed3e7393dc4df46a2fc8d2a3b79f04",
+    "Wire.bend": "d94034034ec7149cc9d8c6750ff13f86a8493b04d6b31d156b4badef077b489a",
+    "bridge.c": "6d091c1683dbe2bbe01f506f0b108cb23d7ce9ca2b0f6dc3ed5ec4acd04cbf4a",
+    "browser.js": "4b77487939be6d0faa4e2d12090295e7e747843afeb43350c8cdd7c035507434",
+    "browser_oracle.c": "11a8533909f2a661a3fc1a5e23d0753755ceb54daf82d60d0c3ff51d5cb436a6",
+    "family_api.c": "24ce22508ba6a8cee091fc891629fdfdd5ffc18b9de26934705f47cd65a39608",
+    "public_controller.h": "d4cebf50d4ab3eeab69b39c70b9dfa863d2567b9529fb6c9e21c126adc5d96b9",
+    "test_autocomplete.c": "598b08a80ae4a97978ad524113a32e7594c952bd6031252696910de3e8e182f5",
+    "test_delayed.c": "bb630c8e02298d6c48cf5d0208cfdb9c1e71ccf1e4e7d1b942520a57a05d3a99"
+  },
+  "new_tasks": [
+    "use-autocomplete"
+  ]
+}

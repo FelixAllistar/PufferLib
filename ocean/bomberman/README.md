@@ -117,3 +117,29 @@ are unavailable, and it does not bind CPU-style legal-action masks. The current
 trainer also rejects frozen-opponent/multi-policy GPU use without a policy-row
 setup hook. CPU mode remains the default and retains its masks/curriculum.
 Do not use the GPU path as a matched masked-CPU training comparison.
+
+## Proximity and early-kill measurements
+
+`near_opponent_ticks` is the mean number of near ticks per agent episode;
+`near_opponent_fraction` is the mean per-episode fraction of ticks spent near
+while the agent and at least one opponent are alive. `slot_0_near_opponent_ticks`
+and `slot_0_near_opponent_fraction` report the same measurements for player 0.
+Near means Manhattan distance to any living opponent is at most the measuring
+player's current bomb range. This is geometric proximity, including through
+walls and diagonal offsets within that distance, rather than blast line of sight.
+Sampling happens after movement and pickups, before deaths; the final combat
+tick counts. The measurements work even with proximity reward set to zero.
+
+`reward_near_opponent` pays once per near tick, regardless of the number of
+nearby opponents. The sweep range 0–0.0001 limits the maximum per-episode payment
+to 0.16 for the configured 1600-tick game. This is an incentive to remain nearby,
+so it can also reward lingering without attacking. Raw kills remain the sweep
+objective. `near_opponent_reward` logs the extra episode reward separately.
+
+`reward_early_kill` adds `coefficient * max(0, 1 - tick / max_ticks)` to each
+credited kill. It follows the existing kill-credit rules, including simultaneous
+trades; self-kills and opponent suicides never trigger it. With no positive
+match deadline, the early bonus is disabled. `early_kill_reward` logs its episode
+sum separately. Both new reward logs are environment rewards before trainer
+clipping. The baseline disables reward clipping so the early bonus is not
+flattened by the existing kill reward of 1; clipping remains a sweep dimension.

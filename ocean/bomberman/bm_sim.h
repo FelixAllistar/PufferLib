@@ -28,6 +28,8 @@ typedef struct {
     float reward_soft;
     float reward_pickup;       // paid only when a pickup increases a stat
     float reward_kill;
+    float reward_early_kill;   // extra credited-kill reward * remaining match fraction
+    float reward_near_opponent; // per tick within own bomb range (Manhattan distance)
     float reward_death;
     float reward_self_kill;    // additional penalty when an agent dies to its own flame
     float reward_win;
@@ -61,6 +63,10 @@ typedef struct {
     float ep_return;
     float ep_score;
     float ep_approach_reward;
+    float ep_near_reward;
+    float ep_early_kill_reward;
+    int near_opponent_ticks;
+    int opponent_present_ticks;
     int kills;
     int self_kills;
     int soft_breaks;
@@ -175,6 +181,8 @@ BM_H BMConfig bm_default_config(void) {
     c.reward_soft = 0.01f;
     c.reward_pickup = 0.02f;
     c.reward_kill = 0.50f;
+    c.reward_early_kill = 0.0f;
+    c.reward_near_opponent = 0.0f;
     c.reward_death = -0.40f;
     c.reward_self_kill = -0.59f;
     c.reward_win = 0.0f;
@@ -969,7 +977,13 @@ BM_HD void bm_resolve_deaths(BMMatch* m, const BMConfig* cfg, float* rewards) {
         // Paying them when a bomb merely lines up with or is escaped from by
         // an enemy is exploitable: policies can repeatedly plant harmless
         // bombs and collect shaping without ever completing a kill.
-        float kill_reward = cfg->reward_kill + cfg->reward_bomb_threat;
+        float early_fraction = cfg->max_ticks > 0
+            ? 1.0f - (float)m->tick / (float)cfg->max_ticks : 0.0f;
+        if (early_fraction < 0.0f) early_fraction = 0.0f;
+        if (early_fraction > 1.0f) early_fraction = 1.0f;
+        float early_reward = cfg->reward_early_kill * early_fraction;
+        m->agents[k].ep_early_kill_reward += early_reward;
+        float kill_reward = cfg->reward_kill + cfg->reward_bomb_threat + early_reward;
         if (!dies[k]) kill_reward += cfg->reward_bomb_escape;
         rewards[k] += kill_reward;
         m->agents[k].ep_return += kill_reward;
@@ -1175,6 +1189,27 @@ BM_HD void bm_step_match(BMMatch* m, const BMConfig* cfg,
                 learner->ep_return += cfg->reward_curriculum_escape;
             }
         }
+    }
+    // Sample after movement/pickups, before deaths: the final combat tick counts.
+    // This measures geometric proximity, including diagonals/through walls;
+    // it does not claim that a blast currently has line of sight.
+    for (int a = 0; a < m->num_agents; a++) {
+        BMAgent* agent = &m->agents[a];
+        if (!agent->alive) continue;
+        int nearest = m->width + m->height;
+        int has_opponent = 0;
+        for (int b = 0; b < m->num_agents; b++) {
+            if (b == a || !m->agents[b].alive) continue;
+            has_opponent = 1;
+            nearest = bm_min_i(nearest, bm_agent_distance(agent, &m->agents[b]));
+        }
+        if (!has_opponent) continue;
+        agent->opponent_present_ticks++;
+        if (nearest > agent->bomb_range) continue;
+        agent->near_opponent_ticks++;
+        rewards[a] += cfg->reward_near_opponent;
+        agent->ep_return += cfg->reward_near_opponent;
+        agent->ep_near_reward += cfg->reward_near_opponent;
     }
     bm_tick_bombs(m, cfg, rewards);
     bm_resolve_deaths(m, cfg, rewards);

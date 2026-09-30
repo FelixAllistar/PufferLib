@@ -9,10 +9,12 @@ int main(int argc, char** argv) {
     Env configured = {0};
     puf_init(&configured, puf_ini_section(&ini, "env", 0));
     assert(configured.num_agents == 2 && configured.cfg.width == 13);
-    assert(configured.cfg.reward_kill == 0.2f && configured.cfg.max_ticks == 1600);
+    assert(configured.cfg.reward_kill == (float)dict_get(puf_ini_section(&ini, "env", 0), "reward_kill") && configured.cfg.max_ticks == 1600);
     assert(configured.cfg.reward_approach == 0.25f);
     assert(configured.cfg.reward_approach_horizon == 400);
     assert(configured.agents[0].policy == 0 && configured.agents[1].policy == 1);
+    assert(configured.cfg.reward_near_opponent == (float)dict_get(puf_ini_section(&ini, "env", 0), "reward_near_opponent"));
+    assert(configured.cfg.reward_early_kill == (float)dict_get(puf_ini_section(&ini, "env", 0), "reward_early_kill"));
     puf_ini_free(&ini);
     Env env = {0};
     env.cfg = bm_default_config();
@@ -58,5 +60,17 @@ int main(int argc, char** argv) {
     assert(dict_get(&metrics, "policy_0_score") == dict_get(&metrics, "slot_0_score"));
     assert(dict_get(&metrics, "policy_1_score") == dict_get(&metrics, "slot_1_score"));
     dict_clear(&metrics);
+    BMMatch sample = {0};
+    sample.num_agents = 2;
+    sample.agents[0].near_opponent_ticks = 3;
+    sample.agents[0].opponent_present_ticks = 4;
+    sample.agents[1].near_opponent_ticks = 1;
+    sample.agents[1].opponent_present_ticks = 4;
+    Log near_log = {0};
+    bm_log_match(&near_log, &sample, 0);
+    assert(near_log.slot_0_near_opponent_ticks / near_log.n == 3);
+    assert(near_log.slot_0_near_opponent_fraction / near_log.n == 0.75f);
+    assert(near_log.near_opponent_ticks / near_log.n == 2);
+    assert(near_log.near_opponent_fraction / near_log.n == 0.5f);
     puts("Bomberman CPU adapter: PASS");
 }

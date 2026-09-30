@@ -1,0 +1,109 @@
+{
+  "date": "2026-09-29",
+  "reference_commit": "33c3b4ddef8c6eb67c57a29663d844b1eda7e614",
+  "compiler": "stock Bend 2.0.6 CPU; serialized <=6 GiB cgroup; no swap",
+  "laws": 10,
+  "native": {
+    "status": "PASS",
+    "independent_draw_cases": 128,
+    "grid_goals": 32,
+    "generated_public_cases": 320,
+    "public_actions": 576,
+    "dirty_row_comparisons": 640,
+    "checks": "Independent double scoring, integer pointer quantization, distance/angle bounds, missing/wrong points, deadlines, terminal absorption and private goal independence"
+  },
+  "browser": {
+    "status": "PASS",
+    "episodes": 100,
+    "comparisons": 280,
+    "actions": 180,
+    "preset": "Original-generated scene imported only at reset; actual CDP integer and fractional clicks; controlled clock"
+  },
+  "public_scripted": {
+    "status": "PASS",
+    "episodes": 5000,
+    "public_checks_passed": 5000,
+    "full_credit": 1560,
+    "actions": 9000,
+    "criterion": "raw reward >=0.95; exact full-credit (>=0.999) counts remain separate",
+    "tasks": [
+      {
+        "task": "bisect-angle",
+        "episodes": 1000,
+        "full_credit": 52,
+        "public_checks_passed": 1000,
+        "mean_raw_reward": 0.988252,
+        "min_raw_reward": 0.975086
+      },
+      {
+        "task": "circle-center",
+        "episodes": 1000,
+        "full_credit": 0,
+        "public_checks_passed": 1000,
+        "mean_raw_reward": 0.977455,
+        "min_raw_reward": 0.971716
+      },
+      {
+        "task": "find-midpoint",
+        "episodes": 1000,
+        "full_credit": 507,
+        "public_checks_passed": 1000,
+        "mean_raw_reward": 0.991783,
+        "min_raw_reward": 0.983333
+      },
+      {
+        "task": "grid-coordinate",
+        "episodes": 1000,
+        "full_credit": 1000,
+        "public_checks_passed": 1000,
+        "mean_raw_reward": 1,
+        "min_raw_reward": 1
+      },
+      {
+        "task": "right-angle",
+        "episodes": 1000,
+        "full_credit": 1,
+        "public_checks_passed": 1000,
+        "mean_raw_reward": 0.979281,
+        "min_raw_reward": 0.958083
+      }
+    ]
+  },
+  "limits": [
+    "Scene geometry observation preset, not a general DOM/AX or pixel encoder",
+    "Integer MouseEvent coordinates; the source circle-center optimum lies between pixels",
+    "F32 geometry with explicit score tolerance; degenerate/numerical threshold and F64-equivalent parity unverified",
+    "Independent generator uses a solvable subset of original geometric configurations",
+    "No learned policy adapter"
+  ],
+  "full_parity": "unverified",
+  "commands": [
+    "make -f ocean/webnav/families/Makefile browser FAMILY=geometry EPISODES=20",
+    "make -f ocean/webnav/families/Makefile public-check FAMILY=geometry EPISODES=1000"
+  ],
+  "build_cache": {
+    "proof": "38ca55f4a3ea5b39a349459f9c80e00d0848ca1547ad2f60b31de1c54ef1a640",
+    "runtime": "d41bc9b8e00b8ad0b27257ba11d7b8f80daaa104d81842b592f263a2fce2bc67"
+  },
+  "source_sha256": {
+    "DrawLAWS.bend": "94a273f7f0b1979389b7e7ac95396a38e1c7761bd9c25834c63469b6b5a8bfc7",
+    "DrawModel.bend": "a56f4165ec9788837413ac6ce7fbab2feed42e75981a3d2d77daf94ef798ef99",
+    "DrawPROOF.bend": "07145d18c504e6fc6e20484262d0ba48e46d706b8074e4da4261e223045788a1",
+    "DrawWire.bend": "26b20b502482242a7b674c9cec563703788ee4f0eef4852492aa7776453436ad",
+    "Generate.bend": "d44c14ffb073713bda26d9cfa7eeba028978f1ac477961ec28de2897556b1781",
+    "LAWS.bend": "4b722e1d889034d35ee17a333efefd72e4a4ff2068d9f621c58aca866657aa3a",
+    "Main.bend": "6aec06db526e6994080bea7131894ba797e0e3521567b928b9940465e12aa163",
+    "Model.bend": "a1a7895acf8d28f1a7777a5a6b5894fa75b0e9e7fb6c6c101abf59b2d59d881e",
+    "PROOF.bend": "d7e3bb5f9387e69c7f63bce1a2b86e048c5b0c66b1f1d1daa8bae7452a76594a",
+    "Wire.bend": "baf8840e04038f6802230717c41150d2c633fe48f1ebb17b40481caf38511854",
+    "bridge.c": "6bed763cf42dc694277a007f6a55d454c289d0f89e79fc5462d110c0bc69b54b",
+    "browser.js": "4703cf4bc50c24da2aff171bed5eb4ec9549ccf51de35fdcdddd185b12d46d48",
+    "browser_oracle.c": "a6bd9ef255818a560bbe7d44a428424afe065f53a92c529609deae37fc21642f",
+    "family_api.c": "b6ccfbdc5e42483be0d90b7ed03630000baf7d2d16201d4809c8595ee210c8d0",
+    "public_controller.h": "fbf45dbd2df78048d43ff01d1b06c1688ddfd8311e88b4cff7b118ef5405220a",
+    "test_draw.c": "3e104bcedb9e62b49a34f12c732481fd2483ed6d082f8c7a12d1951c7f4c5827",
+    "test_geometry.c": "b57d4535638b1c60a8cedeb51e9bc3b784bd0b8203f906f142ad3c0added825a",
+    "test_public.c": "ea2a79e98dbc94e96dec1a8fb6136904c69e6e23fc58f62ddd302c1fa4250d15",
+    "test_reset.c": "81e97919222ca075f925e279cf0a0007c6d0ed0e0147e495c31dbe7e2693e2c0"
+  }
+}

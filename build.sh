@@ -192,6 +192,25 @@ elif [ "$ENV" = "pokemon" ]; then
 elif [ "$ENV" = "webnav" ]; then
     SRC_DIR="ocean/$ENV"
     LINK_ARCHIVES+=("build/webnav/libwebnav.a")
+elif [ "$ENV" = "webnav_family" ] || [ "$ENV" = "webnav_forms" ] || [ "$ENV" = "webnav_navigation" ] || [ "$ENV" = "webnav_numeric" ] || [ "$ENV" = "webnav_email" ] || [ "$ENV" = "webnav_catalog" ]; then
+    SRC_DIR="ocean/$ENV"
+    # The environment loads the checked CPU Bend family DSO at runtime.
+    # Compile the loader as C so its ABI is shared by the CUDA trainer and
+    # the standalone CPU evaluator.
+    mkdir -p build/webnav/families
+    ${CC:-clang} -O2 -std=c11 -Iocean/webnav/families/common -c \
+        ocean/webnav/families/common/loader.c \
+        -o build/webnav/families/loader_train.o
+    LINK_ARCHIVES+=("build/webnav/families/loader_train.o")
+    EXTRA_LDFLAGS+=(-ldl)
+    if [ "$ENV" = "webnav_family" ]; then
+        ${CC:-clang} -O2 -std=c11 -Ivendor -Iocean/webnav -c \
+            ocean/webnav/text_encoder.c -o build/webnav/families/text_encoder_train.o
+        ${CC:-clang} -O2 -std=c11 -Ivendor -c vendor/cJSON.c \
+            -o build/webnav/families/cjson_train.o
+        LINK_ARCHIVES+=("build/webnav/families/text_encoder_train.o" "build/webnav/families/cjson_train.o")
+        EXTRA_LDFLAGS+=(-licuuc)
+    fi
 elif [ "$ENV" = "retro" ]; then
     SRC_DIR="ocean/$ENV"
     make -C "$SRC_DIR" -j2 batch-library panel

@@ -388,9 +388,13 @@ def task_kind_pair(pair: Array<U32> & U32) -> Array<U32> & M.TaskKind:
 def run_step(+base: U32, a: Array<U32>) -> Array<U32>:
   run_kind(base, task_kind_pair(a[(base + 1 : U32)]))
 
+def reset_mode(task: U32, seed: U32, +base: U32, pair: Array<U32> & U32) -> Array<U32>:
+  (a, mode) = pair
+  G.generate(task, seed, mode, base, a)
+
 def reset_seed(task: U32, +base: U32, pair: Array<U32> & U32) -> Array<U32>:
   (a, seed) = pair
-  G.generate(task, seed, base, a)
+  reset_mode(task, seed, base, a[(base + 6 : U32)])
 
 def reset_task(+base: U32, pair: Array<U32> & U32) -> Array<U32>:
   (a, task) = pair

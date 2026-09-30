@@ -154,5 +154,66 @@
     "Finite generated vocabulary, table rows and layouts, not original generator distribution parity.",
     "Public-view solver inserts observed copy text directly; browser conformance separately exercises clipboard shortcuts.",
     "Family-v2 runtime not integrated into legacy twelve-task PPO profile."
-  ]
+  ],
+  "latest_qualification": {
+    "date": "2026-09-29",
+    "reference_commit": "33c3b4ddef8c6eb67c57a29663d844b1eda7e614",
+    "compiler": "stock Bend 2.0.6 CPU; serialized <=6 GiB cgroup; no swap",
+    "laws": 9,
+    "reused_laws": "12 shared text-editor laws",
+    "native": {
+      "status": "PASS",
+      "scenarios": 26
+    },
+    "browser": {
+      "status": "PASS",
+      "episodes": 220,
+      "episodes_per_task": 20,
+      "preset": "Pinned original instances; CDP text/click/clipboard actions; controlled logical clock; wrong text and credentials on legacy ports"
+    },
+    "public_scripted": {
+      "status": "PASS",
+      "episodes": 11000,
+      "successes": 11000,
+      "episodes_per_task": 1000
+    },
+    "new_legacy_ports": [
+      "enter-text",
+      "login-user",
+      "read-table"
+    ],
+    "compatibility": {
+      "command": "make -f ocean/webnav_forms/Makefile test",
+      "result": "PASS: 256 native PufferLib public-controller episodes; existing eight-task policy IDs preserved"
+    },
+    "limits": [
+      "Three legacy ports are not added to the eight-task trained policy",
+      "Bounded ASCII text/table vocabulary, normalized public geometry, not full source RNG or DOM/AX parity",
+      "Model clears clipboard after paste; browser traces cover one paste per copy"
+    ],
+    "full_parity": "unverified",
+    "commands": [
+      "node ocean/webnav/families/build.cjs forms --test",
+      "make -f ocean/webnav/families/Makefile browser FAMILY=forms EPISODES=20",
+      "make -f ocean/webnav/families/Makefile public-check FAMILY=forms EPISODES=1000"
+    ],
+    "build_cache": {
+      "proof": "8bbd2fcb853397c31b30b688982e108bf2adb4fac4ad3481f705e34217e46f72",
+      "runtime": "242c1a7c99c53bc4f40a533d0c736cff1155874e2107bd173eda5ba703396b8e"
+    },
+    "source_sha256": {
+      "Generate.bend": "c8b33a1994e67ec0f8055d774d97a4ad2d6efb9488cf9572de88c937c50e764b",
+      "LAWS.bend": "1f91344ba04fe508d40206cad20b54fc15956bf42275e6708859b4629dd7ca5b",
+      "Main.bend": "6aec06db526e6994080bea7131894ba797e0e3521567b928b9940465e12aa163",
+      "Model.bend": "84ac3b53e00564424cc232f83cdff90807b7a5ef5d3d74ea18049355bdaa9840",
+      "PROOF.bend": "6c2ffe48ec2e486249aadce25bf65710f33f0e70538d8bd23260ab15166a048b",
+      "Wire.bend": "71117246cddf0fab5b4db74fbdd935f71a7f72eda293cb80fbb74dc6b94ea109",
+      "bridge.c": "c169a2625cf9c81e88182aa6f4377df3812ba1c6634fbd1c676c8a5931418f61",
+      "browser.js": "383a481917e477eefce34b88e8851047a694d89f4f9554b7f60c3ddc4107371e",
+      "browser_oracle.c": "2d5c70f1db18c155884f09d34fe879fde070d20afb21bd8eaa36bef62824c782",
+      "family_api.c": "0db8ccdc2ccd06145a96772ebed863dd995d2d15ccfeed26e6d1fb36e56cefe5",
+      "public_controller.h": "7ad68cc5a4b07a0dc346c931850da44ce6abbb2ebf6d561b3e253b180b07938f",
+      "test_forms.c": "c4a44ba40eb551b4d8759e05bf220019c6ba74f58745270e1f2540ddeae38946"
+    }
+  }
 }

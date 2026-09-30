@@ -1,0 +1,174 @@
+{
+  "date": "2026-09-29",
+  "family": "catalog",
+  "status": "adapter-validated-short-training-baseline",
+  "reference_commit": "33c3b4ddef8c6eb67c57a29663d844b1eda7e614",
+  "checkpoint": "checkpoints/webnav_catalog/1790681457404/0000000000999424.bin",
+  "checkpoint_sha256": "07afb8876010723e77e20f0df3663f8cb7bb6ed46627e596fa6feab52d73e89f",
+  "checkpoint_steps": 999424,
+  "config_sha256": "40069caed077e8c075db7b4b7c0e13bcf29780f643cc775fa1a1c895b4bf20dc",
+  "policy": "H64/L1; separate per-family policy; greedy evaluation",
+  "sources": {
+    "ocean/webnav_catalog/browser.js": "f0b368b98a42af7ce4e1a21305c095c8e13cd46f26aadd13d78780067007d53b",
+    "ocean/webnav_catalog/browser_eval.c": "cf72702982e825c5dc585b47d4c4df375270cd65a01578701a9e2467c9b20232",
+    "ocean/webnav_catalog/native_eval.c": "e34549643b077b6b2ebecd06f7dee7ebd2c96449685a5dab443c3134454446d7",
+    "ocean/webnav_catalog/test_env.c": "96e5c9d0dc77b355277433ea46b6b049b15d7267017c05e026c9cbcd5cccee64",
+    "ocean/webnav_catalog/webnav_catalog.h": "0a14d32163593549ebbb24a581d05f495fbef7277fa6c8e29871af462ff49942"
+  },
+  "validation": [
+    "adapter C regression tests passed",
+    "CUDA trainer compiled under serial 6GiB/no-swap guard",
+    "100 random native episodes per task",
+    "2 random original-page episodes per task",
+    "20 greedy held-out native episodes per task",
+    "5 greedy original-page episodes per task"
+  ],
+  "results": {
+    "random": [
+      {
+        "task": "phone-book",
+        "episodes": 100,
+        "successes": 3,
+        "partial_positive": 12,
+        "full_credit_rate": 0.03,
+        "mean_raw_score": -0.622,
+        "vector_steps": 168,
+        "policy": "random"
+      },
+      {
+        "task": "order-food",
+        "episodes": 100,
+        "successes": 0,
+        "partial_positive": 0,
+        "full_credit_rate": 0.0,
+        "mean_raw_score": -1.0,
+        "vector_steps": 2520,
+        "policy": "random"
+      },
+      {
+        "task": "search-engine",
+        "episodes": 100,
+        "successes": 2,
+        "partial_positive": 0,
+        "full_credit_rate": 0.02,
+        "mean_raw_score": -0.96,
+        "vector_steps": 624,
+        "policy": "random"
+      }
+    ],
+    "native_learned": [
+      {
+        "task": "phone-book",
+        "episodes": 20,
+        "successes": 1,
+        "partial_positive": 0,
+        "full_credit_rate": 0.05,
+        "mean_raw_score": -0.9,
+        "vector_steps": 1200,
+        "policy": "greedy"
+      },
+      {
+        "task": "order-food",
+        "episodes": 20,
+        "successes": 0,
+        "partial_positive": 0,
+        "full_credit_rate": 0.0,
+        "mean_raw_score": -1.0,
+        "vector_steps": 1600,
+        "policy": "greedy"
+      },
+      {
+        "task": "search-engine",
+        "episodes": 20,
+        "successes": 0,
+        "partial_positive": 0,
+        "full_credit_rate": 0.0,
+        "mean_raw_score": -1.0,
+        "vector_steps": 1600,
+        "policy": "greedy"
+      }
+    ],
+    "browser_smoke": [
+      {
+        "task": "phone-book",
+        "episodes": 2,
+        "successes": 0,
+        "partial_positive": 0,
+        "full_credit_rate": 0.0,
+        "mean_raw_score": -0.7,
+        "timeouts": 0,
+        "actions": 3,
+        "unhittable": 0,
+        "policy": "random H64/L1; original Chromium pages"
+      },
+      {
+        "task": "order-food",
+        "episodes": 2,
+        "successes": 0,
+        "partial_positive": 0,
+        "full_credit_rate": 0.0,
+        "mean_raw_score": -1.0,
+        "timeouts": 0,
+        "actions": 26,
+        "unhittable": 0,
+        "policy": "random H64/L1; original Chromium pages"
+      },
+      {
+        "task": "search-engine",
+        "episodes": 2,
+        "successes": 0,
+        "partial_positive": 0,
+        "full_credit_rate": 0.0,
+        "mean_raw_score": -1.0,
+        "timeouts": 0,
+        "actions": 33,
+        "unhittable": 0,
+        "policy": "random H64/L1; original Chromium pages"
+      }
+    ],
+    "browser_learned": [
+      {
+        "task": "phone-book",
+        "episodes": 5,
+        "successes": 0,
+        "partial_positive": 0,
+        "full_credit_rate": 0.0,
+        "mean_raw_score": -1.0,
+        "timeouts": 5,
+        "actions": 300,
+        "unhittable": 0,
+        "policy": "greedy H64/L1; original Chromium pages"
+      },
+      {
+        "task": "order-food",
+        "episodes": 5,
+        "successes": 0,
+        "partial_positive": 0,
+        "full_credit_rate": 0.0,
+        "mean_raw_score": -1.0,
+        "timeouts": 5,
+        "actions": 400,
+        "unhittable": 0,
+        "policy": "greedy H64/L1; original Chromium pages"
+      },
+      {
+        "task": "search-engine",
+        "episodes": 5,
+        "successes": 0,
+        "partial_positive": 0,
+        "full_credit_rate": 0.0,
+        "mean_raw_score": -1.0,
+        "timeouts": 5,
+        "actions": 400,
+        "unhittable": 0,
+        "policy": "greedy H64/L1; original Chromium pages"
+      }
+    ]
+  },
+  "limits": [
+    "bounded Bend generators, not full source-distribution parity",
+    "small pilot training/evaluation; adapter coverage is not solved-task coverage",
+    "controlled clock and bounded action preset",
+    "private model goals and original page goals are not policy inputs"
+  ]
+}

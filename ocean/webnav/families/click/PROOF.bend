@@ -29,3 +29,18 @@ def L.wait_preserves_state(s, index):
 
 def L.deadline_preempts_click(s, index):
   {==}
+
+def L.sequence_first_click_never_finishes(node, nodes, index):
+  {==}
+
+def L.sequence_one_then_two_succeeds(node, nodes):
+  {==}
+
+def L.sequence_wrong_first_fails(node, nodes, index):
+  {==}
+
+def L.sequence_repeated_one_fails(node, nodes):
+  {==}
+
+def L.option_submit_uses_selected_target(selected, target, nodes):
+  {==}

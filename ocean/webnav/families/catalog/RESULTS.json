@@ -1,0 +1,70 @@
+{
+  "date": "2026-09-29",
+  "reference_commit": "33c3b4ddef8c6eb67c57a29663d844b1eda7e614",
+  "compiler": "stock Bend 2.0.6 CPU; serialized <=6 GiB cgroup; no swap",
+  "laws": 12,
+  "native": {
+    "status": "PASS",
+    "phone_cases": 1024,
+    "food_cases": 1536,
+    "search_cases": 1792,
+    "public_episodes": 768,
+    "private_view_checks": 768,
+    "checks": "Dirty resets; four phone grades and adjacent navigation; food exact named set, type/quantity, zero removal and capacity; search edits/requery/loaded-result snapshot/page-change reevaluation/wrong result/deadline"
+  },
+  "browser": {
+    "status": "PASS",
+    "episodes": 60,
+    "actions": 209,
+    "scripted_successes": 21,
+    "preset": "Original-generated matched instances, CDP mouse/typing/key events after scrolling, hittable client rectangles, controlled clock",
+    "schedules": "Adjacent phone navigation and all four grades; food success/empty/wrong/extra quantity; real/fake search index and count, repeated Search, edit then page change, wrong result and timeout"
+  },
+  "public_scripted": {
+    "status": "PASS",
+    "episodes": 3000,
+    "successes": 3000,
+    "actions": 11198
+  },
+  "limits": [
+    "Distinct generated contact names; original duplicate names can be ambiguous",
+    "Bounded generated contact/search content; no source-distribution claim",
+    "Fixed fake search table; regenerated fake titles/URLs/descriptions are outside differential scope",
+    "Food quantities are public DOM data-quantity, including zero; rendered quantity text is blank at zero",
+    "U32 quantity and bounded ASCII text capacities; normalized public geometry",
+    "Full DOM/layout parity and learned-policy adapter unverified"
+  ],
+  "full_parity": "unverified",
+  "commands": [
+    "node ocean/webnav/families/build.cjs catalog --test",
+    "make -f ocean/webnav/families/Makefile browser FAMILY=catalog EPISODES=20",
+    "make -f ocean/webnav/families/Makefile public-check FAMILY=catalog EPISODES=1000"
+  ],
+  "build_cache": {
+    "proof": "8c94537f9c7c79481c62dbcab7de81b86585f84f2be9a3a2934fa0ed0ed8bf2a",
+    "runtime": "e5b47b7b4090ec9526c76dfab284df6722590f1b5ee0c2ac237ce82905a304de"
+  },
+  "source_sha256": {
+    "Food.bend": "bd8a2a71085578b151bf1f75d0e6eeb0a4645bc9f85347031609e8b5723f792c",
+    "FoodGenerate.bend": "848f8aa233da23148979511fdc5822bc754dffd96e26ed5edb1fabe032533a91",
+    "FoodWire.bend": "a6970f3c8d9514e07b787c0b9b869a7814c24cad51c43285d5e82bb801c28b1e",
+    "Generate.bend": "70063b0fb74490cb51ca76916017d86d46c509f5629c88603f01d0d5677bc2f1",
+    "LAWS.bend": "975c67bc5e86e6d6c8e057fee4819ad117d48dc57ebe77f7803b61949831e866",
+    "Main.bend": "6aec06db526e6994080bea7131894ba797e0e3521567b928b9940465e12aa163",
+    "Model.bend": "20506c0b80e402e9407b6d6235945481cd4ff56cb5c3a15c31ccf81e72b98fd8",
+    "PROOF.bend": "9f6201d33d55795d7c35d2bf732cb995009659e35732f2f2df26c1714165771c",
+    "Search.bend": "53a1ed212b07d4c1c902a58e6f92c581d07bf9bc2431985e45f5491f5e0f67e5",
+    "SearchGenerate.bend": "1475f5ca651c2a6e9a4f9f1e03923603a4491902ef7561c87117b39e6bd70203",
+    "SearchWire.bend": "327539c1292d0ff440707758da846497a0fb963fd97007d49ce876c7a359ea60",
+    "Wire.bend": "538dba7f9961f49e2c216ad06a9452334b787277157170ff7d26562d890b79f4",
+    "bridge.c": "d7e461f4a759a09e18149f6ca57f45c99801c870e788aa98ae857c36edca0f9f",
+    "browser.js": "a4aea5df0649db9ac87e1e9f5901164d183418522563f909a8e3982bdaa832db",
+    "browser_oracle.c": "0a6b79bc98ae552763c9b815d62689194bcd63b74e891b996977970396fd1fa3",
+    "family_api.c": "9775552e712896ad90de85cb9a55ce34dd0fbd0cd3a2741040028c20c0633668",
+    "public_controller.h": "7a572b924d31e05d97cf1bd26961f64acfdba0ed2417923d70676ff95a4c2161",
+    "test_catalog.c": "630dcb0abfd5e000acf9221035ae11a64c072cb9e8abbdbdc30c75481dee03b1",
+    "test_food.c": "54d1c8ed28677c7ba85486806cc0d0f1a1baf89c41aeed053aa176f70024c774",
+    "test_public.c": "55267fffeccd691f6a432fe17a0308f1d718cce50a1ac2874e8ac14295a90cfc",
+    "test_search.c": "3e6693ae09d6d87eb0e5f7e7659fc4a2b848242475400382ecd9aa08e72dab56"
+  }
+}

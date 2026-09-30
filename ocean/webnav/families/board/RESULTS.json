@@ -1,0 +1,71 @@
+{
+  "date": "2026-09-29",
+  "reference_commit": "33c3b4ddef8c6eb67c57a29663d844b1eda7e614",
+  "compiler": "stock Bend 2.0.6 CPU; serialized <=6 GiB cgroup; no swap",
+  "laws": 8,
+  "native": {
+    "status": "PASS",
+    "independent_games": 256,
+    "empty_starts": 139,
+    "opponent_starts": 117,
+    "random_moves": 685,
+    "smart_moves": 181,
+    "public_games": 256,
+    "public_wins": 209,
+    "public_draws": 47,
+    "public_losses": 0,
+    "checks": "independent source-order opponent, win priority, occupied-cell no-op, forced win/block/draw, dirty reset and private RNG independence"
+  },
+  "browser": {
+    "status": "PASS",
+    "episodes": 20,
+    "wins": 12,
+    "draws": 1,
+    "losses": 3,
+    "timeouts": 4,
+    "occupied_clicks": 4,
+    "preset": "Original handlers; shared deterministic random draws; independently compare board, RNG consumption, status and rewards"
+  },
+  "public_scripted": {
+    "status": "PASS",
+    "episodes": 1000,
+    "successes": 808,
+    "draws": 192,
+    "losses": 0,
+    "timeouts": 0,
+    "actions": 3829,
+    "criterion": "No losses; draws are reported separately and do not count as wins"
+  },
+  "limits": [
+    "Shared deterministic test RNG differs from source seedrandom distribution",
+    "Normalized public cell geometry; unrestricted browser input and full DOM parity unverified",
+    "No learned policy adapter"
+  ],
+  "full_parity": "unverified",
+  "commands": [
+    "node ocean/webnav/families/build.cjs board --test",
+    "make -f ocean/webnav/families/Makefile browser FAMILY=board EPISODES=20",
+    "make -f ocean/webnav/families/Makefile public-check FAMILY=board EPISODES=1000"
+  ],
+  "build_cache": {
+    "proof": "87b5f4993f9b814fc60da744d9f74a3bd272f376a6099b61ca6b42f9cce7a607",
+    "runtime": "63794126502e9cbea09a93f45e23cd9ec4ee0dbd8bdacacaa6cfa83c22946f01"
+  },
+  "source_sha256": {
+    "Generate.bend": "3ee9622f31be1d6fd506864693723a815d799d50f46edc401577e6b4a52602d5",
+    "LAWS.bend": "82d02a6d68ba3c312857f5e679836240da140d460b61ad25312824c1fa0cbe55",
+    "Main.bend": "6aec06db526e6994080bea7131894ba797e0e3521567b928b9940465e12aa163",
+    "Model.bend": "d327ac2a1a5dc9c7ae4769dea8159aabe560e001fe04d0e281011516a9fdb0d9",
+    "PROOF.bend": "7fa2f03c0f3293b924fc0b187e0588ba0c3d4d17079cdf50594dabba59bd5ca5",
+    "Policy.bend": "45a8656eda53d120e547617851d60f5caf65ee2eb789852f3315b634a0434806",
+    "Wire.bend": "7d27437d6897f6cb2fb2b0f6ffd258d3495f5e577ebb1b690e0fb5cd56116dd8",
+    "bridge.c": "a6b91cdb951b63de5784fbfe4d3940ea231bb28733339a1bcd3ade23c04dbe85",
+    "browser.js": "595677d161e6cb04f8fa8e855f0761797a35585755ba64e28d76f5300b306105",
+    "browser_oracle.c": "0da6955877862e2d8742156e0db5a0e73183fc8b7db1fb6d54d3dc9363753888",
+    "family_api.c": "ede53c58967c37bef93e9a6847f8e4520523255ddde8fc50a09b99639ccf79e7",
+    "public_controller.h": "80e562b8af87c52cc00deaa235a1ce2756ca25b69283139d07210f5a19ec8ecb",
+    "test_board.c": "c1f91a6840ed31214df264600767ce73cf95704b61bd2e54e8224cc1e7debfd4",
+    "test_board_oracle.c": "c0394d79fa8ea489b242a89c3be7918b8baa90d96470153586d8e080c30f9b88",
+    "test_public_controller.c": "bceab7ba4ca8a172ea75fd43fe3f7aecfd0f0d90fb4fa746c3066b7674e5167c"
+  }
+}

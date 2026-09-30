@@ -785,9 +785,69 @@ static void test_approach_reward(void) {
     }
 }
 
+static void test_proximity_and_early_kills(void) {
+    BMConfig cfg;
+    BMMatch m;
+    clear_arena(&m, &cfg, 2, 99u);
+    cfg.reward_near_opponent = 0.0001f;
+    m.agents[0].x = 2; m.agents[0].y = 3;
+    m.agents[1].x = 4; m.agents[1].y = 3;
+    m.agents[0].bomb_range = 2;
+    m.agents[1].bomb_range = 1;
+    // Proximity counts through a wall; each player's own range is used.
+    m.tiles[bm_idx(&m, 3, 3)] = BM_TILE_HARD;
+    int actions[2] = {BM_ACT_STAY, BM_ACT_STAY};
+    float rewards[2], terminals[2];
+    bm_step_match(&m, &cfg, actions, rewards, terminals);
+    CHECK(m.agents[0].near_opponent_ticks == 1 && m.agents[1].near_opponent_ticks == 0,
+        "proximity uses inclusive Manhattan distance and own current range");
+    CHECK(rewards[0] == cfg.reward_near_opponent && rewards[1] == 0,
+        "near reward paid once per eligible tick");
+    cfg.reward_near_opponent = 0;
+    m.agents[1].bomb_range = 2;
+    bm_step_match(&m, &cfg, actions, rewards, terminals);
+    CHECK(m.agents[0].near_opponent_ticks == 2 && m.agents[1].near_opponent_ticks == 1,
+        "telemetry works when reward is disabled and tracks range changes");
+    CHECK(rewards[0] == 0 && rewards[1] == 0, "disabled proximity reward is zero");
+    m.agents[1].alive = 0;
+    bm_step_match(&m, &cfg, actions, rewards, terminals);
+    CHECK(m.agents[0].opponent_present_ticks == 2 && m.agents[0].near_opponent_ticks == 2,
+        "dead opponents are excluded from proximity and denominator");
+    bm_reset_match(&m, &cfg, 100u);
+    CHECK(m.agents[0].near_opponent_ticks == 0 && m.agents[0].ep_near_reward == 0,
+        "proximity telemetry resets each episode");
+
+    const int times[] = {250, 500, 1000, 1100};
+    const float bonuses[] = {0.75f, 0.5f, 0, 0};
+    for (int i = 0; i < 4; i++) {
+        clear_arena(&m, &cfg, 2, 101u);
+        cfg.reward_early_kill = 1;
+        m.tick = times[i];
+        m.agents[0].x = 2; m.agents[0].y = 3;
+        m.agents[1].x = 4; m.agents[1].y = 3;
+        int cell = bm_idx(&m, 4, 3);
+        m.flame_ttl[cell] = 1; m.flame_owner[cell] = 0;
+        rewards[0] = rewards[1] = 0;
+        bm_resolve_deaths(&m, &cfg, rewards);
+        CHECK(fabsf(rewards[0] - cfg.reward_kill - bonuses[i]) < 1e-6f,
+            "early kill bonus fades with elapsed match fraction and clamps at zero");
+        CHECK(m.agents[0].kills == 1 && m.agents[0].ep_early_kill_reward == bonuses[i],
+            "early bonus is logged separately without changing kill count");
+    }
+    clear_arena(&m, &cfg, 2, 102u);
+    cfg.reward_early_kill = 1;
+    int cell = bm_idx(&m, m.agents[1].x, m.agents[1].y);
+    m.flame_ttl[cell] = 1; m.flame_owner[cell] = 1;
+    rewards[0] = rewards[1] = 0;
+    bm_resolve_deaths(&m, &cfg, rewards);
+    CHECK(m.agents[0].ep_early_kill_reward == 0 && m.agents[1].ep_early_kill_reward == 0,
+        "opponent suicide cannot pay an early kill bonus to either player");
+}
+
 int main(void) {
     printf("bomberman reworked simulator tests\n");
     test_layout();
+    test_proximity_and_early_kills();
     test_approach_reward();
     test_map_and_canonical_spawns();
     test_bomb_timer_exact();

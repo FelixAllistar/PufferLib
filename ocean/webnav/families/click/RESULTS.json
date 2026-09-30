@@ -269,25 +269,110 @@
     }
   ],
   "source_sha256": {
-    "Generate.bend": "d757f5258fa11f1fa55e929eaae9a884988c305e38cc8a97cf00721172626bdc",
+    "Generate.bend": "45651f5e9dd34365cff1990538749a05fa8d5bcc64ad4d0bdb12fc815bfcc1e4",
     "LAWS.bend": "990139fc65de136dce65e90b1387374c0e9098b53d6ac1e8014a3a56135f73dc",
     "Main.bend": "754da8d9312741e4d2889857851daacb6a4dc61b8f5b922e06483b4ab6bf051f",
     "Model.bend": "7f61b7124b0a855d29ea28675ddad5e0da4135177ad73d397e833ebd5baba62d",
-    "PROOF.bend": "c01832410da4f737372f5a7d51538ad565e064dc38f93d9550b0f09fa45648ee",
+    "PROOF.bend": "0e87089525213a952d8499c399f2d3afe0578a959278126a9f7bc0433fc4929b",
     "Synonyms.bend": "001f5a428f37bd3c0e3a9b93af523d814376756a2150f8bbed80c2aa218e4a95",
     "Wire.bend": "714aec46a3ac9e333604be4024a10387e1ce7fe5eaaa5526c32f8fff6f95aae4",
     "bridge.c": "3f1661326bb6b7966595adeb51f72752081e3789286011e77ef94ee87ded19e5",
-    "browser.js": "d69550ba6aad419ba0ab6e363d5ed04625b9fbf0a53687b09ee775fc3b163dca",
-    "browser_oracle.c": "fa8b9fbcbc7e7fd947deaca178d96d3965c263c6871f098a76ece78ac0a5a57d",
+    "browser.js": "23207003f539b290cfd432bfb784eb2ae9ac11ce5949dc7add57b552d0dfa665",
+    "browser_oracle.c": "1dc079a99eb3fe6c65944502f0d0079bed9a9aa567d8d66ae363ba766387decc",
     "expert_synonyms.h": "072b9b96371fe67a08c11025222fd607bfbd7f5ff66b2f4f650301b7aaba91c8",
     "family_api.c": "bd64067d0362208e381d4cf9153926c232981f03cf3dac8e651d5bc46af05df9",
-    "test_click.c": "b3fea40f10682ede061b15e732973ba6719dee24622573fa90265f441fd92f46"
+    "test_click.c": "2adfef100f371d4b24b1dd7720abd3c1916efc93c622d719998e3f0106d12281"
   },
   "limitations": [
     "Unobscured control-click preset with logical clock; no unrestricted coordinate/scheduler parity.",
     "Finite ASCII lexicon and simple layout; not original generator distribution parity.",
     "Public actionable-node projection, not full DOM/AX fidelity.",
-    "Family-v2 runtime is not yet integrated into twelve-task PPO profile."
+    "Ten click tasks use a separate trainable PPO adapter; the other families are not in that adapter."
   ],
-  "generator_constraints": "Source-derived control counts, focus ordinals, mode-dependent target ranges and deadlines checked at all 10240 resets"
+  "generator_constraints": "Source-derived control counts, focus ordinals, mode-dependent target ranges and deadlines checked at all 10240 resets",
+  "proof_revalidation": {
+    "date": "2026-09-27",
+    "result": "PASS: all terms check; regenerated CPU C; 460800 native transitions pass, including fragmented target layouts and short alphanumeric labels",
+    "scope": "stock CPU Bend proof/import-path revalidation under guarded 6 GiB no-swap build"
+  },
+  "generator_revision": {
+    "date": "2026-09-27",
+    "change": "Independent alphanumeric checkbox labels and ranked target locations in stock CPU Bend; browser harness normalizes public textarea role 16 to internal code 6 for the differential fixture.",
+    "independent_native_transitions": 460800,
+    "original_browser_differential_episodes": 400,
+    "public_scripted_generated_episodes": 10000,
+    "all_checks": "PASS",
+    "learned_policy_results": "../../../webnav_family/RESULTS.md"
+  },
+  "latest_qualification": {
+    "date": "2026-09-29",
+    "reference_commit": "33c3b4ddef8c6eb67c57a29663d844b1eda7e614",
+    "compiler": "stock Bend 2.0.6 CPU; serialized <=6 GiB cgroup; no swap",
+    "laws": 14,
+    "reused_laws": "Shared widget laws imported by PROOF.bend",
+    "native": {
+      "status": "PASS",
+      "transitions": 737280,
+      "resets": 16384
+    },
+    "browser": {
+      "status": "PASS",
+      "episodes": 640,
+      "episodes_per_task_per_mode": 20,
+      "data_modes": [
+        0,
+        1
+      ],
+      "preset": "Pinned original instances; CDP unobscured control clicks; controlled logical clock"
+    },
+    "public_scripted": {
+      "status": "PASS",
+      "episodes": 16000,
+      "successes": 16000,
+      "episodes_per_task": 1000
+    },
+    "new_legacy_ports": [
+      "click-button",
+      "click-link",
+      "focus-text",
+      "click-checkboxes",
+      "click-option",
+      "click-button-sequence"
+    ],
+    "compatibility": {
+      "command": "make -f ocean/webnav_family/Makefile test",
+      "result": "PASS: 120 native PufferLib adapter episodes; existing ten-task policy IDs preserved"
+    },
+    "limits": [
+      "Six legacy task ports are not added to the ten-task trained policy",
+      "Finite generated lexicon and simplified nonoverlapping layout; not source RNG or full DOM/AX parity",
+      "Click-widget text entry, occlusion and unrestricted pointer events remain outside preset"
+    ],
+    "full_parity": "unverified",
+    "commands": [
+      "node ocean/webnav/families/build.cjs click --test",
+      "make -f ocean/webnav/families/Makefile browser FAMILY=click EPISODES=20",
+      "make -f ocean/webnav/families/Makefile public-check FAMILY=click EPISODES=1000"
+    ],
+    "build_cache": {
+      "proof": "ccb6e2f18bf44a7df5f4a4cf39f828526b0ad7856ae039e55ac5e66805cd753f",
+      "runtime": "ea17650d62d824d6c90d7e8a53d4309e4621414abc2651f4857721d2b250ef94"
+    },
+    "source_sha256": {
+      "Generate.bend": "dd05906b7cf9597ce1c848ed8436412ee0af1d390e5c7394dddfef33bfc3d00e",
+      "LAWS.bend": "b894595ce9f263e629d4f2633aeb5aef2c842fb5c8853fb7d55ce4bacfc783ca",
+      "LegacyGenerate.bend": "e4ba8a294c9c415b5175f71aac3c62ce2cfdb3583e545c9c1fc2c6a75d4e6639",
+      "Main.bend": "754da8d9312741e4d2889857851daacb6a4dc61b8f5b922e06483b4ab6bf051f",
+      "Model.bend": "cbf9d7708fa3c15668b897d17061d61c0d9f6afc7195ec80c309c037a7d74da3",
+      "PROOF.bend": "40803ca466ab2af45b9ca84d60c1c58e5279c89cf1b819d38fcc755734a0317d",
+      "Synonyms.bend": "001f5a428f37bd3c0e3a9b93af523d814376756a2150f8bbed80c2aa218e4a95",
+      "Wire.bend": "ce2e39649300d98737dfd7c9a7e904fd46e87e09712108287cd88e83f7999972",
+      "bridge.c": "3f1661326bb6b7966595adeb51f72752081e3789286011e77ef94ee87ded19e5",
+      "browser.js": "d99f44f5c5014c4e77db453d322d655b5513132cb8454eeebbcd132831f654ac",
+      "browser_oracle.c": "40b5e4be2e0fd31bc1404c6f8ce2389dcc2fb1e6ebcbfe0ad884a1d671ad5592",
+      "expert_synonyms.h": "072b9b96371fe67a08c11025222fd607bfbd7f5ff66b2f4f650301b7aaba91c8",
+      "family_api.c": "4987503c679d4332b90c4e7158e2aa44b804bbb35707cb1aafd8531c3260bffa",
+      "test_click.c": "9173d8f67f00bb0bf9ded018fa230ef01c57b8ca6034fc1792b9060dc25f12a9"
+    }
+  }
 }

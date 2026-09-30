@@ -14,6 +14,19 @@ def mix(+x: U32) -> U32:
 def next_seed(x: U32) -> U32:
   mix((x + 2654435769 : U32))
 
+# The pinned MiniWoB pages use ui_utils.generateString: letters of both
+# cases and digits, with inclusive length bounds. Keep this generator local
+# to forms so the other text-task families retain their existing streams.
+def browser_char(+x: U32) -> Char:
+  +r = (x % 62 : U32)
+  Char.from_u32(Bool.pick(U32, U32.is_lt(r, 26), (97 + r : U32),
+    Bool.pick(U32, U32.is_lt(r, 52), (65 + r - 26 : U32), (48 + r - 52 : U32))))
+
+def browser_text(n: Nat, +seed: U32) -> String:
+  match n:
+    case 0n: SNil{}
+    case 1n+p: SCon{browser_char(seed), browser_text(p, next_seed(seed))}
+
 def write_units(xs: +List<U32>, +at: U32, a: Array<U32>) -> Array<U32>:
   match xs:
     case Nil{}: a
@@ -62,19 +75,43 @@ def name_at(xs: +List<String>, index: Nat) -> String:
 def table_keys() -> +List<String>:
   ["Color", "First name", "Last name", "Country", "Gender", "Language", "Year of Birth", "Religion"]
 
-def table_values() -> +List<String>:
-  ["red", "Alice", "Smith", "Canada", "Female", "English", "1984", "Christianity"]
+def table_slot(+seed: U32, +row: U32) -> U32:
+  +stride = (1 + 2 * (mix((seed + 17 : U32)) % 4 : U32) : U32)
+  (((mix(seed) % 8 : U32) + row * stride : U32) % 8 : U32)
 
 def table_key(seed: U32, row: U32) -> String:
-  +slot = (((mix(seed) % 8 : U32) + row : U32) % 8 : U32)
+  +slot = table_slot(seed, row)
   name_at(table_keys(), U32.to_nat(slot))
 
-def table_value(seed: U32, row: U32) -> String:
-  +slot = (((mix(seed) % 8 : U32) + row : U32) % 8 : U32)
-  name_at(table_values(), U32.to_nat(slot))
+def table_value_for(slot: Nat, +seed: U32, +row: U32, +pick: U32) -> String:
+  match slot:
+    case 0n: name_at(["red", "blue", "green", "yellow", "purple", "orange", "black", "white"], U32.to_nat((pick % 8 : U32)))
+    case 1n: TG.name((seed + row * 37 : U32))
+    case 2n: name_at(["Smith", "Johnson", "Brown", "Taylor", "Anderson", "Jackson", "Miller", "Wilson"], U32.to_nat((pick % 8 : U32)))
+    case 3n: TG.country((seed + row * 41 : U32))
+    case 4n: name_at(["Male", "Female"], U32.to_nat((pick % 2 : U32)))
+    case 5n: name_at(["English", "Spanish", "French", "German", "Arabic", "Chinese", "Hindi", "Japanese"], U32.to_nat((pick % 8 : U32)))
+    case 6n: U32.show((1940 + pick % 76 : U32))
+    case _: name_at(["Christianity", "Islam", "Hinduism", "Buddhism", "Judaism", "Sikhism", "Atheism", "Shinto"], U32.to_nat((pick % 8 : U32)))
+
+def table_value(+seed: U32, +row: U32) -> String:
+  +slot = table_slot(seed, row)
+  +pick = mix((seed + row * 1327 + 4919 : U32))
+  table_value_for(U32.to_nat(slot), seed, row, pick)
+
+def lorem_word(+seed: U32) -> String:
+  name_at(["lorem", "ipsum", "dolor", "sit", "amet,", "consectetur", "adipiscing", "elit,",
+    "integer", "vitae", "tempus", "mauris,", "nunc", "orci", "nulla", "feugiat",
+    "sed", "arcu", "pulvinar", "tincidunt"], U32.to_nat((mix(seed) % 20 : U32)))
+
+def paragraph_tail(n: Nat, +seed: U32) -> String:
+  match n:
+    case 0n: ""
+    case 1n+p: " " ++ lorem_word(seed) ++ paragraph_tail(p, next_seed(seed))
 
 def paragraph(+seed: U32) -> String:
-  "The " ++ TG.name(seed) ++ " walks near the " ++ TG.country(next_seed(seed)) ++ " river and watches birds."
+  String.to_upper(lorem_word(seed)) ++
+    paragraph_tail(U32.to_nat((5 + mix(seed) % 5 : U32)), next_seed(seed)) ++ ". "
 
 def ordinal(index: U32) -> String:
   name_at(["1st", "2nd", "3rd"], U32.to_nat(index))
@@ -106,7 +143,7 @@ def simple_button(+base: U32, a: Array<U32>) -> Array<U32>:
   put_static(0, 1, 1, 0, "Submit", "", base, a)
 
 def dynamic(+seed: U32, +base: U32, a: Array<U32>) -> Array<U32>:
-  +target = TG.password(U32.to_nat((1 + mix(seed) % 6 : U32)), next_seed(seed))
+  +target = browser_text(U32.to_nat((1 + mix(seed) % 6 : U32)), next_seed(seed))
   a = set_header(0, seed, 1, 1, 0, base, a)
   a = put_field(0, 3, "Text", "", target, base, a)
   a = simple_button(base, a)
@@ -123,7 +160,7 @@ def enter_case(+flag: Bool, +seed: U32, +base: U32, a: Array<U32>) -> Array<U32>
   set_query("Type \"" ++ typed ++ "\" in all " ++ case_name ++ " case letters in the text input and press Submit.", base, a)
 
 def password(+seed: U32, +base: U32, a: Array<U32>) -> Array<U32>:
-  +target = TG.login_password(seed)
+  +target = browser_text(U32.to_nat((2 + mix(seed) % 5 : U32)), next_seed(seed))
   a = set_header(2, seed, 2, 1, 0, base, a)
   a = put_field(0, 3, "Password", "", target, base, a)
   a = put_field(1, 3, "Verify password", "", target, base, a)
@@ -131,7 +168,7 @@ def password(+seed: U32, +base: U32, a: Array<U32>) -> Array<U32>:
   set_query("Enter the password \"" ++ target ++ "\" into both text fields and press submit.", base, a)
 
 def transform(+seed: U32, +base: U32, a: Array<U32>) -> Array<U32>:
-  +target = TG.password(U32.to_nat((3 + mix(seed) % 3 : U32)), next_seed(seed))
+  +target = browser_text(U32.to_nat((3 + mix(seed) % 3 : U32)), next_seed(seed))
   a = set_header(3, seed, 1, 2, 0, base, a)
   a = put_field(0, 3, "Text", "", target, base, a)
   a = put_static(0, 13, 0, 0, "Captcha", target, base, a)
@@ -153,10 +190,13 @@ def copy_choice_goal(index: Nat, +p0: String, +p1: String, +p2: String) -> Strin
     case _: p2
 
 def copy_many(+seed: U32, +base: U32, a: Array<U32>) -> Array<U32>:
-  +p0 = paragraph(seed)
-  +p1 = paragraph(next_seed(seed))
-  +p2 = paragraph(next_seed(next_seed(seed)))
-  +choice = (mix(seed) % 3 : U32)
+  # Salt each content stream independently of the requested source. Sharing
+  # the same seed stream let PPO exploit paragraph lengths instead of the
+  # public ordinal instruction, which failed on original MiniWoB text.
+  +p0 = paragraph(mix((seed + 101 : U32)))
+  +p1 = paragraph(mix((seed + 202 : U32)))
+  +p2 = paragraph(mix((seed + 303 : U32)))
+  +choice = (mix((seed + 404 : U32)) % 3 : U32)
   +goal = copy_choice_goal(U32.to_nat(choice), p0, p1, p2)
   a = set_header(5, seed, 4, 1, 0, base, a)
   a = put_field(0, 16, "1st text area", p0, "", base, a)
@@ -178,19 +218,23 @@ def table_static_rows(n: Nat, +seed: U32, +base: U32, a: Array<U32>) -> Array<U3
       a = put_static((node + 1 : U32), 10, 0, 0, "", value, base, a)
       table_static_rows(p, seed, base, a)
 
-def table_field(+seed: U32, +row: U32, field: U32, +base: U32, a: Array<U32>) -> Array<U32>:
+def table_field(+seed: U32, +row: U32, field: U32, filled: Bool, +base: U32, a: Array<U32>) -> Array<U32>:
   +key = table_key(seed, row)
   +value = table_value(seed, row)
-  put_field(field, 3, key ++ ":", "", value, base, a)
+  put_field(field, 3, key ++ ":", Bool.pick(String, filled, value, ""), value, base, a)
 
-def table(+seed: U32, +base: U32, a: Array<U32>) -> Array<U32>:
+def table(+seed: U32, +mode: U32, +base: U32, a: Array<U32>) -> Array<U32>:
   +first = (mix(seed) % 5 : U32)
   +second = ((first + 1 + mix(next_seed(seed)) % 4 : U32) % 5 : U32)
   +reverse = U32.is_eq((mix((seed + 37 : U32)) % 2 : U32), 1)
+  # Training-only mode 1 pre-fills one of the two fields. Mode 0 remains the
+  # original two-empty-field task for differential and held-out evaluation.
+  +fill_first = U32.is_eq(mode, 1) && U32.is_eq((mix((seed + 71 : U32)) % 2 : U32), 0)
+  +fill_second = U32.is_eq(mode, 1) && Bool.not(fill_first)
   a = set_header(6, seed, 2, 13, 0, base, a)
   a = table_static_rows(5n, seed, base, a)
-  a = table_field(seed, Bool.pick(U32, reverse, second, first), 0, base, a)
-  a = table_field(seed, Bool.pick(U32, reverse, first, second), 1, base, a)
+  a = table_field(seed, Bool.pick(U32, reverse, second, first), 0, fill_first, base, a)
+  a = table_field(seed, Bool.pick(U32, reverse, first, second), 1, fill_second, base, a)
   a = put_static(10, 13, 0, 0, "Label 1", table_key(seed, Bool.pick(U32, reverse, second, first)) ++ ":", base, a)
   a = put_static(11, 13, 0, 0, "Label 2", table_key(seed, Bool.pick(U32, reverse, first, second)) ++ ":", base, a)
   a = put_static(12, 1, 1, 0, "Submit", "", base, a)
@@ -202,7 +246,7 @@ def popup_mode(seed: U32) -> U32:
 
 def popup_login(+seed: U32, +base: U32, a: Array<U32>) -> Array<U32>:
   +user = TG.username(seed)
-  +secret = TG.login_password(next_seed(seed))
+  +secret = browser_text(U32.to_nat((2 + mix(next_seed(seed)) % 5 : U32)), next_seed(next_seed(seed)))
   +mode = popup_mode(seed)
   a = set_header(7, seed, 2, 5, mode, base, a)
   a = put_field(0, 3, "Username", "", user, base, a)
@@ -214,7 +258,31 @@ def popup_login(+seed: U32, +base: U32, a: Array<U32>) -> Array<U32>:
   a = put_static(4, 1, 3, 1, "Popup Cancel", "Cancel", base, a)
   set_query("Enter the username \"" ++ user ++ "\" and the password \"" ++ secret ++ "\" into the text fields and press login.", base, a)
 
-def generate_kind(kind: M.TaskKind, +seed: U32, +base: U32,
+def enter_text(+seed: U32, +base: U32, a: Array<U32>) -> Array<U32>:
+  +target = TG.name(seed)
+  a = set_header(8, seed, 1, 1, 0, base, a)
+  a = put_field(0, 3, "Text", "", target, base, a)
+  a = simple_button(base, a)
+  set_query("Enter \"" ++ target ++ "\" into the text field and press Submit.", base, a)
+
+def login(+seed: U32, +base: U32, a: Array<U32>) -> Array<U32>:
+  +user = TG.username(seed)
+  +secret = browser_text(U32.to_nat((2 + mix(next_seed(seed)) % 5 : U32)), next_seed(next_seed(seed)))
+  a = set_header(9, seed, 2, 1, 0, base, a)
+  a = put_field(0, 3, "Username", "", user, base, a)
+  a = put_field(1, 3, "Password", "", secret, base, a)
+  a = put_static(0, 1, 1, 0, "Login", "", base, a)
+  set_query("Enter the username \"" ++ user ++ "\" and the password \"" ++ secret ++ "\" into the text fields and press login.", base, a)
+
+def table_one(+seed: U32, +base: U32, a: Array<U32>) -> Array<U32>:
+  +row = (mix((seed + 6197 : U32)) % 5 : U32)
+  a = set_header(10, seed, 1, 11, 0, base, a)
+  a = table_static_rows(5n, seed, base, a)
+  a = put_field(0, 3, "Text", "", table_value(seed, row), base, a)
+  a = put_static(10, 1, 1, 0, "Submit", "", base, a)
+  set_query("Enter the value of " ++ table_key(seed, row) ++ " into the text field and press Submit.", base, a)
+
+def generate_kind(kind: M.TaskKind, +seed: U32, +mode: U32, +base: U32,
     a: Array<U32>) -> Array<U32>:
   match kind:
     case M.EnterDynamic{}: dynamic(seed, base, a)
@@ -223,9 +291,12 @@ def generate_kind(kind: M.TaskKind, +seed: U32, +base: U32,
     case M.Transform{}: transform(seed, base, a)
     case M.CopyOne{}: copy_one(seed, base, a)
     case M.CopyThree{}: copy_many(seed, base, a)
-    case M.ReadTable{}: table(seed, base, a)
+    case M.ReadTable{}: table(seed, mode, base, a)
     case M.PopupLogin{}: popup_login(seed, base, a)
+    case M.EnterText{}: enter_text(seed, base, a)
+    case M.Login{}: login(seed, base, a)
+    case M.TableOne{}: table_one(seed, base, a)
 
-def generate(task: U32, +seed: U32, +base: U32,
+def generate(task: U32, +seed: U32, +mode: U32, +base: U32,
     a: Array<U32>) -> Array<U32>:
-  generate_kind(M.task_kind(task), seed, base, a)
+  generate_kind(M.task_kind(task), seed, mode, base, a)

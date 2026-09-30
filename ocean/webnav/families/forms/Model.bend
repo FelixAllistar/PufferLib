@@ -13,6 +13,9 @@ type TaskKind is Data:
   CopyThree{}
   ReadTable{}
   PopupLogin{}
+  EnterText{}
+  Login{}
+  TableOne{}
 
 def next_kind(kind: TaskKind) -> TaskKind:
   match kind:
@@ -23,7 +26,10 @@ def next_kind(kind: TaskKind) -> TaskKind:
     case CopyOne{}: CopyThree{}
     case CopyThree{}: ReadTable{}
     case ReadTable{}: PopupLogin{}
-    case PopupLogin{}: EnterDynamic{}
+    case PopupLogin{}: EnterText{}
+    case EnterText{}: Login{}
+    case Login{}: TableOne{}
+    case TableOne{}: EnterDynamic{}
 
 def kind_loop(n: Nat, +kind: TaskKind) -> TaskKind:
   match n:

@@ -1,14 +1,33 @@
 # Forms family
 
+## Legacy ports qualified, 2026-09-29
+
+Local IDs 8–10 add `enter-text`, `login-user`, and `read-table` to the eight
+existing tasks. They reuse the same Bend text editor, field matching, clock
+and reward model. The name pool matches the original 50 names; passwords use
+the original alphanumeric alphabet and 2–6 length range. The table generator
+keeps five public key/value rows with a bounded vocabulary and shuffled key
+order. All three tasks have a ten-second deadline.
+
+The fresh family passes nine family laws plus the shared text proofs, 26
+native scenarios, 220 original-browser episodes including deliberately wrong
+text/credentials and timeout cases, and 11,000/11,000 generated public scripted
+episodes. The existing eight-task training adapter passes 256 native episodes;
+the three new IDs have no new learned-policy result. Its task IDs and text
+catalog contract are preserved. Current evidence is in [RESULTS.json](RESULTS.json).
+
+The following section records the earlier eight-task qualification.
+
 ## 5.0 conversion qualification, 2026-09-24
 
 The preserved implementation builds through the capped wrapper. Its five laws
 and twelve shared text-editor laws pass, along with the 17 native scenarios.
 Fresh original-browser comparisons pass 20 episodes per task (160 total), and
 the public-only scripted runner solves 1,000 generated episodes per task
-(8,000 total). `RESULTS.json` retains the historical audit. No trainer changes
-are needed for this standalone family runtime; family PPO integration is still
-separate work.
+(8,000 total). `RESULTS.json` retains the historical audit. The separate
+[trainable adapter](../../../webnav_forms/README.md) now connects all eight
+tasks to native PPO and scores 800/800 on pinned original pages; its checkpoint
+and evaluation scope are documented in [RESULTS.md](../../../webnav_forms/RESULTS.md).
 
 The conversion preserves an existing limitation: the Bend model clears its
 clipboard after paste. The current browser traces test a single paste after

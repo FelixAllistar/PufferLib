@@ -2,11 +2,11 @@
 #include <string.h>
 #define ROW 2048u
 void family_click_batch(uint32_t *words);
-static const char *tasks[]={"click-test","click-test-2","click-test-transfer","click-dialog","click-dialog-2","click-widget","focus-text-2","click-checkboxes-transfer","click-checkboxes-large","click-checkboxes-soft"};
+static const char *tasks[]={"click-test","click-test-2","click-test-transfer","click-dialog","click-dialog-2","click-widget","focus-text-2","click-checkboxes-transfer","click-checkboxes-large","click-checkboxes-soft","click-button","click-link","focus-text","click-checkboxes","click-option","click-button-sequence"};
 static int ascii(const uint32_t *s,unsigned cap){for(unsigned i=0;i<cap;i++){if(!s[i])return 1;if(s[i]<32||s[i]>126)return 0;}return 0;}
 static int valid(const uint32_t *r){
- if(r[0]!=2||r[1]>=10||r[2]>2)return -1;if(r[2]==1)return r[6]>1?-1:0;
- if(r[9]>2||r[12]!=(r[1]==8?20000u:10000u)||r[32]>2||r[33]<1||r[33]>16||r[34]>r[33]||r[8]<r[35]||!ascii(r+768,256))return -1;
+ if(r[0]!=2||r[1]>=16||r[2]>2)return -1;if(r[2]==1)return r[6]>1?-1:0;
+ if(r[9]>2||r[12]!=(r[1]==8?20000u:10000u)||r[32]>4||r[33]<1||r[33]>16||r[34]>r[33]||r[8]<r[35]||!ascii(r+768,256))return -1;
  unsigned boxes=0;for(unsigned i=0;i<r[33];i++){const uint32_t *n=r+64+i*40;if(n[0]>6||n[1]>1||n[2]>1||!ascii(n+4,28)||n[34]>10000||n[35]>10000)return -1;boxes+=n[0]==2;}
  if(r[32]==2&&!boxes)return -1;return 0;
 }
@@ -16,5 +16,5 @@ static int observe(const uint32_t *r,WFView *v){if(valid(r)||r[2]==1)return -1;w
  }return 0;
 }
 static int action(uint32_t *r,const WFAction *a){if(valid(r)||a->elapsed_ms<r[8]||a->text_length||(a->kind!=WF_WAIT&&a->kind!=WF_CLICK)|| (a->kind==WF_CLICK&&(!a->target||a->target>r[33])))return -1;r[2]=2;r[4]=a->kind;r[5]=a->target;r[8]=a->elapsed_ms;return 0;}
-static const WFFamily api={2,ROW,8,10,"click",tasks,valid,family_click_batch,observe,action};
+static const WFFamily api={2,ROW,8,16,"click",tasks,valid,family_click_batch,observe,action};
 WF_EXPORT const WFFamily *webnav_family_v2(void){return &api;}

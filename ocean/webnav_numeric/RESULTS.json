@@ -1,0 +1,331 @@
+{
+  "date": "2026-09-29",
+  "family": "numeric",
+  "status": "adapter-validated-short-training-baseline",
+  "reference_commit": "33c3b4ddef8c6eb67c57a29663d844b1eda7e614",
+  "checkpoint": "checkpoints/webnav_numeric/1790681756242/0000000000999424.bin",
+  "checkpoint_sha256": "059a8d8ae60778ddba302fe94d546c25c0faac4c9a7eae4096be983794ba8013",
+  "checkpoint_steps": 999424,
+  "config_sha256": "173d0c6efeb417c1ea1c11cf89867d46a062532a93be0d8e085cffbeb248f290",
+  "policy": "H64/L1; separate per-family policy; greedy evaluation",
+  "sources": {
+    "ocean/webnav_numeric/browser.js": "45982d143ab52f9cb35c6c27abcf665c93cf42a0a9e46d4b5d277621cf29826b",
+    "ocean/webnav_numeric/browser_eval.c": "736d4f59dc9fabd25cf2cf223eb7beead290caec2bfa65e43b910064d866bf19",
+    "ocean/webnav_numeric/native_eval.c": "261962570580d82556b53e608af6db595f40a6be662a79f5f9a67e6600b245d4",
+    "ocean/webnav_numeric/test_env.c": "4e2b5c03fc00320bd93cca5f2801b84b2c0a28551c312cff39ad681f42200d4c",
+    "ocean/webnav_numeric/webnav_numeric.h": "a85fb6909345460cb209e2fbe44fe4c29ff0fffa30d9a0b74067603e4f7fbbe3"
+  },
+  "validation": [
+    "adapter C regression tests passed",
+    "CUDA trainer compiled under serial 6GiB/no-swap guard",
+    "100 random native episodes per task",
+    "2 random original-page episodes per task",
+    "20 greedy held-out native episodes per task",
+    "5 greedy original-page episodes per task"
+  ],
+  "results": {
+    "random": [
+      {
+        "task": "ascending-numbers",
+        "episodes": 100,
+        "successes": 2,
+        "full_credit_rate": 0.02,
+        "vector_steps": 184,
+        "policy": "random"
+      },
+      {
+        "task": "find-greatest",
+        "episodes": 100,
+        "successes": 26,
+        "full_credit_rate": 0.26,
+        "vector_steps": 544,
+        "policy": "random"
+      },
+      {
+        "task": "generate-number",
+        "episodes": 100,
+        "successes": 29,
+        "full_credit_rate": 0.29,
+        "vector_steps": 320,
+        "policy": "random"
+      },
+      {
+        "task": "guess-number",
+        "episodes": 100,
+        "successes": 3,
+        "full_credit_rate": 0.03,
+        "vector_steps": 6240,
+        "policy": "random"
+      },
+      {
+        "task": "hot-cold",
+        "episodes": 100,
+        "successes": 0,
+        "full_credit_rate": 0.0,
+        "vector_steps": 5064,
+        "policy": "random"
+      },
+      {
+        "task": "number-checkboxes",
+        "episodes": 100,
+        "successes": 0,
+        "full_credit_rate": 0.0,
+        "vector_steps": 3408,
+        "policy": "random"
+      },
+      {
+        "task": "odd-or-even",
+        "episodes": 100,
+        "successes": 3,
+        "full_credit_rate": 0.03,
+        "vector_steps": 776,
+        "policy": "random"
+      },
+      {
+        "task": "simple-algebra",
+        "episodes": 100,
+        "successes": 0,
+        "full_credit_rate": 0.0,
+        "vector_steps": 2240,
+        "policy": "random"
+      },
+      {
+        "task": "simple-arithmetic",
+        "episodes": 100,
+        "successes": 0,
+        "full_credit_rate": 0.0,
+        "vector_steps": 2240,
+        "policy": "random"
+      }
+    ],
+    "native_learned": [
+      {
+        "task": "ascending-numbers",
+        "episodes": 20,
+        "successes": 20,
+        "full_credit_rate": 1.0,
+        "vector_steps": 120,
+        "policy": "greedy"
+      },
+      {
+        "task": "find-greatest",
+        "episodes": 20,
+        "successes": 15,
+        "full_credit_rate": 0.75,
+        "vector_steps": 48,
+        "policy": "greedy"
+      },
+      {
+        "task": "generate-number",
+        "episodes": 20,
+        "successes": 8,
+        "full_credit_rate": 0.4,
+        "vector_steps": 192,
+        "policy": "greedy"
+      },
+      {
+        "task": "guess-number",
+        "episodes": 20,
+        "successes": 0,
+        "full_credit_rate": 0.0,
+        "vector_steps": 1440,
+        "policy": "greedy"
+      },
+      {
+        "task": "hot-cold",
+        "episodes": 20,
+        "successes": 0,
+        "full_credit_rate": 0.0,
+        "vector_steps": 1440,
+        "policy": "greedy"
+      },
+      {
+        "task": "number-checkboxes",
+        "episodes": 20,
+        "successes": 0,
+        "full_credit_rate": 0.0,
+        "vector_steps": 2880,
+        "policy": "greedy"
+      },
+      {
+        "task": "odd-or-even",
+        "episodes": 20,
+        "successes": 1,
+        "full_credit_rate": 0.05,
+        "vector_steps": 992,
+        "policy": "greedy"
+      },
+      {
+        "task": "simple-algebra",
+        "episodes": 20,
+        "successes": 0,
+        "full_credit_rate": 0.0,
+        "vector_steps": 960,
+        "policy": "greedy"
+      },
+      {
+        "task": "simple-arithmetic",
+        "episodes": 20,
+        "successes": 0,
+        "full_credit_rate": 0.0,
+        "vector_steps": 960,
+        "policy": "greedy"
+      }
+    ],
+    "browser_smoke": [
+      {
+        "task": "ascending-numbers",
+        "episodes": 2,
+        "successes": 0,
+        "full_credit_rate": 0.0,
+        "actions": 3,
+        "policy": "random H64/L1; original Chromium pages"
+      },
+      {
+        "task": "find-greatest",
+        "episodes": 2,
+        "successes": 0,
+        "full_credit_rate": 0.0,
+        "actions": 3,
+        "policy": "random H64/L1; original Chromium pages"
+      },
+      {
+        "task": "generate-number",
+        "episodes": 2,
+        "successes": 2,
+        "full_credit_rate": 1.0,
+        "actions": 6,
+        "policy": "random H64/L1; original Chromium pages"
+      },
+      {
+        "task": "guess-number",
+        "episodes": 2,
+        "successes": 0,
+        "full_credit_rate": 0.0,
+        "actions": 120,
+        "policy": "random H64/L1; original Chromium pages"
+      },
+      {
+        "task": "hot-cold",
+        "episodes": 2,
+        "successes": 0,
+        "full_credit_rate": 0.0,
+        "actions": 87,
+        "policy": "random H64/L1; original Chromium pages"
+      },
+      {
+        "task": "number-checkboxes",
+        "episodes": 2,
+        "successes": 0,
+        "full_credit_rate": 0.0,
+        "actions": 69,
+        "policy": "random H64/L1; original Chromium pages"
+      },
+      {
+        "task": "odd-or-even",
+        "episodes": 2,
+        "successes": 1,
+        "full_credit_rate": 0.5,
+        "actions": 10,
+        "policy": "random H64/L1; original Chromium pages"
+      },
+      {
+        "task": "simple-algebra",
+        "episodes": 2,
+        "successes": 0,
+        "full_credit_rate": 0.0,
+        "actions": 60,
+        "policy": "random H64/L1; original Chromium pages"
+      },
+      {
+        "task": "simple-arithmetic",
+        "episodes": 2,
+        "successes": 0,
+        "full_credit_rate": 0.0,
+        "actions": 71,
+        "policy": "random H64/L1; original Chromium pages"
+      }
+    ],
+    "browser_learned": [
+      {
+        "task": "ascending-numbers",
+        "episodes": 5,
+        "successes": 5,
+        "full_credit_rate": 1.0,
+        "actions": 25,
+        "policy": "greedy H64/L1; original Chromium pages"
+      },
+      {
+        "task": "find-greatest",
+        "episodes": 5,
+        "successes": 4,
+        "full_credit_rate": 0.8,
+        "actions": 10,
+        "policy": "greedy H64/L1; original Chromium pages"
+      },
+      {
+        "task": "generate-number",
+        "episodes": 5,
+        "successes": 2,
+        "full_credit_rate": 0.4,
+        "actions": 45,
+        "policy": "greedy H64/L1; original Chromium pages"
+      },
+      {
+        "task": "guess-number",
+        "episodes": 5,
+        "successes": 0,
+        "full_credit_rate": 0.0,
+        "actions": 300,
+        "policy": "greedy H64/L1; original Chromium pages"
+      },
+      {
+        "task": "hot-cold",
+        "episodes": 5,
+        "successes": 0,
+        "full_credit_rate": 0.0,
+        "actions": 300,
+        "policy": "greedy H64/L1; original Chromium pages"
+      },
+      {
+        "task": "number-checkboxes",
+        "episodes": 5,
+        "successes": 0,
+        "full_credit_rate": 0.0,
+        "actions": 600,
+        "policy": "greedy H64/L1; original Chromium pages"
+      },
+      {
+        "task": "odd-or-even",
+        "episodes": 5,
+        "successes": 0,
+        "full_credit_rate": 0.0,
+        "actions": 207,
+        "policy": "greedy H64/L1; original Chromium pages"
+      },
+      {
+        "task": "simple-algebra",
+        "episodes": 5,
+        "successes": 0,
+        "full_credit_rate": 0.0,
+        "actions": 200,
+        "policy": "greedy H64/L1; original Chromium pages"
+      },
+      {
+        "task": "simple-arithmetic",
+        "episodes": 5,
+        "successes": 0,
+        "full_credit_rate": 0.0,
+        "actions": 200,
+        "policy": "greedy H64/L1; original Chromium pages"
+      }
+    ]
+  },
+  "limits": [
+    "bounded Bend generators, not full source-distribution parity",
+    "small pilot training/evaluation; adapter coverage is not solved-task coverage",
+    "controlled clock and bounded action preset",
+    "private model goals and original page goals are not policy inputs"
+  ],
+  "discarded_pilot": "Earlier 999424-step run had unbounded numeric-feedback features and unstable value loss; fresh final run uses numeric feature clipping to [-10,10]."
+}

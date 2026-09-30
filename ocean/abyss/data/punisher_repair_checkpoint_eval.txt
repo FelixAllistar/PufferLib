@@ -1,0 +1,202 @@
+╭──────────────────────────────────────────────────────────────────────────────╮
+│ PufferLib 5.0               🐡 GPU:  19%   VRAM:    0.9/3G    RAM:  0.3G     │
+│                                                                              │
+│ Env               abyss    Evaluate        0ms   0%    Losses                │
+│ Params           305.5K      Model         0ms   0%    policy                │
+│ Steps              8.2K      Env           0ms   0%    value                 │
+│ SPS                 0.0      Copy          0ms   0%    entropy               │
+│ Epoch                 0    Train           0ms   0%    old_kl                │
+│ Uptime            820ms      Model         0ms   0%    kl                    │
+│ To go               0ms      Misc          0ms   0%    clipfrac              │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭──────────────────────────────────────────────────────────────────────────────╮
+│ PufferLib 5.0              🐡  GPU:  29%   VRAM:    0.9/3G    RAM:  0.3G     │
+│                                                                              │
+│ Env               abyss    Evaluate        0ms   0%    Losses                │
+│ Params           305.5K      Model         0ms   0%    policy                │
+│ Steps             32.8K      Env           0ms   0%    value                 │
+│ SPS                 0.0      Copy          0ms   0%    entropy               │
+│ Epoch                 0    Train           0ms   0%    old_kl                │
+│ Uptime         1s 520ms      Model         0ms   0%    kl                    │
+│ To go               0ms      Misc          0ms   0%    clipfrac              │
+│                                                                              │
+│ perf                       1073.753   score                      1073.753    │
+│ episode_return                1.045   episode_length              233.679    │
+│ survival_rate                 0.964   completion_rate               0.964    │
+│ rooms_cleared                 2.929   caches_looted                 2.964    │
+│ death_rate                    0.036   combat_death_rate             0.036    │
+│ boundary_death_rate           0.000   timeout_rate                  0.000    │
+│ timeout_threats_rate          0.000   timeout_cache_rate            0.000    │
+│ timeout_gate_ready_rate       0.000   survived_incomplete_rate      0.000    │
+│ min_cap_fraction              0.732   cap_dry_rate                  0.000    │
+│ cap_dry_fraction              0.000   prop_uptime                   0.963    │
+│ rep_uptime                    0.282   weapon_uptime                 0.699    │
+│ weapon_idle_threat_fracti     0.277   weapon_idle_no_lock_fract     0.224    │
+│ weapon_idle_no_intent_fra     0.015   weapon_idle_transaction_f     0.031    │
+│ weapon_idle_interaction_f     0.007   weapon_idle_cap_starved_f     0.000    │
+│ weapon_idle_actionable_fr     0.000   gate_ready_idle_fraction      0.009    │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭──────────────────────────────────────────────────────────────────────────────╮
+│ PufferLib 5.0             🐡   GPU:  26%   VRAM:    0.9/3G    RAM:  0.3G     │
+│                                                                              │
+│ Env               abyss    Evaluate        0ms   0%    Losses                │
+│ Params           305.5K      Model         0ms   0%    policy                │
+│ Steps             57.3K      Env           0ms   0%    value                 │
+│ SPS                 0.0      Copy          0ms   0%    entropy               │
+│ Epoch                 0    Train           0ms   0%    old_kl                │
+│ Uptime         2s 181ms      Model         0ms   0%    kl                    │
+│ To go               0ms      Misc          0ms   0%    clipfrac              │
+│                                                                              │
+│ perf                       1102.618   score                      1102.618    │
+│ episode_return                1.067   episode_length              299.919    │
+│ survival_rate                 0.992   completion_rate               0.992    │
+│ rooms_cleared                 2.984   caches_looted                 2.992    │
+│ death_rate                    0.008   combat_death_rate             0.008    │
+│ boundary_death_rate           0.000   timeout_rate                  0.000    │
+│ timeout_threats_rate          0.000   timeout_cache_rate            0.000    │
+│ timeout_gate_ready_rate       0.000   survived_incomplete_rate      0.000    │
+│ min_cap_fraction              0.713   cap_dry_rate                  0.000    │
+│ cap_dry_fraction              0.000   prop_uptime                   0.962    │
+│ rep_uptime                    0.321   weapon_uptime                 0.717    │
+│ weapon_idle_threat_fracti     0.244   weapon_idle_no_lock_fract     0.199    │
+│ weapon_idle_no_intent_fra     0.013   weapon_idle_transaction_f     0.026    │
+│ weapon_idle_interaction_f     0.007   weapon_idle_cap_starved_f     0.000    │
+│ weapon_idle_actionable_fr     0.000   gate_ready_idle_fraction      0.002    │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭──────────────────────────────────────────────────────────────────────────────╮
+│ PufferLib 5.0            🐡    GPU:  25%   VRAM:    0.9/3G    RAM:  0.3G     │
+│                                                                              │
+│ Env               abyss    Evaluate        0ms   0%    Losses                │
+│ Params           305.5K      Model         0ms   0%    policy                │
+│ Steps             90.1K      Env           0ms   0%    value                 │
+│ SPS                 0.0      Copy          0ms   0%    entropy               │
+│ Epoch                 0    Train           0ms   0%    old_kl                │
+│ Uptime         2s 970ms      Model         0ms   0%    kl                    │
+│ To go               0ms      Misc          0ms   0%    clipfrac              │
+│                                                                              │
+│ perf                       1106.458   score                      1106.458    │
+│ episode_return                1.075   episode_length              300.000    │
+│ survival_rate                 0.996   completion_rate               0.996    │
+│ rooms_cleared                 2.991   caches_looted                 2.996    │
+│ death_rate                    0.004   combat_death_rate             0.004    │
+│ boundary_death_rate           0.000   timeout_rate                  0.000    │
+│ timeout_threats_rate          0.000   timeout_cache_rate            0.000    │
+│ timeout_gate_ready_rate       0.000   survived_incomplete_rate      0.000    │
+│ min_cap_fraction              0.715   cap_dry_rate                  0.000    │
+│ cap_dry_fraction              0.000   prop_uptime                   0.962    │
+│ rep_uptime                    0.316   weapon_uptime                 0.713    │
+│ weapon_idle_threat_fracti     0.247   weapon_idle_no_lock_fract     0.202    │
+│ weapon_idle_no_intent_fra     0.013   weapon_idle_transaction_f     0.025    │
+│ weapon_idle_interaction_f     0.006   weapon_idle_cap_starved_f     0.000    │
+│ weapon_idle_actionable_fr     0.000   gate_ready_idle_fraction      0.002    │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭──────────────────────────────────────────────────────────────────────────────╮
+│ PufferLib 5.0           🐡     GPU:  25%   VRAM:    0.9/3G    RAM:  0.3G     │
+│                                                                              │
+│ Env               abyss    Evaluate        0ms   0%    Losses                │
+│ Params           305.5K      Model         0ms   0%    policy                │
+│ Steps            114.7K      Env           0ms   0%    value                 │
+│ SPS                 0.0      Copy          0ms   0%    entropy               │
+│ Epoch                 0    Train           0ms   0%    old_kl                │
+│ Uptime         3s 657ms      Model         0ms   0%    kl                    │
+│ To go               0ms      Misc          0ms   0%    clipfrac              │
+│                                                                              │
+│ perf                       1107.744   score                      1107.744    │
+│ episode_return                1.078   episode_length              300.063    │
+│ survival_rate                 0.997   completion_rate               0.997    │
+│ rooms_cleared                 2.994   caches_looted                 2.997    │
+│ death_rate                    0.003   combat_death_rate             0.003    │
+│ boundary_death_rate           0.000   timeout_rate                  0.000    │
+│ timeout_threats_rate          0.000   timeout_cache_rate            0.000    │
+│ timeout_gate_ready_rate       0.000   survived_incomplete_rate      0.000    │
+│ min_cap_fraction              0.714   cap_dry_rate                  0.000    │
+│ cap_dry_fraction              0.000   prop_uptime                   0.962    │
+│ rep_uptime                    0.317   weapon_uptime                 0.717    │
+│ weapon_idle_threat_fracti     0.245   weapon_idle_no_lock_fract     0.200    │
+│ weapon_idle_no_intent_fra     0.013   weapon_idle_transaction_f     0.025    │
+│ weapon_idle_interaction_f     0.006   weapon_idle_cap_starved_f     0.000    │
+│ weapon_idle_actionable_fr     0.000   gate_ready_idle_fraction      0.004    │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭──────────────────────────────────────────────────────────────────────────────╮
+│ PufferLib 5.0          🐡      GPU:  29%   VRAM:    0.9/3G    RAM:  0.3G     │
+│                                                                              │
+│ Env               abyss    Evaluate        0ms   0%    Losses                │
+│ Params           305.5K      Model         0ms   0%    policy                │
+│ Steps            139.3K      Env           0ms   0%    value                 │
+│ SPS                 0.0      Copy          0ms   0%    entropy               │
+│ Epoch                 0    Train           0ms   0%    old_kl                │
+│ Uptime         4s 332ms      Model         0ms   0%    kl                    │
+│ To go               0ms      Misc          0ms   0%    clipfrac              │
+│                                                                              │
+│ perf                       1108.340   score                      1108.340    │
+│ episode_return                1.078   episode_length              303.021    │
+│ survival_rate                 0.997   completion_rate               0.997    │
+│ rooms_cleared                 2.995   caches_looted                 2.997    │
+│ death_rate                    0.003   combat_death_rate             0.003    │
+│ boundary_death_rate           0.000   timeout_rate                  0.000    │
+│ timeout_threats_rate          0.000   timeout_cache_rate            0.000    │
+│ timeout_gate_ready_rate       0.000   survived_incomplete_rate      0.000    │
+│ min_cap_fraction              0.713   cap_dry_rate                  0.000    │
+│ cap_dry_fraction              0.000   prop_uptime                   0.962    │
+│ rep_uptime                    0.321   weapon_uptime                 0.718    │
+│ weapon_idle_threat_fracti     0.243   weapon_idle_no_lock_fract     0.199    │
+│ weapon_idle_no_intent_fra     0.013   weapon_idle_transaction_f     0.025    │
+│ weapon_idle_interaction_f     0.006   weapon_idle_cap_starved_f     0.000    │
+│ weapon_idle_actionable_fr     0.000   gate_ready_idle_fraction      0.003    │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭──────────────────────────────────────────────────────────────────────────────╮
+│ PufferLib 5.0         🐡       GPU:  23%   VRAM:    0.9/3G    RAM:  0.3G     │
+│                                                                              │
+│ Env               abyss    Evaluate        0ms   0%    Losses                │
+│ Params           305.5K      Model         0ms   0%    policy                │
+│ Steps            163.8K      Env           0ms   0%    value                 │
+│ SPS                 0.0      Copy          0ms   0%    entropy               │
+│ Epoch                 0    Train           0ms   0%    old_kl                │
+│ Uptime         5s 086ms      Model         0ms   0%    kl                    │
+│ To go               0ms      Misc          0ms   0%    clipfrac              │
+│                                                                              │
+│ perf                       1108.830   score                      1108.830    │
+│ episode_return                1.077   episode_length              304.894    │
+│ survival_rate                 0.998   completion_rate               0.998    │
+│ rooms_cleared                 2.996   caches_looted                 2.998    │
+│ death_rate                    0.002   combat_death_rate             0.002    │
+│ boundary_death_rate           0.000   timeout_rate                  0.000    │
+│ timeout_threats_rate          0.000   timeout_cache_rate            0.000    │
+│ timeout_gate_ready_rate       0.000   survived_incomplete_rate      0.000    │
+│ min_cap_fraction              0.713   cap_dry_rate                  0.000    │
+│ cap_dry_fraction              0.000   prop_uptime                   0.962    │
+│ rep_uptime                    0.321   weapon_uptime                 0.720    │
+│ weapon_idle_threat_fracti     0.242   weapon_idle_no_lock_fract     0.198    │
+│ weapon_idle_no_intent_fra     0.013   weapon_idle_transaction_f     0.025    │
+│ weapon_idle_interaction_f     0.006   weapon_idle_cap_starved_f     0.000    │
+│ weapon_idle_actionable_fr     0.000   gate_ready_idle_fraction      0.003    │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭──────────────────────────────────────────────────────────────────────────────╮
+│ PufferLib 5.0        🐡        GPU:  27%   VRAM:    0.9/3G    RAM:  0.3G     │
+│                                                                              │
+│ Env               abyss    Evaluate        0ms   0%    Losses                │
+│ Params           305.5K      Model         0ms   0%    policy                │
+│ Steps            180.2K      Env           0ms   0%    value                 │
+│ SPS                 0.0      Copy          0ms   0%    entropy               │
+│ Epoch                 0    Train           0ms   0%    old_kl                │
+│ Uptime         5s 618ms      Model         0ms   0%    kl                    │
+│ To go               0ms      Misc          0ms   0%    clipfrac              │
+│                                                                              │
+│ perf                       1109.037   score                      1109.037    │
+│ episode_return                1.078   episode_length              303.701    │
+│ survival_rate                 0.998   completion_rate               0.998    │
+│ rooms_cleared                 2.996   caches_looted                 2.998    │
+│ death_rate                    0.002   combat_death_rate             0.002    │
+│ boundary_death_rate           0.000   timeout_rate                  0.000    │
+│ timeout_threats_rate          0.000   timeout_cache_rate            0.000    │
+│ timeout_gate_ready_rate       0.000   survived_incomplete_rate      0.000    │
+│ min_cap_fraction              0.714   cap_dry_rate                  0.000    │
+│ cap_dry_fraction              0.000   prop_uptime                   0.961    │
+│ rep_uptime                    0.319   weapon_uptime                 0.719    │
+│ weapon_idle_threat_fracti     0.242   weapon_idle_no_lock_fract     0.199    │
+│ weapon_idle_no_intent_fra     0.013   weapon_idle_transaction_f     0.025    │
+│ weapon_idle_interaction_f     0.006   weapon_idle_cap_starved_f     0.000    │
+│ weapon_idle_actionable_fr     0.000   gate_ready_idle_fraction      0.002    │
+╰──────────────────────────────────────────────────────────────────────────────╯
+CUDA_EVAL env=abyss score=1109.037231 perf=1109.037231 games=522 params=305536 draw=0.000000

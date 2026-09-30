@@ -1,0 +1,397 @@
+{
+  "note": "Heuristic baseline, rounded screenshot profile, no learned policy. Terminal metrics from env.log after auto-reset.",
+  "results": [
+    {
+      "scenario": 0,
+      "weather": 0.3,
+      "episodes": 100,
+      "strategy": "threat_rush",
+      "output": "scenario=00 priority=threat_rush completion=1.000000 survival=1.000000 rooms=3.000 caches=3.000 ticks=324.85 deaths=0.000000 timeouts=0.000000 cap_dry=0.000000 rep_starved=0.000000"
+    },
+    {
+      "scenario": 1,
+      "weather": 0.3,
+      "episodes": 100,
+      "strategy": "threat_rush",
+      "output": "scenario=01 priority=threat_rush completion=0.980000 survival=1.000000 rooms=2.940 caches=2.940 ticks=351.93 deaths=0.000000 timeouts=0.020000 cap_dry=0.000000 rep_starved=0.000000"
+    },
+    {
+      "scenario": 2,
+      "weather": 0.3,
+      "episodes": 100,
+      "strategy": "threat_rush",
+      "output": "scenario=02 priority=threat_rush completion=1.000000 survival=1.000000 rooms=3.000 caches=3.000 ticks=486.79 deaths=0.000000 timeouts=0.000000 cap_dry=0.000000 rep_starved=0.000000"
+    },
+    {
+      "scenario": 3,
+      "weather": 0.3,
+      "episodes": 100,
+      "strategy": "threat_rush",
+      "output": "scenario=03 priority=threat_rush completion=1.000000 survival=1.000000 rooms=3.000 caches=3.000 ticks=366.18 deaths=0.000000 timeouts=0.000000 cap_dry=0.000000 rep_starved=0.000000"
+    },
+    {
+      "scenario": 4,
+      "weather": 0.3,
+      "episodes": 100,
+      "strategy": "threat_rush",
+      "output": "scenario=04 priority=threat_rush completion=1.000000 survival=1.000000 rooms=3.000 caches=3.000 ticks=791.51 deaths=0.000000 timeouts=0.000000 cap_dry=0.000000 rep_starved=0.000000"
+    },
+    {
+      "scenario": 5,
+      "weather": 0.3,
+      "episodes": 100,
+      "strategy": "threat_rush",
+      "output": "scenario=05 priority=threat_rush completion=0.760000 survival=0.760000 rooms=2.760 caches=2.760 ticks=686.36 deaths=0.240000 timeouts=0.000000 cap_dry=0.000000 rep_starved=0.000000"
+    },
+    {
+      "scenario": 6,
+      "weather": 0.3,
+      "episodes": 100,
+      "strategy": "threat_rush",
+      "output": "scenario=06 priority=threat_rush completion=1.000000 survival=1.000000 rooms=3.000 caches=3.000 ticks=565.55 deaths=0.000000 timeouts=0.000000 cap_dry=0.000000 rep_starved=0.000000"
+    },
+    {
+      "scenario": 7,
+      "weather": 0.3,
+      "episodes": 100,
+      "strategy": "threat_rush",
+      "output": "scenario=07 priority=threat_rush completion=0.350000 survival=0.350000 rooms=1.700 caches=1.700 ticks=527.38 deaths=0.650000 timeouts=0.000000 cap_dry=0.000000 rep_starved=0.000000"
+    },
+    {
+      "scenario": 8,
+      "weather": 0.3,
+      "episodes": 100,
+      "strategy": "threat_rush",
+      "output": "scenario=08 priority=threat_rush completion=1.000000 survival=1.000000 rooms=3.000 caches=3.000 ticks=394.20 deaths=0.000000 timeouts=0.000000 cap_dry=0.000000 rep_starved=0.000000"
+    },
+    {
+      "scenario": 9,
+      "weather": 0.3,
+      "episodes": 100,
+      "strategy": "threat_rush",
+      "output": "scenario=09 priority=threat_rush completion=0.780000 survival=0.780000 rooms=2.560 caches=2.560 ticks=592.05 deaths=0.220000 timeouts=0.000000 cap_dry=0.000000 rep_starved=0.000000"
+    },
+    {
+      "scenario": 10,
+      "weather": 0.3,
+      "episodes": 100,
+      "strategy": "threat_rush",
+      "output": "scenario=10 priority=threat_rush completion=1.000000 survival=1.000000 rooms=3.000 caches=3.000 ticks=622.92 deaths=0.000000 timeouts=0.000000 cap_dry=0.000000 rep_starved=0.000000"
+    },
+    {
+      "scenario": 11,
+      "weather": 0.3,
+      "episodes": 100,
+      "strategy": "threat_rush",
+      "output": "scenario=11 priority=threat_rush completion=1.000000 survival=1.000000 rooms=3.000 caches=3.000 ticks=359.71 deaths=0.000000 timeouts=0.000000 cap_dry=0.000000 rep_starved=0.000000"
+    },
+    {
+      "scenario": 12,
+      "weather": 0.3,
+      "episodes": 100,
+      "strategy": "threat_rush",
+      "output": "scenario=12 priority=threat_rush completion=1.000000 survival=1.000000 rooms=3.000 caches=3.000 ticks=586.74 deaths=0.000000 timeouts=0.000000 cap_dry=0.000000 rep_starved=0.000000"
+    },
+    {
+      "scenario": 13,
+      "weather": 0.3,
+      "episodes": 100,
+      "strategy": "threat_rush",
+      "output": "scenario=13 priority=threat_rush completion=0.990000 survival=1.000000 rooms=2.990 caches=2.990 ticks=817.60 deaths=0.000000 timeouts=0.010000 cap_dry=0.000000 rep_starved=0.000000"
+    },
+    {
+      "scenario": 14,
+      "weather": 0.3,
+      "episodes": 100,
+      "strategy": "threat_rush",
+      "output": "scenario=14 priority=threat_rush completion=0.990000 survival=1.000000 rooms=2.990 caches=2.990 ticks=629.10 deaths=0.000000 timeouts=0.010000 cap_dry=0.000000 rep_starved=0.000000"
+    },
+    {
+      "scenario": 15,
+      "weather": 0.3,
+      "episodes": 100,
+      "strategy": "threat_rush",
+      "output": "scenario=15 priority=threat_rush completion=1.000000 survival=1.000000 rooms=3.000 caches=3.000 ticks=563.11 deaths=0.000000 timeouts=0.000000 cap_dry=0.000000 rep_starved=0.000000"
+    },
+    {
+      "scenario": 16,
+      "weather": 0.3,
+      "episodes": 100,
+      "strategy": "threat_rush",
+      "output": "scenario=16 priority=threat_rush completion=0.680000 survival=0.680000 rooms=2.040 caches=2.040 ticks=511.48 deaths=0.320000 timeouts=0.000000 cap_dry=0.000000 rep_starved=0.000000"
+    },
+    {
+      "scenario": 17,
+      "weather": 0.3,
+      "episodes": 100,
+      "strategy": "threat_rush",
+      "output": "scenario=17 priority=threat_rush completion=0.970000 survival=1.000000 rooms=2.970 caches=2.990 ticks=872.80 deaths=0.000000 timeouts=0.030000 cap_dry=0.000000 rep_starved=0.000000"
+    },
+    {
+      "scenario": 18,
+      "weather": 0.3,
+      "episodes": 100,
+      "strategy": "threat_rush",
+      "output": "scenario=18 priority=threat_rush completion=1.000000 survival=1.000000 rooms=3.000 caches=3.000 ticks=525.56 deaths=0.000000 timeouts=0.000000 cap_dry=0.000000 rep_starved=0.000000"
+    },
+    {
+      "scenario": 19,
+      "weather": 0.3,
+      "episodes": 100,
+      "strategy": "threat_rush",
+      "output": "scenario=19 priority=threat_rush completion=1.000000 survival=1.000000 rooms=3.000 caches=3.000 ticks=348.03 deaths=0.000000 timeouts=0.000000 cap_dry=0.000000 rep_starved=0.000000"
+    },
+    {
+      "scenario": 20,
+      "weather": 0.3,
+      "episodes": 100,
+      "strategy": "threat_rush",
+      "output": "scenario=20 priority=threat_rush completion=1.000000 survival=1.000000 rooms=3.000 caches=3.000 ticks=428.14 deaths=0.000000 timeouts=0.000000 cap_dry=0.000000 rep_starved=0.000000"
+    },
+    {
+      "scenario": 21,
+      "weather": 0.3,
+      "episodes": 100,
+      "strategy": "threat_rush",
+      "output": "scenario=21 priority=threat_rush completion=1.000000 survival=1.000000 rooms=3.000 caches=3.000 ticks=308.22 deaths=0.000000 timeouts=0.000000 cap_dry=0.000000 rep_starved=0.000000"
+    },
+    {
+      "scenario": 22,
+      "weather": 0.3,
+      "episodes": 100,
+      "strategy": "threat_rush",
+      "output": "scenario=22 priority=threat_rush completion=1.000000 survival=1.000000 rooms=3.000 caches=3.000 ticks=598.74 deaths=0.000000 timeouts=0.000000 cap_dry=0.000000 rep_starved=0.000000"
+    },
+    {
+      "scenario": 23,
+      "weather": 0.3,
+      "episodes": 100,
+      "strategy": "threat_rush",
+      "output": "scenario=23 priority=threat_rush completion=0.440000 survival=0.440000 rooms=1.320 caches=1.320 ticks=404.12 deaths=0.560000 timeouts=0.000000 cap_dry=0.000000 rep_starved=0.000000"
+    },
+    {
+      "scenario": 24,
+      "weather": 0.3,
+      "episodes": 100,
+      "strategy": "threat_rush",
+      "output": "scenario=24 priority=threat_rush completion=0.990000 survival=1.000000 rooms=2.990 caches=2.990 ticks=819.44 deaths=0.000000 timeouts=0.010000 cap_dry=0.000000 rep_starved=0.000000"
+    },
+    {
+      "scenario": 25,
+      "weather": 0.3,
+      "episodes": 100,
+      "strategy": "threat_rush",
+      "output": "scenario=25 priority=threat_rush completion=1.000000 survival=1.000000 rooms=3.000 caches=3.000 ticks=714.89 deaths=0.000000 timeouts=0.000000 cap_dry=0.000000 rep_starved=0.000000"
+    },
+    {
+      "scenario": 26,
+      "weather": 0.3,
+      "episodes": 100,
+      "strategy": "threat_rush",
+      "output": "scenario=26 priority=threat_rush completion=1.000000 survival=1.000000 rooms=3.000 caches=3.000 ticks=592.91 deaths=0.000000 timeouts=0.000000 cap_dry=0.000000 rep_starved=0.000000"
+    },
+    {
+      "scenario": 27,
+      "weather": 0.3,
+      "episodes": 100,
+      "strategy": "threat_rush",
+      "output": "scenario=27 priority=threat_rush completion=1.000000 survival=1.000000 rooms=3.000 caches=3.000 ticks=599.78 deaths=0.000000 timeouts=0.000000 cap_dry=0.000000 rep_starved=0.000000"
+    },
+    {
+      "scenario": 0,
+      "weather": 0.5,
+      "episodes": 100,
+      "strategy": "threat_rush",
+      "output": "scenario=00 priority=threat_rush completion=1.000000 survival=1.000000 rooms=3.000 caches=3.000 ticks=310.28 deaths=0.000000 timeouts=0.000000 cap_dry=0.000000 rep_starved=0.000000"
+    },
+    {
+      "scenario": 1,
+      "weather": 0.5,
+      "episodes": 100,
+      "strategy": "threat_rush",
+      "output": "scenario=01 priority=threat_rush completion=1.000000 survival=1.000000 rooms=3.000 caches=3.000 ticks=319.31 deaths=0.000000 timeouts=0.000000 cap_dry=0.000000 rep_starved=0.000000"
+    },
+    {
+      "scenario": 2,
+      "weather": 0.5,
+      "episodes": 100,
+      "strategy": "threat_rush",
+      "output": "scenario=02 priority=threat_rush completion=1.000000 survival=1.000000 rooms=3.000 caches=3.000 ticks=461.31 deaths=0.000000 timeouts=0.000000 cap_dry=0.000000 rep_starved=0.000000"
+    },
+    {
+      "scenario": 3,
+      "weather": 0.5,
+      "episodes": 100,
+      "strategy": "threat_rush",
+      "output": "scenario=03 priority=threat_rush completion=1.000000 survival=1.000000 rooms=3.000 caches=3.000 ticks=348.46 deaths=0.000000 timeouts=0.000000 cap_dry=0.000000 rep_starved=0.000000"
+    },
+    {
+      "scenario": 4,
+      "weather": 0.5,
+      "episodes": 100,
+      "strategy": "threat_rush",
+      "output": "scenario=04 priority=threat_rush completion=1.000000 survival=1.000000 rooms=3.000 caches=3.000 ticks=758.75 deaths=0.000000 timeouts=0.000000 cap_dry=0.000000 rep_starved=0.000000"
+    },
+    {
+      "scenario": 5,
+      "weather": 0.5,
+      "episodes": 100,
+      "strategy": "threat_rush",
+      "output": "scenario=05 priority=threat_rush completion=0.270000 survival=0.270000 rooms=2.270 caches=2.270 ticks=414.58 deaths=0.730000 timeouts=0.000000 cap_dry=0.000000 rep_starved=0.000000"
+    },
+    {
+      "scenario": 6,
+      "weather": 0.5,
+      "episodes": 100,
+      "strategy": "threat_rush",
+      "output": "scenario=06 priority=threat_rush completion=1.000000 survival=1.000000 rooms=3.000 caches=3.000 ticks=546.27 deaths=0.000000 timeouts=0.000000 cap_dry=0.000000 rep_starved=0.000000"
+    },
+    {
+      "scenario": 7,
+      "weather": 0.5,
+      "episodes": 100,
+      "strategy": "threat_rush",
+      "output": "scenario=07 priority=threat_rush completion=0.370000 survival=0.380000 rooms=1.730 caches=1.730 ticks=491.60 deaths=0.620000 timeouts=0.010000 cap_dry=0.000000 rep_starved=0.000000"
+    },
+    {
+      "scenario": 8,
+      "weather": 0.5,
+      "episodes": 100,
+      "strategy": "threat_rush",
+      "output": "scenario=08 priority=threat_rush completion=1.000000 survival=1.000000 rooms=3.000 caches=3.000 ticks=377.98 deaths=0.000000 timeouts=0.000000 cap_dry=0.000000 rep_starved=0.000000"
+    },
+    {
+      "scenario": 9,
+      "weather": 0.5,
+      "episodes": 100,
+      "strategy": "threat_rush",
+      "output": "scenario=09 priority=threat_rush completion=0.630000 survival=0.630000 rooms=2.260 caches=2.260 ticks=485.45 deaths=0.370000 timeouts=0.000000 cap_dry=0.000000 rep_starved=0.000000"
+    },
+    {
+      "scenario": 10,
+      "weather": 0.5,
+      "episodes": 100,
+      "strategy": "threat_rush",
+      "output": "scenario=10 priority=threat_rush completion=1.000000 survival=1.000000 rooms=3.000 caches=3.000 ticks=554.69 deaths=0.000000 timeouts=0.000000 cap_dry=0.000000 rep_starved=0.000000"
+    },
+    {
+      "scenario": 11,
+      "weather": 0.5,
+      "episodes": 100,
+      "strategy": "threat_rush",
+      "output": "scenario=11 priority=threat_rush completion=1.000000 survival=1.000000 rooms=3.000 caches=3.000 ticks=342.02 deaths=0.000000 timeouts=0.000000 cap_dry=0.000000 rep_starved=0.000000"
+    },
+    {
+      "scenario": 12,
+      "weather": 0.5,
+      "episodes": 100,
+      "strategy": "threat_rush",
+      "output": "scenario=12 priority=threat_rush completion=1.000000 survival=1.000000 rooms=3.000 caches=3.000 ticks=558.76 deaths=0.000000 timeouts=0.000000 cap_dry=0.000000 rep_starved=0.000000"
+    },
+    {
+      "scenario": 13,
+      "weather": 0.5,
+      "episodes": 100,
+      "strategy": "threat_rush",
+      "output": "scenario=13 priority=threat_rush completion=1.000000 survival=1.000000 rooms=3.000 caches=3.000 ticks=765.33 deaths=0.000000 timeouts=0.000000 cap_dry=0.000000 rep_starved=0.000000"
+    },
+    {
+      "scenario": 14,
+      "weather": 0.5,
+      "episodes": 100,
+      "strategy": "threat_rush",
+      "output": "scenario=14 priority=threat_rush completion=1.000000 survival=1.000000 rooms=3.000 caches=3.000 ticks=545.67 deaths=0.000000 timeouts=0.000000 cap_dry=0.000000 rep_starved=0.000000"
+    },
+    {
+      "scenario": 15,
+      "weather": 0.5,
+      "episodes": 100,
+      "strategy": "threat_rush",
+      "output": "scenario=15 priority=threat_rush completion=1.000000 survival=1.000000 rooms=3.000 caches=3.000 ticks=513.38 deaths=0.000000 timeouts=0.000000 cap_dry=0.000000 rep_starved=0.000000"
+    },
+    {
+      "scenario": 16,
+      "weather": 0.5,
+      "episodes": 100,
+      "strategy": "threat_rush",
+      "output": "scenario=16 priority=threat_rush completion=0.790000 survival=0.790000 rooms=2.370 caches=2.370 ticks=527.79 deaths=0.210000 timeouts=0.000000 cap_dry=0.000000 rep_starved=0.000000"
+    },
+    {
+      "scenario": 17,
+      "weather": 0.5,
+      "episodes": 100,
+      "strategy": "threat_rush",
+      "output": "scenario=17 priority=threat_rush completion=0.990000 survival=1.000000 rooms=2.990 caches=2.990 ticks=796.75 deaths=0.000000 timeouts=0.010000 cap_dry=0.000000 rep_starved=0.000000"
+    },
+    {
+      "scenario": 18,
+      "weather": 0.5,
+      "episodes": 100,
+      "strategy": "threat_rush",
+      "output": "scenario=18 priority=threat_rush completion=1.000000 survival=1.000000 rooms=3.000 caches=3.000 ticks=486.29 deaths=0.000000 timeouts=0.000000 cap_dry=0.000000 rep_starved=0.000000"
+    },
+    {
+      "scenario": 19,
+      "weather": 0.5,
+      "episodes": 100,
+      "strategy": "threat_rush",
+      "output": "scenario=19 priority=threat_rush completion=1.000000 survival=1.000000 rooms=3.000 caches=3.000 ticks=329.58 deaths=0.000000 timeouts=0.000000 cap_dry=0.000000 rep_starved=0.000000"
+    },
+    {
+      "scenario": 20,
+      "weather": 0.5,
+      "episodes": 100,
+      "strategy": "threat_rush",
+      "output": "scenario=20 priority=threat_rush completion=0.990000 survival=0.990000 rooms=2.990 caches=2.990 ticks=406.23 deaths=0.010000 timeouts=0.000000 cap_dry=0.000000 rep_starved=0.000000"
+    },
+    {
+      "scenario": 21,
+      "weather": 0.5,
+      "episodes": 100,
+      "strategy": "threat_rush",
+      "output": "scenario=21 priority=threat_rush completion=1.000000 survival=1.000000 rooms=3.000 caches=3.000 ticks=291.57 deaths=0.000000 timeouts=0.000000 cap_dry=0.000000 rep_starved=0.000000"
+    },
+    {
+      "scenario": 22,
+      "weather": 0.5,
+      "episodes": 100,
+      "strategy": "threat_rush",
+      "output": "scenario=22 priority=threat_rush completion=1.000000 survival=1.000000 rooms=3.000 caches=3.000 ticks=566.07 deaths=0.000000 timeouts=0.000000 cap_dry=0.000000 rep_starved=0.000000"
+    },
+    {
+      "scenario": 23,
+      "weather": 0.5,
+      "episodes": 100,
+      "strategy": "threat_rush",
+      "output": "scenario=23 priority=threat_rush completion=0.390000 survival=0.390000 rooms=1.170 caches=1.170 ticks=315.16 deaths=0.610000 timeouts=0.000000 cap_dry=0.000000 rep_starved=0.000000"
+    },
+    {
+      "scenario": 24,
+      "weather": 0.5,
+      "episodes": 100,
+      "strategy": "threat_rush",
+      "output": "scenario=24 priority=threat_rush completion=1.000000 survival=1.000000 rooms=3.000 caches=3.000 ticks=722.42 deaths=0.000000 timeouts=0.000000 cap_dry=0.000000 rep_starved=0.000000"
+    },
+    {
+      "scenario": 25,
+      "weather": 0.5,
+      "episodes": 100,
+      "strategy": "threat_rush",
+      "output": "scenario=25 priority=threat_rush completion=0.990000 survival=0.990000 rooms=2.980 caches=2.980 ticks=666.06 deaths=0.010000 timeouts=0.000000 cap_dry=0.000000 rep_starved=0.000000"
+    },
+    {
+      "scenario": 26,
+      "weather": 0.5,
+      "episodes": 100,
+      "strategy": "threat_rush",
+      "output": "scenario=26 priority=threat_rush completion=1.000000 survival=1.000000 rooms=3.000 caches=3.000 ticks=556.89 deaths=0.000000 timeouts=0.000000 cap_dry=0.000000 rep_starved=0.000000"
+    },
+    {
+      "scenario": 27,
+      "weather": 0.5,
+      "episodes": 100,
+      "strategy": "threat_rush",
+      "output": "scenario=27 priority=threat_rush completion=1.000000 survival=1.000000 rooms=3.000 caches=3.000 ticks=564.62 deaths=0.000000 timeouts=0.000000 cap_dry=0.000000 rep_starved=0.000000"
+    }
+  ]
+}

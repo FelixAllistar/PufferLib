@@ -1,0 +1,61 @@
+{
+  "date": "2026-09-29",
+  "reference_commit": "33c3b4ddef8c6eb67c57a29663d844b1eda7e614",
+  "compiler": "stock Bend 2.0.6 CPU; serialized <=6 GiB cgroup; no swap",
+  "laws": 11,
+  "native": {
+    "status": "PASS",
+    "public_episodes": 72,
+    "dirty_reset_comparisons": 12,
+    "private_view_checks": 77,
+    "checks": "Gregorian date normalization including leap day; time normalization/midnight/invalid hour; Unicode correct/wrong labels, answer variation, time reward and deadlines"
+  },
+  "browser": {
+    "status": "PASS",
+    "episodes": 60,
+    "wrong_unicode_clicks": 2,
+    "preset": "Original-generated instances, en-US/UTC; atomic native date/time values, original button handlers, controlled clock",
+    "schedules": "Public success, empty submission, invalid native values then recovery, wrong Unicode labels and timeouts"
+  },
+  "public_scripted": {
+    "status": "PASS",
+    "episodes": 3000,
+    "successes": 3000,
+    "actions": 5000
+  },
+  "limits": [
+    "Generated dates use 2010-2019, all months, days1-28; not full source distribution",
+    "Atomic native values capped at10ASCII bytes(date) or5(time); raw keyboard and picker UI unverified",
+    "Locale/timezone fixed en-US/UTC",
+    "Unicode button labels exact; distractor input typing outside preset, generated lorem and geometry bounded",
+    "Full DOM/layout/source RNG parity and learned-policy adapter unverified"
+  ],
+  "full_parity": "unverified",
+  "commands": [
+    "node ocean/webnav/families/build.cjs typed_inputs --test",
+    "make -f ocean/webnav/families/Makefile browser FAMILY=typed_inputs EPISODES=20",
+    "make -f ocean/webnav/families/Makefile public-check FAMILY=typed_inputs EPISODES=1000"
+  ],
+  "build_cache": {
+    "proof": "52eb6710ae9404a69370b9f963149c3916b170101b1ebcebf80ceabcaaa0b79d",
+    "runtime": "1aee831b59737da112833298480d91358bac2da33469a2d5e57813a690d9c65b"
+  },
+  "source_sha256": {
+    "Generate.bend": "cb0c90f2b752f5c5d40bb0a39380140b3b303716a40377dfb127d5f5cc1d07c8",
+    "LAWS.bend": "304a2ebe4e020128cab2e0290a204f24d6e3259f163e9ff20fe18114e1fd9a2b",
+    "Main.bend": "6aec06db526e6994080bea7131894ba797e0e3521567b928b9940465e12aa163",
+    "Model.bend": "54c62f7d6e96c282436b17a38f8f02c940dd7e43680bc8845e5329c5178d8351",
+    "OtherWire.bend": "5af671a0b4045c68c529f00cdcd4f538471c70d0710f7cba4e24102bee93cccb",
+    "PROOF.bend": "c890d670a2778a7cb6e2803e6febb9d311e7f70171c053496c7cbf7a325eff14",
+    "TimeModel.bend": "e2481cd1ed9e9848b3b2b7beff66ee878cb1fadcea0551ca0e0f6e497962694e",
+    "UnicodeModel.bend": "a9289bc4f5c5956195751530fa66b21cef228645dee06fc1071fb30b57450f60",
+    "Wire.bend": "6fe091327be53dd0a678ea0b89a527d361572a987363668da1caaafcf17579d0",
+    "bridge.c": "2013635fc6e006e03cd03f55bcd11a3b19baa3441c8e15c572eaebede2b9ef3f",
+    "browser.js": "c8a72c51f317dd14b9e549dc22e38f81f5a706543ff5855106d7cac06650f8c6",
+    "browser_oracle.c": "03a62fd7af49849c72cbdc96ebd47c86292c344a9acd06c94e39afac0bc1aa49",
+    "family_api.c": "aca39e7a859a0ae8dbcd57d9f7d7514e6c6bdc7555fc63761992973089533d6e",
+    "public_controller.h": "ca5b6ab076474234c6c97baf944cafc5c1dca7006203e9088383d121abdff303",
+    "test_public_controller.c": "28ad95819f2e37778850d4646a2ac1e3c5844a3c9fcfe028edd32d7fe47d1073",
+    "test_typed_inputs.c": "fe61abde251e0c66ca9df6454058469f8a77e1d1305c8f9eec5344b1c19dc78e"
+  }
+}

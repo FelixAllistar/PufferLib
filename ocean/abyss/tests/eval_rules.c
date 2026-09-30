@@ -70,7 +70,7 @@ static void rules_action(Env* env, int strategy) {
         weapon = cache;
     else if (hostile >= 0 && env->entities[hostile].locked)
         weapon = hostile;
-    if (weapon >= 0 && env->weapon_desired_target_index != weapon)
+    if (weapon >= 0)
         action[2] = WEAPON_FIRE_BASE + ab_slot_for_entity(env, weapon);
 
     float armor_fraction = env->armor /
@@ -80,6 +80,7 @@ static void rules_action(Env* env, int strategy) {
     float rep_reserve = strategy == 4 ?
         rep_reserve_fraction * env->cap_capacity :
         env->rep_cap_cost;
+    action[4] = env->rep_on ? DESIRED_ON : DESIRED_OFF;
     if (!env->rep_on && armor_fraction < rep_on_fraction &&
         env->capacitor >= rep_reserve)
         action[4] = DESIRED_ON;
@@ -97,8 +98,7 @@ static void rules_action(Env* env, int strategy) {
         action[0] = NAV_APPROACH_BASE + ab_slot_for_entity(env, nav);
     float nav_distance = nav >= 0 ? ab_surface_distance(env, &env->entities[nav]) : 0;
     int want_prop = nav_distance > 9000.0f && env->capacitor >= env->prop_cap_cost;
-    if (want_prop != env->prop_desired_on)
-        action[3] = want_prop ? DESIRED_ON : DESIRED_OFF;
+    action[3] = want_prop ? DESIRED_ON : DESIRED_OFF;
 
     if (cache >= 0 && !env->entities[cache].alive && !env->cache_looted) {
         if (env->cargo_open)
@@ -128,48 +128,40 @@ static void evaluate(int scenario, int strategy, int episodes) {
     puf_init(&env, cfg);
     env.agents[0].action_mask = action_mask;
     env.configured_scenario_episode = scenario;
+    // Select the roll before reset applies weather to ship/NPC resistances.
+    // This evaluator accepts the two supported T0-T3 penalty endpoints only.
+    if (weather_penalty_override >= 0) {
+        assert(env.filament_tier <= 3);
+        assert(fabsf(weather_penalty_override - .30f) < .001f ||
+               fabsf(weather_penalty_override - .50f) < .001f);
+        env.weather_high_penalty_probability = weather_penalty_override > .4f;
+    }
 
-    int completed = 0;
-    int survived = 0;
-    int rooms = 0;
-    int caches = 0;
-    double ticks = 0;
     for (int episode = 0; episode < episodes; episode++) {
         terminals[0] = 0;
         puf_reset(&env);
-        if (weather_penalty_override >= 0) {
-            env.weather_penalty = weather_penalty_override;
-            env.weather_range_multiplier = env.weather_type == WEATHER_DARK ?
-                1.0f - weather_penalty_override : 1.0f;
-        }
+        if (weather_penalty_override >= 0)
+            assert(fabsf(env.weather_penalty - weather_penalty_override) < .001f);
         while (!terminals[0]) {
             rules_action(&env, strategy);
             puf_step(&env);
         }
-        completed += env.rooms_cleared == 3 && env.caches_looted == 3;
-        survived += env.hull > 0;
-        rooms += env.rooms_cleared;
-        caches += env.caches_looted;
-        ticks += env.tick;
     }
+    // puf_step auto-resets terminal world state; use accumulated terminal logs.
+    assert(env.log.n == episodes);
+    assert(env.log.episode_length >= episodes);
     printf("scenario=%02d priority=%s completion=%.6f survival=%.6f "
         "rooms=%.3f caches=%.3f ticks=%.2f",
         scenario, strategy == 4 ? "threat_reserve" :
             (strategy == 3 ? "threat_wait" :
                 (strategy == 2 ? "threat_rush" :
                     (strategy == 1 ? "threat" : "cache"))),
-        completed / (double)episodes, survived / (double)episodes,
-        rooms / (double)episodes, caches / (double)episodes, ticks / episodes);
-    if (episodes == 1) {
-        int cache = find_cache(&env);
-        printf(" room=%d threats=%d cache_alive=%d cache_dist=%.1f "
-            "nav=%d weapon=%d desired=%d cargo=%d interaction=%d",
-            env.room, ab_gate_targets_alive(&env),
-            cache >= 0 ? env.entities[cache].alive : -1,
-            cache >= 0 ? ab_surface_distance(&env, &env.entities[cache]) : -1,
-            env.navigation_target_index, env.weapon_target_index,
-            env.weapon_desired_target_index, env.cargo_open, env.interaction_kind);
-    }
+        env.log.completion_rate / episodes, env.log.survival_rate / episodes,
+        env.log.rooms_cleared / episodes, env.log.caches_looted / episodes,
+        env.log.episode_length / episodes);
+    printf(" deaths=%.6f timeouts=%.6f cap_dry=%.6f rep_starved=%.6f",
+        env.log.death_rate / episodes, env.log.timeout_rate / episodes,
+        env.log.cap_dry_rate / episodes, env.log.rep_starved_rate / episodes);
     printf("\n");
 }
 
@@ -195,13 +187,14 @@ static void trace_first_failure(int scenario, int strategy) {
     unsigned int failed_seed = 0;
     for (int episode = 0; episode < 100000 && failed_seed == 0; episode++) {
         unsigned int seed = env.rng;
+        float previous_deaths = env.log.death_rate;
         terminals[0] = 0;
         puf_reset(&env);
         while (!terminals[0]) {
             rules_action(&env, strategy);
             puf_step(&env);
         }
-        if (env.hull <= 0) failed_seed = seed;
+        if (env.log.death_rate > previous_deaths) failed_seed = seed;
     }
     if (failed_seed == 0) {
         printf("no failure found\n");
@@ -211,6 +204,7 @@ static void trace_first_failure(int scenario, int strategy) {
     env.rng = failed_seed;
     terminals[0] = 0;
     puf_reset(&env);
+    memset(&env.log, 0, sizeof(env.log));
     printf("trace scenario=%d strategy=%d seed=%u weather_penalty=%.2f\n",
         scenario, strategy, failed_seed, env.weather_penalty);
     while (!terminals[0]) {
@@ -236,9 +230,9 @@ static void trace_first_failure(int scenario, int strategy) {
         }
         puf_step(&env);
     }
-    printf("terminal t=%d room=%d hp=%.0f/%.0f/%.0f cap=%.0f rooms=%d caches=%d\n",
-        env.tick, env.room, env.shield, env.armor, env.hull, env.capacitor,
-        env.rooms_cleared, env.caches_looted);
+    printf("terminal ticks=%.0f death=%.0f completion=%.0f rooms=%.0f caches=%.0f\n",
+        env.log.episode_length, env.log.death_rate, env.log.completion_rate,
+        env.log.rooms_cleared, env.log.caches_looted);
 }
 
 int main(int argc, char** argv) {

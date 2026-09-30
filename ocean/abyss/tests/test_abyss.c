@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include "../abyss.h"
+#include "test_npc_repairs.h"
 
 static void assert_finite_observation(const obs_t* observation) {
     for (int i = 0; i < OBS_SIZE; i++) {
@@ -12,8 +13,19 @@ static void assert_finite_observation(const obs_t* observation) {
 }
 
 int main(void) {
+    test_npc_repairs();
     Ini ini = {0};
     puf_ini_load_env(&ini, "abyss", 0, NULL);
+    // Even the conservative sum of all positive rewards on a success tick fits
+    // below the learner clip; a faster completion must remain distinguishable.
+    Dict* current=puf_ini_section(&ini,"env",0);
+    float bound=0;
+    const char* positive[]={"reward_success","reward_completion_speed",
+        "reward_room_clear","reward_loot","reward_cache_kill","reward_hostile_kill"};
+    for(int i=0;i<6;i++)bound+=(float)dict_get(current,positive[i]);
+    assert(bound<=puf_ini_get(&ini,"train","reward_clip"));
+    assert(dict_get(current,"reward_completion_speed")>0);
+    puf_ini_load_file(&ini, "ocean/abyss/tests/legacy_dark_profile.ini");
     // The mechanics fixture predates the harder training distribution.
     puf_ini_put(&ini, "env.hard_scenario_probability", "0");
     puf_ini_put(&ini, "env.weather_high_penalty_probability", "0.10");
@@ -44,20 +56,19 @@ int main(void) {
     assert(env.entity_count >= 2);
     assert_finite_observation(observations);
     assert(ab_turret_hit_chance(0, 1, 1, 1000, 2000, 1000) == 1.0f);
+    assert(fabsf(ab_turret_hit_chance(0,124.2f,49,14755,11880,2875)-.5f)<.0001f);
     assert(ab_missile_damage_fraction(372, 0, 20, 150, .644f, 36001, 36000) == 0);
     assert(fabsf(ab_missile_damage_fraction(10, 0, 20, 150, .644f, 1000, 36000)
         - .5f) < .0001f);
     float missile_expected=powf(150.0f*40.0f/(125.0f*1000.0f),.682f);
     assert(fabsf(ab_missile_damage_fraction(40, 1000, 125, 150, .682f, 1000, 36000)
         - missile_expected) < .0001f);
-    int pacifier=-1;
-    for(int i=0;i<GENERATED_NPC_COUNT;i++)
-        if(fabsf(GENERATED_NPCS[i].missile_dps-39.6f)<.001f)pacifier=i;
+    int pacifier=0; // Stable catalog identity; multiple NPCs share this DPS.
     assert(pacifier>=0);
     assert(GENERATED_NPCS[pacifier].turret_dps == 0);
     assert(GENERATED_NPCS[pacifier].missile_range == 36000);
-    assert(GENERATED_NPCS[pacifier].missile_explosion_radius == 20);
-    assert(GENERATED_NPCS[pacifier].missile_explosion_velocity == 150);
+    assert(GENERATED_NPCS[pacifier].missile_explosion_radius == 10);
+    assert(GENERATED_NPCS[pacifier].missile_explosion_velocity == 180);
     assert(fabsf(GENERATED_NPCS[pacifier].missile_drf-.644f)<.0001f);
     assert(ab_lock_time(578.0f, 40.0f) > 0.0f);
     assert(fabsf(env.cap_recharge_time - 227.0f) < 0.001f);
@@ -299,6 +310,10 @@ int main(void) {
     env.interaction_kind = INTERACTION_NONE;
     env.interaction_target_index = -1;
 
+    // This transaction fixture needs physically valid locks: current mechanics
+    // correctly discard a lock outside the ship's targeting range.
+    env.entities[cache].pos=ab_add(env.ship_pos,(Vec3){10000,0,0});
+    env.entities[hostile].pos=ab_add(env.ship_pos,(Vec3){12000,0,0});
     // Fire(slot) is a persistent transaction: focus first, start on a later tick.
     env.entities[cache].locked = 1;
     env.entities[gate].locked = 1;

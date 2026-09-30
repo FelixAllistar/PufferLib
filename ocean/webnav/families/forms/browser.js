@@ -23,13 +23,13 @@
  };
  __fm.fieldElements=()=>{
   switch(__fm.task){
-   case 'enter-text-dynamic':case 'enter-text-2':case 'text-transform':
+   case 'enter-text':case 'read-table':case 'enter-text-dynamic':case 'enter-text-2':case 'text-transform':
     return [document.querySelector('#tt')];
    case 'enter-password':return [document.querySelector('#password'),document.querySelector('#verify')];
    case 'copy-paste':return [document.querySelector('#to-copy'),document.querySelector('#answer-input')];
    case 'copy-paste-2':return [document.querySelector('#text-1'),document.querySelector('#text-2'),document.querySelector('#text-3'),document.querySelector('#answer-input')];
    case 'read-table-2':return [document.querySelector('#tt1'),document.querySelector('#tt2')];
-   case 'login-user-popup':return [document.querySelector('#username'),document.querySelector('#password')];
+   case 'login-user':case 'login-user-popup':return [document.querySelector('#username'),document.querySelector('#password')];
    default:return [];
   }
  };
@@ -38,7 +38,7 @@
   if(__fm.task==='copy-paste')return i===0?'Text to copy':'Answer';
   if(__fm.task==='copy-paste-2')return ['1st text area','2nd text area','3rd text area','Answer'][i];
   if(__fm.task==='read-table-2')return document.querySelector(i===0?'#ll1':'#ll2').getAttribute('data-key')+':';
-  if(__fm.task==='login-user-popup')return i===0?'Username':'Password';
+  if(__fm.task==='login-user-popup'||__fm.task==='login-user')return i===0?'Username':'Password';
   return 'Text';
  };
  __fm.goalValues=()=>{
@@ -46,7 +46,7 @@
   const fields=__fm.fieldElements();
   const quoted=[...q.matchAll(/"([^"]*)"/g)].map(m=>m[1]);
   switch(__fm.task){
-   case 'enter-text-dynamic':return [quoted[0]];
+   case 'enter-text':case 'enter-text-dynamic':return [quoted[0]];
    case 'enter-text-2':return [/all upper case/.test(q)?quoted[0].toUpperCase():quoted[0].toLowerCase()];
    case 'enter-password':return [quoted[0],quoted[0]];
    case 'text-transform':return [document.querySelector('#captcha').textContent];
@@ -59,7 +59,12 @@
     const cells=[...document.querySelectorAll('#tab tr')].map(row=>[row.cells[0].textContent,row.cells[1].textContent]);
     return [0,1].map(i=>{const key=document.querySelector(i===0?'#ll1':'#ll2').getAttribute('data-key');return cells.find(pair=>pair[0]===key)[1];});
    }
-   case 'login-user-popup':return [quoted[0].toLowerCase(),quoted[1]];
+   case 'read-table':{
+    const key=/Enter the value of (.*?) into the text field/.exec(q)[1];
+    const row=[...document.querySelectorAll('#tab tr')].find(r=>r.cells[0].textContent===key);
+    return [row.cells[1].textContent];
+   }
+   case 'login-user':case 'login-user-popup':return [quoted[0].toLowerCase(),quoted[1]];
    default:return fields.map(()=>null);
   }
  };
@@ -71,13 +76,15 @@
    add(1,1,0,'Submit','',document.querySelector('#subbtn'));
   }else if(__fm.task==='copy-paste'||__fm.task==='copy-paste-2'){
    add(1,1,0,'Submit','',document.querySelector('#subbtn'));
-  }else if(__fm.task==='read-table-2'){
+  }else if(__fm.task==='read-table-2'||__fm.task==='read-table'){
    for(const row of document.querySelectorAll('#tab tr')){
     add(10,0,0,row.cells[0].textContent,'',row.cells[0]);
     add(10,0,0,'',row.cells[1].textContent,row.cells[1]);
    }
-   add(13,0,0,'Label 1',document.querySelector('#ll1').textContent,document.querySelector('#ll1'));
-   add(13,0,0,'Label 2',document.querySelector('#ll2').textContent,document.querySelector('#ll2'));
+   if(__fm.task==='read-table-2'){
+    add(13,0,0,'Label 1',document.querySelector('#ll1').textContent,document.querySelector('#ll1'));
+    add(13,0,0,'Label 2',document.querySelector('#ll2').textContent,document.querySelector('#ll2'));
+   }
    add(1,1,0,'Submit','',document.querySelector('#subbtn'));
   }else if(__fm.task==='login-user-popup'){
    add(1,1,0,'OK','',document.querySelector('#subbtn'));
@@ -86,6 +93,8 @@
    add(13,0,1,'Popup prompt',popup?popup.querySelectorAll('p')[1]?.textContent||'':'Exit to home page?',popup);
    add(1,2,1,'Popup OK','OK',popup?popup.querySelector('#popup-ok'):null);
    add(1,3,1,'Popup Cancel','Cancel',popup?popup.querySelector('#popup-cancel'):null);
+  }else if(__fm.task==='login-user'){
+   add(1,1,0,'Login','',document.querySelector('#subbtn'));
   }else{
    add(1,1,0,'Submit','',document.querySelector('#subbtn'));
   }
@@ -97,7 +106,7 @@
   const fields=elements.map((e,i)=>({
    role:e.tagName==='TEXTAREA'?16:3,name:__fm.fieldLabel(e,i),value:e.value,
    goal:goals[i]===null?'':goals[i],start:e.selectionStart||0,end:e.selectionEnd||0,
-   enabled:!e.disabled,element:e
+   enabled:!e.disabled,focused:document.activeElement===e,element:e
   }));
   const statics=__fm.staticNodes();
   __fm.fields=fields;__fm.statics=statics;

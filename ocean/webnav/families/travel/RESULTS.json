@@ -1,0 +1,70 @@
+{
+  "date": "2026-09-29",
+  "reference_commit": "33c3b4ddef8c6eb67c57a29663d844b1eda7e614",
+  "compiler": "stock Bend 2.0.6 CPU; serialized <=6 GiB cgroup; no swap",
+  "laws": 11,
+  "native": {
+    "status": "PASS",
+    "flight_instances": 128,
+    "ticket_rank_cases": 256,
+    "public_instances": 192,
+    "public_actions": 704,
+    "dirty_reset_comparisons": 384,
+    "checks": "Independent four-criterion rankings, invalid/blank search and recovery, fake flights, exact deadline, terminal absorption, private-goal noninterference"
+  },
+  "browser": {
+    "status": "PASS",
+    "episodes": 60,
+    "actions": 220,
+    "scripted_successes": 30,
+    "preset": "Original-generated instances; reset-precommitted real/fake result tables; atomic field selections; logical clock",
+    "schedules": "Correct search, invalid/repaired search, wrong route/date, best/middle/worst rank, timeout"
+  },
+  "public_scripted": {
+    "status": "PASS",
+    "episodes": 3000,
+    "successes": 3000,
+    "actions": 11000
+  },
+  "limits": [
+    "Six-choice generated airport catalog; arbitrary sampled original airport labels imported into a six-choice reset preset",
+    "Atomic airport/date choices; autocomplete delay and datepicker pointer/animation paths unverified",
+    "Exact millisecond data-duration is public DOM data; AX-only rounded duration can be ambiguous",
+    "One reset-owned fake result table; repeated wrong-search content regeneration unmodeled",
+    "Airport aliases sharing city/code substrings outside matched preset",
+    "Full source RNG, DOM/layout parity and learned-policy adapter unverified"
+  ],
+  "full_parity": "unverified",
+  "commands": [
+    "node ocean/webnav/families/build.cjs travel --test",
+    "make -f ocean/webnav/families/Makefile browser FAMILY=travel EPISODES=20",
+    "make -f ocean/webnav/families/Makefile public-check FAMILY=travel EPISODES=1000"
+  ],
+  "build_cache": {
+    "proof": "6aad9e50d90484b95ae9c447136899add35ea8635a9f6e6dc35063978ccf58f7",
+    "runtime": "f45be0bd69f3b02683ff1ddfb259a2d2f93c711f13d5fa8d0b8e7c95f6c4fbaf"
+  },
+  "source_sha256": {
+    "Generate.bend": "f3570e20471692952244917e2f112c7b62f05e4a06a8e2547c591185ba5c2a47",
+    "LAWS.bend": "4bf332e212002492116f85c2477e515b9a80eb8e0c28e413f49d567f8ab7e51d",
+    "Main.bend": "6aec06db526e6994080bea7131894ba797e0e3521567b928b9940465e12aa163",
+    "Model.bend": "46f10fda3dfff4f709d91422151cd7419a88914a48770fab18874f6c7b3f3712",
+    "PROOF.bend": "c49204db397658c68fbe40d10f8b2c01a6bd45232a238bcb6198d5561d416382",
+    "TicketGenerate.bend": "f779c24e4cc1c4581603745113e6eac2fb3d27c34843ba6268fc682c1aae7846",
+    "TicketLAWS.bend": "c9b4849f985cc4b5a4f901ae5f6285612844c0419b572eae2b418b50ddca15bb",
+    "TicketModel.bend": "6bd8b6732868af74e28be2a1e4d78b1935e1e9f7a89c8039c764287c34b5fbdd",
+    "TicketPROOF.bend": "d2a7bd7a7d009ec800ff337b81d6569c2f0bffcc5d987668d5fac27b2345b7f2",
+    "TicketWire.bend": "071ee7f9760dd501c75cee8e296fd95c30eb830fe639981b35fa2cd6d3ae2de1",
+    "Wire.bend": "dacae70f2a5013ca07c63e31a12bf0755bdc7e992927845a8ae39d77cd6c8ada",
+    "bridge.c": "4694645d15aab18ca8a951285da9460c41b3ba15996984790214f3e346f1c41c",
+    "browser.js": "f91aff72605bcbca2cf38ec5191bd60ac82fd02e589ee96271b8352ee13984fd",
+    "browser_oracle.c": "3b47f077ead5a701251a288b598793f311d3cc0ae37055d8e57f3e8d65048d1f",
+    "family_api.c": "d109b14e71f660b8bde2df7beb28d2fa96c2c7478480a15b6d5d0ff2106f3938",
+    "public_controller.h": "0f414e1dd6510b682fa9d8bb9521a0e68b4be2a84255aa6e88a63ca87372cf3c",
+    "test_edges.c": "1440666ca0818d0da34dbbf35c0538e2d99c750a302ce6d7fcde49525c5d4f73",
+    "test_public.c": "798a3d25ee19d2086f0d1456eed1d0a031332f113d8a72019965f5185d9ac346",
+    "test_reset.c": "06f012c0cceac8c9ff7733887218b672c46920c5d7646f53d5b34a8fd309905d",
+    "test_ticket.c": "1451c24b7402a883de0bd59f372554861796faffdef85e74d53eac5a68fe7d01",
+    "test_travel.c": "e91b87fa977c1a8fd6655cd3f819b1adca89855117654025f7db7a7f4b4c6384"
+  }
+}
