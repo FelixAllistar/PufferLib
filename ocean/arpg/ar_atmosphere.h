@@ -21,10 +21,12 @@ static inline void ar_lighting_prepare(ARClient* c,ARPG* e) {
         SetTextureFilter(c->lightmap.texture,TEXTURE_FILTER_BILINEAR);
     }
     uint64_t signature=UINT64_C(14695981039346656037);
-    const float camera[]={c->off_x,c->off_y,c->zoom,(float)c->light_mode,e->home_x,e->home_y,e->px,e->py,(float)e->keeper_dormant,e->fx_blast,e->blast_x,e->blast_y};
+    Vector2 keeper=ar_view_keeper(c,e);
+    const float camera[]={c->off_x,c->off_y,c->zoom,(float)c->light_mode,e->home_x,e->home_y,keeper.x,keeper.y,(float)e->keeper_dormant,e->fx_blast,e->blast_x,e->blast_y};
     signature=ar_world_hash(signature,camera,sizeof(camera));
     for(int p=0;p<AR_MAX_PETS;p++)if(e->pets.active[p] && !e->pets.dormant[p]) {
-        float lamp[]={e->pets.x[p],e->pets.y[p],(float)e->pets.kind[p]};signature=ar_world_hash(signature,lamp,sizeof(lamp));
+        Vector2 at=ar_view_pet(c,e,p);
+        float lamp[]={at.x,at.y,(float)e->pets.kind[p]};signature=ar_world_hash(signature,lamp,sizeof(lamp));
     }
     for(int b=0;b<AR_MAX_BUILDINGS;b++)if(e->build_active[b]) {
         float lamp[]={e->build_x[b],e->build_y[b],(float)e->build_kind[b]};signature=ar_world_hash(signature,lamp,sizeof(lamp));
@@ -40,10 +42,11 @@ static inline void ar_lighting_prepare(ARClient* c,ARPG* e) {
     float strength=c->light_mode==1 ? .18f : 1;
     Color warm=Fade((Color){255,179,92,255},strength),cool=Fade((Color){93,199,209,255},strength*.55f);
     ar_lamp(c,e->home_x-2,e->home_y-2,1,255,warm);
-    if(!e->keeper_dormant)ar_lamp(c,e->px,e->py,.9f,155,warm);
+    if(!e->keeper_dormant)ar_lamp(c,keeper.x,keeper.y,.9f,155,warm);
     for(int p=0;p<AR_MAX_PETS;p++)if(e->pets.active[p] && !e->pets.dormant[p]) {
         int kind=e->pets.kind[p];
-        ar_lamp(c,e->pets.x[p],e->pets.y[p],.5f,kind==AR_PET_EMBER ? 135 : 65,kind==AR_PET_EMBER || kind==AR_PET_BURROWER ? warm : cool);
+        Vector2 at=ar_view_pet(c,e,p);
+        ar_lamp(c,at.x,at.y,.5f,kind==AR_PET_EMBER ? 135 : 65,kind==AR_PET_EMBER || kind==AR_PET_BURROWER ? warm : cool);
     }
     for(int b=0;b<AR_MAX_BUILDINGS;b++)if(e->build_active[b] && e->build_kind[b]!=AR_BUILD_WALL && e->build_kind[b]!=AR_BUILD_BRIDGE)
         ar_lamp(c,e->build_x[b],e->build_y[b],1,125,e->build_kind[b]==AR_BUILD_HARVESTER ? warm : cool);

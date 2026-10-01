@@ -32,7 +32,7 @@ playable systems slice, not an AAA-complete campaign.
 ## Lanternlight visual pass
 
 F7 (or the button below the minimap) cycles **Unlit → Daylight → Dusk → Moonlight**.
-Start with `ARPG_LIGHTING=2 ./ocean/arpg/build/viewer play --no-save` to preview dusk, or use `0`
+Start with `ARPG_LIGHTING=2 ./arpg --no-save` to preview dusk, or use `0`
 to disable lighting and projected shadows. These are fixed art-direction presets,
 not a gameplay day/night cycle. Daylight is the default.
 
@@ -78,13 +78,19 @@ From the repository root:
 
 ```sh
 make -C ocean/arpg viewer
-./ocean/arpg/build/viewer play
-./ocean/arpg/build/viewer play --no-save
-./ocean/arpg/build/viewer play --new
-./ocean/arpg/build/viewer play --save saves/arpg/another-world.bin
-./ocean/arpg/build/viewer play checkpoints/arpg/RUN/CHECKPOINT.bin
-./ocean/arpg/build/viewer watch checkpoints/arpg/RUN/CHECKPOINT.bin --deterministic
+./arpg
+./arpg --no-save
+./arpg --new
+./arpg --save saves/arpg/another-world.bin
+./arpg play checkpoints/arpg/RUN/CHECKPOINT.bin
+./arpg watch checkpoints/arpg/RUN/CHECKPOINT.bin --deterministic
 ```
+
+The viewer build refreshes `./arpg` as well as `ocean/arpg/build/viewer`.
+With no arguments, `./arpg` starts manual play. On WSLg it automatically selects
+an installed D3D12 driver when `/dev/dxg` is available. Explicit graphics
+overrides such as `GALLIUM_DRIVER` or `LIBGL_ALWAYS_SOFTWARE` take precedence;
+the automatic choice applies only to this process.
 
 Manual play streams the frontier and resumes `saves/arpg/frontier-v3.bin` when
 present. It saves every 60 simulation seconds, on F5, and on normal exit.
@@ -350,6 +356,7 @@ make -C ocean/arpg sanitize
 make -C ocean/arpg native-cpu-test
 make -C ocean/arpg viewer-test
 make -C ocean/arpg viewer-cpp-test
+make -C ocean/arpg presentation-test
 ```
 
 Tests cover quiet starts on 12 seeds, long mixed-action runs, rewards/resets,
@@ -364,7 +371,7 @@ chunks, biome coverage, opposed keys, screen-relative diagonals, continuous
 click-to-walk arrival, numbered pick targets and 64 distinct imported frames.
 Sanitizers cover the shared simulation, frontier persistence and Reach controls.
 
-`ARPG_SEED=42 ARPG_SHOT=/absolute/path.png ARPG_SHOT_FRAME=360 ./ocean/arpg/build/viewer play`
+`ARPG_SEED=42 ARPG_SHOT=/absolute/path.png ARPG_SHOT_FRAME=360 ./arpg`
 captures the real viewer and disables campaign save I/O. The optional
 `viewer-test SHOT=/absolute/path.png` builds a homestead through normal production.
 
@@ -376,6 +383,34 @@ and places a scout in each biome to exercise streaming without waiting for trave
 Rendering stays at native window resolution. Four-sample antialiasing is opt-in
 with `ARPG_MSAA=1`; it is expensive on software GL, while sprite/font edges
 already have alpha. Ground and shadow passes are batched independently of sprites.
+
+Terrain samples, biome IDs and shared vertex colors are retained in a bounded
+cache indexed by world coordinate. Camera movement generates newly exposed
+strips; digging and bridges invalidate the four affected corners. Streaming
+retains cached world coordinates. The viewer interpolates keeper, pet and enemy
+positions between fixed 60 Hz ticks, including their shadows, lights, labels and
+mouse pick targets. Teleports, possession, resets and replaced bodies snap to
+their new positions. Catch-up is limited to five ticks per frame and discards
+excess elapsed time, so a slow frame cannot leave a backlog of old input.
+
+The atlas retains pixels while panning and generates new pixels with a two-ms
+CPU budget per frame. Large jumps, zoom changes and terrain edits fill
+progressively; movement markers update immediately. It no longer rebuilds the
+whole image on every mouse movement or on a periodic timer.
+
+`presentation-test` checks cache output against uncached terrain, edits, negative
+coordinates, eviction, streaming, interpolation/picking and catch-up recovery.
+The moving benchmark requires a display:
+
+```sh
+GALLIUM_DRIVER=d3d12 make -C ocean/arpg motion-test
+# Optional screenshots: SHOT=/existing/output/directory
+```
+
+It prints median/p95 timings for normal, wide, dusk and atlas-drag scenes and
+checks rendering leaves simulation state unchanged. Frame totals include GPU
+completion and window presentation; the world/UI timers measure CPU submission,
+and `render_present_ms` also includes the raylib FPS limiter when enabled.
 
 The [atlases, provenance and final prompts](assets/README.md)
 are project-local. Terrain, water, placement previews and effects are rendered

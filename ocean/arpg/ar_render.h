@@ -6,6 +6,9 @@
 #include "ar_sprite_sheet.h"
 #include <stdio.h>
 #include <stdlib.h>
+#if defined(__linux__)
+#include <unistd.h>
+#endif
 
 #define AR_VIEW_SCALE 24.0f
 #define AR_FX_COUNT 64
@@ -37,6 +40,23 @@ typedef struct {
     float depth,x,y,size;
     int sprite,slot,kind;
 } ARDrawable;
+typedef struct {
+    Vector2 at;
+    uint64_t body;
+    int active,kind;
+} ARPose;
+typedef struct {
+    ARPose keeper,pets[AR_MAX_PETS],enemies[AR_MAX_ENEMIES];
+    int tick,origin_x,origin_y;
+} ARPoses;
+typedef struct {
+    int x,y;
+    uint8_t tile,biome,tile_valid,vertex_valid;
+    Color vertex;
+} ARGroundSample;
+typedef struct {
+    int x,y,valid;
+} ARMapSample;
 typedef struct ARClient {
     float cam_x,cam_y,off_x,off_y,zoom,time;
     Texture2D atlas,expansion;
@@ -61,9 +81,14 @@ typedef struct ARClient {
     double map_x,map_y;
     float map_span;
     Texture2D map_texture;
-    double map_cache_x,map_cache_y;
     float map_cache_span;
-    int map_cache_tick,map_cache_seed,map_cache_version;
+    int map_cache_seed,map_cache_version;
+    Color* map_pixels;
+    ARMapSample* map_samples;
+    int map_width,map_height,map_cursor,map_chunks;
+    uint32_t map_edit_revision;
+    int map_generated,map_pending;
+    double map_prepare_ms;
     float pet_gait[AR_MAX_PETS],pet_facing[AR_MAX_PETS],keeper_gait,keeper_facing;
     float enemy_gait[AR_MAX_ENEMIES],enemy_facing[AR_MAX_ENEMIES];
     ARDrawable* drawables;
@@ -73,6 +98,20 @@ typedef struct ARClient {
     uint8_t* ground_tiles;
     int tile_capacity,ground_key[8];
     uint32_t ground_revision;
+    ARGroundSample* ground_samples;
+    int ground_side,ground_ready,ground_tick,ground_generated,ground_colored;
+    int ground_campaign;
+    uint8_t ground_snapshot[AR_DUN_CELLS];
+    uint32_t ground_edit_revision;
+    double ground_prepare_ms;
+    ARPoses pose_previous,pose_current;
+    Vector2 view_keeper,view_pets[AR_MAX_PETS],view_enemies[AR_MAX_ENEMIES];
+    int pose_ready,view_ready;
+    float render_alpha;
+    int sim_steps;
+    double sim_dropped_seconds;
+    // CPU submission timings. EndDrawing also includes flushing, swapping and
+    // the FPS limiter; render_present_ms is not a GPU-only measurement.
     double render_world_ms,render_ui_ms,render_present_ms;
     float move_x,move_y;
     char notice[160];
@@ -94,6 +133,7 @@ static inline ARClient* ar_client(ARPG* env) {
     }
     return (ARClient*)env->client;
 }
+#include "ar_view_motion.h"
 static inline void ar_notice(ARClient* c,const char* text) {
     snprintf(c->notice,sizeof(c->notice),"%s",text); c->notice_time=4.0f;
 }
@@ -119,7 +159,8 @@ static inline int ar_world_pointer(ARClient* c,Vector2 mouse,int width,int heigh
 }
 static inline void ar_pet_badges(ARClient* c,ARPG* e,Vector2* points) {
     for(int p=0;p<AR_MAX_PETS;p++) {
-        points[p]=ar_iso(c,e->pets.x[p],e->pets.y[p],0);points[p].y-=64*c->zoom;
+        Vector2 pose=ar_view_pet(c,e,p);
+        points[p]=ar_iso(c,pose.x,pose.y,0);points[p].y-=64*c->zoom;
         if(!e->pets.active[p] || e->pets.dormant[p])continue;
         // Resolve labels only, never move units for presentation. Rendering and
         // picking share this exact layout so overlap cannot hide a pick target.
@@ -300,6 +341,7 @@ static inline int ar_drawable_compare(const void* a,const void* b) {
     float d=((const ARDrawable*)a)->depth-((const ARDrawable*)b)->depth;
     return d<0 ? -1 : d>0;
 }
+#include "ar_view_cache.h"
 #include "ar_atmosphere.h"
 static inline void ar_world(ARClient* c,ARPG* e) {
     const float half=e->cfg.arena_size*0.5f,cell=e->cfg.arena_size/AR_DUN_W;
@@ -330,20 +372,7 @@ static inline void ar_world(ARClient* c,ARPG* e) {
         uint8_t* next=(uint8_t*)realloc(c->ground_tiles,(size_t)tile_count);
         if(!next)return;c->ground_tiles=next;c->tile_capacity=tile_count;
     }
-    uint32_t revision=2166136261u;
-    for(int i=0;i<AR_DUN_CELLS;i++){revision^=e->dungeon[i];revision*=16777619u;}
-    const int key[]={minx,miny,maxx,maxy,c->origin_x,c->origin_y,(int)e->dungeon_seed,e->terrain_version};
-    if(revision!=c->ground_revision || memcmp(key,c->ground_key,sizeof(key))) {
-        // World-space terrain is stable between edits. Cache samples as well as
-        // shared vertex colors; camera follow should not regenerate a whole
-        // landscape sixty times a second (especially on software-rendered GL).
-        for(int y=miny-1;y<=maxy;y++)for(int x=minx-1;x<=maxx;x++)
-            c->ground_tiles[(y-miny+1)*tile_width+x-minx+1]=ar_world_sample(e,x,y);
-        for(int y=miny;y<=maxy;y++)for(int x=minx;x<=maxx;x++)
-            c->ground_vertices[(y-miny)*vertex_width+x-minx]=ar_ground_corner(c,e,x,y,
-                &c->ground_tiles[(y-miny+1)*tile_width+x-minx+1],tile_width);
-        memcpy(c->ground_key,key,sizeof(key));c->ground_revision=revision;
-    }
+    if(!ar_ground_prepare(c,e,minx,miny,maxx,maxy))return;
     int count=0;
     // Ground is one continuous batch. Interleaving little grass strokes with
     // every tile changes primitive modes hundreds of times on software GL.
@@ -360,7 +389,7 @@ static inline void ar_world(ARClient* c,ARPG* e) {
         int tile_index=(y-miny+1)*tile_width+x-minx+1,tile=c->ground_tiles[tile_index];
         int gx=x-AR_DUN_W/2+c->origin_x,gy=y-AR_DUN_H/2+c->origin_y;
         uint32_t hash=ar_hash_xy(e->dungeon_seed,gx,gy);
-        int biome=ar_biome(e->dungeon_seed,gx,gy);
+        int biome=ar_ground_cached(c,gx,gy)->biome;
         if(tile==AR_TILE_GRASS && hash%13==0) {
             DrawLineEx((Vector2){p.x-3*c->zoom,p.y},(Vector2){p.x,p.y-3*c->zoom},c->zoom,(Color){123,144,91,125});
             DrawLineEx((Vector2){p.x,p.y},(Vector2){p.x+3*c->zoom,p.y-2*c->zoom},c->zoom,(Color){73,104,65,110});
@@ -425,13 +454,18 @@ static inline void ar_world(ARClient* c,ARPG* e) {
             ar_ring(c,e->nest_x[n],e->nest_y[n],AR_CAMP_WAKE_RADIUS,(Color){202,95,70,90});
         objects[count++]=(ARDrawable){e->nest_x[n]+e->nest_y[n],e->nest_x[n],e->nest_y[n],104,10,n,3};
     }
-    for(int i=0;i<e->cfg.enemy_cap;i++)if(e->enemies.active[i])
-        objects[count++]=(ARDrawable){e->enemies.x[i]+e->enemies.y[i],e->enemies.x[i],e->enemies.y[i],
+    for(int i=0;i<e->cfg.enemy_cap;i++)if(e->enemies.active[i]) {
+        Vector2 at=ar_view_enemy(c,e,i);
+        objects[count++]=(ARDrawable){at.x+at.y,at.x,at.y,
             e->enemies.type[i] ? 70.0f : 43.0f,e->enemies.type[i] ? 6 : 5,i,4};
-    for(int p=0;p<AR_MAX_PETS;p++)if(e->pets.active[p] && !e->pets.dormant[p])
-        objects[count++]=(ARDrawable){e->pets.x[p]+e->pets.y[p],e->pets.x[p],e->pets.y[p],
+    }
+    for(int p=0;p<AR_MAX_PETS;p++)if(e->pets.active[p] && !e->pets.dormant[p]) {
+        Vector2 at=ar_view_pet(c,e,p);
+        objects[count++]=(ARDrawable){at.x+at.y,at.x,at.y,
             e->pets.kind[p]==AR_PET_AEGIS || e->pets.kind[p]>=4 ? 53.0f : 44.0f,ar_pet_sprite(e->pets.kind[p]),p,5};
-    if(!e->keeper_dormant)objects[count++]=(ARDrawable){e->px+e->py,e->px,e->py,65,0,0,6};
+    }
+    Vector2 keeper=ar_view_keeper(c,e);
+    if(!e->keeper_dormant)objects[count++]=(ARDrawable){keeper.x+keeper.y,keeper.x,keeper.y,65,0,0,6};
     qsort(objects,(size_t)count,sizeof(objects[0]),ar_drawable_compare);
     // One shadow pass, underneath the depth-sorted objects. This avoids a white
     // texture <-> atlas switch per tree, with no render-resolution reduction.
@@ -481,8 +515,10 @@ static inline void ar_world(ARClient* c,ARPG* e) {
             if(e->invuln_timer>0 && (e->tick/4)%2)tint=(Color){255,191,172,255};
         }
         if(d.kind==8 && d.sprite<4) {
-            if(!e->keeper_dormant && ar_geometry_dist2(d.x,d.y,e->px,e->py)<10)tint.a=80;
-            for(int p=0;p<AR_MAX_PETS;p++)if(e->pets.active[p] && !e->pets.dormant[p] && ar_geometry_dist2(d.x,d.y,e->pets.x[p],e->pets.y[p])<10)tint.a=80;
+            if(!e->keeper_dormant && ar_geometry_dist2(d.x,d.y,keeper.x,keeper.y)<10)tint.a=80;
+            for(int p=0;p<AR_MAX_PETS;p++)if(e->pets.active[p] && !e->pets.dormant[p]) {
+                Vector2 pet=ar_view_pet(c,e,p);if(ar_geometry_dist2(d.x,d.y,pet.x,pet.y)<10)tint.a=80;
+            }
         }
         if(d.kind==1 && e->shard_value[d.slot]<1)tint=(Color){120,145,135,170};
         if(d.kind==5)ar_actor(c,e->pets.kind[d.slot]+1,frame,feet,d.size*c->zoom,flip,tint);
@@ -515,11 +551,12 @@ static inline void ar_world(ARClient* c,ARPG* e) {
             ar_ring(c,d.x,d.y,e->cfg.totem_radius*(1-e->build_flash[d.slot]/0.4f),Fade(AR_MINT,e->build_flash[d.slot]/0.4f));
         if(e->show_hitboxes && d.kind>=4) ar_ring(c,d.x,d.y,d.kind==6 ? e->cfg.player_radius : 0.5f,AR_RED);
     }
-    if(e->fx_nova>0)ar_ring(c,e->px,e->py,e->cfg.nova_radius*(1-e->fx_nova/0.4f),Fade(AR_GOLD,e->fx_nova/0.4f));
-    if(e->fx_frost>0)ar_ring(c,e->px,e->py,e->cfg.frost_range*(1-e->fx_frost/0.5f),Fade(AR_MINT,e->fx_frost/0.5f));
-    if(e->fx_dash>0)ar_ring(c,e->px,e->py,1+(1-e->fx_dash/0.35f)*2,Fade(AR_TEXT,e->fx_dash/0.35f));
+    if(e->fx_nova>0)ar_ring(c,keeper.x,keeper.y,e->cfg.nova_radius*(1-e->fx_nova/0.4f),Fade(AR_GOLD,e->fx_nova/0.4f));
+    if(e->fx_frost>0)ar_ring(c,keeper.x,keeper.y,e->cfg.frost_range*(1-e->fx_frost/0.5f),Fade(AR_MINT,e->fx_frost/0.5f));
+    if(e->fx_dash>0)ar_ring(c,keeper.x,keeper.y,1+(1-e->fx_dash/0.35f)*2,Fade(AR_TEXT,e->fx_dash/0.35f));
     for(int p=0;p<AR_MAX_PETS;p++)if(e->pets.active[p] && !e->pets.dormant[p] && (c->selected_mask&(1u<<p)) && e->pets.command[p]!=AR_CMD_AUTO && e->pets.command[p]!=AR_CMD_HOLD) {
-        Vector2 from=ar_iso(c,e->pets.x[p],e->pets.y[p],0),to=ar_iso(c,e->pets.goal_x[p],e->pets.goal_y[p],0);
+        Vector2 pose=ar_view_pet(c,e,p);
+        Vector2 from=ar_iso(c,pose.x,pose.y,0),to=ar_iso(c,e->pets.goal_x[p],e->pets.goal_y[p],0);
         DrawLineEx(from,to,1,Fade(AR_GOLD,0.4f));
         ar_ring(c,e->pets.goal_x[p],e->pets.goal_y[p],0.65f,AR_GOLD);
         ar_text(c,TextFormat("#%d",p+1),to.x+8,to.y-12,12,AR_GOLD);
@@ -569,8 +606,9 @@ static inline void ar_world(ARClient* c,ARPG* e) {
     for(int p=0;p<AR_MAX_PETS;p++)if(e->pets.active[p] && e->pets.cd[p]>e->cfg.pet_attack_cooldown-0.14f) {
         int target=e->pets.target[p];
         if(target>=0 && e->enemies.active[target]) {
-            Vector2 from=ar_iso(c,e->pets.x[p],e->pets.y[p],0.65f);
-            Vector2 to=ar_iso(c,e->enemies.x[target],e->enemies.y[target],0.6f);
+            Vector2 pet=ar_view_pet(c,e,p),enemy=ar_view_enemy(c,e,target);
+            Vector2 from=ar_iso(c,pet.x,pet.y,0.65f);
+            Vector2 to=ar_iso(c,enemy.x,enemy.y,0.6f);
             DrawLineEx(from,to,3*c->zoom,Fade(AR_GOLD,0.8f));
         }
     }
@@ -592,7 +630,8 @@ static inline void ar_entity_markers(ARClient* c,ARPG* e) {
     // Gameplay information is not scenery: compose it after the night layer.
     Vector2 badges[AR_MAX_PETS];ar_pet_badges(c,e,badges);
     for(int p=0;p<AR_MAX_PETS;p++)if(e->pets.active[p] && !e->pets.dormant[p]) {
-        Vector2 at=badges[p],head=ar_iso(c,e->pets.x[p],e->pets.y[p],0);head.y-=52*c->zoom;
+        Vector2 pose=ar_view_pet(c,e,p);
+        Vector2 at=badges[p],head=ar_iso(c,pose.x,pose.y,0);head.y-=52*c->zoom;
         Color color=e->direct_pet==p ? AR_MINT : c->selected_mask&(1u<<p) ? AR_GOLD : AR_TEXT;
         if(fabsf(at.x-head.x)>2)DrawLineEx((Vector2){at.x,at.y+9},head,1,Fade(color,.5f));
         DrawCircleV(at,10,AR_PANEL);DrawCircleLinesV(at,10,Fade(color,.8f));
@@ -606,7 +645,7 @@ static inline void ar_entity_markers(ARClient* c,ARPG* e) {
         ar_text(c,"THORN CAMP",at.x-43,at.y-34,13,AR_RED);
     }
     for(int i=0;i<e->cfg.enemy_cap;i++)if(e->enemies.active[i] && e->enemies.hp[i]<e->enemies.max_hp[i]) {
-        Vector2 at=ar_iso(c,e->enemies.x[i],e->enemies.y[i],0);at.y-=(e->enemies.type[i] ? 70 : 43)*c->zoom;
+        Vector2 pose=ar_view_enemy(c,e,i),at=ar_iso(c,pose.x,pose.y,0);at.y-=(e->enemies.type[i] ? 70 : 43)*c->zoom;
         ar_bar(at.x-20*c->zoom,at.y-8,40*c->zoom,4,e->enemies.hp[i]/e->enemies.max_hp[i],AR_RED);
     }
     for(int b=0;b<AR_MAX_BUILDINGS;b++)if(e->build_active[b] && e->build_hp[b]<e->build_max_hp[b]) {
@@ -630,9 +669,12 @@ static inline void ar_minimap(ARClient* c,ARPG* e,float x,float y) {
         DrawCircleV((Vector2){x+(e->nest_x[n]/e->cfg.arena_size+0.5f)*size,y+(e->nest_y[n]/e->cfg.arena_size+0.5f)*size},3,AR_RED);
     if(fabsf(e->home_x)<e->cfg.arena_size*0.5f && fabsf(e->home_y)<e->cfg.arena_size*0.5f)
         DrawCircleV((Vector2){x+(e->home_x/e->cfg.arena_size+0.5f)*size,y+(e->home_y/e->cfg.arena_size+0.5f)*size},4,AR_GOLD);
-    for(int p=0;p<AR_MAX_PETS;p++)if(e->pets.active[p] && !e->pets.dormant[p])
-        DrawCircleV((Vector2){x+(e->pets.x[p]/e->cfg.arena_size+0.5f)*size,y+(e->pets.y[p]/e->cfg.arena_size+0.5f)*size},2,AR_MINT);
-    if(!e->keeper_dormant)DrawCircleV((Vector2){x+(e->px/e->cfg.arena_size+0.5f)*size,y+(e->py/e->cfg.arena_size+0.5f)*size},3,WHITE);
+    for(int p=0;p<AR_MAX_PETS;p++)if(e->pets.active[p] && !e->pets.dormant[p]) {
+        Vector2 at=ar_view_pet(c,e,p);
+        DrawCircleV((Vector2){x+(at.x/e->cfg.arena_size+0.5f)*size,y+(at.y/e->cfg.arena_size+0.5f)*size},2,AR_MINT);
+    }
+    Vector2 keeper=ar_view_keeper(c,e);
+    if(!e->keeper_dormant)DrawCircleV((Vector2){x+(keeper.x/e->cfg.arena_size+0.5f)*size,y+(keeper.y/e->cfg.arena_size+0.5f)*size},3,WHITE);
     ar_text(c,e->campaign ? "M  OPEN WORLD MAP" : "TRAINING ARENA",x+4,y+size+8,11,AR_GOLD);
     if(e->campaign && !c->map_open && CheckCollisionPointRec(GetMousePosition(),(Rectangle){x-9,y-9,size+18,size+42}) && IsMouseButtonPressed(MOUSE_BUTTON_LEFT))c->ui_map=1;
 }
@@ -657,6 +699,7 @@ static inline void ar_drive_selected(ARClient* c,ARPG* e,int return_keeper) {
     }
     if(!return_keeper && p==e->direct_pet)p=-1;
     ar_world_drive(e,p);c->camera_free=0;c->move_target=0;c->dragging=0;
+    ar_pose_reset(c,e);
     c->build_kind=-1;c->targeting_nuke=0;
     // Account for any streaming rebase before snapping the follow camera.
     if(e->campaign){c->origin_x=((ARWorld*)e->campaign)->origin_x;c->origin_y=((ARWorld*)e->campaign)->origin_y;}
@@ -887,34 +930,14 @@ static inline void ar_overview(ARClient* c,ARPG* e) {
         c->map_y=world->origin_y+(p>=0 ? e->pets.y[p] : e->py)/ar_world_cell(e);
     }
     int pw=256,ph=(int)(pw*r.height/r.width);
-    if(!c->map_texture.id || c->map_texture.height!=ph || c->map_cache_x!=c->map_x || c->map_cache_y!=c->map_y ||
-            c->map_cache_span!=c->map_span || c->map_cache_tick/120!=e->tick/120 ||
-            c->map_cache_seed!=(int)world->seed || c->map_cache_version!=world->terrain_version) {
-        Color* pixels=(Color*)MemAlloc((unsigned)(pw*ph*sizeof(Color)));
-        if(pixels) {
-            for(int y=0;y<ph;y++)for(int x=0;x<pw;x++) {
-                double gx=c->map_x+(x-pw*.5)*c->map_span/pw,gy=c->map_y+(y-ph*.5)*c->map_span/pw;
-                int tile=ar_world_global_tile(e,world,(int)floor(gx),(int)floor(gy));
-                Color color=ar_land_color(world->seed,(float)gx,(float)gy,tile);
-                int known=ar_world_chunk_id(world,(int)floor(gx/AR_CHUNK_SIZE),(int)floor(gy/AR_CHUNK_SIZE))>=0;
-                if(!known)color=ar_mix(color,AR_INK,.57f);
-                pixels[y*pw+x]=color;
-            }
-            Image image={pixels,pw,ph,1,PIXELFORMAT_UNCOMPRESSED_R8G8B8A8};
-            if(c->map_texture.id && c->map_texture.height==ph)UpdateTexture(c->map_texture,pixels);
-            else {if(c->map_texture.id)UnloadTexture(c->map_texture);c->map_texture=LoadTextureFromImage(image);SetTextureFilter(c->map_texture,TEXTURE_FILTER_BILINEAR);}
-            UnloadImage(image);
-            c->map_cache_x=c->map_x;c->map_cache_y=c->map_y;c->map_cache_span=c->map_span;
-            c->map_cache_tick=e->tick;c->map_cache_seed=(int)world->seed;c->map_cache_version=world->terrain_version;
-        }
-    }
+    ar_map_prepare(c,e,pw,ph);
     DrawRectangle(0,76,GetScreenWidth(),GetScreenHeight()-226,Fade(AR_INK,.83f));
     ar_box((Rectangle){r.x-16,r.y-38,r.width+32,r.height+83},AR_PANEL);
     ar_text(c,"THE REACH / WORLD ATLAS",r.x,r.y-28,18,AR_GOLD);
     c->map_ui=1;
     if(ar_button(c,(Rectangle){r.x+r.width-109,r.y-31,109,25},"M  Close",0,1))c->ui_map=1;
     c->map_ui=0;
-    if(c->map_texture.id)DrawTexturePro(c->map_texture,(Rectangle){0,0,(float)pw,(float)ph},r,(Vector2){0,0},0,WHITE);
+    if(c->map_texture.id)DrawTexturePro(c->map_texture,ar_map_source(c,pw,ph),r,(Vector2){0,0},0,WHITE);
     BeginScissorMode((int)r.x,(int)r.y,(int)r.width,(int)r.height);
     int grid=c->map_span>800 ? 128 : c->map_span>320 ? 64 : 32;
     for(int x=(int)floor((c->map_x-c->map_span*.5)/grid)*grid;x<c->map_x+c->map_span*.5;x+=grid) {
@@ -929,9 +952,12 @@ static inline void ar_overview(ARClient* c,ARPG* e) {
     for(int i=0;i<world->nest_count;i++)if(world->nests[i].active)
         ar_map_marker(c,r,world->nests[i].x/cell,world->nests[i].y/cell,AR_RED,NULL);
     ar_map_marker(c,r,world->home_x/cell,world->home_y/cell,AR_GOLD,"Lodge");
-    ar_map_marker(c,r,world->origin_x+e->px/cell,world->origin_y+e->py/cell,WHITE,"Keeper");
-    for(int p=0;p<AR_MAX_PETS;p++)if(e->pets.active[p])
-        ar_map_marker(c,r,world->origin_x+e->pets.x[p]/cell,world->origin_y+e->pets.y[p]/cell,AR_MINT,TextFormat("#%d",p+1));
+    Vector2 keeper=ar_view_keeper(c,e);
+    ar_map_marker(c,r,world->origin_x+keeper.x/cell,world->origin_y+keeper.y/cell,WHITE,"Keeper");
+    for(int p=0;p<AR_MAX_PETS;p++)if(e->pets.active[p]) {
+        Vector2 at=ar_view_pet(c,e,p);
+        ar_map_marker(c,r,world->origin_x+at.x/cell,world->origin_y+at.y/cell,AR_MINT,TextFormat("#%d",p+1));
+    }
     Vector2 a=ar_map_point(c,r,world->origin_x-AR_DUN_W/2,world->origin_y-AR_DUN_H/2);
     float active=AR_DUN_W*r.width/c->map_span;
     DrawRectangleLinesEx((Rectangle){a.x,a.y,active,active},1,Fade(AR_MINT,.35f));
@@ -939,8 +965,20 @@ static inline void ar_overview(ARClient* c,ARPG* e) {
     ar_text(c,"Wheel zoom / RMB or middle-drag pan / Home center / dim terrain is uncharted",r.x,r.y+r.height+10,13,AR_MUTED);
     ar_text(c,TextFormat("%.0f tiles across  /  %d persistent chunks  /  center %.0f, %.0f",c->map_span,world->chunk_count,c->map_x,c->map_y),r.x,r.y+r.height+29,12,AR_MINT);
 }
+static inline void ar_graphics_defaults(void) {
+#if defined(__linux__)
+    // WSLg can default to llvmpipe even when its working D3D12 driver is
+    // installed. Prefer that driver for this process, preserving user overrides.
+    if(getenv("GALLIUM_DRIVER") || getenv("LIBGL_ALWAYS_SOFTWARE") ||
+            getenv("MESA_LOADER_DRIVER_OVERRIDE") || access("/dev/dxg",F_OK))return;
+    const char* drivers[]={"/usr/lib/x86_64-linux-gnu/dri/d3d12_dri.so",
+        "/usr/lib/dri/d3d12_dri.so","/usr/lib64/dri/d3d12_dri.so"};
+    for(int i=0;i<3;i++)if(!access(drivers[i],R_OK)){setenv("GALLIUM_DRIVER","d3d12",0);break;}
+#endif
+}
 static inline void c_render(ARPG* e) {
     if(!IsWindowReady()) {
+        ar_graphics_defaults();
         // Sprite edges already carry alpha. MSAA is optional because software
         // renderers can spend most of a frame resolving a 4x framebuffer.
         SetConfigFlags(FLAG_WINDOW_RESIZABLE|(getenv("ARPG_MSAA") && atoi(getenv("ARPG_MSAA")) ? FLAG_MSAA_4X_HINT : 0));
@@ -961,6 +999,7 @@ static inline void c_render(ARPG* e) {
         }
     }
     if(!c->initialized)ar_assets(c);
+    ar_view_prepare(c,e);
     float dt=fminf(GetFrameTime(),0.1f); c->time+=dt;
     if(IsKeyPressed(KEY_F7))c->light_mode=(c->light_mode+1)%4;
     float anim_dt=ar_clampf((e->tick-c->animation_tick)*AR_DT,0,.15f);c->animation_tick=e->tick;
@@ -1021,7 +1060,8 @@ static inline void c_render(ARPG* e) {
     if(IsKeyPressed(KEY_HOME))c->camera_free=0;
     float blend=1-expf(-7*dt);
     int pilot=e->direct_pet;
-    float target_x=pilot>=0 ? e->pets.x[pilot] : e->px,target_y=pilot>=0 ? e->pets.y[pilot] : e->py;
+    Vector2 target=pilot>=0 ? ar_view_pet(c,e,pilot) : ar_view_keeper(c,e);
+    float target_x=target.x,target_y=target.y;
     if(!c->camera_free){c->cam_x+=(target_x-c->cam_x)*blend;c->cam_y+=(target_y-c->cam_y)*blend;}
     ar_camera_project(c,GetScreenWidth(),GetScreenHeight());
     double render_start=GetTime();
@@ -1057,6 +1097,7 @@ static inline void c_close(ARPG* e) {
         if(c->map_texture.id)UnloadTexture(c->map_texture);
         UnloadFont(c->font);UnloadFont(c->heading);
     }
-    free(c->ground_vertices);free(c->ground_tiles);free(c->drawables);free(c);e->client=NULL;
+    free(c->ground_vertices);free(c->ground_tiles);free(c->ground_samples);
+    free(c->map_pixels);free(c->map_samples);free(c->drawables);free(c);e->client=NULL;
     if(IsWindowReady())CloseWindow();
 }
