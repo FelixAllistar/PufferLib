@@ -93,7 +93,9 @@ void puf_render(Env* env) {
         if (!env->view) { fprintf(stderr,"swat: view allocation failed\n"); exit(1); }
         swat_view_init(env->view,false);
     }
-    swat_view_draw(env->view,env->sim,true);
+    BeginDrawing();
+    swat_view_draw(env->view,env->sim,true,70);
+    EndDrawing();
 }
 
 void puf_close(Env* env) {

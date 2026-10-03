@@ -5,11 +5,11 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-typedef struct SwatView { bool initialized, captured; int width, height; } SwatView;
+typedef struct SwatView { bool initialized; int width, height; } SwatView;
 void swat_view_init(SwatView* view, bool hidden);
-void swat_view_draw(SwatView* view, const SwatSim* sim, bool policy);
+// Draws inside the caller's BeginDrawing/EndDrawing pair.
+void swat_view_draw(SwatView* view, const SwatSim* sim, bool policy, float vertical_fov);
 void swat_view_close(SwatView* view);
-SwatInput swat_view_input(void);
 #ifdef __cplusplus
 }
 #endif

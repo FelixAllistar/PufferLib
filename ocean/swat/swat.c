@@ -1,6 +1,7 @@
 // SWAT: Gold Element player and checkpoint viewer. The game and native RL
 // adapter call the same fixed-step simulation; rendering never changes it.
 #include "swat.h"
+#include "frontend.h"
 #include "../../src/puffercpu.c"
 
 static void usage(const char* path) {
@@ -9,6 +10,8 @@ static void usage(const char* path) {
         "  %s watch CHECKPOINT [--deterministic] [--policy.hidden_size=64]\n"
         "  %s --eval CHECKPOINT [EPISODES] [--deterministic] [--env.max_ticks=1800]\n"
         "  %s --capture FILE.png [--env.randomize=0]\n"
+        "  --settings FILE.ini          Override the saved player preferences\n"
+        "  --capture-screen SCREEN      game, main, pause, or settings\n"
         "Run from the repository root so config/default.ini and config/swat.ini are available.\n",
         path,path,path,path);
 }
@@ -42,7 +45,8 @@ static void policy_action(PufferNet* policy, float* obs, float* actions,
 }
 
 int main(int argc, char** argv) {
-    const char* model=NULL; const char* capture=NULL;
+    const char* model=NULL; const char* capture=NULL; const char* settings_path=NULL;
+    SwatScreen capture_screen=SWAT_SCREEN_GAME;
     bool eval=false,deterministic=false;
     int episodes=8,override_count=0;
     char** overrides=calloc((size_t)argc,sizeof(char*));
@@ -67,6 +71,16 @@ int main(int argc, char** argv) {
         } else if (!strcmp(argv[i],"--capture")) {
             if (++i>=argc) { usage(argv[0]); free(overrides); return 1; }
             capture=argv[i];
+        } else if (!strcmp(argv[i],"--settings")) {
+            if (++i>=argc) { usage(argv[0]); free(overrides); return 1; }
+            settings_path=argv[i];
+        } else if (!strcmp(argv[i],"--capture-screen")) {
+            if (++i>=argc) { usage(argv[0]); free(overrides); return 1; }
+            if(!strcmp(argv[i],"game")) capture_screen=SWAT_SCREEN_GAME;
+            else if(!strcmp(argv[i],"main")) capture_screen=SWAT_SCREEN_MAIN;
+            else if(!strcmp(argv[i],"pause")) capture_screen=SWAT_SCREEN_PAUSE;
+            else if(!strcmp(argv[i],"settings")) capture_screen=SWAT_SCREEN_SETTINGS;
+            else { fprintf(stderr,"swat: unknown capture screen %s\n",argv[i]); free(overrides); return 1; }
         } else if (!strcmp(argv[i],"--deterministic")) deterministic=true;
         else if (!strncmp(argv[i],"--",2) && strchr(argv[i],'.') && strchr(argv[i],'='))
             overrides[override_count++]=argv[i];
@@ -109,43 +123,55 @@ int main(int argc, char** argv) {
 
     SwatView view={0}; swat_view_init(&view,capture!=NULL);
     if (!view.initialized) { puf_close(&env); if(policy) free_puffernet(policy); free(weights); return 1; }
+    SwatFrontend app;
+    swat_frontend_init(&app,settings_path);
+    if(capture) app.screen=capture_screen;
     float accumulator=0,look_x=0,look_y=0;
     int frames=0;
-    while (!WindowShouldClose()) {
-        if (IsKeyPressed(KEY_TAB) && !capture) {
-            view.captured=!view.captured;
-            if(view.captured) DisableCursor(); else EnableCursor();
+    while (!WindowShouldClose() && !app.quit) {
+        if(!capture) swat_frontend_update(&app,env.sim,policy!=NULL);
+        if(app.restart_requested) {
+            puf_reset(&env); terminal=1;
+            app.restart_requested=false;
+            app.reset_input=true;
         }
-        if (IsKeyPressed(KEY_BACKSPACE)) {
-            puf_reset(&env); terminal=1; accumulator=0; look_x=look_y=0;
-        }
-        SwatInput input=view.captured && !policy ? swat_view_input() : swat_neutral_input();
-        look_x+=input.yaw_delta; look_y+=input.pitch_delta;
-        accumulator+=fminf(GetFrameTime(),0.1f);
-        int ticks=(int)(accumulator/SWAT_DT);
-        if(ticks>0) {
-            input.yaw_delta=look_x/ticks; input.pitch_delta=look_y/ticks;
+        if(app.reset_input || capture || !swat_frontend_playing(&app)) {
+            accumulator=0;
             look_x=look_y=0;
+            app.reset_input=false;
         }
-        for(int t=0;t<ticks;t++) {
-            if(policy) {
-                policy_action(policy,obs,actions,terminal,deterministic);
-                puf_step(&env);
-            } else swat_sim_step(env.sim,&input);
-            accumulator-=SWAT_DT;
+        if(!capture && swat_frontend_playing(&app)) {
+            SwatInput input=policy ? swat_neutral_input() : swat_frontend_input(&app,env.sim);
+            look_x+=input.yaw_delta; look_y+=input.pitch_delta;
+            accumulator+=fminf(GetFrameTime(),0.1f);
+            int ticks=(int)(accumulator/SWAT_DT);
+            if(ticks>0) {
+                input.yaw_delta=look_x/ticks; input.pitch_delta=look_y/ticks;
+                look_x=look_y=0;
+            }
+            for(int t=0;t<ticks;t++) {
+                if(policy) {
+                    policy_action(policy,obs,actions,terminal,deterministic);
+                    puf_step(&env);
+                } else swat_sim_step(env.sim,&input);
+                accumulator-=SWAT_DT;
+            }
         }
-        swat_view_draw(&view,env.sim,policy!=NULL);
+        BeginDrawing();
+        swat_view_draw(&view,env.sim,policy!=NULL,app.settings.vertical_fov);
+        swat_frontend_draw(&app,env.sim,policy!=NULL);
+        EndDrawing();
         if(capture && ++frames==12) {
             Image frame=LoadImageFromScreen();
             bool saved=ExportImage(frame,capture);
             UnloadImage(frame);
-            swat_view_close(&view); puf_close(&env);
+            swat_frontend_close(&app); swat_view_close(&view); puf_close(&env);
             if(policy) free_puffernet(policy);
             free(weights);
             return saved ? 0 : 1;
         }
     }
-    swat_view_close(&view); puf_close(&env);
+    swat_frontend_close(&app); swat_view_close(&view); puf_close(&env);
     if(policy) free_puffernet(policy);
     free(weights);
     return 0;

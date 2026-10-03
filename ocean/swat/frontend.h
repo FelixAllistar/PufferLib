@@ -1,0 +1,33 @@
+#ifndef SWAT_FRONTEND_H
+#define SWAT_FRONTEND_H
+#include "render.h"
+#include "settings.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+typedef enum SwatScreen { SWAT_SCREEN_GAME, SWAT_SCREEN_MAIN,
+                         SWAT_SCREEN_PAUSE, SWAT_SCREEN_SETTINGS } SwatScreen;
+typedef struct SwatFrontend {
+    SwatSettings settings, saved_settings;
+    SwatScreen screen, settings_back;
+    bool captured, quit, restart_requested, reset_input, wait_for_release;
+    int discard_mouse_frames;
+    char settings_path[SWAT_SETTINGS_PATH_SIZE];
+    char notice[192];
+} SwatFrontend;
+
+void swat_frontend_init(SwatFrontend* app, const char* settings_path);
+void swat_frontend_update(SwatFrontend* app, const SwatSim* sim, bool policy);
+void swat_frontend_set_screen(SwatFrontend* app, SwatScreen screen);
+bool swat_frontend_playing(const SwatFrontend* app);
+SwatInput swat_frontend_input(SwatFrontend* app, const SwatSim* sim);
+// Draw inside the caller's BeginDrawing/EndDrawing pair, after the game view.
+void swat_frontend_draw(SwatFrontend* app, const SwatSim* sim, bool policy);
+void swat_frontend_close(SwatFrontend* app);
+
+#ifdef __cplusplus
+}
+#endif
+#endif

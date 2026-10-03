@@ -24,6 +24,13 @@ The required public headers and library are loaded from a sibling checkout;
 no dependency binary is committed. Presentation uses the repository's Raylib
 5.5 dependency. The game adds no third-party game art or audio.
 
+Menus use the repository's existing `vendor/raygui.h`, with its license header
+preserved. The optional Windows build downloads the official Raylib 5.5
+Win64 MinGW archive and uses MinGW-w64 tool packages from the host's configured
+APT repositories if a cross-compiler is not already installed. Generated
+libraries, compiler tools, and executables stay under the ignored `build/`
+directory; their source and license files remain with those dependencies.
+
 The Box3D copyright/license notice associated with the dependency and sample
 ancestry is reproduced below. The surrounding repository's license continues
 to apply to its own code.

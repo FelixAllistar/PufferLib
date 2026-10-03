@@ -18,15 +18,44 @@ Run commands from the repository root. With Box3D and Raylib installed:
 
 ```sh
 make -C ocean/swat viewer
-./build/swat/swat play
+./swat play
 ```
 
-The standard build entry point also creates the game:
+The standard build entry point also creates the game and launcher:
 
 ```sh
 bash build.sh swat --cpu
 ./swat play
 ```
+
+`./swat` opens a main menu with **Enter training annex**, **Settings**, and
+**Quit game**. Entering play captures the mouse. **Escape** or **Tab** opens
+the pause menu, releases the cursor, and freezes the simulation. Resume captures
+it again; losing window focus automatically pauses. The pause menu also offers
+restart, settings, return to the main menu, and quit. Menu clicks and capture
+warps are discarded before accepting gameplay input.
+
+On WSL, the launcher uses the **native Windows player** with the same Raylib
+and Box3D code. This avoids the WSLg/RDP pointer path implicated in
+[reported mouse lock and relative-motion problems](https://github.com/microsoft/wslg/issues/240).
+The first Windows build is automatic if needed, or can be run explicitly:
+
+```sh
+bash ocean/swat/build-windows.sh
+./ocean/swat/play.sh play
+```
+
+The script uses an installed MinGW cross-compiler or downloads and unpacks
+Ubuntu/Debian tool packages under `build/swat/windows-deps`, without sudo or
+system installation. It fetches the official Raylib 5.5 Win64 archive and
+builds Box3D into a separate Windows build directory. The player and a
+`Play SWAT.cmd` launcher live in `build/swat/windows`. Only generated files
+are placed there. On non-Debian Linux, install MinGW-w64 C/C++ first.
+
+To explicitly run the Linux player, use `SWAT_NATIVE_WINDOWS=0 ./swat play`
+or `./build/swat/swat play`. CUDA training continues to run on Linux. The
+launcher rebuilds stale player code and translates checkpoint/settings/capture
+paths from WSL for the Windows process.
 
 Open or destroy the wooden door, deal with the armed guard in the far room,
 keep the blue civilian unharmed, and reach the gold extraction circle. It turns
@@ -49,10 +78,37 @@ with training. For controller/weapon practice with a longer limit:
 | 1 / 2 | Carbine / sidearm |
 | V | Cycle selector; carbine starts in semi, then auto, then safe |
 | F | Toggle the door while looking at it within 2.2 m |
-| Backspace / Tab / Esc | Restart / release or capture cursor / quit |
+| Backspace | Restart while playing |
+| Esc or Tab | Pause/resume; back from Settings |
 
 The graybox weapon model, actors, and HUD use procedural Raylib geometry.
 No assets from Ready or Not or SWAT 4 are included.
+
+## Saved settings
+
+The Raygui settings page has sliders for mouse sensitivity, vertical
+sensitivity, aiming sensitivity, vertical FOV, and frame limit, plus independent
+horizontal/vertical inversion. The default mouse sensitivity is **0.035 degrees
+per pixel**, about one third of the original setting, with a 0.65 aiming
+multiplier. Positive horizontal motion turns right; moving the mouse up looks
+up unless inversion is enabled. Mouse displacement is independent of frame rate.
+
+**Save & back** writes preferences immediately; Escape saves edited values
+before returning. **Reload saved** restores the file, and **Defaults** restores
+the starting values. Changes also save on orderly exit. Files are versioned,
+validated, and replaced atomically; a failed save keeps the previous file and
+shows an error in the menu. Preferences load at startup from:
+
+- Windows: `%LOCALAPPDATA%\SWAT Gold Element\settings.ini`
+- Linux: `$XDG_CONFIG_HOME/swat-gold-element/settings.ini`, falling back to
+  `~/.config/swat-gold-element/settings.ini`
+
+Use `--settings /path/to/profile.ini` for an independent profile. The user
+preferences file stores controls/display settings. Gameplay/mission and policy
+configuration continue to live in `config/swat.ini`; preference changes do not
+change the RL action/observation contract. Human FOV is adjustable; policy
+playback retains its sensor FOV. Raygui is already vendored at
+`vendor/raygui.h`; no separate GUI library installation is required.
 
 ## Implemented systems
 
@@ -94,7 +150,8 @@ The sidearm uses 15 plus chamber, 45 reserve, 10-tick fire interval,
 | `world.c`, `world.h` | Box3D scene, queries, material damage, doors |
 | `sim.c`, `sim.h` | Actors, fixed update, ballistics, mission, observations/actions |
 | `swat.h` | Ocean adapter, rewards, logging, automatic reset |
-| `render.c`, `swat.c` | Game presentation, human input, CPU policy playback/evaluation |
+| `render.c`, `swat.c` | Game presentation, fixed update loop, CPU policy playback/evaluation |
+| `frontend.c`, `settings.c` | Main/pause/settings menus, mouse capture, saved player preferences |
 
 Both humans and policies submit `SwatInput` to the same **60 Hz** game update
 with **four Box3D substeps**. Rendering does not own physics or weapon state.
@@ -168,6 +225,7 @@ production learning benchmarks are not implemented in this foundation.
 make -C ocean/swat test
 make -C ocean/swat sanitize
 ./swat --capture build/swat/first-playable.png --env.randomize=0 --env.hostile_fire=0
+./swat --capture build/swat/settings.png --capture-screen settings
 ```
 
 Checks cover movement speed and gates, jump edges, crouch/lean collision and
@@ -182,6 +240,24 @@ finite observations, relocated environment storage, exact timeouts, civilian
 penalty, extraction reward, and preservation of terminal reward across reset.
 ASan/UBSan instrument the game/controller and adapter, not the separately built
 Box3D archive. Offscreen rendering has also been captured and visually inspected.
+
+Settings tests cover save/load/replacement, preserving the old file after a
+failed save, malformed values, unsupported versions, mouse directions,
+inversion, and frame-independent sensitivity. The native Windows GUI regression
+opens its own brief test window and checks the actual OS cursor confinement
+rectangle, stationary mouse input, Escape/pause/resume/quit, focus loss,
+click isolation, slider cancellation, and preferences surviving reinitialization:
+
+```sh
+bash ocean/swat/build-windows.sh
+./build/swat/windows/test_frontend.exe build/swat/windows/frontend-test-settings.ini
+```
+
+It uses only the supplied test settings path. For native Linux, build the same
+GUI test with `make -C ocean/swat frontend-test-build` and run
+`./build/swat/test_frontend build/swat/frontend-test-settings.ini`. That Linux
+test can inspect Raylib capture state; the Windows test additionally checks
+the OS clipping rectangle. Interactive play on WSL uses Windows by default.
 
 A native FP32 smoke run completed 2,048 transitions with finite losses and
 saved checkpoints; loading those weights into another 2,048-step training run

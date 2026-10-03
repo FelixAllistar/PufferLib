@@ -1,0 +1,97 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Build the same player against native Win32 Raylib, avoiding WSLg's RDP mouse
+# path. Missing cross-tools are unpacked locally; no sudo/system install.
+SWAT_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
+SWAT_BUILD="$SWAT_ROOT/build/swat/windows"
+SWAT_DEPS="$SWAT_ROOT/build/swat/windows-deps"
+SWAT_BOX3D=${BOX3D_DIR:-"$SWAT_ROOT/../box3d"}
+mkdir -p "$SWAT_BUILD" "$SWAT_DEPS"
+
+if command -v x86_64-w64-mingw32-gcc >/dev/null 2>&1; then
+    SWAT_CC=$(command -v x86_64-w64-mingw32-gcc)
+    SWAT_CXX=$(command -v x86_64-w64-mingw32-g++)
+else
+    SWAT_TOOLS="$SWAT_DEPS/toolchain"
+    SWAT_CC="$SWAT_TOOLS/usr/bin/x86_64-w64-mingw32-gcc-posix"
+    SWAT_CXX="$SWAT_TOOLS/usr/bin/x86_64-w64-mingw32-g++-posix"
+    if [ ! -x "$SWAT_CC" ] || [ ! -x "$SWAT_CXX" ]; then
+        command -v apt-get >/dev/null || {
+            echo "Install the MinGW-w64 C/C++ cross-compilers, then rerun this script." >&2
+            exit 1
+        }
+        mkdir -p "$SWAT_DEPS/packages" "$SWAT_TOOLS"
+        (
+            cd "$SWAT_DEPS/packages"
+            apt-get download binutils-mingw-w64-x86-64 mingw-w64-common \
+                mingw-w64-x86-64-dev gcc-mingw-w64-base \
+                gcc-mingw-w64-x86-64-posix-runtime \
+                gcc-mingw-w64-x86-64-posix g++-mingw-w64-x86-64-posix
+        )
+        for package in "$SWAT_DEPS/packages/"*.deb; do
+            dpkg-deb -x "$package" "$SWAT_TOOLS"
+        done
+    fi
+fi
+export PATH="$(dirname "$SWAT_CC"):$PATH"
+
+SWAT_RAYLIB="$SWAT_DEPS/raylib-5.5_win64_mingw-w64"
+if [ ! -f "$SWAT_RAYLIB/lib/libraylib.a" ]; then
+    curl -fL --retry 2 \
+        https://github.com/raysan5/raylib/releases/download/5.5/raylib-5.5_win64_mingw-w64.zip \
+        -o "$SWAT_DEPS/raylib-5.5_win64_mingw-w64.zip"
+    unzip -q -o "$SWAT_DEPS/raylib-5.5_win64_mingw-w64.zip" -d "$SWAT_DEPS"
+fi
+
+cat > "$SWAT_BUILD/toolchain.cmake" <<EOF
+set(CMAKE_SYSTEM_NAME Windows)
+set(CMAKE_C_COMPILER "$SWAT_CC")
+set(CMAKE_CXX_COMPILER "$SWAT_CXX")
+set(CMAKE_RC_COMPILER "$(dirname "$SWAT_CC")/x86_64-w64-mingw32-windres")
+EOF
+
+cmake -S "$SWAT_BOX3D" -B "$SWAT_BUILD/box3d" \
+    -DCMAKE_TOOLCHAIN_FILE="$SWAT_BUILD/toolchain.cmake" \
+    -DCMAKE_BUILD_TYPE=Release -DCMAKE_VERBOSE_MAKEFILE=OFF \
+    -DBOX3D_SAMPLES=OFF -DBOX3D_UNIT_TESTS=OFF -DBOX3D_BENCHMARKS=OFF
+if ! cmake --build "$SWAT_BUILD/box3d" --parallel 4 > "$SWAT_BUILD/box3d-build.log" 2>&1; then
+    tail -n 60 "$SWAT_BUILD/box3d-build.log" >&2
+    exit 1
+fi
+
+SWAT_CORE=(body.c controller.c weapons.c world.c sim.c)
+SWAT_SOURCES=()
+for source in "${SWAT_CORE[@]}"; do SWAT_SOURCES+=("$SWAT_ROOT/ocean/swat/$source"); done
+SWAT_FLAGS=(-O2 -g -std=gnu11 -ffp-contract=off -Wall -Wextra
+    -Wno-unused-parameter -Wno-unused-function -Wno-unknown-pragmas
+    -I"$SWAT_ROOT/src" -I"$SWAT_ROOT/vendor" -I"$SWAT_ROOT/ocean/swat"
+    -I"$SWAT_BOX3D/include" -I"$SWAT_RAYLIB/include")
+SWAT_LIBS=("$SWAT_BUILD/box3d/src/libbox3d.a" "$SWAT_RAYLIB/lib/libraylib.a"
+    -static -lopengl32 -lgdi32 -lwinmm -lm)
+
+"$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/swat.c" \
+    "$SWAT_ROOT/ocean/swat/render.c" "$SWAT_ROOT/ocean/swat/frontend.c" \
+    "$SWAT_ROOT/ocean/swat/settings.c" "${SWAT_SOURCES[@]}" \
+    "${SWAT_LIBS[@]}" -o "$SWAT_BUILD/swat.exe"
+
+"$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/tests/test_sim.c" \
+    "${SWAT_SOURCES[@]}" "${SWAT_LIBS[@]}" -o "$SWAT_BUILD/test_sim.exe"
+
+"$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/tests/test_settings.c" \
+    "$SWAT_ROOT/ocean/swat/settings.c" -static -lm -o "$SWAT_BUILD/test_settings.exe"
+
+"$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/tests/test_frontend.c" \
+    "$SWAT_ROOT/ocean/swat/render.c" "$SWAT_ROOT/ocean/swat/frontend.c" \
+    "$SWAT_ROOT/ocean/swat/settings.c" "${SWAT_SOURCES[@]}" \
+    "${SWAT_LIBS[@]}" -o "$SWAT_BUILD/test_frontend.exe"
+
+mkdir -p "$SWAT_BUILD/config"
+cp "$SWAT_ROOT/config/default.ini" "$SWAT_ROOT/config/swat.ini" "$SWAT_BUILD/config/"
+cat > "$SWAT_BUILD/Play SWAT.cmd" <<'EOF'
+@echo off
+pushd "%~dp0"
+swat.exe play
+popd
+EOF
+printf 'Built native Windows player: %s\n' "$SWAT_BUILD/swat.exe"

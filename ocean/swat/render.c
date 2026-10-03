@@ -16,29 +16,7 @@ void swat_view_init(SwatView* view, bool hidden) {
     if (!IsWindowReady()) return;
     SetTargetFPS(60);
     view->initialized = true;
-    view->captured = !hidden;
-    if (view->captured) DisableCursor();
-}
-
-SwatInput swat_view_input(void) {
-    SwatInput in = swat_neutral_input();
-    Vector2 mouse = GetMouseDelta();
-    in.yaw_delta = mouse.x*0.0018f;
-    in.pitch_delta = -mouse.y*0.0018f;
-    in.forward = (float)(IsKeyDown(KEY_W)-IsKeyDown(KEY_S));
-    in.strafe = (float)(IsKeyDown(KEY_D)-IsKeyDown(KEY_A));
-    in.lean = (float)(IsKeyDown(KEY_E)-IsKeyDown(KEY_Q));
-    in.crouch = IsKeyDown(KEY_LEFT_CONTROL) || IsKeyDown(KEY_C);
-    in.gait = IsKeyDown(KEY_LEFT_SHIFT) ? SWAT_SPRINT :
-        (IsKeyDown(KEY_LEFT_ALT) ? SWAT_SLOW : SWAT_WALK);
-    in.jump = IsKeyDown(KEY_SPACE);
-    in.aim = IsMouseButtonDown(MOUSE_BUTTON_RIGHT);
-    in.fire = IsMouseButtonDown(MOUSE_BUTTON_LEFT);
-    in.reload = IsKeyDown(KEY_R);
-    in.interact = IsKeyDown(KEY_F);
-    in.selector = IsKeyDown(KEY_V);
-    in.weapon = IsKeyDown(KEY_ONE) ? 1 : (IsKeyDown(KEY_TWO) ? 2 : 0);
-    return in;
+    EnableCursor(); // Capture only after entering the game with window focus.
 }
 
 static Color swat_material_color(const SwatObject* o) {
@@ -118,7 +96,7 @@ static void swat_draw_weapon(const SwatSim* s) {
     rlPopMatrix();
 }
 
-void swat_view_draw(SwatView* view, const SwatSim* s, bool policy) {
+void swat_view_draw(SwatView* view, const SwatSim* s, bool policy, float vertical_fov) {
     if (!view->initialized) return;
     const SwatActor* a=&s->actors[0];
     const SwatController* c=&a->controller;
@@ -129,9 +107,9 @@ void swat_view_draw(SwatView* view, const SwatSim* s, bool policy) {
     Camera3D camera = {0};
     camera.position=swat_position(eye);
     camera.target=swat_position(b3OffsetPos(eye,forward));
-    camera.up=swat_vector(up); camera.fovy=70-25*c->ads; camera.projection=CAMERA_PERSPECTIVE;
+    float fov=policy ? 70 : vertical_fov;
+    camera.up=swat_vector(up); camera.fovy=fov+(45-fov)*c->ads; camera.projection=CAMERA_PERSPECTIVE;
     int width=GetScreenWidth(), height=GetScreenHeight();
-    BeginDrawing();
     ClearBackground((Color){25,37,47,255});
     BeginMode3D(camera);
     for (int i=0;i<s->world.count;i++) if (s->world.objects[i].material != SWAT_GLASS)
@@ -183,14 +161,7 @@ void swat_view_draw(SwatView* view, const SwatSim* s, bool policy) {
         (s->config.max_ticks-s->tick)/3600,((s->config.max_ticks-s->tick)/60)%60),width/2-165,height-92,17,swat_paper);
     DrawRectangle(0,height-52,width,52,(Color){9,15,21,255});
     DrawText("WASD move   Q / E lean   Ctrl crouch   Shift sprint   RMB aim   LMB fire",28,height-40,16,(Color){162,177,181,255});
-    DrawText("R reload   1 / 2 weapon   V selector   F door   Backspace restart   Tab cursor",28,height-21,15,(Color){126,144,151,255});
-    if (s->end!=SWAT_RUNNING) {
-        DrawRectangle(0,height/2-75,width,150,(Color){9,15,21,235});
-        const char* result=swat_end_name(s->end);
-        DrawText(result,(width-MeasureText(result,34))/2,height/2-34,34,swat_gold);
-        DrawText("BACKSPACE  /  RESTART",width/2-115,height/2+24,20,swat_paper);
-    }
-    EndDrawing();
+    DrawText("R reload   1 / 2 weapon   V selector   F door   Backspace restart   Esc pause / settings",28,height-21,15,(Color){126,144,151,255});
 }
 
 void swat_view_close(SwatView* view) {

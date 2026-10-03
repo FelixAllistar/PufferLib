@@ -220,7 +220,7 @@ elif [ "$ENV" = "swat" ]; then
     SRC_DIR="ocean/$ENV"
     BOX3D_DIR=${BOX3D_DIR:-../box3d}
     INCLUDES+=(-I"$BOX3D_DIR/include")
-    EXTRA_SRC="$SRC_DIR/body.c $SRC_DIR/controller.c $SRC_DIR/weapons.c $SRC_DIR/world.c $SRC_DIR/sim.c $SRC_DIR/render.c"
+    EXTRA_SRC="$SRC_DIR/body.c $SRC_DIR/controller.c $SRC_DIR/weapons.c $SRC_DIR/world.c $SRC_DIR/sim.c $SRC_DIR/render.c $SRC_DIR/settings.c $SRC_DIR/frontend.c"
     LINK_ARCHIVES+=("$BOX3D_DIR/build/src/libbox3d.a")
 elif [ "$ENV" = "shenaniguns3d" ]; then
     SRC_DIR="ocean/$ENV"
@@ -331,6 +331,12 @@ if [ "$STANDALONE" = "1" ]; then
     exit 0
 fi
 if [ "$MODE" = "cpu" ]; then
+    if [ "$ENV" = "swat" ] && [ -z "$OUT" ]; then
+        # ./swat dispatches to native Win32 on WSL for reliable mouse capture.
+        # Keep the Linux player available for headless evaluation/development.
+        mkdir -p build/swat
+        OUTPUT_NAME=build/swat/swat
+    fi
     STANDALONE_SOURCE="src/puffercpu.c"
     STANDALONE_DEFINES=()
     case "$ENV" in
@@ -363,6 +369,11 @@ if [ "$MODE" = "cpu" ]; then
     )
     echo "Compiling $ENV..."
     ${CC:-clang} "${CLANG_OPT[@]}" "${FLAGS[@]}"
+    if [ "$ENV" = "swat" ] && [ -z "$OUT" ]; then
+        cp ocean/swat/play.sh swat.launcher.tmp
+        chmod +x swat.launcher.tmp
+        mv swat.launcher.tmp swat
+    fi
     echo "Built: ./$OUTPUT_NAME"
     exit 0
 elif [ "$MODE" = "web" ]; then

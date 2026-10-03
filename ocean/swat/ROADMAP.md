@@ -19,6 +19,8 @@ is deliberately a general engine improvement.
 - Hinged door, basic armed guard and civilian, extraction/failure/reset.
 - Versioned observation/action documentation, native FP32 training smoke,
   deterministic reset tests, mission solvability tests and sanitizers.
+- Raygui main/pause/settings menus, focus-aware capture and pause, persisted
+  mouse/display preferences, and a native Windows player/WSL launcher.
 
 The current annex is a systems test level. It is not the finished tactical
 controller, full weapon ecosystem, procedural campaign, or trained AI product.
@@ -82,7 +84,7 @@ and runs inside the playable game through the same controller/weapon API.
 ## Production work after these slices
 
 Animation/asset/audio pipeline, map tooling, squad commands, accessibility and
-input settings, replay/save/mission formats, co-op networking and authority,
+key rebinding, replay/save/mission formats, co-op networking and authority,
 performance budgets, model/config manifests, crash handling, and release builds.
 GPU simulation should be considered only with a tested fidelity target against
 the authoritative Box3D game. These are planned systems, not shipped features.
