@@ -16,6 +16,7 @@
 #undef LoadImage
 #endif
 #include "frontend.h"
+#include "sound_view.h"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -26,6 +27,7 @@
 
 // Raylib 5.5's documented automation file event IDs (enum lives in rcore.c).
 enum { TEST_KEY_UP=1, TEST_KEY_DOWN=2, TEST_MOUSE_UP=5, TEST_MOUSE_DOWN=6, TEST_MOUSE_POSITION=7 };
+static SwatSoundView test_sound;
 static void event(unsigned int type, int a, int b) {
     PlayAutomationEvent((AutomationEvent){0,type,{a,b,0,0}});
 }
@@ -38,6 +40,7 @@ static void frame(SwatFrontend* app, SwatView* view, SwatSim* sim) {
         SwatInput in=swat_frontend_input(app,sim);
         swat_sim_step(sim,&in);
     }
+    swat_sound_view_update(&test_sound,sim,app->actor,app->settings.master_volume,0,0);
     BeginDrawing();
     swat_view_draw(view,sim,false,app->settings.vertical_fov);
     swat_frontend_draw(app,sim,false);
@@ -93,6 +96,24 @@ static bool run_checks(SwatFrontend* app, SwatView* view, SwatSim* sim,
     CHECK(IsWindowFocused());
     CHECK(app->screen==SWAT_SCREEN_MAIN && !app->captured && !IsCursorHidden() && sim->tick==0);
 
+    click(app,view,sim,720,425); // Host setup can be cancelled without starting a round.
+    CHECK(app->screen==SWAT_SCREEN_CONNECT && app->hosting && !app->captured);
+    escape(app,view,sim);
+    CHECK(app->screen==SWAT_SCREEN_MAIN && app->disconnect_requested && sim->tick==0);
+    app->disconnect_requested=false;
+    click(app,view,sim,720,485);
+    CHECK(app->screen==SWAT_SCREEN_CONNECT && !app->hosting);
+    click(app,view,sim,720,509); // Join request: runtime owns the actual socket connection.
+    CHECK(app->join_requested && app->connect_pending && !app->host_requested);
+    app->join_requested=false;
+    escape(app,view,sim); app->disconnect_requested=false;
+
+    click(app,view,sim,720,425);
+    click(app,view,sim,720,423);
+    CHECK(app->host_requested && app->connect_pending && !app->join_requested);
+    app->host_requested=false;
+    escape(app,view,sim); app->disconnect_requested=false;
+
     click(app,view,sim,720,365); // Main -> Settings.
     CHECK(app->screen==SWAT_SCREEN_SETTINGS);
     click(app,view,sim,790,225); // Sensitivity slider.
@@ -135,6 +156,13 @@ static bool run_checks(SwatFrontend* app, SwatView* view, SwatSim* sim,
     event(TEST_MOUSE_UP,MOUSE_BUTTON_LEFT,0); frame(app,view,sim);
     frames(app,view,sim,15);
     CHECK(app->screen==SWAT_SCREEN_PAUSE && sim->tick==tick && !app->restart_requested);
+    app->networked=true; app->leader=false;
+    click(app,view,sim,720,425); // Non-leader cannot restart the shared round.
+    CHECK(!app->restart_requested && app->screen==SWAT_SCREEN_PAUSE);
+    event(TEST_KEY_DOWN,KEY_BACKSPACE,0); frame(app,view,sim);
+    event(TEST_KEY_UP,KEY_BACKSPACE,0); frame(app,view,sim);
+    CHECK(!app->restart_requested);
+    app->networked=false; app->leader=true;
     SwatInput neutral=swat_frontend_input(app,sim);
     CHECK(!neutral.fire && neutral.forward==0 && neutral.yaw_delta==0);
 
@@ -163,7 +191,7 @@ static bool run_checks(SwatFrontend* app, SwatView* view, SwatSim* sim,
 #endif
     click(app,view,sim,720,545); // Escape menu -> Quit.
     CHECK(app->quit && !app->captured && !confined_to_window());
-    puts("PASS frontend: start/pause/resume/quit, actual cursor confinement/release, stationary mouse, direction, focus loss, menu click isolation, slider cancel and saved settings");
+    puts("PASS frontend: solo start/pause/resume/quit, host/join setup and cancel, leader restart controls, actual cursor confinement/release, stationary mouse, direction, focus loss, menu click isolation, slider cancel and saved settings");
     return true;
 }
 
@@ -179,9 +207,12 @@ int main(int argc, char** argv) {
     swat_sim_init(sim,config,42);
     SwatFrontend app;
     swat_frontend_init(&app,argv[1]);
+    swat_sound_view_init(&test_sound);
+    printf("GUI audio stream: %s\n",test_sound.initialized ? "active" : "no output device available");
     app.settings=app.saved_settings=swat_settings_defaults();
     bool ok=run_checks(&app,&view,sim,argv[1],argc>2 ? argv[2] : NULL);
     swat_frontend_close(&app);
+    swat_sound_view_close(&test_sound);
     swat_sim_close(sim); free(sim);
     swat_view_close(&view);
     remove(argv[1]); // The path is explicitly test-owned.

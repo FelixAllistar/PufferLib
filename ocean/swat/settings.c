@@ -19,7 +19,7 @@
 #endif
 
 SwatSettings swat_settings_defaults(void) {
-    return (SwatSettings){0.035f,1.0f,0.65f,70.0f,120,false,false};
+    return (SwatSettings){0.035f,1.0f,0.65f,70.0f,120,false,false,1.0f};
 }
 
 static float swat_setting_range(float value, float fallback, float lo, float hi) {
@@ -35,12 +35,14 @@ void swat_settings_sanitize(SwatSettings* s) {
     s->vertical_fov=swat_setting_range(s->vertical_fov,70,55,100);
     if(s->frame_limit<30) s->frame_limit=30;
     if(s->frame_limit>240) s->frame_limit=240;
+    s->master_volume=swat_setting_range(s->master_volume,1,0,1);
 }
 
 bool swat_settings_equal(const SwatSettings* a, const SwatSettings* b) {
     return a->sensitivity==b->sensitivity && a->vertical_multiplier==b->vertical_multiplier &&
         a->ads_multiplier==b->ads_multiplier && a->vertical_fov==b->vertical_fov &&
-        a->frame_limit==b->frame_limit && a->invert_x==b->invert_x && a->invert_y==b->invert_y;
+        a->frame_limit==b->frame_limit && a->invert_x==b->invert_x && a->invert_y==b->invert_y &&
+        a->master_volume==b->master_volume;
 }
 
 bool swat_settings_default_path(char* out, size_t capacity) {
@@ -97,6 +99,7 @@ bool swat_settings_load(SwatSettings* settings, const char* path) {
         else if(!strcmp(key,"vertical_multiplier")) parsed.vertical_multiplier=number;
         else if(!strcmp(key,"ads_multiplier")) parsed.ads_multiplier=number;
         else if(!strcmp(key,"vertical_fov")) parsed.vertical_fov=number;
+        else if(!strcmp(key,"master_volume")) parsed.master_volume=number;
         else if(!strcmp(key,"frame_limit")) parsed.frame_limit=(int)fmaxf(30,fminf(240,number));
         else if(!strcmp(key,"invert_x") && (number==0 || number==1)) parsed.invert_x=number!=0;
         else if(!strcmp(key,"invert_y") && (number==0 || number==1)) parsed.invert_y=number!=0;
@@ -159,9 +162,9 @@ bool swat_settings_save(const SwatSettings* settings, const char* path) {
     bool ok=fprintf(file,
         "# SWAT: Gold Element player preferences\nversion = 1\n"
         "mouse_sensitivity = %.9g\nvertical_multiplier = %.9g\nads_multiplier = %.9g\n"
-        "vertical_fov = %.9g\nframe_limit = %d\ninvert_x = %d\ninvert_y = %d\n",
+        "vertical_fov = %.9g\nframe_limit = %d\ninvert_x = %d\ninvert_y = %d\nmaster_volume = %.9g\n",
         (double)s.sensitivity,(double)s.vertical_multiplier,(double)s.ads_multiplier,
-        (double)s.vertical_fov,s.frame_limit,s.invert_x,s.invert_y)>0;
+        (double)s.vertical_fov,s.frame_limit,s.invert_x,s.invert_y,(double)s.master_volume)>0;
     if(fflush(file)!=0) ok=false;
     if(fclose(file)!=0) ok=false;
     if(ok) {

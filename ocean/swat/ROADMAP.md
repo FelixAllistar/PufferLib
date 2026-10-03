@@ -21,6 +21,14 @@ is deliberately a general engine improvement.
   deterministic reset tests, mission solvability tests and sanitizers.
 - Raygui main/pause/settings menus, focus-aware capture and pause, persisted
   mouse/display preferences, and a native Windows player/WSL launcher.
+- Four-player ENet co-op with listen hosting, a headless dedicated authority,
+  versioned snapshots, shared destruction, late join and leader restart.
+- Material/doorway acoustic paths, delayed NPC hearing and procedural stereo
+  audio, sharing destruction state and independent of player volume.
+
+[ARCHITECTURE.md](ARCHITECTURE.md) records the portable technology choices,
+authority/perception boundaries, current network limits and future fidelity tiers.
+[AUDIO.md](AUDIO.md) separates the implemented foundation from production audio.
 
 The current annex is a systems test level. It is not the finished tactical
 controller, full weapon ecosystem, procedural campaign, or trained AI product.
@@ -54,8 +62,9 @@ reload interruption conserves ammunition; frame rate does not affect rules.
 3. Extend modular breakage into authored fracture/support rules, persistent
    openings, object/door debris, noise, and material-specific visibility.
    Benchmark collision rebuild and sensor cost before increasing complexity.
-4. Add audio/perception events and delayed, occluded information shared through
-   communications. Keep event visibility separate from global game truth.
+4. Extend the shared audio/perception foundation with production recordings,
+   room acoustics, richer diffraction and delayed squad communications.
+   Keep perception separate from global game truth.
 
 Acceptance: destruction creates the same traversable/shootable openings for
 every actor and the renderer; objective and civilian outcomes remain correct
@@ -84,7 +93,8 @@ and runs inside the playable game through the same controller/weapon API.
 ## Production work after these slices
 
 Animation/asset/audio pipeline, map tooling, squad commands, accessibility and
-key rebinding, replay/save/mission formats, co-op networking and authority,
+key rebinding, replay/save/mission formats, network prediction/interpolation,
+Internet connectivity and session services,
 performance budgets, model/config manifests, crash handling, and release builds.
 GPU simulation should be considered only with a tested fidelity target against
 the authoritative Box3D game. These are planned systems, not shipped features.

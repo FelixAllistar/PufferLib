@@ -3,13 +3,15 @@
 #include "controller.h"
 #include "weapons.h"
 #include "world.h"
+#include "acoustics.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 #define SWAT_CONTRACT_VERSION 1
-#define SWAT_MAX_ACTORS 4
+#define SWAT_MAX_ACTORS 8
+#define SWAT_MAX_PLAYERS 4
 #define SWAT_PROPRIO_SIZE 32
 #define SWAT_SENSOR_ROWS 5
 #define SWAT_SENSOR_COLS 9
@@ -28,8 +30,12 @@ typedef struct SwatActor {
     SwatArsenal arsenal;
     SwatRole role;
     float health;
-    bool alive, last_interact;
+    bool present, alive, last_interact;
     int visible_ticks, last_shot_tick;
+    int target_actor, hearing_ticks;
+    float heard_yaw, foot_distance;
+    SwatHearingMemory hearing;
+    b3Pos last_foot_position;
     b3Pos last_seen, tracer_start, tracer_end;
 } SwatActor;
 
@@ -51,6 +57,7 @@ typedef struct SwatSim {
     SwatConfig config;
     SwatEnd end;
     SwatEvents events, totals;
+    SwatSoundLog sounds;
     b3Pos extraction;
 } SwatSim;
 
@@ -58,6 +65,10 @@ SwatConfig swat_default_config(void);
 void swat_sim_init(SwatSim* sim, SwatConfig config, uint32_t seed);
 void swat_sim_reset(SwatSim* sim);
 void swat_sim_close(SwatSim* sim);
+int swat_player_actor(int slot);
+// Stable officer slots: slot zero is actor zero; NPC indices remain unchanged.
+bool swat_sim_set_player(SwatSim* sim, int slot, bool present);
+void swat_sim_spawn_actor(SwatSim* sim, int index, SwatRole role, b3Pos feet, float yaw);
 void swat_sim_bot_inputs(SwatSim* sim, SwatInput inputs[SWAT_MAX_ACTORS]);
 void swat_sim_step_inputs(SwatSim* sim, const SwatInput inputs[SWAT_MAX_ACTORS]);
 void swat_sim_step(SwatSim* sim, const SwatInput* player);

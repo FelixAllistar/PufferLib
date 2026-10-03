@@ -318,6 +318,44 @@ static void test_complete_missions(void) {
     puts("PASS eight randomized live-fire missions: open door, traverse, engage armed target, protect civilian, extract");
 }
 
+static void test_cooperative_mission(void) {
+    SwatSim s; SwatConfig cfg=swat_default_config(); cfg.randomize=false; cfg.hostile_fire=false;
+    swat_sim_init(&s,cfg,42);
+    assert(swat_sim_set_player(&s,1,true));
+    int teammate=swat_player_actor(1);
+    SwatInput inputs[SWAT_MAX_ACTORS];
+    for(int i=0;i<SWAT_MAX_ACTORS;i++) inputs[i]=swat_neutral_input();
+    swat_sim_damage_actor(&s,1,teammate,100);
+    swat_sim_spawn_actor(&s,0,SWAT_OFFICER,s.extraction,0);
+    swat_sim_step_inputs(&s,inputs);
+    assert(s.end==SWAT_RUNNING); // One officer at extraction cannot finish for the team.
+    swat_sim_spawn_actor(&s,teammate,SWAT_OFFICER,b3OffsetPos(s.extraction,swat_v(0,0,.9f)),0);
+    swat_sim_step_inputs(&s,inputs);
+    assert(s.end==SWAT_SUCCESS);
+
+    swat_sim_reset(&s); assert(swat_sim_set_player(&s,1,true));
+    swat_sim_damage_actor(&s,0,1,100);
+    swat_sim_step_inputs(&s,inputs); assert(s.end==SWAT_RUNNING);
+    swat_sim_damage_actor(&s,teammate,1,100);
+    swat_sim_step_inputs(&s,inputs); assert(s.end==SWAT_OFFICER_DOWN);
+
+    swat_sim_reset(&s); assert(swat_sim_set_player(&s,1,true));
+    swat_sim_spawn_actor(&s,teammate,SWAT_OFFICER,(b3Pos){17,0,-4.8f},0);
+    inputs[teammate].fire=true;
+    swat_sim_step_inputs(&s,inputs); assert(s.end==SWAT_CIVILIAN_HARMED);
+    inputs[teammate]=swat_neutral_input();
+
+    swat_sim_reset(&s); assert(swat_sim_set_player(&s,1,true)); s.config.hostile_fire=true;
+    swat_sim_spawn_actor(&s,teammate,SWAT_OFFICER,(b3Pos){14.5f,0,2.9f},0);
+    for(int t=0;t<54;t++) { swat_sim_bot_inputs(&s,inputs); swat_sim_step_inputs(&s,inputs); }
+    assert(s.actors[1].target_actor==teammate && s.actors[1].arsenal.shots==1);
+    assert(s.actors[teammate].health<100 && s.actors[0].health==100);
+    assert(swat_sim_set_player(&s,1,false));
+    swat_sim_bot_inputs(&s,inputs); assert(s.actors[1].target_actor==-1);
+    swat_sim_close(&s);
+    puts("PASS co-op: all living officers extract, teammate survival, squad wipe, shared civilian failure and guard engages a remote officer");
+}
+
 static void test_reset_and_limits(void) {
     SwatSim s; SwatConfig cfg=swat_default_config(); cfg.max_ticks=17; cfg.hostile_fire=false;
     swat_sim_init(&s,cfg,9);
@@ -343,6 +381,7 @@ int main(void) {
     test_door_obstruction();
     test_guard_visibility();
     test_complete_missions();
+    test_cooperative_mission();
     test_reset_and_limits();
     puts("SWAT simulation checks passed");
     return 0;

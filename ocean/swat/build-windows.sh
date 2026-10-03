@@ -60,20 +60,48 @@ if ! cmake --build "$SWAT_BUILD/box3d" --parallel 4 > "$SWAT_BUILD/box3d-build.l
     exit 1
 fi
 
-SWAT_CORE=(body.c controller.c weapons.c world.c sim.c)
+cmake -S "$SWAT_ROOT/vendor/enet" -B "$SWAT_BUILD/enet" \
+    -DCMAKE_TOOLCHAIN_FILE="$SWAT_BUILD/toolchain.cmake" -DCMAKE_BUILD_TYPE=Release
+if ! cmake --build "$SWAT_BUILD/enet" --parallel 4 > "$SWAT_BUILD/enet-build.log" 2>&1; then
+    tail -n 60 "$SWAT_BUILD/enet-build.log" >&2
+    exit 1
+fi
+
+SWAT_CORE=(body.c controller.c weapons.c world.c acoustics.c audio_dsp.c sim.c)
 SWAT_SOURCES=()
 for source in "${SWAT_CORE[@]}"; do SWAT_SOURCES+=("$SWAT_ROOT/ocean/swat/$source"); done
 SWAT_FLAGS=(-O2 -g -std=gnu11 -ffp-contract=off -Wall -Wextra
     -Wno-unused-parameter -Wno-unused-function -Wno-unknown-pragmas
-    -I"$SWAT_ROOT/src" -I"$SWAT_ROOT/vendor" -I"$SWAT_ROOT/ocean/swat"
+    -I"$SWAT_ROOT/src" -I"$SWAT_ROOT/vendor" -I"$SWAT_ROOT/vendor/enet/include" -I"$SWAT_ROOT/ocean/swat"
     -I"$SWAT_BOX3D/include" -I"$SWAT_RAYLIB/include")
-SWAT_LIBS=("$SWAT_BUILD/box3d/src/libbox3d.a" "$SWAT_RAYLIB/lib/libraylib.a"
-    -static -lopengl32 -lgdi32 -lwinmm -lm)
+SWAT_HEADLESS_LIBS=("$SWAT_BUILD/box3d/src/libbox3d.a" "$SWAT_BUILD/enet/libenet.a" -static -lws2_32 -lwinmm -lm)
+SWAT_LIBS=("$SWAT_BUILD/box3d/src/libbox3d.a" "$SWAT_BUILD/enet/libenet.a" "$SWAT_RAYLIB/lib/libraylib.a"
+    -static -lopengl32 -lgdi32 -lws2_32 -lwinmm -lm)
+SWAT_NET=("$SWAT_ROOT/ocean/swat/protocol.c" "$SWAT_ROOT/ocean/swat/net.c")
 
 "$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/swat.c" \
     "$SWAT_ROOT/ocean/swat/render.c" "$SWAT_ROOT/ocean/swat/frontend.c" \
-    "$SWAT_ROOT/ocean/swat/settings.c" "${SWAT_SOURCES[@]}" \
+    "$SWAT_ROOT/ocean/swat/settings.c" "$SWAT_ROOT/ocean/swat/sound_view.c" \
+    "${SWAT_NET[@]}" "${SWAT_SOURCES[@]}" \
     "${SWAT_LIBS[@]}" -o "$SWAT_BUILD/swat.exe"
+
+"$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/server.c" \
+    "${SWAT_NET[@]}" "${SWAT_SOURCES[@]}" "${SWAT_HEADLESS_LIBS[@]}" -o "$SWAT_BUILD/swat-server.exe"
+
+"$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/net_probe.c" \
+    "${SWAT_NET[@]}" "${SWAT_SOURCES[@]}" "${SWAT_HEADLESS_LIBS[@]}" -o "$SWAT_BUILD/net_probe.exe"
+
+"$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/tests/test_net.c" \
+    "${SWAT_NET[@]}" "${SWAT_SOURCES[@]}" "${SWAT_HEADLESS_LIBS[@]}" -o "$SWAT_BUILD/test_net.exe"
+
+"$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/tests/test_acoustics.c" \
+    "${SWAT_SOURCES[@]}" "${SWAT_HEADLESS_LIBS[@]}" -o "$SWAT_BUILD/test_acoustics.exe"
+
+"$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/tests/test_audio_dsp.c" \
+    "$SWAT_ROOT/ocean/swat/audio_dsp.c" -static -lm -o "$SWAT_BUILD/test_audio_dsp.exe"
+
+"$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/tests/test_protocol.c" \
+    "$SWAT_ROOT/ocean/swat/protocol.c" "${SWAT_SOURCES[@]}" "${SWAT_HEADLESS_LIBS[@]}" -o "$SWAT_BUILD/test_protocol.exe"
 
 "$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/tests/test_sim.c" \
     "${SWAT_SOURCES[@]}" "${SWAT_LIBS[@]}" -o "$SWAT_BUILD/test_sim.exe"
@@ -83,7 +111,7 @@ SWAT_LIBS=("$SWAT_BUILD/box3d/src/libbox3d.a" "$SWAT_RAYLIB/lib/libraylib.a"
 
 "$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/tests/test_frontend.c" \
     "$SWAT_ROOT/ocean/swat/render.c" "$SWAT_ROOT/ocean/swat/frontend.c" \
-    "$SWAT_ROOT/ocean/swat/settings.c" "${SWAT_SOURCES[@]}" \
+    "$SWAT_ROOT/ocean/swat/settings.c" "$SWAT_ROOT/ocean/swat/sound_view.c" "${SWAT_SOURCES[@]}" \
     "${SWAT_LIBS[@]}" -o "$SWAT_BUILD/test_frontend.exe"
 
 mkdir -p "$SWAT_BUILD/config"

@@ -1,5 +1,11 @@
 # SWAT contract v1
 
+Co-op and the shared acoustic system preserve this single-officer v1 layout.
+No audio cues/waveform fields have been added. The scripted guard consumes a
+separate delayed hearing API; trained listening or multi-role actors require a
+new observation contract. Network replica state includes hidden world truth
+for presentation and must not be used directly as policy perception.
+
 The game runs at 60 Hz with four Box3D substeps. One agent currently controls
 the officer. A decision applies for one simulation tick. `swat.h` declares the
 native Ocean interface; `sim.h` declares `SWAT_CONTRACT_VERSION = 1`.

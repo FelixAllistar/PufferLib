@@ -8,12 +8,16 @@ extern "C" {
 #endif
 
 typedef enum SwatScreen { SWAT_SCREEN_GAME, SWAT_SCREEN_MAIN,
-                         SWAT_SCREEN_PAUSE, SWAT_SCREEN_SETTINGS } SwatScreen;
+                         SWAT_SCREEN_PAUSE, SWAT_SCREEN_SETTINGS, SWAT_SCREEN_CONNECT } SwatScreen;
 typedef struct SwatFrontend {
     SwatSettings settings, saved_settings;
     SwatScreen screen, settings_back;
     bool captured, quit, restart_requested, reset_input, wait_for_release;
+    bool host_requested,join_requested,disconnect_requested,networked,leader;
+    bool hosting,connect_pending,address_edit,port_edit;
+    int actor;
     int discard_mouse_frames;
+    char address[128],port[8];
     char settings_path[SWAT_SETTINGS_PATH_SIZE];
     char notice[192];
 } SwatFrontend;

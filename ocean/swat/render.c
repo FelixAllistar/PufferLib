@@ -49,9 +49,11 @@ static void swat_draw_object(const SwatObject* o) {
 }
 
 static void swat_draw_actor(const SwatActor* a) {
+    if(!a->present) return;
     b3Pos feet = swat_body_feet_position(&a->controller.body);
     float height = a->controller.body.totalHeight;
-    Color uniform = a->role == SWAT_CIVILIAN ? (Color){68,123,153,255} : (Color){125,58,52,255};
+    Color uniform = a->role == SWAT_CIVILIAN ? (Color){68,123,153,255} :
+        (a->role==SWAT_OFFICER ? (Color){65,79,56,255} : (Color){125,58,52,255});
     if (!a->alive) {
         DrawCube((Vector3){(float)feet.x,0.17f,(float)feet.z},0.48f,0.28f,1.4f,uniform);
         return;
@@ -62,7 +64,7 @@ static void swat_draw_actor(const SwatActor* a) {
     DrawCylinder((Vector3){(float)feet.x,(float)feet.y,(float)feet.z},0.19f,0.22f,height*0.53f,12,(Color){37,44,48,255});
     DrawCapsule(waist,neck,0.245f,8,8,uniform);
     DrawSphere((Vector3){neck.x,neck.y+0.10f,neck.z},0.16f,(Color){175,153,129,255});
-    if (a->role == SWAT_SUSPECT) {
+    if (a->role != SWAT_CIVILIAN) {
         b3Pos eye = swat_controller_eye(&a->controller);
         b3Vec3 direction = swat_controller_aim(&a->controller);
         b3Pos start = b3OffsetPos(eye,swat_v(0,-0.24f,0));
@@ -70,9 +72,7 @@ static void swat_draw_actor(const SwatActor* a) {
     }
 }
 
-static void swat_draw_weapon(const SwatSim* s) {
-    const SwatActor* a = &s->actors[0];
-    const SwatController* c = &a->controller;
+static void swat_draw_weapon(const SwatSim* s,const SwatActor* a,const SwatController* c) {
     b3Vec3 forward,right,up;
     swat_controller_view(c,&forward,&right,&up);
     b3Pos eye = swat_controller_eye(c);
@@ -98,8 +98,15 @@ static void swat_draw_weapon(const SwatSim* s) {
 
 void swat_view_draw(SwatView* view, const SwatSim* s, bool policy, float vertical_fov) {
     if (!view->initialized) return;
-    const SwatActor* a=&s->actors[0];
-    const SwatController* c=&a->controller;
+    if(view->actor<0 || view->actor>=s->actor_count || !s->actors[view->actor].present) {
+        ClearBackground((Color){25,37,47,255});
+        DrawText("Receiving session...",40,120,24,swat_paper); return;
+    }
+    const SwatActor* a=&s->actors[view->actor];
+    SwatController displayed=a->controller;
+    displayed.yaw=swat_angle(displayed.yaw+view->yaw_offset);
+    displayed.pitch=swat_clamp(displayed.pitch+view->pitch_offset,-85*SWAT_RAD,85*SWAT_RAD);
+    const SwatController* c=&displayed;
     const SwatWeapon* w=&a->arsenal.slots[a->arsenal.active];
     b3Vec3 forward,right,up;
     swat_controller_view(c,&forward,&right,&up);
@@ -116,14 +123,14 @@ void swat_view_draw(SwatView* view, const SwatSim* s, bool policy, float vertica
         swat_draw_object(&s->world.objects[i]);
     for (int i=-3;i<24;i++) DrawLine3D((Vector3){(float)i,0.006f,-6.8f},(Vector3){(float)i,0.006f,6.8f},(Color){64,73,73,90});
     for (int i=-6;i<=6;i++) DrawLine3D((Vector3){-3.8f,0.006f,(float)i},(Vector3){23.8f,0.006f,(float)i},(Color){64,73,73,90});
-    for (int i=1;i<s->actor_count;i++) swat_draw_actor(&s->actors[i]);
+    for (int i=0;i<s->actor_count;i++) if(i!=view->actor) swat_draw_actor(&s->actors[i]);
     for (int i=0;i<s->world.count;i++) if (s->world.objects[i].material == SWAT_GLASS)
         swat_draw_object(&s->world.objects[i]);
     Color extraction = swat_sim_hostiles(s) == 0 ? (Color){99,197,144,255} : (Color){177,146,77,180};
     DrawCylinder((Vector3){(float)s->extraction.x,0.01f,(float)s->extraction.z},1.3f,1.3f,0.025f,32,extraction);
     for (int i=0;i<s->actor_count;i++) if (s->tick-s->actors[i].last_shot_tick <= 3)
         DrawLine3D(swat_position(s->actors[i].tracer_start),swat_position(s->actors[i].tracer_end),(Color){250,200,98,180});
-    if (a->alive) swat_draw_weapon(s);
+    if (a->alive) swat_draw_weapon(s,a,c);
     EndMode3D();
 
     DrawRectangle(0,0,width,96,swat_ink);
@@ -131,7 +138,8 @@ void swat_view_draw(SwatView* view, const SwatSim* s, bool policy, float vertica
     DrawText("SWAT",44,20,32,swat_paper);
     DrawText("G O L D  E L E M E N T",46,60,16,swat_gold);
     DrawText("01 / TRAINING ANNEX",width-310,24,21,swat_paper);
-    DrawText(policy ? "POLICY CONTROL" : "TACTICAL CONTROLLER PROTOTYPE",width-310,57,15,swat_gold);
+    DrawText(view->session_status[0] ? view->session_status :
+        (policy ? "POLICY CONTROL" : "SOLO / OFFLINE"),width-310,57,15,swat_gold);
     DrawRectangle(24,118,370,72,swat_ink);
     DrawText(swat_sim_hostiles(s) ? "NEUTRALIZE THE ARMED THREAT" : "MOVE TO THE EXTRACTION MARKER",40,130,17,swat_paper);
     DrawText("Protect the unarmed civilian",40,159,16,(Color){160,178,183,255});
@@ -147,7 +155,8 @@ void swat_view_draw(SwatView* view, const SwatSim* s, bool policy, float vertica
         DrawText(s->world.objects[focus.index].door_open ? "F  CLOSE DOOR" : "F  OPEN DOOR",cx-70,cy+60,18,swat_paper);
 
     DrawRectangle(24,height-158,288,86,swat_ink);
-    DrawText("GOLD 01",40,height-145,18,swat_gold);
+    int officer_number=view->actor==0 ? 1 : view->actor-1;
+    DrawText(TextFormat("GOLD %02d",officer_number),40,height-145,18,swat_gold);
     DrawText(TextFormat("HEALTH  %03d",(int)a->health),40,height-115,23,swat_paper);
     DrawRectangle(40,height-85,248,4,(Color){50,66,69,255});
     DrawRectangle(40,height-85,(int)(248*c->stamina),4,swat_gold);

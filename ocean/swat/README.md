@@ -6,8 +6,8 @@ weapons, destructible cover, and shared human/policy simulation. The longer-term
 game is a cooperative tactical shooter with trained RL actors; see the
 [development roadmap](ROADMAP.md).
 
-This is an early graybox foundation. The armed guard currently uses a visible-target
-script and the civilian is stationary. Native training and checkpoint playback
+This is an early graybox foundation. The armed guard uses scripted sight and
+hearing reactions, and the civilian is stationary. Native training and checkpoint playback
 work, but no capable trained opponent or squad policy ships with this commit.
 This scenario tests threat removal and civilian protection; a full policing,
 surrender, arrest, and rules-of-engagement system is still to come.
@@ -28,9 +28,9 @@ bash build.sh swat --cpu
 ./swat play
 ```
 
-`./swat` opens a main menu with **Enter training annex**, **Settings**, and
-**Quit game**. Entering play captures the mouse. **Escape** or **Tab** opens
-the pause menu, releases the cursor, and freezes the simulation. Resume captures
+`./swat` opens a main menu with solo play, **Settings**, **Host co-op**,
+**Join co-op**, and **Quit game**. Entering play captures the mouse. **Escape** or **Tab** opens
+the pause menu, releases the cursor, and freezes the solo simulation. Resume captures
 it again; losing window focus automatically pauses. The pause menu also offers
 restart, settings, return to the main menu, and quit. Menu clicks and capture
 warps are discarded before accepting gameplay input.
@@ -81,13 +81,45 @@ with training. For controller/weapon practice with a longer limit:
 | Backspace | Restart while playing |
 | Esc or Tab | Pause/resume; back from Settings |
 
+## Co-op and self-hosting
+
+Host or join through the menu, or from the repository root:
+
+```sh
+./swat host --port 27474
+./swat join 192.168.1.50 --port 27474
+make -C ocean/swat server
+SWAT_NATIVE_WINDOWS=0 ./swat server --port 27474
+```
+
+Four officers share server-owned movement, weapons, doors, damage, destruction
+and mission outcomes. All surviving officers must extract. Only the leader can
+restart. Online pause/settings release your controls while the session continues.
+Solo/offline play remains available. The default hosted mission is five minutes.
+
+The dedicated server has no display, Raylib, audio-device or CUDA dependency.
+On WSL, `./swat server` defaults to `build/swat/windows/swat-server.exe`;
+the example explicitly selects Linux. Server options include `--seed 42`,
+`--max-ticks 18000`, `--hostile-fire 0`, `--randomize 0` and `--help`.
+
+Connections currently use direct IPv4 addresses/DNS and UDP port 27474.
+Internet hosting requires a reachable UDP port and appropriate router/firewall
+configuration. There is no lobby service, NAT traversal, relay, authentication,
+encryption or host migration yet. Movement uses authoritative snapshots;
+high-latency presentation still needs prediction/interpolation. See
+[architecture and next priorities](ARCHITECTURE.md).
+
+When mixing native Windows and a WSL Linux server, use the WSL interface IP
+and Windows host gateway IP respectively; UDP loopback forwarding is not
+assumed. The default native Windows host/join path avoids that extra boundary.
+
 The graybox weapon model, actors, and HUD use procedural Raylib geometry.
 No assets from Ready or Not or SWAT 4 are included.
 
 ## Saved settings
 
 The Raygui settings page has sliders for mouse sensitivity, vertical
-sensitivity, aiming sensitivity, vertical FOV, and frame limit, plus independent
+sensitivity, aiming sensitivity, vertical FOV, frame limit, and master volume, plus independent
 horizontal/vertical inversion. The default mouse sensitivity is **0.035 degrees
 per pixel**, about one third of the original setting, with a 0.65 aiming
 multiplier. Positive horizontal motion turns right; moving the mouse up looks
@@ -134,6 +166,10 @@ playback retains its sensor FOV. Raygui is already vendored at
 - **Mission:** armed target, protected civilian, clear-and-extract success,
   injury/death, civilian-harm failure, fall/timeout, restart, and episode metrics.
   Small layout and guard-position variations are seeded at reset.
+- **Audio:** shared material/thickness/doorway propagation, delayed directional
+  hearing, procedural stereo shots/steps/handling/doors/impacts/breakage, and
+  guard turning toward audible cues. Production recordings/reverb/HRTF remain
+  future work; see [AUDIO.md](AUDIO.md).
 
 The carbine has a 30-round magazine plus chamber, 90 reserve rounds, a 6-tick
 fire interval, 120/156-tick tactical/empty reload, and 24-tick equip delay.
@@ -152,6 +188,8 @@ The sidearm uses 15 plus chamber, 45 reserve, 10-tick fire interval,
 | `swat.h` | Ocean adapter, rewards, logging, automatic reset |
 | `render.c`, `swat.c` | Game presentation, fixed update loop, CPU policy playback/evaluation |
 | `frontend.c`, `settings.c` | Main/pause/settings menus, mouse capture, saved player preferences |
+| `protocol.c`, `net.c`, `server.c` | Versioned codec, UDP co-op authority/replica, headless server |
+| `acoustics.c`, `audio_dsp.c`, `sound_view.c` | Shared hearing paths, portable PCM mixer, player audio stream |
 
 Both humans and policies submit `SwatInput` to the same **60 Hz** game update
 with **four Box3D substeps**. Rendering does not own physics or weapon state.
@@ -186,6 +224,19 @@ Makefile expects `raylib-5.5_linux_amd64` and Clang on Linux; override `RAYLIB`,
 `BOX3D`, or `CC` when needed. `build.sh` accepts `BOX3D_DIR` for a different
 physics checkout. CUDA and the repository's native trainer dependencies are
 needed for training, not for the standalone player or core simulation tests.
+
+ENet is vendored at its pinned 1.3.18 revision. A standalone CMake build can
+build the server and core/network tests without the training repository's tools:
+
+```sh
+cmake -S ocean/swat -B build/swat/portable -DSWAT_BUILD_PLAYER=OFF \
+  -DSWAT_BOX3D_DIR=/absolute/path/to/box3d -DCMAKE_BUILD_TYPE=Release
+cmake --build build/swat/portable --parallel 2
+ctest --test-dir build/swat/portable --output-on-failure
+./build/swat/portable/swat_server --port 27474
+```
+
+Enable `SWAT_BUILD_PLAYER` and set `SWAT_RAYLIB_DIR` to build `swat_player`.
 
 ## RL contract and training
 
@@ -223,6 +274,7 @@ production learning benchmarks are not implemented in this foundation.
 
 ```sh
 make -C ocean/swat test
+make -C ocean/swat net-test
 make -C ocean/swat sanitize
 ./swat --capture build/swat/first-playable.png --env.randomize=0 --env.hostile_fire=0
 ./swat --capture build/swat/settings.png --capture-screen settings
@@ -235,6 +287,13 @@ visibility/reaction. A test-only driver completes eight randomized missions with
 enemy fire enabled using ordinary movement, interaction, and weapon inputs.
 It has known waypoints/target poses; it is a solvability check, not learned AI.
 
+Co-op checks cover extraction/squad failure and guard targeting teammates.
+Real UDP tests cover four players, capacity rejection, independent movement
+and ammunition, shared door/destruction/audio state, late join, epoch resets,
+leader authority, terminal menus, disconnect cleanup and listen-host shutdown.
+Codec tests cover malformed/truncated packets, nonfinite fields and replica
+colliders. Acoustic and PCM tests cover shared occlusion/timing and output.
+
 Adapter checks cover 2,048 paired seeded transitions, 33 paired resets,
 finite observations, relocated environment storage, exact timeouts, civilian
 penalty, extraction reward, and preservation of terminal reward across reset.
@@ -246,7 +305,8 @@ failed save, malformed values, unsupported versions, mouse directions,
 inversion, and frame-independent sensitivity. The native Windows GUI regression
 opens its own brief test window and checks the actual OS cursor confinement
 rectangle, stationary mouse input, Escape/pause/resume/quit, focus loss,
-click isolation, slider cancellation, and preferences surviving reinitialization:
+click isolation, slider cancellation, host/join setup/cancel, leader restart
+controls, active audio streaming, and preferences surviving reinitialization:
 
 ```sh
 bash ocean/swat/build-windows.sh
@@ -258,6 +318,12 @@ GUI test with `make -C ocean/swat frontend-test-build` and run
 `./build/swat/test_frontend build/swat/frontend-test-settings.ini`. That Linux
 test can inspect Raylib capture state; the Windows test additionally checks
 the OS clipping rectangle. Interactive play on WSL uses Windows by default.
+
+Separate-process probes also passed from native Windows to the WSL Linux server
+and from Linux to the Windows server using their interface IPs. A joining native
+client moved/fired against the actual listen-host player with the host window
+minimized. These verify this machine's transport/UI integration; a separate
+two-machine LAN session and adverse network conditions remain to qualify.
 
 A native FP32 smoke run completed 2,048 transitions with finite losses and
 saved checkpoints; loading those weights into another 2,048-step training run

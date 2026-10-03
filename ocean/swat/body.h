@@ -115,6 +115,10 @@ b3Pos swat_body_eye_position( const SwatBody* c ); // stance-dependent height
 // Move the real upper-body capsule, sweeping its volume against the world.
 // Returns the achieved offset. Rotation is locked, so offsets are world-space.
 b3Vec3 swat_body_lean( SwatBody* c, b3Vec3 desiredOffset );
+// Apply a validated authoritative pose to a client replica without running
+// movement/clearance decisions again. Replica worlds never step game rules.
+void swat_body_replica_pose( SwatBody* c, b3Pos position, b3Vec3 velocity,
+                            bool crouched, bool grounded, b3Vec3 upperOffset );
 
 #ifdef __cplusplus
 }

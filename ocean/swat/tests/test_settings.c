@@ -18,6 +18,7 @@ int main(int argc, char** argv) {
     original.sensitivity=0.017f; original.vertical_multiplier=1.3f;
     original.ads_multiplier=0.4f; original.vertical_fov=83;
     original.frame_limit=144; original.invert_y=true;
+    original.master_volume=.6f;
     assert(swat_settings_save(&original,path));
     assert(swat_settings_load(&loaded,path));
     assert(swat_settings_equal(&original,&loaded));

@@ -18,6 +18,7 @@ typedef struct SwatSettings {
     float vertical_fov;         // human camera only; RL sensors keep their FOV
     int frame_limit;
     bool invert_x, invert_y;
+    float master_volume; // player output only; agent hearing is never muted
 } SwatSettings;
 
 typedef struct SwatLookDelta { float yaw, pitch; } SwatLookDelta;

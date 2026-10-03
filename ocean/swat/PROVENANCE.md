@@ -35,6 +35,12 @@ The Box3D copyright/license notice associated with the dependency and sample
 ancestry is reproduced below. The surrounding repository's license continues
 to apply to its own code.
 
+Networking vendors the required pristine ENet 1.3.18 C sources/headers/CMake
+and MIT license from `lsalzman/enet`, revision
+`2662c0de09e36f2a2030ccc2c528a3e4c9e8138a`; see `vendor/enet/UPSTREAM.md`.
+The acoustic model and synthesized audio placeholders are original code;
+no third-party sound recordings or game assets are added.
+
 ```text
 MIT License
 

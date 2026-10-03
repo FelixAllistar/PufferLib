@@ -559,6 +559,19 @@ static void swat_body_apply_stance( SwatBody* c )
 #endif
 }
 
+void swat_body_replica_pose( SwatBody* c, b3Pos position, b3Vec3 velocity,
+                            bool crouched, bool grounded, b3Vec3 upperOffset )
+{
+    bool changed = c->crouched != crouched || b3Length( v_sub( c->upperOffset, upperOffset ) ) > 1e-6f;
+    c->crouched = c->crouchWish = crouched;
+    c->totalHeight = crouched ? c->crouchHeight : c->standHeight;
+    c->upperOffset = upperOffset;
+    c->onGround = grounded;
+    if ( changed ) swat_body_apply_stance( c );
+    b3Body_SetTransform( c->body, position, b3Quat_identity );
+    b3Body_SetLinearVelocity( c->body, velocity );
+}
+
 b3Vec3 swat_body_lean( SwatBody* c, b3Vec3 desiredOffset )
 {
 	b3Vec3 delta = v_sub( desiredOffset, c->upperOffset );

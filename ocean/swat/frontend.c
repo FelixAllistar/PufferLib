@@ -1,4 +1,5 @@
 #include "frontend.h"
+#include "net.h"
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
@@ -37,6 +38,9 @@ void swat_frontend_init(SwatFrontend* app, const char* settings_path) {
     app->settings=swat_settings_defaults();
     app->screen=SWAT_SCREEN_MAIN;
     app->settings_back=SWAT_SCREEN_MAIN;
+    app->leader=true;
+    snprintf(app->address,sizeof(app->address),"127.0.0.1");
+    snprintf(app->port,sizeof(app->port),"%d",SWAT_DEFAULT_PORT);
     if(settings_path) {
         if(strlen(settings_path)<sizeof(app->settings_path))
             strcpy(app->settings_path,settings_path);
@@ -56,6 +60,8 @@ void swat_frontend_init(SwatFrontend* app, const char* settings_path) {
 
 void swat_frontend_set_screen(SwatFrontend* app, SwatScreen screen) {
     if(app->screen==screen) return;
+    if(screen==SWAT_SCREEN_MAIN && (app->networked || app->screen==SWAT_SCREEN_CONNECT))
+        app->disconnect_requested=true;
     app->screen=screen;
     app->reset_input=true;
     app->discard_mouse_frames=2;
@@ -95,6 +101,7 @@ void swat_frontend_update(SwatFrontend* app, const SwatSim* sim, bool policy) {
     if(IsWindowFocused() && (IsKeyPressed(KEY_ESCAPE) || IsKeyPressed(KEY_TAB))) {
         if(app->screen==SWAT_SCREEN_GAME) swat_frontend_set_screen(app,SWAT_SCREEN_PAUSE);
         else if(app->screen==SWAT_SCREEN_SETTINGS) swat_settings_back(app);
+        else if(app->screen==SWAT_SCREEN_CONNECT) swat_frontend_set_screen(app,SWAT_SCREEN_MAIN);
         else if(app->screen==SWAT_SCREEN_PAUSE && sim->end==SWAT_RUNNING)
             swat_frontend_set_screen(app,SWAT_SCREEN_GAME);
     }
@@ -106,7 +113,8 @@ void swat_frontend_update(SwatFrontend* app, const SwatSim* sim, bool policy) {
         app->wait_for_release=true;
         app->reset_input=true;
     }
-    if(app->screen==SWAT_SCREEN_GAME && IsWindowFocused() && IsKeyPressed(KEY_BACKSPACE)) {
+    if(app->screen==SWAT_SCREEN_GAME && IsWindowFocused() && IsKeyPressed(KEY_BACKSPACE) &&
+       (!app->networked || app->leader)) {
         app->restart_requested=true;
         app->reset_input=true;
     }
@@ -119,14 +127,15 @@ bool swat_frontend_playing(const SwatFrontend* app) {
 
 SwatInput swat_frontend_input(SwatFrontend* app, const SwatSim* sim) {
     SwatInput in=swat_neutral_input();
-    if(!app->captured || !swat_frontend_playing(app)) return in;
+    if(!app->captured || !swat_frontend_playing(app) || app->actor<0 ||
+       app->actor>=sim->actor_count || !sim->actors[app->actor].present) return in;
     // Do not feed pointer warps/focus changes or the menu's click into gameplay.
     Vector2 mouse=GetMouseDelta();
     if(app->discard_mouse_frames>0) {
         app->discard_mouse_frames--;
         mouse=(Vector2){0};
     }
-    SwatLookDelta look=swat_settings_look(&app->settings,mouse.x,mouse.y,sim->actors[0].controller.ads);
+    SwatLookDelta look=swat_settings_look(&app->settings,mouse.x,mouse.y,sim->actors[app->actor].controller.ads);
     in.yaw_delta=look.yaw; in.pitch_delta=look.pitch;
     in.forward=(float)(IsKeyDown(KEY_W)-IsKeyDown(KEY_S));
     in.strafe=(float)(IsKeyDown(KEY_D)-IsKeyDown(KEY_A));
@@ -188,8 +197,9 @@ void swat_frontend_draw(SwatFrontend* app, const SwatSim* sim, bool policy) {
     x+=32; y+=28;
     float content_w=panel_w-64;
     DrawText("SWAT  /  GOLD ELEMENT",(int)x,(int)y,24,menu_gold);
-    const char* title=settings ? "SETTINGS" : (app->screen==SWAT_SCREEN_MAIN ? "TRAINING ANNEX" :
-        (sim->end==SWAT_RUNNING ? "PAUSED" : swat_end_name(sim->end)));
+    const char* title=settings ? "SETTINGS" : (app->screen==SWAT_SCREEN_CONNECT ?
+        (app->hosting ? "HOST CO-OP" : "JOIN CO-OP") : (app->screen==SWAT_SCREEN_MAIN ? "TRAINING ANNEX" :
+        (sim->end==SWAT_RUNNING ? "PAUSED" : swat_end_name(sim->end))));
     DrawText(title,(int)x,(int)y+43,30,menu_paper);
 
     if(settings) {
@@ -197,20 +207,23 @@ void swat_frontend_draw(SwatFrontend* app, const SwatSim* sim, bool policy) {
         swat_setting_slider(x,y,content_w,"Mouse sensitivity",
             TextFormat("%.3f deg / pixel",app->settings.sensitivity),
             &app->settings.sensitivity,SWAT_SENSITIVITY_MIN,SWAT_SENSITIVITY_MAX);
-        y+=74;
+        y+=61;
         swat_setting_slider(x,y,content_w,"Vertical sensitivity",
             TextFormat("%.2fx",app->settings.vertical_multiplier),&app->settings.vertical_multiplier,0.25f,2);
-        y+=74;
+        y+=61;
         swat_setting_slider(x,y,content_w,"Aiming sensitivity",
             TextFormat("%.2fx",app->settings.ads_multiplier),&app->settings.ads_multiplier,0.1f,1.5f);
-        y+=74;
+        y+=61;
         swat_setting_slider(x,y,content_w,"Field of view (vertical)",
             TextFormat("%.0f degrees",app->settings.vertical_fov),&app->settings.vertical_fov,55,100);
-        y+=74;
+        y+=61;
         float frames=(float)app->settings.frame_limit;
         swat_setting_slider(x,y,content_w,"Frame limit",TextFormat("%d FPS",app->settings.frame_limit),&frames,30,240);
         app->settings.frame_limit=(int)roundf(frames);
-        y+=70;
+        y+=61;
+        swat_setting_slider(x,y,content_w,"Master volume",TextFormat("%.0f%%",app->settings.master_volume*100),
+            &app->settings.master_volume,0,1);
+        y+=61;
         GuiCheckBox((Rectangle){x,y,24,24},"Invert horizontal",&app->settings.invert_x);
         GuiCheckBox((Rectangle){x+content_w*0.53f,y,24,24},"Invert vertical",&app->settings.invert_y);
         y+=49;
@@ -230,12 +243,42 @@ void swat_frontend_draw(SwatFrontend* app, const SwatSim* sim, bool policy) {
         return;
     }
 
+    if(screen==SWAT_SCREEN_CONNECT) {
+        y+=105;
+        DrawText(app->hosting ? "Host a four-officer session on this machine." :
+            "Connect directly to a host or dedicated server.",(int)x,(int)y,16,menu_muted);
+        y+=50;
+        if(!app->hosting) {
+            DrawText("Server address",(int)x,(int)y,18,menu_paper);
+            if(GuiTextBox((Rectangle){x,y+28,content_w,38},app->address,sizeof(app->address),app->address_edit))
+                app->address_edit=!app->address_edit;
+            y+=86;
+        }
+        DrawText("UDP port",(int)x,(int)y,18,menu_paper);
+        if(GuiTextBox((Rectangle){x,y+28,160,38},app->port,sizeof(app->port),app->port_edit))
+            app->port_edit=!app->port_edit;
+        y+=96;
+        if(app->connect_pending) GuiDisable();
+        if(GuiButton((Rectangle){x,y,content_w,48},app->connect_pending ? "Connecting..." :
+                     (app->hosting ? "Start host" : "Join session"))) {
+            app->host_requested=app->hosting; app->join_requested=!app->hosting;
+            app->connect_pending=true; app->address_edit=app->port_edit=false;
+        }
+        GuiEnable(); y+=60;
+        if(GuiButton((Rectangle){x,y,content_w,48},"Back")) swat_frontend_set_screen(app,SWAT_SCREEN_MAIN);
+        y+=65;
+        DrawText(app->notice[0] ? app->notice : "Escape returns to the main menu.",(int)x,(int)y,15,menu_muted);
+        return;
+    }
+
     y+=93;
     DrawText(app->screen==SWAT_SCREEN_MAIN ? "Enter the annex. Tune your controls. Get ready." :
-        "Simulation paused. Mouse released.",(int)x,(int)y,16,menu_muted);
+        (app->networked ? "Your controls paused. The session continues." : "Simulation paused. Mouse released."),
+        (int)x,(int)y,16,menu_muted);
     y+=42;
     if(screen==SWAT_SCREEN_MAIN) {
         if(GuiButton((Rectangle){x,y,content_w,48},policy ? "Watch policy" : "Enter training annex")) {
+            app->networked=false; app->leader=true; app->actor=0;
             app->restart_requested=true;
             swat_frontend_set_screen(app,SWAT_SCREEN_GAME);
         }
@@ -248,17 +291,27 @@ void swat_frontend_draw(SwatFrontend* app, const SwatSim* sim, bool policy) {
     if(GuiButton((Rectangle){x,y,content_w,48},"Settings")) swat_open_settings(app);
     y+=60;
     if(screen!=SWAT_SCREEN_MAIN) {
+        if(app->networked && !app->leader) GuiDisable();
         if(GuiButton((Rectangle){x,y,content_w,48},"Restart mission")) {
             app->restart_requested=true;
             swat_frontend_set_screen(app,SWAT_SCREEN_GAME);
         }
+        GuiEnable();
         y+=60;
         if(GuiButton((Rectangle){x,y,content_w,48},"Main menu")) swat_frontend_set_screen(app,SWAT_SCREEN_MAIN);
         y+=60;
     } else {
-        DrawText("WASD move   /   Mouse look\nQ / E lean   /   Ctrl crouch\nRMB aim   /   LMB fire   /   F door",
-            (int)x,(int)y+6,18,menu_muted);
-        y+=120;
+        if(policy) GuiDisable();
+        if(GuiButton((Rectangle){x,y,content_w,48},"Host co-op")) {
+            app->hosting=true; app->connect_pending=false; app->notice[0]='\0';
+            swat_frontend_set_screen(app,SWAT_SCREEN_CONNECT);
+        }
+        y+=60;
+        if(GuiButton((Rectangle){x,y,content_w,48},"Join co-op")) {
+            app->hosting=false; app->connect_pending=false; app->notice[0]='\0';
+            swat_frontend_set_screen(app,SWAT_SCREEN_CONNECT);
+        }
+        GuiEnable(); y+=60;
     }
     if(GuiButton((Rectangle){x,y,content_w,48},"Quit game")) swat_menu_quit(app);
     y+=64;
