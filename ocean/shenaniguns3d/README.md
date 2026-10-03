@@ -1,4 +1,19 @@
-# Shenaniguns3D conversion
+# Shenaniguns3D
+
+Shenaniguns3D is a single-agent 3D navigation environment. The agent learns
+to steer through doors and around obstacles, jump gaps or raised lips, and
+crouch under low clearances to reach a goal. Ocean's environment/config name
+is `shenaniguns3d`; the C type is spelled `Shenanigans3D`.
+
+The [environment reference and analysis](ENVIRONMENT.md) describes the course
+generator, character physics, exact action and observation layouts, rewards,
+episode lifecycle, configuration, network, and verified limitations. It also
+records the checks rerun on 2026-10-02.
+
+The checked-in config selects **stage 4, crouch gates**, with a fresh randomized
+layout on each reset. `course_stage=4` overrides `course_difficulty=2`.
+
+## Port background
 
 The CPU navigation simulator is preserved from `5c` at `036cf4251`, with its
 391 float observations and five action heads (5/3/3/2/2). The only adapter
