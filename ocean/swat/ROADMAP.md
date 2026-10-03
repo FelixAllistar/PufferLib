@@ -25,12 +25,23 @@ is deliberately a general engine improvement.
   versioned snapshots, shared destruction, late join and leader restart.
 - Material/doorway acoustic paths, delayed NPC hearing and procedural stereo
   audio, sharing destruction state and independent of player volume.
+- Cedar House: three rooms, two suspects, three hostages, outdoor staging,
+  windows/doors, cutaway planning and two authored overwatch camera previews.
+- Thin independent wall faces, cavities, timber studs, plates and headers;
+  distinct material transmission and surface absorption tables.
+- Recon/Control/Entry kit tradeoffs, collision-limited optiwand, melee/ram,
+  less-lethal impact launcher, compliance and interruptible cuffing.
+- Head/torso/arm/leg injury, plate protection, injury-driven movement/spread,
+  secured-hostage extraction and protocol v2 replication of these states.
+- Optional native Steam Audio HRTF, approximate room reflection/decay mixer,
+  and 18 repeatable WAV/CSV comparison scenes.
 
 [ARCHITECTURE.md](ARCHITECTURE.md) records the portable technology choices,
 authority/perception boundaries, current network limits and future fidelity tiers.
 [AUDIO.md](AUDIO.md) separates the implemented foundation from production audio.
 
-The current annex is a systems test level. It is not the finished tactical
+The annex is a systems test level and the house is a small authored encounter.
+The current game is not the finished tactical
 controller, full weapon ecosystem, procedural campaign, or trained AI product.
 
 ## Next: finish the character and weapon interaction layer
@@ -44,7 +55,7 @@ controller, full weapon ecosystem, procedural campaign, or trained AI product.
    audio. Preserve clearance checks throughout animation and camera motion.
 3. Make weapon definitions/data extensible. Introduce staged reload/interrupt
    events and optional magazine inventory, sight/attachment profiles, action
-   buffering, weapon-specific stance/recoil and nonlethal equipment.
+   buffering, weapon-specific stance/recoil and broader less-lethal equipment.
 4. Add a repeatable controller/weapon test range with saved input replays and
    debug overlays for bodies, eye, muzzle, impacts, damage and sensor visibility.
 
@@ -54,17 +65,21 @@ reload interruption conserves ammunition; frame rate does not affect rules.
 
 ## Tactical encounters and destruction
 
-1. Replace the single annex with authored room connectors and seeded layouts.
+1. Extend the authored house with room connectors and seeded layouts.
    Validate spawn/goal reachability, doors, ceiling clearance and cover placement.
-2. Add door states and equipment interactions, contextual prompts, tool use,
-   evidence, surrender, restraint/rescue, mission objectives and an explicit
+2. Expand door states/equipment interactions, contextual prompts, tool use,
+   evidence, surrender behavior, escort/rescue, objectives and an explicit
    rules-of-engagement state machine. Give civilians useful behavior.
 3. Extend modular breakage into authored fracture/support rules, persistent
    openings, object/door debris, noise, and material-specific visibility.
    Benchmark collision rebuild and sensor cost before increasing complexity.
 4. Extend the shared audio/perception foundation with production recordings,
-   room acoustics, richer diffraction and delayed squad communications.
+   source/path room acoustics, richer diffraction and delayed squad communications.
    Keep perception separate from global game truth.
+5. Turn authored overwatch previews into placement/orders, reliable target
+   identification, hold/execute sniper commands and crossfire constraints.
+   A piloted drone needs its own movement, collision, perception and exposure
+   rules; the current overview is a planning camera.
 
 Acceptance: destruction creates the same traversable/shootable openings for
 every actor and the renderer; objective and civilian outcomes remain correct

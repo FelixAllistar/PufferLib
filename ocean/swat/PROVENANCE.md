@@ -41,6 +41,14 @@ and MIT license from `lsalzman/enet`, revision
 The acoustic model and synthesized audio placeholders are original code;
 no third-party sound recordings or game assets are added.
 
+Optional headphone rendering uses Steam Audio 4.8.1. Its unmodified public
+headers, Apache 2.0 license and SDK third-party notices are in
+`vendor/steam_audio`, with the release archive hash in `UPSTREAM.md`.
+`setup_audio.py` verifies that archive and extracts the Linux/Windows runtimes
+only under ignored build directories. The built-in HRTF comes from that SDK;
+the game's source sounds remain original procedural placeholders. Runtime
+distribution includes the SDK's third-party notices, including Intel IPP terms.
+
 ```text
 MIT License
 

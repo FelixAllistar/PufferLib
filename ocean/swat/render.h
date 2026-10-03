@@ -9,6 +9,9 @@ typedef struct SwatView {
     bool initialized;
     int width,height,actor;
     float yaw_offset,pitch_offset;
+    bool planning;
+    int plan_preview;
+    float plan_yaw;
     char session_status[128];
 } SwatView;
 void swat_view_init(SwatView* view, bool hidden);

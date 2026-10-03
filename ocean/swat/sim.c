@@ -3,7 +3,7 @@
 #include <string.h>
 
 SwatConfig swat_default_config(void) {
-    return (SwatConfig){1800,true,true};
+    return (SwatConfig){1800,true,true,SWAT_ANNEX};
 }
 
 void swat_sim_spawn_actor(SwatSim* s, int index, SwatRole role, b3Pos feet, float yaw) {
@@ -13,6 +13,7 @@ void swat_sim_spawn_actor(SwatSim* s, int index, SwatRole role, b3Pos feet, floa
     a->tag = (SwatTag){SWAT_HIT_ACTOR,index};
     a->role = role; a->health = 100; a->present = a->alive = true; a->last_shot_tick = -100;
     a->target_actor = -1; a->last_foot_position = feet;
+    swat_equipment_init(&a->gear);
     swat_controller_init(&a->controller,s->world.id,feet,yaw);
     b3Body_SetUserData(a->controller.body.body,&a->tag);
     swat_weapons_init(&a->arsenal,s->rng ^ ((uint32_t)(index+1)*0x85ebca6bu));
@@ -36,21 +37,31 @@ void swat_sim_reset(SwatSim* s) {
         memset(s,0,sizeof(*s));
         s->config = config; s->rng = rng; s->episode = episode;
         swat_world_init(&s->world);
-        swat_world_build_range(&s->world,&s->rng,config.randomize);
+        if(config.mission==SWAT_HOUSE) swat_mission_build_house(&s->world);
+        else swat_world_build_range(&s->world,&s->rng,config.randomize);
         float shift = config.randomize ? (swat_rand01(&s->rng)-0.5f)*1.5f : 0;
         s->actor_count = 3;
         swat_sim_spawn_actor(s,0,SWAT_OFFICER,(b3Pos){0,0,0},0);
         swat_sim_spawn_actor(s,1,SWAT_SUSPECT,(b3Pos){17,0,2.9f+shift},SWAT_PI);
         swat_sim_spawn_actor(s,2,SWAT_CIVILIAN,(b3Pos){19,0,-4.8f},SWAT_PI);
         s->extraction = (b3Pos){21,0,0};
+        if(config.mission==SWAT_HOUSE) {
+            swat_sim_spawn_actor(s,0,SWAT_OFFICER,swat_mission(SWAT_HOUSE)->staging,0);
+            swat_sim_spawn_actor(s,1,SWAT_SUSPECT,(b3Pos){15,0,-2},SWAT_PI);
+            swat_sim_spawn_actor(s,2,SWAT_CIVILIAN,(b3Pos){16.5f,0,-3.2f},SWAT_PI);
+            swat_sim_spawn_actor(s,6,SWAT_CIVILIAN,(b3Pos){15.1f,0,-3.2f},SWAT_PI);
+            swat_sim_spawn_actor(s,7,SWAT_CIVILIAN,(b3Pos){16.5f,0,2.5f},SWAT_PI);
+            swat_sim_spawn_actor(s,8,SWAT_SUSPECT,(b3Pos){13,0,3.4f},-SWAT_PI*.5f);
+            s->actor_count=9; s->extraction=swat_mission(SWAT_HOUSE)->extraction;
+        }
         // Settle initial contacts without advancing game time, using the same
         // body controller and substeps as ordinary play.
         SwatInput neutral = swat_neutral_input();
         for (int t=0;t<6;t++) {
-            for (int i=0;i<s->actor_count;i++)
+            for (int i=0;i<s->actor_count;i++) if(s->actors[i].present)
                 swat_controller_pre_step(&s->actors[i].controller,&neutral,false);
             b3World_Step(s->world.id,SWAT_DT,SWAT_PHYSICS_SUBSTEPS);
-            for (int i=0;i<s->actor_count;i++)
+            for (int i=0;i<s->actor_count;i++) if(s->actors[i].present)
                 swat_controller_post_step(&s->actors[i].controller,&neutral);
         }
     }
@@ -74,7 +85,9 @@ bool swat_sim_set_player(SwatSim* s, int slot, bool present) {
     memset(actor,0,sizeof(*actor));
     if(present) {
         static const b3Pos spawn[SWAT_MAX_PLAYERS]={{0,0,0},{0,0,-1.4f},{-1.4f,0,1.4f},{-1.4f,0,-1.4f}};
-        swat_sim_spawn_actor(s,index,SWAT_OFFICER,spawn[slot],0);
+        b3Pos feet=spawn[slot];
+        if(s->config.mission==SWAT_HOUSE) feet=b3OffsetPos(swat_mission(SWAT_HOUSE)->staging,swat_v((float)feet.x,(float)feet.y,(float)feet.z));
+        swat_sim_spawn_actor(s,index,SWAT_OFFICER,feet,0);
         if(index>=s->actor_count) s->actor_count=index+1;
     }
     return true;
@@ -82,8 +95,52 @@ bool swat_sim_set_player(SwatSim* s, int slot, bool present) {
 
 int swat_sim_hostiles(const SwatSim* s) {
     int alive = 0;
-    for (int i=0;i<s->actor_count;i++) alive += s->actors[i].alive && s->actors[i].role == SWAT_SUSPECT;
+    for (int i=0;i<s->actor_count;i++) alive += s->actors[i].alive && s->actors[i].role == SWAT_SUSPECT && !s->actors[i].gear.restrained;
     return alive;
+}
+
+int swat_sim_unsecured(const SwatSim* s) {
+    int count=0;
+    for(int i=0;i<s->actor_count;i++) if(s->actors[i].present && s->actors[i].alive &&
+        s->actors[i].role==SWAT_CIVILIAN && !s->actors[i].gear.restrained) count++;
+    return count;
+}
+
+SwatHitRegion swat_sim_hit_region(const SwatActor* actor,b3Pos point) {
+    b3Pos feet=swat_body_feet_position(&actor->controller.body);
+    float height=actor->controller.body.totalHeight,y=(float)(point.y-feet.y);
+    if(y>height-.30f) return SWAT_HEAD;
+    if(y<height*.46f) return SWAT_LEGS;
+    b3Vec3 delta=b3SubPos(point,feet);
+    float lateral=fabsf(b3Dot(delta,swat_controller_right(&actor->controller)));
+    return lateral>.20f && y>height*.55f ? SWAT_ARMS : SWAT_TORSO;
+}
+
+void swat_sim_damage_region(SwatSim* s,int victim,int shooter,float damage,SwatHitRegion region,bool less_lethal) {
+    if(victim<0 || victim>=s->actor_count || !s->actors[victim].alive || region<0 || region>=SWAT_HIT_REGIONS) return;
+    SwatActor* a=&s->actors[victim];
+    static const float multiplier[SWAT_HIT_REGIONS]={1.5f,1,.7f,.75f};
+    float amount=damage*multiplier[region];
+    if(region==SWAT_TORSO) amount*=1-swat_kit(a->gear.kit)->torso_protection;
+    a->gear.wounds[region]=fminf(100,a->gear.wounds[region]+amount);
+    if(less_lethal && a->role!=SWAT_OFFICER) {
+        a->gear.stunned_ticks=240;
+        a->gear.surrendered=true;
+    }
+    swat_sim_damage_actor(s,victim,shooter,amount);
+}
+
+b3Pos swat_sim_inspection_camera(const SwatSim* s,int actor) {
+    const SwatController* c=&s->actors[actor].controller;
+    b3Pos start=swat_controller_eye(c);
+    b3Vec3 forward=swat_controller_aim(c);
+    if(c->body.crouched) {
+        start=b3OffsetPos(swat_body_feet_position(&c->body),swat_v(c->body.upperOffset.x,.045f,c->body.upperOffset.z));
+        forward=swat_direction(c->yaw,0);
+    }
+    b3Vec3 extension=swat_mul(forward,1.15f);
+    SwatHit hit=swat_world_sphere_cast(&s->world,start,extension,.018f,c->body.body);
+    return b3OffsetPos(start,swat_mul(extension,hit.hit ? fmaxf(0,hit.fraction-.02f) : 1));
 }
 
 void swat_sim_damage_actor(SwatSim* s, int victim, int shooter, float damage) {
@@ -121,12 +178,12 @@ void swat_sim_shoot(SwatSim* s, int actor, b3Pos origin, b3Vec3 direction, SwatS
         if(pass==0) swat_sound_emit(&s->sounds,s->tick,actor,SWAT_SOUND_IMPACT,hit.point,0.8f,25);
         if (hit.kind == SWAT_HIT_ACTOR) {
             SwatActor* victim = &s->actors[hit.index];
-            b3Pos feet = swat_body_feet_position(&victim->controller.body);
-            float head_bonus = hit.point.y > feet.y+victim->controller.body.totalHeight-0.30f ? 1.5f : 1.0f;
-            swat_sim_damage_actor(s,hit.index,actor,shot.damage*(energy/shot.energy)*head_bonus);
+            bool less_lethal=swat_kit(a->gear.kit)->less_lethal && a->arsenal.active==0;
+            swat_sim_damage_region(s,hit.index,actor,shot.damage*(energy/shot.energy),swat_sim_hit_region(victim,hit.point),less_lethal);
             break;
         }
         if (hit.index < 0) break;
+        if(swat_kit(a->gear.kit)->less_lethal && a->arsenal.active==0) break;
         SwatObject* object = &s->world.objects[hit.index];
         float thickness = swat_world_exit_distance(object,hit.point,direction);
         float cost = swat_material_resistance(object->material)*fmaxf(thickness,0.01f);
@@ -147,7 +204,7 @@ void swat_sim_bot_inputs(SwatSim* s, SwatInput inputs[SWAT_MAX_ACTORS]) {
     if (!s->config.hostile_fire) return;
     for (int i=1;i<s->actor_count;i++) {
         SwatActor* a = &s->actors[i];
-        if (!a->alive || a->role != SWAT_SUSPECT) continue;
+        if (!a->alive || a->role != SWAT_SUSPECT || a->gear.surrendered || a->gear.restrained) continue;
         b3Pos eye = swat_controller_eye(&a->controller);
         int target_index=-1; float closest=26;
         b3Pos target={0};
@@ -193,17 +250,76 @@ void swat_sim_bot_inputs(SwatSim* s, SwatInput inputs[SWAT_MAX_ACTORS]) {
     }
 }
 
-static void swat_actor_interact(SwatSim* s, int actor, const SwatInput* in) {
+static void swat_actor_interact(SwatSim* s, int actor, SwatInput* in) {
     SwatActor* a = &s->actors[actor];
     bool pressed = in->interact && !a->last_interact;
     a->last_interact = in->interact;
-    if (!pressed) return;
+    if(!in->interact) { a->gear.cuff_ticks=0; a->gear.cuff_target=-1; return; }
     SwatHit hit = swat_world_ray(&s->world,swat_controller_eye(&a->controller),
         swat_controller_aim(&a->controller),2.2f,a->controller.body.body);
-    if (hit.kind == SWAT_HIT_WORLD && hit.index >= 0 && s->world.objects[hit.index].door) {
+    if(hit.kind==SWAT_HIT_ACTOR && hit.index>=0 && a->role==SWAT_OFFICER && hit.distance<1.7f) {
+        SwatActor* target=&s->actors[hit.index];
+        if(target->alive && target->role!=SWAT_OFFICER && target->gear.surrendered && !target->gear.restrained) {
+            in->fire=in->reload=false; in->forward=in->strafe=0;
+            if(a->gear.cuff_target!=hit.index) a->gear.cuff_ticks=0;
+            a->gear.cuff_target=hit.index;
+            if(++a->gear.cuff_ticks>=72) {
+                target->gear.restrained=true; a->gear.cuff_ticks=0;
+                swat_sound_emit(&s->sounds,s->tick,actor,SWAT_SOUND_HANDLE,hit.point,.3f,10);
+            }
+            return;
+        }
+    }
+    a->gear.cuff_ticks=0; a->gear.cuff_target=-1;
+    if (pressed && hit.kind == SWAT_HIT_WORLD && hit.index >= 0 && s->world.objects[hit.index].door) {
         s->world.objects[hit.index].door_open = !s->world.objects[hit.index].door_open;
         swat_sound_emit(&s->sounds,s->tick,actor,SWAT_SOUND_DOOR,s->world.objects[hit.index].center,0.6f,18);
     }
+}
+
+static void swat_actor_equipment(SwatSim* s,int actor,SwatInput* in) {
+    SwatActor* a=&s->actors[actor]; SwatEquipment* gear=&a->gear;
+    if(gear->stunned_ticks>0) gear->stunned_ticks--;
+    if(gear->melee_cooldown>0) gear->melee_cooldown--;
+    if(a->role==SWAT_OFFICER && in->loadout>0 && in->loadout<=SWAT_KIT_COUNT &&
+        a->arsenal.shots==0 && a->health==100 &&
+        b3Distance(swat_body_feet_position(&a->controller.body),swat_mission(s->config.mission)->staging)<3) {
+        int kit=in->loadout-1;
+        if(kit!=gear->kit) { gear->kit=kit; swat_weapons_primary(&a->arsenal,swat_kit(kit)->less_lethal ? 2 : 0); }
+    }
+    gear->inspecting=in->inspect && swat_kit(gear->kit)->optiwand && a->role==SWAT_OFFICER && !gear->restrained;
+    b3Pos eye=swat_controller_eye(&a->controller);
+    bool command=in->command && !gear->last_command; gear->last_command=in->command;
+    if(command && a->role==SWAT_OFFICER) {
+        swat_sound_emit(&s->sounds,s->tick,actor,SWAT_SOUND_COMMAND,eye,1.2f,22);
+        for(int i=0;i<s->actor_count;i++) {
+            SwatActor* target=&s->actors[i];
+            if(!target->alive || target->role==SWAT_OFFICER || target->gear.restrained) continue;
+            b3Pos head=swat_controller_eye(&target->controller); b3Vec3 d=b3SubPos(head,eye); float distance=b3Length(d);
+            if(distance>9) continue;
+            SwatHit hit=swat_world_ray(&s->world,eye,swat_normalize(d),distance+.15f,a->controller.body.body);
+            if(hit.kind==SWAT_HIT_ACTOR && hit.index==i &&
+                (target->role==SWAT_CIVILIAN || target->gear.stunned_ticks || target->health<40)) target->gear.surrendered=true;
+        }
+    }
+    bool melee=in->melee && !gear->last_melee; gear->last_melee=in->melee;
+    if(melee && a->role==SWAT_OFFICER && !gear->melee_cooldown && a->controller.stamina>.08f && !gear->inspecting) {
+        gear->melee_cooldown=48; a->controller.stamina-=.08f;
+        SwatHit hit=swat_world_ray(&s->world,eye,swat_controller_aim(&a->controller),1.7f,a->controller.body.body);
+        if(hit.hit) {
+            swat_sound_emit(&s->sounds,s->tick,actor,SWAT_SOUND_IMPACT,hit.point,1,25);
+            if(hit.kind==SWAT_HIT_ACTOR) swat_sim_damage_region(s,hit.index,actor,5,swat_sim_hit_region(&s->actors[hit.index],hit.point),true);
+            else if(hit.index>=0 && swat_world_damage(&s->world,hit.index,swat_kit(gear->kit)->ram ? 160 : 18)) {
+                s->events.destroyed++; swat_sound_emit(&s->sounds,s->tick,actor,SWAT_SOUND_BREAK,hit.point,1.2f,35);
+            }
+        }
+    }
+    a->controller.mobility=swat_equipment_mobility(gear);
+    if(gear->inspecting) { in->fire=in->reload=false; in->gait=SWAT_SLOW; in->aim=false; }
+    if(gear->restrained || gear->surrendered || gear->stunned_ticks) {
+        *in=swat_neutral_input(); in->crouch=true;
+    }
+    if(gear->cuff_ticks>0) { in->forward=in->strafe=0; in->fire=in->reload=false; }
 }
 
 static void swat_actor_weapon(SwatSim* s, int actor, const SwatInput* in) {
@@ -232,18 +348,21 @@ static void swat_actor_weapon(SwatSim* s, int actor, const SwatInput* in) {
     if (!shot.fired) return;
     if (actor == 0) s->events.shots++;
     // Camera aim selects a target; the actual shot starts at the checked muzzle.
-    b3Vec3 aim = swat_direction(c->yaw+c->recoil_yaw+shot.yaw_offset,
-                                c->pitch+c->recoil_pitch+shot.pitch_offset);
+    float injury_spread=1+2*swat_clamp(a->gear.wounds[SWAT_ARMS]/50,0,1);
+    b3Vec3 aim = swat_direction(c->yaw+c->recoil_yaw+shot.yaw_offset*injury_spread,
+                                c->pitch+c->recoil_pitch+shot.pitch_offset*injury_spread);
     SwatHit sight = swat_world_ray(&s->world,eye,aim,shot.range,c->body.body);
     b3Vec3 direction = swat_normalize(b3SubPos(sight.point,muzzle));
     swat_sim_shoot(s,actor,muzzle,direction,shot);
-    swat_controller_recoil(c,swat_weapon_def(a->arsenal.active)->recoil*SWAT_RAD,shot.recoil_yaw);
+    swat_controller_recoil(c,swat_arsenal_def(&a->arsenal,a->arsenal.active)->recoil*SWAT_RAD,shot.recoil_yaw);
 }
 
-void swat_sim_step_inputs(SwatSim* s, const SwatInput inputs[SWAT_MAX_ACTORS]) {
+void swat_sim_step_inputs(SwatSim* s, const SwatInput requested[SWAT_MAX_ACTORS]) {
     if (s->end != SWAT_RUNNING) return;
     memset(&s->events,0,sizeof(s->events));
     s->tick++;
+    SwatInput inputs[SWAT_MAX_ACTORS]; memcpy(inputs,requested,sizeof(inputs));
+    for(int i=0;i<s->actor_count;i++) if(s->actors[i].alive) swat_actor_equipment(s,i,&inputs[i]);
     for (int i=0;i<s->actor_count;i++) if (s->actors[i].alive)
         swat_actor_interact(s,i,&inputs[i]);
     swat_world_step_doors(&s->world);
@@ -285,7 +404,8 @@ void swat_sim_step_inputs(SwatSim* s, const SwatInput inputs[SWAT_MAX_ACTORS]) {
     }
     if (s->totals.civilian_damage > 0) s->end = SWAT_CIVILIAN_HARMED;
     else if(officers && !living) s->end=fallen ? SWAT_FALL : SWAT_OFFICER_DOWN;
-    else if(living && swat_sim_hostiles(s)==0 && extracted==living) s->end=SWAT_SUCCESS;
+    else if(living && swat_sim_hostiles(s)==0 && extracted==living &&
+        (s->config.mission!=SWAT_HOUSE || !swat_sim_unsecured(s))) s->end=SWAT_SUCCESS;
     else if (s->tick >= s->config.max_ticks) s->end = SWAT_TIMEOUT;
 }
 
@@ -327,7 +447,7 @@ void swat_sim_observe(const SwatSim* s, int actor, float out[SWAT_OBS_SIZE]) {
     const SwatActor* a = &s->actors[actor];
     const SwatController* c = &a->controller;
     const SwatWeapon* w = &a->arsenal.slots[a->arsenal.active];
-    const SwatWeaponDef* def = swat_weapon_def(a->arsenal.active);
+    const SwatWeaponDef* def = swat_arsenal_def(&a->arsenal,a->arsenal.active);
     b3Vec3 v = b3Body_GetLinearVelocity(c->body.body);
     b3Vec3 f = swat_direction(c->yaw,0), r = swat_controller_right(c);
     out[0]=b3Dot(v,f)/4.6f; out[1]=b3Dot(v,r)/4.6f; out[2]=swat_clamp(v.y/15,-1,1);

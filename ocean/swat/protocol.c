@@ -53,6 +53,7 @@ size_t swat_encode_command(void* bytes,size_t size,const SwatCommand* c) {
     unsigned int flags=in->crouch | (in->jump<<1) | (in->aim<<2) | (in->fire<<3) |
                        (in->reload<<4) | (in->interact<<5) | (in->selector<<6);
     put8(&w,flags);
+    put8(&w,in->inspect | (in->command<<1) | (in->melee<<2)); put8(&w,in->loadout);
     return w.ok ? size-w.left : 0;
 }
 bool swat_decode_command(SwatCommand* c,const void* bytes,size_t size) {
@@ -66,6 +67,9 @@ bool swat_decode_command(SwatCommand* c,const void* bytes,size_t size) {
     in->gait=(SwatGait)gait; in->weapon=(int)weapon;
     in->crouch=flags&1; in->jump=flags&2; in->aim=flags&4; in->fire=flags&8;
     in->reload=flags&16; in->interact=flags&32; in->selector=flags&64;
+    unsigned int tools=get8(&r),loadout=get8(&r);
+    if(tools>7 || loadout>SWAT_KIT_COUNT) r.ok=false;
+    in->inspect=tools&1; in->command=tools&2; in->melee=tools&4; in->loadout=(int)loadout;
     if(!r.ok || r.left) return false;
     *c=tmp; return true;
 }
@@ -74,11 +78,18 @@ size_t swat_encode_map(void* bytes,size_t size,const SwatMap* map) {
     Writer w={bytes,size,true}; header(&w,SWAT_MSG_MAP,map->epoch);
     put32(&w,map->sound_floor); put32(&w,(uint32_t)map->config.max_ticks);
     put8(&w,map->config.randomize); put8(&w,map->config.hostile_fire);
+    put8(&w,map->config.mission);
     put32(&w,(uint32_t)map->count); putpos(&w,map->extraction);
+    put8(&w,map->room_count);
+    for(int i=0;i<map->room_count;i++) {
+        putpos(&w,map->rooms[i].center); putvec(&w,map->rooms[i].half);
+        put8(&w,map->rooms[i].surface); put8(&w,map->rooms[i].floor);
+    }
     for(int i=0;i<map->count;i++) {
         const SwatMapObject* o=&map->objects[i];
         putpos(&w,o->center); putpos(&w,o->hinge); putvec(&w,o->half);
         putf(&w,o->yaw); putf(&w,o->max_health); put8(&w,o->material); put8(&w,o->door);
+        putf(&w,o->closed_yaw); put8(&w,o->part);
     }
     return w.ok ? size-w.left : 0;
 }
@@ -89,15 +100,26 @@ bool swat_decode_map(SwatMap* map,const void* bytes,size_t size) {
     unsigned int randomize=get8(&r),fire=get8(&r);
     if(randomize>1 || fire>1) r.ok=false;
     tmp.config.randomize=randomize!=0; tmp.config.hostile_fire=fire!=0;
+    tmp.config.mission=(int)get8(&r); if(tmp.config.mission>=SWAT_MISSION_COUNT) r.ok=false;
     tmp.count=geti(&r,1,SWAT_MAX_OBJECTS); tmp.extraction=getpos(&r);
+    tmp.room_count=(int)get8(&r); if(tmp.room_count>SWAT_MAX_ROOMS) return false;
+    for(int i=0;i<tmp.room_count;i++) {
+        SwatRoom* room=&tmp.rooms[i]; room->center=getpos(&r); room->half=getvec(&r,100);
+        unsigned int surface=get8(&r),floor=get8(&r);
+        if(surface>=SWAT_MATERIAL_COUNT || floor>=SWAT_MATERIAL_COUNT || room->half.x<=0 || room->half.y<=0 || room->half.z<=0) r.ok=false;
+        room->surface=(SwatMaterial)surface; room->floor=(SwatMaterial)floor;
+    }
     if(!r.ok) return false;
     for(int i=0;i<tmp.count;i++) {
         SwatMapObject* o=&tmp.objects[i];
         o->center=getpos(&r); o->hinge=getpos(&r); o->half=getvec(&r,100);
         o->yaw=getf(&r,-SWAT_PI,SWAT_PI); o->max_health=getf(&r,0,1000000);
         unsigned int material=get8(&r),door=get8(&r);
-        if(material>SWAT_STEEL || door>1 || o->half.x<=0 || o->half.y<=0 || o->half.z<=0) r.ok=false;
+        if(material>=SWAT_MATERIAL_COUNT || door>1 || o->half.x<=0 || o->half.y<=0 || o->half.z<=0) r.ok=false;
         o->material=(SwatMaterial)material; o->door=door!=0;
+        o->closed_yaw=getf(&r,-SWAT_PI,SWAT_PI); unsigned int part=get8(&r);
+        if(part>SWAT_PART_SUPPORT) r.ok=false;
+        o->part=(SwatPart)part;
     }
     if(!r.ok || r.left) return false;
     *map=tmp; return true;
@@ -113,7 +135,7 @@ static SwatWeapon getweapon(Reader* r,int slot) {
     w.magazine=geti(r,0,swat_weapon_def(slot)->capacity); w.reserve=geti(r,0,1000000);
     w.cooldown=geti(r,0,10000); w.reload_remaining=geti(r,0,10000); w.reload_duration=geti(r,0,10000);
     unsigned int chamber=get8(r),mode=get8(r);
-    if(chamber>1 || mode>SWAT_AUTO || (slot==1 && mode==SWAT_AUTO)) r->ok=false;
+    if(chamber>1 || mode>SWAT_AUTO || (!swat_weapon_def(slot)->automatic && mode==SWAT_AUTO)) r->ok=false;
     w.chambered=chamber!=0; w.mode=(SwatFireMode)mode; return w;
 }
 static void putactor(Writer* w,const SwatActorState* a) {
@@ -126,7 +148,13 @@ static void putactor(Writer* w,const SwatActorState* a) {
     put32(w,(uint32_t)a->last_shot_tick); putpos(w,a->tracer_start); putpos(w,a->tracer_end);
     put8(w,a->arsenal.active); put32(w,(uint32_t)a->arsenal.equip_remaining); put32(w,(uint32_t)a->arsenal.shots);
     put8(w,a->arsenal.last_fire | (a->arsenal.last_reload<<1) | (a->arsenal.last_selector<<2));
+    put8(w,a->arsenal.primary);
     for(int i=0;i<2;i++) putweapon(w,&a->arsenal.slots[i]);
+    const SwatEquipment* g=&a->gear;
+    put8(w,g->kit); put32(w,(uint32_t)g->stunned_ticks); put32(w,(uint32_t)g->melee_cooldown);
+    put32(w,(uint32_t)g->cuff_ticks); put32(w,(uint32_t)g->cuff_target);
+    put8(w,g->surrendered | (g->restrained<<1) | (g->inspecting<<2) | (g->last_command<<3) | (g->last_melee<<4));
+    for(int i=0;i<SWAT_HIT_REGIONS;i++) putf(w,g->wounds[i]);
 }
 static SwatActorState getactor(Reader* r) {
     SwatActorState a={0}; unsigned int flags=get8(r);
@@ -143,7 +171,15 @@ static SwatActorState getactor(Reader* r) {
     a.arsenal.equip_remaining=geti(r,0,10000); a.arsenal.shots=geti(r,0,1000000);
     unsigned int arsenal_flags=get8(r); if(arsenal_flags>7) r->ok=false;
     a.arsenal.last_fire=arsenal_flags&1; a.arsenal.last_reload=arsenal_flags&2; a.arsenal.last_selector=arsenal_flags&4;
-    for(int i=0;i<2;i++) a.arsenal.slots[i]=getweapon(r,i);
+    a.arsenal.primary=(int)get8(r); if(a.arsenal.primary!=0 && a.arsenal.primary!=2) r->ok=false;
+    for(int i=0;i<2;i++) a.arsenal.slots[i]=getweapon(r,i==0 ? a.arsenal.primary : 1);
+    SwatEquipment* g=&a.gear; g->kit=(int)get8(r); if(g->kit>=SWAT_KIT_COUNT) r->ok=false;
+    g->stunned_ticks=geti(r,0,10000); g->melee_cooldown=geti(r,0,1000);
+    g->cuff_ticks=geti(r,0,72); g->cuff_target=geti(r,-1,SWAT_MAX_ACTORS-1);
+    unsigned int equipment_flags=get8(r); if(equipment_flags>31) r->ok=false;
+    g->surrendered=equipment_flags&1; g->restrained=equipment_flags&2; g->inspecting=equipment_flags&4;
+    g->last_command=equipment_flags&8; g->last_melee=equipment_flags&16;
+    for(int i=0;i<SWAT_HIT_REGIONS;i++) g->wounds[i]=getf(r,0,100);
     if(a.alive!=(a.health>0)) r->ok=false;
     return a;
 }
@@ -219,9 +255,10 @@ void swat_capture_map(const SwatSim* sim,uint32_t epoch,SwatMap* map) {
     memset(map,0,sizeof(*map)); map->epoch=epoch; map->config=sim->config;
     map->sound_floor=sim->sounds.next_id ? sim->sounds.next_id-1 : 0;
     map->count=sim->world.count; map->extraction=sim->extraction;
+    map->room_count=sim->world.room_count; memcpy(map->rooms,sim->world.rooms,sizeof(map->rooms));
     for(int i=0;i<map->count;i++) {
         const SwatObject* o=&sim->world.objects[i];
-        map->objects[i]=(SwatMapObject){o->center,o->hinge,o->half,o->yaw,o->max_health,o->material,o->door};
+        map->objects[i]=(SwatMapObject){o->center,o->hinge,o->half,swat_angle(o->yaw),o->max_health,swat_angle(o->closed_yaw),o->material,o->part,o->door};
     }
 }
 void swat_capture_snapshot(const SwatSim* sim,uint32_t epoch,SwatSnapshot* state) {
@@ -237,6 +274,7 @@ void swat_capture_snapshot(const SwatSim* sim,uint32_t epoch,SwatSnapshot* state
         out->yaw=c->yaw; out->pitch=c->pitch; out->ads=c->ads; out->stamina=c->stamina; out->eye_height=c->eye_height;
         out->recoil_pitch=c->recoil_pitch; out->recoil_yaw=c->recoil_yaw; out->lean=c->lean;
         out->last_shot_tick=a->last_shot_tick; out->tracer_start=a->tracer_start; out->tracer_end=a->tracer_end; out->arsenal=a->arsenal;
+        out->gear=a->gear;
     }
     for(int i=0;i<state->object_count;i++) {
         const SwatObject* o=&sim->world.objects[i]; state->objects[i]=(SwatObjectState){o->active,o->door_open,o->health,o->door_angle};
@@ -253,10 +291,12 @@ void swat_apply_map(SwatSim* sim,const SwatMap* map) {
         swat_world_close(&sim->world); memset(sim,0,sizeof(*sim));
         sim->config=map->config; sim->extraction=map->extraction; sim->episode=(int)map->epoch;
         sim->sounds.next_id=map->sound_floor+1; swat_world_init(&sim->world);
+        sim->world.room_count=map->room_count; memcpy(sim->world.rooms,map->rooms,sizeof(map->rooms));
         for(int i=0;i<map->count;i++) {
             const SwatMapObject* source=&map->objects[i];
             int id=swat_world_box(&sim->world,source->center,source->half,source->material,source->max_health);
             SwatObject* o=&sim->world.objects[id]; o->hinge=source->hinge; o->yaw=source->yaw; o->door=source->door;
+            o->closed_yaw=source->closed_yaw; o->part=source->part;
             b3Quat q={{0,sinf(o->yaw*0.5f),0},cosf(o->yaw*0.5f)}; b3Body_SetTransform(o->body,o->center,q);
         }
     }
@@ -272,7 +312,7 @@ bool swat_apply_snapshot(SwatSim* sim,const SwatSnapshot* state) {
         o->health=in->health; o->door_open=in->door_open; o->door_angle=in->door_angle;
         if(!in->active && o->active) { b3DestroyBody(o->body); o->body=b3_nullBodyId; o->shape=b3_nullShapeId; o->active=false; }
         if(o->active && o->door) {
-            o->yaw=o->door_angle; o->center=b3OffsetPos(o->hinge,swat_v(sinf(o->yaw)*o->half.z,0,cosf(o->yaw)*o->half.z));
+            o->yaw=o->closed_yaw+o->door_angle; o->center=b3OffsetPos(o->hinge,swat_v(sinf(o->yaw)*o->half.z,0,cosf(o->yaw)*o->half.z));
             b3Quat q={{0,sinf(o->yaw*0.5f),0},cosf(o->yaw*0.5f)}; b3Body_SetTransform(o->body,o->center,q);
         }
     }
@@ -285,6 +325,7 @@ bool swat_apply_snapshot(SwatSim* sim,const SwatSnapshot* state) {
         if(!a->present || a->role!=in->role) swat_sim_spawn_actor(sim,i,in->role,in->position,0);
         SwatController* c=&a->controller;
         a->alive=in->alive; a->health=in->health; a->arsenal=in->arsenal;
+        a->gear=in->gear; c->mobility=swat_equipment_mobility(&a->gear);
         a->last_shot_tick=in->last_shot_tick; a->tracer_start=in->tracer_start; a->tracer_end=in->tracer_end;
         c->yaw=in->yaw; c->pitch=in->pitch; c->ads=in->ads; c->stamina=in->stamina;
         c->eye_height=in->eye_height; c->recoil_pitch=in->recoil_pitch; c->recoil_yaw=in->recoil_yaw; c->lean=in->lean;

@@ -16,13 +16,17 @@ static bool number(const char* value,long lo,long hi,long* result) {
 }
 int main(int argc,char** argv) {
     int port=SWAT_DEFAULT_PORT,run_ticks=0; uint32_t seed=42;
-    SwatConfig config=swat_default_config(); config.max_ticks=18000;
+    SwatConfig config=swat_default_config(); config.max_ticks=18000; config.mission=SWAT_HOUSE;
     for(int i=1;i<argc;i++) {
         if(!strcmp(argv[i],"--help")) {
             puts("SWAT dedicated server: --port 27474 --seed 42 --max-ticks 18000\n"
-                 "  --hostile-fire 0|1  --randomize 0|1  --run-ticks N (test duration)\n"
+                 "  --mission house|annex  --hostile-fire 0|1  --randomize 0|1  --run-ticks N\n"
                  "Four player slots; first connected officer leads/restarts. Ctrl+C stops the server.");
             return 0;
+        }
+        if(!strcmp(argv[i],"--mission")) {
+            if(++i>=argc || (strcmp(argv[i],"house") && strcmp(argv[i],"annex"))) { fprintf(stderr,"Invalid mission\n"); return 2; }
+            config.mission=!strcmp(argv[i],"house") ? SWAT_HOUSE : SWAT_ANNEX; continue;
         }
         const char* key=argv[i]; long n;
         if(++i>=argc || !number(argv[i],0,3600000,&n)) {

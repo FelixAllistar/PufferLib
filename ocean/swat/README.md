@@ -1,16 +1,17 @@
 # SWAT: Gold Element
 
 A standalone tactical game within Ocean, with environment/config name `swat`.
-The first playable is a small training annex for developing the character,
-weapons, destructible cover, and shared human/policy simulation. The longer-term
+Human play now defaults to Cedar House: a small hostage mission with planning,
+equipment, arrests and layered construction. The training annex remains the
+stable policy/test environment. The longer-term
 game is a cooperative tactical shooter with trained RL actors; see the
 [development roadmap](ROADMAP.md).
 
-This is an early graybox foundation. The armed guard uses scripted sight and
-hearing reactions, and the civilian is stationary. Native training and checkpoint playback
+This is an early graybox foundation. Armed guards use scripted sight and
+hearing reactions, and civilians stay in place and can comply. Native training and checkpoint playback
 work, but no capable trained opponent or squad policy ships with this commit.
-This scenario tests threat removal and civilian protection; a full policing,
-surrender, arrest, and rules-of-engagement system is still to come.
+Surrender, restraint and less-lethal tools work; full policing, suspect behavior,
+evidence and rules-of-engagement systems still need development.
 
 ## Play
 
@@ -29,7 +30,8 @@ bash build.sh swat --cpu
 ```
 
 `./swat` opens a main menu with solo play, **Settings**, **Host co-op**,
-**Join co-op**, and **Quit game**. Entering play captures the mouse. **Escape** or **Tab** opens
+**Join co-op**, and **Quit game**. **Plan Cedar House** opens an overview and kit
+selection; **Deploy** captures the mouse. **Escape** or **Tab** opens
 the pause menu, releases the cursor, and freezes the solo simulation. Resume captures
 it again; losing window focus automatically pauses. The pause menu also offers
 restart, settings, return to the main menu, and quit. Menu clicks and capture
@@ -57,13 +59,34 @@ or `./build/swat/swat play`. CUDA training continues to run on Linux. The
 launcher rebuilds stale player code and translates checkpoint/settings/capture
 paths from WSL for the Windows process.
 
-Open or destroy the wooden door, deal with the armed guard in the far room,
-keep the blue civilian unharmed, and reach the gold extraction circle. It turns
-green when the threat is down. The default annex has a 30-second limit, shared
-with training. For controller/weapon practice with a longer limit:
+At Cedar House, enter through doors or create openings, secure two suspects,
+order the three civilians to comply, cuff them, and bring all surviving officers
+back to staging. Any civilian harm fails the mission. Human play defaults to
+five minutes. **P** opens planning: orbit the roof cutaway with A/D or inspect
+two authored overwatch viewpoints. The overview shows geometry, not hidden
+actor positions; optical previews show only what the camera can see through
+the actual building. Sniper assignment/fire commands and a piloted drone are
+future work.
+
+Choose a kit before leaving staging or firing. Recon carries a carbine/optiwand
+at full pace; Control trades some mobility for an impact launcher, optiwand and
+light torso protection; Entry has a ram and stronger torso protection at a
+larger movement cost. All have a sidearm and cuffs. The impact launcher forces
+NPC surrender on a hit, but still causes injury and does not penetrate cover.
+Y makes visible civilians comply; healthy armed suspects generally need to be
+stunned or wounded first. Hold F within 1.7 m while aiming at a compliant person
+for 1.2 seconds to restrain them. Release or lose the target to interrupt.
+
+Hold G to extend the optiwand. Crouching puts its lens near the floor to fit
+under door gaps; standing, aiming and leaning let it reach around/over cover.
+The small lens sweeps against actual collision and tool use prevents firing.
+Use B for a butt strike or the Entry kit's stronger ram hit.
+
+To revisit the annex or practice without hostile fire:
 
 ```sh
 ./swat play --env.hostile_fire=0 --env.max_ticks=7200 --env.randomize=0
+./swat play --mission annex
 ```
 
 | Control | Action |
@@ -75,9 +98,13 @@ with training. For controller/weapon practice with a longer limit:
 | Space | Jump; release before jumping again |
 | Right / left mouse | Aim / fire |
 | R | Reload |
-| 1 / 2 | Carbine / sidearm |
+| 1 / 2 | Kit primary / sidearm |
 | V | Cycle selector; carbine starts in semi, then auto, then safe |
-| F | Toggle the door while looking at it within 2.2 m |
+| F | Door within 2.2 m; hold to cuff a compliant person within 1.7 m |
+| Y | Order visible nearby occupants to comply |
+| G | Hold optiwand; crouch for the floor lens, lean/aim to reach around cover |
+| B | Melee / Entry kit ram |
+| P | Planning, overwatch previews and staging equipment selection |
 | Backspace | Restart while playing |
 | Esc or Tab | Pause/resume; back from Settings |
 
@@ -95,12 +122,14 @@ SWAT_NATIVE_WINDOWS=0 ./swat server --port 27474
 Four officers share server-owned movement, weapons, doors, damage, destruction
 and mission outcomes. All surviving officers must extract. Only the leader can
 restart. Online pause/settings release your controls while the session continues.
-Solo/offline play remains available. The default hosted mission is five minutes.
+Solo/offline play remains available. Planning also releases controls online;
+the session continues. The default hosted mission is Cedar House, five minutes;
+`--mission annex` selects the old range. Hosts and peers must use protocol v2.
 
 The dedicated server has no display, Raylib, audio-device or CUDA dependency.
 On WSL, `./swat server` defaults to `build/swat/windows/swat-server.exe`;
 the example explicitly selects Linux. Server options include `--seed 42`,
-`--max-ticks 18000`, `--hostile-fire 0`, `--randomize 0` and `--help`.
+`--mission house|annex`, `--max-ticks 18000`, `--hostile-fire 0`, `--randomize 0` and `--help`.
 
 Connections currently use direct IPv4 addresses/DNS and UDP port 27474.
 Internet hosting requires a reachable UDP port and appropriate router/firewall
@@ -150,26 +179,32 @@ playback retains its sensor FOV. Raygui is already vendored at
   upper collider and eye by up to 0.42 m; it is swept against cover. Standing
   checks the leaned head as well as the feet hull. Aim, roll, and sensor rays
   follow the achieved pose.
-- **Weapons:** carbine and sidearm, chamber plus magazine/reserve counts,
+- **Weapons:** carbine, sidearm and impact launcher, chamber plus magazine/reserve counts,
   semi/auto/safe selectors, timed tactical/empty reloads, reload cancellation on
   swap, equip delay, recoil, movement/air/aim spread, and deterministic actor-local
   weapon RNG. Reserve ammunition is pooled; individual spare magazines and
   staged reload animation are not modeled yet.
 - **Hits and cover:** eye-to-muzzle volume check, muzzle-origin hitscan, nearest
-  collision damage, bounded thickness/material penetration, head damage bonus,
-  breakable wood/glass and independent drywall cells. Destroyed objects lose
+  collision damage, bounded thickness/material penetration, and head/torso/arm/leg
+  damage. Leg wounds reduce pace, arm wounds widen spread, and plates reduce
+  torso damage. Cedar House uses two thin board/plaster faces, a cavity, timber
+  studs, plates and headers; breaking a face exposes what remains behind it.
+  Supports are fixed rather than a structural collapse simulation. Destroyed objects lose
   their physics colliders and disappear from sensors immediately. This is
   modular destruction, not structural fracture or simulated debris.
 - **Doors:** an authored hinged, damageable door with real collision. Its short
   swept rotation stops for actors and resumes once they clear it. It currently
   moves under game control rather than a motorized rigid-body hinge.
-- **Mission:** armed target, protected civilian, clear-and-extract success,
+- **Mission:** house suspects/hostages, command/compliance, hold-to-cuff arrests,
+  protected civilians, secure-and-extract success,
   injury/death, civilian-harm failure, fall/timeout, restart, and episode metrics.
-  Small layout and guard-position variations are seeded at reset.
+  Annex layout/guard variations are seeded; the current house is authored.
 - **Audio:** shared material/thickness/doorway propagation, delayed directional
-  hearing, procedural stereo shots/steps/handling/doors/impacts/breakage, and
-  guard turning toward audible cues. Production recordings/reverb/HRTF remain
-  future work; see [AUDIO.md](AUDIO.md).
+  hearing, room reflections/tails, optional Steam Audio HRTF, procedural
+  shots/steps/handling/doors/impacts/breakage and guard turning toward audible
+  cues. Enable the local runtime with `python3 ocean/swat/setup_audio.py`.
+  Production source recordings and richer propagation still need work; see
+  [research, setup and listening comparisons](AUDIO.md).
 
 The carbine has a 30-round magazine plus chamber, 90 reserve rounds, a 6-tick
 fire interval, 120/156-tick tactical/empty reload, and 24-tick equip delay.
@@ -184,12 +219,14 @@ The sidearm uses 15 plus chamber, 45 reserve, 10-tick fire interval,
 | `controller.c`, `controller.h` | Tactical input, stance/lean/aim, movement gates, recoil |
 | `weapons.c`, `weapons.h` | Weapon state and shot requests |
 | `world.c`, `world.h` | Box3D scene, queries, material damage, doors |
+| `mission.c`, `materials.c`, `equipment.c` | Authored house/framing/viewpoints and editable material/kit tables |
 | `sim.c`, `sim.h` | Actors, fixed update, ballistics, mission, observations/actions |
 | `swat.h` | Ocean adapter, rewards, logging, automatic reset |
 | `render.c`, `swat.c` | Game presentation, fixed update loop, CPU policy playback/evaluation |
 | `frontend.c`, `settings.c` | Main/pause/settings menus, mouse capture, saved player preferences |
 | `protocol.c`, `net.c`, `server.c` | Versioned codec, UDP co-op authority/replica, headless server |
-| `acoustics.c`, `audio_dsp.c`, `sound_view.c` | Shared hearing paths, portable PCM mixer, player audio stream |
+| `acoustics.c`, `audio_dsp.c`, `spatial_audio.c`, `sound_view.c` | Shared hearing, room mixer, optional HRTF, device stream |
+| `audio_lab.c` | Offline WAV/CSV acoustic comparisons |
 
 Both humans and policies submit `SwatInput` to the same **60 Hz** game update
 with **four Box3D substeps**. Rendering does not own physics or weapon state.
@@ -276,8 +313,11 @@ production learning benchmarks are not implemented in this foundation.
 make -C ocean/swat test
 make -C ocean/swat net-test
 make -C ocean/swat sanitize
+make -C ocean/swat audio-lab spatial-test
 ./swat --capture build/swat/first-playable.png --env.randomize=0 --env.hostile_fire=0
 ./swat --capture build/swat/settings.png --capture-screen settings
+./swat --capture build/swat/house-plan.png --capture-screen plan
+./swat --capture build/swat/overwatch.png --capture-screen overwatch
 ```
 
 Checks cover movement speed and gates, jump edges, crouch/lean collision and
@@ -293,6 +333,15 @@ and ammunition, shared door/destruction/audio state, late join, epoch resets,
 leader authority, terminal menus, disconnect cleanup and listen-host shutdown.
 Codec tests cover malformed/truncated packets, nonfinite fields and replica
 colliders. Acoustic and PCM tests cover shared occlusion/timing and output.
+
+House checks exercise independent board faces/studs, rotated door collision,
+optiwand clearance, authority kit restrictions, impact rounds stopped by cover,
+ram breakage, surrender, interrupted cuffs/fire isolation, civilian commands,
+leg-injury mobility and secured-house extraction. This interaction driver uses
+fixture placement to isolate rules; it is not a complete navigation policy.
+Real UDP checks also transfer the full house and late-join wounds/restraints.
+Native HRTF checks verify directional impulse differences; room mixer checks
+verify longer decay retains more late energy.
 
 Adapter checks cover 2,048 paired seeded transitions, 33 paired resets,
 finite observations, relocated environment storage, exact timeouts, civilian

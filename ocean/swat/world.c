@@ -113,8 +113,21 @@ bool swat_world_damage(SwatWorld* w, int object, float damage) {
 }
 
 float swat_material_resistance(SwatMaterial material) {
-    static const float resistance[] = {10000.0f,1.5f,3.0f,0.5f,80.0f};
-    return resistance[(int)material];
+    return swat_material(material)->resistance;
+}
+
+void swat_world_place(SwatObject* o, float yaw) {
+    o->yaw=yaw;
+    b3Quat rotation={{0,sinf(yaw*.5f),0},cosf(yaw*.5f)};
+    b3Body_SetTransform(o->body,o->center,rotation);
+}
+
+int swat_world_room(const SwatWorld* w,b3Pos p) {
+    for(int i=0;i<w->room_count;i++) {
+        const SwatRoom* r=&w->rooms[i]; b3Vec3 d=b3SubPos(p,r->center);
+        if(fabsf(d.x)<r->half.x && fabsf(d.y)<r->half.y && fabsf(d.z)<r->half.z) return i;
+    }
+    return -1;
 }
 
 float swat_world_exit_distance(const SwatObject* o, b3Pos entry, b3Vec3 d) {
@@ -143,7 +156,7 @@ static bool swat_door_obstructed(const SwatWorld* w, const SwatObject* o, float 
     // Only actors block this authored door; the frame touches the hinge.
     b3Vec3 points[16];
     for (int pose=0;pose<2;pose++) {
-        float angle = pose ? next : o->door_angle;
+        float angle = o->closed_yaw+(pose ? next : o->door_angle);
         float c = cosf(angle), s = sinf(angle);
         for (int j=0;j<8;j++) {
             float x = j&1 ? o->half.x : -o->half.x;
@@ -167,7 +180,7 @@ void swat_world_step_doors(SwatWorld* w) {
         float delta = swat_clamp(target-o->door_angle,-2.0f*SWAT_DT,2.0f*SWAT_DT);
         if (fabsf(delta) < 1e-7f) continue;
         if (swat_door_obstructed(w,o,o->door_angle+delta)) continue;
-        o->door_angle += delta; o->yaw = o->door_angle;
+        o->door_angle += delta; o->yaw = o->closed_yaw+o->door_angle;
         o->center = b3OffsetPos(o->hinge,swat_v(sinf(o->yaw)*o->half.z,0,cosf(o->yaw)*o->half.z));
         b3Quat rotation = {{0,sinf(o->yaw*0.5f),0},cosf(o->yaw*0.5f)};
         b3Body_SetTransform(o->body,o->center,rotation);

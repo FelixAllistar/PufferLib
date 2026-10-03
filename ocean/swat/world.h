@@ -1,15 +1,22 @@
 #ifndef SWAT_WORLD_H
 #define SWAT_WORLD_H
 #include "swat_math.h"
+#include "materials.h"
 #include <stdbool.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#define SWAT_MAX_OBJECTS 192
+#define SWAT_MAX_OBJECTS 1536
+#define SWAT_MAX_ROOMS 8
 typedef enum SwatHitKind { SWAT_HIT_NONE, SWAT_HIT_WORLD, SWAT_HIT_ACTOR } SwatHitKind;
-typedef enum SwatMaterial { SWAT_CONCRETE, SWAT_DRYWALL, SWAT_WOOD, SWAT_GLASS, SWAT_STEEL } SwatMaterial;
+typedef enum SwatPart { SWAT_PART_SOLID, SWAT_PART_SKIN, SWAT_PART_FRAME, SWAT_PART_SUPPORT } SwatPart;
+typedef struct SwatRoom {
+    b3Pos center;
+    b3Vec3 half;
+    SwatMaterial surface, floor;
+} SwatRoom;
 typedef struct SwatTag { SwatHitKind kind; int index; } SwatTag;
 typedef struct SwatObject {
     SwatTag tag;
@@ -17,8 +24,9 @@ typedef struct SwatObject {
     b3ShapeId shape;
     b3Pos center;
     b3Vec3 half;
-    float yaw, health, max_health, door_angle;
+    float yaw, health, max_health, door_angle, closed_yaw;
     SwatMaterial material;
+    SwatPart part;
     bool active, door, door_open;
     b3Pos hinge;
 } SwatObject;
@@ -27,6 +35,8 @@ typedef struct SwatWorld {
     b3WorldId id;
     SwatObject objects[SWAT_MAX_OBJECTS];
     int count, generation;
+    SwatRoom rooms[SWAT_MAX_ROOMS];
+    int room_count;
 } SwatWorld;
 
 typedef struct SwatHit {
@@ -51,6 +61,8 @@ bool swat_world_damage(SwatWorld* world, int object, float damage);
 float swat_world_exit_distance(const SwatObject* object, b3Pos entry, b3Vec3 direction);
 float swat_material_resistance(SwatMaterial material);
 void swat_world_step_doors(SwatWorld* world);
+void swat_world_place(SwatObject* object, float yaw);
+int swat_world_room(const SwatWorld* world, b3Pos position);
 
 #ifdef __cplusplus
 }

@@ -45,7 +45,7 @@ static void raw_control(SwatNetClient* client,SwatMessage type,uint32_t epoch) {
 
 int main(void) {
     SwatConfig config=swat_default_config(); config.max_ticks=6000; config.hostile_fire=false; config.randomize=false;
-    SwatSim authority,replicas[5]; SwatNetServer server; SwatNetClient clients[5]={0};
+    static SwatSim authority,replicas[5]; SwatNetServer server; SwatNetClient clients[5]={0};
     swat_sim_init(&authority,config,42);
     int port=30000+(int)(enet_time_get()%20000),attempt=0;
     while(!swat_server_open(&server,&authority,port,false) && ++attempt<32) port++;
@@ -129,6 +129,25 @@ int main(void) {
     while(clients[0].status!=SWAT_NET_FAILED && enet_time_get()-start<2000) swat_client_poll(&clients[0]);
     assert(clients[0].status==SWAT_NET_FAILED && strstr(clients[0].error,"host closed"));
     swat_client_close(&clients[0]);
+    authority.config.mission=SWAT_HOUSE;
+    assert(swat_server_open(&server,&authority,port,true));
+    assert(swat_client_open(&clients[0],&replicas[0],"127.0.0.1",port)); ready(&server,clients,1);
+    assert(replicas[0].config.mission==SWAT_HOUSE && replicas[0].world.count==authority.world.count);
+    inputs[0]=swat_neutral_input(); inputs[0].loadout=2; inputs[0].inspect=true;
+    host=swat_neutral_input(); ticks(&server,clients,inputs,1,6,&host); synchronize(&server,clients,1);
+    assert(authority.actors[3].arsenal.primary==2 && replicas[0].actors[3].gear.inspecting);
+    int broken=-1;
+    for(int i=0;i<authority.world.count;i++) if(authority.world.objects[i].part==SWAT_PART_SKIN) { broken=i; break; }
+    assert(broken>=0 && swat_world_damage(&authority.world,broken,1000));
+    swat_sim_damage_region(&authority,3,1,15,SWAT_LEGS,false);
+    authority.actors[2].gear.surrendered=authority.actors[2].gear.restrained=true;
+    inputs[0].loadout=0; ticks(&server,clients,inputs,1,6,&host); synchronize(&server,clients,1);
+    assert(!replicas[0].world.objects[broken].active && replicas[0].actors[3].gear.wounds[SWAT_LEGS]>0);
+    assert(swat_client_open(&clients[1],&replicas[1],"127.0.0.1",port)); ready(&server,clients,2);
+    assert(!replicas[1].world.objects[broken].active && replicas[1].actors[2].gear.restrained);
+    assert(replicas[1].actors[3].arsenal.primary==2 && replicas[1].actors[3].gear.wounds[SWAT_LEGS]>0);
+    swat_client_close(&clients[0]); swat_client_close(&clients[1]); swat_server_close(&server);
+    puts("PASS real UDP house: fragmented full map/snapshots, authority kit/tool input, wounds, cuffs and destroyed faces at late join");
     for(int i=0;i<5;i++) swat_sim_close(&replicas[i]);
     swat_sim_close(&authority);
     puts("PASS real UDP: listen host uses the same authority and closes joining clients cleanly");

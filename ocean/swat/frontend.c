@@ -95,6 +95,9 @@ static void swat_settings_back(SwatFrontend* app) {
 }
 
 void swat_frontend_update(SwatFrontend* app, const SwatSim* sim, bool policy) {
+    if(app->last_episode!=sim->episode) {
+        app->last_episode=sim->episode; app->loadout_pending=true;
+    }
     if(app->screen==SWAT_SCREEN_GAME && (!IsWindowFocused() ||
         (sim->end!=SWAT_RUNNING && !app->restart_requested)))
         swat_frontend_set_screen(app,SWAT_SCREEN_PAUSE);
@@ -102,9 +105,15 @@ void swat_frontend_update(SwatFrontend* app, const SwatSim* sim, bool policy) {
         if(app->screen==SWAT_SCREEN_GAME) swat_frontend_set_screen(app,SWAT_SCREEN_PAUSE);
         else if(app->screen==SWAT_SCREEN_SETTINGS) swat_settings_back(app);
         else if(app->screen==SWAT_SCREEN_CONNECT) swat_frontend_set_screen(app,SWAT_SCREEN_MAIN);
+        else if(app->screen==SWAT_SCREEN_PLAN) swat_frontend_set_screen(app,SWAT_SCREEN_GAME);
         else if(app->screen==SWAT_SCREEN_PAUSE && sim->end==SWAT_RUNNING)
             swat_frontend_set_screen(app,SWAT_SCREEN_GAME);
     }
+    if(!policy && IsWindowFocused() && IsKeyPressed(KEY_P) &&
+       (app->screen==SWAT_SCREEN_GAME || app->screen==SWAT_SCREEN_PLAN))
+        swat_frontend_set_screen(app,app->screen==SWAT_SCREEN_PLAN ? SWAT_SCREEN_GAME : SWAT_SCREEN_PLAN);
+    if(app->screen==SWAT_SCREEN_PLAN && IsWindowFocused())
+        app->plan_yaw+=(IsKeyDown(KEY_D)-IsKeyDown(KEY_A))*GetFrameTime();
     bool capture=app->screen==SWAT_SCREEN_GAME && IsWindowFocused() && !policy;
     if(capture!=app->captured) {
         if(capture) DisableCursor(); else EnableCursor();
@@ -154,6 +163,11 @@ SwatInput swat_frontend_input(SwatFrontend* app, const SwatSim* sim) {
     in.interact=IsKeyDown(KEY_F);
     in.selector=IsKeyDown(KEY_V);
     in.weapon=IsKeyDown(KEY_ONE) ? 1 : (IsKeyDown(KEY_TWO) ? 2 : 0);
+    in.inspect=IsKeyDown(KEY_G); in.command=IsKeyDown(KEY_Y); in.melee=IsKeyDown(KEY_B);
+    if(app->loadout_pending) {
+        in.loadout=app->selected_kit+1;
+        if(sim->actors[app->actor].gear.kit==app->selected_kit) app->loadout_pending=false;
+    }
     return in;
 }
 
@@ -178,6 +192,43 @@ static void swat_setting_slider(float x, float y, float width, const char* name,
 
 void swat_frontend_draw(SwatFrontend* app, const SwatSim* sim, bool policy) {
     if(app->screen==SWAT_SCREEN_GAME) return;
+    if(app->screen==SWAT_SCREEN_PLAN) {
+        int width=GetScreenWidth(),height=GetScreenHeight();
+        float x=width-400,y=120;
+        DrawRectangle(width-420,96,420,height-96,(Color){12,21,28,248});
+        DrawText("MISSION PLANNING",(int)x,(int)y,23,menu_gold); y+=38;
+        DrawText(sim->config.mission==SWAT_HOUSE ? "Two gunmen / three reported hostages" : "One armed target / one civilian",(int)x,(int)y,16,menu_paper); y+=27;
+        DrawText(sim->config.mission==SWAT_HOUSE ? "Secure occupants. Return to staging." : "Clear the annex. Extract at the far end.",(int)x,(int)y,16,menu_muted); y+=44;
+        if(GuiButton((Rectangle){x,y,376,38},"Drone / cutaway model")) app->plan_preview=0;
+        y+=48;
+        const SwatMissionDef* mission=swat_mission(sim->config.mission);
+        for(int i=0;i<mission->overwatch_count;i++) {
+            if(GuiButton((Rectangle){x,y,376,38},mission->overwatch[i].name)) app->plan_preview=i+1;
+            y+=46;
+        }
+        DrawText("Overwatch cameras: position previews",(int)x,(int)y,15,menu_muted); y+=39;
+        DrawText("EQUIPMENT",(int)x,(int)y,20,menu_gold); y+=31;
+        const SwatActor* actor=&sim->actors[app->actor];
+        bool can_equip=actor->arsenal.shots==0 && actor->health==100 &&
+            b3Distance(swat_body_feet_position(&actor->controller.body),mission->staging)<3;
+        for(int i=0;i<SWAT_KIT_COUNT;i++) {
+            const SwatKitDef* kit=swat_kit(i);
+            if(!can_equip) GuiDisable();
+            if(GuiButton((Rectangle){x,y,376,34},TextFormat("%s%s   %.0f kg   %.0f%% pace",app->selected_kit==i ? "> " : "",kit->name,kit->mass,kit->mobility*100))) {
+                app->selected_kit=i; app->loadout_pending=true;
+            }
+            GuiEnable();
+            y+=39; DrawText(kit->description,(int)x,(int)y,14,menu_muted); y+=29;
+        }
+        DrawText(can_equip ? "Kits apply on deployment at staging." : "Kit changes require an unused staging loadout.",(int)x,(int)y,14,menu_muted);
+        DrawText(TextFormat("Selected torso protection: %.0f%%",swat_kit(app->selected_kit)->torso_protection*100),(int)x,(int)y+23,14,menu_gold);
+        if(GuiButton((Rectangle){x,height-82,376,48},sim->tick<2 ? "Deploy" : "Return to officer"))
+            swat_frontend_set_screen(app,SWAT_SCREEN_GAME);
+        DrawRectangle(24,height-86,570,55,(Color){12,21,28,238});
+        DrawText(app->plan_preview ? "OPTICAL PREVIEW / no sniper fire control yet" : "REPORTED LAYOUT / roof removed for planning",40,height-76,17,menu_paper);
+        DrawText("A / D orbit model     P / Esc return     Kits change at staging",40,height-53,15,menu_gold);
+        return;
+    }
     // A trigger held when Escape was pressed must not become a menu click on
     // release. Wait through the release frame, then allow fresh UI presses.
     if(app->wait_for_release && !IsMouseButtonDown(MOUSE_BUTTON_LEFT) &&
@@ -272,15 +323,16 @@ void swat_frontend_draw(SwatFrontend* app, const SwatSim* sim, bool policy) {
     }
 
     y+=93;
-    DrawText(app->screen==SWAT_SCREEN_MAIN ? "Enter the annex. Tune your controls. Get ready." :
+    DrawText(app->screen==SWAT_SCREEN_MAIN ? "Plan the entry. Equip your team. Get ready." :
         (app->networked ? "Your controls paused. The session continues." : "Simulation paused. Mouse released."),
         (int)x,(int)y,16,menu_muted);
     y+=42;
     if(screen==SWAT_SCREEN_MAIN) {
-        if(GuiButton((Rectangle){x,y,content_w,48},policy ? "Watch policy" : "Enter training annex")) {
+        if(GuiButton((Rectangle){x,y,content_w,48},policy ? "Watch policy" :
+            (sim->config.mission==SWAT_HOUSE ? "Plan Cedar House" : "Enter training annex"))) {
             app->networked=false; app->leader=true; app->actor=0;
             app->restart_requested=true;
-            swat_frontend_set_screen(app,SWAT_SCREEN_GAME);
+            swat_frontend_set_screen(app,!policy && sim->config.mission==SWAT_HOUSE ? SWAT_SCREEN_PLAN : SWAT_SCREEN_GAME);
         }
     } else {
         if(sim->end!=SWAT_RUNNING) GuiDisable();

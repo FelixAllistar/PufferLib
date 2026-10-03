@@ -67,7 +67,7 @@ if ! cmake --build "$SWAT_BUILD/enet" --parallel 4 > "$SWAT_BUILD/enet-build.log
     exit 1
 fi
 
-SWAT_CORE=(body.c controller.c weapons.c world.c acoustics.c audio_dsp.c sim.c)
+SWAT_CORE=(body.c controller.c weapons.c materials.c world.c mission.c equipment.c acoustics.c audio_dsp.c sim.c)
 SWAT_SOURCES=()
 for source in "${SWAT_CORE[@]}"; do SWAT_SOURCES+=("$SWAT_ROOT/ocean/swat/$source"); done
 SWAT_FLAGS=(-O2 -g -std=gnu11 -ffp-contract=off -Wall -Wextra
@@ -81,7 +81,7 @@ SWAT_NET=("$SWAT_ROOT/ocean/swat/protocol.c" "$SWAT_ROOT/ocean/swat/net.c")
 
 "$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/swat.c" \
     "$SWAT_ROOT/ocean/swat/render.c" "$SWAT_ROOT/ocean/swat/frontend.c" \
-    "$SWAT_ROOT/ocean/swat/settings.c" "$SWAT_ROOT/ocean/swat/sound_view.c" \
+    "$SWAT_ROOT/ocean/swat/settings.c" "$SWAT_ROOT/ocean/swat/sound_view.c" "$SWAT_ROOT/ocean/swat/spatial_audio.c" \
     "${SWAT_NET[@]}" "${SWAT_SOURCES[@]}" \
     "${SWAT_LIBS[@]}" -o "$SWAT_BUILD/swat.exe"
 
@@ -100,6 +100,15 @@ SWAT_NET=("$SWAT_ROOT/ocean/swat/protocol.c" "$SWAT_ROOT/ocean/swat/net.c")
 "$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/tests/test_audio_dsp.c" \
     "$SWAT_ROOT/ocean/swat/audio_dsp.c" -static -lm -o "$SWAT_BUILD/test_audio_dsp.exe"
 
+"$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/tests/test_spatial_audio.c" \
+    "$SWAT_ROOT/ocean/swat/spatial_audio.c" -static -lm -o "$SWAT_BUILD/test_spatial_audio.exe"
+
+"$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/tests/test_mission.c" \
+    "$SWAT_ROOT/ocean/swat/protocol.c" "${SWAT_SOURCES[@]}" "${SWAT_HEADLESS_LIBS[@]}" -o "$SWAT_BUILD/test_mission.exe"
+
+"$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/audio_lab.c" \
+    "$SWAT_ROOT/ocean/swat/spatial_audio.c" "${SWAT_SOURCES[@]}" "${SWAT_HEADLESS_LIBS[@]}" -o "$SWAT_BUILD/audio_lab.exe"
+
 "$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/tests/test_protocol.c" \
     "$SWAT_ROOT/ocean/swat/protocol.c" "${SWAT_SOURCES[@]}" "${SWAT_HEADLESS_LIBS[@]}" -o "$SWAT_BUILD/test_protocol.exe"
 
@@ -111,11 +120,17 @@ SWAT_NET=("$SWAT_ROOT/ocean/swat/protocol.c" "$SWAT_ROOT/ocean/swat/net.c")
 
 "$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/tests/test_frontend.c" \
     "$SWAT_ROOT/ocean/swat/render.c" "$SWAT_ROOT/ocean/swat/frontend.c" \
-    "$SWAT_ROOT/ocean/swat/settings.c" "$SWAT_ROOT/ocean/swat/sound_view.c" "${SWAT_SOURCES[@]}" \
+    "$SWAT_ROOT/ocean/swat/settings.c" "$SWAT_ROOT/ocean/swat/sound_view.c" "$SWAT_ROOT/ocean/swat/spatial_audio.c" "${SWAT_SOURCES[@]}" \
     "${SWAT_LIBS[@]}" -o "$SWAT_BUILD/test_frontend.exe"
 
 mkdir -p "$SWAT_BUILD/config"
 cp "$SWAT_ROOT/config/default.ini" "$SWAT_ROOT/config/swat.ini" "$SWAT_BUILD/config/"
+SWAT_PHONON="$SWAT_ROOT/build/swat/deps/steam-audio/steamaudio/lib/windows-x64/phonon.dll"
+if [ -f "$SWAT_PHONON" ]; then
+    cp "$SWAT_PHONON" "$SWAT_BUILD/phonon.dll"
+    cp "$SWAT_ROOT/vendor/steam_audio/LICENSE.md" "$SWAT_BUILD/STEAM_AUDIO_LICENSE.md"
+    cp "$SWAT_ROOT/vendor/steam_audio/THIRDPARTY.md" "$SWAT_BUILD/STEAM_AUDIO_THIRDPARTY.md"
+fi
 cat > "$SWAT_BUILD/Play SWAT.cmd" <<'EOF'
 @echo off
 pushd "%~dp0"

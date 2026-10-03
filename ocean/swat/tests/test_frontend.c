@@ -41,6 +41,8 @@ static void frame(SwatFrontend* app, SwatView* view, SwatSim* sim) {
         swat_sim_step(sim,&in);
     }
     swat_sound_view_update(&test_sound,sim,app->actor,app->settings.master_volume,0,0);
+    view->actor=app->actor; view->planning=app->screen==SWAT_SCREEN_PLAN;
+    view->plan_preview=app->plan_preview; view->plan_yaw=app->plan_yaw;
     BeginDrawing();
     swat_view_draw(view,sim,false,app->settings.vertical_fov);
     swat_frontend_draw(app,sim,false);
@@ -195,6 +197,36 @@ static bool run_checks(SwatFrontend* app, SwatView* view, SwatSim* sim,
     return true;
 }
 
+static bool run_house(SwatFrontend* app,SwatView* view,SwatSim* sim,const char* plan_png,const char* wand_png) {
+    app->quit=false; app->networked=false; app->actor=0; app->selected_kit=0;
+    sim->config.mission=SWAT_HOUSE; swat_sim_reset(sim);
+    swat_frontend_set_screen(app,SWAT_SCREEN_MAIN); frames(app,view,sim,3);
+    click(app,view,sim,720,305);
+    CHECK(app->screen==SWAT_SCREEN_PLAN && !app->captured && sim->tick==0);
+    click(app,view,sim,1220,523); CHECK(app->selected_kit==1 && app->loadout_pending);
+    if(plan_png) { Image picture=LoadImageFromScreen(); bool saved=ExportImage(picture,plan_png); UnloadImage(picture); CHECK(saved); }
+    click(app,view,sim,1220,295); CHECK(app->plan_preview==1);
+    click(app,view,sim,1220,750); frames(app,view,sim,4);
+    CHECK(app->screen==SWAT_SCREEN_GAME && app->captured && sim->actors[0].gear.kit==1);
+    CHECK(sim->actors[0].arsenal.primary==2 && sim->actors[0].arsenal.shots==0);
+    event(TEST_KEY_DOWN,KEY_P,0); frame(app,view,sim);
+    event(TEST_KEY_UP,KEY_P,0); frame(app,view,sim);
+    CHECK(app->screen==SWAT_SCREEN_PLAN && !app->captured);
+    int tick=sim->tick; frames(app,view,sim,5); CHECK(sim->tick==tick);
+    escape(app,view,sim); frames(app,view,sim,3); CHECK(app->captured);
+    SwatController* c=&sim->actors[0].controller;
+    b3Body_SetTransform(c->body.body,(b3Pos){3.3f,c->body.totalHeight*.5f+.01f,-2},b3Quat_identity);
+    b3Body_SetLinearVelocity(c->body.body,swat_v(0,0,0)); c->yaw=c->pitch=0;
+    event(TEST_KEY_DOWN,KEY_LEFT_CONTROL,0); event(TEST_KEY_DOWN,KEY_G,0); frames(app,view,sim,30);
+    CHECK(sim->actors[0].gear.inspecting && swat_sim_inspection_camera(sim,0).x>4.1f);
+    if(wand_png) { Image picture=LoadImageFromScreen(); bool saved=ExportImage(picture,wand_png); UnloadImage(picture); CHECK(saved); }
+    event(TEST_KEY_UP,KEY_G,0); event(TEST_KEY_UP,KEY_LEFT_CONTROL,0); frame(app,view,sim);
+    CHECK(!sim->actors[0].gear.inspecting);
+    escape(app,view,sim); CHECK(!app->captured);
+    printf("PASS house frontend: planning/deploy, kit authority, camera selection, paused overview, tool input and under-door view; HRTF=%s\n",test_sound.spatial ? "active" : "fallback");
+    return true;
+}
+
 int main(int argc, char** argv) {
     if(argc<2) { fprintf(stderr,"usage: test_frontend SETTINGS_TEST_PATH [SCREENSHOT]\n"); return 2; }
     SetTraceLogLevel(LOG_WARNING);
@@ -211,6 +243,7 @@ int main(int argc, char** argv) {
     printf("GUI audio stream: %s\n",test_sound.initialized ? "active" : "no output device available");
     app.settings=app.saved_settings=swat_settings_defaults();
     bool ok=run_checks(&app,&view,sim,argv[1],argc>2 ? argv[2] : NULL);
+    if(ok) ok=run_house(&app,&view,sim,argc>3 ? argv[3] : NULL,argc>4 ? argv[4] : NULL);
     swat_frontend_close(&app);
     swat_sound_view_close(&test_sound);
     swat_sim_close(sim); free(sim);

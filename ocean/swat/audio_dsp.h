@@ -3,18 +3,36 @@
 #include "acoustics.h"
 #define SWAT_AUDIO_RATE 48000
 #define SWAT_AUDIO_VOICES 32
+#define SWAT_AUDIO_BLOCK 256
+#define SWAT_REVERB_BUFFER 4096
+typedef void (*SwatBinauralProcess)(void*,int,uint32_t,b3Vec3,const float*,int,float*,float*);
 typedef struct SwatAudioVoice {
     bool active;
     SwatSoundEvent event;
     uint32_t noise;
     float time,duration,left,right,filter,lowpass;
+    float gain, smooth_gain, smooth_filter;
+    b3Vec3 direction;
+    uint32_t token;
 } SwatAudioVoice;
 typedef struct SwatAudioMixer {
     SwatAudioVoice voices[SWAT_AUDIO_VOICES];
     int sample_rate;
+    SwatBinauralProcess binaural;
+    void* spatial;
+    b3Vec3 forward,right,up;
+    uint32_t next_token;
+    SwatRoomAcoustics room;
+    float feedback[4],damping[4],reverb[4][SWAT_REVERB_BUFFER],early[SWAT_REVERB_BUFFER];
+    int delays[4],positions[4],early_position,early_delays[4];
+    float damp_coefficient,wet;
+    float output[SWAT_AUDIO_BLOCK*2];
+    int output_cursor;
 } SwatAudioMixer;
 
 void swat_audio_init(SwatAudioMixer* mixer,int sample_rate);
+void swat_audio_room(SwatAudioMixer* mixer,SwatRoomAcoustics room);
+void swat_audio_listener(SwatAudioMixer* mixer,b3Vec3 forward,b3Vec3 right,b3Vec3 up);
 void swat_audio_spatial(SwatAudioVoice* voice,SwatAcousticPath path,b3Vec3 listener_right,int sample_rate);
 void swat_audio_start(SwatAudioMixer* mixer,SwatSoundEvent event,SwatAcousticPath path,b3Vec3 listener_right);
 // Portable stereo float PCM: usable without Raylib/device for recordings and

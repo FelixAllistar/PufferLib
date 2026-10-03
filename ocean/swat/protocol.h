@@ -7,17 +7,18 @@
 extern "C" {
 #endif
 
-#define SWAT_NET_VERSION 1
+#define SWAT_NET_VERSION 2
 #define SWAT_NET_MAGIC 0x53474531u
-#define SWAT_NET_PACKET_MAX 24576
+#define SWAT_NET_PACKET_MAX 98304
 #define SWAT_NET_SOUNDS 32
 typedef enum SwatMessage { SWAT_MSG_INPUT=1, SWAT_MSG_MAP, SWAT_MSG_SNAPSHOT,
                           SWAT_MSG_WELCOME, SWAT_MSG_RESTART } SwatMessage;
 typedef struct SwatMapObject {
     b3Pos center,hinge;
     b3Vec3 half;
-    float yaw,max_health;
+    float yaw,max_health,closed_yaw;
     SwatMaterial material;
+    SwatPart part;
     bool door;
 } SwatMapObject;
 typedef struct SwatMap {
@@ -25,6 +26,8 @@ typedef struct SwatMap {
     SwatConfig config;
     int count;
     b3Pos extraction;
+    int room_count;
+    SwatRoom rooms[SWAT_MAX_ROOMS];
     SwatMapObject objects[SWAT_MAX_OBJECTS];
 } SwatMap;
 typedef struct SwatActorState {
@@ -35,6 +38,7 @@ typedef struct SwatActorState {
     float health,yaw,pitch,ads,stamina,eye_height,recoil_pitch,recoil_yaw,lean;
     int last_shot_tick;
     SwatArsenal arsenal;
+    SwatEquipment gear;
 } SwatActorState;
 typedef struct SwatObjectState { bool active,door_open; float health,door_angle; } SwatObjectState;
 typedef struct SwatSnapshot {

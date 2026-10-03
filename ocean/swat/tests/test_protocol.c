@@ -4,13 +4,15 @@
 #include <string.h>
 
 int main(void) {
-    unsigned char bytes[SWAT_NET_PACKET_MAX],bad[SWAT_NET_PACKET_MAX];
+    static unsigned char bytes[SWAT_NET_PACKET_MAX],bad[SWAT_NET_PACKET_MAX];
     SwatCommand command={4,99,swat_neutral_input()};
     command.input.forward=1; command.input.yaw_delta=.2f; command.input.fire=true; command.input.weapon=2;
+    command.input.inspect=command.input.command=command.input.melee=true; command.input.loadout=3;
     size_t length=swat_encode_command(bytes,sizeof(bytes),&command);
     assert(length && swat_message_type(bytes,length)==SWAT_MSG_INPUT);
     SwatCommand decoded={0}; assert(swat_decode_command(&decoded,bytes,length));
     assert(decoded.epoch==4 && decoded.sequence==99 && decoded.input.forward==1 && decoded.input.fire && decoded.input.weapon==2);
+    assert(decoded.input.inspect && decoded.input.command && decoded.input.melee && decoded.input.loadout==3);
     for(size_t i=0;i<length;i++) {
         SwatCommand untouched=decoded;
         assert(!swat_decode_command(&decoded,bytes,i)); assert(!memcmp(&decoded,&untouched,sizeof(decoded)));
@@ -20,9 +22,9 @@ int main(void) {
     bytes[length]=0; assert(!swat_decode_command(&decoded,bytes,length+1));
 
     SwatConfig config=swat_default_config(); config.randomize=false; config.hostile_fire=false;
-    SwatSim server,replica; swat_sim_init(&server,config,42); memset(&replica,0,sizeof(replica));
+    static SwatSim server,replica; swat_sim_init(&server,config,42); memset(&replica,0,sizeof(replica));
     assert(swat_sim_set_player(&server,1,true));
-    SwatMap map,copy; swat_capture_map(&server,3,&map);
+    static SwatMap map,copy; swat_capture_map(&server,3,&map);
     length=swat_encode_map(bytes,sizeof(bytes),&map); assert(length && swat_decode_map(&copy,bytes,length));
     assert(copy.count==server.world.count && copy.config.max_ticks==config.max_ticks);
     for(size_t i=0;i<length;i++) assert(!swat_decode_map(&copy,bytes,i));

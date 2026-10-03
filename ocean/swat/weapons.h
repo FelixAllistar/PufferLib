@@ -23,6 +23,7 @@ typedef struct SwatWeapon {
 typedef struct SwatArsenal {
     SwatWeapon slots[2];
     int active, equip_remaining;
+    int primary; // definition index: 0 carbine, 2 impact launcher
     bool last_fire, last_reload, last_selector;
     int shots;
     uint32_t rng;
@@ -34,6 +35,8 @@ typedef struct SwatShot {
 } SwatShot;
 
 const SwatWeaponDef* swat_weapon_def(int slot);
+const SwatWeaponDef* swat_arsenal_def(const SwatArsenal* arsenal,int slot);
+void swat_weapons_primary(SwatArsenal* arsenal,int definition);
 void swat_weapons_init(SwatArsenal* arsenal, uint32_t seed);
 bool swat_weapons_busy(const SwatArsenal* arsenal);
 SwatShot swat_weapons_step(SwatArsenal* arsenal, const SwatInput* input,

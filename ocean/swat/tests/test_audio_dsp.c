@@ -36,6 +36,23 @@ int main(void) {
         muffled_changes+=m*m; clear_changes+=c*c;
     }
     assert(muffled_changes<clear_changes*.5f);
+    // A room tail outlives the source; longer RT60 retains more late energy.
+    SwatRoomAcoustics short_room={{.35f,.35f,.25f},.5f,{.01f,.02f,.015f,.025f},{.1f,.1f,.1f,.1f}};
+    SwatRoomAcoustics long_room=short_room;
+    for(int i=0;i<3;i++) long_room.rt60[i]*=4;
+    swat_audio_init(&a,SWAT_AUDIO_RATE); swat_audio_init(&b,SWAT_AUDIO_RATE);
+    swat_audio_room(&a,short_room); swat_audio_room(&b,long_room);
+    swat_audio_start(&a,event,right,listener_right); swat_audio_start(&b,event,right,listener_right);
+    double short_tail=0,long_tail=0;
+    for(int block=0;block<48;block++) {
+        swat_audio_mix(&a,first,2048,1); swat_audio_mix(&b,second,2048,1);
+        for(int i=0;i<4096;i++) {
+            assert(isfinite(first[i]) && isfinite(second[i]) && fabsf(first[i])<1 && fabsf(second[i])<1);
+            if(block>12) { short_tail+=first[i]*first[i]; long_tail+=second[i]*second[i]; }
+        }
+    }
+    assert(long_tail>short_tail*10 && long_tail>1e-6);
+    puts("PASS room DSP: bounded stereo reflections, persistent decay after source expiry and RT60-dependent late energy");
     puts("PASS audio DSP: deterministic stereo PCM, right/left orientation, mute, bounded overlapping voices, voice expiry and material low-pass");
     return 0;
 }

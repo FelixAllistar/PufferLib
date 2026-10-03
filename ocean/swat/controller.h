@@ -16,6 +16,8 @@ typedef struct SwatInput {
     SwatGait gait;
     bool crouch, jump, aim, fire, reload, interact, selector;
     int weapon;                    // 0 = keep, 1 = primary, 2 = sidearm
+    bool inspect, command, melee;
+    int loadout;                   // 0 = keep, 1..3 = staging-area kit request
 } SwatInput;
 
 typedef struct SwatController {
@@ -23,6 +25,7 @@ typedef struct SwatController {
     float yaw, pitch, ads, stamina, eye_height;
     float recoil_pitch, recoil_yaw;
     float lean;                    // achieved lean relative to current right
+    float mobility;
     bool sprinting, last_jump, jumped, muzzle_blocked;
 } SwatController;
 

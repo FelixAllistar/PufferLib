@@ -3,11 +3,29 @@
 
 void swat_audio_init(SwatAudioMixer* mixer,int sample_rate) {
     memset(mixer,0,sizeof(*mixer)); mixer->sample_rate=sample_rate>0 ? sample_rate : SWAT_AUDIO_RATE;
+    mixer->forward=swat_v(1,0,0); mixer->right=swat_v(0,0,1); mixer->up=swat_v(0,1,0);
+    mixer->output_cursor=SWAT_AUDIO_BLOCK;
+    const int primes[4]={1493,1789,2137,2591};
+    for(int i=0;i<4;i++) mixer->delays[i]=(int)swat_clamp(primes[i]*mixer->sample_rate/48000.0f,1,SWAT_REVERB_BUFFER-1);
+}
+void swat_audio_listener(SwatAudioMixer* mixer,b3Vec3 forward,b3Vec3 right,b3Vec3 up) {
+    mixer->forward=forward; mixer->right=right; mixer->up=up;
+}
+void swat_audio_room(SwatAudioMixer* mixer,SwatRoomAcoustics room) {
+    mixer->room=room;
+    float mid=swat_clamp(room.rt60[1],.1f,3);
+    for(int i=0;i<4;i++) {
+        mixer->feedback[i]=powf(10,-3.0f*mixer->delays[i]/(mixer->sample_rate*mid));
+        mixer->early_delays[i]=(int)swat_clamp(room.early_seconds[i]*mixer->sample_rate,1,SWAT_REVERB_BUFFER-1);
+    }
+    float cutoff=2000+6000*swat_clamp(room.rt60[2]/mid,0,1);
+    mixer->damp_coefficient=1-expf(-2*SWAT_PI*cutoff/mixer->sample_rate);
 }
 void swat_audio_spatial(SwatAudioVoice* voice,SwatAcousticPath path,b3Vec3 right,int sample_rate) {
     float pan=swat_clamp(b3Dot(path.direction,right),-1,1);
     float gain=swat_clamp(path.gain,0,1)*0.7f;
     voice->left=gain*sqrtf((1-pan)*0.5f); voice->right=gain*sqrtf((1+pan)*0.5f);
+    voice->gain=gain; voice->direction=path.direction;
     float clarity=path.bands[0]>1e-6f ? swat_clamp(path.bands[2]/path.bands[0],0,1) : 0;
     float cutoff=350+9000*clarity;
     voice->filter=1-expf(-2*SWAT_PI*cutoff/sample_rate);
@@ -20,10 +38,12 @@ void swat_audio_start(SwatAudioMixer* mixer,SwatSoundEvent event,SwatAcousticPat
         float gain=voice->left+voice->right;
         if(gain<quietest) { quietest=gain; chosen=i; }
     }
-    static const float duration[SWAT_SOUND_KINDS]={.28f,.14f,.3f,.08f,.6f,.12f,.5f};
+    static const float duration[SWAT_SOUND_KINDS]={.28f,.14f,.3f,.08f,.6f,.12f,.5f,.6f};
     SwatAudioVoice* voice=&mixer->voices[chosen]; memset(voice,0,sizeof(*voice));
     voice->active=true; voice->event=event; voice->noise=event.id*0x9e3779b9u+1;
+    voice->token=++mixer->next_token;
     voice->duration=duration[event.kind]; swat_audio_spatial(voice,path,right,mixer->sample_rate);
+    voice->smooth_gain=voice->gain; voice->smooth_filter=voice->filter;
 }
 static float sample(SwatAudioVoice* voice) {
     float t=voice->time;
@@ -39,21 +59,71 @@ static float sample(SwatAudioVoice* voice) {
         case SWAT_SOUND_DOOR: return (.3f*noise+.7f*sinf(2*SWAT_PI*(180*t+18*t*t)))*expf(-6*t);
         case SWAT_SOUND_IMPACT: return noise*expf(-65*t);
         case SWAT_SOUND_BREAK: return (noise+.25f*sinf(2*SWAT_PI*260*t))*expf(-12*t);
+        case SWAT_SOUND_COMMAND: return .25f*sinf(2*SWAT_PI*180*t)*sinf(SWAT_PI*fminf(t/.6f,1))+.1f*noise*expf(-5*t);
         default: return 0;
     }
 }
+static void mix_block(SwatAudioMixer* mixer) {
+    float dt=1.0f/mixer->sample_rate;
+    float left[SWAT_AUDIO_BLOCK]={0},right[SWAT_AUDIO_BLOCK]={0},send[SWAT_AUDIO_BLOCK]={0};
+    for(int i=0;i<SWAT_AUDIO_VOICES;i++) {
+        SwatAudioVoice* voice=&mixer->voices[i]; if(!voice->active) continue;
+        float mono[SWAT_AUDIO_BLOCK],l[SWAT_AUDIO_BLOCK],r[SWAT_AUDIO_BLOCK];
+        for(int frame=0;frame<SWAT_AUDIO_BLOCK;frame++) {
+            float raw=voice->time<voice->duration ? sample(voice) : 0;
+            voice->smooth_gain+=.004f*(voice->gain-voice->smooth_gain);
+            voice->smooth_filter+=.004f*(voice->filter-voice->smooth_filter);
+            voice->lowpass+=voice->smooth_filter*(raw-voice->lowpass);
+            mono[frame]=voice->lowpass*voice->smooth_gain;
+            send[frame]+=mono[frame]; voice->time+=dt;
+        }
+        if(mixer->binaural) {
+            b3Vec3 direction=swat_v(b3Dot(voice->direction,mixer->right),b3Dot(voice->direction,mixer->up),
+                                   -b3Dot(voice->direction,mixer->forward));
+            mixer->binaural(mixer->spatial,i,voice->token,direction,mono,SWAT_AUDIO_BLOCK,l,r);
+        } else {
+            float pan=swat_clamp(b3Dot(voice->direction,mixer->right),-1,1);
+            float gl=sqrtf((1-pan)*.5f),gr=sqrtf((1+pan)*.5f);
+            for(int frame=0;frame<SWAT_AUDIO_BLOCK;frame++) { l[frame]=mono[frame]*gl; r[frame]=mono[frame]*gr; }
+        }
+        for(int frame=0;frame<SWAT_AUDIO_BLOCK;frame++) { left[frame]+=l[frame]; right[frame]+=r[frame]; }
+        // Drain convolution and low-pass tails before reusing a voice.
+        if(voice->time>voice->duration+.04f) voice->active=false;
+    }
+    for(int frame=0;frame<SWAT_AUDIO_BLOCK;frame++) {
+        float taps[4];
+        for(int i=0;i<4;i++) {
+            float tap=mixer->reverb[i][mixer->positions[i]];
+            mixer->damping[i]+=mixer->damp_coefficient*(tap-mixer->damping[i]);
+            taps[i]=mixer->damping[i];
+        }
+        float scatter[4]={taps[0]+taps[1]+taps[2]+taps[3],taps[0]-taps[1]+taps[2]-taps[3],
+                          taps[0]+taps[1]-taps[2]-taps[3],taps[0]-taps[1]-taps[2]+taps[3]};
+        for(int i=0;i<4;i++) {
+            mixer->reverb[i][mixer->positions[i]]=send[frame]*.25f+scatter[i]*.5f*mixer->feedback[i];
+            mixer->positions[i]=(mixer->positions[i]+1)%mixer->delays[i];
+        }
+        mixer->early[mixer->early_position]=send[frame];
+        float el=0,er=0;
+        for(int i=0;i<4;i++) {
+            int p=(mixer->early_position-mixer->early_delays[i]+SWAT_REVERB_BUFFER)%SWAT_REVERB_BUFFER;
+            float echo=mixer->early[p]*mixer->room.early_gain[i];
+            if(i%2) er+=echo; else el+=echo;
+        }
+        mixer->early_position=(mixer->early_position+1)%SWAT_REVERB_BUFFER;
+        mixer->wet+=.002f*(mixer->room.wet-mixer->wet);
+        float l=left[frame]+mixer->wet*(taps[0]+taps[2]+el);
+        float r=right[frame]+mixer->wet*(taps[1]+taps[3]+er);
+        mixer->output[2*frame]=l/(1+fabsf(l)); mixer->output[2*frame+1]=r/(1+fabsf(r));
+    }
+    mixer->output_cursor=0;
+}
 void swat_audio_mix(SwatAudioMixer* mixer,float* stereo,int frames,float volume) {
     volume=isfinite(volume) ? swat_clamp(volume,0,1) : 0;
-    float dt=1.0f/mixer->sample_rate;
     for(int frame=0;frame<frames;frame++) {
-        float left=0,right=0;
-        for(int i=0;i<SWAT_AUDIO_VOICES;i++) {
-            SwatAudioVoice* voice=&mixer->voices[i]; if(!voice->active) continue;
-            float raw=sample(voice); voice->lowpass+=voice->filter*(raw-voice->lowpass);
-            left+=voice->lowpass*voice->left; right+=voice->lowpass*voice->right;
-            voice->time+=dt; if(voice->time>=voice->duration) voice->active=false;
-        }
-        // Bounded soft limiting keeps overlapping gunshots from clipping.
-        stereo[2*frame]=volume*left/(1+fabsf(left)); stereo[2*frame+1]=volume*right/(1+fabsf(right));
+        if(mixer->output_cursor>=SWAT_AUDIO_BLOCK) mix_block(mixer);
+        stereo[2*frame]=volume*mixer->output[2*mixer->output_cursor];
+        stereo[2*frame+1]=volume*mixer->output[2*mixer->output_cursor+1];
+        mixer->output_cursor++;
     }
 }

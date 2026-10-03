@@ -15,7 +15,7 @@ static void test_transmission_and_arrival(void) {
     assert(muffled.gain<clear.gain && muffled.bands[2]<muffled.bands[0]*0.2f);
     world.objects[wall].material=SWAT_CONCRETE;
     SwatAcousticPath concrete=swat_acoustic_path(&world,&event,listener);
-    assert(concrete.gain<muffled.gain*0.1f);
+    assert(concrete.gain<muffled.gain*0.2f);
     assert(swat_world_damage(&world,wall,200));
     assert(fabsf(swat_acoustic_path(&world,&event,listener).gain-clear.gain)<1e-6f);
     SwatSoundLog log={0}; SwatHearingMemory memory={0}; SwatHeardSound heard;

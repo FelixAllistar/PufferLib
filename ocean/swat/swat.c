@@ -15,7 +15,8 @@ static void usage(const char* path) {
         "  %s host [--port 27474]\n"
         "  %s join ADDRESS [--port 27474]\n"
         "  --settings FILE.ini          Override the saved player preferences\n"
-        "  --capture-screen SCREEN      game, main, pause, or settings\n"
+        "  --mission house|annex        Human default: house; policy default: annex\n"
+        "  --capture-screen SCREEN      game, main, pause, settings, plan, or overwatch\n"
         "Run from the repository root so config/default.ini and config/swat.ini are available.\n",
         path,path,path,path,path,path);
 }
@@ -52,8 +53,9 @@ int main(int argc, char** argv) {
     const char* model=NULL; const char* capture=NULL; const char* settings_path=NULL;
     const char* join_address=NULL; bool start_host=false;
     int port=SWAT_DEFAULT_PORT;
+    int mission=-1,preview=0;
     SwatScreen capture_screen=SWAT_SCREEN_GAME;
-    bool eval=false,deterministic=false;
+    bool eval=false,deterministic=false,max_ticks_override=false;
     int episodes=8,override_count=0;
     char** overrides=calloc((size_t)argc,sizeof(char*));
     if (!overrides) return 1;
@@ -66,6 +68,9 @@ int main(int argc, char** argv) {
         else if(!strcmp(argv[i],"join")) {
             if(++i>=argc) { usage(argv[0]); free(overrides); return 1; }
             join_address=argv[i];
+        } else if(!strcmp(argv[i],"--mission")) {
+            if(++i>=argc || (strcmp(argv[i],"house") && strcmp(argv[i],"annex"))) { usage(argv[0]); free(overrides); return 1; }
+            mission=!strcmp(argv[i],"house") ? SWAT_HOUSE : SWAT_ANNEX;
         } else if(!strcmp(argv[i],"--port")) {
             if(++i>=argc) { usage(argv[0]); free(overrides); return 1; }
             char* end; long parsed=strtol(argv[i],&end,10);
@@ -95,10 +100,14 @@ int main(int argc, char** argv) {
             else if(!strcmp(argv[i],"main")) capture_screen=SWAT_SCREEN_MAIN;
             else if(!strcmp(argv[i],"pause")) capture_screen=SWAT_SCREEN_PAUSE;
             else if(!strcmp(argv[i],"settings")) capture_screen=SWAT_SCREEN_SETTINGS;
+            else if(!strcmp(argv[i],"plan")) capture_screen=SWAT_SCREEN_PLAN;
+            else if(!strcmp(argv[i],"overwatch")) { capture_screen=SWAT_SCREEN_PLAN; preview=1; }
             else { fprintf(stderr,"swat: unknown capture screen %s\n",argv[i]); free(overrides); return 1; }
         } else if (!strcmp(argv[i],"--deterministic")) deterministic=true;
-        else if (!strncmp(argv[i],"--",2) && strchr(argv[i],'.') && strchr(argv[i],'='))
+        else if (!strncmp(argv[i],"--",2) && strchr(argv[i],'.') && strchr(argv[i],'=')) {
             overrides[override_count++]=argv[i];
+            if(!strncmp(argv[i],"--env.max_ticks=",16)) max_ticks_override=true;
+        }
         else { fprintf(stderr,"swat: unknown argument %s\n",argv[i]); usage(argv[0]); free(overrides); return 1; }
     }
     if((model || capture) && (start_host || join_address)) {
@@ -116,6 +125,8 @@ int main(int argc, char** argv) {
     float obs[OBS_SIZE]={0},actions[NUM_ATNS]={0},reward=0,terminal=0;
     env.agents[0].observations=obs; env.agents[0].actions=actions;
     env.agents[0].rewards=&reward; env.agents[0].terminals=&terminal;
+    env.sim->config.mission=mission<0 ? (model ? SWAT_ANNEX : SWAT_HOUSE) : mission;
+    if(!model && !max_ticks_override && env.sim->config.max_ticks==1800) env.sim->config.max_ticks=18000;
     puf_reset(&env);
     SwatConfig solo_config=env.sim->config;
     PufferNet* policy=NULL; Weights* weights=NULL;
@@ -153,7 +164,7 @@ int main(int argc, char** argv) {
         if(join_address) snprintf(app.address,sizeof(app.address),"%s",join_address);
         swat_frontend_set_screen(&app,SWAT_SCREEN_CONNECT);
     }
-    if(capture) app.screen=capture_screen;
+    if(capture) { app.screen=capture_screen; app.plan_preview=preview; }
     float accumulator=0,look_x=0,look_y=0;
     int frames=0;
     while (!WindowShouldClose() && !app.quit) {
@@ -173,7 +184,6 @@ int main(int argc, char** argv) {
                 snprintf(app.notice,sizeof(app.notice),"Choose a UDP port from 1 to 65535."); app.connect_pending=false;
             } else if(request_host) {
                 env.sim->config=solo_config;
-                if(env.sim->config.max_ticks==1800) env.sim->config.max_ticks=18000;
                 if(swat_server_open(&server,env.sim,(int)parsed,true)) {
                     SetWindowState(FLAG_WINDOW_ALWAYS_RUN);
                     app.networked=true; app.leader=true; app.actor=0; app.connect_pending=false;
@@ -234,6 +244,7 @@ int main(int argc, char** argv) {
             }
         }
         view.actor=app.actor;
+        view.planning=app.screen==SWAT_SCREEN_PLAN; view.plan_preview=app.plan_preview; view.plan_yaw=app.plan_yaw;
         view.yaw_offset=look_x+(client.status==SWAT_NET_ACTIVE ? client.pending_yaw : 0);
         view.pitch_offset=look_y+(client.status==SWAT_NET_ACTIVE ? client.pending_pitch : 0);
         if(server.transport) {

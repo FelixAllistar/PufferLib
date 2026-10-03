@@ -4,13 +4,15 @@
 #include "weapons.h"
 #include "world.h"
 #include "acoustics.h"
+#include "equipment.h"
+#include "mission.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 #define SWAT_CONTRACT_VERSION 1
-#define SWAT_MAX_ACTORS 8
+#define SWAT_MAX_ACTORS 12
 #define SWAT_MAX_PLAYERS 4
 #define SWAT_PROPRIO_SIZE 32
 #define SWAT_SENSOR_ROWS 5
@@ -28,6 +30,7 @@ typedef struct SwatActor {
     SwatTag tag;
     SwatController controller;
     SwatArsenal arsenal;
+    SwatEquipment gear;
     SwatRole role;
     float health;
     bool present, alive, last_interact;
@@ -42,6 +45,7 @@ typedef struct SwatActor {
 typedef struct SwatConfig {
     int max_ticks;
     bool randomize, hostile_fire;
+    int mission;
 } SwatConfig;
 
 typedef struct SwatEvents {
@@ -77,6 +81,10 @@ SwatInput swat_decode_action(const float actions[SWAT_ACTION_HEADS]);
 int swat_sim_hostiles(const SwatSim* sim);
 void swat_sim_shoot(SwatSim* sim, int actor, b3Pos origin, b3Vec3 direction, SwatShot shot);
 void swat_sim_damage_actor(SwatSim* sim, int victim, int shooter, float damage);
+void swat_sim_damage_region(SwatSim* sim,int victim,int shooter,float damage,SwatHitRegion region,bool less_lethal);
+SwatHitRegion swat_sim_hit_region(const SwatActor* actor,b3Pos point);
+b3Pos swat_sim_inspection_camera(const SwatSim* sim,int actor);
+int swat_sim_unsecured(const SwatSim* sim);
 const char* swat_end_name(SwatEnd end);
 
 #ifdef __cplusplus

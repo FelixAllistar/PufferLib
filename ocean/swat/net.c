@@ -54,7 +54,7 @@ static void server_broadcast(SwatNetServer* server) {
     server_capture(server,&state);
     size_t size=swat_encode_snapshot(bytes,sizeof(bytes),&state);
     if(!size) return;
-    ENetPacket* packet=enet_packet_create(bytes,size,0);
+    ENetPacket* packet=enet_packet_create(bytes,size,ENET_PACKET_FLAG_UNRELIABLE_FRAGMENT);
     if(packet) enet_host_broadcast((ENetHost*)server->transport,CHANNEL_STATE,packet);
 }
 bool swat_server_open(SwatNetServer* server,SwatSim* sim,int port,bool local_player) {

@@ -18,6 +18,7 @@ void swat_controller_init(SwatController* c, b3WorldId world, b3Pos feet, float 
     c->body.stepDownHeight = 0.30f;
     c->yaw = yaw;
     c->stamina = 1.0f;
+    c->mobility = 1.0f;
     c->eye_height = c->body.standHeight - 0.2032f;
 }
 
@@ -43,6 +44,9 @@ void swat_controller_pre_step(SwatController* c, const SwatInput* in, bool weapo
     c->ads += (target_ads - c->ads) * (1.0f-expf(-18.0f*SWAT_DT));
     c->body.sprint = c->sprinting;
     c->body.walkSpeed = in->gait == SWAT_SLOW ? 1.2f : (in->aim ? 1.7f : 2.8f);
+    c->body.walkSpeed *= c->mobility;
+    c->body.runSpeed = 4.6f*c->mobility;
+    c->body.crouchSpeed = 1.25f*c->mobility;
     c->jumped = in->jump && !c->last_jump && c->body.onGround &&
         c->body.jumpCooldown <= 0.0f && !c->body.crouched && c->stamina >= 0.1f;
     if (c->jumped) {
