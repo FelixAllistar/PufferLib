@@ -10,6 +10,7 @@ set -e
 #   ./build.sh breakout --cpu        # Play/eval binary (optimized) -> ./ENV
 #   ./build.sh osrs_inferno --cpu     # OSRS visual policy viewer -> ./osrs_inferno
 #   ./build.sh nethack --cpu          # NetHack TTY demo (ocean/nethack/nethack.c)
+#   ./build.sh swat --cpu             # SWAT: Gold Element player/policy viewer
 #   ./build.sh breakout myplay --cpu # Play -> ./myplay
 #   ./build.sh breakout --debug      # Debug (-O0 -g; sanitizers on --cpu)
 #   ./build.sh breakout --web        # Emscripten web build
@@ -215,6 +216,12 @@ elif [ "$ENV" = "retro" ]; then
     SRC_DIR="ocean/$ENV"
     make -C "$SRC_DIR" -j2 batch-library panel
     LINK_ARCHIVES+=("build/retro_batch/libquicknes_batch.a")
+elif [ "$ENV" = "swat" ]; then
+    SRC_DIR="ocean/$ENV"
+    BOX3D_DIR=${BOX3D_DIR:-../box3d}
+    INCLUDES+=(-I"$BOX3D_DIR/include")
+    EXTRA_SRC="$SRC_DIR/body.c $SRC_DIR/controller.c $SRC_DIR/weapons.c $SRC_DIR/world.c $SRC_DIR/sim.c $SRC_DIR/render.c"
+    LINK_ARCHIVES+=("$BOX3D_DIR/build/src/libbox3d.a")
 elif [ "$ENV" = "shenaniguns3d" ]; then
     SRC_DIR="ocean/$ENV"
     BOX3D_DIR=${BOX3D_DIR:-../box3d}
@@ -269,7 +276,7 @@ if [ -n "$OUT" ]; then
     OUTPUT_NAME=$OUT
 fi
 # Header-only envs compile src/puffercpu.c. SRC_FILE is the custom standalone
-# for osrs_* (visual sim) and nethack (TTY demo); see --cpu / web.sh.
+# for envs with their own player/viewer, including SWAT; see --cpu / web.sh.
 SRC_FILE=${SRC_FILE:-$SRC_DIR/$ENV.c}
 
 if [ "$(uname -m)" = "x86_64" ]; then
@@ -327,7 +334,7 @@ if [ "$MODE" = "cpu" ]; then
     STANDALONE_SOURCE="src/puffercpu.c"
     STANDALONE_DEFINES=()
     case "$ENV" in
-        osrs_*|nethack|pokemon)
+        osrs_*|nethack|pokemon|swat)
             STANDALONE_SOURCE="$SRC_FILE"
             ;;
         *)
