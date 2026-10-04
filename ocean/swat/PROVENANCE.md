@@ -1,0 +1,74 @@
+# Character and dependency provenance
+
+`body.c` and `body.h` began as local copies of
+`ocean/shenaniguns3d/character.c` and `character.h` at repository commit
+`6e3e0ef19`. Those files preserved the previously unversioned `pd64` C port of
+Box3D's `samples/sample_character.cpp` (`RigidbodyCharacter`), which credits
+s&box's `PlayerController`. The source comments retain that ancestry.
+
+Original snapshot SHA-256 before the SWAT fork:
+
+- `character.c`: `0db4023c191f649532de6ef343754b6cb98e4d92cd657c67fc9595231a24c01b`
+- `character.h`: `411954928be6557ae29276133bf655e4275d25148a80f2964156c85c83517d26`
+
+SWAT namespaces the API and adds collision-limited physical upper-body lean,
+lean-aware standing clearance, consistent mass when leaning, and capped
+horizontal acceleration that leaves vertical velocity to gravity/jumping.
+Tactical control, weapons, scene, mission, rendering and the RL contract live
+in SWAT's own modules. The old game's environment, custom encoder, and
+checkpoint format are not dependencies of SWAT.
+
+Physics dependency: `FelixAllistar/box3d` at
+`c4a414fcfe612a704dcd06ce921348d441271fc7`, built as a separate static library.
+The required public headers and library are loaded from a sibling checkout;
+no dependency binary is committed. Presentation uses the repository's Raylib
+5.5 dependency. The game adds no third-party game art or audio.
+
+Menus use the repository's existing `vendor/raygui.h`, with its license header
+preserved. The optional Windows build downloads the official Raylib 5.5
+Win64 MinGW archive and uses MinGW-w64 tool packages from the host's configured
+APT repositories if a cross-compiler is not already installed. Generated
+libraries, compiler tools, and executables stay under the ignored `build/`
+directory; their source and license files remain with those dependencies.
+
+The Box3D copyright/license notice associated with the dependency and sample
+ancestry is reproduced below. The surrounding repository's license continues
+to apply to its own code.
+
+Networking vendors the required pristine ENet 1.3.18 C sources/headers/CMake
+and MIT license from `lsalzman/enet`, revision
+`2662c0de09e36f2a2030ccc2c528a3e4c9e8138a`; see `vendor/enet/UPSTREAM.md`.
+The acoustic model and synthesized audio placeholders are original code;
+no third-party sound recordings or game assets are added.
+
+Optional headphone rendering uses Steam Audio 4.8.1. Its unmodified public
+headers, Apache 2.0 license and SDK third-party notices are in
+`vendor/steam_audio`, with the release archive hash in `UPSTREAM.md`.
+`setup_audio.py` verifies that archive and extracts the Linux/Windows runtimes
+only under ignored build directories. The built-in HRTF comes from that SDK;
+the game's source sounds remain original procedural placeholders. Runtime
+distribution includes the SDK's third-party notices, including Intel IPP terms.
+
+```text
+MIT License
+
+Copyright (c) 2026 Erin Catto
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```

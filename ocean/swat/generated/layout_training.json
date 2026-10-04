@@ -1,0 +1,46 @@
+{
+  "training": "bootstrap: imitation of top 40% authored layout scores per difficulty",
+  "human_feedback_pairs": 0,
+  "seed": 20261003,
+  "steps": 1600,
+  "corpus_count": 12000,
+  "corpus_unique": 11903,
+  "train_layouts": 3843,
+  "heldout_layouts": 917,
+  "heldout_token_nll": 0.9909934401512146,
+  "corpus_sha256": "a003e317b4f1c24d72da279a4f81be4fe3d745a1c771943b79a97f6cd77ddee7",
+  "model_id": 3039774559,
+  "weights_sha256": "b52f475ff285ab23b028c64ec7cad76ed60003c5084ffa95dad8c20924f9e663",
+  "layout_version": 1,
+  "architecture": [
+    49,
+    64,
+    3
+  ],
+  "temperature": 0.9,
+  "torch_version": "2.13.0+cu126",
+  "c_python_max_logit_error": 2.3644592284099986e-07,
+  "unseen_seeds_uniform": {
+    "count": 1500,
+    "unique_layouts": 1499,
+    "mean_bootstrap_quality": 1.4173955653333332,
+    "room_counts": [
+      494,
+      533,
+      473
+    ],
+    "dimensions": 9
+  },
+  "unseen_seeds_neural": {
+    "count": 1500,
+    "unique_layouts": 1494,
+    "mean_bootstrap_quality": 1.7692230966666667,
+    "room_counts": [
+      380,
+      603,
+      517
+    ],
+    "dimensions": 9
+  },
+  "raw_sample_validity": 0.99
+}

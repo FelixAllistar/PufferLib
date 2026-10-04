@@ -170,7 +170,7 @@ static void capture_reach(ARPG* e,const char* dir) {
         printf("Reach visual seed %u / %s at %d,%d\n",w->seed,tags[biome],best_x,best_y);
     }
     c->map_open=1;c->map_x=c->map_y=0;c->map_span=640;
-    for(int i=0;i<4;i++)c_render(e);
+    for(int i=0;i<120;i++){c_render(e);if(!c->map_pending)break;}
     snprintf(path,sizeof(path),"%s/reach-map.png",dir);capture(path);
     c->map_open=0;
     // Render all imported poses through the same fixed-pivot path as the game.

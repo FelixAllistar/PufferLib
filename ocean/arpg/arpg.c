@@ -12,6 +12,16 @@
 static const double AR_FAST_SIM_DT = 1.0 / 60.0;
 static const int AR_FAST_MAX_CATCHUP_STEPS = 5;
 
+static double ar_frame_budget(double accumulator,double elapsed,double* dropped) {
+    double available=accumulator+fmax(0,elapsed);
+    double limit=AR_FAST_MAX_CATCHUP_STEPS*AR_FAST_SIM_DT;
+    if(available>=limit+AR_FAST_SIM_DT) {
+        double bounded=limit+fmod(available,AR_FAST_SIM_DT);
+        *dropped+=available-bounded;available=bounded;
+    }
+    return available;
+}
+
 // ---------------------------------------------------------------------------
 // Configurable key bindings.
 // ---------------------------------------------------------------------------
@@ -308,7 +318,7 @@ static int ar_pick_pet(ARPG* e,ARClient* c,Vector2 mouse) {
     int found=-1;float best=1e9f;
     Vector2 badges[AR_MAX_PETS];ar_pet_badges(c,e,badges);
     for(int p=0;p<AR_MAX_PETS;p++)if(e->pets.active[p] && !e->pets.dormant[p]) {
-        Vector2 at=ar_iso(c,e->pets.x[p],e->pets.y[p],0);
+        Vector2 pose=ar_view_pet(c,e,p),at=ar_iso(c,pose.x,pose.y,0);
         float radius=fmaxf(17,25*c->zoom);
         Rectangle hit={at.x-radius,at.y-57*c->zoom,radius*2,64*c->zoom};
         float d=(mouse.x-at.x)*(mouse.x-at.x)+(mouse.y-at.y+20*c->zoom)*(mouse.y-at.y+20*c->zoom);
@@ -342,7 +352,7 @@ static void ar_context_order(ARPG* e,ARClient* c,Vector2 mouse,int attack_move) 
         }
     }
     if(target<0)for(int k=0;k<e->enemy_count;k++) {
-        int i=e->enemies.dense[k];Vector2 at=ar_iso(c,e->enemies.x[i],e->enemies.y[i],0);
+        int i=e->enemies.dense[k];Vector2 pose=ar_view_enemy(c,e,i),at=ar_iso(c,pose.x,pose.y,0);
         if(CheckCollisionPointRec(mouse,(Rectangle){at.x-22*c->zoom,at.y-48*c->zoom,44*c->zoom,52*c->zoom})) {
             goal=(Vector2){e->enemies.x[i],e->enemies.y[i]};command=AR_CMD_ATTACK;target=i;break;
         }
@@ -440,6 +450,7 @@ int main(int argc,char** argv) {
     }
     c_render(&e);
     ARClient* client=ar_client(&e);
+    ar_pose_reset(client,&e);
     client->autoplay=watch;client->pet_policy=net!=NULL;
     if(e.campaign)for(int p=0;p<AR_MAX_PETS;p++)client->task_override[p]=((ARWorld*)e.campaign)->task_override[p];
     if(loaded)ar_notice(client,"Frontier restored. Your outposts, companions, and terrain changes are here.");
@@ -451,7 +462,7 @@ int main(int argc,char** argv) {
     int shot_at=240;
     if(getenv("ARPG_SHOT_FRAME"))shot_at=atoi(getenv("ARPG_SHOT_FRAME"));
     while(!WindowShouldClose()) {
-        float frame_dt=fminf(GetFrameTime(),0.1f);
+        double frame_dt=GetFrameTime();
         if(e.campaign)for(int p=0;p<AR_MAX_PETS;p++)((ARWorld*)e.campaign)->task_override[p]=client->task_override[p];
         if(save_enabled && IsKeyPressed(KEY_F5))ar_notice(client,ar_world_save(&e,save_path) ? "Frontier saved." : "Save failed. Your current world is still in memory.");
         if(ar_binding_pressed(controls.reset)) {
@@ -474,6 +485,7 @@ int main(int argc,char** argv) {
             client->camera_free=0;client->cam_x=e.px;client->cam_y=e.py;client->origin_x=client->origin_y=0;
             client->selected_mask=0;client->targeting_nuke=0;client->dragging=0;client->map_open=0;
             client->map_cache_span=0;
+            client->ground_ready=0;ar_pose_reset(client,&e);
             memset(client->groups,0,sizeof(client->groups));
             client->ui_summon=0;client->ui_ability=0;
             memset(actions,0,sizeof(actions));
@@ -483,6 +495,7 @@ int main(int argc,char** argv) {
         }
         if(IsKeyPressed(KEY_TAB) || client->ui_pause) {
             client->paused=e.hp<=0 ? 1 : !client->paused;client->ui_pause=0;accumulator=0;
+            ar_pose_reset(client,&e);
         }
         if(ar_binding_pressed(controls.hitboxes))e.show_hitboxes=!e.show_hitboxes;
         if(ar_binding_pressed(controls.autoplay) || client->ui_toggle) {
@@ -601,7 +614,7 @@ int main(int argc,char** argv) {
                     if(!additive)client->selected_mask=0;
                     Rectangle box={fminf(mouse.x,client->drag_start.x),fminf(mouse.y,client->drag_start.y),fabsf(dx),fabsf(dy)};
                     for(int p=0;p<AR_MAX_PETS;p++)if(e.pets.active[p] && !e.pets.dormant[p]) {
-                        Vector2 at=ar_iso(client,e.pets.x[p],e.pets.y[p],0.6f);
+                        Vector2 pose=ar_view_pet(client,&e,p),at=ar_iso(client,pose.x,pose.y,0.6f);
                         if(CheckCollisionPointRec(at,box))client->selected_mask|=1u<<p;
                     }
                 } else {
@@ -626,7 +639,7 @@ int main(int argc,char** argv) {
             }
             actions[2]=(float)human_order;
         }
-        if(!client->paused)accumulator+=frame_dt;
+        if(!client->paused)accumulator=ar_frame_budget(accumulator,frame_dt,&client->sim_dropped_seconds);
         int steps=0;
         while(accumulator>=AR_FAST_SIM_DT && steps<AR_FAST_MAX_CATCHUP_STEPS && !client->paused) {
             if(!client->autoplay && e.direct_pet<0 && client->move_target) {
@@ -642,7 +655,10 @@ int main(int argc,char** argv) {
             for(int p=0;p<AR_MAX_PETS;p++)if(client->task_override[p]>=0)actions[5+p]=(float)client->task_override[p];
             int respawns=e.campaign ? ((ARWorld*)e.campaign)->respawns : 0;
             int old_driver=e.direct_pet;
-            c_step(&e);accumulator-=AR_FAST_SIM_DT;steps++;
+            ar_pose_before_step(client,&e);
+            c_step(&e);
+            ar_pose_after_step(client,&e);
+            accumulator-=AR_FAST_SIM_DT;steps++;
             if(old_driver>=0 && e.direct_pet<0)ar_drive_selected(client,&e,1);
             if(e.campaign && ((ARWorld*)e.campaign)->respawns>respawns) {
                 client->move_target=0;client->camera_free=0;
@@ -655,6 +671,8 @@ int main(int argc,char** argv) {
                 accumulator=0;break;
             }
         }
+        client->sim_steps=steps;
+        client->render_alpha=client->paused ? 1 : (float)(accumulator/AR_FAST_SIM_DT);
         if(save_enabled && e.tick>=next_save_tick) {
             if(!ar_world_save(&e,save_path))ar_notice(client,"Autosave failed. F5 retries; your world is still in memory.");
             next_save_tick=e.tick+3600;

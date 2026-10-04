@@ -10,6 +10,7 @@ set -e
 #   ./build.sh breakout --cpu        # Play/eval binary (optimized) -> ./ENV
 #   ./build.sh osrs_inferno --cpu     # OSRS visual policy viewer -> ./osrs_inferno
 #   ./build.sh nethack --cpu          # NetHack TTY demo (ocean/nethack/nethack.c)
+#   ./build.sh swat --cpu             # SWAT: Gold Element player/policy viewer
 #   ./build.sh breakout myplay --cpu # Play -> ./myplay
 #   ./build.sh breakout --debug      # Debug (-O0 -g; sanitizers on --cpu)
 #   ./build.sh breakout --web        # Emscripten web build
@@ -215,6 +216,14 @@ elif [ "$ENV" = "retro" ]; then
     SRC_DIR="ocean/$ENV"
     make -C "$SRC_DIR" -j2 batch-library panel
     LINK_ARCHIVES+=("build/retro_batch/libquicknes_batch.a")
+elif [ "$ENV" = "swat" ]; then
+    SRC_DIR="ocean/$ENV"
+    BOX3D_DIR=${BOX3D_DIR:-../box3d}
+    INCLUDES+=(-I"$BOX3D_DIR/include" -Ivendor/enet/include)
+    cmake -S vendor/enet -B build/swat/enet -DCMAKE_BUILD_TYPE=Release >/dev/null
+    cmake --build build/swat/enet --parallel 2 >/dev/null
+    EXTRA_SRC="$SRC_DIR/body.c $SRC_DIR/controller.c $SRC_DIR/weapons.c $SRC_DIR/materials.c $SRC_DIR/world.c $SRC_DIR/mission.c $SRC_DIR/equipment.c $SRC_DIR/tactical.c $SRC_DIR/overwatch.c $SRC_DIR/generation.c $SRC_DIR/acoustics.c $SRC_DIR/audio_dsp.c $SRC_DIR/spatial_audio.c $SRC_DIR/sim.c $SRC_DIR/protocol.c $SRC_DIR/net.c $SRC_DIR/render.c $SRC_DIR/settings.c $SRC_DIR/feedback.c $SRC_DIR/frontend.c $SRC_DIR/sound_view.c"
+    LINK_ARCHIVES+=("$BOX3D_DIR/build/src/libbox3d.a" "build/swat/enet/libenet.a")
 elif [ "$ENV" = "shenaniguns3d" ]; then
     SRC_DIR="ocean/$ENV"
     BOX3D_DIR=${BOX3D_DIR:-../box3d}
@@ -269,7 +278,7 @@ if [ -n "$OUT" ]; then
     OUTPUT_NAME=$OUT
 fi
 # Header-only envs compile src/puffercpu.c. SRC_FILE is the custom standalone
-# for osrs_* (visual sim) and nethack (TTY demo); see --cpu / web.sh.
+# for envs with their own player/viewer, including SWAT; see --cpu / web.sh.
 SRC_FILE=${SRC_FILE:-$SRC_DIR/$ENV.c}
 
 if [ "$(uname -m)" = "x86_64" ]; then
@@ -324,10 +333,16 @@ if [ "$STANDALONE" = "1" ]; then
     exit 0
 fi
 if [ "$MODE" = "cpu" ]; then
+    if [ "$ENV" = "swat" ] && [ -z "$OUT" ]; then
+        # ./swat dispatches to native Win32 on WSL for reliable mouse capture.
+        # Keep the Linux player available for headless evaluation/development.
+        mkdir -p build/swat
+        OUTPUT_NAME=build/swat/swat
+    fi
     STANDALONE_SOURCE="src/puffercpu.c"
     STANDALONE_DEFINES=()
     case "$ENV" in
-        osrs_*|nethack|pokemon)
+        osrs_*|nethack|pokemon|swat)
             STANDALONE_SOURCE="$SRC_FILE"
             ;;
         *)
@@ -356,6 +371,11 @@ if [ "$MODE" = "cpu" ]; then
     )
     echo "Compiling $ENV..."
     ${CC:-clang} "${CLANG_OPT[@]}" "${FLAGS[@]}"
+    if [ "$ENV" = "swat" ] && [ -z "$OUT" ]; then
+        cp ocean/swat/play.sh swat.launcher.tmp
+        chmod +x swat.launcher.tmp
+        mv swat.launcher.tmp swat
+    fi
     echo "Built: ./$OUTPUT_NAME"
     exit 0
 elif [ "$MODE" = "web" ]; then

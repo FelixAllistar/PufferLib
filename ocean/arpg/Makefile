@@ -13,12 +13,13 @@ gpu-test: | $(BUILD)
 		tests/test_cuda.cu -o $(BUILD)/test_cuda
 	cd $(ROOT) && $(abspath $(BUILD)/test_cuda)
 
-.PHONY: test sanitize native-cpu-test viewer viewer-test viewer-cpp-test frontier-test reach-test
+.PHONY: test sanitize native-cpu-test viewer viewer-test viewer-cpp-test frontier-test reach-test presentation-test motion-test
 $(BUILD):
 	mkdir -p $(BUILD)
 viewer: | $(BUILD)
 	$(CC) $(CFLAGS) $(INCLUDES) arpg.c $(ROOT)/raylib-5.5_linux_amd64/lib/libraylib.a \
 		$(LDLIBS) -lGL -ldl -o $(BUILD)/viewer
+	install -m 755 $(BUILD)/viewer $(ROOT)/arpg
 test: | $(BUILD)
 	$(CC) $(CFLAGS) $(INCLUDES) tests/test_sim.c $(LDLIBS) -o $(BUILD)/test_sim
 	cd $(ROOT) && $(abspath $(BUILD)/test_sim)
@@ -26,6 +27,7 @@ sanitize:
 	$(MAKE) test BUILD=$(BUILD)/sanitize CFLAGS="-O1 -g -std=gnu11 -fsanitize=address,undefined -fno-omit-frame-pointer"
 	$(MAKE) frontier-test BUILD=$(BUILD)/sanitize CFLAGS="-O1 -g -std=gnu11 -fsanitize=address,undefined -fno-omit-frame-pointer"
 	$(MAKE) reach-test BUILD=$(BUILD)/sanitize CFLAGS="-O1 -g -std=gnu11 -fsanitize=address,undefined -fno-omit-frame-pointer"
+	$(MAKE) presentation-test BUILD=$(BUILD)/sanitize CFLAGS="-O1 -g -std=gnu11 -fsanitize=address,undefined -fno-omit-frame-pointer"
 reach-test: | $(BUILD)
 	$(CC) $(CFLAGS) $(INCLUDES) tests/test_reach.c $(LDLIBS) -o $(BUILD)/test_reach
 	cd $(ROOT) && $(abspath $(BUILD)/test_reach)
@@ -36,6 +38,12 @@ viewer-test: | $(BUILD)
 	$(CC) $(CFLAGS) $(INCLUDES) tests/test_viewer.c $(ROOT)/raylib-5.5_linux_amd64/lib/libraylib.a \
 		$(LDLIBS) -lGL -ldl -o $(BUILD)/test_viewer
 	cd $(ROOT) && $(abspath $(BUILD)/test_viewer) $(SHOT)
+presentation-test: | $(BUILD)
+	$(CC) $(CFLAGS) $(INCLUDES) tests/test_presentation.c $(ROOT)/raylib-5.5_linux_amd64/lib/libraylib.a \
+		$(LDLIBS) -lGL -ldl -o $(BUILD)/test_presentation
+	cd $(ROOT) && $(abspath $(BUILD)/test_presentation)
+motion-test: presentation-test
+	cd $(ROOT) && $(abspath $(BUILD)/test_presentation) --render $(SHOT)
 viewer-cpp-test: | $(BUILD)
 	$(NVCC) -O0 -std=c++17 -arch=$${NVCC_ARCH:-native} $(INCLUDES) \
 		-c tests/test_render_cpp.cu -o $(BUILD)/test_render_cpp.o
