@@ -56,9 +56,10 @@ if(SWAT_BUILD_PLAYER)
     endif()
     add_executable(swat_player swat.c render.c frontend.c settings.c feedback.c sound_view.c)
     add_custom_target(swat_ui_assets
-        COMMAND ${CMAKE_COMMAND} -E copy_directory
-            "${CMAKE_CURRENT_LIST_DIR}/assets/ui" "$<TARGET_FILE_DIR:swat_player>/assets/ui"
-        COMMENT "Copying Gold Element UI assets" VERBATIM)
+        COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:swat_player>/assets/ui"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${SWAT_ROOT}/resources/shared/Roboto-Regular.ttf" "$<TARGET_FILE_DIR:swat_player>/assets/ui/Roboto-Regular.ttf"
+        COMMENT "Copying Gold Element HUD font" VERBATIM)
     add_dependencies(swat_player swat_ui_assets)
     target_include_directories(swat_player PRIVATE "${SWAT_ROOT}/src" "${SWAT_ROOT}/vendor")
     target_link_libraries(swat_player PRIVATE swat_network swat_spatial raylib)

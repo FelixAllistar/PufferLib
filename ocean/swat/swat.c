@@ -293,7 +293,7 @@ int main(int argc, char** argv) {
             client.status==SWAT_NET_ACTIVE ? client.sound_floor : 0,view.yaw_offset);
         BeginDrawing();
         swat_view_draw(&view,env.sim,policy!=NULL,app.settings.vertical_fov);
-        swat_frontend_draw(&app,env.sim,policy!=NULL);
+        swat_frontend_draw(&app,&view,env.sim,policy!=NULL);
         EndDrawing();
         if(capture && ++frames==12) {
             Image frame=LoadImageFromScreen();

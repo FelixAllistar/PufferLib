@@ -125,10 +125,15 @@ Holding Tab frees the pointer and sends neutral officer input while simulation
 continues. Preview/close/feed selection are local presentation choices; sniper
 assignment and firing remain commander-only authoritative commands.
 Live cycling keys and previous/next buttons reopen a hidden panel without
-changing the officer's weapon. One generated panel skin is sliced into fixed
-corners/borders and a stretchable center; a transparent four-icon sheet supplies
-camera/tool/command badges. Make, CMake and the native Windows builder copy
-these assets beside the player. Missing skins fall back to plain panels.
+changing the officer's weapon. The gameplay HUD uses Roboto text with a fine
+shadow for contrast, compact edge status and one contextual action near the
+reticle. There are no opaque status or interaction cards. The camera shows its
+video with a one-pixel edge; unassigned/down cameras collapse to text. Holding
+Tab reveals borderless camera controls and equipment counts. Actual menus are
+reserved for planning, settings and pause. Make, CMake and the native Windows
+builder copy the existing shared font beside the player; missing fonts use
+Raylib's default. The earlier generated panel/icon assets remain an experiment
+in source, and the player no longer loads them.
 
 Contextual use shares a three-degree ray fan between player prompts and
 authoritative physical tools. Direct hits take priority; all samples trace real

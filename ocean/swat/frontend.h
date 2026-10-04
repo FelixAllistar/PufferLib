@@ -46,7 +46,7 @@ void swat_frontend_set_screen(SwatFrontend* app, SwatScreen screen);
 bool swat_frontend_playing(const SwatFrontend* app);
 SwatInput swat_frontend_input(SwatFrontend* app, const SwatSim* sim);
 // Draw inside the caller's BeginDrawing/EndDrawing pair, after the game view.
-void swat_frontend_draw(SwatFrontend* app, const SwatSim* sim, bool policy);
+void swat_frontend_draw(SwatFrontend* app, const SwatView* view, const SwatSim* sim, bool policy);
 void swat_frontend_close(SwatFrontend* app);
 
 #ifdef __cplusplus

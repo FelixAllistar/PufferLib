@@ -40,8 +40,8 @@ is deliberately a general engine improvement.
 - Live A/B scope inset during officer movement, cursor controls without pausing,
   and animated floating takeover over the dimmed officer view.
 - Live previous/next camera bindings and buttons, contextual F use/compliance,
-  RMB cuff/pick/aim with held-action isolation, clear interaction cards and
-  generated panel/icon assets.
+  RMB cuff/pick/aim with held-action isolation, minimal floating text prompts
+  and camera controls shown on held Tab.
 - Locked house entries, reusable interruptible lockpicks, finite mounted
   breaching charges, owner-only remote detonation and shared blast/door state.
 - Automatic under-door optiwand insertion, independent lens rotation and

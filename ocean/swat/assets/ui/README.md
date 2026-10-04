@@ -1,8 +1,9 @@
 # Gold Element UI asset experiment
 
 Generated with the built-in `image_gen` tool on 2026-10-04. These are raster
-assets used by the actual player; labels, button behavior, live camera video,
-target selection and progress remain code-rendered.
+assets from an earlier HUD experiment. The gameplay HUD now uses minimal text
+and a borderless camera instead. These images are preserved as design artifacts;
+the player no longer loads or packages them.
 
 | Asset | Use |
 | --- | --- |
@@ -10,9 +11,8 @@ target selection and progress remain code-rendered.
 | `icons.png` | Transparent 1254×1254 sheet; top-left camera, top-right cuffs, bottom-left picks, bottom-right compliance. Each equal quadrant is sampled independently. Alpha was checked to span 0–255. |
 
 The originals were inspected and copied into this directory without editing.
-The renderer scales/slices them at draw time. Make, CMake and the native Windows
-builder copy them into `assets/ui` beside the player; source-root play can load
-this directory directly. Missing images retain a plain-panel fallback.
+The previous renderer sliced/scaled them at draw time. Current builds package
+the existing shared Roboto font in `assets/ui` beside the player instead.
 
 ## Final panel prompt
 

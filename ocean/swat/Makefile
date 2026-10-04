@@ -23,7 +23,7 @@ spatial-test: | $(BUILD)
 all: test viewer
 ui-assets: | $(BUILD)
 	mkdir -p $(BUILD)/assets/ui
-	cp assets/ui/*.png $(BUILD)/assets/ui/
+	cp $(ROOT)/resources/shared/Roboto-Regular.ttf $(BUILD)/assets/ui/
 $(BUILD):
 	mkdir -p $(BUILD)
 $(ENET_LIB): $(wildcard $(ROOT)/vendor/enet/*.c) $(wildcard $(ROOT)/vendor/enet/include/enet/*.h)

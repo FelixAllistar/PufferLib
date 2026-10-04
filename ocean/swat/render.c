@@ -8,94 +8,66 @@ static const Color swat_gold = {226,181,82,255};
 static const Color swat_ink = {12,19,26,235};
 static const Color swat_paper = {224,231,229,255};
 
-static Texture2D swat_load_ui(const char* name) {
-    const char* path=TextFormat("ocean/swat/assets/ui/%s",name);
-    if(!FileExists(path)) path=TextFormat("%sassets/ui/%s",GetApplicationDirectory(),name);
-    return FileExists(path) ? LoadTexture(path) : (Texture2D){0};
+int swat_hud_measure(const SwatView* view,const char* text,int size) {
+    return (int)MeasureTextEx(view->hud_font,text,(float)size,.5f).x;
 }
 
-static void swat_draw_panel(const SwatView* view,Rectangle box) {
-    if(!view->panel_skin.id) { DrawRectangleRec(box,swat_ink); return; }
-    // Source corners and output borders have independent sizes, so the same
-    // generated skin stays subtle on both an inset and a large floating panel.
-    Texture2D texture=view->panel_skin;
-    float source_x[]={0,96,texture.width-96,texture.width};
-    float source_y[]={0,96,texture.height-96,texture.height};
-    float x[]={box.x,box.x+12,box.x+box.width-12,box.x+box.width};
-    float y[]={box.y,box.y+12,box.y+box.height-12,box.y+box.height};
-    for(int row=0;row<3;row++) for(int col=0;col<3;col++)
-        DrawTexturePro(texture,(Rectangle){source_x[col],source_y[row],source_x[col+1]-source_x[col],source_y[row+1]-source_y[row]},
-            (Rectangle){x[col],y[row],x[col+1]-x[col],y[row+1]-y[row]},(Vector2){0},0,WHITE);
+void swat_hud_text(const SwatView* view,const char* text,int x,int y,int size,Color color) {
+    // A fine shadow keeps text readable against both bright walls and darkness
+    // without covering the scene with a panel.
+    DrawTextEx(view->hud_font,text,(Vector2){x+1,y+1},size,.5f,(Color){0,0,0,220});
+    DrawTextEx(view->hud_font,text,(Vector2){x,y},size,.5f,color);
 }
 
-static void swat_draw_ui_icon(const SwatView* view,int icon,Rectangle box) {
-    if(!view->ui_icons.id) return;
-    float width=view->ui_icons.width*.5f,height=view->ui_icons.height*.5f;
-    DrawTexturePro(view->ui_icons,(Rectangle){(icon%2)*width,(icon/2)*height,width,height},box,(Vector2){0},0,WHITE);
+static void swat_hud_center(const SwatView* view,const char* text,int x,int y,int size,Color color) {
+    swat_hud_text(view,text,x-swat_hud_measure(view,text,size)/2,y,size,color);
 }
 
 static void swat_draw_context(const SwatView* view,const SwatSim* sim,SwatContext context,int width,int height) {
     if(context.action==SWAT_CONTEXT_NONE) return;
     const SwatActor* actor=&sim->actors[view->actor];
-    const char* title="",*action="",*detail=""; int icon=3;
+    const char* action="",*detail=NULL;
     switch(context.action) {
         case SWAT_CONTEXT_OPEN: case SWAT_CONTEXT_CLOSE:
-            title="DOOR / UNLOCKED";
-            action=context.ready ? (context.action==SWAT_CONTEXT_OPEN ? "F  Open door" : "F  Close door") : "Move closer to use the door";
-            detail="RMB / Z  Aim"; break;
+            action=context.ready ? (context.action==SWAT_CONTEXT_OPEN ? "[F] Open door" : "[F] Close door") : "Move closer to use door"; break;
         case SWAT_CONTEXT_LOCKED:
-            title="DOOR / LOCKED"; icon=2;
-            action=context.ready ? "Hold RMB  Pick lock" : "Move closer to pick the lock";
-            detail=swat_kit(actor->gear.kit)->optiwand ? "F  Check lock     G  Inspect     L  Pick" : "F  Check lock     L  Pick"; break;
+            action=context.ready ? "Hold [RMB] Pick lock" : "Locked / move closer";
+            if(context.ready && swat_kit(actor->gear.kit)->optiwand) detail="[G] Mirror under door";
+            break;
         case SWAT_CONTEXT_CHARGE:
-            title="DOOR / CHARGE MOUNTED"; icon=2;
-            action=sim->world.objects[context.hit.index].breach_owner==view->actor ? "K  Detonate your charges" : "Teammate controls this charge";
-            detail="RMB / Z  Aim"; break;
+            action=sim->world.objects[context.hit.index].breach_owner==view->actor ? "[K] Detonate charge" : "Teammate's charge"; break;
         case SWAT_CONTEXT_CUFF:
-            title="PERSON / COMPLIANT"; icon=1;
-            action=context.ready ? "Hold RMB  Handcuff" : "Move closer to handcuff";
-            detail="F  Request compliance     Z  Aim"; break;
-        case SWAT_CONTEXT_COMPLY:
-            title="PERSON / UNSECURED";
-            action="F  Request compliance"; detail="RMB / Z  Aim"; break;
-        case SWAT_CONTEXT_SECURED:
-            title="PERSON / SECURED"; icon=1;
-            action="Handcuffed"; detail="RMB / Z  Aim"; break;
+            action=context.ready ? "Hold [RMB] Handcuff" : "Move closer to handcuff"; break;
+        case SWAT_CONTEXT_COMPLY: action="[F] Request compliance"; break;
+        case SWAT_CONTEXT_SECURED: return;
         default: return;
     }
     const SwatEquipment* gear=&actor->gear;
     float progress=gear->door_ticks ? gear->door_ticks/(gear->door_mode==SWAT_LOCKPICK ? 180.0f : 90.0f) : gear->cuff_ticks/72.0f;
-    if(gear->door_ticks) { action=gear->door_mode==SWAT_LOCKPICK ? "Picking lock..." : "Mounting charge..."; icon=2; }
+    if(gear->door_ticks) action=gear->door_mode==SWAT_LOCKPICK ? "Picking lock..." : "Mounting charge...";
     if(gear->cuff_ticks) action="Handcuffing...";
-    if(progress>0) detail="Keep holding; turn away to cancel";
-    Rectangle box={width*.5f-214,height-288,428,88};
-    swat_draw_panel(view,box);
-    swat_draw_ui_icon(view,icon,(Rectangle){box.x+12,box.y+19,46,46});
-    int x=(int)box.x+(view->ui_icons.id ? 68 : 18),y=(int)box.y+13;
-    DrawText(title,x,y,13,swat_gold);
-    DrawText(action,x,y+20,18,context.ready ? swat_paper : (Color){166,178,180,255});
-    DrawText(detail,x,y+46,13,(Color){153,172,178,255});
+    int cx=width/2,y=height/2+48;
+    swat_hud_center(view,action,cx,y,18,swat_paper);
     if(progress>0) {
-        DrawRectangle((int)box.x+16,(int)(box.y+box.height)-10,(int)box.width-32,3,(Color){55,69,72,255});
-        DrawRectangle((int)box.x+16,(int)(box.y+box.height)-10,(int)((box.width-32)*progress),3,swat_gold);
-    }
+        DrawRectangle(cx-52,y+27,104,2,(Color){0,0,0,180});
+        DrawRectangle(cx-52,y+27,(int)(104*swat_clamp(progress,0,1)),2,swat_gold);
+    } else if(detail) swat_hud_center(view,detail,cx,y+23,14,(Color){190,198,199,255});
 }
 
-SwatCameraLayout swat_camera_layout(int width,int height,float expansion) {
+SwatCameraLayout swat_camera_layout(int width,int height,float expansion,bool has_feed) {
     float t=swat_clamp(expansion,0,1); t=t*t*(3-2*t);
-    float small=fminf(384,width-48),large=fminf(960,fminf(width-96,(height-210)*16.0f/9+16));
-    float w=small+(large-small)*t,h=(w-16)*9.0f/16+114;
+    float small=fminf(280,width-48),large=fminf(840,fminf(width-96,(height-160)*16.0f/9));
+    float w=small+(large-small)*t,h=has_feed ? w*9.0f/16 : 0;
     float x=(width-small-24)*(1-t)+(width-w)*.5f*t;
-    float y=110*(1-t)+(height-h)*.5f*t;
+    float y=48*(1-t)+(height-h)*.5f*t;
     SwatCameraLayout layout={0};
-    layout.panel=(Rectangle){x,y,w,h};
-    layout.feed=(Rectangle){x+8,y+40,w-16,(w-16)*9.0f/16};
-    layout.close=(Rectangle){x+w-38,y+7,28,26};
-    float buttons=layout.feed.y+layout.feed.height+8;
-    for(int i=0;i<SWAT_SNIPERS;i++) layout.unit[i]=(Rectangle){x+8+i*48,buttons,42,28};
-    layout.previous=(Rectangle){x+106,buttons,34,28};
-    layout.next=(Rectangle){x+146,buttons,34,28};
-    layout.takeover=(Rectangle){x+w-160,buttons,152,28};
+    layout.panel=layout.feed=(Rectangle){x,y,w,h};
+    layout.close=(Rectangle){x+w-28,y-24,28,24};
+    float buttons=y+h+4;
+    for(int i=0;i<SWAT_SNIPERS;i++) layout.unit[i]=(Rectangle){x+i*30,buttons,26,26};
+    layout.previous=(Rectangle){x+62,buttons,26,26};
+    layout.next=(Rectangle){x+92,buttons,26,26};
+    layout.takeover=(Rectangle){x+w-140,buttons,140,26};
     return layout;
 }
 
@@ -107,8 +79,10 @@ void swat_view_init(SwatView* view, bool hidden) {
     if (!IsWindowReady()) return;
     SetTargetFPS(60);
     view->initialized = true;
-    view->panel_skin=swat_load_ui("panel.png");
-    view->ui_icons=swat_load_ui("icons.png");
+    const char* font_path="resources/shared/Roboto-Regular.ttf";
+    if(!FileExists(font_path)) font_path=TextFormat("%sassets/ui/Roboto-Regular.ttf",GetApplicationDirectory());
+    view->hud_font=FileExists(font_path) ? LoadFontEx(font_path,32,NULL,0) : GetFontDefault();
+    SetTextureFilter(view->hud_font.texture,TEXTURE_FILTER_BILINEAR);
     EnableCursor(); // Capture only after entering the game with window focus.
 }
 
@@ -212,8 +186,8 @@ static void swat_draw_projectiles(const SwatSim* s) {
     }
 }
 static void swat_draw_exposure(const SwatActor* a,int width,int height) {
-    if(a->gear.gas_ticks>0) DrawRectangle(0,96,width,height-148,(Color){100,125,55,(unsigned char)(a->gear.gas_ticks*.55f)});
-    if(a->gear.flash_ticks>0) DrawRectangle(0,96,width,height-148,(Color){242,245,221,(unsigned char)(240*fminf(1,a->gear.flash_ticks/120.0f))});
+    if(a->gear.gas_ticks>0) DrawRectangle(0,0,width,height,(Color){100,125,55,(unsigned char)(a->gear.gas_ticks*.55f)});
+    if(a->gear.flash_ticks>0) DrawRectangle(0,0,width,height,(Color){242,245,221,(unsigned char)(240*fminf(1,a->gear.flash_ticks/120.0f))});
 }
 static void swat_draw_plan(SwatView* view,const SwatSim* sim) {
     const SwatMissionDef* mission=swat_sim_mission(sim);
@@ -365,17 +339,12 @@ void swat_view_draw(SwatView* view, const SwatSim* s, bool policy, float vertica
     EndMode3D();
     swat_draw_exposure(a,width,height);
 
-    DrawRectangle(0,0,width,96,swat_ink);
-    DrawRectangle(26,25,4,45,swat_gold);
-    DrawText("SWAT",44,20,32,swat_paper);
-    DrawText("G O L D  E L E M E N T",46,60,16,swat_gold);
-    DrawText(swat_sim_mission(s)->name,width-310,24,21,swat_paper);
-    DrawText(view->session_status[0] ? view->session_status :
-        (policy ? "POLICY CONTROL" : "SOLO / OFFLINE"),width-310,57,15,swat_gold);
-    DrawRectangle(24,118,370,72,swat_ink);
-    DrawText(swat_sim_hostiles(s) ? "SECURE THE ARMED THREATS" :
-        (s->config.mission!=SWAT_ANNEX && swat_sim_unsecured(s) ? "RESTRAIN THE HOSTAGES" : "MOVE TO THE EXTRACTION MARKER"),40,130,17,swat_paper);
-    DrawText(s->config.mission!=SWAT_ANNEX ? TextFormat("%d threats / %d hostages unsecured",swat_sim_hostiles(s),swat_sim_unsecured(s)) : "Protect the unarmed civilian",40,159,16,(Color){160,178,183,255});
+    swat_hud_text(view,swat_sim_mission(s)->name,24,22,15,swat_paper);
+    const char* objective=swat_sim_hostiles(s) ? "Secure the armed threats" :
+        (s->config.mission!=SWAT_ANNEX && swat_sim_unsecured(s) ? "Restrain the hostages" : "Return to extraction");
+    swat_hud_text(view,objective,24,43,15,swat_gold);
+    if(view->session_status[0] || policy)
+        swat_hud_text(view,policy ? "Policy control" : view->session_status,24,64,13,(Color){180,191,195,255});
 
     Color reticle = c->muzzle_blocked ? (Color){230,110,80,255} : swat_gold;
     int cx=width/2, cy=height/2;
@@ -383,55 +352,46 @@ void swat_view_draw(SwatView* view, const SwatSim* s, bool policy, float vertica
     DrawLine(cx-gap-8,cy,cx-gap,cy,reticle); DrawLine(cx+gap,cy,cx+gap+8,cy,reticle);
     DrawLine(cx,cy-gap-8,cx,cy-gap,reticle); DrawLine(cx,cy+gap,cx,cy+gap+8,reticle);
     if(a->gear.inspecting) {
-        DrawRectangleLinesEx((Rectangle){16,106,width-32,height-170},3,swat_gold);
-        const char* modes[]={"FORWARD","UNDER DOOR","CORNER LEFT","CORNER RIGHT","OVER COVER"};
-        DrawText(TextFormat("OPTIWAND / %s",modes[a->gear.wand_mode]),cx-150,120,20,swat_gold);
+        const char* modes[]={"Forward","Under door","Corner left","Corner right","Over cover"};
+        swat_hud_center(view,TextFormat("Optiwand / %s",modes[a->gear.wand_mode]),cx,28,16,swat_paper);
         b3Vec3 base_forward=swat_direction(a->controller.yaw,0);
         float reach=b3Dot(b3SubPos(eye,swat_body_feet_position(&a->controller.body)),base_forward);
-        DrawText(reach<.5f ? "LENS BLOCKED / reposition or select another reach" : "LENS INSERTED / mouse rotates the lens",cx-230,148,17,swat_paper);
-        DrawText("Hold G / Q-E reach around / Ctrl under / Space over / release G to move",cx-320,height-195,17,swat_paper);
-    } else if (c->muzzle_blocked) DrawText("MUZZLE OBSTRUCTED",cx-95,cy+30,16,reticle);
-    if(!a->gear.inspecting) swat_draw_context(view,s,swat_context(s,view->actor),width,height);
+        swat_hud_center(view,reach<.5f ? "Lens blocked / reposition" : "Release [G] to return",cx,51,14,swat_gold);
+    } else if(c->muzzle_blocked) swat_hud_center(view,"Muzzle obstructed",cx,cy+27,14,reticle);
+    if(!a->gear.inspecting && !view->scope) swat_draw_context(view,s,swat_context(s,view->actor),width,height);
 
-    DrawRectangle(24,height-158,288,86,swat_ink);
     int officer_number=view->actor==0 ? 1 : view->actor-1;
-    DrawText(TextFormat("GOLD %02d",officer_number),40,height-145,18,swat_gold);
-    DrawText(TextFormat("HEALTH  %03d",(int)a->health),40,height-115,23,swat_paper);
-    DrawRectangle(40,height-85,248,4,(Color){50,66,69,255});
-    DrawRectangle(40,height-85,(int)(248*c->stamina),4,swat_gold);
-    DrawRectangle(width-340,height-176,316,104,swat_ink);
-    DrawText(swat_arsenal_def(&a->arsenal,a->arsenal.active)->name,width-320,height-164,19,swat_gold);
-    const char* modes[]={"SAFE","SEMI","AUTO"};
-    DrawText(TextFormat("%02d+%d  /  %03d",w->magazine,w->chambered,w->reserve),width-320,height-133,30,swat_paper);
-    DrawText(w->reload_remaining ? "RELOADING" : (a->arsenal.equip_remaining ? "EQUIPPING" : modes[w->mode]),width-320,height-94,16,swat_gold);
-    const char* stance=c->sprinting ? "SPRINT" : (c->body.crouched ? "CROUCH" : "STAND");
-    DrawText(TextFormat("%s   LEAN %+0.2f   %02d:%02d",stance,c->lean,
-        (s->config.max_ticks-s->tick)/3600,((s->config.max_ticks-s->tick)/60)%60),width/2-165,height-92,17,swat_paper);
-    DrawText(TextFormat("%s / LEGS %.0f / ARMS %.0f",swat_kit(a->gear.kit)->name,a->gear.wounds[SWAT_LEGS],a->gear.wounds[SWAT_ARMS]),width/2-165,height-119,16,swat_gold);
-    DrawText(TextFormat("4 FLASH %d   5 CS %d   T TASER %d%s",a->gear.flashbangs,a->gear.gas_grenades,a->gear.taser_charges,
-        a->gear.taser_cooldown ? " / CHARGING" : ""),width/2-225,height-146,16,swat_gold);
-    int mounted=0;
-    for(int i=0;i<s->world.count;i++) if(s->world.objects[i].active && s->world.objects[i].breach_owner==view->actor) mounted++;
-    DrawText(TextFormat("L PICKS   7 CHARGE %d   K DETONATE %d",a->gear.breaching_charges,mounted),width/2-225,height-170,16,swat_gold);
-    DrawRectangle(0,height-52,width,52,(Color){9,15,21,255});
-    DrawText("WASD move   Q / E lean   Ctrl / C crouch   Shift sprint   F use / comply   RMB context / aim   Z aim   LMB fire",28,height-40,16,(Color){162,177,181,255});
-    DrawText("G wand   B melee   4 / 5 grenades   T taser   P plan   N camera   Comma / Period feeds   Enter control   Hold Tab cursor   R reload   Esc pause",28,height-21,15,(Color){126,144,151,255});
+    swat_hud_text(view,TextFormat("Gold %02d / %d%%",officer_number,(int)a->health),24,height-48,16,
+        a->health<40 ? (Color){230,110,80,255} : swat_paper);
+    if(c->stamina<.98f) {
+        DrawRectangle(24,height-24,92,2,(Color){0,0,0,160});
+        DrawRectangle(24,height-24,(int)(92*c->stamina),2,swat_gold);
+    }
+    if(a->gear.wounds[SWAT_LEGS]>0 || a->gear.wounds[SWAT_ARMS]>0)
+        swat_hud_text(view,"Injured",24,height-70,14,(Color){230,110,80,255});
+    int remaining=s->config.max_ticks-s->tick;
+    if(remaining<60*60) swat_hud_center(view,TextFormat("%02d:%02d",remaining/3600,(remaining/60)%60),cx,height-40,16,swat_gold);
+    const char* name=swat_arsenal_def(&a->arsenal,a->arsenal.active)->name;
+    swat_hud_text(view,name,width-24-swat_hud_measure(view,name,14),height-84,14,swat_paper);
+    const char* ammo=TextFormat("%02d+%d / %03d",w->magazine,w->chambered,w->reserve);
+    swat_hud_text(view,ammo,width-24-swat_hud_measure(view,ammo,24),height-62,24,swat_paper);
+    const char* modes[]={"Safe","Semi","Auto"};
+    const char* state=w->reload_remaining ? "Reloading" : (a->arsenal.equip_remaining ? "Equipping" : modes[w->mode]);
+    swat_hud_text(view,state,width-24-swat_hud_measure(view,state,14),height-30,14,swat_gold);
     if(show_camera) {
-        SwatCameraLayout layout=swat_camera_layout(width,height,view->camera_expansion);
-        DrawRectangle(0,0,width,height,(Color){0,0,0,(unsigned char)(155*view->camera_expansion)});
-        DrawRectangleRec((Rectangle){layout.panel.x+6,layout.panel.y+8,layout.panel.width,layout.panel.height},(Color){0,0,0,130});
-        swat_draw_panel(view,layout.panel);
-        swat_draw_ui_icon(view,0,(Rectangle){layout.panel.x+7,layout.panel.y+6,28,28});
-        if(view->camera_target.id) DrawTexturePro(view->camera_target.texture,
+        bool has_feed=s->snipers[view->sniper_unit].deployed && s->actors[swat_sniper_actor(view->sniper_unit)].alive;
+        SwatCameraLayout layout=swat_camera_layout(width,height,view->camera_expansion,has_feed);
+        DrawRectangle(0,0,width,height,(Color){0,0,0,(unsigned char)(70*view->camera_expansion)});
+        if(has_feed && view->camera_target.id) DrawTexturePro(view->camera_target.texture,
             (Rectangle){0,0,view->camera_target.texture.width,-view->camera_target.texture.height},layout.feed,(Vector2){0},0,WHITE);
+        if(has_feed) DrawRectangleLinesEx(layout.feed,1,(Color){174,186,190,110});
     }
 }
 
 void swat_view_close(SwatView* view) {
     if (view->initialized && IsWindowReady()) {
         if(view->camera_target.id) UnloadRenderTexture(view->camera_target);
-        if(view->panel_skin.id) UnloadTexture(view->panel_skin);
-        if(view->ui_icons.id) UnloadTexture(view->ui_icons);
+        if(view->hud_font.texture.id && view->hud_font.texture.id!=GetFontDefault().texture.id) UnloadFont(view->hud_font);
         CloseWindow();
     }
     memset(view,0,sizeof(*view));

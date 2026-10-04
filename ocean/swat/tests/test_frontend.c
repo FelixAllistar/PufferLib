@@ -53,7 +53,7 @@ static void frame(SwatFrontend* app, SwatView* view, SwatSim* sim) {
     view->camera_expansion=app->camera_expansion;
     BeginDrawing();
     swat_view_draw(view,sim,false,app->settings.vertical_fov);
-    swat_frontend_draw(app,sim,false);
+    swat_frontend_draw(app,view,sim,false);
     EndDrawing();
 }
 
@@ -286,16 +286,20 @@ static bool run_house(SwatFrontend* app,SwatView* view,SwatSim* sim,const char* 
     event(TEST_KEY_DOWN,KEY_TAB,0); frames(app,view,sim,3);
     CHECK(app->screen==SWAT_SCREEN_GAME && app->camera_pointer && !app->captured && !confined_to_window());
     tick=sim->tick; frames(app,view,sim,3); CHECK(sim->tick==tick+3);
-    SwatCameraLayout camera=swat_camera_layout(GetScreenWidth(),GetScreenHeight(),0);
-    CHECK(view->panel_skin.id && view->ui_icons.id);
+    SwatCameraLayout camera=swat_camera_layout(GetScreenWidth(),GetScreenHeight(),0,true);
+    CHECK(view->hud_font.texture.id);
     click(app,view,sim,(int)camera.next.x+16,(int)camera.next.y+14);
     CHECK(app->selected_sniper==1 && sim->actors[0].arsenal.active==0);
+    camera=swat_camera_layout(GetScreenWidth(),GetScreenHeight(),0,false);
     click(app,view,sim,(int)camera.previous.x+16,(int)camera.previous.y+14);
     CHECK(app->selected_sniper==0);
+    camera=swat_camera_layout(GetScreenWidth(),GetScreenHeight(),0,true);
     click(app,view,sim,(int)camera.unit[1].x+20,(int)camera.unit[1].y+14);
     CHECK(app->selected_sniper==1 && sim->actors[0].arsenal.active==0);
+    camera=swat_camera_layout(GetScreenWidth(),GetScreenHeight(),0,false);
     click(app,view,sim,(int)camera.takeover.x+70,(int)camera.takeover.y+14);
     CHECK(sim->snipers[1].deployed && sim->actors[0].arsenal.shots==officer_shots);
+    camera=swat_camera_layout(GetScreenWidth(),GetScreenHeight(),0,true);
     click(app,view,sim,(int)camera.unit[0].x+20,(int)camera.unit[0].y+14);
     if(camera_png) { Image picture=LoadImageFromScreen(); bool saved=ExportImage(picture,camera_png); UnloadImage(picture); CHECK(saved); }
     app->networked=true; app->leader=false;
@@ -396,7 +400,7 @@ static bool run_house(SwatFrontend* app,SwatView* view,SwatSim* sim,const char* 
     CHECK(sim->actors[2].gear.restrained && sim->actors[0].arsenal.shots==officer_shots);
     frames(app,view,sim,5); CHECK(app->right_action==SWAT_RIGHT_CUFF && c->ads<.01f && sim->actors[0].arsenal.shots==officer_shots);
     event(TEST_MOUSE_UP,MOUSE_BUTTON_RIGHT,0); event(TEST_MOUSE_UP,MOUSE_BUTTON_LEFT,0); frame(app,view,sim);
-    printf("PASS house frontend: planning/loadout, under-door lens, live camera keyboard/button cycles without weapon changes, pointer without pause, leader-only floating scope, mark/execute, generated skins, F use/compliance, Z aim, held/aborted RMB pick/cuff and no completion click leakage; HRTF=%s\n",test_sound.spatial ? "active" : "fallback");
+    printf("PASS house frontend: planning/loadout, under-door lens, live camera keyboard/button cycles without weapon changes, pointer without pause, leader-only floating scope, mark/execute, minimal text controls, F use/compliance, Z aim, held/aborted RMB pick/cuff and no completion click leakage; HRTF=%s\n",test_sound.spatial ? "active" : "fallback");
     return true;
 }
 

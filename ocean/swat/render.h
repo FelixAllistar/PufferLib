@@ -16,14 +16,16 @@ typedef struct SwatView {
     bool sniper_camera;
     float camera_expansion;
     RenderTexture2D camera_target;
-    Texture2D panel_skin,ui_icons;
+    Font hud_font;
     int sniper_unit;
     char session_status[128];
 } SwatView;
 typedef struct SwatCameraLayout {
     Rectangle panel,feed,unit[SWAT_SNIPERS],previous,next,takeover,close;
 } SwatCameraLayout;
-SwatCameraLayout swat_camera_layout(int width,int height,float expansion);
+SwatCameraLayout swat_camera_layout(int width,int height,float expansion,bool has_feed);
+int swat_hud_measure(const SwatView* view,const char* text,int size);
+void swat_hud_text(const SwatView* view,const char* text,int x,int y,int size,Color color);
 void swat_view_init(SwatView* view, bool hidden);
 // Draws inside the caller's BeginDrawing/EndDrawing pair.
 void swat_view_draw(SwatView* view, const SwatSim* sim, bool policy, float vertical_fov);

@@ -80,7 +80,7 @@ the dimmed, still-visible officer view. The mission keeps running while the
 pointer is free. **N** hides/shows the camera, **Comma / Period** selects the
 previous/next feed during ordinary officer play, and
 **Enter** takes control or returns. Co-op teammates can preview; the leader controls.
-Previous/next arrow buttons sit beside A/B. Cycling also reopens a hidden inset.
+Compact previous/next text controls appear beside A/B while Tab is held. Cycling also reopens a hidden inset.
 **Page Up / Page Down** and **Backslash / Slash** are previous/next aliases;
 the older left/right bracket bindings also remain available. Camera cycling
 does not change the officer's weapon.
@@ -105,7 +105,7 @@ cone. **Middle mouse** is another use/compliance binding; **Y** remains a
 dedicated compliance alias. Healthy armed suspects generally need to be stunned
 or wounded first. Hold **RMB** within 1.7 m while aiming at a compliant person
 for 1.2 seconds to restrain them. Release or lose the target to interrupt.
-The interaction card shows the selected action and when to move closer. A
+One short floating text prompt shows the selected action and when to move closer. A
 three-degree ray fan tolerates small reticle errors, with every ray stopped by
 real cover. Physical reach limits remain enforced by authority.
 
@@ -208,8 +208,16 @@ describes contextual use, viewport cycling and a right-click command interface;
 selected tools use the fire action. This prototype keeps the combined
 use/compliance idea and adds direct contextual RMB cuff/pick access, alongside
 the requested held-Tab camera pointer. A full squad command menu is future work.
-The [UI asset notes](assets/ui/README.md) record the generated panel/icon skin,
-exact prompts and packaging; text, targets and progress are drawn live.
+The gameplay HUD follows the compact text and video treatment visible in
+[Ready or Not screenshots](https://www.spaziogames.it/recensioni/ready-or-not-recensione)
+and [SWAT 4 screenshots](https://www.play-asia.com/swat-4-gold-edition/13/70dsxt):
+small edge status, a short action prompt, and camera controls when needed.
+Roboto text uses a fine shadow for contrast. Interaction progress is a thin line;
+the camera has a one-pixel edge, with no decorative frame or surrounding card.
+Unassigned/down cameras collapse to text. Holding Tab shows camera controls and
+equipment counts; the permanent full-width control footer is gone. Planning,
+settings and pause retain their dedicated menus. The earlier
+[generated UI experiment](assets/ui/README.md) is preserved in source.
 
 ## Co-op and self-hosting
 
@@ -476,7 +484,7 @@ rectangle, stationary mouse input, Escape/pause/resume/quit, focus loss,
 click isolation, slider cancellation, host/join setup/cancel, leader restart
 controls, active audio streaming, preferences surviving reinitialization,
 automatic optiwand insertion, live camera keyboard/button cycles, floating
-scope/cursor isolation, generated skins, F use/compliance, Z aim, held/aborted
+scope/cursor isolation, minimal text controls, F use/compliance, Z aim, held/aborted
 RMB pick/cuff and completion click isolation, sniper mark/execute,
 charge controls and local house comparisons:
 
