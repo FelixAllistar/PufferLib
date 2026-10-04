@@ -100,7 +100,7 @@ endif()
 
 if(SWAT_BUILD_TESTS)
     enable_testing()
-    foreach(check environment_binding sim acoustics audio_dsp protocol net mission tactical overwatch generation spatial_audio foundation encounter devices payloads)
+    foreach(check environment_props environment_binding sim acoustics audio_dsp protocol net mission tactical overwatch generation spatial_audio foundation encounter devices payloads)
         add_executable(swat_test_${check} tests/test_${check}.c)
         target_link_libraries(swat_test_${check} PRIVATE swat_network swat_spatial)
         if(MSVC)

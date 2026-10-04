@@ -1,0 +1,1378 @@
+{
+  "schema": "swat_compact_props_v1",
+  "license": "CC0-1.0",
+  "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "source_package": "Quiet Evidence: Household Clutter Batch 02",
+  "provenance_basis": "Pinned local source files, supplied CC0 dedication and selected source manifest records. No new third-party license verification or authorship claim.",
+  "source_files": [
+    {
+      "path": "modules/chipped_coffee_mug.glb",
+      "sha256": "d1fd3c6091cb1fdeba088c3dbb0f4ae0fa998f0a35d84d01cd1d33d52b39a4d0"
+    },
+    {
+      "path": "modules/stacked_dinner_plates.glb",
+      "sha256": "e2f3a922846a5f4ee47e0955ae47d1a8c7b01ec500088136687b4483c3434527"
+    },
+    {
+      "path": "modules/folded_hand_towel.glb",
+      "sha256": "f95b3ccdd98ea1805c5a1334222138d8bd3c1166a523e187abefa46a51eac754"
+    },
+    {
+      "path": "modules/television_remote.glb",
+      "sha256": "76f7219967cd28f9895d3e79bd265bc4e49f4e0c58c00d54e3eea20fb7eb0f60"
+    },
+    {
+      "path": "modules/brass_eyeglasses.glb",
+      "sha256": "67e9bdd4fa495cbe13c01d36422f17e424d7d7a57c8df1304ce022e9f0e57068"
+    },
+    {
+      "path": "modules/creased_leather_wallet.glb",
+      "sha256": "adb0116489a06e5892f10a9178695282645cd7c16cafa4cbcd75232dd2b1b546"
+    },
+    {
+      "path": "manifest.json",
+      "sha256": "b6d68cddd66916da9f02958ef61656464f6ab9290d1bb89a760fa6d7c65d8a91"
+    },
+    {
+      "path": "LICENSE.txt",
+      "sha256": "f26e4507daa86f1a1ed8a2c666d18599cd4358447f6a2faadad054c30f5b9d5c"
+    },
+    {
+      "path": "README.md",
+      "sha256": "458ecde446fd723ea060ca1513d245b00799f5b1469677be361887bbe554935d"
+    },
+    {
+      "path": "build_clutter.py",
+      "sha256": "1148c179c7a8fd20d68b9bef7940135d30bdb358b4feefd8a96a1a3895b11aae"
+    },
+    {
+      "path": "refine_geometry.py",
+      "sha256": "6c4a8223033f119e4de48149f3694dae7eedb76a26474331b24a873fa948ee4e"
+    }
+  ],
+  "source_license_copy": {
+    "path": "LICENSE_SOURCE_CLUTTER.txt",
+    "source": "LICENSE.txt",
+    "sha256": "f26e4507daa86f1a1ed8a2c666d18599cd4358447f6a2faadad054c30f5b9d5c"
+  },
+  "runtime_contract": {
+    "target": "PufferLib ocean/swat; raylib 5.5 core glTF importer and diffuse-only drawing",
+    "units": "metres",
+    "up": "+Y",
+    "front": "+Z",
+    "pivot": "Source XZ bounding-box centre; minimum Y exactly zero. Float32 centre residual under 1e-8 metre retained.",
+    "transform": "Identity. Source GLBs are already +Y up. Do not repeat Blender-to-glTF axis conversion.",
+    "placement": "Apply uniform scale and yaw, then translate the origin onto its supporting tabletop. Use catalog bounds for the scaled/rotated footprint.",
+    "ownership": "Decorative render-only children of authoritative support objects; no independent world, navigation, projectile or physics actors.",
+    "collision": "none",
+    "materials": "Core baseColorTexture/baseColorFactor only; neutral metallic=0 and roughness=1 constants; no PBR maps, normal/occlusion/emissive maps, extensions or external URIs.",
+    "geometry": "All source float32 positions/normals/UVs and uint16 triangle indices copied byte-for-byte, including primitive/material order. No decimation, welding or rebasing.",
+    "raylib": "Each triangle primitive becomes one raylib mesh; each has <65536 vertices and uint16 indices. Preserve source doubleSided flags in glTF; raylib drawing code must disable backface culling when two-sided display is needed.",
+    "fallback": "Skip unloaded props and retain the original unmodified procedural environment."
+  },
+  "modifications": [
+    "Resize each embedded original 256x256 RGB diffuse PNG to 128x128 with Pillow LANCZOS; PNG compress_level=9, optimize=False.",
+    "Retain original base-color factors, UVs, image associations, material names and double-sided flags. Replace metallic/roughness response with neutral constants.",
+    "Remove source-only metadata; correct source custom-property front label to the already-exported +Z glTF front. Keep one identity mesh node.",
+    "Repack aligned GLB buffers and retain per-stream source geometry hashes for exact validation."
+  ],
+  "assets": [
+    {
+      "id": "chipped_coffee_mug",
+      "path": "prop_chipped_coffee_mug.glb",
+      "kind": "glb_model",
+      "license": "CC0-1.0",
+      "source": "modules/chipped_coffee_mug.glb",
+      "source_sha256": "d1fd3c6091cb1fdeba088c3dbb0f4ae0fa998f0a35d84d01cd1d33d52b39a4d0",
+      "source_manifest_record": {
+        "asset_id": "chipped_coffee_mug",
+        "category": "kitchen",
+        "description": "Open ceramic mug with handle and coffee residue",
+        "file": "modules/chipped_coffee_mug.glb",
+        "dimensions_m_blender_xyz": [
+          0.110991,
+          0.0768,
+          0.0925
+        ],
+        "dimensions_m_gltf_xyz": [
+          0.110991,
+          0.0925,
+          0.0768
+        ],
+        "aabb_blender_z_up": {
+          "min": [
+            -0.05549529194831848,
+            -0.03840000182390213,
+            0.0
+          ],
+          "max": [
+            0.05549529194831848,
+            0.03840000182390213,
+            0.0925000011920929
+          ]
+        },
+        "aabb_gltf_y_up": {
+          "min": [
+            -0.05549529194831848,
+            0.0,
+            -0.03840000182390213
+          ],
+          "max": [
+            0.05549529194831848,
+            0.0925000011920929,
+            0.03840000182390213
+          ]
+        },
+        "triangles_source": 2149,
+        "vertices_source": 1115,
+        "materials": [
+          "HC02_ceramic",
+          "HC02_olive",
+          "HC02_dark",
+          "HC02_dust"
+        ],
+        "collision": "none; optional coarse AABB only when deliberately promoted to interactive item",
+        "render_only": true,
+        "bytes": 260164,
+        "sha256": "d1fd3c6091cb1fdeba088c3dbb0f4ae0fa998f0a35d84d01cd1d33d52b39a4d0",
+        "triangles_exported": 2149,
+        "mesh_count": 1,
+        "material_count": 4,
+        "embedded_image_count": 2,
+        "external_uris": []
+      },
+      "sha256": "36cdea377b7067fd68681a70dbf13a636e59008b8dc09eec713ec00f335c0603",
+      "bytes": 116172,
+      "aabb_metres_xyz": {
+        "min": [
+          -0.05549529194831848,
+          0.0,
+          -0.03840000182390213
+        ],
+        "max": [
+          0.05549529194831848,
+          0.0925000011920929,
+          0.03840000182390213
+        ]
+      },
+      "dimensions_metres_xyz": [
+        0.11099058389663696,
+        0.0925000011920929,
+        0.07680000364780426
+      ],
+      "source_to_runtime_matrix_column_major": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1
+      ],
+      "mesh_count": 1,
+      "node_count": 1,
+      "material_count": 4,
+      "primitive_count": 4,
+      "raylib_mesh_count": 4,
+      "vertex_count": 1813,
+      "triangle_count": 2149,
+      "geometry": [
+        {
+          "material": 0,
+          "vertices": 588,
+          "triangles": 676,
+          "stream_sha256": {
+            "POSITION": "499a0368c8f9ffad8fe689e14d228f6fbeb84d35ed9a6e0c0dc14893a3bf626d",
+            "NORMAL": "615eed800e6600926f7c7461d5a6735533e680ea4afccbf510acd265dcab194f",
+            "TEXCOORD_0": "bf54312da88e4fa8254a30fe9959b04cf0259ecced84befea3c9d50b89bb6e1d",
+            "indices": "fa736b00f220aca752f887713916a6e197ccab18b28b5c03a5324620604b73d8"
+          }
+        },
+        {
+          "material": 1,
+          "vertices": 559,
+          "triangles": 689,
+          "stream_sha256": {
+            "POSITION": "94d2ea7231f0de82d0f24e88b986d0bfd52e3788b642d31c6197dbdfe4c6b653",
+            "NORMAL": "d3e7a22eac0f4cadaf4ed2beba2d239626211b93eed49dbaa96585a5ee49bb4e",
+            "TEXCOORD_0": "3b0db3ade901871f43ff48e5f857ad7e27e2bd361d18dae93f73a93c674e8d66",
+            "indices": "29b0e5e539cc5b03cf585864e28a8e54f5d57b038feacf2e1f7d4a281819cace"
+          }
+        },
+        {
+          "material": 2,
+          "vertices": 504,
+          "triangles": 640,
+          "stream_sha256": {
+            "POSITION": "ee05ddc33a382b02c11d6661480d54c7f0c959c69f41021f08ecc15e9b82aba6",
+            "NORMAL": "0f8728a900e09bf91ec92c8e61bc7aa29f7f1bf47a58b40148887244559ea59d",
+            "TEXCOORD_0": "6dfce8df839ddfd3c97f91335ff63c60efeb66287ab73a8e264aca410a55663d",
+            "indices": "d6ca5b05fa96d96e1b2cf7c9ed4eb98ed223fa891f2b5a0df48a3413786ec443"
+          }
+        },
+        {
+          "material": 3,
+          "vertices": 162,
+          "triangles": 144,
+          "stream_sha256": {
+            "POSITION": "a6db6b42b7acc03d2a30e76c3822c2cad94ec4a20397d3ca20265c1831af355c",
+            "NORMAL": "8cd3b56c6dcf45294955480eef8731c09824d54fa3cb14b200326e38dcdd8ce5",
+            "TEXCOORD_0": "d410fae18d2a7edf2c7d9a7c0e7e8ab83c6895637c5f6126466c986ea0409575",
+            "indices": "a3116884b7a8f8d91316c6e5cf775eaef4e468b8ff2beea1d7183ceeee6dd5e3"
+          }
+        }
+      ],
+      "embedded_image_count": 2,
+      "images": [
+        {
+          "name": "ceramic",
+          "source_size_pixels": [
+            256,
+            256
+          ],
+          "source_sha256": "c7f8a120b5f5728bed2b56238e9d14fbd31e660f6bf76844238249dfa3ef581a",
+          "source_bytes": 100264,
+          "size_pixels": [
+            128,
+            128
+          ],
+          "channels": "RGB",
+          "sha256": "3c14b4da784bd9b971df8deb851ba9d36e9aa1b0601a4fddba9047ba65a2ddd2",
+          "bytes": 23584
+        },
+        {
+          "name": "olive",
+          "source_size_pixels": [
+            256,
+            256
+          ],
+          "source_sha256": "cd54d3bb3d8584739999c817aac51db800eaa06ee7376057cdfbaa90b6f7cdf3",
+          "source_bytes": 84369,
+          "size_pixels": [
+            128,
+            128
+          ],
+          "channels": "RGB",
+          "sha256": "db65a982cc02a43ee20e614a8bb1ddf0c2acc634f9b23aae0a6b6133432066ac",
+          "bytes": 17151
+        }
+      ],
+      "external_uris": [],
+      "render_only": true,
+      "collision": "none"
+    },
+    {
+      "id": "stacked_dinner_plates",
+      "path": "prop_stacked_dinner_plates.glb",
+      "kind": "glb_model",
+      "license": "CC0-1.0",
+      "source": "modules/stacked_dinner_plates.glb",
+      "source_sha256": "e2f3a922846a5f4ee47e0955ae47d1a8c7b01ec500088136687b4483c3434527",
+      "source_manifest_record": {
+        "asset_id": "stacked_dinner_plates",
+        "category": "kitchen",
+        "description": "Three nested ceramic plates with blue rim bands",
+        "file": "modules/stacked_dinner_plates.glb",
+        "dimensions_m_blender_xyz": [
+          0.26,
+          0.26,
+          0.058386
+        ],
+        "dimensions_m_gltf_xyz": [
+          0.26,
+          0.058386,
+          0.26
+        ],
+        "aabb_blender_z_up": {
+          "min": [
+            -0.12999999523162842,
+            -0.12999999523162842,
+            0.0
+          ],
+          "max": [
+            0.12999999523162842,
+            0.12999999523162842,
+            0.058385640382766724
+          ]
+        },
+        "aabb_gltf_y_up": {
+          "min": [
+            -0.12999999523162842,
+            0.0,
+            -0.12999999523162842
+          ],
+          "max": [
+            0.12999999523162842,
+            0.058385640382766724,
+            0.12999999523162842
+          ]
+        },
+        "triangles_source": 3600,
+        "vertices_source": 1830,
+        "materials": [
+          "HC02_ceramic",
+          "HC02_blue",
+          "HC02_dust"
+        ],
+        "collision": "none; optional coarse AABB only when deliberately promoted to interactive item",
+        "render_only": true,
+        "bytes": 308140,
+        "sha256": "e2f3a922846a5f4ee47e0955ae47d1a8c7b01ec500088136687b4483c3434527",
+        "triangles_exported": 3600,
+        "mesh_count": 1,
+        "material_count": 3,
+        "embedded_image_count": 2,
+        "external_uris": []
+      },
+      "sha256": "5b833fd62245cbe2050ec2933e8fe180999241b2ae3b30a66ac4217eda8c4d58",
+      "bytes": 160520,
+      "aabb_metres_xyz": {
+        "min": [
+          -0.12999999523162842,
+          0.0,
+          -0.12999999523162842
+        ],
+        "max": [
+          0.12999999523162842,
+          0.058385640382766724,
+          0.12999999523162842
+        ]
+      },
+      "dimensions_metres_xyz": [
+        0.25999999046325684,
+        0.058385640382766724,
+        0.25999999046325684
+      ],
+      "source_to_runtime_matrix_column_major": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1
+      ],
+      "mesh_count": 1,
+      "node_count": 1,
+      "material_count": 3,
+      "primitive_count": 3,
+      "raylib_mesh_count": 3,
+      "vertex_count": 2910,
+      "triangle_count": 3600,
+      "geometry": [
+        {
+          "material": 0,
+          "vertices": 1242,
+          "triangles": 1728,
+          "stream_sha256": {
+            "POSITION": "0d32acf2e870f25673888642f073a964306623348d50cbcd6b8df1f7479a7558",
+            "NORMAL": "e0992cf67c281e0f7494fe93c6c6e1ee2a8ad5df7972c9fee27e4de875529bf2",
+            "TEXCOORD_0": "9b52de7cbd01c9b2dc73ec33282d9908d92bf9e3193871bb8eddd5faff115f30",
+            "indices": "1febf20934440c50858a1998226a7a0bc34045d81e1520a3a6c1a6d74bf280c8"
+          }
+        },
+        {
+          "material": 1,
+          "vertices": 1476,
+          "triangles": 1728,
+          "stream_sha256": {
+            "POSITION": "1f356f0ace0e740f823c6e03823b2f65b4b01e31adbc4763583093723fd6aede",
+            "NORMAL": "34c80f44cb19a46902f30fffd912e9def53c6e371a08b6778c06dd38ec6ebeeb",
+            "TEXCOORD_0": "fe28cd2c568b5cdb5b73d36534ad20a84ef788dc2d621c4846b9ed969b2a338b",
+            "indices": "148adba08bec3e1d1ded41a87d310e396298bee2218a803d0994c91b854b42f9"
+          }
+        },
+        {
+          "material": 2,
+          "vertices": 192,
+          "triangles": 144,
+          "stream_sha256": {
+            "POSITION": "f0e25e8ae33bb1934ffecee2a1106301d7a6dca59e7a9b07c5ba240637799858",
+            "NORMAL": "1b8151c5d979f31ea8f37d4eb4a340da7517ea45edbf416445bb7d2694f207c6",
+            "TEXCOORD_0": "83e69f6a08688ad343ccf9b4c9ed47e7ba89d87a93f6624bfc60d6a21662d047",
+            "indices": "7c8527ab921ff1fef0d2985f86c6aa873057d91b8986b7a1b0da9d4858bb368a"
+          }
+        }
+      ],
+      "embedded_image_count": 2,
+      "images": [
+        {
+          "name": "ceramic",
+          "source_size_pixels": [
+            256,
+            256
+          ],
+          "source_sha256": "c7f8a120b5f5728bed2b56238e9d14fbd31e660f6bf76844238249dfa3ef581a",
+          "source_bytes": 100264,
+          "size_pixels": [
+            128,
+            128
+          ],
+          "channels": "RGB",
+          "sha256": "3c14b4da784bd9b971df8deb851ba9d36e9aa1b0601a4fddba9047ba65a2ddd2",
+          "bytes": 23584
+        },
+        {
+          "name": "blue",
+          "source_size_pixels": [
+            256,
+            256
+          ],
+          "source_sha256": "011092ba9180d0689f8c4cb74dd78798826f176c6274a1bf69ab9ea8d490c354",
+          "source_bytes": 89479,
+          "size_pixels": [
+            128,
+            128
+          ],
+          "channels": "RGB",
+          "sha256": "6f89856e5d3f9e6f604654d36209917d844a9ba82a1f96a3e036915fdebec929",
+          "bytes": 18614
+        }
+      ],
+      "external_uris": [],
+      "render_only": true,
+      "collision": "none"
+    },
+    {
+      "id": "folded_hand_towel",
+      "path": "prop_folded_hand_towel.glb",
+      "kind": "glb_model",
+      "license": "CC0-1.0",
+      "source": "modules/folded_hand_towel.glb",
+      "source_sha256": "f95b3ccdd98ea1805c5a1334222138d8bd3c1166a523e187abefa46a51eac754",
+      "source_manifest_record": {
+        "asset_id": "folded_hand_towel",
+        "category": "bathroom",
+        "description": "Wrinkled folded towel with border stitching and frayed edge",
+        "file": "modules/folded_hand_towel.glb",
+        "dimensions_m_blender_xyz": [
+          0.299901,
+          0.192982,
+          0.04882
+        ],
+        "dimensions_m_gltf_xyz": [
+          0.299901,
+          0.04882,
+          0.192982
+        ],
+        "aabb_blender_z_up": {
+          "min": [
+            -0.14995057880878448,
+            -0.09649112820625305,
+            0.0
+          ],
+          "max": [
+            0.1499505639076233,
+            0.09649112820625305,
+            0.048819608986377716
+          ]
+        },
+        "aabb_gltf_y_up": {
+          "min": [
+            -0.14995057880878448,
+            0.0,
+            -0.09649112820625305
+          ],
+          "max": [
+            0.1499505639076233,
+            0.048819608986377716,
+            0.09649112820625305
+          ]
+        },
+        "triangles_source": 2456,
+        "vertices_source": 1286,
+        "materials": [
+          "HC02_fabric",
+          "HC02_olive",
+          "HC02_cream"
+        ],
+        "collision": "none; optional coarse AABB only when deliberately promoted to interactive item",
+        "render_only": true,
+        "bytes": 358208,
+        "sha256": "f95b3ccdd98ea1805c5a1334222138d8bd3c1166a523e187abefa46a51eac754",
+        "triangles_exported": 2456,
+        "mesh_count": 1,
+        "material_count": 3,
+        "embedded_image_count": 3,
+        "external_uris": []
+      },
+      "sha256": "f812d57ecf32059359adfb4cb46e1412b0cfa0ff279d8b770a9e7e965dd821bc",
+      "bytes": 144948,
+      "aabb_metres_xyz": {
+        "min": [
+          -0.14995057880878448,
+          0.0,
+          -0.09649112820625305
+        ],
+        "max": [
+          0.1499505639076233,
+          0.048819608986377716,
+          0.09649112820625305
+        ]
+      },
+      "dimensions_metres_xyz": [
+        0.2999011427164078,
+        0.048819608986377716,
+        0.1929822564125061
+      ],
+      "source_to_runtime_matrix_column_major": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1
+      ],
+      "mesh_count": 1,
+      "node_count": 1,
+      "material_count": 3,
+      "primitive_count": 3,
+      "raylib_mesh_count": 3,
+      "vertex_count": 2140,
+      "triangle_count": 2456,
+      "geometry": [
+        {
+          "material": 0,
+          "vertices": 1510,
+          "triangles": 1792,
+          "stream_sha256": {
+            "POSITION": "4312023c5a04b0946250241b5a351226fe7c15c18518e070d30a7b1d87d26c77",
+            "NORMAL": "e3abb7dc5b9fe4c06eee16c5d9d070c0624ec437219e3cff35a691afb51d2ada",
+            "TEXCOORD_0": "0c2c2e5932a7dd5ef7f6efa6275898025ff123954cbf9a1e9203f70438c9f8be",
+            "indices": "f54d5b04be3fc9b2d11c8393c460fc591e8ba5e6e50555bc192ff3aac13e46bf"
+          }
+        },
+        {
+          "material": 1,
+          "vertices": 126,
+          "triangles": 96,
+          "stream_sha256": {
+            "POSITION": "af3038c55c4a7bf56e4dcd3e971cf7b241bb5b14a3350ca82e4f02c0a3b7b941",
+            "NORMAL": "85ad65094a0fcf5ba15668e30dda1c9d6ad724ca846f462a8df88c0ed7e2b587",
+            "TEXCOORD_0": "a7f8d7d48d22c7d3a6a74b111832dcb211496d64522f2a48c926ff955429835c",
+            "indices": "405ca2132630a1a5c6771f7a2641c2125b883d976cb5fa98ae89a8d4123da49f"
+          }
+        },
+        {
+          "material": 2,
+          "vertices": 504,
+          "triangles": 568,
+          "stream_sha256": {
+            "POSITION": "6ad01e9284a94a277fc50c110c83326a9c4483286e0cf1d3a4d44ae8464a2c80",
+            "NORMAL": "c583070ed3883b503675fd69cc56dac8d2ace5b4727dc3b4b462679c04cc396b",
+            "TEXCOORD_0": "744db12fefd8f864921a28e078c8b26a961891e39c1c0b117e865c700bfee9a6",
+            "indices": "3276648c18f6d0dec88ccf3ac89d291133a4f8f5ea780ebb8428a386f7e8f6bd"
+          }
+        }
+      ],
+      "embedded_image_count": 3,
+      "images": [
+        {
+          "name": "fabric",
+          "source_size_pixels": [
+            256,
+            256
+          ],
+          "source_sha256": "814a05b64be04318c9513cc005b47c7ea7552a0e7838f49c160db15e9d521434",
+          "source_bytes": 90793,
+          "size_pixels": [
+            128,
+            128
+          ],
+          "channels": "RGB",
+          "sha256": "7fe6bd2be76f6be48b5a6398b38e772dbd20970e43b128362264893157b5fa0c",
+          "bytes": 19089
+        },
+        {
+          "name": "olive",
+          "source_size_pixels": [
+            256,
+            256
+          ],
+          "source_sha256": "cd54d3bb3d8584739999c817aac51db800eaa06ee7376057cdfbaa90b6f7cdf3",
+          "source_bytes": 84369,
+          "size_pixels": [
+            128,
+            128
+          ],
+          "channels": "RGB",
+          "sha256": "db65a982cc02a43ee20e614a8bb1ddf0c2acc634f9b23aae0a6b6133432066ac",
+          "bytes": 17151
+        },
+        {
+          "name": "cream",
+          "source_size_pixels": [
+            256,
+            256
+          ],
+          "source_sha256": "c0613fe47808ba8d6ce7ce642fcd8f3a92c2cb2f8f46c505a83a2e8f36e8050c",
+          "source_bytes": 96069,
+          "size_pixels": [
+            128,
+            128
+          ],
+          "channels": "RGB",
+          "sha256": "ea783512ea3227d8df832572b5a7cdb28192e71d6afe3feb9ecad62f70e23145",
+          "bytes": 21816
+        }
+      ],
+      "external_uris": [],
+      "render_only": true,
+      "collision": "none"
+    },
+    {
+      "id": "television_remote",
+      "path": "prop_television_remote.glb",
+      "kind": "glb_model",
+      "license": "CC0-1.0",
+      "source": "modules/television_remote.glb",
+      "source_sha256": "76f7219967cd28f9895d3e79bd265bc4e49f4e0c58c00d54e3eea20fb7eb0f60",
+      "source_manifest_record": {
+        "asset_id": "television_remote",
+        "category": "desk_personal",
+        "description": "Worn remote with screen, buttons and directional ring",
+        "file": "modules/television_remote.glb",
+        "dimensions_m_blender_xyz": [
+          0.047,
+          0.178,
+          0.0235
+        ],
+        "dimensions_m_gltf_xyz": [
+          0.047,
+          0.0235,
+          0.178
+        ],
+        "aabb_blender_z_up": {
+          "min": [
+            -0.023499999195337296,
+            -0.08900000154972076,
+            0.0
+          ],
+          "max": [
+            0.023499999195337296,
+            0.08900000154972076,
+            0.023499999195337296
+          ]
+        },
+        "aabb_gltf_y_up": {
+          "min": [
+            -0.023499999195337296,
+            0.0,
+            -0.08900000154972076
+          ],
+          "max": [
+            0.023499999195337296,
+            0.023499999195337296,
+            0.08900000154972076
+          ]
+        },
+        "triangles_source": 1674,
+        "vertices_source": 889,
+        "materials": [
+          "HC02_black",
+          "HC02_screen",
+          "HC02_red",
+          "HC02_cream",
+          "HC02_rubber",
+          "HC02_aged_steel",
+          "HC02_paper"
+        ],
+        "collision": "none; optional coarse AABB only when deliberately promoted to interactive item",
+        "render_only": true,
+        "bytes": 547252,
+        "sha256": "76f7219967cd28f9895d3e79bd265bc4e49f4e0c58c00d54e3eea20fb7eb0f60",
+        "triangles_exported": 1674,
+        "mesh_count": 1,
+        "material_count": 7,
+        "embedded_image_count": 6,
+        "external_uris": []
+      },
+      "sha256": "87a517ae578d459a54e91295d91de6d7e67060cccf342e270f61a133a2afe5d6",
+      "bytes": 183280,
+      "aabb_metres_xyz": {
+        "min": [
+          -0.023499999195337296,
+          0.0,
+          -0.08900000154972076
+        ],
+        "max": [
+          0.023499999195337296,
+          0.023499999195337296,
+          0.08900000154972076
+        ]
+      },
+      "dimensions_metres_xyz": [
+        0.04699999839067459,
+        0.023499999195337296,
+        0.17800000309944153
+      ],
+      "source_to_runtime_matrix_column_major": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1
+      ],
+      "mesh_count": 1,
+      "node_count": 1,
+      "material_count": 7,
+      "primitive_count": 7,
+      "raylib_mesh_count": 7,
+      "vertex_count": 2337,
+      "triangle_count": 1674,
+      "geometry": [
+        {
+          "material": 0,
+          "vertices": 96,
+          "triangles": 60,
+          "stream_sha256": {
+            "POSITION": "7cc2d3d6a7e31c32d697803c4cb31a051958daff9704ac081582f311fa823932",
+            "NORMAL": "e2a65d7b7dc9e653351c02d802461df41b0c218ace4949042709d131dd589620",
+            "TEXCOORD_0": "71ea17176682d76ed3cca0f378b163de16c7694677609329b0d08058a80e4d8c",
+            "indices": "8d5d3a54fc51d69572106c58ea2300b2caef462df64c60cf2a17a3ff12f76e58"
+          }
+        },
+        {
+          "material": 1,
+          "vertices": 96,
+          "triangles": 60,
+          "stream_sha256": {
+            "POSITION": "f7d721fef7cf8dc3d11a4108200496987edbbf5114813856f5ab9524fefa4dba",
+            "NORMAL": "e2a65d7b7dc9e653351c02d802461df41b0c218ace4949042709d131dd589620",
+            "TEXCOORD_0": "69736d46061c50614078c5c7e14a9a35fce53706d72a314d187eafa0a2e23959",
+            "indices": "8d5d3a54fc51d69572106c58ea2300b2caef462df64c60cf2a17a3ff12f76e58"
+          }
+        },
+        {
+          "material": 2,
+          "vertices": 96,
+          "triangles": 60,
+          "stream_sha256": {
+            "POSITION": "6b4695dd6f014669d60badefb620413718ec461ae5a7658129b88de5296c3ec6",
+            "NORMAL": "e2a65d7b7dc9e653351c02d802461df41b0c218ace4949042709d131dd589620",
+            "TEXCOORD_0": "ba470bac45612d79f22376c61b397a625c1c5e622e595911c609b35e497db1ed",
+            "indices": "8d5d3a54fc51d69572106c58ea2300b2caef462df64c60cf2a17a3ff12f76e58"
+          }
+        },
+        {
+          "material": 3,
+          "vertices": 192,
+          "triangles": 120,
+          "stream_sha256": {
+            "POSITION": "ac1c9f08cb9255145ca6f51e9a457322450b22ec91ed748c50ed7fccdad81267",
+            "NORMAL": "fc5365c0c6cc5a712260ff9a31b7bf0d0edd1e110bce0b21d20ed9b94d6b4b5d",
+            "TEXCOORD_0": "1664cea30ce9f709d14f270f256ce1bb14c73dd27e15d632b59a6b2e87a86c76",
+            "indices": "1b6fc057a63a29e3f6027890b0e08684e994d8387262bfa6382d7fc260a77761"
+          }
+        },
+        {
+          "material": 4,
+          "vertices": 1530,
+          "triangles": 980,
+          "stream_sha256": {
+            "POSITION": "4bd8c5bb93712cbcdc5bee4440049e5300ad74783297da0ceffa0e4c624d58d7",
+            "NORMAL": "10dc044475e1dd2fe8f14277e796faf2b518fb218eb0b8bddf8a69b06d572fbb",
+            "TEXCOORD_0": "7e5b0e97d5b2c52971a6072edcb273403b0e866586497930e9d96fd2a0e0d6e6",
+            "indices": "34ca2ebe4a4b67bce269c09c670b22ecd9e41449bdd8c15d263249b6475134a1"
+          }
+        },
+        {
+          "material": 5,
+          "vertices": 312,
+          "triangles": 384,
+          "stream_sha256": {
+            "POSITION": "067a455696a8f8639f186b0407d3b10b78e7c233544242f787a4c37d246d6520",
+            "NORMAL": "73aafd12e4f17e51e25f4cd1c887dd55cc09b81a655094f04eeb6b8169ab9c90",
+            "TEXCOORD_0": "3946ce0fa3db35f8d8e79ba8a012059110d680af6e2ebfb557743706b487de68",
+            "indices": "8c519316f94d8785dbecc9ad85280db7431704d496235141cb25f71242d877b7"
+          }
+        },
+        {
+          "material": 6,
+          "vertices": 15,
+          "triangles": 10,
+          "stream_sha256": {
+            "POSITION": "3aedea8c31c3c5b56a0988116bcec9bff239c71fc4bc63370a3aca6c4ab9721a",
+            "NORMAL": "fe0d26dd32331dd8e6b976f5ee930daf895472db97ebbfdf27f50880eb6616d0",
+            "TEXCOORD_0": "f820b1fa924ba7b2b27b7cd78c7173ce84b865c96210ee85aba5d77eda2f6656",
+            "indices": "91d20adee0352aac04aaaa494606f858f5909169a14c8e41bf522ded97732495"
+          }
+        }
+      ],
+      "embedded_image_count": 6,
+      "images": [
+        {
+          "name": "black",
+          "source_size_pixels": [
+            256,
+            256
+          ],
+          "source_sha256": "89b9afbc7c67ee6f8b1ff9d2992e90dbc57c56793b93a518aca2479cfdce5426",
+          "source_bytes": 47326,
+          "size_pixels": [
+            128,
+            128
+          ],
+          "channels": "RGB",
+          "sha256": "c5c7342244407253348c55c4bdf54054cc59682196f0879a54ef8296878927ec",
+          "bytes": 7411
+        },
+        {
+          "name": "red",
+          "source_size_pixels": [
+            256,
+            256
+          ],
+          "source_sha256": "0042b1ed290fdb5f59c6a84c3f8e16d0ce86bb78683b636fd9f97a49ecce6312",
+          "source_bytes": 83927,
+          "size_pixels": [
+            128,
+            128
+          ],
+          "channels": "RGB",
+          "sha256": "71a335aa60c9ae8e50e49db6a1efc86f02aa97156d3fa2c62a26efa115f60bf1",
+          "bytes": 17231
+        },
+        {
+          "name": "cream",
+          "source_size_pixels": [
+            256,
+            256
+          ],
+          "source_sha256": "c0613fe47808ba8d6ce7ce642fcd8f3a92c2cb2f8f46c505a83a2e8f36e8050c",
+          "source_bytes": 96069,
+          "size_pixels": [
+            128,
+            128
+          ],
+          "channels": "RGB",
+          "sha256": "ea783512ea3227d8df832572b5a7cdb28192e71d6afe3feb9ecad62f70e23145",
+          "bytes": 21816
+        },
+        {
+          "name": "rubber",
+          "source_size_pixels": [
+            256,
+            256
+          ],
+          "source_sha256": "b800b0e9c81b9da2cff5a11534490cc7fe1dcb5eb9a15f98c478b3fe04d66359",
+          "source_bytes": 45200,
+          "size_pixels": [
+            128,
+            128
+          ],
+          "channels": "RGB",
+          "sha256": "66dc450d0942e2f284bcea06a6413c7dd4fd401b0d71d4e7eb171df10c42c26e",
+          "bytes": 5509
+        },
+        {
+          "name": "aged_steel",
+          "source_size_pixels": [
+            256,
+            256
+          ],
+          "source_sha256": "7485f1030aaf6f7010c2811cc9dd7c29042a0da6d5bbf8ea45d72bf2bb17a934",
+          "source_bytes": 85571,
+          "size_pixels": [
+            128,
+            128
+          ],
+          "channels": "RGB",
+          "sha256": "4dff9ef072452b0ddbced2d785b6100a0faddbe0cb1c96e27264f3da85d507e7",
+          "bytes": 17426
+        },
+        {
+          "name": "paper",
+          "source_size_pixels": [
+            256,
+            256
+          ],
+          "source_sha256": "bac2f51685768562a6a4fd8ad3df88314859389b7670ccb505b3b5f9b2197e88",
+          "source_bytes": 97473,
+          "size_pixels": [
+            128,
+            128
+          ],
+          "channels": "RGB",
+          "sha256": "4d3d1d108ceab0a328ec92209f177eba737e4ec01dbdc730844e0c20e22c2840",
+          "bytes": 21351
+        }
+      ],
+      "external_uris": [],
+      "render_only": true,
+      "collision": "none"
+    },
+    {
+      "id": "brass_eyeglasses",
+      "path": "prop_brass_eyeglasses.glb",
+      "kind": "glb_model",
+      "license": "CC0-1.0",
+      "source": "modules/brass_eyeglasses.glb",
+      "source_sha256": "67e9bdd4fa495cbe13c01d36422f17e424d7d7a57c8df1304ce022e9f0e57068",
+      "source_manifest_record": {
+        "asset_id": "brass_eyeglasses",
+        "category": "desk_personal",
+        "description": "Oval brass glasses with bridge, lenses and folded-height arms",
+        "file": "modules/brass_eyeglasses.glb",
+        "dimensions_m_blender_xyz": [
+          0.120767,
+          0.124099,
+          0.012711
+        ],
+        "dimensions_m_gltf_xyz": [
+          0.120767,
+          0.012711,
+          0.124099
+        ],
+        "aabb_blender_z_up": {
+          "min": [
+            -0.06038356199860573,
+            -0.062049537897109985,
+            0.0
+          ],
+          "max": [
+            0.06038356199860573,
+            0.062049537897109985,
+            0.012711391784250736
+          ]
+        },
+        "aabb_gltf_y_up": {
+          "min": [
+            -0.06038356199860573,
+            0.0,
+            -0.062049537897109985
+          ],
+          "max": [
+            0.06038356199860573,
+            0.012711391784250736,
+            0.062049537897109985
+          ]
+        },
+        "triangles_source": 1400,
+        "vertices_source": 714,
+        "materials": [
+          "HC02_brass",
+          "HC02_glass",
+          "HC02_bakelite"
+        ],
+        "collision": "none; optional coarse AABB only when deliberately promoted to interactive item",
+        "render_only": true,
+        "bytes": 203648,
+        "sha256": "67e9bdd4fa495cbe13c01d36422f17e424d7d7a57c8df1304ce022e9f0e57068",
+        "triangles_exported": 1400,
+        "mesh_count": 1,
+        "material_count": 3,
+        "embedded_image_count": 2,
+        "external_uris": []
+      },
+      "sha256": "b01bdc73bf964942afbda4c89c55b8ffd65c9207bdcf6171b7c7acdbbdd4c0a8",
+      "bytes": 84332,
+      "aabb_metres_xyz": {
+        "min": [
+          -0.06038356199860573,
+          0.0,
+          -0.062049537897109985
+        ],
+        "max": [
+          0.06038356199860573,
+          0.012711391784250736,
+          0.062049537897109985
+        ]
+      },
+      "dimensions_metres_xyz": [
+        0.12076712399721146,
+        0.012711391784250736,
+        0.12409907579421997
+      ],
+      "source_to_runtime_matrix_column_major": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1
+      ],
+      "mesh_count": 1,
+      "node_count": 1,
+      "material_count": 3,
+      "primitive_count": 3,
+      "raylib_mesh_count": 3,
+      "vertex_count": 1362,
+      "triangle_count": 1400,
+      "geometry": [
+        {
+          "material": 0,
+          "vertices": 974,
+          "triangles": 1056,
+          "stream_sha256": {
+            "POSITION": "a2e8e90b5fde145d756437b1eb17ff03df7fc987a6bff15bd1265857cc88b35a",
+            "NORMAL": "f365757d775dd75bfe7e2822430ca25a17c8a5d3f6afa2aae93c34f671e49f03",
+            "TEXCOORD_0": "e62a68e8629df230d8778bf8c5e80e05cc487a23e1f4c0e39c690610bc7d885d",
+            "indices": "eac34b48b738f2c069be5951944ab980a2743ab3763cf6e22132534adbe84d35"
+          }
+        },
+        {
+          "material": 1,
+          "vertices": 308,
+          "triangles": 288,
+          "stream_sha256": {
+            "POSITION": "630a274cc5fb9f6c2fd49524bde120933945b2c2219ef0b116da8958f6e9b859",
+            "NORMAL": "bc9322b73bccda92f7b2635f366248ff30a2f9efd7cd4bc15446f7f936cdb472",
+            "TEXCOORD_0": "d1d34da1a38eeb51beb91ac625ec993bb7f950f6e41f3cb18d204849dcb93e28",
+            "indices": "eea9366497cf2f7a5e274ae0be553e77ce9ef7ca44beadaa2290c275abc8a169"
+          }
+        },
+        {
+          "material": 2,
+          "vertices": 80,
+          "triangles": 56,
+          "stream_sha256": {
+            "POSITION": "f83fbfbd8f474b07967690c7f12e3bdff59d0572e0f98aa343ecb732ce83ca78",
+            "NORMAL": "e548665ccac021b843a6a334c41359b1fa4a1e245ebc9604dfc8bf53eb17c29e",
+            "TEXCOORD_0": "97af239b4e1f0bb1f62683da59f22bffb5d5740c8c4f145cf01669971e7a45d0",
+            "indices": "2fcf2cbd5f611a1593b1b337eb0b93e044aa4d229a17f254e9ffc20706d209c7"
+          }
+        }
+      ],
+      "embedded_image_count": 2,
+      "images": [
+        {
+          "name": "brass",
+          "source_size_pixels": [
+            256,
+            256
+          ],
+          "source_sha256": "eb854d975abc90a3bdfb950753cfef30c71ac916504e4c2a4d96659d51e1074b",
+          "source_bytes": 89217,
+          "size_pixels": [
+            128,
+            128
+          ],
+          "channels": "RGB",
+          "sha256": "5a47ff0c10823fa35c56188467e93dca7a1526414495416c05c802c66185b8b4",
+          "bytes": 19249
+        },
+        {
+          "name": "bakelite",
+          "source_size_pixels": [
+            256,
+            256
+          ],
+          "source_sha256": "6fdf9ff7976c2b59be5326e93b26b17c551c26c09db25474de99df25627434f0",
+          "source_bytes": 58750,
+          "size_pixels": [
+            128,
+            128
+          ],
+          "channels": "RGB",
+          "sha256": "f797cdb94a61add0205b64d6a7f88e2bf678198bd6cfda84851796593edffa06",
+          "bytes": 9521
+        }
+      ],
+      "external_uris": [],
+      "render_only": true,
+      "collision": "none"
+    },
+    {
+      "id": "creased_leather_wallet",
+      "path": "prop_creased_leather_wallet.glb",
+      "kind": "glb_model",
+      "license": "CC0-1.0",
+      "source": "modules/creased_leather_wallet.glb",
+      "source_sha256": "adb0116489a06e5892f10a9178695282645cd7c16cafa4cbcd75232dd2b1b546",
+      "source_manifest_record": {
+        "asset_id": "creased_leather_wallet",
+        "category": "desk_personal",
+        "description": "Leather bifold with card edge, scuffs and stitched border",
+        "file": "modules/creased_leather_wallet.glb",
+        "dimensions_m_blender_xyz": [
+          0.114,
+          0.098045,
+          0.03628
+        ],
+        "dimensions_m_gltf_xyz": [
+          0.114,
+          0.03628,
+          0.098045
+        ],
+        "aabb_blender_z_up": {
+          "min": [
+            -0.05700000002980232,
+            -0.04902263358235359,
+            0.0
+          ],
+          "max": [
+            0.05700000002980232,
+            0.04902263358235359,
+            0.03627999871969223
+          ]
+        },
+        "aabb_gltf_y_up": {
+          "min": [
+            -0.05700000002980232,
+            0.0,
+            -0.04902263358235359
+          ],
+          "max": [
+            0.05700000002980232,
+            0.03627999871969223,
+            0.04902263358235359
+          ]
+        },
+        "triangles_source": 1428,
+        "vertices_source": 920,
+        "materials": [
+          "HC02_leather",
+          "HC02_dark",
+          "HC02_paper",
+          "HC02_wood_light",
+          "HC02_wood"
+        ],
+        "collision": "none; optional coarse AABB only when deliberately promoted to interactive item",
+        "render_only": true,
+        "bytes": 425900,
+        "sha256": "adb0116489a06e5892f10a9178695282645cd7c16cafa4cbcd75232dd2b1b546",
+        "triangles_exported": 1428,
+        "mesh_count": 1,
+        "material_count": 5,
+        "embedded_image_count": 4,
+        "external_uris": []
+      },
+      "sha256": "0441f43ac18054033b15cef719e9715911c1baeabee2c65f07ca39b0cc16e62a",
+      "bytes": 147420,
+      "aabb_metres_xyz": {
+        "min": [
+          -0.05700000002980232,
+          0.0,
+          -0.04902263358235359
+        ],
+        "max": [
+          0.05700000002980232,
+          0.03627999871969223,
+          0.04902263358235359
+        ]
+      },
+      "dimensions_metres_xyz": [
+        0.11400000005960464,
+        0.03627999871969223,
+        0.09804526716470718
+      ],
+      "source_to_runtime_matrix_column_major": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1
+      ],
+      "mesh_count": 1,
+      "node_count": 1,
+      "material_count": 5,
+      "primitive_count": 5,
+      "raylib_mesh_count": 5,
+      "vertex_count": 1968,
+      "triangle_count": 1428,
+      "geometry": [
+        {
+          "material": 0,
+          "vertices": 192,
+          "triangles": 120,
+          "stream_sha256": {
+            "POSITION": "5f2dddacc901649dd4085655ab184418cd4da230ff14cc7ced529be72100b6e7",
+            "NORMAL": "ed6c9d3102091b3d7a1e70cc23f633dc1307c66a1321a406531e8c95e67b17ce",
+            "TEXCOORD_0": "0d3e846239cab4b2f7c2ae42798cad4459131df507685d3b69118a52cb7aebf3",
+            "indices": "3fedc4811c2b7da64feb83104a6389e96769ca12c3a9ec322b1a28ae05584a03"
+          }
+        },
+        {
+          "material": 1,
+          "vertices": 96,
+          "triangles": 60,
+          "stream_sha256": {
+            "POSITION": "33cd6ca4dc1086a48e5fab032a91e224696cff2fcd374bf786d5cc8241bb99bf",
+            "NORMAL": "e2a65d7b7dc9e653351c02d802461df41b0c218ace4949042709d131dd589620",
+            "TEXCOORD_0": "30ae433d469fef681a5e1c2a8250d6ea39ed5fc4f76528c869ee68b4f51549bb",
+            "indices": "ae6f76abeb00688bf12281e298cf4269c388950b5105aa20c23f45389a4f881e"
+          }
+        },
+        {
+          "material": 2,
+          "vertices": 96,
+          "triangles": 60,
+          "stream_sha256": {
+            "POSITION": "992905ac1ab6435721913da4e3ada1b77fc5932dab0c86a97eff2d7e32973650",
+            "NORMAL": "23c02042ffec1acb4ec568a988977dded89ccaa4da365c2d239d62baa5914845",
+            "TEXCOORD_0": "85012d6274553af03e587da93a475e26130ff2c876c37967badc3952c58fd602",
+            "indices": "944edc78dfc7261e3728cd2d649d9a7fdf66fbcd38a0d71d507f82460eaac5c9"
+          }
+        },
+        {
+          "material": 3,
+          "vertices": 1408,
+          "triangles": 1056,
+          "stream_sha256": {
+            "POSITION": "854239adf9104f007f37d082a33528b738dc10f29e85021023d9f25294a44c54",
+            "NORMAL": "028c67c6f6aaf47c131c43820cd628c062237e78b62a888185a241c7af928cbd",
+            "TEXCOORD_0": "b2fd71954bd4d29d125d9453d128f0819b59d184e0c6e52440a060099795e4d9",
+            "indices": "71ae7093be2dfc6a95c0b8b498ddc1c90c1ed482c7806afef49af6fa1bec3a99"
+          }
+        },
+        {
+          "material": 4,
+          "vertices": 176,
+          "triangles": 132,
+          "stream_sha256": {
+            "POSITION": "a8ab0ae38f3f9bda3ce29ad6ad1ff01ad38b57912a1b140bc030a8cd4a66662c",
+            "NORMAL": "05a7b753ce1fc45c64f62f4adabc2e6a73e08b9e73e85bdea03aa72cc86277f0",
+            "TEXCOORD_0": "d19e2f405a945f539b15d68ce1898007f25af7e98a131b3de812d689bbc0244c",
+            "indices": "1bb2e4797b2805201151f8b90bf2026fb4168d81698bed334a680b47f6dd5dcf"
+          }
+        }
+      ],
+      "embedded_image_count": 4,
+      "images": [
+        {
+          "name": "leather",
+          "source_size_pixels": [
+            256,
+            256
+          ],
+          "source_sha256": "80b52b9bb9a982e4bb781a4446329197a71816c5563b306b8a115d706d39b6a4",
+          "source_bytes": 75289,
+          "size_pixels": [
+            128,
+            128
+          ],
+          "channels": "RGB",
+          "sha256": "f6ac9653e70ff9c3a7c8cc7803b91ce1a2b4c7f451ebd73996e4d57ccd416aa7",
+          "bytes": 13828
+        },
+        {
+          "name": "paper",
+          "source_size_pixels": [
+            256,
+            256
+          ],
+          "source_sha256": "bac2f51685768562a6a4fd8ad3df88314859389b7670ccb505b3b5f9b2197e88",
+          "source_bytes": 97473,
+          "size_pixels": [
+            128,
+            128
+          ],
+          "channels": "RGB",
+          "sha256": "4d3d1d108ceab0a328ec92209f177eba737e4ec01dbdc730844e0c20e22c2840",
+          "bytes": 21351
+        },
+        {
+          "name": "wood_light",
+          "source_size_pixels": [
+            256,
+            256
+          ],
+          "source_sha256": "f741aaf339dd4b3f23200b793ed40f5663e1c589050054d106b78c8fbf4ace98",
+          "source_bytes": 91924,
+          "size_pixels": [
+            128,
+            128
+          ],
+          "channels": "RGB",
+          "sha256": "7ac6a59733ff7f299d000c2bae04010f54f888d97774cf6ece77bd5ec05510dc",
+          "bytes": 18823
+        },
+        {
+          "name": "wood",
+          "source_size_pixels": [
+            256,
+            256
+          ],
+          "source_sha256": "cc68753fff56f31e31490eea591c6dc18146b3f7ef6755d2b5703fe29d64ec21",
+          "source_bytes": 83917,
+          "size_pixels": [
+            128,
+            128
+          ],
+          "channels": "RGB",
+          "sha256": "3e1ccaced1a319774b7debc8a6ecea356fd3fc61269c9098bc6cf4e355864e4d",
+          "bytes": 16214
+        }
+      ],
+      "external_uris": [],
+      "render_only": true,
+      "collision": "none"
+    }
+  ],
+  "runtime_total_bytes": 836672,
+  "total_triangles": 12707,
+  "total_raylib_meshes": 25,
+  "rebuild": {
+    "script": "build_props.py",
+    "dependencies": [
+      "Python >=3.9",
+      "Pillow"
+    ],
+    "reference_pillow_version": "12.3.0",
+    "source_mutation": false,
+    "command": "python3 build_props.py --source /path/to/02_household_clutter",
+    "independent_check": "python3 build_props.py --source /path/to/02_household_clutter --out /tmp/swat-props-rebuild; python3 validate_props.py --assets /tmp/swat-props-rebuild --source /path/to/02_household_clutter",
+    "determinism": "Byte-identical rebuilds with the same Python/Pillow/PNG encoder versions; no timestamps or absolute paths in outputs."
+  }
+}
