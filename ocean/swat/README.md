@@ -103,6 +103,9 @@ unmodified. For comparison, `SWAT_LIGHTING=0 ./swat play` restores unlit shading
 Walls default to a provisional calm imagegen plaster texture. The exact prompt
 and source hash are in `assets/environment/painted_plaster_v1.json`.
 `SWAT_PLASTER_STYLE=weathered ./swat play` selects the preserved worn source map.
+The local carbine loads its private rigid export with original 4K material maps;
+[WEAPON_ART.md](WEAPON_ART.md) records setup, measured clearance and remaining fit work.
+`SWAT_WEAPON_ART=0 ./swat` provides a procedural comparison.
 These overrides are forwarded across WSL interop, with paths translated where
 appropriate. Source wood/plaster tiling now follows the supplied metre scales.
 `test_lighting` is an explicit graphics check requiring a display; it verifies
@@ -282,7 +285,7 @@ and mission outcomes. All surviving officers must extract. Only the leader can
 restart, choose a house or command snipers. Online pause/settings release your controls while the session continues.
 Solo/offline play remains available. Planning also releases controls online;
 the session continues. The default hosted mission is Cedar House, five minutes;
-`--mission annex` selects the old range. Hosts and peers must use protocol v7.
+`--mission annex` selects the old range. Hosts and peers must use protocol v8.
 
 The dedicated server has no display, Raylib, audio-device or CUDA dependency.
 On WSL, `./swat server` defaults to `build/swat/windows/swat-server.exe`;
@@ -645,3 +648,17 @@ tethers are required for a connection. Crouch/turn moves contacts with the body.
 A tether restraint checks its hit region and creates temporary movement denial;
 ordinary cuffs are still required. The original **T** taser remains the simple
 profile; v1 annex impact handling remains compatible with old policy defaults.
+
+### Solo mission checkpoints
+
+Press **F5** to save the current solo mission and **F9** to restore it. The
+checkpoint sits beside settings as `<settings path>.mission.sgrp`; a local
+`<settings path>.live.sgrp` journal enables exact continuation. `./swat play
+--resume FILE.sgrp` resumes a supplied checkpoint. Restore verifies the entire
+input journal before replacing the live world, and subsequent F5 saves include
+the continued mission. Load restores the saved kit, primary, sights, retained
+magazines and squad state. This is solo persistence; co-op saves are pending.
+
+Saves require this network/replay version (currently 8) and the same generated
+layout model. Long journals take time to replay on load; there is no bounded-
+time snapshot restore or crash recovery guarantee. Policy mode does not save.

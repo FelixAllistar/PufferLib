@@ -58,7 +58,7 @@ closing the listen host ends the session. Leaving online play restores solo.
 `protocol.c` explicitly encodes big-endian integers and IEEE float32, validates
 version/type/length/ranges and decodes into temporary storage before applying.
 C layouts, pointers and platform bool representations never cross the wire.
-Protocol v7 includes mission/room data, framed-wall part/material metadata,
+Protocol v8 includes mission/room data, framed-wall part/material metadata,
 rotated door bases, kit/tool commands, regional injuries and restraints,
 throwable flight/effect state, stocks/exposure, independent wand pose and
 sniper assignments/rifles/targets/travel state.
@@ -143,7 +143,7 @@ occupants behind the officer. The annex v1 interaction remains a direct ray.
 F/middle mouse selects use or compliance; RMB latches cuff, pick or aim on
 press. Lost targets cancel progress, cannot transfer the held cuff to another
 person, and finishing does not change that press into ADS or a weapon click.
-These bindings reuse existing protocol v7 commands; the server still computes
+These bindings reuse existing protocol v8 commands; the server still computes
 targets and validates physical actions independently of client prompts.
 
 Optiwand cameras sweep a small sphere through actual geometry. Near a closed
@@ -198,7 +198,7 @@ or editor. These are the intended entry points for a developer or coding agent:
 | New remote command/state | `SwatInput` and `protocol.c`, with protocol version/round-trip tests |
 
 Change simulation rules once so solo, co-op and future policy actors agree.
-Do not put authoritative damage or kit changes in the UI. Protocol v7 peers
+Do not put authoritative damage or kit changes in the UI. Protocol v8 peers
 must agree on behavior; mod compatibility negotiation/hot reload is future work.
 
 | Tier | Purpose | Agreement to verify |
@@ -233,7 +233,7 @@ authoritative eye-to-muzzle sphere sweep use this same pose. High/low ready
 raise before a buffered trigger is permitted to fire. Reload removal/insertion/
 chamber events conserve ammunition even when interrupted at any tick. Optional
 retained magazines and sight profiles are replicated; profile changes require
-an unused officer in staging. Protocol v7 includes these fields and pitched
+an unused officer in staging. Protocol v8 includes these fields and pitched
 world objects for the controller range.
 
 `replay.c` stores explicit portable config/seed/input/state-hash records and
@@ -282,6 +282,22 @@ effects use the existing cover/mask/region rules. CEW probes attach in actor
 local coordinates with stance-relative height. Two separated contacts require
 clear world-space tether paths before applying a temporary stun. Primary
 payload profiles are selected before deployment; reserve rounds retain the
-profile's type rather than changing on a UI selection. Protocol v7 replicates
+profile's type rather than changing on a UI selection. Protocol v8 replicates
 these states and validates bounded inventories/remote inputs. Replica devices
 render public state without creating an independent dynamic authority.
+
+## Rigid weapon calibration and solo persistence
+
+The private rigid carbine is an optional presentation asset, with the measured
+interface documented in [WEAPON_ART.md](WEAPON_ART.md). Its points also define
+authoritative carbine clearance and firing origins without the asset installed.
+That semantic change bumps peers and journals to v8; old v7 clients/recordings
+are rejected. Full skeletal character playback remains pending.
+
+Solo F5/F9 checkpoints copy a journal atomically and restore into a temporary
+simulation by verified replay. Physics body tags are retargeted after transfer;
+failure preserves the live world. Continued recording copies the verified prefix
+and appends future input. The frontend reconciles the restored kit and profiles,
+resets outstanding UI actions, and invalidates presentation caches. Journals
+require the same procedural model and load by replaying every recorded tick.
+Co-op persistence and bounded-time snapshot restoration remain future work.

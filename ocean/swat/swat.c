@@ -17,6 +17,7 @@ static void usage(const char* path) {
         "  %s join ADDRESS [--port 27474]\n"
         "  --record FILE.sgrp          Record a solo round for exact input replay\n"
         "  --settings FILE.ini          Override the saved player preferences\n"
+        "  --resume FILE.sgrp          Restore a verified solo mission journal\n"
         "  --mission house|annex|generated|range  Human default: house; policy default: annex\n"
         "  --layout-seed N --difficulty 0|1|2 --generator neural|uniform\n"
         "  --layout-model FILE          Optional trained house policy\n"
@@ -55,7 +56,7 @@ static void policy_action(PufferNet* policy, float* obs, float* actions,
 
 int main(int argc, char** argv) {
     const char* model=NULL; const char* capture=NULL; const char* settings_path=NULL; const char* layout_model=NULL;
-    const char* record_path=NULL;
+    const char* record_path=NULL; const char* resume_path=NULL;
     SwatReplay recording={0}; bool record_started=false;
     const char* join_address=NULL; bool start_host=false;
     int port=SWAT_DEFAULT_PORT;
@@ -109,6 +110,9 @@ int main(int argc, char** argv) {
         } else if(!strcmp(argv[i],"--record")) {
             if(++i>=argc) { usage(argv[0]); free(overrides); return 1; }
             record_path=argv[i];
+        } else if(!strcmp(argv[i],"--resume")) {
+            if(++i>=argc) { usage(argv[0]); free(overrides); return 1; }
+            resume_path=argv[i];
         } else if (!strcmp(argv[i],"--capture")) {
             if (++i>=argc) { usage(argv[0]); free(overrides); return 1; }
             capture=argv[i];
@@ -156,6 +160,12 @@ int main(int argc, char** argv) {
     env.sim->config.layout_seed=layout_seed; env.sim->config.generator=generator; env.sim->config.difficulty=difficulty;
     if(!model && !max_ticks_override && env.sim->config.max_ticks==1800) env.sim->config.max_ticks=18000;
     puf_reset(&env);
+    if(resume_path) {
+        char error[256];
+        if(model || start_host || join_address || !swat_replay_restore(env.sim,resume_path,error,sizeof(error))) {
+            fprintf(stderr,"Cannot resume solo mission: %s\n",model || start_host || join_address ? "choose solo human play" : error); puf_close(&env); return 1;
+        }
+    }
     SwatConfig solo_config=env.sim->config;
     PufferNet* policy=NULL; Weights* weights=NULL;
     if (model) {
@@ -193,6 +203,15 @@ int main(int argc, char** argv) {
         swat_frontend_set_screen(&app,SWAT_SCREEN_CONNECT);
     }
     if(capture) { app.screen=capture_screen; app.plan_preview=preview; }
+    char auto_record[SWAT_SETTINGS_PATH_SIZE+32],save_path[SWAT_SETTINGS_PATH_SIZE+32];
+    snprintf(auto_record,sizeof(auto_record),"%s.live.sgrp",app.settings_path);
+    snprintf(save_path,sizeof(save_path),"%s.mission.sgrp",app.settings_path);
+    if(!record_path && !model && !capture && app.settings_path[0] && swat_settings_prepare_path(auto_record)) record_path=auto_record;
+    if(resume_path && record_path) {
+        record_started=true;
+        if(!swat_replay_continue(&recording,record_path,resume_path,env.sim)) fprintf(stderr,"Mission restored, but recording could not continue: %s\n",record_path);
+    }
+    if(resume_path && !capture) swat_frontend_restored(&app,env.sim);
     float accumulator=0,look_x=0,look_y=0;
     int frames=0;
     while (!WindowShouldClose() && !app.quit) {
@@ -240,7 +259,27 @@ int main(int argc, char** argv) {
             }
         }
         if(!capture) swat_frontend_update(&app,env.sim,policy!=NULL);
-        if(recording.file && (app.scenario_requested || app.restart_requested || app.host_requested || app.join_requested)) swat_replay_close(&recording);
+        if(app.scenario_requested || app.restart_requested || app.host_requested || app.join_requested) {
+            if(recording.file) swat_replay_close(&recording);
+            record_started=false;
+        }
+        if(app.save_requested) {
+            bool saved=!server.transport && !client.transport && recording.file && swat_replay_checkpoint(&recording,save_path);
+            snprintf(app.notice,sizeof(app.notice),"%s",saved ? "Mission saved" : "Save requires a recorded solo round from deployment");
+            app.notice_seconds=4; app.save_requested=false;
+        }
+        if(app.resume_requested) {
+            if(server.transport || client.transport) snprintf(app.notice,sizeof(app.notice),"Load saves in solo play.");
+            else if(swat_replay_restore(env.sim,save_path,app.notice,sizeof(app.notice))) {
+                if(recording.file) swat_replay_close(&recording);
+                solo_config=env.sim->config; terminal=1; app.reset_input=true;
+                accumulator=look_x=look_y=0; record_started=true;
+                bool continued=record_path && swat_replay_continue(&recording,record_path,save_path,env.sim);
+                swat_frontend_restored(&app,env.sim); sound.episode=-1; view.lighting.prepared=false;
+                snprintf(app.notice,sizeof(app.notice),"%s",continued ? "Mission restored" : "Mission restored; further saving unavailable");
+            }
+            app.notice_seconds=4; app.resume_requested=false;
+        }
         if(app.scenario_requested) {
             if(app.leader) {
                 if(server.transport) swat_server_scenario(&server,&app.scenario);

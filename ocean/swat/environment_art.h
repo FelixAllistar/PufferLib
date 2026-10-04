@@ -16,6 +16,8 @@ typedef struct SwatEnvironmentArt {
 // Call only with an active graphics context; headless simulation never loads art.
 void swat_environment_art_init(SwatEnvironmentArt* art);
 void swat_environment_art_close(SwatEnvironmentArt* art);
+// Releases unique shared material textures once, then the model allocations.
+void swat_art_model_close(Model model);
 // Draws in the caller's object-local transform. False means use graybox fallback.
 bool swat_environment_art_draw(const SwatEnvironmentArt* art,const SwatObject* o);
 bool swat_environment_art_has_floor(const SwatEnvironmentArt* art,SwatMaterial floor);

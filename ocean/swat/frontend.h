@@ -15,6 +15,8 @@ typedef enum SwatRightAction { SWAT_RIGHT_NONE,SWAT_RIGHT_AIM,SWAT_RIGHT_CUFF,SW
 typedef struct SwatFrontend {
     SwatSettings settings, saved_settings;
     SwatScreen screen, settings_back;
+    bool save_requested,resume_requested;
+    float notice_seconds;
     bool captured, quit, restart_requested, reset_input, wait_for_release;
     bool host_requested,join_requested,disconnect_requested,networked,leader;
     bool hosting,connect_pending,address_edit,port_edit;
@@ -51,6 +53,7 @@ SwatInput swat_frontend_input(SwatFrontend* app, const SwatSim* sim);
 // Draw inside the caller's BeginDrawing/EndDrawing pair, after the game view.
 void swat_frontend_draw(SwatFrontend* app, const SwatView* view, const SwatSim* sim, bool policy);
 void swat_frontend_close(SwatFrontend* app);
+void swat_frontend_restored(SwatFrontend* app,const SwatSim* sim);
 
 #ifdef __cplusplus
 }

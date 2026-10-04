@@ -122,6 +122,27 @@ static void swat_camera_select(SwatFrontend* app,const SwatSim* sim,int unit) {
     }
 }
 
+void swat_frontend_restored(SwatFrontend* app,const SwatSim* sim) {
+    const SwatActor* actor=&sim->actors[0];
+    app->actor=0; app->last_episode=sim->episode;
+    app->selected_kit=actor->gear.kit; app->selected_primary=actor->arsenal.primary;
+    app->selected_sight=actor->arsenal.sight; app->magazine_inventory=actor->arsenal.slots[0].use_magazines;
+    app->loadout_pending=app->profiles_pending=false;
+    app->squad_pending=0; app->scenario_requested=app->restart_requested=false;
+    app->ready=actor->controller.ready; app->selected_gadget=0;
+    app->gadget_door_action=0; app->right_held=false; app->right_action=SWAT_RIGHT_NONE;
+    app->camera_pointer=app->squad_pointer=false; app->camera_expansion=0;
+    for(int i=0;i<SWAT_SNIPERS;i++) {
+        app->sniper_enabled[i]=sim->snipers[i].deployed;
+        app->sniper_post[i]=sim->snipers[i].post; app->sniper_rifle[i]=sim->snipers[i].rifle;
+        app->sniper_pending[i]=false;
+    }
+    snprintf(app->layout_seed,sizeof(app->layout_seed),"%u",sim->config.layout_seed);
+    app->layout_difficulty=sim->config.difficulty; app->layout_generator=sim->config.generator;
+    app->reset_input=true;
+    swat_frontend_set_screen(app,sim->end==SWAT_RUNNING ? SWAT_SCREEN_GAME : SWAT_SCREEN_PAUSE);
+}
+
 static void swat_camera_cycle(SwatFrontend* app,const SwatSim* sim,int direction) {
     for(int step=1;step<=SWAT_SNIPERS+SWAT_MAX_DEVICES;step++) {
         int unit=(app->selected_sniper+direction*step+SWAT_SNIPERS+SWAT_MAX_DEVICES)%(SWAT_SNIPERS+SWAT_MAX_DEVICES);
@@ -217,6 +238,9 @@ void swat_frontend_update(SwatFrontend* app, const SwatSim* sim, bool policy) {
         app->reset_input=true;
     }
     if(IsKeyPressed(KEY_F3)) app->debug=!app->debug;
+    app->notice_seconds=fmaxf(0,app->notice_seconds-GetFrameTime());
+    if(IsWindowFocused() && !policy && IsKeyPressed(KEY_F5)) app->save_requested=true;
+    if(IsWindowFocused() && !policy && IsKeyPressed(KEY_F9)) app->resume_requested=true;
     SetTargetFPS(app->settings.frame_limit);
 }
 
@@ -457,6 +481,7 @@ static void swat_camera_draw(SwatFrontend* app,const SwatView* view,const SwatSi
 void swat_frontend_draw(SwatFrontend* app, const SwatView* view, const SwatSim* sim, bool policy) {
     if(app->screen==SWAT_SCREEN_GAME || app->screen==SWAT_SCREEN_SCOPE) {
         if(!policy) swat_camera_draw(app,view,sim);
+        if(app->notice_seconds>0 && app->notice[0]) swat_hud_text(view,app->notice,24,86,15,menu_gold);
         if(app->squad_pointer) {
             int x=(int)(GetScreenWidth()*.63f),y=GetScreenHeight()/2-105;
             const char* teams[]={"Gold","Red","Blue"};
@@ -483,7 +508,7 @@ void swat_frontend_draw(SwatFrontend* app, const SwatView* view, const SwatSim* 
             swat_hud_text(view,TextFormat("[4] Flash %d    [5] CS %d",gear->flashbangs,gear->gas_grenades),24,y+23,14,menu_paper);
             swat_hud_text(view,TextFormat("[T] Taser %d    [7] Charge %d",gear->taser_charges,gear->breaching_charges),24,y+44,14,menu_paper);
             swat_hud_text(view,TextFormat("[6] Spray %.1fs    [9] Wedges %d    [8] Disarm",gear->spray_ticks/60.0f,gear->wedges),24,y+65,14,menu_paper);
-            swat_hud_text(view,"[P] Planning    [M] Squad    [Esc] Pause",24,y+86,14,menu_muted);
+            swat_hud_text(view,"[P] Planning    [M] Squad    [F5/F9] Save/load    [Esc] Pause",24,y+86,14,menu_muted);
         }
         return;
     }

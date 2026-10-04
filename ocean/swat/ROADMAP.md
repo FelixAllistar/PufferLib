@@ -32,7 +32,7 @@ is deliberately a general engine improvement.
 - Recon/Control/Entry kit tradeoffs, collision-limited optiwand, melee/ram,
   less-lethal impact launcher, compliance and interruptible cuffing.
 - Head/torso/arm/leg injury, plate protection, injury-driven movement/spread,
-  secured-hostage extraction and protocol v7 replication of these states.
+  secured-hostage extraction and protocol v8 replication of these states.
 - Optional native Steam Audio HRTF, approximate room reflection/decay mixer,
   and 26 repeatable WAV/CSV comparison scenes.
 - Two physical snipers: post/rifle selection, direct scope control, visible
@@ -47,7 +47,7 @@ is deliberately a general engine improvement.
 - Canonical first/third-person eye/hand/sight/muzzle geometry, high/low ready,
   buffered actions, staged interruptible reloads and optional retained magazines.
 - Staging primary/sight profiles, stair/ramp/clearance test range, F3 physical
-  debug overlay and portable exact solo input replay verification (protocol v7).
+  debug overlay and portable exact solo input replay verification (protocol v8).
 - Door peek/wedge/recovery, inspected trap disarming and finite occluded spray.
 - Shared clearance navigation, initial sight/hearing-memory NPCs, vacant-slot
   squad bots, delayed/queued Gold/Red/Blue orders, escort/evidence/debrief state.
@@ -68,15 +68,22 @@ is deliberately a general engine improvement.
   props, tied to active damage pieces/supports without new collision or LOS.
 - Initial linear-light shading, cached sun/nearest-room depth shadows and
   exposure overrides; transformed primitives and imported art share shading.
-  Material replacement, normal/roughness maps, authored fixtures and GI remain.
+  The coherent environment material family, normal/roughness maps, authored
+  fixtures and GI remain.
+- Optional private rigid-carbine import with measured authority/render alignment,
+  original normal/roughness/metalness maps and staged magazine visibility.
+- Verified solo mission checkpoint/restore and journal continuation, with F5/F9
+  input and `--resume`; co-op persistence remains pending.
 - Explicit native/WSLg launcher routing, GPU fallback selection and a portable
   frame-cost benchmark covering simulation, audio, live cameras and recording.
 
 Current art handoffs: the immutable F character GLB passes structural preflight
 with all seven influences; full runtime character playback is pending. Guns have
-mechanical profiles and canonical pose targets, but still use placeholder art.
-The standalone rigid rifle export and coherent material quality pass are the
-next art integration gates. These foundation checks do not imply a finished
+mechanical profiles and canonical pose targets. The local rigid carbine now
+uses its original maps, measured bindings and reload magazine visibility; see
+[WEAPON_ART.md](WEAPON_ART.md). Other guns remain procedural and the supplied
+sidearm needs physical-size calibration. The coherent environment material
+quality pass and full character consumer remain art integration gates. These foundation checks do not imply a finished
 animation pipeline, production lighting or completed roadmap.
 
 [ARCHITECTURE.md](ARCHITECTURE.md) records the portable technology choices,

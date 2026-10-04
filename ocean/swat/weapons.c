@@ -1,9 +1,10 @@
 #include "weapons.h"
+#include "rifle_geometry.h"
 #include <string.h>
 
 // Fictional game profiles. Reload events and inventory are authority-owned.
 static const SwatWeaponDef swat_weapon_defs[SWAT_WEAPON_PROFILES] = {
-    {"GE CARBINE",30,6,120,156,24,34.0f,60.0f,1.0f,2.0f,0.08f,1.2f,true,.56f,.055f},
+    {"GE CARBINE",30,6,120,156,24,34.0f,60.0f,1.0f,2.0f,0.08f,1.2f,true,SWAT_CARBINE_REACH,SWAT_CARBINE_SIGHT_HEIGHT},
     {"P9 SIDEARM",15,10,90,120,18,26.0f,40.0f,0.45f,2.5f,0.15f,1.7f,false,.36f,.03f},
     {"LL IMPACT LAUNCHER",5,48,150,180,30,6.0f,18.0f,0.14f,3.0f,0.5f,1.8f,false,.62f,.055f},
     {"GE PRECISION",4,90,180,210,36,82.0f,150.0f,2.6f,3.0f,.025f,2.5f,false,.84f,.06f},

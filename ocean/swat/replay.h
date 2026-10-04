@@ -14,5 +14,8 @@ bool swat_replay_open(SwatReplay* replay,const char* path);
 // 1 complete frame, 0 clean end, -1 malformed/truncated/incompatible file.
 int swat_replay_next(SwatReplay* replay,SwatInput* input,uint32_t* expected);
 bool swat_replay_close(SwatReplay* replay);
+bool swat_replay_checkpoint(SwatReplay* replay,const char* path);
+bool swat_replay_restore(SwatSim* sim,const char* path,char* error,size_t capacity);
+bool swat_replay_continue(SwatReplay* replay,const char* path,const char* checkpoint,const SwatSim* sim);
 uint32_t swat_replay_digest(const SwatSim* sim);
 #endif

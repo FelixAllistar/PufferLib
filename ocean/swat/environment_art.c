@@ -4,7 +4,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-static void close_model(Model model);
 
 static bool prop_bounds_fit(Model model,b3Vec3 size) {
     if(!model.meshCount) return false;
@@ -58,7 +57,7 @@ void swat_environment_art_init(SwatEnvironmentArt* art) {
     for(int i=0;i<SWAT_ENV_PROP_KINDS;i++) {
         if(asset_path(path,sizeof(path),swat_environment_prop_specs[i].file)) art->props[i]=LoadModel(path);
         if(!prop_bounds_fit(art->props[i],swat_environment_prop_specs[i].size)) {
-            close_model(art->props[i]); art->props[i]=(Model){0};
+            swat_art_model_close(art->props[i]); art->props[i]=(Model){0};
         }
         if(!art->props[i].meshCount) missing_props++;
     }
@@ -67,7 +66,7 @@ void swat_environment_art_init(SwatEnvironmentArt* art) {
         TraceLog(LOG_WARNING,"SWAT: environment art incomplete; missing pieces use graybox rendering");
 }
 
-static void close_model(Model model) {
+void swat_art_model_close(Model model) {
     // Raylib UnloadModel owns meshes/material arrays but not their textures.
     // glTF materials can share one image: release every unique texture once.
     for(int m=0;m<model.materialCount;m++) for(int k=0;k<(MATERIAL_MAP_BRDF+1);k++) {
@@ -87,8 +86,8 @@ static void close_model(Model model) {
 void swat_environment_art_close(SwatEnvironmentArt* art) {
     if(art->plaster.id) UnloadTexture(art->plaster);
     if(art->wood.id) UnloadTexture(art->wood);
-    close_model(art->door);
-    for(int i=0;i<SWAT_ENV_PROP_KINDS;i++) close_model(art->props[i]);
+    swat_art_model_close(art->door);
+    for(int i=0;i<SWAT_ENV_PROP_KINDS;i++) swat_art_model_close(art->props[i]);
     memset(art,0,sizeof(*art));
 }
 

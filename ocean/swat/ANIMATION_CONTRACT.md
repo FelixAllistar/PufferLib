@@ -8,6 +8,19 @@ coordination with ongoing engine work. This is a presentation contract, separate
 from [the versioned RL contract](CONTRACT.md). Reported local save/restore work
 is not in this verified snapshot and is not covered here.
 
+## Current integration update (2026-10-04)
+
+The pinned facts below remain the historical animation baseline. The active
+engine additionally imports the private rigid rifle; see [WEAPON_ART.md](WEAPON_ART.md).
+Carbine reach/sight height are now .89999995/.12474874 m from stock-pad origin,
+with an additional muzzle Y offset .04362635 m. `rifle_geometry.h` and
+`swat_pose_weapon_point` define measured bindings; use them rather than the
+historical .56/.055 m offsets below. Network/replay version 8 separates this
+calibration from old clients and recordings. Reload timing and the immutable
+F source fixture are unchanged. The rigid consumer does not implement seven-
+influence full-body skinning, skeletal playback or a finished anatomical fit.
+Solo checkpoint/restore is now integrated separately from this baseline.
+
 ## Scope and verified implementation
 
 This contribution adds only this document, an asset-agnostic read-only GLB probe,

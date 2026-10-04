@@ -184,6 +184,10 @@ static bool run_checks(SwatFrontend* app, SwatView* view, SwatSim* sim,
     CHECK(app->screen==SWAT_SCREEN_GAME && app->captured && IsCursorHidden());
     CHECK(confined_to_window());
     CHECK(fabsf(sim->actors[0].controller.yaw)<0.001f && fabsf(sim->actors[0].controller.pitch)<0.001f);
+    event(TEST_KEY_DOWN,KEY_F5,0); frame(app,view,sim);
+    CHECK(app->save_requested); app->save_requested=false; event(TEST_KEY_UP,KEY_F5,0); frame(app,view,sim);
+    event(TEST_KEY_DOWN,KEY_F9,0); frame(app,view,sim);
+    CHECK(app->resume_requested); app->resume_requested=false; event(TEST_KEY_UP,KEY_F9,0); frame(app,view,sim);
     Vector2 position=GetMousePosition();
     event(TEST_MOUSE_POSITION,(int)position.x+40,(int)position.y-30);
     frame(app,view,sim);
@@ -487,6 +491,13 @@ int main(int argc, char** argv) {
     if(ok) ok=run_house(&app,&view,sim,argc>3 ? argv[3] : NULL,argc>4 ? argv[4] : NULL,argc>5 ? argv[5] : NULL,argc>7 ? argv[7] : NULL,argc>8 ? argv[8] : NULL,argc>9 ? argv[9] : NULL,argc>10 ? argv[10] : NULL);
     if(ok) ok=run_devices(&app,&view,sim);
     if(ok) ok=run_generation(&app,&view,sim,argc>6 ? argv[6] : NULL);
+    if(ok) {
+        swat_frontend_restored(&app,sim);
+        SwatInput restored_input=swat_frontend_input(&app,sim);
+        ok=app.last_episode==sim->episode && !app.profiles_pending && !app.loadout_pending &&
+            app.selected_primary==sim->actors[0].arsenal.primary && !restored_input.primary_profile && !restored_input.loadout;
+        if(ok) puts("PASS save frontend: F5/F9 requests and restored loadout reconciliation without fresh equipment commits");
+    }
     swat_frontend_close(&app);
     swat_sound_view_close(&test_sound);
     swat_sim_close(sim); free(sim);

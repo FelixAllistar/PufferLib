@@ -22,7 +22,7 @@ class Launcher(unittest.TestCase):
                 path.write_text('#!/bin/bash\nprintf "driver=%s\\nshared=%s\\n" "${GALLIUM_DRIVER:-automatic}" "${WSLENV:-}"\nprintf "arg=%s\\n" "$@"\n')
                 path.chmod(0o755)
             env = dict(os.environ)
-            for key in ["WSL_INTEROP", "WSLENV", "GALLIUM_DRIVER", "MESA_LOADER_DRIVER_OVERRIDE", "LIBGL_ALWAYS_SOFTWARE", "SWAT_NATIVE_WINDOWS", "SWAT_LIGHTING", "SWAT_EXPOSURE", "SWAT_PLASTER_STYLE", "SWAT_ENVIRONMENT_ASSETS"]:
+            for key in ["WSL_INTEROP", "WSLENV", "GALLIUM_DRIVER", "MESA_LOADER_DRIVER_OVERRIDE", "LIBGL_ALWAYS_SOFTWARE", "SWAT_NATIVE_WINDOWS", "SWAT_LIGHTING", "SWAT_EXPOSURE", "SWAT_PLASTER_STYLE", "SWAT_ENVIRONMENT_ASSETS", "SWAT_WEAPON_ART", "SWAT_WEAPON_ASSETS"]:
                 env.pop(key, None)
             env.update(overrides)
             result = subprocess.run([str(launcher), *args], env=env, text=True, capture_output=True, check=True)
@@ -48,6 +48,10 @@ class Launcher(unittest.TestCase):
         out, err = self.run_launcher({"WSL_INTEROP": "fixture", "WSLENV": "EXISTING/p", "SWAT_LIGHTING": "0", "SWAT_EXPOSURE": "0.8", "SWAT_ENVIRONMENT_ASSETS": "/tmp/assets"})
         self.assertIn("Native Windows player", err)
         self.assertIn("EXISTING/p:SWAT_LIGHTING/w:SWAT_EXPOSURE/w:SWAT_ENVIRONMENT_ASSETS/pw", out)
+
+    def test_native_weapon_assets_forwarded(self):
+        out, _ = self.run_launcher({"WSL_INTEROP": "fixture", "SWAT_WEAPON_ART": "0", "SWAT_WEAPON_ASSETS": "/tmp/private-weapons"})
+        self.assertIn("SWAT_WEAPON_ART/w:SWAT_WEAPON_ASSETS/pw", out)
 
     def test_native_registered_interop_without_shell_variable(self):
         if not Path("/proc/sys/fs/binfmt_misc/WSLInterop").exists():
