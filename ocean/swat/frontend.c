@@ -205,6 +205,7 @@ void swat_frontend_update(SwatFrontend* app, const SwatSim* sim, bool policy) {
         app->restart_requested=true;
         app->reset_input=true;
     }
+    if(IsKeyPressed(KEY_F3)) app->debug=!app->debug;
     SetTargetFPS(app->settings.frame_limit);
 }
 
@@ -236,6 +237,10 @@ SwatInput swat_frontend_input(SwatFrontend* app, const SwatSim* sim) {
         in.fire=IsMouseButtonDown(MOUSE_BUTTON_LEFT);
     }
     in.reload=IsKeyDown(KEY_R);
+    in.cancel_reload=IsKeyDown(KEY_BACKSLASH) && IsKeyDown(KEY_LEFT_ALT);
+    if(IsKeyPressed(KEY_HOME)) app->ready=app->ready==SWAT_LOW_READY ? SWAT_READY : SWAT_LOW_READY;
+    if(IsKeyPressed(KEY_END)) app->ready=app->ready==SWAT_HIGH_READY ? SWAT_READY : SWAT_HIGH_READY;
+    in.ready=app->ready;
     in.selector=IsKeyDown(KEY_V);
     in.weapon=IsKeyDown(KEY_ONE) ? 1 : (IsKeyDown(KEY_TWO) ? 2 : 0);
     in.inspect=IsKeyDown(KEY_G); in.command=IsKeyDown(KEY_Y); in.melee=IsKeyDown(KEY_B);
@@ -277,6 +282,12 @@ SwatInput swat_frontend_input(SwatFrontend* app, const SwatSim* sim) {
     if(app->loadout_pending) {
         in.loadout=app->selected_kit+1;
         if(sim->actors[app->actor].gear.kit==app->selected_kit) app->loadout_pending=false;
+    }
+    if(app->profiles_pending) {
+        in.primary_profile=app->selected_primary+1; in.sight_profile=app->selected_sight+1;
+        in.magazine_inventory=app->magazine_inventory;
+        if(sim->actors[app->actor].arsenal.primary==app->selected_primary && sim->actors[app->actor].arsenal.sight==app->selected_sight &&
+           (sim->actors[app->actor].arsenal.slots[0].use_magazines==app->magazine_inventory)) app->profiles_pending=false;
     }
     if(app->screen==SWAT_SCREEN_SCOPE) {
         SwatInput scope=swat_neutral_input(); scope.sniper_control=true; scope.sniper_unit=app->selected_sniper;
@@ -443,6 +454,23 @@ void swat_frontend_draw(SwatFrontend* app, const SwatView* view, const SwatSim* 
                 DrawText(TextFormat("%.0f%% torso protection / %s",kit->torso_protection*100,kit->gas_mask ? "gas mask" : "no mask"),(int)x,(int)y,14,menu_gold); y+=35;
             }
             DrawText(can_equip ? "Kits apply on deployment at staging." : "Used equipment cannot be refilled at staging.",(int)x,(int)y+8,14,menu_muted);
+            y+=35;
+            const int profiles[]={0,2,5,6,7};
+            if(!can_equip) GuiDisable();
+            if(GuiButton((Rectangle){x,y,376,32},TextFormat("Primary: %s",swat_weapon_def(app->selected_primary)->name))) {
+                int next=0;
+                for(int i=0;i<5;i++) if(profiles[i]==app->selected_primary) next=(i+1)%5;
+                app->selected_primary=profiles[next]; app->profiles_pending=true;
+            }
+            y+=38;
+            const char* sights[]={"Iron sights","Red dot","Optic"};
+            if(GuiButton((Rectangle){x,y,184,30},sights[app->selected_sight])) {
+                app->selected_sight=(app->selected_sight+1)%SWAT_SIGHTS; app->profiles_pending=true;
+            }
+            if(GuiButton((Rectangle){x+192,y,184,30},app->magazine_inventory ? "Retained magazines" : "Pooled reserve")) {
+                app->magazine_inventory=!app->magazine_inventory; app->profiles_pending=true;
+            }
+            GuiEnable();
         } else if(app->plan_tab==2) {
             for(int i=0;i<SWAT_SNIPERS;i++)
                 if(GuiButton((Rectangle){x+i*192,y,184,35},TextFormat("%sSNIPER %c",app->selected_sniper==i ? "> " : "",'A'+i))) app->selected_sniper=i;

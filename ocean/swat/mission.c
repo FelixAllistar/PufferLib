@@ -9,6 +9,8 @@ static const SwatMissionDef missions[SWAT_MISSION_COUNT]={
          {"South garden",{10.5f,2.4f,-13},{15,1.55f,-2}}}},
     {"Generated residence","Secure the occupants and return to staging.",{0,0,0},{-1.5f,0,0},3,
         {{"Window post A",{0,0,0},{0,0,0}},{"Window post B",{0,0,0},{0,0,0}},{"Window post C",{0,0,0},{0,0,0}}}},
+    {"Controller test range","Stairs, ramps, crouch clearance, cover, doors and target lanes. No live hostiles.",
+        {0,0,0},{0,0,0},0,{{0}}},
 };
 const SwatMissionDef* swat_mission(int mission) {
     return &missions[mission>=0 && mission<SWAT_MISSION_COUNT ? mission : SWAT_ANNEX];
@@ -126,4 +128,21 @@ void swat_mission_build_house(SwatWorld* w) {
         float top=(float)p.y-1.6256f;
         swat_world_box(w,(b3Pos){p.x,top*.5f,p.z},swat_v(.85f,top*.5f,.85f),SWAT_BRICK,0);
     }
+}
+
+void swat_mission_build_test_range(SwatWorld* w) {
+    swat_world_box(w,(b3Pos){12,-.5f,0},swat_v(18,.5f,18),SWAT_CONCRETE,0);
+    // Each obstacle occupies a separate approach lane.
+    for(int i=0;i<6;i++) swat_world_box(w,(b3Pos){4+i*.65f,(i+1)*.10f,0},swat_v(.325f,(i+1)*.10f,1),SWAT_CONCRETE,0);
+    int ramp=swat_world_box(w,(b3Pos){6,.72f,-5},swat_v(2.5f,.15f,1),SWAT_WOOD,0);
+    swat_world_tilt(&w->objects[ramp],20*SWAT_RAD);
+    ramp=swat_world_box(w,(b3Pos){6,2.15f,-10},swat_v(2.5f,.15f,1),SWAT_CONCRETE,0);
+    swat_world_tilt(&w->objects[ramp],60*SWAT_RAD);
+    swat_world_box(w,(b3Pos){6,1.7f,5},swat_v(2,.6f,1),SWAT_CONCRETE,0);
+    swat_world_box(w,(b3Pos){12,.50f,0},swat_v(2,.50f,1),SWAT_WOOD,120);
+    swat_world_box(w,(b3Pos){12,1.3f,-5},swat_v(.08f,1.3f,1.5f),SWAT_DRYWALL,45);
+    swat_build_framed_wall(w,(b3Pos){12,0,5},0,5,2.7f,0,1.2f,0,2.1f,false);
+    swat_world_box(w,(b3Pos){20,1.2f,0},swat_v(.1f,1.2f,.4f),SWAT_WOOD,100);
+    swat_world_box(w,(b3Pos){20,1.2f,-5},swat_v(.1f,1.2f,.4f),SWAT_STEEL,0);
+    w->rooms[0]=(SwatRoom){{12,1.5f,0},{17,1.5f,17},SWAT_CONCRETE,SWAT_CONCRETE}; w->room_count=1;
 }

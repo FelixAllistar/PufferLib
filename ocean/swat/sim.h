@@ -63,6 +63,7 @@ typedef struct SwatSim {
     SwatActor actors[SWAT_MAX_ACTORS];
     int actor_count, tick, episode;
     uint32_t rng;
+    uint32_t reset_seed;
     SwatConfig config;
     SwatEnd end;
     SwatEvents events, totals;

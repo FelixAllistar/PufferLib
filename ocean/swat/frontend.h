@@ -21,14 +21,15 @@ typedef struct SwatFrontend {
     int actor;
     int selected_kit,plan_preview,last_episode;
     float plan_yaw;
-    bool loadout_pending;
+    bool loadout_pending,profiles_pending,magazine_inventory;
+    int selected_primary,selected_sight,ready;
     int plan_tab,selected_sniper,sniper_post[SWAT_SNIPERS],sniper_rifle[SWAT_SNIPERS];
     bool sniper_pending[SWAT_SNIPERS],sniper_enabled[SWAT_SNIPERS];
     bool camera_open,camera_pointer;
     float camera_expansion;
     SwatRightAction right_action;
     int right_target;
-    bool right_held;
+    bool right_held,debug;
     bool scenario_requested,seed_edit;
     SwatConfig scenario;
     char layout_seed[16];

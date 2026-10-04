@@ -7,7 +7,7 @@
 extern "C" {
 #endif
 
-#define SWAT_NET_VERSION 4
+#define SWAT_NET_VERSION 5
 #define SWAT_NET_MAGIC 0x53474531u
 #define SWAT_NET_PACKET_MAX 98304
 #define SWAT_NET_SOUNDS 32
@@ -20,6 +20,7 @@ typedef struct SwatMapObject {
     SwatMaterial material;
     SwatPart part;
     bool door;
+    float pitch;
 } SwatMapObject;
 typedef struct SwatMap {
     uint32_t epoch, sound_floor;
@@ -38,7 +39,8 @@ typedef struct SwatActorState {
     SwatRole role;
     b3Pos position,tracer_start,tracer_end;
     b3Vec3 velocity,upper_offset;
-    float health,yaw,pitch,ads,stamina,eye_height,recoil_pitch,recoil_yaw,lean;
+    float health,yaw,pitch,ads,stamina,eye_height,recoil_pitch,recoil_yaw,lean,ready_blend;
+    SwatReady ready;
     int last_shot_tick;
     SwatArsenal arsenal;
     SwatEquipment gear;

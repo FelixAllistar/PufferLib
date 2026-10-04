@@ -58,7 +58,7 @@ closing the listen host ends the session. Leaving online play restores solo.
 `protocol.c` explicitly encodes big-endian integers and IEEE float32, validates
 version/type/length/ranges and decodes into temporary storage before applying.
 C layouts, pointers and platform bool representations never cross the wire.
-Protocol v4 includes mission/room data, framed-wall part/material metadata,
+Protocol v5 includes mission/room data, framed-wall part/material metadata,
 rotated door bases, kit/tool commands, regional injuries and restraints,
 throwable flight/effect state, stocks/exposure, independent wand pose and
 sniper assignments/rifles/targets/travel state.
@@ -143,7 +143,7 @@ occupants behind the officer. The annex v1 interaction remains a direct ray.
 F/middle mouse selects use or compliance; RMB latches cuff, pick or aim on
 press. Lost targets cancel progress, cannot transfer the held cuff to another
 person, and finishing does not change that press into ADS or a weapon click.
-These bindings reuse existing protocol v4 commands; the server still computes
+These bindings reuse existing protocol v5 commands; the server still computes
 targets and validates physical actions independently of client prompts.
 
 Optiwand cameras sweep a small sphere through actual geometry. Near a closed
@@ -198,7 +198,7 @@ or editor. These are the intended entry points for a developer or coding agent:
 | New remote command/state | `SwatInput` and `protocol.c`, with protocol version/round-trip tests |
 
 Change simulation rules once so solo, co-op and future policy actors agree.
-Do not put authoritative damage or kit changes in the UI. Protocol v4 peers
+Do not put authoritative damage or kit changes in the UI. Protocol v5 peers
 must agree on behavior; mod compatibility negotiation/hot reload is future work.
 
 | Tier | Purpose | Agreement to verify |
@@ -224,3 +224,20 @@ policy quality. There is no second approximate training simulator yet.
    a real two-machine LAN session before Internet service features.
 5. Version multi-role observations, measure scripted/frozen baselines, then
    build curricula and multiple fidelity tiers against game behavior.
+
+## Weapon pose and replay foundation
+
+`pose.c` defines eye, shoulders, hands, sight and muzzle from the achieved
+controller state and the active weapon definition. The render model and
+authoritative eye-to-muzzle sphere sweep use this same pose. High/low ready
+raise before a buffered trigger is permitted to fire. Reload removal/insertion/
+chamber events conserve ammunition even when interrupted at any tick. Optional
+retained magazines and sight profiles are replicated; profile changes require
+an unused officer in staging. Protocol v5 includes these fields and pitched
+world objects for the controller range.
+
+`replay.c` stores explicit portable config/seed/input/state-hash records and
+`replay_tool.c` verifies them in the same simulation. It records only solo
+officer input from round start. It does not serialize live physics warm starts,
+custom layout-model weights, or multiplayer authority. F3 debug rendering is
+read-only and uses actual actor/muzzle/sensor geometry.

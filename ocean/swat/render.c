@@ -1,4 +1,5 @@
 #include "render.h"
+#include "pose.h"
 #include "rlgl.h"
 #include <string.h>
 
@@ -108,6 +109,7 @@ static void swat_draw_object(const SwatObject* o) {
     rlPushMatrix();
     rlTranslatef((float)o->center.x,(float)o->center.y,(float)o->center.z);
     rlRotatef(o->yaw/SWAT_RAD,0,1,0);
+    rlRotatef(o->pitch/SWAT_RAD,0,0,1);
     Vector3 size = {o->half.x*2,o->half.y*2,o->half.z*2};
     DrawCubeV((Vector3){0},size,swat_material_color(o));
     if(o->part!=SWAT_PART_SKIN) DrawCubeWiresV((Vector3){0},size,(Color){22,31,36,130});
@@ -148,10 +150,14 @@ static void swat_draw_actor(const SwatActor* a) {
         DrawSphere((Vector3){neck.x+spread,y,neck.z},.075f,skin);
         if(a->gear.restrained) DrawCylinderEx((Vector3){neck.x-.12f,y,neck.z},(Vector3){neck.x+.12f,y,neck.z},.022f,.022f,6,swat_gold);
     } else if (a->role != SWAT_CIVILIAN) {
-        b3Pos eye = swat_controller_eye(&a->controller);
-        b3Vec3 direction = swat_controller_aim(&a->controller);
-        b3Pos start = b3OffsetPos(eye,swat_v(0,-0.24f,0));
-        DrawCylinderEx(swat_position(start),swat_position(b3OffsetPos(start,swat_mul(direction,0.65f))),0.045f,0.035f,6,(Color){26,29,31,255});
+        SwatPose pose=swat_pose(&a->controller,&a->arsenal);
+        b3Pos left=b3OffsetPos(pose.shoulder,swat_mul(pose.right,-.19f));
+        b3Pos right=b3OffsetPos(pose.shoulder,swat_mul(pose.right,.19f));
+        DrawCapsule(swat_position(left),swat_position(pose.left_hand),.065f,6,6,uniform);
+        DrawCapsule(swat_position(right),swat_position(pose.right_hand),.065f,6,6,uniform);
+        DrawSphere(swat_position(pose.left_hand),.045f,(Color){85,87,69,255});
+        DrawSphere(swat_position(pose.right_hand),.045f,(Color){85,87,69,255});
+        DrawCylinderEx(swat_position(pose.shoulder),swat_position(pose.muzzle),.035f,.018f,8,(Color){26,29,31,255});
     }
 }
 
@@ -261,27 +267,21 @@ static void swat_draw_scope(const SwatView* view,const SwatSim* sim,int width,in
 }
 
 static void swat_draw_weapon(const SwatSim* s,const SwatActor* a,const SwatController* c) {
-    b3Vec3 forward,right,up;
-    swat_controller_view(c,&forward,&right,&up);
-    b3Pos eye = swat_controller_eye(c);
-    float lowered = swat_weapons_busy(&a->arsenal) || c->sprinting ? 0.18f : 0;
-    b3Vec3 offset = swat_add(swat_mul(forward,c->muzzle_blocked ? 0.13f : 0.25f),
-        swat_add(swat_mul(right,0.12f*(1-c->ads)),swat_mul(up,-0.19f-lowered)));
-    b3Pos center = b3OffsetPos(eye,offset);
-    rlPushMatrix();
-    rlTranslatef((float)center.x,(float)center.y,(float)center.z);
-    rlRotatef(-(c->yaw+c->recoil_yaw)/SWAT_RAD,0,1,0);
-    rlRotatef((c->pitch+c->recoil_pitch)/SWAT_RAD,0,0,1);
-    rlRotatef(c->lean*8,1,0,0);
-    float length = a->arsenal.active == 0 ? 0.26f : 0.16f;
-    DrawCube((Vector3){0},length,0.07f,0.055f,(Color){26,32,35,255});
-    DrawCube((Vector3){length*0.55f,0,0},length*0.65f,0.025f,0.022f,(Color){19,23,27,255});
-    DrawCube((Vector3){-0.03f,-0.085f,0},0.065f,0.12f,0.04f,(Color){30,36,40,255});
-    DrawCube((Vector3){0,0.047f,0},0.065f,0.022f,0.043f,swat_gold);
-    DrawSphere((Vector3){-0.02f,-0.04f,-0.03f},0.045f,(Color){85,87,69,255});
-    if (s->tick-a->last_shot_tick <= 2)
-        DrawSphere((Vector3){length*0.9f,0,0},0.047f,(Color){255,216,112,230});
-    rlPopMatrix();
+    SwatPose pose=swat_pose(c,&a->arsenal);
+    const SwatWeaponDef* definition=swat_arsenal_def(&a->arsenal,a->arsenal.active);
+    b3Vec3 axis=swat_normalize(b3SubPos(pose.muzzle,pose.shoulder));
+    b3Pos receiver=b3OffsetPos(pose.shoulder,swat_mul(axis,definition->barrel*.35f));
+    DrawCylinderEx(swat_position(pose.shoulder),swat_position(receiver),.033f,.033f,8,(Color){26,32,35,255});
+    DrawCylinderEx(swat_position(receiver),swat_position(pose.muzzle),.020f,.013f,8,(Color){19,23,27,255});
+    b3Pos grip=b3OffsetPos(pose.right_hand,swat_mul(pose.up,-.065f));
+    DrawCylinderEx(swat_position(pose.right_hand),swat_position(grip),.023f,.020f,6,(Color){30,36,40,255});
+    b3Pos magazine=b3OffsetPos(receiver,swat_mul(pose.up,-.10f));
+    if(a->arsenal.slots[a->arsenal.active].magazine_seated)
+        DrawCylinderEx(swat_position(receiver),swat_position(magazine),.026f,.020f,6,(Color){38,43,47,255});
+    DrawSphere(swat_position(pose.sight),a->arsenal.sight==SWAT_OPTIC ? .026f : .012f,(Color){54,60,64,255});
+    DrawSphere(swat_position(pose.right_hand),.040f,(Color){85,87,69,255});
+    DrawSphere(swat_position(pose.left_hand),.040f,(Color){85,87,69,255});
+    if(s->tick-a->last_shot_tick<=2) DrawSphere(swat_position(pose.muzzle),.035f,(Color){255,216,112,230});
 }
 
 void swat_view_draw(SwatView* view, const SwatSim* s, bool policy, float vertical_fov) {
@@ -319,7 +319,7 @@ void swat_view_draw(SwatView* view, const SwatSim* s, bool policy, float vertica
     camera.position=swat_position(eye);
     camera.target=swat_position(b3OffsetPos(eye,forward));
     float fov=policy ? 70 : vertical_fov;
-    camera.up=swat_vector(up); camera.fovy=fov+(45-fov)*c->ads; camera.projection=CAMERA_PERSPECTIVE;
+    camera.up=swat_vector(up); camera.fovy=fov+((a->arsenal.sight==SWAT_OPTIC ? 30 : 45)-fov)*c->ads; camera.projection=CAMERA_PERSPECTIVE;
     int width=GetScreenWidth(), height=GetScreenHeight();
     ClearBackground((Color){25,37,47,255});
     BeginMode3D(camera);
@@ -336,9 +336,30 @@ void swat_view_draw(SwatView* view, const SwatSim* s, bool policy, float vertica
     for (int i=0;i<s->actor_count;i++) if (s->tick-s->actors[i].last_shot_tick <= 3)
         DrawLine3D(swat_position(s->actors[i].tracer_start),swat_position(s->actors[i].tracer_end),(Color){250,200,98,180});
     if (a->alive && !a->gear.inspecting) swat_draw_weapon(s,a,c);
+    if(view->debug) {
+        for(int i=0;i<s->actor_count;i++) if(s->actors[i].present && s->actors[i].alive) {
+            const SwatActor* actor=&s->actors[i];
+            b3Capsule capsule=b3Shape_GetCapsule(actor->controller.body.capsuleId);
+            b3Transform transform=b3Body_GetTransform(actor->controller.body.body);
+            DrawCapsuleWires(swat_position(b3TransformPoint(transform,capsule.center1)),
+                swat_position(b3TransformPoint(transform,capsule.center2)),capsule.radius,8,8,GREEN);
+            SwatPose pose=swat_pose(&actor->controller,&actor->arsenal);
+            DrawSphereWires(swat_position(pose.eye),.06f,6,6,BLUE);
+            DrawSphereWires(swat_position(pose.muzzle),.035f,6,6,RED);
+            DrawLine3D(swat_position(pose.eye),swat_position(pose.muzzle),YELLOW);
+            if(s->tick-actor->last_shot_tick<60) DrawLine3D(swat_position(actor->tracer_start),swat_position(actor->tracer_end),RED);
+        }
+        for(int row=0;row<SWAT_SENSOR_ROWS;row++) for(int col=0;col<SWAT_SENSOR_COLS;col++) {
+            b3Vec3 direction=swat_direction(c->yaw+(col-(SWAT_SENSOR_COLS-1)*.5f)*8*SWAT_RAD,
+                c->pitch+((SWAT_SENSOR_ROWS-1)*.5f-row)*8*SWAT_RAD);
+            SwatHit hit=swat_world_ray(&s->world,eye,direction,30,c->body.body);
+            DrawLine3D(swat_position(eye),swat_position(hit.point),Fade(hit.kind==SWAT_HIT_ACTOR ? RED : SKYBLUE,.3f));
+        }
+    }
     EndMode3D();
     swat_draw_exposure(a,width,height);
 
+    if(view->debug) swat_hud_center(view,TextFormat("DEBUG / tick %d / world %d / %d objects",s->tick,s->world.generation,s->world.count),width/2,80,14,swat_gold);
     swat_hud_text(view,swat_sim_mission(s)->name,24,22,15,swat_paper);
     const char* objective=swat_sim_hostiles(s) ? "Secure the armed threats" :
         (s->config.mission!=SWAT_ANNEX && swat_sim_unsecured(s) ? "Restrain the hostages" : "Return to extraction");
@@ -376,8 +397,10 @@ void swat_view_draw(SwatView* view, const SwatSim* s, bool policy, float vertica
     const char* ammo=TextFormat("%02d+%d / %03d",w->magazine,w->chambered,w->reserve);
     swat_hud_text(view,ammo,width-24-swat_hud_measure(view,ammo,24),height-62,24,swat_paper);
     const char* modes[]={"Safe","Semi","Auto"};
-    const char* state=w->reload_remaining ? "Reloading" : (a->arsenal.equip_remaining ? "Equipping" : modes[w->mode]);
+    const char* reload_names[]={"Reloading","Removing magazine","Inserting magazine","Chambering"};
+    const char* state=w->reload_remaining ? reload_names[w->reload_stage] : (a->arsenal.equip_remaining ? "Equipping" : modes[w->mode]);
     swat_hud_text(view,state,width-24-swat_hud_measure(view,state,14),height-30,14,swat_gold);
+    if(c->ready!=SWAT_READY) swat_hud_center(view,c->ready==SWAT_HIGH_READY ? "High ready" : "Low ready",cx,height-40,14,swat_paper);
     if(show_camera) {
         bool has_feed=s->snipers[view->sniper_unit].deployed && s->actors[swat_sniper_actor(view->sniper_unit)].alive;
         SwatCameraLayout layout=swat_camera_layout(width,height,view->camera_expansion,has_feed);

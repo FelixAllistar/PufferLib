@@ -40,7 +40,11 @@ void swat_controller_pre_step(SwatController* c, const SwatInput* in, bool weapo
         !c->body.crouched && !in->aim && !in->fire && !in->reload &&
         !weapon_busy && fabsf(in->lean) < 0.01f && c->stamina > 0.05f;
     c->stamina = swat_clamp(c->stamina + (c->sprinting ? -0.16f : 0.10f)*SWAT_DT,0,1);
-    float target_ads = in->aim && !weapon_busy && !in->reload ? 1.0f : 0.0f;
+    c->ready=(SwatReady)(in->ready>=0 && in->ready<SWAT_READY_STATES ? in->ready : SWAT_READY);
+    if(in->aim || in->fire) c->ready=SWAT_READY;
+    float ready_target=c->sprinting ? -1 : (c->ready==SWAT_HIGH_READY ? 1 : (c->ready==SWAT_LOW_READY ? -1 : 0));
+    c->ready_blend+=(ready_target-c->ready_blend)*(1-expf(-12*SWAT_DT));
+    float target_ads = in->aim && c->ready==SWAT_READY && !weapon_busy && !in->reload ? 1.0f : 0.0f;
     c->ads += (target_ads - c->ads) * (1.0f-expf(-18.0f*SWAT_DT));
     c->body.sprint = c->sprinting;
     c->body.walkSpeed = in->gait == SWAT_SLOW ? 1.2f : (in->aim ? 1.7f : 2.8f);

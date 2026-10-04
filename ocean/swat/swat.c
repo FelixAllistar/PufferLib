@@ -3,6 +3,7 @@
 #include "swat.h"
 #include "frontend.h"
 #include "net.h"
+#include "replay.h"
 #include "sound_view.h"
 #include "../../src/puffercpu.c"
 
@@ -14,8 +15,9 @@ static void usage(const char* path) {
         "  %s --capture FILE.png [--env.randomize=0]\n"
         "  %s host [--port 27474]\n"
         "  %s join ADDRESS [--port 27474]\n"
+        "  --record FILE.sgrp          Record a solo round for exact input replay\n"
         "  --settings FILE.ini          Override the saved player preferences\n"
-        "  --mission house|annex|generated  Human default: house; policy default: annex\n"
+        "  --mission house|annex|generated|range  Human default: house; policy default: annex\n"
         "  --layout-seed N --difficulty 0|1|2 --generator neural|uniform\n"
         "  --layout-model FILE          Optional trained house policy\n"
         "  --capture-screen SCREEN      game, main, pause, settings, plan, or overwatch\n"
@@ -53,6 +55,8 @@ static void policy_action(PufferNet* policy, float* obs, float* actions,
 
 int main(int argc, char** argv) {
     const char* model=NULL; const char* capture=NULL; const char* settings_path=NULL; const char* layout_model=NULL;
+    const char* record_path=NULL;
+    SwatReplay recording={0}; bool record_started=false;
     const char* join_address=NULL; bool start_host=false;
     int port=SWAT_DEFAULT_PORT;
     int mission=-1,preview=0,difficulty=1,generator=SWAT_LAYOUT_NEURAL;
@@ -72,8 +76,8 @@ int main(int argc, char** argv) {
             if(++i>=argc) { usage(argv[0]); free(overrides); return 1; }
             join_address=argv[i];
         } else if(!strcmp(argv[i],"--mission")) {
-            if(++i>=argc || (strcmp(argv[i],"house") && strcmp(argv[i],"annex") && strcmp(argv[i],"generated"))) { usage(argv[0]); free(overrides); return 1; }
-            mission=!strcmp(argv[i],"house") ? SWAT_HOUSE : (!strcmp(argv[i],"generated") ? SWAT_GENERATED : SWAT_ANNEX);
+            if(++i>=argc || (strcmp(argv[i],"house") && strcmp(argv[i],"annex") && strcmp(argv[i],"generated") && strcmp(argv[i],"range"))) { usage(argv[0]); free(overrides); return 1; }
+            mission=!strcmp(argv[i],"house") ? SWAT_HOUSE : (!strcmp(argv[i],"generated") ? SWAT_GENERATED : (!strcmp(argv[i],"range") ? SWAT_RANGE : SWAT_ANNEX));
         } else if(!strcmp(argv[i],"--layout-model")) {
             if(++i>=argc) { usage(argv[0]); free(overrides); return 1; } layout_model=argv[i];
         } else if(!strcmp(argv[i],"--generator")) {
@@ -102,6 +106,9 @@ int main(int argc, char** argv) {
                 }
                 episodes=(int)n;
             }
+        } else if(!strcmp(argv[i],"--record")) {
+            if(++i>=argc) { usage(argv[0]); free(overrides); return 1; }
+            record_path=argv[i];
         } else if (!strcmp(argv[i],"--capture")) {
             if (++i>=argc) { usage(argv[0]); free(overrides); return 1; }
             capture=argv[i];
@@ -124,6 +131,7 @@ int main(int argc, char** argv) {
         }
         else { fprintf(stderr,"swat: unknown argument %s\n",argv[i]); usage(argv[0]); free(overrides); return 1; }
     }
+    if(record_path && (model || start_host || join_address)) { fprintf(stderr,"Recording currently requires solo human play\n"); free(overrides); return 1; }
     if((model || capture) && (start_host || join_address)) {
         fprintf(stderr,"swat: host/join requires human play\n"); free(overrides); return 1;
     }
@@ -195,6 +203,7 @@ int main(int argc, char** argv) {
             view.session_status[0]='\0';
         }
         if(app.host_requested || app.join_requested) {
+            if(recording.file) swat_replay_close(&recording);
             char* end; long parsed=strtol(app.port,&end,10);
             bool request_host=app.host_requested;
             app.host_requested=app.join_requested=false;
@@ -229,6 +238,7 @@ int main(int argc, char** argv) {
             }
         }
         if(!capture) swat_frontend_update(&app,env.sim,policy!=NULL);
+        if(recording.file && (app.scenario_requested || app.restart_requested || app.host_requested || app.join_requested)) swat_replay_close(&recording);
         if(app.scenario_requested) {
             if(app.leader) {
                 if(server.transport) swat_server_scenario(&server,&app.scenario);
@@ -265,11 +275,20 @@ int main(int argc, char** argv) {
                 else if(policy) {
                     policy_action(policy,obs,actions,terminal,deterministic);
                     puf_step(&env);
-                } else swat_sim_step(env.sim,&input);
+                } else {
+                    if(record_path && !record_started && env.sim->tick==0) {
+                        record_started=true;
+                        if(!swat_replay_record(&recording,record_path,env.sim)) fprintf(stderr,"Cannot start replay recording: %s\n",record_path);
+                    }
+                    int before_tick=env.sim->tick; swat_sim_step(env.sim,&input);
+                    if(recording.file && env.sim->tick!=before_tick && !swat_replay_append(&recording,&input,env.sim)) {
+                        fprintf(stderr,"Replay recording stopped after %u frames\n",recording.count); swat_replay_close(&recording);
+                    }
+                }
                 accumulator-=SWAT_DT;
             }
         }
-        view.actor=app.actor;
+        view.actor=app.actor; view.debug=app.debug;
         view.planning=app.screen==SWAT_SCREEN_PLAN; view.plan_preview=app.plan_preview; view.plan_yaw=app.plan_yaw;
         view.scope=app.screen==SWAT_SCREEN_SCOPE; view.sniper_unit=app.selected_sniper;
         view.sniper_camera=swat_frontend_playing(&app) && app.camera_open;
@@ -299,12 +318,14 @@ int main(int argc, char** argv) {
             Image frame=LoadImageFromScreen();
             bool saved=ExportImage(frame,capture);
             UnloadImage(frame);
+            if(recording.file && !swat_replay_close(&recording)) fprintf(stderr,"Replay could not be finalized\n");
             swat_sound_view_close(&sound); swat_frontend_close(&app); swat_view_close(&view); puf_close(&env);
             if(policy) free_puffernet(policy);
             free(weights);
             return saved ? 0 : 1;
         }
     }
+    if(recording.file && !swat_replay_close(&recording)) fprintf(stderr,"Replay could not be finalized\n");
     swat_client_close(&client); swat_server_close(&server); swat_sound_view_close(&sound);
     swat_frontend_close(&app); swat_view_close(&view); puf_close(&env);
     if(policy) free_puffernet(policy);

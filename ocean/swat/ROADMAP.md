@@ -44,6 +44,10 @@ is deliberately a general engine improvement.
   and camera controls shown on held Tab.
 - Locked house entries, reusable interruptible lockpicks, finite mounted
   breaching charges, owner-only remote detonation and shared blast/door state.
+- Canonical first/third-person eye/hand/sight/muzzle geometry, high/low ready,
+  buffered actions, staged interruptible reloads and optional retained magazines.
+- Staging primary/sight profiles, stair/ramp/clearance test range, F3 physical
+  debug overlay and portable exact solo input replay verification (protocol v5).
 - Automatic under-door optiwand insertion, independent lens rotation and
   collision-limited corner/over-cover modes with explicit HUD feedback.
 - Shared physical/acoustic materials, CCD flash/CS canisters, masks, finite

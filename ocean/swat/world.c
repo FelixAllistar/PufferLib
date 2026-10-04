@@ -153,11 +153,11 @@ int swat_world_room(const SwatWorld* w,b3Pos p) {
     return -1;
 }
 
-float swat_world_exit_distance(const SwatObject* o, b3Pos entry, b3Vec3 d) {
-    b3Vec3 rel = b3SubPos(entry,o->center);
-    float c = cosf(o->yaw), s = sinf(o->yaw);
-    float p[3] = {c*rel.x-s*rel.z,rel.y,s*rel.x+c*rel.z};
-    float v[3] = {c*d.x-s*d.z,d.y,s*d.x+c*d.z};
+float swat_world_exit_distance(const SwatObject* o,b3Pos entry,b3Vec3 d) {
+    b3Quat q=b3MulQuat(b3MakeQuatFromAxisAngle(swat_v(0,1,0),o->yaw),b3MakeQuatFromAxisAngle(swat_v(0,0,1),o->pitch));
+    b3Vec3 rel=b3InvRotateVector(q,b3SubPos(entry,o->center));
+    b3Vec3 direction=b3InvRotateVector(q,d);
+    float p[3]={rel.x,rel.y,rel.z},v[3]={direction.x,direction.y,direction.z};
     float half[3] = {o->half.x,o->half.y,o->half.z};
     float exit = 1e6f;
     for (int i=0;i<3;i++) if (fabsf(v[i]) > 1e-7f) {
@@ -209,4 +209,10 @@ void swat_world_step_doors(SwatWorld* w) {
         b3Quat rotation = {{0,sinf(o->yaw*0.5f),0},cosf(o->yaw*0.5f)};
         b3Body_SetTransform(o->body,o->center,rotation);
     }
+}
+
+void swat_world_tilt(SwatObject* o,float pitch) {
+    o->pitch=pitch;
+    b3Quat q=b3MulQuat(b3MakeQuatFromAxisAngle(swat_v(0,1,0),o->yaw),b3MakeQuatFromAxisAngle(swat_v(0,0,1),pitch));
+    b3Body_SetTransform(o->body,o->center,q);
 }

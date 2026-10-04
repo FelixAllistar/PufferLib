@@ -5,9 +5,9 @@ RAYLIB ?= $(ROOT)/raylib-5.5_linux_amd64
 CC := clang
 CFLAGS ?= -O2 -g -std=gnu11 -Wall -Wextra -Werror -Wno-unused-parameter -Wno-unused-function -Wno-unknown-pragmas
 CPPFLAGS := -I$(ROOT)/src -I$(ROOT)/vendor -I$(ROOT)/vendor/enet/include -I$(RAYLIB)/include -I$(BOX3D)/include -I.
-CORE := body.c controller.c weapons.c materials.c world.c mission.c equipment.c tactical.c overwatch.c generation.c acoustics.c audio_dsp.c sim.c
+CORE := body.c controller.c pose.c weapons.c materials.c world.c mission.c equipment.c tactical.c overwatch.c generation.c acoustics.c audio_dsp.c sim.c
 CLIENT := render.c settings.c feedback.c frontend.c sound_view.c spatial_audio.c
-NET := protocol.c net.c
+NET := protocol.c net.c replay.c
 ENET_LIB := $(ROOT)/build/swat/enet/libenet.a
 PHYSICS_LIBS := $(BOX3D)/build/src/libbox3d.a -lm -lpthread
 VIEW_LIBS := $(RAYLIB)/lib/libraylib.a -lGL -ldl
@@ -15,6 +15,11 @@ VIEW_LIBS := $(RAYLIB)/lib/libraylib.a -lGL -ldl
 .PHONY: all test sanitize viewer server net-test net-probe frontend-test-build ui-assets
 layout-tool: | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) layout_tool.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/layout_tool
+replay-tool: $(ENET_LIB) | $(BUILD)
+	$(CC) $(CFLAGS) $(CPPFLAGS) replay_tool.c $(NET) $(CORE) $(ENET_LIB) $(PHYSICS_LIBS) -o $(BUILD)/replay_tool
+foundation-test: $(ENET_LIB) | $(BUILD)
+	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_foundation.c $(NET) $(CORE) $(ENET_LIB) $(PHYSICS_LIBS) -o $(BUILD)/test_foundation
+	$(BUILD)/test_foundation $(BUILD)/foundation-test.sgrp
 audio-lab: | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) audio_lab.c spatial_audio.c $(CORE) $(PHYSICS_LIBS) -ldl -o $(BUILD)/audio_lab
 spatial-test: | $(BUILD)
@@ -45,7 +50,7 @@ overwatch-test: | $(BUILD)
 generation-test: | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_generation.c protocol.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_generation
 	ulimit -c 0; $(BUILD)/test_generation
-test: tactical-test overwatch-test generation-test | $(BUILD)
+test: foundation-test tactical-test overwatch-test generation-test | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_mission.c protocol.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_mission
 	ulimit -c 0; $(BUILD)/test_mission
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_settings.c settings.c -lm -o $(BUILD)/test_settings

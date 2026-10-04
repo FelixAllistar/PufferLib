@@ -38,7 +38,7 @@ if [ -n "${WSL_INTEROP:-}" ] && [ "${SWAT_NATIVE_WINDOWS:-1}" != 0 ]; then
         else
             SWAT_ARGS+=("$argument")
             case "$argument" in
-                watch|--eval|--settings|--capture|--layout-model) SWAT_PATH_NEXT=1 ;;
+                watch|--eval|--settings|--capture|--layout-model|--record) SWAT_PATH_NEXT=1 ;;
             esac
         fi
     done

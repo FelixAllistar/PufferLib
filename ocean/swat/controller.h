@@ -9,6 +9,7 @@ extern "C" {
 
 #define SWAT_MAX_LEAN 0.42f
 typedef enum SwatGait { SWAT_SLOW, SWAT_WALK, SWAT_SPRINT } SwatGait;
+typedef enum SwatReady { SWAT_READY,SWAT_LOW_READY,SWAT_HIGH_READY,SWAT_READY_STATES } SwatReady;
 typedef enum SwatDoorTool { SWAT_DOOR_NONE,SWAT_LOCKPICK,SWAT_PLACE_CHARGE,SWAT_DETONATE_CHARGE,SWAT_DOOR_TOOLS } SwatDoorTool;
 typedef struct SwatInput {
     float forward, strafe;          // [-1,1]
@@ -24,6 +25,10 @@ typedef struct SwatInput {
     int door_tool;                  // held pick/place, pressed remote detonation
     int sniper_order, sniper_unit, sniper_post, sniper_rifle;
     bool sniper_control;
+    int ready;                    // 0 normal, 1 low ready, 2 high ready
+    bool cancel_reload;
+    int primary_profile,sight_profile; // staging requests: zero keeps current
+    bool magazine_inventory;
 } SwatInput;
 
 typedef struct SwatController {
@@ -33,6 +38,8 @@ typedef struct SwatController {
     float lean;                    // achieved lean relative to current right
     float mobility;
     bool sprinting, last_jump, jumped, muzzle_blocked;
+    float ready_blend;
+    SwatReady ready;
 } SwatController;
 
 SwatInput swat_neutral_input(void);

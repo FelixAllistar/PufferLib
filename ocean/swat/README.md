@@ -235,7 +235,7 @@ and mission outcomes. All surviving officers must extract. Only the leader can
 restart, choose a house or command snipers. Online pause/settings release your controls while the session continues.
 Solo/offline play remains available. Planning also releases controls online;
 the session continues. The default hosted mission is Cedar House, five minutes;
-`--mission annex` selects the old range. Hosts and peers must use protocol v4.
+`--mission annex` selects the old range. Hosts and peers must use protocol v5.
 
 The dedicated server has no display, Raylib, audio-device or CUDA dependency.
 On WSL, `./swat server` defaults to `build/swat/windows/swat-server.exe`;
@@ -291,11 +291,15 @@ playback retains its sensor FOV. Raygui is already vendored at
   upper collider and eye by up to 0.42 m; it is swept against cover. Standing
   checks the leaned head as well as the feet hull. Aim, roll, and sensor rays
   follow the achieved pose.
-- **Weapons:** carbine, sidearm, impact launcher and two sniper rifles, chamber plus magazine/reserve counts,
+- **Weapons:** carbine, sidearm, impact launcher, two sniper rifles, pepper launcher, breach shotgun and compact SMG profiles; chamber plus magazine/reserve counts,
   semi/auto/safe selectors, timed tactical/empty reloads, reload cancellation on
   swap, equip delay, recoil, movement/air/aim spread, and deterministic actor-local
-  weapon RNG. Reserve ammunition is pooled; individual spare magazines and
-  staged reload animation are not modeled yet.
+  weapon RNG. Reloads commit magazine removal, insertion and chambering separately.
+  Cancelling or switching preserves committed ammunition and can leave the
+  magazine detached. Staging offers pooled reserve or retained spare magazines,
+  irons/red dot/optic sights, and primary profiles. Eye, sight, hands and muzzle
+  share a canonical pose for rendering and clearance. Pepper and shotgun profiles
+  currently use the hitscan rules; specialized payloads remain under development.
 - **Hits and cover:** eye-to-muzzle volume check, muzzle-origin hitscan, nearest
   collision damage, bounded thickness/material penetration, and head/torso/arm/leg
   damage. Leg wounds reduce pace, arm wounds widen spread, and plates reduce
@@ -520,3 +524,20 @@ checkpoint compatibility, not policy quality. Reproduce a short run with:
 ./swat --eval build/swat/checkpoints/swat/smoke/0000000000002048.bin 4 \
   --deterministic --env.max_ticks=32 --env.hostile_fire=0
 ```
+
+## Controller range and deterministic replays
+
+Launch `./ocean/swat/play.sh --mission range` for stairs, shallow/steep ramps,
+crouch clearance, low cover, material targets and a framed door. **Home** and
+**End** toggle low/high ready; aiming or firing raises the weapon. **F3** shows
+physical bodies, eye/muzzle clearance and sensor rays. **Alt + Backslash**
+interrupts a reload. Primary/sight/magazine choices are in the staging loadout.
+
+Use `--record /path/to/round.sgrp` to capture a solo round from tick zero.
+Build `make -C ocean/swat replay-tool` and run
+`build/swat/replay_tool /path/to/round.sgrp` to verify each recorded authoritative
+state. Native Windows also builds `build/swat/windows/replay_tool.exe`.
+Files record the wire version, scenario settings, reset RNG seed, fixed-tick
+inputs and portable snapshot hashes; incompatible/truncated files are rejected.
+These are same-build solo replay checks, not full save games or a guarantee of
+identical results with a different layout model or across architectures.

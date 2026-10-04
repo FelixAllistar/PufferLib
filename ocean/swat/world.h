@@ -24,7 +24,7 @@ typedef struct SwatObject {
     b3ShapeId shape;
     b3Pos center;
     b3Vec3 half;
-    float yaw, health, max_health, door_angle, closed_yaw;
+    float yaw, health, max_health, door_angle, closed_yaw,pitch;
     SwatMaterial material;
     SwatPart part;
     bool active, door, door_open,locked;
@@ -63,6 +63,7 @@ float swat_world_exit_distance(const SwatObject* object, b3Pos entry, b3Vec3 dir
 float swat_material_resistance(SwatMaterial material);
 void swat_world_step_doors(SwatWorld* world);
 void swat_world_place(SwatObject* object, float yaw);
+void swat_world_tilt(SwatObject* object,float pitch);
 int swat_world_room(const SwatWorld* world, b3Pos position);
 b3SurfaceMaterial swat_physics_material(SwatMaterial material);
 bool swat_world_visible(const SwatWorld* world,b3Pos from,b3Pos to);
