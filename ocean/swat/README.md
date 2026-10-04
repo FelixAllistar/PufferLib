@@ -365,6 +365,14 @@ The character ancestry and dependency revision are recorded in
 [PROVENANCE.md](PROVENANCE.md). SWAT owns its controller fork and does not import
 Shenaniguns gameplay code, assets, checkpoints, observations, or tasks.
 
+## Environment art
+
+The player now applies a small worn-plaster/timber pack and an imported door
+leaf to the live generated geometry. Individual boards still disappear with
+their own authoritative damage, and doors follow their real hinges. See
+[the render-only integration and asset contract](ENVIRONMENT_ART.md) for the
+scope, provenance, fallback controls and checks.
+
 ## Dependencies
 
 Use the existing sibling Box3D checkout if it is already at this revision.

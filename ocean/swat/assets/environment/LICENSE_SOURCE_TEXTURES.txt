@@ -1,0 +1,13 @@
+These texture assets are CC0 1.0 Universal, from Poly Haven. Raw redistribution is allowed.
+License: https://polyhaven.com/license
+CC0: https://creativecommons.org/publicdomain/zero/1.0/
+
+Worn Plaster Wall by Dimitrios Savva
+https://polyhaven.com/a/worn_plaster_wall
+Recommended physical tile width 1.8 meters.
+
+Wood Floor Worn by Dimitrios Savva
+https://polyhaven.com/a/wood_floor_worn
+Recommended physical tile width 2 meters.
+
+Downloaded unmodified 1k JPEG maps. MD5 checked against official API and SHA256 recorded in provenance.json.

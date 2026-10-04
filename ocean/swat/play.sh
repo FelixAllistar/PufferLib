@@ -14,6 +14,7 @@ swat_needs_build() {
     local binary=$1 source
     [ -f "$binary" ] || return 0
     for source in ocean/swat/*.c ocean/swat/*.h ocean/swat/generated/*.h resources/shared/Roboto-Regular.ttf ocean/swat/build-windows.sh \
+                  ocean/swat/assets/environment/* \
                   config/swat.ini config/default.ini vendor/raygui.h \
                   vendor/enet/*.c vendor/enet/include/enet/*.h; do
         [ "$source" -nt "$binary" ] && return 0
