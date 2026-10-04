@@ -1,0 +1,19 @@
+{
+  "status": "passed",
+  "review_scope": "Asset-only source, provenance, channel/metric contracts, runtime budget, deterministic export and final actual-pixel QA.",
+  "checks": [
+    "Independent 18-map and manifest byte-identical rebuild",
+    "Eight contract fixtures pass",
+    "Independent source-normal pixel/basis rotation exactly matches output",
+    "Original architecture and prop validators pass",
+    "Final six QA images inspected; basecolor-only candidate retains quality improvement",
+    "Render-time source and intermediate hashes verified; stale cache rejection tested",
+    "No edits outside new materials_v1 directory",
+    "Python compilation and git diff --check pass"
+  ],
+  "limitations": [
+    "No live engine integration or GPU performance validation",
+    "Possible source cavity shading in photographed floor diffuse",
+    "No end-grain, BC compression or separate normal mip chains"
+  ]
+}
