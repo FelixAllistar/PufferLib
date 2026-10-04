@@ -23,6 +23,8 @@ typedef struct SwatFrontend {
     bool loadout_pending;
     int plan_tab,selected_sniper,sniper_post[SWAT_SNIPERS],sniper_rifle[SWAT_SNIPERS];
     bool sniper_pending[SWAT_SNIPERS],sniper_enabled[SWAT_SNIPERS];
+    bool camera_open,camera_pointer;
+    float camera_expansion;
     bool scenario_requested,seed_edit;
     SwatConfig scenario;
     char layout_seed[16];

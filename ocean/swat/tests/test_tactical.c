@@ -123,6 +123,73 @@ static void effects(void) {
     assert(!swat_taser(&sim,0)); swat_sim_close(&sim);
     puts("PASS effects: flash occlusion/compliance, gas wall/destruction boundaries, masks, taser cover/range/recovery and zero damage");
 }
+
+static void doors(void) {
+    fixture(SWAT_CONCRETE);
+    int id=swat_world_box(&sim.world,(b3Pos){-3.7f,1.3f,0},swat_v(.04f,1.3f,.8f),SWAT_WOOD,120);
+    SwatObject* door=&sim.world.objects[id]; door->door=door->locked=true;
+    door->hinge=b3OffsetPos(door->center,swat_v(0,0,-.8f));
+    SwatInput in=swat_neutral_input(); in.interact=true; step(in,1);
+    assert(door->locked && !door->door_open);
+    in=swat_neutral_input(); in.door_tool=SWAT_LOCKPICK; in.fire=true; in.forward=1;
+    b3Pos start=swat_body_feet_position(&sim.actors[0].controller.body);
+    step(in,60);
+    assert(door->locked && sim.actors[0].gear.door_ticks==60 && sim.actors[0].arsenal.shots==0);
+    assert(b3Distance(start,swat_body_feet_position(&sim.actors[0].controller.body))<.02f);
+    step(swat_neutral_input(),1); assert(!sim.actors[0].gear.door_ticks);
+    sim.actors[0].controller.yaw=SWAT_PI; step(in,1); assert(!sim.actors[0].gear.door_ticks);
+    sim.actors[0].controller.yaw=0; step(in,179); assert(door->locked);
+    step(in,1); assert(!door->locked && !door->door_open && sim.actors[0].gear.used_tools);
+    step(in,8); assert(sim.actors[0].arsenal.shots==0);
+    in=swat_neutral_input(); in.interact=true; step(in,50); assert(door->door_open && door->door_angle>1.5f);
+    swat_equipment_kit(&sim.actors[0].gear,1); // Test-owned setup, not a staging request.
+    in=swat_neutral_input(); in.door_tool=SWAT_PLACE_CHARGE; step(in,90);
+    assert(door->breach_owner<0 && sim.actors[0].gear.breaching_charges==1);
+    sim.actors[0].controller.yaw=atan2f(-.8f,1.5f);
+    step(swat_neutral_input(),1); in=swat_neutral_input(); in.interact=true; step(in,50);
+    assert(!door->door_open && door->door_angle<.01f);
+    sim.actors[0].controller.yaw=0;
+    in=swat_neutral_input(); in.door_tool=SWAT_PLACE_CHARGE; step(in,30);
+    assert(door->breach_owner<0 && sim.actors[0].gear.breaching_charges==1 && sim.actors[0].gear.door_ticks==30);
+    step(swat_neutral_input(),1); assert(!sim.actors[0].gear.door_ticks);
+    place(0,(b3Pos){-8,0,0},0); step(in,90);
+    assert(door->breach_owner<0 && sim.actors[0].gear.breaching_charges==1);
+    place(0,(b3Pos){-5,0,0},0); step(in,89); assert(door->breach_owner<0);
+    step(in,1); assert(door->breach_owner==0 && sim.actors[0].gear.breaching_charges==0);
+    step(in,100); assert(door->active && door->breach_owner==0 && !sim.actors[0].gear.door_ticks);
+    // A late-joining renderer receives the lock, mount, stock and interaction
+    // state; it never needs a local collision body for a mounted charge.
+    static SwatMap map; static SwatSnapshot snapshot,received; static unsigned char bytes[SWAT_NET_PACKET_MAX];
+    swat_capture_map(&sim,1,&map); swat_apply_map(&replica,&map);
+    swat_capture_snapshot(&sim,1,&snapshot);
+    size_t size=swat_encode_snapshot(bytes,sizeof(bytes),&snapshot);
+    assert(size && swat_decode_snapshot(&received,bytes,size) && swat_apply_snapshot(&replica,&received));
+    assert(replica.world.objects[id].breach_owner==0 && replica.actors[0].gear.breaching_charges==0);
+    swat_sim_spawn_actor(&sim,3,SWAT_OFFICER,(b3Pos){-10,0,-5},0); sim.actor_count=4;
+    SwatInput inputs[SWAT_MAX_ACTORS]; for(int i=0;i<SWAT_MAX_ACTORS;i++) inputs[i]=swat_neutral_input();
+    inputs[3].door_tool=SWAT_DETONATE_CHARGE; swat_sim_step_inputs(&sim,inputs);
+    assert(door->active && door->breach_owner==0); // Only the planter owns this remote.
+    place(0,(b3Pos){-8,0,0},0); place(1,(b3Pos){-3,0,0},SWAT_PI);
+    place(2,(b3Pos){-3,0,1.1f},SWAT_PI);
+    swat_world_box(&sim.world,(b3Pos){-3.35f,1.3f,.55f},swat_v(.05f,1.3f,.4f),SWAT_CONCRETE,0);
+    SwatCommand command={.epoch=1,.sequence=1,.input={.door_tool=SWAT_DETONATE_CHARGE}},decoded;
+    size=swat_encode_command(bytes,sizeof(bytes),&command);
+    assert(size && swat_decode_command(&decoded,bytes,size));
+    step(decoded.input,1);
+    assert(!door->active && door->door_open && !door->locked && door->breach_owner<0 && door->breach_ticks>0);
+    assert(sim.actors[1].health<100 && sim.actors[1].gear.stunned_ticks>0 && sim.totals.hostile_damage>0);
+    assert(sim.actors[0].health==100 && sim.actors[2].health==100 && !sim.actors[2].gear.stunned_ticks);
+    // Rebuild the replica for the new wall, then verify the spent leaf/effect.
+    swat_capture_map(&sim,1,&map); swat_apply_map(&replica,&map); swat_capture_snapshot(&sim,1,&snapshot);
+    size=swat_encode_snapshot(bytes,sizeof(bytes),&snapshot);
+    assert(size && swat_decode_snapshot(&received,bytes,size) && swat_apply_snapshot(&replica,&received));
+    assert(!replica.world.objects[id].active && replica.world.objects[id].breach_ticks>0);
+    step(decoded.input,12); assert(sim.totals.destroyed==1);
+    in=swat_neutral_input(); in.loadout=3; place(0,(b3Pos){0,0,0},0); step(in,1);
+    assert(sim.actors[0].gear.kit==1 && sim.actors[0].gear.breaching_charges==0);
+    swat_sim_close(&sim); swat_sim_close(&replica);
+    puts("PASS door tools: locked latch, held/aborted quiet pick, fire/movement isolation, closed-door charge mounting, finite stock, owner remote, material occlusion/injury, no refill and mounted/spent replication");
+}
 static void network(void) {
     fixture(SWAT_CONCRETE); assert(swat_throw(&sim,0,SWAT_CS_GAS)); step(swat_neutral_input(),25);
     static SwatMap map; static SwatSnapshot snapshot,received; static unsigned char bytes[SWAT_NET_PACKET_MAX];
@@ -141,4 +208,4 @@ static void network(void) {
     swat_sim_close(&sim); swat_sim_close(&replica);
     puts("PASS tactical protocol: flight, inventory, inputs, replica body isolation and every truncated packet rejected");
 }
-int main(void) { physical_materials(); wand(); throw_rules(); effects(); network(); return 0; }
+int main(void) { physical_materials(); wand(); throw_rules(); effects(); doors(); network(); return 0; }

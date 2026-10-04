@@ -272,8 +272,16 @@ int main(int argc, char** argv) {
         view.actor=app.actor;
         view.planning=app.screen==SWAT_SCREEN_PLAN; view.plan_preview=app.plan_preview; view.plan_yaw=app.plan_yaw;
         view.scope=app.screen==SWAT_SCREEN_SCOPE; view.sniper_unit=app.selected_sniper;
-        view.yaw_offset=look_x+(client.status==SWAT_NET_ACTIVE ? client.pending_yaw : 0);
-        view.pitch_offset=look_y+(client.status==SWAT_NET_ACTIVE ? client.pending_pitch : 0);
+        view.sniper_camera=swat_frontend_playing(&app) && app.camera_open;
+        view.camera_expansion=app.camera_expansion;
+        view.yaw_offset=look_x; view.pitch_offset=look_y;
+        if(client.status==SWAT_NET_ACTIVE) for(int i=0;i<client.pending_count;i++) {
+            const SwatInput* pending=&client.pending[(client.pending_head+i)%128].input;
+            // Unacknowledged aim belongs to the body or selected sniper that
+            // received it. Switching feeds must not rotate another camera.
+            if(pending->sniper_control!=view.scope || (view.scope && pending->sniper_unit!=view.sniper_unit)) continue;
+            view.yaw_offset+=pending->yaw_delta; view.pitch_offset+=pending->pitch_delta;
+        }
         if(server.transport) {
             int players=0; for(int i=0;i<SWAT_MAX_PLAYERS;i++) players+=(server.player_mask>>i)&1;
             snprintf(view.session_status,sizeof(view.session_status),"HOST :%d / %d OF 4",server.port,players);

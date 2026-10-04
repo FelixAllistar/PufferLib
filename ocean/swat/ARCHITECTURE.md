@@ -58,11 +58,14 @@ closing the listen host ends the session. Leaving online play restores solo.
 `protocol.c` explicitly encodes big-endian integers and IEEE float32, validates
 version/type/length/ranges and decodes into temporary storage before applying.
 C layouts, pointers and platform bool representations never cross the wire.
-Protocol v3 includes mission/room data, framed-wall part/material metadata,
+Protocol v4 includes mission/room data, framed-wall part/material metadata,
 rotated door bases, kit/tool commands, regional injuries and restraints,
 throwable flight/effect state, stocks/exposure, independent wand pose and
-sniper assignments/rifles/targets/travel state. Generated maps include seed,
-accepted tokens, model ID, staging and post geometry. The 1,109-object Cedar
+sniper assignments/rifles/targets/travel state.
+Door snapshots carry lock state, mounted-charge owner and the short breach effect;
+actor equipment carries pick/mount progress and finite charges. Door tool input
+is validated as a bounded command before authority applies it. Generated maps
+include seed, accepted tokens, model ID, staging and post geometry. The 1,109-object Cedar
 House and up-to-1,528-object accepted generated houses use a reliable map
 baseline and fragmented state packets.
 
@@ -115,6 +118,13 @@ and a conservative friendly/compliant-person corridor govern fire. Moving
 posts is a timed relocation that preserves health and ammunition. Snipers
 are physical actors, but do not join the entry squad's extraction requirement.
 
+The live sniper inset renders the actual actor camera into one reusable texture.
+Taking control animates that panel into a centered scope over a dimmed officer
+view; the officer camera stays at the body while mouse input drives the sniper.
+Holding Tab frees the pointer and sends neutral officer input while simulation
+continues. Preview/close/feed selection are local presentation choices; sniper
+assignment and firing remain commander-only authoritative commands.
+
 Optiwand cameras sweep a small sphere through actual geometry. Near a closed
 door, G chooses the low lens and crouch automatically; corner/over-cover modes
 use two-segment sweeps. Lens yaw/pitch is independent of the officer/stem, and
@@ -131,6 +141,13 @@ for its spherical body. Canisters use gravity and bullet CCD; contact events
 produce impacts using the struck material. Flash/CS exposure traces through
 live world geometry, so broken cover changes exposure. Taser hits use a short
 checked trace. All equipment rules run on authority and preserve finite stocks.
+
+Reusable lockpicks unlock a closed leaf after an interruptible hold. A separate
+mount hold consumes a charge; an edge-triggered remote detonates only charges
+owned by that officer. Breaching removes the same collision object seen by all
+actors and clients. Frames remain physical. The simplified blast uses live
+world visibility for exposure, injury and material-aware sound; it does not
+simulate explosive chemistry, pressure waves, fragmentation or flying debris.
 
 The building policy chooses twelve categorical grammar tokens with a tiny
 49→64→3 tanh network in C. Validation precedes physical construction, including
@@ -160,7 +177,7 @@ or editor. These are the intended entry points for a developer or coding agent:
 | New remote command/state | `SwatInput` and `protocol.c`, with protocol version/round-trip tests |
 
 Change simulation rules once so solo, co-op and future policy actors agree.
-Do not put authoritative damage or kit changes in the UI. Protocol v3 peers
+Do not put authoritative damage or kit changes in the UI. Protocol v4 peers
 must agree on behavior; mod compatibility negotiation/hot reload is future work.
 
 | Tier | Purpose | Agreement to verify |

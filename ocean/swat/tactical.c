@@ -5,6 +5,61 @@ static bool clear_to(const SwatSim* s,b3Pos from,b3Pos to,int target) {
     (void)target;
     return swat_world_visible(&s->world,from,to);
 }
+
+static void breach(SwatSim* s,int object,int owner) {
+    SwatObject* door=&s->world.objects[object]; b3Pos origin=door->center;
+    if(!swat_world_damage(&s->world,object,door->max_health)) return;
+    door->door_open=true; door->breach_ticks=24; s->events.destroyed++;
+    swat_sound_surface(&s->sounds,s->tick,owner,SWAT_SOUND_FLASH,origin,2.5f,80,door->material);
+    // Gameplay blast exposure uses the same intact-wall visibility boundary
+    // as throwables. Removing the leaf opens the aperture; its frame remains.
+    for(int i=0;i<s->actor_count;i++) {
+        SwatActor* a=&s->actors[i]; if(!a->present || !a->alive) continue;
+        b3Pos chest=b3OffsetPos(swat_body_feet_position(&a->controller.body),swat_v(0,a->controller.body.totalHeight*.65f,0));
+        float distance=b3Distance(origin,chest);
+        if(distance>=3 || !swat_world_visible(&s->world,origin,chest)) continue;
+        a->gear.flash_ticks=(int)fmaxf(a->gear.flash_ticks,(1-distance/3)*120);
+        a->gear.stunned_ticks=(int)fmaxf(a->gear.stunned_ticks,(1-distance/3)*150);
+        if(distance<1.5f) swat_sim_damage_region(s,i,owner,(1-distance/1.5f)*100,SWAT_TORSO,false);
+    }
+}
+
+void swat_door_tools(SwatSim* s,int actor,SwatInput* in) {
+    SwatActor* a=&s->actors[actor]; SwatEquipment* g=&a->gear;
+    int mode=in->door_tool,previous=g->last_door_tool; g->last_door_tool=mode;
+    bool allowed=a->alive && a->role==SWAT_OFFICER && !g->inspecting && !g->stunned_ticks &&
+        !g->restrained && !g->surrendered && !g->cuff_ticks && !g->throw_cooldown && g->taser_cooldown<=150 &&
+        !swat_weapons_busy(&a->arsenal);
+    if(mode>SWAT_DOOR_NONE && mode<SWAT_DOOR_TOOLS) in->fire=in->reload=in->melee=false;
+    if(allowed && mode==SWAT_DETONATE_CHARGE && previous!=mode) {
+        for(int i=0;i<s->world.count;i++) {
+            const SwatObject* door=&s->world.objects[i];
+            if(door->active && door->door && door->breach_owner==actor) breach(s,i,actor);
+        }
+        in->fire=in->reload=in->melee=false;
+    }
+    if(!allowed || (mode!=SWAT_LOCKPICK && mode!=SWAT_PLACE_CHARGE)) {
+        g->door_ticks=0; g->door_target=-1; g->door_mode=SWAT_DOOR_NONE; return;
+    }
+    SwatHit hit=swat_world_ray(&s->world,swat_controller_eye(&a->controller),
+        swat_controller_aim(&a->controller),1.7f,a->controller.body.body);
+    SwatObject* door=hit.kind==SWAT_HIT_WORLD && hit.index>=0 ? &s->world.objects[hit.index] : NULL;
+    bool usable=door && door->door && !door->door_open && door->door_angle<.01f && door->breach_owner<0 &&
+        (mode==SWAT_LOCKPICK ? door->locked : (g->breaching_charges>0 && door->max_health>0));
+    if(!usable) { g->door_ticks=0; g->door_target=-1; g->door_mode=SWAT_DOOR_NONE; return; }
+    if(g->door_target!=hit.index || g->door_mode!=mode) g->door_ticks=0;
+    g->door_target=hit.index; g->door_mode=mode;
+    if(!g->door_ticks) swat_sound_emit(&s->sounds,s->tick,actor,SWAT_SOUND_HANDLE,hit.point,.12f,5);
+    bool crouch=in->crouch; float yaw=in->yaw_delta,pitch=in->pitch_delta;
+    *in=swat_neutral_input(); in->crouch=crouch; in->yaw_delta=yaw; in->pitch_delta=pitch;
+    int duration=mode==SWAT_LOCKPICK ? 180 : 90;
+    if(++g->door_ticks>=duration) {
+        if(mode==SWAT_LOCKPICK) door->locked=false;
+        else { door->breach_owner=actor; g->breaching_charges--; }
+        g->used_tools=true; g->door_ticks=0; g->door_target=-1; g->door_mode=SWAT_DOOR_NONE;
+        swat_sound_emit(&s->sounds,s->tick,actor,SWAT_SOUND_HANDLE,hit.point,.18f,6);
+    }
+}
 bool swat_throw(SwatSim* s,int actor,SwatProjectileKind kind) {
     if(actor<0 || actor>=s->actor_count || kind<0 || kind>=SWAT_PROJECTILE_KINDS) return false;
     SwatActor* a=&s->actors[actor]; SwatEquipment* g=&a->gear;

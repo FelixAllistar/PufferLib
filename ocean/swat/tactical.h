@@ -18,6 +18,8 @@ struct SwatSim;
 // world integrates flight, bounce, rolling and contact impulses.
 bool swat_throw(struct SwatSim* sim,int actor,SwatProjectileKind kind);
 bool swat_taser(struct SwatSim* sim,int actor);
+struct SwatInput;
+void swat_door_tools(struct SwatSim* sim,int actor,struct SwatInput* input);
 void swat_projectiles_step(struct SwatSim* sim);
 float swat_gas_at(const struct SwatSim* sim,b3Pos position);
 #endif

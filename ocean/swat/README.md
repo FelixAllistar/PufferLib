@@ -72,10 +72,17 @@ the actual building. The overview is a planning camera; a piloted drone remains 
 
 In **P > Snipers**, select A or B, choose an unoccupied post and a Precision or
 Marksman rifle, then assign. **Take scope control** deploys queued assignments.
+During play, a small live camera previews the selected sniper while your officer
+moves. Hold **Tab** to free the pointer: A/B switches feeds, the close button
+hides the camera, and **Assign sniper** deploys an unassigned unit at its selected post.
+Click the image or **Take over** to expand it into a centered floating scope over
+the dimmed, still-visible officer view. The mission keeps running while the
+pointer is free. **N** hides/shows the camera, **[ / ]** switches feeds, and
+**Enter** takes control or returns. Co-op teammates can preview; the leader controls.
 In the scope, mouse aims, **Y** marks an optically visible armed target, **Space**
 orders both snipers to execute their marked shots, **H** clears marks, and
 **LMB** fires the controlled rifle. **1/2** switches snipers; **Esc** returns to
-your officer. From the officer, **X** executes and **H** clears. Snipers hold
+your officer and the small live feed. From the officer, **X** executes and **H** clears. Snipers hold
 fire until ordered; opaque cover and friendly/compliant people block a marked
 shot. Wait for **TARGET READY**: the rifle must finish equipping and steady its
 aim before a shot can fire. Glass uses the shared bullet penetration rules. Repositioning takes
@@ -100,6 +107,18 @@ mode and whether reach is blocked. The lens sweeps against collision; movement
 and firing are locked during inspection. Release G to return to normal controls.
 Use B for a butt strike or the Entry kit's stronger ram hit.
 
+House exterior doors start locked. Hold **L** within 1.7 m while aiming at the
+closed leaf to pick its lock for three seconds. Releasing L, losing the door or
+being interrupted resets progress. Picking leaves the door closed; **F** opens
+it afterward. Picks are reusable in every kit. Hold **7** for 1.5 seconds to mount
+a breaching charge to a fully closed door, then retreat and press **K** to
+detonate your mounted charges. Another officer cannot fire your remote. The
+charge consumes stock when mounting finishes, removes the actual door collider,
+emits a material-aware blast sound, and can stun/injure nearby people through
+the opening. Intact walls block exposure. Mounted charges appear on the leaf
+and the HUD counts your remaining/mounted stock. Used tools cannot be refilled
+by swapping kits at staging. The annex's training door remains unlocked.
+
 **4** throws a flashbang and **5** throws CS gas. Canisters are dynamic Box3D
 bodies with gravity, swept collision and material-dependent bounce/friction.
 A 1.5-second fuse starts when thrown; holding a key throws once. Flash exposure
@@ -109,11 +128,15 @@ limited-charge taser within 7 m through a checked short trace. It stops at cover
 stuns and can force surrender; it does not simulate a cable or flying darts yet.
 These are fictional, non-damaging game effects; cuffs remain necessary.
 
-| Kit | Flashbangs | CS canisters | Taser charges | Gas mask |
-| --- | ---: | ---: | ---: | --- |
-| Recon | 1 | 1 | 2 | No |
-| Control | 1 | 2 | 3 | Yes |
-| Entry | 2 | 1 | 0 | Yes |
+| Kit | Flashbangs | CS canisters | Taser charges | Breaching charges | Gas mask |
+| --- | ---: | ---: | ---: | ---: | --- |
+| Recon | 1 | 1 | 2 | 0 | No |
+| Control | 1 | 2 | 3 | 1 | Yes |
+| Entry | 2 | 1 | 0 | 2 | Yes |
+
+The [equipment comparison and gadget shortlist](EQUIPMENT.md) records SWAT 4,
+Elite Force/First Responders, Ready or Not, and manufacturer sources for the
+next equipment choices.
 
 In **P > Houses**, choose a seed, difficulty and Learned/Random generator, then
 **Build this seed** or **Next house**. Accepted layouts have connected rooms,
@@ -174,7 +197,7 @@ and mission outcomes. All surviving officers must extract. Only the leader can
 restart, choose a house or command snipers. Online pause/settings release your controls while the session continues.
 Solo/offline play remains available. Planning also releases controls online;
 the session continues. The default hosted mission is Cedar House, five minutes;
-`--mission annex` selects the old range. Hosts and peers must use protocol v3.
+`--mission annex` selects the old range. Hosts and peers must use protocol v4.
 
 The dedicated server has no display, Raylib, audio-device or CUDA dependency.
 On WSL, `./swat server` defaults to `build/swat/windows/swat-server.exe`;
@@ -401,8 +424,10 @@ New checks cover canister mass/bounce/CCD, cover-sensitive effects, consumable
 conservation, independent optiwand aim, sniper placement/mark/hold/execute and
 friendly interlocks. Generated-house tests include 1,024 deterministic plans,
 314 real standing door crossings across 24 houses, exact collider counting and
-token/seed/model replication. UDP checks cover active gas at late join and
-leader-only scenario changes. The optional Python smoke command exercises
+token/seed/model replication. Door checks cover aborted picking, finite mounting,
+owner-only remote detonation, blast occlusion/injury and staging refill prevention.
+UDP checks cover active gas and mounted charges at late join, shared breach
+collision, and leader-only scenario changes. The optional Python smoke command exercises
 preference reward training and policy updates using marked synthetic labels.
 Native HRTF checks verify directional impulse differences; room mixer checks
 verify longer decay retains more late energy.
@@ -420,7 +445,8 @@ opens its own brief test window and checks the actual OS cursor confinement
 rectangle, stationary mouse input, Escape/pause/resume/quit, focus loss,
 click isolation, slider cancellation, host/join setup/cancel, leader restart
 controls, active audio streaming, preferences surviving reinitialization,
-automatic optiwand insertion, sniper scope/mark/execute and local house comparisons:
+automatic optiwand insertion, live camera/floating scope/cursor isolation,
+sniper mark/execute, lockpick/charge controls and local house comparisons:
 
 ```sh
 bash ocean/swat/build-windows.sh

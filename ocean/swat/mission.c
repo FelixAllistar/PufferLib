@@ -73,7 +73,7 @@ static void framed_wall(SwatWallBuild* w,b3Pos o,float yaw,float length,float he
             int id=piece(w,o,yaw,swat_v(0,(.08f+opening_height)*.5f,opening_center),
                          swat_v(.022f,(opening_height-.08f)*.5f,opening_width*.5f-.04f),SWAT_WOOD,120,SWAT_PART_SOLID);
             if(w->world) {
-                SwatObject* d=&w->world->objects[id]; d->door=true; d->closed_yaw=yaw;
+                SwatObject* d=&w->world->objects[id]; d->door=true; d->closed_yaw=yaw; d->locked=exterior;
                 d->hinge=b3OffsetPos(d->center,swat_v(-sinf(yaw)*d->half.z,0,-cosf(yaw)*d->half.z));
             }
         }

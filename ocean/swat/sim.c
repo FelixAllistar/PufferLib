@@ -314,6 +314,9 @@ static void swat_actor_interact(SwatSim* s, int actor, SwatInput* in) {
     }
     a->gear.cuff_ticks=0; a->gear.cuff_target=-1;
     if (pressed && hit.kind == SWAT_HIT_WORLD && hit.index >= 0 && s->world.objects[hit.index].door) {
+        if(s->world.objects[hit.index].locked || s->world.objects[hit.index].breach_owner>=0) {
+            swat_sound_emit(&s->sounds,s->tick,actor,SWAT_SOUND_HANDLE,hit.point,.2f,8); return;
+        }
         s->world.objects[hit.index].door_open = !s->world.objects[hit.index].door_open;
         swat_sound_emit(&s->sounds,s->tick,actor,SWAT_SOUND_DOOR,s->world.objects[hit.index].center,0.6f,18);
     }
@@ -353,8 +356,10 @@ static void swat_actor_equipment(SwatSim* s,int actor,SwatInput* in) {
     }
     bool throwing=in->throwable>0 && !gear->last_throw; gear->last_throw=in->throwable>0;
     bool tasing=in->taser && !gear->last_taser; gear->last_taser=in->taser;
-    if(throwing) swat_throw(s,actor,(SwatProjectileKind)(in->throwable-1));
-    if(tasing) swat_taser(s,actor);
+    bool door_tool=in->door_tool!=SWAT_DOOR_NONE;
+    swat_door_tools(s,actor,in);
+    if(throwing && !door_tool) swat_throw(s,actor,(SwatProjectileKind)(in->throwable-1));
+    if(tasing && !door_tool) swat_taser(s,actor);
     if(gear->throw_cooldown || gear->taser_cooldown>150) in->fire=in->reload=in->melee=false;
     bool command=in->command && !gear->last_command; gear->last_command=in->command;
     if(command && a->role==SWAT_OFFICER) {

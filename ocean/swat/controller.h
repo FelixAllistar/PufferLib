@@ -9,6 +9,7 @@ extern "C" {
 
 #define SWAT_MAX_LEAN 0.42f
 typedef enum SwatGait { SWAT_SLOW, SWAT_WALK, SWAT_SPRINT } SwatGait;
+typedef enum SwatDoorTool { SWAT_DOOR_NONE,SWAT_LOCKPICK,SWAT_PLACE_CHARGE,SWAT_DETONATE_CHARGE,SWAT_DOOR_TOOLS } SwatDoorTool;
 typedef struct SwatInput {
     float forward, strafe;          // [-1,1]
     float yaw_delta, pitch_delta;   // radians for this fixed simulation tick
@@ -20,6 +21,7 @@ typedef struct SwatInput {
     int loadout;                   // 0 = keep, 1..3 = staging-area kit request
     int throwable;                 // 0 = none, 1 = flashbang, 2 = CS gas
     bool taser;
+    int door_tool;                  // held pick/place, pressed remote detonation
     int sniper_order, sniper_unit, sniper_post, sniper_rifle;
     bool sniper_control;
 } SwatInput;

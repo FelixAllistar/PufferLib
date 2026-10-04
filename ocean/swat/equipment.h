@@ -10,6 +10,7 @@ typedef struct SwatKitDef {
     bool less_lethal, optiwand, ram;
     bool gas_mask;
     int flashbangs, gas_grenades, taser_charges;
+    int breaching_charges;
 } SwatKitDef;
 #define SWAT_KIT_COUNT 3
 typedef enum SwatWandMode { SWAT_WAND_FORWARD, SWAT_WAND_UNDER,
@@ -23,6 +24,7 @@ typedef struct SwatEquipment {
     bool last_throw,last_taser,used_tools;
     SwatWandMode wand_mode;
     float wand_yaw,wand_pitch;
+    int breaching_charges,door_ticks,door_target,door_mode,last_door_tool;
 } SwatEquipment;
 const SwatKitDef* swat_kit(int kit);
 void swat_equipment_init(SwatEquipment* gear);

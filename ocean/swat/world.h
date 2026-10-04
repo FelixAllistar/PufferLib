@@ -27,7 +27,8 @@ typedef struct SwatObject {
     float yaw, health, max_health, door_angle, closed_yaw;
     SwatMaterial material;
     SwatPart part;
-    bool active, door, door_open;
+    bool active, door, door_open,locked;
+    int breach_owner,breach_ticks;
     b3Pos hinge;
 } SwatObject;
 
