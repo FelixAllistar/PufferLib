@@ -31,6 +31,8 @@ typedef struct SwatInput {
     bool magazine_inventory;
     int squad_order,squad_team;
     bool squad_queue,squad_execute;
+    int device_deploy,device_unit;
+    bool device_control;
 } SwatInput;
 
 typedef struct SwatController {

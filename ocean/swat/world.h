@@ -10,7 +10,7 @@ extern "C" {
 
 #define SWAT_MAX_OBJECTS 1536
 #define SWAT_MAX_ROOMS 8
-typedef enum SwatHitKind { SWAT_HIT_NONE, SWAT_HIT_WORLD, SWAT_HIT_ACTOR, SWAT_HIT_PROJECTILE } SwatHitKind;
+typedef enum SwatHitKind { SWAT_HIT_NONE, SWAT_HIT_WORLD, SWAT_HIT_ACTOR, SWAT_HIT_PROJECTILE,SWAT_HIT_DEVICE } SwatHitKind;
 typedef enum SwatPart { SWAT_PART_SOLID, SWAT_PART_SKIN, SWAT_PART_FRAME, SWAT_PART_SUPPORT } SwatPart;
 typedef struct SwatRoom {
     b3Pos center;

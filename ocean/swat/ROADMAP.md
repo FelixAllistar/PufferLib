@@ -32,7 +32,7 @@ is deliberately a general engine improvement.
 - Recon/Control/Entry kit tradeoffs, collision-limited optiwand, melee/ram,
   less-lethal impact launcher, compliance and interruptible cuffing.
 - Head/torso/arm/leg injury, plate protection, injury-driven movement/spread,
-  secured-hostage extraction and protocol v6 replication of these states.
+  secured-hostage extraction and protocol v7 replication of these states.
 - Optional native Steam Audio HRTF, approximate room reflection/decay mixer,
   and 26 repeatable WAV/CSV comparison scenes.
 - Two physical snipers: post/rifle selection, direct scope control, visible
@@ -47,10 +47,14 @@ is deliberately a general engine improvement.
 - Canonical first/third-person eye/hand/sight/muzzle geometry, high/low ready,
   buffered actions, staged interruptible reloads and optional retained magazines.
 - Staging primary/sight profiles, stair/ramp/clearance test range, F3 physical
-  debug overlay and portable exact solo input replay verification (protocol v6).
+  debug overlay and portable exact solo input replay verification (protocol v7).
 - Door peek/wedge/recovery, inspected trap disarming and finite occluded spray.
 - Shared clearance navigation, initial sight/hearing-memory NPCs, vacant-slot
   squad bots, delayed/queued Gold/Red/Blue orders, escort/evidence/debrief state.
+- Physical PepperBall/impact/CS/flash rounds, separate finite payload profiles,
+  ten-probe/two-contact CEW with occluded tethers and an experimental restraint.
+- Physical throwable camera, robot, audio communication ball and slow drone;
+  owner-only takeover, live cycling/audio, recovery, batteries and vulnerability.
 - Automatic under-door optiwand insertion, independent lens rotation and
   collision-limited corner/over-cover modes with explicit HUD feedback.
 - Shared physical/acoustic materials, CCD flash/CS canisters, masks, finite

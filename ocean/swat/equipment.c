@@ -12,6 +12,7 @@ void swat_equipment_kit(SwatEquipment* gear,int kit) {
     gear->kit=kit; const SwatKitDef* d=swat_kit(kit);
     gear->flashbangs=d->flashbangs; gear->gas_grenades=d->gas_grenades; gear->taser_charges=d->taser_charges;
     gear->breaching_charges=d->breaching_charges; gear->wedges=2; gear->spray_ticks=360;
+    for(int i=0;i<4;i++) gear->devices[i]=1;
 }
 void swat_equipment_init(SwatEquipment* gear) {
     memset(gear,0,sizeof(*gear)); gear->cuff_target=gear->door_target=-1; swat_equipment_kit(gear,0);

@@ -10,6 +10,7 @@
 #include "overwatch.h"
 #include "generation.h"
 #include "encounter.h"
+#include "devices.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -77,6 +78,7 @@ typedef struct SwatSim {
     int commander_actor,last_sniper_order[SWAT_MAX_ACTORS];
     SwatMissionDef mission;
     SwatLayout layout;
+    SwatDevice devices[SWAT_MAX_DEVICES];
     SwatNavigation navigation;
     SwatEvidence evidence[SWAT_MAX_ACTORS];
     SwatDebrief debrief;

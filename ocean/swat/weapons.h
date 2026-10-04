@@ -9,7 +9,7 @@ extern "C" {
 typedef enum SwatFireMode { SWAT_SAFE, SWAT_SEMI, SWAT_AUTO } SwatFireMode;
 typedef enum SwatReloadStage { SWAT_RELOAD_IDLE,SWAT_RELOAD_REMOVE,SWAT_RELOAD_INSERT,SWAT_RELOAD_CHAMBER,SWAT_RELOAD_STAGES } SwatReloadStage;
 typedef enum SwatSightProfile { SWAT_IRONS,SWAT_RED_DOT,SWAT_OPTIC,SWAT_SIGHTS } SwatSightProfile;
-#define SWAT_WEAPON_PROFILES 8
+#define SWAT_WEAPON_PROFILES 12
 #define SWAT_MAGAZINES 4
 typedef struct SwatWeaponDef {
     const char* name;

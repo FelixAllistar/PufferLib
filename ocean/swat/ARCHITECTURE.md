@@ -58,7 +58,7 @@ closing the listen host ends the session. Leaving online play restores solo.
 `protocol.c` explicitly encodes big-endian integers and IEEE float32, validates
 version/type/length/ranges and decodes into temporary storage before applying.
 C layouts, pointers and platform bool representations never cross the wire.
-Protocol v6 includes mission/room data, framed-wall part/material metadata,
+Protocol v7 includes mission/room data, framed-wall part/material metadata,
 rotated door bases, kit/tool commands, regional injuries and restraints,
 throwable flight/effect state, stocks/exposure, independent wand pose and
 sniper assignments/rifles/targets/travel state.
@@ -143,7 +143,7 @@ occupants behind the officer. The annex v1 interaction remains a direct ray.
 F/middle mouse selects use or compliance; RMB latches cuff, pick or aim on
 press. Lost targets cancel progress, cannot transfer the held cuff to another
 person, and finishing does not change that press into ADS or a weapon click.
-These bindings reuse existing protocol v6 commands; the server still computes
+These bindings reuse existing protocol v7 commands; the server still computes
 targets and validates physical actions independently of client prompts.
 
 Optiwand cameras sweep a small sphere through actual geometry. Near a closed
@@ -198,7 +198,7 @@ or editor. These are the intended entry points for a developer or coding agent:
 | New remote command/state | `SwatInput` and `protocol.c`, with protocol version/round-trip tests |
 
 Change simulation rules once so solo, co-op and future policy actors agree.
-Do not put authoritative damage or kit changes in the UI. Protocol v6 peers
+Do not put authoritative damage or kit changes in the UI. Protocol v7 peers
 must agree on behavior; mod compatibility negotiation/hot reload is future work.
 
 | Tier | Purpose | Agreement to verify |
@@ -233,7 +233,7 @@ authoritative eye-to-muzzle sphere sweep use this same pose. High/low ready
 raise before a buffered trigger is permitted to fire. Reload removal/insertion/
 chamber events conserve ammunition even when interrupted at any tick. Optional
 retained magazines and sight profiles are replicated; profile changes require
-an unused officer in staging. Protocol v6 includes these fields and pitched
+an unused officer in staging. Protocol v7 includes these fields and pitched
 world objects for the controller range.
 
 `replay.c` stores explicit portable config/seed/input/state-hash records and
@@ -264,3 +264,24 @@ objects as hinges/destruction. Spray uses finite stock, a short forward cone,
 real cover and masks. Evidence is collected once; rescue and force violations
 are debrief outcomes. The force record currently classifies civilian or
 surrendered/restrained harm, rather than a complete legal judgment model.
+
+## Physical payloads and remote devices
+
+`devices.c` uses authoritative CCD bodies for throwable cameras, robots,
+communication balls and drones. Camera yaw/pitch is stabilized independently
+of the body's tumble. Slow robot/drone velocity requests still collide with
+the same world. Remote commands are owner-validated; the officer receives a
+neutral stance input while its body remains present. Batteries and damage
+limit feeds. A communication ball has no optical camera and emits command
+audio from its physical position. The player mixer can listen at a device
+location using the same acoustic paths.
+
+Projectile kinds now include PepperBall, impact, CS/flash launcher, probes and
+experimental tether rounds. Actual swept flight resolves contacts; payload
+effects use the existing cover/mask/region rules. CEW probes attach in actor
+local coordinates with stance-relative height. Two separated contacts require
+clear world-space tether paths before applying a temporary stun. Primary
+payload profiles are selected before deployment; reserve rounds retain the
+profile's type rather than changing on a UI selection. Protocol v7 replicates
+these states and validates bounded inventories/remote inputs. Replica devices
+render public state without creating an independent dynamic authority.

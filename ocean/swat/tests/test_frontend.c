@@ -412,6 +412,31 @@ static bool run_house(SwatFrontend* app,SwatView* view,SwatSim* sim,const char* 
     return true;
 }
 
+static bool run_devices(SwatFrontend* app,SwatView* view,SwatSim* sim) {
+    SwatController* c=&sim->actors[0].controller; c->yaw=c->pitch=0;
+    app->selected_gadget=0; int shots=sim->actors[0].arsenal.shots;
+    event(TEST_KEY_DOWN,KEY_LEFT_ALT,0);
+    for(int i=0;i<4;i++) { event(TEST_KEY_DOWN,KEY_TWO,0); frame(app,view,sim); event(TEST_KEY_UP,KEY_TWO,0); frame(app,view,sim); }
+    event(TEST_KEY_UP,KEY_LEFT_ALT,0); frames(app,view,sim,4); CHECK(app->selected_gadget==4);
+    event(TEST_MOUSE_DOWN,MOUSE_BUTTON_LEFT,0); frames(app,view,sim,50); event(TEST_MOUSE_UP,MOUSE_BUTTON_LEFT,0); frames(app,view,sim,4);
+    CHECK(sim->devices[0].active && sim->devices[0].kind==SWAT_CAMERA && sim->actors[0].gear.devices[0]==0 && sim->actors[0].arsenal.shots==shots);
+    app->selected_sniper=1;
+    event(TEST_KEY_DOWN,KEY_PERIOD,0); frame(app,view,sim); event(TEST_KEY_UP,KEY_PERIOD,0); frame(app,view,sim);
+    CHECK(app->selected_sniper==SWAT_SNIPERS && app->screen==SWAT_SCREEN_GAME);
+    event(TEST_KEY_DOWN,KEY_ENTER,0); frame(app,view,sim); event(TEST_KEY_UP,KEY_ENTER,0); frames(app,view,sim,12);
+    CHECK(app->screen==SWAT_SCREEN_SCOPE && app->captured && swat_feed_present(sim,SWAT_SNIPERS));
+    b3Pos feet=swat_body_feet_position(&c->body);
+    event(TEST_KEY_DOWN,KEY_W,0); frames(app,view,sim,20); event(TEST_KEY_UP,KEY_W,0); frames(app,view,sim,3);
+    CHECK(b3Distance(feet,swat_body_feet_position(&c->body))<.1f && sim->actors[0].arsenal.shots==shots);
+    Image remote=LoadImageFromScreen(); CHECK(ExportImage(remote,"build/swat/windows/remote-camera.png")); UnloadImage(remote);
+    event(TEST_KEY_DOWN,KEY_ENTER,0); frame(app,view,sim); event(TEST_KEY_UP,KEY_ENTER,0); frames(app,view,sim,4);
+    CHECK(app->screen==SWAT_SCREEN_GAME);
+    event(TEST_KEY_DOWN,KEY_ONE,0); frame(app,view,sim); event(TEST_KEY_UP,KEY_ONE,0); frames(app,view,sim,3);
+    CHECK(app->selected_gadget==0 && sim->actors[0].arsenal.shots==shots);
+    puts("PASS remote frontend: Alt equipment cycle, held physical camera deployment, live feed cycling, floating takeover, officer/fire isolation and weapon return");
+    return true;
+}
+
 static bool run_generation(SwatFrontend* app,SwatView* view,SwatSim* sim,const char* png) {
     event(TEST_KEY_DOWN,KEY_P,0); frame(app,view,sim); event(TEST_KEY_UP,KEY_P,0); frame(app,view,sim);
     click(app,view,sim,1370,174); CHECK(app->plan_tab==3);
@@ -457,6 +482,7 @@ int main(int argc, char** argv) {
     app.settings=app.saved_settings=swat_settings_defaults();
     bool ok=run_checks(&app,&view,sim,argv[1],argc>2 ? argv[2] : NULL);
     if(ok) ok=run_house(&app,&view,sim,argc>3 ? argv[3] : NULL,argc>4 ? argv[4] : NULL,argc>5 ? argv[5] : NULL,argc>7 ? argv[7] : NULL,argc>8 ? argv[8] : NULL,argc>9 ? argv[9] : NULL,argc>10 ? argv[10] : NULL);
+    if(ok) ok=run_devices(&app,&view,sim);
     if(ok) ok=run_generation(&app,&view,sim,argc>6 ? argv[6] : NULL);
     swat_frontend_close(&app);
     swat_sound_view_close(&test_sound);

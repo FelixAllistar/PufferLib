@@ -5,7 +5,7 @@ RAYLIB ?= $(ROOT)/raylib-5.5_linux_amd64
 CC := clang
 CFLAGS ?= -O2 -g -std=gnu11 -Wall -Wextra -Werror -Wno-unused-parameter -Wno-unused-function -Wno-unknown-pragmas
 CPPFLAGS := -I$(ROOT)/src -I$(ROOT)/vendor -I$(ROOT)/vendor/enet/include -I$(RAYLIB)/include -I$(BOX3D)/include -I.
-CORE := body.c controller.c pose.c encounter.c weapons.c materials.c world.c mission.c equipment.c tactical.c overwatch.c generation.c acoustics.c audio_dsp.c sim.c
+CORE := body.c controller.c pose.c devices.c encounter.c weapons.c materials.c world.c mission.c equipment.c tactical.c overwatch.c generation.c acoustics.c audio_dsp.c sim.c
 CLIENT := render.c settings.c feedback.c frontend.c sound_view.c spatial_audio.c
 NET := protocol.c net.c replay.c
 ENET_LIB := $(ROOT)/build/swat/enet/libenet.a
@@ -50,10 +50,16 @@ overwatch-test: | $(BUILD)
 generation-test: | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_generation.c protocol.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_generation
 	ulimit -c 0; $(BUILD)/test_generation
+payloads-test: | $(BUILD)
+	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_payloads.c protocol.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_payloads
+	$(BUILD)/test_payloads
+devices-test: | $(BUILD)
+	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_devices.c protocol.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_devices
+	$(BUILD)/test_devices
 encounter-test: | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_encounter.c protocol.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_encounter
 	$(BUILD)/test_encounter
-test: encounter-test foundation-test tactical-test overwatch-test generation-test | $(BUILD)
+test: payloads-test devices-test encounter-test foundation-test tactical-test overwatch-test generation-test | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_mission.c protocol.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_mission
 	ulimit -c 0; $(BUILD)/test_mission
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_settings.c settings.c -lm -o $(BUILD)/test_settings

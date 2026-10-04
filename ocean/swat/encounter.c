@@ -164,7 +164,7 @@ void swat_encounter_inputs(SwatSim* s,SwatInput inputs[]) {
         a->visible_ticks=0; a->target_actor=-1; mind->target=-1;
         SwatHeardSound heard;
         for(int n=0;n<4 && swat_hearing_next(&s->world,&s->sounds,s->tick,swat_controller_eye(&a->controller),i,&a->hearing,&heard);n++) {
-            if(heard.gain<.02f || (heard.kind!=SWAT_SOUND_SHOT && heard.kind!=SWAT_SOUND_BREAK && heard.kind!=SWAT_SOUND_DOOR && heard.kind!=SWAT_SOUND_FLASH)) continue;
+            if(heard.gain<.02f || (heard.kind!=SWAT_SOUND_SHOT && heard.kind!=SWAT_SOUND_BREAK && heard.kind!=SWAT_SOUND_DOOR && heard.kind!=SWAT_SOUND_FLASH && heard.kind!=SWAT_SOUND_HANDLE)) continue;
             // Hearing supplies bearing, not a hidden actor location. Investigate a coarse point four metres along it.
             mind->memory=b3OffsetPos(swat_body_feet_position(&a->controller.body),swat_mul(swat_direction(heard.bearing,0),4)); mind->memory_ticks=180;
         }

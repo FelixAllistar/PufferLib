@@ -7,7 +7,7 @@
 extern "C" {
 #endif
 
-#define SWAT_NET_VERSION 6
+#define SWAT_NET_VERSION 7
 #define SWAT_NET_MAGIC 0x53474531u
 #define SWAT_NET_PACKET_MAX 98304
 #define SWAT_NET_SOUNDS 32
@@ -68,6 +68,7 @@ typedef struct SwatSnapshot {
     int sound_count;
     SwatProjectile projectiles[SWAT_MAX_PROJECTILES];
     SwatSniper snipers[SWAT_SNIPERS];
+    SwatDevice devices[SWAT_MAX_DEVICES];
     int commander_actor;
 } SwatSnapshot;
 typedef struct SwatCommand { uint32_t epoch,sequence; SwatInput input; } SwatCommand;

@@ -79,3 +79,11 @@ checks a short occluded cone and gas-mask resistance. Unlocked door peeking and
 optical trap discovery/disarming are also implemented. Physical PepperBall,
 launcher payload selection, remote cameras/robots/drone, individual taser
 probes, shield and communication-device mechanics are the next equipment work.
+
+Physical PepperBall/impact/CS/flash launcher profiles, a physical ten-probe CEW
+with two-contact/clear-tether connection, and an experimental temporary tether
+restraint are now implemented. Throwable cameras, slow robots and drones, and
+an audio-only communication ball share the live feed interface with A/B. They
+have finite inventory, collision, owner controls, recovery, batteries and damage.
+These are fictional gameplay models; thermal imaging, shield mechanics, richer
+animations and production asset/audio integration remain further work.

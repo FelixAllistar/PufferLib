@@ -8,6 +8,7 @@ static bool clear_to(const SwatSim* s,b3Pos from,b3Pos to,int target) {
 
 static bool contextual_hit(const SwatSim* s,SwatHit hit) {
     if(hit.kind==SWAT_HIT_WORLD && hit.index>=0) return s->world.objects[hit.index].door;
+    if(hit.kind==SWAT_HIT_DEVICE) return hit.index>=0 && hit.index<SWAT_MAX_DEVICES && s->devices[hit.index].active;
     if(hit.kind!=SWAT_HIT_ACTOR || hit.index<0 || hit.index>=s->actor_count) return false;
     const SwatActor* a=&s->actors[hit.index];
     return a->present && a->alive && (a->role==SWAT_SUSPECT || a->role==SWAT_CIVILIAN);
@@ -37,6 +38,9 @@ SwatContext swat_context(const SwatSim* s,int actor) {
     SwatContext out={.hit={.index=-1}};
     if(actor<0 || actor>=s->actor_count || !s->actors[actor].present) return out;
     out.hit=swat_context_hit(s,actor,9);
+    if(out.hit.kind==SWAT_HIT_DEVICE && out.hit.index>=0 && out.hit.index<SWAT_MAX_DEVICES) {
+        out.action=SWAT_CONTEXT_DEVICE; out.ready=out.hit.distance<2.2f && s->devices[out.hit.index].owner==actor; return out;
+    }
     if(!contextual_hit(s,out.hit)) {
         if(s->config.tactical_rules) {
             b3Pos eye=swat_controller_eye(&s->actors[actor].controller); b3Vec3 aim=swat_controller_aim(&s->actors[actor].controller);
@@ -128,7 +132,7 @@ void swat_door_tools(SwatSim* s,int actor,SwatInput* in) {
     }
 }
 bool swat_throw(SwatSim* s,int actor,SwatProjectileKind kind) {
-    if(actor<0 || actor>=s->actor_count || kind<0 || kind>=SWAT_PROJECTILE_KINDS) return false;
+    if(actor<0 || actor>=s->actor_count || kind<0 || kind>SWAT_CS_GAS) return false;
     SwatActor* a=&s->actors[actor]; SwatEquipment* g=&a->gear;
     int* stock=kind==SWAT_FLASHBANG ? &g->flashbangs : &g->gas_grenades;
     if(!a->alive || a->role!=SWAT_OFFICER || *stock<=0 || g->throw_cooldown || g->inspecting ||
@@ -140,7 +144,7 @@ bool swat_throw(SwatSim* s,int actor,SwatProjectileKind kind) {
     b3Vec3 extension=swat_add(swat_mul(direction,.62f),swat_v(0,-.13f,0));
     if(swat_world_sphere_cast(&s->world,eye,extension,.06f,a->controller.body.body).hit) return false;
     SwatProjectile* p=&s->projectiles[slot]; memset(p,0,sizeof(*p));
-    p->tag=(SwatTag){SWAT_HIT_PROJECTILE,slot}; p->active=true; p->kind=kind; p->owner=actor;
+    p->tag=(SwatTag){SWAT_HIT_PROJECTILE,slot}; p->active=true; p->kind=kind; p->owner=actor; p->target=-1;
     p->position=b3OffsetPos(eye,extension); p->remaining_ticks=90; p->last_impact_tick=-100;
     p->velocity=swat_add(swat_mul(direction,10),swat_v(0,2.2f,0));
     p->velocity=swat_add(p->velocity,b3Body_GetLinearVelocity(a->controller.body.body));
@@ -174,12 +178,14 @@ bool swat_taser(SwatSim* s,int actor) {
     }
     return true;
 }
+static bool gas_kind(SwatProjectileKind kind);
+static float gas_radius(const SwatProjectile* p);
 float swat_gas_at(const SwatSim* s,b3Pos position) {
     float exposure=0;
     for(int i=0;i<SWAT_MAX_PROJECTILES;i++) {
         const SwatProjectile* p=&s->projectiles[i];
-        if(!p->active || !p->detonated || p->kind!=SWAT_CS_GAS) continue;
-        float radius=fminf(3.5f,.8f+(p->age-90)*SWAT_DT*.6f);
+        if(!p->active || !p->detonated || !gas_kind(p->kind)) continue;
+        float radius=gas_radius(p);
         b3Pos source=b3OffsetPos(p->position,swat_v(0,.18f,0));
         float distance=b3Distance(source,position);
         if(distance<radius && clear_to(s,source,position,-1))
@@ -187,12 +193,15 @@ float swat_gas_at(const SwatSim* s,b3Pos position) {
     }
     return exposure;
 }
+static bool gas_kind(SwatProjectileKind kind) { return kind==SWAT_CS_GAS || kind==SWAT_LAUNCH_CS || kind==SWAT_PEPPERBALL; }
+static bool flash_kind(SwatProjectileKind kind) { return kind==SWAT_FLASHBANG || kind==SWAT_LAUNCH_FLASH; }
+static float gas_radius(const SwatProjectile* p) { return p->kind==SWAT_PEPPERBALL ? 1.25f : fminf(3.5f,.8f+fmaxf(0,p->age-90)*SWAT_DT*.6f); }
 static void detonate(SwatSim* s,SwatProjectile* p) {
-    p->detonated=true; p->remaining_ticks=p->kind==SWAT_FLASHBANG ? 24 : 720;
+    p->detonated=true; p->remaining_ticks=flash_kind(p->kind) ? 24 : p->kind==SWAT_PEPPERBALL ? 180 : gas_kind(p->kind) ? 720 : p->kind==SWAT_PROBE ? 300 : 12;
     b3DestroyBody(p->body); p->body=b3_nullBodyId; p->shape=b3_nullShapeId; p->velocity=swat_v(0,0,0);
-    swat_sound_emit(&s->sounds,s->tick,p->owner,p->kind==SWAT_FLASHBANG ? SWAT_SOUND_FLASH : SWAT_SOUND_GAS,
-                    p->position,p->kind==SWAT_FLASHBANG ? 2 : .65f,p->kind==SWAT_FLASHBANG ? 65 : 18);
-    if(p->kind!=SWAT_FLASHBANG) return;
+    swat_sound_emit(&s->sounds,s->tick,p->owner,flash_kind(p->kind) ? SWAT_SOUND_FLASH : gas_kind(p->kind) ? SWAT_SOUND_GAS : SWAT_SOUND_IMPACT,
+                    p->position,flash_kind(p->kind) ? 2 : .65f,flash_kind(p->kind) ? 65 : 18);
+    if(!flash_kind(p->kind)) return;
     b3Pos origin=b3OffsetPos(p->position,swat_v(0,.07f,0));
     for(int i=0;i<s->actor_count;i++) {
         SwatActor* a=&s->actors[i]; if(!a->present || !a->alive) continue;
@@ -225,10 +234,41 @@ void swat_projectiles_step(SwatSim* s) {
         SwatProjectile* p=&s->projectiles[i]; if(!p->active) continue;
         p->age++; p->remaining_ticks--;
         if(!p->detonated) {
-            p->position=b3Body_GetPosition(p->body); p->velocity=b3Body_GetLinearVelocity(p->body);
-            if(!p->remaining_ticks) detonate(s,p);
+            b3Pos next=b3Body_GetPosition(p->body); p->velocity=b3Body_GetLinearVelocity(p->body);
+            if(p->kind>=SWAT_PEPPERBALL) {
+                SwatHit hit=swat_world_sphere_cast(&s->world,p->position,b3SubPos(next,p->position),p->kind==SWAT_PEPPERBALL ? .018f : .035f,p->body);
+                if(hit.hit) {
+                    next=b3OffsetPos(hit.point,swat_mul(hit.normal,.04f));
+                    if(hit.kind==SWAT_HIT_ACTOR && hit.index>=0 && hit.index!=p->owner) {
+                        if(p->kind==SWAT_PROBE) { p->target=hit.index; p->attachment=b3InvRotateVector(b3MakeQuatFromAxisAngle(swat_v(0,1,0),s->actors[hit.index].controller.yaw),b3SubPos(hit.point,swat_body_feet_position(&s->actors[hit.index].controller.body))); p->attachment.y/=s->actors[hit.index].controller.body.totalHeight; }
+                        else if(p->kind==SWAT_BOLA) {
+                            SwatHitRegion region=swat_sim_hit_region(&s->actors[hit.index],hit.point);
+                            if(region==SWAT_LEGS || region==SWAT_TORSO) { s->actors[hit.index].gear.tether_ticks=180; s->actors[hit.index].gear.surrendered=true; }
+                        } else if(p->damage>0) swat_sim_damage_region(s,hit.index,p->owner,p->damage,swat_sim_hit_region(&s->actors[hit.index],hit.point),p->kind==SWAT_IMPACT_ROUND);
+                    } else if(hit.kind==SWAT_HIT_DEVICE) swat_device_damage(s,hit.index,p->damage);
+                    p->position=next; detonate(s,p);
+                }
+            }
+            p->position=next;
+            if(!p->detonated && !p->remaining_ticks) detonate(s,p);
         } else if(!p->remaining_ticks) p->active=false;
-        if(p->active && p->detonated && p->kind==SWAT_CS_GAS && p->age%30==0)
+        if(p->active && p->detonated && p->kind==SWAT_PROBE && p->target>=0 && s->actors[p->target].present) {
+            b3Vec3 offset=p->attachment; offset.y*=s->actors[p->target].controller.body.totalHeight;
+            offset=b3RotateVector(b3MakeQuatFromAxisAngle(swat_v(0,1,0),s->actors[p->target].controller.yaw),offset);
+            p->position=b3OffsetPos(swat_body_feet_position(&s->actors[p->target].controller.body),offset);
+            b3Pos source=swat_controller_eye(&s->actors[p->owner].controller);
+            if(b3Distance(source,p->position)<10 && clear_to(s,source,p->position,p->target)) {
+                for(int j=0;j<i;j++) {
+                    const SwatProjectile* other=&s->projectiles[j];
+                    if(other->active && other->detonated && other->kind==SWAT_PROBE && other->owner==p->owner && other->target==p->target &&
+                       b3Distance(other->position,p->position)>.12f && clear_to(s,source,other->position,p->target)) {
+                        SwatActor* target=&s->actors[p->target]; target->gear.stunned_ticks=120;
+                        if(target->role==SWAT_SUSPECT || target->role==SWAT_CIVILIAN) target->gear.surrendered=true;
+                    }
+                }
+            }
+        }
+        if(p->active && p->detonated && gas_kind(p->kind) && p->age%30==0)
             swat_sound_emit(&s->sounds,s->tick,p->owner,SWAT_SOUND_GAS,p->position,.3f,10);
     }
     for(int i=0;i<s->actor_count;i++) {
@@ -238,9 +278,9 @@ void swat_projectiles_step(SwatSim* s) {
         bool exposed=false;
         for(int j=0;j<SWAT_MAX_PROJECTILES;j++) {
             const SwatProjectile* p=&s->projectiles[j];
-            if(!p->active || !p->detonated || p->kind!=SWAT_CS_GAS) continue;
+            if(!p->active || !p->detonated || !gas_kind(p->kind)) continue;
             b3Pos origin=b3OffsetPos(p->position,swat_v(0,.18f,0));
-            float radius=fminf(3.5f,.8f+(p->age-90)*SWAT_DT*.6f);
+            float radius=gas_radius(p);
             if(b3Distance(origin,chest)<radius && clear_to(s,origin,chest,i)) exposed=true;
         }
         bool mask=(a->role==SWAT_OFFICER || a->role==SWAT_SNIPER) && swat_kit(a->gear.kit)->gas_mask;
@@ -288,4 +328,22 @@ void swat_traps_step(SwatSim* s) {
             }
         }
     }
+}
+
+int swat_launcher_kind(int profile) {
+    switch(profile) { case 2:return SWAT_IMPACT_ROUND; case 5:return SWAT_PEPPERBALL; case 8:return SWAT_LAUNCH_CS; case 9:return SWAT_LAUNCH_FLASH; case 10:return SWAT_PROBE; case 11:return SWAT_BOLA; default:return -1; }
+}
+bool swat_launch(SwatSim* s,int actor,SwatProjectileKind kind,b3Pos muzzle,b3Vec3 direction,float damage,float range) {
+    if(actor<0 || actor>=s->actor_count || kind<SWAT_PEPPERBALL || kind>=SWAT_PROJECTILE_KINDS) return false;
+    int slot=-1; for(int i=0;i<SWAT_MAX_PROJECTILES;i++) if(!s->projectiles[i].active) { slot=i; break; }
+    if(slot<0) return false;
+    SwatProjectile* p=&s->projectiles[slot]; memset(p,0,sizeof(*p)); p->tag=(SwatTag){SWAT_HIT_PROJECTILE,slot};
+    p->active=true; p->owner=actor; p->target=-1; p->kind=kind; p->position=muzzle; p->damage=damage;
+    float speed=kind==SWAT_PROBE ? 45 : kind==SWAT_PEPPERBALL ? 30 : 24;
+    p->remaining_ticks=(int)ceilf(range/speed/SWAT_DT); p->last_impact_tick=-100;
+    p->velocity=swat_add(swat_mul(direction,speed),b3Body_GetLinearVelocity(s->actors[actor].controller.body.body));
+    b3BodyDef bd=b3DefaultBodyDef(); bd.type=b3_dynamicBody; bd.position=muzzle; bd.linearVelocity=p->velocity; bd.isBullet=true; bd.userData=&p->tag;
+    p->body=b3CreateBody(s->world.id,&bd); b3ShapeDef sd=b3DefaultShapeDef(); sd.baseMaterial=swat_physics_material(SWAT_CARPET); sd.enableHitEvents=true;
+    float radius=kind==SWAT_PEPPERBALL ? .018f : .035f; sd.density=.04f/(4.0f/3*SWAT_PI*radius*radius*radius);
+    b3Sphere sphere={{0,0,0},radius}; p->shape=b3CreateSphereShape(p->body,&sd,&sphere); return true;
 }

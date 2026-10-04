@@ -300,7 +300,9 @@ int main(int argc, char** argv) {
             const SwatInput* pending=&client.pending[(client.pending_head+i)%128].input;
             // Unacknowledged aim belongs to the body or selected sniper that
             // received it. Switching feeds must not rotate another camera.
-            if(pending->sniper_control!=view.scope || (view.scope && pending->sniper_unit!=view.sniper_unit)) continue;
+            bool pending_scope=pending->sniper_control || pending->device_control;
+            int pending_unit=pending->device_control ? SWAT_SNIPERS+pending->device_unit : pending->sniper_unit;
+            if(pending_scope!=view.scope || (view.scope && pending_unit!=view.sniper_unit)) continue;
             view.yaw_offset+=pending->yaw_delta; view.pitch_offset+=pending->pitch_delta;
         }
         if(server.transport) {
@@ -309,7 +311,9 @@ int main(int argc, char** argv) {
         } else if(client.status==SWAT_NET_ACTIVE)
             snprintf(view.session_status,sizeof(view.session_status),"CO-OP / GOLD %02d / %d ms",client.slot+1,client.ping_ms);
         else view.session_status[0]='\0';
-        int listener=view.scope && env.sim->snipers[app.selected_sniper].deployed ? swat_sniper_actor(app.selected_sniper) : app.actor;
+        int listener=app.actor;
+        if(view.scope && app.selected_sniper<SWAT_SNIPERS && env.sim->snipers[app.selected_sniper].deployed) listener=swat_sniper_actor(app.selected_sniper);
+        if(view.scope && app.selected_sniper>=SWAT_SNIPERS) listener=SWAT_MAX_ACTORS+app.selected_sniper-SWAT_SNIPERS;
         swat_sound_view_update(&sound,env.sim,listener,app.settings.master_volume,
             client.status==SWAT_NET_ACTIVE ? client.sound_floor : 0,view.yaw_offset);
         BeginDrawing();

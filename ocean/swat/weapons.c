@@ -11,6 +11,10 @@ static const SwatWeaponDef swat_weapon_defs[SWAT_WEAPON_PROFILES] = {
     {"PEPPER LAUNCHER",20,12,138,168,28,1.0f,22.0f,.08f,2.0f,.25f,.25f,false,.57f,.05f},
     {"BREACH SHOTGUN",6,48,180,210,32,42.0f,24.0f,.65f,3.5f,.8f,2.2f,false,.65f,.04f},
     {"GE COMPACT",25,5,108,138,20,24.0f,40.0f,.65f,2.5f,.12f,1.0f,true,.45f,.045f},
+    {"LL CS LAUNCHER",5,48,150,180,30,0,18,.01f,3,.5f,1.8f,false,.62f,.055f},
+    {"LL FLASH LAUNCHER",5,48,150,180,30,0,18,.01f,3,.5f,1.8f,false,.62f,.055f},
+    {"MULTI-PROBE CEW",9,30,150,180,24,0,10,.01f,2,.2f,.1f,false,.36f,.03f},
+    {"TETHER RESTRAINT",1,60,120,150,28,0,6,.01f,2,.4f,.2f,false,.40f,.035f},
 };
 
 const SwatWeaponDef* swat_weapon_def(int slot) {
@@ -24,6 +28,7 @@ void swat_weapons_primary(SwatArsenal* a,int definition) {
     a->primary=definition>=0 && definition<SWAT_WEAPON_PROFILES && definition!=1 ? definition : 0;
     const SwatWeaponDef* d=swat_arsenal_def(a,0);
     a->slots[0]=(SwatWeapon){.magazine=d->capacity,.reserve=d->capacity*3,.chambered=true,.mode=SWAT_SEMI,.magazine_seated=true};
+    if(a->primary==10) a->slots[0].reserve=0; // Ten independently fired probes, no automatic cartridge refill.
     a->equip_remaining=d->equip_ticks;
 }
 

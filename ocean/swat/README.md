@@ -68,7 +68,7 @@ back to staging. Any civilian harm fails the mission. Human play defaults to
 five minutes. **P** opens planning: orbit the roof cutaway with A/D or inspect
 three authored overwatch viewpoints. The overview shows geometry, not hidden
 actor positions; optical previews show only what the camera can see through
-the actual building. The overview is a planning camera; a piloted drone remains future work.
+the actual building. The overview is a planning camera. A separate deployable drone now has slow physical flight and its own live feed.
 
 In **P > Snipers**, select A or B, choose an unoccupied post and a Precision or
 Marksman rifle, then assign. **Take scope control** deploys queued assignments.
@@ -235,7 +235,7 @@ and mission outcomes. All surviving officers must extract. Only the leader can
 restart, choose a house or command snipers. Online pause/settings release your controls while the session continues.
 Solo/offline play remains available. Planning also releases controls online;
 the session continues. The default hosted mission is Cedar House, five minutes;
-`--mission annex` selects the old range. Hosts and peers must use protocol v6.
+`--mission annex` selects the old range. Hosts and peers must use protocol v7.
 
 The dedicated server has no display, Raylib, audio-device or CUDA dependency.
 On WSL, `./swat server` defaults to `build/swat/windows/swat-server.exe`;
@@ -298,8 +298,8 @@ playback retains its sensor FOV. Raygui is already vendored at
   Cancelling or switching preserves committed ammunition and can leave the
   magazine detached. Staging offers pooled reserve or retained spare magazines,
   irons/red dot/optic sights, and primary profiles. Eye, sight, hands and muzzle
-  share a canonical pose for rendering and clearance. Pepper and shotgun profiles
-  currently use the hitscan rules; specialized payloads remain under development.
+  share a canonical pose for rendering and clearance. PepperBall, impact/CS/flash, probe and tether profiles use physical
+  rounds. The breach shotgun uses the shared traced damage/penetration rules.
 - **Hits and cover:** eye-to-muzzle volume check, muzzle-origin hitscan, nearest
   collision damage, bounded thickness/material penetration, and head/torso/arm/leg
   damage. Leg wounds reduce pace, arm wounds widen spread, and plates reduce
@@ -567,3 +567,26 @@ evidence and harm to civilians/surrendered/restrained people. Evidence and
 rescue currently add recorded outcomes, rather than new mandatory victory
 conditions. Suspects use visible targets and short-lived memory; noise supplies
 a coarse bearing for investigation, never a hidden actor position.
+
+## Remote devices and physical less-lethal rounds
+
+Continue **Alt+1/2** through throwable camera, ground robot, communication ball
+and drone; left click deploys the selected device. Each currently has one
+finite inventory item. Comma/Period and aliases cycle deployed devices alongside
+sniper A/B. **Enter** takes control of your own device; **WASD** drives a robot
+or drone, **Space/Ctrl** raises/lowers a drone, and mouse turns its lens. The
+officer stays still and vulnerable. **F** transmits compliance requests from a
+communication ball; its link is audio-only. Audio follows the selected remote
+location during takeover. Devices collide, emit noise, have battery/health
+limits, and can be recovered with an aimed **F**. Thermal vision is not modeled.
+
+Primary selection in staging includes separate physical impact, CS and flash
+launcher profiles, a pepper launcher, a ten-probe CEW, and an experimental tether
+restraint. The selected profile owns its ammunition; switching payload profiles
+after using a weapon/tool is rejected. Pepper projectiles break into a small
+occluded irritant cloud. Impact rounds injure by body region and can subdue.
+A single probe is insufficient: two separated attached contacts and clear
+tethers are required for a connection. Crouch/turn moves contacts with the body.
+A tether restraint checks its hit region and creates temporary movement denial;
+ordinary cuffs are still required. The original **T** taser remains the simple
+profile; v1 annex impact handling remains compatible with old policy defaults.
