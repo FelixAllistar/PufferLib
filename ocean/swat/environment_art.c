@@ -4,6 +4,17 @@
 #include <stdlib.h>
 #include <string.h>
 
+static void close_model(Model model);
+
+static bool prop_bounds_fit(Model model,b3Vec3 size) {
+    if(!model.meshCount) return false;
+    BoundingBox box=GetModelBoundingBox(model);
+    // Fail closed if an explicit override is oversized or has a wrong pivot.
+    return box.min.x>=-size.x*.5f && box.max.x<=size.x*.5f &&
+        box.min.z>=-size.z*.5f && box.max.z<=size.z*.5f &&
+        box.min.y>=-1e-5f && box.min.y<=1e-5f && box.max.y<=size.y && box.max.y>0;
+}
+
 static bool asset_path(char* path,size_t size,const char* name) {
     const char* custom=getenv("SWAT_ENVIRONMENT_ASSETS");
     if(custom && custom[0]) {
@@ -36,27 +47,41 @@ void swat_environment_art_init(SwatEnvironmentArt* art) {
     art->wood=load_surface("wood_diffuse.png");
     char path[4096];
     if(asset_path(path,sizeof(path),"door_leaf.glb")) art->door=LoadModel(path);
+    int missing_props=0;
+    for(int i=0;i<SWAT_ENV_PROP_KINDS;i++) {
+        if(asset_path(path,sizeof(path),swat_environment_prop_specs[i].file)) art->props[i]=LoadModel(path);
+        if(!prop_bounds_fit(art->props[i],swat_environment_prop_specs[i].size)) {
+            close_model(art->props[i]); art->props[i]=(Model){0};
+        }
+        if(!art->props[i].meshCount) missing_props++;
+    }
+    if(missing_props) TraceLog(LOG_WARNING,"SWAT: %d decorative props unavailable; omitted without affecting supports",missing_props);
     if(!art->plaster.id || !art->wood.id || !art->door.meshCount)
         TraceLog(LOG_WARNING,"SWAT: environment art incomplete; missing pieces use graybox rendering");
+}
+
+static void close_model(Model model) {
+    // Raylib UnloadModel owns meshes/material arrays but not their textures.
+    // glTF materials can share one image: release every unique texture once.
+    for(int m=0;m<model.materialCount;m++) for(int k=0;k<(MATERIAL_MAP_BRDF+1);k++) {
+        unsigned int id=model.materials[m].maps[k].texture.id;
+        if(!id || id==rlGetTextureIdDefault()) continue;
+        bool earlier=false;
+        for(int a=0;a<=m;a++) for(int b=0;b<(MATERIAL_MAP_BRDF+1);b++) {
+            if(a==m && b>=k) break;
+            if(model.materials[a].maps[b].texture.id==id) earlier=true;
+        }
+        if(!earlier) UnloadTexture(model.materials[m].maps[k].texture);
+    }
+    // Even a failed GLB load can own Raylib's fallback material allocation.
+    if(model.meshCount || model.materialCount) UnloadModel(model);
 }
 
 void swat_environment_art_close(SwatEnvironmentArt* art) {
     if(art->plaster.id) UnloadTexture(art->plaster);
     if(art->wood.id) UnloadTexture(art->wood);
-    // Raylib UnloadModel owns meshes/material arrays but not their textures.
-    // glTF materials can share one image: release every unique texture once.
-    for(int m=0;m<art->door.materialCount;m++) for(int k=0;k<(MATERIAL_MAP_BRDF+1);k++) {
-        unsigned int id=art->door.materials[m].maps[k].texture.id;
-        if(!id || id==rlGetTextureIdDefault()) continue;
-        bool earlier=false;
-        for(int a=0;a<=m;a++) for(int b=0;b<(MATERIAL_MAP_BRDF+1);b++) {
-            if(a==m && b>=k) break;
-            if(art->door.materials[a].maps[b].texture.id==id) earlier=true;
-        }
-        if(!earlier) UnloadTexture(art->door.materials[m].maps[k].texture);
-    }
-    // Even a failed GLB load can own Raylib's fallback material allocation.
-    if(art->door.meshCount || art->door.materialCount) UnloadModel(art->door);
+    close_model(art->door);
+    for(int i=0;i<SWAT_ENV_PROP_KINDS;i++) close_model(art->props[i]);
     memset(art,0,sizeof(*art));
 }
 
@@ -118,4 +143,30 @@ bool swat_environment_art_draw(const SwatEnvironmentArt* art,const SwatObject* o
 
 bool swat_environment_art_has_floor(const SwatEnvironmentArt* art,SwatMaterial floor) {
     return floor==SWAT_WOOD && art->wood.id;
+}
+
+void swat_environment_art_draw_props(const SwatEnvironmentArt* art,const SwatWorld* world,
+                                     const SwatLayout* layout) {
+    bool loaded=false;
+    for(int i=0;i<SWAT_ENV_PROP_KINDS;i++) if(art->props[i].meshCount) loaded=true;
+    if(!loaded) return;
+    SwatEnvironmentProp props[SWAT_ENV_PROP_MAX];
+    int count=swat_environment_props(world,layout,props);
+    // Raylib ignores glTF doubleSided; thin cloth/lens details need both faces.
+    rlDrawRenderBatchActive();
+    rlDisableBackfaceCulling();
+    for(int i=0;i<count;i++) {
+        const SwatEnvironmentProp* p=&props[i];
+        Model model=art->props[p->kind]; if(!model.meshCount) continue;
+        const SwatObject* support=&world->objects[p->support];
+        rlPushMatrix();
+        rlTranslatef((float)support->center.x,(float)support->center.y,(float)support->center.z);
+        rlRotatef(support->yaw/SWAT_RAD,0,1,0);
+        rlRotatef(support->pitch/SWAT_RAD,0,0,1);
+        DrawModelEx(model,(Vector3){p->local.x,p->local.y,p->local.z},(Vector3){0,1,0},
+            p->yaw/SWAT_RAD,(Vector3){1,1,1},wear_color(support,1));
+        rlPopMatrix();
+    }
+    rlDrawRenderBatchActive();
+    rlEnableBackfaceCulling();
 }

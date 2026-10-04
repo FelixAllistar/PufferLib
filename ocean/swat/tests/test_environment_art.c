@@ -17,6 +17,103 @@ static void environment(const char* key,const char* value) {
 }
 static SwatSim sim;
 static SwatWorld before;
+static SwatWorld prop_world;
+
+static void fixture_u32(FILE* file,uint32_t value) {
+    for(int i=0;i<4;i++) assert(fputc((int)((value>>(8*i))&255),file)!=EOF);
+}
+static void write_prop_fixture(const char* path,float bottom,float top) {
+    // Valid GLB triangle: exercise geometry contract rejection, not parse errors.
+    char json[1024];
+    snprintf(json,sizeof(json),"{\"asset\":{\"version\":\"2.0\"},\"scene\":0,\"scenes\":[{\"nodes\":[0]}],"
+        "\"nodes\":[{\"mesh\":0}],\"meshes\":[{\"primitives\":[{\"attributes\":{\"POSITION\":0}}]}],"
+        "\"buffers\":[{\"byteLength\":36}],\"bufferViews\":[{\"buffer\":0,\"byteLength\":36}],"
+        "\"accessors\":[{\"bufferView\":0,\"componentType\":5126,\"count\":3,\"type\":\"VEC3\","
+        "\"min\":[-0.01,%.9g,-0.01],\"max\":[0.01,%.9g,0.01]}]}",bottom,top);
+    uint32_t length=(uint32_t)strlen(json),padded=(length+3u)&~3u;
+    FILE* file=fopen(path,"wb"); assert(file);
+    fixture_u32(file,0x46546c67u); fixture_u32(file,2); fixture_u32(file,12+8+padded+8+36);
+    fixture_u32(file,padded); fixture_u32(file,0x4e4f534au);
+    assert(fwrite(json,1,length,file)==length);
+    for(uint32_t i=length;i<padded;i++) assert(fputc(' ',file)!=EOF);
+    fixture_u32(file,36); fixture_u32(file,0x004e4942u);
+    float vertices[9]={-.01f,bottom,-.01f,.01f,bottom,.01f,0,top,0};
+    for(int i=0;i<9;i++) { uint32_t bits; memcpy(&bits,&vertices[i],4); fixture_u32(file,bits); }
+    assert(!fclose(file));
+}
+
+static size_t prop_pixels(SwatEnvironmentArt* art,const SwatEnvironmentProp* prop,const char* capture) {
+    memcpy(&prop_world,&sim.world,sizeof(prop_world));
+    for(int i=0;i<prop_world.count;i++) if(i!=prop->support) prop_world.objects[i].active=false;
+    SwatEnvironmentArt selected=*art;
+    for(int i=0;i<SWAT_ENV_PROP_KINDS;i++) if(i!=(int)prop->kind) selected.props[i]=(Model){0};
+    const SwatObject* support=&prop_world.objects[prop->support];
+    Vector3 target={(float)support->center.x+prop->local.x,(float)support->center.y+prop->local.y,
+        (float)support->center.z+prop->local.z};
+    Camera3D camera={{target.x+.5f,target.y+.5f,target.z+.5f},target,{0,1,0},.4f,CAMERA_ORTHOGRAPHIC};
+    RenderTexture2D texture=LoadRenderTexture(384,384);
+    BeginTextureMode(texture); ClearBackground(MAGENTA); BeginMode3D(camera);
+    swat_environment_art_draw_props(&selected,&prop_world,&sim.layout);
+    EndMode3D(); EndTextureMode();
+    Image image=LoadImageFromTexture(texture.texture); ImageFlipVertical(&image);
+    if(capture) assert(ExportImage(image,capture));
+    Color* colors=LoadImageColors(image); size_t pixels=0;
+    for(int i=0;i<image.width*image.height;i++)
+        if(colors[i].r!=MAGENTA.r || colors[i].g!=MAGENTA.g || colors[i].b!=MAGENTA.b) pixels++;
+    UnloadImageColors(colors); UnloadImage(image); UnloadRenderTexture(texture);
+    return pixels;
+}
+
+static void capture_tabletop(SwatEnvironmentArt* art,const SwatEnvironmentProp* prop,const char* capture) {
+    const SwatObject* support=&sim.world.objects[prop->support];
+    const SwatPlanRoom* room=&sim.layout.rooms[prop->room];
+    Vector3 target={(float)support->center.x,(float)support->center.y+support->half.y,(float)support->center.z};
+    Camera3D camera={{target.x+(target.x<(room->x0+room->x1)*.5f ? 1 : -1),target.y+1.25f,
+        target.z+(target.z<(room->z0+room->z1)*.5f ? 1 : -1)},target,{0,1,0},48,CAMERA_PERSPECTIVE};
+    RenderTexture2D texture=LoadRenderTexture(960,640);
+    BeginTextureMode(texture); ClearBackground((Color){57,76,86,255}); BeginMode3D(camera);
+    for(int i=0;i<sim.world.count;i++) {
+        const SwatObject* o=&sim.world.objects[i]; if(!o->active) continue;
+        rlPushMatrix(); rlTranslatef(o->center.x,o->center.y,o->center.z);
+        rlRotatef(o->yaw/SWAT_RAD,0,1,0); rlRotatef(o->pitch/SWAT_RAD,0,0,1);
+        if(!swat_environment_art_draw(art,o)) DrawCube((Vector3){0},2*o->half.x,2*o->half.y,2*o->half.z,GRAY);
+        rlPopMatrix();
+    }
+    swat_environment_art_draw_props(art,&sim.world,&sim.layout);
+    EndMode3D(); EndTextureMode();
+    Image image=LoadImageFromTexture(texture.texture); ImageFlipVertical(&image);
+    assert(ExportImage(image,capture)); UnloadImage(image); UnloadRenderTexture(texture);
+}
+
+static void prop_graphics(SwatEnvironmentArt* art,const char* directory) {
+    unsigned seen=0; char path[4096];
+    for(int i=0;i<SWAT_ENV_PROP_KINDS;i++) assert(art->props[i].meshCount);
+    SwatConfig config=swat_default_config(); config.mission=SWAT_GENERATED; config.hostile_fire=false;
+    for(int seed=0;seed<32 && seen!=(1u<<SWAT_ENV_PROP_KINDS)-1;seed++) {
+        config.layout_seed=(uint32_t)seed; swat_sim_init(&sim,config,42);
+        SwatEnvironmentProp props[SWAT_ENV_PROP_MAX];
+        int count=swat_environment_props(&sim.world,&sim.layout,props);
+        for(int i=0;i<count;i++) if(!(seen&(1u<<props[i].kind))) {
+            const SwatEnvironmentProp* p=&props[i];
+            snprintf(path,sizeof(path),"%s/environment-prop-%d.png",directory,p->kind);
+            assert(prop_pixels(art,p,path)>100);
+            snprintf(path,sizeof(path),"%s/environment-tabletop-%d.png",directory,p->kind/2);
+            capture_tabletop(art,p,path);
+            // Omitting just this model does not substitute opaque fake clutter.
+            SwatEnvironmentArt missing=*art; missing.props[p->kind]=(Model){0};
+            assert(prop_pixels(&missing,p,NULL)==0);
+            // Removing the real support hides its child art in the very next draw.
+            bool active=sim.world.objects[p->support].active;
+            sim.world.objects[p->support].active=false;
+            assert(prop_pixels(art,p,NULL)==0);
+            sim.world.objects[p->support].active=active;
+            seen|=1u<<p->kind;
+        }
+        swat_sim_close(&sim);
+    }
+    assert(seen==(1u<<SWAT_ENV_PROP_KINDS)-1);
+    puts("PASS prop graphics: all six imported models rendered at metre scale, generated tabletop captures, per-asset fallback and support visibility");
+}
 static size_t object_pixels(SwatEnvironmentArt* art,SwatObject* object,const char* capture) {
     RenderTexture2D target=LoadRenderTexture(512,512);
     Camera3D camera={{3,2,3},{0,0,0},{0,1,0},3,CAMERA_ORTHOGRAPHIC};
@@ -74,6 +171,7 @@ int main(int argc,char** argv) {
     environment("SWAT_ENVIRONMENT_ART",NULL); environment("SWAT_ENVIRONMENT_ASSETS",NULL);
     SwatView view={0}; swat_view_init(&view,true); assert(IsWindowReady());
     assert(view.environment.plaster.id && view.environment.wood.id && view.environment.door.meshCount);
+    prop_graphics(&view.environment,directory);
     destruction_pixels(&view.environment,directory);
     SwatObject door={0}; door.active=true; door.door=true; door.material=SWAT_WOOD;
     door.half=swat_v(.022f,1.01f,.56f); door.health=door.max_health=120;
@@ -98,6 +196,7 @@ int main(int argc,char** argv) {
     environment("SWAT_ENVIRONMENT_ASSETS","/swat-deliberately-missing-assets");
     swat_environment_art_init(&view.environment);
     assert(!view.environment.plaster.id && !view.environment.wood.id && !view.environment.door.meshCount);
+    for(int i=0;i<SWAT_ENV_PROP_KINDS;i++) assert(!view.environment.props[i].meshCount);
     assert(!swat_environment_art_draw(&view.environment,&door));
     for(int i=0;i<3;i++) { BeginDrawing(); swat_view_draw(&view,&sim,false,75); EndDrawing(); }
     snprintf(path,sizeof(path),"%s/environment-missing-fallback.png",directory);
@@ -116,8 +215,21 @@ int main(int argc,char** argv) {
         assert(!view.environment.door.materials && !view.environment.door.materialCount);
     }
     assert(remove(path)==0);
+    snprintf(path,sizeof(path),"%s/environment-corrupt-fixture/prop_chipped_coffee_mug.glb",directory);
+    invalid=fopen(path,"wb"); assert(invalid); assert(fputs("invalid GLB fixture",invalid)>=0); assert(!fclose(invalid));
+    swat_environment_art_init(&view.environment);
+    assert(!view.environment.props[SWAT_ENV_PROP_MUG].meshCount);
+    swat_environment_art_close(&view.environment); assert(remove(path)==0);
+    for(int fixture=0;fixture<2;fixture++) {
+        write_prop_fixture(path,fixture ? .01f : 0,fixture ? .03f : 1);
+        Model valid=LoadModel(path); assert(valid.meshCount==1); UnloadModel(valid);
+        swat_environment_art_init(&view.environment);
+        assert(!view.environment.props[SWAT_ENV_PROP_MUG].meshCount);
+        swat_environment_art_close(&view.environment); assert(remove(path)==0);
+    }
     environment("SWAT_ENVIRONMENT_ASSETS",NULL); environment("SWAT_ENVIRONMENT_ART","0");
     swat_environment_art_init(&view.environment); assert(!view.environment.wood.id);
+    for(int i=0;i<SWAT_ENV_PROP_KINDS;i++) assert(!view.environment.props[i].meshCount);
     swat_environment_art_close(&view.environment); environment("SWAT_ENVIRONMENT_ART",NULL);
     // Repeated initialization is idempotent; close/reopen owns no stale GPU IDs.
     for(int i=0;i<2;i++) {

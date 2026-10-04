@@ -175,7 +175,8 @@ static void swat_draw_actor(const SwatActor* a) {
     }
 }
 
-static void swat_draw_floors(const SwatView* view,const SwatWorld* world) {
+static void swat_draw_floors(const SwatView* view,const SwatSim* sim) {
+    const SwatWorld* world=&sim->world;
     for(int i=0;i<world->room_count;i++) {
         const SwatRoom* room=&world->rooms[i];
         // The real wood floor collider already carries its surface texture.
@@ -185,6 +186,8 @@ static void swat_draw_floors(const SwatView* view,const SwatWorld* world) {
         Color color={rgba[0],rgba[1],rgba[2],255};
         DrawCube((Vector3){(float)room->center.x,.004f,(float)room->center.z},room->half.x*2,.008f,room->half.z*2,color);
     }
+    swat_environment_art_draw_props(&view->environment,world,
+        sim->config.mission==SWAT_GENERATED ? &sim->layout : NULL);
 }
 
 static void swat_draw_projectiles(const SwatSim* s) {
@@ -249,7 +252,7 @@ static void swat_draw_plan(SwatView* view,const SwatSim* sim) {
         if(!preview && o->center.y>2.7f && o->half.x>3 && o->half.z>3) continue;
         if(o->material!=SWAT_GLASS) swat_draw_object(view,o);
     }
-    swat_draw_floors(view,&sim->world);
+    swat_draw_floors(view,sim);
     if(preview) for(int i=0;i<sim->actor_count;i++) swat_draw_actor(&sim->actors[i]);
     for(int i=0;i<sim->world.count;i++) if(sim->world.objects[i].material==SWAT_GLASS) swat_draw_object(view,&sim->world.objects[i]);
     DrawCylinder(swat_position(mission->staging),1.2f,1.2f,.035f,32,swat_gold);
@@ -274,7 +277,7 @@ static void swat_draw_scope(const SwatView* view,const SwatSim* sim,int width,in
         Camera3D camera={swat_position(eye),swat_position(b3OffsetPos(eye,aim)),{0,1,0},80,CAMERA_PERSPECTIVE};
         BeginMode3D(camera);
         for(int i=0;i<sim->world.count;i++) if(sim->world.objects[i].material!=SWAT_GLASS) swat_draw_object(view,&sim->world.objects[i]);
-        swat_draw_floors(view,&sim->world);
+        swat_draw_floors(view,sim);
         for(int i=0;i<sim->actor_count;i++) swat_draw_actor(&sim->actors[i]);
         for(int i=0;i<sim->world.count;i++) if(sim->world.objects[i].material==SWAT_GLASS) swat_draw_object(view,&sim->world.objects[i]);
         EndMode3D(); return;
@@ -291,7 +294,7 @@ static void swat_draw_scope(const SwatView* view,const SwatSim* sim,int width,in
     camera.up=(Vector3){0,1,0}; camera.fovy=sniper->rifle ? 25 : 17; camera.projection=CAMERA_PERSPECTIVE;
     BeginMode3D(camera);
     for(int i=0;i<sim->world.count;i++) if(sim->world.objects[i].material!=SWAT_GLASS) swat_draw_object(view,&sim->world.objects[i]);
-    swat_draw_floors(view,&sim->world);
+    swat_draw_floors(view,sim);
     for(int i=0;i<sim->actor_count;i++) if(i!=actor) swat_draw_actor(&sim->actors[i]);
     swat_draw_projectiles(sim);
     for(int i=0;i<sim->world.count;i++) if(sim->world.objects[i].material==SWAT_GLASS) swat_draw_object(view,&sim->world.objects[i]);
@@ -367,7 +370,7 @@ void swat_view_draw(SwatView* view, const SwatSim* s, bool policy, float vertica
     BeginMode3D(camera);
     for (int i=0;i<s->world.count;i++) if (s->world.objects[i].material != SWAT_GLASS)
         swat_draw_object(view,&s->world.objects[i]);
-    swat_draw_floors(view,&s->world);
+    swat_draw_floors(view,s);
     for (int i=0;i<s->actor_count;i++) if(i!=view->actor) swat_draw_actor(&s->actors[i]);
     swat_draw_projectiles(s);
     for (int i=0;i<s->world.count;i++) if (s->world.objects[i].material == SWAT_GLASS)

@@ -1,7 +1,8 @@
 # SWAT environment runtime slice
 
-Three small CC0 runtime files from the existing `house_kit`, totaling approximately
-284 KiB. Nothing in the original full pack is modified.
+Three small CC0 architecture files (about 284 KiB) plus six decorative tabletop
+props (about 817 KiB). The full runtime pack is 1,127,179 bytes, about 1.08 MiB.
+Nothing in either source pack is modified.
 
 | File | Purpose |
 | --- | --- |
@@ -56,7 +57,7 @@ with 72% greige paint in Blender. These files retain that provenance. The catalo
 quotes the source's recorded retrieval date without inferring when this runtime
 adaptation was downloaded or created. Source documents and local hashes are the
 basis for the licensing record; no claim of fresh external license verification
-is made. No furniture, optional downloaded reference model or game IP is used.
+is made. No solid furniture mesh, optional downloaded reference model or game IP is used.
 
 ## Rebuild and validate
 
@@ -76,3 +77,22 @@ geometry counts, material maps and ownership using only the standard library.
 Rebuilding needs Pillow but no Blender or network access. Rebuild source images
 are not duplicated in this lightweight slice; their original paths and SHA256
 values are pinned in both builder and catalog.
+
+## Decorative tabletop subset
+
+Six `prop_*.glb` files are derived from the supplied CC0 Household Clutter Batch
+02. `props_catalog.json` records all source/output hashes, AABBs, retained
+geometry, texture changes and supplied provenance. `LICENSE_SOURCE_CLUTTER.txt`
+is the exact source dedication. See `../../ENVIRONMENT_ART.md` for the live
+placement, support ownership, decorative-only and clearance contract.
+
+```sh
+python3 build_props.py --source /path/to/02_household_clutter
+python3 validate_props.py --source /path/to/02_household_clutter --header ../../environment_props.h
+```
+
+Rebuild uses Pillow; standalone validation uses the Python standard library.
+The source position/normal/UV/index streams are unchanged. Materials use embedded
+128px RGB diffuse maps, with PBR maps removed. Double-sided details are rendered
+by the scoped Raylib prop pass. An independent rebuild is byte-identical with
+the reference Pillow version recorded in the catalog.

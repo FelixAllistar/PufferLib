@@ -1,4 +1,4 @@
-# Procedural environment art: first runtime slice
+# Procedural environment art
 
 This adapter applies the small, CC0 house-kit runtime pack in
 `assets/environment/` to the **existing authoritative generated geometry**.
@@ -30,6 +30,50 @@ Other room floor overlays keep their existing behaviour. Planning still cuts
 away the actual roof object. All main, planning, sniper and device views use
 the same binding path. Debug mode adds box wires over the art.
 
+## Generated tabletop props (recipe v1)
+
+Six existing Household Clutter Batch 02 models dress **accepted generated
+furniture**: chipped mug, stacked plates, folded towel, leather wallet, TV remote,
+and eyeglasses. They form three small domestic pairs. The generator currently
+identifies halls, not kitchen/bedroom/bathroom roles, so these are neutral tabletop
+clusters rather than invented room semantics. Cedar House and the annex are unchanged.
+
+`environment_props.h` is the pure presentation metadata/hook. It uses accepted
+layout seed, token fingerprint and furniture ordinal to select a pair and its
+orientation with fixed integer arithmetic. It does not draw from the simulation
+RNG, run the neural policy again, change tokens/scores/preferences, or add wire
+fields. Replicas reconstruct the same accepted plan from the existing map packet.
+
+Each furnishing is matched to a unique current active, solid object by its
+accepted position, size and material. Missing, ambiguous, door, tilted, resized,
+or destroyed supports fail closed. The hook is rebound every draw, so no object
+index survives a map reset. Each prop inherits support health tint and disappears
+with its support; there is no invented falling/debris simulation. All camera
+paths use the same pass before actors and transparent windows.
+
+These props are explicitly decorative: no independent collider, bullet stop,
+interaction, sound blocker, AI occlusion or damage state. The supporting wooden
+box remains fully rendered and authoritative. Prop height is below 10 cm and the
+entire XZ footprint is at least 8 cm inside that existing solid footprint. No
+walking or doorway space is occupied, and no solid furniture silhouette is
+replaced by a hollow art mesh. Tiny visual occlusion from tabletop detail is not
+represented in policy observations; these assets are unsuitable as tactical cover.
+Real furniture archetypes require a separate gameplay/collision/damage contract.
+
+The six GLBs add **836,672 bytes** (about 817 KiB), 12,707 distinct triangles,
+25 material primitives and 19 embedded 128px base-colour maps. Geometry is copied
+bit-for-bit from the source pack. `props_catalog.json`, `build_props.py`, and
+`validate_props.py` record and validate provenance, bounds, hashes and conversion.
+Their CC0 source license is copied in `LICENSE_SOURCE_CLUTTER.txt`.
+
+At most 24 instances are drawn per generated view (two per existing furnishing).
+The hook allocates no heap memory and scans at most 12 × 1,536 support candidates;
+models are loaded once per view, not per instance. There is no extra headless or
+network payload. This is a bounded first pass, not a whole-library performance
+claim: distant LOD/culling and instancing remain future work. Missing/corrupt or
+out-of-bounds models are omitted individually, leaving the real support visible.
+The existing art opt-out and explicit asset-folder override apply to props too.
+
 ## Door transform contract
 
 The packed GLB has one identity-transform node, no authored open angle, no
@@ -57,10 +101,10 @@ the JSON or original Blender manifests. The included builder/validator can
 reproduce the small pack from the unmodified house-kit sources. The source
 pack and editable Blender files are intentionally not copied into Git.
 
-The three runtime art files total **290,507 bytes** (about 284 KiB): two 256 ×
+The original three runtime art files total **290,507 bytes** (about 284 KiB): two 256 ×
 256 base-colour textures and a 1,236-triangle door. See the catalog for exact
-per-file sizes and hashes; catalog/licenses/build tools are additional small
-text files. Licensing is recorded in the two `LICENSE_SOURCE_*.txt` files.
+per-file sizes and hashes. With the props, runtime files total **1,127,179 bytes**
+(about 1.08 MiB); catalogs/licenses/build tools are additional text files. Licensing is recorded in the two `LICENSE_SOURCE_*.txt` files.
 The source surface photographs are Poly Haven CC0; the generated plaster
 derivative and house-kit geometry have the supplied CC0 dedication.
 
@@ -84,10 +128,8 @@ then the repository's `ocean/swat/assets/environment/`.
   model uses the textured box if wood is available, otherwise its graybox.
 
 The root training `build.sh` includes this adapter in its SWAT source list.
-At the reviewed base revision it already omitted `pose.c`, `encounter.c` and
-`devices.c`, which are required by current simulation code. That independent
-source-list issue is not repaired here. Use the standalone Makefile or CMake
-for this slice; do not treat this change as full trainer-build qualification.
+Its simulation source-list fix is already present in the base of this prop slice.
+Standalone Makefile/CMake checks do not qualify the full trainer build.
 
 ## Verification
 
@@ -96,6 +138,7 @@ From the repository root, with the README's pinned Box3D and Raylib dependencies
 ```sh
 make -C ocean/swat test net-test
 make -C ocean/swat sanitize
+python3 ocean/swat/assets/environment/validate_props.py --header ocean/swat/environment_props.h
 make -C ocean/swat viewer environment-art-test-build
 ./build/swat/test_environment_art build/swat
 ./build/swat/swat --mission generated --layout-seed 42 \
@@ -111,12 +154,17 @@ replica selection, each cardinal door yaw and every swing step against actual
 collider transforms, plus the fixed hinge and floor gap. The graphics test
 checks real imported pixels, inactive visibility, immutable world state,
 generated rendering, missing-assets fallback, opt-out and repeated lifecycle.
+The prop test covers 96 uniform/neural layouts across all difficulties, real
+map/snapshot encode/decode replication, exact repeated recipes, support damage,
+ambiguous/tilted support rejection, all six prop kinds and footprint clearance.
+Graphics checks render each imported prop, capture three real generated tabletop
+clusters and verify per-asset omission, support visibility and repeated cleanup.
 
 ## Next integration slices
 
 The catalog is an initial import boundary, not a claim that all environment
 batches are playable. Furniture meshes, exterior set pieces, texture families,
-LOD selection and dressed procedural clutter are not yet connected. A later
+LOD selection and broad procedural dressing are not yet connected. A later
 slice can attach explicit visual archetypes while keeping accepted placement,
 clearance, collision and independent damage ownership authoritative. Full
 assembled wall GLBs must not be overlaid on existing damage cells: that would
