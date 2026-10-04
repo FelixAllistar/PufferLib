@@ -27,15 +27,17 @@ static bool render(const char* directory,FILE* report,const char* name,const Swa
     SwatAcousticPath path=swat_acoustic_path(world,&event,listener);
     swat_audio_init(&mixer,SWAT_AUDIO_RATE); swat_audio_room(&mixer,room);
     if(spatial) { swat_spatial_reset(spatial); mixer.spatial=spatial; mixer.binaural=swat_spatial_process; }
-    swat_audio_start(&mixer,event,path,swat_v(0,0,1));
+    SwatRoomAcoustics source=swat_acoustic_room(world,event.position);
+    SwatAudioVoice* voice=swat_audio_start(&mixer,event,path,swat_v(0,0,1));
+    swat_audio_source_room(voice,source,swat_world_room(world,event.position)!=swat_world_room(world,listener),SWAT_AUDIO_RATE);
     swat_audio_mix(&mixer,pcm,SWAT_AUDIO_RATE*3,.85f);
     double energy=0,tail=0;
     for(int i=0;i<SWAT_AUDIO_RATE*3*2;i++) {
         energy+=pcm[i]*pcm[i]; if(i>=SWAT_AUDIO_RATE) tail+=pcm[i]*pcm[i];
     }
     char file[1024]; snprintf(file,sizeof(file),"%s/%s.wav",directory,name);
-    fprintf(report,"%s,%.8f,%.8f,%.8f,%.8f,%d,%d,%.4f,%.8f,%.8f\n",name,path.bands[0],path.bands[1],path.bands[2],path.gain,
-            path.delay_ticks,path.via_doorway,room.rt60[1],sqrt(energy/(SWAT_AUDIO_RATE*6)),sqrt(tail/(SWAT_AUDIO_RATE*5)));
+    fprintf(report,"%s,%.8f,%.8f,%.8f,%.8f,%d,%d,%.4f,%.4f,%.8f,%.8f\n",name,path.bands[0],path.bands[1],path.bands[2],path.gain,
+            path.delay_ticks,path.via_doorway,room.rt60[1],source.rt60[1],sqrt(energy/(SWAT_AUDIO_RATE*6)),sqrt(tail/(SWAT_AUDIO_RATE*5)));
     return wav(file,SWAT_AUDIO_RATE*3);
 }
 int main(int argc,char** argv) {
@@ -50,8 +52,8 @@ int main(int argc,char** argv) {
 #endif
     char file[1024]; snprintf(file,sizeof(file),"%s/comparison.csv",directory);
     FILE* report=fopen(file,"w"); if(!report) { perror(file); swat_spatial_close(spatial); return 1; }
-    fprintf(report,"scene,low,mid,high,gain,delay_ticks,via_doorway,mid_rt60,rms,tail_rms_after_500ms\n");
-    SwatSoundEvent event={1,0,0,SWAT_SOUND_SHOT,{-3,1.4f,.17f},3,100};
+    fprintf(report,"scene,low,mid,high,gain,delay_ticks,via_doorway,mid_rt60,source_mid_rt60,rms,tail_rms_after_500ms\n");
+    SwatSoundEvent event={1,0,0,SWAT_SOUND_SHOT,{-3,1.4f,.17f},3,100,SWAT_CONCRETE};
     b3Pos listener={3,1.4f,.17f}; SwatRoomAcoustics dry={0}; static SwatWorld world;
     bool ok=true; swat_world_init(&world);
     ok=render(directory,report,"01_open",&world,event,listener,dry,spatial)&&ok;
@@ -88,8 +90,22 @@ int main(int argc,char** argv) {
     for(int i=0;i<world.count;i++) if(world.objects[i].door) world.objects[i].door_open=true;
     for(int i=0;i<60;i++) swat_world_step_doors(&world);
     ok=render(directory,report,"18_doors_open",&world,event,listener,swat_acoustic_room(&world,listener),spatial)&&ok;
+    listener=(b3Pos){14,1.4f,-8}; world.rooms[1].floor=SWAT_CARPET;
+    ok=render(directory,report,"19_source_room_outside_carpet",&world,event,listener,dry,spatial)&&ok;
+    world.rooms[1].floor=SWAT_TILE;
+    ok=render(directory,report,"20_source_room_outside_tile",&world,event,listener,dry,spatial)&&ok;
+    swat_world_close(&world); swat_world_init(&world);
+    event.position=(b3Pos){2,1,0}; listener=(b3Pos){0,1,0}; event.kind=SWAT_SOUND_STEP; event.range=12;
+    event.material=SWAT_CARPET; event.strength=.4f*swat_material(event.material)->footstep_gain;
+    ok=render(directory,report,"21_step_carpet",&world,event,listener,dry,spatial)&&ok;
+    event.material=SWAT_TILE; event.strength=.4f*swat_material(event.material)->footstep_gain;
+    ok=render(directory,report,"22_step_tile",&world,event,listener,dry,spatial)&&ok;
+    event.kind=SWAT_SOUND_IMPACT; event.strength=.8f;
+    const char* impacts[]={"23_impact_wood","24_impact_steel","25_impact_tile","26_impact_carpet"};
+    const SwatMaterial surfaces[]={SWAT_WOOD,SWAT_STEEL,SWAT_TILE,SWAT_CARPET};
+    for(int i=0;i<4;i++) { event.material=surfaces[i]; ok=render(directory,report,impacts[i],&world,event,listener,dry,spatial)&&ok; }
     swat_world_close(&world); swat_spatial_close(spatial);
     if(fclose(report)) ok=false;
-    printf("%s 18 fixed-level WAV comparisons and metrics: %s (%s)\n",ok ? "Wrote" : "FAILED",directory,use_hrtf ? "Steam Audio HRTF" : "stereo");
+    printf("%s 26 WAV comparisons and metrics: %s (%s)\n",ok ? "Wrote" : "FAILED",directory,use_hrtf ? "Steam Audio HRTF" : "stereo");
     return ok ? 0 : 1;
 }

@@ -13,6 +13,8 @@ typedef struct SwatMaterialDef {
     float transmission_db[3]; // amplitude loss through reference thickness
     float reference_thickness;
     uint8_t color[4];
+    float density, friction, restitution, rolling_resistance;
+    float impact_pitch, impact_decay, footstep_gain;
 } SwatMaterialDef;
 const SwatMaterialDef* swat_material(SwatMaterial material);
 #endif

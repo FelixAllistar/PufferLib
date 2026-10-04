@@ -9,12 +9,19 @@ coefficients are authored game tuning, not measured building assemblies.
 ## Current path
 
 Authority emits accepted shots, impacts, breakage, grounded footsteps,
-reload/equip/selector handling, compliance commands and door interactions into a bounded ring.
+reload/equip/selector handling, compliance commands, canister contacts,
+flash/CS/taser effects and door interactions into a bounded ring.
 Events contain stable IDs, emission tick, source position, kind, strength and
-range. Rejected shots produce no shot event. Snapshots repeat recent sounds;
+range and surface material. Rejected shots produce no shot event. Snapshots repeat recent sounds;
 listener deduplication prevents repeats. Late join starts above old event IDs.
 
-`materials.c` separates surface absorption from low/mid/high transmission loss.
+`materials.c` separates surface absorption from low/mid/high transmission loss,
+and supplies contact density/friction/restitution/rolling resistance, impact
+pitch/decay and footstep gain from the same material identity. This is the
+collider-surface concept described by [Unity's Physics Material reference](https://docs.unity.com/en-us/engine/6000.7/manual/physics-section/physics-overview/collision-section/collider-surfaces/class-physics-material),
+implemented here using Box3D and our own authored tables. The coefficients are
+game tuning; sound absorption, transmission and mechanical bounce remain
+separate properties rather than being inferred from one another.
 Concrete, gypsum board, timber, glass, steel, brick, plaster, fibrous insulation,
 tile, carpet and earth have editable definitions. `acoustics.c` intersects live
 oriented boxes, adds each crossed layer's loss in dB, and uses a logarithmic
@@ -31,11 +38,23 @@ multiple-room portal chains.
 `audio_dsp.c` generates deterministic 48 kHz stereo float PCM with 32 bounded
 voices, smoothed gain/filter changes and a soft output limit. A four-delay
 feedback network plus four early taps supplies a stereo room tail. Room size,
-wall/floor absorption and open doors/holes determine approximate decay times;
+wall/floor absorption, actual roof material, exposed furniture and open
+doors/holes determine approximate decay times;
 the mixer uses the middle-band RT60 with high-frequency damping. A broken board
 only adds escape area when the opposite face no longer blocks the opening.
-Outdoor space has no added local-room reverb. This first room bus follows the
-listener's room; source-room and directional portal reverb remain future work.
+Outdoor space has no added local-room reverb. A source in another room also
+has a small two-delay feedback tail that passes through its live material
+filter, attenuation and arrival direction before HRTF processing. An indoor
+shot therefore retains source-room decay for an outdoor listener. Sources in
+the listener's room use the shared room bus to avoid applying that room twice.
+This remains an approximate room/path model, not measured impulse responses
+or arbitrary coupled-room wave simulation.
+
+Footsteps query the actual ground material; its gain changes authority sound
+events and NPC hearing as well as player output. Canister contact sounds use
+the struck surface. Carpet is quieter and stops bouncing quickly; tile and
+steel have more energetic contacts and distinct synthesized ringing. The
+canister mass/contact/CCD tests are separate from PCM timbre and room-tail tests.
 
 `spatial_audio.c` dynamically loads Steam Audio 4.8.1 and uses one binaural
 effect per voice, bilinear HRTF interpolation, 256-frame processing, and
@@ -48,7 +67,8 @@ personal HRTF; `SWAT_STEAM_AUDIO_LIBRARY` overrides the runtime library path.
 
 `sound_view.c` streams through Raylib. Listener orientation updates every frame;
 active acoustic paths and room parameters refresh at 10 Hz. The listening point
-stays at the officer's ears while using the optiwand or planning cameras. Saved
+stays at the officer's ears while using the optiwand or planning cameras;
+direct scope control listens at the selected sniper. Saved
 master volume affects player output only; authority/training opens no device.
 
 The scripted guard consumes delayed kind/gain/16-sector world-bearing cues.
@@ -76,9 +96,11 @@ beside the executable. The startup log reports HRTF or stereo fallback. Other
 build locations can use the explicit library environment variable. Headers and
 notices are in `vendor/steam_audio`; binaries are not committed.
 
-The lab writes 18 stereo PCM16 WAVs and `comparison.csv`, using the same source
-at fixed gain: open air, wood/brick/glass/steel, two/one/no gypsum faces,
-front/back/left/right/above, dry/carpet/tile rooms, and closed/open doors.
+The lab writes 26 stereo PCM16 WAVs and `comparison.csv`: open air,
+wood/brick/glass/steel, two/one/no gypsum faces, front/back/left/right/above,
+dry/carpet/tile rooms, closed/open doors, an indoor source heard outside,
+carpet/tile steps and wood/steel/tile/carpet impacts. Propagation comparisons
+keep source gain fixed; footstep comparisons include the surface's authored gain.
 Compare on headphones without normalizing each file's loudness. Waveforms,
 band gains and late energy are repeatable; perceptual realism still needs
 listening tests and better source recordings.
@@ -86,8 +108,8 @@ listening tests and better source recordings.
 In the current six-metre fixture, calculated gain is 0.429 without a partition,
 0.029 through two gypsum faces, 0.101 after one face breaks, and 0.429 after both
 break between studs. The house doorway case rises from 0.029 to 0.197 and changes
-arrival direction to the opening. The carpet/tile room fixture requests 0.677 s
-versus 1.348 s middle-band RT60 and produces more late energy for tile. These
+arrival direction to the opening. The carpet/tile room fixture requests 0.674 s
+versus 1.337 s middle-band RT60 and produces more late energy for tile. These
 numbers describe this tuning and these fixtures, not measurements of real homes.
 
 ## Research and decisions
@@ -100,8 +122,8 @@ numbers describe this tuning and these fixtures, not measurements of real homes.
   room/portal graphs, apparent direction at openings and runtime geometry
   changes are useful for a destructible house. Its 10–15 Hz propagation update
   is a useful scheduling reference. The talk also explains why listener-only
-  reverb can misrepresent a remote source; per-source/path room buses are a
-  concrete next step here. Our current three-point, one-bend routes are much
+  reverb can misrepresent a remote source; our source tails now retain their
+  room decay along the arrival path. The current three-point, one-bend routes are much
   smaller than Hitman's graph system.
 - [Audio Propagation Through the Ears of VERA, GDC 2018](https://www.gdcvault.com/play/1025063/Audio-Propagation-Through-the-Ears):
   the session describes a voxel approach covering occlusion, obstruction,
@@ -122,7 +144,7 @@ uses a specialist library for headphone rendering.
 
 Replace synthesis with licensed/original recordings and authored mechanisms,
 material impacts and stance/surface footsteps, retaining event IDs and shared
-propagation. Add voice priority, source/path room buses, broader diffraction,
+propagation. Add better voice priority, coupled-room calibration, broader diffraction,
 measured material assemblies and spatial calibration. Test recognition/localization with
 players and agents on the same scenes.
 
@@ -134,6 +156,7 @@ datasets and trained audio models do not.
 
 Tests cover distance/delay, material bands, changing occlusion, doorway bearing,
 deduplication, guard reaction, deterministic PCM, stereo orientation, mute,
-voice limits/expiry, low-pass behavior, persistent room tails and native HRTF
+voice limits/expiry, low-pass behavior, persistent listener/source room tails,
+floor/roof/furniture absorption and native HRTF
 left/right, front/back and elevation differences. These checks validate behavior,
 not production audio quality.

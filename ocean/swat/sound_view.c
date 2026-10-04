@@ -43,14 +43,20 @@ void swat_sound_view_update(SwatSoundView* view,const SwatSim* sim,int actor,flo
             SwatAcousticPath path=view->paths[slot];
             if(sim->tick<event->tick+path.delay_ticks || path.gain<.008f) continue;
             swat_hearing_consume(&view->memory,event->id);
-            swat_audio_start(&view->mixer,*event,path,right);
+            SwatAudioVoice* voice=swat_audio_start(&view->mixer,*event,path,right);
+            swat_audio_source_room(voice,swat_acoustic_room(&sim->world,event->position),
+                swat_world_room(&sim->world,event->position)!=swat_world_room(&sim->world,eye),SWAT_AUDIO_RATE);
         }
         if(sim->tick>=view->next_acoustic_tick || view->path_generation!=sim->world.generation) {
             view->next_acoustic_tick=sim->tick+6;
             swat_audio_room(&view->mixer,swat_acoustic_room(&sim->world,eye));
             for(int i=0;i<SWAT_AUDIO_VOICES;i++) {
                 SwatAudioVoice* voice=&view->mixer.voices[i];
-                if(voice->active) swat_audio_spatial(voice,swat_acoustic_path(&sim->world,&voice->event,eye),right,SWAT_AUDIO_RATE);
+                if(voice->active) {
+                    swat_audio_spatial(voice,swat_acoustic_path(&sim->world,&voice->event,eye),right,SWAT_AUDIO_RATE);
+                    swat_audio_source_room(voice,swat_acoustic_room(&sim->world,voice->event.position),
+                        swat_world_room(&sim->world,voice->event.position)!=swat_world_room(&sim->world,eye),SWAT_AUDIO_RATE);
+                }
             }
         }
         view->path_generation=sim->world.generation;

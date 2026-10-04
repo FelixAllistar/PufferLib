@@ -6,7 +6,7 @@
 static void test_transmission_and_arrival(void) {
     SwatWorld world; swat_world_init(&world);
     swat_world_box(&world,(b3Pos){5,-0.5f,0},swat_v(20,0.5f,20),SWAT_CONCRETE,0);
-    SwatSoundEvent event={1,10,0,SWAT_SOUND_SHOT,{0,1.6f,0},3,100};
+    SwatSoundEvent event={1,10,0,SWAT_SOUND_SHOT,{0,1.6f,0},3,100,SWAT_CONCRETE};
     b3Pos listener={10,1.6f,0};
     SwatAcousticPath clear=swat_acoustic_path(&world,&event,listener);
     assert(clear.gain>0.25f && clear.delay_ticks==2 && clear.direction.x<-0.99f);
@@ -33,7 +33,7 @@ static void test_transmission_and_arrival(void) {
 static void test_doorway_route(void) {
     SwatWorld world; swat_world_init(&world); uint32_t seed=42;
     swat_world_build_range(&world,&seed,false);
-    SwatSoundEvent event={1,0,0,SWAT_SOUND_SHOT,{9,1.6f,3},3,100};
+    SwatSoundEvent event={1,0,0,SWAT_SOUND_SHOT,{9,1.6f,3},3,100,SWAT_CONCRETE};
     b3Pos listener={5,1.6f,3};
     SwatAcousticPath closed=swat_acoustic_path(&world,&event,listener);
     int door=-1; for(int i=0;i<world.count;i++) if(world.objects[i].door) door=i;
@@ -60,4 +60,22 @@ static void test_agent_listens(void) {
     swat_sim_close(&sim);
     puts("PASS scripted guard orients to an audible hidden event without acquiring or firing at an unseen officer");
 }
-int main(void) { test_transmission_and_arrival(); test_doorway_route(); test_agent_listens(); return 0; }
+static void test_surface_room(void) {
+    SwatWorld world; swat_world_init(&world); swat_mission_build_house(&world);
+    b3Pos listener={14,1.4f,-2};
+    SwatRoomAcoustics carpet=swat_acoustic_room(&world,listener);
+    world.rooms[1].floor=SWAT_TILE;
+    SwatRoomAcoustics tile=swat_acoustic_room(&world,listener);
+    assert(tile.rt60[1]>carpet.rt60[1]*1.4f && tile.rt60[2]>carpet.rt60[2]*1.5f);
+    int roof=-1;
+    for(int i=0;i<world.count;i++) if(world.objects[i].center.y>2.7f && world.objects[i].half.x>3 && world.objects[i].half.z>3) roof=i;
+    assert(roof>=0); world.objects[roof].material=SWAT_INSULATION;
+    SwatRoomAcoustics absorbent=swat_acoustic_room(&world,listener);
+    assert(absorbent.rt60[1]<tile.rt60[1]*.6f);
+    for(int i=0;i<world.count;i++) if(world.objects[i].door) swat_world_damage(&world,i,1000);
+    SwatRoomAcoustics open=swat_acoustic_room(&world,listener);
+    assert(open.rt60[1]<absorbent.rt60[1] && open.wet<absorbent.wet);
+    swat_world_close(&world);
+    puts("PASS room surfaces: floor finish, actual roof absorption, furnishings and destroyed door openings affect decay");
+}
+int main(void) { test_transmission_and_arrival(); test_doorway_route(); test_agent_listens(); test_surface_room(); return 0; }

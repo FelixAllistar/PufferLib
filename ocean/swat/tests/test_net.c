@@ -14,11 +14,12 @@ static void ready(SwatNetServer* server,SwatNetClient* clients,int count) {
     uint32_t start=enet_time_get(); bool all=false;
     while(!all && enet_time_get()-start<5000) {
         idle(server,clients,count); all=true;
-        for(int i=0;i<count;i++) all=all && clients[i].status==SWAT_NET_ACTIVE;
+        for(int i=0;i<count;i++) all=all && clients[i].status==SWAT_NET_ACTIVE && clients[i].epoch==server->epoch;
     }
     for(int i=0;i<count;i++) {
         if(clients[i].status!=SWAT_NET_ACTIVE) fprintf(stderr,"client %d status %d error %s\n",i,clients[i].status,clients[i].error);
         assert(clients[i].status==SWAT_NET_ACTIVE);
+        assert(clients[i].epoch==server->epoch);
     }
 }
 static void ticks(SwatNetServer* server,SwatNetClient* clients,SwatInput* inputs,int count,int steps,const SwatInput* host) {
@@ -40,6 +41,11 @@ static void raw_control(SwatNetClient* client,SwatMessage type,uint32_t epoch) {
     unsigned char bytes[32]; size_t length=swat_encode_control(bytes,sizeof(bytes),type,epoch,0);
     ENetPacket* packet=enet_packet_create(bytes,length,ENET_PACKET_FLAG_RELIABLE);
     assert(enet_peer_send((ENetPeer*)client->peer,0,packet)==0);
+    enet_host_flush((ENetHost*)client->transport);
+}
+static void raw_scenario(SwatNetClient* client,uint32_t epoch,const SwatConfig* config) {
+    unsigned char bytes[32]; size_t length=swat_encode_scenario(bytes,sizeof(bytes),epoch,config);
+    assert(length && enet_peer_send((ENetPeer*)client->peer,0,enet_packet_create(bytes,length,ENET_PACKET_FLAG_RELIABLE))==0);
     enet_host_flush((ENetHost*)client->transport);
 }
 
@@ -146,8 +152,52 @@ int main(void) {
     assert(swat_client_open(&clients[1],&replicas[1],"127.0.0.1",port)); ready(&server,clients,2);
     assert(!replicas[1].world.objects[broken].active && replicas[1].actors[2].gear.restrained);
     assert(replicas[1].actors[3].arsenal.primary==2 && replicas[1].actors[3].gear.wounds[SWAT_LEGS]>0);
-    swat_client_close(&clients[0]); swat_client_close(&clients[1]); swat_server_close(&server);
     puts("PASS real UDP house: fragmented full map/snapshots, authority kit/tool input, wounds, cuffs and destroyed faces at late join");
+    inputs[0]=inputs[1]=swat_neutral_input(); inputs[0].throwable=2;
+    host.sniper_order=SWAT_SNIPER_ASSIGN; host.sniper_post=2;
+    ticks(&server,clients,inputs,2,6,&host); synchronize(&server,clients,2);
+    assert(authority.snipers[0].deployed && authority.projectiles[0].active && !authority.projectiles[0].detonated);
+    for(int i=0;i<2;i++) {
+        assert(replicas[i].snipers[0].post==2 && replicas[i].actors[9].role==SWAT_SNIPER);
+        assert(replicas[i].actors[3].gear.gas_grenades==1 && replicas[i].projectiles[0].active);
+        assert(b3Distance(replicas[i].projectiles[0].position,authority.projectiles[0].position)<1e-4f);
+    }
+    host=swat_neutral_input(); inputs[0].throwable=0;
+    ticks(&server,clients,inputs,2,120,&host); synchronize(&server,clients,2);
+    assert(authority.projectiles[0].detonated);
+    assert(swat_client_open(&clients[2],&replicas[2],"127.0.0.1",port)); ready(&server,clients,3);
+    assert(replicas[2].projectiles[0].active && replicas[2].projectiles[0].detonated && replicas[2].snipers[0].deployed);
+    puts("PASS real UDP tactical: leader sniper assignment, authoritative canister flight/ammunition and active gas cloud at late join");
+
+    SwatConfig generated=authority.config; generated.mission=SWAT_GENERATED; generated.layout_seed=947; generated.difficulty=2;
+    uint32_t old_epoch=server.epoch;
+    raw_scenario(&clients[0],old_epoch,&generated); // Listen host remains the leader.
+    for(int i=0;i<20;i++) idle(&server,clients,3);
+    assert(server.epoch==old_epoch && authority.config.mission==SWAT_HOUSE);
+    swat_server_scenario(&server,&generated); ready(&server,clients,3);
+    for(int i=0;i<3;i++) {
+        assert(clients[i].epoch==old_epoch+1 && replicas[i].config.mission==SWAT_GENERATED);
+        assert(replicas[i].layout.fingerprint==authority.layout.fingerprint && replicas[i].layout.policy_id==authority.layout.policy_id);
+        assert(replicas[i].world.count==authority.world.count && replicas[i].config.difficulty==2);
+        assert(!replicas[i].snipers[0].deployed && !replicas[i].projectiles[0].active);
+    }
+    for(int i=0;i<3;i++) swat_client_close(&clients[i]);
+    swat_server_close(&server);
+    // Dedicated sessions accept the authenticated remote leader's scenario request.
+    assert(swat_server_open(&server,&authority,port,false));
+    assert(swat_client_open(&clients[0],&replicas[0],"127.0.0.1",port)); ready(&server,clients,1);
+    generated.layout_seed=948; generated.difficulty=0; old_epoch=server.epoch;
+    swat_client_scenario(&clients[0],&generated); start=enet_time_get();
+    while(server.epoch==old_epoch && enet_time_get()-start<2000) idle(&server,clients,1);
+    assert(server.epoch==old_epoch+1); ready(&server,clients,1);
+    assert(replicas[0].layout.seed==948 && swat_sim_hostiles(&replicas[0])==1);
+    assert(swat_client_open(&clients[1],&replicas[1],"127.0.0.1",port)); ready(&server,clients,2);
+    assert(replicas[1].layout.fingerprint==authority.layout.fingerprint && replicas[1].mission.overwatch_count==authority.mission.overwatch_count);
+    raw_scenario(&clients[0],old_epoch,&config);
+    for(int i=0;i<20;i++) idle(&server,clients,2);
+    assert(authority.config.mission==SWAT_GENERATED && authority.config.layout_seed==948);
+    swat_client_close(&clients[0]); swat_client_close(&clients[1]); swat_server_close(&server);
+    puts("PASS real UDP generated houses: leader-only scenario changes, epoch cleanup, exact token/seed/model metadata and generated-map late join");
     for(int i=0;i<5;i++) swat_sim_close(&replicas[i]);
     swat_sim_close(&authority);
     puts("PASS real UDP: listen host uses the same authority and closes joining clients cleanly");

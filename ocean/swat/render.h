@@ -12,6 +12,8 @@ typedef struct SwatView {
     bool planning;
     int plan_preview;
     float plan_yaw;
+    bool scope;
+    int sniper_unit;
     char session_status[128];
 } SwatView;
 void swat_view_init(SwatView* view, bool hidden);

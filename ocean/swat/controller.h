@@ -18,6 +18,10 @@ typedef struct SwatInput {
     int weapon;                    // 0 = keep, 1 = primary, 2 = sidearm
     bool inspect, command, melee;
     int loadout;                   // 0 = keep, 1..3 = staging-area kit request
+    int throwable;                 // 0 = none, 1 = flashbang, 2 = CS gas
+    bool taser;
+    int sniper_order, sniper_unit, sniper_post, sniper_rifle;
+    bool sniper_control;
 } SwatInput;
 
 typedef struct SwatController {

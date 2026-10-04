@@ -46,12 +46,14 @@ bool swat_server_open(SwatNetServer* server,SwatSim* sim,int port,bool local_pla
 void swat_server_poll(SwatNetServer* server);
 void swat_server_tick(SwatNetServer* server,const SwatInput* local);
 void swat_server_restart(SwatNetServer* server);
+void swat_server_scenario(SwatNetServer* server,const SwatConfig* config);
 void swat_server_close(SwatNetServer* server);
 int swat_server_leader(const SwatNetServer* server);
 bool swat_client_open(SwatNetClient* client,SwatSim* replica,const char* address,int port);
 void swat_client_poll(SwatNetClient* client);
 bool swat_client_input(SwatNetClient* client,const SwatInput* input);
 void swat_client_restart(SwatNetClient* client);
+void swat_client_scenario(SwatNetClient* client,const SwatConfig* config);
 void swat_client_close(SwatNetClient* client);
 const char* swat_disconnect_reason(unsigned int reason);
 

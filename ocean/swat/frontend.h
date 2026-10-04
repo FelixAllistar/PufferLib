@@ -2,6 +2,7 @@
 #define SWAT_FRONTEND_H
 #include "render.h"
 #include "settings.h"
+#include "feedback.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -9,7 +10,7 @@ extern "C" {
 
 typedef enum SwatScreen { SWAT_SCREEN_GAME, SWAT_SCREEN_MAIN,
                          SWAT_SCREEN_PAUSE, SWAT_SCREEN_SETTINGS, SWAT_SCREEN_CONNECT,
-                         SWAT_SCREEN_PLAN } SwatScreen;
+                         SWAT_SCREEN_PLAN, SWAT_SCREEN_SCOPE } SwatScreen;
 typedef struct SwatFrontend {
     SwatSettings settings, saved_settings;
     SwatScreen screen, settings_back;
@@ -20,6 +21,13 @@ typedef struct SwatFrontend {
     int selected_kit,plan_preview,last_episode;
     float plan_yaw;
     bool loadout_pending;
+    int plan_tab,selected_sniper,sniper_post[SWAT_SNIPERS],sniper_rifle[SWAT_SNIPERS];
+    bool sniper_pending[SWAT_SNIPERS],sniper_enabled[SWAT_SNIPERS];
+    bool scenario_requested,seed_edit;
+    SwatConfig scenario;
+    char layout_seed[16];
+    int layout_difficulty,layout_generator;
+    SwatFeedback feedback;
     int discard_mouse_frames;
     char address[128],port[8];
     char settings_path[SWAT_SETTINGS_PATH_SIZE];

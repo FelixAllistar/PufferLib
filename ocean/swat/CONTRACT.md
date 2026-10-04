@@ -1,10 +1,11 @@
 # SWAT contract v1
 
-This is the annex training/policy contract. Human Cedar House play adds kit,
-inspection, command and melee fields to the internal `SwatInput`, but v1's
-action heads and 167-float observations do not expose those features or hearing.
+This is the annex training/policy contract. Human house play adds kit,
+inspection, command, melee, throwable, taser and sniper fields to the internal
+`SwatInput`, but v1's action heads and 167-float observations do not expose
+those features or hearing. Generated buildings use a separate layout policy.
 A house/arrest/audio policy requires a new contract and corresponding training;
-network protocol v2 is separate from the RL contract version.
+network protocol v3 is separate from the RL contract version.
 
 Co-op and the shared acoustic system preserve this single-officer v1 layout.
 No audio cues/waveform fields have been added. The scripted guard consumes a

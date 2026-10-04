@@ -32,6 +32,7 @@ bool swat_settings_default_path(char* out, size_t capacity);
 bool swat_settings_load(SwatSettings* settings, const char* path);
 // Writes beside the destination and atomically replaces it after close succeeds.
 bool swat_settings_save(const SwatSettings* settings, const char* path);
+bool swat_settings_prepare_path(const char* path);
 SwatLookDelta swat_settings_look(const SwatSettings* settings,
                                 float pixels_x, float pixels_y, float ads);
 

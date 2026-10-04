@@ -42,7 +42,7 @@ SwatMessage swat_message_type(const void* bytes,size_t size) {
     Reader r={bytes,size,true};
     if(get32(&r)!=SWAT_NET_MAGIC || get8(&r)!=SWAT_NET_VERSION) return 0;
     unsigned int kind=get8(&r);
-    return kind>=SWAT_MSG_INPUT && kind<=SWAT_MSG_RESTART ? (SwatMessage)kind : 0;
+    return kind>=SWAT_MSG_INPUT && kind<=SWAT_MSG_SCENARIO ? (SwatMessage)kind : 0;
 }
 
 size_t swat_encode_command(void* bytes,size_t size,const SwatCommand* c) {
@@ -53,7 +53,9 @@ size_t swat_encode_command(void* bytes,size_t size,const SwatCommand* c) {
     unsigned int flags=in->crouch | (in->jump<<1) | (in->aim<<2) | (in->fire<<3) |
                        (in->reload<<4) | (in->interact<<5) | (in->selector<<6);
     put8(&w,flags);
-    put8(&w,in->inspect | (in->command<<1) | (in->melee<<2)); put8(&w,in->loadout);
+    put8(&w,in->inspect | (in->command<<1) | (in->melee<<2) | (in->taser<<3)); put8(&w,in->loadout);
+    put8(&w,in->throwable);
+    put8(&w,in->sniper_order); put8(&w,in->sniper_unit); put8(&w,in->sniper_post); put8(&w,in->sniper_rifle); put8(&w,in->sniper_control);
     return w.ok ? size-w.left : 0;
 }
 bool swat_decode_command(SwatCommand* c,const void* bytes,size_t size) {
@@ -68,8 +70,12 @@ bool swat_decode_command(SwatCommand* c,const void* bytes,size_t size) {
     in->crouch=flags&1; in->jump=flags&2; in->aim=flags&4; in->fire=flags&8;
     in->reload=flags&16; in->interact=flags&32; in->selector=flags&64;
     unsigned int tools=get8(&r),loadout=get8(&r);
-    if(tools>7 || loadout>SWAT_KIT_COUNT) r.ok=false;
+    if(tools>15 || loadout>SWAT_KIT_COUNT) r.ok=false;
     in->inspect=tools&1; in->command=tools&2; in->melee=tools&4; in->loadout=(int)loadout;
+    in->taser=tools&8; in->throwable=(int)get8(&r); if(in->throwable>SWAT_PROJECTILE_KINDS) r.ok=false;
+    in->sniper_order=(int)get8(&r); in->sniper_unit=(int)get8(&r); in->sniper_post=(int)get8(&r); in->sniper_rifle=(int)get8(&r);
+    unsigned int control=get8(&r); in->sniper_control=control!=0;
+    if(in->sniper_order>=SWAT_SNIPER_ORDERS || in->sniper_unit>=SWAT_SNIPERS || in->sniper_post>=3 || in->sniper_rifle>1 || control>1) r.ok=false;
     if(!r.ok || r.left) return false;
     *c=tmp; return true;
 }
@@ -79,6 +85,13 @@ size_t swat_encode_map(void* bytes,size_t size,const SwatMap* map) {
     put32(&w,map->sound_floor); put32(&w,(uint32_t)map->config.max_ticks);
     put8(&w,map->config.randomize); put8(&w,map->config.hostile_fire);
     put8(&w,map->config.mission);
+    put32(&w,map->config.layout_seed); put8(&w,map->config.generator); put8(&w,map->config.difficulty);
+    putpos(&w,map->mission.staging); put8(&w,map->mission.overwatch_count);
+    for(int i=0;i<map->mission.overwatch_count;i++) { putpos(&w,map->mission.overwatch[i].position); putpos(&w,map->mission.overwatch[i].target); }
+    if(map->config.mission==SWAT_GENERATED) {
+        put32(&w,map->layout_policy_id);
+        for(int i=0;i<SWAT_LAYOUT_TOKENS;i++) put8(&w,map->layout_tokens[i]);
+    }
     put32(&w,(uint32_t)map->count); putpos(&w,map->extraction);
     put8(&w,map->room_count);
     for(int i=0;i<map->room_count;i++) {
@@ -101,7 +114,19 @@ bool swat_decode_map(SwatMap* map,const void* bytes,size_t size) {
     if(randomize>1 || fire>1) r.ok=false;
     tmp.config.randomize=randomize!=0; tmp.config.hostile_fire=fire!=0;
     tmp.config.mission=(int)get8(&r); if(tmp.config.mission>=SWAT_MISSION_COUNT) r.ok=false;
+    tmp.config.layout_seed=get32(&r); tmp.config.generator=(int)get8(&r); tmp.config.difficulty=(int)get8(&r);
+    if(tmp.config.generator>=SWAT_GENERATORS || tmp.config.difficulty>2 || !r.ok) return false;
+    tmp.mission=*swat_mission(tmp.config.mission); tmp.mission.staging=getpos(&r);
+    tmp.mission.overwatch_count=(int)get8(&r); if(tmp.mission.overwatch_count>3) return false;
+    for(int i=0;i<tmp.mission.overwatch_count;i++) { tmp.mission.overwatch[i].position=getpos(&r); tmp.mission.overwatch[i].target=getpos(&r); }
+    if(tmp.config.mission==SWAT_GENERATED) {
+        tmp.layout_policy_id=get32(&r);
+        for(int i=0;i<SWAT_LAYOUT_TOKENS;i++) tmp.layout_tokens[i]=(int)get8(&r);
+        SwatLayout layout;
+        if(!r.ok || !swat_layout_plan(&layout,tmp.layout_tokens,tmp.config.difficulty)) return false;
+    }
     tmp.count=geti(&r,1,SWAT_MAX_OBJECTS); tmp.extraction=getpos(&r);
+    tmp.mission.extraction=tmp.extraction;
     tmp.room_count=(int)get8(&r); if(tmp.room_count>SWAT_MAX_ROOMS) return false;
     for(int i=0;i<tmp.room_count;i++) {
         SwatRoom* room=&tmp.rooms[i]; room->center=getpos(&r); room->half=getvec(&r,100);
@@ -153,15 +178,19 @@ static void putactor(Writer* w,const SwatActorState* a) {
     const SwatEquipment* g=&a->gear;
     put8(w,g->kit); put32(w,(uint32_t)g->stunned_ticks); put32(w,(uint32_t)g->melee_cooldown);
     put32(w,(uint32_t)g->cuff_ticks); put32(w,(uint32_t)g->cuff_target);
-    put8(w,g->surrendered | (g->restrained<<1) | (g->inspecting<<2) | (g->last_command<<3) | (g->last_melee<<4));
+    put8(w,g->surrendered | (g->restrained<<1) | (g->inspecting<<2) | (g->last_command<<3) | (g->last_melee<<4) |
+        (g->last_throw<<5) | (g->last_taser<<6) | (g->used_tools<<7));
     for(int i=0;i<SWAT_HIT_REGIONS;i++) putf(w,g->wounds[i]);
+    put32(w,g->flash_ticks); put32(w,g->gas_ticks); put32(w,g->taser_cooldown); put32(w,g->throw_cooldown);
+    put8(w,g->flashbangs); put8(w,g->gas_grenades); put8(w,g->taser_charges);
+    put8(w,g->wand_mode); putf(w,g->wand_yaw); putf(w,g->wand_pitch);
 }
 static SwatActorState getactor(Reader* r) {
     SwatActorState a={0}; unsigned int flags=get8(r);
     if(flags>63 || (!(flags&1) && flags)) r->ok=false;
     a.present=flags&1; if(!a.present) return a;
     a.alive=flags&2; a.crouched=flags&4; a.grounded=flags&8; a.sprinting=flags&16; a.muzzle_blocked=flags&32;
-    unsigned int role=get8(r); if(role>SWAT_CIVILIAN) r->ok=false; a.role=(SwatRole)role;
+    unsigned int role=get8(r); if(role>SWAT_SNIPER) r->ok=false; a.role=(SwatRole)role;
     a.position=getpos(r); a.velocity=getvec(r,100); a.upper_offset=getvec(r,SWAT_MAX_LEAN+0.01f);
     a.health=getf(r,0,100); a.yaw=getf(r,-SWAT_PI,SWAT_PI); a.pitch=getf(r,-85*SWAT_RAD,85*SWAT_RAD);
     a.ads=getf(r,0,1); a.stamina=getf(r,0,1); a.eye_height=getf(r,0,2);
@@ -171,15 +200,22 @@ static SwatActorState getactor(Reader* r) {
     a.arsenal.equip_remaining=geti(r,0,10000); a.arsenal.shots=geti(r,0,1000000);
     unsigned int arsenal_flags=get8(r); if(arsenal_flags>7) r->ok=false;
     a.arsenal.last_fire=arsenal_flags&1; a.arsenal.last_reload=arsenal_flags&2; a.arsenal.last_selector=arsenal_flags&4;
-    a.arsenal.primary=(int)get8(r); if(a.arsenal.primary!=0 && a.arsenal.primary!=2) r->ok=false;
+    a.arsenal.primary=(int)get8(r); if(a.arsenal.primary!=0 && (a.arsenal.primary<2 || a.arsenal.primary>4)) r->ok=false;
     for(int i=0;i<2;i++) a.arsenal.slots[i]=getweapon(r,i==0 ? a.arsenal.primary : 1);
     SwatEquipment* g=&a.gear; g->kit=(int)get8(r); if(g->kit>=SWAT_KIT_COUNT) r->ok=false;
     g->stunned_ticks=geti(r,0,10000); g->melee_cooldown=geti(r,0,1000);
     g->cuff_ticks=geti(r,0,72); g->cuff_target=geti(r,-1,SWAT_MAX_ACTORS-1);
-    unsigned int equipment_flags=get8(r); if(equipment_flags>31) r->ok=false;
+    unsigned int equipment_flags=get8(r);
     g->surrendered=equipment_flags&1; g->restrained=equipment_flags&2; g->inspecting=equipment_flags&4;
     g->last_command=equipment_flags&8; g->last_melee=equipment_flags&16;
+    g->last_throw=equipment_flags&32; g->last_taser=equipment_flags&64; g->used_tools=equipment_flags&128;
     for(int i=0;i<SWAT_HIT_REGIONS;i++) g->wounds[i]=getf(r,0,100);
+    g->flash_ticks=geti(r,0,240); g->gas_ticks=geti(r,0,180);
+    g->taser_cooldown=geti(r,0,180); g->throw_cooldown=geti(r,0,45);
+    g->flashbangs=(int)get8(r); g->gas_grenades=(int)get8(r); g->taser_charges=(int)get8(r);
+    if(g->flashbangs>2 || g->gas_grenades>2 || g->taser_charges>3) r->ok=false;
+    g->wand_mode=(SwatWandMode)get8(r); if(g->wand_mode>=SWAT_WAND_MODES) r->ok=false;
+    g->wand_yaw=getf(r,-110*SWAT_RAD,110*SWAT_RAD); g->wand_pitch=getf(r,-80*SWAT_RAD,80*SWAT_RAD);
     if(a.alive!=(a.health>0)) r->ok=false;
     return a;
 }
@@ -207,6 +243,20 @@ size_t swat_encode_snapshot(void* bytes,size_t size,const SwatSnapshot* state) {
         const SwatSoundEvent* e=&state->sounds[i];
         put32(&w,e->id); put32(&w,(uint32_t)e->tick); put32(&w,(uint32_t)e->source_actor);
         put8(&w,e->kind); putpos(&w,e->position); putf(&w,e->strength); putf(&w,e->range);
+        put8(&w,e->material);
+    }
+    for(int i=0;i<SWAT_MAX_PROJECTILES;i++) {
+        const SwatProjectile* p=&state->projectiles[i]; put8(&w,p->active);
+        if(!p->active) continue;
+        put8(&w,p->kind); put8(&w,p->owner); put8(&w,p->detonated);
+        put32(&w,p->age); put32(&w,p->remaining_ticks); putpos(&w,p->position); putvec(&w,p->velocity);
+    }
+    put8(&w,state->commander_actor);
+    for(int i=0;i<SWAT_SNIPERS;i++) {
+        const SwatSniper* sniper=&state->snipers[i]; put8(&w,sniper->deployed);
+        if(!sniper->deployed) continue;
+        put8(&w,sniper->post); put8(&w,sniper->rifle); put32(&w,(uint32_t)sniper->target);
+        put32(&w,sniper->travel_ticks); putf(&w,sniper->target_height); put8(&w,sniper->status);
     }
     return w.ok ? size-w.left : 0;
 }
@@ -236,6 +286,24 @@ bool swat_decode_snapshot(SwatSnapshot* state,const void* bytes,size_t size) {
         unsigned int kind=get8(&r); if(kind>=SWAT_SOUND_KINDS || !e->id || e->id<=previous) r.ok=false;
         previous=e->id; e->kind=(SwatSoundKind)kind; e->position=getpos(&r);
         e->strength=getf(&r,0,10); e->range=getf(&r,0,1000);
+        e->material=(SwatMaterial)get8(&r); if(e->material>=SWAT_MATERIAL_COUNT) r.ok=false;
+    }
+    for(int i=0;i<SWAT_MAX_PROJECTILES;i++) {
+        SwatProjectile* p=&tmp.projectiles[i]; unsigned active=get8(&r); if(active>1) r.ok=false;
+        p->active=active!=0; if(!p->active) continue;
+        p->kind=(SwatProjectileKind)get8(&r); p->owner=(int)get8(&r); unsigned detonated=get8(&r);
+        if(p->kind>=SWAT_PROJECTILE_KINDS || p->owner>=SWAT_MAX_ACTORS || detonated>1) r.ok=false;
+        p->detonated=detonated!=0; p->age=geti(&r,0,810); p->remaining_ticks=geti(&r,1,720);
+        p->position=getpos(&r); p->velocity=getvec(&r,200);
+    }
+    tmp.commander_actor=(int)get8(&r); if(tmp.commander_actor>=SWAT_MAX_ACTORS) r.ok=false;
+    for(int i=0;i<SWAT_SNIPERS;i++) {
+        SwatSniper* sniper=&tmp.snipers[i]; unsigned int deployed=get8(&r); if(deployed>1) r.ok=false;
+        sniper->deployed=deployed!=0; if(!sniper->deployed) continue;
+        sniper->post=(int)get8(&r); sniper->rifle=(int)get8(&r); sniper->target=geti(&r,-1,SWAT_MAX_ACTORS-1);
+        sniper->travel_ticks=geti(&r,0,180); sniper->target_height=getf(&r,0,1); sniper->status=(SwatSniperStatus)get8(&r);
+        if(sniper->post>=3 || sniper->rifle>1 || sniper->status>=SWAT_SNIPER_STATUSES ||
+            !tmp.actors[swat_sniper_actor(i)].present || tmp.actors[swat_sniper_actor(i)].role!=SWAT_SNIPER) r.ok=false;
     }
     if(!r.ok || r.left) return false;
     *state=tmp; return true;
@@ -251,10 +319,26 @@ bool swat_decode_control(const void* bytes,size_t size,SwatMessage type,uint32_t
     *epoch=e; *slot=(int)s; return true;
 }
 
+size_t swat_encode_scenario(void* bytes,size_t size,uint32_t epoch,const SwatConfig* config) {
+    Writer w={bytes,size,true}; header(&w,SWAT_MSG_SCENARIO,epoch);
+    put8(&w,config->mission); put32(&w,config->layout_seed);
+    put8(&w,config->generator); put8(&w,config->difficulty);
+    return w.ok ? size-w.left : 0;
+}
+bool swat_decode_scenario(const void* bytes,size_t size,uint32_t* epoch,SwatConfig* config) {
+    Reader r={bytes,size,true}; uint32_t e; read_header(&r,SWAT_MSG_SCENARIO,&e);
+    SwatConfig tmp=swat_default_config();
+    tmp.mission=(int)get8(&r); tmp.layout_seed=get32(&r);
+    tmp.generator=(int)get8(&r); tmp.difficulty=(int)get8(&r);
+    if(!r.ok || r.left || tmp.mission>=SWAT_MISSION_COUNT || tmp.generator>=SWAT_GENERATORS || tmp.difficulty>2) return false;
+    *epoch=e; *config=tmp; return true;
+}
+
 void swat_capture_map(const SwatSim* sim,uint32_t epoch,SwatMap* map) {
     memset(map,0,sizeof(*map)); map->epoch=epoch; map->config=sim->config;
     map->sound_floor=sim->sounds.next_id ? sim->sounds.next_id-1 : 0;
     map->count=sim->world.count; map->extraction=sim->extraction;
+    map->mission=sim->mission; memcpy(map->layout_tokens,sim->layout.tokens,sizeof(map->layout_tokens)); map->layout_policy_id=sim->layout.policy_id;
     map->room_count=sim->world.room_count; memcpy(map->rooms,sim->world.rooms,sizeof(map->rooms));
     for(int i=0;i<map->count;i++) {
         const SwatObject* o=&sim->world.objects[i];
@@ -265,6 +349,11 @@ void swat_capture_snapshot(const SwatSim* sim,uint32_t epoch,SwatSnapshot* state
     memset(state,0,sizeof(*state)); state->epoch=epoch; state->revision=1; state->tick=sim->tick;
     state->actor_count=sim->actor_count; state->object_count=sim->world.count;
     state->generation=sim->world.generation; state->end=sim->end; state->totals=sim->totals;
+    memcpy(state->snipers,sim->snipers,sizeof(state->snipers)); state->commander_actor=sim->commander_actor;
+    memcpy(state->projectiles,sim->projectiles,sizeof(state->projectiles));
+    for(int i=0;i<SWAT_MAX_PROJECTILES;i++) {
+        state->projectiles[i].body=b3_nullBodyId; state->projectiles[i].shape=b3_nullShapeId;
+    }
     for(int i=0;i<SWAT_MAX_ACTORS;i++) {
         const SwatActor* a=&sim->actors[i]; if(!a->present) continue;
         const SwatController* c=&a->controller; SwatActorState* out=&state->actors[i];
@@ -290,6 +379,11 @@ void swat_apply_map(SwatSim* sim,const SwatMap* map) {
     {
         swat_world_close(&sim->world); memset(sim,0,sizeof(*sim));
         sim->config=map->config; sim->extraction=map->extraction; sim->episode=(int)map->epoch;
+        sim->mission=map->mission;
+        if(map->config.mission==SWAT_GENERATED) {
+            swat_layout_plan(&sim->layout,map->layout_tokens,map->config.difficulty);
+            sim->layout.seed=map->config.layout_seed; sim->layout.policy_id=map->layout_policy_id;
+        }
         sim->sounds.next_id=map->sound_floor+1; swat_world_init(&sim->world);
         sim->world.room_count=map->room_count; memcpy(sim->world.rooms,map->rooms,sizeof(map->rooms));
         for(int i=0;i<map->count;i++) {
@@ -335,6 +429,12 @@ bool swat_apply_snapshot(SwatSim* sim,const SwatSnapshot* state) {
     }
     sim->actor_count=state->actor_count; sim->tick=state->tick; sim->end=state->end;
     sim->totals=state->totals; sim->world.generation=state->generation;
+    memcpy(sim->snipers,state->snipers,sizeof(sim->snipers)); sim->commander_actor=state->commander_actor;
+    for(int i=0;i<SWAT_MAX_PROJECTILES;i++) {
+        if(B3_IS_NON_NULL(sim->projectiles[i].body)) b3DestroyBody(sim->projectiles[i].body);
+        sim->projectiles[i]=state->projectiles[i];
+        sim->projectiles[i].body=b3_nullBodyId; sim->projectiles[i].shape=b3_nullShapeId;
+    }
     for(int i=0;i<state->sound_count;i++) swat_sound_append(&sim->sounds,state->sounds[i]);
     return true;
 }

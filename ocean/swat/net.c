@@ -94,6 +94,15 @@ void swat_server_restart(SwatNetServer* server) {
         if(server->slots[i].peer) server_map_to(server,(ENetPeer*)server->slots[i].peer);
     enet_host_flush((ENetHost*)server->transport);
 }
+void swat_server_scenario(SwatNetServer* server,const SwatConfig* config) {
+    if(!server->transport || config->mission<0 || config->mission>=SWAT_MISSION_COUNT ||
+       config->generator<0 || config->generator>=SWAT_GENERATORS || config->difficulty<0 || config->difficulty>2) return;
+    server->sim->config.mission=config->mission;
+    server->sim->config.layout_seed=config->layout_seed;
+    server->sim->config.generator=config->generator;
+    server->sim->config.difficulty=config->difficulty;
+    swat_server_restart(server);
+}
 void swat_server_poll(SwatNetServer* server) {
     if(!server->transport) return;
     ENetHost* host=(ENetHost*)server->transport;
@@ -142,6 +151,11 @@ void swat_server_poll(SwatNetServer* server) {
                 valid=swat_decode_control(event.packet->data,event.packet->dataLength,type,&epoch,&requested_slot);
                 int actual_slot=(int)(remote-server->slots);
                 if(valid && epoch==server->epoch && actual_slot==swat_server_leader(server)) swat_server_restart(server);
+            } else if(valid && type==SWAT_MSG_SCENARIO && event.channelID==CHANNEL_CONTROL) {
+                uint32_t epoch; SwatConfig config;
+                valid=swat_decode_scenario(event.packet->data,event.packet->dataLength,&epoch,&config);
+                int actual_slot=(int)(remote-server->slots);
+                if(valid && epoch==server->epoch && actual_slot==swat_server_leader(server)) swat_server_scenario(server,&config);
             } else valid=false;
             enet_packet_destroy(event.packet);
             if(!valid) enet_peer_disconnect(event.peer,REASON_INVALID);
@@ -153,6 +167,7 @@ void swat_server_tick(SwatNetServer* server,const SwatInput* local) {
     if(!server->transport) return;
     if(server->player_mask && server->sim->end==SWAT_RUNNING) {
         SwatInput inputs[SWAT_MAX_ACTORS]; swat_sim_bot_inputs(server->sim,inputs);
+        server->sim->commander_actor=swat_player_actor(swat_server_leader(server));
         for(int slot=0;slot<SWAT_MAX_PLAYERS;slot++) {
             if(!(server->player_mask&(1u<<slot))) continue;
             SwatInput input=swat_neutral_input();
@@ -280,6 +295,12 @@ void swat_client_restart(SwatNetClient* client) {
     if(client->status!=SWAT_NET_ACTIVE || client->slot!=client->leader_slot) return;
     unsigned char bytes[32];
     net_send((ENetPeer*)client->peer,CHANNEL_CONTROL,bytes,swat_encode_control(bytes,sizeof(bytes),SWAT_MSG_RESTART,client->epoch,0),true);
+    enet_host_flush((ENetHost*)client->transport);
+}
+void swat_client_scenario(SwatNetClient* client,const SwatConfig* config) {
+    if(client->status!=SWAT_NET_ACTIVE || client->slot!=client->leader_slot) return;
+    unsigned char bytes[32];
+    net_send((ENetPeer*)client->peer,CHANNEL_CONTROL,bytes,swat_encode_scenario(bytes,sizeof(bytes),client->epoch,config),true);
     enet_host_flush((ENetHost*)client->transport);
 }
 void swat_client_close(SwatNetClient* client) {

@@ -34,7 +34,8 @@ weapon, collision, damage and objective rules. Solo remains entirely offline.
 A listen host runs authority in the player's process. The dedicated server
 runs the same game without Raylib, a window, audio device or GPU. There are
 four officer slots: slot 0 uses actor 0; actors 1/2 remain suspect/civilian;
-slots 1/2/3 use actors 3/4/5. House NPCs also occupy actors 6/7/8. The
+slots 1/2/3 use actors 3/4/5. House NPCs also occupy actors 6/7/8; sniper actors
+use 9/10 and the complex generated mission can use suspect actor 11. The
 single-officer annex Ocean adapter is preserved.
 
 The server chooses the map, rolls randomness, advances doors, accepts shots,
@@ -47,7 +48,8 @@ harm by any member fails. The house also requires all living civilians cuffed;
 an armed suspect remains unsecured until restrained or killed.
 
 The listen host leads; the first occupied dedicated slot leads, with leadership
-moving to an occupied slot on disconnect. Only the leader can restart. A new
+moving to an occupied slot on disconnect. Only the leader can restart, choose
+a generated scenario or issue sniper commands. A new
 round epoch invalidates queued old inputs/snapshots. There is no host migration:
 closing the listen host ends the session. Leaving online play restores solo.
 
@@ -56,9 +58,13 @@ closing the listen host ends the session. Leaving online play restores solo.
 `protocol.c` explicitly encodes big-endian integers and IEEE float32, validates
 version/type/length/ranges and decodes into temporary storage before applying.
 C layouts, pointers and platform bool representations never cross the wire.
-Protocol v2 includes mission/room data, framed-wall part/material metadata,
-rotated door bases, kit/tool commands, regional injuries and restraints. The
-1,100-object house uses a reliable map baseline and fragmented state packets.
+Protocol v3 includes mission/room data, framed-wall part/material metadata,
+rotated door bases, kit/tool commands, regional injuries and restraints,
+throwable flight/effect state, stocks/exposure, independent wand pose and
+sniper assignments/rifles/targets/travel state. Generated maps include seed,
+accepted tokens, model ID, staging and post geometry. The 1,109-object Cedar
+House and up-to-1,528-object accepted generated houses use a reliable map
+baseline and fragmented state packets.
 
 | Channel | Content | Delivery |
 | --- | --- | --- |
@@ -75,7 +81,10 @@ prevents a large snapshot silently becoming reliable when it exceeds the MTU.
 
 Snapshots carry input acknowledgements, actor pose/weapon/equipment state, cover HP,
 doors and recent sounds. Replica application restores stance/lean colliders
-without advancing physics; destroyed cover loses its collider. Old revisions
+without advancing physics; destroyed cover loses its collider. Replicated
+canisters carry visual state without creating a second simulated projectile.
+Reliable scenario requests are bound to the connected leader and current epoch;
+changing mission clears prior inputs, canisters and sniper assignments. Old revisions
 are discarded. Input queues, packet sizes and waiting data are bounded. Missing
 input becomes neutral after 250 ms. Online menus/focus loss submit neutral
 controls while authority continues; solo menus freeze simulation.
@@ -98,11 +107,37 @@ audio observations; hearing/equipment/house policies need a new versioned
 contract and curriculum. Human play and dedicated servers default to the house;
 policy playback and the current training adapter default to the annex.
 
-Planning's cutaway shows authored geometry without hidden actors. Fixed
-overwatch previews use real exterior camera positions and ordinary depth
-occlusion. They are initial preview tools, not a piloted drone or autonomous
-sniper. Optiwand cameras sweep a small sphere through actual geometry; the
-officer's hearing position stays at their body.
+Planning's cutaway shows geometry without hidden actors. Overwatch previews
+and controllable snipers use exterior posts and ordinary depth occlusion.
+Target marking permits optical glass visibility, while firing uses shared
+material penetration. An explicit hold/execute command, ammunition, cooldowns
+and a conservative friendly/compliant-person corridor govern fire. Moving
+posts is a timed relocation that preserves health and ammunition. Snipers
+are physical actors, but do not join the entry squad's extraction requirement.
+
+Optiwand cameras sweep a small sphere through actual geometry. Near a closed
+door, G chooses the low lens and crouch automatically; corner/over-cover modes
+use two-segment sweeps. Lens yaw/pitch is independent of the officer/stem, and
+inspection locks body movement/fire. Hearing stays at the officer's body;
+direct sniper control listens at that sniper.
+
+## Materials, throwables and generation
+
+One material table supplies color, damage resistance, transmission/absorption,
+density, contact friction/restitution/rolling resistance and impact/footstep
+timbre. Box3D shape materials use those values; restitution combines the two
+surfaces geometrically. A hollow-canister mass overrides solid steel density
+for its spherical body. Canisters use gravity and bullet CCD; contact events
+produce impacts using the struck material. Flash/CS exposure traces through
+live world geometry, so broken cover changes exposure. Taser hits use a short
+checked trace. All equipment rules run on authority and preserve finite stocks.
+
+The building policy chooses twelve categorical grammar tokens with a tiny
+49→64→3 tanh network in C. Validation precedes physical construction, including
+the exact wall-piece count. A shipped bootstrap model was trained from authored
+scores; explicit local player comparisons feed an optional offline reward-model
+and policy-update pipeline. [GENERATION.md](GENERATION.md) records the format,
+data provenance, tests and limits. The layout model does not control NPCs.
 
 ## Modifying the game with ordinary code
 
@@ -113,7 +148,11 @@ or editor. These are the intended entry points for a developer or coding agent:
 | --- | --- |
 | House walls, openings, room dimensions, staging or camera posts | `mission.c` builders and mission table |
 | Add a scenario | `SwatMission`/`SwatMissionDef`, build/spawn branch in `sim.c`; update protocol bounds/tests |
-| Material color, projectile resistance, absorption or transmission | `materials.c`; material enum in `materials.h` |
+| Material color, resistance, contact physics, absorption/transmission or impact timbre | `materials.c`; material enum in `materials.h` |
+| Canister motion, flash/CS exposure, masks or taser | `tactical.c`; shared geometry and material tables |
+| Sniper assignments, visibility, interlocks and orders | `overwatch.c`; rifle profiles in `weapons.c` |
+| Generated room grammar, acceptance rules or learned policy | `generation.c`, `layout_tool.c`, `train_layout.py` |
+| Player comparisons | `feedback.c`, Houses tab; no automatic upload or training |
 | Kit mass, speed, torso protection and tools | `equipment.c` and authority equipment step in `sim.c` |
 | Weapon timing, capacity, spread and impact behavior | `weapons.c`; authority hit processing in `sim.c` |
 | Injury/compliance/arrest/objective behavior | `sim.c`; add scenario checks in `tests/test_mission.c` |
@@ -121,7 +160,7 @@ or editor. These are the intended entry points for a developer or coding agent:
 | New remote command/state | `SwatInput` and `protocol.c`, with protocol version/round-trip tests |
 
 Change simulation rules once so solo, co-op and future policy actors agree.
-Do not put authoritative damage or kit changes in the UI. Protocol v2 peers
+Do not put authoritative damage or kit changes in the UI. Protocol v3 peers
 must agree on behavior; mod compatibility negotiation/hot reload is future work.
 
 | Tier | Purpose | Agreement to verify |
@@ -139,7 +178,8 @@ policy quality. There is no second approximate training simulator yet.
 1. Integrate art/animation with actual eye, muzzle and collider poses; build an
    interaction/test range and saved input replay.
 2. Expand the house into replayable missions with useful suspect/civilian
-   behavior, evidence, rules of engagement, equipment slots and overwatch orders.
+   behavior, evidence, rules of engagement and equipment slots; evaluate generated
+   houses and sniper sight lines with players.
 3. Produce material/weapon/footstep audio and calibrated room acoustics before
    audio policy training.
 4. Improve remote movement presentation, measure loss/bandwidth, and qualify

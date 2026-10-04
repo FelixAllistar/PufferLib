@@ -67,9 +67,8 @@ if ! cmake --build "$SWAT_BUILD/enet" --parallel 4 > "$SWAT_BUILD/enet-build.log
     exit 1
 fi
 
-SWAT_CORE=(body.c controller.c weapons.c materials.c world.c mission.c equipment.c acoustics.c audio_dsp.c sim.c)
+SWAT_CORE=(body.c controller.c weapons.c materials.c world.c mission.c equipment.c tactical.c overwatch.c generation.c acoustics.c audio_dsp.c sim.c)
 SWAT_SOURCES=()
-for source in "${SWAT_CORE[@]}"; do SWAT_SOURCES+=("$SWAT_ROOT/ocean/swat/$source"); done
 SWAT_FLAGS=(-O2 -g -std=gnu11 -ffp-contract=off -Wall -Wextra
     -Wno-unused-parameter -Wno-unused-function -Wno-unknown-pragmas
     -I"$SWAT_ROOT/src" -I"$SWAT_ROOT/vendor" -I"$SWAT_ROOT/vendor/enet/include" -I"$SWAT_ROOT/ocean/swat"
@@ -77,11 +76,22 @@ SWAT_FLAGS=(-O2 -g -std=gnu11 -ffp-contract=off -Wall -Wextra
 SWAT_HEADLESS_LIBS=("$SWAT_BUILD/box3d/src/libbox3d.a" "$SWAT_BUILD/enet/libenet.a" -static -lws2_32 -lwinmm -lm)
 SWAT_LIBS=("$SWAT_BUILD/box3d/src/libbox3d.a" "$SWAT_BUILD/enet/libenet.a" "$SWAT_RAYLIB/lib/libraylib.a"
     -static -lopengl32 -lgdi32 -lws2_32 -lwinmm -lm)
-SWAT_NET=("$SWAT_ROOT/ocean/swat/protocol.c" "$SWAT_ROOT/ocean/swat/net.c")
+SWAT_NET=()
+# Compile the growing shared simulation once for the player, server and checks.
+# Each invocation refreshes objects with the same flags; no stale header cache.
+mkdir -p "$SWAT_BUILD/objects"
+for source in "${SWAT_CORE[@]}" protocol.c net.c; do
+    object="$SWAT_BUILD/objects/${source%.c}.o"
+    "$SWAT_CC" "${SWAT_FLAGS[@]}" -c "$SWAT_ROOT/ocean/swat/$source" -o "$object"
+    case "$source" in
+        protocol.c|net.c) SWAT_NET+=("$object") ;;
+        *) SWAT_SOURCES+=("$object") ;;
+    esac
+done
 
 "$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/swat.c" \
     "$SWAT_ROOT/ocean/swat/render.c" "$SWAT_ROOT/ocean/swat/frontend.c" \
-    "$SWAT_ROOT/ocean/swat/settings.c" "$SWAT_ROOT/ocean/swat/sound_view.c" "$SWAT_ROOT/ocean/swat/spatial_audio.c" \
+    "$SWAT_ROOT/ocean/swat/settings.c" "$SWAT_ROOT/ocean/swat/feedback.c" "$SWAT_ROOT/ocean/swat/sound_view.c" "$SWAT_ROOT/ocean/swat/spatial_audio.c" \
     "${SWAT_NET[@]}" "${SWAT_SOURCES[@]}" \
     "${SWAT_LIBS[@]}" -o "$SWAT_BUILD/swat.exe"
 
@@ -98,13 +108,25 @@ SWAT_NET=("$SWAT_ROOT/ocean/swat/protocol.c" "$SWAT_ROOT/ocean/swat/net.c")
     "${SWAT_SOURCES[@]}" "${SWAT_HEADLESS_LIBS[@]}" -o "$SWAT_BUILD/test_acoustics.exe"
 
 "$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/tests/test_audio_dsp.c" \
-    "$SWAT_ROOT/ocean/swat/audio_dsp.c" -static -lm -o "$SWAT_BUILD/test_audio_dsp.exe"
+    "$SWAT_ROOT/ocean/swat/audio_dsp.c" "$SWAT_ROOT/ocean/swat/materials.c" -static -lm -o "$SWAT_BUILD/test_audio_dsp.exe"
 
 "$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/tests/test_spatial_audio.c" \
     "$SWAT_ROOT/ocean/swat/spatial_audio.c" -static -lm -o "$SWAT_BUILD/test_spatial_audio.exe"
 
 "$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/tests/test_mission.c" \
     "$SWAT_ROOT/ocean/swat/protocol.c" "${SWAT_SOURCES[@]}" "${SWAT_HEADLESS_LIBS[@]}" -o "$SWAT_BUILD/test_mission.exe"
+
+"$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/tests/test_tactical.c" \
+    "$SWAT_ROOT/ocean/swat/protocol.c" "${SWAT_SOURCES[@]}" "${SWAT_HEADLESS_LIBS[@]}" -o "$SWAT_BUILD/test_tactical.exe"
+
+"$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/tests/test_overwatch.c" \
+    "$SWAT_ROOT/ocean/swat/protocol.c" "${SWAT_SOURCES[@]}" "${SWAT_HEADLESS_LIBS[@]}" -o "$SWAT_BUILD/test_overwatch.exe"
+
+"$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/layout_tool.c" \
+    "${SWAT_SOURCES[@]}" "${SWAT_HEADLESS_LIBS[@]}" -o "$SWAT_BUILD/layout_tool.exe"
+
+"$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/tests/test_generation.c" \
+    "$SWAT_ROOT/ocean/swat/protocol.c" "${SWAT_SOURCES[@]}" "${SWAT_HEADLESS_LIBS[@]}" -o "$SWAT_BUILD/test_generation.exe"
 
 "$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/audio_lab.c" \
     "$SWAT_ROOT/ocean/swat/spatial_audio.c" "${SWAT_SOURCES[@]}" "${SWAT_HEADLESS_LIBS[@]}" -o "$SWAT_BUILD/audio_lab.exe"
@@ -120,7 +142,7 @@ SWAT_NET=("$SWAT_ROOT/ocean/swat/protocol.c" "$SWAT_ROOT/ocean/swat/net.c")
 
 "$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/tests/test_frontend.c" \
     "$SWAT_ROOT/ocean/swat/render.c" "$SWAT_ROOT/ocean/swat/frontend.c" \
-    "$SWAT_ROOT/ocean/swat/settings.c" "$SWAT_ROOT/ocean/swat/sound_view.c" "$SWAT_ROOT/ocean/swat/spatial_audio.c" "${SWAT_SOURCES[@]}" \
+    "$SWAT_ROOT/ocean/swat/settings.c" "$SWAT_ROOT/ocean/swat/feedback.c" "$SWAT_ROOT/ocean/swat/sound_view.c" "$SWAT_ROOT/ocean/swat/spatial_audio.c" "${SWAT_SOURCES[@]}" \
     "${SWAT_LIBS[@]}" -o "$SWAT_BUILD/test_frontend.exe"
 
 mkdir -p "$SWAT_BUILD/config"

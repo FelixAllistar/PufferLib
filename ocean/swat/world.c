@@ -2,9 +2,21 @@
 #include <assert.h>
 #include <string.h>
 
+static float swat_bounce(float a,uint64_t ma,float b,uint64_t mb) {
+    (void)ma; (void)mb;
+    return sqrtf(a*b); // a soft receiving surface damps a hard projectile
+}
+b3SurfaceMaterial swat_physics_material(SwatMaterial material) {
+    const SwatMaterialDef* m=swat_material(material);
+    b3SurfaceMaterial result={0};
+    result.friction=m->friction; result.restitution=m->restitution;
+    result.rollingResistance=m->rolling_resistance; result.userMaterialId=(uint64_t)material;
+    return result;
+}
 void swat_world_init(SwatWorld* w) {
     memset(w,0,sizeof(*w));
     b3WorldDef def = b3DefaultWorldDef();
+    def.restitutionCallback=swat_bounce;
     w->id = b3CreateWorld(&def);
 }
 
@@ -27,6 +39,7 @@ int swat_world_box(SwatWorld* w, b3Pos center, b3Vec3 half, SwatMaterial materia
     o->body = b3CreateBody(w->id,&bd);
     b3Body_SetUserData(o->body,&o->tag);
     b3ShapeDef sd = b3DefaultShapeDef();
+    sd.baseMaterial=swat_physics_material(material); sd.density=swat_material(material)->density;
     b3BoxHull hull = b3MakeBoxHull(half.x,half.y,half.z);
     o->shape = b3CreateHullShape(o->body,&sd,&hull.base);
     return index;
@@ -59,15 +72,17 @@ void swat_world_build_range(SwatWorld* w, uint32_t* seed, bool randomize) {
     swat_world_box(w,(b3Pos){3.0f,2.0f,4.8f},swat_v(1.8f,0.8f,1.0f),SWAT_CONCRETE,0);
 }
 
-typedef struct SwatRayContext { SwatHit result; b3BodyId ignore; } SwatRayContext;
+typedef struct SwatRayContext { SwatHit result; b3BodyId ignore; bool world_only; } SwatRayContext;
 static float swat_ray_callback(b3ShapeId shape, b3Pos point, b3Vec3 normal,
     float fraction, uint64_t material, int triangle, int child, void* context) {
     (void)material; (void)triangle; (void)child;
     SwatRayContext* c = (SwatRayContext*)context;
     b3BodyId body = b3Shape_GetBody(shape);
     if (B3_ID_EQUALS(body,c->ignore)) return -1.0f;
+    SwatTag* tag = (SwatTag*)b3Body_GetUserData(body);
+    if(tag && tag->kind==SWAT_HIT_PROJECTILE) return -1.0f;
+    if(c->world_only && tag && tag->kind!=SWAT_HIT_WORLD) return -1.0f;
     if (fraction <= c->result.fraction) {
-        SwatTag* tag = (SwatTag*)b3Body_GetUserData(body);
         c->result.hit = true;
         c->result.fraction = fraction;
         c->result.point = point;
@@ -98,6 +113,12 @@ SwatHit swat_world_sphere_cast(const SwatWorld* w, b3Pos origin,
     b3World_CastShape(w->id,origin,&proxy,translation,b3DefaultQueryFilter(),swat_ray_callback,&c);
     c.result.distance = c.result.fraction*b3Length(translation);
     return c.result;
+}
+
+bool swat_world_visible(const SwatWorld* w,b3Pos from,b3Pos to) {
+    SwatRayContext c={0}; c.result.fraction=1; c.world_only=true;
+    b3World_CastRay(w->id,from,b3SubPos(to,from),b3DefaultQueryFilter(),swat_ray_callback,&c);
+    return !c.result.hit;
 }
 
 bool swat_world_damage(SwatWorld* w, int object, float damage) {

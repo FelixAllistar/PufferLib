@@ -4,9 +4,9 @@
 #include <string.h>
 
 int main(void) {
-    SwatAudioMixer a,b;
+    static SwatAudioMixer a,b;
     swat_audio_init(&a,SWAT_AUDIO_RATE); swat_audio_init(&b,SWAT_AUDIO_RATE);
-    SwatSoundEvent event={1,0,0,SWAT_SOUND_SHOT,{0,1,3},3,100};
+    SwatSoundEvent event={1,0,0,SWAT_SOUND_SHOT,{0,1,3},3,100,SWAT_CONCRETE};
     SwatAcousticPath right={{1,1,1},1,{0,0,1},0,false};
     b3Vec3 listener_right={0,0,1};
     swat_audio_start(&a,event,right,listener_right); swat_audio_start(&b,event,right,listener_right);
@@ -52,6 +52,23 @@ int main(void) {
         }
     }
     assert(long_tail>short_tail*10 && long_tail>1e-6);
+    // The listener is outdoors (zero room bus), but indoor source decay still
+    // travels through the same directional/filter path as its direct sound.
+    swat_audio_init(&a,SWAT_AUDIO_RATE); swat_audio_init(&b,SWAT_AUDIO_RATE);
+    SwatAudioVoice* indoor=swat_audio_start(&a,event,right,listener_right);
+    swat_audio_source_room(indoor,long_room,true,SWAT_AUDIO_RATE);
+    swat_audio_start(&b,event,right,listener_right);
+    double source_tail=0,dry_tail=0;
+    for(int block=0;block<48;block++) {
+        swat_audio_mix(&a,first,2048,1); swat_audio_mix(&b,second,2048,1);
+        for(int i=0;i<4096;i++) {
+            assert(isfinite(first[i]) && fabsf(first[i])<1);
+            if(block>12) { source_tail+=first[i]*first[i]; dry_tail+=second[i]*second[i]; }
+        }
+    }
+    assert(source_tail>1e-6 && source_tail>dry_tail*100);
+    assert(!indoor->active);
+    puts("PASS source-room DSP: room decay reaches an outdoor listener through the source path, stays bounded and expires");
     puts("PASS room DSP: bounded stereo reflections, persistent decay after source expiry and RT60-dependent late energy");
     puts("PASS audio DSP: deterministic stereo PCM, right/left orientation, mute, bounded overlapping voices, voice expiry and material low-pass");
     return 0;

@@ -3,21 +3,23 @@
 
 // Fictional game tuning. The inventory retains partially used magazines as
 // pooled reserve ammunition; it does not model individual magazine objects.
-static const SwatWeaponDef swat_weapon_defs[3] = {
+static const SwatWeaponDef swat_weapon_defs[5] = {
     {"GE CARBINE",30,6,120,156,24,34.0f,60.0f,1.0f,2.0f,0.08f,1.2f,true},
     {"P9 SIDEARM",15,10,90,120,18,26.0f,40.0f,0.45f,2.5f,0.15f,1.7f,false},
     {"LL IMPACT LAUNCHER",5,48,150,180,30,6.0f,18.0f,0.14f,3.0f,0.5f,1.8f,false},
+    {"GE PRECISION",4,90,180,210,36,82.0f,150.0f,2.6f,3.0f,.025f,2.5f,false},
+    {"GE MARKSMAN",10,24,150,180,30,48.0f,100.0f,1.6f,2.5f,.065f,1.5f,false},
 };
 
 const SwatWeaponDef* swat_weapon_def(int slot) {
-    return &swat_weapon_defs[slot>=0 && slot<3 ? slot : 0];
+    return &swat_weapon_defs[slot>=0 && slot<5 ? slot : 0];
 }
 
 const SwatWeaponDef* swat_arsenal_def(const SwatArsenal* a,int slot) {
     return swat_weapon_def(slot==1 ? 1 : a->primary);
 }
 void swat_weapons_primary(SwatArsenal* a,int definition) {
-    a->primary=definition==2 ? 2 : 0;
+    a->primary=definition>=2 && definition<=4 ? definition : 0;
     const SwatWeaponDef* d=swat_arsenal_def(a,0);
     a->slots[0]=(SwatWeapon){.magazine=d->capacity,.reserve=d->capacity*3,.chambered=true,.mode=SWAT_SEMI};
     a->equip_remaining=d->equip_ticks;

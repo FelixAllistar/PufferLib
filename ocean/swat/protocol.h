@@ -7,12 +7,12 @@
 extern "C" {
 #endif
 
-#define SWAT_NET_VERSION 2
+#define SWAT_NET_VERSION 3
 #define SWAT_NET_MAGIC 0x53474531u
 #define SWAT_NET_PACKET_MAX 98304
 #define SWAT_NET_SOUNDS 32
 typedef enum SwatMessage { SWAT_MSG_INPUT=1, SWAT_MSG_MAP, SWAT_MSG_SNAPSHOT,
-                          SWAT_MSG_WELCOME, SWAT_MSG_RESTART } SwatMessage;
+                          SWAT_MSG_WELCOME, SWAT_MSG_RESTART, SWAT_MSG_SCENARIO } SwatMessage;
 typedef struct SwatMapObject {
     b3Pos center,hinge;
     b3Vec3 half;
@@ -29,6 +29,9 @@ typedef struct SwatMap {
     int room_count;
     SwatRoom rooms[SWAT_MAX_ROOMS];
     SwatMapObject objects[SWAT_MAX_OBJECTS];
+    SwatMissionDef mission;
+    int layout_tokens[SWAT_LAYOUT_TOKENS];
+    uint32_t layout_policy_id;
 } SwatMap;
 typedef struct SwatActorState {
     bool present,alive,crouched,grounded,sprinting,muzzle_blocked;
@@ -51,6 +54,9 @@ typedef struct SwatSnapshot {
     SwatObjectState objects[SWAT_MAX_OBJECTS];
     SwatSoundEvent sounds[SWAT_NET_SOUNDS];
     int sound_count;
+    SwatProjectile projectiles[SWAT_MAX_PROJECTILES];
+    SwatSniper snipers[SWAT_SNIPERS];
+    int commander_actor;
 } SwatSnapshot;
 typedef struct SwatCommand { uint32_t epoch,sequence; SwatInput input; } SwatCommand;
 
@@ -65,6 +71,8 @@ size_t swat_encode_snapshot(void* bytes,size_t size,const SwatSnapshot* state);
 bool swat_decode_snapshot(SwatSnapshot* state,const void* bytes,size_t size);
 size_t swat_encode_control(void* bytes,size_t size,SwatMessage type,uint32_t epoch,int slot);
 bool swat_decode_control(const void* bytes,size_t size,SwatMessage type,uint32_t* epoch,int* slot);
+size_t swat_encode_scenario(void* bytes,size_t size,uint32_t epoch,const SwatConfig* config);
+bool swat_decode_scenario(const void* bytes,size_t size,uint32_t* epoch,SwatConfig* config);
 void swat_capture_map(const SwatSim* sim,uint32_t epoch,SwatMap* map);
 void swat_capture_snapshot(const SwatSim* sim,uint32_t epoch,SwatSnapshot* state);
 void swat_apply_map(SwatSim* sim,const SwatMap* map);

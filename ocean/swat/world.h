@@ -10,7 +10,7 @@ extern "C" {
 
 #define SWAT_MAX_OBJECTS 1536
 #define SWAT_MAX_ROOMS 8
-typedef enum SwatHitKind { SWAT_HIT_NONE, SWAT_HIT_WORLD, SWAT_HIT_ACTOR } SwatHitKind;
+typedef enum SwatHitKind { SWAT_HIT_NONE, SWAT_HIT_WORLD, SWAT_HIT_ACTOR, SWAT_HIT_PROJECTILE } SwatHitKind;
 typedef enum SwatPart { SWAT_PART_SOLID, SWAT_PART_SKIN, SWAT_PART_FRAME, SWAT_PART_SUPPORT } SwatPart;
 typedef struct SwatRoom {
     b3Pos center;
@@ -63,6 +63,8 @@ float swat_material_resistance(SwatMaterial material);
 void swat_world_step_doors(SwatWorld* world);
 void swat_world_place(SwatObject* object, float yaw);
 int swat_world_room(const SwatWorld* world, b3Pos position);
+b3SurfaceMaterial swat_physics_material(SwatMaterial material);
+bool swat_world_visible(const SwatWorld* world,b3Pos from,b3Pos to);
 
 #ifdef __cplusplus
 }

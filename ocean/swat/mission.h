@@ -1,7 +1,7 @@
 #ifndef SWAT_MISSION_H
 #define SWAT_MISSION_H
 #include "world.h"
-typedef enum SwatMission { SWAT_ANNEX, SWAT_HOUSE, SWAT_MISSION_COUNT } SwatMission;
+typedef enum SwatMission { SWAT_ANNEX, SWAT_HOUSE, SWAT_GENERATED, SWAT_MISSION_COUNT } SwatMission;
 typedef struct SwatOverwatch {
     const char* name;
     b3Pos position, target;
@@ -18,5 +18,7 @@ void swat_mission_build_house(SwatWorld* world);
 // A framed wall runs along its local Z axis; opening coordinates are local Z.
 void swat_build_framed_wall(SwatWorld* w,b3Pos origin,float yaw,float length,
                             float height,float opening_center,float opening_width,
+                            float sill,float opening_height,bool exterior);
+int swat_framed_wall_pieces(float length,float height,float opening_center,float opening_width,
                             float sill,float opening_height,bool exterior);
 #endif

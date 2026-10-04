@@ -20,13 +20,27 @@ int main(int argc,char** argv) {
     for(int i=1;i<argc;i++) {
         if(!strcmp(argv[i],"--help")) {
             puts("SWAT dedicated server: --port 27474 --seed 42 --max-ticks 18000\n"
-                 "  --mission house|annex  --hostile-fire 0|1  --randomize 0|1  --run-ticks N\n"
+                 "  --mission house|annex|generated  --hostile-fire 0|1  --randomize 0|1  --run-ticks N\n"
+                 "  --layout-seed N --difficulty 0|1|2 --generator neural|uniform --layout-model FILE\n"
                  "Four player slots; first connected officer leads/restarts. Ctrl+C stops the server.");
             return 0;
         }
         if(!strcmp(argv[i],"--mission")) {
-            if(++i>=argc || (strcmp(argv[i],"house") && strcmp(argv[i],"annex"))) { fprintf(stderr,"Invalid mission\n"); return 2; }
-            config.mission=!strcmp(argv[i],"house") ? SWAT_HOUSE : SWAT_ANNEX; continue;
+            if(++i>=argc || (strcmp(argv[i],"house") && strcmp(argv[i],"annex") && strcmp(argv[i],"generated"))) { fprintf(stderr,"Invalid mission\n"); return 2; }
+            config.mission=!strcmp(argv[i],"house") ? SWAT_HOUSE : (!strcmp(argv[i],"generated") ? SWAT_GENERATED : SWAT_ANNEX); continue;
+        }
+        if(!strcmp(argv[i],"--layout-model")) {
+            if(++i>=argc || !swat_layout_load_policy(argv[i])) { fprintf(stderr,"Invalid layout model\n"); return 2; } continue;
+        }
+        if(!strcmp(argv[i],"--generator")) {
+            if(++i>=argc || (strcmp(argv[i],"neural") && strcmp(argv[i],"uniform"))) { fprintf(stderr,"Invalid generator\n"); return 2; }
+            config.generator=!strcmp(argv[i],"neural") ? SWAT_LAYOUT_NEURAL : SWAT_LAYOUT_UNIFORM; continue;
+        }
+        if(!strcmp(argv[i],"--layout-seed")) {
+            if(++i>=argc) return 2;
+            char* end; unsigned long long n=strtoull(argv[i],&end,10);
+            if(end==argv[i] || *end || argv[i][0]=='-' || n>UINT32_MAX) { fprintf(stderr,"Invalid layout seed\n"); return 2; }
+            config.layout_seed=(uint32_t)n; continue;
         }
         const char* key=argv[i]; long n;
         if(++i>=argc || !number(argv[i],0,3600000,&n)) {
@@ -37,6 +51,7 @@ int main(int argc,char** argv) {
         else if(!strcmp(key,"--max-ticks") && n>0) config.max_ticks=(int)n;
         else if(!strcmp(key,"--hostile-fire") && n<=1) config.hostile_fire=n!=0;
         else if(!strcmp(key,"--randomize") && n<=1) config.randomize=n!=0;
+        else if(!strcmp(key,"--difficulty") && n<=2) config.difficulty=(int)n;
         else if(!strcmp(key,"--run-ticks")) run_ticks=(int)n;
         else { fprintf(stderr,"Unknown or invalid option %s\n",key); return 2; }
     }

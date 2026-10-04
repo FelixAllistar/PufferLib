@@ -10,7 +10,8 @@ extern "C" {
 #define SWAT_SOUND_LIFETIME 120
 typedef enum SwatSoundKind {
     SWAT_SOUND_SHOT, SWAT_SOUND_STEP, SWAT_SOUND_RELOAD, SWAT_SOUND_HANDLE,
-    SWAT_SOUND_DOOR, SWAT_SOUND_IMPACT, SWAT_SOUND_BREAK, SWAT_SOUND_COMMAND, SWAT_SOUND_KINDS
+    SWAT_SOUND_DOOR, SWAT_SOUND_IMPACT, SWAT_SOUND_BREAK, SWAT_SOUND_COMMAND,
+    SWAT_SOUND_FLASH, SWAT_SOUND_GAS, SWAT_SOUND_TASER, SWAT_SOUND_KINDS
 } SwatSoundKind;
 typedef struct SwatSoundEvent {
     uint32_t id;
@@ -18,6 +19,7 @@ typedef struct SwatSoundEvent {
     SwatSoundKind kind;
     b3Pos position;
     float strength, range;
+    SwatMaterial material;
 } SwatSoundEvent;
 typedef struct SwatSoundLog {
     SwatSoundEvent events[SWAT_SOUND_CAPACITY];
@@ -47,6 +49,8 @@ SwatRoomAcoustics swat_acoustic_room(const SwatWorld* world,b3Pos listener);
 
 void swat_sound_emit(SwatSoundLog* log, int tick, int source, SwatSoundKind kind,
                      b3Pos position, float strength, float range);
+void swat_sound_surface(SwatSoundLog* log,int tick,int source,SwatSoundKind kind,
+                       b3Pos position,float strength,float range,SwatMaterial material);
 void swat_sound_append(SwatSoundLog* log, SwatSoundEvent event);
 const SwatSoundEvent* swat_sound_at(const SwatSoundLog* log, int index);
 SwatAcousticPath swat_acoustic_path(const SwatWorld* world, const SwatSoundEvent* event,

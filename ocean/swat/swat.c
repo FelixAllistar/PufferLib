@@ -15,7 +15,9 @@ static void usage(const char* path) {
         "  %s host [--port 27474]\n"
         "  %s join ADDRESS [--port 27474]\n"
         "  --settings FILE.ini          Override the saved player preferences\n"
-        "  --mission house|annex        Human default: house; policy default: annex\n"
+        "  --mission house|annex|generated  Human default: house; policy default: annex\n"
+        "  --layout-seed N --difficulty 0|1|2 --generator neural|uniform\n"
+        "  --layout-model FILE          Optional trained house policy\n"
         "  --capture-screen SCREEN      game, main, pause, settings, plan, or overwatch\n"
         "Run from the repository root so config/default.ini and config/swat.ini are available.\n",
         path,path,path,path,path,path);
@@ -50,10 +52,11 @@ static void policy_action(PufferNet* policy, float* obs, float* actions,
 }
 
 int main(int argc, char** argv) {
-    const char* model=NULL; const char* capture=NULL; const char* settings_path=NULL;
+    const char* model=NULL; const char* capture=NULL; const char* settings_path=NULL; const char* layout_model=NULL;
     const char* join_address=NULL; bool start_host=false;
     int port=SWAT_DEFAULT_PORT;
-    int mission=-1,preview=0;
+    int mission=-1,preview=0,difficulty=1,generator=SWAT_LAYOUT_NEURAL;
+    uint32_t layout_seed=1;
     SwatScreen capture_screen=SWAT_SCREEN_GAME;
     bool eval=false,deterministic=false,max_ticks_override=false;
     int episodes=8,override_count=0;
@@ -69,8 +72,19 @@ int main(int argc, char** argv) {
             if(++i>=argc) { usage(argv[0]); free(overrides); return 1; }
             join_address=argv[i];
         } else if(!strcmp(argv[i],"--mission")) {
-            if(++i>=argc || (strcmp(argv[i],"house") && strcmp(argv[i],"annex"))) { usage(argv[0]); free(overrides); return 1; }
-            mission=!strcmp(argv[i],"house") ? SWAT_HOUSE : SWAT_ANNEX;
+            if(++i>=argc || (strcmp(argv[i],"house") && strcmp(argv[i],"annex") && strcmp(argv[i],"generated"))) { usage(argv[0]); free(overrides); return 1; }
+            mission=!strcmp(argv[i],"house") ? SWAT_HOUSE : (!strcmp(argv[i],"generated") ? SWAT_GENERATED : SWAT_ANNEX);
+        } else if(!strcmp(argv[i],"--layout-model")) {
+            if(++i>=argc) { usage(argv[0]); free(overrides); return 1; } layout_model=argv[i];
+        } else if(!strcmp(argv[i],"--generator")) {
+            if(++i>=argc || (strcmp(argv[i],"neural") && strcmp(argv[i],"uniform"))) { usage(argv[0]); free(overrides); return 1; }
+            generator=!strcmp(argv[i],"neural") ? SWAT_LAYOUT_NEURAL : SWAT_LAYOUT_UNIFORM;
+        } else if(!strcmp(argv[i],"--layout-seed") || !strcmp(argv[i],"--difficulty")) {
+            bool seed_option=!strcmp(argv[i],"--layout-seed");
+            if(++i>=argc) { usage(argv[0]); free(overrides); return 1; }
+            char* end; unsigned long long n=strtoull(argv[i],&end,10);
+            if(end==argv[i] || *end || argv[i][0]=='-' || n>(seed_option ? UINT32_MAX : 2u)) { usage(argv[0]); free(overrides); return 1; }
+            if(seed_option) layout_seed=(uint32_t)n; else difficulty=(int)n;
         } else if(!strcmp(argv[i],"--port")) {
             if(++i>=argc) { usage(argv[0]); free(overrides); return 1; }
             char* end; long parsed=strtol(argv[i],&end,10);
@@ -113,6 +127,9 @@ int main(int argc, char** argv) {
     if((model || capture) && (start_host || join_address)) {
         fprintf(stderr,"swat: host/join requires human play\n"); free(overrides); return 1;
     }
+    if(layout_model && !swat_layout_load_policy(layout_model)) {
+        fprintf(stderr,"swat: cannot load layout model %s\n",layout_model); free(overrides); return 1;
+    }
     Ini ini={0};
     puf_ini_load_env(&ini,"swat",override_count,overrides);
     free(overrides);
@@ -126,6 +143,7 @@ int main(int argc, char** argv) {
     env.agents[0].observations=obs; env.agents[0].actions=actions;
     env.agents[0].rewards=&reward; env.agents[0].terminals=&terminal;
     env.sim->config.mission=mission<0 ? (model ? SWAT_ANNEX : SWAT_HOUSE) : mission;
+    env.sim->config.layout_seed=layout_seed; env.sim->config.generator=generator; env.sim->config.difficulty=difficulty;
     if(!model && !max_ticks_override && env.sim->config.max_ticks==1800) env.sim->config.max_ticks=18000;
     puf_reset(&env);
     SwatConfig solo_config=env.sim->config;
@@ -201,7 +219,7 @@ int main(int argc, char** argv) {
             swat_client_poll(&client);
             if(client.status==SWAT_NET_ACTIVE) {
                 app.actor=client.actor; app.networked=true; app.leader=client.slot==client.leader_slot;
-                if(app.connect_pending) { app.connect_pending=false; swat_frontend_set_screen(&app,SWAT_SCREEN_GAME); }
+                if(app.connect_pending) { app.connect_pending=false; app.last_episode=-1; swat_frontend_set_screen(&app,SWAT_SCREEN_GAME); }
             } else if(client.status==SWAT_NET_FAILED) {
                 snprintf(app.notice,sizeof(app.notice),"%s",client.error);
                 swat_client_close(&client); env.sim->config=solo_config; env.sim->rng=seed; puf_reset(&env);
@@ -211,6 +229,14 @@ int main(int argc, char** argv) {
             }
         }
         if(!capture) swat_frontend_update(&app,env.sim,policy!=NULL);
+        if(app.scenario_requested) {
+            if(app.leader) {
+                if(server.transport) swat_server_scenario(&server,&app.scenario);
+                else if(client.transport) swat_client_scenario(&client,&app.scenario);
+                else { env.sim->config=solo_config=app.scenario; puf_reset(&env); terminal=1; }
+            }
+            app.scenario_requested=false; app.reset_input=true;
+        }
         if(app.restart_requested) {
             if(server.transport) swat_server_restart(&server);
             else if(client.transport) swat_client_restart(&client);
@@ -245,6 +271,7 @@ int main(int argc, char** argv) {
         }
         view.actor=app.actor;
         view.planning=app.screen==SWAT_SCREEN_PLAN; view.plan_preview=app.plan_preview; view.plan_yaw=app.plan_yaw;
+        view.scope=app.screen==SWAT_SCREEN_SCOPE; view.sniper_unit=app.selected_sniper;
         view.yaw_offset=look_x+(client.status==SWAT_NET_ACTIVE ? client.pending_yaw : 0);
         view.pitch_offset=look_y+(client.status==SWAT_NET_ACTIVE ? client.pending_pitch : 0);
         if(server.transport) {
@@ -253,7 +280,8 @@ int main(int argc, char** argv) {
         } else if(client.status==SWAT_NET_ACTIVE)
             snprintf(view.session_status,sizeof(view.session_status),"CO-OP / GOLD %02d / %d ms",client.slot+1,client.ping_ms);
         else view.session_status[0]='\0';
-        swat_sound_view_update(&sound,env.sim,app.actor,app.settings.master_volume,
+        int listener=view.scope && env.sim->snipers[app.selected_sniper].deployed ? swat_sniper_actor(app.selected_sniper) : app.actor;
+        swat_sound_view_update(&sound,env.sim,listener,app.settings.master_volume,
             client.status==SWAT_NET_ACTIVE ? client.sound_floor : 0,view.yaw_offset);
         BeginDrawing();
         swat_view_draw(&view,env.sim,policy!=NULL,app.settings.vertical_fov);

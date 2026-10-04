@@ -1,8 +1,9 @@
 # SWAT: Gold Element
 
 A standalone tactical game within Ocean, with environment/config name `swat`.
-Human play now defaults to Cedar House: a small hostage mission with planning,
-equipment, arrests and layered construction. The training annex remains the
+Human play defaults to Cedar House: a small hostage mission with planning,
+equipment, arrests and layered construction. Planning also offers generated
+residences, two controllable snipers, and local house comparisons. The training annex remains the
 stable policy/test environment. The longer-term
 game is a cooperative tactical shooter with trained RL actors; see the
 [development roadmap](ROADMAP.md).
@@ -10,6 +11,8 @@ game is a cooperative tactical shooter with trained RL actors; see the
 This is an early graybox foundation. Armed guards use scripted sight and
 hearing reactions, and civilians stay in place and can comply. Native training and checkpoint playback
 work, but no capable trained opponent or squad policy ships with this commit.
+The house generator does ship a small trained neural policy; it is separate
+from character AI and has learned authored layout scores, not player enjoyment.
 Surrender, restraint and less-lethal tools work; full policing, suspect behavior,
 evidence and rules-of-engagement systems still need development.
 
@@ -30,8 +33,8 @@ bash build.sh swat --cpu
 ```
 
 `./swat` opens a main menu with solo play, **Settings**, **Host co-op**,
-**Join co-op**, and **Quit game**. **Plan Cedar House** opens an overview and kit
-selection; **Deploy** captures the mouse. **Escape** or **Tab** opens
+**Join co-op**, and **Quit game**. **Plan the mission** opens Briefing, Loadout,
+Snipers and Houses tabs; **Deploy** captures the mouse. **Escape** or **Tab** opens
 the pause menu, releases the cursor, and freezes the solo simulation. Resume captures
 it again; losing window focus automatically pauses. The pause menu also offers
 restart, settings, return to the main menu, and quit. Menu clicks and capture
@@ -56,31 +59,76 @@ are placed there. On non-Debian Linux, install MinGW-w64 C/C++ first.
 
 To explicitly run the Linux player, use `SWAT_NATIVE_WINDOWS=0 ./swat play`
 or `./build/swat/swat play`. CUDA training continues to run on Linux. The
-launcher rebuilds stale player code and translates checkpoint/settings/capture
+launcher rebuilds stale player code and translates checkpoint/settings/capture/layout-model
 paths from WSL for the Windows process.
 
 At Cedar House, enter through doors or create openings, secure two suspects,
 order the three civilians to comply, cuff them, and bring all surviving officers
 back to staging. Any civilian harm fails the mission. Human play defaults to
 five minutes. **P** opens planning: orbit the roof cutaway with A/D or inspect
-two authored overwatch viewpoints. The overview shows geometry, not hidden
+three authored overwatch viewpoints. The overview shows geometry, not hidden
 actor positions; optical previews show only what the camera can see through
-the actual building. Sniper assignment/fire commands and a piloted drone are
-future work.
+the actual building. The overview is a planning camera; a piloted drone remains future work.
 
-Choose a kit before leaving staging or firing. Recon carries a carbine/optiwand
+In **P > Snipers**, select A or B, choose an unoccupied post and a Precision or
+Marksman rifle, then assign. **Take scope control** deploys queued assignments.
+In the scope, mouse aims, **Y** marks an optically visible armed target, **Space**
+orders both snipers to execute their marked shots, **H** clears marks, and
+**LMB** fires the controlled rifle. **1/2** switches snipers; **Esc** returns to
+your officer. From the officer, **X** executes and **H** clears. Snipers hold
+fire until ordered; opaque cover and friendly/compliant people block a marked
+shot. Wait for **TARGET READY**: the rifle must finish equipping and steady its
+aim before a shot can fire. Glass uses the shared bullet penetration rules. Repositioning takes
+three seconds and preserves wounds/ammunition; it currently moves the actor
+to the new post after that delay. Your officer remains in the world while you
+control a sniper, and online planning does not pause the mission.
+
+Choose a kit before leaving staging, firing or using a consumable. Recon carries a carbine/optiwand
 at full pace; Control trades some mobility for an impact launcher, optiwand and
 light torso protection; Entry has a ram and stronger torso protection at a
-larger movement cost. All have a sidearm and cuffs. The impact launcher forces
+larger movement cost. Control and Entry have gas masks. All have a sidearm and cuffs. The impact launcher forces
 NPC surrender on a hit, but still causes injury and does not penetrate cover.
 Y makes visible civilians comply; healthy armed suspects generally need to be
 stunned or wounded first. Hold F within 1.7 m while aiming at a compliant person
 for 1.2 seconds to restrain them. Release or lose the target to interrupt.
 
-Hold G to extend the optiwand. Crouching puts its lens near the floor to fit
-under door gaps; standing, aiming and leaning let it reach around/over cover.
-The small lens sweeps against actual collision and tool use prevents firing.
+Hold **G** near a closed door: the officer crouches and inserts the lens through
+the floor gap automatically. Mouse movement rotates the lens without moving its
+stem. While holding G, **Ctrl/C** selects under-door, **Q/E** reaches around a
+left/right corner, and **Space** reaches over cover. The HUD shows the selected
+mode and whether reach is blocked. The lens sweeps against collision; movement
+and firing are locked during inspection. Release G to return to normal controls.
 Use B for a butt strike or the Entry kit's stronger ram hit.
+
+**4** throws a flashbang and **5** throws CS gas. Canisters are dynamic Box3D
+bodies with gravity, swept collision and material-dependent bounce/friction.
+A 1.5-second fuse starts when thrown; holding a key throws once. Flash exposure
+depends on distance, facing and cover. Gas grows for twelve seconds, respects
+geometry, slows unmasked officers and can force NPC compliance. **T** fires the
+limited-charge taser within 7 m through a checked short trace. It stops at cover,
+stuns and can force surrender; it does not simulate a cable or flying darts yet.
+These are fictional, non-damaging game effects; cuffs remain necessary.
+
+| Kit | Flashbangs | CS canisters | Taser charges | Gas mask |
+| --- | ---: | ---: | ---: | --- |
+| Recon | 1 | 1 | 2 | No |
+| Control | 1 | 2 | 3 | Yes |
+| Entry | 2 | 1 | 0 | Yes |
+
+In **P > Houses**, choose a seed, difficulty and Learned/Random generator, then
+**Build this seed** or **Next house**. Accepted layouts have connected rooms,
+clear door frames, reachable occupants and a checked collider budget. The three
+arrangements have 3–5 rooms; difficulty places 1–3 suspects and three hostages.
+After playing two different houses, the comparison buttons save your explicit
+choice locally beside settings as `settings.ini.layouts.jsonl`. Nothing is
+uploaded, and votes do not retrain the running game automatically. See
+[generation, model training and player preferences](GENERATION.md).
+
+```sh
+./swat play --mission generated --layout-seed 42 --difficulty 1
+./swat play --mission generated --generator uniform
+./swat play --mission generated --layout-model build/swat/layout-experiment/policy.txt
+```
 
 To revisit the annex or practice without hostile fire:
 
@@ -102,9 +150,11 @@ To revisit the annex or practice without hostile fire:
 | V | Cycle selector; carbine starts in semi, then auto, then safe |
 | F | Door within 2.2 m; hold to cuff a compliant person within 1.7 m |
 | Y | Order visible nearby occupants to comply |
-| G | Hold optiwand; crouch for the floor lens, lean/aim to reach around cover |
+| G | Hold optiwand; auto under-door, mouse lens aim; Ctrl/Q/E/Space select reach |
+| 4 / 5 / T | Flashbang / CS gas / taser |
+| X / H | Execute marked sniper shots / clear sniper marks |
 | B | Melee / Entry kit ram |
-| P | Planning, overwatch previews and staging equipment selection |
+| P | Briefing, equipment, sniper placement/control and generated houses |
 | Backspace | Restart while playing |
 | Esc or Tab | Pause/resume; back from Settings |
 
@@ -121,15 +171,16 @@ SWAT_NATIVE_WINDOWS=0 ./swat server --port 27474
 
 Four officers share server-owned movement, weapons, doors, damage, destruction
 and mission outcomes. All surviving officers must extract. Only the leader can
-restart. Online pause/settings release your controls while the session continues.
+restart, choose a house or command snipers. Online pause/settings release your controls while the session continues.
 Solo/offline play remains available. Planning also releases controls online;
 the session continues. The default hosted mission is Cedar House, five minutes;
-`--mission annex` selects the old range. Hosts and peers must use protocol v2.
+`--mission annex` selects the old range. Hosts and peers must use protocol v3.
 
 The dedicated server has no display, Raylib, audio-device or CUDA dependency.
 On WSL, `./swat server` defaults to `build/swat/windows/swat-server.exe`;
 the example explicitly selects Linux. Server options include `--seed 42`,
-`--mission house|annex`, `--max-ticks 18000`, `--hostile-fire 0`, `--randomize 0` and `--help`.
+`--mission house|annex|generated`, `--layout-seed`, `--difficulty`, `--generator`,
+`--layout-model`, `--max-ticks 18000`, `--hostile-fire 0`, `--randomize 0` and `--help`.
 
 Connections currently use direct IPv4 addresses/DNS and UDP port 27474.
 Internet hosting requires a reachable UDP port and appropriate router/firewall
@@ -179,7 +230,7 @@ playback retains its sensor FOV. Raygui is already vendored at
   upper collider and eye by up to 0.42 m; it is swept against cover. Standing
   checks the leaned head as well as the feet hull. Aim, roll, and sensor rays
   follow the achieved pose.
-- **Weapons:** carbine, sidearm and impact launcher, chamber plus magazine/reserve counts,
+- **Weapons:** carbine, sidearm, impact launcher and two sniper rifles, chamber plus magazine/reserve counts,
   semi/auto/safe selectors, timed tactical/empty reloads, reload cancellation on
   swap, equip delay, recoil, movement/air/aim spread, and deterministic actor-local
   weapon RNG. Reserve ammunition is pooled; individual spare magazines and
@@ -198,9 +249,12 @@ playback retains its sensor FOV. Raygui is already vendored at
 - **Mission:** house suspects/hostages, command/compliance, hold-to-cuff arrests,
   protected civilians, secure-and-extract success,
   injury/death, civilian-harm failure, fall/timeout, restart, and episode metrics.
-  Annex layout/guard variations are seeded; the current house is authored.
+  Annex variations, authored Cedar House and neural/uniform generated houses.
+- **Materials and equipment:** shared density/friction/restitution/rolling values,
+  CCD canisters, cover-sensitive flash/CS exposure, masks, finite taser/throwable
+  stocks and collision-limited optiwand placement with independent lens aim.
 - **Audio:** shared material/thickness/doorway propagation, delayed directional
-  hearing, room reflections/tails, optional Steam Audio HRTF, procedural
+  hearing, listener/source room reflections/tails, optional Steam Audio HRTF, procedural
   shots/steps/handling/doors/impacts/breakage and guard turning toward audible
   cues. Enable the local runtime with `python3 ocean/swat/setup_audio.py`.
   Production source recordings and richer propagation still need work; see
@@ -220,6 +274,9 @@ The sidearm uses 15 plus chamber, 45 reserve, 10-tick fire interval,
 | `weapons.c`, `weapons.h` | Weapon state and shot requests |
 | `world.c`, `world.h` | Box3D scene, queries, material damage, doors |
 | `mission.c`, `materials.c`, `equipment.c` | Authored house/framing/viewpoints and editable material/kit tables |
+| `tactical.c`, `overwatch.c` | Physical canisters/effects/taser and authoritative sniper orders/control |
+| `generation.c`, `layout_tool.c`, `train_layout.py` | Validated layout grammar, C inference and offline model training |
+| `feedback.c` | Explicit local comparisons between played houses |
 | `sim.c`, `sim.h` | Actors, fixed update, ballistics, mission, observations/actions |
 | `swat.h` | Ocean adapter, rewards, logging, automatic reset |
 | `render.c`, `swat.c` | Game presentation, fixed update loop, CPU policy playback/evaluation |
@@ -340,6 +397,13 @@ ram breakage, surrender, interrupted cuffs/fire isolation, civilian commands,
 leg-injury mobility and secured-house extraction. This interaction driver uses
 fixture placement to isolate rules; it is not a complete navigation policy.
 Real UDP checks also transfer the full house and late-join wounds/restraints.
+New checks cover canister mass/bounce/CCD, cover-sensitive effects, consumable
+conservation, independent optiwand aim, sniper placement/mark/hold/execute and
+friendly interlocks. Generated-house tests include 1,024 deterministic plans,
+314 real standing door crossings across 24 houses, exact collider counting and
+token/seed/model replication. UDP checks cover active gas at late join and
+leader-only scenario changes. The optional Python smoke command exercises
+preference reward training and policy updates using marked synthetic labels.
 Native HRTF checks verify directional impulse differences; room mixer checks
 verify longer decay retains more late energy.
 
@@ -355,7 +419,8 @@ inversion, and frame-independent sensitivity. The native Windows GUI regression
 opens its own brief test window and checks the actual OS cursor confinement
 rectangle, stationary mouse input, Escape/pause/resume/quit, focus loss,
 click isolation, slider cancellation, host/join setup/cancel, leader restart
-controls, active audio streaming, and preferences surviving reinitialization:
+controls, active audio streaming, preferences surviving reinitialization,
+automatic optiwand insertion, sniper scope/mark/execute and local house comparisons:
 
 ```sh
 bash ocean/swat/build-windows.sh

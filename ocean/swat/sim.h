@@ -6,6 +6,9 @@
 #include "acoustics.h"
 #include "equipment.h"
 #include "mission.h"
+#include "tactical.h"
+#include "overwatch.h"
+#include "generation.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -23,7 +26,7 @@ extern "C" {
 #define SWAT_ACTION_SIZES {5,5,3,3,3,2,3,2,2,2,3,2,2,2}
 #define SWAT_PHYSICS_SUBSTEPS 4
 
-typedef enum SwatRole { SWAT_OFFICER, SWAT_SUSPECT, SWAT_CIVILIAN } SwatRole;
+typedef enum SwatRole { SWAT_OFFICER, SWAT_SUSPECT, SWAT_CIVILIAN, SWAT_SNIPER } SwatRole;
 typedef enum SwatEnd { SWAT_RUNNING, SWAT_SUCCESS, SWAT_OFFICER_DOWN,
                        SWAT_CIVILIAN_HARMED, SWAT_TIMEOUT, SWAT_FALL } SwatEnd;
 typedef struct SwatActor {
@@ -46,6 +49,8 @@ typedef struct SwatConfig {
     int max_ticks;
     bool randomize, hostile_fire;
     int mission;
+    uint32_t layout_seed;
+    int generator,difficulty;
 } SwatConfig;
 
 typedef struct SwatEvents {
@@ -63,6 +68,11 @@ typedef struct SwatSim {
     SwatEvents events, totals;
     SwatSoundLog sounds;
     b3Pos extraction;
+    SwatProjectile projectiles[SWAT_MAX_PROJECTILES];
+    SwatSniper snipers[SWAT_SNIPERS];
+    int commander_actor,last_sniper_order[SWAT_MAX_ACTORS];
+    SwatMissionDef mission;
+    SwatLayout layout;
 } SwatSim;
 
 SwatConfig swat_default_config(void);
@@ -84,8 +94,10 @@ void swat_sim_damage_actor(SwatSim* sim, int victim, int shooter, float damage);
 void swat_sim_damage_region(SwatSim* sim,int victim,int shooter,float damage,SwatHitRegion region,bool less_lethal);
 SwatHitRegion swat_sim_hit_region(const SwatActor* actor,b3Pos point);
 b3Pos swat_sim_inspection_camera(const SwatSim* sim,int actor);
+b3Vec3 swat_sim_inspection_direction(const SwatSim* sim,int actor);
 int swat_sim_unsecured(const SwatSim* sim);
 const char* swat_end_name(SwatEnd end);
+const SwatMissionDef* swat_sim_mission(const SwatSim* sim);
 
 #ifdef __cplusplus
 }

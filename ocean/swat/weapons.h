@@ -23,7 +23,7 @@ typedef struct SwatWeapon {
 typedef struct SwatArsenal {
     SwatWeapon slots[2];
     int active, equip_remaining;
-    int primary; // definition index: 0 carbine, 2 impact launcher
+    int primary; // 0 carbine, 2 impact launcher, 3 precision, 4 marksman
     bool last_fire, last_reload, last_selector;
     int shots;
     uint32_t rng;

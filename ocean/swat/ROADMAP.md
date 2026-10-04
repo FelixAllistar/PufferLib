@@ -26,15 +26,26 @@ is deliberately a general engine improvement.
 - Material/doorway acoustic paths, delayed NPC hearing and procedural stereo
   audio, sharing destruction state and independent of player volume.
 - Cedar House: three rooms, two suspects, three hostages, outdoor staging,
-  windows/doors, cutaway planning and two authored overwatch camera previews.
+  windows/doors, cutaway planning and three authored overwatch posts.
 - Thin independent wall faces, cavities, timber studs, plates and headers;
   distinct material transmission and surface absorption tables.
 - Recon/Control/Entry kit tradeoffs, collision-limited optiwand, melee/ram,
   less-lethal impact launcher, compliance and interruptible cuffing.
 - Head/torso/arm/leg injury, plate protection, injury-driven movement/spread,
-  secured-hostage extraction and protocol v2 replication of these states.
+  secured-hostage extraction and protocol v3 replication of these states.
 - Optional native Steam Audio HRTF, approximate room reflection/decay mixer,
-  and 18 repeatable WAV/CSV comparison scenes.
+  and 26 repeatable WAV/CSV comparison scenes.
+- Two physical snipers: post/rifle selection, direct scope control, visible
+  target designation, hold/execute, ammunition/cadence and friendly interlocks.
+- Automatic under-door optiwand insertion, independent lens rotation and
+  collision-limited corner/over-cover modes with explicit HUD feedback.
+- Shared physical/acoustic materials, CCD flash/CS canisters, masks, finite
+  stocks, taser, material impact/step sound and source-room decay through paths.
+- Validated 3–5-room house grammar, CPU neural inference, a trained bootstrap
+  model, seeded mission UI/CLI and exact generated-map replication.
+- Explicit local house comparisons and a runnable preference reward/policy
+  training pipeline. The shipped model has no human feedback yet; see
+  [GENERATION.md](GENERATION.md).
 
 [ARCHITECTURE.md](ARCHITECTURE.md) records the portable technology choices,
 authority/perception boundaries, current network limits and future fidelity tiers.
@@ -65,8 +76,9 @@ reload interruption conserves ammunition; frame rate does not affect rules.
 
 ## Tactical encounters and destruction
 
-1. Extend the authored house with room connectors and seeded layouts.
-   Validate spawn/goal reachability, doors, ceiling clearance and cover placement.
+1. Play-test the generated houses and gather real comparisons. Expand room
+   identity, cover, approach choices and the grammar with navigation checks;
+   qualify learned preference improvements on new player judgments.
 2. Expand door states/equipment interactions, contextual prompts, tool use,
    evidence, surrender behavior, escort/rescue, objectives and an explicit
    rules-of-engagement state machine. Give civilians useful behavior.
@@ -74,10 +86,10 @@ reload interruption conserves ammunition; frame rate does not affect rules.
    openings, object/door debris, noise, and material-specific visibility.
    Benchmark collision rebuild and sensor cost before increasing complexity.
 4. Extend the shared audio/perception foundation with production recordings,
-   source/path room acoustics, richer diffraction and delayed squad communications.
+   calibrated source/path acoustics, richer diffraction and delayed squad communications.
    Keep perception separate from global game truth.
-5. Turn authored overwatch previews into placement/orders, reliable target
-   identification, hold/execute sniper commands and crossfire constraints.
+5. Expand sniper behaviors with animated travel, stronger target identification,
+   squad communications and more complex sight-line/crossfire cases.
    A piloted drone needs its own movement, collision, perception and exposure
    rules; the current overview is a planning camera.
 

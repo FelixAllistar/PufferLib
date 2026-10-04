@@ -19,6 +19,7 @@
 #include "sound_view.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define CHECK(condition) do { if(!(condition)) { \
     fprintf(stderr,"FAIL %s:%d: %s (screen=%d back=%d tick=%d notice=%s mouse=%.0f,%.0f)\n", \
@@ -35,6 +36,7 @@ static void event(unsigned int type, int a, int b) {
 static void frame(SwatFrontend* app, SwatView* view, SwatSim* sim) {
     swat_frontend_update(app,sim,false);
     if(app->restart_requested) { swat_sim_reset(sim); app->restart_requested=false; }
+    if(app->scenario_requested) { sim->config=app->scenario; swat_sim_reset(sim); app->scenario_requested=false; }
     app->reset_input=false;
     if(swat_frontend_playing(app)) {
         SwatInput in=swat_frontend_input(app,sim);
@@ -43,6 +45,7 @@ static void frame(SwatFrontend* app, SwatView* view, SwatSim* sim) {
     swat_sound_view_update(&test_sound,sim,app->actor,app->settings.master_volume,0,0);
     view->actor=app->actor; view->planning=app->screen==SWAT_SCREEN_PLAN;
     view->plan_preview=app->plan_preview; view->plan_yaw=app->plan_yaw;
+    view->scope=app->screen==SWAT_SCREEN_SCOPE; view->sniper_unit=app->selected_sniper;
     BeginDrawing();
     swat_view_draw(view,sim,false,app->settings.vertical_fov);
     swat_frontend_draw(app,sim,false);
@@ -60,6 +63,9 @@ static void click(SwatFrontend* app, SwatView* view, SwatSim* sim, int x, int y)
     frames(app,view,sim,2);
     event(TEST_MOUSE_POSITION,x,y);
     event(TEST_MOUSE_DOWN,MOUSE_BUTTON_LEFT,0); frame(app,view,sim);
+    // OS warp callbacks may arrive in the down frame; pin the injected release
+    // to the same UI target as the press without changing gameplay input tests.
+    event(TEST_MOUSE_POSITION,x,y);
     event(TEST_MOUSE_UP,MOUSE_BUTTON_LEFT,0); frame(app,view,sim);
     frame(app,view,sim);
 }
@@ -79,6 +85,17 @@ static void escape(SwatFrontend* app, SwatView* view, SwatSim* sim) {
 #endif
 }
 
+#if defined(_WIN32)
+static void focus_test_window(void) {
+    HWND window=(HWND)GetWindowHandle();
+    DWORD own=GetCurrentThreadId(),foreground=GetWindowThreadProcessId(GetForegroundWindow(),NULL);
+    bool attached=foreground && foreground!=own && AttachThreadInput(own,foreground,TRUE);
+    SetForegroundWindow(window);
+    SetFocus(window);
+    if(attached) AttachThreadInput(own,foreground,FALSE);
+}
+#endif
+
 static bool confined_to_window(void) {
 #if defined(_WIN32)
     RECT clip,client;
@@ -86,7 +103,12 @@ static bool confined_to_window(void) {
     if(!GetClipCursor(&clip) || !GetClientRect(window,&client)) return false;
     POINT first={client.left,client.top},last={client.right,client.bottom};
     ClientToScreen(window,&first); ClientToScreen(window,&last);
-    return clip.left==first.x && clip.top==first.y && clip.right==last.x && clip.bottom==last.y;
+    bool confined=clip.left==first.x && clip.top==first.y && clip.right==last.x && clip.bottom==last.y;
+    if(IsCursorHidden() && !confined) fprintf(stderr,
+        "Cursor bounds: clip=(%ld,%ld,%ld,%ld) client=(%ld,%ld,%ld,%ld) focused=%d foreground=%d\n",
+        clip.left,clip.top,clip.right,clip.bottom,first.x,first.y,last.x,last.y,
+        IsWindowFocused(),GetForegroundWindow()==window);
+    return confined;
 #else
     return IsCursorHidden();
 #endif
@@ -94,8 +116,17 @@ static bool confined_to_window(void) {
 
 static bool run_checks(SwatFrontend* app, SwatView* view, SwatSim* sim,
                        const char* preferences, const char* screenshot) {
+#if defined(_WIN32)
+    // A launch from a background WSL console can leave GLFW's initial focus
+    // flag set before Win32 grants foreground ownership. Automation clicks do
+    // not activate the real window, so establish and verify that prerequisite.
+    focus_test_window();
+#endif
     frames(app,view,sim,20);
     CHECK(IsWindowFocused());
+#if defined(_WIN32)
+    CHECK(GetForegroundWindow()==(HWND)GetWindowHandle());
+#endif
     CHECK(app->screen==SWAT_SCREEN_MAIN && !app->captured && !IsCursorHidden() && sim->tick==0);
 
     click(app,view,sim,720,425); // Host setup can be cancelled without starting a round.
@@ -185,7 +216,7 @@ static bool run_checks(SwatFrontend* app, SwatView* view, SwatSim* sim,
     frames(app,view,sim,4);
     CHECK(app->screen==SWAT_SCREEN_PAUSE && !app->captured && !confined_to_window());
     tick=sim->tick;
-    ShowWindow(window,SW_RESTORE); SetForegroundWindow(window);
+    ShowWindow(window,SW_RESTORE); focus_test_window();
     frames(app,view,sim,12);
     CHECK(app->screen==SWAT_SCREEN_PAUSE && sim->tick==tick && !app->captured);
 #else
@@ -197,15 +228,17 @@ static bool run_checks(SwatFrontend* app, SwatView* view, SwatSim* sim,
     return true;
 }
 
-static bool run_house(SwatFrontend* app,SwatView* view,SwatSim* sim,const char* plan_png,const char* wand_png) {
+static bool run_house(SwatFrontend* app,SwatView* view,SwatSim* sim,const char* plan_png,const char* wand_png,const char* scope_png) {
     app->quit=false; app->networked=false; app->actor=0; app->selected_kit=0;
     sim->config.mission=SWAT_HOUSE; swat_sim_reset(sim);
     swat_frontend_set_screen(app,SWAT_SCREEN_MAIN); frames(app,view,sim,3);
     click(app,view,sim,720,305);
     CHECK(app->screen==SWAT_SCREEN_PLAN && !app->captured && sim->tick==0);
-    click(app,view,sim,1220,523); CHECK(app->selected_kit==1 && app->loadout_pending);
+    click(app,view,sim,1180,174); CHECK(app->plan_tab==1);
+    click(app,view,sim,1220,365); CHECK(app->selected_kit==1 && app->loadout_pending);
+    click(app,view,sim,1080,174); CHECK(app->plan_tab==0);
     if(plan_png) { Image picture=LoadImageFromScreen(); bool saved=ExportImage(picture,plan_png); UnloadImage(picture); CHECK(saved); }
-    click(app,view,sim,1220,295); CHECK(app->plan_preview==1);
+    click(app,view,sim,1220,350); CHECK(app->plan_preview==1);
     click(app,view,sim,1220,750); frames(app,view,sim,4);
     CHECK(app->screen==SWAT_SCREEN_GAME && app->captured && sim->actors[0].gear.kit==1);
     CHECK(sim->actors[0].arsenal.primary==2 && sim->actors[0].arsenal.shots==0);
@@ -217,13 +250,61 @@ static bool run_house(SwatFrontend* app,SwatView* view,SwatSim* sim,const char* 
     SwatController* c=&sim->actors[0].controller;
     b3Body_SetTransform(c->body.body,(b3Pos){3.3f,c->body.totalHeight*.5f+.01f,-2},b3Quat_identity);
     b3Body_SetLinearVelocity(c->body.body,swat_v(0,0,0)); c->yaw=c->pitch=0;
-    event(TEST_KEY_DOWN,KEY_LEFT_CONTROL,0); event(TEST_KEY_DOWN,KEY_G,0); frames(app,view,sim,30);
+    event(TEST_KEY_DOWN,KEY_G,0); frames(app,view,sim,30);
     CHECK(sim->actors[0].gear.inspecting && swat_sim_inspection_camera(sim,0).x>4.1f);
+    CHECK(sim->actors[0].gear.wand_mode==SWAT_WAND_UNDER && sim->actors[0].controller.body.crouched);
     if(wand_png) { Image picture=LoadImageFromScreen(); bool saved=ExportImage(picture,wand_png); UnloadImage(picture); CHECK(saved); }
-    event(TEST_KEY_UP,KEY_G,0); event(TEST_KEY_UP,KEY_LEFT_CONTROL,0); frame(app,view,sim);
+    b3Pos lens=swat_sim_inspection_camera(sim,0); float body_yaw=c->yaw;
+    Vector2 position=GetMousePosition(); event(TEST_MOUSE_POSITION,(int)position.x+100,(int)position.y);
+    frame(app,view,sim);
+    CHECK(b3Distance(lens,swat_sim_inspection_camera(sim,0))<.01f && c->yaw==body_yaw && sim->actors[0].gear.wand_yaw>0);
+    event(TEST_KEY_UP,KEY_G,0); frame(app,view,sim);
     CHECK(!sim->actors[0].gear.inspecting);
-    escape(app,view,sim); CHECK(!app->captured);
-    printf("PASS house frontend: planning/deploy, kit authority, camera selection, paused overview, tool input and under-door view; HRTF=%s\n",test_sound.spatial ? "active" : "fallback");
+    event(TEST_KEY_DOWN,KEY_P,0); frame(app,view,sim); event(TEST_KEY_UP,KEY_P,0); frame(app,view,sim);
+    click(app,view,sim,1270,174); CHECK(app->plan_tab==2);
+    click(app,view,sim,1220,394); CHECK(app->sniper_post[0]==2);
+    click(app,view,sim,1220,565); CHECK(app->sniper_pending[0]);
+    click(app,view,sim,1220,612); frames(app,view,sim,5);
+    CHECK(app->screen==SWAT_SCREEN_SCOPE && app->captured && sim->snipers[0].deployed && sim->snipers[0].post==2);
+    event(TEST_KEY_DOWN,KEY_Y,0); frames(app,view,sim,30); event(TEST_KEY_UP,KEY_Y,0); frame(app,view,sim);
+    CHECK(sim->snipers[0].target==1 && sim->snipers[0].status==SWAT_SNIPER_STEADYING);
+    frames(app,view,sim,20);
+    CHECK(sim->snipers[0].status==SWAT_SNIPER_READY && sim->actors[swat_sniper_actor(0)].controller.ads>=.98f);
+    if(scope_png) { Image picture=LoadImageFromScreen(); bool saved=ExportImage(picture,scope_png); UnloadImage(picture); CHECK(saved); }
+    b3Pos officer=swat_body_feet_position(&c->body);
+    event(TEST_KEY_DOWN,KEY_SPACE,0); frames(app,view,sim,3); event(TEST_KEY_UP,KEY_SPACE,0); frame(app,view,sim);
+    CHECK(sim->actors[swat_sniper_actor(0)].arsenal.shots==1 && !sim->actors[1].alive);
+    CHECK(b3Distance(officer,swat_body_feet_position(&c->body))<.02f);
+    escape(app,view,sim); CHECK(app->screen==SWAT_SCREEN_GAME && app->captured);
+    printf("PASS house frontend: planning/loadout, automatic under-door insertion, independent lens, sniper placement/scope/mark/execute; HRTF=%s\n",test_sound.spatial ? "active" : "fallback");
+    return true;
+}
+
+static bool run_generation(SwatFrontend* app,SwatView* view,SwatSim* sim,const char* png) {
+    event(TEST_KEY_DOWN,KEY_P,0); frame(app,view,sim); event(TEST_KEY_UP,KEY_P,0); frame(app,view,sim);
+    click(app,view,sim,1370,174); CHECK(app->plan_tab==3);
+    app->networked=true; app->leader=false;
+    click(app,view,sim,1120,412); CHECK(sim->config.mission==SWAT_HOUSE && !app->scenario_requested);
+    app->networked=false; app->leader=true;
+    click(app,view,sim,1120,412); frames(app,view,sim,3);
+    CHECK(sim->config.mission==SWAT_GENERATED && sim->layout.policy_id!=0 && sim->layout.seed==1);
+    CHECK(app->screen==SWAT_SCREEN_PLAN && sim->tick==0);
+    if(png) { Image picture=LoadImageFromScreen(); bool saved=ExportImage(picture,png); UnloadImage(picture); CHECK(saved); }
+    click(app,view,sim,1220,750); frames(app,view,sim,310);
+    CHECK(app->feedback.current.played_ticks>=300);
+    event(TEST_KEY_DOWN,KEY_P,0); frame(app,view,sim); event(TEST_KEY_UP,KEY_P,0); frame(app,view,sim);
+    click(app,view,sim,1320,412); frames(app,view,sim,3);
+    CHECK(sim->layout.seed==2 && app->feedback.previous.seed==1 && !swat_feedback_ready(&app->feedback));
+    click(app,view,sim,1220,750); frames(app,view,sim,310);
+    event(TEST_KEY_DOWN,KEY_P,0); frame(app,view,sim); event(TEST_KEY_UP,KEY_P,0); frame(app,view,sim);
+    CHECK(swat_feedback_ready(&app->feedback));
+    click(app,view,sim,1220,568); CHECK(app->feedback.voted);
+    char path[SWAT_SETTINGS_PATH_SIZE]; snprintf(path,sizeof(path),"%s.layouts.jsonl",app->settings_path);
+    FILE* file=fopen(path,"rb"); CHECK(file!=NULL);
+    char line[2048]; CHECK(fgets(line,sizeof(line),file)!=NULL); fclose(file);
+    CHECK(strstr(line,"\"source\":\"player\"") && strstr(line,"\"choice\":\"b\""));
+    remove(path); // Only this test-owned preference path is removed.
+    puts("PASS generated frontend: leader-only house selection, learned seeded build, deploy/next, two played houses and explicit local comparison");
     return true;
 }
 
@@ -243,7 +324,8 @@ int main(int argc, char** argv) {
     printf("GUI audio stream: %s\n",test_sound.initialized ? "active" : "no output device available");
     app.settings=app.saved_settings=swat_settings_defaults();
     bool ok=run_checks(&app,&view,sim,argv[1],argc>2 ? argv[2] : NULL);
-    if(ok) ok=run_house(&app,&view,sim,argc>3 ? argv[3] : NULL,argc>4 ? argv[4] : NULL);
+    if(ok) ok=run_house(&app,&view,sim,argc>3 ? argv[3] : NULL,argc>4 ? argv[4] : NULL,argc>5 ? argv[5] : NULL);
+    if(ok) ok=run_generation(&app,&view,sim,argc>6 ? argv[6] : NULL);
     swat_frontend_close(&app);
     swat_sound_view_close(&test_sound);
     swat_sim_close(sim); free(sim);

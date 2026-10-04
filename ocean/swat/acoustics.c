@@ -18,8 +18,12 @@ void swat_sound_append(SwatSoundLog* log, SwatSoundEvent event) {
 
 void swat_sound_emit(SwatSoundLog* log, int tick, int source, SwatSoundKind kind,
                      b3Pos position, float strength, float range) {
+    swat_sound_surface(log,tick,source,kind,position,strength,range,SWAT_CONCRETE);
+}
+void swat_sound_surface(SwatSoundLog* log,int tick,int source,SwatSoundKind kind,
+                       b3Pos position,float strength,float range,SwatMaterial material) {
     if(!log->next_id) log->next_id=1;
-    swat_sound_append(log,(SwatSoundEvent){log->next_id,tick,source,kind,position,strength,range});
+    swat_sound_append(log,(SwatSoundEvent){log->next_id,tick,source,kind,position,strength,range,material});
 }
 
 // Intersect a segment with the same oriented boxes used by physics. Actors
@@ -126,8 +130,31 @@ SwatRoomAcoustics swat_acoustic_room(const SwatWorld* w,b3Pos listener) {
         open_area+=4*o->half.y*o->half.z*fraction;
     }
     const SwatMaterialDef* wall=swat_material(r->surface),*ground=swat_material(r->floor);
+    float ceiling[3],furnishings[3]={0},ceiling_area=0;
+    for(int band=0;band<3;band++) ceiling[band]=0;
+    for(int i=0;i<w->count;i++) {
+        const SwatObject* o=&w->objects[i]; if(!o->active) continue;
+        b3Vec3 d=b3SubPos(o->center,r->center);
+        // Actual roof material, plus exposed furniture faces inside this room.
+        // The architectural room dimensions remain an approximation to volume.
+        if(fabsf(d.y-o->half.y-r->half.y)<.25f && o->half.y<.25f) {
+            float ax=fmaxf(0,fminf((float)o->center.x+o->half.x,(float)r->center.x+r->half.x)-
+                fmaxf((float)o->center.x-o->half.x,(float)r->center.x-r->half.x));
+            float az=fmaxf(0,fminf((float)o->center.z+o->half.z,(float)r->center.z+r->half.z)-
+                fmaxf((float)o->center.z-o->half.z,(float)r->center.z-r->half.z));
+            float area=ax*az; ceiling_area+=area;
+            for(int band=0;band<3;band++) ceiling[band]+=area*swat_material(o->material)->absorption[band];
+        }
+        if(o->part==SWAT_PART_SOLID && !o->door && o->half.y>.1f &&
+           fabsf(d.x)+o->half.x<r->half.x && fabsf(d.z)+o->half.z<r->half.z &&
+           o->center.y>r->center.y-r->half.y+.1f && o->center.y+o->half.y<r->center.y+r->half.y) {
+            float area=4*o->half.x*o->half.z+8*o->half.y*(o->half.x+o->half.z);
+            for(int band=0;band<3;band++) furnishings[band]+=area*swat_material(o->material)->absorption[band];
+        }
+    }
     for(int band=0;band<3;band++) {
-        float area=walls*wall->absorption[band]+floor*(ground->absorption[band]+.12f)+open_area;
+        float roof=ceiling_area>0 ? ceiling[band]*floor/ceiling_area : floor*wall->absorption[band];
+        float area=walls*wall->absorption[band]+floor*ground->absorption[band]+roof+furnishings[band]+open_area;
         result.rt60[band]=swat_clamp(.161f*volume/fmaxf(area,1),.15f,2.5f);
     }
     result.wet=.22f/(1+open_area*.08f);
@@ -137,7 +164,7 @@ SwatRoomAcoustics swat_acoustic_room(const SwatWorld* w,b3Pos listener) {
         (float)(r->center.z+r->half.z-listener.z)};
     for(int i=0;i<4;i++) {
         result.early_seconds[i]=swat_clamp(2*distances[i]/343,.003f,.07f);
-        result.early_gain[i]=.10f/(1+.3f*distances[i]);
+        result.early_gain[i]=.10f*(1-wall->absorption[1])/(1+.3f*distances[i]);
     }
     return result;
 }

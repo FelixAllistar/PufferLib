@@ -112,7 +112,8 @@ bool swat_settings_load(SwatSettings* settings, const char* path) {
     return true;
 }
 
-static bool swat_settings_parents(const char* path) {
+bool swat_settings_prepare_path(const char* path) {
+    if(!path || !path[0]) { errno=EINVAL; return false; }
     char directory[SWAT_SETTINGS_PATH_SIZE];
     if(strlen(path)>=sizeof(directory)) { errno=ENAMETOOLONG; return false; }
     strcpy(directory,path);
@@ -151,7 +152,7 @@ static bool swat_settings_parents(const char* path) {
 
 bool swat_settings_save(const SwatSettings* settings, const char* path) {
     if(!path || !path[0]) { errno=EINVAL; return false; }
-    if(!swat_settings_parents(path)) return false;
+    if(!swat_settings_prepare_path(path)) return false;
     SwatSettings s=*settings;
     swat_settings_sanitize(&s);
     char temporary[SWAT_SETTINGS_PATH_SIZE+32];
