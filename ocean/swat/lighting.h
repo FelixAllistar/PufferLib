@@ -8,6 +8,8 @@ typedef struct SwatLightingProgram {
     Shader shader;
     int camera,sun_matrix,lamp_matrix,sun_map,lamp_map,rooms,centers,halves,lamp_room,exposure;
     int pbr,normal_map,roughness,metalness;
+    int environment,environment_normal,environment_normal_map,environment_roughness_map;
+    int environment_size,environment_tile;
 } SwatLightingProgram;
 typedef struct SwatLighting {
     bool initialized,enabled,prepared;
@@ -19,6 +21,7 @@ typedef struct SwatLighting {
     uint32_t geometry;
     int lamp_room,last_tick,updates;
     bool cutaway;
+    unsigned int surface_normal,surface_roughness;
 } SwatLighting;
 typedef void (*SwatShadowScene)(const SwatSim* sim,bool cutaway);
 
@@ -34,4 +37,8 @@ void swat_lighting_end(SwatLighting* light,SwatEnvironmentArt* art);
 // Original glTF normal and packed G-roughness/B-metalness maps. Reset after
 // drawing the material so ordinary scene meshes retain their diffuse shading.
 void swat_lighting_material(SwatLighting* light,Material material,bool enabled);
+// Independent R8 roughness/OpenGL normals for metric environment surfaces.
+// Mesh size/tile remap the original door's unit-space positions to metre UVs.
+void swat_lighting_surface(SwatLighting* light,Texture2D normal,Texture2D roughness,
+                           Vector3 size,Vector2 tile,bool mesh);
 #endif

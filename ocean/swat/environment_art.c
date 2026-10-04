@@ -1,5 +1,7 @@
 #include "environment_art.h"
+#include "lighting.h"
 #include "rlgl.h"
+#include "raymath.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -26,9 +28,16 @@ static bool asset_path(char* path,size_t size,const char* name) {
     return FileExists(path);
 }
 
-static Texture2D load_surface(const char* name) {
+static Texture2D load_surface(const char* name,bool metric) {
     char path[4096]; Texture2D texture={0};
-    if(asset_path(path,sizeof(path),name)) texture=LoadTexture(path);
+    if(asset_path(path,sizeof(path),name)) {
+        if(metric) {
+            // New source PNGs define top row as V=1. Reverse upload rows once;
+            // positive metric V and OpenGL +Y normals then share one basis.
+            Image image=LoadImage(path);
+            if(image.data) { ImageFlipVertical(&image); texture=LoadTextureFromImage(image); UnloadImage(image); }
+        } else texture=LoadTexture(path);
+    }
     if(texture.id) {
         GenTextureMipmaps(&texture);
         SetTextureFilter(texture,TEXTURE_FILTER_TRILINEAR);
@@ -44,13 +53,27 @@ void swat_environment_art_init(SwatEnvironmentArt* art) {
     if(enabled && !strcmp(enabled,"0")) return;
     const char* plaster_style=getenv("SWAT_PLASTER_STYLE");
     if(!plaster_style || strcmp(plaster_style,"weathered")) {
-        art->plaster=load_surface("painted_plaster_basecolor_v1.png");
+        art->plaster=load_surface("painted_plaster_basecolor_v1.png",false);
         art->plaster_tile_metres=1;
     }
     if(!art->plaster.id) {
-        art->plaster=load_surface("plaster_diffuse.png"); art->plaster_tile_metres=1.8f;
+        art->plaster=load_surface("plaster_diffuse.png",false); art->plaster_tile_metres=1.8f;
     }
-    art->wood=load_surface("wood_diffuse.png");
+    art->wood=load_surface("wood_diffuse.png",false);
+    art->legacy_plaster=plaster_style && !strcmp(plaster_style,"weathered");
+    const char* style=getenv("SWAT_ENVIRONMENT_STYLE"),*pbr=getenv("SWAT_ENVIRONMENT_PBR");
+    if(!style || strcmp(style,"legacy")) {
+        static const char* names[SWAT_SURFACE_COUNT]={"plaster_painted","floor_pine","framing_pine","door_paint","door_wood","plaster_worn"};
+        static const Vector2 tiles[SWAT_SURFACE_COUNT]={{1,1},{2,2},{.4f,2},{.6f,2},{.6f,2},{2,2}};
+        for(int i=0;i<SWAT_SURFACE_COUNT;i++) {
+            SwatSurfaceMaps* m=&art->surfaces[i]; char file[256]; m->tile=tiles[i];
+            snprintf(file,sizeof(file),"materials_v1/%s_basecolor.png",names[i]); m->color=load_surface(file,true);
+            if(m->color.id && (!pbr || strcmp(pbr,"0"))) {
+                snprintf(file,sizeof(file),"materials_v1/%s_normal.png",names[i]); m->normal=load_surface(file,true);
+                snprintf(file,sizeof(file),"materials_v1/%s_roughness.png",names[i]); m->roughness=load_surface(file,true);
+            }
+        }
+    }
     char path[4096];
     if(asset_path(path,sizeof(path),"door_leaf.glb")) art->door=LoadModel(path);
     int missing_props=0;
@@ -86,6 +109,11 @@ void swat_art_model_close(Model model) {
 void swat_environment_art_close(SwatEnvironmentArt* art) {
     if(art->plaster.id) UnloadTexture(art->plaster);
     if(art->wood.id) UnloadTexture(art->wood);
+    for(int i=0;i<SWAT_SURFACE_COUNT;i++) {
+        if(art->surfaces[i].color.id) UnloadTexture(art->surfaces[i].color);
+        if(art->surfaces[i].normal.id) UnloadTexture(art->surfaces[i].normal);
+        if(art->surfaces[i].roughness.id) UnloadTexture(art->surfaces[i].roughness);
+    }
     swat_art_model_close(art->door);
     for(int i=0;i<SWAT_ENV_PROP_KINDS;i++) swat_art_model_close(art->props[i]);
     memset(art,0,sizeof(*art));
@@ -98,7 +126,7 @@ static Color wear_color(const SwatObject* o,float shade) {
     return (Color){value,value,value,255};
 }
 
-static void textured_box(Texture2D texture,const SwatObject* o,bool lit,float tile_metres) {
+static void textured_box(Texture2D texture,const SwatObject* o,bool lit,Vector2 tile,int grain,bool metric) {
     // Six independently UV-mapped faces. UVs are in metres, rather than stretched
     // once per damage cell. Translation in the wall basis keeps adjacent skins
     // continuous, including on cardinally rotated generated walls.
@@ -125,35 +153,92 @@ static void textured_box(Texture2D texture,const SwatObject* o,bool lit,float ti
             float x=corners[face][v][0]*o->half.x;
             float y=corners[face][v][1]*o->half.y;
             float z=corners[face][v][2]*o->half.z;
-            float u=face<2 ? oz+z : ox+x;
-            float t=(face==2 || face==3) ? oz+z : (float)o->center.y+y;
-            rlTexCoord2f(u/tile_metres,-t/tile_metres); rlVertex3f(x,y,z);
+            float axes[3]={ox+x,(float)o->center.y+y,oz+z};
+            int u_axis=face<2 ? 2 : 0,v_axis=(face==2 || face==3) ? 2 : 1;
+            if(grain>=0 && u_axis==grain) { int old=u_axis; u_axis=v_axis; v_axis=old; }
+            // End caps use the remaining planar axes rather than degenerate UVs.
+            rlTexCoord2f(axes[u_axis]/tile.x,(metric ? 1 : -1)*axes[v_axis]/tile.y); rlVertex3f(x,y,z);
         }
     }
     rlEnd(); rlSetTexture(0);
 }
 
+static void clear_surface(const SwatEnvironmentArt* art) {
+    swat_lighting_surface(art->lighting,(Texture2D){0},(Texture2D){0},(Vector3){0},(Vector2){0},false);
+}
+
+static bool material_door(const SwatEnvironmentArt* art,const SwatObject* o) {
+    if(!art->door.meshCount || !art->surfaces[SWAT_SURFACE_DOOR_PAINT].color.id) return false;
+    static const int material_slots[5]={2,2,1,3,4};
+    if(art->door.meshCount!=5 || art->door.materialCount!=5) return false;
+    for(int i=0;i<5;i++) if(art->door.meshMaterial[i]!=material_slots[i]) return false;
+    // Preserve the original leaf/recess/hardware geometry; do not apply a box
+    // texture to its non-metric source UVs. Mesh shader projects unit positions.
+    // Without lighting, retain the original GLB until a valid projection exists.
+    if(!art->lit || !art->lighting) return false;
+    clear_surface(art);
+    Model model=art->door; Vector3 size={2*o->half.x,2*o->half.y,2*o->half.z};
+    Matrix transform=MatrixMultiply(model.transform,MatrixScale(size.x,size.y,size.z));
+    for(int i=0;i<model.meshCount;i++) {
+        int index=model.meshMaterial[i]; Material material=model.materials[index];
+        // Raylib reserves slot 0; pinned GLB IDs + 1 are brass, paint,
+        // recessed wood and exposed plaster. Hardware retains its source map.
+        int kind=index==2 || index==3 ? SWAT_SURFACE_DOOR_PAINT : index==4 ? SWAT_SURFACE_WORN : -1;
+        const SwatSurfaceMaps* maps=kind>=0 ? &art->surfaces[kind] : NULL;
+        MaterialMap local[MATERIAL_MAP_BRDF+1]; memcpy(local,material.maps,sizeof(local)); material.maps=local;
+        Vector2 tile={0}; Texture2D normal={0},roughness={0};
+        if(maps && maps->color.id) {
+            local[MATERIAL_MAP_ALBEDO].texture=maps->color;
+            local[MATERIAL_MAP_ALBEDO].color=wear_color(o,1);
+            tile=maps->tile; normal=maps->normal; roughness=maps->roughness;
+        }
+        swat_lighting_surface(art->lighting,normal,roughness,size,tile,true);
+        DrawMesh(model.meshes[i],material,transform);
+    }
+    swat_lighting_surface(art->lighting,(Texture2D){0},(Texture2D){0},(Vector3){0},(Vector2){0},true);
+    clear_surface(art);
+    return true;
+}
+
 bool swat_environment_art_draw(const SwatEnvironmentArt* art,const SwatObject* o) {
     SwatEnvironmentSurface surface=swat_environment_surface(o);
+    if(surface==SWAT_ENV_DOOR && material_door(art,o)) return true;
     if(surface==SWAT_ENV_DOOR && art->door.meshCount) {
+        clear_surface(art);
         DrawModelEx(art->door,(Vector3){0},(Vector3){0,1,0},0,
             (Vector3){2*o->half.x,2*o->half.y,2*o->half.z},wear_color(o,1));
         return true;
     }
     Texture2D texture={0};
+    int kind=surface==SWAT_ENV_PLASTER ? SWAT_SURFACE_PLASTER : surface==SWAT_ENV_DOOR ? SWAT_SURFACE_DOOR_PAINT : SWAT_SURFACE_DOOR_WOOD;
+    int grain=surface==SWAT_ENV_DOOR ? 1 : -1;
+    if(surface==SWAT_ENV_WOOD) {
+        if(o->part==SWAT_PART_FRAME || o->part==SWAT_PART_SUPPORT) kind=SWAT_SURFACE_FRAME;
+        else if(o->center.y+o->half.y<=.05f && o->half.y<.05f) kind=SWAT_SURFACE_FLOOR;
+        grain=kind==SWAT_SURFACE_FLOOR ? 2 : o->half.y>=o->half.x && o->half.y>=o->half.z ? 1 : o->half.z>=o->half.x ? 2 : 0;
+    }
+    const SwatSurfaceMaps* maps=&art->surfaces[kind];
+    if(surface!=SWAT_ENV_NONE && maps->color.id && !(surface==SWAT_ENV_PLASTER && art->legacy_plaster)) {
+        swat_lighting_surface(art->lighting,maps->normal,maps->roughness,(Vector3){0},(Vector2){0},false);
+        textured_box(maps->color,o,art->lit,maps->tile,grain,true);
+        return true;
+    }
+    clear_surface(art);
     if(surface==SWAT_ENV_PLASTER) texture=art->plaster;
     if(surface==SWAT_ENV_WOOD || surface==SWAT_ENV_DOOR) texture=art->wood;
     if(!texture.id) return false;
-    textured_box(texture,o,art->lit,surface==SWAT_ENV_PLASTER ? art->plaster_tile_metres : 2);
+    float tile=surface==SWAT_ENV_PLASTER ? art->plaster_tile_metres : 2;
+    textured_box(texture,o,art->lit,(Vector2){tile,tile},-1,false);
     return true;
 }
 
 bool swat_environment_art_has_floor(const SwatEnvironmentArt* art,SwatMaterial floor) {
-    return floor==SWAT_WOOD && art->wood.id;
+    return floor==SWAT_WOOD && (art->wood.id || art->surfaces[SWAT_SURFACE_FLOOR].color.id);
 }
 
 void swat_environment_art_draw_props(const SwatEnvironmentArt* art,const SwatWorld* world,
                                      const SwatLayout* layout) {
+    clear_surface(art);
     bool loaded=false;
     for(int i=0;i<SWAT_ENV_PROP_KINDS;i++) if(art->props[i].meshCount) loaded=true;
     if(!loaded) return;

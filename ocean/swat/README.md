@@ -100,8 +100,14 @@ with no baked global illumination or physical fixtures yet. Both immediate
 geometry and imported door/prop models receive lighting. The HUD remains
 unmodified. For comparison, `SWAT_LIGHTING=0 ./swat play` restores unlit shading;
 `SWAT_EXPOSURE=0.8 ./swat play` adjusts exposure (0.25–3, default 1.1).
-Walls default to a provisional calm imagegen plaster texture. The exact prompt
-and source hash are in `assets/environment/painted_plaster_v1.json`.
+Walls now default to Sunder's restrained painted plaster, with separate pine
+floor, framing, sage door paint and door wood materials. Their 512 px basecolor,
+OpenGL normal and linear roughness maps use authored metre scales. The original
+door geometry/hardware remains; its paint/recess UVs are projected in metres.
+`SWAT_ENVIRONMENT_PBR=0 ./swat` selects the new basecolors without normal/specular
+shading; `SWAT_ENVIRONMENT_STYLE=legacy ./swat` restores the previous material set.
+The provisional imagegen plaster remains preserved with exact prompt and source
+hash in `assets/environment/painted_plaster_v1.json`.
 `SWAT_PLASTER_STYLE=weathered ./swat play` selects the preserved worn source map.
 The local carbine loads its private rigid export with original 4K material maps;
 [WEAPON_ART.md](WEAPON_ART.md) records setup, measured clearance and remaining fit work.
@@ -115,6 +121,8 @@ full-influence art preview, with original timing and no gameplay event commits.
 and remaining character integration work.
 These overrides are forwarded across WSL interop, with paths translated where
 appropriate. Source wood/plaster tiling now follows the supplied metre scales.
+[ENVIRONMENT_MATERIALS.md](ENVIRONMENT_MATERIALS.md) records role bindings,
+channel conventions, resource ownership and validation limits.
 `test_lighting` is an explicit graphics check requiring a display; it verifies
 occlusion, geometry invalidation, rotated/scaled mesh equivalence, world
 immutability, exposure, opt-out and GPU resource lifecycle.

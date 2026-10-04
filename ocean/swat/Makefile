@@ -39,6 +39,7 @@ ui-assets: | $(BUILD)
 	cp $(ROOT)/resources/shared/Roboto-Regular.ttf $(BUILD)/assets/ui/
 	mkdir -p $(BUILD)/assets/environment
 	cp $(ROOT)/ocean/swat/assets/environment/*.png $(ROOT)/ocean/swat/assets/environment/*.glb $(ROOT)/ocean/swat/assets/environment/*.json $(ROOT)/ocean/swat/assets/environment/*.txt $(BUILD)/assets/environment/
+	cp -R $(ROOT)/ocean/swat/assets/environment/materials_v1 $(BUILD)/assets/environment/
 $(BUILD):
 	mkdir -p $(BUILD)
 $(ENET_LIB): $(wildcard $(ROOT)/vendor/enet/*.c) $(wildcard $(ROOT)/vendor/enet/include/enet/*.h)

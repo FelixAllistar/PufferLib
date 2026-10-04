@@ -113,6 +113,7 @@ static Color swat_material_color(const SwatObject* o) {
 
 static void swat_draw_object(const SwatView* view,const SwatObject* o) {
     if(o->breach_ticks>0) {
+        swat_lighting_surface(view->environment.lighting,(Texture2D){0},(Texture2D){0},(Vector3){0},(Vector2){0},false);
         DrawSphereWires(swat_position(o->center),.25f+(24-o->breach_ticks)*.055f,5,8,
             Fade(swat_gold,o->breach_ticks/24.0f));
         if(o->breach_ticks>20) DrawSphere(swat_position(o->center),.18f,swat_paper);
@@ -125,9 +126,12 @@ static void swat_draw_object(const SwatView* view,const SwatObject* o) {
     Vector3 size = {o->half.x*2,o->half.y*2,o->half.z*2};
     bool art=swat_environment_art_draw(&view->environment,o);
     if(!art) DrawCubeV((Vector3){0},size,swat_material_color(o));
-    if(view->debug)
+    if(view->debug) {
+        swat_lighting_surface(view->environment.lighting,(Texture2D){0},(Texture2D){0},(Vector3){0},(Vector2){0},false);
         DrawCubeWiresV((Vector3){0},size,(Color){22,31,36,130});
+    }
     if (o->door) {
+        swat_lighting_surface(view->environment.lighting,(Texture2D){0},(Texture2D){0},(Vector3){0},(Vector2){0},false);
         bool leaf_art=art && view->environment.door.meshCount && o->material==SWAT_WOOD;
         if(!leaf_art) DrawCube((Vector3){-o->half.x-0.015f,0.06f,o->half.z-0.17f},0.05f,0.055f,0.22f,swat_gold);
         if(!leaf_art) DrawCube((Vector3){o->half.x+0.015f,0.06f,o->half.z-0.17f},0.05f,0.055f,0.22f,swat_gold);

@@ -43,6 +43,51 @@ static Image capture(SwatLighting* light,SwatEnvironmentArt* art,Camera3D camera
     Image image=LoadImageFromTexture(target.texture); ImageFlipVertical(&image);
     UnloadRenderTexture(target); return image;
 }
+
+static void wall_quad(float x,bool mirrored) {
+    rlBegin(RL_QUADS); rlColor4ub(180,180,180,255); rlNormal3f(0,0,1);
+    rlTexCoord2f(0,0); rlVertex3f(x-.8f,-.8f,0);
+    rlTexCoord2f(1,0); rlVertex3f(x+.8f,-.8f,0);
+    rlTexCoord2f(1,mirrored ? -1 : 1); rlVertex3f(x+.8f,.8f,0);
+    rlTexCoord2f(0,mirrored ? -1 : 1); rlVertex3f(x-.8f,.8f,0); rlEnd();
+}
+static Image surface_capture(SwatLighting* light,SwatEnvironmentArt* art,Texture2D normal,Texture2D roughness,bool mirrored) {
+    Camera3D camera={{0,0,4},{0,0,0},{0,1,0},4,CAMERA_ORTHOGRAPHIC};
+    RenderTexture2D target=LoadRenderTexture(256,256);
+    BeginTextureMode(target); ClearBackground(BLACK); BeginMode3D(camera);
+    swat_lighting_begin(light,art,&sim.world,camera.position);
+    swat_lighting_surface(light,normal,roughness,(Vector3){0},(Vector2){0},false);
+    wall_quad(-1,mirrored);
+    // This plain right-hand wall must never inherit the previous normal map.
+    swat_lighting_surface(light,(Texture2D){0},(Texture2D){0},(Vector3){0},(Vector2){0},false);
+    wall_quad(1,false);
+    swat_lighting_end(light,art); EndMode3D(); EndTextureMode();
+    Image image=LoadImageFromTexture(target.texture); ImageFlipVertical(&image);
+    UnloadRenderTexture(target); return image;
+}
+static Texture2D solid_texture(Color color) {
+    Image image=GenImageColor(2,2,color); Texture2D result=LoadTextureFromImage(image); UnloadImage(image); return result;
+}
+static void environment_basis(SwatLighting* light,SwatEnvironmentArt* art) {
+    sim.world.room_count=0; sim.world.objects[0].active=sim.world.objects[1].active=false;
+    swat_lighting_prepare(light,&sim,(Vector3){0,0,4},false,scene);
+    Texture2D up=solid_texture((Color){128,218,218,255});
+    Texture2D down=solid_texture((Color){128,37,218,255});
+    Texture2D roughness=solid_texture((Color){170,170,170,255});
+    Image a=surface_capture(light,art,up,roughness,false);
+    Image b=surface_capture(light,art,down,roughness,false);
+    Image mirrored=surface_capture(light,art,up,roughness,true);
+    Color* pa=LoadImageColors(a),*pb=LoadImageColors(b),*pm=LoadImageColors(mirrored);
+    int left=128*256+64,right=128*256+192;
+    int brighter=pa[left].r+pa[left].g+pa[left].b-pb[left].r-pb[left].g-pb[left].b;
+    int match=abs(pb[left].r-pm[left].r)+abs(pb[left].g-pm[left].g)+abs(pb[left].b-pm[left].b);
+    assert(brighter>30 && match<5);
+    assert(!memcmp(&pa[right],&pb[right],sizeof(Color)) && !memcmp(&pa[right],&pm[right],sizeof(Color)));
+    printf("environment normal +V response=%d mirrored-basis error=%d; plain surface state restored\n",brighter,match);
+    UnloadImageColors(pa); UnloadImageColors(pb); UnloadImageColors(pm);
+    UnloadImage(a); UnloadImage(b); UnloadImage(mirrored);
+    UnloadTexture(up); UnloadTexture(down); UnloadTexture(roughness);
+}
 int main(int argc,char** argv) {
     const char* directory=argc>1 ? argv[1] : ".";
     SetConfigFlags(FLAG_WINDOW_HIDDEN); InitWindow(640,480,"SWAT lighting regression"); assert(IsWindowReady());
@@ -103,6 +148,7 @@ int main(int argc,char** argv) {
     }
     printf("ground brightness range=%d..%d\n",darkest,brightest); assert(brightest-darkest<8 && darkest>500);
     UnloadImageColors(a); UnloadImage(ground);
+    environment_basis(&light,&art);
     swat_lighting_close(&light); assert(!light.sun.id && !light.batch.shader.id);
     environment("SWAT_LIGHTING","0"); swat_lighting_init(&light); assert(!light.enabled && !light.sun.id);
     swat_lighting_close(&light); environment("SWAT_LIGHTING",NULL);

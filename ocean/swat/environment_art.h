@@ -4,11 +4,24 @@
 #include "environment_props.h"
 #include "raylib.h"
 
+typedef enum SwatSurfaceKind {
+    SWAT_SURFACE_PLASTER, SWAT_SURFACE_FLOOR, SWAT_SURFACE_FRAME,
+    SWAT_SURFACE_DOOR_PAINT, SWAT_SURFACE_DOOR_WOOD, SWAT_SURFACE_WORN, SWAT_SURFACE_COUNT
+} SwatSurfaceKind;
+typedef struct SwatSurfaceMaps {
+    Texture2D color,normal,roughness;
+    Vector2 tile;
+} SwatSurfaceMaps;
+struct SwatLighting;
+
 typedef struct SwatEnvironmentArt {
     bool initialized;
     bool lit;
     Texture2D plaster,wood;
     float plaster_tile_metres;
+    bool legacy_plaster;
+    SwatSurfaceMaps surfaces[SWAT_SURFACE_COUNT];
+    struct SwatLighting* lighting;
     Model door;
     Model props[SWAT_ENV_PROP_KINDS];
 } SwatEnvironmentArt;

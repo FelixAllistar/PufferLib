@@ -169,9 +169,25 @@ int main(int argc,char** argv) {
     const char* directory=argc>1 ? argv[1] : "build/swat";
     char path[4096];
     environment("SWAT_ENVIRONMENT_ART",NULL); environment("SWAT_ENVIRONMENT_ASSETS",NULL); environment("SWAT_PLASTER_STYLE",NULL);
+    environment("SWAT_ENVIRONMENT_STYLE",NULL); environment("SWAT_ENVIRONMENT_PBR",NULL);
     SwatView view={0}; swat_view_init(&view,true); assert(IsWindowReady());
     assert(view.environment.plaster.id && view.environment.wood.id && view.environment.door.meshCount);
+    static const int door_materials[5]={2,2,1,3,4};
+    assert(view.environment.door.meshCount==5 && view.environment.door.materialCount==5);
+    for(int i=0;i<5;i++) assert(view.environment.door.meshMaterial[i]==door_materials[i]);
     assert(view.environment.plaster_tile_metres==1 && view.environment.plaster.width==1254);
+    for(int i=0;i<SWAT_SURFACE_COUNT;i++) {
+        SwatSurfaceMaps* m=&view.environment.surfaces[i];
+        assert(m->color.id && m->color.width==512 && m->normal.id && m->roughness.id);
+    }
+    environment("SWAT_ENVIRONMENT_PBR","0");
+    SwatEnvironmentArt color_only={0}; swat_environment_art_init(&color_only);
+    for(int i=0;i<SWAT_SURFACE_COUNT;i++) assert(color_only.surfaces[i].color.id && !color_only.surfaces[i].normal.id && !color_only.surfaces[i].roughness.id);
+    swat_environment_art_close(&color_only); environment("SWAT_ENVIRONMENT_PBR",NULL);
+    environment("SWAT_ENVIRONMENT_STYLE","legacy");
+    SwatEnvironmentArt legacy={0}; swat_environment_art_init(&legacy);
+    for(int i=0;i<SWAT_SURFACE_COUNT;i++) assert(!legacy.surfaces[i].color.id);
+    swat_environment_art_close(&legacy); environment("SWAT_ENVIRONMENT_STYLE",NULL);
     environment("SWAT_PLASTER_STYLE","weathered");
     SwatEnvironmentArt weathered={0}; swat_environment_art_init(&weathered);
     assert(weathered.plaster.id && weathered.plaster.width==256 && weathered.plaster_tile_metres==1.8f);

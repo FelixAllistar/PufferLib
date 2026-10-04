@@ -214,6 +214,7 @@ mkdir -p "$SWAT_BUILD/assets/ui"
 cp "$SWAT_ROOT/resources/shared/Roboto-Regular.ttf" "$SWAT_BUILD/assets/ui/"
 mkdir -p "$SWAT_BUILD/assets/environment"
 cp "$SWAT_ROOT/ocean/swat/assets/environment/"*.{png,glb,json,txt} "$SWAT_BUILD/assets/environment/"
+cp -R "$SWAT_ROOT/ocean/swat/assets/environment/materials_v1" "$SWAT_BUILD/assets/environment/"
 SWAT_PRIVATE_RIFLE="$SWAT_ROOT/build/swat/assets/weapons/rifle7_rigid_textured.glb"
 if [ -f "$SWAT_PRIVATE_RIFLE" ]; then
     mkdir -p "$SWAT_BUILD/assets/weapons"

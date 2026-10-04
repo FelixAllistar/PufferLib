@@ -68,8 +68,8 @@ is deliberately a general engine improvement.
   props, tied to active damage pieces/supports without new collision or LOS.
 - Initial linear-light shading, cached sun/nearest-room depth shadows and
   exposure overrides; transformed primitives and imported art share shading.
-  The coherent environment material family, normal/roughness maps, authored
-  fixtures and GI remain.
+  The coherent material family now has separate metric floor/frame/door bindings
+  and signed OpenGL normal/roughness shading; authored fixtures and GI remain.
 - Optional private rigid-carbine import with measured authority/render alignment,
   original normal/roughness/metalness maps and staged magazine visibility.
 - Verified solo mission checkpoint/restore and journal continuation, with F5/F9
@@ -86,8 +86,9 @@ squad playback remain pending. Guns have
 mechanical profiles and canonical pose targets. The local rigid carbine now
 uses its original maps, measured bindings and reload magazine visibility; see
 [WEAPON_ART.md](WEAPON_ART.md). Other guns remain procedural and the supplied
-sidearm needs physical-size calibration. The coherent environment material
-quality pass and live character integration remain art integration gates. These foundation checks do not imply a finished
+sidearm needs physical-size calibration. The first coherent environment material
+quality pass is integrated; [ENVIRONMENT_MATERIALS.md](ENVIRONMENT_MATERIALS.md)
+records its scope. Live character and whole location-kit integration remain gates. These foundation checks do not imply a finished
 animation pipeline, production lighting or completed roadmap.
 
 [ARCHITECTURE.md](ARCHITECTURE.md) records the portable technology choices,
