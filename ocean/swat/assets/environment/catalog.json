@@ -1,0 +1,224 @@
+{
+  "schema": "swat_environment_runtime_assets_v1",
+  "license": "CC0-1.0",
+  "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "provenance_basis": "Verified source files and their supplied license/provenance records; no new authorship or external verification claims.",
+  "source_package": "house_kit / 318 Alder rundown three-bedroom house",
+  "source_files": [
+    {
+      "path": "modules/door_hinged_1_2m.glb",
+      "sha256": "0ed2ec9abf607036483c78eec1dc64e1847d17af8b9be8cc65a6ca02393b5b30"
+    },
+    {
+      "path": "architecture.py",
+      "sha256": "4bd9475770e47197a3cd2259e630281bdfd46dd0b7c35dfd03a50b766d0b8262"
+    },
+    {
+      "path": "refine_materials.py",
+      "sha256": "e30c9f1f0117e9cde1991d49809f8f1d2b950e47865c02cf0f1f5c33dc4c634f"
+    },
+    {
+      "path": "LICENSE_ARCHITECTURE.txt",
+      "sha256": "2038f0e8297e16c6d033e6c318058fb8c7e62958e0aa131beee7f21c38961900"
+    },
+    {
+      "path": "textures/LICENSES.txt",
+      "sha256": "035efa8c50953732f41309162d296db726c91ad781897f0e13542eb74c434fb2"
+    },
+    {
+      "path": "textures/alder_faded_plaster_diff.png",
+      "sha256": "ca713620c8442f713360209cd9ca6ae802f577862a511cbacdbc64bec5cca4de"
+    },
+    {
+      "path": "textures/wood_floor_worn_diff_1k.jpg",
+      "sha256": "db386853009b92b9edd7255b35c9f7b0d4b7de16837a7a9da8422148754bc758"
+    },
+    {
+      "path": "textures/worn_plaster_wall_diff_1k.jpg",
+      "sha256": "f769bee35504ff713e89e89d2b64c1eb3c373dd184973ac8706310f19fd63efe"
+    },
+    {
+      "path": "textures/provenance.json",
+      "sha256": "0674fb55934fc254f217a5359df33b2342e2a896da10af2ad5f1c1c004fb007e"
+    },
+    {
+      "path": "textures/alder_faded_plaster_provenance.json",
+      "sha256": "dc32f6726e5d6ba48fc00c525abfec39cdf4ef6f480106d35a02bb39c128fc3e"
+    }
+  ],
+  "source_texture_records": [
+    {
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/worn_plaster_wall/worn_plaster_wall_diff_1k.jpg",
+      "md5": "31aab3a5bf3859361cd423e15b9735bc",
+      "size": 750361,
+      "asset": "worn_plaster_wall",
+      "channel": "Diffuse",
+      "file": "worn_plaster_wall_diff_1k.jpg",
+      "sha256": "f769bee35504ff713e89e89d2b64c1eb3c373dd184973ac8706310f19fd63efe",
+      "source": "https://polyhaven.com/a/worn_plaster_wall",
+      "license": "CC0-1.0",
+      "license_url": "https://polyhaven.com/license",
+      "author": "Dimitrios Savva",
+      "retrieved": "2026-10-04"
+    },
+    {
+      "size": 629271,
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/wood_floor_worn/wood_floor_worn_diff_1k.jpg",
+      "md5": "160b2c683907f592dee214a23d8dfa1e",
+      "asset": "wood_floor_worn",
+      "channel": "Diffuse",
+      "file": "wood_floor_worn_diff_1k.jpg",
+      "sha256": "db386853009b92b9edd7255b35c9f7b0d4b7de16837a7a9da8422148754bc758",
+      "source": "https://polyhaven.com/a/wood_floor_worn",
+      "license": "CC0-1.0",
+      "license_url": "https://polyhaven.com/license",
+      "author": "Dimitrios Savva",
+      "retrieved": "2026-10-04"
+    }
+  ],
+  "source_plaster_derivative_record": {
+    "asset": "alder_faded_plaster_diff.png",
+    "type": "original art-directed derivative of CC0 source",
+    "source_asset": "worn_plaster_wall_diff_1k.jpg",
+    "source_page": "https://polyhaven.com/a/worn_plaster_wall",
+    "source_license": "CC0-1.0",
+    "license_url": "https://polyhaven.com/license",
+    "source_creator": "Dimitrios Savva",
+    "modifications": "In Blender, blend base color 28% source with 72% faded greige paint RGB(0.37,0.36,0.30). Original source untouched; roughness and normal remain from CC0 source.",
+    "sha256": "ca713620c8442f713360209cd9ca6ae802f577862a511cbacdbc64bec5cca4de"
+  },
+  "source_license_copies": [
+    "LICENSE_SOURCE_ARCHITECTURE.txt",
+    "LICENSE_SOURCE_TEXTURES.txt"
+  ],
+  "assets": [
+    {
+      "id": "plaster_diffuse",
+      "path": "plaster_diffuse.png",
+      "kind": "diffuse_texture",
+      "size_pixels": [
+        256,
+        256
+      ],
+      "color_space": "sRGB",
+      "channels": "RGB",
+      "sha256": "1820b7fb89dcfa04cd736353892c05a86753b41a5b62ffb50ed53a056f501219",
+      "bytes": 66573,
+      "source": "textures/alder_faded_plaster_diff.png",
+      "source_sha256": "ca713620c8442f713360209cd9ca6ae802f577862a511cbacdbc64bec5cca4de",
+      "license": "CC0-1.0",
+      "recommended_tile_metres": 1.8,
+      "modifications": "RGB conversion and Lanczos resize from 1024 to 256 pixels; PNG encoding."
+    },
+    {
+      "id": "wood_diffuse",
+      "path": "wood_diffuse.png",
+      "kind": "diffuse_texture",
+      "size_pixels": [
+        256,
+        256
+      ],
+      "color_space": "sRGB",
+      "channels": "RGB",
+      "sha256": "ba8532f20c9673a481496cae5b4ffbe30f74b0c82a6b40f39ce462b357245d81",
+      "bytes": 88910,
+      "source": "textures/wood_floor_worn_diff_1k.jpg",
+      "source_sha256": "db386853009b92b9edd7255b35c9f7b0d4b7de16837a7a9da8422148754bc758",
+      "license": "CC0-1.0",
+      "recommended_tile_metres": 2.0,
+      "modifications": "RGB conversion and Lanczos resize from 1024 to 256 pixels; PNG encoding."
+    },
+    {
+      "id": "door_leaf",
+      "path": "door_leaf.glb",
+      "kind": "glb_model",
+      "sha256": "dc44891e0779082539075fd24ddc65849bd20ed375142837744d1331877868ee",
+      "bytes": 135024,
+      "source": "modules/door_hinged_1_2m.glb",
+      "source_sha256": "0ed2ec9abf607036483c78eec1dc64e1847d17af8b9be8cc65a6ca02393b5b30",
+      "license": "CC0-1.0",
+      "modifications": [
+        "Preserve all source geometry: separate base slab from leaf-mounted trim by connected components.",
+        "Bake centered normalized SWAT frame and inverse-transpose normals into vertices.",
+        "Keep one identity-transform node, no casing/frame, no pre-open rotation.",
+        "Embed one 256px RGB paint diffuse: source paint linear color converted to sRGB, multiplied by (0.72 + 0.28 * wood Rec.709 encoded RGB luminance).",
+        "Remove metallic response; use diffuse-only material factors with no PBR texture maps."
+      ],
+      "logical_slab_bounds": {
+        "min": [
+          -0.5,
+          -0.5,
+          -0.5
+        ],
+        "max": [
+          0.5,
+          0.5,
+          0.5
+        ]
+      },
+      "visual_bounds": {
+        "min": [
+          -2.3522729873657227,
+          -0.5,
+          -0.5165401101112366
+        ],
+        "max": [
+          2.3522729873657227,
+          0.5,
+          0.5
+        ]
+      },
+      "source_slab_bounds_gltf": {
+        "min": [
+          0.0,
+          -1.3807498255857809e-08,
+          -0.02199999988079071
+        ],
+        "max": [
+          1.1200000047683716,
+          2.0199999809265137,
+          0.02199999988079071
+        ]
+      },
+      "source_slab_size_gltf": [
+        1.1200000047683716,
+        2.019999994734012,
+        0.04399999976158142
+      ],
+      "vertex_count": 2520,
+      "triangle_count": 1236,
+      "primitive_roles": [
+        "slab",
+        "leaf_panel_trim",
+        "knobs_escutcheons_and_hinges",
+        "leaf_recessed_panels",
+        "leaf_paint_chips"
+      ],
+      "embedded_image_sha256": "f84cdc3c676ff2273ea62348fb53462299c42686370bf977be410995d0de7f4b"
+    }
+  ],
+  "runtime_contract": {
+    "target": "PufferLib ocean/swat, Raylib 5.5 non-PBR",
+    "coordinate_system": "Right-handed; X thickness, Y up/height, Z width; pivot at slab center.",
+    "source_gltf_mapping": "x = -source_z / 0.044; y = (source_y - 1.01) / 2.02; z = (source_x - 0.56) / 1.12. Actual source float32 slab extrema determine the exact affine transform.",
+    "source_blender_mapping": "Source (width x, thickness y, height z) -> centered (thickness y, height z, width x), each divided by its slab dimension.",
+    "slab_scale": "Scale each local axis by 2 * o.half on the corresponding axis. Do not fit to whole-model visual bounds.",
+    "placement": "Then apply the authoritative object yaw and pitch with the engine OBB convention, and translate by o.pos. No extra source door swing or hinge transform.",
+    "damage_ownership": "All five primitives, including knobs, hinges, panels and chips, belong to one active/health SWAT door object. Draw and hide all together. No independent static door render or collision.",
+    "collision": "Existing SWAT object OBB uses logical unit slab; knobs/hinges/trim are render-only protrusions.",
+    "environment_surfaces": "Diffuse texture overrides only. Each wall/floor render remains owned by its existing active/health SWAT object.",
+    "fallback": "The game must retain its current procedural draw when either texture or the model fails to load.",
+    "materials": "Standard glTF baseColor textures/factors only; no normal, occlusion, roughness or metallic maps; image embedded in GLB."
+  },
+  "rebuild": {
+    "script": "build_assets.py",
+    "dependencies": [
+      "Python >=3.9",
+      "Pillow"
+    ],
+    "reference_pillow_version": "12.3.0",
+    "command": "python3 build_assets.py --source /path/to/house_kit",
+    "source_mutation": false
+  },
+  "runtime_total_bytes": 290507
+}

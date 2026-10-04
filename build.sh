@@ -222,7 +222,7 @@ elif [ "$ENV" = "swat" ]; then
     INCLUDES+=(-I"$BOX3D_DIR/include" -Ivendor/enet/include)
     cmake -S vendor/enet -B build/swat/enet -DCMAKE_BUILD_TYPE=Release >/dev/null
     cmake --build build/swat/enet --parallel 2 >/dev/null
-    EXTRA_SRC="$SRC_DIR/body.c $SRC_DIR/controller.c $SRC_DIR/weapons.c $SRC_DIR/materials.c $SRC_DIR/world.c $SRC_DIR/mission.c $SRC_DIR/equipment.c $SRC_DIR/tactical.c $SRC_DIR/overwatch.c $SRC_DIR/generation.c $SRC_DIR/acoustics.c $SRC_DIR/audio_dsp.c $SRC_DIR/spatial_audio.c $SRC_DIR/sim.c $SRC_DIR/protocol.c $SRC_DIR/net.c $SRC_DIR/render.c $SRC_DIR/settings.c $SRC_DIR/feedback.c $SRC_DIR/frontend.c $SRC_DIR/sound_view.c"
+    EXTRA_SRC="$SRC_DIR/body.c $SRC_DIR/controller.c $SRC_DIR/weapons.c $SRC_DIR/materials.c $SRC_DIR/world.c $SRC_DIR/mission.c $SRC_DIR/equipment.c $SRC_DIR/tactical.c $SRC_DIR/overwatch.c $SRC_DIR/generation.c $SRC_DIR/acoustics.c $SRC_DIR/audio_dsp.c $SRC_DIR/spatial_audio.c $SRC_DIR/sim.c $SRC_DIR/protocol.c $SRC_DIR/net.c $SRC_DIR/render.c $SRC_DIR/environment_art.c $SRC_DIR/settings.c $SRC_DIR/feedback.c $SRC_DIR/frontend.c $SRC_DIR/sound_view.c"
     LINK_ARCHIVES+=("$BOX3D_DIR/build/src/libbox3d.a" "build/swat/enet/libenet.a")
 elif [ "$ENV" = "shenaniguns3d" ]; then
     SRC_DIR="ocean/$ENV"

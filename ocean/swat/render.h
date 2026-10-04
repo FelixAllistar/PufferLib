@@ -2,6 +2,7 @@
 #define SWAT_RENDER_H
 #include "sim.h"
 #include "raylib.h"
+#include "environment_art.h"
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -17,6 +18,7 @@ typedef struct SwatView {
     float camera_expansion;
     RenderTexture2D camera_target;
     Font hud_font;
+    SwatEnvironmentArt environment;
     int sniper_unit;
     char session_status[128];
 } SwatView;

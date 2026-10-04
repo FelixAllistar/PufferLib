@@ -1,0 +1,15 @@
+Original architecture and assembly geometry, procedural scene scripts, authored
+floor plan and original geometric wear in this package are dedicated to the
+public domain under CC0 1.0 Universal.
+
+https://creativecommons.org/publicdomain/zero/1.0/
+
+Original work was generated for this modular house-kit project. No third-party
+building mesh or proprietary game art is included in the architecture modules.
+
+The Poly Haven texture sources and the faded-plaster derivative are also CC0.
+Their independent authorship, source URLs, license and checksum records are in
+textures/LICENSES.txt, textures/provenance.json and
+textures/alder_faded_plaster_provenance.json. Original source maps are preserved.
+Furniture and clutter licensing is recorded separately in LICENSE_PROPS.txt.
+Optional reference/downloaded source-model licenses are in source_models/.
