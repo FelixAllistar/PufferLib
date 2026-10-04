@@ -7,7 +7,7 @@ import unittest
 
 
 class Launcher(unittest.TestCase):
-    def run_launcher(self, overrides, args=()):
+    def run_launcher(self, overrides, args=(), force_build=False):
         source = Path(__file__).resolve().parents[1] / "play.sh"
         with tempfile.TemporaryDirectory(prefix="swat-launcher-") as directory:
             root = Path(directory)
@@ -16,11 +16,15 @@ class Launcher(unittest.TestCase):
             launcher = root / "swat"
             launcher.write_text(source.read_text())
             launcher.chmod(0o755)
-            for name in ["build/swat/swat", "build/swat/server", "build/swat/windows/swat.exe"]:
+            for name in ["build/swat/swat", "build/swat/server", "build/swat/character_lab", "build/swat/windows/swat.exe", "build/swat/windows/swat-server.exe", "build/swat/windows/character_lab.exe"]:
                 path = root / name
                 path.parent.mkdir(parents=True, exist_ok=True)
                 path.write_text('#!/bin/bash\nprintf "driver=%s\\nshared=%s\\n" "${GALLIUM_DRIVER:-automatic}" "${WSLENV:-}"\nprintf "arg=%s\\n" "$@"\n')
                 path.chmod(0o755)
+            if force_build:
+                script = root / "ocean/swat/build-windows.sh"
+                script.parent.mkdir(parents=True)
+                script.write_text('#!/bin/bash\nprintf "build-arg=%s\\n" "$@"\n')
             env = dict(os.environ)
             for key in ["WSL_INTEROP", "WSLENV", "GALLIUM_DRIVER", "MESA_LOADER_DRIVER_OVERRIDE", "LIBGL_ALWAYS_SOFTWARE", "SWAT_NATIVE_WINDOWS", "SWAT_LIGHTING", "SWAT_EXPOSURE", "SWAT_PLASTER_STYLE", "SWAT_ENVIRONMENT_ASSETS", "SWAT_WEAPON_ART", "SWAT_WEAPON_ASSETS"]:
                 env.pop(key, None)
@@ -37,6 +41,18 @@ class Launcher(unittest.TestCase):
     def test_explicit_software_choice(self):
         out, _ = self.run_launcher({"SWAT_NATIVE_WINDOWS": "0", "LIBGL_ALWAYS_SOFTWARE": "true"})
         self.assertIn("driver=automatic", out)
+
+    def test_character_lab_routing(self):
+        out, _ = self.run_launcher({"SWAT_NATIVE_WINDOWS": "0"}, ["character", "--asset", "/tmp/private.glb"])
+        self.assertNotIn("arg=character", out)
+        self.assertIn("arg=--asset", out)
+        self.assertIn("arg=/tmp/private.glb", out)
+
+    def test_native_builds_only_selected_target(self):
+        for args, target in [([], "player"), (["server"], "server"), (["character"], "character")]:
+            with self.subTest(target=target):
+                out, _ = self.run_launcher({"WSL_INTEROP": "fixture"}, args, force_build=True)
+                self.assertIn("build-arg=--target\nbuild-arg=" + target, out)
 
     def test_wsl_hardware_fallback(self):
         if not Path("/dev/dxg").exists():

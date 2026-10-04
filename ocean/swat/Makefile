@@ -13,6 +13,12 @@ PHYSICS_LIBS := $(BOX3D)/build/src/libbox3d.a -lm -lpthread
 VIEW_LIBS := $(RAYLIB)/lib/libraylib.a -lGL -ldl
 
 .PHONY: all test sanitize viewer server net-test net-probe frontend-test-build ui-assets
+character-probe: | $(BUILD)
+	$(CC) $(CFLAGS) -I. tests/character_probe.c character_asset.c -lm -o $(BUILD)/character_probe
+character-test: character-probe
+	python3 tests/test_character_contract.py --probe $(BUILD)/character_probe
+character-lab: | $(BUILD)
+	$(CC) $(CFLAGS) $(CPPFLAGS) character_lab.c character_view.c character_asset.c lighting.c -lm -lpthread $(VIEW_LIBS) -o $(BUILD)/character_lab
 performance-tool: $(ENET_LIB) ui-assets | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) performance_tool.c render.c lighting.c weapon_art.c environment_art.c sound_view.c spatial_audio.c $(NET) $(CORE) $(ENET_LIB) $(PHYSICS_LIBS) $(VIEW_LIBS) -o $(BUILD)/performance_tool
 layout-tool: | $(BUILD)
@@ -69,7 +75,7 @@ environment-binding-test: | $(BUILD)
 environment-props-test: | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_environment_props.c protocol.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_environment_props
 	$(BUILD)/test_environment_props
-test: environment-props-test environment-binding-test payloads-test devices-test encounter-test foundation-test tactical-test overwatch-test generation-test | $(BUILD)
+test: character-test environment-props-test environment-binding-test payloads-test devices-test encounter-test foundation-test tactical-test overwatch-test generation-test | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_mission.c protocol.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_mission
 	ulimit -c 0; $(BUILD)/test_mission
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_settings.c settings.c -lm -o $(BUILD)/test_settings

@@ -1,5 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
+SWAT_TARGET=all
+if [ "$#" != 0 ]; then
+    if [ "$#" != 2 ] || [ "$1" != --target ]; then
+        echo "Usage: build-windows.sh [--target all|player|server|character]" >&2
+        exit 2
+    fi
+    SWAT_TARGET=$2
+fi
+case "$SWAT_TARGET" in all|player|server|character) ;; *) echo "Unknown build target: $SWAT_TARGET" >&2; exit 2 ;; esac
 
 # Build the same player against native Win32 Raylib, avoiding WSLg's RDP mouse
 # path. Missing cross-tools are unpacked locally; no sudo/system install.
@@ -77,9 +86,17 @@ SWAT_HEADLESS_LIBS=("$SWAT_BUILD/box3d/src/libbox3d.a" "$SWAT_BUILD/enet/libenet
 SWAT_LIBS=("$SWAT_BUILD/box3d/src/libbox3d.a" "$SWAT_BUILD/enet/libenet.a" "$SWAT_RAYLIB/lib/libraylib.a"
     -static -lopengl32 -lgdi32 -lws2_32 -lwinmm -lm)
 SWAT_NET=()
+if [ "$SWAT_TARGET" = all ] || [ "$SWAT_TARGET" = character ]; then
+"$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/tests/character_probe.c" \
+    "$SWAT_ROOT/ocean/swat/character_asset.c" -static -lm -o "$SWAT_BUILD/character_probe.exe"
+"$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/character_lab.c" \
+    "$SWAT_ROOT/ocean/swat/character_view.c" "$SWAT_ROOT/ocean/swat/character_asset.c" \
+    "$SWAT_ROOT/ocean/swat/lighting.c" "${SWAT_LIBS[@]}" -o "$SWAT_BUILD/character_lab.exe"
+fi
 # Compile the growing shared simulation once for the player, server and checks.
 # Each invocation refreshes objects with the same flags; no stale header cache.
 mkdir -p "$SWAT_BUILD/objects"
+if [ "$SWAT_TARGET" != character ]; then
 for source in "${SWAT_CORE[@]}" protocol.c net.c replay.c; do
     object="$SWAT_BUILD/objects/${source%.c}.o"
     "$SWAT_CC" "${SWAT_FLAGS[@]}" -c "$SWAT_ROOT/ocean/swat/$source" -o "$object"
@@ -89,15 +106,24 @@ for source in "${SWAT_CORE[@]}" protocol.c net.c replay.c; do
     esac
 done
 
+fi
+
+if [ "$SWAT_TARGET" = all ] || [ "$SWAT_TARGET" = player ]; then
 "$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/swat.c" \
     "$SWAT_ROOT/ocean/swat/render.c" "$SWAT_ROOT/ocean/swat/lighting.c" "$SWAT_ROOT/ocean/swat/weapon_art.c" "$SWAT_ROOT/ocean/swat/environment_art.c" "$SWAT_ROOT/ocean/swat/frontend.c" \
     "$SWAT_ROOT/ocean/swat/settings.c" "$SWAT_ROOT/ocean/swat/feedback.c" "$SWAT_ROOT/ocean/swat/sound_view.c" "$SWAT_ROOT/ocean/swat/spatial_audio.c" \
     "${SWAT_NET[@]}" "${SWAT_SOURCES[@]}" \
     "${SWAT_LIBS[@]}" -o "$SWAT_BUILD/swat.exe"
 
+fi
+
+if [ "$SWAT_TARGET" = all ] || [ "$SWAT_TARGET" = server ]; then
 "$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/server.c" \
     "${SWAT_NET[@]}" "${SWAT_SOURCES[@]}" "${SWAT_HEADLESS_LIBS[@]}" -o "$SWAT_BUILD/swat-server.exe"
 
+fi
+
+if [ "$SWAT_TARGET" = all ]; then
 "$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/replay_tool.c" \
     "${SWAT_NET[@]}" "${SWAT_SOURCES[@]}" "${SWAT_HEADLESS_LIBS[@]}" -o "$SWAT_BUILD/replay_tool.exe"
 "$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/tests/test_foundation.c" \
@@ -173,7 +199,6 @@ done
     "$SWAT_ROOT/ocean/swat/weapon_art.c" "$SWAT_ROOT/ocean/swat/lighting.c" "$SWAT_ROOT/ocean/swat/environment_art.c" \
     "${SWAT_SOURCES[@]}" "${SWAT_LIBS[@]}" -o "$SWAT_BUILD/test_weapon_art.exe"
 
-mkdir -p "$SWAT_BUILD/config"
 "$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/tests/test_lighting.c" \
     "$SWAT_ROOT/ocean/swat/lighting.c" "${SWAT_LIBS[@]}" -o "$SWAT_BUILD/test_lighting.exe"
 "$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/performance_tool.c" \
@@ -181,6 +206,9 @@ mkdir -p "$SWAT_BUILD/config"
     "$SWAT_ROOT/ocean/swat/sound_view.c" "$SWAT_ROOT/ocean/swat/spatial_audio.c" \
     "${SWAT_NET[@]}" "${SWAT_SOURCES[@]}" "${SWAT_LIBS[@]}" -o "$SWAT_BUILD/performance_tool.exe"
 
+fi
+
+mkdir -p "$SWAT_BUILD/config"
 cp "$SWAT_ROOT/config/default.ini" "$SWAT_ROOT/config/swat.ini" "$SWAT_BUILD/config/"
 mkdir -p "$SWAT_BUILD/assets/ui"
 cp "$SWAT_ROOT/resources/shared/Roboto-Regular.ttf" "$SWAT_BUILD/assets/ui/"
@@ -203,4 +231,4 @@ pushd "%~dp0"
 swat.exe play
 popd
 EOF
-printf 'Built native Windows player: %s\n' "$SWAT_BUILD/swat.exe"
+printf 'Built native Windows target: %s (%s)\n' "$SWAT_TARGET" "$SWAT_BUILD"

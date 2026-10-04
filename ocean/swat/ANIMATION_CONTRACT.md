@@ -20,6 +20,10 @@ calibration from old clients and recordings. Reload timing and the immutable
 F source fixture are unchanged. The rigid consumer does not implement seven-
 influence full-body skinning, skeletal playback or a finished anatomical fit.
 Solo checkpoint/restore is now integrated separately from this baseline.
+A separate independent full-influence character consumer and art lab now render
+the original F clip and pass 377 numerical pose comparisons;
+[CHARACTER_ART.md](CHARACTER_ART.md) records current implementation and limits.
+Gameplay character placement, phase mapping and fit approval remain pending.
 
 ## Scope and verified implementation
 

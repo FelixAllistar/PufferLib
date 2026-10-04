@@ -78,12 +78,16 @@ is deliberately a general engine improvement.
   frame-cost benchmark covering simulation, audio, live cameras and recording.
 
 Current art handoffs: the immutable F character GLB passes structural preflight
-with all seven influences; full runtime character playback is pending. Guns have
+with all seven influences. An independent full-influence consumer now passes
+377 numerical pose comparisons and renders the unretimed reload in an isolated
+art lab; [CHARACTER_ART.md](CHARACTER_ART.md) records evidence and limitations.
+Character placement, gameplay phase mapping, original materials and optimized
+squad playback remain pending. Guns have
 mechanical profiles and canonical pose targets. The local rigid carbine now
 uses its original maps, measured bindings and reload magazine visibility; see
 [WEAPON_ART.md](WEAPON_ART.md). Other guns remain procedural and the supplied
 sidearm needs physical-size calibration. The coherent environment material
-quality pass and full character consumer remain art integration gates. These foundation checks do not imply a finished
+quality pass and live character integration remain art integration gates. These foundation checks do not imply a finished
 animation pipeline, production lighting or completed roadmap.
 
 [ARCHITECTURE.md](ARCHITECTURE.md) records the portable technology choices,

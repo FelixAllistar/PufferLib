@@ -9,11 +9,13 @@ fi
 cd "$SWAT_ROOT"
 SWAT_SERVER_MODE=0
 if [ "${1:-}" = server ]; then SWAT_SERVER_MODE=1; shift; fi
+SWAT_CHARACTER_MODE=0
+if [ "${1:-}" = character ]; then SWAT_CHARACTER_MODE=1; shift; fi
 
 swat_needs_build() {
     local binary=$1 source
     [ -f "$binary" ] || return 0
-    for source in ocean/swat/*.c ocean/swat/*.h ocean/swat/generated/*.h resources/shared/Roboto-Regular.ttf ocean/swat/build-windows.sh \
+    for source in ocean/swat/*.c ocean/swat/*.h ocean/swat/generated/*.h ocean/swat/vendor/*.h ocean/swat/tests/character_probe.c ocean/swat/CMakeLists.txt ocean/swat/Makefile resources/shared/Roboto-Regular.ttf ocean/swat/build-windows.sh \
                   ocean/swat/assets/environment/* \
                   config/swat.ini config/default.ini vendor/raygui.h \
                   vendor/enet/*.c vendor/enet/include/enet/*.h; do
@@ -37,10 +39,12 @@ if { [ -n "${WSL_INTEROP:-}" ] || [ -e /proc/sys/fs/binfmt_misc/WSLInterop ]; } 
             esac
         fi
     done
+    SWAT_BUILD_TARGET=player
     SWAT_WINDOWS_BINARY=swat.exe
-    if [ "$SWAT_SERVER_MODE" = 1 ]; then SWAT_WINDOWS_BINARY=swat-server.exe; fi
+    if [ "$SWAT_SERVER_MODE" = 1 ]; then SWAT_WINDOWS_BINARY=swat-server.exe; SWAT_BUILD_TARGET=server; fi
+    if [ "$SWAT_CHARACTER_MODE" = 1 ]; then SWAT_WINDOWS_BINARY=character_lab.exe; SWAT_BUILD_TARGET=character; fi
     if swat_needs_build "build/swat/windows/$SWAT_WINDOWS_BINARY"; then
-        bash ocean/swat/build-windows.sh
+        bash ocean/swat/build-windows.sh --target "$SWAT_BUILD_TARGET"
     fi
     SWAT_ARGS=()
     SWAT_PATH_NEXT=0
@@ -51,7 +55,7 @@ if { [ -n "${WSL_INTEROP:-}" ] || [ -e /proc/sys/fs/binfmt_misc/WSLInterop ]; } 
         else
             SWAT_ARGS+=("$argument")
             case "$argument" in
-                watch|--eval|--settings|--capture|--layout-model|--record|--resume) SWAT_PATH_NEXT=1 ;;
+                watch|--eval|--settings|--capture|--layout-model|--record|--resume|--asset) SWAT_PATH_NEXT=1 ;;
             esac
         fi
     done
@@ -70,5 +74,9 @@ if [ -e /dev/dxg ] && [ -z "${GALLIUM_DRIVER:-}" ] && [ -z "${MESA_LOADER_DRIVER
     export GALLIUM_DRIVER=d3d12
 fi
 printf "[swat] Linux player; Gallium driver: %s (device appears in the GL startup log).\n" "${GALLIUM_DRIVER:-automatic}" >&2
+if [ "$SWAT_CHARACTER_MODE" = 1 ]; then
+    if swat_needs_build build/swat/character_lab; then make -C ocean/swat character-lab; fi
+    exec ./build/swat/character_lab "$@"
+fi
 if swat_needs_build build/swat/swat; then make -C ocean/swat viewer; fi
 exec ./build/swat/swat "$@"

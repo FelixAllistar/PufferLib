@@ -92,7 +92,7 @@ Use
 small debug text in play.
 
 The initial lighting pass adds linear diffuse shading, a cool sky/warm sun,
-warm room lights and filtered depth shadows. Geometry changes invalidate the
+warm room lights and continuously weighted depth shadows. Geometry changes invalidate the
 shadow cache immediately; moving silhouettes refresh every four simulation
 ticks. The player-nearest room has a shadow map; other room lights use room
 bounds to limit their reach. This remains an authored preview lighting model,
@@ -106,6 +106,13 @@ and source hash are in `assets/environment/painted_plaster_v1.json`.
 The local carbine loads its private rigid export with original 4K material maps;
 [WEAPON_ART.md](WEAPON_ART.md) records setup, measured clearance and remaining fit work.
 `SWAT_WEAPON_ART=0 ./swat` provides a procedural comparison.
+After source edits, the native launcher builds only the app being launched.
+`bash ocean/swat/build-windows.sh` still builds the full set of tools and checks;
+`--target player`, `server` or `character` builds a selected app.
+`./swat character --asset /path/to/private/character.glb` opens the independent
+full-influence art preview, with original timing and no gameplay event commits.
+[CHARACTER_ART.md](CHARACTER_ART.md) documents controls, measured parity, cost
+and remaining character integration work.
 These overrides are forwarded across WSL interop, with paths translated where
 appropriate. Source wood/plaster tiling now follows the supplied metre scales.
 `test_lighting` is an explicit graphics check requiring a display; it verifies
