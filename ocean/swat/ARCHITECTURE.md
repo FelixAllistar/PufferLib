@@ -124,6 +124,22 @@ view; the officer camera stays at the body while mouse input drives the sniper.
 Holding Tab frees the pointer and sends neutral officer input while simulation
 continues. Preview/close/feed selection are local presentation choices; sniper
 assignment and firing remain commander-only authoritative commands.
+Live cycling keys and previous/next buttons reopen a hidden panel without
+changing the officer's weapon. One generated panel skin is sliced into fixed
+corners/borders and a stretchable center; a transparent four-icon sheet supplies
+camera/tool/command badges. Make, CMake and the native Windows builder copy
+these assets beside the player. Missing skins fall back to plain panels.
+
+Contextual use shares a three-degree ray fan between player prompts and
+authoritative physical tools. Direct hits take priority; all samples trace real
+cover and still enforce door/cuff reach. Compliance accepts the actual aimed
+person and additionally checks a visible 15-degree forward cone, so a shout is forgiving without commanding
+occupants behind the officer. The annex v1 interaction remains a direct ray.
+F/middle mouse selects use or compliance; RMB latches cuff, pick or aim on
+press. Lost targets cancel progress, cannot transfer the held cuff to another
+person, and finishing does not change that press into ADS or a weapon click.
+These bindings reuse existing protocol v4 commands; the server still computes
+targets and validates physical actions independently of client prompts.
 
 Optiwand cameras sweep a small sphere through actual geometry. Near a closed
 door, G chooses the low lens and crouch automatically; corner/over-cover modes

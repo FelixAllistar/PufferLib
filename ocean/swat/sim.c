@@ -297,13 +297,18 @@ static void swat_actor_interact(SwatSim* s, int actor, SwatInput* in) {
     bool pressed = in->interact && !a->last_interact;
     a->last_interact = in->interact;
     if(!in->interact) { a->gear.cuff_ticks=0; a->gear.cuff_target=-1; return; }
-    SwatHit hit = swat_world_ray(&s->world,swat_controller_eye(&a->controller),
-        swat_controller_aim(&a->controller),2.2f,a->controller.body.body);
+    if(!pressed && !a->gear.cuff_ticks) { a->gear.cuff_target=-1; return; }
+    SwatHit hit = s->config.mission==SWAT_ANNEX ?
+        swat_world_ray(&s->world,swat_controller_eye(&a->controller),
+            swat_controller_aim(&a->controller),2.2f,a->controller.body.body) : swat_context_hit(s,actor,2.2f);
     if(hit.kind==SWAT_HIT_ACTOR && hit.index>=0 && a->role==SWAT_OFFICER && hit.distance<1.7f) {
         SwatActor* target=&s->actors[hit.index];
         if(target->alive && (target->role==SWAT_SUSPECT || target->role==SWAT_CIVILIAN) && target->gear.surrendered && !target->gear.restrained) {
             in->fire=in->reload=false; in->forward=in->strafe=0;
-            if(a->gear.cuff_target!=hit.index) a->gear.cuff_ticks=0;
+            if(a->gear.cuff_target!=hit.index) {
+                if(!pressed && a->gear.cuff_target>=0) { a->gear.cuff_ticks=0; a->gear.cuff_target=-1; return; }
+                a->gear.cuff_ticks=0;
+            }
             a->gear.cuff_target=hit.index;
             if(++a->gear.cuff_ticks>=72) {
                 target->gear.restrained=true; a->gear.cuff_ticks=0;
@@ -364,12 +369,14 @@ static void swat_actor_equipment(SwatSim* s,int actor,SwatInput* in) {
     bool command=in->command && !gear->last_command; gear->last_command=in->command;
     if(command && a->role==SWAT_OFFICER) {
         swat_sound_emit(&s->sounds,s->tick,actor,SWAT_SOUND_COMMAND,eye,1.2f,22);
+        SwatHit focused=swat_context_hit(s,actor,9);
         for(int i=0;i<s->actor_count;i++) {
             SwatActor* target=&s->actors[i];
             if(!target->alive || (target->role!=SWAT_SUSPECT && target->role!=SWAT_CIVILIAN) || target->gear.restrained) continue;
             b3Pos head=swat_controller_eye(&target->controller); b3Vec3 d=b3SubPos(head,eye); float distance=b3Length(d);
-            if(distance>9) continue;
-            SwatHit hit=swat_world_ray(&s->world,eye,swat_normalize(d),distance+.15f,a->controller.body.body);
+            bool aimed=focused.kind==SWAT_HIT_ACTOR && focused.index==i;
+            if(!aimed && (distance>9 || b3Dot(swat_controller_aim(&a->controller),swat_normalize(d))<cosf(15*SWAT_RAD))) continue;
+            SwatHit hit=aimed ? focused : swat_world_ray(&s->world,eye,swat_normalize(d),distance+.15f,a->controller.body.body);
             if(hit.kind==SWAT_HIT_ACTOR && hit.index==i &&
                 (target->role==SWAT_CIVILIAN || target->gear.stunned_ticks || target->health<40)) target->gear.surrendered=true;
         }

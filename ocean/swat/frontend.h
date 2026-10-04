@@ -11,6 +11,7 @@ extern "C" {
 typedef enum SwatScreen { SWAT_SCREEN_GAME, SWAT_SCREEN_MAIN,
                          SWAT_SCREEN_PAUSE, SWAT_SCREEN_SETTINGS, SWAT_SCREEN_CONNECT,
                          SWAT_SCREEN_PLAN, SWAT_SCREEN_SCOPE } SwatScreen;
+typedef enum SwatRightAction { SWAT_RIGHT_NONE,SWAT_RIGHT_AIM,SWAT_RIGHT_CUFF,SWAT_RIGHT_PICK } SwatRightAction;
 typedef struct SwatFrontend {
     SwatSettings settings, saved_settings;
     SwatScreen screen, settings_back;
@@ -25,6 +26,9 @@ typedef struct SwatFrontend {
     bool sniper_pending[SWAT_SNIPERS],sniper_enabled[SWAT_SNIPERS];
     bool camera_open,camera_pointer;
     float camera_expansion;
+    SwatRightAction right_action;
+    int right_target;
+    bool right_held;
     bool scenario_requested,seed_edit;
     SwatConfig scenario;
     char layout_seed[16];

@@ -208,4 +208,51 @@ static void network(void) {
     swat_sim_close(&sim); swat_sim_close(&replica);
     puts("PASS tactical protocol: flight, inventory, inputs, replica body isolation and every truncated packet rejected");
 }
-int main(void) { physical_materials(); wand(); throw_rules(); effects(); doors(); network(); return 0; }
+
+static void context(void) {
+    fixture(SWAT_CONCRETE);
+    sim.config.mission=SWAT_HOUSE;
+    sim.actors[0].controller.yaw=4*SWAT_RAD;
+    SwatHit direct=swat_world_ray(&sim.world,swat_controller_eye(&sim.actors[0].controller),
+        swat_controller_aim(&sim.actors[0].controller),9,sim.actors[0].controller.body.body);
+    assert(direct.kind!=SWAT_HIT_ACTOR);
+    SwatContext focused=swat_context(&sim,0);
+    assert(focused.hit.kind==SWAT_HIT_ACTOR && focused.hit.index==1 && focused.action==SWAT_CONTEXT_COMPLY);
+    sim.actors[0].controller.yaw=12*SWAT_RAD;
+    assert(swat_context(&sim,0).action==SWAT_CONTEXT_NONE);
+    sim.actors[0].controller.yaw=0;
+    int wall=swat_world_box(&sim.world,(b3Pos){2,1.5f,0},swat_v(.08f,1.5f,2),SWAT_WOOD,100);
+    assert(swat_context(&sim,0).action==SWAT_CONTEXT_NONE);
+    SwatInput command=swat_neutral_input(); command.command=true;
+    sim.actors[1].gear.stunned_ticks=200;
+    step(command,1); assert(!sim.actors[1].gear.surrendered);
+    assert(swat_world_damage(&sim.world,wall,100));
+    step(swat_neutral_input(),1);
+    place(2,(b3Pos){-8,0,0},0); // Visible behind the officer, outside the aimed shout.
+    step(command,1);
+    assert(sim.actors[1].gear.surrendered && !sim.actors[2].gear.surrendered);
+    place(0,(b3Pos){1.8f,0,0},0);
+    sim.actors[0].controller.pitch=atan2f(.6f-swat_controller_eye(&sim.actors[0].controller).y,1.2f);
+    focused=swat_context(&sim,0);
+    assert(focused.action==SWAT_CONTEXT_CUFF && focused.ready && focused.hit.index==1);
+    command=swat_neutral_input(); command.interact=true; step(command,12);
+    assert(sim.actors[0].gear.cuff_ticks==12);
+    sim.actors[0].controller.yaw=SWAT_PI; step(command,1);
+    assert(!sim.actors[0].gear.cuff_ticks && !sim.actors[1].gear.restrained);
+    sim.actors[0].controller.yaw=0; step(command,72);
+    assert(!sim.actors[0].gear.cuff_ticks && !sim.actors[1].gear.restrained);
+    step(swat_neutral_input(),1); step(command,12);
+    assert(sim.actors[0].gear.cuff_ticks==12);
+    // Raw remote input must not move a held cuff to a different person, even
+    // without the local frontend's target latch.
+    sim.actors[2].gear.surrendered=true; swat_body_set_crouch(&sim.actors[2].controller.body,true);
+    place(2,(b3Pos){1.8f,0,1.2f},0);
+    sim.actors[0].controller.yaw=SWAT_PI*.5f;
+    step(command,80);
+    assert(!sim.actors[0].gear.cuff_ticks && !sim.actors[2].gear.restrained);
+    sim.actors[0].controller.yaw=0; step(swat_neutral_input(),1); step(command,72);
+    assert(sim.actors[1].gear.restrained && swat_context(&sim,0).action==SWAT_CONTEXT_SECURED);
+    swat_sim_close(&sim);
+    puts("PASS contextual use: narrow aim tolerance, larger misses rejected, intact-wall blocking, forward-only compliance, close cuff reach, look-away interruption and authority held-target isolation");
+}
+int main(void) { physical_materials(); wand(); throw_rules(); effects(); doors(); network(); context(); return 0; }

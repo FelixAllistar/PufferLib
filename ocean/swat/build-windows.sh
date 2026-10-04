@@ -147,6 +147,8 @@ done
 
 mkdir -p "$SWAT_BUILD/config"
 cp "$SWAT_ROOT/config/default.ini" "$SWAT_ROOT/config/swat.ini" "$SWAT_BUILD/config/"
+mkdir -p "$SWAT_BUILD/assets/ui"
+cp "$SWAT_ROOT/ocean/swat/assets/ui/"*.png "$SWAT_BUILD/assets/ui/"
 SWAT_PHONON="$SWAT_ROOT/build/swat/deps/steam-audio/steamaudio/lib/windows-x64/phonon.dll"
 if [ -f "$SWAT_PHONON" ]; then
     cp "$SWAT_PHONON" "$SWAT_BUILD/phonon.dll"

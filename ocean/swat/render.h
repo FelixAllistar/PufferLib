@@ -16,11 +16,12 @@ typedef struct SwatView {
     bool sniper_camera;
     float camera_expansion;
     RenderTexture2D camera_target;
+    Texture2D panel_skin,ui_icons;
     int sniper_unit;
     char session_status[128];
 } SwatView;
 typedef struct SwatCameraLayout {
-    Rectangle panel,feed,unit[SWAT_SNIPERS],takeover,close;
+    Rectangle panel,feed,unit[SWAT_SNIPERS],previous,next,takeover,close;
 } SwatCameraLayout;
 SwatCameraLayout swat_camera_layout(int width,int height,float expansion);
 void swat_view_init(SwatView* view, bool hidden);

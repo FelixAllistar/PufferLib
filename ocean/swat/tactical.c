@@ -6,6 +6,53 @@ static bool clear_to(const SwatSim* s,b3Pos from,b3Pos to,int target) {
     return swat_world_visible(&s->world,from,to);
 }
 
+static bool contextual_hit(const SwatSim* s,SwatHit hit) {
+    if(hit.kind==SWAT_HIT_WORLD && hit.index>=0) return s->world.objects[hit.index].door;
+    if(hit.kind!=SWAT_HIT_ACTOR || hit.index<0 || hit.index>=s->actor_count) return false;
+    const SwatActor* a=&s->actors[hit.index];
+    return a->present && a->alive && (a->role==SWAT_SUSPECT || a->role==SWAT_CIVILIAN);
+}
+
+SwatHit swat_context_hit(const SwatSim* s,int actor,float range) {
+    if(actor<0 || actor>=s->actor_count || !s->actors[actor].present) return (SwatHit){.index=-1};
+    const SwatController* c=&s->actors[actor].controller;
+    b3Pos eye=swat_controller_eye(c); b3Vec3 aim=swat_controller_aim(c);
+    SwatHit direct=swat_world_ray(&s->world,eye,aim,range,c->body.body);
+    if(contextual_hit(s,direct)) return direct;
+    // Three degrees, not a magnet to the nearest person. An intervening wall
+    // or actor is still the first hit for each individual sample.
+    b3Vec3 right=swat_v(-sinf(c->yaw),0,cosf(c->yaw));
+    b3Vec3 up=swat_direction(c->yaw,c->pitch+SWAT_PI*.5f);
+    const float radius=.0524f;
+    for(int i=0;i<8;i++) {
+        float angle=i*SWAT_PI*.25f;
+        b3Vec3 offset=swat_add(swat_mul(right,cosf(angle)*radius),swat_mul(up,sinf(angle)*radius));
+        SwatHit hit=swat_world_ray(&s->world,eye,swat_normalize(swat_add(aim,offset)),range,c->body.body);
+        if(contextual_hit(s,hit)) return hit;
+    }
+    return direct;
+}
+
+SwatContext swat_context(const SwatSim* s,int actor) {
+    SwatContext out={.hit={.index=-1}};
+    if(actor<0 || actor>=s->actor_count || !s->actors[actor].present) return out;
+    out.hit=swat_context_hit(s,actor,9);
+    if(!contextual_hit(s,out.hit)) return out;
+    if(out.hit.kind==SWAT_HIT_WORLD) {
+        const SwatObject* door=&s->world.objects[out.hit.index];
+        out.action=door->breach_owner>=0 ? SWAT_CONTEXT_CHARGE : (door->locked ? SWAT_CONTEXT_LOCKED :
+            (door->door_open ? SWAT_CONTEXT_CLOSE : SWAT_CONTEXT_OPEN));
+        out.ready=out.hit.distance<=(door->locked ? 1.7f : 2.2f);
+        if(door->locked && (door->door_open || door->door_angle>=.01f)) out.ready=false;
+    } else {
+        const SwatActor* target=&s->actors[out.hit.index];
+        out.action=target->gear.restrained ? SWAT_CONTEXT_SECURED :
+            (target->gear.surrendered ? SWAT_CONTEXT_CUFF : SWAT_CONTEXT_COMPLY);
+        out.ready=out.action!=SWAT_CONTEXT_CUFF || out.hit.distance<1.7f;
+    }
+    return out;
+}
+
 static void breach(SwatSim* s,int object,int owner) {
     SwatObject* door=&s->world.objects[object]; b3Pos origin=door->center;
     if(!swat_world_damage(&s->world,object,door->max_health)) return;
@@ -41,8 +88,7 @@ void swat_door_tools(SwatSim* s,int actor,SwatInput* in) {
     if(!allowed || (mode!=SWAT_LOCKPICK && mode!=SWAT_PLACE_CHARGE)) {
         g->door_ticks=0; g->door_target=-1; g->door_mode=SWAT_DOOR_NONE; return;
     }
-    SwatHit hit=swat_world_ray(&s->world,swat_controller_eye(&a->controller),
-        swat_controller_aim(&a->controller),1.7f,a->controller.body.body);
+    SwatHit hit=swat_context_hit(s,actor,1.7f);
     SwatObject* door=hit.kind==SWAT_HIT_WORLD && hit.index>=0 ? &s->world.objects[hit.index] : NULL;
     bool usable=door && door->door && !door->door_open && door->door_angle<.01f && door->breach_owner<0 &&
         (mode==SWAT_LOCKPICK ? door->locked : (g->breaching_charges>0 && door->max_health>0));

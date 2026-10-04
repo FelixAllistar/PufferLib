@@ -12,7 +12,7 @@ ENET_LIB := $(ROOT)/build/swat/enet/libenet.a
 PHYSICS_LIBS := $(BOX3D)/build/src/libbox3d.a -lm -lpthread
 VIEW_LIBS := $(RAYLIB)/lib/libraylib.a -lGL -ldl
 
-.PHONY: all test sanitize viewer server net-test net-probe frontend-test-build
+.PHONY: all test sanitize viewer server net-test net-probe frontend-test-build ui-assets
 layout-tool: | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) layout_tool.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/layout_tool
 audio-lab: | $(BUILD)
@@ -21,6 +21,9 @@ spatial-test: | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_spatial_audio.c spatial_audio.c -lm -ldl -o $(BUILD)/test_spatial_audio
 	$(BUILD)/test_spatial_audio
 all: test viewer
+ui-assets: | $(BUILD)
+	mkdir -p $(BUILD)/assets/ui
+	cp assets/ui/*.png $(BUILD)/assets/ui/
 $(BUILD):
 	mkdir -p $(BUILD)
 $(ENET_LIB): $(wildcard $(ROOT)/vendor/enet/*.c) $(wildcard $(ROOT)/vendor/enet/include/enet/*.h)
@@ -59,10 +62,10 @@ test: tactical-test overwatch-test generation-test | $(BUILD)
 	ulimit -c 0; $(BUILD)/test_adapter
 sanitize:
 	$(MAKE) test BUILD=$(BUILD)/sanitize CFLAGS='-O1 -g -std=gnu11 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -Wno-unknown-pragmas -fsanitize=address,undefined -fno-omit-frame-pointer'
-viewer: $(ENET_LIB) | $(BUILD)
+viewer: $(ENET_LIB) ui-assets | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) swat.c $(CLIENT) $(NET) $(CORE) $(ENET_LIB) $(PHYSICS_LIBS) $(VIEW_LIBS) -o $(BUILD)/swat
 	cp play.sh $(ROOT)/swat.launcher.tmp
 	chmod +x $(ROOT)/swat.launcher.tmp
 	mv $(ROOT)/swat.launcher.tmp $(ROOT)/swat
-frontend-test-build: | $(BUILD)
+frontend-test-build: ui-assets | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_frontend.c $(CLIENT) $(CORE) $(PHYSICS_LIBS) $(VIEW_LIBS) -o $(BUILD)/test_frontend

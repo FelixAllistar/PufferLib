@@ -77,8 +77,13 @@ moves. Hold **Tab** to free the pointer: A/B switches feeds, the close button
 hides the camera, and **Assign sniper** deploys an unassigned unit at its selected post.
 Click the image or **Take over** to expand it into a centered floating scope over
 the dimmed, still-visible officer view. The mission keeps running while the
-pointer is free. **N** hides/shows the camera, **[ / ]** switches feeds, and
+pointer is free. **N** hides/shows the camera, **Comma / Period** selects the
+previous/next feed during ordinary officer play, and
 **Enter** takes control or returns. Co-op teammates can preview; the leader controls.
+Previous/next arrow buttons sit beside A/B. Cycling also reopens a hidden inset.
+**Page Up / Page Down** and **Backslash / Slash** are previous/next aliases;
+the older left/right bracket bindings also remain available. Camera cycling
+does not change the officer's weapon.
 In the scope, mouse aims, **Y** marks an optically visible armed target, **Space**
 orders both snipers to execute their marked shots, **H** clears marks, and
 **LMB** fires the controlled rifle. **1/2** switches snipers; **Esc** returns to
@@ -95,9 +100,20 @@ at full pace; Control trades some mobility for an impact launcher, optiwand and
 light torso protection; Entry has a ram and stronger torso protection at a
 larger movement cost. Control and Entry have gas masks. All have a sidearm and cuffs. The impact launcher forces
 NPC surrender on a hit, but still causes injury and does not penetrate cover.
-Y makes visible civilians comply; healthy armed suspects generally need to be
-stunned or wounded first. Hold F within 1.7 m while aiming at a compliant person
+**F** uses a nearby door or requests compliance from people in a visible forward
+cone. **Middle mouse** is another use/compliance binding; **Y** remains a
+dedicated compliance alias. Healthy armed suspects generally need to be stunned
+or wounded first. Hold **RMB** within 1.7 m while aiming at a compliant person
 for 1.2 seconds to restrain them. Release or lose the target to interrupt.
+The interaction card shows the selected action and when to move closer. A
+three-degree ray fan tolerates small reticle errors, with every ray stopped by
+real cover. Physical reach limits remain enforced by authority.
+
+Right-click chooses cuffing, picking or aiming when the press begins and keeps
+that choice until release. Finishing a tool does not turn the held click into
+aiming or firing, and another person cannot inherit the same cuff press. Away
+from an available close tool action, **RMB** aims. Held **Z** always offers aim
+without selecting a contextual tool.
 
 Hold **G** near a closed door: the officer crouches and inserts the lens through
 the floor gap automatically. Mouse movement rotates the lens without moving its
@@ -107,8 +123,8 @@ mode and whether reach is blocked. The lens sweeps against collision; movement
 and firing are locked during inspection. Release G to return to normal controls.
 Use B for a butt strike or the Entry kit's stronger ram hit.
 
-House exterior doors start locked. Hold **L** within 1.7 m while aiming at the
-closed leaf to pick its lock for three seconds. Releasing L, losing the door or
+House exterior doors start locked. Hold **RMB** (or **L**) within 1.7 m while aiming at the
+closed leaf to pick its lock for three seconds. Letting go, losing the door or
 being interrupted resets progress. Picking leaves the door closed; **F** opens
 it afterward. Picks are reusable in every kit. Hold **7** for 1.5 seconds to mount
 a breaching charge to a fully closed door, then retreat and press **K** to
@@ -167,19 +183,33 @@ To revisit the annex or practice without hostile fire:
 | Ctrl or C | Hold crouch; standing waits for clearance |
 | Shift / Alt | Sprint / slow walk |
 | Space | Jump; release before jumping again |
-| Right / left mouse | Aim / fire |
+| Right mouse | Hold to cuff a close compliant person or pick a close locked door; otherwise aim |
+| Z / left mouse | Hold aim / fire |
 | R | Reload |
 | 1 / 2 | Kit primary / sidearm |
 | V | Cycle selector; carbine starts in semi, then auto, then safe |
-| F | Door within 2.2 m; hold to cuff a compliant person within 1.7 m |
-| Y | Order visible nearby occupants to comply |
+| F / middle mouse | Use a door within 2.2 m; otherwise request compliance in front of you |
+| Y | Dedicated compliance request |
 | G | Hold optiwand; auto under-door, mouse lens aim; Ctrl/Q/E/Space select reach |
 | 4 / 5 / T | Flashbang / CS gas / taser |
 | X / H | Execute marked sniper shots / clear sniper marks |
 | B | Melee / Entry kit ram |
+| L / 7 / K | Hold lockpick / hold charge placement / detonate owned charges |
+| Comma / Period | Previous / next camera feed while moving; reopens a hidden inset |
+| Page Up / Page Down | Previous / next camera feed aliases |
+| N / Enter | Hide/show camera / take control or return |
+| Held Tab | Free cursor for camera buttons without pausing when the inset is open |
 | P | Briefing, equipment, sniper placement/control and generated houses |
 | Backspace | Restart while playing |
-| Esc or Tab | Pause/resume; back from Settings |
+| Esc | Pause/resume; return from floating scope or menus |
+
+The [SWAT 4 publisher manual](https://sierrachest.com/gfx/games/SWAT4/box/SWT4_Mn_TX_7162010.pdf)
+describes contextual use, viewport cycling and a right-click command interface;
+selected tools use the fire action. This prototype keeps the combined
+use/compliance idea and adds direct contextual RMB cuff/pick access, alongside
+the requested held-Tab camera pointer. A full squad command menu is future work.
+The [UI asset notes](assets/ui/README.md) record the generated panel/icon skin,
+exact prompts and packaging; text, targets and progress are drawn live.
 
 ## Co-op and self-hosting
 
@@ -445,8 +475,10 @@ opens its own brief test window and checks the actual OS cursor confinement
 rectangle, stationary mouse input, Escape/pause/resume/quit, focus loss,
 click isolation, slider cancellation, host/join setup/cancel, leader restart
 controls, active audio streaming, preferences surviving reinitialization,
-automatic optiwand insertion, live camera/floating scope/cursor isolation,
-sniper mark/execute, lockpick/charge controls and local house comparisons:
+automatic optiwand insertion, live camera keyboard/button cycles, floating
+scope/cursor isolation, generated skins, F use/compliance, Z aim, held/aborted
+RMB pick/cuff and completion click isolation, sniper mark/execute,
+charge controls and local house comparisons:
 
 ```sh
 bash ocean/swat/build-windows.sh
