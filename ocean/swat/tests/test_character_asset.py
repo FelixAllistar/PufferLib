@@ -95,7 +95,9 @@ def run(probe,raw,times,work,label,limit=32,reject=False):
 
 
 def main():
-    parser=argparse.ArgumentParser(); parser.add_argument('--probe',required=True,type=Path); parser.add_argument('--asset',type=Path); args=parser.parse_args()
+    parser=argparse.ArgumentParser(); parser.add_argument('--probe',required=True,type=Path); parser.add_argument('--asset',type=Path)
+    parser.add_argument('--event-time',action='append',type=float,default=[],help='clip-specific event/repair boundary in seconds (repeatable)')
+    args=parser.parse_args()
     probe=args.probe.resolve()
     with tempfile.TemporaryDirectory(prefix='swat-character-') as root:
         work=Path(root)
@@ -106,13 +108,16 @@ def main():
             run(probe,synthetic(malformed=bad),[0],work,bad,reject=True)
         run(probe,synthetic()[:-1],[0],work,'truncated',reject=True)
         if args.asset:
-            raw=args.asset.read_bytes(); d,access=decode(raw); times={-1.,0.,6.}
+            raw=args.asset.read_bytes(); d,access=decode(raw); times={-1.,0.}
             for sampler in d['animations'][0]['samplers']:
                 keys=access(sampler['input']).ravel(); times.update(float(t) for t in keys)
+            duration=max(times); times.add(duration+1e-5)
             # Every authored key, precise transfer-boundary neighborhoods, and
             # off-key times expose interpolation/resampling loss.
-            times.update(float(t) for t in np.arange(.013,6,.137))
-            for t in [.7,.88,1.05,1.4,1.928125,3.107862609329446,3.65,3.85,4.35,5.8,6]: times.update([t-1e-5,t,t+1e-5])
+            times.update(float(t) for t in np.arange(.013,duration,.137))
+            for t in [0.,duration,*args.event_time]:
+                if not np.isfinite(t) or not 0<=t<=duration: parser.error('event times must be finite and inside the clip')
+                times.update([max(0,t-1e-5),t,t+1e-5])
             run(probe,raw,sorted(times),work,'actual-private-fixture')
             run(probe,raw,[0],work,'actual-four-weight',limit=4,reject=True)
 
