@@ -28,8 +28,10 @@ typedef struct SwatFrontend {
     bool camera_open,camera_pointer;
     float camera_expansion;
     SwatRightAction right_action;
+    int selected_gadget,gadget_door_action;
     int right_target;
-    bool right_held,debug;
+    bool right_held,debug,squad_pointer,squad_queue;
+    int squad_team,squad_pending;
     bool scenario_requested,seed_edit;
     SwatConfig scenario;
     char layout_seed[16];

@@ -37,10 +37,23 @@ SwatContext swat_context(const SwatSim* s,int actor) {
     SwatContext out={.hit={.index=-1}};
     if(actor<0 || actor>=s->actor_count || !s->actors[actor].present) return out;
     out.hit=swat_context_hit(s,actor,9);
-    if(!contextual_hit(s,out.hit)) return out;
+    if(!contextual_hit(s,out.hit)) {
+        if(s->config.tactical_rules) {
+            b3Pos eye=swat_controller_eye(&s->actors[actor].controller); b3Vec3 aim=swat_controller_aim(&s->actors[actor].controller);
+            for(int i=0;i<SWAT_MAX_ACTORS;i++) {
+                const SwatEvidence* evidence=&s->evidence[i]; if(!evidence->dropped || evidence->collected) continue;
+                b3Vec3 delta=b3SubPos(evidence->position,eye);
+                if(b3Length(delta)<2.2f && b3Dot(aim,swat_normalize(delta))>cosf(12*SWAT_RAD) && clear_to(s,eye,evidence->position,-1)) {
+                    out.action=SWAT_CONTEXT_EVIDENCE; out.ready=true; out.hit.index=i; out.hit.point=evidence->position; out.hit.distance=b3Length(delta); break;
+                }
+            }
+        }
+        return out;
+    }
     if(out.hit.kind==SWAT_HIT_WORLD) {
         const SwatObject* door=&s->world.objects[out.hit.index];
-        out.action=door->breach_owner>=0 ? SWAT_CONTEXT_CHARGE : (door->locked ? SWAT_CONTEXT_LOCKED :
+        out.action=door->wedge_owner>=0 ? SWAT_CONTEXT_WEDGED :
+            (door->trapped && (door->trap_known&(1u<<actor))) ? SWAT_CONTEXT_TRAP : door->breach_owner>=0 ? SWAT_CONTEXT_CHARGE : (door->locked ? SWAT_CONTEXT_LOCKED :
             (door->door_open ? SWAT_CONTEXT_CLOSE : SWAT_CONTEXT_OPEN));
         out.ready=out.hit.distance<=(door->locked ? 1.7f : 2.2f);
         if(door->locked && (door->door_open || door->door_angle>=.01f)) out.ready=false;
@@ -85,23 +98,31 @@ void swat_door_tools(SwatSim* s,int actor,SwatInput* in) {
         }
         in->fire=in->reload=in->melee=false;
     }
-    if(!allowed || (mode!=SWAT_LOCKPICK && mode!=SWAT_PLACE_CHARGE)) {
+    if(mode==SWAT_DOOR_NONE || mode!=previous) g->door_completed=false;
+    if(!allowed || g->door_completed || (mode!=SWAT_LOCKPICK && mode!=SWAT_PLACE_CHARGE &&
+       mode!=SWAT_WEDGE && mode!=SWAT_REMOVE_WEDGE && mode!=SWAT_DISARM)) {
         g->door_ticks=0; g->door_target=-1; g->door_mode=SWAT_DOOR_NONE; return;
     }
     SwatHit hit=swat_context_hit(s,actor,1.7f);
     SwatObject* door=hit.kind==SWAT_HIT_WORLD && hit.index>=0 ? &s->world.objects[hit.index] : NULL;
     bool usable=door && door->door && !door->door_open && door->door_angle<.01f && door->breach_owner<0 &&
-        (mode==SWAT_LOCKPICK ? door->locked : (g->breaching_charges>0 && door->max_health>0));
+        (mode==SWAT_LOCKPICK ? door->locked : mode==SWAT_PLACE_CHARGE ? (g->breaching_charges>0 && door->max_health>0) :
+         mode==SWAT_WEDGE ? (door->wedge_owner<0 && g->wedges>0) : mode==SWAT_REMOVE_WEDGE ? door->wedge_owner>=0 :
+         (door->trapped && (door->trap_known&(1u<<actor))));
     if(!usable) { g->door_ticks=0; g->door_target=-1; g->door_mode=SWAT_DOOR_NONE; return; }
     if(g->door_target!=hit.index || g->door_mode!=mode) g->door_ticks=0;
     g->door_target=hit.index; g->door_mode=mode;
     if(!g->door_ticks) swat_sound_emit(&s->sounds,s->tick,actor,SWAT_SOUND_HANDLE,hit.point,.12f,5);
     bool crouch=in->crouch; float yaw=in->yaw_delta,pitch=in->pitch_delta;
     *in=swat_neutral_input(); in->crouch=crouch; in->yaw_delta=yaw; in->pitch_delta=pitch;
-    int duration=mode==SWAT_LOCKPICK ? 180 : 90;
+    int duration=mode==SWAT_LOCKPICK ? 180 : mode==SWAT_DISARM ? 120 : mode==SWAT_PLACE_CHARGE ? 90 : 45;
     if(++g->door_ticks>=duration) {
         if(mode==SWAT_LOCKPICK) door->locked=false;
-        else { door->breach_owner=actor; g->breaching_charges--; }
+        else if(mode==SWAT_PLACE_CHARGE) { door->breach_owner=actor; g->breaching_charges--; }
+        else if(mode==SWAT_WEDGE) { door->wedge_owner=actor; g->wedges--; }
+        else if(mode==SWAT_REMOVE_WEDGE) { door->wedge_owner=-1; g->wedges=(int)fminf(2,g->wedges+1); }
+        else { door->trapped=false; door->trap_known=0; }
+        g->door_completed=true; s->world.generation++;
         g->used_tools=true; g->door_ticks=0; g->door_target=-1; g->door_mode=SWAT_DOOR_NONE;
         swat_sound_emit(&s->sounds,s->tick,actor,SWAT_SOUND_HANDLE,hit.point,.18f,6);
     }
@@ -226,5 +247,45 @@ void swat_projectiles_step(SwatSim* s) {
         if(exposed && !mask) a->gear.gas_ticks=(int)fminf(180,a->gear.gas_ticks+3);
         else if(a->gear.gas_ticks>0) a->gear.gas_ticks--;
         if(a->gear.gas_ticks>30 && (a->role==SWAT_SUSPECT || a->role==SWAT_CIVILIAN)) a->gear.surrendered=true;
+    }
+}
+
+void swat_pepper_spray(SwatSim* s,int actor) {
+    SwatActor* a=&s->actors[actor]; SwatEquipment* g=&a->gear;
+    if(!a->present || !a->alive || a->role!=SWAT_OFFICER || g->spray_ticks<=0 ||
+       g->stunned_ticks || g->restrained || g->inspecting || g->cuff_ticks || swat_weapons_busy(&a->arsenal)) return;
+    b3Pos eye=swat_controller_eye(&a->controller);
+    b3Vec3 aim=swat_controller_aim(&a->controller);
+    if(swat_world_sphere_cast(&s->world,eye,swat_mul(aim,.2f),.025f,a->controller.body.body).hit) return;
+    g->spray_ticks--; g->used_tools=true;
+    if(s->tick%15==0) swat_sound_emit(&s->sounds,s->tick,actor,SWAT_SOUND_GAS,eye,.15f,5);
+    for(int i=0;i<s->actor_count;i++) {
+        SwatActor* target=&s->actors[i]; if(i==actor || !target->present || !target->alive) continue;
+        b3Pos head=swat_controller_eye(&target->controller); b3Vec3 delta=b3SubPos(head,eye);
+        if(b3Length(delta)>2.5f || b3Dot(aim,swat_normalize(delta))<cosf(12*SWAT_RAD) || !clear_to(s,eye,head,i)) continue;
+        if((target->role==SWAT_OFFICER || target->role==SWAT_SNIPER) && swat_kit(target->gear.kit)->gas_mask) continue;
+        target->gear.gas_ticks=(int)fminf(180,target->gear.gas_ticks+5);
+        if(target->gear.gas_ticks>30 && (target->role==SWAT_SUSPECT || target->role==SWAT_CIVILIAN)) {
+            target->gear.surrendered=true; target->gear.stunned_ticks=(int)fmaxf(target->gear.stunned_ticks,90);
+        }
+    }
+}
+void swat_traps_step(SwatSim* s) {
+    for(int i=0;i<s->world.count;i++) {
+        SwatObject* door=&s->world.objects[i];
+        if(!door->active || !door->door || !door->trapped || door->door_angle<4*SWAT_RAD) continue;
+        door->trapped=false; door->trap_known=0;
+        swat_sound_emit(&s->sounds,s->tick,-1,SWAT_SOUND_FLASH,door->center,2,60);
+        for(int j=0;j<s->actor_count;j++) {
+            SwatActor* a=&s->actors[j]; if(!a->present || !a->alive) continue;
+            b3Pos eye=swat_controller_eye(&a->controller); float distance=b3Distance(eye,door->center);
+            b3Vec3 normal=swat_v(cosf(door->yaw),0,-sinf(door->yaw));
+            float side=b3Dot(normal,b3SubPos(eye,door->center))>=0 ? 1 : -1;
+            b3Pos source=b3OffsetPos(door->center,swat_mul(normal,side*(door->half.x+.03f)));
+            if(distance<5 && clear_to(s,source,eye,j)) {
+                a->gear.flash_ticks=(int)fmaxf(a->gear.flash_ticks,(1-distance/5)*240);
+                a->gear.stunned_ticks=(int)fmaxf(a->gear.stunned_ticks,(1-distance/5)*180);
+            }
+        }
     }
 }

@@ -7,7 +7,7 @@
 extern "C" {
 #endif
 
-#define SWAT_NET_VERSION 5
+#define SWAT_NET_VERSION 6
 #define SWAT_NET_MAGIC 0x53474531u
 #define SWAT_NET_PACKET_MAX 98304
 #define SWAT_NET_SOUNDS 32
@@ -37,6 +37,8 @@ typedef struct SwatMap {
 typedef struct SwatActorState {
     bool present,alive,crouched,grounded,sprinting,muzzle_blocked;
     SwatRole role;
+    SwatMind mind;
+    bool rescued;
     b3Pos position,tracer_start,tracer_end;
     b3Vec3 velocity,upper_offset;
     float health,yaw,pitch,ads,stamina,eye_height,recoil_pitch,recoil_yaw,lean,ready_blend;
@@ -48,7 +50,9 @@ typedef struct SwatActorState {
 typedef struct SwatObjectState {
     bool active,door_open,locked;
     float health,door_angle;
-    int breach_owner,breach_ticks;
+    int breach_owner,breach_ticks,wedge_owner;
+    bool peek,trapped;
+    unsigned int trap_known;
 } SwatObjectState;
 typedef struct SwatSnapshot {
     uint32_t epoch, revision, ack[SWAT_MAX_PLAYERS];
@@ -56,6 +60,8 @@ typedef struct SwatSnapshot {
     unsigned int player_mask;
     SwatEnd end;
     SwatEvents totals;
+    SwatDebrief debrief;
+    SwatEvidence evidence[SWAT_MAX_ACTORS];
     SwatActorState actors[SWAT_MAX_ACTORS];
     SwatObjectState objects[SWAT_MAX_OBJECTS];
     SwatSoundEvent sounds[SWAT_NET_SOUNDS];

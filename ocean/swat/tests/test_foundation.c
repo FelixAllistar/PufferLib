@@ -120,6 +120,25 @@ static void replay_roundtrip(const char* path) {
     remove(path); swat_sim_close(&source); swat_sim_close(&playback);
     puts("PASS replay: exact 240-tick state match and malformed-tail rejection");
 }
+static void tactical_replay(const char* path) {
+    static SwatSim source,playback;
+    SwatConfig config=swat_default_config(); config.mission=SWAT_HOUSE; config.max_ticks=1800;
+    config.tactical_rules=true; config.squad_bots=3; config.hostile_fire=false;
+    swat_sim_init(&source,config,177); SwatReplay writer; assert(swat_replay_record(&writer,path,&source));
+    for(int t=0;t<360;t++) {
+        SwatInput input=swat_neutral_input(); input.squad_order=t==10 ? SWAT_ORDER_HOLD : t==100 ? SWAT_ORDER_FALL_IN : 0;
+        input.squad_queue=t==10; input.squad_execute=t==50;
+        swat_sim_step(&source,&input); assert(swat_replay_append(&writer,&input,&source));
+    }
+    assert(swat_replay_close(&writer)); SwatReplay reader; assert(swat_replay_open(&reader,path));
+    assert(reader.config.tactical_rules && reader.config.squad_bots==3); swat_sim_init(&playback,reader.config,reader.seed);
+    SwatInput input; uint32_t hash; int status;
+    while((status=swat_replay_next(&reader,&input,&hash))==1) { swat_sim_step(&playback,&input); assert(swat_replay_digest(&playback)==hash); }
+    assert(status==0 && swat_replay_close(&reader));
+    assert(source.actors[3].alive && source.actors[4].alive && source.actors[5].alive && !source.totals.civilian_damage);
+    swat_sim_close(&source); swat_sim_close(&playback); remove(path);
+    puts("PASS tactical replay: identical autonomous NPC/squad movement, delayed queued orders and intact civilian/officer outcomes");
+}
 int main(int argc,char** argv) {
-    assert(argc==2); reload_interruptions(); poses_and_range(); replay_roundtrip(argv[1]); return 0;
+    assert(argc==2); reload_interruptions(); poses_and_range(); replay_roundtrip(argv[1]); tactical_replay(argv[1]); return 0;
 }

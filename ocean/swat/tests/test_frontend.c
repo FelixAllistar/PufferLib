@@ -400,6 +400,14 @@ static bool run_house(SwatFrontend* app,SwatView* view,SwatSim* sim,const char* 
     CHECK(sim->actors[2].gear.restrained && sim->actors[0].arsenal.shots==officer_shots);
     frames(app,view,sim,5); CHECK(app->right_action==SWAT_RIGHT_CUFF && c->ads<.01f && sim->actors[0].arsenal.shots==officer_shots);
     event(TEST_MOUSE_UP,MOUSE_BUTTON_RIGHT,0); event(TEST_MOUSE_UP,MOUSE_BUTTON_LEFT,0); frame(app,view,sim);
+    c->pitch=0;
+    event(TEST_KEY_DOWN,KEY_M,0); frames(app,view,sim,3);
+    CHECK(app->squad_pointer && !app->captured && !confined_to_window());
+    Image squad_picture=LoadImageFromScreen(); CHECK(ExportImage(squad_picture,"build/swat/windows/squad-menu.png")); UnloadImage(squad_picture);
+    click(app,view,sim,(int)(GetScreenWidth()*.63f)+45,GetScreenHeight()/2-105+23+8);
+    CHECK(sim->actors[0].arsenal.shots==officer_shots && app->screen==SWAT_SCREEN_GAME);
+    event(TEST_KEY_UP,KEY_M,0); frames(app,view,sim,5);
+    CHECK(!app->squad_pointer && app->captured && confined_to_window() && !app->wait_for_release);
     printf("PASS house frontend: planning/loadout, under-door lens, live camera keyboard/button cycles without weapon changes, pointer without pause, leader-only floating scope, mark/execute, minimal text controls, F use/compliance, Z aim, held/aborted RMB pick/cuff and no completion click leakage; HRTF=%s\n",test_sound.spatial ? "active" : "fallback");
     return true;
 }

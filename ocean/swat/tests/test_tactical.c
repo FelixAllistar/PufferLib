@@ -255,4 +255,37 @@ static void context(void) {
     swat_sim_close(&sim);
     puts("PASS contextual use: narrow aim tolerance, larger misses rejected, intact-wall blocking, forward-only compliance, close cuff reach, look-away interruption and authority held-target isolation");
 }
-int main(void) { physical_materials(); wand(); throw_rules(); effects(); doors(); network(); context(); return 0; }
+static void wedges_spray_traps(void) {
+    SwatConfig config=swat_default_config(); config.mission=SWAT_HOUSE; config.hostile_fire=false;
+    swat_sim_init(&sim,config,71); place(0,(b3Pos){3.3f,0,-2},0);
+    SwatContext c=swat_context(&sim,0); assert(c.hit.kind==SWAT_HIT_WORLD);
+    SwatObject* door=&sim.world.objects[c.hit.index]; door->locked=false;
+    SwatInput in=swat_neutral_input(); in.door_tool=SWAT_WEDGE; step(in,100);
+    assert(door->wedge_owner==0 && sim.actors[0].gear.wedges==1);
+    step(swat_neutral_input(),1); in=swat_neutral_input(); in.interact=true; step(in,40);
+    assert(!door->door_open && door->door_angle==0);
+    in=swat_neutral_input(); in.door_tool=SWAT_REMOVE_WEDGE; step(in,80);
+    assert(door->wedge_owner==-1 && sim.actors[0].gear.wedges==2);
+    step(swat_neutral_input(),1); in=swat_neutral_input(); in.interact=true; in.peek=true; step(in,30);
+    assert(door->peek && fabsf(door->door_angle-12*SWAT_RAD)<.001f);
+    step(swat_neutral_input(),1); in.peek=false; step(in,60);
+    assert(!door->peek && door->door_angle>1.5f);
+    door->door_open=false; step(swat_neutral_input(),90); door->trapped=true;
+    in=swat_neutral_input(); in.door_tool=SWAT_DISARM; step(in,130); assert(door->trapped);
+    in=swat_neutral_input(); in.inspect=true; step(in,1);
+    assert(door->trap_known&1); in=swat_neutral_input(); in.door_tool=SWAT_DISARM; step(in,120);
+    assert(!door->trapped && !door->trap_known);
+    step(swat_neutral_input(),1); door->trapped=true; in=swat_neutral_input(); in.interact=true; step(in,5);
+    assert(!door->trapped && sim.actors[0].gear.flash_ticks>0);
+    swat_sim_close(&sim);
+    fixture(SWAT_CONCRETE); place(0,(b3Pos){1,0,0},0);
+    int wall=swat_world_box(&sim.world,(b3Pos){2,1.5f,0},swat_v(.05f,1.5f,2),SWAT_DRYWALL,50);
+    in=swat_neutral_input(); in.pepper_spray=true; in.fire=true; step(in,20);
+    assert(!sim.actors[1].gear.gas_ticks && sim.actors[0].gear.spray_ticks==340 && !sim.actors[0].arsenal.shots);
+    assert(swat_world_damage(&sim.world,wall,100)); step(in,20);
+    assert(sim.actors[1].gear.surrendered && sim.actors[0].gear.spray_ticks==320);
+    step(in,400); assert(sim.actors[0].gear.spray_ticks==0 && !sim.actors[0].arsenal.shots);
+    swat_sim_close(&sim);
+    puts("PASS tactical tools: held-action isolation, persistent/recoverable wedge, physical peek, inspection-before-disarm, trap exposure, finite and occluded spray");
+}
+int main(void) { physical_materials(); wand(); throw_rules(); effects(); doors(); network(); context(); wedges_spray_traps(); return 0; }

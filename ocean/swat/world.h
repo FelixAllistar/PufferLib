@@ -29,6 +29,9 @@ typedef struct SwatObject {
     SwatPart part;
     bool active, door, door_open,locked;
     int breach_owner,breach_ticks;
+    int wedge_owner;
+    bool peek,trapped;
+    unsigned int trap_known;
     b3Pos hinge;
 } SwatObject;
 

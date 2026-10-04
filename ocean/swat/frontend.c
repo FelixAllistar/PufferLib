@@ -182,8 +182,10 @@ void swat_frontend_update(SwatFrontend* app, const SwatSim* sim, bool policy) {
         }
     }
     active=app->screen==SWAT_SCREEN_GAME || app->screen==SWAT_SCREEN_SCOPE;
+    app->squad_pointer=app->screen==SWAT_SCREEN_GAME && app->leader && !policy && IsWindowFocused() && IsKeyDown(KEY_M);
     app->camera_pointer=active && app->camera_open && sim->mission.overwatch_count>0 &&
         IsWindowFocused() && IsKeyDown(KEY_TAB) && !policy;
+    app->camera_pointer|=app->squad_pointer;
     float target=app->screen==SWAT_SCREEN_SCOPE ? 1 : 0,step=GetFrameTime()*6;
     app->camera_expansion+=swat_clamp(target-app->camera_expansion,-step,step);
     // A UI click must be released before either camera controls or a weapon
@@ -242,18 +244,28 @@ SwatInput swat_frontend_input(SwatFrontend* app, const SwatSim* sim) {
     if(IsKeyPressed(KEY_END)) app->ready=app->ready==SWAT_HIGH_READY ? SWAT_READY : SWAT_HIGH_READY;
     in.ready=app->ready;
     in.selector=IsKeyDown(KEY_V);
-    in.weapon=IsKeyDown(KEY_ONE) ? 1 : (IsKeyDown(KEY_TWO) ? 2 : 0);
+    bool equipment_modifier=IsKeyDown(KEY_LEFT_ALT);
+    if(equipment_modifier && (IsKeyPressed(KEY_ONE) || IsKeyPressed(KEY_TWO))) {
+        app->selected_gadget=(app->selected_gadget+(IsKeyPressed(KEY_TWO) ? 1 : 3))%4;
+        app->wait_for_release=true; in.fire=false;
+    }
+    in.weapon=equipment_modifier ? 0 : (IsKeyDown(KEY_ONE) ? 1 : (IsKeyDown(KEY_TWO) ? 2 : 0));
+    if(in.weapon) app->selected_gadget=0;
+    in.pepper_spray=IsKeyDown(KEY_SIX);
     in.inspect=IsKeyDown(KEY_G); in.command=IsKeyDown(KEY_Y); in.melee=IsKeyDown(KEY_B);
     in.throwable=IsKeyDown(KEY_FOUR) ? 1 : (IsKeyDown(KEY_FIVE) ? 2 : 0);
     in.taser=IsKeyDown(KEY_T);
     in.door_tool=IsKeyDown(KEY_K) ? SWAT_DETONATE_CHARGE :
         (IsKeyDown(KEY_SEVEN) ? SWAT_PLACE_CHARGE : (IsKeyDown(KEY_L) ? SWAT_LOCKPICK : SWAT_DOOR_NONE));
     if(app->screen==SWAT_SCREEN_GAME && !app->camera_pointer) {
+        if(IsKeyDown(KEY_NINE)) in.door_tool=equipment_modifier ? SWAT_REMOVE_WEDGE : SWAT_WEDGE;
+        if(IsKeyDown(KEY_EIGHT)) in.door_tool=SWAT_DISARM;
         SwatContext context=swat_context(sim,app->actor);
         bool use=IsKeyDown(KEY_F) || (!app->wait_for_release && IsMouseButtonDown(MOUSE_BUTTON_MIDDLE));
         bool door=context.hit.kind==SWAT_HIT_WORLD && context.action!=SWAT_CONTEXT_NONE && context.hit.distance<=2.2f;
-        in.interact=use && door;
-        in.command|=use && !door;
+        bool physical=door || context.action==SWAT_CONTEXT_EVIDENCE || context.action==SWAT_CONTEXT_SECURED;
+        in.interact=use && physical; in.peek=equipment_modifier;
+        in.command|=use && !physical;
         bool right=!app->wait_for_release && IsMouseButtonDown(MOUSE_BUTTON_RIGHT);
         if(!right && app->right_held && (app->right_action==SWAT_RIGHT_CUFF || app->right_action==SWAT_RIGHT_PICK) &&
            IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
@@ -278,7 +290,28 @@ SwatInput swat_frontend_input(SwatFrontend* app, const SwatSim* sim) {
             else in.door_tool=same && context.action==SWAT_CONTEXT_LOCKED ? SWAT_LOCKPICK : SWAT_DOOR_NONE;
         }
     } else if(!app->wait_for_release) in.aim=IsMouseButtonDown(MOUSE_BUTTON_RIGHT);
+    if(app->selected_gadget && app->screen==SWAT_SCREEN_GAME) {
+        bool use=in.fire; in.fire=in.reload=false;
+        if(app->selected_gadget==1) in.pepper_spray|=use;
+        else if(use && !app->gadget_door_action) {
+            SwatContext target=swat_context(sim,app->actor);
+            app->gadget_door_action=app->selected_gadget==3 ? SWAT_DISARM :
+                (target.action==SWAT_CONTEXT_WEDGED ? SWAT_REMOVE_WEDGE : SWAT_WEDGE);
+        }
+        if(app->selected_gadget>1 && use) in.door_tool=app->gadget_door_action;
+        if(!use) app->gadget_door_action=0;
+    }
     if(app->camera_pointer) in=swat_neutral_input();
+    in.squad_order=app->squad_pending; in.squad_team=app->squad_team; in.squad_queue=app->squad_queue;
+    in.squad_execute=IsKeyDown(KEY_J);
+    if(app->squad_pending) {
+        bool accepted=true,has_bot=false;
+        for(int i=0;i<sim->actor_count;i++) if(sim->actors[i].present && sim->actors[i].mind.bot && sim->actors[i].role==SWAT_OFFICER &&
+            (!app->squad_team || sim->actors[i].mind.team==app->squad_team)) {
+            has_bot=true; if(sim->actors[i].mind.order!=app->squad_pending && sim->actors[i].mind.pending_order!=app->squad_pending) accepted=false;
+        }
+        if(accepted || !has_bot) app->squad_pending=0;
+    }
     if(app->loadout_pending) {
         in.loadout=app->selected_kit+1;
         if(sim->actors[app->actor].gear.kit==app->selected_kit) app->loadout_pending=false;
@@ -406,13 +439,33 @@ static void swat_camera_draw(SwatFrontend* app,const SwatView* view,const SwatSi
 void swat_frontend_draw(SwatFrontend* app, const SwatView* view, const SwatSim* sim, bool policy) {
     if(app->screen==SWAT_SCREEN_GAME || app->screen==SWAT_SCREEN_SCOPE) {
         if(!policy) swat_camera_draw(app,view,sim);
+        if(app->squad_pointer) {
+            int x=(int)(GetScreenWidth()*.63f),y=GetScreenHeight()/2-105;
+            const char* teams[]={"Gold","Red","Blue"};
+            for(int team=0;team<3;team++) {
+                Rectangle r={(float)(x+team*70),(float)(y-32),65,24};
+                swat_hud_text(view,teams[team],(int)r.x,(int)r.y,15,team==app->squad_team ? menu_gold : menu_paper);
+                if(CheckCollisionPointRec(GetMousePosition(),r) && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) app->squad_team=team;
+            }
+            for(int order=1;order<SWAT_SQUAD_ORDERS;order++) {
+                Rectangle r={(float)x,(float)(y+(order-1)*23),210,22}; bool hover=CheckCollisionPointRec(GetMousePosition(),r);
+                swat_hud_text(view,swat_squad_order_name(order),x,(int)r.y,15,hover ? menu_gold : menu_paper);
+                if(hover && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) { app->squad_pending=order; app->squad_queue=IsKeyDown(KEY_LEFT_SHIFT); app->wait_for_release=true; }
+            }
+            swat_hud_text(view,"Shift: queue / J: execute",x,y+237,13,menu_muted);
+        }
+        if(app->selected_gadget) {
+            const char* gadgets[]={"Weapon","Pepper spray","Door wedge","Disarm kit"};
+            swat_hud_text(view,gadgets[app->selected_gadget],24,GetScreenHeight()-96,15,menu_gold);
+        }
         if(!policy && IsKeyDown(KEY_TAB) && app->screen==SWAT_SCREEN_GAME) {
             const SwatEquipment* gear=&sim->actors[app->actor].gear;
             int y=GetScreenHeight()-160;
             swat_hud_text(view,"Equipment",24,y,15,menu_gold);
             swat_hud_text(view,TextFormat("[4] Flash %d    [5] CS %d",gear->flashbangs,gear->gas_grenades),24,y+23,14,menu_paper);
             swat_hud_text(view,TextFormat("[T] Taser %d    [7] Charge %d",gear->taser_charges,gear->breaching_charges),24,y+44,14,menu_paper);
-            swat_hud_text(view,"[P] Planning    [Esc] Pause",24,y+68,14,menu_muted);
+            swat_hud_text(view,TextFormat("[6] Spray %.1fs    [9] Wedges %d    [8] Disarm",gear->spray_ticks/60.0f,gear->wedges),24,y+65,14,menu_paper);
+            swat_hud_text(view,"[P] Planning    [M] Squad    [Esc] Pause",24,y+86,14,menu_muted);
         }
         return;
     }
@@ -587,6 +640,10 @@ void swat_frontend_draw(SwatFrontend* app, const SwatView* view, const SwatSim* 
         (app->hosting ? "HOST CO-OP" : "JOIN CO-OP") : (app->screen==SWAT_SCREEN_MAIN ? "TRAINING ANNEX" :
         (sim->end==SWAT_RUNNING ? "PAUSED" : swat_end_name(sim->end))));
     DrawText(title,(int)x,(int)y+43,30,menu_paper);
+    if(!settings && sim->end!=SWAT_RUNNING && sim->config.tactical_rules) {
+        swat_hud_text(view,TextFormat("Arrests %d / rescued %d / evidence %d",sim->debrief.arrests,sim->debrief.rescued,sim->debrief.evidence),24,GetScreenHeight()-67,16,menu_paper);
+        swat_hud_text(view,TextFormat("Force violations %d / unlawful harm %.0f",sim->debrief.roe_violations,sim->debrief.unlawful_damage),24,GetScreenHeight()-42,16,menu_gold);
+    }
 
     if(settings) {
         y+=94;

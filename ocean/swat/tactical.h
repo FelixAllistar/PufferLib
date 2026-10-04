@@ -16,7 +16,7 @@ typedef struct SwatProjectile {
 struct SwatSim;
 typedef enum SwatContextAction { SWAT_CONTEXT_NONE,SWAT_CONTEXT_OPEN,SWAT_CONTEXT_CLOSE,
     SWAT_CONTEXT_LOCKED,SWAT_CONTEXT_CUFF,SWAT_CONTEXT_COMPLY,SWAT_CONTEXT_SECURED,
-    SWAT_CONTEXT_CHARGE } SwatContextAction;
+    SWAT_CONTEXT_CHARGE,SWAT_CONTEXT_WEDGED,SWAT_CONTEXT_TRAP,SWAT_CONTEXT_EVIDENCE } SwatContextAction;
 typedef struct SwatContext {
     SwatHit hit;
     SwatContextAction action;
@@ -29,6 +29,8 @@ SwatContext swat_context(const struct SwatSim* sim,int actor);
 // Throws use a sphere sweep for hand clearance, then the authoritative Box3D
 // world integrates flight, bounce, rolling and contact impulses.
 bool swat_throw(struct SwatSim* sim,int actor,SwatProjectileKind kind);
+void swat_pepper_spray(struct SwatSim* sim,int actor);
+void swat_traps_step(struct SwatSim* sim);
 bool swat_taser(struct SwatSim* sim,int actor);
 struct SwatInput;
 void swat_door_tools(struct SwatSim* sim,int actor,struct SwatInput* input);

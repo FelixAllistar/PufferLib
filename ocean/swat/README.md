@@ -207,7 +207,7 @@ The [SWAT 4 publisher manual](https://sierrachest.com/gfx/games/SWAT4/box/SWT4_M
 describes contextual use, viewport cycling and a right-click command interface;
 selected tools use the fire action. This prototype keeps the combined
 use/compliance idea and adds direct contextual RMB cuff/pick access, alongside
-the requested held-Tab camera pointer. A full squad command menu is future work.
+the requested held-Tab camera pointer. Hold **M** for Gold/Red/Blue squad orders; Shift queues an order and **J** executes it. Orders affect scripted bots, never human peers.
 The gameplay HUD follows the compact text and video treatment visible in
 [Ready or Not screenshots](https://www.spaziogames.it/recensioni/ready-or-not-recensione)
 and [SWAT 4 screenshots](https://www.play-asia.com/swat-4-gold-edition/13/70dsxt):
@@ -235,7 +235,7 @@ and mission outcomes. All surviving officers must extract. Only the leader can
 restart, choose a house or command snipers. Online pause/settings release your controls while the session continues.
 Solo/offline play remains available. Planning also releases controls online;
 the session continues. The default hosted mission is Cedar House, five minutes;
-`--mission annex` selects the old range. Hosts and peers must use protocol v5.
+`--mission annex` selects the old range. Hosts and peers must use protocol v6.
 
 The dedicated server has no display, Raylib, audio-device or CUDA dependency.
 On WSL, `./swat server` defaults to `build/swat/windows/swat-server.exe`;
@@ -541,3 +541,29 @@ Files record the wire version, scenario settings, reset RNG seed, fixed-tick
 inputs and portable snapshot hashes; incompatible/truncated files are rejected.
 These are same-build solo replay checks, not full save games or a guarantee of
 identical results with a different layout model or across architectures.
+
+## Tactical encounter rules
+
+Human house/generated play now enables three scripted squad bots in vacant
+officer slots. Humans replace those bots when joining co-op. The legacy annex
+and policy contract keep their previous defaults. Hold **M** for floating squad
+orders; choose Gold, Red or Blue, Shift-click to queue, and press **J** to execute.
+Orders acknowledge after 18 simulation ticks. Bots route through actual static
+clearance, open/pick encountered doors and yield to nearby actors. This is an
+initial authored tactical behavior layer; it is not a trained squad policy.
+
+**Alt+F** peeks an unlocked door to 12 degrees. **9** places a wedge, **Alt+9**
+recovers it, **8** disarms an inspected trap, and **6** sprays pepper. These are
+held actions with finite stock and cover checks. **Alt+1/2** cycles the equipped
+small tool; left click uses it, and plain **1/2** returns to a weapon. Wedges
+block the same leaf for every actor. Difficult generated tactical houses may
+have traps; inspect with the optiwand before disarming. Opening a trapped leaf
+triggers an occluded flash/stun game effect.
+
+Cuffed civilians can follow an officer via **F**, or hold position on another
+press. Surrendered/down suspects leave weapon evidence; aim down and use **F**
+to collect it. The end-of-round debrief records arrests, rescued civilians,
+evidence and harm to civilians/surrendered/restrained people. Evidence and
+rescue currently add recorded outcomes, rather than new mandatory victory
+conditions. Suspects use visible targets and short-lived memory; noise supplies
+a coarse bearing for investigation, never a hidden actor position.

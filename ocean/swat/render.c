@@ -35,17 +35,25 @@ static void swat_draw_context(const SwatView* view,const SwatSim* sim,SwatContex
             action=context.ready ? "Hold [RMB] Pick lock" : "Locked / move closer";
             if(context.ready && swat_kit(actor->gear.kit)->optiwand) detail="[G] Mirror under door";
             break;
+        case SWAT_CONTEXT_WEDGED: action="Door wedged / [Alt+9] Remove"; break;
+        case SWAT_CONTEXT_TRAP: action="Trap found / hold [8] Disarm"; break;
         case SWAT_CONTEXT_CHARGE:
             action=sim->world.objects[context.hit.index].breach_owner==view->actor ? "[K] Detonate charge" : "Teammate's charge"; break;
         case SWAT_CONTEXT_CUFF:
             action=context.ready ? "Hold [RMB] Handcuff" : "Move closer to handcuff"; break;
         case SWAT_CONTEXT_COMPLY: action="[F] Request compliance"; break;
-        case SWAT_CONTEXT_SECURED: return;
+        case SWAT_CONTEXT_SECURED:
+            if(sim->config.tactical_rules && sim->actors[context.hit.index].role==SWAT_CIVILIAN) { action="[F] Escort / hold position"; break; }
+            return;
+        case SWAT_CONTEXT_EVIDENCE: action="[F] Collect weapon evidence"; break;
         default: return;
     }
     const SwatEquipment* gear=&actor->gear;
-    float progress=gear->door_ticks ? gear->door_ticks/(gear->door_mode==SWAT_LOCKPICK ? 180.0f : 90.0f) : gear->cuff_ticks/72.0f;
-    if(gear->door_ticks) action=gear->door_mode==SWAT_LOCKPICK ? "Picking lock..." : "Mounting charge...";
+    float progress=gear->door_ticks ? gear->door_ticks/(gear->door_mode==SWAT_LOCKPICK ? 180.0f : gear->door_mode==SWAT_DISARM ? 120.0f : gear->door_mode==SWAT_PLACE_CHARGE ? 90.0f : 45.0f) : gear->cuff_ticks/72.0f;
+    if(gear->door_ticks) {
+        const char* tools[]={"","Picking lock...","Mounting charge...","","Placing wedge...","Removing wedge...","Disarming trap..."};
+        action=tools[gear->door_mode];
+    }
     if(gear->cuff_ticks) action="Handcuffing...";
     int cx=width/2,y=height/2+48;
     swat_hud_center(view,action,cx,y,18,swat_paper);
@@ -116,6 +124,7 @@ static void swat_draw_object(const SwatObject* o) {
     if (o->door) {
         DrawCube((Vector3){-o->half.x-0.015f,0.06f,o->half.z-0.17f},0.05f,0.055f,0.22f,swat_gold);
         DrawCube((Vector3){o->half.x+0.015f,0.06f,o->half.z-0.17f},0.05f,0.055f,0.22f,swat_gold);
+        if(o->wedge_owner>=0) DrawCube((Vector3){0,-o->half.y+.035f,o->half.z-.2f},.22f,.07f,.28f,(Color){184,98,45,255});
         if(o->breach_owner>=0) for(int side=-1;side<=1;side+=2) {
             DrawCube((Vector3){side*(o->half.x+.018f),.12f,o->half.z-.22f},.035f,.18f,.22f,swat_gold);
             DrawCube((Vector3){side*(o->half.x+.04f),.12f,o->half.z-.22f},.014f,.06f,.08f,(Color){205,65,48,255});
@@ -171,6 +180,9 @@ static void swat_draw_floors(const SwatWorld* world) {
 }
 
 static void swat_draw_projectiles(const SwatSim* s) {
+    for(int i=0;i<SWAT_MAX_ACTORS;i++) if(s->evidence[i].dropped && !s->evidence[i].collected) {
+        Vector3 p=swat_position(s->evidence[i].position); DrawCube(p,.42f,.06f,.08f,(Color){28,32,35,255});
+    }
     for(int i=0;i<SWAT_MAX_PROJECTILES;i++) {
         const SwatProjectile* p=&s->projectiles[i]; if(!p->active) continue;
         Color color=p->kind==SWAT_FLASHBANG ? (Color){220,175,60,255} : (Color){83,150,87,255};

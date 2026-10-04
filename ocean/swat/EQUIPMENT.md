@@ -70,3 +70,12 @@ reach their full value.
 Evidence collection, an explicit force-use/debrief record and more varied
 suspect/civilian behavior should grow alongside this list. Equipment needs
 encounters where its tradeoffs are visible, measurable and worth choosing.
+
+## Implemented encounter additions
+
+Wedges and pepper spray now use finite inventories and authority checks. Wedges
+require a held placement/removal and persist on the shared hinged leaf; spray
+checks a short occluded cone and gas-mask resistance. Unlocked door peeking and
+optical trap discovery/disarming are also implemented. Physical PepperBall,
+launcher payload selection, remote cameras/robots/drone, individual taser
+probes, shield and communication-device mechanics are the next equipment work.

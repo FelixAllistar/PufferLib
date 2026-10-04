@@ -24,6 +24,8 @@ typedef struct SwatEquipment {
     bool last_throw,last_taser,used_tools;
     SwatWandMode wand_mode;
     float wand_yaw,wand_pitch;
+    int wedges,spray_ticks;
+    bool door_completed;
     int breaching_charges,door_ticks,door_target,door_mode,last_door_tool;
 } SwatEquipment;
 const SwatKitDef* swat_kit(int kit);

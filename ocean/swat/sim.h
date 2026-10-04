@@ -9,6 +9,7 @@
 #include "tactical.h"
 #include "overwatch.h"
 #include "generation.h"
+#include "encounter.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -35,6 +36,8 @@ typedef struct SwatActor {
     SwatArsenal arsenal;
     SwatEquipment gear;
     SwatRole role;
+    SwatMind mind;
+    bool rescued;
     float health;
     bool present, alive, last_interact;
     int visible_ticks, last_shot_tick;
@@ -47,10 +50,10 @@ typedef struct SwatActor {
 
 typedef struct SwatConfig {
     int max_ticks;
-    bool randomize, hostile_fire;
+    bool randomize, hostile_fire,tactical_rules;
     int mission;
     uint32_t layout_seed;
-    int generator,difficulty;
+    int generator,difficulty,squad_bots;
 } SwatConfig;
 
 typedef struct SwatEvents {
@@ -74,6 +77,10 @@ typedef struct SwatSim {
     int commander_actor,last_sniper_order[SWAT_MAX_ACTORS];
     SwatMissionDef mission;
     SwatLayout layout;
+    SwatNavigation navigation;
+    SwatEvidence evidence[SWAT_MAX_ACTORS];
+    SwatDebrief debrief;
+    int last_squad_order;
 } SwatSim;
 
 SwatConfig swat_default_config(void);
