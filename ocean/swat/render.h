@@ -3,6 +3,7 @@
 #include "sim.h"
 #include "raylib.h"
 #include "environment_art.h"
+#include "lighting.h"
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -19,6 +20,7 @@ typedef struct SwatView {
     RenderTexture2D camera_target;
     Font hud_font;
     SwatEnvironmentArt environment;
+    SwatLighting lighting;
     int sniper_unit;
     char session_status[128];
 } SwatView;

@@ -6,7 +6,9 @@
 
 typedef struct SwatEnvironmentArt {
     bool initialized;
+    bool lit;
     Texture2D plaster,wood;
+    float plaster_tile_metres;
     Model door;
     Model props[SWAT_ENV_PROP_KINDS];
 } SwatEnvironmentArt;

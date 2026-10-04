@@ -1,0 +1,28 @@
+{
+  "schema": "swat_generated_material_v1",
+  "asset": "painted_plaster_basecolor_v1.png",
+  "source": "OpenAI built-in imagegen",
+  "created": "2026-10-04",
+  "prompt": "Use case: photorealistic-natural. Asset type: a seamless tileable base-color/albedo texture for painted plaster walls in a tactical first-person game. Create one square 1024x1024 image representing exactly one metre by one metre of calm warm off-white painted plaster. Orthographic straight-on surface scan, evenly lit neutral diffuse illumination, no baked directional lighting, no ambient occlusion, no gradients or vignette. Fine shallow plaster grain and tiny low-contrast irregularities; slight natural age only, clean and believable occupied residential wall. Keep the overall color near warm chalk white, with very restrained fine variation. Continuous seamless repetition on all four edges. Texture fills the entire image. No cracks, large stains, brown blotches, peeling patches, bricks, seams, grooves, objects, text, borders or watermark. This is a texture map, not a picture of a room or a material preview sphere.",
+  "actual_size_pixels": [
+    1254,
+    1254
+  ],
+  "requested_size_pixels": [
+    1024,
+    1024
+  ],
+  "color_space": "sRGB",
+  "tile_metres": 1,
+  "sha256": "3d5db06dfc54326099db35ccefd3a0dcdb14fd5b9129cbef0b7d3dd5f4078bce",
+  "bytes": 3069691,
+  "license_note": "Generated for this project. Separate from the CC0 source packs; no third-party CC0 provenance claimed.",
+  "status": "Provisional base-color comparison. Fine relief is suggested in the bitmap; no measured normal/roughness or strict seamlessness certificate. Original file copied unchanged.",
+  "edge_readback": {
+    "left_right_mean_absolute_channel_difference": 8.78,
+    "top_bottom_mean_absolute_channel_difference": 9.45,
+    "left_right_max_channel_difference": 54,
+    "top_bottom_max_channel_difference": 65,
+    "note": "Observed encoded RGB edge mismatch on unmodified output; visually review tiling, not a seamlessness guarantee."
+  }
+}

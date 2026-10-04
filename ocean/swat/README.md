@@ -62,6 +62,53 @@ or `./build/swat/swat play`. CUDA training continues to run on Linux. The
 launcher rebuilds stale player code and translates checkpoint/settings/capture/layout-model
 paths from WSL for the Windows process.
 
+The launcher prints whether it selected Windows or Linux. WSL detection also
+uses the interop registration when a shell has lost `WSL_INTEROP`. The Linux
+fallback selects `GALLIUM_DRIVER=d3d12` when `/dev/dxg` is present and no renderer
+override was supplied. Explicit `GALLIUM_DRIVER`, `MESA_LOADER_DRIVER_OVERRIDE`
+and `LIBGL_ALWAYS_SOFTWARE` values remain authoritative. Check Raylib's startup
+`Renderer` line: `llvmpipe` means software rendering. On this GTX 1060 workstation,
+the initial generated-house benchmark measured 5.5 ms/frame for native Windows
+and 190 ms/frame for llvmpipe; those are controlled benchmarks, not a guarantee
+for every mission or WSLg session.
+
+For a repeatable cost breakdown without the player's frame limiter:
+
+```sh
+make -C ocean/swat performance-tool
+GALLIUM_DRIVER=d3d12 ./build/swat/performance_tool --generated --audio --frames 600
+./build/swat/windows/performance_tool.exe --generated --audio --camera --frames 600
+./build/swat/performance_tool --headless --generated --frames 600
+```
+
+The tool reports simulation, audio, draw submission, presentation and total
+mean/p50/p95/maximum times after warmup. `--camera` actually assigns a sniper and
+renders its live feed; `--record FILE.sgrp` includes replay digest/write cost;
+`--draw-only` excludes simulation, and `--plan` measures the cutaway. Use
+`--expanded-camera` to measure the large takeover. The compact feed uses a
+512 × 288 target; expansion restores 1024 × 576 with matching reticle proportions.
+Use
+`--capture FILE.png` for a final scene capture. **F3** shows FPS/frame time as
+small debug text in play.
+
+The initial lighting pass adds linear diffuse shading, a cool sky/warm sun,
+warm room lights and filtered depth shadows. Geometry changes invalidate the
+shadow cache immediately; moving silhouettes refresh every four simulation
+ticks. The player-nearest room has a shadow map; other room lights use room
+bounds to limit their reach. This remains an authored preview lighting model,
+with no baked global illumination or physical fixtures yet. Both immediate
+geometry and imported door/prop models receive lighting. The HUD remains
+unmodified. For comparison, `SWAT_LIGHTING=0 ./swat play` restores unlit shading;
+`SWAT_EXPOSURE=0.8 ./swat play` adjusts exposure (0.25–3, default 1.1).
+Walls default to a provisional calm imagegen plaster texture. The exact prompt
+and source hash are in `assets/environment/painted_plaster_v1.json`.
+`SWAT_PLASTER_STYLE=weathered ./swat play` selects the preserved worn source map.
+These overrides are forwarded across WSL interop, with paths translated where
+appropriate. Source wood/plaster tiling now follows the supplied metre scales.
+`test_lighting` is an explicit graphics check requiring a display; it verifies
+occlusion, geometry invalidation, rotated/scaled mesh equivalence, world
+immutability, exposure, opt-out and GPU resource lifecycle.
+
 At Cedar House, enter through doors or create openings, secure two suspects,
 order the three civilians to comply, cuff them, and bring all surviving officers
 back to staging. Any civilian harm fails the mission. Human play defaults to

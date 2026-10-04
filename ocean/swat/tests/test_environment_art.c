@@ -168,9 +168,14 @@ static void destruction_pixels(SwatEnvironmentArt* art,const char* directory) {
 int main(int argc,char** argv) {
     const char* directory=argc>1 ? argv[1] : "build/swat";
     char path[4096];
-    environment("SWAT_ENVIRONMENT_ART",NULL); environment("SWAT_ENVIRONMENT_ASSETS",NULL);
+    environment("SWAT_ENVIRONMENT_ART",NULL); environment("SWAT_ENVIRONMENT_ASSETS",NULL); environment("SWAT_PLASTER_STYLE",NULL);
     SwatView view={0}; swat_view_init(&view,true); assert(IsWindowReady());
     assert(view.environment.plaster.id && view.environment.wood.id && view.environment.door.meshCount);
+    assert(view.environment.plaster_tile_metres==1 && view.environment.plaster.width==1254);
+    environment("SWAT_PLASTER_STYLE","weathered");
+    SwatEnvironmentArt weathered={0}; swat_environment_art_init(&weathered);
+    assert(weathered.plaster.id && weathered.plaster.width==256 && weathered.plaster_tile_metres==1.8f);
+    swat_environment_art_close(&weathered); environment("SWAT_PLASTER_STYLE",NULL);
     prop_graphics(&view.environment,directory);
     destruction_pixels(&view.environment,directory);
     SwatObject door={0}; door.active=true; door.door=true; door.material=SWAT_WOOD;

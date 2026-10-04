@@ -43,7 +43,14 @@ void swat_environment_art_init(SwatEnvironmentArt* art) {
     art->initialized=true;
     const char* enabled=getenv("SWAT_ENVIRONMENT_ART");
     if(enabled && !strcmp(enabled,"0")) return;
-    art->plaster=load_surface("plaster_diffuse.png");
+    const char* plaster_style=getenv("SWAT_PLASTER_STYLE");
+    if(!plaster_style || strcmp(plaster_style,"weathered")) {
+        art->plaster=load_surface("painted_plaster_basecolor_v1.png");
+        art->plaster_tile_metres=1;
+    }
+    if(!art->plaster.id) {
+        art->plaster=load_surface("plaster_diffuse.png"); art->plaster_tile_metres=1.8f;
+    }
     art->wood=load_surface("wood_diffuse.png");
     char path[4096];
     if(asset_path(path,sizeof(path),"door_leaf.glb")) art->door=LoadModel(path);
@@ -86,12 +93,13 @@ void swat_environment_art_close(SwatEnvironmentArt* art) {
 }
 
 static Color wear_color(const SwatObject* o,float shade) {
-    float wear=o->max_health>0 ? .5f+.5f*swat_clamp(o->health/o->max_health,0,1) : 1;
+    // Lost wall cells expose framing; surviving cells need only restrained wear.
+    float wear=o->max_health>0 ? .94f+.06f*swat_clamp(o->health/o->max_health,0,1) : 1;
     unsigned char value=(unsigned char)(255*wear*shade);
     return (Color){value,value,value,255};
 }
 
-static void textured_box(Texture2D texture,const SwatObject* o) {
+static void textured_box(Texture2D texture,const SwatObject* o,bool lit,float tile_metres) {
     // Six independently UV-mapped faces. UVs are in metres, rather than stretched
     // once per damage cell. Translation in the wall basis keeps adjacent skins
     // continuous, including on cardinally rotated generated walls.
@@ -111,7 +119,7 @@ static void textured_box(Texture2D texture,const SwatObject* o) {
     rlSetTexture(texture.id);
     rlBegin(RL_QUADS);
     for(int face=0;face<6;face++) {
-        Color color=wear_color(o,shade[face]);
+        Color color=wear_color(o,lit ? 1 : shade[face]);
         rlColor4ub(color.r,color.g,color.b,color.a);
         rlNormal3f(normals[face][0],normals[face][1],normals[face][2]);
         for(int v=0;v<4;v++) {
@@ -120,7 +128,7 @@ static void textured_box(Texture2D texture,const SwatObject* o) {
             float z=corners[face][v][2]*o->half.z;
             float u=face<2 ? oz+z : ox+x;
             float t=(face==2 || face==3) ? oz+z : (float)o->center.y+y;
-            rlTexCoord2f(u,-t); rlVertex3f(x,y,z);
+            rlTexCoord2f(u/tile_metres,-t/tile_metres); rlVertex3f(x,y,z);
         }
     }
     rlEnd(); rlSetTexture(0);
@@ -137,7 +145,7 @@ bool swat_environment_art_draw(const SwatEnvironmentArt* art,const SwatObject* o
     if(surface==SWAT_ENV_PLASTER) texture=art->plaster;
     if(surface==SWAT_ENV_WOOD || surface==SWAT_ENV_DOOR) texture=art->wood;
     if(!texture.id) return false;
-    textured_box(texture,o);
+    textured_box(texture,o,art->lit,surface==SWAT_ENV_PLASTER ? art->plaster_tile_metres : 2);
     return true;
 }
 

@@ -94,6 +94,7 @@ void swat_view_init(SwatView* view, bool hidden) {
     view->hud_font=FileExists(font_path) ? LoadFontEx(font_path,32,NULL,0) : GetFontDefault();
     SetTextureFilter(view->hud_font.texture,TEXTURE_FILTER_BILINEAR);
     swat_environment_art_init(&view->environment);
+    swat_lighting_init(&view->lighting);
     EnableCursor(); // Capture only after entering the game with window focus.
 }
 
@@ -123,7 +124,7 @@ static void swat_draw_object(const SwatView* view,const SwatObject* o) {
     Vector3 size = {o->half.x*2,o->half.y*2,o->half.z*2};
     bool art=swat_environment_art_draw(&view->environment,o);
     if(!art) DrawCubeV((Vector3){0},size,swat_material_color(o));
-    if((!art && o->part!=SWAT_PART_SKIN) || view->debug)
+    if(view->debug)
         DrawCubeWiresV((Vector3){0},size,(Color){22,31,36,130});
     if (o->door) {
         bool leaf_art=art && view->environment.door.meshCount && o->material==SWAT_WOOD;
@@ -177,17 +178,30 @@ static void swat_draw_actor(const SwatActor* a) {
 
 static void swat_draw_floors(const SwatView* view,const SwatSim* sim) {
     const SwatWorld* world=&sim->world;
-    for(int i=0;i<world->room_count;i++) {
-        const SwatRoom* room=&world->rooms[i];
-        // The real wood floor collider already carries its surface texture.
-        // Do not hide it under a second room-sized tint overlay.
-        if(swat_environment_art_has_floor(&view->environment,room->floor)) continue;
-        const unsigned char* rgba=swat_material(room->floor)->color;
-        Color color={rgba[0],rgba[1],rgba[2],255};
-        DrawCube((Vector3){(float)room->center.x,.004f,(float)room->center.z},room->half.x*2,.008f,room->half.z*2,color);
-    }
+    // Every mission has authoritative finish-floor boxes. A second room-sized
+    // cube only fights their depth and hides their real surface material.
     swat_environment_art_draw_props(&view->environment,world,
         sim->config.mission==SWAT_GENERATED ? &sim->layout : NULL);
+}
+
+static void swat_draw_shadow_scene(const SwatSim* sim,bool cutaway) {
+    for(int i=0;i<sim->world.count;i++) {
+        const SwatObject* o=&sim->world.objects[i];
+        if(!o->active || o->material==SWAT_GLASS) continue;
+        if(cutaway && o->center.y>2.7f && o->half.x>3 && o->half.z>3) continue;
+        rlPushMatrix(); rlTranslatef((float)o->center.x,(float)o->center.y,(float)o->center.z);
+        rlRotatef(o->yaw/SWAT_RAD,0,1,0); rlRotatef(o->pitch/SWAT_RAD,0,0,1);
+        DrawCubeV((Vector3){0},(Vector3){o->half.x*2,o->half.y*2,o->half.z*2},WHITE); rlPopMatrix();
+    }
+    if(!cutaway) for(int i=0;i<sim->actor_count;i++) swat_draw_actor(&sim->actors[i]);
+}
+
+static void swat_begin_scene(SwatView* view,const SwatSim* sim,Camera3D camera) {
+    BeginMode3D(camera);
+    swat_lighting_begin(&view->lighting,&view->environment,&sim->world,camera.position);
+}
+static void swat_end_scene(SwatView* view) {
+    swat_lighting_end(&view->lighting,&view->environment); EndMode3D();
 }
 
 static void swat_draw_projectiles(const SwatSim* s) {
@@ -246,7 +260,7 @@ static void swat_draw_plan(SwatView* view,const SwatSim* sim) {
         camera.position.z+=7.2f*cosf(yaw); camera.target.z+=7.2f*cosf(yaw);
     }
     ClearBackground((Color){57,76,86,255});
-    BeginMode3D(camera);
+    swat_begin_scene(view,sim,camera);
     for(int i=0;i<sim->world.count;i++) {
         const SwatObject* o=&sim->world.objects[i];
         if(!preview && o->center.y>2.7f && o->half.x>3 && o->half.z>3) continue;
@@ -260,14 +274,15 @@ static void swat_draw_plan(SwatView* view,const SwatSim* sim) {
         Vector3 p=swat_position(mission->overwatch[i].position);
         DrawSphere(p,.3f,swat_gold); DrawLine3D(p,swat_position(mission->overwatch[i].target),swat_gold);
     }
-    EndMode3D();
+    swat_end_scene(view);
     DrawRectangle(0,0,GetScreenWidth(),96,swat_ink);
     DrawText(TextFormat("%s / OPERATION BRIEF",mission->name),32,22,28,swat_paper);
     DrawText(preview ? mission->overwatch[preview-1].name : "DRONE OVERVIEW / CUTAWAY",34,61,18,swat_gold);
 }
 
-static void swat_draw_scope(const SwatView* view,const SwatSim* sim,int width,int height) {
+static void swat_draw_scope(SwatView* view,const SwatSim* sim,int width,int height) {
     int unit=view->sniper_unit,actor=swat_sniper_actor(unit);
+    float reticle_scale=width/1024.0f;
     ClearBackground((Color){12,19,24,255});
     if(unit>=SWAT_SNIPERS) {
         if(!swat_feed_present(sim,unit)) return;
@@ -275,16 +290,17 @@ static void swat_draw_scope(const SwatView* view,const SwatSim* sim,int width,in
         if(device->kind==SWAT_BALL) { DrawText("AUDIO LINK",width/2-65,height/2-10,22,swat_gold); return; }
         b3Pos eye=swat_device_eye(device); b3Vec3 aim=swat_direction(device->yaw,device->pitch);
         Camera3D camera={swat_position(eye),swat_position(b3OffsetPos(eye,aim)),{0,1,0},80,CAMERA_PERSPECTIVE};
-        BeginMode3D(camera);
+        swat_begin_scene(view,sim,camera);
         for(int i=0;i<sim->world.count;i++) if(sim->world.objects[i].material!=SWAT_GLASS) swat_draw_object(view,&sim->world.objects[i]);
         swat_draw_floors(view,sim);
         for(int i=0;i<sim->actor_count;i++) swat_draw_actor(&sim->actors[i]);
         for(int i=0;i<sim->world.count;i++) if(sim->world.objects[i].material==SWAT_GLASS) swat_draw_object(view,&sim->world.objects[i]);
-        EndMode3D(); return;
+        swat_end_scene(view); return;
     }
     if(actor<0 || !sim->snipers[unit].deployed || !sim->actors[actor].alive) {
         const char* message=actor>=0 && sim->snipers[unit].deployed ? "SNIPER DOWN" : "NO SNIPER ASSIGNED";
-        DrawText(message,(width-MeasureText(message,40))/2,height/2-20,40,swat_gold); return;
+        int size=(int)(40*reticle_scale);
+        DrawText(message,(width-MeasureText(message,size))/2,height/2-size/2,size,swat_gold); return;
     }
     const SwatSniper* sniper=&sim->snipers[unit]; const SwatActor* a=&sim->actors[actor];
     b3Pos eye=swat_controller_eye(&a->controller);
@@ -292,7 +308,7 @@ static void swat_draw_scope(const SwatView* view,const SwatSim* sim,int width,in
         a->controller.pitch+(view->scope ? view->pitch_offset : 0));
     Camera3D camera={0}; camera.position=swat_position(eye); camera.target=swat_position(b3OffsetPos(eye,aim));
     camera.up=(Vector3){0,1,0}; camera.fovy=sniper->rifle ? 25 : 17; camera.projection=CAMERA_PERSPECTIVE;
-    BeginMode3D(camera);
+    swat_begin_scene(view,sim,camera);
     for(int i=0;i<sim->world.count;i++) if(sim->world.objects[i].material!=SWAT_GLASS) swat_draw_object(view,&sim->world.objects[i]);
     swat_draw_floors(view,sim);
     for(int i=0;i<sim->actor_count;i++) if(i!=actor) swat_draw_actor(&sim->actors[i]);
@@ -300,14 +316,18 @@ static void swat_draw_scope(const SwatView* view,const SwatSim* sim,int width,in
     for(int i=0;i<sim->world.count;i++) if(sim->world.objects[i].material==SWAT_GLASS) swat_draw_object(view,&sim->world.objects[i]);
     for(int i=0;i<sim->actor_count;i++) if(sim->tick-sim->actors[i].last_shot_tick<=3)
         DrawLine3D(swat_position(sim->actors[i].tracer_start),swat_position(sim->actors[i].tracer_end),swat_gold);
-    EndMode3D();
+    swat_end_scene(view);
     if(a->gear.gas_ticks>0) DrawRectangle(0,0,width,height,(Color){100,125,55,(unsigned char)(a->gear.gas_ticks*.55f)});
     if(a->gear.flash_ticks>0) DrawRectangle(0,0,width,height,(Color){242,245,221,(unsigned char)(240*fminf(1,a->gear.flash_ticks/120.0f))});
     int cx=width/2,cy=height/2;
-    DrawLine(cx-230,cy,cx-12,cy,swat_ink); DrawLine(cx+12,cy,cx+230,cy,swat_ink);
-    DrawLine(cx,cy-170,cx,cy-12,swat_ink); DrawLine(cx,cy+12,cx,cy+170,swat_ink);
-    DrawCircleLines(cx,cy,10,sniper->status==SWAT_SNIPER_READY ? GREEN : swat_gold);
-    for(int t=-3;t<=3;t++) if(t) { DrawLine(cx+t*50,cy-5,cx+t*50,cy+5,swat_ink); DrawLine(cx-5,cy+t*45,cx+5,cy+t*45,swat_ink); }
+    int hx=(int)(230*reticle_scale),hy=(int)(170*reticle_scale),gap=(int)(12*reticle_scale),tick=(int)(5*reticle_scale);
+    DrawLine(cx-hx,cy,cx-gap,cy,swat_ink); DrawLine(cx+gap,cy,cx+hx,cy,swat_ink);
+    DrawLine(cx,cy-hy,cx,cy-gap,swat_ink); DrawLine(cx,cy+gap,cx,cy+hy,swat_ink);
+    DrawCircleLines(cx,cy,10*reticle_scale,sniper->status==SWAT_SNIPER_READY ? GREEN : swat_gold);
+    for(int t=-3;t<=3;t++) if(t) {
+        int dx=(int)(t*50*reticle_scale),dy=(int)(t*45*reticle_scale);
+        DrawLine(cx+dx,cy-tick,cx+dx,cy+tick,swat_ink); DrawLine(cx-tick,cy+dy,cx+tick,cy+dy,swat_ink);
+    }
     if(sniper->travel_ticks) DrawText(TextFormat("REPOSITIONING  %.1f s",sniper->travel_ticks/60.0f),cx-140,cy+70,22,swat_gold);
 }
 
@@ -331,6 +351,10 @@ static void swat_draw_weapon(const SwatSim* s,const SwatActor* a,const SwatContr
 
 void swat_view_draw(SwatView* view, const SwatSim* s, bool policy, float vertical_fov) {
     if (!view->initialized) return;
+    Vector3 light_eye={11,1.6f,0};
+    if(view->actor>=0 && view->actor<s->actor_count && s->actors[view->actor].present)
+        light_eye=swat_position(swat_controller_eye(&s->actors[view->actor].controller));
+    swat_lighting_prepare(&view->lighting,s,light_eye,view->planning && !view->plan_preview,swat_draw_shadow_scene);
     if(view->planning) { swat_draw_plan(view,s); return; }
     if(view->actor<0 || view->actor>=s->actor_count || !s->actors[view->actor].present) {
         ClearBackground((Color){25,37,47,255});
@@ -339,7 +363,13 @@ void swat_view_draw(SwatView* view, const SwatSim* s, bool policy, float vertica
     const SwatActor* a=&s->actors[view->actor];
     bool show_camera=view->sniper_camera && (s->mission.overwatch_count>0 || view->sniper_unit>=SWAT_SNIPERS) && !policy;
     if(show_camera) {
-        if(!view->camera_target.id) view->camera_target=LoadRenderTexture(1024,576);
+        // A 280px inset does not need the full takeover render target. Keep a
+        // little supersampling when compact; restore 1024px during expansion.
+        int feed_width=view->camera_expansion>.05f ? 1024 : 512;
+        if(view->camera_target.id && view->camera_target.texture.width!=feed_width) {
+            UnloadRenderTexture(view->camera_target); view->camera_target=(RenderTexture2D){0};
+        }
+        if(!view->camera_target.id) view->camera_target=LoadRenderTexture(feed_width,feed_width*9/16);
         if(view->camera_target.id) {
             BeginTextureMode(view->camera_target);
             swat_draw_scope(view,s,view->camera_target.texture.width,view->camera_target.texture.height);
@@ -367,7 +397,7 @@ void swat_view_draw(SwatView* view, const SwatSim* s, bool policy, float vertica
     camera.up=swat_vector(up); camera.fovy=fov+((a->arsenal.sight==SWAT_OPTIC ? 30 : 45)-fov)*c->ads; camera.projection=CAMERA_PERSPECTIVE;
     int width=GetScreenWidth(), height=GetScreenHeight();
     ClearBackground((Color){25,37,47,255});
-    BeginMode3D(camera);
+    swat_begin_scene(view,s,camera);
     for (int i=0;i<s->world.count;i++) if (s->world.objects[i].material != SWAT_GLASS)
         swat_draw_object(view,&s->world.objects[i]);
     swat_draw_floors(view,s);
@@ -401,10 +431,10 @@ void swat_view_draw(SwatView* view, const SwatSim* s, bool policy, float vertica
             DrawLine3D(swat_position(eye),swat_position(hit.point),Fade(hit.kind==SWAT_HIT_ACTOR ? RED : SKYBLUE,.3f));
         }
     }
-    EndMode3D();
+    swat_end_scene(view);
     swat_draw_exposure(a,width,height);
 
-    if(view->debug) swat_hud_center(view,TextFormat("DEBUG / tick %d / world %d / %d objects",s->tick,s->world.generation,s->world.count),width/2,80,14,swat_gold);
+    if(view->debug) swat_hud_center(view,TextFormat("%d FPS / %.1f ms / tick %d / %d objects / %s",GetFPS(),GetFrameTime()*1000,s->tick,s->world.count,view->lighting.enabled ? "lit" : "unlit"),width/2,80,14,swat_gold);
     swat_hud_text(view,swat_sim_mission(s)->name,24,22,15,swat_paper);
     const char* objective=swat_sim_hostiles(s) ? "Secure the armed threats" :
         (s->config.mission!=SWAT_ANNEX && swat_sim_unsecured(s) ? "Restrain the hostages" : "Return to extraction");
@@ -461,6 +491,7 @@ void swat_view_close(SwatView* view) {
         if(view->camera_target.id) UnloadRenderTexture(view->camera_target);
         if(view->hud_font.texture.id && view->hud_font.texture.id!=GetFontDefault().texture.id) UnloadFont(view->hud_font);
         swat_environment_art_close(&view->environment);
+        swat_lighting_close(&view->lighting);
         CloseWindow();
     }
     memset(view,0,sizeof(*view));

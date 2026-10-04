@@ -64,6 +64,20 @@ is deliberately a general engine improvement.
 - Explicit local house comparisons and a runnable preference reward/policy
   training pipeline. The shipped model has no human feedback yet; see
   [GENERATION.md](GENERATION.md).
+- Initial live environment textures/doors and six bounded decorative tabletop
+  props, tied to active damage pieces/supports without new collision or LOS.
+- Initial linear-light shading, cached sun/nearest-room depth shadows and
+  exposure overrides; transformed primitives and imported art share shading.
+  Material replacement, normal/roughness maps, authored fixtures and GI remain.
+- Explicit native/WSLg launcher routing, GPU fallback selection and a portable
+  frame-cost benchmark covering simulation, audio, live cameras and recording.
+
+Current art handoffs: the immutable F character GLB passes structural preflight
+with all seven influences; full runtime character playback is pending. Guns have
+mechanical profiles and canonical pose targets, but still use placeholder art.
+The standalone rigid rifle export and coherent material quality pass are the
+next art integration gates. These foundation checks do not imply a finished
+animation pipeline, production lighting or completed roadmap.
 
 [ARCHITECTURE.md](ARCHITECTURE.md) records the portable technology choices,
 authority/perception boundaries, current network limits and future fidelity tiers.

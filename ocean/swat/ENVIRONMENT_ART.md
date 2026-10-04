@@ -1,6 +1,7 @@
 # Procedural environment art
 
-This adapter applies the small, CC0 house-kit runtime pack in
+This adapter applies the small, CC0 house-kit runtime pack and a provisional
+generated painted-plaster comparison in
 `assets/environment/` to the **existing authoritative generated geometry**.
 It is enabled by default in the player. It does not import the example house,
 change layout tokens, or replace the neural/uniform generator or preference data.
@@ -9,7 +10,7 @@ change layout tokens, or replace the neural/uniform generator or preference data
 
 | Live object | Visual recipe | Damage owner |
 | --- | --- | --- |
-| Drywall or plaster, including every independent skin cell | Worn plaster base-colour texture on its exact six collider faces | That one `SwatObject` |
+| Drywall or plaster, including every independent skin cell | Calm painted-plaster base color by default; preserved weathered source selectable | That one `SwatObject` |
 | Wood frames, supports, floors, roofs and coarse furniture | Worn timber base-colour texture on its exact box | That one `SwatObject` |
 | Wood door | Imported `door_leaf.glb`, including panels, chips, hinges and knobs | The moving door object, all primitives together |
 | Other materials, including glass | Existing graybox treatment | Existing object |
@@ -26,9 +27,19 @@ observations, rewards and layout acceptance remain simulation-owned.
 Texture coordinates use metre-scale repetition with adjacent skin UVs aligned
 in the wall's basis. Wood floor art is drawn on the actual floor box; its
 old room-sized tint overlay is omitted, avoiding a second coplanar surface.
-Other room floor overlays keep their existing behaviour. Planning still cuts
+All finish floors use their existing material boxes without duplicate overlays. Planning still cuts
 away the actual roof object. All main, planning, sniper and device views use
 the same binding path. Debug mode adds box wires over the art.
+
+The initial lighting pass covers both primitives and imported models using
+linear diffuse shading, exposure, warm room lights and filtered sun/nearest-room
+depth maps. Geometry changes invalidate immediately; moving silhouettes refresh
+every four ticks. It is an authored approximation, without GI, physical fixtures,
+normal/roughness maps or Blender material parity. The shadow caster geometry is
+the authoritative boxes and actor primitives; decorative tabletop detail does
+not cast its own shadow in this pass. See the player README for comparison and
+exposure controls. The generated plaster image has its own prompt/hash record
+in `painted_plaster_v1.json`; it makes no CC0-source or measured-relief claim.
 
 ## Generated tabletop props (recipe v1)
 
@@ -103,13 +114,17 @@ pack and editable Blender files are intentionally not copied into Git.
 
 The original three runtime art files total **290,507 bytes** (about 284 KiB): two 256 ×
 256 base-colour textures and a 1,236-triangle door. See the catalog for exact
-per-file sizes and hashes. With the props, runtime files total **1,127,179 bytes**
-(about 1.08 MiB); catalogs/licenses/build tools are additional text files. Licensing is recorded in the two `LICENSE_SOURCE_*.txt` files.
+per-file sizes and hashes. With the props, the CC0 source slice totals **1,127,179 bytes**
+(about 1.08 MiB). The separate generated plaster comparison adds 3,069,691 bytes;
+the combined runtime images/models total 4,196,870 bytes (about 4 MiB).
+Catalogs/licenses/build tools are additional text files. Source licensing is
+recorded in the `LICENSE_SOURCE_*.txt` files.
 The source surface photographs are Poly Haven CC0; the generated plaster
 derivative and house-kit geometry have the supplied CC0 dedication.
 
-Raylib 5.5 loads the embedded glTF base-colour materials. This path uses
-base-colour rendering and simple face tinting, not Blender/PBR lighting parity.
+Raylib 5.5 loads the embedded glTF base-colour materials. The initial linear
+lighting shader applies to them as well as immediate geometry; the unlit fallback
+retains simple face tinting. Neither path claims Blender/PBR lighting parity.
 Textures/models are loaded once per view and released before the graphics
 context closes. Headless simulation does not initialize or load this cache.
 No texture/model content is uploaded by the player.

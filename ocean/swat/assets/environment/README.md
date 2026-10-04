@@ -4,6 +4,17 @@ Three small CC0 architecture files (about 284 KiB) plus six decorative tabletop
 props (about 817 KiB). The full runtime pack is 1,127,179 bytes, about 1.08 MiB.
 Nothing in either source pack is modified.
 
+The player also has a provisional calm painted-plaster comparison texture,
+`painted_plaster_basecolor_v1.png`, generated with the built-in imagegen tool.
+It adds 3,069,691 bytes (1254 × 1254); `painted_plaster_v1.json` records the exact
+prompt, checksum, requested/actual dimensions and limitations. This image is
+separate from the source packs and their CC0 claims. It is copied unchanged and
+contains fine apparent relief; no normal map or measured seamlessness is claimed.
+It is the default plaster at 1 metre per tile. `SWAT_PLASTER_STYLE=weathered`
+selects the preserved source plaster at its catalogued 1.8-metre tile width;
+the source wood uses 2 metres. Missing new plaster falls back to the old map.
+Explicit asset-directory overrides still never mix in default assets.
+
 | File | Purpose |
 | --- | --- |
 | `plaster_diffuse.png` | 256 × 256 RGB, faded worn plaster from the kit's art-directed Poly Haven derivative |

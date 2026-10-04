@@ -278,6 +278,7 @@ static bool run_house(SwatFrontend* app,SwatView* view,SwatSim* sim,const char* 
     click(app,view,sim,1220,565); CHECK(app->sniper_pending[0]);
     escape(app,view,sim); frames(app,view,sim,5);
     CHECK(app->screen==SWAT_SCREEN_GAME && app->captured && app->camera_open && view->camera_target.id);
+    CHECK(view->camera_target.texture.width==512 && view->camera_target.texture.height==288);
     CHECK(sim->snipers[0].deployed && sim->snipers[0].post==2);
     b3Pos walking=swat_body_feet_position(&c->body);
     event(TEST_KEY_DOWN,KEY_S,0); frames(app,view,sim,12); event(TEST_KEY_UP,KEY_S,0); frame(app,view,sim);
@@ -322,8 +323,10 @@ static bool run_house(SwatFrontend* app,SwatView* view,SwatSim* sim,const char* 
     CHECK(sim->actors[swat_sniper_actor(0)].arsenal.shots==1 && !sim->actors[1].alive);
     CHECK(b3Distance(officer,swat_body_feet_position(&c->body))<.02f);
     CHECK(app->camera_expansion>.99f);
+    CHECK(view->camera_target.texture.width==1024 && view->camera_target.texture.height==576);
     escape(app,view,sim); frames(app,view,sim,25);
     CHECK(app->screen==SWAT_SCREEN_GAME && app->captured && app->camera_open && app->camera_expansion<.01f);
+    CHECK(view->camera_target.texture.width==512);
     const int live_keys[]={KEY_PERIOD,KEY_COMMA,KEY_SLASH,KEY_BACKSLASH,KEY_PAGE_DOWN,KEY_PAGE_UP};
     for(int i=0;i<6;i++) {
         event(TEST_KEY_DOWN,live_keys[i],0); frame(app,view,sim); event(TEST_KEY_UP,live_keys[i],0); frame(app,view,sim);
