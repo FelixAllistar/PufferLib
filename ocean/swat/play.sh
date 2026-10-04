@@ -13,7 +13,7 @@ if [ "${1:-}" = server ]; then SWAT_SERVER_MODE=1; shift; fi
 swat_needs_build() {
     local binary=$1 source
     [ -f "$binary" ] || return 0
-    for source in ocean/swat/*.c ocean/swat/*.h ocean/swat/generated/*.h ocean/swat/build-windows.sh \
+    for source in ocean/swat/*.c ocean/swat/*.h ocean/swat/generated/*.h resources/shared/Roboto-Regular.ttf ocean/swat/build-windows.sh \
                   config/swat.ini config/default.ini vendor/raygui.h \
                   vendor/enet/*.c vendor/enet/include/enet/*.h; do
         [ "$source" -nt "$binary" ] && return 0
@@ -38,7 +38,7 @@ if [ -n "${WSL_INTEROP:-}" ] && [ "${SWAT_NATIVE_WINDOWS:-1}" != 0 ]; then
         else
             SWAT_ARGS+=("$argument")
             case "$argument" in
-                watch|--eval|--settings|--capture|--layout-model) SWAT_PATH_NEXT=1 ;;
+                watch|--eval|--settings|--capture|--layout-model|--record) SWAT_PATH_NEXT=1 ;;
             esac
         fi
     done

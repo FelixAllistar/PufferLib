@@ -58,11 +58,14 @@ closing the listen host ends the session. Leaving online play restores solo.
 `protocol.c` explicitly encodes big-endian integers and IEEE float32, validates
 version/type/length/ranges and decodes into temporary storage before applying.
 C layouts, pointers and platform bool representations never cross the wire.
-Protocol v3 includes mission/room data, framed-wall part/material metadata,
+Protocol v7 includes mission/room data, framed-wall part/material metadata,
 rotated door bases, kit/tool commands, regional injuries and restraints,
 throwable flight/effect state, stocks/exposure, independent wand pose and
-sniper assignments/rifles/targets/travel state. Generated maps include seed,
-accepted tokens, model ID, staging and post geometry. The 1,109-object Cedar
+sniper assignments/rifles/targets/travel state.
+Door snapshots carry lock state, mounted-charge owner and the short breach effect;
+actor equipment carries pick/mount progress and finite charges. Door tool input
+is validated as a bounded command before authority applies it. Generated maps
+include seed, accepted tokens, model ID, staging and post geometry. The 1,109-object Cedar
 House and up-to-1,528-object accepted generated houses use a reliable map
 baseline and fragmented state packets.
 
@@ -115,6 +118,34 @@ and a conservative friendly/compliant-person corridor govern fire. Moving
 posts is a timed relocation that preserves health and ammunition. Snipers
 are physical actors, but do not join the entry squad's extraction requirement.
 
+The live sniper inset renders the actual actor camera into one reusable texture.
+Taking control animates that panel into a centered scope over a dimmed officer
+view; the officer camera stays at the body while mouse input drives the sniper.
+Holding Tab frees the pointer and sends neutral officer input while simulation
+continues. Preview/close/feed selection are local presentation choices; sniper
+assignment and firing remain commander-only authoritative commands.
+Live cycling keys and previous/next buttons reopen a hidden panel without
+changing the officer's weapon. The gameplay HUD uses Roboto text with a fine
+shadow for contrast, compact edge status and one contextual action near the
+reticle. There are no opaque status or interaction cards. The camera shows its
+video with a one-pixel edge; unassigned/down cameras collapse to text. Holding
+Tab reveals borderless camera controls and equipment counts. Actual menus are
+reserved for planning, settings and pause. Make, CMake and the native Windows
+builder copy the existing shared font beside the player; missing fonts use
+Raylib's default. The earlier generated panel/icon assets remain an experiment
+in source, and the player no longer loads them.
+
+Contextual use shares a three-degree ray fan between player prompts and
+authoritative physical tools. Direct hits take priority; all samples trace real
+cover and still enforce door/cuff reach. Compliance accepts the actual aimed
+person and additionally checks a visible 15-degree forward cone, so a shout is forgiving without commanding
+occupants behind the officer. The annex v1 interaction remains a direct ray.
+F/middle mouse selects use or compliance; RMB latches cuff, pick or aim on
+press. Lost targets cancel progress, cannot transfer the held cuff to another
+person, and finishing does not change that press into ADS or a weapon click.
+These bindings reuse existing protocol v7 commands; the server still computes
+targets and validates physical actions independently of client prompts.
+
 Optiwand cameras sweep a small sphere through actual geometry. Near a closed
 door, G chooses the low lens and crouch automatically; corner/over-cover modes
 use two-segment sweeps. Lens yaw/pitch is independent of the officer/stem, and
@@ -131,6 +162,13 @@ for its spherical body. Canisters use gravity and bullet CCD; contact events
 produce impacts using the struck material. Flash/CS exposure traces through
 live world geometry, so broken cover changes exposure. Taser hits use a short
 checked trace. All equipment rules run on authority and preserve finite stocks.
+
+Reusable lockpicks unlock a closed leaf after an interruptible hold. A separate
+mount hold consumes a charge; an edge-triggered remote detonates only charges
+owned by that officer. Breaching removes the same collision object seen by all
+actors and clients. Frames remain physical. The simplified blast uses live
+world visibility for exposure, injury and material-aware sound; it does not
+simulate explosive chemistry, pressure waves, fragmentation or flying debris.
 
 The building policy chooses twelve categorical grammar tokens with a tiny
 49→64→3 tanh network in C. Validation precedes physical construction, including
@@ -160,7 +198,7 @@ or editor. These are the intended entry points for a developer or coding agent:
 | New remote command/state | `SwatInput` and `protocol.c`, with protocol version/round-trip tests |
 
 Change simulation rules once so solo, co-op and future policy actors agree.
-Do not put authoritative damage or kit changes in the UI. Protocol v3 peers
+Do not put authoritative damage or kit changes in the UI. Protocol v7 peers
 must agree on behavior; mod compatibility negotiation/hot reload is future work.
 
 | Tier | Purpose | Agreement to verify |
@@ -186,3 +224,64 @@ policy quality. There is no second approximate training simulator yet.
    a real two-machine LAN session before Internet service features.
 5. Version multi-role observations, measure scripted/frozen baselines, then
    build curricula and multiple fidelity tiers against game behavior.
+
+## Weapon pose and replay foundation
+
+`pose.c` defines eye, shoulders, hands, sight and muzzle from the achieved
+controller state and the active weapon definition. The render model and
+authoritative eye-to-muzzle sphere sweep use this same pose. High/low ready
+raise before a buffered trigger is permitted to fire. Reload removal/insertion/
+chamber events conserve ammunition even when interrupted at any tick. Optional
+retained magazines and sight profiles are replicated; profile changes require
+an unused officer in staging. Protocol v7 includes these fields and pitched
+world objects for the controller range.
+
+`replay.c` stores explicit portable config/seed/input/state-hash records and
+`replay_tool.c` verifies them in the same simulation. It records only solo
+officer input from round start. It does not serialize live physics warm starts,
+custom layout-model weights, or multiplayer authority. F3 debug rendering is
+read-only and uses actual actor/muzzle/sensor geometry.
+
+## Tactical encounter authority
+
+`encounter.c` owns cached planar clearance navigation and scripted role state.
+Its grid is built from actual Box3D overlap queries on supported flat ground;
+world generation invalidates it after destruction or wedge/tool changes.
+Planning allows an unwedged door, while movement must open/pick its physical
+leaf. This first navigator does not handle stair floors or flying actors.
+
+Tactical behavior is opt-in in `SwatConfig`, preserving the v1 annex/checkpoint
+defaults. Sight checks use the first physical ray hit. Hearing gives a bearing
+and a coarse investigation point; no hidden actor position is copied into
+NPC memory. Squad orders are authority-derived from the commander's sight ray,
+delayed 18 ticks and optionally queued. Only bot officers accept orders. Human
+joins replace bots; departure/restart restores configured vacant-slot bots.
+Public behavior/order/escort state, evidence and debrief totals are replicated
+in v6; private targets, memory and personality are excluded from the wire.
+
+Door wedges, partial peeks and trap knowledge share the same authoritative
+objects as hinges/destruction. Spray uses finite stock, a short forward cone,
+real cover and masks. Evidence is collected once; rescue and force violations
+are debrief outcomes. The force record currently classifies civilian or
+surrendered/restrained harm, rather than a complete legal judgment model.
+
+## Physical payloads and remote devices
+
+`devices.c` uses authoritative CCD bodies for throwable cameras, robots,
+communication balls and drones. Camera yaw/pitch is stabilized independently
+of the body's tumble. Slow robot/drone velocity requests still collide with
+the same world. Remote commands are owner-validated; the officer receives a
+neutral stance input while its body remains present. Batteries and damage
+limit feeds. A communication ball has no optical camera and emits command
+audio from its physical position. The player mixer can listen at a device
+location using the same acoustic paths.
+
+Projectile kinds now include PepperBall, impact, CS/flash launcher, probes and
+experimental tether rounds. Actual swept flight resolves contacts; payload
+effects use the existing cover/mask/region rules. CEW probes attach in actor
+local coordinates with stance-relative height. Two separated contacts require
+clear world-space tether paths before applying a temporary stun. Primary
+payload profiles are selected before deployment; reserve rounds retain the
+profile's type rather than changing on a UI selection. Protocol v7 replicates
+these states and validates bounded inventories/remote inputs. Replica devices
+render public state without creating an independent dynamic authority.

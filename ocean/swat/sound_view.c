@@ -24,10 +24,11 @@ void swat_sound_view_update(SwatSoundView* view,const SwatSim* sim,int actor,flo
         memset(view->path_ids,0,sizeof(view->path_ids)); view->path_generation=-1;
         view->memory.minimum_id=floor; view->episode=sim->episode; view->actor=actor;
     }
-    if(actor>=0 && actor<sim->actor_count && sim->actors[actor].present) {
-        SwatController displayed=sim->actors[actor].controller;
+    bool remote=actor>=SWAT_MAX_ACTORS && actor<SWAT_MAX_ACTORS+SWAT_MAX_DEVICES && sim->devices[actor-SWAT_MAX_ACTORS].active;
+    if(remote || (actor>=0 && actor<sim->actor_count && sim->actors[actor].present)) {
+        SwatController displayed=remote ? (SwatController){.yaw=sim->devices[actor-SWAT_MAX_ACTORS].yaw,.pitch=sim->devices[actor-SWAT_MAX_ACTORS].pitch} : sim->actors[actor].controller;
         displayed.yaw=swat_angle(displayed.yaw+yaw_offset);
-        b3Pos eye=swat_controller_eye(&displayed); b3Vec3 forward,right,up;
+        b3Pos eye=remote ? swat_device_eye(&sim->devices[actor-SWAT_MAX_ACTORS]) : swat_controller_eye(&displayed); b3Vec3 forward,right,up;
         swat_controller_view(&displayed,&forward,&right,&up);
         swat_audio_listener(&view->mixer,forward,right,up);
         for(int i=0;i<sim->sounds.count;i++) {

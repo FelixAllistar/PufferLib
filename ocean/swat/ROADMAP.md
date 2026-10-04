@@ -32,11 +32,29 @@ is deliberately a general engine improvement.
 - Recon/Control/Entry kit tradeoffs, collision-limited optiwand, melee/ram,
   less-lethal impact launcher, compliance and interruptible cuffing.
 - Head/torso/arm/leg injury, plate protection, injury-driven movement/spread,
-  secured-hostage extraction and protocol v3 replication of these states.
+  secured-hostage extraction and protocol v7 replication of these states.
 - Optional native Steam Audio HRTF, approximate room reflection/decay mixer,
   and 26 repeatable WAV/CSV comparison scenes.
 - Two physical snipers: post/rifle selection, direct scope control, visible
   target designation, hold/execute, ammunition/cadence and friendly interlocks.
+- Live A/B scope inset during officer movement, cursor controls without pausing,
+  and animated floating takeover over the dimmed officer view.
+- Live previous/next camera bindings and buttons, contextual F use/compliance,
+  RMB cuff/pick/aim with held-action isolation, minimal floating text prompts
+  and camera controls shown on held Tab.
+- Locked house entries, reusable interruptible lockpicks, finite mounted
+  breaching charges, owner-only remote detonation and shared blast/door state.
+- Canonical first/third-person eye/hand/sight/muzzle geometry, high/low ready,
+  buffered actions, staged interruptible reloads and optional retained magazines.
+- Staging primary/sight profiles, stair/ramp/clearance test range, F3 physical
+  debug overlay and portable exact solo input replay verification (protocol v7).
+- Door peek/wedge/recovery, inspected trap disarming and finite occluded spray.
+- Shared clearance navigation, initial sight/hearing-memory NPCs, vacant-slot
+  squad bots, delayed/queued Gold/Red/Blue orders, escort/evidence/debrief state.
+- Physical PepperBall/impact/CS/flash rounds, separate finite payload profiles,
+  ten-probe/two-contact CEW with occluded tethers and an experimental restraint.
+- Physical throwable camera, robot, audio communication ball and slow drone;
+  owner-only takeover, live cycling/audio, recovery, batteries and vulnerability.
 - Automatic under-door optiwand insertion, independent lens rotation and
   collision-limited corner/over-cover modes with explicit HUD feedback.
 - Shared physical/acoustic materials, CCD flash/CS canisters, masks, finite
@@ -50,6 +68,7 @@ is deliberately a general engine improvement.
 [ARCHITECTURE.md](ARCHITECTURE.md) records the portable technology choices,
 authority/perception boundaries, current network limits and future fidelity tiers.
 [AUDIO.md](AUDIO.md) separates the implemented foundation from production audio.
+[EQUIPMENT.md](EQUIPMENT.md) compares tactical gear and records the next gadget choices.
 
 The annex is a systems test level and the house is a small authored encounter.
 The current game is not the finished tactical
@@ -79,7 +98,8 @@ reload interruption conserves ammunition; frame rate does not affect rules.
 1. Play-test the generated houses and gather real comparisons. Expand room
    identity, cover, approach choices and the grammar with navigation checks;
    qualify learned preference improvements on new player judgments.
-2. Expand door states/equipment interactions, contextual prompts, tool use,
+2. Extend locked/charged doors with peeking, wedges and trap inspection/removal;
+   expand contextual prompts, equipment slots and tool use,
    evidence, surrender behavior, escort/rescue, objectives and an explicit
    rules-of-engagement state machine. Give civilians useful behavior.
 3. Extend modular breakage into authored fracture/support rules, persistent

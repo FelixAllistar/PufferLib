@@ -35,6 +35,8 @@ static void synchronize(SwatNetServer* server,SwatNetClient* clients,int count) 
         idle(server,clients,count); done=true;
         for(int i=0;i<count;i++) done=done && clients[i].replica->tick==server->sim->tick && clients[i].epoch==server->epoch;
     }
+    if(!done) for(int i=0;i<count;i++) fprintf(stderr,"Sync failed: authority tick=%d, client %d tick=%d status=%d epoch=%u/%u error=%s\n",
+        server->sim->tick,i,clients[i].replica->tick,clients[i].status,clients[i].epoch,server->epoch,clients[i].error);
     assert(done);
 }
 static void raw_control(SwatNetClient* client,SwatMessage type,uint32_t epoch) {
@@ -168,6 +170,35 @@ int main(void) {
     assert(swat_client_open(&clients[2],&replicas[2],"127.0.0.1",port)); ready(&server,clients,3);
     assert(replicas[2].projectiles[0].active && replicas[2].projectiles[0].detonated && replicas[2].snipers[0].deployed);
     puts("PASS real UDP tactical: leader sniper assignment, authoritative canister flight/ammunition and active gas cloud at late join");
+
+    int entry=-1;
+    for(int i=0;i<authority.world.count;i++) if(authority.world.objects[i].door && authority.world.objects[i].locked) { entry=i; break; }
+    assert(entry>=0); SwatObject* leaf=&authority.world.objects[entry];
+    officer=&authority.actors[3].controller;
+    b3Body_SetTransform(officer->body.body,(b3Pos){leaf->center.x-.9f,officer->body.totalHeight*.5f+.02f,leaf->center.z},b3Quat_identity);
+    b3Body_SetLinearVelocity(officer->body.body,swat_v(0,0,0)); officer->yaw=officer->pitch=0;
+    inputs[0].door_tool=SWAT_LOCKPICK; ticks(&server,clients,inputs,3,46,&host); synchronize(&server,clients,3);
+    assert(leaf->locked && authority.actors[3].gear.door_ticks>40 && replicas[1].actors[3].gear.door_ticks>40);
+    inputs[0]=swat_neutral_input(); ticks(&server,clients,inputs,3,4,&host);
+    assert(!authority.actors[3].gear.door_ticks);
+    inputs[0].door_tool=SWAT_LOCKPICK; ticks(&server,clients,inputs,3,184,&host); synchronize(&server,clients,3);
+    assert(!leaf->locked && !leaf->door_open && !replicas[2].world.objects[entry].locked);
+    inputs[0].door_tool=SWAT_PLACE_CHARGE; ticks(&server,clients,inputs,3,94,&host); synchronize(&server,clients,3);
+    assert(leaf->breach_owner==3 && authority.actors[3].gear.breaching_charges==0);
+    inputs[0]=swat_neutral_input(); inputs[1].door_tool=SWAT_DETONATE_CHARGE;
+    ticks(&server,clients,inputs,3,6,&host); assert(leaf->active && leaf->breach_owner==3);
+    inputs[1]=swat_neutral_input();
+    swat_client_close(&clients[2]);
+    for(int i=0;i<20;i++) idle(&server,clients,2);
+    assert(swat_client_open(&clients[2],&replicas[2],"127.0.0.1",port)); ready(&server,clients,3);
+    assert(replicas[2].world.objects[entry].breach_owner==3 && replicas[2].actors[3].gear.breaching_charges==0);
+    b3Body_SetTransform(officer->body.body,(b3Pos){0,officer->body.totalHeight*.5f+.02f,-2},b3Quat_identity);
+    b3Body_SetLinearVelocity(officer->body.body,swat_v(0,0,0));
+    inputs[0].door_tool=SWAT_DETONATE_CHARGE; ticks(&server,clients,inputs,3,6,&host); synchronize(&server,clients,3);
+    assert(!leaf->active && leaf->breach_ticks>0);
+    for(int i=0;i<3;i++) assert(!replicas[i].world.objects[entry].active && replicas[i].world.objects[entry].breach_owner<0);
+    inputs[0]=swat_neutral_input();
+    puts("PASS real UDP door tools: interrupted/finished remote pick, finite mounted charge, owner-only detonation, rejoin baseline and shared breach collision");
 
     SwatConfig generated=authority.config; generated.mission=SWAT_GENERATED; generated.layout_seed=947; generated.difficulty=2;
     uint32_t old_epoch=server.epoch;

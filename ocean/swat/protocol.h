@@ -7,7 +7,7 @@
 extern "C" {
 #endif
 
-#define SWAT_NET_VERSION 3
+#define SWAT_NET_VERSION 7
 #define SWAT_NET_MAGIC 0x53474531u
 #define SWAT_NET_PACKET_MAX 98304
 #define SWAT_NET_SOUNDS 32
@@ -20,6 +20,7 @@ typedef struct SwatMapObject {
     SwatMaterial material;
     SwatPart part;
     bool door;
+    float pitch;
 } SwatMapObject;
 typedef struct SwatMap {
     uint32_t epoch, sound_floor;
@@ -36,26 +37,38 @@ typedef struct SwatMap {
 typedef struct SwatActorState {
     bool present,alive,crouched,grounded,sprinting,muzzle_blocked;
     SwatRole role;
+    SwatMind mind;
+    bool rescued;
     b3Pos position,tracer_start,tracer_end;
     b3Vec3 velocity,upper_offset;
-    float health,yaw,pitch,ads,stamina,eye_height,recoil_pitch,recoil_yaw,lean;
+    float health,yaw,pitch,ads,stamina,eye_height,recoil_pitch,recoil_yaw,lean,ready_blend;
+    SwatReady ready;
     int last_shot_tick;
     SwatArsenal arsenal;
     SwatEquipment gear;
 } SwatActorState;
-typedef struct SwatObjectState { bool active,door_open; float health,door_angle; } SwatObjectState;
+typedef struct SwatObjectState {
+    bool active,door_open,locked;
+    float health,door_angle;
+    int breach_owner,breach_ticks,wedge_owner;
+    bool peek,trapped;
+    unsigned int trap_known;
+} SwatObjectState;
 typedef struct SwatSnapshot {
     uint32_t epoch, revision, ack[SWAT_MAX_PLAYERS];
     int tick,actor_count,object_count,generation,leader_slot;
     unsigned int player_mask;
     SwatEnd end;
     SwatEvents totals;
+    SwatDebrief debrief;
+    SwatEvidence evidence[SWAT_MAX_ACTORS];
     SwatActorState actors[SWAT_MAX_ACTORS];
     SwatObjectState objects[SWAT_MAX_OBJECTS];
     SwatSoundEvent sounds[SWAT_NET_SOUNDS];
     int sound_count;
     SwatProjectile projectiles[SWAT_MAX_PROJECTILES];
     SwatSniper snipers[SWAT_SNIPERS];
+    SwatDevice devices[SWAT_MAX_DEVICES];
     int commander_actor;
 } SwatSnapshot;
 typedef struct SwatCommand { uint32_t epoch,sequence; SwatInput input; } SwatCommand;

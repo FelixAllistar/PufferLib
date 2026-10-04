@@ -67,7 +67,7 @@ if ! cmake --build "$SWAT_BUILD/enet" --parallel 4 > "$SWAT_BUILD/enet-build.log
     exit 1
 fi
 
-SWAT_CORE=(body.c controller.c weapons.c materials.c world.c mission.c equipment.c tactical.c overwatch.c generation.c acoustics.c audio_dsp.c sim.c)
+SWAT_CORE=(body.c controller.c pose.c devices.c encounter.c weapons.c materials.c world.c mission.c equipment.c tactical.c overwatch.c generation.c acoustics.c audio_dsp.c sim.c)
 SWAT_SOURCES=()
 SWAT_FLAGS=(-O2 -g -std=gnu11 -ffp-contract=off -Wall -Wextra
     -Wno-unused-parameter -Wno-unused-function -Wno-unknown-pragmas
@@ -80,11 +80,11 @@ SWAT_NET=()
 # Compile the growing shared simulation once for the player, server and checks.
 # Each invocation refreshes objects with the same flags; no stale header cache.
 mkdir -p "$SWAT_BUILD/objects"
-for source in "${SWAT_CORE[@]}" protocol.c net.c; do
+for source in "${SWAT_CORE[@]}" protocol.c net.c replay.c; do
     object="$SWAT_BUILD/objects/${source%.c}.o"
     "$SWAT_CC" "${SWAT_FLAGS[@]}" -c "$SWAT_ROOT/ocean/swat/$source" -o "$object"
     case "$source" in
-        protocol.c|net.c) SWAT_NET+=("$object") ;;
+        protocol.c|net.c|replay.c) SWAT_NET+=("$object") ;;
         *) SWAT_SOURCES+=("$object") ;;
     esac
 done
@@ -97,6 +97,20 @@ done
 
 "$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/server.c" \
     "${SWAT_NET[@]}" "${SWAT_SOURCES[@]}" "${SWAT_HEADLESS_LIBS[@]}" -o "$SWAT_BUILD/swat-server.exe"
+
+"$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/replay_tool.c" \
+    "${SWAT_NET[@]}" "${SWAT_SOURCES[@]}" "${SWAT_HEADLESS_LIBS[@]}" -o "$SWAT_BUILD/replay_tool.exe"
+"$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/tests/test_foundation.c" \
+    "${SWAT_NET[@]}" "${SWAT_SOURCES[@]}" "${SWAT_HEADLESS_LIBS[@]}" -o "$SWAT_BUILD/test_foundation.exe"
+
+"$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/tests/test_encounter.c" \
+    "${SWAT_NET[@]}" "${SWAT_SOURCES[@]}" "${SWAT_HEADLESS_LIBS[@]}" -o "$SWAT_BUILD/test_encounter.exe"
+
+"$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/tests/test_devices.c" \
+    "${SWAT_NET[@]}" "${SWAT_SOURCES[@]}" "${SWAT_HEADLESS_LIBS[@]}" -o "$SWAT_BUILD/test_devices.exe"
+
+"$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/tests/test_payloads.c" \
+    "${SWAT_NET[@]}" "${SWAT_SOURCES[@]}" "${SWAT_HEADLESS_LIBS[@]}" -o "$SWAT_BUILD/test_payloads.exe"
 
 "$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/net_probe.c" \
     "${SWAT_NET[@]}" "${SWAT_SOURCES[@]}" "${SWAT_HEADLESS_LIBS[@]}" -o "$SWAT_BUILD/net_probe.exe"
@@ -147,6 +161,8 @@ done
 
 mkdir -p "$SWAT_BUILD/config"
 cp "$SWAT_ROOT/config/default.ini" "$SWAT_ROOT/config/swat.ini" "$SWAT_BUILD/config/"
+mkdir -p "$SWAT_BUILD/assets/ui"
+cp "$SWAT_ROOT/resources/shared/Roboto-Regular.ttf" "$SWAT_BUILD/assets/ui/"
 SWAT_PHONON="$SWAT_ROOT/build/swat/deps/steam-audio/steamaudio/lib/windows-x64/phonon.dll"
 if [ -f "$SWAT_PHONON" ]; then
     cp "$SWAT_PHONON" "$SWAT_BUILD/phonon.dll"

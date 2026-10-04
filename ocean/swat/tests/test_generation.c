@@ -86,7 +86,7 @@ static void replication(void) {
     assert(size && swat_decode_scenario(bytes,size,&epoch,&received));
     assert(epoch==17 && received.mission==SWAT_GENERATED && received.layout_seed==UINT32_MAX && received.difficulty==2);
     for(size_t n=0;n<size;n++) assert(!swat_decode_scenario(bytes,n,&epoch,&received));
-    bytes[size-1]=3; assert(!swat_decode_scenario(bytes,size,&epoch,&received));
+    bytes[size-3]=3; assert(!swat_decode_scenario(bytes,size,&epoch,&received));
     assert(received.difficulty==2 && epoch==17);
     swat_sim_close(&sim); swat_sim_close(&replica);
     puts("PASS generated protocol: exact tokens/model/seed, geometry, staging/posts and strict transactional scenario decoding");

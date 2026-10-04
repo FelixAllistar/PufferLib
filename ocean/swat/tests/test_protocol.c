@@ -8,11 +8,15 @@ int main(void) {
     SwatCommand command={4,99,swat_neutral_input()};
     command.input.forward=1; command.input.yaw_delta=.2f; command.input.fire=true; command.input.weapon=2;
     command.input.inspect=command.input.command=command.input.melee=true; command.input.loadout=3;
+    command.input.ready=SWAT_HIGH_READY; command.input.cancel_reload=true;
+    command.input.primary_profile=6; command.input.sight_profile=3; command.input.magazine_inventory=true;
     size_t length=swat_encode_command(bytes,sizeof(bytes),&command);
     assert(length && swat_message_type(bytes,length)==SWAT_MSG_INPUT);
     SwatCommand decoded={0}; assert(swat_decode_command(&decoded,bytes,length));
     assert(decoded.epoch==4 && decoded.sequence==99 && decoded.input.forward==1 && decoded.input.fire && decoded.input.weapon==2);
     assert(decoded.input.inspect && decoded.input.command && decoded.input.melee && decoded.input.loadout==3);
+    assert(decoded.input.ready==SWAT_HIGH_READY && decoded.input.cancel_reload && decoded.input.primary_profile==6 &&
+        decoded.input.sight_profile==3 && decoded.input.magazine_inventory);
     for(size_t i=0;i<length;i++) {
         SwatCommand untouched=decoded;
         assert(!swat_decode_command(&decoded,bytes,i)); assert(!memcmp(&decoded,&untouched,sizeof(decoded)));

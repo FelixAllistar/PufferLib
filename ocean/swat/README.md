@@ -68,14 +68,26 @@ back to staging. Any civilian harm fails the mission. Human play defaults to
 five minutes. **P** opens planning: orbit the roof cutaway with A/D or inspect
 three authored overwatch viewpoints. The overview shows geometry, not hidden
 actor positions; optical previews show only what the camera can see through
-the actual building. The overview is a planning camera; a piloted drone remains future work.
+the actual building. The overview is a planning camera. A separate deployable drone now has slow physical flight and its own live feed.
 
 In **P > Snipers**, select A or B, choose an unoccupied post and a Precision or
 Marksman rifle, then assign. **Take scope control** deploys queued assignments.
+During play, a small live camera previews the selected sniper while your officer
+moves. Hold **Tab** to free the pointer: A/B switches feeds, the close button
+hides the camera, and **Assign sniper** deploys an unassigned unit at its selected post.
+Click the image or **Take over** to expand it into a centered floating scope over
+the dimmed, still-visible officer view. The mission keeps running while the
+pointer is free. **N** hides/shows the camera, **Comma / Period** selects the
+previous/next feed during ordinary officer play, and
+**Enter** takes control or returns. Co-op teammates can preview; the leader controls.
+Compact previous/next text controls appear beside A/B while Tab is held. Cycling also reopens a hidden inset.
+**Page Up / Page Down** and **Backslash / Slash** are previous/next aliases;
+the older left/right bracket bindings also remain available. Camera cycling
+does not change the officer's weapon.
 In the scope, mouse aims, **Y** marks an optically visible armed target, **Space**
 orders both snipers to execute their marked shots, **H** clears marks, and
 **LMB** fires the controlled rifle. **1/2** switches snipers; **Esc** returns to
-your officer. From the officer, **X** executes and **H** clears. Snipers hold
+your officer and the small live feed. From the officer, **X** executes and **H** clears. Snipers hold
 fire until ordered; opaque cover and friendly/compliant people block a marked
 shot. Wait for **TARGET READY**: the rifle must finish equipping and steady its
 aim before a shot can fire. Glass uses the shared bullet penetration rules. Repositioning takes
@@ -88,9 +100,20 @@ at full pace; Control trades some mobility for an impact launcher, optiwand and
 light torso protection; Entry has a ram and stronger torso protection at a
 larger movement cost. Control and Entry have gas masks. All have a sidearm and cuffs. The impact launcher forces
 NPC surrender on a hit, but still causes injury and does not penetrate cover.
-Y makes visible civilians comply; healthy armed suspects generally need to be
-stunned or wounded first. Hold F within 1.7 m while aiming at a compliant person
+**F** uses a nearby door or requests compliance from people in a visible forward
+cone. **Middle mouse** is another use/compliance binding; **Y** remains a
+dedicated compliance alias. Healthy armed suspects generally need to be stunned
+or wounded first. Hold **RMB** within 1.7 m while aiming at a compliant person
 for 1.2 seconds to restrain them. Release or lose the target to interrupt.
+One short floating text prompt shows the selected action and when to move closer. A
+three-degree ray fan tolerates small reticle errors, with every ray stopped by
+real cover. Physical reach limits remain enforced by authority.
+
+Right-click chooses cuffing, picking or aiming when the press begins and keeps
+that choice until release. Finishing a tool does not turn the held click into
+aiming or firing, and another person cannot inherit the same cuff press. Away
+from an available close tool action, **RMB** aims. Held **Z** always offers aim
+without selecting a contextual tool.
 
 Hold **G** near a closed door: the officer crouches and inserts the lens through
 the floor gap automatically. Mouse movement rotates the lens without moving its
@@ -99,6 +122,18 @@ left/right corner, and **Space** reaches over cover. The HUD shows the selected
 mode and whether reach is blocked. The lens sweeps against collision; movement
 and firing are locked during inspection. Release G to return to normal controls.
 Use B for a butt strike or the Entry kit's stronger ram hit.
+
+House exterior doors start locked. Hold **RMB** (or **L**) within 1.7 m while aiming at the
+closed leaf to pick its lock for three seconds. Letting go, losing the door or
+being interrupted resets progress. Picking leaves the door closed; **F** opens
+it afterward. Picks are reusable in every kit. Hold **7** for 1.5 seconds to mount
+a breaching charge to a fully closed door, then retreat and press **K** to
+detonate your mounted charges. Another officer cannot fire your remote. The
+charge consumes stock when mounting finishes, removes the actual door collider,
+emits a material-aware blast sound, and can stun/injure nearby people through
+the opening. Intact walls block exposure. Mounted charges appear on the leaf
+and the HUD counts your remaining/mounted stock. Used tools cannot be refilled
+by swapping kits at staging. The annex's training door remains unlocked.
 
 **4** throws a flashbang and **5** throws CS gas. Canisters are dynamic Box3D
 bodies with gravity, swept collision and material-dependent bounce/friction.
@@ -109,11 +144,15 @@ limited-charge taser within 7 m through a checked short trace. It stops at cover
 stuns and can force surrender; it does not simulate a cable or flying darts yet.
 These are fictional, non-damaging game effects; cuffs remain necessary.
 
-| Kit | Flashbangs | CS canisters | Taser charges | Gas mask |
-| --- | ---: | ---: | ---: | --- |
-| Recon | 1 | 1 | 2 | No |
-| Control | 1 | 2 | 3 | Yes |
-| Entry | 2 | 1 | 0 | Yes |
+| Kit | Flashbangs | CS canisters | Taser charges | Breaching charges | Gas mask |
+| --- | ---: | ---: | ---: | ---: | --- |
+| Recon | 1 | 1 | 2 | 0 | No |
+| Control | 1 | 2 | 3 | 1 | Yes |
+| Entry | 2 | 1 | 0 | 2 | Yes |
+
+The [equipment comparison and gadget shortlist](EQUIPMENT.md) records SWAT 4,
+Elite Force/First Responders, Ready or Not, and manufacturer sources for the
+next equipment choices.
 
 In **P > Houses**, choose a seed, difficulty and Learned/Random generator, then
 **Build this seed** or **Next house**. Accepted layouts have connected rooms,
@@ -144,19 +183,41 @@ To revisit the annex or practice without hostile fire:
 | Ctrl or C | Hold crouch; standing waits for clearance |
 | Shift / Alt | Sprint / slow walk |
 | Space | Jump; release before jumping again |
-| Right / left mouse | Aim / fire |
+| Right mouse | Hold to cuff a close compliant person or pick a close locked door; otherwise aim |
+| Z / left mouse | Hold aim / fire |
 | R | Reload |
 | 1 / 2 | Kit primary / sidearm |
 | V | Cycle selector; carbine starts in semi, then auto, then safe |
-| F | Door within 2.2 m; hold to cuff a compliant person within 1.7 m |
-| Y | Order visible nearby occupants to comply |
+| F / middle mouse | Use a door within 2.2 m; otherwise request compliance in front of you |
+| Y | Dedicated compliance request |
 | G | Hold optiwand; auto under-door, mouse lens aim; Ctrl/Q/E/Space select reach |
 | 4 / 5 / T | Flashbang / CS gas / taser |
 | X / H | Execute marked sniper shots / clear sniper marks |
 | B | Melee / Entry kit ram |
+| L / 7 / K | Hold lockpick / hold charge placement / detonate owned charges |
+| Comma / Period | Previous / next camera feed while moving; reopens a hidden inset |
+| Page Up / Page Down | Previous / next camera feed aliases |
+| N / Enter | Hide/show camera / take control or return |
+| Held Tab | Free cursor for camera buttons without pausing when the inset is open |
 | P | Briefing, equipment, sniper placement/control and generated houses |
 | Backspace | Restart while playing |
-| Esc or Tab | Pause/resume; back from Settings |
+| Esc | Pause/resume; return from floating scope or menus |
+
+The [SWAT 4 publisher manual](https://sierrachest.com/gfx/games/SWAT4/box/SWT4_Mn_TX_7162010.pdf)
+describes contextual use, viewport cycling and a right-click command interface;
+selected tools use the fire action. This prototype keeps the combined
+use/compliance idea and adds direct contextual RMB cuff/pick access, alongside
+the requested held-Tab camera pointer. Hold **M** for Gold/Red/Blue squad orders; Shift queues an order and **J** executes it. Orders affect scripted bots, never human peers.
+The gameplay HUD follows the compact text and video treatment visible in
+[Ready or Not screenshots](https://www.spaziogames.it/recensioni/ready-or-not-recensione)
+and [SWAT 4 screenshots](https://www.play-asia.com/swat-4-gold-edition/13/70dsxt):
+small edge status, a short action prompt, and camera controls when needed.
+Roboto text uses a fine shadow for contrast. Interaction progress is a thin line;
+the camera has a one-pixel edge, with no decorative frame or surrounding card.
+Unassigned/down cameras collapse to text. Holding Tab shows camera controls and
+equipment counts; the permanent full-width control footer is gone. Planning,
+settings and pause retain their dedicated menus. The earlier
+[generated UI experiment](assets/ui/README.md) is preserved in source.
 
 ## Co-op and self-hosting
 
@@ -174,7 +235,7 @@ and mission outcomes. All surviving officers must extract. Only the leader can
 restart, choose a house or command snipers. Online pause/settings release your controls while the session continues.
 Solo/offline play remains available. Planning also releases controls online;
 the session continues. The default hosted mission is Cedar House, five minutes;
-`--mission annex` selects the old range. Hosts and peers must use protocol v3.
+`--mission annex` selects the old range. Hosts and peers must use protocol v7.
 
 The dedicated server has no display, Raylib, audio-device or CUDA dependency.
 On WSL, `./swat server` defaults to `build/swat/windows/swat-server.exe`;
@@ -230,11 +291,15 @@ playback retains its sensor FOV. Raygui is already vendored at
   upper collider and eye by up to 0.42 m; it is swept against cover. Standing
   checks the leaned head as well as the feet hull. Aim, roll, and sensor rays
   follow the achieved pose.
-- **Weapons:** carbine, sidearm, impact launcher and two sniper rifles, chamber plus magazine/reserve counts,
+- **Weapons:** carbine, sidearm, impact launcher, two sniper rifles, pepper launcher, breach shotgun and compact SMG profiles; chamber plus magazine/reserve counts,
   semi/auto/safe selectors, timed tactical/empty reloads, reload cancellation on
   swap, equip delay, recoil, movement/air/aim spread, and deterministic actor-local
-  weapon RNG. Reserve ammunition is pooled; individual spare magazines and
-  staged reload animation are not modeled yet.
+  weapon RNG. Reloads commit magazine removal, insertion and chambering separately.
+  Cancelling or switching preserves committed ammunition and can leave the
+  magazine detached. Staging offers pooled reserve or retained spare magazines,
+  irons/red dot/optic sights, and primary profiles. Eye, sight, hands and muzzle
+  share a canonical pose for rendering and clearance. PepperBall, impact/CS/flash, probe and tether profiles use physical
+  rounds. The breach shotgun uses the shared traced damage/penetration rules.
 - **Hits and cover:** eye-to-muzzle volume check, muzzle-origin hitscan, nearest
   collision damage, bounded thickness/material penetration, and head/torso/arm/leg
   damage. Leg wounds reduce pace, arm wounds widen spread, and plates reduce
@@ -401,8 +466,10 @@ New checks cover canister mass/bounce/CCD, cover-sensitive effects, consumable
 conservation, independent optiwand aim, sniper placement/mark/hold/execute and
 friendly interlocks. Generated-house tests include 1,024 deterministic plans,
 314 real standing door crossings across 24 houses, exact collider counting and
-token/seed/model replication. UDP checks cover active gas at late join and
-leader-only scenario changes. The optional Python smoke command exercises
+token/seed/model replication. Door checks cover aborted picking, finite mounting,
+owner-only remote detonation, blast occlusion/injury and staging refill prevention.
+UDP checks cover active gas and mounted charges at late join, shared breach
+collision, and leader-only scenario changes. The optional Python smoke command exercises
 preference reward training and policy updates using marked synthetic labels.
 Native HRTF checks verify directional impulse differences; room mixer checks
 verify longer decay retains more late energy.
@@ -420,7 +487,10 @@ opens its own brief test window and checks the actual OS cursor confinement
 rectangle, stationary mouse input, Escape/pause/resume/quit, focus loss,
 click isolation, slider cancellation, host/join setup/cancel, leader restart
 controls, active audio streaming, preferences surviving reinitialization,
-automatic optiwand insertion, sniper scope/mark/execute and local house comparisons:
+automatic optiwand insertion, live camera keyboard/button cycles, floating
+scope/cursor isolation, minimal text controls, F use/compliance, Z aim, held/aborted
+RMB pick/cuff and completion click isolation, sniper mark/execute,
+charge controls and local house comparisons:
 
 ```sh
 bash ocean/swat/build-windows.sh
@@ -454,3 +524,69 @@ checkpoint compatibility, not policy quality. Reproduce a short run with:
 ./swat --eval build/swat/checkpoints/swat/smoke/0000000000002048.bin 4 \
   --deterministic --env.max_ticks=32 --env.hostile_fire=0
 ```
+
+## Controller range and deterministic replays
+
+Launch `./ocean/swat/play.sh --mission range` for stairs, shallow/steep ramps,
+crouch clearance, low cover, material targets and a framed door. **Home** and
+**End** toggle low/high ready; aiming or firing raises the weapon. **F3** shows
+physical bodies, eye/muzzle clearance and sensor rays. **Alt + Backslash**
+interrupts a reload. Primary/sight/magazine choices are in the staging loadout.
+
+Use `--record /path/to/round.sgrp` to capture a solo round from tick zero.
+Build `make -C ocean/swat replay-tool` and run
+`build/swat/replay_tool /path/to/round.sgrp` to verify each recorded authoritative
+state. Native Windows also builds `build/swat/windows/replay_tool.exe`.
+Files record the wire version, scenario settings, reset RNG seed, fixed-tick
+inputs and portable snapshot hashes; incompatible/truncated files are rejected.
+These are same-build solo replay checks, not full save games or a guarantee of
+identical results with a different layout model or across architectures.
+
+## Tactical encounter rules
+
+Human house/generated play now enables three scripted squad bots in vacant
+officer slots. Humans replace those bots when joining co-op. The legacy annex
+and policy contract keep their previous defaults. Hold **M** for floating squad
+orders; choose Gold, Red or Blue, Shift-click to queue, and press **J** to execute.
+Orders acknowledge after 18 simulation ticks. Bots route through actual static
+clearance, open/pick encountered doors and yield to nearby actors. This is an
+initial authored tactical behavior layer; it is not a trained squad policy.
+
+**Alt+F** peeks an unlocked door to 12 degrees. **9** places a wedge, **Alt+9**
+recovers it, **8** disarms an inspected trap, and **6** sprays pepper. These are
+held actions with finite stock and cover checks. **Alt+1/2** cycles the equipped
+small tool; left click uses it, and plain **1/2** returns to a weapon. Wedges
+block the same leaf for every actor. Difficult generated tactical houses may
+have traps; inspect with the optiwand before disarming. Opening a trapped leaf
+triggers an occluded flash/stun game effect.
+
+Cuffed civilians can follow an officer via **F**, or hold position on another
+press. Surrendered/down suspects leave weapon evidence; aim down and use **F**
+to collect it. The end-of-round debrief records arrests, rescued civilians,
+evidence and harm to civilians/surrendered/restrained people. Evidence and
+rescue currently add recorded outcomes, rather than new mandatory victory
+conditions. Suspects use visible targets and short-lived memory; noise supplies
+a coarse bearing for investigation, never a hidden actor position.
+
+## Remote devices and physical less-lethal rounds
+
+Continue **Alt+1/2** through throwable camera, ground robot, communication ball
+and drone; left click deploys the selected device. Each currently has one
+finite inventory item. Comma/Period and aliases cycle deployed devices alongside
+sniper A/B. **Enter** takes control of your own device; **WASD** drives a robot
+or drone, **Space/Ctrl** raises/lowers a drone, and mouse turns its lens. The
+officer stays still and vulnerable. **F** transmits compliance requests from a
+communication ball; its link is audio-only. Audio follows the selected remote
+location during takeover. Devices collide, emit noise, have battery/health
+limits, and can be recovered with an aimed **F**. Thermal vision is not modeled.
+
+Primary selection in staging includes separate physical impact, CS and flash
+launcher profiles, a pepper launcher, a ten-probe CEW, and an experimental tether
+restraint. The selected profile owns its ammunition; switching payload profiles
+after using a weapon/tool is rejected. Pepper projectiles break into a small
+occluded irritant cloud. Impact rounds injure by body region and can subdue.
+A single probe is insufficient: two separated attached contacts and clear
+tethers are required for a connection. Crouch/turn moves contacts with the body.
+A tether restraint checks its hit region and creates temporary movement denial;
+ordinary cuffs are still required. The original **T** taser remains the simple
+profile; v1 annex impact handling remains compatible with old policy defaults.
