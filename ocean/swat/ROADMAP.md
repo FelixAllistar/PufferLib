@@ -93,8 +93,10 @@ position controls. Carbine ADS now has adjustable 80–220 mm eye relief (120 mm
 default), a display-only aim preview and fading crosshair lines. The separate
 72-joint F gear geometry is integrated with all six original motion banks;
 rigid anatomical elbow carriers are updated after arm IK, and source body maps
-and authored pad/headset materials are retained. Existing hand/finger contact
-remains under art review. Guns have
+and authored pad/headset materials are retained. The engine now adds a measured
+carbine support-thumb wrap in hip/ADS and world presentation, releasing it for
+authored reload handling; the frozen C/C1 grip studies remain diagnostics.
+Remaining palm/finger contact and rifle silhouette need further art iteration. Guns have
 mechanical profiles and canonical pose targets. The local rigid carbine now
 uses its original maps, measured bindings and reload magazine visibility; see
 [WEAPON_ART.md](WEAPON_ART.md). Other guns remain procedural and the supplied

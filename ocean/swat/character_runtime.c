@@ -104,6 +104,32 @@ static bool elbow_carriers(SwatCharacterAsset* asset) {
     return elbow_carrier(asset,"Left","Gear_Elbow_L") && elbow_carrier(asset,"Right","Gear_Elbow_R");
 }
 
+// Rifle-specific support thumb, in the measured stock-origin frame (+X
+// forward, +Y up, +Z right). Rotate the sampled joints, never substitute the
+// Blender matrix_basis quaternions: those use a different native rest frame.
+// The thumb comes up the outside of the handguard and curls over its edge.
+// Its wrist, root, segment lengths and the other fingers remain authored.
+bool swat_character_support_grip(SwatCharacterAsset* asset,float amount) {
+    if(!asset || !isfinite(amount)) return false;
+    amount=Clamp(amount,0,1); if(amount==0) return true;
+    const char* names[]={"mixamorig:LeftHandThumb1","mixamorig:LeftHandThumb2",
+        "mixamorig:LeftHandThumb3","mixamorig:LeftHandThumb4"};
+    if(swat_character_find_node(asset,"Prop_Rifle")<0) return false;
+    for(int i=0;i<4;i++) if(swat_character_find_node(asset,names[i])<0) return false;
+    Matrix gun=compose(node(asset,"Prop_Rifle"),matrix(rifle_joint));
+    const Vector3 directions[]={{.013f,.0317f,-.0135f},{.003f,.034f,.011f},{-.002f,.023f,.018f}};
+    Vector3 sampled[3];
+    for(int i=0;i<3;i++) sampled[i]=Vector3Subtract(origin(node(asset,names[i+1])),origin(node(asset,names[i])));
+    for(int i=0;i<3;i++) {
+        Vector3 direction=Vector3Subtract(Vector3Transform(directions[i],gun),origin(gun));
+        Quaternion rotation=QuaternionFromVector3ToVector3(Vector3Normalize(sampled[i]),Vector3Normalize(direction));
+        direction=Vector3RotateByQuaternion(sampled[i],QuaternionSlerp(QuaternionIdentity(),rotation,amount));
+        Vector3 pivot=origin(node(asset,names[i]));
+        if(!pivot_rotate(asset,names[i],Vector3Subtract(origin(node(asset,names[i+1])),pivot),direction,pivot)) return false;
+    }
+    return true;
+}
+
 double swat_character_reload_time(const SwatWeapon* w) {
     if(!w || w->reload_remaining<=0 || w->reload_duration<=0) return 0;
     int elapsed=w->reload_duration-w->reload_remaining,remove=w->reload_duration/4,insert=2*w->reload_duration/3;
@@ -227,7 +253,11 @@ void swat_character_runtime_prepare(SwatCharacterRuntime* runtime,const SwatSim*
         double time=reload ? swat_character_reload_time(weapon) : cycle_metres[bank]>0 ? cache->phase*swat_character_clip_duration(runtime->banks[bank].asset,0) : 0;
         SwatCharacterView* view=&runtime->banks[bank]; SwatCharacterAsset* asset=view->asset;
         double started=GetTime();
-        cache->valid=false; if(!swat_character_view_sample(view,clips[bank],time) || !elbow_carriers(asset)) continue;
+        // Release the holding correction for the authored magazine handling;
+        // short endpoint fades avoid snapping between the source and hold pose.
+        float grip=reload ? Clamp(1-(float)time/.12f,0,1)+Clamp(((float)time-5.82f)/.18f,0,1) : 1;
+        cache->valid=false; if(!swat_character_view_sample(view,clips[bank],time) ||
+            !swat_character_support_grip(asset,grip) || !elbow_carriers(asset)) continue;
         size_t count=(size_t)swat_character_info(asset).nodes*16;
         if(cache->count!=count) {
             free(cache->matrices); free(cache->first_person_matrices);

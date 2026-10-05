@@ -60,6 +60,60 @@ static Image frame(SwatCharacterView* view,SwatLighting* light,Camera3D camera,M
     swat_lighting_end(light,&art); EndMode3D(); EndTextureMode();
     Image result=LoadImageFromTexture(target.texture); ImageFlipVertical(&result); UnloadRenderTexture(target); return result;
 }
+static void grip_check(SwatCharacterRuntime* runtime,SwatLighting* light) {
+    const float bridge[16]={0,-1,0,0,0,0,1,0,-1,0,0,0,.0012969123f,.4499999881f,.0226502232f,1};
+    Matrix joint={bridge[0],bridge[4],bridge[8],bridge[12],bridge[1],bridge[5],bridge[9],bridge[13],
+        bridge[2],bridge[6],bridge[10],bridge[14],bridge[3],bridge[7],bridge[11],bridge[15]};
+    for(int bank=0;bank<SWAT_CHARACTER_BANKS;bank++) {
+        SwatCharacterView* view=&runtime->banks[bank]; SwatCharacterAsset* asset=view->asset; if(!asset) continue;
+        size_t count=(size_t)swat_character_info(asset).nodes*16;
+        float* source=malloc(count*sizeof(float)),*corrected=malloc(count*sizeof(float)); assert(source && corrected);
+        assert(swat_character_view_sample(view,swat_character_clip_name(asset,0),0));
+        assert(swat_character_capture_pose(asset,source,count));
+        int prop=swat_character_find_node(asset,"Prop_Rifle");
+        const float* p=source+prop*16;
+        Matrix gun={p[0],p[4],p[8],p[12],p[1],p[5],p[9],p[13],p[2],p[6],p[10],p[14],p[3],p[7],p[11],p[15]};
+        Matrix inverse=MatrixInvert(MatrixMultiply(joint,gun));
+        const float amounts[]={0,.25f,.5f,1};
+        for(int step=0;step<4;step++) {
+            assert(swat_character_restore_pose(asset,source,count));
+            assert(swat_character_support_grip(asset,amounts[step]));
+            assert(swat_character_capture_pose(asset,corrected,count));
+            for(size_t i=0;i<count;i++) assert(isfinite(corrected[i]));
+            for(int n=0;n<swat_character_info(asset).nodes;n++) {
+                // Only three thumb joints and their terminal descendant move.
+                if(!strstr(swat_character_node_name(asset,n),"LeftHandThumb"))
+                    assert(!memcmp(source+n*16,corrected+n*16,16*sizeof(float)));
+            }
+            Vector3 previous_old={0},previous_new={0};
+            for(int segment=1;segment<=4;segment++) {
+                char name[64]; snprintf(name,sizeof(name),"mixamorig:LeftHandThumb%d",segment);
+                int n=swat_character_find_node(asset,name);
+                Vector3 old=point(source+n*16,(Vector3){0}),now=point(corrected+n*16,(Vector3){0});
+                if(segment==1) assert(Vector3Distance(old,now)<1e-6f);
+                else assert(fabsf(Vector3Distance(old,previous_old)-Vector3Distance(now,previous_new))<1e-6f);
+                previous_old=old; previous_new=now;
+            }
+            Vector3 tip=Vector3Transform(previous_new,inverse);
+            if(amounts[step]==0) assert(!memcmp(source,corrected,count*sizeof(float)));
+            if(amounts[step]==1) {
+                // It must actually wrap up and across the outside edge rather
+                // than merely change quaternion values along the original axis.
+                assert(tip.x<.565f && tip.y>.07f && tip.z>-.03f && tip.z<-.016f);
+                assert(swat_character_skin(asset)); // all deformed vertices/normals finite
+                printf("Grip bank=%d thumb tip=(%.6f,%.6f,%.6f), original bone lengths retained\n",bank,tip.x,tip.y,tip.z);
+            }
+            if(bank==0 && (step==0 || step==3) && getenv("SWAT_CHARACTER_TEST_CAPTURES")) {
+                const Vector3 eyes[]={{.57f,.14f,-.30f},{.56f,.14f,.30f},{.56f,-.28f,-.05f}};
+                for(int angle=0;angle<3;angle++) {
+                    Image image=frame(view,light,(Camera3D){eyes[angle],{.55f,.025f,0},{0,1,0},35,CAMERA_PERSPECTIVE},inverse);
+                    ExportImage(image,TextFormat("%s/grip-%s-%d.png",getenv("SWAT_CHARACTER_TEST_CAPTURES"),step ? "wrap" : "source",angle)); UnloadImage(image);
+                }
+            }
+        }
+        free(source); free(corrected);
+    }
+}
 static void parity(const char* path,SwatLighting* light) {
     SwatCharacterView cpu={0},gpu={0}; char error[256];
     assert(swat_character_view_init(&cpu,path,error,sizeof(error)));
@@ -205,6 +259,7 @@ static void runtime_check(const char* directory,SwatLighting* light) {
 #endif
     SwatWeaponArt weapons={0}; swat_weapon_art_init(&weapons);
     SwatCharacterRuntime* runtime=swat_character_runtime_open(&weapons); assert(runtime);
+    grip_check(runtime,light);
     SwatSim* sim=calloc(1,sizeof(*sim)); SwatSim* before=malloc(sizeof(*before)); assert(sim && before);
     SwatConfig config=swat_default_config(); config.hostile_fire=false; config.mission=SWAT_ANNEX; swat_sim_init(sim,config,42);
     SwatActor* actor=&sim->actors[0];
@@ -301,6 +356,16 @@ static void runtime_check(const char* directory,SwatLighting* light) {
         assert(!memcmp(before,sim,sizeof(*before)));
         if(weapon->reload_remaining>0) assert(runtime->actors[0].bank==SWAT_CHARACTER_READY);
         double time=runtime->actors[0].source_time;
+        if(time>=.12 && time<=5.82) {
+            SwatCharacterAsset* asset=runtime->banks[0].asset;
+            assert(swat_character_sample_pose(asset,swat_character_clip_name(asset,0),time));
+            for(int segment=1;segment<=4;segment++) {
+                char name[64]; snprintf(name,sizeof(name),"mixamorig:LeftHandThumb%d",segment);
+                int n=swat_character_find_node(asset,name);
+                assert(!memcmp(swat_character_node_matrix(asset,n),runtime->actors[0].first_person_matrices+n*16,16*sizeof(float)));
+            }
+            assert(swat_character_restore_pose(asset,runtime->actors[0].matrices,runtime->actors[0].count));
+        }
         if(elapsed==duration/4) assert(fabs(time-.88)<1e-7 && !weapon->magazine_seated);
         if(elapsed==2*duration/3) assert(fabs(time-3.65)<1e-7 && weapon->magazine_seated);
         if(elapsed==duration/4 || elapsed==2*duration/3) {

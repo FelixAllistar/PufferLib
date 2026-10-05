@@ -34,4 +34,6 @@ bool swat_character_runtime_draw(SwatCharacterRuntime* runtime,int actor,SwatLig
 bool swat_character_runtime_draw_first_person(SwatCharacterRuntime* runtime,int actor,SwatLighting* lighting,const SwatPose* presentation);
 void swat_character_runtime_close(SwatCharacterRuntime* runtime);
 double swat_character_reload_time(const SwatWeapon* weapon);
+// Presentation-only carbine grip, applied to a freshly sampled source pose.
+bool swat_character_support_grip(SwatCharacterAsset* asset,float amount);
 #endif

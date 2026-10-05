@@ -77,8 +77,23 @@ single-influence cap rigidity. SWAT_Wearer primitives retain the source
 1001/1002 texture correspondence; the new headset and caps retain their authored
 polymer/padding factors. `SWAT_CHARACTER_GEAR=0` selects the original geometry.
 The supplied three-second articulation remains source review evidence, rather
-than replacing gameplay locomotion or reloads. Mount gaps and existing grips
-remain source limitations.
+than replacing gameplay locomotion or reloads. Mount gaps and remaining palm/
+finger contact defects remain source limitations.
+
+The frozen October 5 grip handoff is private diagnostic evidence, archive
+SHA-256 `9a74320a3e2c2c8b6efb3216ebf90f4990bf73f38a5f54c5971215370cb94d8f`.
+`ENGINE_THUMB_FRAME_HANDOFF.json` supplies the original thumb joint basis and
+measured rifle frame; its C/C1 poses are not applied. The engine now curls only
+the three left thumb joints around the carbine handguard's outer upper edge in
+that measured frame. Wrist, right hand, other fingers, source weights, segment
+lengths and rifle geometry remain unchanged. This correction is captured before
+world arm IK, so first-person, world, feeds and shadows share the grip. It fades
+out during the first 0.12 authored seconds of a reload, remains completely
+released during magazine handling, and returns over the final 0.18 seconds.
+The GPU contract checks every movement bank, rigid chain lengths, unchanged
+unrelated joints, actual hip/ADS captures and exact source thumb matrices during
+reload handling. This is a support-thumb iteration, not a replacement rifle or
+a claim that all source glove contact defects are repaired.
 
 First-person carbine aiming uses an adjustable eye-to-aperture distance, default
 120 mm. This rigid presentation shift changes neither the physical muzzle nor
