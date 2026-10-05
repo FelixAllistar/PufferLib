@@ -205,6 +205,13 @@ CTest): CPU/GPU image comparisons cover rest/off-key/endpoint/backward seeks,
 full influence sets, nonuniform normal transforms and collapsed props. It also
 checks yaw/crouch/high pitch, the measured stock transform, read-only authority,
 camera reuse and real reload removal/insertion/cancellation/restart boundaries.
+First-person rendering uses a separately cached copy of the original sampled
+arm pose, aligned as a complete rig to the presentation rifle. Upright world-body
+shoulder IK no longer enters the first-person pass; source grips and limb lengths
+remain intact when the camera looks up/down. The shared bank's world pose is
+restored after drawing. Look-limit checks compare screen masks through ±85°
+pitch and quarter-turn yaw, verify the larger coverage, and ensure opposite
+view-slider extremes produce identical fully aimed frames.
 Public synthetic seven-, seventeen- and thirty-two-weight fixtures need no
 licensed art. Live checks use the private Ready/walk install.
 

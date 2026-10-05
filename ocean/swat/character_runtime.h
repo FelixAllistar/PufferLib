@@ -10,8 +10,10 @@ typedef enum SwatCharacterBank {
 } SwatCharacterBank;
 typedef struct SwatCharacterActorPose {
     float* matrices;
+    float* first_person_matrices;
     size_t count;
     Matrix root;
+    Matrix first_person_inverse_gun;
     b3Pos feet;
     double distance,phase,source_time;
     int tick,episode,bank;
@@ -29,7 +31,7 @@ typedef struct SwatCharacterRuntime {
 SwatCharacterRuntime* swat_character_runtime_open(const SwatWeaponArt* weapons);
 void swat_character_runtime_prepare(SwatCharacterRuntime* runtime,const SwatSim* sim);
 bool swat_character_runtime_draw(SwatCharacterRuntime* runtime,int actor,SwatLighting* lighting);
-bool swat_character_runtime_draw_first_person(SwatCharacterRuntime* runtime,int actor,SwatLighting* lighting,const SwatActor* source,const SwatController* displayed);
+bool swat_character_runtime_draw_first_person(SwatCharacterRuntime* runtime,int actor,SwatLighting* lighting,const SwatPose* presentation);
 void swat_character_runtime_close(SwatCharacterRuntime* runtime);
 double swat_character_reload_time(const SwatWeapon* weapon);
 #endif

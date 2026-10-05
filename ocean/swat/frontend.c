@@ -670,11 +670,14 @@ void swat_frontend_draw(SwatFrontend* app, const SwatView* view, const SwatSim* 
     if(app->wait_for_release || !IsWindowFocused()) GuiLock(); else GuiUnlock();
     SwatScreen screen=app->screen; // Layout remains stable when a button changes pages.
     int width=GetScreenWidth(),height=GetScreenHeight();
-    DrawRectangle(0,0,width,height,(Color){5,11,16,210});
     bool settings=app->screen==SWAT_SCREEN_SETTINGS;
+    bool weapon_settings=settings && app->weapon_settings;
+    if(!weapon_settings) DrawRectangle(0,0,width,height,(Color){5,11,16,210});
     float panel_w=settings ? 620.0f : 500.0f;
-    float panel_h=settings ? 680.0f : 574.0f;
+    float panel_h=settings ? 714.0f : 574.0f;
+    if(weapon_settings) { panel_w=420; panel_h=465; }
     float x=(width-panel_w)*0.5f,y=(height-panel_h)*0.5f;
+    if(weapon_settings) { x=24; y=24; }
     DrawRectangle((int)x,(int)y,(int)panel_w,(int)panel_h,(Color){12,20,28,250});
     DrawRectangleLines((int)x,(int)y,(int)panel_w,(int)panel_h,(Color){62,79,90,255});
     DrawRectangle((int)x,(int)y,4,(int)panel_h,menu_gold);
@@ -692,6 +695,29 @@ void swat_frontend_draw(SwatFrontend* app, const SwatView* view, const SwatSim* 
 
     if(settings) {
         y+=94;
+        if(GuiButton((Rectangle){x,y,(content_w-10)/2,28},"General")) app->weapon_settings=false;
+        if(GuiButton((Rectangle){x+(content_w+10)/2,y,(content_w-10)/2,28},"Weapon view")) app->weapon_settings=true;
+        y+=36;
+        if(weapon_settings) {
+            swat_setting_slider(x,y,content_w,"Weapon size",TextFormat("%.0f%%",app->settings.weapon_size*100),
+                &app->settings.weapon_size,1,2.4f); y+=61;
+            swat_setting_slider(x,y,content_w,"Horizontal position",TextFormat("%+.0f",app->settings.weapon_horizontal*1000),
+                &app->settings.weapon_horizontal,-.10f,.10f); y+=61;
+            swat_setting_slider(x,y,content_w,"Vertical position",TextFormat("%+.0f",app->settings.weapon_vertical*1000),
+                &app->settings.weapon_vertical,-.08f,.12f); y+=61;
+            DrawText("Live preview / aiming stays aligned",(int)x,(int)y,14,menu_muted); y+=32;
+            if(GuiButton((Rectangle){x,y,105,38},"Reset view")) {
+                SwatSettings defaults=swat_settings_defaults();
+                app->settings.weapon_size=defaults.weapon_size;
+                app->settings.weapon_horizontal=defaults.weapon_horizontal;
+                app->settings.weapon_vertical=defaults.weapon_vertical;
+            }
+            if(GuiButton((Rectangle){x+115,y,content_w-115,38},"Save & back") && swat_menu_save(app))
+                swat_frontend_set_screen(app,app->settings_back);
+            DrawText(app->notice[0] ? app->notice : "Escape saves and returns.",(int)x,(int)y+49,14,menu_muted);
+            swat_settings_sanitize(&app->settings);
+            return;
+        }
         swat_setting_slider(x,y,content_w,"Mouse sensitivity",
             TextFormat("%.3f deg / pixel",app->settings.sensitivity),
             &app->settings.sensitivity,SWAT_SENSITIVITY_MIN,SWAT_SENSITIVITY_MAX);

@@ -15,6 +15,7 @@ typedef enum SwatRightAction { SWAT_RIGHT_NONE,SWAT_RIGHT_AIM,SWAT_RIGHT_CUFF,SW
 typedef struct SwatFrontend {
     SwatSettings settings, saved_settings;
     SwatScreen screen, settings_back;
+    bool weapon_settings;
     bool save_requested,resume_requested;
     float notice_seconds;
     bool captured, quit, restart_requested, reset_input, wait_for_release;

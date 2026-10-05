@@ -49,6 +49,66 @@ static void parity(const char* path,SwatLighting* light) {
     }
     swat_character_view_close(&gpu); swat_character_view_close(&cpu);
 }
+static Image first_person_frame(SwatCharacterRuntime* runtime,SwatSim* sim,SwatLighting* light,float size,float horizontal,float vertical) {
+    SwatActor* actor=&sim->actors[0]; SwatPose pose=swat_pose(&actor->controller,&actor->arsenal);
+    b3Vec3 offset=swat_mul(b3Add(swat_mul(pose.right,horizontal),swat_mul(pose.up,vertical)),1-actor->controller.ads);
+    pose.shoulder=b3OffsetPos(pose.shoulder,offset);
+    float hip=2*atanf(tanf(31*SWAT_RAD)/size)/SWAT_RAD;
+    float fov=hip+(45-hip)*actor->controller.ads;
+    Camera3D camera={{pose.eye.x,pose.eye.y,pose.eye.z},
+        {pose.eye.x+pose.forward.x,pose.eye.y+pose.forward.y,pose.eye.z+pose.forward.z},
+        {pose.up.x,pose.up.y,pose.up.z},fov,CAMERA_PERSPECTIVE};
+    RenderTexture2D target=LoadRenderTexture(960,540); assert(target.id);
+    BeginTextureMode(target); ClearBackground(BLACK); BeginMode3D(camera);
+    SwatEnvironmentArt art={0}; SwatWorld world={0}; swat_lighting_begin(light,&art,&world,camera.position);
+    assert(swat_character_runtime_draw_first_person(runtime,0,light,&pose));
+    swat_lighting_end(light,&art); EndMode3D(); EndTextureMode();
+    Image result=LoadImageFromTexture(target.texture); ImageFlipVertical(&result); UnloadRenderTexture(target); return result;
+}
+static void first_person_check(SwatCharacterRuntime* runtime,SwatSim* sim,SwatLighting* light) {
+    SwatActor* actor=&sim->actors[0]; actor->controller.ready_blend=actor->controller.ads=0;
+    b3Body_SetLinearVelocity(actor->controller.body.body,b3Vec3_zero);
+    for(int stance=0;stance<2;stance++) {
+        swat_body_set_crouch(&actor->controller.body,stance!=0);
+        actor->controller.eye_height=actor->controller.body.totalHeight-.2032f;
+        const float pitch[]={0,-85,-70,70,85}; Color* reference=NULL; int original=0,enlarged=0;
+        for(int i=0;i<5;i++) {
+            actor->controller.pitch=pitch[i]*SWAT_RAD; actor->controller.yaw=i*SWAT_PI/2;
+            sim->tick++; swat_character_runtime_prepare(runtime,sim);
+            SwatCharacterActorPose* cache=&runtime->actors[0]; SwatCharacterView* view=&runtime->banks[cache->bank];
+            SwatSim* before=malloc(sizeof(*before)); assert(before); memcpy(before,sim,sizeof(*before));
+            Image image=first_person_frame(runtime,sim,light,1.7f,-.055f,.075f);
+            Color* pixels=LoadImageColors(image); int coverage=0,upper=0,changed=0;
+            for(int p=0;p<960*540;p++) {
+                bool filled=pixels[p].r+pixels[p].g+pixels[p].b>0;
+                coverage+=filled; upper+=filled && p/960<540*45/100;
+                if(reference) changed+=filled!=(reference[p].r+reference[p].g+reference[p].b>0);
+            }
+            printf("First-person pitch=%.0f coverage=%d upper=%d mask_difference=%d\n",pitch[i],coverage,upper,changed); fflush(stdout);
+            // Camera-relative framing must survive the look limits. This catches
+            // the giant sleeves/missing weapon caused by reusing upright body IK.
+            assert(coverage>960*540/20 && upper==0 && changed<960*540/200);
+            assert(!memcmp(before,sim,sizeof(*before))); free(before);
+            float* restored=malloc(cache->count*sizeof(float)); assert(restored);
+            assert(swat_character_capture_pose(view->asset,restored,cache->count));
+            assert(!memcmp(restored,cache->matrices,cache->count*sizeof(float))); free(restored);
+            if(getenv("SWAT_CHARACTER_TEST_CAPTURES")) ExportImage(image,TextFormat("%s/first-person-%d-%d.png",getenv("SWAT_CHARACTER_TEST_CAPTURES"),stance,i));
+            if(!reference) { reference=pixels; enlarged=coverage; } else UnloadImageColors(pixels);
+            UnloadImage(image);
+        }
+        actor->controller.pitch=actor->controller.yaw=0; sim->tick++; swat_character_runtime_prepare(runtime,sim);
+        Image old=first_person_frame(runtime,sim,light,1,0,0); Color* pixels=LoadImageColors(old);
+        for(int p=0;p<960*540;p++) original+=pixels[p].r+pixels[p].g+pixels[p].b>0;
+        printf("First-person original=%d enlarged=%d coverage_ratio=%.3f\n",original,enlarged,(double)enlarged/original);
+        assert(enlarged>original*1.5f); UnloadImageColors(pixels); UnloadImage(old); UnloadImageColors(reference);
+        // At ADS all hip offsets fade out, even at opposite slider extremes.
+        actor->controller.ads=1; sim->tick++; swat_character_runtime_prepare(runtime,sim);
+        Image a=first_person_frame(runtime,sim,light,1,-.10f,-.08f),b=first_person_frame(runtime,sim,light,2.4f,.10f,.12f);
+        pixels=LoadImageColors(a); Color* other=LoadImageColors(b);
+        assert(!memcmp(pixels,other,(size_t)960*540*sizeof(Color)));
+        UnloadImageColors(pixels); UnloadImageColors(other); UnloadImage(a); UnloadImage(b); actor->controller.ads=0;
+    }
+}
 static void runtime_check(const char* directory,SwatLighting* light) {
 #ifdef _WIN32
     assert(!_putenv_s("SWAT_CHARACTER_ASSETS",directory));
@@ -79,6 +139,8 @@ static void runtime_check(const char* directory,SwatLighting* light) {
                 Vector3 feet={pose->feet.x,pose->feet.y,pose->feet.z};
                 Image image=frame(bank,light,(Camera3D){Vector3Add(feet,(Vector3){3,1.5f,3}),Vector3Add(feet,(Vector3){0,k>=3 ? .65f : .9f,0}),{0,1,0},40,CAMERA_PERSPECTIVE},pose->root);
                 ExportImage(image,TextFormat("%s/bank-%d.png",getenv("SWAT_CHARACTER_TEST_CAPTURES"),pose->bank));UnloadImage(image);
+                image=first_person_frame(runtime,sim,light,1.7f,-.055f,.075f);
+                ExportImage(image,TextFormat("%s/first-person-bank-%d.png",getenv("SWAT_CHARACTER_TEST_CAPTURES"),pose->bank));UnloadImage(image);
             }
         }
         // A stopped collider cannot animate a stride merely from held input or
@@ -139,6 +201,7 @@ static void runtime_check(const char* directory,SwatLighting* light) {
         }
         assert(!memcmp(before,sim,sizeof(*before)));
     }
+    first_person_check(runtime,sim,light);
     SwatWeapon* weapon=&actor->arsenal.slots[0]; weapon->magazine=0; weapon->chambered=false;
     SwatInput input=swat_neutral_input(); input.reload=true;
     swat_weapons_step(&actor->arsenal,&input,0,0,true,false); input.reload=false;
@@ -151,6 +214,10 @@ static void runtime_check(const char* directory,SwatLighting* light) {
         double time=runtime->actors[0].source_time;
         if(elapsed==duration/4) assert(fabs(time-.88)<1e-7 && !weapon->magazine_seated);
         if(elapsed==2*duration/3) assert(fabs(time-3.65)<1e-7 && weapon->magazine_seated);
+        if(elapsed==duration/4 || elapsed==2*duration/3) {
+            Image image=first_person_frame(runtime,sim,light,1.7f,-.055f,.075f); UnloadImage(image);
+            assert(!memcmp(before,sim,sizeof(*before)));
+        }
     }
     assert(runtime->actors[0].source_time==0 && weapon->magazine_seated);
     // Cancellation after removal, then a fresh INSERT start, cannot restore A.

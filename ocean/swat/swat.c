@@ -21,7 +21,7 @@ static void usage(const char* path) {
         "  --mission house|annex|generated|range|motel|storefront  Human default: house; policy default: annex\n"
         "  --layout-seed N --difficulty 0|1|2 --generator neural|uniform\n"
         "  --layout-model FILE          Optional trained house policy\n"
-        "  --capture-screen SCREEN      game, main, pause, settings, plan, or overwatch\n"
+        "  --capture-screen SCREEN      game, main, pause, settings, weapon, plan, or overwatch\n"
         "Run from the repository root so config/default.ini and config/swat.ini are available.\n",
         path,path,path,path,path,path);
 }
@@ -63,7 +63,7 @@ int main(int argc, char** argv) {
     int mission=-1,preview=0,difficulty=1,generator=SWAT_LAYOUT_NEURAL;
     uint32_t layout_seed=1;
     SwatScreen capture_screen=SWAT_SCREEN_GAME;
-    bool eval=false,deterministic=false,max_ticks_override=false;
+    bool eval=false,deterministic=false,max_ticks_override=false,weapon_settings_capture=false;
     int episodes=8,override_count=0;
     char** overrides=calloc((size_t)argc,sizeof(char*));
     if (!overrides) return 1;
@@ -125,6 +125,7 @@ int main(int argc, char** argv) {
             else if(!strcmp(argv[i],"main")) capture_screen=SWAT_SCREEN_MAIN;
             else if(!strcmp(argv[i],"pause")) capture_screen=SWAT_SCREEN_PAUSE;
             else if(!strcmp(argv[i],"settings")) capture_screen=SWAT_SCREEN_SETTINGS;
+            else if(!strcmp(argv[i],"weapon")) { capture_screen=SWAT_SCREEN_SETTINGS; weapon_settings_capture=true; }
             else if(!strcmp(argv[i],"plan")) capture_screen=SWAT_SCREEN_PLAN;
             else if(!strcmp(argv[i],"overwatch")) { capture_screen=SWAT_SCREEN_PLAN; preview=1; }
             else { fprintf(stderr,"swat: unknown capture screen %s\n",argv[i]); free(overrides); return 1; }
@@ -202,7 +203,7 @@ int main(int argc, char** argv) {
         if(join_address) snprintf(app.address,sizeof(app.address),"%s",join_address);
         swat_frontend_set_screen(&app,SWAT_SCREEN_CONNECT);
     }
-    if(capture) { app.screen=capture_screen; app.plan_preview=preview; }
+    if(capture) { app.screen=capture_screen; app.plan_preview=preview; app.weapon_settings=weapon_settings_capture; }
     char auto_record[SWAT_SETTINGS_PATH_SIZE+32],save_path[SWAT_SETTINGS_PATH_SIZE+32];
     snprintf(auto_record,sizeof(auto_record),"%s.live.sgrp",app.settings_path);
     snprintf(save_path,sizeof(save_path),"%s.mission.sgrp",app.settings_path);
@@ -330,6 +331,8 @@ int main(int argc, char** argv) {
             }
         }
         view.actor=app.actor; view.debug=app.debug;
+        view.weapon_size=app.settings.weapon_size;
+        view.weapon_horizontal=app.settings.weapon_horizontal; view.weapon_vertical=app.settings.weapon_vertical;
         view.planning=app.screen==SWAT_SCREEN_PLAN; view.plan_preview=app.plan_preview; view.plan_yaw=app.plan_yaw;
         view.scope=app.screen==SWAT_SCREEN_SCOPE; view.sniper_unit=app.selected_sniper;
         view.sniper_camera=swat_frontend_playing(&app) && app.camera_open;

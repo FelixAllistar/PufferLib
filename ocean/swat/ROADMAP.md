@@ -83,7 +83,9 @@ with all seven influences. An independent full-influence consumer now passes
 art lab; [CHARACTER_ART.md](CHARACTER_ART.md) records evidence and limitations.
 Live carbine officers and first-person arms now use full-influence GPU skinning,
 achieved stance/weapon fitting, original maps and authority-driven reload phases;
-cameras/shadows reuse cached poses. Guns have
+cameras/shadows reuse cached poses. First-person arms use camera-relative
+authored grips, with a larger weapon projection and saved live-preview size and
+position controls. Guns have
 mechanical profiles and canonical pose targets. The local rigid carbine now
 uses its original maps, measured bindings and reload magazine visibility; see
 [WEAPON_ART.md](WEAPON_ART.md). Other guns remain procedural and the supplied

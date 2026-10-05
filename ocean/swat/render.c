@@ -85,6 +85,7 @@ void swat_view_init(SwatView* view, bool hidden) {
     if (view->initialized) return;
     SetConfigFlags(FLAG_MSAA_4X_HINT | (hidden ? FLAG_WINDOW_HIDDEN : 0));
     view->width = 1440; view->height = 810;
+    view->weapon_size=1.7f; view->weapon_horizontal=-.055f; view->weapon_vertical=.075f;
     InitWindow(view->width,view->height,"SWAT: Gold Element");
     if (!IsWindowReady()) return;
     SetTargetFPS(60);
@@ -353,7 +354,14 @@ static void swat_draw_scope(SwatView* view,const SwatSim* sim,int width,int heig
 
 static void swat_draw_weapon(SwatView* view,const SwatSim* s,const SwatActor* a,const SwatController* c) {
     SwatPose pose=swat_pose(c,&a->arsenal);
-    if(swat_character_runtime_draw_first_person(view->characters,view->actor,&view->lighting,a,c)) {
+    // Translate the complete presentation (including fallback hands and flash)
+    // together. Fade out at ADS so measured sights retain their exact alignment.
+    b3Vec3 offset=swat_mul(b3Add(swat_mul(pose.right,view->weapon_horizontal),
+        swat_mul(pose.up,view->weapon_vertical)),1-c->ads);
+    pose.shoulder=b3OffsetPos(pose.shoulder,offset); pose.muzzle=b3OffsetPos(pose.muzzle,offset);
+    pose.sight=b3OffsetPos(pose.sight,offset); pose.left_hand=b3OffsetPos(pose.left_hand,offset);
+    pose.right_hand=b3OffsetPos(pose.right_hand,offset);
+    if(swat_character_runtime_draw_first_person(view->characters,view->actor,&view->lighting,&pose)) {
         if(s->tick-a->last_shot_tick<=2) DrawSphere(swat_position(pose.muzzle),.035f,(Color){255,216,112,230});
         return;
     }
@@ -440,12 +448,13 @@ void swat_view_draw(SwatView* view, const SwatSim* s, bool policy, float vertica
         DrawLine3D(swat_position(s->actors[i].tracer_start),swat_position(s->actors[i].tracer_end),(Color){250,200,98,180});
     swat_environment_art_transparent(&view->environment,&s->world,camera.position,false);
     if (a->alive && !a->gear.inspecting) {
-        // A modest separate presentation FOV keeps a measured rifle readable.
+        // Projected magnification = tan(oldFov/2)/tan(newFov/2). The default
+        // 1.7x maps 62 degrees to 38.9 degrees; the world gun stays scale one.
         // Preserve the world depth buffer and match the sight FOV exactly at ADS.
         // Physics, achieved pose and obstruction logic still use the world camera.
         swat_end_scene(view);
         Camera3D weapon_camera=camera;
-        float hip=fminf(fov,62.0f);
+        float hip=2*atanf(tanf(31*SWAT_RAD)/view->weapon_size)/SWAT_RAD;
         weapon_camera.fovy=hip+((a->arsenal.sight==SWAT_OPTIC?30:45)-hip)*c->ads;
         BeginMode3D(weapon_camera);
         swat_lighting_begin(&view->lighting,&view->environment,&s->world,camera.position);

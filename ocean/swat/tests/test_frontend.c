@@ -47,6 +47,8 @@ static void frame(SwatFrontend* app, SwatView* view, SwatSim* sim) {
     }
     swat_sound_view_update(&test_sound,sim,app->actor,app->settings.master_volume,0,0);
     view->actor=app->actor; view->planning=app->screen==SWAT_SCREEN_PLAN;
+    view->weapon_size=app->settings.weapon_size;
+    view->weapon_horizontal=app->settings.weapon_horizontal; view->weapon_vertical=app->settings.weapon_vertical;
     view->plan_preview=app->plan_preview; view->plan_yaw=app->plan_yaw;
     view->scope=app->screen==SWAT_SCREEN_SCOPE; view->sniper_unit=app->selected_sniper;
     view->sniper_camera=swat_frontend_playing(app) && app->camera_open;
@@ -161,15 +163,22 @@ static bool run_checks(SwatFrontend* app, SwatView* view, SwatSim* sim,
 
     click(app,view,sim,720,365); // Main -> Settings.
     CHECK(app->screen==SWAT_SCREEN_SETTINGS);
-    click(app,view,sim,790,225); // Sensitivity slider.
-    click(app,view,sim,746,565); // Invert vertical.
+    click(app,view,sim,790,244); // Sensitivity slider.
+    click(app,view,sim,746,584); // Invert vertical.
     CHECK(app->settings.sensitivity>0.08f && app->settings.invert_y);
+    float sensitivity=app->settings.sensitivity;
+    click(app,view,sim,856,191); CHECK(app->weapon_settings);
+    click(app,view,sim,320,220); // Larger first-person view, preview stays visible.
+    click(app,view,sim,160,282); click(app,view,sim,390,343);
+    CHECK(app->settings.weapon_size>2 && app->settings.weapon_horizontal>-.055f && app->settings.weapon_vertical>.10f);
+    CHECK(app->settings.sensitivity==sensitivity && app->settings.invert_y);
+    click(app,view,sim,130,159); CHECK(!app->weapon_settings);
     if(screenshot) {
         Image image=LoadImageFromScreen();
         bool saved=ExportImage(image,screenshot); UnloadImage(image);
         CHECK(saved);
     }
-    click(app,view,sim,910,620); // Save & back.
+    click(app,view,sim,910,639); // Save & back, including the weapon view.
     CHECK(app->screen==SWAT_SCREEN_MAIN && sim->tick==0);
     SwatSettings loaded;
     CHECK(swat_settings_load(&loaded,preferences));
@@ -217,7 +226,7 @@ static bool run_checks(SwatFrontend* app, SwatView* view, SwatSim* sim,
 
     click(app,view,sim,720,365); // Pause -> Settings.
     CHECK(app->screen==SWAT_SCREEN_SETTINGS);
-    event(TEST_MOUSE_POSITION,750,225);
+    event(TEST_MOUSE_POSITION,750,244);
     event(TEST_MOUSE_DOWN,MOUSE_BUTTON_LEFT,0); frame(app,view,sim);
     escape(app,view,sim); // Escape while dragging must cancel raygui's exclusive drag.
     CHECK(app->screen==SWAT_SCREEN_PAUSE);
@@ -462,7 +471,7 @@ static bool run_generation(SwatFrontend* app,SwatView* view,SwatSim* sim,const c
     click(app,view,sim,1220,750); frames(app,view,sim,310);
     event(TEST_KEY_DOWN,KEY_P,0); frame(app,view,sim); event(TEST_KEY_UP,KEY_P,0); frame(app,view,sim);
     CHECK(swat_feedback_ready(&app->feedback));
-    click(app,view,sim,1220,568); CHECK(app->feedback.voted);
+    click(app,view,sim,1220,618); CHECK(app->feedback.voted);
     char path[SWAT_SETTINGS_PATH_SIZE]; snprintf(path,sizeof(path),"%s.layouts.jsonl",app->settings_path);
     FILE* file=fopen(path,"rb"); CHECK(file!=NULL);
     char line[2048]; CHECK(fgets(line,sizeof(line),file)!=NULL); fclose(file);

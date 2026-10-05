@@ -13,6 +13,7 @@ typedef struct SwatView {
     bool initialized;
     int width,height,actor;
     float yaw_offset,pitch_offset;
+    float weapon_size,weapon_horizontal,weapon_vertical;
     bool planning,debug;
     int plan_preview;
     float plan_yaw;

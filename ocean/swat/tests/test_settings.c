@@ -19,6 +19,7 @@ int main(int argc, char** argv) {
     original.ads_multiplier=0.4f; original.vertical_fov=83;
     original.frame_limit=144; original.invert_y=true;
     original.master_volume=.6f;
+    original.weapon_size=2.1f; original.weapon_horizontal=-.03f; original.weapon_vertical=.09f;
     assert(swat_settings_save(&original,path));
     assert(swat_settings_load(&loaded,path));
     assert(swat_settings_equal(&original,&loaded));
@@ -33,11 +34,15 @@ int main(int argc, char** argv) {
 
     write_file(path,"version=1\nmouse_sensitivity=nan\nvertical_multiplier=9\n"
         "ads_multiplier=-2\nvertical_fov=500\nframe_limit=inf\ninvert_y=1\n"
-        "invert_x=garbage\nunknown_key=42\n");
+        "invert_x=garbage\nunknown_key=42\nweapon_size=500\nweapon_horizontal=-9\nweapon_vertical=nan\n");
     assert(swat_settings_load(&loaded,path));
     assert(loaded.sensitivity==swat_settings_defaults().sensitivity);
     assert(loaded.vertical_multiplier==2 && loaded.ads_multiplier==0.1f);
     assert(loaded.vertical_fov==100 && loaded.frame_limit==120 && loaded.invert_y && !loaded.invert_x);
+    assert(loaded.weapon_size==2.4f && loaded.weapon_horizontal==-.10f && loaded.weapon_vertical==.075f);
+    write_file(path,"version=1\nvertical_fov=75\n");
+    assert(swat_settings_load(&loaded,path));
+    assert(loaded.weapon_size==swat_settings_defaults().weapon_size && loaded.weapon_horizontal==-.055f);
     write_file(path,"version=99\nmouse_sensitivity=.1\n");
     assert(!swat_settings_load(&loaded,path) && errno==EINVAL);
     original=swat_settings_defaults();

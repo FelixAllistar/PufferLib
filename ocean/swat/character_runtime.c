@@ -184,6 +184,14 @@ void swat_character_runtime_prepare(SwatCharacterRuntime* runtime,const SwatSim*
         SwatCharacterView* view=&runtime->banks[bank]; SwatCharacterAsset* asset=view->asset;
         double started=GetTime();
         cache->valid=false; if(!swat_character_view_sample(view,clips[bank],time)) continue;
+        size_t count=(size_t)swat_character_info(asset).nodes*16;
+        if(cache->count!=count) {
+            free(cache->matrices); free(cache->first_person_matrices);
+            cache->matrices=calloc(count,sizeof(float)); cache->first_person_matrices=calloc(count,sizeof(float)); cache->count=count;
+        }
+        if(!cache->matrices || !cache->first_person_matrices ||
+           !swat_character_capture_pose(asset,cache->first_person_matrices,count)) continue;
+        cache->first_person_inverse_gun=MatrixInvert(compose(node(asset,"Prop_Rifle"),matrix(rifle_joint)));
         Matrix heading=MatrixRotateY(-actor->controller.yaw);
         Matrix root=compose(MatrixTranslate(feet.x,feet.y,feet.z),compose(heading,matrix(bank<2 ? fits[bank] : movement_fits[bank-2])));
         float turn=0;
@@ -229,8 +237,6 @@ void swat_character_runtime_prepare(SwatCharacterRuntime* runtime,const SwatSim*
         ok=limb(asset,"mixamorig:LeftArm","mixamorig:LeftForeArm","mixamorig:LeftHand",hand_targets[0]) && ok;
         ok=limb(asset,"mixamorig:RightArm","mixamorig:RightForeArm","mixamorig:RightHand",hand_targets[1]) && ok;
         if(!ok || !swat_character_finalize_pose(asset)) continue;
-        size_t count=(size_t)swat_character_info(asset).nodes*16;
-        if(cache->count!=count) { free(cache->matrices); cache->matrices=calloc(count,sizeof(float)); cache->count=count; }
         if(!cache->matrices || !swat_character_capture_pose(asset,cache->matrices,count)) continue;
         for(int m=0;m<view->model.meshCount;m++) {
             const SwatArtMesh* source=swat_character_mesh(asset,m); bool visible=source->visible;
@@ -254,14 +260,23 @@ bool swat_character_runtime_draw(SwatCharacterRuntime* runtime,int actor,SwatLig
     memcpy(view->visible,cache->visible,(size_t)view->model.meshCount);
     swat_character_view_draw(view,lighting,cache->root); runtime->draws++; return true;
 }
-bool swat_character_runtime_draw_first_person(SwatCharacterRuntime* runtime,int actor,SwatLighting* lighting,const SwatActor* source,const SwatController* displayed) {
+bool swat_character_runtime_draw_first_person(SwatCharacterRuntime* runtime,int actor,SwatLighting* lighting,const SwatPose* presentation) {
     if(!runtime || actor<0 || actor>=SWAT_MAX_ACTORS || !runtime->actors[actor].valid) return false;
     SwatCharacterActorPose* cache=&runtime->actors[actor]; SwatCharacterView* view=&runtime->banks[cache->bank];
-    if(!swat_character_restore_pose(view->asset,cache->matrices,cache->count)) return false;
+    // First-person shoulders follow the camera with the authored grip. Reusing
+    // world-body IK here leaves upper sleeves attached to upright shoulders
+    // while the gun turns through +/-85 degrees, sweeping them across the eye.
+    // Align the entire sampled arm rig to the measured rifle, without changing
+    // bone lengths, source weights, world-body pose or authoritative weapon.
+    // Both source and world poses are cached during prepare: extra render
+    // passes never resample a clip or advance its phase.
+    if(!swat_character_restore_pose(view->asset,cache->first_person_matrices,cache->count)) return false;
     memcpy(view->visible,cache->visible,(size_t)view->model.meshCount);
-    SwatPose authority=swat_pose(&source->controller,&source->arsenal),presentation=swat_pose(displayed,&source->arsenal);
-    Matrix correction=compose(swat_weapon_art_transform(&presentation),MatrixInvert(swat_weapon_art_transform(&authority)));
-    swat_character_view_draw_first_person(view,lighting,compose(correction,cache->root)); runtime->draws++; return true;
+    Matrix root=compose(swat_weapon_art_transform(presentation),cache->first_person_inverse_gun);
+    swat_character_view_draw_first_person(view,lighting,root);
+    // Shared banks may be used by a subsequent feed/world draw in this frame.
+    bool restored=swat_character_restore_pose(view->asset,cache->matrices,cache->count);
+    runtime->draws++; return restored;
 }
 void swat_character_runtime_close(SwatCharacterRuntime* runtime) {
     if(!runtime) return;
@@ -269,6 +284,6 @@ void swat_character_runtime_close(SwatCharacterRuntime* runtime) {
     for(int i=0;i<2;i++) { if(runtime->diffuse[i].id) UnloadTexture(runtime->diffuse[i]); if(runtime->normal[i].id) UnloadTexture(runtime->normal[i]); }
     if(runtime->emissive.id) UnloadTexture(runtime->emissive);
     if(runtime->orm.id) UnloadTexture(runtime->orm);
-    for(int i=0;i<SWAT_MAX_ACTORS;i++) free(runtime->actors[i].matrices);
+    for(int i=0;i<SWAT_MAX_ACTORS;i++) { free(runtime->actors[i].matrices); free(runtime->actors[i].first_person_matrices); }
     free(runtime);
 }
