@@ -47,7 +47,7 @@ static const char* fragment_source=
     "uniform sampler2D emissionMap; uniform int useEmission;\n"
     "uniform sampler2D environmentNormalMap,environmentRoughnessMap; uniform int useEnvironment,useEnvironmentNormal;\n"
     "uniform mat4 sunMatrix,lampMatrix; uniform vec3 camera;\n"
-    "uniform int rooms,lampRoom; uniform vec3 centers[8],halves[8]; uniform float exposure;\n"
+    "uniform int rooms,lampRoom; uniform vec3 centers[8],halves[8],origins[8]; uniform float exposure;\n"
     "float visible(sampler2D map,mat4 matrix,vec3 n,vec3 l){"
     "vec4 clip=matrix*vec4(position,1.0); if(clip.w<=0.0)return 1.0;"
     "vec3 p=clip.xyz/clip.w*0.5+0.5;"
@@ -111,7 +111,7 @@ static const char* fragment_source=
     "vec3 axis=abs(normalize(normal));contact=dot(axis,vec3(edge.y*edge.z,edge.x*edge.z,edge.x*edge.y))/(axis.x+axis.y+axis.z);"
     "illumination=mix(vec3(0.06,0.058,0.055),vec3(0.145,0.145,0.14),n.y*0.5+0.5);"
     "environment=mix(vec3(0.075,0.068,0.055),vec3(0.32,0.30,0.26),reflectedDirection.y*0.5+0.5);"
-    "vec3 origin=centers[i]+vec3(0.0,halves[i].y-0.18,0.0); vec3 toLight=origin-position;"
+    "vec3 origin=origins[i]; vec3 toLight=origin-position;"
     "float d2=dot(toLight,toLight); vec3 l=normalize(toLight);"
     "float visibility=i==lampRoom?visible(lampMap,lampMatrix,n,l):1.0;"
     "vec3 radiance=vec3(1.0,0.92,0.80)*visibility*1.8/(1.0+0.18*d2);"
@@ -153,7 +153,7 @@ static SwatLightingProgram program(void) {
     p.sun_matrix=GetShaderLocation(p.shader,"sunMatrix"); p.lamp_matrix=GetShaderLocation(p.shader,"lampMatrix");
     p.sun_map=GetShaderLocation(p.shader,"sunMap"); p.lamp_map=GetShaderLocation(p.shader,"lampMap");
     p.rooms=GetShaderLocation(p.shader,"rooms"); p.centers=GetShaderLocation(p.shader,"centers[0]");
-    p.halves=GetShaderLocation(p.shader,"halves[0]"); p.lamp_room=GetShaderLocation(p.shader,"lampRoom");
+    p.halves=GetShaderLocation(p.shader,"halves[0]"); p.origins=GetShaderLocation(p.shader,"origins[0]"); p.lamp_room=GetShaderLocation(p.shader,"lampRoom");
     p.exposure=GetShaderLocation(p.shader,"exposure"); return p;
 }
 
@@ -297,6 +297,17 @@ static Matrix shadow(RenderTexture2D target,Camera3D camera,const SwatSim* sim,b
     if(contextual) contextual(context,sim,cutaway); else draw(sim,cutaway);
     EndMode3D(); EndTextureMode(); rlSetClipPlanes(near,far); return matrix;
 }
+static Vector3 room_light_origin(const SwatWorld* world,int room) {
+    const SwatRoom* r=&world->rooms[room];
+    Vector3 origin={(float)r->center.x,(float)r->center.y+r->half.y-.18f,(float)r->center.z};
+    for(int i=0;i<world->count;i++) {
+        const SwatObject* o=&world->objects[i];
+        b3Vec3 d=b3SubPos(o->center,r->center);
+        if(o->active && o->part==SWAT_PART_LIGHT && fabsf(d.x)<r->half.x && fabsf(d.y)<r->half.y && fabsf(d.z)<r->half.z)
+            return (Vector3){(float)o->center.x,(float)o->center.y-o->half.y-.01f,(float)o->center.z};
+    }
+    return origin;
+}
 static void prepare(SwatLighting* light,const SwatSim* sim,Vector3 eye,bool cutaway,SwatShadowScene draw,SwatShadowSceneContext contextual,void* context) {
     if(!light->enabled) return;
     const SwatWorld* world=&sim->world; int room=-1; float distance=1e30f;
@@ -318,8 +329,7 @@ static void prepare(SwatLighting* light,const SwatSim* sim,Vector3 eye,bool cuta
     Camera3D sun={Vector3Add(center,Vector3Scale(light->sun_direction,45)),center,{0,1,0},extent,CAMERA_ORTHOGRAPHIC};
     light->sun_matrix=shadow(light->sun,sun,sim,cutaway,draw,contextual,context);
     if(room>=0) {
-        const SwatRoom* r=&world->rooms[room];
-        Vector3 origin={(float)r->center.x,(float)r->center.y+r->half.y-.18f,(float)r->center.z};
+        Vector3 origin=room_light_origin(world,room);
         Camera3D lamp={origin,{origin.x,origin.y-1,origin.z},{0,0,-1},150,CAMERA_PERSPECTIVE};
         light->lamp_matrix=shadow(light->lamp,lamp,sim,cutaway,draw,contextual,context);
     } else light->lamp_matrix=MatrixIdentity();
@@ -342,11 +352,11 @@ static void art_shader(SwatEnvironmentArt* art,Shader shader) {
 }
 void swat_lighting_begin(SwatLighting* light,SwatEnvironmentArt* art,const SwatWorld* world,Vector3 camera) {
     if(!light->enabled || !light->prepared) return;
-    Vector3 centers[SWAT_MAX_ROOMS],halves[SWAT_MAX_ROOMS];
+    Vector3 centers[SWAT_MAX_ROOMS],halves[SWAT_MAX_ROOMS],origins[SWAT_MAX_ROOMS];
     for(int i=0;i<world->room_count;i++) {
         const SwatRoom* r=&world->rooms[i];
         centers[i]=(Vector3){(float)r->center.x,(float)r->center.y,(float)r->center.z};
-        halves[i]=(Vector3){r->half.x,r->half.y,r->half.z};
+        halves[i]=(Vector3){r->half.x,r->half.y,r->half.z}; origins[i]=room_light_origin(world,i);
     }
     SwatLightingProgram* programs[]={&light->batch,&light->mesh};
     for(int i=0;i<2;i++) {
@@ -366,6 +376,7 @@ void swat_lighting_begin(SwatLighting* light,SwatEnvironmentArt* art,const SwatW
         if(world->room_count) {
             SetShaderValueV(s,p->centers,centers,SHADER_UNIFORM_VEC3,world->room_count);
             SetShaderValueV(s,p->halves,halves,SHADER_UNIFORM_VEC3,world->room_count);
+            SetShaderValueV(s,p->origins,origins,SHADER_UNIFORM_VEC3,world->room_count);
         }
     }
     rlActiveTextureSlot(14); rlEnableTexture(light->sun.depth.id);

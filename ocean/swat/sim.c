@@ -18,7 +18,7 @@ void swat_sim_spawn_actor(SwatSim* s, int index, SwatRole role, b3Pos feet, floa
     a->tag = (SwatTag){SWAT_HIT_ACTOR,index};
     a->role = role; a->health = 100; a->present = a->alive = true; a->last_shot_tick = -100;
     a->mind.target=a->mind.escort_owner=-1;
-    a->mind.resolve=.2f+.75f*((s->reset_seed^(index*2654435761u))%1000)/1000.0f;
+    a->mind.resolve=.2f+.75f*((s->reset_seed^s->config.layout_seed^(index*2654435761u))%1000)/1000.0f;
     a->target_actor = -1; a->last_foot_position = feet;
     swat_equipment_init(&a->gear);
     swat_controller_init(&a->controller,s->world.id,feet,yaw);
@@ -45,7 +45,11 @@ void swat_sim_reset(SwatSim* s) {
         s->config = config; s->rng = rng; s->reset_seed=rng; s->episode = episode;
         swat_world_init(&s->world);
         s->mission=*swat_mission(config.mission);
-        if(config.mission==SWAT_HOUSE) swat_mission_build_house(&s->world);
+        if(config.mission==SWAT_BUILDING) {
+            bool valid=swat_building_plan(&s->layout,config.layout_seed,config.difficulty); assert(valid); (void)valid;
+            swat_building_build(&s->world,&s->layout); s->mission=s->layout.mission;
+        }
+        else if(config.mission==SWAT_HOUSE) swat_mission_build_house(&s->world);
         else if(config.mission==SWAT_MOTEL) swat_motel_build(&s->world);
         else if(config.mission==SWAT_STOREFRONT) swat_storefront_build(&s->world);
         else if(config.mission==SWAT_RANGE) swat_mission_build_test_range(&s->world);
@@ -76,7 +80,7 @@ void swat_sim_reset(SwatSim* s) {
             swat_sim_spawn_actor(s,8,SWAT_SUSPECT,(b3Pos){13,0,3.4f},-SWAT_PI*.5f);
             s->actor_count=9; s->extraction=swat_mission(SWAT_HOUSE)->extraction;
         }
-        if(config.mission==SWAT_GENERATED) {
+        if(config.mission==SWAT_GENERATED || config.mission==SWAT_BUILDING) {
             for(int i=0;i<3;i++) {
                 b3DestroyBody(s->actors[i].controller.body.body); memset(&s->actors[i],0,sizeof(s->actors[i]));
             }

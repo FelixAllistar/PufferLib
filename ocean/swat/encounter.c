@@ -1,73 +1,192 @@
 #include "sim.h"
+#include "locomotion.h"
 #include <string.h>
 
-static b3Pos cell_position(int index) { return (b3Pos){-8+(index%SWAT_NAV_SIDE+.5f)*.6f,0,-24+(index/SWAT_NAV_SIDE+.5f)*.6f}; }
-static int cell_index(b3Pos point) {
-    int x=(int)floorf((point.x+8)/.6f),z=(int)floorf((point.z+24)/.6f);
-    return x>=0 && x<SWAT_NAV_SIDE && z>=0 && z<SWAT_NAV_SIDE ? z*SWAT_NAV_SIDE+x : -1;
+static b3Pos cell_position(const SwatNavigation* nav,int index) {
+    return (b3Pos){nav->x[index],nav->height[index],nav->z[index]};
 }
+static b3Pos grid_position(int index) { return (b3Pos){-8+(index%SWAT_NAV_SIDE+.5f)*.6f,0,-24+(index/SWAT_NAV_SIDE+.5f)*.6f}; }
 typedef struct NavQuery { const SwatWorld* world; bool blocked; } NavQuery;
 static bool obstacle(b3ShapeId shape,void* context) {
     NavQuery* query=context;
     SwatTag* tag=b3Body_GetUserData(b3Shape_GetBody(shape));
     if(!tag || tag->kind!=SWAT_HIT_WORLD) return true;
     const SwatObject* o=&query->world->objects[tag->index];
-    if(o->door && o->wedge_owner<0) return true; // Route through doors; use actual opening/picking on approach.
+    if(o->door && o->wedge_owner<0) return true;
     query->blocked=true; return false;
+}
+typedef struct NavFloors { float y[SWAT_NAV_LAYERS]; int count; float top,span; } NavFloors;
+static float floor_hit(b3ShapeId shape,b3Pos point,b3Vec3 normal,float fraction,uint64_t material,int triangle,int child,void* context) {
+    SwatTag* tag=b3Body_GetUserData(b3Shape_GetBody(shape)); NavFloors* floors=context;
+    if(!tag || tag->kind!=SWAT_HIT_WORLD || normal.y<.70f) return 1;
+    for(int i=0;i<floors->count;i++) if(fabsf(floors->y[i]-(float)point.y)<.05f) return 1;
+    if(floors->count<SWAT_NAV_LAYERS) floors->y[floors->count++]=(float)point.y;
+    else {
+        int lowest=0; for(int i=1;i<SWAT_NAV_LAYERS;i++) if(floors->y[i]<floors->y[lowest]) lowest=i;
+        if(point.y>floors->y[lowest]) floors->y[lowest]=(float)point.y;
+    }
+    return 1;
+}
+static bool nav_clear(const SwatWorld* world,b3Pos p,float height) {
+    b3Vec3 points[]={{0,height*.5f+.1437f,0},{0,fmaxf(height-.2873f,height*.5f+.1537f),0}}; b3ShapeProxy proxy={points,2,.2873f};
+    NavQuery query={world,false};
+    b3World_OverlapShape(world->id,p,&proxy,b3DefaultQueryFilter(),obstacle,&query);
+    // The lower box may step over risers within the same 457 mm controller
+    // limit, while solid cover above that limit remains an obstacle.
+    b3Vec3 feet[8];
+    for(int i=0;i<8;i++) feet[i]=swat_v(i&1 ? .2032f : -.2032f,i&2 ? fmaxf(height*.5f,.49f) : .46f,i&4 ? .2032f : -.2032f);
+    b3ShapeProxy lower={feet,8,0};
+    if(!query.blocked) b3World_OverlapShape(world->id,p,&lower,b3DefaultQueryFilter(),obstacle,&query);
+    return !query.blocked;
+}
+static float edge_hit(b3ShapeId shape,b3Pos point,b3Vec3 normal,float fraction,uint64_t material,int triangle,int child,void* context) {
+    return obstacle(shape,context) ? -1 : 0;
+}
+static bool nav_edge(const SwatWorld* world,b3Pos a,b3Pos b,float height) {
+    float rise=(float)fabs(a.y-b.y);
+    if(rise>.4572f) {
+        // A grid edge can span several ordinary stair treads. Validate each
+        // intermediate support instead of treating their summed rise as a ledge.
+        float previous=(float)a.y;
+        for(int i=1;i<=4;i++) {
+            float t=i*.25f,expected=(float)(a.y+(b.y-a.y)*t);
+            b3Pos p={a.x+(b.x-a.x)*t,expected+.6f,a.z+(b.z-a.z)*t}; NavFloors floors={0};
+            b3World_CastRay(world->id,p,swat_v(0,-1.2f,0),b3DefaultQueryFilter(),floor_hit,&floors);
+            float nearest=1e9f,height_y=0;
+            for(int j=0;j<floors.count;j++) { float d=fabsf(floors.y[j]-expected); if(d<nearest) { nearest=d; height_y=floors.y[j]; } }
+            if(nearest>.3f || fabsf(height_y-previous)>.4572f) return false;
+            previous=height_y;
+        }
+    }
+    // Step up/across/down matches the controller's bounded stair clearance.
+    b3Pos raised=a; raised.y=fmax(a.y,b.y)+.015;
+    b3Vec3 points[]={{0,height*.5f+.1437f,0},{0,fmaxf(height-.2873f,height*.5f+.1537f),0}}; b3ShapeProxy proxy={points,2,.2873f};
+    NavQuery query={world,false}; b3Vec3 translation=b3SubPos(b,raised); translation.y=0;
+    b3World_CastShape(world->id,raised,&proxy,translation,b3DefaultQueryFilter(),edge_hit,&query);
+    b3Vec3 feet[8];
+    for(int i=0;i<8;i++) feet[i]=swat_v(i&1 ? .2032f : -.2032f,i&2 ? fmaxf(height*.5f,.49f) : .46f,i&4 ? .2032f : -.2032f);
+    b3ShapeProxy lower={feet,8,0};
+    if(!query.blocked) b3World_CastShape(world->id,raised,&lower,translation,b3DefaultQueryFilter(),edge_hit,&query);
+    return !query.blocked;
+}
+static int adjacent(int cell,int direction) {
+    int x=cell%SWAT_NAV_SIDE,z=cell/SWAT_NAV_SIDE;
+    const int neighbors[]={x>0 ? cell-1 : -1,x+1<SWAT_NAV_SIDE ? cell+1 : -1,z>0 ? cell-SWAT_NAV_SIDE : -1,z+1<SWAT_NAV_SIDE ? cell+SWAT_NAV_SIDE : -1};
+    return neighbors[direction];
+}
+static unsigned char navigation_object_state(const SwatObject* o) {
+    return (unsigned char)(o->active ? 1+(o->door && o->wedge_owner>=0) : 0);
 }
 static void navigation_build(SwatSim* s) {
     SwatNavigation* nav=&s->navigation;
-    memset(nav->walkable,0,sizeof(nav->walkable));
-    b3Vec3 points[]={{0,.38f,0},{0,1.42f,0}}; b3ShapeProxy proxy={points,2,.25f};
-    for(int i=0;i<SWAT_NAV_CELLS;i++) {
-        b3Pos p=cell_position(i); bool supported=false;
-        for(int j=0;j<s->world.count;j++) {
-            const SwatObject* floor=&s->world.objects[j];
-            if(floor->active && floor->center.y+floor->half.y<.08f && floor->center.y+floor->half.y>-.1f &&
-                fabsf((float)(p.x-floor->center.x))<floor->half.x-.25f && fabsf((float)(p.z-floor->center.z))<floor->half.z-.25f) { supported=true; break; }
+    bool full=!nav->built || nav->count!=s->world.count;
+    unsigned char cells[SWAT_NAV_CELLS]={0},edges[SWAT_NAV_CELLS]={0};
+    if(full) {
+        memset(nav,0,sizeof(*nav)); memset(cells,1,sizeof(cells));
+        nav->top=3; nav->bottom=-1;
+        for(int i=0;i<s->world.count;i++) if(s->world.objects[i].active) {
+            const SwatObject* o=&s->world.objects[i];
+            nav->top=fmaxf(nav->top,(float)o->center.y+b3Length(o->half)+1);
+            nav->bottom=fminf(nav->bottom,(float)o->center.y-b3Length(o->half)-1);
         }
-        if(!supported) continue;
-        NavQuery query={&s->world,false};
-        b3World_OverlapShape(s->world.id,p,&proxy,b3DefaultQueryFilter(),obstacle,&query);
-        nav->walkable[i]=!query.blocked;
+    } else for(int i=0;i<s->world.count;i++) {
+        const SwatObject* o=&s->world.objects[i];
+        if(nav->object_state[i]==navigation_object_state(o)) continue;
+        // Removal and wedges affect only this footprint, controller clearance
+        // and the adjoining edges. Mounted charges/health changes need no work.
+        float radius=o->door ? b3Length(o->half)*2 : 0;
+        float x=fabsf(cosf(o->yaw))*o->half.x+fabsf(sinf(o->yaw))*o->half.z+1.1f+radius;
+        float z=fabsf(sinf(o->yaw))*o->half.x+fabsf(cosf(o->yaw))*o->half.z+1.1f+radius;
+        for(int cell=0;cell<SWAT_NAV_CELLS;cell++) {
+            b3Pos p=grid_position(cell);
+            if(fabs(p.x-o->center.x)<=x && fabs(p.z-o->center.z)<=z) cells[cell]=1;
+        }
     }
+    nav->updated_cells=0;
+    for(int cell=0;cell<SWAT_NAV_CELLS;cell++) if(cells[cell]) {
+        nav->updated_cells++; edges[cell]=1;
+        for(int d=0;d<4;d++) { int other=adjacent(cell,d); if(other>=0) edges[other]=1; }
+        for(int layer=0;layer<SWAT_NAV_LAYERS;layer++) nav->walkable[layer*SWAT_NAV_CELLS+cell]=0;
+        b3Pos p=grid_position(cell);
+        // Align narrow door apertures before checking physical body clearance.
+        for(int j=0;j<s->world.count;j++) {
+            const SwatObject* o=&s->world.objects[j]; if(!o->active || !o->door) continue;
+            b3Pos center=b3OffsetPos(o->hinge,swat_v(sinf(o->closed_yaw)*o->half.z,0,cosf(o->closed_yaw)*o->half.z));
+            b3Vec3 d=b3SubPos(p,center),t=swat_v(sinf(o->closed_yaw),0,cosf(o->closed_yaw)),n=swat_v(cosf(o->closed_yaw),0,-sinf(o->closed_yaw));
+            float lateral=b3Dot(d,t);
+            if(fabsf(lateral)<.31f && fabsf(b3Dot(d,n))<.7f) p=b3OffsetPos(p,swat_mul(t,-lateral));
+        }
+        NavFloors floors={0}; p.y=nav->top;
+        b3World_CastRay(s->world.id,p,swat_v(0,nav->bottom-nav->top,0),b3DefaultQueryFilter(),floor_hit,&floors);
+        for(int i=0;i<floors.count;i++) for(int j=i+1;j<floors.count;j++) if(floors.y[j]<floors.y[i]) { float swap=floors.y[i]; floors.y[i]=floors.y[j]; floors.y[j]=swap; }
+        for(int layer=0;layer<floors.count;layer++) {
+            int at=layer*SWAT_NAV_CELLS+cell; p.y=floors.y[layer]+.015f;
+            nav->height[at]=floors.y[layer]; nav->x[at]=(float)p.x; nav->z[at]=(float)p.z;
+            if(nav_clear(&s->world,p,1.016f)) nav->walkable[at]=1;
+            if(nav->walkable[at] && nav_clear(&s->world,p,1.8288f)) nav->walkable[at]=3;
+        }
+    }
+    for(int at=0;at<SWAT_NAV_NODES;at++) if(edges[at%SWAT_NAV_CELLS]) {
+        memset(nav->links[at],0,sizeof(nav->links[at])); if(!nav->walkable[at]) continue;
+        for(int direction=0;direction<4;direction++) {
+            int neighbor=adjacent(at%SWAT_NAV_CELLS,direction); if(neighbor<0) continue;
+            for(int layer=0;layer<SWAT_NAV_LAYERS;layer++) {
+                int other=layer*SWAT_NAV_CELLS+neighbor; if(!nav->walkable[other]) continue;
+                float height=(nav->walkable[at]&nav->walkable[other]&2) ? 1.8288f : 1.016f;
+                if(nav_edge(&s->world,cell_position(nav,at),cell_position(nav,other),height)) nav->links[at][direction]|=1u<<layer;
+            }
+        }
+    }
+    for(int i=0;i<s->world.count;i++) nav->object_state[i]=navigation_object_state(&s->world.objects[i]);
     nav->generation=s->world.generation; nav->count=s->world.count; nav->built_tick=s->tick; nav->built=true;
 }
 static int nearest(const SwatNavigation* nav,b3Pos point) {
-    int at=cell_index(point); if(at>=0 && nav->walkable[at]) return at;
-    int best=-1; float distance=4;
-    for(int i=0;i<SWAT_NAV_CELLS;i++) if(nav->walkable[i]) {
-        float d=b3Distance(point,cell_position(i)); if(d<distance) { distance=d; best=i; }
+    int best=-1; float distance=2;
+    for(int i=0;i<SWAT_NAV_NODES;i++) if(nav->walkable[i]) {
+        b3Pos p=cell_position(nav,i);
+        if(fabs(p.y-point.y)>.65) continue;
+        float d=b3Distance(point,p); if(d<distance) { distance=d; best=i; }
     }
     return best;
+}
+bool swat_navigation_crouch(const SwatSim* s,b3Pos position) {
+    int at=nearest(&s->navigation,position); return at>=0 && !(s->navigation.walkable[at]&2);
 }
 bool swat_navigation_next(SwatSim* s,b3Pos start,b3Pos goal,b3Pos* next) {
     SwatNavigation* nav=&s->navigation;
     if(!nav->built || nav->generation!=s->world.generation || nav->count!=s->world.count) navigation_build(s);
     int from=nearest(nav,start),to=nearest(nav,goal); if(from<0 || to<0) return false;
-    int16_t parent[SWAT_NAV_CELLS]; uint16_t queue[SWAT_NAV_CELLS];
-    for(int i=0;i<SWAT_NAV_CELLS;i++) parent[i]=-1;
-    int head=0,tail=0; queue[tail++]=(uint16_t)to; parent[to]=(int16_t)to;
+    int32_t parent[SWAT_NAV_NODES]; uint16_t queue[SWAT_NAV_NODES];
+    for(int i=0;i<SWAT_NAV_NODES;i++) parent[i]=-1;
+    int head=0,tail=0; queue[tail++]=(uint16_t)to; parent[to]=to;
     while(head<tail && parent[from]<0) {
-        int at=queue[head++],x=at%SWAT_NAV_SIDE,z=at/SWAT_NAV_SIDE;
-        int neighbors[]={x>0 ? at-1 : -1,x+1<SWAT_NAV_SIDE ? at+1 : -1,z>0 ? at-SWAT_NAV_SIDE : -1,z+1<SWAT_NAV_SIDE ? at+SWAT_NAV_SIDE : -1};
-        for(int k=0;k<4;k++) { int n=neighbors[k]; if(n>=0 && nav->walkable[n] && parent[n]<0) { parent[n]=(int16_t)at; queue[tail++]=(uint16_t)n; } }
+        int at=queue[head++];
+        for(int direction=0;direction<4;direction++) {
+            int cell=adjacent(at%SWAT_NAV_CELLS,direction); if(cell<0) continue;
+            for(int layer=0;layer<SWAT_NAV_LAYERS;layer++) {
+                int n=layer*SWAT_NAV_CELLS+cell;
+                // Reverse traversal; each edge may require a lower stance.
+                if((nav->links[n][direction^1]&(1u<<(at/SWAT_NAV_CELLS))) && parent[n]<0) { parent[n]=at; queue[tail++]=(uint16_t)n; }
+            }
+        }
     }
     if(parent[from]<0) return false;
-    *next=from==to ? goal : cell_position(parent[from]); return true;
+    *next=cell_position(nav,from==to ? to : parent[from]); return true;
 }
 static void move_to(SwatSim* s,int index,b3Pos goal,SwatInput* in) {
     SwatActor* a=&s->actors[index]; SwatMind* mind=&a->mind;
     b3Pos feet=swat_body_feet_position(&a->controller.body); b3Vec3 delta=b3SubPos(goal,feet);
-    if(hypotf(delta.x,delta.z)<.65f) return;
-    if(s->tick>=mind->replan_tick || b3Distance(feet,mind->waypoint)<.3f) {
+    if(hypotf(delta.x,delta.z)<.45f && fabsf(delta.y)<.45f) return;
+    if(s->tick>=mind->replan_tick || (hypotf((float)(feet.x-mind->waypoint.x),(float)(feet.z-mind->waypoint.z))<.30f && fabs(feet.y-mind->waypoint.y)<.55)) {
         if(!swat_navigation_next(s,feet,goal,&mind->waypoint)) return;
         mind->replan_tick=s->tick+30;
     }
+    in->crouch=swat_navigation_crouch(s,feet) || swat_navigation_crouch(s,mind->waypoint);
     delta=b3SubPos(mind->waypoint,feet); float yaw=atan2f(delta.z,delta.x),error=swat_angle(yaw-a->controller.yaw);
     in->yaw_delta=swat_clamp(error,-3*SWAT_RAD,3*SWAT_RAD);
     if(fabsf(error)<50*SWAT_RAD) in->forward=.7f;
     in->gait=SWAT_SLOW;
+    swat_locomotion_input(s,index,mind->waypoint,in);
     // Interact only with the first actual leaf encountered. Never teleport through a planned route.
     SwatHit ahead=swat_context_hit(s,index,1.7f);
     if(ahead.kind==SWAT_HIT_WORLD && ahead.index>=0 && s->world.objects[ahead.index].door) {
@@ -79,7 +198,7 @@ static void move_to(SwatSim* s,int index,b3Pos goal,SwatInput* in) {
     // Yield for teammates close ahead; keep the commanded goal.
     for(int i=0;i<s->actor_count;i++) if(i!=index && s->actors[i].present && s->actors[i].alive) {
         b3Vec3 d=b3SubPos(swat_body_feet_position(&s->actors[i].controller.body),feet);
-        if(hypotf(d.x,d.z)<.75f && b3Dot(swat_direction(a->controller.yaw,0),d)>.15f) in->forward=0;
+        if(fabsf(d.y)<1 && hypotf(d.x,d.z)<.85f && b3Dot(swat_direction(a->controller.yaw,0),d)>.15f) in->forward=0;
     }
 }
 static int visible_target(SwatSim* s,int index,bool officer) {
@@ -121,7 +240,8 @@ void swat_encounter_orders(SwatSim* s,const SwatInput inputs[]) {
         SwatActor* source=&s->actors[leader]; b3Pos eye=swat_controller_eye(&source->controller);
         SwatHit hit=swat_context_hit(s,leader,24); b3Pos goal=hit.point;
         if(hit.kind==SWAT_HIT_WORLD) goal=b3OffsetPos(hit.point,swat_mul(hit.normal,.6f));
-        goal.y=0;
+        // Preserve the targeted floor; navigation resolves its support height.
+        if(hit.kind==SWAT_HIT_WORLD && hit.normal.y<.5f) goal.y=eye.y-source->controller.eye_height;
         swat_sound_emit(&s->sounds,s->tick,leader,SWAT_SOUND_COMMAND,eye,1,20);
         for(int i=0;i<s->actor_count;i++) {
             SwatActor* a=&s->actors[i]; if(!a->present || !a->alive || !a->mind.bot || a->role!=SWAT_OFFICER || (in->squad_team && in->squad_team!=a->mind.team)) continue;

@@ -5,6 +5,7 @@
 #include "net.h"
 #include "replay.h"
 #include "sound_view.h"
+#include "locomotion.h"
 #include "../../src/puffercpu.c"
 
 static void usage(const char* path) {
@@ -18,9 +19,10 @@ static void usage(const char* path) {
         "  --record FILE.sgrp          Record a solo round for exact input replay\n"
         "  --settings FILE.ini          Override the saved player preferences\n"
         "  --resume FILE.sgrp          Restore a verified solo mission journal\n"
-        "  --mission house|annex|generated|range|motel|storefront  Human default: house; policy default: annex\n"
+        "  --mission house|annex|generated|building|range|motel|storefront  Human default: house; policy default: annex\n"
         "  --layout-seed N --difficulty 0|1|2 --generator neural|uniform\n"
         "  --layout-model FILE          Optional trained house policy\n"
+        "  --locomotion-policy FILE     Experimental local movement policy\n"
         "  --capture-screen SCREEN      game, main, pause, settings, weapon, plan, or overwatch\n"
         "Run from the repository root so config/default.ini and config/swat.ini are available.\n",
         path,path,path,path,path,path);
@@ -56,6 +58,7 @@ static void policy_action(PufferNet* policy, float* obs, float* actions,
 
 int main(int argc, char** argv) {
     const char* model=NULL; const char* capture=NULL; const char* settings_path=NULL; const char* layout_model=NULL;
+    const char* locomotion_model=NULL;
     const char* record_path=NULL; const char* resume_path=NULL;
     SwatReplay recording={0}; bool record_started=false;
     const char* join_address=NULL; bool start_host=false;
@@ -76,9 +79,11 @@ int main(int argc, char** argv) {
         else if(!strcmp(argv[i],"join")) {
             if(++i>=argc) { usage(argv[0]); free(overrides); return 1; }
             join_address=argv[i];
+        } else if(!strcmp(argv[i],"--locomotion-policy")) {
+            if(++i>=argc) { usage(argv[0]); free(overrides); return 1; } locomotion_model=argv[i];
         } else if(!strcmp(argv[i],"--mission")) {
-            if(++i>=argc || (strcmp(argv[i],"house") && strcmp(argv[i],"annex") && strcmp(argv[i],"generated") && strcmp(argv[i],"range") && strcmp(argv[i],"motel") && strcmp(argv[i],"storefront"))) { usage(argv[0]); free(overrides); return 1; }
-            mission=!strcmp(argv[i],"storefront") ? SWAT_STOREFRONT : !strcmp(argv[i],"motel") ? SWAT_MOTEL : !strcmp(argv[i],"house") ? SWAT_HOUSE : (!strcmp(argv[i],"generated") ? SWAT_GENERATED : (!strcmp(argv[i],"range") ? SWAT_RANGE : SWAT_ANNEX));
+            if(++i>=argc || (strcmp(argv[i],"house") && strcmp(argv[i],"annex") && strcmp(argv[i],"generated") && strcmp(argv[i],"range") && strcmp(argv[i],"motel") && strcmp(argv[i],"storefront") && strcmp(argv[i],"building"))) { usage(argv[0]); free(overrides); return 1; }
+            mission=!strcmp(argv[i],"building") ? SWAT_BUILDING : !strcmp(argv[i],"storefront") ? SWAT_STOREFRONT : !strcmp(argv[i],"motel") ? SWAT_MOTEL : !strcmp(argv[i],"house") ? SWAT_HOUSE : (!strcmp(argv[i],"generated") ? SWAT_GENERATED : (!strcmp(argv[i],"range") ? SWAT_RANGE : SWAT_ANNEX));
         } else if(!strcmp(argv[i],"--layout-model")) {
             if(++i>=argc) { usage(argv[0]); free(overrides); return 1; } layout_model=argv[i];
         } else if(!strcmp(argv[i],"--generator")) {
@@ -148,6 +153,7 @@ int main(int argc, char** argv) {
     free(overrides);
     int hidden=(int)puf_ini_get(&ini,"policy","hidden_size");
     int layers=(int)puf_ini_get(&ini,"policy","num_layers");
+    if(locomotion_model && !swat_locomotion_load(locomotion_model)) { fprintf(stderr,"Invalid locomotion policy contract or weights\n"); return 1; }
     unsigned int seed=(unsigned int)puf_ini_get(&ini,"base","seed");
     Env env={0}; env.rng=seed;
     puf_init(&env,puf_ini_section(&ini,"env",0));
@@ -157,7 +163,7 @@ int main(int argc, char** argv) {
     env.agents[0].rewards=&reward; env.agents[0].terminals=&terminal;
     env.sim->config.mission=mission<0 ? (model ? SWAT_ANNEX : SWAT_HOUSE) : mission;
     env.sim->config.tactical_rules=!model && env.sim->config.mission!=SWAT_ANNEX;
-    env.sim->config.squad_bots=!model && (env.sim->config.mission==SWAT_HOUSE || env.sim->config.mission==SWAT_GENERATED) ? 3 : 0;
+    env.sim->config.squad_bots=!model && (env.sim->config.mission==SWAT_HOUSE || env.sim->config.mission==SWAT_GENERATED || env.sim->config.mission==SWAT_BUILDING) ? 3 : 0;
     env.sim->config.layout_seed=layout_seed; env.sim->config.generator=generator; env.sim->config.difficulty=difficulty;
     if(!model && !max_ticks_override && env.sim->config.max_ticks==1800) env.sim->config.max_ticks=18000;
     puf_reset(&env);

@@ -7,7 +7,7 @@ static bool clear_to(const SwatSim* s,b3Pos from,b3Pos to,int target) {
 }
 
 static bool contextual_hit(const SwatSim* s,SwatHit hit) {
-    if(hit.kind==SWAT_HIT_WORLD && hit.index>=0) return s->world.objects[hit.index].door;
+    if(hit.kind==SWAT_HIT_WORLD && hit.index>=0) return s->world.objects[hit.index].door || swat_world_breachable(&s->world.objects[hit.index]);
     if(hit.kind==SWAT_HIT_DEVICE) return hit.index>=0 && hit.index<SWAT_MAX_DEVICES && s->devices[hit.index].active;
     if(hit.kind!=SWAT_HIT_ACTOR || hit.index<0 || hit.index>=s->actor_count) return false;
     const SwatActor* a=&s->actors[hit.index];
@@ -56,6 +56,10 @@ SwatContext swat_context(const SwatSim* s,int actor) {
     }
     if(out.hit.kind==SWAT_HIT_WORLD) {
         const SwatObject* door=&s->world.objects[out.hit.index];
+        if(!door->door) {
+            out.action=door->breach_owner>=0 ? SWAT_CONTEXT_CHARGE : SWAT_CONTEXT_WALL;
+            out.ready=out.hit.distance<=1.7f; return out;
+        }
         out.action=door->wedge_owner>=0 ? SWAT_CONTEXT_WEDGED :
             (door->trapped && (door->trap_known&(1u<<actor))) ? SWAT_CONTEXT_TRAP : door->breach_owner>=0 ? SWAT_CONTEXT_CHARGE : (door->locked ? SWAT_CONTEXT_LOCKED :
             (door->door_open ? SWAT_CONTEXT_CLOSE : SWAT_CONTEXT_OPEN));
@@ -71,9 +75,10 @@ SwatContext swat_context(const SwatSim* s,int actor) {
 }
 
 static void breach(SwatSim* s,int object,int owner) {
-    SwatObject* door=&s->world.objects[object]; b3Pos origin=door->center;
-    if(!swat_world_damage(&s->world,object,door->max_health)) return;
-    door->door_open=true; door->breach_ticks=24; s->events.destroyed++;
+    SwatObject* door=&s->world.objects[object]; b3Pos origin=door->breach_position;
+    bool leaf=door->door; int removed=swat_world_breach(&s->world,object,origin);
+    if(!removed) return;
+    door->door_open=leaf; door->breach_ticks=24; s->events.destroyed+=removed;
     swat_sound_surface(&s->sounds,s->tick,owner,SWAT_SOUND_FLASH,origin,2.5f,80,door->material);
     // Gameplay blast exposure uses the same intact-wall visibility boundary
     // as throwables. Removing the leaf opens the aperture; its frame remains.
@@ -98,7 +103,7 @@ void swat_door_tools(SwatSim* s,int actor,SwatInput* in) {
     if(allowed && mode==SWAT_DETONATE_CHARGE && previous!=mode) {
         for(int i=0;i<s->world.count;i++) {
             const SwatObject* door=&s->world.objects[i];
-            if(door->active && door->door && door->breach_owner==actor) breach(s,i,actor);
+            if(swat_world_breachable(door) && door->breach_owner==actor) breach(s,i,actor);
         }
         in->fire=in->reload=in->melee=false;
     }
@@ -109,7 +114,7 @@ void swat_door_tools(SwatSim* s,int actor,SwatInput* in) {
     }
     SwatHit hit=swat_context_hit(s,actor,1.7f);
     SwatObject* door=hit.kind==SWAT_HIT_WORLD && hit.index>=0 ? &s->world.objects[hit.index] : NULL;
-    bool usable=door && door->door && !door->door_open && door->door_angle<.01f && door->breach_owner<0 &&
+    bool usable=door && swat_world_breachable(door) && (door->door || mode==SWAT_PLACE_CHARGE) && !door->door_open && door->door_angle<.01f && door->breach_owner<0 &&
         (mode==SWAT_LOCKPICK ? door->locked : mode==SWAT_PLACE_CHARGE ? (g->breaching_charges>0 && door->max_health>0) :
          mode==SWAT_WEDGE ? (door->wedge_owner<0 && g->wedges>0) : mode==SWAT_REMOVE_WEDGE ? door->wedge_owner>=0 :
          (door->trapped && (door->trap_known&(1u<<actor))));
@@ -122,7 +127,7 @@ void swat_door_tools(SwatSim* s,int actor,SwatInput* in) {
     int duration=mode==SWAT_LOCKPICK ? 180 : mode==SWAT_DISARM ? 120 : mode==SWAT_PLACE_CHARGE ? 90 : 45;
     if(++g->door_ticks>=duration) {
         if(mode==SWAT_LOCKPICK) door->locked=false;
-        else if(mode==SWAT_PLACE_CHARGE) { door->breach_owner=actor; g->breaching_charges--; }
+        else if(mode==SWAT_PLACE_CHARGE) { door->breach_owner=actor; door->breach_position=hit.point; g->breaching_charges--; }
         else if(mode==SWAT_WEDGE) { door->wedge_owner=actor; g->wedges--; }
         else if(mode==SWAT_REMOVE_WEDGE) { door->wedge_owner=-1; g->wedges=(int)fminf(2,g->wedges+1); }
         else { door->trapped=false; door->trap_known=0; }

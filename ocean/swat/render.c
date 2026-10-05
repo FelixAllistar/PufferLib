@@ -37,6 +37,7 @@ static void swat_draw_context(const SwatView* view,const SwatSim* sim,SwatContex
             break;
         case SWAT_CONTEXT_WEDGED: action="Door wedged / [Alt+9] Remove"; break;
         case SWAT_CONTEXT_TRAP: action="Trap found / hold [8] Disarm"; break;
+        case SWAT_CONTEXT_WALL: action=context.ready ? "Hold [7] Place wall charge" : "Move closer to place wall charge"; break;
         case SWAT_CONTEXT_CHARGE:
             action=sim->world.objects[context.hit.index].breach_owner==view->actor ? "[K] Detonate charge" : "Teammate's charge"; break;
         case SWAT_CONTEXT_CUFF:
@@ -115,11 +116,26 @@ static Color swat_material_color(const SwatObject* o) {
 }
 
 static void swat_draw_object(const SwatView* view,const SwatWorld* world,const SwatObject* o) {
-    if(o->breach_ticks>0) {
+    if(!o->active && o->fractured && !view->planning) {
         swat_lighting_surface(view->environment.lighting,(Texture2D){0},(Texture2D){0},(Vector3){0},(Vector2){0},false);
-        DrawSphereWires(swat_position(o->center),.25f+(24-o->breach_ticks)*.055f,5,8,
-            Fade(swat_gold,o->breach_ticks/24.0f));
-        if(o->breach_ticks>20) DrawSphere(swat_position(o->center),.18f,swat_paper);
+        float floor_y=0;
+        for(int i=0;i<world->room_count;i++) {
+            const SwatRoom* r=&world->rooms[i];
+            if(o->center.y>=r->center.y-r->half.y && fabs(o->center.x-r->center.x)<r->half.x+.2f && fabs(o->center.z-r->center.z)<r->half.z+.2f)
+                floor_y=fmaxf(floor_y,(float)(r->center.y-r->half.y));
+        }
+        // Presentation-only fragments never add colliders or acoustic searches.
+        float hash=(o->tag.index*37%101)/101.0f;
+        Vector3 p={(float)o->center.x+.18f*(hash-.5f),floor_y+.015f,(float)o->center.z+.25f*(hash-.5f)};
+        DrawTriangle3D(p,(Vector3){p.x+.02f,p.y,p.z+.16f},(Vector3){p.x+.13f,p.y,p.z+.04f},(Color){166,158,143,255});
+        if(o->breach_ticks>0) {
+            float age=(48-o->breach_ticks)*SWAT_DT;
+            for(int i=0;i<3;i++) {
+                Vector3 chip={(float)o->center.x+(hash-.5f)*age*2,(float)o->center.y+.4f*age-2.5f*age*age,(float)o->center.z+(i-1)*age*.6f};
+                if(chip.y<floor_y) chip.y=floor_y+.02f;
+                DrawCube(chip,.035f,.018f,.06f,Fade((Color){184,176,158,255},o->breach_ticks/48.0f));
+            }
+        }
     }
     if (!o->active) return;
     bool cutaway=view->planning && !view->plan_preview;
@@ -146,6 +162,10 @@ static void swat_draw_object(const SwatView* view,const SwatWorld* world,const S
             DrawCube((Vector3){side*(o->half.x+.018f),.12f,o->half.z-.22f},.035f,.18f,.22f,swat_gold);
             DrawCube((Vector3){side*(o->half.x+.04f),.12f,o->half.z-.22f},.014f,.06f,.08f,(Color){205,65,48,255});
         }
+    }
+    if(!o->door && o->breach_owner>=0) {
+        b3Vec3 local=b3InvRotateVector(b3MakeQuatFromAxisAngle(swat_v(0,1,0),o->yaw),b3SubPos(o->breach_position,o->center));
+        DrawCube((Vector3){local.x,local.y,local.z},.045f,.18f,.22f,swat_gold);
     }
     rlPopMatrix();
 }
@@ -195,7 +215,7 @@ static void swat_draw_floors(const SwatView* view,const SwatSim* sim) {
     // Every mission has authoritative finish-floor boxes. A second room-sized
     // cube only fights their depth and hides their real surface material.
     swat_environment_art_draw_props(&view->environment,world,
-        sim->config.mission==SWAT_GENERATED ? &sim->layout : NULL);
+        (sim->config.mission==SWAT_GENERATED || sim->config.mission==SWAT_BUILDING) ? &sim->layout : NULL);
 }
 
 static void swat_draw_shadow_scene(void* context,const SwatSim* sim,bool cutaway) {
@@ -208,7 +228,9 @@ static void swat_draw_shadow_scene(void* context,const SwatSim* sim,bool cutaway
         if(cutaway && o->center.y>2.7f && o->half.x>3 && o->half.z>3) continue;
         rlPushMatrix(); rlTranslatef((float)o->center.x,(float)o->center.y,(float)o->center.z);
         rlRotatef(o->yaw/SWAT_RAD,0,1,0); rlRotatef(o->pitch/SWAT_RAD,0,0,1);
-        DrawCubeV((Vector3){0},(Vector3){o->half.x*2,o->half.y*2,o->half.z*2},WHITE); rlPopMatrix();
+        if(o->fractured) swat_environment_fragment_draw(o);
+        else DrawCubeV((Vector3){0},(Vector3){o->half.x*2,o->half.y*2,o->half.z*2},WHITE);
+        rlPopMatrix();
     }
     if(!cutaway) for(int i=0;i<sim->actor_count;i++) swat_draw_actor(view,sim,i,true);
 }

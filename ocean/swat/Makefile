@@ -5,7 +5,7 @@ RAYLIB ?= $(ROOT)/raylib-5.5_linux_amd64
 CC := clang
 CFLAGS ?= -O2 -g -std=gnu11 -Wall -Wextra -Werror -Wno-unused-parameter -Wno-unused-function -Wno-unknown-pragmas
 CPPFLAGS := -I$(ROOT)/src -I$(ROOT)/vendor -I$(ROOT)/vendor/enet/include -I$(RAYLIB)/include -I$(BOX3D)/include -I.
-CORE := body.c controller.c pose.c devices.c encounter.c weapons.c materials.c world.c motel.c storefront.c mission.c equipment.c tactical.c overwatch.c generation.c acoustics.c audio_dsp.c sim.c
+CORE := body.c controller.c pose.c devices.c encounter.c locomotion.c weapons.c materials.c world.c motel.c storefront.c mission.c equipment.c tactical.c overwatch.c generation.c building.c acoustics.c audio_dsp.c sim.c
 CHARACTER := character_runtime.c character_view.c character_asset.c
 CLIENT := $(CHARACTER) render.c lighting.c weapon_art.c environment_art.c settings.c feedback.c frontend.c sound_view.c spatial_audio.c
 NET := protocol.c net.c replay.c
@@ -31,6 +31,8 @@ replay-tool: $(ENET_LIB) | $(BUILD)
 foundation-test: $(ENET_LIB) | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_foundation.c $(NET) $(CORE) $(ENET_LIB) $(PHYSICS_LIBS) -o $(BUILD)/test_foundation
 	$(BUILD)/test_foundation $(BUILD)/foundation-test.sgrp
+audio-import: | $(BUILD)
+	$(CC) $(CFLAGS) $(CPPFLAGS) audio_import.c -lm -lpthread $(VIEW_LIBS) -o $(BUILD)/audio_import
 audio-lab: | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) audio_lab.c spatial_audio.c $(CORE) $(PHYSICS_LIBS) -ldl -o $(BUILD)/audio_lab
 spatial-test: | $(BUILD)
@@ -43,6 +45,9 @@ ui-assets: | $(BUILD)
 	mkdir -p $(BUILD)/assets/environment
 	cp $(ROOT)/ocean/swat/assets/environment/*.png $(ROOT)/ocean/swat/assets/environment/*.glb $(ROOT)/ocean/swat/assets/environment/*.json $(ROOT)/ocean/swat/assets/environment/*.txt $(BUILD)/assets/environment/
 	cp -R $(ROOT)/ocean/swat/assets/environment/materials_v1 $(BUILD)/assets/environment/
+	mkdir -p $(BUILD)/assets/audio
+	cp $(ROOT)/ocean/swat/assets/audio/* $(BUILD)/assets/audio/
+	cp -R $(ROOT)/ocean/swat/assets/policies $(BUILD)/assets/
 $(BUILD):
 	mkdir -p $(BUILD)
 $(ENET_LIB): $(wildcard $(ROOT)/vendor/enet/*.c) $(wildcard $(ROOT)/vendor/enet/include/enet/*.h)
@@ -79,7 +84,15 @@ environment-binding-test: | $(BUILD)
 environment-props-test: | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_environment_props.c protocol.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_environment_props
 	$(BUILD)/test_environment_props
-test: motel-test storefront-test character-test environment-props-test environment-binding-test payloads-test devices-test encounter-test foundation-test tactical-test overwatch-test generation-test | $(BUILD)
+locomotion-library: | $(BUILD)
+	$(CC) $(CFLAGS) $(CPPFLAGS) -shared -fPIC locomotion.c $(filter-out locomotion.c,$(CORE)) $(PHYSICS_LIBS) -o $(BUILD)/libswat_training.so
+locomotion-test: | $(BUILD)
+	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_locomotion.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_locomotion
+	$(BUILD)/test_locomotion $(BUILD)/locomotion-test.weights
+scenarios-test: | $(BUILD)
+	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_scenarios.c protocol.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_scenarios
+	ulimit -c 0; $(BUILD)/test_scenarios
+test: locomotion-test scenarios-test motel-test storefront-test character-test environment-props-test environment-binding-test payloads-test devices-test encounter-test foundation-test tactical-test overwatch-test generation-test | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_mission.c protocol.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_mission
 	ulimit -c 0; $(BUILD)/test_mission
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_settings.c settings.c -lm -o $(BUILD)/test_settings

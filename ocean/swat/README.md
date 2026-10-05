@@ -724,6 +724,81 @@ input journal before replacing the live world, and subsequent F5 saves include
 the continued mission. Load restores the saved kit, primary, sights, retained
 magazines and squad state. This is solo persistence; co-op saves are pending.
 
-Saves require this network/replay version (currently 8) and the same generated
+Saves require this network/replay version (currently 9) and the same generated
 layout model. Long journals take time to replay on load; there is no bounded-
 time snapshot restore or crash recovery guarantee. Policy mode does not save.
+
+
+## Scenario systems: buildings, wall breaches and movement
+
+Scenarios define geometry, occupants, equipment and initial conditions. There
+are no required action sequences, scheduled enemy waves or mandated entry tools.
+The player chooses how to resolve the situation with the available tools.
+
+```sh
+./swat --mission building --layout-seed 7 --difficulty 1
+```
+
+The **Scenarios** planning tab can generate a building or another house from a
+seed. Buildings have six rooms across two floors, a physical staircase, varied
+room uses/furnishings, different exterior openings, and occupants on both floors.
+The seed determines those initial conditions. Difficulty adjusts armed occupant
+count. These are assembled prototype environments, not finished architectural art.
+
+Hold **7** while looking at a destructible wall or door to mount a finite charge;
+release or look away to interrupt. Move back and press **K** to detonate charges
+you own. Wall charges remove a localized opening through both skins and the
+segmented studs, with bounded shedding of unsupported adjacent skins. Geometry,
+penetration, visibility, navigation and replicated collision share the convex
+fragment shapes. Crack boundaries are irregular, while surface UVs remain
+continuous in metres. Short-lived chips and persistent small rubble are cosmetic;
+there is no full structural stress or dynamic rubble simulation yet.
+
+Squad movement now routes by floor height, standing/crouching clearance and actual
+stair support. Doors are operated on approach; actors still move through the real
+controller rather than teleporting along the route. Wall destruction updates nearby cells and their connections in
+the shared navigation graph. Acoustic spatial queries share an exactly validated
+thread-local tree; moved doors and removed fragments refresh it immediately. The new scenario tests verify both human and squad
+stair traversal, finite/interruptible charges and traversal through a replicated
+breach. The network geometry contract is version **9**; version 8 clients and
+journals are incompatible, so use a fresh recording for this build.
+
+The audio bank contains 45 CC0 recorded clips with 67 event/material bindings:
+carbine/sidearm shots, mechanical handling, footsteps and impacts. They use the
+existing propagation, occlusion, directional audio and room decay mixer. Missing
+bindings retain the synthesized fallback. Some material families currently share
+recordings, and the reload mechanisms are airsoft recordings rather than a final
+weapon-specific production selection. Attribution, source hashes and clip cuts
+are in `assets/audio/SOURCES.json`. No licensed purchases are required.
+`SWAT_SOUND_ASSETS` can override the bank directory. Rebuild the bank from the
+archived sources using `build_audio_bank.py --source-dir ... --converter ...`.
+`make -C ocean/swat audio-import` builds `build/swat/audio_import`, a Raylib-based
+converter that opens no audio device or window.
+
+### Experimental movement learning
+
+```sh
+make -C ocean/swat locomotion-library
+python ocean/swat/train_locomotion.py --demo-seeds 4 --epochs 60 --updates 8
+./swat --mission building --locomotion-policy build/swat/training/locomotion-v1/policy.txt
+```
+
+The Python runner requires NumPy and CPU PyTorch. It trains through a small C ABI
+that steps the same Box3D/controller simulation as the player: goal approach,
+stairs, low clearance, doors and pre-existing wall breaches, for both officer and
+suspect bodies. A supervised warm-start is followed by bounded PPO. The versioned
+32-value observation includes goal-relative movement, body state and local physical
+probes; it does not expose hidden enemy positions. The six action heads control
+movement only. Orders, equipment, weapon handling and rules of engagement stay
+with the game systems.
+
+`evaluation.json` reports untrained, scripted and learned baselines, validation
+seeds used for checkpoint selection, and a separate untouched test seed set.
+A copy of the tested policy and evaluation is bundled under
+`assets/policies/locomotion-v1` for opt-in use without retraining.
+The small curriculum demonstrates controller integration; it does not qualify
+squad tactics, enemy combat or general navigation in arbitrary buildings. Learned
+movement remains opt-in. Default NPC movement uses the height-aware navigation.
+The loader checks dimensions, finite bounded weights and exact file completion,
+and retains the previous valid model after a rejected load. Training uses two CPU
+threads and does not take over the GPU.

@@ -18,6 +18,9 @@ typedef struct SwatAudioVoice {
     float source_echo[2][SWAT_SOURCE_BUFFER],source_feedback[2],source_damping[2];
     int source_delay[2],source_position[2];
     float source_filter,source_wet,source_smooth_wet,source_tail;
+    const float* recording;
+    int recording_frames,recording_rate;
+    float recording_gain;
 } SwatAudioVoice;
 typedef struct SwatAudioMixer {
     SwatAudioVoice voices[SWAT_AUDIO_VOICES];
@@ -39,6 +42,7 @@ void swat_audio_room(SwatAudioMixer* mixer,SwatRoomAcoustics room);
 void swat_audio_listener(SwatAudioMixer* mixer,b3Vec3 forward,b3Vec3 right,b3Vec3 up);
 void swat_audio_spatial(SwatAudioVoice* voice,SwatAcousticPath path,b3Vec3 listener_right,int sample_rate);
 SwatAudioVoice* swat_audio_start(SwatAudioMixer* mixer,SwatSoundEvent event,SwatAcousticPath path,b3Vec3 listener_right);
+void swat_audio_recording(SwatAudioVoice* voice,const float* mono,int frames,int rate,float gain);
 // A source in another room carries its own filtered decay along its acoustic
 // path, including to an outdoor listener. Same-room decay uses the listener bus.
 void swat_audio_source_room(SwatAudioVoice* voice,SwatRoomAcoustics room,bool different_room,int sample_rate);

@@ -4,16 +4,16 @@
 #include <stddef.h>
 #define SWAT_LAYOUT_VERSION 1
 #define SWAT_LAYOUT_TOKENS 12
-#define SWAT_LAYOUT_ROOMS 5
-#define SWAT_LAYOUT_WALLS 32
-#define SWAT_LAYOUT_FURNITURE 12
+#define SWAT_LAYOUT_ROOMS 8
+#define SWAT_LAYOUT_WALLS 64
+#define SWAT_LAYOUT_FURNITURE 40
 #define SWAT_LAYOUT_SPAWNS 6
 #define SWAT_LAYOUT_INPUT 49
 #define SWAT_LAYOUT_HIDDEN 64
 #define SWAT_LAYOUT_OUTPUT 3
 #define SWAT_LAYOUT_PARAMETERS ((SWAT_LAYOUT_INPUT+1)*SWAT_LAYOUT_HIDDEN+(SWAT_LAYOUT_HIDDEN+1)*SWAT_LAYOUT_OUTPUT)
 typedef enum SwatGenerator { SWAT_LAYOUT_UNIFORM, SWAT_LAYOUT_NEURAL, SWAT_GENERATORS } SwatGenerator;
-typedef struct SwatPlanRoom { float x0,x1,z0,z1; bool hall; SwatMaterial floor; } SwatPlanRoom;
+typedef struct SwatPlanRoom { float x0,x1,z0,z1; bool hall; SwatMaterial floor; float y; int identity; } SwatPlanRoom;
 typedef struct SwatPlanWall {
     b3Pos origin;
     float yaw,length,opening,width,sill;
@@ -40,5 +40,7 @@ uint32_t swat_layout_policy_id(void);
 bool swat_layout_plan(SwatLayout* plan,const int* tokens,int difficulty);
 bool swat_layout_validate(SwatLayout* plan);
 bool swat_layout_generate(SwatLayout* plan,uint32_t seed,int difficulty,SwatGenerator generator);
+bool swat_building_plan(SwatLayout* plan,uint32_t seed,int difficulty);
+void swat_building_build(SwatWorld* world,const SwatLayout* plan);
 void swat_layout_build(SwatWorld* world,const SwatLayout* plan);
 #endif

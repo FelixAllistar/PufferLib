@@ -1,7 +1,44 @@
 #include "sound_view.h"
 #include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
 
 #define SWAT_AUDIO_BUFFER 2048
+static void recordings_open(SwatSoundView* view) {
+    const char* root=getenv("SWAT_SOUND_ASSETS"); char directory[1024],path[1280];
+    if(root && *root) snprintf(directory,sizeof(directory),"%s",root);
+    else if(FileExists("build/swat/assets/audio/bank.txt")) snprintf(directory,sizeof(directory),"build/swat/assets/audio");
+    else snprintf(directory,sizeof(directory),"%sassets/audio",GetApplicationDirectory());
+    snprintf(path,sizeof(path),"%s/bank.txt",directory); FILE* file=fopen(path,"r"); if(!file) return;
+    char line[1024],name[256]; int kind,material,profile; float gain;
+    while(view->clip_count<SWAT_SOUND_CLIPS && fgets(line,sizeof(line),file)) {
+        if(line[0]=='#' || sscanf(line,"%d %d %d %f %255s",&kind,&material,&profile,&gain,name)!=5) continue;
+        if(kind<0 || kind>=SWAT_SOUND_KINDS || material< -1 || material>=SWAT_MATERIAL_COUNT || profile< -1 || profile>1 ||
+           !isfinite(gain) || gain<=0 || gain>4 || strstr(name,"..") || name[0]=='/' || strchr(name,':') || strchr(name,'\\')) continue;
+        snprintf(path,sizeof(path),"%s/%s",directory,name); Wave wave=LoadWave(path); if(!IsWaveValid(wave)) continue;
+        if(wave.frameCount>wave.sampleRate*4u) { UnloadWave(wave); continue; }
+        WaveFormat(&wave,SWAT_AUDIO_RATE,32,1); float* pcm=LoadWaveSamples(wave); bool valid=pcm!=NULL;
+        for(unsigned int i=0;valid && i<wave.frameCount;i++) if(!isfinite(pcm[i]) || fabsf(pcm[i])>1.01f) valid=false;
+        if(valid) view->clips[view->clip_count++]=(SwatSoundClip){pcm,(int)wave.frameCount,(int)wave.sampleRate,kind,material,profile,gain};
+        else if(pcm) UnloadWaveSamples(pcm);
+        UnloadWave(wave);
+    }
+    fclose(file); TraceLog(LOG_INFO,"SWAT AUDIO: %d recorded variants loaded",view->clip_count);
+}
+static void recording_start(const SwatSoundView* view,const SwatSim* sim,SwatAudioVoice* voice) {
+    int choices[SWAT_SOUND_CLIPS],count=0; bool sidearm=false;
+    int actor=voice->event.source_actor;
+    if(actor>=0 && actor<sim->actor_count) sidearm=sim->actors[actor].arsenal.active==1;
+    for(int i=0;i<view->clip_count;i++) {
+        const SwatSoundClip* clip=&view->clips[i];
+        if(clip->kind==(int)voice->event.kind && (clip->material<0 || clip->material==(int)voice->event.material) &&
+           (clip->profile<0 || clip->profile==(int)sidearm)) choices[count++]=i;
+    }
+    if(!count) return;
+    uint32_t hash=voice->event.id*2654435761u; hash^=hash>>16;
+    const SwatSoundClip* clip=&view->clips[choices[hash%(unsigned int)count]];
+    swat_audio_recording(voice,clip->pcm,clip->frames,clip->rate,clip->gain);
+}
 void swat_sound_view_init(SwatSoundView* view) {
     memset(view,0,sizeof(*view)); view->episode=view->actor=-1;
     InitAudioDevice(); if(!IsAudioDeviceReady()) return;
@@ -11,6 +48,7 @@ void swat_sound_view_init(SwatSoundView* view) {
     swat_audio_init(&view->mixer,SWAT_AUDIO_RATE);
     view->spatial=swat_spatial_open(SWAT_AUDIO_RATE,SWAT_AUDIO_VOICES);
     TraceLog(LOG_INFO,"SWAT AUDIO: %s",view->spatial ? "Steam Audio binaural HRTF" : "stereo fallback (Steam Audio initialization unavailable)");
+    recordings_open(view);
     PlayAudioStream(view->stream); view->initialized=true;
 }
 void swat_sound_view_update(SwatSoundView* view,const SwatSim* sim,int actor,float volume,uint32_t floor,float yaw_offset) {
@@ -45,6 +83,7 @@ void swat_sound_view_update(SwatSoundView* view,const SwatSim* sim,int actor,flo
             if(sim->tick<event->tick+path.delay_ticks || path.gain<.008f) continue;
             swat_hearing_consume(&view->memory,event->id);
             SwatAudioVoice* voice=swat_audio_start(&view->mixer,*event,path,right);
+            recording_start(view,sim,voice);
             swat_audio_source_room(voice,swat_acoustic_room(&sim->world,event->position),
                 swat_world_room(&sim->world,event->position)!=swat_world_room(&sim->world,eye),SWAT_AUDIO_RATE);
         }
@@ -70,6 +109,7 @@ void swat_sound_view_update(SwatSoundView* view,const SwatSim* sim,int actor,flo
 }
 void swat_sound_view_close(SwatSoundView* view) {
     if(view->initialized) { StopAudioStream(view->stream); UnloadAudioStream(view->stream); CloseAudioDevice(); }
+    for(int i=0;i<view->clip_count;i++) UnloadWaveSamples(view->clips[i].pcm);
     swat_spatial_close(view->spatial);
     memset(view,0,sizeof(*view));
 }

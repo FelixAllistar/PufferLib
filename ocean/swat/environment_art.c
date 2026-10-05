@@ -162,7 +162,29 @@ static Color wear_color(const SwatObject* o,float shade) {
     return (Color){value,value,value,255};
 }
 
+static void fragment_mesh(Texture2D texture,const SwatObject* o,bool lit,Vector2 tile,bool metric) {
+    b3Vec3 vertices[8];
+    for(int i=0;i<8;i++) vertices[i]=swat_v(i<4 ? o->half.x : -o->half.x,o->corners[i%4][0],o->corners[i%4][1]);
+    const int faces[6][4]={{0,1,2,3},{7,6,5,4},{0,4,5,1},{1,5,6,2},{2,6,7,3},{3,7,4,0}};
+    float oz=sinf(o->yaw)*(float)o->center.x+cosf(o->yaw)*(float)o->center.z;
+    rlSetTexture(texture.id); rlBegin(RL_QUADS);
+    for(int f=0;f<6;f++) {
+        b3Vec3 normal=swat_normalize(b3Cross(b3Sub(vertices[faces[f][1]],vertices[faces[f][0]]),b3Sub(vertices[faces[f][2]],vertices[faces[f][0]])));
+        Color color=f<2 ? wear_color(o,lit ? 1 : .9f) : (Color){178,169,148,255};
+        rlColor4ub(color.r,color.g,color.b,255); rlNormal3f(normal.x,normal.y,normal.z);
+        for(int j=0;j<4;j++) {
+            b3Vec3 v=vertices[faces[f][j]];
+            rlTexCoord2f((oz+v.z)/tile.x,(metric ? 1 : -1)*((float)o->center.y+v.y)/tile.y);
+            rlVertex3f(v.x,v.y,v.z);
+        }
+    }
+    rlEnd(); rlSetTexture(0);
+}
+void swat_environment_fragment_draw(const SwatObject* o) {
+    fragment_mesh((Texture2D){rlGetTextureIdDefault(),1,1,1,PIXELFORMAT_UNCOMPRESSED_R8G8B8A8},o,true,(Vector2){1,1},true);
+}
 static void textured_box(Texture2D texture,const SwatObject* o,bool lit,Vector2 tile,int grain,bool metric) {
+    if(o->fractured) { fragment_mesh(texture,o,lit,tile,metric); return; }
     // Six independently UV-mapped faces. UVs are in metres, rather than stretched
     // once per damage cell. Translation in the wall basis keeps adjacent skins
     // continuous, including on cardinally rotated generated walls.
@@ -250,7 +272,7 @@ bool swat_environment_art_draw(const SwatEnvironmentArt* art,const SwatObject* o
     int grain=surface==SWAT_ENV_DOOR ? 1 : -1;
     if(surface==SWAT_ENV_WOOD) {
         if(o->part==SWAT_PART_FRAME || o->part==SWAT_PART_SUPPORT) kind=SWAT_SURFACE_FRAME;
-        else if(o->center.y+o->half.y<=.05f && o->half.y<.05f) kind=SWAT_SURFACE_FLOOR;
+        else if(o->half.y<.11f && o->half.x>.5f && o->half.z>.5f) kind=SWAT_SURFACE_FLOOR;
         grain=kind==SWAT_SURFACE_FLOOR ? 2 : o->half.y>=o->half.x && o->half.y>=o->half.z ? 1 : o->half.z>=o->half.x ? 2 : 0;
     }
     const SwatSurfaceMaps* maps=&art->surfaces[kind];
@@ -262,7 +284,7 @@ bool swat_environment_art_draw(const SwatEnvironmentArt* art,const SwatObject* o
     clear_surface(art);
     if(surface==SWAT_ENV_PLASTER) texture=art->plaster;
     if(surface==SWAT_ENV_WOOD || surface==SWAT_ENV_DOOR) texture=art->wood;
-    if(!texture.id) return false;
+    if(!texture.id) { if(o->fractured) { swat_environment_fragment_draw(o); return true; } return false; }
     float tile=surface==SWAT_ENV_PLASTER ? art->plaster_tile_metres : 2;
     textured_box(texture,o,art->lit,(Vector2){tile,tile},-1,false);
     return true;

@@ -38,6 +38,7 @@ void swat_environment_art_close(SwatEnvironmentArt* art);
 // Releases unique shared material textures once, then the model allocations.
 void swat_art_model_close(Model model);
 // Draws in the caller's object-local transform. False means use graybox fallback.
+void swat_environment_fragment_draw(const SwatObject* object);
 bool swat_environment_art_draw(const SwatEnvironmentArt* art,const SwatObject* o);
 bool swat_environment_motel_draw(const SwatEnvironmentArt* art,const SwatWorld* world,const SwatObject* object,bool shadow,bool cutaway);
 bool swat_environment_storefront_draw(const SwatEnvironmentArt* art,const SwatWorld* world,const SwatObject* object,bool shadow,bool cutaway);

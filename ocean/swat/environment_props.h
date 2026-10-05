@@ -57,7 +57,7 @@ static inline int swat_environment_props(const SwatWorld* world,const SwatLayout
         int room=-1,support=-1;
         for(int r=0;r<layout->room_count;r++) {
             const SwatPlanRoom* candidate=&layout->rooms[r];
-            if(!candidate->hall && furniture->center.x-furniture->half.x>=candidate->x0 &&
+            if(!candidate->hall && furniture->center.y-furniture->half.y>=candidate->y-.01f && furniture->center.y+furniture->half.y<candidate->y+2.8f && furniture->center.x-furniture->half.x>=candidate->x0 &&
                furniture->center.x+furniture->half.x<=candidate->x1 &&
                furniture->center.z-furniture->half.z>=candidate->z0 &&
                furniture->center.z+furniture->half.z<=candidate->z1) { room=r; break; }

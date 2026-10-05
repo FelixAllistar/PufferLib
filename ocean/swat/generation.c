@@ -51,7 +51,7 @@ void swat_layout_logits(const int* tokens,int step,int difficulty,float logits[S
 }
 static void room(SwatLayout* p,float x0,float x1,float z0,float z1,bool hall) {
     SwatMaterial palette[3]={SWAT_WOOD,SWAT_CARPET,SWAT_TILE};
-    int i=p->room_count++; p->rooms[i]=(SwatPlanRoom){x0,x1,z0,z1,hall,palette[(i+p->tokens[9])%3]};
+    int i=p->room_count++; p->rooms[i]=(SwatPlanRoom){.x0=x0,.x1=x1,.z0=z0,.z1=z1,.hall=hall,.floor=palette[(i+p->tokens[9])%3]};
 }
 static b3Pos wall_opening(const SwatPlanWall* wall) {
     return b3OffsetPos(wall->origin,swat_v(sinf(wall->yaw)*wall->opening,0,cosf(wall->yaw)*wall->opening));

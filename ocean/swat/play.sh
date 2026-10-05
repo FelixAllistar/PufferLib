@@ -22,6 +22,7 @@ swat_needs_build() {
                   ocean/swat/assets/environment/storefront_v1/*.glb \
                   build/swat/assets/characters/*.glb build/swat/assets/characters/upper_gear_f/*.glb \
                   build/swat/assets/weapons/*.glb \
+                  ocean/swat/assets/audio/* ocean/swat/assets/policies/*/* \
                   config/swat.ini config/default.ini vendor/raygui.h \
                   vendor/enet/*.c vendor/enet/include/enet/*.h; do
         [ "$source" -nt "$binary" ] && return 0
@@ -34,7 +35,7 @@ swat_needs_build() {
 if { [ -n "${WSL_INTEROP:-}" ] || [ -e /proc/sys/fs/binfmt_misc/WSLInterop ]; } && [ "${SWAT_NATIVE_WINDOWS:-1}" != 0 ]; then
     # Linux variables otherwise disappear across interop. Forward only supplied
     # game overrides; path entries are translated by WSL, existing rules kept.
-    for SWAT_FORWARD in SWAT_LIGHTING/w SWAT_EXPOSURE/w SWAT_PLASTER_STYLE/w SWAT_ENVIRONMENT_STYLE/w SWAT_ENVIRONMENT_PBR/w SWAT_ENVIRONMENT_ART/w SWAT_WEAPON_ART/w SWAT_WEAPON_ASSETS/pw SWAT_CHARACTER_ART/w SWAT_CHARACTER_NORMALS/w SWAT_CHARACTER_ASSETS/pw \
+    for SWAT_FORWARD in SWAT_SOUND_ASSETS/pw SWAT_LIGHTING/w SWAT_EXPOSURE/w SWAT_PLASTER_STYLE/w SWAT_ENVIRONMENT_STYLE/w SWAT_ENVIRONMENT_PBR/w SWAT_ENVIRONMENT_ART/w SWAT_WEAPON_ART/w SWAT_WEAPON_ASSETS/pw SWAT_CHARACTER_ART/w SWAT_CHARACTER_NORMALS/w SWAT_CHARACTER_ASSETS/pw \
                         SWAT_ENVIRONMENT_ASSETS/pw SWAT_STEAM_AUDIO_LIBRARY/pw SWAT_HRTF_SOFA/pw; do
         SWAT_FORWARD_KEY=${SWAT_FORWARD%%/*}
         if [ -v "$SWAT_FORWARD_KEY" ]; then
@@ -60,7 +61,7 @@ if { [ -n "${WSL_INTEROP:-}" ] || [ -e /proc/sys/fs/binfmt_misc/WSLInterop ]; } 
         else
             SWAT_ARGS+=("$argument")
             case "$argument" in
-                watch|--eval|--settings|--capture|--layout-model|--record|--resume|--asset) SWAT_PATH_NEXT=1 ;;
+                watch|--eval|--settings|--capture|--layout-model|--record|--resume|--asset|--locomotion-policy) SWAT_PATH_NEXT=1 ;;
             esac
         fi
     done

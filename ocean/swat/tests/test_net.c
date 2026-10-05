@@ -25,7 +25,16 @@ static void ready(SwatNetServer* server,SwatNetClient* clients,int count) {
 static void ticks(SwatNetServer* server,SwatNetClient* clients,SwatInput* inputs,int count,int steps,const SwatInput* host) {
     for(int t=0;t<steps;t++) {
         for(int i=0;i<count;i++) if(clients[i].status==SWAT_NET_ACTIVE) assert(swat_client_input(&clients[i],&inputs[i]));
-        swat_server_poll(server); swat_server_tick(server,host);
+        // This test measures simulated hold durations. Receive every command
+        // before advancing its frame so scheduler/UDP latency cannot shorten a
+        // lockpick hold or queue an earlier neutral input behind its next hold.
+        uint32_t start=enet_time_get(); bool delivered=false;
+        while(!delivered && enet_time_get()-start<1000) {
+            idle(server,clients,count); delivered=true;
+            for(int i=0;i<count;i++) if(clients[i].status==SWAT_NET_ACTIVE)
+                delivered=delivered && server->slots[clients[i].slot].received>=clients[i].sequence;
+        }
+        assert(delivered); swat_server_tick(server,host);
         idle(server,clients,count);
     }
 }

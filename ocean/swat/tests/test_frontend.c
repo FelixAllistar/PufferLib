@@ -477,12 +477,19 @@ static bool run_generation(SwatFrontend* app,SwatView* view,SwatSim* sim,const c
     click(app,view,sim,1220,750); frames(app,view,sim,310);
     event(TEST_KEY_DOWN,KEY_P,0); frame(app,view,sim); event(TEST_KEY_UP,KEY_P,0); frame(app,view,sim);
     CHECK(swat_feedback_ready(&app->feedback));
-    click(app,view,sim,1220,618); CHECK(app->feedback.voted);
+    click(app,view,sim,1220,582); CHECK(app->feedback.voted);
     char path[SWAT_SETTINGS_PATH_SIZE]; snprintf(path,sizeof(path),"%s.layouts.jsonl",app->settings_path);
     FILE* file=fopen(path,"rb"); CHECK(file!=NULL);
     char line[2048]; CHECK(fgets(line,sizeof(line),file)!=NULL); fclose(file);
     CHECK(strstr(line,"\"source\":\"player\"") && strstr(line,"\"choice\":\"b\""));
     remove(path); // Only this test-owned preference path is removed.
+    click(app,view,sim,1220,372); frames(app,view,sim,3);
+    CHECK(sim->config.mission==SWAT_BUILDING && sim->world.room_count==6);
+    unsigned int building_seed=sim->config.layout_seed;
+    click(app,view,sim,1320,412); frames(app,view,sim,3);
+    CHECK(sim->config.mission==SWAT_BUILDING && sim->config.layout_seed==building_seed+1);
+    Image building=LoadImageFromScreen(); CHECK(ExportImage(building,"build/swat/windows/building-plan.png")); UnloadImage(building);
+    puts("PASS building frontend: seeded two-floor selection and next seed retain the scenario family");
     puts("PASS generated frontend: leader-only house selection, learned seeded build, deploy/next, two played houses and explicit local comparison");
     return true;
 }

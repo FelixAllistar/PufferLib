@@ -8,10 +8,10 @@
 extern "C" {
 #endif
 
-#define SWAT_MAX_OBJECTS 1536
+#define SWAT_MAX_OBJECTS 2048
 #define SWAT_MAX_ROOMS 8
 typedef enum SwatHitKind { SWAT_HIT_NONE, SWAT_HIT_WORLD, SWAT_HIT_ACTOR, SWAT_HIT_PROJECTILE,SWAT_HIT_DEVICE } SwatHitKind;
-typedef enum SwatPart { SWAT_PART_SOLID, SWAT_PART_SKIN, SWAT_PART_FRAME, SWAT_PART_SUPPORT } SwatPart;
+typedef enum SwatPart { SWAT_PART_SOLID, SWAT_PART_SKIN, SWAT_PART_FRAME, SWAT_PART_SUPPORT, SWAT_PART_LIGHT } SwatPart;
 typedef struct SwatRoom {
     b3Pos center;
     b3Vec3 half;
@@ -33,6 +33,12 @@ typedef struct SwatObject {
     bool peek,trapped;
     unsigned int trap_known;
     b3Pos hinge;
+    // Convex board fragments share their exact boundary with collision/render.
+    // Corners are counter-clockwise in object-local (Y,Z), relative to center.
+    bool fractured;
+    float corners[4][2];
+    int wall_group;
+    b3Pos breach_position;
 } SwatObject;
 
 typedef struct SwatWorld {
@@ -70,6 +76,9 @@ float swat_material_resistance(SwatMaterial material);
 void swat_world_step_doors(SwatWorld* world);
 void swat_world_place(SwatObject* object, float yaw);
 void swat_world_tilt(SwatObject* object,float pitch);
+bool swat_world_fragment(SwatObject* object,const float corners[4][2]);
+bool swat_world_breachable(const SwatObject* object);
+int swat_world_breach(SwatWorld* world,int object,b3Pos position);
 int swat_world_room(const SwatWorld* world, b3Pos position);
 b3SurfaceMaterial swat_physics_material(SwatMaterial material);
 bool swat_world_visible(const SwatWorld* world,b3Pos from,b3Pos to);

@@ -134,8 +134,70 @@ bool swat_world_damage(SwatWorld* w, int object, float damage) {
     o->body = b3_nullBodyId; o->shape = b3_nullShapeId; o->active = false;
     o->locked=false; o->breach_owner=o->wedge_owner=-1;
     o->trapped=o->peek=false; o->trap_known=0;
+    o->breach_ticks=48;
     w->generation++;
     return true;
+}
+
+bool swat_world_fragment(SwatObject* o,const float corners[4][2]) {
+    if(!o->active || o->door || o->part!=SWAT_PART_SKIN) return false;
+    b3Vec3 points[8];
+    for(int i=0;i<4;i++) {
+        int j=(i+1)%4,k=(i+2)%4;
+        float ay=corners[j][0]-corners[i][0],az=corners[j][1]-corners[i][1];
+        float by=corners[k][0]-corners[j][0],bz=corners[k][1]-corners[j][1];
+        if(!isfinite(corners[i][0]) || !isfinite(corners[i][1]) ||
+           fabsf(corners[i][0])>o->half.y+.001f || fabsf(corners[i][1])>o->half.z+.001f || ay*bz-az*by<.001f) return false;
+        points[i]=swat_v(-o->half.x,corners[i][0],corners[i][1]);
+        points[i+4]=swat_v(o->half.x,corners[i][0],corners[i][1]);
+    }
+    b3HullData* hull=b3CreateHull(points,8,8); if(!hull) return false;
+    b3Shape_SetHull(o->shape,hull); b3DestroyHull(hull);
+    memcpy(o->corners,corners,sizeof(o->corners)); o->fractured=true; return true;
+}
+
+bool swat_world_breachable(const SwatObject* o) {
+    return o->active && o->max_health>0 && (o->door || (o->wall_group>0 &&
+        (o->part==SWAT_PART_SKIN || o->part==SWAT_PART_FRAME)));
+}
+
+int swat_world_breach(SwatWorld* w,int object,b3Pos position) {
+    if(object<0 || object>=w->count || !swat_world_breachable(&w->objects[object])) return 0;
+    SwatObject source=w->objects[object];
+    if(source.door) return swat_world_damage(w,object,source.max_health) ? 1 : 0;
+    b3Vec3 tangent=swat_v(sinf(source.yaw),0,cosf(source.yaw));
+    // Localized game-space aperture. It crosses both wall faces and the
+    // intervening stud segments, leaving the rest of the assembly intact.
+    float floor_y=(float)source.center.y;
+    for(int i=0;i<w->count;i++) if(w->objects[i].wall_group==source.wall_group)
+        floor_y=fminf(floor_y,(float)w->objects[i].center.y-w->objects[i].half.y);
+    b3Pos center=position; center.y=fmax(floor_y+1.05,position.y-.35);
+    int removed=0;
+    for(int i=0;i<w->count;i++) {
+        SwatObject* o=&w->objects[i];
+        if(!swat_world_breachable(o) || o->door || o->wall_group!=source.wall_group) continue;
+        b3Vec3 delta=b3SubPos(o->center,center);
+        float z=fabsf(b3Dot(delta,tangent)),y=fabsf(delta.y);
+        if(z<.72f+o->half.z*.6f && y<1.10f+o->half.y*.45f)
+            removed+=swat_world_damage(w,i,o->max_health);
+    }
+    // Board islands without a surviving timber attachment shed locally.
+    // This is a bounded wall-assembly support rule, not whole-building collapse.
+    for(int i=0;i<w->count;i++) {
+        SwatObject* skin=&w->objects[i];
+        if(!skin->active || skin->part!=SWAT_PART_SKIN || skin->wall_group!=source.wall_group) continue;
+        bool supported=false;
+        for(int j=0;j<w->count && !supported;j++) {
+            const SwatObject* frame=&w->objects[j];
+            if(!frame->active || frame->wall_group!=source.wall_group ||
+               (frame->part!=SWAT_PART_FRAME && frame->part!=SWAT_PART_SUPPORT)) continue;
+            b3Vec3 d=b3SubPos(frame->center,skin->center);
+            supported=fabsf(b3Dot(d,tangent))<frame->half.z+skin->half.z+.025f &&
+                fabsf(d.y)<frame->half.y+skin->half.y+.025f;
+        }
+        if(!supported) removed+=swat_world_damage(w,i,skin->max_health);
+    }
+    return removed;
 }
 
 float swat_material_resistance(SwatMaterial material) {
@@ -163,6 +225,17 @@ float swat_world_exit_distance(const SwatObject* o,b3Pos entry,b3Vec3 d) {
     float p[3]={rel.x,rel.y,rel.z},v[3]={direction.x,direction.y,direction.z};
     float half[3] = {o->half.x,o->half.y,o->half.z};
     float exit = 1e6f;
+    if(o->fractured) {
+        if(fabsf(direction.x)>1e-7f) exit=((direction.x>0 ? o->half.x : -o->half.x)-rel.x)/direction.x;
+        for(int i=0;i<4;i++) {
+            int j=(i+1)%4;
+            float ey=o->corners[j][0]-o->corners[i][0],ez=o->corners[j][1]-o->corners[i][1];
+            float inside=ey*(rel.z-o->corners[i][1])-ez*(rel.y-o->corners[i][0]);
+            float rate=ey*direction.z-ez*direction.y;
+            if(rate< -1e-7f) exit=fminf(exit,-inside/rate);
+        }
+        return exit>=-.001f && exit<1e6f ? fmaxf(0,exit) : 0;
+    }
     for (int i=0;i<3;i++) if (fabsf(v[i]) > 1e-7f) {
         float distance = ((v[i] > 0 ? half[i] : -half[i])-p[i])/v[i];
         if (distance >= -0.001f) exit = fminf(exit,fmaxf(0,distance));

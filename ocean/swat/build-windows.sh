@@ -76,7 +76,7 @@ if ! cmake --build "$SWAT_BUILD/enet" --parallel 4 > "$SWAT_BUILD/enet-build.log
     exit 1
 fi
 
-SWAT_CORE=(body.c controller.c pose.c devices.c encounter.c weapons.c materials.c world.c motel.c storefront.c mission.c equipment.c tactical.c overwatch.c generation.c acoustics.c audio_dsp.c sim.c)
+SWAT_CORE=(body.c controller.c pose.c devices.c encounter.c locomotion.c weapons.c materials.c world.c motel.c storefront.c mission.c equipment.c tactical.c overwatch.c generation.c building.c acoustics.c audio_dsp.c sim.c)
 SWAT_SOURCES=()
 SWAT_FLAGS=(-O2 -g -std=gnu11 -ffp-contract=off -Wall -Wextra
     -Wno-unused-parameter -Wno-unused-function -Wno-unknown-pragmas
@@ -130,6 +130,10 @@ if [ "$SWAT_TARGET" = all ] || [ "$SWAT_TARGET" = server ]; then
 fi
 
 if [ "$SWAT_TARGET" = all ]; then
+for check in scenarios locomotion; do
+    "$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/tests/test_$check.c" \
+        "${SWAT_NET[@]}" "${SWAT_SOURCES[@]}" "${SWAT_HEADLESS_LIBS[@]}" -o "$SWAT_BUILD/test_$check.exe"
+done
 "$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/replay_tool.c" \
     "${SWAT_NET[@]}" "${SWAT_SOURCES[@]}" "${SWAT_HEADLESS_LIBS[@]}" -o "$SWAT_BUILD/replay_tool.exe"
 "$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/tests/test_foundation.c" \
@@ -254,3 +258,8 @@ swat.exe play
 popd
 EOF
 printf 'Built native Windows target: %s (%s)\n' "$SWAT_TARGET" "$SWAT_BUILD"
+
+mkdir -p "$SWAT_BUILD/assets/audio"
+cp "$SWAT_ROOT/ocean/swat/assets/audio/"* "$SWAT_BUILD/assets/audio/"
+
+cp -R "$SWAT_ROOT/ocean/swat/assets/policies" "$SWAT_BUILD/assets/"

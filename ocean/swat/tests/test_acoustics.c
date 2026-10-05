@@ -14,6 +14,11 @@ static float reference_thickness(const SwatObject* o, b3Pos from, b3Pos to) {
     float c=cosf(o->yaw),s=sinf(o->yaw);
     float origin[3]={c*p.x-s*p.z,p.y,s*p.x+c*p.z};
     float delta[3]={c*d.x-s*d.z,d.y,s*d.x+c*d.z};
+    if(o->pitch!=0) {
+        float cp=cosf(o->pitch),sp=sinf(o->pitch),x=origin[0],dx=delta[0];
+        origin[0]=cp*x+sp*origin[1]; origin[1]=-sp*x+cp*origin[1];
+        delta[0]=cp*dx+sp*delta[1]; delta[1]=-sp*dx+cp*delta[1];
+    }
     float half[3]={o->half.x,o->half.y,o->half.z};
     float enter=0,exit=1;
     for(int axis=0;axis<3;axis++) {
@@ -25,6 +30,16 @@ static float reference_thickness(const SwatObject* o, b3Pos from, b3Pos to) {
             enter=fmaxf(enter,fminf(a,b)); exit=fminf(exit,fmaxf(a,b));
             if(exit<=enter) return 0;
         }
+    }
+    if(o->fractured) for(int i=0;i<4;i++) {
+        int j=(i+1)%4;
+        float ey=o->corners[j][0]-o->corners[i][0],ez=o->corners[j][1]-o->corners[i][1];
+        float value=ey*(origin[2]-o->corners[i][1])-ez*(origin[1]-o->corners[i][0]);
+        float slope=ey*delta[2]-ez*delta[1];
+        if(fabsf(slope)<1e-7f) { if(value<0) return 0; }
+        else if(slope>0) enter=fmaxf(enter,-value/slope);
+        else exit=fminf(exit,-value/slope);
+        if(exit<=enter) return 0;
     }
     return (exit-enter)*b3Length(d);
 }
@@ -251,4 +266,24 @@ static void test_surface_room(void) {
     swat_world_close(&world);
     puts("PASS room surfaces: floor finish, actual roof absorption, furnishings and destroyed door openings affect decay");
 }
-int main(void) { test_spatial_search(); test_hearing_sequence(); test_transmission_and_arrival(); test_doorway_route(); test_agent_listens(); test_surface_room(); return 0; }
+static void test_fragment_path(void) {
+    SwatWorld* world=calloc(1,sizeof(*world)); assert(world); swat_world_init(world);
+    int id=swat_world_box(world,(b3Pos){0,1,0},swat_v(.02f,1,1),SWAT_DRYWALL,50);
+    SwatObject* skin=&world->objects[id]; skin->part=SWAT_PART_SKIN;
+    const float corners[4][2]={{-1,-1},{1,-1},{.5f,1},{-.5f,1}};
+    assert(swat_world_fragment(skin,corners));
+    SwatSoundEvent e={1,0,0,SWAT_SOUND_SHOT,{-1,1.9f,.9f},3,100,SWAT_CONCRETE};
+    b3Pos listener={1,1.9f,.9f};
+    assert(!swat_world_ray(world,e.position,swat_v(1,0,0),2,b3_nullBodyId).hit);
+    SwatAcousticPath outside=swat_acoustic_path(world,&e,listener);
+    assert(fabsf(outside.gain-1)<1e-6f);
+    e.position=(b3Pos){-1,1,0}; listener=(b3Pos){1,1,0};
+    assert(swat_world_ray(world,e.position,swat_v(1,0,0),2,b3_nullBodyId).hit);
+    SwatAcousticPath inside=swat_acoustic_path(world,&e,listener); assert(inside.gain<outside.gain*.7f);
+    swat_world_damage(world,id,1000); assert(fabsf(swat_acoustic_path(world,&e,listener).gain-1)<1e-6f);
+    swat_world_close(world); free(world);
+    puts("PASS fragment acoustics: empty convex corners agree with physical rays, board attenuates, destruction refreshes immediately");
+}
+
+int main(void) {
+    test_fragment_path(); test_spatial_search(); test_hearing_sequence(); test_transmission_and_arrival(); test_doorway_route(); test_agent_listens(); test_surface_room(); return 0; }

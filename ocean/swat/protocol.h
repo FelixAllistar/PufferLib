@@ -7,9 +7,9 @@
 extern "C" {
 #endif
 
-#define SWAT_NET_VERSION 8
+#define SWAT_NET_VERSION 9
 #define SWAT_NET_MAGIC 0x53474531u
-#define SWAT_NET_PACKET_MAX 98304
+#define SWAT_NET_PACKET_MAX 262144
 #define SWAT_NET_SOUNDS 32
 typedef enum SwatMessage { SWAT_MSG_INPUT=1, SWAT_MSG_MAP, SWAT_MSG_SNAPSHOT,
                           SWAT_MSG_WELCOME, SWAT_MSG_RESTART, SWAT_MSG_SCENARIO } SwatMessage;
@@ -21,6 +21,9 @@ typedef struct SwatMapObject {
     SwatPart part;
     bool door;
     float pitch;
+    bool fractured;
+    float corners[4][2];
+    int wall_group;
 } SwatMapObject;
 typedef struct SwatMap {
     uint32_t epoch, sound_floor;
@@ -53,6 +56,7 @@ typedef struct SwatObjectState {
     int breach_owner,breach_ticks,wedge_owner;
     bool peek,trapped;
     unsigned int trap_known;
+    b3Pos breach_position;
 } SwatObjectState;
 typedef struct SwatSnapshot {
     uint32_t epoch, revision, ack[SWAT_MAX_PLAYERS];

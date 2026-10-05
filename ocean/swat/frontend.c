@@ -297,7 +297,7 @@ SwatInput swat_frontend_input(SwatFrontend* app, const SwatSim* sim) {
         if(IsKeyDown(KEY_EIGHT)) in.door_tool=SWAT_DISARM;
         SwatContext context=swat_context(sim,app->actor);
         bool use=IsKeyDown(KEY_F) || (!app->wait_for_release && IsMouseButtonDown(MOUSE_BUTTON_MIDDLE));
-        bool door=context.hit.kind==SWAT_HIT_WORLD && context.action!=SWAT_CONTEXT_NONE && context.hit.distance<=2.2f;
+        bool door=context.hit.kind==SWAT_HIT_WORLD && context.action!=SWAT_CONTEXT_NONE && context.action!=SWAT_CONTEXT_WALL && context.action!=SWAT_CONTEXT_CHARGE && context.hit.distance<=2.2f;
         bool physical=door || context.action==SWAT_CONTEXT_EVIDENCE || context.action==SWAT_CONTEXT_SECURED || context.action==SWAT_CONTEXT_DEVICE;
         in.interact=use && physical; in.peek=equipment_modifier;
         in.command|=use && !physical;
@@ -518,13 +518,15 @@ void swat_frontend_draw(SwatFrontend* app, const SwatView* view, const SwatSim* 
         int width=GetScreenWidth(),height=GetScreenHeight();
         float x=width-400,y=120;
         DrawRectangle(width-420,96,420,height-96,(Color){12,21,28,248});
-        DrawText("MISSION PLANNING",(int)x,(int)y,23,menu_gold); y+=38;
+        DrawText("SCENARIO PLANNING",(int)x,(int)y,23,menu_gold); y+=38;
         const SwatMissionDef* mission=swat_sim_mission(sim);
-        const char* tabs[]={"Briefing","Loadout","Snipers","Houses"};
+        const char* tabs[]={"Briefing","Loadout","Snipers","Scenarios"};
+        int tab_text_size=GuiGetStyle(DEFAULT,TEXT_SIZE); GuiSetStyle(DEFAULT,TEXT_SIZE,16);
         for(int i=0;i<4;i++) if(GuiButton((Rectangle){x+i*95,y,91,32},tabs[i])) { app->plan_tab=i; app->notice[0]=0; }
+        GuiSetStyle(DEFAULT,TEXT_SIZE,tab_text_size);
         y+=52;
         if(app->plan_tab==0) {
-            const char* report=sim->config.mission==SWAT_GENERATED ? TextFormat("%d reported gunmen / three hostages",1+sim->config.difficulty) :
+            const char* report=(sim->config.mission==SWAT_GENERATED || sim->config.mission==SWAT_BUILDING) ? TextFormat("%d reported gunmen / three hostages",1+sim->config.difficulty) :
                 (sim->config.mission==SWAT_HOUSE ? "Two gunmen / three reported hostages" : "One armed target / one civilian");
             DrawText(report,(int)x,(int)y,16,menu_paper); y+=30;
             DrawText(sim->config.mission!=SWAT_ANNEX ? "Secure occupants. Return to staging." : "Clear the annex. Extract at the far end.",(int)x,(int)y,16,menu_muted); y+=42;
@@ -608,27 +610,28 @@ void swat_frontend_draw(SwatFrontend* app, const SwatView* view, const SwatSim* 
             DrawText("Officer: X execute / H clear marks",(int)x,(int)y+24,15,menu_muted);
             if(!app->leader) DrawText("The session leader controls overwatch.",(int)x,(int)y+48,15,menu_gold);
         } else {
-            DrawText("BUILD ANOTHER RESIDENCE",(int)x,(int)y,20,menu_gold); y+=36;
+            DrawText("SCENARIO GENERATION",(int)x,(int)y,20,menu_gold); y+=28;
             if(!app->leader) GuiDisable();
             DrawText("Seed",(int)x,(int)y+9,18,menu_paper);
-            if(GuiTextBox((Rectangle){x+66,y,310,36},app->layout_seed,sizeof(app->layout_seed),app->seed_edit)) app->seed_edit=!app->seed_edit;
-            y+=50;
+            if(GuiTextBox((Rectangle){x+66,y,310,30},app->layout_seed,sizeof(app->layout_seed),app->seed_edit)) app->seed_edit=!app->seed_edit;
+            y+=40;
             const char* difficulty[]={"Compact","Standard","Complex"};
-            for(int i=0;i<3;i++) if(GuiButton((Rectangle){x+i*127,y,122,34},TextFormat("%s%s",app->layout_difficulty==i ? "> " : "",difficulty[i]))) app->layout_difficulty=i;
-            y+=48;
-            for(int i=0;i<2;i++) if(GuiButton((Rectangle){x+i*192,y,184,34},TextFormat("%s%s",app->layout_generator==i ? "> " : "",i ? "Learned" : "Random"))) app->layout_generator=i;
-            y+=48;
-            bool build=GuiButton((Rectangle){x,y,184,38},"Build this seed");
-            bool next=GuiButton((Rectangle){x+192,y,184,38},"Next house"); y+=49;
-            bool cedar=GuiButton((Rectangle){x,y,184,34},"Cedar House");
-            bool motel=GuiButton((Rectangle){x+192,y,184,34},"Briar Court motel"); y+=50;
-            bool storefront=GuiButton((Rectangle){x,y,376,34},"Morrow Block storefronts"); y+=50;
-            if(build || next || cedar || motel || storefront) {
+            for(int i=0;i<3;i++) if(GuiButton((Rectangle){x+i*127,y,122,30},TextFormat("%s%s",app->layout_difficulty==i ? "> " : "",difficulty[i]))) app->layout_difficulty=i;
+            y+=40;
+            for(int i=0;i<2;i++) if(GuiButton((Rectangle){x+i*192,y,184,30},TextFormat("%s%s",app->layout_generator==i ? "> " : "",i ? "House: learned" : "House: random"))) app->layout_generator=i;
+            y+=40;
+            bool building=GuiButton((Rectangle){x,y,376,30},"Generate two-story building scenario"); y+=40;
+            bool build=GuiButton((Rectangle){x,y,184,34},"Build this seed");
+            bool next=GuiButton((Rectangle){x+192,y,184,34},"Next seed"); y+=40;
+            bool cedar=GuiButton((Rectangle){x,y,184,30},"Cedar House");
+            bool motel=GuiButton((Rectangle){x+192,y,184,30},"Briar Court motel"); y+=40;
+            bool storefront=GuiButton((Rectangle){x,y,376,30},"Morrow Block storefronts"); y+=40;
+            if(build || next || cedar || motel || storefront || building) {
                 char* end; errno=0; unsigned long long seed=strtoull(app->layout_seed,&end,10);
                 if(!cedar && !motel && !storefront && (errno || end==app->layout_seed || *end || app->layout_seed[0]=='-' || seed>UINT32_MAX))
                     snprintf(app->notice,sizeof(app->notice),"Use a seed from 0 to 4294967295.");
                 else {
-                    app->scenario=sim->config; app->scenario.mission=storefront ? SWAT_STOREFRONT : motel ? SWAT_MOTEL : (cedar ? SWAT_HOUSE : SWAT_GENERATED);
+                    app->scenario=sim->config; app->scenario.mission=(building || (next && sim->config.mission==SWAT_BUILDING)) ? SWAT_BUILDING : storefront ? SWAT_STOREFRONT : motel ? SWAT_MOTEL : (cedar ? SWAT_HOUSE : SWAT_GENERATED);
                     app->scenario.layout_seed=(uint32_t)seed+(next ? 1u : 0u);
                     app->scenario.generator=app->layout_generator; app->scenario.difficulty=app->layout_difficulty;
                     app->scenario_requested=true; app->plan_preview=0; app->seed_edit=false;
@@ -636,26 +639,32 @@ void swat_frontend_draw(SwatFrontend* app, const SwatView* view, const SwatSim* 
                 }
             }
             GuiEnable();
-            if(sim->config.mission==SWAT_GENERATED) {
-                DrawText(TextFormat("Current: seed %u / %d rooms / %.0f x %.0f m",sim->layout.seed,sim->layout.room_count,sim->layout.width,sim->layout.depth),(int)x,(int)y,15,menu_paper); y+=27;
+            if(sim->config.mission==SWAT_GENERATED || sim->config.mission==SWAT_BUILDING) {
+                DrawText(TextFormat("Current: seed %u / %d rooms / %.0f x %.0f m",sim->layout.seed,sim->layout.room_count,sim->layout.width,sim->layout.depth),(int)x,(int)y,15,menu_paper); y+=23;
             }
-            DrawText("WHICH HOUSE WAS MORE FUN?",(int)x,(int)y,18,menu_gold); y+=32;
-            bool ready=swat_feedback_ready(&app->feedback);
-            if(!ready) GuiDisable();
-            const char* labels[]={"Previous","This one","Tie"};
-            for(int i=0;i<3;i++) if(GuiButton((Rectangle){x+i*127,y,122,34},labels[i])) {
-                char path[SWAT_SETTINGS_PATH_SIZE];
-                int n=snprintf(path,sizeof(path),"%s.layouts.jsonl",app->settings_path);
-                if(!app->settings_path[0] || n<0 || (size_t)n>=sizeof(path) || !swat_feedback_save(&app->feedback,path,i))
-                    snprintf(app->notice,sizeof(app->notice),"Could not save this comparison.");
-                else snprintf(app->notice,sizeof(app->notice),"Comparison saved beside your settings.");
+            if(sim->config.mission==SWAT_BUILDING) {
+                DrawText("Choose your entry and tools.",(int)x,(int)y,15,menu_gold);
+                DrawText("The seed sets the initial situation.",(int)x,(int)y+25,14,menu_muted);
+            } else {
+                DrawText("WHICH HOUSE WAS MORE FUN?",(int)x,(int)y,18,menu_gold); y+=26;
+                bool ready=swat_feedback_ready(&app->feedback);
+                if(!ready) GuiDisable();
+                const char* labels[]={"Previous","This one","Tie"};
+                for(int i=0;i<3;i++) if(GuiButton((Rectangle){x+i*127,y,122,30},labels[i])) {
+                    char path[SWAT_SETTINGS_PATH_SIZE];
+                    int n=snprintf(path,sizeof(path),"%s.layouts.jsonl",app->settings_path);
+                    if(!app->settings_path[0] || n<0 || (size_t)n>=sizeof(path) || !swat_feedback_save(&app->feedback,path,i))
+                        snprintf(app->notice,sizeof(app->notice),"Could not save this comparison.");
+                    else snprintf(app->notice,sizeof(app->notice),"Comparison saved beside your settings.");
+                }
+                GuiEnable(); y+=40;
+                DrawText(app->feedback.voted ? "Thanks. Play another house to compare again." :
+                    "Play two houses for at least 5 seconds each.",(int)x,(int)y,14,menu_muted); y+=24;
+                if(y+14<height-94) DrawText("Comparisons stay on this computer.",(int)x,(int)y,14,menu_muted);
+                y+=24;
+                if(!app->leader) { DrawText("The session leader chooses the next house.",(int)x,(int)y,14,menu_gold); y+=24; }
+                if(app->notice[0]) DrawText(app->notice,(int)x,(int)y+7,14,menu_gold);
             }
-            GuiEnable(); y+=48;
-            DrawText(app->feedback.voted ? "Thanks. Play another house to compare again." :
-                "Play two houses for at least 5 seconds each.",(int)x,(int)y,14,menu_muted); y+=24;
-            DrawText("Comparisons stay on this computer.",(int)x,(int)y,14,menu_muted); y+=24;
-            if(!app->leader) { DrawText("The session leader chooses the next house.",(int)x,(int)y,14,menu_gold); y+=24; }
-            if(app->notice[0]) DrawText(app->notice,(int)x,(int)y+7,14,menu_gold);
         }
         if(GuiButton((Rectangle){x,height-82,376,48},sim->tick<2 ? "Deploy" : "Return to officer"))
             swat_frontend_set_screen(app,SWAT_SCREEN_GAME);

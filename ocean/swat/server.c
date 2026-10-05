@@ -20,14 +20,14 @@ int main(int argc,char** argv) {
     for(int i=1;i<argc;i++) {
         if(!strcmp(argv[i],"--help")) {
             puts("SWAT dedicated server: --port 27474 --seed 42 --max-ticks 18000\n"
-                 "  --mission house|annex|generated|motel|storefront  --hostile-fire 0|1  --randomize 0|1  --run-ticks N\n"
+                 "  --mission house|annex|generated|building|motel|storefront  --hostile-fire 0|1  --randomize 0|1  --run-ticks N\n"
                  "  --layout-seed N --difficulty 0|1|2 --generator neural|uniform --layout-model FILE\n"
                  "Four player slots; first connected officer leads/restarts. Ctrl+C stops the server.");
             return 0;
         }
         if(!strcmp(argv[i],"--mission")) {
-            if(++i>=argc || (strcmp(argv[i],"house") && strcmp(argv[i],"annex") && strcmp(argv[i],"generated") && strcmp(argv[i],"motel") && strcmp(argv[i],"storefront"))) { fprintf(stderr,"Invalid mission\n"); return 2; }
-            config.mission=!strcmp(argv[i],"storefront") ? SWAT_STOREFRONT : !strcmp(argv[i],"motel") ? SWAT_MOTEL : !strcmp(argv[i],"house") ? SWAT_HOUSE : (!strcmp(argv[i],"generated") ? SWAT_GENERATED : SWAT_ANNEX); continue;
+            if(++i>=argc || (strcmp(argv[i],"house") && strcmp(argv[i],"annex") && strcmp(argv[i],"generated") && strcmp(argv[i],"motel") && strcmp(argv[i],"storefront") && strcmp(argv[i],"building"))) { fprintf(stderr,"Invalid mission\n"); return 2; }
+            config.mission=!strcmp(argv[i],"building") ? SWAT_BUILDING : !strcmp(argv[i],"storefront") ? SWAT_STOREFRONT : !strcmp(argv[i],"motel") ? SWAT_MOTEL : !strcmp(argv[i],"house") ? SWAT_HOUSE : (!strcmp(argv[i],"generated") ? SWAT_GENERATED : SWAT_ANNEX); continue;
         }
         if(!strcmp(argv[i],"--layout-model")) {
             if(++i>=argc || !swat_layout_load_policy(argv[i])) { fprintf(stderr,"Invalid layout model\n"); return 2; } continue;

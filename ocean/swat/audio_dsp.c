@@ -58,8 +58,19 @@ SwatAudioVoice* swat_audio_start(SwatAudioMixer* mixer,SwatSoundEvent event,Swat
     voice->smooth_gain=voice->gain; voice->smooth_filter=voice->filter;
     return voice;
 }
+void swat_audio_recording(SwatAudioVoice* voice,const float* mono,int frames,int rate,float gain) {
+    if(!voice || !mono || frames<=0 || rate<8000 || rate>192000 || !isfinite(gain) || gain<=0 || gain>4) return;
+    voice->recording=mono; voice->recording_frames=frames; voice->recording_rate=rate; voice->recording_gain=gain;
+    voice->duration=(float)frames/rate;
+}
 static float sample(SwatAudioVoice* voice) {
     float t=voice->time;
+    if(voice->recording) {
+        float position=t*voice->recording_rate; int at=(int)position;
+        if(at>=voice->recording_frames) return 0;
+        float a=voice->recording[at],b=at+1<voice->recording_frames ? voice->recording[at+1] : 0;
+        return (a+(b-a)*(position-at))*voice->recording_gain;
+    }
     float noise=swat_rand01(&voice->noise)*2-1;
     const SwatMaterialDef* surface=swat_material(voice->event.material);
     switch(voice->event.kind) {

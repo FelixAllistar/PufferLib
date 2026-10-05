@@ -68,6 +68,26 @@ int main(void) {
     }
     assert(source_tail>1e-6 && source_tail>dry_tail*100);
     assert(!indoor->active);
+    // Recorded sources use the same pan/occlusion path, including resampling.
+    static float pcm[960];
+    for(int i=0;i<960;i++) pcm[i]=.7f*sinf(i*.6f);
+    swat_audio_init(&a,SWAT_AUDIO_RATE); swat_audio_init(&b,SWAT_AUDIO_RATE);
+    SwatAudioVoice* recorded=swat_audio_start(&a,event,right,listener_right);
+    SwatAudioVoice* filtered=swat_audio_start(&b,event,muffled,listener_right);
+    swat_audio_recording(recorded,pcm,960,24000,.8f); swat_audio_recording(filtered,pcm,960,24000,.8f);
+    assert(fabsf(recorded->duration-.04f)<1e-5f);
+    swat_audio_mix(&a,first,2048,1); swat_audio_mix(&b,second,2048,1);
+    float clear_recording=0,muffled_recording=0;
+    for(int i=1;i<1920;i++) {
+        assert(first[2*i]==0 && isfinite(first[2*i+1]) && fabsf(first[2*i+1])<1);
+        float c=first[2*i+1]-first[2*i-1],m=second[2*i+1]-second[2*i-1];
+        clear_recording+=c*c; muffled_recording+=m*m;
+    }
+    assert(clear_recording>.01f && muffled_recording<clear_recording*.5f);
+    for(int i=0;i<4;i++) swat_audio_mix(&a,first,2048,1);
+    assert(!recorded->active);
+    swat_audio_recording(recorded,pcm,960,1,NAN); assert(recorded->recording_rate==24000);
+    puts("PASS recorded DSP: resampling, directional pan, occlusion filtering, finite bounded output and source expiry");
     puts("PASS source-room DSP: room decay reaches an outdoor listener through the source path, stays bounded and expires");
     puts("PASS room DSP: bounded stereo reflections, persistent decay after source expiry and RT60-dependent late energy");
     puts("PASS audio DSP: deterministic stereo PCM, right/left orientation, mute, bounded overlapping voices, voice expiry and material low-pass");
