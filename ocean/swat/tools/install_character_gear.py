@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Install the private F geometry with the six unchanged gameplay motion banks.
+"""Install the private F geometry with the unchanged gameplay motion banks.
 
 Usage: install_character_gear.py EXTRACTED_F_FIXTURE
 Source files stay untouched. Runtime reconstructs the two new anatomical elbow
@@ -20,6 +20,7 @@ MOTION_SHA = {
     'walk_right': 'edcb227870a0483d06c99e89df491e24f6eb22c879e35833e597f3d6a196b899',
     'crouch_ready': '54957d0769b6ecaaa164969f0c0315316f6834714044a2b376364f2a32fd6d66',
     'crouch_walk': 'ea828e53f305de77b35ba55abdf67470ae98e871911c43fae5505c5022d47dd1',
+    'walk_backward': '5769ec1b03a63e3d363ba360c66edd31784225e6ca49be7b2177980ba84170de',
 }
 
 
@@ -100,9 +101,13 @@ def main():
     geometry, binary = read_glb(fixture/'swat_upper_gear_remake_f_v1.glb', GEOMETRY_SHA)
     root = Path(__file__).resolve().parents[3]/'build/swat/assets/characters'
     outputs = {}
+    installed_motion = {}
     for name, sha in MOTION_SHA.items():
+        if name == 'walk_backward' and not (root/(name+'.glb')).exists():
+            continue # Optional until the private backward handoff is installed.
         motion, motion_bytes = read_glb(root/(name+'.glb'), sha)
         outputs[name] = join_motion(geometry, binary, motion, motion_bytes)
+        installed_motion[name] = sha
     # Validate every bank before changing the ignored installation.
     destination = root/'upper_gear_f'
     destination.mkdir(exist_ok=True)
@@ -112,7 +117,7 @@ def main():
         temporary.replace(destination/(name+'.glb'))
         print('Installed F geometry / original motion:', name, hashlib.sha256(raw).hexdigest())
     (destination/'provenance.json').write_text(json.dumps({
-        'geometry_source_sha256': GEOMETRY_SHA, 'original_motion_sha256': MOTION_SHA,
+        'geometry_source_sha256': GEOMETRY_SHA, 'original_motion_sha256': installed_motion,
         'carrier_policy': 'runtime anatomical frames after source sampling and arm IK',
     }, indent=2)+'\n')
 

@@ -10,7 +10,7 @@ and authoritative reload phase mapping outside that source.
 
 The optional private install is `build/swat/assets/characters/ready.glb`,
 `walk.glb` and `textures/Ch15_*.png`, optionally extended by `walk_left.glb`,
-`walk_right.glb`, `crouch_ready.glb` and `crouch_walk.glb`. Ready is the verified six-second Shared
+`walk_right.glb`, `crouch_ready.glb`, `crouch_walk.glb` and `walk_backward.glb`. Ready is the verified six-second Shared
 Ready N carry/reload export, SHA-256
 `3a20375ec72f106925ef96718da0931e172f21908c6720cff4d792c173c0cc81`;
 walk is the one-second cubic candidate identified below. Build scripts copy
@@ -32,11 +32,25 @@ Art landmarks never override the camera, physical muzzle or collider dimensions.
 Standing locomotion now selects distinct original left/right banks according to
 achieved local travel. Their pace is 1.92126191 / 1.92126155 m per one-second
 cycle. The adapter uses each bank's measured travel vector after its fixed fit,
-retaining authored chest/pelvis counter-rotation. Diagonals and backward travel
-rotate the nearest available bank toward achieved movement; no backward source
-clip is claimed. Phase remains continuous across bank changes, stops without
+retaining authored chest/pelvis counter-rotation. Retreat now selects the original
+one-second backward bank, SHA-256
+`5769ec1b03a63e3d363ba360c66edd31784225e6ca49be7b2177980ba84170de`,
+at a measured 1.921261449 m per cycle. Its fixed fit and oblique travel heading
+are measured independently from its rifle-facing direction. Diagonals rotate
+the nearest available bank toward achieved movement. Phase stays continuous across bank changes, stops without
 actual displacement, and advances by 2.03907418 m per crouch-forward cycle.
 Missing optional banks fall back to forward/Ready without disabling character art.
+
+`tools/install_character_movement.py --backward EXTRACTED_FIXTURE` verifies and
+installs the private backward original; rerunning the F gear installer adds its
+unchanged motion to the current geometry. All 70 native joints match exactly at
+765 keys, midpoints and independent reference phases. The consumer agrees with
+151 independent Blender deformation poses and nine full-surface controls, with
+maximum vertex error 0.000000940 m. Sampled cycle-end matrices are identical.
+GPU checks cover actual travel phase, yaw/diagonal selection, stop, missing-bank
+fallback, current thumb grip and anatomical elbow carriers. The source's raised
+Ready posture and documented thigh/strap contacts remain; no authored ADS,
+footstep or gameplay event track is invented.
 
 The planted crouch contains a single STEP key at t=0 and no authored duration;
 it is sampled and held at zero. Crouch-forward is the separate original one-second
@@ -66,7 +80,7 @@ representations. Source garment/contact defects remain source art issues.
 The optional F gear install is `assets/characters/upper_gear_f/`, built by
 `tools/install_character_gear.py EXTRACTED_F_FIXTURE`. It verifies the original
 geometry hash `5dd68cf3010b4ba24ec719fb949e1d8f62053c5761142c37da41079848f00835`
-and all six original motion hashes, plus exact native joint default transforms
+and all installed original motion hashes (six base banks plus optional backward), plus exact native joint default transforms
 and hierarchy. It combines the new 72-joint geometry with unchanged original
 animation accessors/channels in separate private runtime banks; original files,
 weights, UVs and curves remain intact. All 70 original sampled joint matrices

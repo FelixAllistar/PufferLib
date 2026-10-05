@@ -91,12 +91,14 @@ cameras/shadows reuse cached poses. First-person arms use camera-relative
 authored grips, with a larger weapon projection and saved live-preview size and
 position controls. Carbine ADS now has adjustable 80–220 mm eye relief (120 mm
 default), a display-only aim preview and fading crosshair lines. The separate
-72-joint F gear geometry is integrated with all six original motion banks;
+72-joint F gear geometry is integrated with all seven original motion banks;
 rigid anatomical elbow carriers are updated after arm IK, and source body maps
 and authored pad/headset materials are retained. The engine now adds a measured
 carbine support-thumb wrap in hip/ADS and world presentation, releasing it for
 authored reload handling; the frozen C/C1 grip studies remain diagnostics.
-Remaining palm/finger contact and rifle silhouette need further art iteration. Guns have
+Retreat now uses its own original one-second backward cycle, paced by actual
+travel at 1.921261449 m per cycle, with continuous phase and the forward fallback
+when the optional asset is absent. Remaining palm/finger contact and rifle silhouette need further art iteration. Guns have
 mechanical profiles and canonical pose targets. The local rigid carbine now
 uses its original maps, measured bindings and reload magazine visibility; see
 [WEAPON_ART.md](WEAPON_ART.md). Other guns remain procedural and the supplied

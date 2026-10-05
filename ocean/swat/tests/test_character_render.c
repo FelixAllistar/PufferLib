@@ -251,6 +251,53 @@ static void ads_projection_check(SwatCharacterRuntime* runtime,SwatSim* sim,Swat
     actor->controller.pitch=actor->controller.yaw=actor->controller.recoil_pitch=actor->controller.recoil_yaw=actor->controller.lean=actor->controller.ads=0;
     printf("PASS ADS: source aperture/post centered at all eye distances, yaw, lean, recoil and pitch limits; rigid F elbow carriers\n");
 }
+static void backward_check(SwatCharacterRuntime* runtime,SwatSim* sim,SwatLighting* light) {
+    SwatActor* actor=&sim->actors[0];
+    swat_body_set_crouch(&actor->controller.body,false); actor->controller.body.onGround=true;
+    actor->controller.eye_height=actor->controller.body.totalHeight-.2032f;
+    bool installed=runtime->banks[SWAT_CHARACTER_BACKWARD].asset!=NULL;
+    const float directions[]={0,30,60,90,120,150,180,-150,-120,-90,-60,-30};
+    for(int yaw=0;yaw<4;yaw++) for(size_t d=0;d<sizeof(directions)/sizeof(*directions);d++) {
+        actor->controller.yaw=yaw*SWAT_PI/2;
+        float local=directions[d]*SWAT_RAD,world=actor->controller.yaw+local;
+        b3Body_SetLinearVelocity(actor->controller.body.body,(b3Vec3){cosf(world),0,sinf(world)});
+        sim->tick++; swat_character_runtime_prepare(runtime,sim);
+        int expected=fabsf(sinf(local))>fabsf(cosf(local)) ? (local<0 ? SWAT_CHARACTER_LEFT : SWAT_CHARACTER_RIGHT) :
+            cosf(local)<0 && installed ? SWAT_CHARACTER_BACKWARD : SWAT_CHARACTER_WALK;
+        if(!runtime->banks[expected].asset) expected=SWAT_CHARACTER_WALK;
+        assert(runtime->actors[0].valid && runtime->actors[0].bank==expected);
+    }
+    actor->controller.yaw=0;
+    b3Body_SetLinearVelocity(actor->controller.body.body,(b3Vec3){-1,0,0}); sim->tick++;
+    swat_character_runtime_prepare(runtime,sim); double phase=runtime->actors[0].phase;
+    b3Pos at=b3Body_GetPosition(actor->controller.body.body);at.x-=.1f;
+    b3Body_SetTransform(actor->controller.body.body,at,b3Quat_identity); sim->tick+=2;
+    swat_character_runtime_prepare(runtime,sim);
+    double advance=fmod(runtime->actors[0].phase-phase+1,1);
+    assert(fabs(advance-.1/(installed ? 1.92126144912079 : 1.9212602376939625))<1e-6);
+    if(installed) {
+        SwatCharacterActorPose* cached=&runtime->actors[0]; SwatCharacterView* view=&runtime->banks[cached->bank];
+        assert(swat_character_clip_duration(view->asset,0)==1);
+        carrier_check(view->asset);
+        if(getenv("SWAT_CHARACTER_TEST_CAPTURES")) {
+            Vector3 feet={cached->feet.x,cached->feet.y,cached->feet.z};
+            memcpy(view->visible,cached->visible,(size_t)view->model.meshCount);
+            Image image=frame(view,light,(Camera3D){Vector3Add(feet,(Vector3){3,1.5f,3}),Vector3Add(feet,(Vector3){0,.9f,0}),{0,1,0},40,CAMERA_PERSPECTIVE},cached->root);
+            ExportImage(image,TextFormat("%s/bank-backward.png",getenv("SWAT_CHARACTER_TEST_CAPTURES")));UnloadImage(image);
+            image=first_person_frame(runtime,sim,light,1.7f,-.055f,.075f);
+            ExportImage(image,TextFormat("%s/first-person-backward.png",getenv("SWAT_CHARACTER_TEST_CAPTURES")));UnloadImage(image);
+        }
+        // No installed retreat asset must still use the existing forward fallback.
+        SwatCharacterView saved=runtime->banks[SWAT_CHARACTER_BACKWARD];runtime->banks[SWAT_CHARACTER_BACKWARD]=(SwatCharacterView){0};
+        sim->tick++; swat_character_runtime_prepare(runtime,sim);assert(runtime->actors[0].bank==SWAT_CHARACTER_WALK);
+        runtime->banks[SWAT_CHARACTER_BACKWARD]=saved;
+    }
+    phase=runtime->actors[0].phase;
+    b3Body_SetLinearVelocity(actor->controller.body.body,b3Vec3_zero);sim->tick++;
+    swat_character_runtime_prepare(runtime,sim);
+    assert(runtime->actors[0].bank==SWAT_CHARACTER_READY && runtime->actors[0].phase==phase);
+    printf("PASS backward: local direction across yaw/diagonals, measured travel pace, stop and optional-bank fallback\n");
+}
 static void runtime_check(const char* directory,SwatLighting* light) {
 #ifdef _WIN32
     assert(!_putenv_s("SWAT_CHARACTER_ASSETS",directory));
@@ -304,6 +351,7 @@ static void runtime_check(const char* directory,SwatLighting* light) {
         runtime->banks[SWAT_CHARACTER_LEFT]=left;
         b3Body_SetLinearVelocity(actor->controller.body.body,b3Vec3_zero);
     }
+    backward_check(runtime,sim,light);
     for(int stance=0;stance<2;stance++) for(int angle=0;angle<4;angle++) {
         actor->controller.yaw=angle*SWAT_PI/2; actor->controller.pitch=angle==3 ? 70*SWAT_RAD : 0;
         swat_body_set_crouch(&actor->controller.body,stance!=0); sim->tick++;

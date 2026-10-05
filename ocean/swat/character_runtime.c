@@ -9,14 +9,15 @@
 
 static const char* clips[]={"Standing Empty / Shared Ready N Carry F","Forward Walk / Shared Ready N C1 Seam Repair B",
     "Walk Left / Shared Ready N C1 Loop A","Walk Right / Shared Ready N C1 Loop A",
-    "Crouch Ready / Planted Shared N Low-Ready","Crouch Forward / Shared Ready N C1 Loop A"};
-static const char* files[]={"ready","walk","walk_left","walk_right","crouch_ready","crouch_walk"};
+    "Crouch Ready / Planted Shared N Low-Ready","Crouch Forward / Shared Ready N C1 Loop A",
+    "Walk Backward / Shared Ready N C1 Loop A"};
+static const char* files[]={"ready","walk","walk_left","walk_right","crouch_ready","crouch_walk","walk_backward"};
 // Authored cycle distances, not controller speeds. The static crouch is a
 // single STEP key with no duration and is always sampled at zero.
-static const double cycle_metres[]={0,1.9212602376939625,1.9212619066480534,1.921261549020877,0,2.0390741825103778};
+static const double cycle_metres[]={0,1.9212602376939625,1.9212619066480534,1.921261549020877,0,2.0390741825103778,1.92126144912079};
 // Lateral source travel measured AFTER its fixed preview fit; preserve native
 // chest/pelvis counter-rotation instead of inferring facing from clip labels.
-static const float travel_yaw[]={0,.214434941f,-1.683827915f,1.295261099f,0,.103343568f};
+static const float travel_yaw[]={0,.214434941f,-1.683827915f,1.295261099f,0,.103343568f,3.001731908f};
 #include "character_movement_data.h"
 // Immutable measured model-to-heading-zero/feet transforms, metres, scale 1.
 static const float fits[2][16]={
@@ -245,7 +246,8 @@ void swat_character_runtime_prepare(SwatCharacterRuntime* runtime,const SwatSim*
         int bank=SWAT_CHARACTER_READY;
         if(!reload) {
             if(crouch) bank=moving ? SWAT_CHARACTER_CROUCH_WALK : SWAT_CHARACTER_CROUCH_READY;
-            else if(moving) bank=fabsf(sinf(direction))>fabsf(cosf(direction)) ? (direction<0 ? SWAT_CHARACTER_LEFT : SWAT_CHARACTER_RIGHT) : SWAT_CHARACTER_WALK;
+            else if(moving) bank=fabsf(sinf(direction))>fabsf(cosf(direction)) ? (direction<0 ? SWAT_CHARACTER_LEFT : SWAT_CHARACTER_RIGHT) :
+                cosf(direction)<0 ? SWAT_CHARACTER_BACKWARD : SWAT_CHARACTER_WALK;
             if(!runtime->banks[bank].asset) bank=moving ? SWAT_CHARACTER_WALK : SWAT_CHARACTER_READY;
         }
         cache->phase=reset ? 0 : cache->phase;
