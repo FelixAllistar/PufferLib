@@ -110,10 +110,16 @@ fi
 
 if [ "$SWAT_TARGET" = all ] || [ "$SWAT_TARGET" = player ]; then
 "$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/swat.c" \
+    "$SWAT_ROOT/ocean/swat/character_runtime.c" "$SWAT_ROOT/ocean/swat/character_view.c" "$SWAT_ROOT/ocean/swat/character_asset.c" \
     "$SWAT_ROOT/ocean/swat/render.c" "$SWAT_ROOT/ocean/swat/lighting.c" "$SWAT_ROOT/ocean/swat/weapon_art.c" "$SWAT_ROOT/ocean/swat/environment_art.c" "$SWAT_ROOT/ocean/swat/frontend.c" \
     "$SWAT_ROOT/ocean/swat/settings.c" "$SWAT_ROOT/ocean/swat/feedback.c" "$SWAT_ROOT/ocean/swat/sound_view.c" "$SWAT_ROOT/ocean/swat/spatial_audio.c" \
     "${SWAT_NET[@]}" "${SWAT_SOURCES[@]}" \
     "${SWAT_LIBS[@]}" -o "$SWAT_BUILD/swat.exe"
+
+"$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/tests/test_character_render.c" \
+    "$SWAT_ROOT/ocean/swat/character_runtime.c" "$SWAT_ROOT/ocean/swat/character_view.c" "$SWAT_ROOT/ocean/swat/character_asset.c" \
+    "$SWAT_ROOT/ocean/swat/lighting.c" "$SWAT_ROOT/ocean/swat/weapon_art.c" "$SWAT_ROOT/ocean/swat/environment_art.c" \
+    "${SWAT_SOURCES[@]}" "${SWAT_LIBS[@]}" -o "$SWAT_BUILD/test_character_render.exe"
 
 fi
 
@@ -181,6 +187,7 @@ if [ "$SWAT_TARGET" = all ]; then
     "$SWAT_ROOT/ocean/swat/settings.c" -static -lm -o "$SWAT_BUILD/test_settings.exe"
 
 "$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/tests/test_frontend.c" \
+    "$SWAT_ROOT/ocean/swat/character_runtime.c" "$SWAT_ROOT/ocean/swat/character_view.c" "$SWAT_ROOT/ocean/swat/character_asset.c" \
     "$SWAT_ROOT/ocean/swat/render.c" "$SWAT_ROOT/ocean/swat/lighting.c" "$SWAT_ROOT/ocean/swat/weapon_art.c" "$SWAT_ROOT/ocean/swat/environment_art.c" "$SWAT_ROOT/ocean/swat/frontend.c" \
     "$SWAT_ROOT/ocean/swat/settings.c" "$SWAT_ROOT/ocean/swat/feedback.c" "$SWAT_ROOT/ocean/swat/sound_view.c" "$SWAT_ROOT/ocean/swat/spatial_audio.c" "${SWAT_SOURCES[@]}" \
     "${SWAT_LIBS[@]}" -o "$SWAT_BUILD/test_frontend.exe"
@@ -192,6 +199,7 @@ if [ "$SWAT_TARGET" = all ]; then
     "$SWAT_ROOT/ocean/swat/protocol.c" "${SWAT_SOURCES[@]}" "${SWAT_HEADLESS_LIBS[@]}" -o "$SWAT_BUILD/test_environment_props.exe"
 
 "$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/tests/test_environment_art.c" \
+    "$SWAT_ROOT/ocean/swat/character_runtime.c" "$SWAT_ROOT/ocean/swat/character_view.c" "$SWAT_ROOT/ocean/swat/character_asset.c" \
     "$SWAT_ROOT/ocean/swat/render.c" "$SWAT_ROOT/ocean/swat/lighting.c" "$SWAT_ROOT/ocean/swat/weapon_art.c" "$SWAT_ROOT/ocean/swat/environment_art.c" \
     "$SWAT_ROOT/ocean/swat/protocol.c" "${SWAT_SOURCES[@]}" "${SWAT_LIBS[@]}" -o "$SWAT_BUILD/test_environment_art.exe"
 
@@ -202,6 +210,7 @@ if [ "$SWAT_TARGET" = all ]; then
 "$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/tests/test_lighting.c" \
     "$SWAT_ROOT/ocean/swat/lighting.c" "${SWAT_LIBS[@]}" -o "$SWAT_BUILD/test_lighting.exe"
 "$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/performance_tool.c" \
+    "$SWAT_ROOT/ocean/swat/character_runtime.c" "$SWAT_ROOT/ocean/swat/character_view.c" "$SWAT_ROOT/ocean/swat/character_asset.c" \
     "$SWAT_ROOT/ocean/swat/render.c" "$SWAT_ROOT/ocean/swat/lighting.c" "$SWAT_ROOT/ocean/swat/weapon_art.c" "$SWAT_ROOT/ocean/swat/environment_art.c" \
     "$SWAT_ROOT/ocean/swat/sound_view.c" "$SWAT_ROOT/ocean/swat/spatial_audio.c" \
     "${SWAT_NET[@]}" "${SWAT_SOURCES[@]}" "${SWAT_LIBS[@]}" -o "$SWAT_BUILD/performance_tool.exe"
@@ -215,6 +224,10 @@ cp "$SWAT_ROOT/resources/shared/Roboto-Regular.ttf" "$SWAT_BUILD/assets/ui/"
 mkdir -p "$SWAT_BUILD/assets/environment"
 cp "$SWAT_ROOT/ocean/swat/assets/environment/"*.{png,glb,json,txt} "$SWAT_BUILD/assets/environment/"
 cp -R "$SWAT_ROOT/ocean/swat/assets/environment/materials_v1" "$SWAT_BUILD/assets/environment/"
+if [ -d "$SWAT_ROOT/build/swat/assets/characters" ]; then
+    mkdir -p "$SWAT_BUILD/assets/characters"
+    cp -R "$SWAT_ROOT/build/swat/assets/characters/." "$SWAT_BUILD/assets/characters/"
+fi
 SWAT_PRIVATE_RIFLE="$SWAT_ROOT/build/swat/assets/weapons/rifle7_rigid_textured.glb"
 if [ -f "$SWAT_PRIVATE_RIFLE" ]; then
     mkdir -p "$SWAT_BUILD/assets/weapons"

@@ -91,6 +91,8 @@ int main(int argc,char** argv) {
     report("simulation",measurements,frames); report("audio",measurements+frames,frames);
     report("draw_submit",measurements+2*frames,frames); report("present",measurements+3*frames,frames);
     report("total",measurements+4*frames,frames);
+    if(view.characters) printf("character poses=%u draws=%u prepare_mean_ms=%.3f prepare_max_ms=%.3f\n",view.characters->preparations,view.characters->draws,
+        view.characters->preparations ? view.characters->prepare_seconds/view.characters->preparations*1000 : 0,view.characters->prepare_max_seconds*1000);
     if(capture) { Image frame=LoadImageFromScreen(); valid=ExportImage(frame,capture) && valid; UnloadImage(frame); }
     if(recording.file && !swat_replay_close(&recording)) valid=false;
     swat_sound_view_close(&sound); swat_view_close(&view); swat_sim_close(sim); free(sim); free(measurements); return valid ? 0 : 1;

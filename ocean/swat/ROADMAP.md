@@ -81,14 +81,16 @@ Current art handoffs: the immutable F character GLB passes structural preflight
 with all seven influences. An independent full-influence consumer now passes
 377 numerical pose comparisons and renders the unretimed reload in an isolated
 art lab; [CHARACTER_ART.md](CHARACTER_ART.md) records evidence and limitations.
-Character placement, gameplay phase mapping, original materials and optimized
-squad playback remain pending. Guns have
+Live carbine officers and first-person arms now use full-influence GPU skinning,
+achieved stance/weapon fitting, original maps and authority-driven reload phases;
+cameras/shadows reuse cached poses. Guns have
 mechanical profiles and canonical pose targets. The local rigid carbine now
 uses its original maps, measured bindings and reload magazine visibility; see
 [WEAPON_ART.md](WEAPON_ART.md). Other guns remain procedural and the supplied
 sidearm needs physical-size calibration. The first coherent environment material
 quality pass is integrated; [ENVIRONMENT_MATERIALS.md](ENVIRONMENT_MATERIALS.md)
-records its scope. Live character and whole location-kit integration remain gates. These foundation checks do not imply a finished
+records its scope. Whole location-kit integration remains a separate step. These
+foundation checks do not imply a finished
 animation pipeline, production lighting or completed roadmap.
 
 [ARCHITECTURE.md](ARCHITECTURE.md) records the portable technology choices,

@@ -5,6 +5,7 @@
 #include "environment_art.h"
 #include "lighting.h"
 #include "weapon_art.h"
+#include "character_runtime.h"
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -23,6 +24,7 @@ typedef struct SwatView {
     SwatEnvironmentArt environment;
     SwatLighting lighting;
     SwatWeaponArt weapons;
+    SwatCharacterRuntime* characters;
     int sniper_unit;
     char session_status[128];
 } SwatView;

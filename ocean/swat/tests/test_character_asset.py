@@ -107,6 +107,7 @@ def main():
         for bad in ['empty','bounds','cycle','joints','pair','duplicate','matrix_channel','external','weights','affine','material','parents','duplicate_child','emissive']:
             run(probe,synthetic(malformed=bad),[0],work,bad,reject=True)
         run(probe,synthetic()[:-1],[0],work,'truncated',reject=True)
+        run(probe,synthetic(influences=17),[-1,0,.137,.95,1,0],work,'seventeen-influence-gpu-contract')
         if args.asset:
             raw=args.asset.read_bytes(); d,access=decode(raw); times={-1.,0.}
             for sampler in d['animations'][0]['samplers']:

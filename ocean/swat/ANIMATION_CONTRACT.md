@@ -23,7 +23,11 @@ Solo checkpoint/restore is now integrated separately from this baseline.
 A separate independent full-influence character consumer and art lab now render
 the original F clip and pass 377 numerical pose comparisons;
 [CHARACTER_ART.md](CHARACTER_ART.md) records current implementation and limits.
-Gameplay character placement, phase mapping and fit approval remain pending.
+The player now consumes Ready/walk with full-influence GPU skinning, achieved
+stance/weapon fitting, first-person arm selection and authority-driven reload
+phase mapping. Live camera/shadow passes share cached poses. This updates the
+historical primitive-renderer facts below; anatomical eye/source artistic fit
+approval is separate from the implemented adapter.
 
 ## Scope and verified implementation
 

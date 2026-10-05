@@ -1,10 +1,65 @@
 # Character consumer and preview
 
-The independent C GLB consumer and a read-only art lab are implemented. They
-preserve the original animation timing and every supplied influence set. The
-game player still draws procedural actors: anatomical/controller calibration,
-reload phase mapping, material sources and optimized squad rendering are pending.
-This is the next integration stage, not approval of the source animation's fit.
+The independent C GLB consumer drives live carbine officers, squad members,
+first-person arms, camera feeds and character shadows. Exact source sampling
+and all supplied influences are preserved. The separate art lab remains useful
+for inspecting the unchanged source; gameplay adds presentation pose fitting
+and authoritative reload phase mapping outside that source.
+
+## Live player
+
+The optional private install is `build/swat/assets/characters/ready.glb`,
+`walk.glb` and `textures/Ch15_*.png`. Ready is the verified six-second Shared
+Ready N carry/reload export, SHA-256
+`3a20375ec72f106925ef96718da0931e172f21908c6720cff4d792c173c0cc81`;
+walk is the one-second cubic candidate identified below. Build scripts copy
+this ignored install beside player binaries; no licensed source is published.
+`./swat` uses it automatically. `SWAT_CHARACTER_ASSETS` selects another private
+install; `SWAT_CHARACTER_ART=0` selects procedural rendering.
+
+`character_runtime.c` follows actual feet, heading, stance, achieved lean and
+weapon pose. Source scale remains one metre per metre. Walk phase advances with
+actual horizontal displacement divided by the measured 1.92126024 m cycle travel,
+without adding root travel to physics. Teleports, rewind/reset and actor changes
+reset presentation travel. Legs turn toward actual travel and a two-bone solve
+provides crouch/stance adaptation while preserving limb lengths and source foot
+targets. Torso pitch is bounded; independent arm solves fit the achieved rifle
+pose. The measured Prop_Rifle inverse-bind bridge is applied exactly once.
+Art landmarks never override the camera, physical muzzle or collider dimensions.
+
+The normal controlled body is omitted. First-person rendering selects arm
+triangles from the original weights, along with the rifle and currently owned
+magazine representations. Local unacknowledged look is a display correction
+applied to those meshes only. Other live carbine officers use the full body;
+other weapon/role and incapacitated/restrained states retain their existing
+representations. Source garment/contact defects remain source art issues.
+
+Empty and tactical game reloads retain their original authoritative durations.
+A piecewise presentation mapping aligns source release at 0.88 s with integer
+`floor(D/4)` removal and source seating at 3.65 s with `floor(2D/3)` insertion,
+then maps the remaining source through completion. Unseated INSERT restarts
+skip removal. Cancellation/late snapshots reconstruct from current seated,
+chamber and timer state; an unseated IDLE never redraws an installed magazine.
+The source empty-mag fall and spare sleeve are hidden because authority retains
+rounds/magazines and supplies no persistent drop/pouch identities. Animation
+creates no inventory, ownership events or world drops.
+
+Skeleton evaluation and IK happen once per actor per simulation tick. Cached
+node matrices are reused by main, camera and shadow passes. Bind vertices and
+all contiguous influence sets stay on the GPU; RGBA32F tables carry every joint
+index/weight and the exact sampled palettes. The vertex shader computes the
+weighted matrix and its inverse-transpose normal, with no four/eight-weight
+reduction, animation resampling or weight renormalization. Shadow/unlit rendering
+uses the same deformation. Headless simulation/server builds have no renderer
+or graphics dependency.
+
+Original 2K diffuse/emissive maps use their documented sRGB interpretation;
+roughness remains 0.78 and metalness zero. The unlinked gloss maps are not
+converted to roughness. Normals use signed UV derivatives on deformed geometry
+and the preserved Blender material's unflipped +Y interpretation. That is not
+proof of the original artist's convention; `SWAT_CHARACTER_NORMALS=0` or `-y`
+allows the documented comparison without rewriting source maps. Original gun
+maps are borrowed from the measured rigid carbine's unchanged 4K materials.
 
 From the repository root:
 
@@ -12,7 +67,7 @@ From the repository root:
 ./swat character --asset /path/to/private/character.glb
 ./swat character --asset /path/to/private/character.glb --time 1.4 --capture /tmp/pickup.png
 ./swat character --asset /path/to/private/character.glb --play --frames 370
-./swat character --asset /path/to/private/walk.glb --play --loop --frames 370
+./swat character --asset /path/to/private/walk.glb --play --loop --gpu --frames 370
 ```
 
 The launcher selects native Windows in WSL and translates asset/capture paths.
@@ -42,8 +97,8 @@ pinned MIT cgltf header with private symbols, avoiding Raylib's cgltf ABI.
 - Inverse-transpose normalized normals; collapsed zero-scale props are hidden
   without inverting a singular matrix. Nonfinite poses fail.
 
-The initial lab preserves neutral material factors and uses the existing
-diffuse preview shader. It does not yet implement textured character materials,
+The art lab preserves neutral fixture materials; `--gpu` selects the same
+full-influence vertex path used in gameplay. The GLB parser itself rejects embedded textured character materials,
 transparent/emissive/unlit or material-extension shading, morph targets, sparse/compressed accessors or
 external dependencies. Unsupported textured character maps are rejected with a
 specific error. All instantiated mesh nodes are consumed; selectable scenes
@@ -51,6 +106,15 @@ and skinning LOD are pending. Explicit node/skin/clip/geometry/input limits boun
 the preview's allocations.
 
 ## Independent verification
+
+Live integration passed 20 headless tests and real-GPU CPU/reference comparisons
+with 7, 17 and 32 influences. Synthetic poses were pixel-identical; the private
+Ready and walk comparisons differed in at most three of 262,144 pixels above
+the comparison threshold. Reload cancellation/restart, stance and yaw fitting,
+frustum culling and repeated-camera caching passed on Linux D3D12 and native
+Windows. A 631-step gameplay journal was byte-identical with character art on
+and off (42,961 bytes), including unchanged inventory and authority state.
+
 
 The original, unchanged six-second F fixture has SHA-256
 `2410005918b2b3e87c157229c12debb5743d228fefee1f29cd4bccb9e14ec45f`.
@@ -70,12 +134,10 @@ Screenshots were also inspected against the author's Ready reimport view.
 Native Windows on the observed GTX 1060 3GB completed 370 frames; 298 changing
 poses averaged 2.650 ms for CPU deformation plus vertex-buffer upload, with a
 7.977 ms maximum while build work was also running. This is one preview
-character, not a full-squad frame budget. CPU caching/LOD or full-influence GPU
-skinning must precede default squad integration. The preview's white character
+character, not a full-squad frame budget. These historical CPU lab costs motivated the live GPU consumer above. The preview's white character
 comes from the fixture's neutral untextured materials. The nine original 2K body
-maps have now been received and hash-verified in private storage; their
-diffuse/specular/glossiness conventions still need an explicit renderer adapter.
-Normal-map green convention is not yet established. Licensed fixture/capture
+maps have been received and hash-verified in private storage. The live renderer
+uses the source conventions described above. Licensed fixture/capture
 files stay in ignored local storage and are not shipped in the public repository.
 
 ### Forward walk cubic seam candidate
@@ -103,10 +165,25 @@ Native Windows completed 370 frames and six wraps, with 369 changing samples
 averaging 2.426 ms for CPU deformation plus upload (3.018 ms maximum). These
 measurements apply to one neutral-material preview character. The source author
 reports that stock Blender 4.3.2 reimport loses cubic tangents; our validation
-uses the actual cubic consumer, not that reimport. Controller fit, garment
-defects, textured character rendering and gameplay playback remain pending.
+uses the actual cubic consumer, not that reimport. The runtime now fits this
+source to achieved gameplay pose and renders it with original maps; this does
+not repair source garments or establish an anatomical eye landmark.
 
 ## Checks
+
+`tests/test_character_render.c` is an explicit display check (not a headless
+CTest): CPU/GPU image comparisons cover rest/off-key/endpoint/backward seeks,
+full influence sets, nonuniform normal transforms and collapsed props. It also
+checks yaw/crouch/high pitch, the measured stock transform, read-only authority,
+camera reuse and real reload removal/insertion/cancellation/restart boundaries.
+Public synthetic seven-, seventeen- and thirty-two-weight fixtures need no
+licensed art. Live checks use the private Ready/walk install.
+
+```sh
+build/swat/portable/swat_test_character_render /path/to/synthetic.glb
+build/swat/portable/swat_test_character_render build/swat/assets/characters/walk.glb build/swat/assets/characters
+```
+
 
 ```sh
 make -C ocean/swat character-test character-lab

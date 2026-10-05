@@ -118,7 +118,10 @@ After source edits, the native launcher builds only the app being launched.
 `./swat character --asset /path/to/private/character.glb` opens the independent
 full-influence art preview, with original timing and no gameplay event commits.
 [CHARACTER_ART.md](CHARACTER_ART.md) documents controls, measured parity, cost
-and remaining character integration work.
+and the live character implementation. The ignored Ready/walk install also
+drives carbine squad bodies, first-person arms and reloads automatically in
+`./swat`, preserving every influence on the GPU. Original body maps, achieved
+stance/weapon fitting and shared camera/shadow poses are implemented.
 These overrides are forwarded across WSL interop, with paths translated where
 appropriate. Source wood/plaster tiling now follows the supplied metre scales.
 [ENVIRONMENT_MATERIALS.md](ENVIRONMENT_MATERIALS.md) records role bindings,

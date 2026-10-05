@@ -96,6 +96,7 @@ void swat_view_init(SwatView* view, bool hidden) {
     swat_environment_art_init(&view->environment);
     swat_lighting_init(&view->lighting);
     swat_weapon_art_init(&view->weapons);
+    view->characters=swat_character_runtime_open(&view->weapons);
     EnableCursor(); // Capture only after entering the game with window focus.
 }
 
@@ -144,8 +145,10 @@ static void swat_draw_object(const SwatView* view,const SwatObject* o) {
     rlPopMatrix();
 }
 
-static void swat_draw_actor(SwatView* view,const SwatActor* a) {
+static void swat_draw_actor(SwatView* view,const SwatSim* sim,int index,bool shadow) {
+    const SwatActor* a=&sim->actors[index];
     if(!a->present) return;
+    if(view && swat_character_runtime_draw(view->characters,index,shadow ? NULL : &view->lighting)) return;
     b3Pos feet = swat_body_feet_position(&a->controller.body);
     float height = a->controller.body.totalHeight;
     Color uniform = a->role == SWAT_CIVILIAN ? (Color){68,123,153,255} :
@@ -190,7 +193,8 @@ static void swat_draw_floors(const SwatView* view,const SwatSim* sim) {
         sim->config.mission==SWAT_GENERATED ? &sim->layout : NULL);
 }
 
-static void swat_draw_shadow_scene(const SwatSim* sim,bool cutaway) {
+static void swat_draw_shadow_scene(void* context,const SwatSim* sim,bool cutaway) {
+    SwatView* view=context;
     for(int i=0;i<sim->world.count;i++) {
         const SwatObject* o=&sim->world.objects[i];
         if(!o->active || o->material==SWAT_GLASS) continue;
@@ -199,7 +203,7 @@ static void swat_draw_shadow_scene(const SwatSim* sim,bool cutaway) {
         rlRotatef(o->yaw/SWAT_RAD,0,1,0); rlRotatef(o->pitch/SWAT_RAD,0,0,1);
         DrawCubeV((Vector3){0},(Vector3){o->half.x*2,o->half.y*2,o->half.z*2},WHITE); rlPopMatrix();
     }
-    if(!cutaway) for(int i=0;i<sim->actor_count;i++) swat_draw_actor(NULL,&sim->actors[i]);
+    if(!cutaway) for(int i=0;i<sim->actor_count;i++) swat_draw_actor(view,sim,i,true);
 }
 
 static void swat_begin_scene(SwatView* view,const SwatSim* sim,Camera3D camera) {
@@ -273,7 +277,7 @@ static void swat_draw_plan(SwatView* view,const SwatSim* sim) {
         if(o->material!=SWAT_GLASS) swat_draw_object(view,o);
     }
     swat_draw_floors(view,sim);
-    if(preview) for(int i=0;i<sim->actor_count;i++) swat_draw_actor(view,&sim->actors[i]);
+    if(preview) for(int i=0;i<sim->actor_count;i++) swat_draw_actor(view,sim,i,false);
     for(int i=0;i<sim->world.count;i++) if(sim->world.objects[i].material==SWAT_GLASS) swat_draw_object(view,&sim->world.objects[i]);
     DrawCylinder(swat_position(mission->staging),1.2f,1.2f,.035f,32,swat_gold);
     if(!preview) for(int i=0;i<mission->overwatch_count;i++) {
@@ -299,7 +303,7 @@ static void swat_draw_scope(SwatView* view,const SwatSim* sim,int width,int heig
         swat_begin_scene(view,sim,camera);
         for(int i=0;i<sim->world.count;i++) if(sim->world.objects[i].material!=SWAT_GLASS) swat_draw_object(view,&sim->world.objects[i]);
         swat_draw_floors(view,sim);
-        for(int i=0;i<sim->actor_count;i++) swat_draw_actor(view,&sim->actors[i]);
+        for(int i=0;i<sim->actor_count;i++) swat_draw_actor(view,sim,i,false);
         for(int i=0;i<sim->world.count;i++) if(sim->world.objects[i].material==SWAT_GLASS) swat_draw_object(view,&sim->world.objects[i]);
         swat_end_scene(view); return;
     }
@@ -317,7 +321,7 @@ static void swat_draw_scope(SwatView* view,const SwatSim* sim,int width,int heig
     swat_begin_scene(view,sim,camera);
     for(int i=0;i<sim->world.count;i++) if(sim->world.objects[i].material!=SWAT_GLASS) swat_draw_object(view,&sim->world.objects[i]);
     swat_draw_floors(view,sim);
-    for(int i=0;i<sim->actor_count;i++) if(i!=actor) swat_draw_actor(view,&sim->actors[i]);
+    for(int i=0;i<sim->actor_count;i++) if(i!=actor) swat_draw_actor(view,sim,i,false);
     swat_draw_projectiles(sim);
     for(int i=0;i<sim->world.count;i++) if(sim->world.objects[i].material==SWAT_GLASS) swat_draw_object(view,&sim->world.objects[i]);
     for(int i=0;i<sim->actor_count;i++) if(sim->tick-sim->actors[i].last_shot_tick<=3)
@@ -339,6 +343,10 @@ static void swat_draw_scope(SwatView* view,const SwatSim* sim,int width,int heig
 
 static void swat_draw_weapon(SwatView* view,const SwatSim* s,const SwatActor* a,const SwatController* c) {
     SwatPose pose=swat_pose(c,&a->arsenal);
+    if(swat_character_runtime_draw_first_person(view->characters,view->actor,&view->lighting,a,c)) {
+        if(s->tick-a->last_shot_tick<=2) DrawSphere(swat_position(pose.muzzle),.035f,(Color){255,216,112,230});
+        return;
+    }
     const SwatWeaponDef* definition=swat_arsenal_def(&a->arsenal,a->arsenal.active);
     if(!swat_weapon_art_draw(&view->weapons,&view->lighting,&a->arsenal,&pose)) {
         b3Vec3 axis=swat_normalize(b3SubPos(pose.muzzle,pose.shoulder));
@@ -362,7 +370,8 @@ void swat_view_draw(SwatView* view, const SwatSim* s, bool policy, float vertica
     Vector3 light_eye={11,1.6f,0};
     if(view->actor>=0 && view->actor<s->actor_count && s->actors[view->actor].present)
         light_eye=swat_position(swat_controller_eye(&s->actors[view->actor].controller));
-    swat_lighting_prepare(&view->lighting,s,light_eye,view->planning && !view->plan_preview,swat_draw_shadow_scene);
+    swat_character_runtime_prepare(view->characters,s);
+    swat_lighting_prepare_context(&view->lighting,s,light_eye,view->planning && !view->plan_preview,swat_draw_shadow_scene,view);
     if(view->planning) { swat_draw_plan(view,s); return; }
     if(view->actor<0 || view->actor>=s->actor_count || !s->actors[view->actor].present) {
         ClearBackground((Color){25,37,47,255});
@@ -409,7 +418,7 @@ void swat_view_draw(SwatView* view, const SwatSim* s, bool policy, float vertica
     for (int i=0;i<s->world.count;i++) if (s->world.objects[i].material != SWAT_GLASS)
         swat_draw_object(view,&s->world.objects[i]);
     swat_draw_floors(view,s);
-    for (int i=0;i<s->actor_count;i++) if(i!=view->actor) swat_draw_actor(view,&s->actors[i]);
+    for (int i=0;i<s->actor_count;i++) if(i!=view->actor) swat_draw_actor(view,s,i,false);
     swat_draw_projectiles(s);
     for (int i=0;i<s->world.count;i++) if (s->world.objects[i].material == SWAT_GLASS)
         swat_draw_object(view,&s->world.objects[i]);
@@ -499,6 +508,7 @@ void swat_view_close(SwatView* view) {
         if(view->camera_target.id) UnloadRenderTexture(view->camera_target);
         if(view->hud_font.texture.id && view->hud_font.texture.id!=GetFontDefault().texture.id) UnloadFont(view->hud_font);
         swat_environment_art_close(&view->environment);
+        swat_character_runtime_close(view->characters);
         swat_weapon_art_close(&view->weapons);
         swat_lighting_close(&view->lighting);
         CloseWindow();

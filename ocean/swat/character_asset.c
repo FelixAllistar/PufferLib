@@ -30,6 +30,7 @@ struct SwatCharacterAsset {
     ArtSkin* skins;
     ArtMesh* meshes;
     double* durations;
+    bool pose_dirty;
 };
 static bool fail(char* error,size_t capacity,const char* reason) { if(error && capacity) snprintf(error,capacity,"%s",reason); return false; }
 static void identity(float* m) { memset(m,0,16*sizeof(float)); m[0]=m[5]=m[10]=m[15]=1; }
@@ -167,6 +168,10 @@ static bool load_mesh(SwatCharacterAsset* asset,ArtMesh* mesh,cgltf_node* node,i
             asset->info.vertices_over_four+=active>4;
         }
     }
+    v->joint_ids=mesh->joints; v->joint_weights=mesh->weights;
+    v->joint_nodes=mesh->skin>=0 ? asset->skins[mesh->skin].nodes : NULL;
+    v->palette=mesh->skin>=0 ? asset->skins[mesh->skin].palette : asset->nodes[v->node].world;
+    v->palette_count=mesh->skin>=0 ? asset->skins[mesh->skin].count : 1;
     v->base_color[0]=v->base_color[1]=v->base_color[2]=v->base_color[3]=1; v->roughness=1; v->metalness=1;
     if(p->material) {
         const cgltf_material* material=p->material;
@@ -310,7 +315,24 @@ static bool normal_transform(float* out,const float* m,const float* input) {
     double length=sqrt(x*x+y*y+z*z); if(!isfinite(length) || length<1e-14) { out[0]=out[1]=out[2]=0; return false; }
     out[0]=(float)(x/length); out[1]=(float)(y/length); out[2]=(float)(z/length); return true;
 }
-bool swat_character_sample(SwatCharacterAsset* asset,const char* clip_name,double time) {
+static void refresh_pose(SwatCharacterAsset* asset) {
+    asset->pose_dirty=false;
+    for(int i=0;i<asset->info.skins;i++) {
+        ArtSkin* skin=&asset->skins[i]; for(int j=0;j<skin->count;j++) multiply(skin->palette+j*16,asset->nodes[skin->nodes[j]].world,skin->inverse+j*16);
+    }
+    for(int k=0;k<asset->info.meshes;k++) {
+        SwatArtMesh* v=&asset->meshes[k].view; v->visible=false;
+        // Conservative visibility: zero-scale props stay collapsed. The GPU
+        // handles singular blended vertices identically to the CPU consumer.
+        for(int j=0;j<(v->influences ? v->vertices*v->influences : 1);j++) {
+            if(v->influences && v->joint_weights[j]==0) continue;
+            const float* m=v->palette+(v->influences ? v->joint_ids[j]*16 : 0);
+            double det=(double)m[0]*(m[5]*m[10]-m[9]*m[6])-(double)m[4]*(m[1]*m[10]-m[9]*m[2])+(double)m[8]*(m[1]*m[6]-m[5]*m[2]);
+            if(fabs(det)>1e-14) { v->visible=true; break; }
+        }
+    }
+}
+bool swat_character_sample_pose(SwatCharacterAsset* asset,const char* clip_name,double time) {
     if(!asset || !isfinite(time)) return false;
     cgltf_animation* clip=NULL;
     if(clip_name) {
@@ -333,9 +355,11 @@ bool swat_character_sample(SwatCharacterAsset* asset,const char* clip_name,doubl
         if(n->parent>=0) multiply(n->world,asset->nodes[n->parent].world,local); else memcpy(n->world,local,sizeof(local));
         if(!finite_values(n->world,16)) return false;
     }
-    for(int i=0;i<asset->info.skins;i++) {
-        ArtSkin* skin=&asset->skins[i]; for(int j=0;j<skin->count;j++) multiply(skin->palette+j*16,asset->nodes[skin->nodes[j]].world,skin->inverse+j*16);
-    }
+    refresh_pose(asset); return true;
+}
+bool swat_character_skin(SwatCharacterAsset* asset) {
+    if(!asset) return false;
+    if(asset->pose_dirty) refresh_pose(asset);
     for(int k=0;k<asset->info.meshes;k++) {
         ArtMesh* mesh=&asset->meshes[k]; SwatArtMesh* v=&mesh->view; v->visible=false;
         for(int j=0;j<v->vertices;j++) {
@@ -356,6 +380,34 @@ bool swat_character_sample(SwatCharacterAsset* asset,const char* clip_name,doubl
     }
     return true;
 }
+bool swat_character_sample(SwatCharacterAsset* asset,const char* clip_name,double time) {
+    return swat_character_sample_pose(asset,clip_name,time) && swat_character_skin(asset);
+}
+bool swat_character_transform_node(SwatCharacterAsset* asset,int node,const float delta[16]) {
+    if(!asset || node<0 || node>=asset->info.nodes || !affine(delta)) return false;
+    for(int i=0;i<asset->info.nodes;i++) {
+        int parent=i;
+        while(parent>=0 && parent!=node) parent=asset->nodes[parent].parent;
+        if(parent==node) { multiply(asset->nodes[i].world,delta,asset->nodes[i].world); if(!affine(asset->nodes[i].world)) return false; }
+    }
+    asset->pose_dirty=true; return true;
+}
+bool swat_character_finalize_pose(SwatCharacterAsset* asset) {
+    if(!asset) return false;
+    if(asset->pose_dirty) refresh_pose(asset);
+    return true;
+}
+bool swat_character_capture_pose(const SwatCharacterAsset* asset,float* matrices,size_t count) {
+    if(!asset || !matrices || count!=(size_t)asset->info.nodes*16) return false;
+    for(int i=0;i<asset->info.nodes;i++) memcpy(matrices+i*16,asset->nodes[i].world,16*sizeof(float));
+    return true;
+}
+bool swat_character_restore_pose(SwatCharacterAsset* asset,const float* matrices,size_t count) {
+    if(!asset || !matrices || count!=(size_t)asset->info.nodes*16) return false;
+    for(int i=0;i<asset->info.nodes;i++) if(!affine(matrices+i*16)) return false;
+    for(int i=0;i<asset->info.nodes;i++) memcpy(asset->nodes[i].world,matrices+i*16,16*sizeof(float));
+    refresh_pose(asset); return true;
+}
 SwatArtInfo swat_character_info(const SwatCharacterAsset* asset) { return asset ? asset->info : (SwatArtInfo){0}; }
 const SwatArtMesh* swat_character_mesh(const SwatCharacterAsset* asset,int index) { return asset && index>=0 && index<asset->info.meshes ? &asset->meshes[index].view : NULL; }
 const char* swat_character_clip_name(const SwatCharacterAsset* asset,int clip) { return asset && clip>=0 && clip<asset->info.clips ? asset->source->animations[clip].name : NULL; }
@@ -366,4 +418,7 @@ int swat_character_find_node(const SwatCharacterAsset* asset,const char* name) {
     int found=-1;
     for(int i=0;i<asset->info.nodes;i++) if(asset->source->nodes[i].name && !strcmp(asset->source->nodes[i].name,name)) { if(found>=0) return -1; found=i; }
     return found;
+}
+const char* swat_character_node_name(const SwatCharacterAsset* asset,int node) {
+    return asset && node>=0 && node<asset->info.nodes ? asset->source->nodes[node].name : NULL;
 }

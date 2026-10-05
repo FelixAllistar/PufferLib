@@ -10,6 +10,7 @@ typedef struct SwatLightingProgram {
     int pbr,normal_map,roughness,metalness;
     int environment,environment_normal,environment_normal_map,environment_roughness_map;
     int environment_size,environment_tile;
+    int skinning,skin_sets,skin_palette,skin_influences,emission,normal_green;
 } SwatLightingProgram;
 typedef struct SwatLighting {
     bool initialized,enabled,prepared;
@@ -24,13 +25,18 @@ typedef struct SwatLighting {
     unsigned int surface_normal,surface_roughness;
 } SwatLighting;
 typedef void (*SwatShadowScene)(const SwatSim* sim,bool cutaway);
+typedef void (*SwatShadowSceneContext)(void* context,const SwatSim* sim,bool cutaway);
 
 void swat_lighting_init(SwatLighting* light);
+// Same exact full-influence vertex path for unlit and shadow mesh draws.
+Shader swat_lighting_skin_shader(void);
 void swat_lighting_close(SwatLighting* light);
 // Call outside any 3D/texture mode. Authority is read only; doors/destruction
 // invalidate immediately, moving silhouettes refresh at most every four ticks.
 void swat_lighting_prepare(SwatLighting* light,const SwatSim* sim,Vector3 eye,
                            bool cutaway,SwatShadowScene draw);
+void swat_lighting_prepare_context(SwatLighting* light,const SwatSim* sim,Vector3 eye,
+                           bool cutaway,SwatShadowSceneContext draw,void* context);
 // Called inside BeginMode3D; the shader never touches text or HUD compositing.
 void swat_lighting_begin(SwatLighting* light,SwatEnvironmentArt* art,const SwatWorld* world,Vector3 camera);
 void swat_lighting_end(SwatLighting* light,SwatEnvironmentArt* art);

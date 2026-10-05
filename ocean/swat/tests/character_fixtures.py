@@ -12,7 +12,7 @@ def encode(document, binary):
     return struct.pack('<III', 0x46546C67, 2, 28+len(text)+len(binary)) + struct.pack('<II',len(text),0x4E4F534A)+text+struct.pack('<II',len(binary),0x004E4942)+binary
 
 
-def synthetic(mode='STEP', malformed=None):
+def synthetic(mode='STEP', malformed=None, influences=7):
     d={'asset':{'version':'2.0'}, 'bufferViews':[], 'accessors':[], 'nodes':[], 'skins':[], 'scenes':[{'nodes':[0,7,8,9]}], 'scene':0}
     b=bytearray()
     def add(values, kind, component=5126, normalized=False):
@@ -34,9 +34,15 @@ def synthetic(mode='STEP', malformed=None):
         inverse.extend([1,0,0,0,0,1,0,0,0,0,1,0,0,-.1*j,0,1])
     ibm=add(inverse,'MAT4'); d['skins']=[{'joints':order,'inverseBindMatrices':ibm}]
     p=add([0,0,0,1,0,0,0,1,0],'VEC3'); n=add([1/math.sqrt(2),1/math.sqrt(2),0]*3,'VEC3')
-    j0=add([0,1,2,3]*3,'VEC4',5121); j1=add([4,5,6,0]*3,'VEC4',5121)
-    w0=add([1/7]*4*3,'VEC4'); w1=add(([1/7]*3+[0])*3,'VEC4'); ix=add([0,1,2],'SCALAR',5123)
-    d['meshes']=[{'primitives':[{'attributes':{'POSITION':p,'NORMAL':n,'JOINTS_0':j0,'WEIGHTS_0':w0,'JOINTS_1':j1,'WEIGHTS_1':w1},'indices':ix}]}, {'primitives':[{'attributes':{'POSITION':p,'NORMAL':n},'indices':ix}]}]
+    assert 1<=influences<=32
+    attributes={'POSITION':p,'NORMAL':n}; w1=None
+    for group in range((influences+3)//4):
+        attributes[f'JOINTS_{group}']=add([(group*4+k)%7 for k in range(4)]*3,'VEC4',5121)
+        weights=add([1/influences if group*4+k<influences else 0 for k in range(4)]*3,'VEC4')
+        attributes[f'WEIGHTS_{group}']=weights
+        if group==1: w1=weights
+    ix=add([0,1,2],'SCALAR',5123)
+    d['meshes']=[{'primitives':[{'attributes':attributes,'indices':ix}]}, {'primitives':[{'attributes':{'POSITION':p,'NORMAL':n},'indices':ix}]}]
     times=add([0,1],'SCALAR'); scales=add([0,0,0,1,1,1],'VEC3'); move=add([0,0,0,0,0,2],'VEC3'); rotate=add([0,0,0,1,0,0,1,0],'VEC4')
     cubic=add([0,0,0,0,0,0,2,0,0,0,0,0,1,0,0,0,0,0],'VEC3')
     d['animations']=[{'name':'Fixture','samplers':[{'input':times,'output':scales,'interpolation':mode},{'input':times,'output':move,'interpolation':'LINEAR'},{'input':times,'output':rotate,'interpolation':'LINEAR'},{'input':times,'output':cubic,'interpolation':'CUBICSPLINE'}], 'channels':[{'sampler':0,'target':{'node':8,'path':'scale'}},{'sampler':1,'target':{'node':8,'path':'translation'}},{'sampler':2,'target':{'node':1,'path':'rotation'}},{'sampler':3,'target':{'node':2,'path':'translation'}}]}]

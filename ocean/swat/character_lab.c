@@ -7,7 +7,7 @@
 #include <limits.h>
 static void empty(const SwatSim* sim,bool cutaway) { (void)sim; (void)cutaway; }
 int main(int argc,char** argv) {
-    const char *asset=NULL,*capture=NULL,*clip=NULL; double time=0; int frames=0; bool playing=false,looping=false; bool valid=true;
+    const char *asset=NULL,*capture=NULL,*clip=NULL; double time=0; int frames=0; bool playing=false,looping=false,gpu=false; bool valid=true;
     for(int i=1;i<argc;i++) {
         if(!strcmp(argv[i],"--asset") && ++i<argc) asset=argv[i];
         else if(!strcmp(argv[i],"--capture") && ++i<argc) capture=argv[i];
@@ -16,12 +16,13 @@ int main(int argc,char** argv) {
         else if(!strcmp(argv[i],"--frames") && ++i<argc) { char* end; long value=strtol(argv[i],&end,10); valid=valid && end!=argv[i] && !*end && value>=0 && value<=36000; frames=valid ? (int)value : 0; }
         else if(!strcmp(argv[i],"--play")) playing=true;
         else if(!strcmp(argv[i],"--loop")) looping=true;
-        else { fprintf(stderr,"usage: character_lab --asset PRIVATE.glb [--clip EXACT_NAME] [--time SEC] [--play] [--loop] [--frames COUNT] [--capture PNG]\n"); return 2; }
+        else if(!strcmp(argv[i],"--gpu")) gpu=true;
+        else { fprintf(stderr,"usage: character_lab --asset PRIVATE.glb [--clip EXACT_NAME] [--time SEC] [--play] [--loop] [--gpu] [--frames COUNT] [--capture PNG]\n"); return 2; }
     }
     if(!valid || !asset || !isfinite(time) || frames<0 || frames>36000) return 2;
     SetConfigFlags(FLAG_MSAA_4X_HINT|(capture ? FLAG_WINDOW_HIDDEN : 0)); InitWindow(1200,900,"SWAT character art lab");
     if(!IsWindowReady()) return 1;
-    SwatCharacterView view={0}; char error[256]; if(!swat_character_view_init(&view,asset,error,sizeof(error))) { fprintf(stderr,"Character: %s\n",error); CloseWindow(); return 1; }
+    SwatCharacterView view={0}; char error[256]; if(!(gpu ? swat_character_view_init_gpu(&view,asset,error,sizeof(error)) : swat_character_view_init(&view,asset,error,sizeof(error)))) { fprintf(stderr,"Character: %s\n",error); CloseWindow(); return 1; }
     if(!clip) clip=swat_character_clip_name(view.asset,0);
     if(!swat_character_view_sample(&view,clip,time)) { fprintf(stderr,"Unknown clip or invalid pose: %s\n",clip ? clip : "rest"); swat_character_view_close(&view); CloseWindow(); return 1; }
     SwatArtInfo info=swat_character_info(view.asset); int clip_index=-1;
