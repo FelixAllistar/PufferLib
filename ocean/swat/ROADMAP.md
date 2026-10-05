@@ -75,7 +75,7 @@ is deliberately a general engine improvement.
   The coherent material family now has separate metric floor/frame/door bindings
   and signed OpenGL normal/roughness shading; authored fixtures and GI remain.
 - Optional private rigid-carbine import with measured authority/render alignment,
-  authored normal strength, revised R2 finish/outer sight ring and staged
+  authored normal strength, revised R3 finish/contours and rounded sight ring and staged
   magazine visibility in both rigid and animated character rendering.
 - Verified solo mission checkpoint/restore and journal continuation, with F5/F9
   input and `--resume`; co-op persistence remains pending.
@@ -99,8 +99,11 @@ carbine support-thumb wrap in hip/ADS and world presentation, releasing it for
 authored reload handling; the frozen C/C1 grip studies remain diagnostics.
 Retreat now uses its own original one-second backward cycle, paced by actual
 travel at 1.921261449 m per cycle, with continuous phase and the forward fallback
-when the optional asset is absent. R2 now supplies a rounder outer rear sight
-and restrained wear without changing the inner aperture or measured contacts.
+when the optional asset is absent. R3 retains the rounded outer rear sight and softens selected stalk/receiver
+edges with restrained wear, without changing the opening or measured contacts.
+First-person reloads now retain the authored working carry and frame visible
+magazine handling; only forearms/gloves enter the camera pass. The support-thumb
+correction is eased to avoid the oversized curved glove silhouette.
 Remaining palm/finger contact and other rifle details need art iteration. Guns
 have mechanical profiles and canonical pose targets. The local rigid carbine
 uses authored normal strength, measured bindings and reload magazine visibility; see

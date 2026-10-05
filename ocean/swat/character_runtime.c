@@ -124,7 +124,7 @@ bool swat_character_support_grip(SwatCharacterAsset* asset,float amount) {
     for(int i=0;i<3;i++) {
         Vector3 direction=Vector3Subtract(Vector3Transform(directions[i],gun),origin(gun));
         Quaternion rotation=QuaternionFromVector3ToVector3(Vector3Normalize(sampled[i]),Vector3Normalize(direction));
-        direction=Vector3RotateByQuaternion(sampled[i],QuaternionSlerp(QuaternionIdentity(),rotation,amount));
+        direction=Vector3RotateByQuaternion(sampled[i],QuaternionSlerp(QuaternionIdentity(),rotation,amount*.3f));
         Vector3 pivot=origin(node(asset,names[i]));
         if(!pivot_rotate(asset,names[i],Vector3Subtract(origin(node(asset,names[i+1])),pivot),direction,pivot)) return false;
     }
@@ -185,6 +185,10 @@ SwatCharacterRuntime* swat_character_runtime_open(const SwatWeaponArt* weapons) 
         valid=valid && (i==SWAT_CHARACTER_CROUCH_READY ? duration==0 : duration>0);
         if(!valid) { if(i<2) goto failed; swat_character_view_close(&runtime->banks[i]); }
     }
+    // A fixed entry frame preserves the authored rifle turn/translation during
+    // reload. Inverting the current frame would cancel that motion every draw.
+    if(!swat_character_view_sample(&runtime->banks[0],clips[0],0)) goto failed;
+    runtime->reload_inverse_gun=MatrixInvert(compose(node(runtime->banks[0].asset,"Prop_Rifle"),matrix(rifle_joint)));
     runtime->diffuse[0]=texture(directory,"Ch15_1001_Diffuse.png"); runtime->diffuse[1]=texture(directory,"Ch15_1002_Diffuse.png");
     runtime->emissive=texture(directory,"Ch15_1002_Emissive.png");
     const char* finish=getenv("SWAT_CHARACTER_FINISH");
@@ -272,7 +276,8 @@ void swat_character_runtime_prepare(SwatCharacterRuntime* runtime,const SwatSim*
         }
         if(!cache->matrices || !cache->first_person_matrices ||
            !swat_character_capture_pose(asset,cache->first_person_matrices,count)) continue;
-        cache->first_person_inverse_gun=MatrixInvert(compose(node(asset,"Prop_Rifle"),matrix(rifle_joint)));
+        cache->first_person_inverse_gun=reload ? runtime->reload_inverse_gun :
+            MatrixInvert(compose(node(asset,"Prop_Rifle"),matrix(rifle_joint)));
         Matrix heading=MatrixRotateY(-actor->controller.yaw);
         Matrix root=compose(MatrixTranslate(feet.x,feet.y,feet.z),compose(heading,matrix(bank<2 ? fits[bank] : movement_fits[bank-2])));
         float turn=0;
@@ -328,7 +333,7 @@ void swat_character_runtime_prepare(SwatCharacterRuntime* runtime,const SwatSim*
             if(strstr(source->node_name,"sleeve")) visible=false;
             cache->visible[m]=(unsigned char)visible;
         }
-        cache->root=root; cache->feet=feet; cache->source_time=time; cache->bank=bank; cache->tick=sim->tick; cache->episode=sim->episode; cache->signature=signature; cache->valid=true;
+        cache->root=root; cache->feet=feet; cache->source_time=time; cache->bank=bank; cache->tick=sim->tick; cache->episode=sim->episode; cache->signature=signature; cache->valid=true; cache->reloading=reload;
         runtime->preparations++;
         double elapsed=GetTime()-started; runtime->prepare_seconds+=elapsed; runtime->prepare_max_seconds=fmax(runtime->prepare_max_seconds,elapsed);
     }
@@ -353,7 +358,32 @@ bool swat_character_runtime_draw_first_person(SwatCharacterRuntime* runtime,int 
     // passes never resample a clip or advance its phase.
     if(!swat_character_restore_pose(view->asset,cache->first_person_matrices,cache->count)) return false;
     memcpy(view->visible,cache->visible,(size_t)view->model.meshCount);
-    Matrix root=compose(swat_weapon_art_transform(presentation),cache->first_person_inverse_gun);
+    SwatPose anchor=*presentation;
+    if(cache->reloading) {
+        // The generic busy pose points 28 degrees down and hides the whole
+        // assembly at the weapon-view FOV. Let the source working carry supply
+        // its own motion, relative to the camera's neutral holding frame.
+        anchor.weapon_forward=anchor.forward; anchor.weapon_up=anchor.up;
+        float enter=Clamp((float)cache->source_time/.7f,0,1),leave=Clamp((6-(float)cache->source_time)/1.05f,0,1);
+        float carry=enter*enter*(3-2*enter)*leave*leave*(3-2*leave);
+        // Frame the measured seated-magazine centre at 62% across / 65%
+        // down, 0.60 m from the eye. Use the current projection so weapon-size
+        // settings cannot push the magazine handling out of the viewport.
+        // Retain the source rifle rotation and all relative hand/prop motion.
+        Matrix source_gun=compose(node(view->asset,"Prop_Rifle"),matrix(rifle_joint));
+        Vector3 centre=Vector3Transform((Vector3){.4214302f,-.0708817f,0},
+            compose(cache->first_person_inverse_gun,source_gun));
+        Matrix projection=rlGetMatrixProjection();
+        float tangent=1/projection.m5,aspect=projection.m5/projection.m0;
+        b3Vec3 screen=swat_add(swat_mul(anchor.forward,.60f),
+            swat_add(swat_mul(anchor.right,.24f*.60f*tangent*aspect),swat_mul(anchor.up,-.30f*.60f*tangent)));
+        b3Vec3 local=swat_add(swat_mul(anchor.forward,centre.x),
+            swat_add(swat_mul(anchor.up,centre.y),swat_mul(anchor.right,centre.z)));
+        b3Pos framed=b3OffsetPos(anchor.eye,b3Sub(screen,local));
+        b3Pos neutral=b3OffsetPos(anchor.shoulder,swat_mul(anchor.up,.04f));
+        anchor.shoulder=b3OffsetPos(neutral,swat_mul(b3SubPos(framed,neutral),carry));
+    }
+    Matrix root=compose(swat_weapon_art_transform(&anchor),cache->first_person_inverse_gun);
     swat_character_view_draw_first_person(view,lighting,root);
     // Shared banks may be used by a subsequent feed/world draw in this frame.
     bool restored=swat_character_restore_pose(view->asset,cache->matrices,cache->count);

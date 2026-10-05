@@ -70,8 +70,9 @@ times; worst vertex difference is 0.000000827 m. GPU checks cover held zero-dura
 crouch, lateral/stance selection, actual-displacement phase, missing-bank fallback,
 abdomen length, physical rifle placement, reload commits and immutable authority.
 
-The normal controlled body is omitted. First-person rendering selects arm
-triangles from the original weights, along with the rifle and currently owned
+The normal controlled body is omitted. First-person rendering selects forearm/glove
+triangles from the original weights, excluding upper shoulders that otherwise
+sweep through the camera during the authored working carry, along with the rifle and currently owned
 magazine representations. Local unacknowledged look is a display correction
 applied to those meshes only. Other live carbine officers use the full body;
 other weapon/role and incapacitated/restrained states retain their existing
@@ -97,9 +98,11 @@ finger contact defects remain source limitations.
 The frozen October 5 grip handoff is private diagnostic evidence, archive
 SHA-256 `9a74320a3e2c2c8b6efb3216ebf90f4990bf73f38a5f54c5971215370cb94d8f`.
 `ENGINE_THUMB_FRAME_HANDOFF.json` supplies the original thumb joint basis and
-measured rifle frame; its C/C1 poses are not applied. The engine now curls only
-the three left thumb joints around the carbine handguard's outer upper edge in
-that measured frame. Wrist, right hand, other fingers, source weights, segment
+measured rifle frame; its C/C1 poses are not applied. The engine applies a modest correction to the three left thumb joints in
+that measured frame. Rotation strength is now capped at 30% of the original
+wrap target: the stronger correction made the thumb look oversized and bent
+the glove web into a tall curved silhouette. This keeps the thumb alongside
+the fore-end rather than stretching its skin upward. Wrist, right hand, other fingers, source weights, segment
 lengths and rifle geometry remain unchanged. This correction is captured before
 world arm IK, so first-person, world, feeds and shadows share the grip. It fades
 out during the first 0.12 authored seconds of a reload, remains completely
@@ -166,6 +169,26 @@ and the wheel to zoom. Playback clamps at the original clip end by default.
 scrubbing still clamps so the endpoint can be inspected. Preview wrapping
 produces no inventory, visibility-policy or gameplay-event commits. `--clip` takes the exact name. Capture exits after three
 frames; `--frames` bounds playback. These operations change no gameplay state.
+
+
+First-person reloads use the fixed Ready entry rifle frame, preserving the
+source rifle turn and hand/prop motion. Inverting each current sampled rifle
+frame had cancelled its motion; applying the generic 28-degree busy tilt then
+hid the entire animation below the weapon-view viewport. The camera adapter
+now lets the authored working carry provide the tilt and smoothly frames the
+measured seated-magazine centre at 62% across / 65% down, 0.60 m from the eye.
+It uses the current projection so weapon-size/position settings retain visible
+magazine handling. Ordinary hip/ADS framing and physical gun authority are
+unchanged; world/camera poses are restored after each first-person draw.
+
+The explicit GPU check now asserts visible geometry at seven reload stages,
+and isolates the fresh magazine during carry/insertion to verify it remains
+on screen at both slider extremes and while holding aim. Source thumb handling,
+magazine removal/insertion ticks and cancellation/restart checks remain exact.
+The current tests pass on both WSLg/D3D12 and native GTX 1060. All 21 headless
+checks pass. A bounded CPU check finds no rifle penetration among 329 original
+thumb skin vertices/triangle-centroid samples at the eased 30% correction, with
+minimum sampled gap 0.25683 mm; it does not establish continuous clearance.
 
 ## Supported data
 

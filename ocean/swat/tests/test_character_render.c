@@ -97,17 +97,17 @@ static void grip_check(SwatCharacterRuntime* runtime,SwatLighting* light) {
             Vector3 tip=Vector3Transform(previous_new,inverse);
             if(amounts[step]==0) assert(!memcmp(source,corrected,count*sizeof(float)));
             if(amounts[step]==1) {
-                // It must actually wrap up and across the outside edge rather
-                // than merely change quaternion values along the original axis.
-                assert(tip.x<.565f && tip.y>.07f && tip.z>-.03f && tip.z<-.016f);
+                // Keep the eased thumb alongside the fore-end, below the tall
+                // former wrap silhouette, while retaining the source wrist/root.
+                assert(tip.x>.60f && tip.x<.61f && tip.y>.05f && tip.y<.06f && tip.z>-.032f && tip.z<-.025f);
                 assert(swat_character_skin(asset)); // all deformed vertices/normals finite
                 printf("Grip bank=%d thumb tip=(%.6f,%.6f,%.6f), original bone lengths retained\n",bank,tip.x,tip.y,tip.z);
             }
-            if(bank==0 && (step==0 || step==3) && getenv("SWAT_CHARACTER_TEST_CAPTURES")) {
+            if(bank==0 && getenv("SWAT_CHARACTER_TEST_CAPTURES")) {
                 const Vector3 eyes[]={{.57f,.14f,-.30f},{.56f,.14f,.30f},{.56f,-.28f,-.05f}};
                 for(int angle=0;angle<3;angle++) {
                     Image image=frame(view,light,(Camera3D){eyes[angle],{.55f,.025f,0},{0,1,0},35,CAMERA_PERSPECTIVE},inverse);
-                    ExportImage(image,TextFormat("%s/grip-%s-%d.png",getenv("SWAT_CHARACTER_TEST_CAPTURES"),step ? "wrap" : "source",angle)); UnloadImage(image);
+                    ExportImage(image,TextFormat("%s/grip-%s-%d.png",getenv("SWAT_CHARACTER_TEST_CAPTURES"),step==0 ? "source" : step==3 ? "wrap" : step==1 ? "quarter" : "half",angle)); UnloadImage(image);
                 }
             }
         }
@@ -420,8 +420,33 @@ static void runtime_check(const char* directory,SwatLighting* light) {
         }
         if(elapsed==duration/4) assert(fabs(time-.88)<1e-7 && !weapon->magazine_seated);
         if(elapsed==2*duration/3) assert(fabs(time-3.65)<1e-7 && weapon->magazine_seated);
-        if(elapsed==duration/4 || elapsed==2*duration/3) {
-            Image image=first_person_frame(runtime,sim,light,1.7f,-.055f,.075f); UnloadImage(image);
+        if(elapsed==1 || elapsed==duration/8 || elapsed==duration/4 || elapsed==duration/2 || elapsed==2*duration/3 || elapsed==5*duration/6 || elapsed==duration-1) {
+            Image image=first_person_frame(runtime,sim,light,1.7f,-.055f,.075f);
+            if(getenv("SWAT_CHARACTER_TEST_CAPTURES")) ExportImage(image,TextFormat("%s/reload-%03d.png",getenv("SWAT_CHARACTER_TEST_CAPTURES"),elapsed));
+            Color* pixels=LoadImageColors(image); int coverage=0;
+            for(int p=0;p<image.width*image.height;p++) coverage+=pixels[p].r+pixels[p].g+pixels[p].b>0;
+            printf("Reload elapsed=%d source=%.3f coverage=%d\n",elapsed,time,coverage);
+            assert(coverage>960*540/30); // previously every stage was entirely offscreen
+            UnloadImageColors(pixels); UnloadImage(image);
+            assert(!memcmp(before,sim,sizeof(*before)));
+        }
+        if(elapsed==duration/2 || elapsed==2*duration/3) {
+            // Isolate the actual carried/seated fresh magazine. A moving gun
+            // alone cannot establish that the player sees magazine handling.
+            SwatCharacterActorPose* cache=&runtime->actors[0]; SwatCharacterView* view=&runtime->banks[cache->bank];
+            unsigned char saved[SWAT_CHARACTER_MESHES]; memcpy(saved,cache->visible,sizeof(saved));
+            for(int m=0;m<view->model.meshCount;m++) cache->visible[m]=saved[m] && !strcmp(swat_character_mesh(view->asset,m)->node_name,"Fresh magazine");
+            const float settings[][3]={{1.7f,-.055f,.075f},{1,-.10f,-.08f},{2.4f,.10f,.12f}};
+            for(int setting=0;setting<3;setting++) {
+                actor->controller.ads=setting==2; // also reload while still holding aim
+                Image image=first_person_frame(runtime,sim,light,settings[setting][0],settings[setting][1],settings[setting][2]);
+                Color* pixels=LoadImageColors(image); int coverage=0;
+                for(int p=0;p<image.width*image.height;p++) coverage+=pixels[p].r+pixels[p].g+pixels[p].b>0;
+                printf("Reload fresh magazine elapsed=%d setting=%d pixels=%d\n",elapsed,setting,coverage); fflush(stdout);
+                assert(coverage>200);
+                UnloadImageColors(pixels); UnloadImage(image);
+            }
+            actor->controller.ads=0; memcpy(cache->visible,saved,sizeof(saved));
             assert(!memcmp(before,sim,sizeof(*before)));
         }
     }

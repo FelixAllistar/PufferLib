@@ -18,11 +18,12 @@ typedef struct SwatCharacterActorPose {
     double distance,phase,source_time;
     int tick,episode,bank;
     uint64_t signature;
-    bool valid;
+    bool valid,reloading;
     unsigned char visible[SWAT_CHARACTER_MESHES];
 } SwatCharacterActorPose;
 typedef struct SwatCharacterRuntime {
     SwatCharacterView banks[SWAT_CHARACTER_BANKS];
+    Matrix reload_inverse_gun; // Ready entry frame; retain authored working carry.
     Texture2D diffuse[2],normal[2],specular[2],gloss[2],emissive,orm;
     SwatCharacterActorPose actors[SWAT_MAX_ACTORS];
     unsigned int preparations,draws;

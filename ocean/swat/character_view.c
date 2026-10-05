@@ -53,11 +53,13 @@ bool swat_character_view_init_gpu(SwatCharacterView* view,const char* path,char*
         UpdateMeshBuffer(*mesh,0,mesh->vertices,mesh->vertexCount*3*(int)sizeof(float),0);
         UpdateMeshBuffer(*mesh,2,mesh->normals,mesh->vertexCount*3*(int)sizeof(float),0);
         if(swat_character_body_mesh(source->node_name) && mesh->indices && source->influences) {
+            // First person keeps forearms/gloves; upper shoulders otherwise
+            // sweep through the camera in the source working-carry reload.
             float* arm_weights=calloc((size_t)mesh->vertexCount,sizeof(float)); if(!arm_weights) goto failed;
             for(int j=0;j<mesh->vertexCount;j++) for(int w=0;w<source->influences;w++) {
                 size_t at=(size_t)j*source->influences+w; if(!source->joint_weights[at]) continue;
                 const char* name=swat_character_node_name(view->asset,source->joint_nodes[source->joint_ids[at]]);
-                if(name && (strstr(name,"Arm") || strstr(name,"Hand"))) arm_weights[j]+=source->joint_weights[at];
+                if(name && (strstr(name,"ForeArm") || strstr(name,"Hand"))) arm_weights[j]+=source->joint_weights[at];
             }
             int triangles=0;
             for(int t=0;t<mesh->triangleCount;t++) if(arm_weights[mesh->indices[t*3]]>.5f && arm_weights[mesh->indices[t*3+1]]>.5f && arm_weights[mesh->indices[t*3+2]]>.5f) triangles++;

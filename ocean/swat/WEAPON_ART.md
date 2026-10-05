@@ -18,7 +18,9 @@ both overrides to the native player, translating the directory path.
 The source has no public redistribution authorization. Its binary, textures,
 neutral views and editable sources stay in private Drive/local ignored build
 storage. The public repository contains only the consumer and measured interface.
-The installed R2 source SHA-256 is
+The installed R3 source SHA-256 is
+`011f758561ead2519e7cf37f6b1379479e232dbf493d374e3ae06ef01b33133a`.
+R2 is retained separately with SHA-256
 `09d659865fb4d75aaed64b91f973e98ae178d12ffd9df42b8fc401cac25fce98`.
 The frozen original is
 `daac57ca6bf40c9157808f88a1d1184c11f19ea4bada63cc54ca260b24392b48`.
@@ -32,7 +34,10 @@ python3 ocean/swat/tools/install_weapon_revision.py EXTRACTED_R2_FIXTURE
 The installer checks pinned payload hashes, the rigid frame, exact original
 vertex prefixes, unchanged bounds and magazine geometry before replacing the
 canonical local asset. It keeps `rifle7_original_textured.glb` for comparison.
-`--material-only` installs the separately verified finish-only variant.
+`--revision r3` installs the R3 fixture against the frozen R2 baseline, preserving
+R2's exact vertex prefixes and all 1,024 rounded sight-ring triangles.
+`--material-only` installs the separately verified finish-only variant (R3's
+finish-only control retains R2 geometry).
 
 R2 rounds the rear sight's outer contour from eight to 32 angular segments,
 replacing 64 outer-ring triangles with 1,024. The largest cosmetic contour move
@@ -40,6 +45,14 @@ is 0.442354 mm. All 10,209 other body triangles and the 780 magazine triangles
 are unchanged. The inner aperture remains octagonal; sight centers, bore,
 stock, measured hand contacts and overall bounds are unchanged. This improves
 the outer silhouette without changing the physical sight opening.
+
+R3 adds 2,749 triangles to soften selected sight-stalk/base and upper-receiver
+edges: 13,982 body triangles plus the unchanged 780-triangle magazine. The entire
+R2 ring/opening and measured frame/contacts remain exact. Selected base/upper
+receiver UV regions have quieter bright wear and a roughness floor of 0.73;
+other active regions, metallic/AO channels and the original normal image remain
+unchanged. The measured cosmetic surface departure is at most 0.486111 mm at
+sampled old/new vertices, rather than a continuous surface guarantee.
 
 ## Authority and source dimensions
 
@@ -116,7 +129,7 @@ does not establish a worst-case gameplay budget. The full UI suite passed two
 consecutive unchanged runs after one intermittent charge-mount automation
 failure; no input assertions were relaxed.
 
-R2 validation: all 21 headless tests pass. The explicit GPU suites pass
+R2/R3 validation: all 21 headless tests pass. The explicit GPU suites pass
 with the original and revised weapon, including all seven motion banks,
 source grip release, reload visibility, camera pose restoration and physical
 ADS alignment through eye-relief, yaw, lean, recoil and pitch limits. Matched
