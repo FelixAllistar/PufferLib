@@ -128,6 +128,11 @@ SwatCharacterRuntime* swat_character_runtime_open(const SwatWeaponArt* weapons) 
     }
     runtime->diffuse[0]=texture(directory,"Ch15_1001_Diffuse.png"); runtime->diffuse[1]=texture(directory,"Ch15_1002_Diffuse.png");
     runtime->emissive=texture(directory,"Ch15_1002_Emissive.png");
+    const char* finish=getenv("SWAT_CHARACTER_FINISH");
+    if(!finish || strcmp(finish,"0")) for(int i=0;i<2;i++) {
+        char file[128]; snprintf(file,sizeof(file),"Ch15_100%d_Specular.png",i+1); runtime->specular[i]=texture(directory,file);
+        snprintf(file,sizeof(file),"Ch15_100%d_Glossiness.png",i+1); runtime->gloss[i]=texture(directory,file);
+    }
     const char* normals=getenv("SWAT_CHARACTER_NORMALS");
     if(!normals || strcmp(normals,"0")) { runtime->normal[0]=texture(directory,"Ch15_1001_Normal.png"); runtime->normal[1]=texture(directory,"Ch15_1002_Normal.png"); }
     Image white=GenImageColor(1,1,WHITE); runtime->orm=LoadTextureFromImage(white); UnloadImage(white);
@@ -138,6 +143,13 @@ SwatCharacterRuntime* swat_character_runtime_open(const SwatWeaponArt* weapons) 
             int set=source->primitive; if(set>=2) goto failed;
             if(runtime->diffuse[set].id) { material->maps[MATERIAL_MAP_ALBEDO].texture=runtime->diffuse[set]; material->maps[MATERIAL_MAP_ALBEDO].color=WHITE; }
             material->maps[MATERIAL_MAP_ROUGHNESS].texture=runtime->orm; material->maps[MATERIAL_MAP_ROUGHNESS].value=.78f; material->maps[MATERIAL_MAP_METALNESS].value=0;
+            if(runtime->specular[set].id && runtime->gloss[set].id) {
+                // Source specular color is sRGB; gloss is linear. Do not turn
+                // arbitrary specular pixels into a guessed metallic mask.
+                material->maps[MATERIAL_MAP_SPECULAR].texture=runtime->specular[set];
+                material->maps[MATERIAL_MAP_ROUGHNESS].texture=runtime->gloss[set];
+                material->maps[MATERIAL_MAP_ROUGHNESS].value=-1;
+            }
             if(set==1 && runtime->emissive.id) material->maps[MATERIAL_MAP_EMISSION].texture=runtime->emissive;
             material->maps[MATERIAL_MAP_NORMAL].texture=runtime->normal[set];
             material->maps[MATERIAL_MAP_NORMAL].value=normals && !strcmp(normals,"-y") ? -2 : 2;
@@ -281,7 +293,12 @@ bool swat_character_runtime_draw_first_person(SwatCharacterRuntime* runtime,int 
 void swat_character_runtime_close(SwatCharacterRuntime* runtime) {
     if(!runtime) return;
     for(int i=0;i<SWAT_CHARACTER_BANKS;i++) swat_character_view_close(&runtime->banks[i]);
-    for(int i=0;i<2;i++) { if(runtime->diffuse[i].id) UnloadTexture(runtime->diffuse[i]); if(runtime->normal[i].id) UnloadTexture(runtime->normal[i]); }
+    for(int i=0;i<2;i++) {
+        if(runtime->diffuse[i].id) UnloadTexture(runtime->diffuse[i]);
+        if(runtime->normal[i].id) UnloadTexture(runtime->normal[i]);
+        if(runtime->specular[i].id) UnloadTexture(runtime->specular[i]);
+        if(runtime->gloss[i].id) UnloadTexture(runtime->gloss[i]);
+    }
     if(runtime->emissive.id) UnloadTexture(runtime->emissive);
     if(runtime->orm.id) UnloadTexture(runtime->orm);
     for(int i=0;i<SWAT_MAX_ACTORS;i++) { free(runtime->actors[i].matrices); free(runtime->actors[i].first_person_matrices); }

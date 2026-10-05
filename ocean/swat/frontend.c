@@ -59,7 +59,7 @@ void swat_frontend_init(SwatFrontend* app, const char* settings_path) {
     }
     app->saved_settings=app->settings;
     swat_menu_style();
-    SetTargetFPS(app->settings.frame_limit);
+    SetTargetFPS(app->settings.frame_limit); app->applied_frame_limit=app->settings.frame_limit;
     EnableCursor();
 }
 
@@ -241,7 +241,9 @@ void swat_frontend_update(SwatFrontend* app, const SwatSim* sim, bool policy) {
     app->notice_seconds=fmaxf(0,app->notice_seconds-GetFrameTime());
     if(IsWindowFocused() && !policy && IsKeyPressed(KEY_F5)) app->save_requested=true;
     if(IsWindowFocused() && !policy && IsKeyPressed(KEY_F9)) app->resume_requested=true;
-    SetTargetFPS(app->settings.frame_limit);
+    if(app->applied_frame_limit!=app->settings.frame_limit) {
+        SetTargetFPS(app->settings.frame_limit); app->applied_frame_limit=app->settings.frame_limit;
+    }
 }
 
 bool swat_frontend_playing(const SwatFrontend* app) {

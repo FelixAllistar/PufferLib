@@ -82,9 +82,15 @@ reduction, animation resampling or weight renormalization. Shadow/unlit renderin
 uses the same deformation. Headless simulation/server builds have no renderer
 or graphics dependency.
 
-Original 2K diffuse/emissive maps use their documented sRGB interpretation;
-roughness remains 0.78 and metalness zero. The unlinked gloss maps are not
-converted to roughness. Normals use signed UV derivatives on deformed geometry
+Original 2K diffuse/emissive and specular-color maps are interpreted as sRGB. The paired source gloss map is linear and supplies perceptual
+roughness `clamp(1 - gloss, 0.08, 1)`. Specular RGB supplies F0; diffuse energy
+uses `1 - max(F0)`, following the
+[Khronos specular/glossiness equations](https://github.com/KhronosGroup/glTF/tree/main/extensions/2.0/Archived/KHR_materials_pbrSpecularGlossiness).
+This is runtime binding of the separate legacy maps, not support for importing
+that glTF extension. The source maps are shared across all movement banks and
+released once. Missing pairs use the existing rough dielectric fallback;
+`SWAT_CHARACTER_FINISH=0` selects that fallback for comparisons. Normals use
+signed UV derivatives on deformed geometry
 and the preserved Blender material's unflipped +Y interpretation. That is not
 proof of the original artist's convention; `SWAT_CHARACTER_NORMALS=0` or `-y`
 allows the documented comparison without rewriting source maps. Original gun

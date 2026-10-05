@@ -88,6 +88,46 @@ static void environment_basis(SwatLighting* light,SwatEnvironmentArt* art) {
     UnloadImage(a); UnloadImage(b); UnloadImage(mirrored);
     UnloadTexture(up); UnloadTexture(down); UnloadTexture(roughness);
 }
+static Image finish_capture(SwatLighting* light,SwatEnvironmentArt* art,Model* model,
+                            Texture2D specular,Texture2D gloss) {
+    Camera3D camera={{1.1f,3,1.1f},{0,0,0},{0,1,0},3,CAMERA_ORTHOGRAPHIC};
+    RenderTexture2D target=LoadRenderTexture(256,256); assert(target.id);
+    Material* material=&model->materials[0];
+    material->maps[MATERIAL_MAP_ALBEDO].color=(Color){128,128,128,255};
+    material->maps[MATERIAL_MAP_SPECULAR].texture=specular;
+    material->maps[MATERIAL_MAP_ROUGHNESS].texture=gloss;
+    material->maps[MATERIAL_MAP_ROUGHNESS].value=-1;
+    BeginTextureMode(target); ClearBackground(BLACK); BeginMode3D(camera);
+    swat_lighting_begin(light,art,&sim.world,camera.position);
+    material->shader=light->mesh.shader;
+    swat_lighting_material(light,*material,true); DrawModel(*model,(Vector3){0},1,WHITE);
+    swat_lighting_material(light,(Material){0},false);
+    swat_lighting_end(light,art); EndMode3D(); EndTextureMode();
+    Image result=LoadImageFromTexture(target.texture); ImageFlipVertical(&result); UnloadRenderTexture(target);
+    return result;
+}
+static void source_finish(SwatLighting* light,SwatEnvironmentArt* art) {
+    sim.world.room_count=0;
+    Model model=LoadModelFromMesh(GenMeshPlane(2,2,1,1));
+    Texture2D dull=solid_texture((Color){16,16,16,255}),smooth=solid_texture((Color){240,240,240,255});
+    Texture2D red=solid_texture((Color){220,20,20,255}),blue=solid_texture((Color){20,20,220,255});
+    Image a=finish_capture(light,art,&model,red,dull),b=finish_capture(light,art,&model,blue,dull);
+    Image shiny=finish_capture(light,art,&model,red,smooth);
+    Color* pa=LoadImageColors(a),*pb=LoadImageColors(b),*ps=LoadImageColors(shiny);
+    int colored=0,gloss_changed=0;
+    for(int i=0;i<256*256;i++) {
+        if(pa[i].r>pb[i].r+10 && pb[i].b>pa[i].b+10) colored++;
+        if(abs(pa[i].r-ps[i].r)+abs(pa[i].g-ps[i].g)+abs(pa[i].b-ps[i].b)>10) gloss_changed++;
+    }
+    printf("source specular-color response=%d gloss-response pixels=%d\n",colored,gloss_changed);
+    assert(colored>1000 && gloss_changed>1000);
+    // Both source texture slots are borrowed; release each owner once.
+    model.materials[0].shader=(Shader){rlGetShaderIdDefault(),rlGetShaderLocsDefault()}; UnloadModel(model);
+    UnloadTexture(dull); UnloadTexture(smooth); UnloadTexture(red); UnloadTexture(blue);
+    UnloadImageColors(pa); UnloadImageColors(pb); UnloadImageColors(ps);
+    UnloadImage(a); UnloadImage(b); UnloadImage(shiny);
+    puts("PASS original specular-color and linear gloss maps affect distinct rendered material responses");
+}
 int main(int argc,char** argv) {
     const char* directory=argc>1 ? argv[1] : ".";
     SetConfigFlags(FLAG_WINDOW_HIDDEN); InitWindow(640,480,"SWAT lighting regression"); assert(IsWindowReady());
@@ -149,6 +189,7 @@ int main(int argc,char** argv) {
     printf("ground brightness range=%d..%d\n",darkest,brightest); assert(brightest-darkest<8 && darkest>500);
     UnloadImageColors(a); UnloadImage(ground);
     environment_basis(&light,&art);
+    source_finish(&light,&art);
     swat_lighting_close(&light); assert(!light.sun.id && !light.batch.shader.id);
     environment("SWAT_LIGHTING","0"); swat_lighting_init(&light); assert(!light.enabled && !light.sun.id);
     swat_lighting_close(&light); environment("SWAT_LIGHTING",NULL);

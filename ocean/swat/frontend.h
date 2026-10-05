@@ -40,7 +40,7 @@ typedef struct SwatFrontend {
     char layout_seed[16];
     int layout_difficulty,layout_generator;
     SwatFeedback feedback;
-    int discard_mouse_frames;
+    int discard_mouse_frames,applied_frame_limit;
     char address[128],port[8];
     char settings_path[SWAT_SETTINGS_PATH_SIZE];
     char notice[192];

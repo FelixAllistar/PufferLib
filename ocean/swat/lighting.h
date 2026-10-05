@@ -7,7 +7,7 @@
 typedef struct SwatLightingProgram {
     Shader shader;
     int camera,sun_matrix,lamp_matrix,sun_map,lamp_map,rooms,centers,halves,lamp_room,exposure;
-    int orm,pbr,normal_map,roughness,metalness;
+    int orm,pbr,normal_map,roughness,metalness,spec_gloss;
     int environment,environment_normal,environment_normal_map,environment_roughness_map;
     int environment_size,environment_tile;
     int skinning,skin_sets,skin_palette,skin_influences,emission,normal_green;
@@ -42,7 +42,9 @@ void swat_lighting_prepare_context(SwatLighting* light,const SwatSim* sim,Vector
 void swat_lighting_begin(SwatLighting* light,SwatEnvironmentArt* art,const SwatWorld* world,Vector3 camera);
 void swat_lighting_sky(SwatLighting* light,Camera3D camera,int width,int height);
 void swat_lighting_end(SwatLighting* light,SwatEnvironmentArt* art);
-// Original glTF normal and packed G-roughness/B-metalness maps. Reset after
+// Original glTF normal and packed G-roughness/B-metalness maps. A negative
+// roughness value selects source RGB-specular/R-gloss textures in the standard
+// specular/roughness map slots. Reset after
 // drawing the material so ordinary scene meshes retain their diffuse shading.
 void swat_lighting_material(SwatLighting* light,Material material,bool enabled);
 // Independent R8 roughness/OpenGL normals for metric environment surfaces.

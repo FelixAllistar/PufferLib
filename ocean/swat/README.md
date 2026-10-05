@@ -117,7 +117,18 @@ small debug text in play.
 The initial lighting pass adds linear diffuse shading, a cool sky/warm sun,
 warm room lights and continuously weighted depth shadows. Geometry changes invalidate the
 shadow cache immediately; moving silhouettes refresh every four simulation
-ticks. The player-nearest room has a shadow map; other room lights use room
+ticks.
+
+Indoor ambient now darkens near adjacent floor/wall/ceiling planes, excluding a
+surface's own plane. This room-bound approximation affects diffuse ambient and
+indirect reflections; direct sun/lamp light keeps its existing shadow visibility.
+Room lights use a less yellow neutral-warm tint. It is an inexpensive structural
+approximation; furniture-scale occlusion and scene-probe/GI remain future work.
+Original character specular/gloss maps now separate cloth, gloves and hard gear
+instead of assigning the entire body one rough finish; see [CHARACTER_ART.md](CHARACTER_ART.md).
+Frame limits are applied on change, eliminating the per-frame timer-log spam.
+
+The player-nearest room has a shadow map; other room lights use room
 bounds to limit their reach. This remains an authored preview lighting model,
 with no baked global illumination or physical fixtures yet. Both immediate
 geometry and imported door/prop models receive lighting. The HUD remains

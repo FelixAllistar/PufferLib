@@ -43,7 +43,7 @@ static const char* fragment_source=
     "#version 330\n"
     "in vec3 position,normal; in vec2 uv; in vec4 tint,tangent; out vec4 finalColor;\n"
     "uniform sampler2D texture0,sunMap,lampMap; uniform vec4 colDiffuse;\n"
-    "uniform sampler2D normalMap,ormMap; uniform int usePbr,useNormal,useOrm; uniform float roughnessFactor,metalnessFactor,normalGreen;\n"
+    "uniform sampler2D normalMap,ormMap,specularMap; uniform int usePbr,useNormal,useOrm,useSpecGloss; uniform float roughnessFactor,metalnessFactor,normalGreen;\n"
     "uniform sampler2D emissionMap; uniform int useEmission;\n"
     "uniform sampler2D environmentNormalMap,environmentRoughnessMap; uniform int useEnvironment,useEnvironmentNormal;\n"
     "uniform mat4 sunMatrix,lampMatrix; uniform vec3 camera;\n"
@@ -84,6 +84,8 @@ static const char* fragment_source=
     "n=normalize(mat3(normalize(t),normalize(b),n)*(texture(environmentNormalMap,uv).xyz*2.0-1.0)); } } }"
     "if(usePbr!=0){ vec4 orm=useOrm!=0?texture(ormMap,uv):vec4(1.0); roughness=clamp(orm.g*roughnessFactor,0.08,1.0);"
     "metalness=clamp(orm.b*metalnessFactor,0.0,1.0); f0=mix(vec3(0.04),albedo,metalness);"
+    "if(useSpecGloss!=0){roughness=clamp(1.0-orm.r,0.08,1.0);metalness=0.0;"
+    "f0=pow(clamp(texture(specularMap,uv).rgb,0.0,1.0),vec3(2.2));}"
     "if(useNormal!=0){ vec3 t,b;"
     "if(useNormal==2){vec3 dx=dFdx(position),dy=dFdy(position);vec2 tx=dFdx(uv),ty=dFdy(uv);"
     "float det=tx.x*ty.y-tx.y*ty.x; t=abs(det)>1e-12?(dx*ty.y-dy*tx.y)/det:vec3(0.0);"
@@ -97,26 +99,30 @@ static const char* fragment_source=
     "vec3 illumination=mix(vec3(0.11,0.105,0.09),vec3(0.30,0.37,0.46),n.y*0.5+0.5);"
     "vec3 reflectedDirection=reflect(-v,n),environment=skyRadiance(reflectedDirection,roughness);"
     "float contact=1.0;"
-    "illumination+=vec3(0.95,0.88,0.76)*direct;"
+    "vec3 punctual=vec3(0.95,0.88,0.76)*direct;"
     "if(usePbr!=0||useEnvironment!=0)reflection+=vec3(0.95,0.88,0.76)*sunVisibility*specular(n,v,sun,f0,roughness);"
     "for(int i=0;i<rooms;i++){ vec3 delta=position-centers[i];"
     "if(abs(delta.x)>halves[i].x+0.12||abs(delta.z)>halves[i].z+0.12||abs(delta.y)>halves[i].y+0.15)continue;"
     "vec3 gap=max(halves[i]-abs(delta),vec3(0.0));"
-    "float wall=min(gap.x,gap.z),floorGap=max(position.y-centers[i].y+halves[i].y,0.0);"
-    "contact=0.82+0.18*smoothstep(0.0,0.32,min(wall,floorGap));"
-    "illumination=mix(vec3(0.09,0.085,0.075),vec3(0.20,0.19,0.17),n.y*0.5+0.5)+vec3(0.95,0.88,0.76)*direct;"
+    // A bounded room approximation darkens ambient near adjacent planes only.
+    // The surface's own plane does not occlude itself; punctual lights retain
+    // their shadow-map visibility instead of receiving an invented AO shadow.
+    "vec3 edge=mix(vec3(0.55),vec3(1.0),smoothstep(vec3(0.0),vec3(0.45),gap));"
+    "vec3 axis=abs(normalize(normal));contact=dot(axis,vec3(edge.y*edge.z,edge.x*edge.z,edge.x*edge.y))/(axis.x+axis.y+axis.z);"
+    "illumination=mix(vec3(0.06,0.058,0.055),vec3(0.145,0.145,0.14),n.y*0.5+0.5);"
     "environment=mix(vec3(0.075,0.068,0.055),vec3(0.32,0.30,0.26),reflectedDirection.y*0.5+0.5);"
     "vec3 origin=centers[i]+vec3(0.0,halves[i].y-0.18,0.0); vec3 toLight=origin-position;"
     "float d2=dot(toLight,toLight); vec3 l=normalize(toLight);"
     "float visibility=i==lampRoom?visible(lampMap,lampMatrix,n,l):1.0;"
-    "vec3 radiance=vec3(1.0,0.82,0.62)*visibility*1.8/(1.0+0.18*d2);"
-    "illumination+=radiance*max(dot(n,l),0.0); if(usePbr!=0||useEnvironment!=0)reflection+=radiance*specular(n,v,l,f0,roughness); }"
+    "vec3 radiance=vec3(1.0,0.92,0.80)*visibility*1.8/(1.0+0.18*d2);"
+    "punctual+=radiance*max(dot(n,l),0.0); if(usePbr!=0||useEnvironment!=0)reflection+=radiance*specular(n,v,l,f0,roughness); }"
     // Roughness-aware grazing reflection for painted surfaces as well as metal.
     // This analytic environment is deliberately bounded; it is not a scene probe.
     "float nv=max(dot(n,v),0.0); vec3 fresnel=f0+(max(vec3(1.0-roughness),f0)-f0)*pow(1.0-nv,5.0);"
     "vec3 indirect=(usePbr!=0||useEnvironment!=0)?environment*fresnel:vec3(0.0);"
     "vec3 emission=useEmission!=0?pow(max(texture(emissionMap,uv).rgb,vec3(0.0)),vec3(2.2)):vec3(0.0);"
-    "vec3 color=tone((albedo*illumination*(1.0-metalness)*contact+reflection+indirect*contact+emission)*exposure);"
+    "float diffuseEnergy=useSpecGloss!=0?1.0-max(f0.r,max(f0.g,f0.b)):1.0-metalness;"
+    "vec3 color=tone((albedo*(illumination*contact+punctual)*diffuseEnergy+reflection+indirect*contact+emission)*exposure);"
     "finalColor=vec4(pow(color,vec3(1.0/2.2)),surface.a); }\n";
 
 static SwatLightingProgram program(void) {
@@ -125,6 +131,8 @@ static SwatLightingProgram program(void) {
     p.shader.locs[SHADER_LOC_MATRIX_MODEL]=GetShaderLocation(p.shader,"matModel");
     p.shader.locs[SHADER_LOC_MATRIX_NORMAL]=GetShaderLocation(p.shader,"matNormal");
     p.shader.locs[SHADER_LOC_VERTEX_TANGENT]=GetShaderLocationAttrib(p.shader,"vertexTangent");
+    p.shader.locs[SHADER_LOC_MAP_SPECULAR]=GetShaderLocation(p.shader,"specularMap");
+    p.spec_gloss=GetShaderLocation(p.shader,"useSpecGloss");
     p.shader.locs[SHADER_LOC_MAP_NORMAL]=GetShaderLocation(p.shader,"normalMap");
     p.shader.locs[SHADER_LOC_MAP_ROUGHNESS]=GetShaderLocation(p.shader,"ormMap");
     p.shader.locs[SHADER_LOC_MAP_EMISSION]=GetShaderLocation(p.shader,"emissionMap");
@@ -209,7 +217,10 @@ void swat_lighting_material(SwatLighting* light,Material material,bool enabled) 
     SetShaderValue(p->shader,p->environment,&zero,SHADER_UNIFORM_INT);
     SetShaderValue(p->shader,p->environment_tile,&tile,SHADER_UNIFORM_VEC2);
     int orm=enabled && material.maps && material.maps[MATERIAL_MAP_ROUGHNESS].texture.id;
+    int spec_gloss=enabled && material.maps && material.maps[MATERIAL_MAP_SPECULAR].texture.id &&
+        material.maps[MATERIAL_MAP_ROUGHNESS].texture.id && material.maps[MATERIAL_MAP_ROUGHNESS].value<0;
     int pbr=enabled && material.maps && (orm || material.maps[MATERIAL_MAP_ROUGHNESS].value>0);
+    SetShaderValue(p->shader,p->spec_gloss,&spec_gloss,SHADER_UNIFORM_INT);
     SetShaderValue(p->shader,p->orm,&orm,SHADER_UNIFORM_INT);
     int normal=pbr && material.maps[MATERIAL_MAP_NORMAL].texture.id;
     if(normal && fabsf(material.maps[MATERIAL_MAP_NORMAL].value)==2) normal=2;
@@ -237,6 +248,7 @@ void swat_lighting_surface(SwatLighting* light,Texture2D normal,Texture2D roughn
     SetShaderValue(p->shader,p->environment,&enabled,SHADER_UNIFORM_INT);
     SetShaderValue(p->shader,p->environment_normal,&use_normal,SHADER_UNIFORM_INT);
     SetShaderValue(p->shader,p->pbr,&zero,SHADER_UNIFORM_INT);
+    SetShaderValue(p->shader,p->spec_gloss,&zero,SHADER_UNIFORM_INT);
     SetShaderValue(p->shader,p->environment_normal_map,&nslot,SHADER_UNIFORM_INT);
     SetShaderValue(p->shader,p->environment_roughness_map,&rslot,SHADER_UNIFORM_INT);
     SetShaderValue(p->shader,p->environment_size,&size,SHADER_UNIFORM_VEC3);
@@ -335,6 +347,7 @@ void swat_lighting_begin(SwatLighting* light,SwatEnvironmentArt* art,const SwatW
         SwatLightingProgram* p=programs[i]; Shader s=p->shader; int sun=14,lamp=15;
         int zero=0; Vector2 tile={0};
         SetShaderValue(s,p->pbr,&zero,SHADER_UNIFORM_INT);
+        SetShaderValue(s,p->spec_gloss,&zero,SHADER_UNIFORM_INT);
         SetShaderValue(s,p->skinning,&zero,SHADER_UNIFORM_INT);
         SetShaderValue(s,p->emission,&zero,SHADER_UNIFORM_INT);
         SetShaderValue(s,p->environment,&zero,SHADER_UNIFORM_INT);

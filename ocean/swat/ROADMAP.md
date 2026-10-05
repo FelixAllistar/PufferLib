@@ -70,6 +70,8 @@ is deliberately a general engine improvement.
   props, tied to active damage pieces/supports without new collision or LOS.
 - Initial linear-light shading, cached sun/nearest-room depth shadows and
   exposure overrides; transformed primitives and imported art share shading.
+  Original body specular/gloss maps and bounded room ambient occlusion now
+  separate surface finishes and adjacent structural planes.
   The coherent material family now has separate metric floor/frame/door bindings
   and signed OpenGL normal/roughness shading; authored fixtures and GI remain.
 - Optional private rigid-carbine import with measured authority/render alignment,

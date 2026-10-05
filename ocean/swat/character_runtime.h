@@ -23,7 +23,7 @@ typedef struct SwatCharacterActorPose {
 } SwatCharacterActorPose;
 typedef struct SwatCharacterRuntime {
     SwatCharacterView banks[SWAT_CHARACTER_BANKS];
-    Texture2D diffuse[2],normal[2],emissive,orm;
+    Texture2D diffuse[2],normal[2],specular[2],gloss[2],emissive,orm;
     SwatCharacterActorPose actors[SWAT_MAX_ACTORS];
     unsigned int preparations,draws;
     double prepare_seconds,prepare_max_seconds;
