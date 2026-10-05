@@ -1,4 +1,4 @@
-# Procedural environment art
+# Environment art and authored motel
 
 This adapter applies the small, CC0 house-kit runtime pack and a provisional
 generated painted-plaster comparison in
@@ -34,9 +34,10 @@ the same binding path. Debug mode adds box wires over the art.
 The initial lighting pass covers both primitives and imported models using
 linear diffuse shading, exposure, warm room lights and filtered sun/nearest-room
 depth maps. Geometry changes invalidate immediately; moving silhouettes refresh
-every four ticks. It is an authored approximation, without GI, physical fixtures,
-normal/roughness maps or Blender material parity. The shadow caster geometry is
-the authoritative boxes and actor primitives; decorative tabletop detail does
+every four ticks. It remains an authored approximation without GI or scene reflection probes.
+Metric normals/roughness, original model PBR factors, daylight reflections and
+textured character shadows are now connected; see ENVIRONMENT_MATERIALS.md.
+The generated-house shadow caster geometry follows authoritative boxes; decorative tabletop detail does
 not cast its own shadow in this pass. See the player README for comparison and
 exposure controls. The generated plaster image has its own prompt/hash record
 in `painted_plaster_v1.json`; it makes no CC0-source or measured-relief claim.
@@ -185,3 +186,48 @@ clearance, collision and independent damage ownership authoritative. Full
 assembled wall GLBs must not be overlaid on existing damage cells: that would
 cover real holes with surviving art. New visual variants that change perception
 or collision need intentional, versioned design and multiplayer qualification.
+
+## Briar Court motel
+
+`./swat play --mission motel` selects the complete motor-court encounter. The
+Houses planning tab also offers Briar Court. The CC0 batch-15 import adds 24
+new modules, 16 reused designs and 146 placed instances. The source GLBs remain
+unchanged in `assets/environment/motel_v1`; source licences, manifests and
+hashes accompany them. The preserved handoff README describes the complete
+Blender source package; this runtime directory contains the modules and manifests,
+with the complete editable package retained in the art handoff.
+`tools/import_motel.py` generates the deterministic
+local mesh data and placement table from hash-checked inputs, converting
+source Z-up to engine Y-up once. It never executes supplied Blender scripts.
+
+Each static instance has its own authoritative object and exact triangle
+collision, retaining facade openings, bathroom passages, the access ramp and
+furniture gaps. Five separate door leaves use the existing physical hinge,
+interaction, lock and breach machinery. A removed leaf hides its whole matching
+model. Static masonry and furnishings currently remain intact. Room volumes,
+occupants, staging and extraction form a playable encounter. Planning omits the
+roof collection; shadow, officer, scope and device rendering share the instances.
+
+The standard map packet still transmits object identities and bounding recipes.
+For this new mission, matching compiled placements reconstruct triangle collision
+on replicas; all instance positions, sizes, yaw and material/door flags are
+checked before any collider changes. Modified maps that no longer match retain
+the explicit box geometry they transmit. Existing missions and packet fields
+are unchanged. Both peers need a build that supports the new motel mission.
+The world owns collision meshes and releases them after its physics world.
+
+The adapter restores original scalar roughness and metallic factors omitted by
+Raylib 5.5 when no combined texture is present. Materials use derivative normals,
+original base colour, mipmaps and the common lighting shader. Lighting includes
+an analytic daylight environment and room reflection approximation, not captured
+scene reflections. The visible sky uses the same daylight radiance. The next
+art pass is adding metric normals/roughness to the motel's small source textures.
+Master module reuse currently retains the room-101 plaque texture/geometry and
+master facade finish, rather than the assembled example's per-room variants.
+
+Engine validation covers all nine authored 0.6 m diameter / 1.8 m capsule
+routes against Box3D mesh collision, closed/open/breached doors, every imported
+material factor, map round-trip collision (including already-open doors),
+modified-map fallback and repeated world reset/shutdown. Linux GPU captures
+and the standard lighting, rifle and environment graphics checks are also
+reviewed; rendering remains read-only with respect to gameplay state.

@@ -42,6 +42,8 @@ int main(int argc,char** argv) {
         assert(mat.maps[MATERIAL_MAP_NORMAL].texture.width==4096);
         assert(mat.maps[MATERIAL_MAP_ROUGHNESS].texture.width==4096);
         assert(mat.maps[MATERIAL_MAP_ALBEDO].texture.mipmaps>1);
+        assert(mat.maps[MATERIAL_MAP_ROUGHNESS].value==1);
+        assert(mat.maps[MATERIAL_MAP_METALNESS].value==1);
     }
     SwatArsenal arsenal; swat_weapons_init(&arsenal,9); SwatArsenal before=arsenal;
     SwatPose pose={.weapon_forward={1,0,0},.weapon_up={0,1,0},.right={0,0,1}};
@@ -69,6 +71,19 @@ int main(int argc,char** argv) {
     char diagnostic[4096]; snprintf(diagnostic,sizeof(diagnostic),"%s/rifle-normal-debug.png",argv[2]); ExportImage(seated,diagnostic);
     snprintf(diagnostic,sizeof(diagnostic),"%s/rifle-flat-debug.png",argv[2]); ExportImage(flat,diagnostic); assert(changed>100);
     for(int i=0;i<art.carbine.materialCount;i++) art.carbine.materials[i].maps[MATERIAL_MAP_NORMAL].texture=normal[i];
+    MaterialMap* saved=calloc((size_t)art.carbine.materialCount*(MATERIAL_MAP_BRDF+1),sizeof(*saved)); assert(saved);
+    for(int i=0;i<art.carbine.materialCount;i++) {
+        MaterialMap* maps=art.carbine.materials[i].maps;
+        memcpy(saved+i*(MATERIAL_MAP_BRDF+1),maps,(MATERIAL_MAP_BRDF+1)*sizeof(*saved));
+        maps[MATERIAL_MAP_ROUGHNESS].texture=(Texture){0};
+        maps[MATERIAL_MAP_ROUGHNESS].value=.25f; maps[MATERIAL_MAP_METALNESS].value=1;
+    }
+    Image scalar_metal=capture(&art,&light,&arsenal,&pose);
+    for(int i=0;i<art.carbine.materialCount;i++) art.carbine.materials[i].maps[MATERIAL_MAP_METALNESS].value=0;
+    Image scalar_paint=capture(&art,&light,&arsenal,&pose); changed=difference(scalar_metal,scalar_paint);
+    printf("scalar PBR without ORM metal/paint response pixels=%d\n",changed); assert(changed>100);
+    for(int i=0;i<art.carbine.materialCount;i++) memcpy(art.carbine.materials[i].maps,saved+i*(MATERIAL_MAP_BRDF+1),(MATERIAL_MAP_BRDF+1)*sizeof(*saved));
+    free(saved); UnloadImage(scalar_metal); UnloadImage(scalar_paint);
     char path[4096]; snprintf(path,sizeof(path),"%s/rifle-material.png",argv[2]); assert(ExportImage(seated,path));
     snprintf(path,sizeof(path),"%s/rifle-magazine-removed.png",argv[2]); assert(ExportImage(removed,path));
     UnloadImage(seated); UnloadImage(removed); UnloadImage(flat);

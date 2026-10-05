@@ -58,8 +58,9 @@ Graphics checks cover signed +V/mirrored normal response, plain-surface state
 restoration, shadows, scaled/rotated mesh equivalence, layered breaches,
 unmodified authority, missing/corrupt assets, both comparison modes and texture
 lifecycle. Offline asset hashes and channel/source contracts remain in the
-handoff. Whole exported motel/warehouse/carnival scenes are not playable levels
-yet; their authoritative damage/physics binding is a separate integration.
+handoff. The motel is now a playable authored mission with individual geometry
+and physics bindings; see [ENVIRONMENT_ART.md](ENVIRONMENT_ART.md). Warehouse
+and carnival kits remain separate candidates.
 
 ## Measured native comparison
 
@@ -80,3 +81,21 @@ Both Linux D3D12 and native GPU graphics checks passed; the signed normal test
 has +V brightness response 285 and mirrored-basis color error zero. All 20 core
 CTest checks passed. Play and planning captures were visually reviewed locally;
 these runtime captures are separate from the handoff's Blender QA.
+
+## Daylight and material follow-up
+
+The visible daylight sky and analytic reflection environment now share their
+linear radiance. Specular reflection varies with roughness and view angle for
+painted surfaces as well as metal; interior surfaces use restrained room
+reflection and contact shading. This remains an approximation without scene
+reflection probes or GI. Imported scalar metallic/roughness factors are restored
+where Raylib 5.5 omits them for materials lacking an ORM texture; the shader now
+supports those materials independently of texture presence. Original rifle
+G-roughness/B-metalness maps and their unit factors remain unchanged, following
+the [glTF material contract](https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#metallic-roughness-material).
+
+First-person weapon rendering uses a 62-degree vertical hip FOV (bounded by the
+world FOV) and interpolates to the same sight FOV at full ADS. It preserves the
+world depth buffer. World dimensions, physical muzzle, achieved weapon fitting,
+obstruction checks, projectiles and hit authority retain their original camera
+and pose. This changes presentation framing without scaling the source art.

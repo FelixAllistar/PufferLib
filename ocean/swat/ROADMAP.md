@@ -89,7 +89,9 @@ uses its original maps, measured bindings and reload magazine visibility; see
 [WEAPON_ART.md](WEAPON_ART.md). Other guns remain procedural and the supplied
 sidearm needs physical-size calibration. The first coherent environment material
 quality pass is integrated; [ENVIRONMENT_MATERIALS.md](ENVIRONMENT_MATERIALS.md)
-records its scope. Whole location-kit integration remains a separate step. These
+records its scope. Briar Court batch 15 is now a playable authored motel with
+146 instances, original mesh collision, five functional door leaves and network
+replica reconstruction; see [ENVIRONMENT_ART.md](ENVIRONMENT_ART.md). These
 foundation checks do not imply a finished
 animation pipeline, production lighting or completed roadmap.
 

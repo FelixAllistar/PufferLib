@@ -7,7 +7,7 @@
 typedef struct SwatLightingProgram {
     Shader shader;
     int camera,sun_matrix,lamp_matrix,sun_map,lamp_map,rooms,centers,halves,lamp_room,exposure;
-    int pbr,normal_map,roughness,metalness;
+    int orm,pbr,normal_map,roughness,metalness;
     int environment,environment_normal,environment_normal_map,environment_roughness_map;
     int environment_size,environment_tile;
     int skinning,skin_sets,skin_palette,skin_influences,emission,normal_green;
@@ -15,6 +15,7 @@ typedef struct SwatLightingProgram {
 typedef struct SwatLighting {
     bool initialized,enabled,prepared;
     SwatLightingProgram batch,mesh;
+    Shader sky; int sky_forward,sky_right,sky_up,sky_scale,sky_size,sky_exposure;
     RenderTexture2D sun,lamp;
     Matrix sun_matrix,lamp_matrix;
     Vector3 sun_direction;
@@ -39,6 +40,7 @@ void swat_lighting_prepare_context(SwatLighting* light,const SwatSim* sim,Vector
                            bool cutaway,SwatShadowSceneContext draw,void* context);
 // Called inside BeginMode3D; the shader never touches text or HUD compositing.
 void swat_lighting_begin(SwatLighting* light,SwatEnvironmentArt* art,const SwatWorld* world,Vector3 camera);
+void swat_lighting_sky(SwatLighting* light,Camera3D camera,int width,int height);
 void swat_lighting_end(SwatLighting* light,SwatEnvironmentArt* art);
 // Original glTF normal and packed G-roughness/B-metalness maps. Reset after
 // drawing the material so ordinary scene meshes retain their diffuse shading.

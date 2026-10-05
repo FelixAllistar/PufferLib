@@ -172,6 +172,14 @@ int main(int argc,char** argv) {
     environment("SWAT_ENVIRONMENT_STYLE",NULL); environment("SWAT_ENVIRONMENT_PBR",NULL);
     SwatView view={0}; swat_view_init(&view,true); assert(IsWindowReady());
     assert(view.environment.plaster.id && view.environment.wood.id && view.environment.door.meshCount);
+    for(int i=0;i<SWAT_MOTEL_ASSETS;i++) {
+        const SwatMotelAsset* source=swat_motel_asset(i); Model model=view.environment.motel[i];
+        assert(model.meshCount>0 && model.materialCount==source->material_count+1);
+        for(int m=0;m<source->material_count;m++) {
+            assert(model.materials[m+1].maps[MATERIAL_MAP_ROUGHNESS].value==source->materials[m].roughness);
+            assert(model.materials[m+1].maps[MATERIAL_MAP_METALNESS].value==source->materials[m].metalness);
+        }
+    }
     static const int door_materials[5]={2,2,1,3,4};
     assert(view.environment.door.meshCount==5 && view.environment.door.materialCount==5);
     for(int i=0;i<5;i++) assert(view.environment.door.meshMaterial[i]==door_materials[i]);

@@ -1,5 +1,6 @@
 #include "sim.h"
 #include "pose.h"
+#include "motel.h"
 #include <assert.h>
 #include <string.h>
 
@@ -44,6 +45,7 @@ void swat_sim_reset(SwatSim* s) {
         swat_world_init(&s->world);
         s->mission=*swat_mission(config.mission);
         if(config.mission==SWAT_HOUSE) swat_mission_build_house(&s->world);
+        else if(config.mission==SWAT_MOTEL) swat_motel_build(&s->world);
         else if(config.mission==SWAT_RANGE) swat_mission_build_test_range(&s->world);
         else if(config.mission==SWAT_GENERATED) {
             bool valid=swat_layout_generate(&s->layout,config.layout_seed,config.difficulty,(SwatGenerator)config.generator);
@@ -84,6 +86,15 @@ void swat_sim_reset(SwatSim* s) {
                 if(p->actor>=s->actor_count) s->actor_count=p->actor+1;
             }
             s->extraction=s->mission.extraction;
+        }
+        if(config.mission==SWAT_MOTEL) {
+            swat_sim_spawn_actor(s,0,SWAT_OFFICER,s->mission.staging,-SWAT_PI*.5f);
+            swat_sim_spawn_actor(s,1,SWAT_SUSPECT,(b3Pos){-2,0,-2},SWAT_PI*.5f);
+            swat_sim_spawn_actor(s,2,SWAT_CIVILIAN,(b3Pos){-6,0,-2},SWAT_PI*.5f);
+            swat_sim_spawn_actor(s,6,SWAT_CIVILIAN,(b3Pos){2,0,-2},SWAT_PI*.5f);
+            swat_sim_spawn_actor(s,7,SWAT_CIVILIAN,(b3Pos){-10,0,-1.4f},SWAT_PI*.5f);
+            swat_sim_spawn_actor(s,8,SWAT_SUSPECT,(b3Pos){6,0,-1.4f},SWAT_PI*.5f);
+            s->actor_count=9; s->extraction=s->mission.extraction;
         }
         if(config.mission==SWAT_RANGE) {
             for(int i=1;i<s->actor_count;i++) if(s->actors[i].present) {

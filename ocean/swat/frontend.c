@@ -618,13 +618,14 @@ void swat_frontend_draw(SwatFrontend* app, const SwatView* view, const SwatSim* 
             y+=48;
             bool build=GuiButton((Rectangle){x,y,184,38},"Build this seed");
             bool next=GuiButton((Rectangle){x+192,y,184,38},"Next house"); y+=49;
-            bool cedar=GuiButton((Rectangle){x,y,376,34},"Return to Cedar House"); y+=50;
-            if(build || next || cedar) {
+            bool cedar=GuiButton((Rectangle){x,y,184,34},"Cedar House");
+            bool motel=GuiButton((Rectangle){x+192,y,184,34},"Briar Court motel"); y+=50;
+            if(build || next || cedar || motel) {
                 char* end; errno=0; unsigned long long seed=strtoull(app->layout_seed,&end,10);
-                if(!cedar && (errno || end==app->layout_seed || *end || app->layout_seed[0]=='-' || seed>UINT32_MAX))
+                if(!cedar && !motel && (errno || end==app->layout_seed || *end || app->layout_seed[0]=='-' || seed>UINT32_MAX))
                     snprintf(app->notice,sizeof(app->notice),"Use a seed from 0 to 4294967295.");
                 else {
-                    app->scenario=sim->config; app->scenario.mission=cedar ? SWAT_HOUSE : SWAT_GENERATED;
+                    app->scenario=sim->config; app->scenario.mission=motel ? SWAT_MOTEL : (cedar ? SWAT_HOUSE : SWAT_GENERATED);
                     app->scenario.layout_seed=(uint32_t)seed+(next ? 1u : 0u);
                     app->scenario.generator=app->layout_generator; app->scenario.difficulty=app->layout_difficulty;
                     app->scenario_requested=true; app->plan_preview=0; app->seed_edit=false;

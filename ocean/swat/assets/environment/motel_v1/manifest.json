@@ -1,0 +1,2492 @@
+{
+  "schema": "motor_court_motel_batch15_v1",
+  "batch": "15_motor_court_motel",
+  "title": "Briar Court: a modest motor-court motel",
+  "asset_count": 24,
+  "total_triangles": 13452,
+  "license": "CC0-1.0",
+  "original_artwork": true,
+  "seed": 151004,
+  "units": "metres",
+  "source_coordinates": "Right-handed Z-up, front -Y",
+  "gltf_coordinates": "Right-handed Y-up, front +Z. Source (x,y,z) maps to (x,z,-y).",
+  "physics": "Render-only. No colliders, rigid bodies, navmesh or game interaction supplied. Reused original GLBs remain byte-identical; override any legacy collider suggestions at import.",
+  "snap_grid_m": 4,
+  "materials": "Original packed/embedded 192px base-color textures, opaque metallic/roughness PBR. Window inserts and vending display use opaque dark dusty glass.",
+  "assets": [
+    {
+      "id": "mc15_room_facade_4m",
+      "name": "room_facade_4m",
+      "title": "Room facade / door and window openings",
+      "file": "assets/room_facade_4m.glb",
+      "bounds_m_source_xyz": [
+        [
+          -2.0,
+          -0.14000000059604645,
+          0.0
+        ],
+        [
+          2.0,
+          0.10000000149011612,
+          2.799999952316284
+        ]
+      ],
+      "dimensions_m_source_xyz": [
+        4.0,
+        0.24,
+        2.8
+      ],
+      "dimensions_m_gltf_xyz": [
+        4.0,
+        2.8,
+        0.24
+      ],
+      "triangles": 547,
+      "vertices_source": 304,
+      "material_count": 5,
+      "editable_vertex_groups": [
+        "base_plinth",
+        "door_jambs",
+        "drip_cap",
+        "localized_plinth_repair",
+        "stucco_masonry"
+      ],
+      "pivot": "Authored modular/attachment datum; bounds may extend below Z=0. Door uses left hinge at Z=0.",
+      "connections": [
+        {
+          "name": "left",
+          "position_source_m": [
+            -2,
+            0,
+            0
+          ],
+          "outward_source": [
+            -1,
+            0,
+            0
+          ],
+          "position_gltf_m": [
+            -2,
+            0,
+            0
+          ],
+          "outward_gltf": [
+            -1,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "right",
+          "position_source_m": [
+            2,
+            0,
+            0
+          ],
+          "outward_source": [
+            1,
+            0,
+            0
+          ],
+          "position_gltf_m": [
+            2,
+            0,
+            0
+          ],
+          "outward_gltf": [
+            1,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "roof",
+          "position_source_m": [
+            0,
+            0,
+            2.8
+          ],
+          "outward_source": [
+            0,
+            0,
+            1
+          ],
+          "position_gltf_m": [
+            0,
+            2.8,
+            0
+          ],
+          "outward_gltf": [
+            0,
+            1,
+            0
+          ]
+        },
+        {
+          "name": "door_hinge",
+          "position_source_m": [
+            -1.74,
+            0,
+            0
+          ],
+          "outward_source": [
+            0,
+            -1,
+            0
+          ],
+          "position_gltf_m": [
+            -1.74,
+            0,
+            0
+          ],
+          "outward_gltf": [
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "name": "window",
+          "position_source_m": [
+            0.8,
+            -0.018,
+            0.88
+          ],
+          "outward_source": [
+            0,
+            -1,
+            0
+          ],
+          "position_gltf_m": [
+            0.8,
+            0.88,
+            0.018
+          ],
+          "outward_gltf": [
+            0,
+            0,
+            1
+          ]
+        }
+      ],
+      "sha256": "22e084bc315a5b6f524f382f98d425580834c84597c49e4245ac3edac5c522d0",
+      "bytes": 308964,
+      "render_only": true,
+      "collider_enabled": false,
+      "colliders_supplied": false
+    },
+    {
+      "id": "mc15_solid_wall_4m",
+      "name": "solid_wall_4m",
+      "title": "Four metre rear wall",
+      "file": "assets/solid_wall_4m.glb",
+      "bounds_m_source_xyz": [
+        [
+          -2.0,
+          -0.11300000548362732,
+          0.0
+        ],
+        [
+          2.0,
+          0.09000000357627869,
+          2.799999952316284
+        ]
+      ],
+      "dimensions_m_source_xyz": [
+        4.0,
+        0.203,
+        2.8
+      ],
+      "dimensions_m_gltf_xyz": [
+        4.0,
+        2.8,
+        0.203
+      ],
+      "triangles": 95,
+      "vertices_source": 56,
+      "material_count": 3,
+      "editable_vertex_groups": [
+        "masonry",
+        "repair",
+        "skirt"
+      ],
+      "pivot": "Authored modular/attachment datum; bounds may extend below Z=0. Door uses left hinge at Z=0.",
+      "connections": [
+        {
+          "name": "left",
+          "position_source_m": [
+            -2,
+            0,
+            0
+          ],
+          "outward_source": [
+            -1,
+            0,
+            0
+          ],
+          "position_gltf_m": [
+            -2,
+            0,
+            0
+          ],
+          "outward_gltf": [
+            -1,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "right",
+          "position_source_m": [
+            2,
+            0,
+            0
+          ],
+          "outward_source": [
+            1,
+            0,
+            0
+          ],
+          "position_gltf_m": [
+            2,
+            0,
+            0
+          ],
+          "outward_gltf": [
+            1,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "roof",
+          "position_source_m": [
+            0,
+            0,
+            2.8
+          ],
+          "outward_source": [
+            0,
+            0,
+            1
+          ],
+          "position_gltf_m": [
+            0,
+            2.8,
+            0
+          ],
+          "outward_gltf": [
+            0,
+            1,
+            0
+          ]
+        }
+      ],
+      "sha256": "e8de5460cf7c583206b632189fe3c0fd5bbd4a042eb819d0b664950e986f6168",
+      "bytes": 171384,
+      "render_only": true,
+      "collider_enabled": false,
+      "colliders_supplied": false
+    },
+    {
+      "id": "mc15_end_wall_6m",
+      "name": "end_wall_6m",
+      "title": "Six metre room side wall",
+      "file": "assets/end_wall_6m.glb",
+      "bounds_m_source_xyz": [
+        [
+          -3.0,
+          -0.11300000548362732,
+          0.0
+        ],
+        [
+          3.0,
+          0.09000000357627869,
+          2.799999952316284
+        ]
+      ],
+      "dimensions_m_source_xyz": [
+        6.0,
+        0.203,
+        2.8
+      ],
+      "dimensions_m_gltf_xyz": [
+        6.0,
+        2.8,
+        0.203
+      ],
+      "triangles": 95,
+      "vertices_source": 56,
+      "material_count": 3,
+      "editable_vertex_groups": [
+        "masonry",
+        "repair",
+        "skirt"
+      ],
+      "pivot": "Authored modular/attachment datum; bounds may extend below Z=0. Door uses left hinge at Z=0.",
+      "connections": [
+        {
+          "name": "left",
+          "position_source_m": [
+            -3,
+            0,
+            0
+          ],
+          "outward_source": [
+            -1,
+            0,
+            0
+          ],
+          "position_gltf_m": [
+            -3,
+            0,
+            0
+          ],
+          "outward_gltf": [
+            -1,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "right",
+          "position_source_m": [
+            3,
+            0,
+            0
+          ],
+          "outward_source": [
+            1,
+            0,
+            0
+          ],
+          "position_gltf_m": [
+            3,
+            0,
+            0
+          ],
+          "outward_gltf": [
+            1,
+            0,
+            0
+          ]
+        }
+      ],
+      "sha256": "cf3bf207f4f8c4a0058eb4e6e8f7f1b739a0e7b0a9c9f330ba776d5b2b2ae36d",
+      "bytes": 171252,
+      "render_only": true,
+      "collider_enabled": false,
+      "colliders_supplied": false
+    },
+    {
+      "id": "mc15_corner_pier",
+      "name": "corner_pier",
+      "title": "Cream corner cap",
+      "file": "assets/corner_pier.glb",
+      "bounds_m_source_xyz": [
+        [
+          -0.13500000536441803,
+          -0.13500000536441803,
+          0.0
+        ],
+        [
+          0.13500000536441803,
+          0.13500000536441803,
+          2.799999952316284
+        ]
+      ],
+      "dimensions_m_source_xyz": [
+        0.27,
+        0.27,
+        2.8
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.27,
+        2.8,
+        0.27
+      ],
+      "triangles": 132,
+      "vertices_source": 72,
+      "material_count": 2,
+      "editable_vertex_groups": [
+        "corner_cap"
+      ],
+      "pivot": "Authored modular/attachment datum; bounds may extend below Z=0. Door uses left hinge at Z=0.",
+      "connections": [
+        {
+          "name": "placement_origin",
+          "position_source_m": [
+            0,
+            0,
+            0
+          ],
+          "outward_source": [
+            0,
+            0,
+            1
+          ],
+          "position_gltf_m": [
+            0,
+            0,
+            0
+          ],
+          "outward_gltf": [
+            0,
+            1,
+            0
+          ]
+        }
+      ],
+      "sha256": "cc1b516b38ffe2074eaa4470b934ed6c3202531b425264bd6c5b3cf8dba7f336",
+      "bytes": 113668,
+      "render_only": true,
+      "collider_enabled": false,
+      "colliders_supplied": false
+    },
+    {
+      "id": "mc15_room_floor_4x6m",
+      "name": "room_floor_4x6m",
+      "title": "Carpet and tile room floor",
+      "file": "assets/room_floor_4x6m.glb",
+      "bounds_m_source_xyz": [
+        [
+          -2.0,
+          -3.0,
+          -0.10000000149011612
+        ],
+        [
+          2.0,
+          3.0,
+          0.006500000134110451
+        ]
+      ],
+      "dimensions_m_source_xyz": [
+        4.0,
+        6.0,
+        0.1065
+      ],
+      "dimensions_m_gltf_xyz": [
+        4.0,
+        0.1065,
+        6.0
+      ],
+      "triangles": 200,
+      "vertices_source": 128,
+      "material_count": 3,
+      "editable_vertex_groups": [
+        "bath_tile",
+        "bedroom_carpet",
+        "concrete_slab"
+      ],
+      "pivot": "Authored modular/attachment datum; bounds may extend below Z=0. Door uses left hinge at Z=0.",
+      "connections": [
+        {
+          "name": "left",
+          "position_source_m": [
+            -2,
+            0,
+            0
+          ],
+          "outward_source": [
+            -1,
+            0,
+            0
+          ],
+          "position_gltf_m": [
+            -2,
+            0,
+            0
+          ],
+          "outward_gltf": [
+            -1,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "right",
+          "position_source_m": [
+            2,
+            0,
+            0
+          ],
+          "outward_source": [
+            1,
+            0,
+            0
+          ],
+          "position_gltf_m": [
+            2,
+            0,
+            0
+          ],
+          "outward_gltf": [
+            1,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "front",
+          "position_source_m": [
+            0,
+            -3,
+            0
+          ],
+          "outward_source": [
+            0,
+            -1,
+            0
+          ],
+          "position_gltf_m": [
+            0,
+            0,
+            3
+          ],
+          "outward_gltf": [
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "name": "back",
+          "position_source_m": [
+            0,
+            3,
+            0
+          ],
+          "outward_source": [
+            0,
+            1,
+            0
+          ],
+          "position_gltf_m": [
+            0,
+            0,
+            -3
+          ],
+          "outward_gltf": [
+            0,
+            0,
+            -1
+          ]
+        }
+      ],
+      "sha256": "424cb97c36f85c352c9c0a6f14129334385a9d80e22efb27541124e1e60381c7",
+      "bytes": 167128,
+      "render_only": true,
+      "collider_enabled": false,
+      "colliders_supplied": false
+    },
+    {
+      "id": "mc15_flat_roof_4x6m",
+      "name": "flat_roof_4x6m",
+      "title": "Flat roof with banded fascia",
+      "file": "assets/flat_roof_4x6m.glb",
+      "bounds_m_source_xyz": [
+        [
+          -2.0,
+          -3.1524999141693115,
+          -0.019999995827674866
+        ],
+        [
+          2.0,
+          3.1474997997283936,
+          0.2199999988079071
+        ]
+      ],
+      "dimensions_m_source_xyz": [
+        4.0,
+        6.3,
+        0.24
+      ],
+      "dimensions_m_gltf_xyz": [
+        4.0,
+        0.24,
+        6.3
+      ],
+      "triangles": 168,
+      "vertices_source": 96,
+      "material_count": 4,
+      "editable_vertex_groups": [
+        "edge_fascias",
+        "flat_membrane",
+        "roof_deck"
+      ],
+      "pivot": "Authored modular/attachment datum; bounds may extend below Z=0. Door uses left hinge at Z=0.",
+      "connections": [
+        {
+          "name": "placement_origin",
+          "position_source_m": [
+            0,
+            0,
+            0
+          ],
+          "outward_source": [
+            0,
+            0,
+            1
+          ],
+          "position_gltf_m": [
+            0,
+            0,
+            0
+          ],
+          "outward_gltf": [
+            0,
+            1,
+            0
+          ]
+        }
+      ],
+      "sha256": "7f811e5dd3af74608db434f0c3bc92428fdde034554e4dec19b5f836299485ae",
+      "bytes": 208372,
+      "render_only": true,
+      "collider_enabled": false,
+      "colliders_supplied": false
+    },
+    {
+      "id": "mc15_gallery_walkway_4m",
+      "name": "gallery_walkway_4m",
+      "title": "Exterior walkway slab",
+      "file": "assets/gallery_walkway_4m.glb",
+      "bounds_m_source_xyz": [
+        [
+          -2.0,
+          -1.8299999237060547,
+          -0.17000000178813934
+        ],
+        [
+          2.0,
+          0.0,
+          0.0020000000949949026
+        ]
+      ],
+      "dimensions_m_source_xyz": [
+        4.0,
+        1.83,
+        0.172
+      ],
+      "dimensions_m_gltf_xyz": [
+        4.0,
+        0.172,
+        1.83
+      ],
+      "triangles": 112,
+      "vertices_source": 64,
+      "material_count": 3,
+      "editable_vertex_groups": [
+        "edge",
+        "gallery_slab"
+      ],
+      "pivot": "Authored modular/attachment datum; bounds may extend below Z=0. Door uses left hinge at Z=0.",
+      "connections": [
+        {
+          "name": "left",
+          "position_source_m": [
+            -2,
+            0,
+            0
+          ],
+          "outward_source": [
+            -1,
+            0,
+            0
+          ],
+          "position_gltf_m": [
+            -2,
+            0,
+            0
+          ],
+          "outward_gltf": [
+            -1,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "right",
+          "position_source_m": [
+            2,
+            0,
+            0
+          ],
+          "outward_source": [
+            1,
+            0,
+            0
+          ],
+          "position_gltf_m": [
+            2,
+            0,
+            0
+          ],
+          "outward_gltf": [
+            1,
+            0,
+            0
+          ]
+        }
+      ],
+      "sha256": "576d29b5059343a2f57037e61e1a7199ce2cdadee6bec04592d3c4884365e874",
+      "bytes": 157148,
+      "render_only": true,
+      "collider_enabled": false,
+      "colliders_supplied": false
+    },
+    {
+      "id": "mc15_gallery_canopy_4m",
+      "name": "gallery_canopy_4m",
+      "title": "Corrugated gallery canopy",
+      "file": "assets/gallery_canopy_4m.glb",
+      "bounds_m_source_xyz": [
+        [
+          -2.0,
+          -2.007499933242798,
+          -0.09999999403953552
+        ],
+        [
+          2.0,
+          0.050000011920928955,
+          0.1899999976158142
+        ]
+      ],
+      "dimensions_m_source_xyz": [
+        4.0,
+        2.0575,
+        0.29
+      ],
+      "dimensions_m_gltf_xyz": [
+        4.0,
+        0.29,
+        2.0575
+      ],
+      "triangles": 276,
+      "vertices_source": 152,
+      "material_count": 4,
+      "editable_vertex_groups": [
+        "front_fascia",
+        "seams",
+        "sheet"
+      ],
+      "pivot": "Authored modular/attachment datum; bounds may extend below Z=0. Door uses left hinge at Z=0.",
+      "connections": [
+        {
+          "name": "left",
+          "position_source_m": [
+            -2,
+            0,
+            0
+          ],
+          "outward_source": [
+            -1,
+            0,
+            0
+          ],
+          "position_gltf_m": [
+            -2,
+            0,
+            0
+          ],
+          "outward_gltf": [
+            -1,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "right",
+          "position_source_m": [
+            2,
+            0,
+            0
+          ],
+          "outward_source": [
+            1,
+            0,
+            0
+          ],
+          "position_gltf_m": [
+            2,
+            0,
+            0
+          ],
+          "outward_gltf": [
+            1,
+            0,
+            0
+          ]
+        }
+      ],
+      "sha256": "bf31e9a47c5824ccb1bb1c50db2acfef14561b57aa00be57614b04a32a8b4fe3",
+      "bytes": 213844,
+      "render_only": true,
+      "collider_enabled": false,
+      "colliders_supplied": false
+    },
+    {
+      "id": "mc15_canopy_post",
+      "name": "canopy_post",
+      "title": "Thin gallery support post",
+      "file": "assets/canopy_post.glb",
+      "bounds_m_source_xyz": [
+        [
+          -0.07999999821186066,
+          -0.07999999821186066,
+          0.0
+        ],
+        [
+          0.07999999821186066,
+          0.07999999821186066,
+          2.440000057220459
+        ]
+      ],
+      "dimensions_m_source_xyz": [
+        0.16,
+        0.16,
+        2.44
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.16,
+        2.44,
+        0.16
+      ],
+      "triangles": 188,
+      "vertices_source": 104,
+      "material_count": 3,
+      "editable_vertex_groups": [
+        "painted_tube"
+      ],
+      "pivot": "Authored modular/attachment datum; bounds may extend below Z=0. Door uses left hinge at Z=0.",
+      "connections": [
+        {
+          "name": "foot",
+          "position_source_m": [
+            0,
+            0,
+            0
+          ],
+          "outward_source": [
+            0,
+            0,
+            -1
+          ],
+          "position_gltf_m": [
+            0,
+            0,
+            0
+          ],
+          "outward_gltf": [
+            0,
+            -1,
+            0
+          ]
+        },
+        {
+          "name": "head",
+          "position_source_m": [
+            0,
+            0,
+            2.44
+          ],
+          "outward_source": [
+            0,
+            0,
+            1
+          ],
+          "position_gltf_m": [
+            0,
+            2.44,
+            0
+          ],
+          "outward_gltf": [
+            0,
+            1,
+            0
+          ]
+        }
+      ],
+      "sha256": "e0f211d94784a205fe2b9fb0e0e924ab7ff3dd185aef082fbf6777c815eacc9b",
+      "bytes": 151872,
+      "render_only": true,
+      "collider_enabled": false,
+      "colliders_supplied": false
+    },
+    {
+      "id": "mc15_room_door_leaf",
+      "name": "room_door_leaf",
+      "title": "Panel door / left hinge origin",
+      "file": "assets/room_door_leaf.glb",
+      "bounds_m_source_xyz": [
+        [
+          0.0,
+          -0.11500000208616257,
+          0.0
+        ],
+        [
+          1.0800000429153442,
+          0.02250000089406967,
+          2.190000057220459
+        ]
+      ],
+      "dimensions_m_source_xyz": [
+        1.08,
+        0.1375,
+        2.19
+      ],
+      "dimensions_m_gltf_xyz": [
+        1.08,
+        2.19,
+        0.1375
+      ],
+      "triangles": 467,
+      "vertices_source": 260,
+      "material_count": 6,
+      "editable_vertex_groups": [
+        "handle_wear",
+        "hinges",
+        "kickplate",
+        "latch",
+        "leaf",
+        "peephole",
+        "raised_panels"
+      ],
+      "pivot": "Authored modular/attachment datum; bounds may extend below Z=0. Door uses left hinge at Z=0.",
+      "connections": [
+        {
+          "name": "hinge",
+          "position_source_m": [
+            0,
+            0,
+            0
+          ],
+          "outward_source": [
+            0,
+            -1,
+            0
+          ],
+          "position_gltf_m": [
+            0,
+            0,
+            0
+          ],
+          "outward_gltf": [
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "name": "latch",
+          "position_source_m": [
+            1.08,
+            0,
+            1.04
+          ],
+          "outward_source": [
+            1,
+            0,
+            0
+          ],
+          "position_gltf_m": [
+            1.08,
+            1.04,
+            0
+          ],
+          "outward_gltf": [
+            1,
+            0,
+            0
+          ]
+        }
+      ],
+      "sha256": "1f0c6633b60dc0c5e6b1b8333d2f4045f9da15e0f94cd985f37fcd2cda6b0fc4",
+      "bytes": 300636,
+      "render_only": true,
+      "collider_enabled": false,
+      "colliders_supplied": false
+    },
+    {
+      "id": "mc15_room_window_insert",
+      "name": "room_window_insert",
+      "title": "Divided window with curtain folds",
+      "file": "assets/room_window_insert.glb",
+      "bounds_m_source_xyz": [
+        [
+          -1.034999966621399,
+          -0.1850000023841858,
+          -0.008499999530613422
+        ],
+        [
+          1.034999966621399,
+          0.06499999761581421,
+          1.2999999523162842
+        ]
+      ],
+      "dimensions_m_source_xyz": [
+        2.07,
+        0.25,
+        1.3085
+      ],
+      "dimensions_m_gltf_xyz": [
+        2.07,
+        1.3085,
+        0.25
+      ],
+      "triangles": 792,
+      "vertices_source": 432,
+      "material_count": 4,
+      "editable_vertex_groups": [
+        "curtain_folds",
+        "frame",
+        "opaque_dusty_panes",
+        "sill"
+      ],
+      "pivot": "Authored modular/attachment datum; bounds may extend below Z=0. Door uses left hinge at Z=0.",
+      "connections": [
+        {
+          "name": "opening_origin",
+          "position_source_m": [
+            0,
+            0,
+            0
+          ],
+          "outward_source": [
+            0,
+            1,
+            0
+          ],
+          "position_gltf_m": [
+            0,
+            0,
+            0
+          ],
+          "outward_gltf": [
+            0,
+            0,
+            -1
+          ]
+        }
+      ],
+      "sha256": "a88dfa7e390653544ad1616b688aa71a5d44a0d30b82a41abed3a4cf6d4186ba",
+      "bytes": 247172,
+      "render_only": true,
+      "collider_enabled": false,
+      "colliders_supplied": false
+    },
+    {
+      "id": "mc15_gallery_railing_2m",
+      "name": "gallery_railing_2m",
+      "title": "Simple gallery railing",
+      "file": "assets/gallery_railing_2m.glb",
+      "bounds_m_source_xyz": [
+        [
+          -1.0299999713897705,
+          -0.05999999865889549,
+          0.0
+        ],
+        [
+          1.0299999713897705,
+          0.05999999865889549,
+          1.0225000381469727
+        ]
+      ],
+      "dimensions_m_source_xyz": [
+        2.06,
+        0.12,
+        1.0225
+      ],
+      "dimensions_m_gltf_xyz": [
+        2.06,
+        1.0225,
+        0.12
+      ],
+      "triangles": 484,
+      "vertices_source": 264,
+      "material_count": 3,
+      "editable_vertex_groups": [
+        "feet",
+        "rails"
+      ],
+      "pivot": "Authored modular/attachment datum; bounds may extend below Z=0. Door uses left hinge at Z=0.",
+      "connections": [
+        {
+          "name": "placement_origin",
+          "position_source_m": [
+            0,
+            0,
+            0
+          ],
+          "outward_source": [
+            0,
+            0,
+            1
+          ],
+          "position_gltf_m": [
+            0,
+            0,
+            0
+          ],
+          "outward_gltf": [
+            0,
+            1,
+            0
+          ]
+        }
+      ],
+      "sha256": "8c6bf42ccb3711aacc9a8f9aefe0b64e1f31d81919948c95e868c0440d78367c",
+      "bytes": 175020,
+      "render_only": true,
+      "collider_enabled": false,
+      "colliders_supplied": false
+    },
+    {
+      "id": "mc15_lobby_glazed_facade",
+      "name": "lobby_glazed_facade",
+      "title": "Reception glazing and doorway",
+      "file": "assets/lobby_glazed_facade.glb",
+      "bounds_m_source_xyz": [
+        [
+          -2.0,
+          -0.10050000250339508,
+          0.0
+        ],
+        [
+          2.0,
+          0.09000000357627869,
+          2.799999952316284
+        ]
+      ],
+      "dimensions_m_source_xyz": [
+        4.0,
+        0.1905,
+        2.8
+      ],
+      "dimensions_m_gltf_xyz": [
+        4.0,
+        2.8,
+        0.1905
+      ],
+      "triangles": 1004,
+      "vertices_source": 616,
+      "material_count": 3,
+      "editable_vertex_groups": [
+        "frame_and_header",
+        "glazed_panels",
+        "lettering"
+      ],
+      "pivot": "Authored modular/attachment datum; bounds may extend below Z=0. Door uses left hinge at Z=0.",
+      "connections": [
+        {
+          "name": "left",
+          "position_source_m": [
+            -2,
+            0,
+            0
+          ],
+          "outward_source": [
+            -1,
+            0,
+            0
+          ],
+          "position_gltf_m": [
+            -2,
+            0,
+            0
+          ],
+          "outward_gltf": [
+            -1,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "right",
+          "position_source_m": [
+            2,
+            0,
+            0
+          ],
+          "outward_source": [
+            1,
+            0,
+            0
+          ],
+          "position_gltf_m": [
+            2,
+            0,
+            0
+          ],
+          "outward_gltf": [
+            1,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "roof",
+          "position_source_m": [
+            0,
+            0,
+            2.8
+          ],
+          "outward_source": [
+            0,
+            0,
+            1
+          ],
+          "position_gltf_m": [
+            0,
+            2.8,
+            0
+          ],
+          "outward_gltf": [
+            0,
+            1,
+            0
+          ]
+        }
+      ],
+      "sha256": "f3e939267e9401b47fd180e66cddcebeff95f4ed8da9f226c16223a1d325bcb0",
+      "bytes": 213760,
+      "render_only": true,
+      "collider_enabled": false,
+      "colliders_supplied": false
+    },
+    {
+      "id": "mc15_reception_counter",
+      "name": "reception_counter",
+      "title": "Batten-front reception counter",
+      "file": "assets/reception_counter.glb",
+      "bounds_m_source_xyz": [
+        [
+          -1.25,
+          -0.39399999380111694,
+          0.0
+        ],
+        [
+          1.25,
+          0.5199999809265137,
+          1.090000033378601
+        ]
+      ],
+      "dimensions_m_source_xyz": [
+        2.5,
+        0.914,
+        1.09
+      ],
+      "dimensions_m_gltf_xyz": [
+        2.5,
+        1.09,
+        0.914
+      ],
+      "triangles": 892,
+      "vertices_source": 488,
+      "material_count": 4,
+      "editable_vertex_groups": [
+        "cabinet",
+        "edge_wear",
+        "service_ledgetop",
+        "vertical_battens",
+        "worktop"
+      ],
+      "pivot": "Authored modular/attachment datum; bounds may extend below Z=0. Door uses left hinge at Z=0.",
+      "connections": [
+        {
+          "name": "placement_origin",
+          "position_source_m": [
+            0,
+            0,
+            0
+          ],
+          "outward_source": [
+            0,
+            0,
+            1
+          ],
+          "position_gltf_m": [
+            0,
+            0,
+            0
+          ],
+          "outward_gltf": [
+            0,
+            1,
+            0
+          ]
+        }
+      ],
+      "sha256": "6f526688a7fd5cea05702072f0d2c03224dea2c1ba0f72bd57a7c25158f7ff4c",
+      "bytes": 268072,
+      "render_only": true,
+      "collider_enabled": false,
+      "colliders_supplied": false
+    },
+    {
+      "id": "mc15_roadside_sign",
+      "name": "roadside_sign",
+      "title": "BRIAR COURT roadside sign",
+      "file": "assets/roadside_sign.glb",
+      "bounds_m_source_xyz": [
+        [
+          -1.600000023841858,
+          -0.3499999940395355,
+          0.0
+        ],
+        [
+          1.600000023841858,
+          0.3499999940395355,
+          4.112499713897705
+        ]
+      ],
+      "dimensions_m_source_xyz": [
+        3.2,
+        0.7,
+        4.1125
+      ],
+      "dimensions_m_gltf_xyz": [
+        3.2,
+        4.1125,
+        0.7
+      ],
+      "triangles": 3075,
+      "vertices_source": 2016,
+      "material_count": 7,
+      "editable_vertex_groups": [
+        "edge_wear",
+        "face_casing",
+        "foundation",
+        "lower_reader",
+        "mast",
+        "name_letters"
+      ],
+      "pivot": "Authored modular/attachment datum; bounds may extend below Z=0. Door uses left hinge at Z=0.",
+      "connections": [
+        {
+          "name": "placement_origin",
+          "position_source_m": [
+            0,
+            0,
+            0
+          ],
+          "outward_source": [
+            0,
+            0,
+            1
+          ],
+          "position_gltf_m": [
+            0,
+            0,
+            0
+          ],
+          "outward_gltf": [
+            0,
+            1,
+            0
+          ]
+        }
+      ],
+      "sha256": "588f6b571e3874b37597692c3597de05fcf9c364a64e32fc22d9e0480bd22170",
+      "bytes": 559856,
+      "render_only": true,
+      "collider_enabled": false,
+      "colliders_supplied": false
+    },
+    {
+      "id": "mc15_ice_machine",
+      "name": "ice_machine",
+      "title": "Weathered ice dispenser shell",
+      "file": "assets/ice_machine.glb",
+      "bounds_m_source_xyz": [
+        [
+          -0.4749999940395355,
+          -0.4429999887943268,
+          0.0
+        ],
+        [
+          0.4749999940395355,
+          0.4000000059604645,
+          1.6200000047683716
+        ]
+      ],
+      "dimensions_m_source_xyz": [
+        0.95,
+        0.843,
+        1.62
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.95,
+        1.62,
+        0.843
+      ],
+      "triangles": 875,
+      "vertices_source": 512,
+      "material_count": 5,
+      "editable_vertex_groups": [
+        "enamel_shell",
+        "hopper",
+        "label",
+        "lid",
+        "staining",
+        "vent_louvres"
+      ],
+      "pivot": "Authored modular/attachment datum; bounds may extend below Z=0. Door uses left hinge at Z=0.",
+      "connections": [
+        {
+          "name": "placement_origin",
+          "position_source_m": [
+            0,
+            0,
+            0
+          ],
+          "outward_source": [
+            0,
+            0,
+            1
+          ],
+          "position_gltf_m": [
+            0,
+            0,
+            0
+          ],
+          "outward_gltf": [
+            0,
+            1,
+            0
+          ]
+        }
+      ],
+      "sha256": "ef83a3514d38f7f07634ef4dea21098c6b1b9c6c413b90d032b322a0eb9490f6",
+      "bytes": 278912,
+      "render_only": true,
+      "collider_enabled": false,
+      "colliders_supplied": false
+    },
+    {
+      "id": "mc15_vending_machine",
+      "name": "vending_machine",
+      "title": "Snack vending cabinet shell",
+      "file": "assets/vending_machine.glb",
+      "bounds_m_source_xyz": [
+        [
+          -0.4699999988079071,
+          -0.4754999876022339,
+          0.0
+        ],
+        [
+          0.4699999988079071,
+          0.4000000059604645,
+          1.840000033378601
+        ]
+      ],
+      "dimensions_m_source_xyz": [
+        0.94,
+        0.8755,
+        1.84
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.94,
+        1.84,
+        0.8755
+      ],
+      "triangles": 1043,
+      "vertices_source": 576,
+      "material_count": 6,
+      "editable_vertex_groups": [
+        "buttons",
+        "display",
+        "kickwear",
+        "pickup_slot",
+        "product_bars",
+        "steel_cabinet"
+      ],
+      "pivot": "Authored modular/attachment datum; bounds may extend below Z=0. Door uses left hinge at Z=0.",
+      "connections": [
+        {
+          "name": "placement_origin",
+          "position_source_m": [
+            0,
+            0,
+            0
+          ],
+          "outward_source": [
+            0,
+            0,
+            1
+          ],
+          "position_gltf_m": [
+            0,
+            0,
+            0
+          ],
+          "outward_gltf": [
+            0,
+            1,
+            0
+          ]
+        }
+      ],
+      "sha256": "80279ecba4c61943dd09043c2198c74d0e4080133bdc77a9b107985d35576185",
+      "bytes": 338572,
+      "render_only": true,
+      "collider_enabled": false,
+      "colliders_supplied": false
+    },
+    {
+      "id": "mc15_room_number_plaque",
+      "name": "room_number_plaque",
+      "title": "Room 101 plaque master",
+      "file": "assets/room_number_plaque.glb",
+      "bounds_m_source_xyz": [
+        [
+          -0.1599999964237213,
+          -0.03799999877810478,
+          -0.08500000089406967
+        ],
+        [
+          0.1599999964237213,
+          0.0,
+          0.08500000089406967
+        ]
+      ],
+      "dimensions_m_source_xyz": [
+        0.32,
+        0.038,
+        0.17
+      ],
+      "dimensions_m_gltf_xyz": [
+        0.32,
+        0.17,
+        0.038
+      ],
+      "triangles": 424,
+      "vertices_source": 272,
+      "material_count": 3,
+      "editable_vertex_groups": [
+        "numerals",
+        "plate"
+      ],
+      "pivot": "Authored modular/attachment datum; bounds may extend below Z=0. Door uses left hinge at Z=0.",
+      "connections": [
+        {
+          "name": "placement_origin",
+          "position_source_m": [
+            0,
+            0,
+            0
+          ],
+          "outward_source": [
+            0,
+            0,
+            1
+          ],
+          "position_gltf_m": [
+            0,
+            0,
+            0
+          ],
+          "outward_gltf": [
+            0,
+            1,
+            0
+          ]
+        }
+      ],
+      "sha256": "028dc1310568185b544d783574a81492d9be9f97ba07f17287eb15a137b00121",
+      "bytes": 178312,
+      "render_only": true,
+      "collider_enabled": false,
+      "colliders_supplied": false
+    },
+    {
+      "id": "mc15_through_wall_ac",
+      "name": "through_wall_ac",
+      "title": "Sleeved through-wall air conditioner",
+      "file": "assets/through_wall_ac.glb",
+      "bounds_m_source_xyz": [
+        [
+          -0.5049999952316284,
+          -0.20649999380111694,
+          -0.04000002145767212
+        ],
+        [
+          0.5049999952316284,
+          0.1925000101327896,
+          0.5600000023841858
+        ]
+      ],
+      "dimensions_m_source_xyz": [
+        1.01,
+        0.399,
+        0.6
+      ],
+      "dimensions_m_gltf_xyz": [
+        1.01,
+        0.6,
+        0.399
+      ],
+      "triangles": 1019,
+      "vertices_source": 560,
+      "material_count": 4,
+      "editable_vertex_groups": [
+        "cabinet",
+        "drip_stain",
+        "lower_grille",
+        "upper_louvres",
+        "wall_flange"
+      ],
+      "pivot": "Authored modular/attachment datum; bounds may extend below Z=0. Door uses left hinge at Z=0.",
+      "connections": [
+        {
+          "name": "placement_origin",
+          "position_source_m": [
+            0,
+            0,
+            0
+          ],
+          "outward_source": [
+            0,
+            0,
+            1
+          ],
+          "position_gltf_m": [
+            0,
+            0,
+            0
+          ],
+          "outward_gltf": [
+            0,
+            1,
+            0
+          ]
+        }
+      ],
+      "sha256": "cc4d86eb06bdc0b596222716213ba425c3cb34be5248b47339e58ed50165e237",
+      "bytes": 245516,
+      "render_only": true,
+      "collider_enabled": false,
+      "colliders_supplied": false
+    },
+    {
+      "id": "mc15_parking_wheel_stop",
+      "name": "parking_wheel_stop",
+      "title": "Chipped concrete wheel stop",
+      "file": "assets/parking_wheel_stop.glb",
+      "bounds_m_source_xyz": [
+        [
+          -0.8999999761581421,
+          -0.12350000441074371,
+          0.0
+        ],
+        [
+          0.8999999761581421,
+          0.11999999731779099,
+          0.14300000667572021
+        ]
+      ],
+      "dimensions_m_source_xyz": [
+        1.8,
+        0.2435,
+        0.143
+      ],
+      "dimensions_m_gltf_xyz": [
+        1.8,
+        0.143,
+        0.2435
+      ],
+      "triangles": 156,
+      "vertices_source": 88,
+      "material_count": 3,
+      "editable_vertex_groups": [
+        "concrete_body",
+        "faded_reflectors"
+      ],
+      "pivot": "Authored modular/attachment datum; bounds may extend below Z=0. Door uses left hinge at Z=0.",
+      "connections": [
+        {
+          "name": "placement_origin",
+          "position_source_m": [
+            0,
+            0,
+            0
+          ],
+          "outward_source": [
+            0,
+            0,
+            1
+          ],
+          "position_gltf_m": [
+            0,
+            0,
+            0
+          ],
+          "outward_gltf": [
+            0,
+            1,
+            0
+          ]
+        }
+      ],
+      "sha256": "22afdb17fbe161a0534ad1b2c50d50b30857aa8bf845fe62e25f73c4f6cf3d1e",
+      "bytes": 140084,
+      "render_only": true,
+      "collider_enabled": false,
+      "colliders_supplied": false
+    },
+    {
+      "id": "mc15_gallery_access_ramp",
+      "name": "gallery_access_ramp",
+      "title": "Shallow walkway ramp",
+      "file": "assets/gallery_access_ramp.glb",
+      "bounds_m_source_xyz": [
+        [
+          -0.699999988079071,
+          -1.2000000476837158,
+          -0.07999999821186066
+        ],
+        [
+          0.699999988079071,
+          0.0,
+          0.0
+        ]
+      ],
+      "dimensions_m_source_xyz": [
+        1.4,
+        1.2,
+        0.08
+      ],
+      "dimensions_m_gltf_xyz": [
+        1.4,
+        0.08,
+        1.2
+      ],
+      "triangles": 108,
+      "vertices_source": 72,
+      "material_count": 2,
+      "editable_vertex_groups": [
+        "shallow_walkway_transition"
+      ],
+      "pivot": "Authored modular/attachment datum; bounds may extend below Z=0. Door uses left hinge at Z=0.",
+      "connections": [
+        {
+          "name": "walkway",
+          "position_source_m": [
+            0,
+            0,
+            0
+          ],
+          "outward_source": [
+            0,
+            1,
+            0
+          ],
+          "position_gltf_m": [
+            0,
+            0,
+            0
+          ],
+          "outward_gltf": [
+            0,
+            0,
+            -1
+          ]
+        },
+        {
+          "name": "court",
+          "position_source_m": [
+            0,
+            -1.2,
+            -0.079
+          ],
+          "outward_source": [
+            0,
+            -1,
+            0
+          ],
+          "position_gltf_m": [
+            0,
+            -0.079,
+            1.2
+          ],
+          "outward_gltf": [
+            0,
+            0,
+            1
+          ]
+        }
+      ],
+      "sha256": "1a2aa51634c08fafbe5ce43ecc875a5334ffa60ced0c459b2ef17879a38b457e",
+      "bytes": 103448,
+      "render_only": true,
+      "collider_enabled": false,
+      "colliders_supplied": false
+    },
+    {
+      "id": "mc15_service_doorway_4m",
+      "name": "service_doorway_4m",
+      "title": "Centred service doorway wall",
+      "file": "assets/service_doorway_4m.glb",
+      "bounds_m_source_xyz": [
+        [
+          -2.0,
+          -0.11500000208616257,
+          0.0
+        ],
+        [
+          2.0,
+          0.11500000208616257,
+          2.799999952316284
+        ]
+      ],
+      "dimensions_m_source_xyz": [
+        4.0,
+        0.23,
+        2.8
+      ],
+      "dimensions_m_gltf_xyz": [
+        4.0,
+        2.8,
+        0.23
+      ],
+      "triangles": 264,
+      "vertices_source": 144,
+      "material_count": 2,
+      "editable_vertex_groups": [
+        "jamb",
+        "walls"
+      ],
+      "pivot": "Authored modular/attachment datum; bounds may extend below Z=0. Door uses left hinge at Z=0.",
+      "connections": [
+        {
+          "name": "left",
+          "position_source_m": [
+            -2,
+            0,
+            0
+          ],
+          "outward_source": [
+            -1,
+            0,
+            0
+          ],
+          "position_gltf_m": [
+            -2,
+            0,
+            0
+          ],
+          "outward_gltf": [
+            -1,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "right",
+          "position_source_m": [
+            2,
+            0,
+            0
+          ],
+          "outward_source": [
+            1,
+            0,
+            0
+          ],
+          "position_gltf_m": [
+            2,
+            0,
+            0
+          ],
+          "outward_gltf": [
+            1,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "roof",
+          "position_source_m": [
+            0,
+            0,
+            2.8
+          ],
+          "outward_source": [
+            0,
+            0,
+            1
+          ],
+          "position_gltf_m": [
+            0,
+            2.8,
+            0
+          ],
+          "outward_gltf": [
+            0,
+            1,
+            0
+          ]
+        }
+      ],
+      "sha256": "4587ce79f75c066c05739bc08e613add968edd167fe20fa8c13acc5d46868272",
+      "bytes": 131976,
+      "render_only": true,
+      "collider_enabled": false,
+      "colliders_supplied": false
+    },
+    {
+      "id": "mc15_bathroom_partition_4m",
+      "name": "bathroom_partition_4m",
+      "title": "Off-centre bathroom partition",
+      "file": "assets/bathroom_partition_4m.glb",
+      "bounds_m_source_xyz": [
+        [
+          -2.0,
+          -0.08500000089406967,
+          0.0
+        ],
+        [
+          2.0,
+          0.08500000089406967,
+          2.799999952316284
+        ]
+      ],
+      "dimensions_m_source_xyz": [
+        4.0,
+        0.17,
+        2.8
+      ],
+      "dimensions_m_gltf_xyz": [
+        4.0,
+        2.8,
+        0.17
+      ],
+      "triangles": 264,
+      "vertices_source": 144,
+      "material_count": 3,
+      "editable_vertex_groups": [
+        "painted_partition",
+        "tile_wainscot"
+      ],
+      "pivot": "Authored modular/attachment datum; bounds may extend below Z=0. Door uses left hinge at Z=0.",
+      "connections": [
+        {
+          "name": "left",
+          "position_source_m": [
+            -2,
+            0,
+            0
+          ],
+          "outward_source": [
+            -1,
+            0,
+            0
+          ],
+          "position_gltf_m": [
+            -2,
+            0,
+            0
+          ],
+          "outward_gltf": [
+            -1,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "right",
+          "position_source_m": [
+            2,
+            0,
+            0
+          ],
+          "outward_source": [
+            1,
+            0,
+            0
+          ],
+          "position_gltf_m": [
+            2,
+            0,
+            0
+          ],
+          "outward_gltf": [
+            1,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "roof",
+          "position_source_m": [
+            0,
+            0,
+            2.8
+          ],
+          "outward_source": [
+            0,
+            0,
+            1
+          ],
+          "position_gltf_m": [
+            0,
+            2.8,
+            0
+          ],
+          "outward_gltf": [
+            0,
+            1,
+            0
+          ]
+        }
+      ],
+      "sha256": "32c6ee7ee72b4dee39feb2820d65e34789af32af906fb756fa196bd0ea2d7877",
+      "bytes": 179136,
+      "render_only": true,
+      "collider_enabled": false,
+      "colliders_supplied": false
+    },
+    {
+      "id": "mc15_reception_key_cubbies",
+      "name": "reception_key_cubbies",
+      "title": "Sixteen-slot reception key rack",
+      "file": "assets/reception_key_cubbies.glb",
+      "bounds_m_source_xyz": [
+        [
+          -0.5400000214576721,
+          -0.2199999988079071,
+          0.0
+        ],
+        [
+          0.5400000214576721,
+          0.05000000074505806,
+          0.9200000166893005
+        ]
+      ],
+      "dimensions_m_source_xyz": [
+        1.08,
+        0.27,
+        0.92
+      ],
+      "dimensions_m_gltf_xyz": [
+        1.08,
+        0.92,
+        0.27
+      ],
+      "triangles": 772,
+      "vertices_source": 424,
+      "material_count": 3,
+      "editable_vertex_groups": [
+        "backboard",
+        "cubby_dividers",
+        "key_tags"
+      ],
+      "pivot": "Authored modular/attachment datum; bounds may extend below Z=0. Door uses left hinge at Z=0.",
+      "connections": [
+        {
+          "name": "placement_origin",
+          "position_source_m": [
+            0,
+            0,
+            0
+          ],
+          "outward_source": [
+            0,
+            0,
+            1
+          ],
+          "position_gltf_m": [
+            0,
+            0,
+            0
+          ],
+          "outward_gltf": [
+            0,
+            1,
+            0
+          ]
+        }
+      ],
+      "sha256": "ba9ab1491186f8aaf1341d584188365f49cf69b006fbe91b3d116628f98a0741",
+      "bytes": 196208,
+      "render_only": true,
+      "collider_enabled": false,
+      "colliders_supplied": false
+    }
+  ],
+  "reused_existing_assets": [
+    {
+      "id": "bedframe_single_institutional",
+      "name": "bedframe_single_institutional",
+      "source_file_original": "../04_furniture_variants/assets/bedframe_single_institutional.glb",
+      "file": "reused_assets/bedframe_single_institutional.glb",
+      "sha256": "515601eefaae54b374b900e8b5a98a8cc0b39385c2997775b4d0991b6fe7e370",
+      "counted_as_new_design": false,
+      "license": "CC0-1.0",
+      "bounds_source_m": [
+        [
+          -0.5260000228881836,
+          -1.0679999589920044,
+          0.0
+        ],
+        [
+          0.5260000228881836,
+          1.0679999589920044,
+          1.0950000286102295
+        ]
+      ]
+    },
+    {
+      "id": "mattress_dirty",
+      "name": "mattress_dirty",
+      "source_file_original": "../../house_kit/modules/props/mattress_dirty.glb",
+      "file": "reused_assets/mattress_dirty.glb",
+      "sha256": "73aa330b4d519c838f042c50c89569ef58dec3ac3f2d7e9c24f5e7a0fb2e1ab5",
+      "counted_as_new_design": false,
+      "license": "CC0-1.0",
+      "bounds_source_m": [
+        [
+          -0.6790000200271606,
+          -0.9790000319480896,
+          0.014812052249908447
+        ],
+        [
+          0.6790000200271606,
+          0.9790000319480896,
+          0.4221677780151367
+        ]
+      ]
+    },
+    {
+      "id": "desk",
+      "name": "desk",
+      "source_file_original": "../../house_kit/modules/props/desk.glb",
+      "file": "reused_assets/desk.glb",
+      "sha256": "acb19cfa1461ba4bd960615ccbc2971493ac82a198d4a7445c9922f9f8325bb7",
+      "counted_as_new_design": false,
+      "license": "CC0-1.0",
+      "bounds_source_m": [
+        [
+          -0.7099999785423279,
+          -0.41499999165534973,
+          0.0
+        ],
+        [
+          0.7099999785423279,
+          0.41499999165534973,
+          0.7523000240325928
+        ]
+      ]
+    },
+    {
+      "id": "chair_metal_folding",
+      "name": "chair_metal_folding",
+      "source_file_original": "../04_furniture_variants/assets/chair_metal_folding.glb",
+      "file": "reused_assets/chair_metal_folding.glb",
+      "sha256": "7aa71587f7f9805ef3cbb5d7694012a191a376579cf9acde62f6826249daffed",
+      "counted_as_new_design": false,
+      "license": "CC0-1.0",
+      "bounds_source_m": [
+        [
+          -0.2540000081062317,
+          -0.3068743050098419,
+          0.0
+        ],
+        [
+          0.2540000081062317,
+          0.32187432050704956,
+          0.8758432865142822
+        ]
+      ]
+    },
+    {
+      "id": "tv_crt",
+      "name": "tv_crt",
+      "source_file_original": "../../house_kit/modules/props/tv_crt.glb",
+      "file": "reused_assets/tv_crt.glb",
+      "sha256": "f3b503ae9a81e630c915fad5b552d2f76a5f872fbd13b41dd054da350afd0bf2",
+      "counted_as_new_design": false,
+      "license": "CC0-1.0",
+      "bounds_source_m": [
+        [
+          -0.3434012532234192,
+          -0.25200000405311584,
+          0.004500001668930054
+        ],
+        [
+          0.33000001311302185,
+          0.23000000417232513,
+          0.9321996569633484
+        ]
+      ]
+    },
+    {
+      "id": "basin_pedestal",
+      "name": "basin_pedestal",
+      "source_file_original": "../../house_kit/modules/props/basin_pedestal.glb",
+      "file": "reused_assets/basin_pedestal.glb",
+      "sha256": "e1b421ac32966a1466fb8b18aae4e469b464b8ac98122a338487576f5d1f1f56",
+      "counted_as_new_design": false,
+      "license": "CC0-1.0",
+      "bounds_source_m": [
+        [
+          -0.3050000071525574,
+          -0.22499999403953552,
+          0.004999995231628418
+        ],
+        [
+          0.3050000071525574,
+          0.22499999403953552,
+          1.033314824104309
+        ]
+      ]
+    },
+    {
+      "id": "toilet_old",
+      "name": "toilet_old",
+      "source_file_original": "../../house_kit/modules/props/toilet_old.glb",
+      "file": "reused_assets/toilet_old.glb",
+      "sha256": "807fc8fc1274d0f022505d0df62948d8bcc930f90c90ebfa5d1423a7f4760d43",
+      "counted_as_new_design": false,
+      "license": "CC0-1.0",
+      "bounds_source_m": [
+        [
+          -0.26750001311302185,
+          -0.4003663659095764,
+          0.015000000596046448
+        ],
+        [
+          0.22499999403953552,
+          0.3400000035762787,
+          0.8624999523162842
+        ]
+      ]
+    },
+    {
+      "id": "bathtub_old",
+      "name": "bathtub_old",
+      "source_file_original": "../../house_kit/modules/props/bathtub_old.glb",
+      "file": "reused_assets/bathtub_old.glb",
+      "sha256": "26a921829021be2378186f1d877aca3983ba13b46cdf1fd1d6209ef51a43bea0",
+      "counted_as_new_design": false,
+      "license": "CC0-1.0",
+      "bounds_source_m": [
+        [
+          -0.8700000047683716,
+          -0.39500001072883606,
+          0.030000001192092896
+        ],
+        [
+          0.8700000047683716,
+          0.39500001072883606,
+          0.8970000147819519
+        ]
+      ]
+    },
+    {
+      "id": "frosted_dome_light",
+      "name": "frosted_dome_light",
+      "source_file_original": "../05_interior_fixtures/assets/frosted_dome_light.glb",
+      "file": "reused_assets/frosted_dome_light.glb",
+      "sha256": "e105aef8c014e1c253ba45414bda021659609c28012d0256e354f8582afba38c",
+      "counted_as_new_design": false,
+      "license": "CC0-1.0",
+      "bounds_source_m": [
+        [
+          -0.164000004529953,
+          -0.164000004529953,
+          -0.1509999930858612
+        ],
+        [
+          0.164000004529953,
+          0.164000004529953,
+          0.0
+        ]
+      ]
+    },
+    {
+      "id": "ribbed_glass_wall_sconce",
+      "name": "ribbed_glass_wall_sconce",
+      "source_file_original": "../05_interior_fixtures/assets/ribbed_glass_wall_sconce.glb",
+      "file": "reused_assets/ribbed_glass_wall_sconce.glb",
+      "sha256": "e38fb4f491ba38a29d533f18b724d5e0762ad695e6c6312f4b734fcf91195cad",
+      "counted_as_new_design": false,
+      "license": "CC0-1.0",
+      "bounds_source_m": [
+        [
+          -0.07138402760028839,
+          -0.19438402354717255,
+          -0.10450000315904617
+        ],
+        [
+          0.07138402760028839,
+          0.0,
+          0.10450000315904617
+        ]
+      ]
+    },
+    {
+      "id": "lb11_front_load_washer",
+      "name": "front_load_washer",
+      "source_file_original": "../11_laundry_basement/assets/front_load_washer.glb",
+      "file": "reused_assets/front_load_washer.glb",
+      "sha256": "b4178f63e852ad16510bbfab8cb30ee3f5d9b4ce461e395c9a71a57cb3f7e33d",
+      "counted_as_new_design": false,
+      "license": "CC0-1.0",
+      "bounds_source_m": [
+        [
+          -0.3165000081062317,
+          -0.3779980540275574,
+          0.0
+        ],
+        [
+          0.3165000081062317,
+          0.3779980540275574,
+          0.8844999670982361
+        ]
+      ]
+    },
+    {
+      "id": "lb11_vented_tumble_dryer",
+      "name": "vented_tumble_dryer",
+      "source_file_original": "../11_laundry_basement/assets/vented_tumble_dryer.glb",
+      "file": "reused_assets/vented_tumble_dryer.glb",
+      "sha256": "416fd1ad92098cc9c7c8897d1aa3b4e50263f0fbdc34820961cecf500b1af27d",
+      "counted_as_new_design": false,
+      "license": "CC0-1.0",
+      "bounds_source_m": [
+        [
+          -0.3199999928474426,
+          -0.37450000643730164,
+          0.0
+        ],
+        [
+          0.3199999928474426,
+          0.37450000643730164,
+          1.0255000591278076
+        ]
+      ]
+    },
+    {
+      "id": "lb11_folded_bedsheet_stack",
+      "name": "folded_bedsheet_stack",
+      "source_file_original": "../11_laundry_basement/assets/folded_bedsheet_stack.glb",
+      "file": "reused_assets/folded_bedsheet_stack.glb",
+      "sha256": "cdc52903272f0383b7c7af1086e6ec9e99ee7c0ec7d79210ddc36dc494aaa8a2",
+      "counted_as_new_design": false,
+      "license": "CC0-1.0",
+      "bounds_source_m": [
+        [
+          -0.23742148280143738,
+          -0.17382186651229858,
+          0.0
+        ],
+        [
+          0.23742148280143738,
+          0.17382186651229858,
+          0.15042652189731598
+        ]
+      ]
+    },
+    {
+      "id": "rotary_telephone",
+      "name": "rotary_telephone",
+      "source_file_original": "../02_household_clutter/modules/rotary_telephone.glb",
+      "file": "reused_assets/rotary_telephone.glb",
+      "sha256": "429110b24d329af32deaa8f531d3563507eee32bc2d45b1e7dcbdd929b39d6c1",
+      "counted_as_new_design": false,
+      "license": "CC0-1.0",
+      "bounds_source_m": [
+        [
+          -0.16477791965007782,
+          -0.10249999910593033,
+          0.0
+        ],
+        [
+          0.16477791965007782,
+          0.10249999910593033,
+          0.1960841566324234
+        ]
+      ]
+    },
+    {
+      "id": "twin_bell_alarm_clock",
+      "name": "twin_bell_alarm_clock",
+      "source_file_original": "../02_household_clutter/modules/twin_bell_alarm_clock.glb",
+      "file": "reused_assets/twin_bell_alarm_clock.glb",
+      "sha256": "332c0ae369197861fb11a6f464a293217922e526d3b42d8e79e10db7f3b0cdbf",
+      "counted_as_new_design": false,
+      "license": "CC0-1.0",
+      "bounds_source_m": [
+        [
+          -0.08023183047771454,
+          -0.03550000116229057,
+          0.0
+        ],
+        [
+          0.08023183047771454,
+          0.03550000116229057,
+          0.20212070643901825
+        ]
+      ]
+    },
+    {
+      "id": "chipped_coffee_mug",
+      "name": "chipped_coffee_mug",
+      "source_file_original": "../02_household_clutter/modules/chipped_coffee_mug.glb",
+      "file": "reused_assets/chipped_coffee_mug.glb",
+      "sha256": "d1fd3c6091cb1fdeba088c3dbb0f4ae0fa998f0a35d84d01cd1d33d52b39a4d0",
+      "counted_as_new_design": false,
+      "license": "CC0-1.0",
+      "bounds_source_m": [
+        [
+          -0.05549529194831848,
+          -0.03840000182390213,
+          0.0
+        ],
+        [
+          0.05549529194831848,
+          0.03840000182390213,
+          0.0925000011920929
+        ]
+      ]
+    }
+  ],
+  "example": {
+    "file": "motel_example.glb",
+    "cutaway": "motel_example_cutaway.glb",
+    "guest_rooms": 4,
+    "room_footprint_m": [
+      4,
+      6
+    ],
+    "lobby_footprint_m": [
+      4,
+      6
+    ],
+    "service_room_footprint_m": [
+      4,
+      4
+    ],
+    "building_main_footprint_m": [
+      20,
+      6
+    ],
+    "gallery_depth_m": 1.8,
+    "ceiling_height_m": 2.8,
+    "main_floor_z_m": 0,
+    "courtyard_z_m": -0.08,
+    "instance_count": 146,
+    "room_door_clear_opening_m": [
+      1.11,
+      2.2225
+    ]
+  },
+  "notes": [
+    "Original fictional location, sign artwork, layout and geometry. No commercial game maps or real incident layout reproduced.",
+    "Room number plaque master reads 101. Alternate example numbers are generated from the same design; not separate counted assets.",
+    "Open doors are separate left-hinge meshes. They are static placements, not runtime animations.",
+    "All room furnishings are reused by source ID and hashes, not counted as new designs.",
+    "Single-storey gallery needs no exterior stairs. Shallow courtyard transition is provided."
+  ]
+}

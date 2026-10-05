@@ -28,11 +28,22 @@ static const char* vertex_source=
     "vec3 a=abs(vertexNormal); uv=(a.y>max(a.x,a.z)?vec2(p.x,p.z):vec2(a.x>=a.z?p.z:p.x,p.y))/environmentTile; }"
     "tangent=vec4((matModel*vec4(t0,0.0)).xyz,vertexTangent.w);"
     "gl_Position=mvp*vec4(p0,1.0); }\n";
+// Shared linear daylight environment: the visible sky and reflected radiance
+// agree. Roughness blends toward its broad irradiance approximation.
+#define SWAT_SKY_GLSL \
+    "vec3 skyRadiance(vec3 d,float r){float h=clamp(d.y,0.0,1.0);" \
+    "vec3 sky=mix(vec3(0.62,0.68,0.73),vec3(0.25,0.43,0.66),pow(h,0.45));" \
+    "float clouds=pow(max(0.0,sin(d.x*9.0+d.z*3.0)*sin(d.z*11.0-d.x*2.0)),4.0);" \
+    "sky=mix(sky,vec3(0.76,0.78,0.79),clouds*(1.0-r)*(1.0-r)*smoothstep(0.02,0.28,h)*0.65);" \
+    "sky=mix(vec3(0.11,0.105,0.09),sky,smoothstep(-0.06,0.03,d.y));" \
+    "return mix(sky,vec3(0.32,0.39,0.46),r*r*0.65);}" \
+    "vec3 tone(vec3 x){return clamp((x*(2.51*x+0.03))/(x*(2.43*x+0.59)+0.14),0.0,1.0);}" \
+    "\n"
 static const char* fragment_source=
     "#version 330\n"
     "in vec3 position,normal; in vec2 uv; in vec4 tint,tangent; out vec4 finalColor;\n"
     "uniform sampler2D texture0,sunMap,lampMap; uniform vec4 colDiffuse;\n"
-    "uniform sampler2D normalMap,ormMap; uniform int usePbr,useNormal; uniform float roughnessFactor,metalnessFactor,normalGreen;\n"
+    "uniform sampler2D normalMap,ormMap; uniform int usePbr,useNormal,useOrm; uniform float roughnessFactor,metalnessFactor,normalGreen;\n"
     "uniform sampler2D emissionMap; uniform int useEmission;\n"
     "uniform sampler2D environmentNormalMap,environmentRoughnessMap; uniform int useEnvironment,useEnvironmentNormal;\n"
     "uniform mat4 sunMatrix,lampMatrix; uniform vec3 camera;\n"
@@ -53,7 +64,7 @@ static const char* fragment_source=
     "vec2 offset=vec2(x,y),sampleUV=(base+offset+0.5)*pixel;"
     "vec2 weight=2.0-abs(offset-fraction);"
     "v+=weight.x*weight.y*step(p.z+dot(gradient,sampleUV-p.xy)-bias,texture(map,sampleUV).r); } return v/16.0; }\n"
-    "vec3 tone(vec3 x){return clamp((x*(2.51*x+0.03))/(x*(2.43*x+0.59)+0.14),0.0,1.0);}\n"
+    SWAT_SKY_GLSL
     "vec3 specular(vec3 n,vec3 v,vec3 l,vec3 f0,float r){"
     "vec3 h=normalize(v+l); float nv=max(dot(n,v),0.001),nl=max(dot(n,l),0.0),nh=max(dot(n,h),0.0);"
     "float a=r*r,a2=a*a,d=nh*nh*(a2-1.0)+1.0; float distribution=a2/(3.14159265*d*d);"
@@ -71,7 +82,7 @@ static const char* fragment_source=
     "vec3 t=(dx*ty.y-dy*tx.y)/determinant,b=(dy*tx.x-dx*ty.x)/determinant;"
     "t-=n*dot(n,t); b-=n*dot(n,b); if(dot(t,t)>1e-12&&dot(b,b)>1e-12)"
     "n=normalize(mat3(normalize(t),normalize(b),n)*(texture(environmentNormalMap,uv).xyz*2.0-1.0)); } } }"
-    "if(usePbr!=0){ vec4 orm=texture(ormMap,uv); roughness=clamp(orm.g*roughnessFactor,0.08,1.0);"
+    "if(usePbr!=0){ vec4 orm=useOrm!=0?texture(ormMap,uv):vec4(1.0); roughness=clamp(orm.g*roughnessFactor,0.08,1.0);"
     "metalness=clamp(orm.b*metalnessFactor,0.0,1.0); f0=mix(vec3(0.04),albedo,metalness);"
     "if(useNormal!=0){ vec3 t,b;"
     "if(useNormal==2){vec3 dx=dFdx(position),dy=dFdy(position);vec2 tx=dFdx(uv),ty=dFdy(uv);"
@@ -83,22 +94,29 @@ static const char* fragment_source=
     "if(dot(t,t)>1e-12){vec3 mapped=texture(normalMap,uv).xyz*2.0-1.0;mapped.y*=normalGreen;n=normalize(mat3(t,b,n)*mapped);} } }"
     "vec3 sun=normalize(vec3(-0.45,0.82,-0.35));"
     "float sunVisibility=visible(sunMap,sunMatrix,n,sun); float direct=max(dot(n,sun),0.0)*sunVisibility;"
-    "vec3 illumination=mix(vec3(0.13,0.12,0.105),vec3(0.30,0.34,0.39),n.y*0.5+0.5);"
+    "vec3 illumination=mix(vec3(0.11,0.105,0.09),vec3(0.30,0.37,0.46),n.y*0.5+0.5);"
+    "vec3 reflectedDirection=reflect(-v,n),environment=skyRadiance(reflectedDirection,roughness);"
+    "float contact=1.0;"
     "illumination+=vec3(0.95,0.88,0.76)*direct;"
     "if(usePbr!=0||useEnvironment!=0)reflection+=vec3(0.95,0.88,0.76)*sunVisibility*specular(n,v,sun,f0,roughness);"
     "for(int i=0;i<rooms;i++){ vec3 delta=position-centers[i];"
     "if(abs(delta.x)>halves[i].x+0.12||abs(delta.z)>halves[i].z+0.12||abs(delta.y)>halves[i].y+0.15)continue;"
+    "vec3 gap=max(halves[i]-abs(delta),vec3(0.0));"
+    "float wall=min(gap.x,gap.z),floorGap=max(position.y-centers[i].y+halves[i].y,0.0);"
+    "contact=0.82+0.18*smoothstep(0.0,0.32,min(wall,floorGap));"
+    "illumination=mix(vec3(0.09,0.085,0.075),vec3(0.20,0.19,0.17),n.y*0.5+0.5)+vec3(0.95,0.88,0.76)*direct;"
+    "environment=mix(vec3(0.075,0.068,0.055),vec3(0.32,0.30,0.26),reflectedDirection.y*0.5+0.5);"
     "vec3 origin=centers[i]+vec3(0.0,halves[i].y-0.18,0.0); vec3 toLight=origin-position;"
     "float d2=dot(toLight,toLight); vec3 l=normalize(toLight);"
     "float visibility=i==lampRoom?visible(lampMap,lampMatrix,n,l):1.0;"
     "vec3 radiance=vec3(1.0,0.82,0.62)*visibility*1.8/(1.0+0.18*d2);"
     "illumination+=radiance*max(dot(n,l),0.0); if(usePbr!=0||useEnvironment!=0)reflection+=radiance*specular(n,v,l,f0,roughness); }"
-    // Broad hemisphere reflection keeps metal readable without inventing a
-    // second diffuse response. This is an approximation, not scene IBL.
-    "vec3 reflectedDirection=reflect(-v,n);"
-    "vec3 environment=mix(vec3(0.13,0.12,0.105),vec3(0.30,0.34,0.39),reflectedDirection.y*0.5+0.5);"
+    // Roughness-aware grazing reflection for painted surfaces as well as metal.
+    // This analytic environment is deliberately bounded; it is not a scene probe.
+    "float nv=max(dot(n,v),0.0); vec3 fresnel=f0+(max(vec3(1.0-roughness),f0)-f0)*pow(1.0-nv,5.0);"
+    "vec3 indirect=(usePbr!=0||useEnvironment!=0)?environment*fresnel:vec3(0.0);"
     "vec3 emission=useEmission!=0?pow(max(texture(emissionMap,uv).rgb,vec3(0.0)),vec3(2.2)):vec3(0.0);"
-    "vec3 color=tone((albedo*illumination*(1.0-metalness)+reflection+f0*metalness*environment+emission)*exposure);"
+    "vec3 color=tone((albedo*illumination*(1.0-metalness)*contact+reflection+indirect*contact+emission)*exposure);"
     "finalColor=vec4(pow(color,vec3(1.0/2.2)),surface.a); }\n";
 
 static SwatLightingProgram program(void) {
@@ -114,7 +132,7 @@ static SwatLightingProgram program(void) {
     p.skin_palette=GetShaderLocation(p.shader,"skinPalette"); p.skin_influences=GetShaderLocation(p.shader,"skinInfluences");
     p.emission=GetShaderLocation(p.shader,"useEmission");
     p.normal_green=GetShaderLocation(p.shader,"normalGreen");
-    p.pbr=GetShaderLocation(p.shader,"usePbr"); p.normal_map=GetShaderLocation(p.shader,"useNormal");
+    p.orm=GetShaderLocation(p.shader,"useOrm"); p.pbr=GetShaderLocation(p.shader,"usePbr"); p.normal_map=GetShaderLocation(p.shader,"useNormal");
     p.roughness=GetShaderLocation(p.shader,"roughnessFactor"); p.metalness=GetShaderLocation(p.shader,"metalnessFactor");
     p.environment=GetShaderLocation(p.shader,"useEnvironment");
     p.environment_normal=GetShaderLocation(p.shader,"useEnvironmentNormal");
@@ -160,6 +178,14 @@ void swat_lighting_init(SwatLighting* light) {
     if(mode && !strcmp(mode,"0")) return;
     if(exposure) { char* end; float v=strtof(exposure,&end); if(end!=exposure && !*end && isfinite(v)) light->exposure=swat_clamp(v,.25f,3); }
     light->batch=program(); light->mesh=program();
+    const char* sky_fragment="#version 330\n in vec2 fragTexCoord; out vec4 finalColor; uniform vec3 skyForward,skyRight,skyUp; uniform vec2 skyScale,skySize; uniform float exposure;\n"
+        SWAT_SKY_GLSL
+        "void main(){vec2 p=(gl_FragCoord.xy/skySize*2.0-1.0)*skyScale;vec3 d=normalize(skyForward+p.x*skyRight+p.y*skyUp);finalColor=vec4(pow(tone(skyRadiance(d,0.0)*exposure),vec3(1.0/2.2)),1.0);}";
+    light->sky=LoadShaderFromMemory(NULL,sky_fragment);
+    light->sky_forward=GetShaderLocation(light->sky,"skyForward"); light->sky_right=GetShaderLocation(light->sky,"skyRight");
+    light->sky_up=GetShaderLocation(light->sky,"skyUp"); light->sky_scale=GetShaderLocation(light->sky,"skyScale");
+    light->sky_size=GetShaderLocation(light->sky,"skySize");
+    light->sky_exposure=GetShaderLocation(light->sky,"exposure");
     light->sun=depth_target(1536); light->lamp=depth_target(768);
     light->enabled=light->sun.id && light->lamp.id && light->batch.shader.id!=rlGetShaderIdDefault() &&
         light->mesh.shader.id!=rlGetShaderIdDefault();
@@ -182,7 +208,9 @@ void swat_lighting_material(SwatLighting* light,Material material,bool enabled) 
     int zero=0; Vector2 tile={0};
     SetShaderValue(p->shader,p->environment,&zero,SHADER_UNIFORM_INT);
     SetShaderValue(p->shader,p->environment_tile,&tile,SHADER_UNIFORM_VEC2);
-    int pbr=enabled && material.maps && material.maps[MATERIAL_MAP_ROUGHNESS].texture.id;
+    int orm=enabled && material.maps && material.maps[MATERIAL_MAP_ROUGHNESS].texture.id;
+    int pbr=enabled && material.maps && (orm || material.maps[MATERIAL_MAP_ROUGHNESS].value>0);
+    SetShaderValue(p->shader,p->orm,&orm,SHADER_UNIFORM_INT);
     int normal=pbr && material.maps[MATERIAL_MAP_NORMAL].texture.id;
     if(normal && fabsf(material.maps[MATERIAL_MAP_NORMAL].value)==2) normal=2;
     SetShaderValue(p->shader,p->pbr,&pbr,SHADER_UNIFORM_INT);
@@ -226,6 +254,7 @@ void swat_lighting_close(SwatLighting* light) {
     if(light->lamp.id) rlUnloadFramebuffer(light->lamp.id);
     if(light->batch.shader.id && light->batch.shader.id!=rlGetShaderIdDefault()) UnloadShader(light->batch.shader);
     if(light->mesh.shader.id && light->mesh.shader.id!=rlGetShaderIdDefault()) UnloadShader(light->mesh.shader);
+    if(light->sky.id && light->sky.id!=rlGetShaderIdDefault()) UnloadShader(light->sky);
     memset(light,0,sizeof(*light));
 }
 
@@ -330,4 +359,18 @@ void swat_lighting_end(SwatLighting* light,SwatEnvironmentArt* art) {
     EndShaderMode(); art->lit=false; art->lighting=NULL; art_shader(art,(Shader){rlGetShaderIdDefault(),rlGetShaderLocsDefault()});
     rlActiveTextureSlot(12); rlDisableTexture(); rlActiveTextureSlot(13); rlDisableTexture();
     rlActiveTextureSlot(14); rlDisableTexture(); rlActiveTextureSlot(15); rlDisableTexture(); rlActiveTextureSlot(0);
+}
+
+void swat_lighting_sky(SwatLighting* light,Camera3D camera,int width,int height) {
+    if(!light->enabled || camera.projection!=CAMERA_PERSPECTIVE || !light->sky.id || light->sky.id==rlGetShaderIdDefault() || height<1) return;
+    Vector3 forward=Vector3Normalize(Vector3Subtract(camera.target,camera.position));
+    Vector3 right=Vector3Normalize(Vector3CrossProduct(forward,camera.up)),up=Vector3CrossProduct(right,forward);
+    float t=tanf(camera.fovy*DEG2RAD*.5f); Vector2 scale={t*width/height,t};
+    SetShaderValue(light->sky,light->sky_forward,&forward,SHADER_UNIFORM_VEC3);
+    SetShaderValue(light->sky,light->sky_right,&right,SHADER_UNIFORM_VEC3);
+    SetShaderValue(light->sky,light->sky_up,&up,SHADER_UNIFORM_VEC3);
+    SetShaderValue(light->sky,light->sky_scale,&scale,SHADER_UNIFORM_VEC2);
+    Vector2 size={(float)width,(float)height}; SetShaderValue(light->sky,light->sky_size,&size,SHADER_UNIFORM_VEC2);
+    SetShaderValue(light->sky,light->sky_exposure,&light->exposure,SHADER_UNIFORM_FLOAT);
+    BeginShaderMode(light->sky); DrawRectangle(0,0,width,height,WHITE); EndShaderMode();
 }

@@ -22,6 +22,7 @@ void swat_world_init(SwatWorld* w) {
 
 void swat_world_close(SwatWorld* w) {
     if (B3_IS_NON_NULL(w->id)) b3DestroyWorld(w->id);
+    for(int i=0;i<40;i++) if(w->motel_meshes[i]) b3DestroyMesh(w->motel_meshes[i]);
     memset(w,0,sizeof(*w));
 }
 

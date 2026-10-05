@@ -37,6 +37,8 @@ typedef struct SwatObject {
 
 typedef struct SwatWorld {
     b3WorldId id;
+    bool motel;
+    b3MeshData* motel_meshes[40]; // Owned static collision; released after world destruction.
     SwatObject objects[SWAT_MAX_OBJECTS];
     int count, generation;
     SwatRoom rooms[SWAT_MAX_ROOMS];

@@ -1,7 +1,7 @@
 #ifndef SWAT_MISSION_H
 #define SWAT_MISSION_H
 #include "world.h"
-typedef enum SwatMission { SWAT_ANNEX, SWAT_HOUSE, SWAT_GENERATED, SWAT_RANGE, SWAT_MISSION_COUNT } SwatMission;
+typedef enum SwatMission { SWAT_ANNEX, SWAT_HOUSE, SWAT_GENERATED, SWAT_RANGE, SWAT_MOTEL, SWAT_MISSION_COUNT } SwatMission;
 typedef struct SwatOverwatch {
     const char* name;
     b3Pos position, target;

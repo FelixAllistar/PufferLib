@@ -2,6 +2,7 @@
 #define SWAT_ENVIRONMENT_ART_H
 #include "environment_binding.h"
 #include "environment_props.h"
+#include "motel.h"
 #include "raylib.h"
 
 typedef enum SwatSurfaceKind {
@@ -23,6 +24,7 @@ typedef struct SwatEnvironmentArt {
     SwatSurfaceMaps surfaces[SWAT_SURFACE_COUNT];
     struct SwatLighting* lighting;
     Model door;
+    Model motel[SWAT_MOTEL_ASSETS];
     Model props[SWAT_ENV_PROP_KINDS];
 } SwatEnvironmentArt;
 
@@ -33,6 +35,7 @@ void swat_environment_art_close(SwatEnvironmentArt* art);
 void swat_art_model_close(Model model);
 // Draws in the caller's object-local transform. False means use graybox fallback.
 bool swat_environment_art_draw(const SwatEnvironmentArt* art,const SwatObject* o);
+bool swat_environment_motel_draw(const SwatEnvironmentArt* art,const SwatWorld* world,const SwatObject* object,bool shadow,bool cutaway);
 bool swat_environment_art_has_floor(const SwatEnvironmentArt* art,SwatMaterial floor);
 // Generated-only decorative tabletop clutter, using current accepted supports.
 void swat_environment_art_draw_props(const SwatEnvironmentArt* art,const SwatWorld* world,

@@ -23,6 +23,7 @@ Run commands from the repository root. With Box3D and Raylib installed:
 ```sh
 make -C ocean/swat viewer
 ./swat play
+./swat play --mission motel  # Briar Court, authored rooms/reception/laundry
 ```
 
 The standard build entry point also creates the game and launcher:

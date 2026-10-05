@@ -84,6 +84,26 @@ void swat_environment_art_init(SwatEnvironmentArt* art) {
         }
         if(!art->props[i].meshCount) missing_props++;
     }
+    int motel_missing=0;
+    for(int i=0;i<SWAT_MOTEL_ASSETS;i++) {
+        const SwatMotelAsset* a=swat_motel_asset(i); char file[256]; snprintf(file,sizeof(file),"motel_v1/%s",a->file);
+        if(asset_path(path,sizeof(path),file)) art->motel[i]=LoadModel(path);
+        Model* model=&art->motel[i];
+        if(!model->meshCount || model->materialCount!=a->material_count+1) { swat_art_model_close(*model); *model=(Model){0}; motel_missing++; continue; }
+        // Raylib 5.5 reads scalar glTF PBR factors only when an ORM texture
+        // exists. Restore the catalogued original factors for scalar materials.
+        for(int m=0;m<a->material_count;m++) {
+            Material* material=&model->materials[m+1];
+            material->maps[MATERIAL_MAP_ROUGHNESS].value=a->materials[m].roughness;
+            material->maps[MATERIAL_MAP_METALNESS].value=a->materials[m].metalness;
+            material->maps[MATERIAL_MAP_NORMAL].value=2; // Signed UV derivatives.
+            for(int k=0;k<=MATERIAL_MAP_BRDF;k++) {
+                Texture2D* t=&material->maps[k].texture;
+                if(t->id && t->id!=rlGetTextureIdDefault()) { GenTextureMipmaps(t); SetTextureFilter(*t,TEXTURE_FILTER_TRILINEAR); }
+            }
+        }
+    }
+    if(motel_missing) TraceLog(LOG_WARNING,"SWAT: %d motel modules absent; matching colliders use graybox rendering",motel_missing);
     if(missing_props) TraceLog(LOG_WARNING,"SWAT: %d decorative props unavailable; omitted without affecting supports",missing_props);
     if(!art->plaster.id || !art->wood.id || !art->door.meshCount)
         TraceLog(LOG_WARNING,"SWAT: environment art incomplete; missing pieces use graybox rendering");
@@ -115,6 +135,7 @@ void swat_environment_art_close(SwatEnvironmentArt* art) {
         if(art->surfaces[i].roughness.id) UnloadTexture(art->surfaces[i].roughness);
     }
     swat_art_model_close(art->door);
+    for(int i=0;i<SWAT_MOTEL_ASSETS;i++) swat_art_model_close(art->motel[i]);
     for(int i=0;i<SWAT_ENV_PROP_KINDS;i++) swat_art_model_close(art->props[i]);
     memset(art,0,sizeof(*art));
 }
@@ -261,4 +282,26 @@ void swat_environment_art_draw_props(const SwatEnvironmentArt* art,const SwatWor
     }
     rlDrawRenderBatchActive();
     rlEnableBackfaceCulling();
+}
+
+bool swat_environment_motel_draw(const SwatEnvironmentArt* art,const SwatWorld* world,const SwatObject* o,bool shadow,bool cutaway) {
+    if(!world->motel || o->tag.index<1 || o->tag.index>SWAT_MOTEL_INSTANCES) return false;
+    if(!o->active) return true;
+    const SwatMotelInstance* p=swat_motel_instance(o->tag.index-1);
+    if(cutaway && p->roof) return true;
+    const Model* model=&art->motel[p->asset]; if(!model->meshCount) return false;
+    Vector3 origin={(float)p->origin.x,(float)p->origin.y,(float)p->origin.z}; float yaw=p->yaw;
+    if(p->door) { origin=(Vector3){o->hinge.x,o->hinge.y-1.095f,o->hinge.z}; yaw=o->yaw-SWAT_PI*.5f; }
+    Matrix scale=MatrixScale(p->scale.x,p->scale.y,p->scale.z);
+    Matrix transform=MatrixMultiply(MatrixMultiply(scale,MatrixRotateY(yaw)),MatrixTranslate(origin.x,origin.y,origin.z));
+    bool lit=!shadow && art->lighting && art->lighting->enabled && art->lighting->prepared;
+    rlDrawRenderBatchActive();
+    for(int i=0;i<model->meshCount;i++) {
+        Material material=model->materials[model->meshMaterial[i]];
+        material.shader=lit?art->lighting->mesh.shader:(Shader){rlGetShaderIdDefault(),rlGetShaderLocsDefault()};
+        if(lit) swat_lighting_material(art->lighting,material,true);
+        DrawMesh(model->meshes[i],material,transform);
+    }
+    if(lit) swat_lighting_material(art->lighting,(Material){0},false);
+    return true;
 }
