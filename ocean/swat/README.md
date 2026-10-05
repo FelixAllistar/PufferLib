@@ -83,6 +83,27 @@ GALLIUM_DRIVER=d3d12 ./build/swat/performance_tool --generated --audio --frames 
 ./build/swat/performance_tool --headless --generated --frames 600
 ```
 
+To reproduce indoor wall-hit stalls, use `--indoors --fire --frames 180`.
+`--indoors` starts at the first room centre; `--fire` continuously fires the
+carbine and reloads it. Compare `--headless` with a rendered run and with
+`--audio` to separate simulation, graphics, and output audio. `--audio-stereo`
+keeps output audio while disabling the optional HRTF backend. `--hidden` runs
+rendered Windows measurements without taking focus. `--storefront` and
+`--motel` select the imported environments. Replay recording excludes
+`--indoors`/`--fire`, whose starting-state overrides are not in replay headers.
+
+The indoor shooting bottleneck was NPC acoustic routing: unheard events remain
+pending for two seconds, and every route scanned all building pieces. Routing
+now builds a query-local spatial tree over the acoustic bounds, shares it across
+pending hearing events, and prunes doorway routes whose unoccluded gain cannot
+beat the best path. It preserves ordered material sums and immediately observes
+moving doors and destruction. Exhaustive comparisons cover 720 paths and a
+180-tick hearing sequence with movement, mutations, arrival delays and log wrap.
+On this workstation, adjacent native Windows headless tests (Cedar House,
+1,109 pieces, nine actors, 30 indoor shots) reduced mean simulation time from
+54.3 to 7.8 ms; the rendered/audio run averaged 17.6 ms/frame. Background load
+and scene complexity still affect these measurements.
+
 The tool reports simulation, audio, draw submission, presentation and total
 mean/p50/p95/maximum times after warmup. `--camera` actually assigns a sniper and
 renders its live feed; `--record FILE.sgrp` includes replay digest/write cost;

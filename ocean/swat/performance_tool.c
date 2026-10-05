@@ -32,35 +32,50 @@ static void report(const char* name,double* values,int count) {
         name,total/count*1000,values[count/2]*1000,values[count*95/100]*1000,values[count-1]*1000);
 }
 int main(int argc,char** argv) {
-    bool headless=false,audio=false,draw_only=false,planning=false,scope=false,expanded=false;
+    bool headless=false,audio=false,draw_only=false,planning=false,scope=false,expanded=false,indoors=false,fire=false,hidden=false,stereo=false;
     const char* record_path=NULL;
     const char* capture=NULL;
     int frames=300,mission=SWAT_HOUSE;
     for(int i=1;i<argc;i++) {
         if(!strcmp(argv[i],"--headless")) headless=true;
+        else if(!strcmp(argv[i],"--hidden")) hidden=true;
         else if(!strcmp(argv[i],"--audio")) audio=true;
+        else if(!strcmp(argv[i],"--audio-stereo")) audio=stereo=true;
         else if(!strcmp(argv[i],"--draw-only")) draw_only=true;
         else if(!strcmp(argv[i],"--plan")) planning=true;
         else if(!strcmp(argv[i],"--camera")) scope=true;
         else if(!strcmp(argv[i],"--expanded-camera")) scope=expanded=true;
         else if(!strcmp(argv[i],"--generated")) mission=SWAT_GENERATED;
+        else if(!strcmp(argv[i],"--storefront")) mission=SWAT_STOREFRONT;
+        else if(!strcmp(argv[i],"--motel")) mission=SWAT_MOTEL;
+        else if(!strcmp(argv[i],"--indoors")) indoors=true;
+        else if(!strcmp(argv[i],"--fire")) fire=true;
         else if(!strcmp(argv[i],"--record") && ++i<argc) record_path=argv[i];
         else if(!strcmp(argv[i],"--capture") && ++i<argc) capture=argv[i];
         else if(!strcmp(argv[i],"--frames") && ++i<argc) frames=atoi(argv[i]);
-        else { fprintf(stderr,"usage: performance_tool [--headless] [--audio] [--draw-only] [--plan] [--camera|--expanded-camera] [--generated] [--record FILE] [--capture PNG] [--frames 30..3600]\n"); return 1; }
+        else { fprintf(stderr,"usage: performance_tool [--headless|--hidden] [--audio|--audio-stereo] [--draw-only] [--plan] [--camera|--expanded-camera] [--generated|--storefront|--motel] [--indoors] [--fire] [--record FILE] [--capture PNG] [--frames 30..3600]\n"); return 1; }
     }
-    if(frames<30 || frames>3600 || (headless && (audio || draw_only || capture)) || (record_path && draw_only)) return 1;
+    if(frames<30 || frames>3600 || (headless && (audio || draw_only || capture)) || (record_path && (draw_only || indoors || fire))) return 1;
     SwatSim* sim=calloc(1,sizeof(*sim)); double* measurements=calloc((size_t)frames*5,sizeof(double));
     if(!sim || !measurements) { free(sim); free(measurements); return 1; }
     SwatConfig config=swat_default_config(); config.mission=mission; config.layout_seed=42;
     config.tactical_rules=true; config.squad_bots=3; config.hostile_fire=false; config.max_ticks=36000;
     double start=seconds(); swat_sim_init(sim,config,42); double initialization=seconds()-start;
+    if(indoors && sim->world.room_count) {
+        const SwatRoom* room=&sim->world.rooms[0];
+        b3Pos feet={room->center.x,room->center.y-room->half.y+.02f,room->center.z};
+        SwatController* c=&sim->actors[0].controller;
+        b3Body_SetTransform(c->body.body,feet,b3Quat_identity); b3Body_SetLinearVelocity(c->body.body,b3Vec3_zero);
+        c->yaw=c->pitch=c->recoil_pitch=c->recoil_yaw=0;
+    }
+    if(fire) sim->actors[0].arsenal.slots[0].mode=SWAT_AUTO;
     SwatView view={0}; SwatSoundView sound={0};
     if(!headless) {
-        swat_view_init(&view,false); if(!view.initialized) { swat_sim_close(sim); free(sim); free(measurements); return 1; }
+        swat_view_init(&view,hidden); if(!view.initialized) { swat_sim_close(sim); free(sim); free(measurements); return 1; }
         SetTargetFPS(0); view.planning=planning; view.sniper_camera=scope;
         view.scope=expanded; view.camera_expansion=expanded ? 1 : 0;
         if(audio) swat_sound_view_init(&sound);
+        if(stereo) { swat_spatial_close(sound.spatial); sound.spatial=NULL; }
     }
     SwatInput input=swat_neutral_input();
     if(scope) { input.sniper_order=SWAT_SNIPER_ASSIGN; input.sniper_unit=0; input.sniper_post=0; }
@@ -73,6 +88,7 @@ int main(int argc,char** argv) {
     bool valid=!record_path || swat_replay_append(&recording,&input,sim);
     input.sniper_order=SWAT_SNIPER_NONE;
     for(int i=0;i<frames+30;i++) {
+        input.fire=fire; input.reload=fire && !sim->actors[0].arsenal.slots[0].magazine;
         double t=seconds(); if(!draw_only) swat_sim_step(sim,&input);
         if(recording.file && !swat_replay_append(&recording,&input,sim)) valid=false;
         double tick=seconds()-t;
@@ -86,8 +102,8 @@ int main(int argc,char** argv) {
             measurements[4*frames+n]=tick+mix+drawing+present;
         }
     }
-    printf("SWAT PERF mission=%s seed=42 objects=%d actors=%d frames=%d draw_only=%d audio=%d planning=%d camera=%d expanded=%d init_ms=%.3f first_tick_ms=%.3f\n",
-        mission==SWAT_GENERATED ? "generated" : "house",sim->world.count,sim->actor_count,frames,draw_only,audio,planning,scope,expanded,initialization*1000,first_tick*1000);
+    printf("SWAT PERF mission=%s seed=42 objects=%d actors=%d frames=%d draw_only=%d audio=%d planning=%d camera=%d expanded=%d indoors=%d shots=%d init_ms=%.3f first_tick_ms=%.3f\n",
+        swat_mission(mission)->name,sim->world.count,sim->actor_count,frames,draw_only,audio,planning,scope,expanded,indoors,sim->actors[0].arsenal.shots,initialization*1000,first_tick*1000);
     report("simulation",measurements,frames); report("audio",measurements+frames,frames);
     report("draw_submit",measurements+2*frames,frames); report("present",measurements+3*frames,frames);
     report("total",measurements+4*frames,frames);

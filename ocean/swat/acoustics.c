@@ -1,5 +1,8 @@
 #include "acoustics.h"
 #include <string.h>
+#ifdef _MSC_VER
+#include <intrin.h>
+#endif
 
 const SwatSoundEvent* swat_sound_at(const SwatSoundLog* log, int index) {
     if(index<0 || index>=log->count) return NULL;
@@ -26,11 +29,103 @@ void swat_sound_surface(SwatSoundLog* log,int tick,int source,SwatSoundKind kind
     swat_sound_append(log,(SwatSoundEvent){log->next_id,tick,source,kind,position,strength,range,material});
 }
 
-// Intersect a segment with the same oriented boxes used by physics. Actors
+// A query-local BVH uses the acoustic boxes themselves, including imported
+// geometry's authored bounds. It does not borrow physics mesh bounds or cache
+// mutable doors/destruction across ticks. Hearing shares one tree across all
+// pending events; transmission retains object order for deterministic sums.
+typedef struct SwatAcousticNode {
+    float low[3],high[3];
+    int start,count,left,right;
+} SwatAcousticNode;
+typedef struct SwatAcousticScene {
+    const SwatWorld* world;
+    b3Pos origin;
+    float c[SWAT_MAX_OBJECTS],s[SWAT_MAX_OBJECTS];
+    float low[SWAT_MAX_OBJECTS][3],high[SWAT_MAX_OBJECTS][3];
+    int order[SWAT_MAX_OBJECTS],count,node_count;
+    SwatAcousticNode nodes[2*SWAT_MAX_OBJECTS];
+} SwatAcousticScene;
+
+static int swat_acoustic_tree(SwatAcousticScene* scene,int start,int count) {
+    int index=scene->node_count++;
+    SwatAcousticNode* node=&scene->nodes[index];
+    node->start=start; node->count=count;
+    for(int axis=0;axis<3;axis++) {
+        node->low[axis]=INFINITY; node->high[axis]=-INFINITY;
+        for(int j=start;j<start+count;j++) {
+            int object=scene->order[j];
+            node->low[axis]=fminf(node->low[axis],scene->low[object][axis]);
+            node->high[axis]=fmaxf(node->high[axis],scene->high[object][axis]);
+        }
+    }
+    if(count<=4) return index;
+    int axis=0;
+    for(int a=1;a<3;a++) if(node->high[a]-node->low[a]>node->high[axis]-node->low[axis]) axis=a;
+    float middle=(node->low[axis]+node->high[axis])*.5f;
+    int split=start;
+    for(int j=start;j<start+count;j++) {
+        int object=scene->order[j];
+        if((scene->low[object][axis]+scene->high[object][axis])*.5f<middle) {
+            int swap=scene->order[split]; scene->order[split++]=object; scene->order[j]=swap;
+        }
+    }
+    // Bound recursion even for coincident boxes or extremely uneven scenes.
+    if(split-start<count/4 || start+count-split<count/4 || split==start || split==start+count)
+        split=start+count/2;
+    node->count=0;
+    node->left=swat_acoustic_tree(scene,start,split-start);
+    node->right=swat_acoustic_tree(scene,split,start+count-split);
+    return index;
+}
+
+static void swat_acoustic_scene(SwatAcousticScene* scene,const SwatWorld* world) {
+    scene->world=world; scene->count=scene->node_count=0;
+    scene->origin=world->count ? world->objects[0].center : (b3Pos){0};
+    for(int i=0;i<world->count;i++) {
+        const SwatObject* o=&world->objects[i]; if(!o->active) continue;
+        float c=scene->c[i]=cosf(o->yaw),s=scene->s[i]=sinf(o->yaw);
+        b3Vec3 p=b3SubPos(o->center,scene->origin);
+        float center[3]={p.x,p.y,p.z};
+        float extent[3]={fabsf(c)*o->half.x+fabsf(s)*o->half.z,o->half.y,
+                         fabsf(s)*o->half.x+fabsf(c)*o->half.z};
+        for(int a=0;a<3;a++) {
+            // Conservative padding covers float subtraction/rotation rounding.
+            float pad=.001f+fabsf(center[a])*.00001f;
+            scene->low[i][a]=center[a]-extent[a]-pad;
+            scene->high[i][a]=center[a]+extent[a]+pad;
+        }
+        scene->order[scene->count++]=i;
+    }
+    if(scene->count) swat_acoustic_tree(scene,0,scene->count);
+}
+
+static void swat_acoustic_query(const SwatAcousticScene* scene,int index,
+                                const float from[3],const float delta[3],uint64_t* objects) {
+    const SwatAcousticNode* node=&scene->nodes[index];
+    float enter=0,exit=1;
+    for(int a=0;a<3;a++) {
+        if(fabsf(delta[a])<1e-7f) {
+            if(from[a]<node->low[a] || from[a]>node->high[a]) return;
+        } else {
+            float x=(node->low[a]-from[a])/delta[a],y=(node->high[a]-from[a])/delta[a];
+            enter=fmaxf(enter,fminf(x,y)); exit=fminf(exit,fmaxf(x,y));
+            if(exit<enter) return;
+        }
+    }
+    if(node->count) {
+        for(int j=node->start;j<node->start+node->count;j++) {
+            int object=scene->order[j]; objects[object/64]|=UINT64_C(1)<<(object%64);
+        }
+    } else {
+        swat_acoustic_query(scene,node->left,from,delta,objects);
+        swat_acoustic_query(scene,node->right,from,delta,objects);
+    }
+}
+
+// Intersect a segment with the existing yaw-oriented acoustic box. Actors
 // do not act as acoustic walls. Destroyed cover is excluded immediately.
-static float swat_acoustic_thickness(const SwatObject* o, b3Pos from, b3Pos to) {
+static float swat_acoustic_thickness(const SwatObject* o,float c,float s,b3Pos from,b3Pos to) {
     b3Vec3 p=b3SubPos(from,o->center),d=b3SubPos(to,from);
-    float c=cosf(o->yaw),s=sinf(o->yaw);
     float origin[3]={c*p.x-s*p.z,p.y,s*p.x+c*p.z};
     float delta[3]={c*d.x-s*d.z,d.y,s*d.x+c*d.z};
     float half[3]={o->half.x,o->half.y,o->half.z};
@@ -48,12 +143,24 @@ static float swat_acoustic_thickness(const SwatObject* o, b3Pos from, b3Pos to) 
     return (exit-enter)*b3Length(d);
 }
 
-static void swat_acoustic_transmit(const SwatWorld* world, b3Pos from, b3Pos to, float bands[3]) {
+static int swat_acoustic_first_bit(uint64_t bits) {
+#ifdef _MSC_VER
+    unsigned long bit; _BitScanForward64(&bit,bits); return (int)bit;
+#else
+    return __builtin_ctzll(bits);
+#endif
+}
+
+static void swat_acoustic_transmit(const SwatAcousticScene* scene, b3Pos from, b3Pos to, float bands[3]) {
     float loss[3]={0};
-    for(int i=0;i<world->count;i++) {
-        const SwatObject* o=&world->objects[i];
-        if(!o->active) continue;
-        float thickness=swat_acoustic_thickness(o,from,to);
+    uint64_t objects[(SWAT_MAX_OBJECTS+63)/64]={0};
+    b3Vec3 p=b3SubPos(from,scene->origin),d=b3SubPos(to,from);
+    float origin[3]={p.x,p.y,p.z},delta[3]={d.x,d.y,d.z};
+    if(scene->count) swat_acoustic_query(scene,0,origin,delta,objects);
+    for(int word=0;word<(SWAT_MAX_OBJECTS+63)/64;word++) while(objects[word]) {
+        int i=word*64+swat_acoustic_first_bit(objects[word]); objects[word]&=objects[word]-1;
+        const SwatObject* o=&scene->world->objects[i];
+        float thickness=swat_acoustic_thickness(o,scene->c[i],scene->s[i],from,to);
         if(thickness<=0) continue;
         const SwatMaterialDef* material=swat_material(o->material);
         // A thicker homogeneous slab is not many independent partitions.
@@ -65,7 +172,7 @@ static void swat_acoustic_transmit(const SwatWorld* world, b3Pos from, b3Pos to,
     for(int b=0;b<3;b++) bands[b]*=powf(10,-fminf(loss[b],180)*.05f);
 }
 
-static SwatAcousticPath swat_acoustic_route(const SwatWorld* world, const SwatSoundEvent* event,
+static SwatAcousticPath swat_acoustic_route(const SwatAcousticScene* scene, const SwatSoundEvent* event,
                                            b3Pos listener, const b3Pos* portal) {
     SwatAcousticPath path={0};
     float length=portal ? b3Distance(event->position,*portal)+b3Distance(*portal,listener) :
@@ -74,11 +181,11 @@ static SwatAcousticPath swat_acoustic_route(const SwatWorld* world, const SwatSo
     float attenuation=event->strength/(1.0f+length);
     for(int b=0;b<3;b++) path.bands[b]=attenuation;
     if(portal) {
-        swat_acoustic_transmit(world,event->position,*portal,path.bands);
-        swat_acoustic_transmit(world,*portal,listener,path.bands);
+        swat_acoustic_transmit(scene,event->position,*portal,path.bands);
+        swat_acoustic_transmit(scene,*portal,listener,path.bands);
         // One bend loses some energy, especially in the high band.
         path.bands[0]*=0.75f; path.bands[1]*=0.55f; path.bands[2]*=0.35f;
-    } else swat_acoustic_transmit(world,event->position,listener,path.bands);
+    } else swat_acoustic_transmit(scene,event->position,listener,path.bands);
     path.gain=path.bands[0]*0.3f+path.bands[1]*0.5f+path.bands[2]*0.2f;
     path.direction=swat_normalize(b3SubPos(portal ? *portal : event->position,listener));
     path.delay_ticks=(int)ceilf(length/(343.0f*SWAT_DT));
@@ -86,9 +193,10 @@ static SwatAcousticPath swat_acoustic_route(const SwatWorld* world, const SwatSo
     return path;
 }
 
-SwatAcousticPath swat_acoustic_path(const SwatWorld* world, const SwatSoundEvent* event,
-                                   b3Pos listener) {
-    SwatAcousticPath best=swat_acoustic_route(world,event,listener,NULL);
+static SwatAcousticPath swat_acoustic_scene_path(const SwatAcousticScene* scene,const SwatSoundEvent* event,
+                                               b3Pos listener) {
+    const SwatWorld* world=scene->world;
+    SwatAcousticPath best=swat_acoustic_route(scene,event,listener,NULL);
     for(int i=0;i<world->count;i++) {
         const SwatObject* door=&world->objects[i];
         if(!door->door || (door->active && door->door_angle<0.15f)) continue;
@@ -100,11 +208,20 @@ SwatAcousticPath swat_acoustic_path(const SwatWorld* world, const SwatSoundEvent
             b3Pos portal=b3OffsetPos(door->hinge,swat_v(sinf(door->closed_yaw)*offset,0,cosf(door->closed_yaw)*offset));
             portal.y=swat_clamp((float)(event->position.y+listener.y)*.5f,
                                (float)door->center.y-door->half.y+.12f,(float)door->center.y+door->half.y-.12f);
-            SwatAcousticPath candidate=swat_acoustic_route(world,event,listener,&portal);
+            float length=b3Distance(event->position,portal)+b3Distance(portal,listener);
+            float amplitude=event->strength/(1.0f+length);
+            float upper=amplitude*.75f*.3f+amplitude*.55f*.5f+amplitude*.35f*.2f;
+            if(length>event->range || upper<=best.gain) continue;
+            SwatAcousticPath candidate=swat_acoustic_route(scene,event,listener,&portal);
             if(candidate.gain>best.gain) best=candidate;
         }
     }
     return best;
+}
+
+SwatAcousticPath swat_acoustic_path(const SwatWorld* world,const SwatSoundEvent* event,b3Pos listener) {
+    SwatAcousticScene scene; swat_acoustic_scene(&scene,world);
+    return swat_acoustic_scene_path(&scene,event,listener);
 }
 
 SwatRoomAcoustics swat_acoustic_room(const SwatWorld* w,b3Pos listener) {
@@ -183,11 +300,13 @@ void swat_hearing_consume(SwatHearingMemory* memory, uint32_t id) {
 bool swat_hearing_next(const SwatWorld* world, const SwatSoundLog* log, int tick,
                        b3Pos listener, int actor, SwatHearingMemory* memory,
                        SwatHeardSound* heard) {
+    SwatAcousticScene scene; bool prepared=false;
     for(int i=0;i<log->count;i++) {
         const SwatSoundEvent* event=swat_sound_at(log,i);
         if(event->source_actor==actor || swat_hearing_consumed(memory,event->id)) continue;
         if(tick-event->tick>SWAT_SOUND_LIFETIME) { swat_hearing_consume(memory,event->id); continue; }
-        SwatAcousticPath path=swat_acoustic_path(world,event,listener);
+        if(!prepared) { swat_acoustic_scene(&scene,world); prepared=true; }
+        SwatAcousticPath path=swat_acoustic_scene_path(&scene,event,listener);
         if(tick<event->tick+path.delay_ticks || path.gain<0.008f) continue;
         swat_hearing_consume(memory,event->id);
         float angle=atan2f(path.direction.z,path.direction.x);

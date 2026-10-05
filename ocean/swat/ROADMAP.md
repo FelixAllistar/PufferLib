@@ -24,7 +24,9 @@ is deliberately a general engine improvement.
 - Four-player ENet co-op with listen hosting, a headless dedicated authority,
   versioned snapshots, shared destruction, late join and leader restart.
 - Material/doorway acoustic paths, delayed NPC hearing and procedural stereo
-  audio, sharing destruction state and independent of player volume.
+  audio, sharing destruction state and independent of player volume. Query-local
+  acoustic spatial searches and gain bounds remove the indoor wall-hit full-scan
+  bottleneck while matching exhaustive hearing/route results exactly.
 - Cedar House: three rooms, two suspects, three hostages, outdoor staging,
   windows/doors, cutaway planning and three authored overwatch posts.
 - Thin independent wall faces, cavities, timber studs, plates and headers;
