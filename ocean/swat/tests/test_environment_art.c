@@ -165,6 +165,32 @@ static void destruction_pixels(SwatEnvironmentArt* art,const char* directory) {
     for(int i=0;i<wall.count;i++) if(wall.objects[i].part==SWAT_PART_FRAME) assert(wall.objects[i].active);
     swat_world_close(&wall);
 }
+static void glass_graphics(SwatEnvironmentArt* art,const char* directory) {
+    static SwatWorld world; swat_world_init(&world);swat_storefront_build(&world);
+    swat_environment_art_prepare_location(art,&world);assert(art->location==2);
+    RenderTexture2D target=LoadRenderTexture(256,256);assert(target.id);
+    Camera3D camera={{1,1.5f,3},{1,1.5f,-1},{0,1,0},40,CAMERA_PERSPECTIVE};
+    for(int late=0;late<2;late++) {
+        BeginTextureMode(target);ClearBackground(BLACK);BeginMode3D(camera);
+        for(int i=1;i<world.count;i++) assert(swat_environment_storefront_draw(art,&world,&world.objects[i],false,false));
+        if(!late) DrawCube((Vector3){1,1.5f,-1},1,1,1,RED);
+        swat_environment_art_transparent(art,&world,camera.position,false);
+        // A late opaque probe behind the window must pass depth testing: the
+        // blended pass must neither write pane depth nor leave writes disabled.
+        if(late) {
+            DrawCube((Vector3){1,1.5f,-1},1,1,1,RED);
+            // Depth writes must be restored: this farther opaque probe must
+            // remain hidden behind the red probe that was just drawn.
+            DrawCube((Vector3){1,1.5f,-2},1,1,1,BLUE);
+        }
+        EndMode3D();EndTextureMode();
+        Image image=LoadImageFromTexture(target.texture);Color pixel=GetImageColor(image,128,128);
+        printf("glass interior probe late=%d rgb=%d,%d,%d\n",late,pixel.r,pixel.g,pixel.b);
+        assert(pixel.r>pixel.g+80 && pixel.r>pixel.b+80);
+        char path[4096];snprintf(path,sizeof(path),"%s/environment-glass-%d.png",directory,late);assert(ExportImage(image,path));UnloadImage(image);
+    }
+    UnloadRenderTexture(target);swat_world_close(&world);
+}
 int main(int argc,char** argv) {
     const char* directory=argc>1 ? argv[1] : "build/swat";
     char path[4096];
@@ -172,6 +198,9 @@ int main(int argc,char** argv) {
     environment("SWAT_ENVIRONMENT_STYLE",NULL); environment("SWAT_ENVIRONMENT_PBR",NULL);
     SwatView view={0}; swat_view_init(&view,true); assert(IsWindowReady());
     assert(view.environment.plaster.id && view.environment.wood.id && view.environment.door.meshCount);
+    assert(view.environment.location==0 && !view.environment.motel[0].meshCount && !view.environment.storefront[0].meshCount);
+    static SwatWorld location;location.motel=true;
+    swat_environment_art_prepare_location(&view.environment,&location);
     for(int i=0;i<SWAT_MOTEL_ASSETS;i++) {
         const SwatMotelAsset* source=swat_motel_asset(i); Model model=view.environment.motel[i];
         assert(model.meshCount>0 && model.materialCount==source->material_count+1);
@@ -180,6 +209,22 @@ int main(int argc,char** argv) {
             assert(model.materials[m+1].maps[MATERIAL_MAP_METALNESS].value==source->materials[m].metalness);
         }
     }
+    unsigned int mesh=view.environment.motel[0].meshes[0].vaoId;
+    swat_environment_art_prepare_location(&view.environment,&location);assert(view.environment.motel[0].meshes[0].vaoId==mesh);
+    location.motel=false;location.storefront=true;swat_environment_art_prepare_location(&view.environment,&location);
+    assert(!view.environment.motel[0].meshCount && view.environment.location==2);
+    for(int i=0;i<SWAT_STOREFRONT_ASSETS;i++) {
+        const SwatMotelAsset* source=swat_storefront_asset(i);Model model=view.environment.storefront[i];
+        assert(model.meshCount>0 && model.materialCount==source->material_count+1);
+        for(int m=0;m<source->material_count;m++) {
+            assert(model.materials[m+1].maps[MATERIAL_MAP_ROUGHNESS].value==source->materials[m].roughness);
+            assert(model.materials[m+1].maps[MATERIAL_MAP_METALNESS].value==source->materials[m].metalness);
+        }
+    }
+    assert(view.environment.storefront[SWAT_STOREFRONT_ASSETS-1].meshCount==8);
+    glass_graphics(&view.environment,directory);
+    location.storefront=false;swat_environment_art_prepare_location(&view.environment,&location);
+    assert(view.environment.location==0 && !view.environment.storefront[0].meshCount);
     static const int door_materials[5]={2,2,1,3,4};
     assert(view.environment.door.meshCount==5 && view.environment.door.materialCount==5);
     for(int i=0;i<5;i++) assert(view.environment.door.meshMaterial[i]==door_materials[i]);

@@ -60,15 +60,63 @@ static void runtime_check(const char* directory,SwatLighting* light) {
     SwatSim* sim=calloc(1,sizeof(*sim)); SwatSim* before=malloc(sizeof(*before)); assert(sim && before);
     SwatConfig config=swat_default_config(); config.hostile_fire=false; config.mission=SWAT_ANNEX; swat_sim_init(sim,config,42);
     SwatActor* actor=&sim->actors[0];
+    bool movement=runtime->banks[SWAT_CHARACTER_LEFT].asset && runtime->banks[SWAT_CHARACTER_RIGHT].asset &&
+        runtime->banks[SWAT_CHARACTER_CROUCH_READY].asset && runtime->banks[SWAT_CHARACTER_CROUCH_WALK].asset;
+    if(movement) {
+        const int expected[]={SWAT_CHARACTER_WALK,SWAT_CHARACTER_LEFT,SWAT_CHARACTER_RIGHT,SWAT_CHARACTER_CROUCH_READY,SWAT_CHARACTER_CROUCH_WALK};
+        const b3Vec3 velocities[]={{1,0,0},{0,0,-1},{0,0,1},{0,0,0},{1,0,0}};
+        for(int k=0;k<5;k++) {
+            actor->controller.yaw=0;swat_body_set_crouch(&actor->controller.body,k>=3);actor->controller.body.onGround=true;
+            actor->controller.eye_height=actor->controller.body.totalHeight-.2032f;
+            b3Body_SetLinearVelocity(actor->controller.body.body,velocities[k]);sim->tick++;
+            memcpy(before,sim,sizeof(*before));swat_character_runtime_prepare(runtime,sim);
+            assert(!memcmp(before,sim,sizeof(*before)) && runtime->actors[0].valid && runtime->actors[0].bank==expected[k]);
+            if(k==3) assert(runtime->actors[0].source_time==0 && swat_character_clip_duration(runtime->banks[expected[k]].asset,0)==0);
+            if(getenv("SWAT_CHARACTER_TEST_CAPTURES")) {
+                SwatCharacterActorPose* pose=&runtime->actors[0];SwatCharacterView* bank=&runtime->banks[pose->bank];
+                assert(swat_character_restore_pose(bank->asset,pose->matrices,pose->count));
+                memcpy(bank->visible,pose->visible,(size_t)bank->model.meshCount);
+                Vector3 feet={pose->feet.x,pose->feet.y,pose->feet.z};
+                Image image=frame(bank,light,(Camera3D){Vector3Add(feet,(Vector3){3,1.5f,3}),Vector3Add(feet,(Vector3){0,k>=3 ? .65f : .9f,0}),{0,1,0},40,CAMERA_PERSPECTIVE},pose->root);
+                ExportImage(image,TextFormat("%s/bank-%d.png",getenv("SWAT_CHARACTER_TEST_CAPTURES"),pose->bank));UnloadImage(image);
+            }
+        }
+        // A stopped collider cannot animate a stride merely from held input or
+        // elapsed time. Actual 10 cm motion uses this crouch clip's own pace.
+        double phase=runtime->actors[0].phase;sim->tick++;
+        swat_character_runtime_prepare(runtime,sim);assert(runtime->actors[0].phase==phase);
+        b3Pos at=b3Body_GetPosition(actor->controller.body.body);at.x+=.1f;
+        b3Body_SetTransform(actor->controller.body.body,at,b3Quat_identity);sim->tick+=2;
+        swat_character_runtime_prepare(runtime,sim);
+        double delta=fmod(runtime->actors[0].phase-phase+1,1);
+        assert(fabs(delta-.1/2.0390741825103778)<1e-6);
+        // Optional bank absence falls back to forward locomotion without
+        // disabling the character. Restore ownership immediately afterwards.
+        SwatCharacterView left=runtime->banks[SWAT_CHARACTER_LEFT];runtime->banks[SWAT_CHARACTER_LEFT]=(SwatCharacterView){0};
+        swat_body_set_crouch(&actor->controller.body,false);actor->controller.body.onGround=true;
+        b3Body_SetLinearVelocity(actor->controller.body.body,(b3Vec3){0,0,-1});sim->tick++;
+        swat_character_runtime_prepare(runtime,sim);assert(runtime->actors[0].bank==SWAT_CHARACTER_WALK);
+        runtime->banks[SWAT_CHARACTER_LEFT]=left;
+        b3Body_SetLinearVelocity(actor->controller.body.body,b3Vec3_zero);
+    }
     for(int stance=0;stance<2;stance++) for(int angle=0;angle<4;angle++) {
         actor->controller.yaw=angle*SWAT_PI/2; actor->controller.pitch=angle==3 ? 70*SWAT_RAD : 0;
         swat_body_set_crouch(&actor->controller.body,stance!=0); sim->tick++;
         actor->controller.eye_height=actor->controller.body.totalHeight-.2032f;
         memcpy(before,sim,sizeof(*before)); swat_character_runtime_prepare(runtime,sim); assert(!memcmp(before,sim,sizeof(*before)));
         assert(runtime->actors[0].valid);
+        if(movement) assert(runtime->actors[0].bank==(stance ? SWAT_CHARACTER_CROUCH_READY : SWAT_CHARACTER_READY));
         unsigned int preparations=runtime->preparations; swat_character_runtime_prepare(runtime,sim); assert(preparations==runtime->preparations);
         SwatCharacterActorPose* cached=&runtime->actors[0]; SwatCharacterView* view=&runtime->banks[cached->bank];
+        // Upper aiming must retain the abdomen's sampled bone length, even
+        // through large pitch/crouch targets that arms cannot fully reach.
+        int spine=swat_character_find_node(view->asset,"mixamorig:Spine2"),parent=swat_character_find_node(view->asset,"mixamorig:Spine1");
+        assert(swat_character_view_sample(view,swat_character_clip_name(view->asset,0),cached->source_time));
+        const float* a=swat_character_node_matrix(view->asset,spine),*b=swat_character_node_matrix(view->asset,parent);
+        float source_length=Vector3Distance((Vector3){a[12],a[13],a[14]},(Vector3){b[12],b[13],b[14]});
         assert(swat_character_restore_pose(view->asset,cached->matrices,cached->count));
+        a=swat_character_node_matrix(view->asset,spine);b=swat_character_node_matrix(view->asset,parent);
+        assert(fabsf(Vector3Distance((Vector3){a[12],a[13],a[14]},(Vector3){b[12],b[13],b[14]})-source_length)<1e-5f);
         // Physical rifle stock transform exactly follows achieved pose at every
         // yaw/stance/pitch, independent of anatomical markers and source roots.
         const float* w=swat_character_node_matrix(view->asset,swat_character_find_node(view->asset,"Prop_Rifle"));
@@ -99,6 +147,7 @@ static void runtime_check(const char* directory,SwatLighting* light) {
         swat_weapons_step(&actor->arsenal,&input,0,0,true,false); sim->tick++;
         memcpy(before,sim,sizeof(*before)); swat_character_runtime_prepare(runtime,sim); assert(runtime->actors[0].valid);
         assert(!memcmp(before,sim,sizeof(*before)));
+        if(weapon->reload_remaining>0) assert(runtime->actors[0].bank==SWAT_CHARACTER_READY);
         double time=runtime->actors[0].source_time;
         if(elapsed==duration/4) assert(fabs(time-.88)<1e-7 && !weapon->magazine_seated);
         if(elapsed==2*duration/3) assert(fabs(time-3.65)<1e-7 && weapon->magazine_seated);

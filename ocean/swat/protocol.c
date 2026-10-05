@@ -1,5 +1,6 @@
 #include "protocol.h"
 #include "motel.h"
+#include "storefront.h"
 #include <string.h>
 
 typedef struct Writer { unsigned char* p; size_t left; bool ok; } Writer;
@@ -490,6 +491,10 @@ void swat_apply_map(SwatSim* sim,const SwatMap* map) {
         if(map->config.mission==SWAT_MOTEL) {
             bool bound=swat_motel_bind_collision(&sim->world);
             (void)bound; // Modified/noncanonical maps retain their explicit boxes.
+        }
+        if(map->config.mission==SWAT_STOREFRONT) {
+            bool bound=swat_storefront_bind_collision(&sim->world);
+            (void)bound;
         }
     }
 }

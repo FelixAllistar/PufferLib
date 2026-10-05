@@ -18,7 +18,7 @@ static void usage(const char* path) {
         "  --record FILE.sgrp          Record a solo round for exact input replay\n"
         "  --settings FILE.ini          Override the saved player preferences\n"
         "  --resume FILE.sgrp          Restore a verified solo mission journal\n"
-        "  --mission house|annex|generated|range|motel  Human default: house; policy default: annex\n"
+        "  --mission house|annex|generated|range|motel|storefront  Human default: house; policy default: annex\n"
         "  --layout-seed N --difficulty 0|1|2 --generator neural|uniform\n"
         "  --layout-model FILE          Optional trained house policy\n"
         "  --capture-screen SCREEN      game, main, pause, settings, plan, or overwatch\n"
@@ -77,8 +77,8 @@ int main(int argc, char** argv) {
             if(++i>=argc) { usage(argv[0]); free(overrides); return 1; }
             join_address=argv[i];
         } else if(!strcmp(argv[i],"--mission")) {
-            if(++i>=argc || (strcmp(argv[i],"house") && strcmp(argv[i],"annex") && strcmp(argv[i],"generated") && strcmp(argv[i],"range") && strcmp(argv[i],"motel"))) { usage(argv[0]); free(overrides); return 1; }
-            mission=!strcmp(argv[i],"motel") ? SWAT_MOTEL : !strcmp(argv[i],"house") ? SWAT_HOUSE : (!strcmp(argv[i],"generated") ? SWAT_GENERATED : (!strcmp(argv[i],"range") ? SWAT_RANGE : SWAT_ANNEX));
+            if(++i>=argc || (strcmp(argv[i],"house") && strcmp(argv[i],"annex") && strcmp(argv[i],"generated") && strcmp(argv[i],"range") && strcmp(argv[i],"motel") && strcmp(argv[i],"storefront"))) { usage(argv[0]); free(overrides); return 1; }
+            mission=!strcmp(argv[i],"storefront") ? SWAT_STOREFRONT : !strcmp(argv[i],"motel") ? SWAT_MOTEL : !strcmp(argv[i],"house") ? SWAT_HOUSE : (!strcmp(argv[i],"generated") ? SWAT_GENERATED : (!strcmp(argv[i],"range") ? SWAT_RANGE : SWAT_ANNEX));
         } else if(!strcmp(argv[i],"--layout-model")) {
             if(++i>=argc) { usage(argv[0]); free(overrides); return 1; } layout_model=argv[i];
         } else if(!strcmp(argv[i],"--generator")) {

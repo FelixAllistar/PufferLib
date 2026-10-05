@@ -3,19 +3,24 @@
 #include "character_view.h"
 #include "weapon_art.h"
 #define SWAT_CHARACTER_MESHES 16
+typedef enum SwatCharacterBank {
+    SWAT_CHARACTER_READY, SWAT_CHARACTER_WALK, SWAT_CHARACTER_LEFT,
+    SWAT_CHARACTER_RIGHT, SWAT_CHARACTER_CROUCH_READY,
+    SWAT_CHARACTER_CROUCH_WALK, SWAT_CHARACTER_BANKS
+} SwatCharacterBank;
 typedef struct SwatCharacterActorPose {
     float* matrices;
     size_t count;
     Matrix root;
     b3Pos feet;
-    double distance,source_time;
+    double distance,phase,source_time;
     int tick,episode,bank;
     uint64_t signature;
     bool valid;
     unsigned char visible[SWAT_CHARACTER_MESHES];
 } SwatCharacterActorPose;
 typedef struct SwatCharacterRuntime {
-    SwatCharacterView banks[2];
+    SwatCharacterView banks[SWAT_CHARACTER_BANKS];
     Texture2D diffuse[2],normal[2],emissive,orm;
     SwatCharacterActorPose actors[SWAT_MAX_ACTORS];
     unsigned int preparations,draws;

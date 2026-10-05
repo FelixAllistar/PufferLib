@@ -120,7 +120,9 @@ static void swat_draw_object(const SwatView* view,const SwatWorld* world,const S
         if(o->breach_ticks>20) DrawSphere(swat_position(o->center),.18f,swat_paper);
     }
     if (!o->active) return;
-    bool imported=swat_environment_motel_draw(&view->environment,world,o,false,view->planning && !view->plan_preview);
+    bool cutaway=view->planning && !view->plan_preview;
+    bool imported=swat_environment_motel_draw(&view->environment,world,o,false,cutaway) ||
+        swat_environment_storefront_draw(&view->environment,world,o,false,cutaway);
     rlPushMatrix();
     rlTranslatef((float)o->center.x,(float)o->center.y,(float)o->center.z);
     rlRotatef(o->yaw/SWAT_RAD,0,1,0);
@@ -200,6 +202,7 @@ static void swat_draw_shadow_scene(void* context,const SwatSim* sim,bool cutaway
         const SwatObject* o=&sim->world.objects[i];
         if(!o->active || o->material==SWAT_GLASS) continue;
         if(swat_environment_motel_draw(&view->environment,&sim->world,o,true,cutaway)) continue;
+        if(swat_environment_storefront_draw(&view->environment,&sim->world,o,true,cutaway)) continue;
         if(cutaway && o->center.y>2.7f && o->half.x>3 && o->half.z>3) continue;
         rlPushMatrix(); rlTranslatef((float)o->center.x,(float)o->center.y,(float)o->center.z);
         rlRotatef(o->yaw/SWAT_RAD,0,1,0); rlRotatef(o->pitch/SWAT_RAD,0,0,1);
@@ -265,9 +268,10 @@ static void swat_draw_plan(SwatView* view,const SwatSim* sim) {
         camera.fovy=55; camera.projection=CAMERA_PERSPECTIVE;
     } else {
         float yaw=view->plan_yaw+.65f;
-        float center=sim->config.mission==SWAT_MOTEL ? -2 : (sim->config.mission==SWAT_GENERATED ? 4+sim->layout.width*.5f : 11);
-        camera.position=(Vector3){center-20*cosf(yaw),24,-20*sinf(yaw)};
-        camera.target=(Vector3){center,0,0}; camera.fovy=28; camera.projection=CAMERA_ORTHOGRAPHIC;
+        float center=sim->config.mission==SWAT_STOREFRONT ? 0 : sim->config.mission==SWAT_MOTEL ? -2 : (sim->config.mission==SWAT_GENERATED ? 4+sim->layout.width*.5f : 11);
+        float center_z=sim->config.mission==SWAT_STOREFRONT ? -5 : 0;
+        camera.position=(Vector3){center-20*cosf(yaw),24,center_z-20*sinf(yaw)};
+        camera.target=(Vector3){center,0,center_z}; camera.fovy=28; camera.projection=CAMERA_ORTHOGRAPHIC;
         // Centre the model in the space left of the planning sidebar.
         camera.position.x-=7.2f*sinf(yaw); camera.target.x-=7.2f*sinf(yaw);
         camera.position.z+=7.2f*cosf(yaw); camera.target.z+=7.2f*cosf(yaw);
@@ -287,6 +291,7 @@ static void swat_draw_plan(SwatView* view,const SwatSim* sim) {
         Vector3 p=swat_position(mission->overwatch[i].position);
         DrawSphere(p,.3f,swat_gold); DrawLine3D(p,swat_position(mission->overwatch[i].target),swat_gold);
     }
+    swat_environment_art_transparent(&view->environment,&sim->world,camera.position,!preview);
     swat_end_scene(view);
     DrawRectangle(0,0,GetScreenWidth(),96,swat_ink);
     DrawText(TextFormat("%s / OPERATION BRIEF",mission->name),32,22,28,swat_paper);
@@ -308,6 +313,7 @@ static void swat_draw_scope(SwatView* view,const SwatSim* sim,int width,int heig
         swat_draw_floors(view,sim);
         for(int i=0;i<sim->actor_count;i++) swat_draw_actor(view,sim,i,false);
         for(int i=0;i<sim->world.count;i++) if(sim->world.objects[i].material==SWAT_GLASS) swat_draw_object(view,&sim->world,&sim->world.objects[i]);
+        swat_environment_art_transparent(&view->environment,&sim->world,camera.position,false);
         swat_end_scene(view); return;
     }
     if(actor<0 || !sim->snipers[unit].deployed || !sim->actors[actor].alive) {
@@ -329,6 +335,7 @@ static void swat_draw_scope(SwatView* view,const SwatSim* sim,int width,int heig
     for(int i=0;i<sim->world.count;i++) if(sim->world.objects[i].material==SWAT_GLASS) swat_draw_object(view,&sim->world,&sim->world.objects[i]);
     for(int i=0;i<sim->actor_count;i++) if(sim->tick-sim->actors[i].last_shot_tick<=3)
         DrawLine3D(swat_position(sim->actors[i].tracer_start),swat_position(sim->actors[i].tracer_end),swat_gold);
+    swat_environment_art_transparent(&view->environment,&sim->world,camera.position,false);
     swat_end_scene(view);
     if(a->gear.gas_ticks>0) DrawRectangle(0,0,width,height,(Color){100,125,55,(unsigned char)(a->gear.gas_ticks*.55f)});
     if(a->gear.flash_ticks>0) DrawRectangle(0,0,width,height,(Color){242,245,221,(unsigned char)(240*fminf(1,a->gear.flash_ticks/120.0f))});
@@ -374,6 +381,7 @@ void swat_view_draw(SwatView* view, const SwatSim* s, bool policy, float vertica
     if(view->actor>=0 && view->actor<s->actor_count && s->actors[view->actor].present)
         light_eye=swat_position(swat_controller_eye(&s->actors[view->actor].controller));
     swat_character_runtime_prepare(view->characters,s);
+    swat_environment_art_prepare_location(&view->environment,&s->world);
     swat_lighting_prepare_context(&view->lighting,s,light_eye,view->planning && !view->plan_preview,swat_draw_shadow_scene,view);
     if(view->planning) { swat_draw_plan(view,s); return; }
     if(view->actor<0 || view->actor>=s->actor_count || !s->actors[view->actor].present) {
@@ -430,6 +438,7 @@ void swat_view_draw(SwatView* view, const SwatSim* s, bool policy, float vertica
     DrawCylinder((Vector3){(float)s->extraction.x,0.01f,(float)s->extraction.z},1.3f,1.3f,0.025f,32,extraction);
     for (int i=0;i<s->actor_count;i++) if (s->tick-s->actors[i].last_shot_tick <= 3)
         DrawLine3D(swat_position(s->actors[i].tracer_start),swat_position(s->actors[i].tracer_end),(Color){250,200,98,180});
+    swat_environment_art_transparent(&view->environment,&s->world,camera.position,false);
     if (a->alive && !a->gear.inspecting) {
         // A modest separate presentation FOV keeps a measured rifle readable.
         // Preserve the world depth buffer and match the sight FOV exactly at ADS.

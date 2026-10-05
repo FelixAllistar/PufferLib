@@ -1,4 +1,4 @@
-# Environment art and authored motel
+# Environment art and authored locations
 
 This adapter applies the small, CC0 house-kit runtime pack and a provisional
 generated painted-plaster comparison in
@@ -231,3 +231,48 @@ material factor, map round-trip collision (including already-open doors),
 modified-map fallback and repeated world reset/shutdown. Linux GPU captures
 and the standard lighting, rifle and environment graphics checks are also
 reviewed; rendering remains read-only with respect to gameplay state.
+
+## Morrow Block storefronts
+
+`./swat play --mission storefront` or Morrow Block in the planning menu selects
+batch 16's laundromat, pawn/repair shop and shared rear service area. The 24 new
+modules and 15 reused designs retain their exact source GLBs and embedded
+metric base colour/OpenGL +Y normal/roughness maps in `storefront_v1`. The 151
+modular placements plus a separate site asset use original static triangles.
+The site includes all eight source sidewalk/apron/street meshes, extracted with
+only their referenced geometry/material buffers; unrelated example nodes and
+textures are excluded. `tools/import_storefront.py` verifies module hashes and
+records provenance for the extracted site. No supplied Blender scripts execute.
+
+Five leaves use their measured original floor hinges with functional closed,
+open, locked/picked and breached states. Example open angles become closed
+canonical rest angles; the rear exit's opposed orientation opens inward.
+Existing doors retain their original behavior. Three room volumes, two gunmen,
+three civilians, staging/extraction and squad spawning form the encounter.
+Physics uses canonical door slabs and exact static triangles for openings,
+thresholds, furniture and the authored site. Static imported masonry, windows
+and furnishings currently remain intact, with one gameplay material per module;
+this is not per-primitive ballistic material assignment or destructible glazing.
+
+Map replicas reconstruct the compiled static geometry only after every instance
+recipe matches, including hinge/current transforms for already-open leaves.
+Modified maps retain transmitted box collision. Existing enum indices, map
+fields and protocol/replay v8 remain unchanged; both peers need storefront support.
+Mesh data is owned by the world and freed after its physics world is destroyed.
+
+Only the current mission's location modules load onto the GPU, before camera
+and shadow passes. Switching missions unloads the previous bank; ordinary houses
+load neither large kit. Scalar PBR factors are restored alongside embedded maps.
+Opaque primitives draw first. Blended glass draws after scene geometry, ordered
+back to front for each camera with depth writes disabled, then restores render
+state. Glass no longer hides later-drawn interiors or casts opaque pane shadows.
+This sorting is per placed object; intersecting translucent primitives within
+one module are not independently sorted. There is no scene refraction.
+
+Validation covers all five authored capsule paths, actual controller walking
+across the front/stockroom thresholds, five functional leaves, original static
+mesh identity, resting/open map reconstruction, modified-map fallback and reset
+ownership. GPU checks validate all 40 motel and 40 storefront models/materials,
+only eight meshes in the extracted site, on-demand switching and idempotence,
+and visible objects behind glass with correct depth state. Windows and Linux
+player captures use the same asset placement and shared lighting.

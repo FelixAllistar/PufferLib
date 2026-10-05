@@ -3,6 +3,7 @@
 #include "environment_binding.h"
 #include "environment_props.h"
 #include "motel.h"
+#include "storefront.h"
 #include "raylib.h"
 
 typedef enum SwatSurfaceKind {
@@ -17,6 +18,7 @@ struct SwatLighting;
 
 typedef struct SwatEnvironmentArt {
     bool initialized;
+    int location; // Only the current mission's module bank resides on the GPU.
     bool lit;
     Texture2D plaster,wood;
     float plaster_tile_metres;
@@ -25,17 +27,22 @@ typedef struct SwatEnvironmentArt {
     struct SwatLighting* lighting;
     Model door;
     Model motel[SWAT_MOTEL_ASSETS];
+    Model storefront[SWAT_STOREFRONT_ASSETS];
     Model props[SWAT_ENV_PROP_KINDS];
 } SwatEnvironmentArt;
 
 // Call only with an active graphics context; headless simulation never loads art.
 void swat_environment_art_init(SwatEnvironmentArt* art);
+void swat_environment_art_prepare_location(SwatEnvironmentArt* art,const SwatWorld* world);
 void swat_environment_art_close(SwatEnvironmentArt* art);
 // Releases unique shared material textures once, then the model allocations.
 void swat_art_model_close(Model model);
 // Draws in the caller's object-local transform. False means use graybox fallback.
 bool swat_environment_art_draw(const SwatEnvironmentArt* art,const SwatObject* o);
 bool swat_environment_motel_draw(const SwatEnvironmentArt* art,const SwatWorld* world,const SwatObject* object,bool shadow,bool cutaway);
+bool swat_environment_storefront_draw(const SwatEnvironmentArt* art,const SwatWorld* world,const SwatObject* object,bool shadow,bool cutaway);
+// Blended GLB primitives follow all opaque geometry, sorted per camera.
+void swat_environment_art_transparent(const SwatEnvironmentArt* art,const SwatWorld* world,Vector3 eye,bool cutaway);
 bool swat_environment_art_has_floor(const SwatEnvironmentArt* art,SwatMaterial floor);
 // Generated-only decorative tabletop clutter, using current accepted supports.
 void swat_environment_art_draw_props(const SwatEnvironmentArt* art,const SwatWorld* world,

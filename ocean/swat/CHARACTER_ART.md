@@ -9,7 +9,8 @@ and authoritative reload phase mapping outside that source.
 ## Live player
 
 The optional private install is `build/swat/assets/characters/ready.glb`,
-`walk.glb` and `textures/Ch15_*.png`. Ready is the verified six-second Shared
+`walk.glb` and `textures/Ch15_*.png`, optionally extended by `walk_left.glb`,
+`walk_right.glb`, `crouch_ready.glb` and `crouch_walk.glb`. Ready is the verified six-second Shared
 Ready N carry/reload export, SHA-256
 `3a20375ec72f106925ef96718da0931e172f21908c6720cff4d792c173c0cc81`;
 walk is the one-second cubic candidate identified below. Build scripts copy
@@ -19,13 +20,41 @@ install; `SWAT_CHARACTER_ART=0` selects procedural rendering.
 
 `character_runtime.c` follows actual feet, heading, stance, achieved lean and
 weapon pose. Source scale remains one metre per metre. Walk phase advances with
-actual horizontal displacement divided by the measured 1.92126024 m cycle travel,
+actual horizontal displacement divided by each bank's measured cycle travel,
 without adding root travel to physics. Teleports, rewind/reset and actor changes
 reset presentation travel. Legs turn toward actual travel and a two-bone solve
 provides crouch/stance adaptation while preserving limb lengths and source foot
-targets. Torso pitch is bounded; independent arm solves fit the achieved rifle
+targets. Torso pitch is bounded and rotates around the sampled spine joint,
+preserving abdomen length even when camera/stance targets differ; independent arm solves fit the achieved rifle
 pose. The measured Prop_Rifle inverse-bind bridge is applied exactly once.
 Art landmarks never override the camera, physical muzzle or collider dimensions.
+
+Standing locomotion now selects distinct original left/right banks according to
+achieved local travel. Their pace is 1.92126191 / 1.92126155 m per one-second
+cycle. The adapter uses each bank's measured travel vector after its fixed fit,
+retaining authored chest/pelvis counter-rotation. Diagonals and backward travel
+rotate the nearest available bank toward achieved movement; no backward source
+clip is claimed. Phase remains continuous across bank changes, stops without
+actual displacement, and advances by 2.03907418 m per crouch-forward cycle.
+Missing optional banks fall back to forward/Ready without disabling character art.
+
+The planted crouch contains a single STEP key at t=0 and no authored duration;
+it is sampled and held at zero. Crouch-forward is the separate original one-second
+cubic bank. Their phase-zero hips already sit 0.268843 m below Ready, so stance
+adaptation subtracts that authored drop before solving the remaining controller
+hip drop. Reloads always use the unchanged Ready bank and authority phase mapping.
+Source garment/contact limitations remain, including the reported 18.392 mm
+crouch-forward sleeve/thigh overlap. Rejected ADS study poses are excluded.
+
+`tools/install_character_movement.py` accepts the four extracted private fixture
+directories in left, right, crouch-ready, crouch-forward order. It checks all
+four calibrated original GLB hashes before writing the ignored install. The
+measured fits are recorded in `character_movement_data.h`; no source mesh,
+curve, duration, weight or binding is rewritten. The four new banks pass 748
+independent numerical source samples, including every authored key and off-key
+times; worst vertex difference is 0.000000827 m. GPU checks cover held zero-duration
+crouch, lateral/stance selection, actual-displacement phase, missing-bank fallback,
+abdomen length, physical rifle placement, reload commits and immutable authority.
 
 The normal controlled body is omitted. First-person rendering selects arm
 triangles from the original weights, along with the rifle and currently owned

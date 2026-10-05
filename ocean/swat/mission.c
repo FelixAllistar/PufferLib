@@ -13,6 +13,8 @@ static const SwatMissionDef missions[SWAT_MISSION_COUNT]={
         {0,0,0},{0,0,0},0,{{0}}},
     {"Briar Court motel","Secure the rooms and reception, restrain occupants, then return to staging.",
         {0,-.079f,8},{0,-.079f,10},0,{{0}}},
+    {"Morrow Block","Clear the laundromat, pawn shop and shared rear service area. Secure occupants and return to the street.",
+        {-3,-.139f,5},{-3,-.139f,7},0,{{0}}},
 };
 const SwatMissionDef* swat_mission(int mission) {
     return &missions[mission>=0 && mission<SWAT_MISSION_COUNT ? mission : SWAT_ANNEX];

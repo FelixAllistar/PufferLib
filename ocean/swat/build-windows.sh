@@ -76,7 +76,7 @@ if ! cmake --build "$SWAT_BUILD/enet" --parallel 4 > "$SWAT_BUILD/enet-build.log
     exit 1
 fi
 
-SWAT_CORE=(body.c controller.c pose.c devices.c encounter.c weapons.c materials.c world.c motel.c mission.c equipment.c tactical.c overwatch.c generation.c acoustics.c audio_dsp.c sim.c)
+SWAT_CORE=(body.c controller.c pose.c devices.c encounter.c weapons.c materials.c world.c motel.c storefront.c mission.c equipment.c tactical.c overwatch.c generation.c acoustics.c audio_dsp.c sim.c)
 SWAT_SOURCES=()
 SWAT_FLAGS=(-O2 -g -std=gnu11 -ffp-contract=off -Wall -Wextra
     -Wno-unused-parameter -Wno-unused-function -Wno-unknown-pragmas
@@ -195,6 +195,9 @@ if [ "$SWAT_TARGET" = all ]; then
 "$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/tests/test_motel.c" \
     "$SWAT_ROOT/ocean/swat/protocol.c" "${SWAT_SOURCES[@]}" "${SWAT_HEADLESS_LIBS[@]}" -o "$SWAT_BUILD/test_motel.exe"
 
+"$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/tests/test_storefront.c" \
+    "$SWAT_ROOT/ocean/swat/protocol.c" "${SWAT_SOURCES[@]}" "${SWAT_HEADLESS_LIBS[@]}" -o "$SWAT_BUILD/test_storefront.exe"
+
 "$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/tests/test_environment_binding.c" \
     "$SWAT_ROOT/ocean/swat/protocol.c" "${SWAT_SOURCES[@]}" "${SWAT_HEADLESS_LIBS[@]}" -o "$SWAT_BUILD/test_environment_binding.exe"
 
@@ -228,6 +231,7 @@ mkdir -p "$SWAT_BUILD/assets/environment"
 cp "$SWAT_ROOT/ocean/swat/assets/environment/"*.{png,glb,json,txt} "$SWAT_BUILD/assets/environment/"
 cp -R "$SWAT_ROOT/ocean/swat/assets/environment/materials_v1" "$SWAT_BUILD/assets/environment/"
 cp -R "$SWAT_ROOT/ocean/swat/assets/environment/motel_v1" "$SWAT_BUILD/assets/environment/"
+cp -R "$SWAT_ROOT/ocean/swat/assets/environment/storefront_v1" "$SWAT_BUILD/assets/environment/"
 if [ -d "$SWAT_ROOT/build/swat/assets/characters" ]; then
     mkdir -p "$SWAT_BUILD/assets/characters"
     cp -R "$SWAT_ROOT/build/swat/assets/characters/." "$SWAT_BUILD/assets/characters/"
