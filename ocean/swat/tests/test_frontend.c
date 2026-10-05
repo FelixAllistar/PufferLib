@@ -48,6 +48,8 @@ static void frame(SwatFrontend* app, SwatView* view, SwatSim* sim) {
     swat_sound_view_update(&test_sound,sim,app->actor,app->settings.master_volume,0,0);
     view->actor=app->actor; view->planning=app->screen==SWAT_SCREEN_PLAN;
     view->weapon_size=app->settings.weapon_size;
+    view->weapon_ads_relief=app->settings.weapon_ads_relief;
+    view->weapon_preview_ads=app->screen==SWAT_SCREEN_SETTINGS && app->weapon_settings && app->weapon_preview_ads;
     view->weapon_horizontal=app->settings.weapon_horizontal; view->weapon_vertical=app->settings.weapon_vertical;
     view->plan_preview=app->plan_preview; view->plan_yaw=app->plan_yaw;
     view->scope=app->screen==SWAT_SCREEN_SCOPE; view->sniper_unit=app->selected_sniper;
@@ -172,7 +174,11 @@ static bool run_checks(SwatFrontend* app, SwatView* view, SwatSim* sim,
     click(app,view,sim,160,282); click(app,view,sim,390,343);
     CHECK(app->settings.weapon_size>2 && app->settings.weapon_horizontal>-.055f && app->settings.weapon_vertical>.10f);
     CHECK(app->settings.sensitivity==sensitivity && app->settings.invert_y);
+    click(app,view,sim,350,405); CHECK(app->settings.weapon_ads_relief>.18f);
+    click(app,view,sim,230,438); CHECK(app->weapon_preview_ads && view->weapon_preview_ads && sim->tick==0);
+    CHECK(sim->actors[0].controller.ads==0); // Display preview cannot aim/fire the simulation.
     click(app,view,sim,130,159); CHECK(!app->weapon_settings);
+    CHECK(!view->weapon_preview_ads);
     if(screenshot) {
         Image image=LoadImageFromScreen();
         bool saved=ExportImage(image,screenshot); UnloadImage(image);

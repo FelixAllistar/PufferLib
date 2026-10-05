@@ -1,6 +1,10 @@
 #ifndef SWAT_CHARACTER_VIEW_H
 #define SWAT_CHARACTER_VIEW_H
 #include "character_asset.h"
+#include <string.h>
+static inline bool swat_character_body_mesh(const char* name) {
+    return name && (strstr(name,"full body") || !strcmp(name,"SWAT_Wearer"));
+}
 #include "lighting.h"
 typedef struct SwatCharacterView {
     SwatCharacterAsset* asset;

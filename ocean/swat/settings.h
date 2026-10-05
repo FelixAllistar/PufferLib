@@ -20,6 +20,7 @@ typedef struct SwatSettings {
     bool invert_x, invert_y;
     float master_volume; // player output only; agent hearing is never muted
     float weapon_size,weapon_horizontal,weapon_vertical; // first-person view only
+    float weapon_ads_relief; // eye to rear aperture, metres; carbine view only
 } SwatSettings;
 
 typedef struct SwatLookDelta { float yaw, pitch; } SwatLookDelta;

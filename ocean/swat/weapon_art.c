@@ -1,5 +1,6 @@
 #include "weapon_art.h"
 #include "rlgl.h"
+#include "rifle_geometry.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -43,6 +44,24 @@ Matrix swat_weapon_art_transform(const SwatPose* p) {
     m.m4=p->weapon_up.x; m.m5=p->weapon_up.y; m.m6=p->weapon_up.z;
     m.m8=p->right.x; m.m9=p->right.y; m.m10=p->right.z;
     m.m12=(float)p->shoulder.x; m.m13=(float)p->shoulder.y; m.m14=(float)p->shoulder.z; m.m15=1; return m;
+}
+SwatPose swat_weapon_view_pose(const SwatPose* achieved,const SwatArsenal* arsenal,
+    float ads,float horizontal,float vertical,float eye_relief) {
+    SwatPose p=*achieved;
+    b3Vec3 offset=swat_mul(b3Add(swat_mul(p.right,horizontal),swat_mul(p.up,vertical)),1-ads);
+    if(!arsenal->active && !arsenal->primary) {
+        // The measured rear aperture was 220 mm in front of the eye. That
+        // distant eye point makes its 5.4 mm opening almost unreadable. Use
+        // adjustable eye relief for the first-person carbine only. Computing
+        // from the achieved rear point keeps this stable through lean/recoil.
+        b3Pos rear=swat_pose_weapon_point(&p,swat_carbine_rear_sight);
+        float distance=b3Dot(b3SubPos(rear,p.eye),p.forward);
+        offset=b3Add(offset,swat_mul(p.forward,ads*(eye_relief-distance)));
+    }
+    p.shoulder=b3OffsetPos(p.shoulder,offset); p.muzzle=b3OffsetPos(p.muzzle,offset);
+    p.sight=b3OffsetPos(p.sight,offset); p.left_hand=b3OffsetPos(p.left_hand,offset);
+    p.right_hand=b3OffsetPos(p.right_hand,offset);
+    return p;
 }
 bool swat_weapon_art_draw(SwatWeaponArt* art,SwatLighting* light,const SwatArsenal* a,const SwatPose* pose) {
     if(!art->carbine.meshCount || a->active || a->primary) return false;

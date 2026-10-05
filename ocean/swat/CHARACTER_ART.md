@@ -63,6 +63,30 @@ applied to those meshes only. Other live carbine officers use the full body;
 other weapon/role and incapacitated/restrained states retain their existing
 representations. Source garment/contact defects remain source art issues.
 
+The optional F gear install is `assets/characters/upper_gear_f/`, built by
+`tools/install_character_gear.py EXTRACTED_F_FIXTURE`. It verifies the original
+geometry hash `5dd68cf3010b4ba24ec719fb949e1d8f62053c5761142c37da41079848f00835`
+and all six original motion hashes, plus exact native joint default transforms
+and hierarchy. It combines the new 72-joint geometry with unchanged original
+animation accessors/channels in separate private runtime banks; original files,
+weights, UVs and curves remain intact. All 70 original sampled joint matrices
+match exactly across 3,114 authored-key/midpoint samples. Runtime reconstructs
+the two new rigid elbow carriers from the anatomical bend plane after sampling
+and after arm IK. The GPU contract checks unit frames, elbow/wrist alignment and
+single-influence cap rigidity. SWAT_Wearer primitives retain the source
+1001/1002 texture correspondence; the new headset and caps retain their authored
+polymer/padding factors. `SWAT_CHARACTER_GEAR=0` selects the original geometry.
+The supplied three-second articulation remains source review evidence, rather
+than replacing gameplay locomotion or reloads. Mount gaps and existing grips
+remain source limitations.
+
+First-person carbine aiming uses an adjustable eye-to-aperture distance, default
+120 mm. This rigid presentation shift changes neither the physical muzzle nor
+world rifle placement. GPU tests project the actual source aperture center and
+post tip onto screen center at 80/120/220 mm through yaw, stance, lean, recoil
+and +/-85-degree look limits. Hip view sliders do not displace full-ADS sights;
+settings offer an aiming preview without changing simulation state.
+
 Empty and tactical game reloads retain their original authoritative durations.
 A piecewise presentation mapping aligns source release at 0.88 s with integer
 `floor(D/4)` removal and source seating at 3.65 s with `floor(2D/3)` insertion,

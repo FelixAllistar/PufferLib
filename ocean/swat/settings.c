@@ -19,7 +19,7 @@
 #endif
 
 SwatSettings swat_settings_defaults(void) {
-    return (SwatSettings){0.035f,1.0f,0.65f,70.0f,120,false,false,1.0f,1.7f,-.055f,.075f};
+    return (SwatSettings){0.035f,1.0f,0.65f,70.0f,120,false,false,1.0f,1.7f,-.055f,.075f,.12f};
 }
 
 static float swat_setting_range(float value, float fallback, float lo, float hi) {
@@ -39,6 +39,7 @@ void swat_settings_sanitize(SwatSettings* s) {
     s->weapon_size=swat_setting_range(s->weapon_size,defaults.weapon_size,1,2.4f);
     s->weapon_horizontal=swat_setting_range(s->weapon_horizontal,defaults.weapon_horizontal,-.10f,.10f);
     s->weapon_vertical=swat_setting_range(s->weapon_vertical,defaults.weapon_vertical,-.08f,.12f);
+    s->weapon_ads_relief=swat_setting_range(s->weapon_ads_relief,defaults.weapon_ads_relief,.08f,.22f);
 }
 
 bool swat_settings_equal(const SwatSettings* a, const SwatSettings* b) {
@@ -46,7 +47,8 @@ bool swat_settings_equal(const SwatSettings* a, const SwatSettings* b) {
         a->ads_multiplier==b->ads_multiplier && a->vertical_fov==b->vertical_fov &&
         a->frame_limit==b->frame_limit && a->invert_x==b->invert_x && a->invert_y==b->invert_y &&
         a->master_volume==b->master_volume && a->weapon_size==b->weapon_size &&
-        a->weapon_horizontal==b->weapon_horizontal && a->weapon_vertical==b->weapon_vertical;
+        a->weapon_horizontal==b->weapon_horizontal && a->weapon_vertical==b->weapon_vertical &&
+        a->weapon_ads_relief==b->weapon_ads_relief;
 }
 
 bool swat_settings_default_path(char* out, size_t capacity) {
@@ -107,6 +109,7 @@ bool swat_settings_load(SwatSettings* settings, const char* path) {
         else if(!strcmp(key,"weapon_size")) parsed.weapon_size=number;
         else if(!strcmp(key,"weapon_horizontal")) parsed.weapon_horizontal=number;
         else if(!strcmp(key,"weapon_vertical")) parsed.weapon_vertical=number;
+        else if(!strcmp(key,"weapon_ads_relief")) parsed.weapon_ads_relief=number;
         else if(!strcmp(key,"frame_limit")) parsed.frame_limit=(int)fmaxf(30,fminf(240,number));
         else if(!strcmp(key,"invert_x") && (number==0 || number==1)) parsed.invert_x=number!=0;
         else if(!strcmp(key,"invert_y") && (number==0 || number==1)) parsed.invert_y=number!=0;
@@ -171,10 +174,10 @@ bool swat_settings_save(const SwatSettings* settings, const char* path) {
         "# SWAT: Gold Element player preferences\nversion = 1\n"
         "mouse_sensitivity = %.9g\nvertical_multiplier = %.9g\nads_multiplier = %.9g\n"
         "vertical_fov = %.9g\nframe_limit = %d\ninvert_x = %d\ninvert_y = %d\nmaster_volume = %.9g\n"
-        "weapon_size = %.9g\nweapon_horizontal = %.9g\nweapon_vertical = %.9g\n",
+        "weapon_size = %.9g\nweapon_horizontal = %.9g\nweapon_vertical = %.9g\nweapon_ads_relief = %.9g\n",
         (double)s.sensitivity,(double)s.vertical_multiplier,(double)s.ads_multiplier,
         (double)s.vertical_fov,s.frame_limit,s.invert_x,s.invert_y,(double)s.master_volume,
-        (double)s.weapon_size,(double)s.weapon_horizontal,(double)s.weapon_vertical)>0;
+        (double)s.weapon_size,(double)s.weapon_horizontal,(double)s.weapon_vertical,(double)s.weapon_ads_relief)>0;
     if(fflush(file)!=0) ok=false;
     if(fclose(file)!=0) ok=false;
     if(ok) {

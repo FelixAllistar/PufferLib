@@ -86,6 +86,7 @@ void swat_view_init(SwatView* view, bool hidden) {
     SetConfigFlags(FLAG_MSAA_4X_HINT | (hidden ? FLAG_WINDOW_HIDDEN : 0));
     view->width = 1440; view->height = 810;
     view->weapon_size=1.7f; view->weapon_horizontal=-.055f; view->weapon_vertical=.075f;
+    view->weapon_ads_relief=.12f;
     InitWindow(view->width,view->height,"SWAT: Gold Element");
     if (!IsWindowReady()) return;
     SetTargetFPS(60);
@@ -353,14 +354,9 @@ static void swat_draw_scope(SwatView* view,const SwatSim* sim,int width,int heig
 }
 
 static void swat_draw_weapon(SwatView* view,const SwatSim* s,const SwatActor* a,const SwatController* c) {
-    SwatPose pose=swat_pose(c,&a->arsenal);
-    // Translate the complete presentation (including fallback hands and flash)
-    // together. Fade out at ADS so measured sights retain their exact alignment.
-    b3Vec3 offset=swat_mul(b3Add(swat_mul(pose.right,view->weapon_horizontal),
-        swat_mul(pose.up,view->weapon_vertical)),1-c->ads);
-    pose.shoulder=b3OffsetPos(pose.shoulder,offset); pose.muzzle=b3OffsetPos(pose.muzzle,offset);
-    pose.sight=b3OffsetPos(pose.sight,offset); pose.left_hand=b3OffsetPos(pose.left_hand,offset);
-    pose.right_hand=b3OffsetPos(pose.right_hand,offset);
+    SwatPose achieved=swat_pose(c,&a->arsenal);
+    SwatPose pose=swat_weapon_view_pose(&achieved,&a->arsenal,c->ads,
+        view->weapon_horizontal,view->weapon_vertical,view->weapon_ads_relief);
     if(swat_character_runtime_draw_first_person(view->characters,view->actor,&view->lighting,&pose)) {
         if(s->tick-a->last_shot_tick<=2) DrawSphere(swat_position(pose.muzzle),.035f,(Color){255,216,112,230});
         return;
@@ -413,6 +409,7 @@ void swat_view_draw(SwatView* view, const SwatSim* s, bool policy, float vertica
         }
     }
     SwatController displayed=a->controller;
+    if(view->weapon_preview_ads) { displayed.ads=1; displayed.ready_blend=0; }
     displayed.yaw=swat_angle(displayed.yaw+(view->scope ? 0 : view->yaw_offset));
     displayed.pitch=swat_clamp(displayed.pitch+(view->scope ? 0 : view->pitch_offset),-85*SWAT_RAD,85*SWAT_RAD);
     const SwatController* c=&displayed;
@@ -497,8 +494,9 @@ void swat_view_draw(SwatView* view, const SwatSim* s, bool policy, float vertica
     Color reticle = c->muzzle_blocked ? (Color){230,110,80,255} : swat_gold;
     int cx=width/2, cy=height/2;
     int gap=3+(int)((1-c->ads)*5);
-    DrawLine(cx-gap-8,cy,cx-gap,cy,reticle); DrawLine(cx+gap,cy,cx+gap+8,cy,reticle);
-    DrawLine(cx,cy-gap-8,cx,cy-gap,reticle); DrawLine(cx,cy+gap,cx,cy+gap+8,reticle);
+    Color crosshair=Fade(reticle,1-c->ads);
+    DrawLine(cx-gap-8,cy,cx-gap,cy,crosshair); DrawLine(cx+gap,cy,cx+gap+8,cy,crosshair);
+    DrawLine(cx,cy-gap-8,cx,cy-gap,crosshair); DrawLine(cx,cy+gap,cx,cy+gap+8,crosshair);
     if(a->gear.inspecting) {
         const char* modes[]={"Forward","Under door","Corner left","Corner right","Over cover"};
         swat_hud_center(view,TextFormat("Optiwand / %s",modes[a->gear.wand_mode]),cx,28,16,swat_paper);

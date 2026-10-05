@@ -677,7 +677,7 @@ void swat_frontend_draw(SwatFrontend* app, const SwatView* view, const SwatSim* 
     if(!weapon_settings) DrawRectangle(0,0,width,height,(Color){5,11,16,210});
     float panel_w=settings ? 620.0f : 500.0f;
     float panel_h=settings ? 714.0f : 574.0f;
-    if(weapon_settings) { panel_w=420; panel_h=465; }
+    if(weapon_settings) { panel_w=420; panel_h=548; }
     float x=(width-panel_w)*0.5f,y=(height-panel_h)*0.5f;
     if(weapon_settings) { x=24; y=24; }
     DrawRectangle((int)x,(int)y,(int)panel_w,(int)panel_h,(Color){12,20,28,250});
@@ -707,12 +707,17 @@ void swat_frontend_draw(SwatFrontend* app, const SwatView* view, const SwatSim* 
                 &app->settings.weapon_horizontal,-.10f,.10f); y+=61;
             swat_setting_slider(x,y,content_w,"Vertical position",TextFormat("%+.0f",app->settings.weapon_vertical*1000),
                 &app->settings.weapon_vertical,-.08f,.12f); y+=61;
-            DrawText("Live preview / aiming stays aligned",(int)x,(int)y,14,menu_muted); y+=32;
+            swat_setting_slider(x,y,content_w,"ADS eye distance",TextFormat("%.0f mm",app->settings.weapon_ads_relief*1000),
+                &app->settings.weapon_ads_relief,.08f,.22f); y+=61;
+            if(GuiButton((Rectangle){x,y,content_w,28},app->weapon_preview_ads ? "Preview: aiming / switch to hip" : "Preview: hip / switch to aiming"))
+                app->weapon_preview_ads=!app->weapon_preview_ads;
+            y+=44;
             if(GuiButton((Rectangle){x,y,105,38},"Reset view")) {
                 SwatSettings defaults=swat_settings_defaults();
                 app->settings.weapon_size=defaults.weapon_size;
                 app->settings.weapon_horizontal=defaults.weapon_horizontal;
                 app->settings.weapon_vertical=defaults.weapon_vertical;
+                app->settings.weapon_ads_relief=defaults.weapon_ads_relief;
             }
             if(GuiButton((Rectangle){x+115,y,content_w-115,38},"Save & back") && swat_menu_save(app))
                 swat_frontend_set_screen(app,app->settings_back);

@@ -369,14 +369,17 @@ multiplier. Positive horizontal motion turns right; moving the mouse up looks
 up unless inversion is enabled. Mouse displacement is independent of frame rate.
 
 **Escape → Settings → Weapon view** opens a small panel on the left with a live
-preview of weapon size, horizontal position and vertical position. **Reset view**
-resets only these three values. The default projects the weapon at 170% of the
+preview of weapon size, horizontal position, vertical position and ADS eye
+distance. Switch the preview between hip and aiming without changing gameplay.
+**Reset view** resets these four values. The default projects the weapon at 170% of the
 old size (62° weapon FOV becomes about 38.9°), with a small height/position
 correction. This changes first-person presentation only: world weapon dimensions,
 reach and firing remain measured. Hip-view offsets fade out while aiming, and
-aimed sights retain their original alignment. Preferences also support
-`weapon_size`, `weapon_horizontal` and `weapon_vertical`; size is magnification,
-and the position values are camera-relative metres.
+aimed sights retain their original alignment. Carbine ADS defaults to 120 mm
+between eye and rear aperture, adjustable from 80 to 220 mm. The entire gun and
+arms move together; normal crosshair lines fade away so the post remains visible.
+Preferences support `weapon_size`, `weapon_horizontal`, `weapon_vertical` and
+`weapon_ads_relief`; size is magnification and the other values are metres.
 
 **Save & back** writes preferences immediately; Escape saves edited values
 before returning. **Reload saved** restores the file, and **Defaults** restores

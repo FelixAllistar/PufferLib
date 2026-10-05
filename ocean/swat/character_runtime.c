@@ -79,6 +79,31 @@ static bool limb(SwatCharacterAsset* asset,const char* upper,const char* lower,c
     return transform(asset,end,compose(target,MatrixInvert(current)));
 }
 
+// The F geometry's rigid pads use an anatomical elbow frame, separate from
+// forearm pronation. Reconstruct it after sampling and after arm IK; otherwise
+// the old motion banks cannot drive the two newly introduced carrier joints.
+static bool elbow_carrier(SwatCharacterAsset* asset,const char* side,const char* carrier) {
+    int index=swat_character_find_node(asset,carrier); if(index<0) return true;
+    char name[64]; snprintf(name,sizeof(name),"mixamorig:%sArm",side); Vector3 a=origin(node(asset,name));
+    snprintf(name,sizeof(name),"mixamorig:%sForeArm",side); Vector3 b=origin(node(asset,name));
+    snprintf(name,sizeof(name),"mixamorig:%sHand",side); Vector3 c=origin(node(asset,name));
+    Vector3 y=Vector3Subtract(c,b),z=Vector3CrossProduct(Vector3Subtract(b,a),y);
+    if(Vector3LengthSqr(y)<1e-10f) return false;
+    y=Vector3Normalize(y); Matrix current=node(asset,carrier);
+    if(Vector3LengthSqr(z)<1e-10f) {
+        z=(Vector3){current.m8,current.m9,current.m10};
+        z=Vector3Subtract(z,Vector3Scale(y,Vector3DotProduct(y,z)));
+        if(Vector3LengthSqr(z)<1e-10f) return false;
+    }
+    z=Vector3Normalize(z); Vector3 x=Vector3Normalize(Vector3CrossProduct(y,z)); z=Vector3CrossProduct(x,y);
+    Matrix target={.m0=x.x,.m1=x.y,.m2=x.z,.m4=y.x,.m5=y.y,.m6=y.z,
+        .m8=z.x,.m9=z.y,.m10=z.z,.m12=b.x,.m13=b.y,.m14=b.z,.m15=1};
+    return transform(asset,carrier,compose(target,MatrixInvert(current)));
+}
+static bool elbow_carriers(SwatCharacterAsset* asset) {
+    return elbow_carrier(asset,"Left","Gear_Elbow_L") && elbow_carrier(asset,"Right","Gear_Elbow_R");
+}
+
 double swat_character_reload_time(const SwatWeapon* w) {
     if(!w || w->reload_remaining<=0 || w->reload_duration<=0) return 0;
     int elapsed=w->reload_duration-w->reload_remaining,remove=w->reload_duration/4,insert=2*w->reload_duration/3;
@@ -105,8 +130,13 @@ SwatCharacterRuntime* swat_character_runtime_open(const SwatWeaponArt* weapons) 
     else { snprintf(directory,sizeof(directory),"%sassets/characters",GetApplicationDirectory()); if(!DirectoryExists(directory)) snprintf(directory,sizeof(directory),"build/swat/assets/characters"); }
     snprintf(path,sizeof(path),"%s/ready.glb",directory); if(!FileExists(path)) { TraceLog(LOG_INFO,"SWAT: private character absent; procedural actors"); return NULL; }
     SwatCharacterRuntime* runtime=calloc(1,sizeof(*runtime)); if(!runtime) return NULL;
+    char geometry[4096]; snprintf(geometry,sizeof(geometry),"%s/upper_gear_f",directory);
+    const char* gear=getenv("SWAT_CHARACTER_GEAR");
+    snprintf(path,sizeof(path),"%s/ready.glb",geometry);
+    bool use_gear=(!gear || strcmp(gear,"0")) && FileExists(path);
+    if(use_gear) TraceLog(LOG_INFO,"SWAT: F gear geometry / original gameplay motion / anatomical elbow carriers");
     for(int i=0;i<SWAT_CHARACTER_BANKS;i++) {
-        snprintf(path,sizeof(path),"%s/%s.glb",directory,files[i]);
+        snprintf(path,sizeof(path),"%s/%s.glb",use_gear ? geometry : directory,files[i]);
         if(i>=2 && !FileExists(path)) continue;
         if(!swat_character_view_init_gpu(&runtime->banks[i],path,error,sizeof(error))) {
             TraceLog(LOG_WARNING,"SWAT: character bank %s: %s",files[i],error);
@@ -121,6 +151,8 @@ SwatCharacterRuntime* swat_character_runtime_open(const SwatWeaponArt* weapons) 
         }
         const char* required[]={"mixamorig:Hips","mixamorig:LeftUpLeg","mixamorig:LeftLeg","mixamorig:LeftFoot","mixamorig:RightUpLeg","mixamorig:RightLeg","mixamorig:RightFoot","mixamorig:LeftArm","mixamorig:LeftForeArm","mixamorig:LeftHand","mixamorig:RightArm","mixamorig:RightForeArm","mixamorig:RightHand","Prop_Magazine_A","Prop_Magazine_B"};
         bool valid=true;
+        if(use_gear && (info.joints!=72 || swat_character_find_node(runtime->banks[i].asset,"Gear_Elbow_L")<0 ||
+                       swat_character_find_node(runtime->banks[i].asset,"Gear_Elbow_R")<0)) valid=false;
         for(size_t j=0;j<sizeof(required)/sizeof(*required);j++) if(swat_character_find_node(runtime->banks[i].asset,required[j])<0) valid=false;
         double duration=swat_character_clip_duration(runtime->banks[i].asset,0);
         valid=valid && (i==SWAT_CHARACTER_CROUCH_READY ? duration==0 : duration>0);
@@ -139,7 +171,7 @@ SwatCharacterRuntime* swat_character_runtime_open(const SwatWeaponArt* weapons) 
     for(int b=0;b<SWAT_CHARACTER_BANKS;b++) for(int i=0;i<runtime->banks[b].model.meshCount;i++) {
         const SwatArtMesh* source=swat_character_mesh(runtime->banks[b].asset,i);
         Material* material=&runtime->banks[b].model.materials[i];
-        if(strstr(source->node_name,"full body")) {
+        if(swat_character_body_mesh(source->node_name)) {
             int set=source->primitive; if(set>=2) goto failed;
             if(runtime->diffuse[set].id) { material->maps[MATERIAL_MAP_ALBEDO].texture=runtime->diffuse[set]; material->maps[MATERIAL_MAP_ALBEDO].color=WHITE; }
             material->maps[MATERIAL_MAP_ROUGHNESS].texture=runtime->orm; material->maps[MATERIAL_MAP_ROUGHNESS].value=.78f; material->maps[MATERIAL_MAP_METALNESS].value=0;
@@ -195,7 +227,7 @@ void swat_character_runtime_prepare(SwatCharacterRuntime* runtime,const SwatSim*
         double time=reload ? swat_character_reload_time(weapon) : cycle_metres[bank]>0 ? cache->phase*swat_character_clip_duration(runtime->banks[bank].asset,0) : 0;
         SwatCharacterView* view=&runtime->banks[bank]; SwatCharacterAsset* asset=view->asset;
         double started=GetTime();
-        cache->valid=false; if(!swat_character_view_sample(view,clips[bank],time)) continue;
+        cache->valid=false; if(!swat_character_view_sample(view,clips[bank],time) || !elbow_carriers(asset)) continue;
         size_t count=(size_t)swat_character_info(asset).nodes*16;
         if(cache->count!=count) {
             free(cache->matrices); free(cache->first_person_matrices);
@@ -248,7 +280,7 @@ void swat_character_runtime_prepare(SwatCharacterRuntime* runtime,const SwatSim*
         for(int p=0;p<3;p++) ok=transform(asset,props[p],gun_delta) && ok;
         ok=limb(asset,"mixamorig:LeftArm","mixamorig:LeftForeArm","mixamorig:LeftHand",hand_targets[0]) && ok;
         ok=limb(asset,"mixamorig:RightArm","mixamorig:RightForeArm","mixamorig:RightHand",hand_targets[1]) && ok;
-        if(!ok || !swat_character_finalize_pose(asset)) continue;
+        if(!ok || !elbow_carriers(asset) || !swat_character_finalize_pose(asset)) continue;
         if(!cache->matrices || !swat_character_capture_pose(asset,cache->matrices,count)) continue;
         for(int m=0;m<view->model.meshCount;m++) {
             const SwatArtMesh* source=swat_character_mesh(asset,m); bool visible=source->visible;

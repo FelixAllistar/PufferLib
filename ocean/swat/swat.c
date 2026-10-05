@@ -332,6 +332,8 @@ int main(int argc, char** argv) {
         }
         view.actor=app.actor; view.debug=app.debug;
         view.weapon_size=app.settings.weapon_size;
+        view.weapon_ads_relief=app.settings.weapon_ads_relief;
+        view.weapon_preview_ads=app.screen==SWAT_SCREEN_SETTINGS && app.weapon_settings && app.weapon_preview_ads;
         view.weapon_horizontal=app.settings.weapon_horizontal; view.weapon_vertical=app.settings.weapon_vertical;
         view.planning=app.screen==SWAT_SCREEN_PLAN; view.plan_preview=app.plan_preview; view.plan_yaw=app.plan_yaw;
         view.scope=app.screen==SWAT_SCREEN_SCOPE; view.sniper_unit=app.selected_sniper;

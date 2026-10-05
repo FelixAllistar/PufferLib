@@ -89,7 +89,12 @@ Live carbine officers and first-person arms now use full-influence GPU skinning,
 achieved stance/weapon fitting, original maps and authority-driven reload phases;
 cameras/shadows reuse cached poses. First-person arms use camera-relative
 authored grips, with a larger weapon projection and saved live-preview size and
-position controls. Guns have
+position controls. Carbine ADS now has adjustable 80–220 mm eye relief (120 mm
+default), a display-only aim preview and fading crosshair lines. The separate
+72-joint F gear geometry is integrated with all six original motion banks;
+rigid anatomical elbow carriers are updated after arm IK, and source body maps
+and authored pad/headset materials are retained. Existing hand/finger contact
+remains under art review. Guns have
 mechanical profiles and canonical pose targets. The local rigid carbine now
 uses its original maps, measured bindings and reload magazine visibility; see
 [WEAPON_ART.md](WEAPON_ART.md). Other guns remain procedural and the supplied

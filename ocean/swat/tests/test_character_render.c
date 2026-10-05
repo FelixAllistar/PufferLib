@@ -8,6 +8,46 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
+static Vector3 point(const float* m,Vector3 p) {
+    return (Vector3){m[0]*p.x+m[4]*p.y+m[8]*p.z+m[12],
+        m[1]*p.x+m[5]*p.y+m[9]*p.z+m[13],m[2]*p.x+m[6]*p.y+m[10]*p.z+m[14]};
+}
+static void carrier_check(SwatCharacterAsset* asset) {
+    for(int side=0;side<2;side++) {
+        int carrier=swat_character_find_node(asset,side ? "Gear_Elbow_R" : "Gear_Elbow_L");
+        if(carrier<0) continue;
+        const float* g=swat_character_node_matrix(asset,carrier);
+        const float* arm=swat_character_node_matrix(asset,swat_character_find_node(asset,side ? "mixamorig:RightArm" : "mixamorig:LeftArm"));
+        const float* elbow=swat_character_node_matrix(asset,swat_character_find_node(asset,side ? "mixamorig:RightForeArm" : "mixamorig:LeftForeArm"));
+        const float* hand=swat_character_node_matrix(asset,swat_character_find_node(asset,side ? "mixamorig:RightHand" : "mixamorig:LeftHand"));
+        Vector3 x={g[0],g[1],g[2]},y={g[4],g[5],g[6]},z={g[8],g[9],g[10]};
+        Vector3 upper={elbow[12]-arm[12],elbow[13]-arm[13],elbow[14]-arm[14]};
+        Vector3 lower={hand[12]-elbow[12],hand[13]-elbow[13],hand[14]-elbow[14]};
+        assert(Vector3Distance((Vector3){g[12],g[13],g[14]},(Vector3){elbow[12],elbow[13],elbow[14]})<1e-5f);
+        assert(Vector3Distance(y,Vector3Normalize(lower))<1e-4f);
+        assert(fabsf(Vector3DotProduct(z,Vector3Normalize(upper)))<1e-4f);
+        assert(fabsf(Vector3DotProduct(z,Vector3Normalize(lower)))<1e-4f);
+        assert(Vector3Distance(Vector3CrossProduct(x,y),z)<1e-4f);
+        assert(fabsf(Vector3Length(x)-1)<1e-4f && fabsf(Vector3Length(z)-1)<1e-4f);
+        // Every exported cap vertex remains wholly rigid. Its skin matrix
+        // preserves actual bind-space distances even after world arm IK.
+        for(int i=0;i<swat_character_info(asset).meshes;i++) {
+            const SwatArtMesh* m=swat_character_mesh(asset,i);
+            if(strcmp(m->node_name,side ? "SWAT_ElbowCap_R" : "SWAT_ElbowCap_L")) continue;
+            for(int v=0;v<m->vertices;v++) {
+                int used=0;
+                for(int w=0;w<m->influences;w++) if(m->joint_weights[v*m->influences+w]>0) {
+                    int slot=m->joint_ids[v*m->influences+w]; used++;
+                    assert(m->joint_weights[v*m->influences+w]==1 && m->joint_nodes[slot]==carrier);
+                    Vector3 a={m->bind_positions[0],m->bind_positions[1],m->bind_positions[2]};
+                    Vector3 b={m->bind_positions[v*3],m->bind_positions[v*3+1],m->bind_positions[v*3+2]};
+                    assert(fabsf(Vector3Distance(point(m->palette+slot*16,a),point(m->palette+slot*16,b))-Vector3Distance(a,b))<1e-5f);
+                }
+                assert(used==1);
+            }
+        }
+    }
+}
 static void empty(const SwatSim* sim,bool cutaway) { (void)sim; (void)cutaway; }
 static Image frame(SwatCharacterView* view,SwatLighting* light,Camera3D camera,Matrix root) {
     RenderTexture2D target=LoadRenderTexture(512,512); assert(target.id);
@@ -51,8 +91,7 @@ static void parity(const char* path,SwatLighting* light) {
 }
 static Image first_person_frame(SwatCharacterRuntime* runtime,SwatSim* sim,SwatLighting* light,float size,float horizontal,float vertical) {
     SwatActor* actor=&sim->actors[0]; SwatPose pose=swat_pose(&actor->controller,&actor->arsenal);
-    b3Vec3 offset=swat_mul(b3Add(swat_mul(pose.right,horizontal),swat_mul(pose.up,vertical)),1-actor->controller.ads);
-    pose.shoulder=b3OffsetPos(pose.shoulder,offset);
+    pose=swat_weapon_view_pose(&pose,&actor->arsenal,actor->controller.ads,horizontal,vertical,.12f);
     float hip=2*atanf(tanf(31*SWAT_RAD)/size)/SWAT_RAD;
     float fov=hip+(45-hip)*actor->controller.ads;
     Camera3D camera={{pose.eye.x,pose.eye.y,pose.eye.z},
@@ -104,10 +143,59 @@ static void first_person_check(SwatCharacterRuntime* runtime,SwatSim* sim,SwatLi
         // At ADS all hip offsets fade out, even at opposite slider extremes.
         actor->controller.ads=1; sim->tick++; swat_character_runtime_prepare(runtime,sim);
         Image a=first_person_frame(runtime,sim,light,1,-.10f,-.08f),b=first_person_frame(runtime,sim,light,2.4f,.10f,.12f);
+        if(getenv("SWAT_CHARACTER_TEST_CAPTURES")) ExportImage(a,TextFormat("%s/first-person-ads-%d.png",getenv("SWAT_CHARACTER_TEST_CAPTURES"),stance));
         pixels=LoadImageColors(a); Color* other=LoadImageColors(b);
         assert(!memcmp(pixels,other,(size_t)960*540*sizeof(Color)));
+        int coverage=0; for(int p=0;p<960*540;p++) coverage+=pixels[p].r+pixels[p].g+pixels[p].b>0;
+        assert(coverage>960*540/20);
         UnloadImageColors(pixels); UnloadImageColors(other); UnloadImage(a); UnloadImage(b); actor->controller.ads=0;
     }
+}
+static void ads_projection_check(SwatCharacterRuntime* runtime,SwatSim* sim,SwatLighting* light) {
+    SwatActor* actor=&sim->actors[0]; actor->controller.ready_blend=0; actor->controller.ads=1;
+    const float pitches[]={-85,-45,0,45,85},reliefs[]={.08f,.12f,.22f};
+    for(int stance=0;stance<2;stance++) {
+        swat_body_set_crouch(&actor->controller.body,stance!=0);
+        actor->controller.eye_height=actor->controller.body.totalHeight-.2032f;
+        Color* reference=NULL;
+        for(int i=0;i<5;i++) {
+            actor->controller.pitch=pitches[i]*SWAT_RAD; actor->controller.yaw=i*SWAT_PI/2;
+            actor->controller.recoil_pitch=2*SWAT_RAD; actor->controller.recoil_yaw=.5f*SWAT_RAD;
+            actor->controller.lean=(i-2)*.1f; sim->tick++; swat_character_runtime_prepare(runtime,sim);
+            SwatCharacterActorPose* cache=&runtime->actors[0]; SwatCharacterAsset* asset=runtime->banks[cache->bank].asset;
+            carrier_check(asset);
+            // Actual source aperture center and post tip, not the controller's
+            // named sight helper: this also checks the complete attachment bridge.
+            int prop=swat_character_find_node(asset,"Prop_Rifle");
+            Vector3 rear=point(cache->first_person_matrices+prop*16,(Vector3){.0012967195f,.1501783282f,.1473989636f});
+            Vector3 front=point(cache->first_person_matrices+prop*16,(Vector3){.0012967659f,-.2049736381f,.1473761201f});
+            SwatPose achieved=swat_pose(&actor->controller,&actor->arsenal);
+            Camera3D camera={{achieved.eye.x,achieved.eye.y,achieved.eye.z},
+                {achieved.eye.x+achieved.forward.x,achieved.eye.y+achieved.forward.y,achieved.eye.z+achieved.forward.z},
+                {achieved.up.x,achieved.up.y,achieved.up.z},45,CAMERA_PERSPECTIVE};
+            for(int r=0;r<3;r++) {
+                SwatPose pose=swat_weapon_view_pose(&achieved,&actor->arsenal,1,.10f,-.08f,reliefs[r]);
+                Matrix root=MatrixMultiply(cache->first_person_inverse_gun,swat_weapon_art_transform(&pose));
+                Vector3 a=Vector3Transform(rear,root),b=Vector3Transform(front,root);
+                Vector2 ap=GetWorldToScreenEx(a,camera,960,540),bp=GetWorldToScreenEx(b,camera,960,540);
+                assert(fabsf(ap.x-480)<.1f && fabsf(ap.y-270)<.1f);
+                assert(fabsf(bp.x-480)<.1f && fabsf(bp.y-270)<.15f);
+                assert(fabsf(Vector3DotProduct(Vector3Subtract(a,camera.position),(Vector3){pose.forward.x,pose.forward.y,pose.forward.z})-reliefs[r])<1e-5f);
+                SwatPose unchanged=swat_pose(&actor->controller,&actor->arsenal); assert(!memcmp(&achieved,&unchanged,sizeof(achieved)));
+            }
+            Image image=first_person_frame(runtime,sim,light,1.7f,-.055f,.075f); Color* pixels=LoadImageColors(image);
+            int changed=0,coverage=0; for(int p=0;p<960*540;p++) {
+                bool filled=pixels[p].r+pixels[p].g+pixels[p].b>0; coverage+=filled;
+                if(reference) changed+=filled!=(reference[p].r+reference[p].g+reference[p].b>0);
+            }
+            assert(coverage>960*540/20 && changed<960*540/200);
+            if(!reference) reference=pixels; else UnloadImageColors(pixels);
+            UnloadImage(image);
+        }
+        UnloadImageColors(reference);
+    }
+    actor->controller.pitch=actor->controller.yaw=actor->controller.recoil_pitch=actor->controller.recoil_yaw=actor->controller.lean=actor->controller.ads=0;
+    printf("PASS ADS: source aperture/post centered at all eye distances, yaw, lean, recoil and pitch limits; rigid F elbow carriers\n");
 }
 static void runtime_check(const char* directory,SwatLighting* light) {
 #ifdef _WIN32
@@ -202,6 +290,7 @@ static void runtime_check(const char* directory,SwatLighting* light) {
         assert(!memcmp(before,sim,sizeof(*before)));
     }
     first_person_check(runtime,sim,light);
+    ads_projection_check(runtime,sim,light);
     SwatWeapon* weapon=&actor->arsenal.slots[0]; weapon->magazine=0; weapon->chambered=false;
     SwatInput input=swat_neutral_input(); input.reload=true;
     swat_weapons_step(&actor->arsenal,&input,0,0,true,false); input.reload=false;

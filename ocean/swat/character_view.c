@@ -51,7 +51,7 @@ bool swat_character_view_init_gpu(SwatCharacterView* view,const char* path,char*
         SetTextureFilter(view->influence_maps[i],TEXTURE_FILTER_POINT); SetTextureFilter(view->palette_maps[i],TEXTURE_FILTER_POINT);
         UpdateMeshBuffer(*mesh,0,mesh->vertices,mesh->vertexCount*3*(int)sizeof(float),0);
         UpdateMeshBuffer(*mesh,2,mesh->normals,mesh->vertexCount*3*(int)sizeof(float),0);
-        if(strstr(source->node_name,"full body") && mesh->indices && source->influences) {
+        if(swat_character_body_mesh(source->node_name) && mesh->indices && source->influences) {
             float* arm_weights=calloc((size_t)mesh->vertexCount,sizeof(float)); if(!arm_weights) goto failed;
             for(int j=0;j<mesh->vertexCount;j++) for(int w=0;w<source->influences;w++) {
                 size_t at=(size_t)j*source->influences+w; if(!source->joint_weights[at]) continue;
@@ -139,8 +139,9 @@ static void draw(const SwatCharacterView* view,SwatLighting* lighting,Matrix roo
         Mesh mesh=view->model.meshes[i];
         if(first_person) {
             const char* name=swat_character_mesh(view->asset,i)->node_name;
-            if(strstr(name,"full body")) { if(!view->arms || !view->arms[i].vaoId) continue; mesh=view->arms[i]; }
-            else if(strcmp(name,"Rifle 7") && strcmp(name,"Removed magazine") && strcmp(name,"Fresh magazine")) continue;
+            if(swat_character_body_mesh(name)) { if(!view->arms || !view->arms[i].vaoId) continue; mesh=view->arms[i]; }
+            else if(strcmp(name,"Rifle 7") && strcmp(name,"Removed magazine") && strcmp(name,"Fresh magazine") &&
+                    strncmp(name,"SWAT_ElbowCap_",14)) continue;
         }
         Material material=view->model.materials[view->model.meshMaterial[i]]; material.shader=shader;
         if(lighting) swat_lighting_material(lighting,material,true);
