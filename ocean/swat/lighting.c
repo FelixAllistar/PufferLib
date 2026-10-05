@@ -43,7 +43,7 @@ static const char* fragment_source=
     "#version 330\n"
     "in vec3 position,normal; in vec2 uv; in vec4 tint,tangent; out vec4 finalColor;\n"
     "uniform sampler2D texture0,sunMap,lampMap; uniform vec4 colDiffuse;\n"
-    "uniform sampler2D normalMap,ormMap,specularMap; uniform int usePbr,useNormal,useOrm,useSpecGloss; uniform float roughnessFactor,metalnessFactor,normalGreen;\n"
+    "uniform sampler2D normalMap,ormMap,specularMap; uniform int usePbr,useNormal,useOrm,useSpecGloss; uniform float roughnessFactor,metalnessFactor,normalGreen,normalScale;\n"
     "uniform sampler2D emissionMap; uniform int useEmission;\n"
     "uniform sampler2D environmentNormalMap,environmentRoughnessMap; uniform int useEnvironment,useEnvironmentNormal;\n"
     "uniform mat4 sunMatrix,lampMatrix; uniform vec3 camera;\n"
@@ -93,7 +93,7 @@ static const char* fragment_source=
     "if(dot(t,t)>1e-12){t=normalize(t);b=cross(n,t)*(dot(cross(n,t),b)<0.0?-1.0:1.0);}"
     "else {t=vec3(0.0);b=vec3(0.0);} }"
     "else {t=normalize(tangent.xyz-n*dot(n,tangent.xyz));b=cross(n,t)*tangent.w;}"
-    "if(dot(t,t)>1e-12){vec3 mapped=texture(normalMap,uv).xyz*2.0-1.0;mapped.y*=normalGreen;n=normalize(mat3(t,b,n)*mapped);} } }"
+    "if(dot(t,t)>1e-12){vec3 mapped=texture(normalMap,uv).xyz*2.0-1.0;mapped.xy*=normalScale;mapped.y*=normalGreen;n=normalize(mat3(t,b,n)*mapped);} } }"
     "vec3 sun=normalize(vec3(-0.45,0.82,-0.35));"
     "float sunVisibility=visible(sunMap,sunMatrix,n,sun); float direct=max(dot(n,sun),0.0)*sunVisibility;"
     "vec3 illumination=mix(vec3(0.11,0.105,0.09),vec3(0.30,0.37,0.46),n.y*0.5+0.5);"
@@ -140,6 +140,7 @@ static SwatLightingProgram program(void) {
     p.skin_palette=GetShaderLocation(p.shader,"skinPalette"); p.skin_influences=GetShaderLocation(p.shader,"skinInfluences");
     p.emission=GetShaderLocation(p.shader,"useEmission");
     p.normal_green=GetShaderLocation(p.shader,"normalGreen");
+    p.normal_scale=GetShaderLocation(p.shader,"normalScale");
     p.orm=GetShaderLocation(p.shader,"useOrm"); p.pbr=GetShaderLocation(p.shader,"usePbr"); p.normal_map=GetShaderLocation(p.shader,"useNormal");
     p.roughness=GetShaderLocation(p.shader,"roughnessFactor"); p.metalness=GetShaderLocation(p.shader,"metalnessFactor");
     p.environment=GetShaderLocation(p.shader,"useEnvironment");
@@ -210,8 +211,8 @@ void swat_lighting_init(SwatLighting* light) {
     TraceLog(light->enabled ? LOG_INFO : LOG_WARNING,"SWAT: %s; exposure %.2f",light->enabled ? "linear lighting + cached sun/room shadows" : "lighting unavailable, using unlit fallback",light->exposure);
 }
 
-void swat_lighting_material(SwatLighting* light,Material material,bool enabled) {
-    if(!light->enabled || !light->prepared) return;
+void swat_lighting_material_scaled(SwatLighting* light,Material material,bool enabled,float normal_scale) {
+    if(!light || !light->enabled || !light->prepared) return;
     SwatLightingProgram* p=&light->mesh;
     int zero=0; Vector2 tile={0};
     SetShaderValue(p->shader,p->environment,&zero,SHADER_UNIFORM_INT);
@@ -228,6 +229,7 @@ void swat_lighting_material(SwatLighting* light,Material material,bool enabled) 
     SetShaderValue(p->shader,p->normal_map,&normal,SHADER_UNIFORM_INT);
     float green=normal && material.maps[MATERIAL_MAP_NORMAL].value<0 ? -1 : 1;
     SetShaderValue(p->shader,p->normal_green,&green,SHADER_UNIFORM_FLOAT);
+    SetShaderValue(p->shader,p->normal_scale,&normal_scale,SHADER_UNIFORM_FLOAT);
     int emission=enabled && material.maps && material.maps[MATERIAL_MAP_EMISSION].texture.id;
     SetShaderValue(p->shader,p->emission,&emission,SHADER_UNIFORM_INT);
     SetShaderValue(p->shader,p->skinning,&zero,SHADER_UNIFORM_INT);
@@ -235,6 +237,10 @@ void swat_lighting_material(SwatLighting* light,Material material,bool enabled) 
         SetShaderValue(p->shader,p->roughness,&material.maps[MATERIAL_MAP_ROUGHNESS].value,SHADER_UNIFORM_FLOAT);
         SetShaderValue(p->shader,p->metalness,&material.maps[MATERIAL_MAP_METALNESS].value,SHADER_UNIFORM_FLOAT);
     }
+}
+
+void swat_lighting_material(SwatLighting* light,Material material,bool enabled) {
+    swat_lighting_material_scaled(light,material,enabled,1);
 }
 
 void swat_lighting_surface(SwatLighting* light,Texture2D normal,Texture2D roughness,

@@ -104,7 +104,7 @@ viewer: $(ENET_LIB) ui-assets | $(BUILD)
 environment-art-test-build: ui-assets | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_environment_art.c $(CHARACTER) render.c lighting.c weapon_art.c environment_art.c protocol.c $(CORE) $(PHYSICS_LIBS) $(VIEW_LIBS) -o $(BUILD)/test_environment_art
 weapon-art-test-build: ui-assets | $(BUILD)
-	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_weapon_art.c weapon_art.c lighting.c environment_art.c $(CORE) $(PHYSICS_LIBS) $(VIEW_LIBS) -o $(BUILD)/test_weapon_art
+	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_weapon_art.c weapon_art.c character_asset.c lighting.c environment_art.c $(CORE) $(PHYSICS_LIBS) $(VIEW_LIBS) -o $(BUILD)/test_weapon_art
 lighting-test-build: | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_lighting.c lighting.c -lm $(VIEW_LIBS) -o $(BUILD)/test_lighting
 frontend-test-build: ui-assets | $(BUILD)

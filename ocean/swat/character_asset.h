@@ -49,6 +49,9 @@ bool swat_character_restore_pose(SwatCharacterAsset* asset,const float* matrices
 const float* swat_character_node_matrix(const SwatCharacterAsset* asset,int node);
 int swat_character_find_node(const SwatCharacterAsset* asset,const char* name);
 const char* swat_character_node_name(const SwatCharacterAsset* asset,int node);
+// Authored normalTexture.scale on the first rigid mesh's material. Raylib's
+// model loader does not retain this glTF field. Missing/invalid data defaults to 1.
+float swat_art_normal_scale(const char* path);
 #ifdef __cplusplus
 }
 #endif

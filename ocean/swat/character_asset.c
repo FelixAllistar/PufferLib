@@ -332,6 +332,18 @@ static void refresh_pose(SwatCharacterAsset* asset) {
         }
     }
 }
+float swat_art_normal_scale(const char* path) {
+    cgltf_options options={0}; cgltf_data* source=NULL; float scale=1;
+    if(path && cgltf_parse_file(&options,path,&source)==cgltf_result_success) {
+        if(source->meshes_count && source->meshes[0].primitives_count) {
+            const cgltf_material* material=source->meshes[0].primitives[0].material;
+            if(material && material->normal_texture.texture && isfinite(material->normal_texture.scale) &&
+               material->normal_texture.scale>=0 && material->normal_texture.scale<=8) scale=material->normal_texture.scale;
+        }
+        cgltf_free(source);
+    }
+    return scale;
+}
 bool swat_character_sample_pose(SwatCharacterAsset* asset,const char* clip_name,double time) {
     if(!asset || !isfinite(time)) return false;
     cgltf_animation* clip=NULL;

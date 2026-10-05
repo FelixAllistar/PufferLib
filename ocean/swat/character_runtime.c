@@ -196,6 +196,11 @@ SwatCharacterRuntime* swat_character_runtime_open(const SwatWeaponArt* weapons) 
     if(!normals || strcmp(normals,"0")) { runtime->normal[0]=texture(directory,"Ch15_1001_Normal.png"); runtime->normal[1]=texture(directory,"Ch15_1002_Normal.png"); }
     Image white=GenImageColor(1,1,WHITE); runtime->orm=LoadTextureFromImage(white); UnloadImage(white);
     for(int b=0;b<SWAT_CHARACTER_BANKS;b++) for(int i=0;i<runtime->banks[b].model.meshCount;i++) {
+        if(weapons && weapons->carbine.meshCount) {
+            runtime->banks[b].rigid_rifle=&weapons->carbine;
+            runtime->banks[b].rifle_bridge=matrix(rifle_joint);
+            runtime->banks[b].weapon_normal_scale=weapons->normal_scale;
+        }
         const SwatArtMesh* source=swat_character_mesh(runtime->banks[b].asset,i);
         Material* material=&runtime->banks[b].model.materials[i];
         if(swat_character_body_mesh(source->node_name)) {

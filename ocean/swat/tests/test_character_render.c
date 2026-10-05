@@ -306,6 +306,10 @@ static void runtime_check(const char* directory,SwatLighting* light) {
 #endif
     SwatWeaponArt weapons={0}; swat_weapon_art_init(&weapons);
     SwatCharacterRuntime* runtime=swat_character_runtime_open(&weapons); assert(runtime);
+    for(int bank=0;bank<SWAT_CHARACTER_BANKS;bank++) if(runtime->banks[bank].asset && weapons.carbine.meshCount) {
+        assert(runtime->banks[bank].rigid_rifle==&weapons.carbine);
+        assert(runtime->banks[bank].weapon_normal_scale==weapons.normal_scale);
+    }
     grip_check(runtime,light);
     SwatSim* sim=calloc(1,sizeof(*sim)); SwatSim* before=malloc(sizeof(*before)); assert(sim && before);
     SwatConfig config=swat_default_config(); config.hostile_fire=false; config.mission=SWAT_ANNEX; swat_sim_init(sim,config,42);

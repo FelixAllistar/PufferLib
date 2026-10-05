@@ -10,7 +10,7 @@ typedef struct SwatLightingProgram {
     int orm,pbr,normal_map,roughness,metalness,spec_gloss;
     int environment,environment_normal,environment_normal_map,environment_roughness_map;
     int environment_size,environment_tile;
-    int skinning,skin_sets,skin_palette,skin_influences,emission,normal_green;
+    int skinning,skin_sets,skin_palette,skin_influences,emission,normal_green,normal_scale;
 } SwatLightingProgram;
 typedef struct SwatLighting {
     bool initialized,enabled,prepared;
@@ -47,6 +47,7 @@ void swat_lighting_end(SwatLighting* light,SwatEnvironmentArt* art);
 // specular/roughness map slots. Reset after
 // drawing the material so ordinary scene meshes retain their diffuse shading.
 void swat_lighting_material(SwatLighting* light,Material material,bool enabled);
+void swat_lighting_material_scaled(SwatLighting* light,Material material,bool enabled,float normal_scale);
 // Independent R8 roughness/OpenGL normals for metric environment surfaces.
 // Mesh size/tile remap the original door's unit-space positions to metre UVs.
 void swat_lighting_surface(SwatLighting* light,Texture2D normal,Texture2D roughness,

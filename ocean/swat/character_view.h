@@ -15,6 +15,11 @@ typedef struct SwatCharacterView {
     Texture2D *influence_maps,*palette_maps;
     float** palette_pixels;
     Mesh* arms;
+    // Borrowed rigid body replacement; source animation and magazine meshes
+    // stay intact. Owner outlives this view and releases the model/textures.
+    const Model* rigid_rifle;
+    Matrix rifle_bridge;
+    float weapon_normal_scale;
 } SwatCharacterView;
 bool swat_character_view_init(SwatCharacterView* view,const char* path,char* error,size_t capacity);
 bool swat_character_view_init_gpu(SwatCharacterView* view,const char* path,char* error,size_t capacity);

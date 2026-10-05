@@ -210,7 +210,7 @@ if [ "$SWAT_TARGET" = all ]; then
     "$SWAT_ROOT/ocean/swat/protocol.c" "${SWAT_SOURCES[@]}" "${SWAT_LIBS[@]}" -o "$SWAT_BUILD/test_environment_art.exe"
 
 "$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/tests/test_weapon_art.c" \
-    "$SWAT_ROOT/ocean/swat/weapon_art.c" "$SWAT_ROOT/ocean/swat/lighting.c" "$SWAT_ROOT/ocean/swat/environment_art.c" \
+    "$SWAT_ROOT/ocean/swat/weapon_art.c" "$SWAT_ROOT/ocean/swat/character_asset.c" "$SWAT_ROOT/ocean/swat/lighting.c" "$SWAT_ROOT/ocean/swat/environment_art.c" \
     "${SWAT_SOURCES[@]}" "${SWAT_LIBS[@]}" -o "$SWAT_BUILD/test_weapon_art.exe"
 
 "$SWAT_CC" "${SWAT_FLAGS[@]}" "$SWAT_ROOT/ocean/swat/tests/test_lighting.c" \

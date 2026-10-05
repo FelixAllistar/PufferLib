@@ -5,6 +5,7 @@
 typedef struct SwatWeaponArt {
     bool initialized;
     Model carbine;
+    float normal_scale;
 } SwatWeaponArt;
 void swat_weapon_art_init(SwatWeaponArt* art);
 void swat_weapon_art_close(SwatWeaponArt* art);

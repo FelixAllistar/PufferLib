@@ -75,7 +75,8 @@ is deliberately a general engine improvement.
   The coherent material family now has separate metric floor/frame/door bindings
   and signed OpenGL normal/roughness shading; authored fixtures and GI remain.
 - Optional private rigid-carbine import with measured authority/render alignment,
-  original normal/roughness/metalness maps and staged magazine visibility.
+  authored normal strength, revised R2 finish/outer sight ring and staged
+  magazine visibility in both rigid and animated character rendering.
 - Verified solo mission checkpoint/restore and journal continuation, with F5/F9
   input and `--resume`; co-op persistence remains pending.
 - Explicit native/WSLg launcher routing, GPU fallback selection and a portable
@@ -98,9 +99,11 @@ carbine support-thumb wrap in hip/ADS and world presentation, releasing it for
 authored reload handling; the frozen C/C1 grip studies remain diagnostics.
 Retreat now uses its own original one-second backward cycle, paced by actual
 travel at 1.921261449 m per cycle, with continuous phase and the forward fallback
-when the optional asset is absent. Remaining palm/finger contact and rifle silhouette need further art iteration. Guns have
-mechanical profiles and canonical pose targets. The local rigid carbine now
-uses its original maps, measured bindings and reload magazine visibility; see
+when the optional asset is absent. R2 now supplies a rounder outer rear sight
+and restrained wear without changing the inner aperture or measured contacts.
+Remaining palm/finger contact and other rifle details need art iteration. Guns
+have mechanical profiles and canonical pose targets. The local rigid carbine
+uses authored normal strength, measured bindings and reload magazine visibility; see
 [WEAPON_ART.md](WEAPON_ART.md). Other guns remain procedural and the supplied
 sidearm needs physical-size calibration. The first coherent environment material
 quality pass is integrated; [ENVIRONMENT_MATERIALS.md](ENVIRONMENT_MATERIALS.md)

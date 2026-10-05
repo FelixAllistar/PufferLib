@@ -1,5 +1,6 @@
 #include "character_view.h"
 #include "rlgl.h"
+#include "raymath.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -79,6 +80,7 @@ failed:
 }
 bool swat_character_view_init(SwatCharacterView* view,const char* path,char* error,size_t capacity) {
     if(view->asset) return false;
+    view->weapon_normal_scale=1;
     view->asset=swat_character_load(path,32,error,capacity); if(!view->asset) return false;
     SwatArtInfo info=swat_character_info(view->asset); Model* model=&view->model;
     model->transform=(Matrix){.m0=1,.m5=1,.m10=1,.m15=1}; model->meshCount=model->materialCount=0;
@@ -135,16 +137,21 @@ static void draw(const SwatCharacterView* view,SwatLighting* lighting,Matrix roo
     if(!swat_character_finalize_pose(view->asset)) return;
     Shader shader=lighting && lighting->enabled && lighting->prepared ? lighting->mesh.shader : view->gpu ? view->fallback : (Shader){rlGetShaderIdDefault(),rlGetShaderLocsDefault()};
     rlDrawRenderBatchActive(); rlDisableBackfaceCulling();
+    bool rigid_body=false;
     for(int i=0;i<view->model.meshCount;i++) if(view->visible[i]) {
+        const char* name=swat_character_mesh(view->asset,i)->node_name;
+        if(view->rigid_rifle && view->rigid_rifle->meshCount && !strcmp(name,"Rifle 7")) {
+            rigid_body=true; continue; // Avoid drawing the old body over its revision.
+        }
         Mesh mesh=view->model.meshes[i];
         if(first_person) {
-            const char* name=swat_character_mesh(view->asset,i)->node_name;
             if(swat_character_body_mesh(name)) { if(!view->arms || !view->arms[i].vaoId) continue; mesh=view->arms[i]; }
             else if(strcmp(name,"Rifle 7") && strcmp(name,"Removed magazine") && strcmp(name,"Fresh magazine") &&
                     strncmp(name,"SWAT_ElbowCap_",14)) continue;
         }
         Material material=view->model.materials[view->model.meshMaterial[i]]; material.shader=shader;
-        if(lighting) swat_lighting_material(lighting,material,true);
+        float scale=(!strcmp(name,"Rifle 7") || (strstr(name,"magazine") && !strstr(name,"sleeve"))) ? view->weapon_normal_scale : 1;
+        if(lighting) swat_lighting_material_scaled(lighting,material,true,scale);
         if(view->gpu) {
             const SwatArtMesh* source=swat_character_mesh(view->asset,i);
             memcpy(view->palette_pixels[i],source->palette,(size_t)source->palette_count*16*sizeof(float));
@@ -163,6 +170,20 @@ static void draw(const SwatCharacterView* view,SwatLighting* lighting,Matrix roo
     if(view->gpu) { int zero=0; SetShaderValue(shader,GetShaderLocation(shader,"useSkinning"),&zero,SHADER_UNIFORM_INT); rlActiveTextureSlot(11); rlDisableTexture(); rlActiveTextureSlot(12); rlDisableTexture(); rlActiveTextureSlot(0); }
     if(lighting) swat_lighting_material(lighting,(Material){0},false);
     if(lighting) { lighting->surface_normal=~0u; lighting->surface_roughness=~0u; }
+    if(rigid_body) {
+        int prop=swat_character_find_node(view->asset,"Prop_Rifle");
+        const float* f=swat_character_node_matrix(view->asset,prop);
+        Matrix gun={f[0],f[4],f[8],f[12],f[1],f[5],f[9],f[13],f[2],f[6],f[10],f[14],f[3],f[7],f[11],f[15]};
+        // Column vectors: external root * sampled Prop_Rifle * measured bridge.
+        const Model* rifle=view->rigid_rifle;
+        Material material=rifle->materials[rifle->meshMaterial[0]];
+        material.shader=lighting && lighting->enabled && lighting->prepared ? lighting->mesh.shader :
+            (Shader){rlGetShaderIdDefault(),rlGetShaderLocsDefault()};
+        rlDrawRenderBatchActive(); rlDisableBackfaceCulling();
+        swat_lighting_material_scaled(lighting,material,true,view->weapon_normal_scale);
+        DrawMesh(rifle->meshes[0],material,MatrixMultiply(MatrixMultiply(view->rifle_bridge,gun),root));
+        swat_lighting_material(lighting,(Material){0},false);
+    }
     rlEnableBackfaceCulling();
 }
 void swat_character_view_draw(const SwatCharacterView* view,SwatLighting* lighting,Matrix root) { draw(view,lighting,root,false); }

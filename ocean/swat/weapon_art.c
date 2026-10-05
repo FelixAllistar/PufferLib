@@ -1,6 +1,7 @@
 #include "weapon_art.h"
 #include "rlgl.h"
 #include "rifle_geometry.h"
+#include "character_asset.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -8,6 +9,7 @@
 void swat_weapon_art_init(SwatWeaponArt* art) {
     if(art->initialized) return;
     art->initialized=true;
+    art->normal_scale=1;
     const char* enabled=getenv("SWAT_WEAPON_ART"); if(enabled && !strcmp(enabled,"0")) return;
     const char* custom=getenv("SWAT_WEAPON_ASSETS"); char path[4096];
     if(custom && custom[0]) snprintf(path,sizeof(path),"%s/rifle7_rigid_textured.glb",custom);
@@ -26,6 +28,7 @@ void swat_weapon_art_init(SwatWeaponArt* art) {
             m.meshes[i].texcoords && m.meshes[i].tangents && m.meshMaterial[i]>=0 && m.meshMaterial[i]<m.materialCount;
     }
     if(!valid) { swat_art_model_close(m); art->carbine=(Model){0}; TraceLog(LOG_WARNING,"SWAT: rigid rifle violates measured interface; using fallback"); return; }
+    art->normal_scale=swat_art_normal_scale(path);
     // Preserve 4K source maps, with mipmaps rather than shimmer at distance.
     unsigned int previous[32]; int count=0;
     for(int i=0;i<m.materialCount;i++) for(int k=0;k<=MATERIAL_MAP_BRDF;k++) {
@@ -36,7 +39,7 @@ void swat_weapon_art_init(SwatWeaponArt* art) {
             previous[count++]=t->id; GenTextureMipmaps(t); SetTextureFilter(*t,TEXTURE_FILTER_TRILINEAR);
         }
     }
-    TraceLog(LOG_INFO,"SWAT: private rigid rifle loaded, 0.90m reach, original maps, separate seated magazine");
+    TraceLog(LOG_INFO,"SWAT: private rigid rifle loaded, 0.90m reach, authored maps/normal scale %.2f, separate seated magazine",art->normal_scale);
 }
 void swat_weapon_art_close(SwatWeaponArt* art) { swat_art_model_close(art->carbine); memset(art,0,sizeof(*art)); }
 Matrix swat_weapon_art_transform(const SwatPose* p) {
@@ -72,7 +75,7 @@ bool swat_weapon_art_draw(SwatWeaponArt* art,SwatLighting* light,const SwatArsen
     for(int i=0;i<art->carbine.meshCount;i++) {
         if(i==1 && !a->slots[0].magazine_seated) continue;
         Material material=art->carbine.materials[art->carbine.meshMaterial[i]];
-        material.shader=shader; swat_lighting_material(light,material,true);
+        material.shader=shader; swat_lighting_material_scaled(light,material,true,art->normal_scale);
         DrawMesh(art->carbine.meshes[i],material,transform);
     }
     swat_lighting_material(light,(Material){0},false);

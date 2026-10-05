@@ -1,6 +1,7 @@
 // Explicit real-GPU check using the privately installed export, never a public fixture.
 #include "weapon_art.h"
 #include "rifle_geometry.h"
+#include "character_asset.h"
 #include "raymath.h"
 #include <assert.h>
 #include <stdio.h>
@@ -35,6 +36,9 @@ int main(int argc,char** argv) {
     environment("SWAT_LIGHTING",NULL); SetConfigFlags(FLAG_WINDOW_HIDDEN); InitWindow(640,480,"Rigid rifle regression");
     SwatWeaponArt art={0}; swat_weapon_art_init(&art); assert(art.carbine.meshCount==2);
     swat_weapon_art_init(&art); assert(art.carbine.meshCount==2);
+    char source[4096]; snprintf(source,sizeof(source),"%s/rifle7_rigid_textured.glb",argv[1]);
+    assert(art.normal_scale==swat_art_normal_scale(source));
+    assert(swat_art_normal_scale("missing-private-material.glb")==1);
     for(int i=0;i<2;i++) {
         Mesh mesh=art.carbine.meshes[i]; assert(mesh.vertexCount>500 && mesh.tangents);
         Material mat=art.carbine.materials[art.carbine.meshMaterial[i]];
@@ -59,6 +63,10 @@ int main(int argc,char** argv) {
     static SwatSim sim; SwatLighting light={0}; swat_lighting_init(&light); assert(light.enabled);
     swat_lighting_prepare(&light,&sim,(Vector3){0,1,0},false,empty);
     Image seated=capture(&art,&light,&arsenal,&pose); assert(!memcmp(&arsenal,&before,sizeof(before)));
+    float authored_scale=art.normal_scale; art.normal_scale=0;
+    Image zero_normal=capture(&art,&light,&arsenal,&pose); art.normal_scale=authored_scale;
+    int scaled=difference(seated,zero_normal);assert(scaled>100);
+    printf("authored normal scale=%.2f response pixels=%d\n",authored_scale,scaled);
     arsenal.slots[0].magazine_seated=false; Image removed=capture(&art,&light,&arsenal,&pose);
     int changed=difference(seated,removed); printf("removed magazine pixels=%d\n",changed); assert(changed>500);
     arsenal.slots[0].magazine_seated=true;
@@ -67,6 +75,7 @@ int main(int argc,char** argv) {
         normal[i]=mat->maps[MATERIAL_MAP_NORMAL].texture; mat->maps[MATERIAL_MAP_NORMAL].texture=(Texture){0};
     }
     Image flat=capture(&art,&light,&arsenal,&pose); changed=difference(seated,flat);
+    assert(difference(flat,zero_normal)<100); UnloadImage(zero_normal);
     printf("normal map response pixels=%d\n",changed); fflush(stdout);
     char diagnostic[4096]; snprintf(diagnostic,sizeof(diagnostic),"%s/rifle-normal-debug.png",argv[2]); ExportImage(seated,diagnostic);
     snprintf(diagnostic,sizeof(diagnostic),"%s/rifle-flat-debug.png",argv[2]); ExportImage(flat,diagnostic); assert(changed>100);
