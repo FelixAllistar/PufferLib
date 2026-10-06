@@ -119,7 +119,7 @@ int main(int argc, char** argv) {
     assert(h.row_obs == OBS_SIZE && h.row_expert == NUM_ATNS &&
            h.row_mask == (KAG_ALL_LOGITS + 7) / 8);
 #ifdef KAG_DIRECT_POLICY
-    assert(h.observation_version == 4 && h.policy_version == 6 && h.macro_mode == 0 &&
+    assert(h.observation_version == KAG_OBSERVATION_ENTITIES && h.policy_version == KAG_POLICY_VERSION && h.macro_mode == 0 &&
            h.executor == 0 && h.interval == 1 && h.score_features == 0);
 #else
     assert(h.observation_version == 3 && h.policy_version == 5 && h.macro_mode == 2 &&

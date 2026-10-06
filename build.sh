@@ -261,7 +261,7 @@ if [ "$ENV" = "kaggriculture" ]; then
     EXTRA_CFLAGS+=(-DPUFFER_KAGGRICULTURE_DIRECT -DKAG_DIRECT_POLICY)
     case "${MODE:-native}" in
         native|profile) EXTRA_CFLAGS+=(-DKAG_WITH_PAIRED_CRITIC) ;;
-        *) echo "Use native train/eval for direct ABI 6; legacy CPU/web exporters are incompatible." >&2; exit 1 ;;
+        *) echo "Use native train/eval for compact ABI 7; legacy CPU/web exporters are incompatible." >&2; exit 1 ;;
     esac
 fi
 

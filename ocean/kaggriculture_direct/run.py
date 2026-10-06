@@ -13,6 +13,8 @@ import subprocess
 import time
 
 ROOT = Path(__file__).resolve().parents[2]
+os.sys.path.insert(0, str(Path(__file__).resolve().parent))
+from compact_contract import OBS, HEADS, PACKED, STEPS, POLICY_VERSION, OBSERVATION_VERSION
 def grid_shapes(ini):
     widths = [int(x) for x in ini["bc_grid"]["hidden_sizes"].split(",")]
     depths = [int(x) for x in ini["bc_grid"]["num_layers"].split(",")]
@@ -29,7 +31,7 @@ def digest(path):
 def settings():
     ini = configparser.ConfigParser(interpolation=None,inline_comment_prefixes=("#",";"))
     ini.read([ROOT/"config/default.ini", ROOT/"config/kaggriculture.ini"])
-    assert ini.getint("policy","action_version") == 6
+    assert ini.getint("policy","action_version") == POLICY_VERSION
     return ini
 
 
@@ -41,9 +43,9 @@ def check_dataset(path):
     with path.open("rb") as stream:
         header = struct.unpack("<16IQQd",stream.read(88))
     assert header[0:2] == (0x4b414742,3)
-    assert header[3:6] == (6112,30,3629) and header[8:15] == (4,4,6,0,0,1,0)
+    assert header[3:6] == (OBS,HEADS,PACKED) and header[8:15] == (4,OBSERVATION_VERSION,POLICY_VERSION,0,0,1,0)
     assert header[-1] == 1 and 0 < header[15] < header[6]
-    assert header[2] == header[6]*720 and path.stat().st_size == 88+header[2]*(6112*4+30*4+3629+4)
+    assert header[2] == header[6]*STEPS and path.stat().st_size == 88+header[2]*(OBS*4+HEADS*4+PACKED+4)
     metadata = json.loads(path.with_suffix(".json").read_text())
     assert metadata["sha256"] == digest(path), "dataset digest mismatch"
     return metadata
@@ -102,7 +104,7 @@ def run_bc(args, ini, shapes, overrides):
     data = ROOT/ini["bc"]["data"]
     metadata = None if args.dry_run else check_dataset(data)
     common = {} if args.dry_run else dict(
-        policy=6, observation=4, macro=0, executor=0, optimizer="Adam",
+        policy=POLICY_VERSION, observation=OBSERVATION_VERSION, macro=0, executor=0, optimizer="Adam",
         config=(ROOT/"config/kaggriculture.ini").read_text(),
         default_config=(ROOT/"config/default.ini").read_text(),
         dataset_sha256=metadata["sha256"], trainer_sha256=digest(args.bc_binary))

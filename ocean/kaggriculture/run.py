@@ -205,7 +205,7 @@ def validate_dataset(path, config, mode):
 def main():
     settings = configparser.ConfigParser(interpolation=None)
     settings.read(ROOT / "config/kaggriculture.ini")
-    if settings.getint("policy", "action_version", fallback=5) == 6:
+    if settings.getint("policy", "action_version", fallback=5) >= 6:
         # One active config and entry point. Legacy experiment overlays must
         # never silently change the new action/reward/BC contract.
         import importlib.util

@@ -18,7 +18,9 @@ def test_one_config():
     assert not (ROOT/"config/kaggriculture_direct.ini").exists()
     c=configparser.ConfigParser()
     c.read(ROOT/"config/kaggriculture.ini")
-    assert c.getint("policy","action_version") == 6
+    assert c.getint("policy","action_version") == 7
+    assert c.getfloat("env","reset_state_prob") == .9
+    assert "/compact_v7/" in c.get("base","load_model_path")
     assert c.getint("train","horizon") == 720
     assert c.getfloat("train","gamma") == 1
     assert c.getfloat("train","gae_lambda") == .97
@@ -30,7 +32,7 @@ def test_one_config():
     assert c.getint("env","reward_win_loss_draw") == 1
     assert c.getint("policy","critic_mode") == 2
     for key in ("reward_growth_land","reward_growth_crop","reward_growth_animal",
-                "potential_beta","reset_state_prob","opponent_noise_initial","opponent_noise_final"):
+                "potential_beta","opponent_noise_initial","opponent_noise_final"):
         assert c.getfloat("env",key) == 0
     assert command("train") == [[str(ROOT/"puffer"),"train"]]
 

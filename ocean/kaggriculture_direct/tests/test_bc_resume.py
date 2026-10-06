@@ -24,7 +24,7 @@ def checkpoint(path, expected):
 
 @pytest.fixture
 def expected():
-    return dict(policy=6, observation=4, macro=0, executor=0, hidden=512, layers=2,
+    return dict(policy=7, observation=5, macro=0, executor=0, hidden=512, layers=2,
                 config="one config", default_config="shared defaults", dataset_sha256="dataset",
                 trainer_sha256="trainer", command=["bc", "--policy.hidden_size=512"], mode="actor")
 
@@ -98,7 +98,7 @@ def test_queue_validates_all_shapes_then_runs_only_missing(tmp_path, monkeypatch
     monkeypatch.setattr(run, "check_dataset", lambda path: {"sha256": "dataset"})
     args = argparse.Namespace(mode="bc-grid", bc_binary=binary, dry_run=False, resume=True)
     shapes = [(h, l) for h in (256, 512, 1024) for l in (2, 3)]
-    common = dict(policy=6, observation=4, macro=0, executor=0, optimizer="Adam", config="main config",
+    common = dict(policy=7, observation=5, macro=0, executor=0, optimizer="Adam", config="main config",
                   default_config="defaults", dataset_sha256="dataset", trainer_sha256=run.digest(binary))
     for h, l in shapes[:3]:
         output = run.model_path(ini, h, l)

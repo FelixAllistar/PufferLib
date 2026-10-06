@@ -1,6 +1,6 @@
 #pragma once
 
-// ABI 6: direct worker actions, no macro requests or route executor.
+// ABI 7: compact primitive commands with separate quantity heads. No executor.
 // Reuse simulator/metric helpers without invoking the legacy controller.
 #define KagActionMaskState KagLegacyActionMaskState
 #define kag_write_observation kag_legacy_write_observation
@@ -25,65 +25,67 @@
 #undef kag_policy_reset
 
 #undef KAG_POLICY_VERSION
-#define KAG_POLICY_VERSION 6
+#define KAG_POLICY_VERSION 7
 #undef KAG_OBSERVATION_ENTITIES
-#define KAG_OBSERVATION_ENTITIES 4
+#define KAG_OBSERVATION_ENTITIES 5
 #undef KG_POLICY_DIRECT_HANDS
 #define KG_POLICY_DIRECT_HANDS 19
 #undef KG_POLICY_UNITS
 #define KG_POLICY_UNITS 20
 #undef KG_POLICY_UNIT_HEADS
-#define KG_POLICY_UNIT_HEADS 20
+#define KG_POLICY_UNIT_HEADS 40
 #undef KG_POLICY_UNIT_COMMANDS
-#define KG_POLICY_UNIT_COMMANDS 500
+#define KG_POLICY_UNIT_COMMANDS 44
 #undef KAG_ACTION_HEADS
-#define KAG_ACTION_HEADS 30
+#define KAG_ACTION_HEADS 60
 #undef KAG_ACTION_SIZES
-#define KAG_ACTION_SIZES {500,500,500,500,500,500,500,500,500,500, \
-    500,500,500,500,500,500,500,500,500,500, \
-    1903,1903,1903,1903,1903,1903,1903,1903,1903,1903}
+#define KAG_ACTION_SIZES {44,20,44,20,44,20,44,20,44,20, \
+    44,20,44,20,44,20,44,20,44,20,44,20,44,20,44,20,44,20,44,20, \
+    44,20,44,20,44,20,44,20,44,20, \
+    22,100,22,100,22,100,22,100,22,100,22,100,22,100,22,100,22,100,22,100}
 #undef KAG_TASK_LOGITS
-#define KAG_TASK_LOGITS (20 * 500)
+#define KAG_TASK_LOGITS (20 * (44 + 20))
 #undef KAG_MARKET_LOGITS
-#define KAG_MARKET_LOGITS (10 * 1903)
+#define KAG_MARKET_LOGITS (10 * (22 + 100))
 // KAG_ALL_LOGITS and KG_POLICY_ACTION_MASK_SIZE expand the updated widths.
 #undef KAG_ENTITY_OBS_SIZE
-#define KAG_ENTITY_OBS_SIZE 5856
-#define KAG_DIRECT_CELLS 416
-#define KAG_DIRECT_OWN_UNITS 5216
-#define KAG_DIRECT_OTHER_UNITS 5696
-#define KAG_DIRECT_UNIT_WIDTH 24
-#define KAG_DIRECT_CELL_WIDTH 24
-#define KAG_DIRECT_MARKET_WIDTH 1903
-#define KAG_DIRECT_PASS 4
-#define KAG_DIRECT_DROP 245
-#define KAG_DIRECT_SELL 1003
+#define KAG_ENTITY_OBS_SIZE 3000
+#define KAG_DIRECT_CELLS 200
+#define KAG_DIRECT_OWN_UNITS 2600
+#define KAG_DIRECT_OTHER_UNITS 2920
+#define KAG_DIRECT_UNIT_WIDTH 16
+#define KAG_DIRECT_CELL_WIDTH 12
+#define KAG_DIRECT_MARKET_WIDTH 100 // Maximum head width, including quantities.
+#define KAG_DIRECT_PASS 0
+#define KAG_DIRECT_DROP 17
+#define KAG_DIRECT_SELL 13
 
-KG_HD KGUnitAction kag_direct_unit(int id) {
+// Original primitive command vocabulary; quantity is now a separate decision.
+KG_HD KGUnitAction kag_direct_unit(int id, int quantity) {
     KGUnitAction a = {KG_OP_PASS, -1, 1};
-    if (id < 0 || id >= 500) return a;
+    if (id < 0 || id >= 44) return a;
     if (id < 5) {
-        const int ops[] = {KG_OP_NORTH, KG_OP_SOUTH, KG_OP_EAST, KG_OP_WEST, KG_OP_PASS};
+        const int ops[] = {KG_OP_PASS, KG_OP_NORTH, KG_OP_SOUTH, KG_OP_EAST, KG_OP_WEST};
         a.op = ops[id];
-    } else if (id < 245 || (id >= 246 && id < 486)) {
-        int k = id < 245 ? id - 5 : id - 246;
-        a.op = id < 245 ? KG_OP_PICKUP : KG_OP_PLACE;
-        a.arg = k / 20;
-        a.n = 1 + k % 20;
-    } else if (id == 245) a.op = KG_OP_DROP;
-    else if (id < 491) { a.op = KG_OP_PLANT; a.arg = id - 486; }
+    } else if (id < 17 || id >= 32) {
+        a.op = id < 17 ? KG_OP_PICKUP : KG_OP_PLACE;
+        a.arg = id < 17 ? id - 5 : id - 32;
+        a.n = quantity;
+    } else if (id == 17) a.op = KG_OP_DROP;
+    else if (id < 23) { a.op = KG_OP_PLANT; a.arg = id - 18; }
     else {
         const int ops[] = {KG_OP_WATER, KG_OP_HARVEST, KG_OP_FERTILIZE,
             KG_OP_BUILD_COOP, KG_OP_BUILD_PASTURE, KG_OP_DIG, KG_OP_FEED,
             KG_OP_COLLECT_FERTILIZER, KG_OP_CARE};
-        a.op = ops[id - 491];
+        a.op = ops[id - 23];
     }
     return a;
 }
 
 KG_HD int kag_direct_unit_id(KGUnitAction a) {
-    for (int id = 0; id < 500; id++) {
-        KGUnitAction b = kag_direct_unit(id);
+    if ((a.op == KG_OP_PICKUP || a.op == KG_OP_PLACE) && (a.n < 1 || a.n > 20)) return -1;
+    for (int id = 0; id < 44; id++) {
+        KGUnitAction b = kag_direct_unit(id, a.n);
         if (a.op == b.op && (b.op != KG_OP_PLANT || a.arg == b.arg)
             && ((b.op != KG_OP_PICKUP && b.op != KG_OP_PLACE)
                 || (a.arg == b.arg && a.n == b.n))) return id;
@@ -91,36 +93,44 @@ KG_HD int kag_direct_unit_id(KGUnitAction a) {
     return -1;
 }
 
-KG_HD KGMarketOrder kag_direct_market(int id) {
+KG_HD KGMarketOrder kag_direct_market(int id, int quantity) {
     KGMarketOrder a = {-1, -1, 1};
-    if (id <= 0 || id >= 1903) return a;
-    if (id <= 500) { a.op = KG_MARKET_BUY_SEED; a.item = (id - 1) / 100; }
-    else if (id <= 700) {
+    if (id <= 0 || id >= 22) return a;
+    if (id <= 5) { a.op = KG_MARKET_BUY_SEED; a.item = id - 1; }
+    else if (id <= 7) {
         a.op = KG_MARKET_BUY_PRODUCT;
-        a.item = id <= 600 ? KG_ITEM_WHEAT : KG_ITEM_FERTILIZER;
-    } else if (id <= 1000) {
-        a.op = KG_MARKET_BUY_ANIMAL; a.item = KG_ITEM_GOOSE + (id - 701) / 100;
-    } else if (id == 1001) { a.op = KG_MARKET_HIRE; return a; }
-    else if (id == 1002) { a.op = KG_MARKET_BUY_LAND; return a; }
-    else { a.op = KG_MARKET_SELL; a.item = (id - 1003) / 100; }
-    a.n = id >= 1003 ? 1 + (id - 1003) % 100 : 1 + (id - 1) % 100;
+        a.item = id == 6 ? KG_ITEM_WHEAT : KG_ITEM_FERTILIZER;
+    } else if (id <= 10) {
+        a.op = KG_MARKET_BUY_ANIMAL; a.item = KG_ITEM_GOOSE + id - 8;
+    } else if (id == 11) { a.op = KG_MARKET_HIRE; return a; }
+    else if (id == 12) { a.op = KG_MARKET_BUY_LAND; return a; }
+    else { a.op = KG_MARKET_SELL; a.item = id - KAG_DIRECT_SELL; }
+    a.n = quantity;
     return a;
 }
 
 KG_HD int kag_direct_market_id(KGMarketOrder a) {
-    if (a.op == KG_MARKET_HIRE) return 1001;
-    if (a.op == KG_MARKET_BUY_LAND) return 1002;
+    if (a.op < 0) return 0;
+    if (a.op == KG_MARKET_HIRE) return 11;
+    if (a.op == KG_MARKET_BUY_LAND) return 12;
     if (a.n < 1 || a.n > 100) return -1;
-    if (a.op == KG_MARKET_BUY_SEED && (unsigned)a.item < 5) return 1 + 100*a.item + a.n-1;
+    if (a.op == KG_MARKET_BUY_SEED && (unsigned)a.item < 5) return 1 + a.item;
     if (a.op == KG_MARKET_BUY_PRODUCT && (a.item == 0 || a.item == 8))
-        return 501 + (a.item == 8 ? 100 : 0) + a.n-1;
+        return 6 + (a.item == 8);
     if (a.op == KG_MARKET_BUY_ANIMAL && a.item >= 9 && a.item < 12)
-        return 701 + 100*(a.item-9) + a.n-1;
-    if (a.op == KG_MARKET_SELL && (unsigned)a.item < 9) return 1003 + 100*a.item + a.n-1;
+        return 8 + a.item-9;
+    if (a.op == KG_MARKET_SELL && (unsigned)a.item < 9) return KAG_DIRECT_SELL + a.item;
     return -1;
 }
 
-KG_HD int kag_direct_offset(int h) { return h < 20 ? 500*h : 10000 + 1903*(h-20); }
+KG_HD int kag_direct_width(int h) { return h < 40 ? (h%2 ? 20 : 44) : (h%2 ? 100 : 22); }
+KG_HD int kag_direct_offset(int h) {
+    return h < 40 ? (h/2)*64 + (h%2)*44 : KAG_TASK_LOGITS + ((h-40)/2)*122 + (h%2)*22;
+}
+KG_HD int kag_direct_unit_quantity(int command) {
+    return (command >= 5 && command < 17) || (command >= 32 && command < 44);
+}
+KG_HD int kag_direct_market_quantity(int command) { return command > 0 && command != 11 && command != 12; }
 KG_HD int kag_action_head_active(const float* actions, int h) { (void)actions; (void)h; return 1; }
 
 KG_HD void kag_policy_reset(KagPolicy* policy, const KGState* game, int source) {
@@ -188,7 +198,7 @@ KG_HD void kag_action_mask_begin(KagActionMaskState* s, const KGState* g,
     s->lands = kag_popcount(f->unlocked_mask);
     for (int u = 0; u < f->unit_count; u++)
         for (int i = 0; i < 12; i++) s->held[i] += f->units[u].inventory[i];
-    for (int u = 0; u < 20; u++) s->choices[u] = KAG_DIRECT_PASS;
+    // PASS/NOOP and the unused quantity index are all zero.
 }
 
 KG_HD int kag_direct_group(KGUnitAction a, const KGTile* t) {
@@ -249,29 +259,65 @@ KG_HD void kag_direct_prepare_sales(KagActionMaskState* s) {
     }
 }
 
-KG_HD int kag_direct_forced_sale(const KagActionMaskState* s) {
+KG_HD KGMarketOrder kag_direct_forced_sale(const KagActionMaskState* s) {
     int best = -1;
     for (int i = 0; i < 9; i++) {
         if (s->forced[i] <= 0 || s->shed[i] <= 0) continue;
         if (best < 0 || (int64_t)kg_market_price(i, s->market[i])*s->forced[i]
             > (int64_t)kg_market_price(best, s->market[best])*s->forced[best]) best = i;
     }
-    if (best < 0) return 0;
+    if (best < 0) return (KGMarketOrder){-1, -1, 1};
     int n = s->forced[best];
     if (n > s->shed[best]) n = s->shed[best];
     if (n > 100) n = 100;
-    return 1003 + 100*best + n-1;
+    return (KGMarketOrder){KG_MARKET_SELL, best, n};
+}
+
+// Prefix-conditional quantity support. Command support asks whether n=1 is
+// affordable; after choosing a command only its quantity row is expanded.
+KG_HD int kag_direct_market_limit(const KagActionMaskState* s, int command, int limit) {
+    const KGState* g = s->game;
+    if (command == 0) return 1;
+    if (command == 11) return s->hands < s->policy->max_hands
+        && g->hour != g->config.turns_per_day-1
+        && s->money >= kg_hire_cost(s->hires, g->config.farm_hand_cost_mult);
+    if (command == 12) return s->lands < 4 && s->lands > 0
+        && s->money >= (1000 << (s->lands-1))
+        && kag_land_buy_delay_ready(s->policy, g, s->player);
+    if (command >= KAG_DIRECT_SELL) {
+        int n = s->shed[command-KAG_DIRECT_SELL];
+        return n < limit ? n : limit;
+    }
+    int kind = command-1, result = 0;
+    int room = g->config.shed_capacity-kag_direct_total(s->shed, 12);
+    int64_t cost = 0;
+    for (int n = 1; n <= limit; n++) {
+        int price = kind < 5 ? KG_CROP_DEFS[kind].seed_cost : kind < 7
+            ? kg_market_price(kind == 5 ? 0 : 8, s->market[kind == 5 ? 0 : 8]-n)
+            : KG_ANIMAL_DEFS[kind-7].cost;
+        cost += price;
+        if (cost > s->money || (kind >= 5 && n > room)) break;
+        result = n;
+    }
+    return result;
 }
 
 KG_HD void kag_direct_mask_row(KagActionMaskState* s, int h, unsigned char* row) {
-    int width = h < 20 ? 500 : 1903;
+    int width = kag_direct_width(h);
     memset(row, 0, width);
     const KGState* g = s->game;
     const KGPlayer* f = &g->players[s->player];
-    if (h < 20) {
+    if (h < 40) {
+        int unit = h/2;
+        if (h%2) {
+            row[0] = 1;
+            if (!g->done && unit < f->unit_count && kag_direct_unit_quantity((int)s->choices[h-1]))
+                memset(row, 1, width);
+            return;
+        }
         row[KAG_DIRECT_PASS] = 1;
-        if (h >= f->unit_count || g->done) return;
-        const KGUnitState* u = &f->units[h];
+        if (unit >= f->unit_count || g->done) return;
+        const KGUnitState* u = &f->units[unit];
         int tile = kg_tile_index(u->x, u->y), board = g->config.board_size;
         const KGTile* t = &f->tiles[tile];
         if (g->step == g->config.episode_steps-2 && kag_direct_adjacent(u, board)
@@ -280,12 +326,12 @@ KG_HD void kag_direct_mask_row(KagActionMaskState* s, int h, unsigned char* row)
         }
         // Final B's rule-aware support, not a hand-written task selector.
         memset(row, 1, width);
-        row[0] = u->y > 0; row[1] = u->y+1 < board;
-        row[2] = u->x+1 < board; row[3] = u->x > 0;
-        row[493] = u->inventory[KG_ITEM_FERTILIZER] > 0 && kag_direct_fertilize(g, t);
-        row[499] = kag_direct_care(g, t);
-        for (int id = 0; id < 500; id++) {
-            KGUnitAction a = kag_direct_unit(id);
+        row[1] = u->y > 0; row[2] = u->y+1 < board;
+        row[3] = u->x+1 < board; row[4] = u->x > 0;
+        row[25] = u->inventory[KG_ITEM_FERTILIZER] > 0 && kag_direct_fertilize(g, t);
+        row[31] = kag_direct_care(g, t);
+        for (int id = 0; id < 44; id++) {
+            KGUnitAction a = kag_direct_unit(id, 1);
             int group = kag_direct_group(a, t);
             if ((group >= 0 && (s->claims[tile] & (1u << group)))
                 || (a.op == KG_OP_PLANT && s->seeds[a.arg] <= 0)) row[id] = 0;
@@ -294,30 +340,23 @@ KG_HD void kag_direct_mask_row(KagActionMaskState* s, int h, unsigned char* row)
         return;
     }
     row[0] = 1;
-    if (g->done || h-20 >= s->policy->market_slots
-        || h-20 >= g->config.max_market_orders_per_turn) return;
+    if (g->done || (h-40)/2 >= s->policy->market_slots
+        || (h-40)/2 >= g->config.max_market_orders_per_turn) return;
     kag_direct_prepare_sales(s);
-    int forced = kag_direct_forced_sale(s);
-    if (forced) { row[0] = 0; row[forced] = 1; return; }
-    if (g->step >= g->config.episode_steps-3) return;
-    int room = g->config.shed_capacity-kag_direct_total(s->shed, 12);
-    for (int item = 0; item < 9; item++)
-        for (int n = 1; n <= 100 && n <= s->shed[item]; n++) row[1003+item*100+n-1] = 1;
-    for (int kind = 0; kind < 10; kind++) {
-        int64_t cost = 0;
-        for (int n = 1; n <= 100; n++) {
-            int price = kind < 5 ? KG_CROP_DEFS[kind].seed_cost : kind < 7
-                ? kg_market_price(kind == 5 ? 0 : 8, s->market[kind == 5 ? 0 : 8]-n)
-                : KG_ANIMAL_DEFS[kind-7].cost;
-            cost += price;
-            if (cost > s->money || (kind >= 5 && n > room)) break;
-            row[1+100*kind+n-1] = 1;
-        }
+    KGMarketOrder forced = kag_direct_forced_sale(s);
+    if (forced.op >= 0) {
+        row[0] = 0;
+        row[h%2 ? forced.n-1 : kag_direct_market_id(forced)] = 1;
+        return;
     }
-    row[1001] = s->hands < s->policy->max_hands && g->hour != g->config.turns_per_day-1
-        && s->money >= kg_hire_cost(s->hires, g->config.farm_hand_cost_mult);
-    row[1002] = s->lands < 4 && s->lands > 0 && s->money >= (1000 << (s->lands-1))
-        && kag_land_buy_delay_ready(s->policy, g, s->player);
+    if (g->step >= g->config.episode_steps-3) return;
+    if (h%2) {
+        int command = (int)s->choices[h-1];
+        if (kag_direct_market_quantity(command))
+            memset(row, 1, kag_direct_market_limit(s, command, 100));
+    } else {
+        for (int id = 1; id < width; id++) row[id] = kag_direct_market_limit(s, id, 1) > 0;
+    }
 }
 
 KG_HD void kag_action_mask_before(KagActionMaskState* s, int h, unsigned char* mask) {
@@ -326,14 +365,17 @@ KG_HD void kag_action_mask_before(KagActionMaskState* s, int h, unsigned char* m
 
 KG_HD void kag_action_mask_commit(KagActionMaskState* s, int h, int id) {
     s->choices[h] = id;
+    // Commit each complete command/quantity pair once, before the next unit or
+    // market slot. Non-quantity commands have a singleton dummy quantity row.
+    if (!(h%2)) return;
     const KGState* g = s->game;
     const KGPlayer* f = &g->players[s->player];
-    if (h < 20) {
-        if (h >= f->unit_count) return;
-        const KGUnitState* u = &f->units[h];
+    if (h < 40) {
+        if (h/2 >= f->unit_count) return;
+        const KGUnitState* u = &f->units[h/2];
         int tile = kg_tile_index(u->x, u->y);
         const KGTile* t = &f->tiles[tile];
-        KGUnitAction a = kag_direct_unit(id);
+        KGUnitAction a = kag_direct_unit((int)s->choices[h-1], id+1);
         int group = kag_direct_group(a, t);
         if (group >= 0) s->claims[tile] |= 1u << group;
         if (a.op == KG_OP_PLANT) s->seeds[a.arg]--;
@@ -369,7 +411,7 @@ KG_HD void kag_action_mask_commit(KagActionMaskState* s, int h, int id) {
             s->held[0]--;
         return;
     }
-    KGMarketOrder a = kag_direct_market(id);
+    KGMarketOrder a = kag_direct_market((int)s->choices[h-1], id+1);
     if (a.op < 0) return;
     if (a.op == KG_MARKET_HIRE) {
         s->money -= kg_hire_cost(s->hires++, g->config.farm_hand_cost_mult); s->hands++;
@@ -404,13 +446,15 @@ KG_HD void kag_decode_multi_action(KGAction* out, const float* actions, const KG
         int p, KagPolicy* policy) {
     (void)policy;
     memset(out, 0, sizeof(*out));
-    out->farmer = kag_direct_unit(kag_discrete_index(actions[0], 500));
+    out->farmer = kag_direct_unit(kag_discrete_index(actions[0], 44), 1+kag_discrete_index(actions[1], 20));
     out->hand_count = g->players[p].hand_count;
     for (int u = 1; u <= out->hand_count; u++)
-        out->hands[u-1] = u < 20 ? kag_direct_unit(kag_discrete_index(actions[u], 500))
+        out->hands[u-1] = u < 20 ? kag_direct_unit(kag_discrete_index(actions[2*u], 44),
+                1+kag_discrete_index(actions[2*u+1], 20))
             : (KGUnitAction){KG_OP_PASS,-1,1};
     for (int slot = 0; slot < policy->market_slots && slot < g->config.max_market_orders_per_turn; slot++) {
-        KGMarketOrder a = kag_direct_market(kag_discrete_index(actions[20+slot], 1903));
+        KGMarketOrder a = kag_direct_market(kag_discrete_index(actions[40+2*slot], 22),
+            1+kag_discrete_index(actions[41+2*slot], 100));
         // Preserve slot positions: removing NOOPs changes simultaneous price resolution.
         out->market[out->market_count++] = a;
     }
@@ -421,9 +465,9 @@ KG_HD void kag_sample_cpu_logits(KagPolicy* policy, const KGState* g, int p,
         unsigned char* mask) {
     KagActionMaskState s;
     kag_action_mask_begin(&s, g, policy, p);
-    for (int h = 0; h < 30; h++) {
+    for (int h = 0; h < KAG_ACTION_HEADS; h++) {
         kag_action_mask_before(&s, h, mask);
-        int start = kag_direct_offset(h), n = h < 20 ? 500 : 1903, best = -1;
+        int start = kag_direct_offset(h), n = kag_direct_width(h), best = -1;
         float maximum = -INFINITY, sum = 0;
         for (int i = 0; i < n; i++) if (mask[start+i]) {
             if (best < 0 || logits[start+i] > maximum) { maximum = logits[start+i]; best = i; }
@@ -478,37 +522,38 @@ KG_HD void kag_write_observation(KagPolicy* policy, const KGState* g, int p, flo
         out[124+limb] = (((uint32_t)opp->money >> (8*limb)) & 255u)/256.0f;
     }
     for (int i = 0; i < 9; i++) {
-        float* r = out+128+i*32;
-        r[i] = 1; r[9] = g->market.prices[i]/1000.0f;
-        r[10] = (g->market.inventory[i]-10000)/1000.0f;
-        r[11] = me->shed[i]/100.0f;
-        r[12] = i < 5 ? me->seeds[i]/100.0f : 0;
-        r[13] = KG_MARKET_DEFS[i].base/1000.0f;
-        for (int u = 0; u < me->unit_count; u++) r[14] += me->units[u].inventory[i]/100.0f;
+        // Commodity identity is implicit in its fixed position, not a one-hot.
+        float* r = out+128+i*8;
+        r[0] = g->market.prices[i]/1000.0f;
+        r[1] = (g->market.inventory[i]-10000)/1000.0f;
+        r[2] = me->shed[i]/100.0f;
+        r[3] = i < 5 ? me->seeds[i]/100.0f : 0;
+        r[4] = KG_MARKET_DEFS[i].base/1000.0f;
+        for (int u = 0; u < me->unit_count; u++) r[5] += me->units[u].inventory[i]/100.0f;
     }
     for (int side = 0; side < 2; side++) {
         const KGPlayer* f = &g->players[side ? 1-p : p];
         for (int tile = 0; tile < 100; tile++) {
             const KGTile* t = &f->tiles[tile];
-            float* r = out+KAG_DIRECT_CELLS+(side*100+tile)*24;
-            r[t->kind] = 1;
-            if (t->kind == KG_TILE_PLANT) r[7+t->crop] = 1;
-            if (kg_is_animal_tile(t)) r[12+t->animal] = 1;
-            r[15] = t->yield_units/20.0f;
-            r[16] = t->kind == KG_TILE_PLANT ? (g->day-t->planted_day)/30.0f
+            float* r = out+KAG_DIRECT_CELLS+(side*100+tile)*KAG_DIRECT_CELL_WIDTH;
+            r[0] = t->kind/8.0f;
+            if (t->kind == KG_TILE_PLANT) r[1] = (t->crop+1)/8.0f;
+            if (kg_is_animal_tile(t)) r[1] = (t->animal+1)/8.0f;
+            r[2] = t->yield_units/20.0f;
+            r[3] = t->kind == KG_TILE_PLANT ? (g->day-t->planted_day)/30.0f
                 : kg_is_animal_tile(t) ? (g->day-t->placed_day)/30.0f : 0;
-            r[17] = t->watered_today; r[18] = t->fed_today; r[19] = t->cared_today;
-            r[20] = t->consecutive_unwatered/2.0f; r[21] = t->consecutive_unfed/2.0f;
-            r[22] = t->fertilizer_available;
-            r[23] = t->kind == KG_TILE_PLANT ? (t->fertilized_until_day-g->day)/3.0f
+            r[4] = t->watered_today; r[5] = t->fed_today; r[6] = t->cared_today;
+            r[7] = t->consecutive_unwatered/2.0f; r[8] = t->consecutive_unfed/2.0f;
+            r[9] = t->fertilizer_available;
+            r[10] = t->kind == KG_TILE_PLANT ? (t->fertilized_until_day-g->day)/3.0f
                 : t->pending_care_bonus/2.0f;
         }
         for (int u = 0; u < 20 && u < f->unit_count; u++) {
             const KGUnitState* unit = &f->units[u];
-            float* r = out+(side ? KAG_DIRECT_OTHER_UNITS+u*8 : KAG_DIRECT_OWN_UNITS+u*24);
-            r[0] = 1; r[1] = unit->x/board; r[2] = unit->y/board; r[3] = u == 0;
-            r[4] = kag_direct_adjacent(unit,g->config.board_size);
-            if (!side) for (int i = 0; i < 12; i++) r[8+i] = unit->inventory[i]/100.0f;
+            float* r = out+(side ? KAG_DIRECT_OTHER_UNITS+u*4 : KAG_DIRECT_OWN_UNITS+u*KAG_DIRECT_UNIT_WIDTH);
+            r[0] = 1; r[1] = unit->x/board; r[2] = unit->y/board;
+            r[3] = kag_direct_adjacent(unit,g->config.board_size);
+            if (!side) for (int i = 0; i < 12; i++) r[4+i] = unit->inventory[i]/100.0f;
         }
     }
     // Critic summary is observation-derived; private opponent inventories never enter the actor.

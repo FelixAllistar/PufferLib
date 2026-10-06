@@ -8,15 +8,24 @@ The implementation lives in `ocean/kaggriculture_direct/`, but there is no
 second environment config or profile overlay. The old macro controller is
 retained for archived tools/checkpoints and is not executed by the new policy.
 
-Current contract: policy ABI 6 / observation version 4, 5,856 actor features
-plus 256 privileged paired-critic features, 20 unit heads × 500 candidates and
-10 market heads × 1,903 candidates. The encoder is one stock PufferNet linear
+Current contract: policy ABI 7 / observation version 5, 3,000 actor features
+plus 256 privileged paired-critic features. Each of 20 units chooses one of
+44 primitive commands and, when needed, a quantity from 1–20. Each of 10
+market slots chooses one of 22 commands (including NOOP) and a quantity from
+1–100. The 60 small heads produce 2,500 scores total, down from ABI 6's 29,030.
+The encoder is one stock PufferNet linear
 projection followed by upstream MinGRU. Separate nonlinear unit/market heads
 and the compact same-state paired critic remain; there is **no Transformer**.
 The actor never receives the appended opponent-private critic features.
 
-The action vocabulary and rule-aware design follow
+The rule-aware design is inspired by
 [M & M & P & Q's Final B](https://github.com/msdsm/kaggriculture-solution).
+The primitive command vocabulary returns to this project's pre-executor
+controls; it does not copy their large, flat candidate lists. Quantities are
+factorized, so this is a deliberate policy parameterization change, not an
+equivalent distribution over the old flat catalog. Fixed observation slots
+encode identity implicitly, and tile categories use compact scalar codes
+instead of one-hots. All previously exposed game fields remain available.
 Actions are primitive moves, work, inventory operations and exact-quantity
 market orders, not macro requests to a route executor. Farmer then workers
 reserve seeds and tile tasks. Market slots reserve money and inventory.
@@ -30,14 +39,16 @@ an otherwise supported primitive action can still do nothing in the game.
 The baseline uses terminal +1/0/-1 WLD, gamma 1, paired zero-sum value,
 lambda .97, PPO clip .2, entropy .0015 and frozen-teacher KL .2.
 Both current-policy seats train. Historical league, scripted training
-opponents, opponent action noise, replay resets, PBRS and auxiliary rewards
-are off. `root_money` remains visible. Optional land/crop/animal bonuses
+opponents, opponent action noise, PBRS and auxiliary rewards are off.
+Replay resets are enabled at 90%, leaving 10% fresh starts. `root_money`
+remains visible. Optional land/crop/animal bonuses
 remain available for later experiments; adding them is no longer pure WLD.
 
 The shared profile has a 500M-agent-step budget, horizon 720, 128 agent rows
 and two full sequences per minibatch. A game has 719 action steps; Puffer's
-BF16 GAE needs a horizon divisible by eight. The conservative vector size
-also fits the requested 1024×3 architecture on the 16GB GPU in qualification.
+BF16 GAE needs a horizon divisible by eight. The 128-row vector retains
+memory headroom on the current 8GB GPU; larger shapes need separate checks.
+The user's reduced PPO learning rate is preserved; the BC Adam rate is separate.
 Do not infer stronger play or production throughput from smoke tests.
 
 ### Fresh BC: six shapes, one configuration
@@ -46,7 +57,9 @@ Do not infer stronger play or production throughput from smoke tests.
 describe the requested models. The runner launches all six with CLI shape
 overrides; it does not write six INI files. Each has its own checkpoint,
 training log and provenance receipt under
-`saved/kaggriculture/direct_v6/h{hidden}_l{layers}/`.
+`saved/kaggriculture/compact_v7/h{hidden}_l{layers}/`.
+ABI-6 weights and datasets are incompatible and remain untouched. A fresh
+compact dataset is written to `data/kaggriculture/compact_v7/teacher.bc`.
 
 ```bash
 python ocean/kaggriculture/run.py build-bc
@@ -72,9 +85,11 @@ CUDA separately with `python ocean/kaggriculture_direct/check_cuda.py`.
 Successful `nvidia-smi` output alone is not a CUDA compute health check.
 
 Preparation re-encodes the existing, parity-checked Majkel1337 replay cache
-into primitive ABI-6 labels, not old macro labels. These are not demonstrations
+into factorized primitive ABI-7 labels, not old macro labels. These are not demonstrations
 from the winning Final B policy. Unsupported, masked and forced teacher
-components are ignored. Original actions still advance the replay so state
+components are ignored. Quantity labels are also ignored when their preceding
+teacher command was filtered; they never supervise an unrelated fallback.
+Original actions still advance the replay so state
 parity is preserved. Episodes cannot cross training and validation splits.
 The dataset is streamed to disk and published without replacing existing files.
 
@@ -91,7 +106,7 @@ python ocean/kaggriculture/run.py eval --hidden 512 --layers 3
 ```
 
 Evaluation starts fresh with no reset bank or opponent noise. Native eval and
-match are supported. The old CPU/web/Kaggle macro exporters cannot load ABI 6;
+match are supported. The old CPU/web/Kaggle macro exporters cannot load ABI 7;
 the build rejects those paths rather than silently exporting the wrong policy.
 
 ### Deliberate adaptations and remaining gaps
@@ -120,7 +135,7 @@ loading a checkpoint starts a fresh run as in the existing Puffer trainer.
 ### Verification
 
 ```bash
-make -C ocean/kaggriculture_direct test replay-bridge
+make -C ocean/kaggriculture_direct test test-replay replay-bridge
 uv run --no-project --with numpy --with pytest python -m pytest -q ocean/kaggriculture_direct/tests
 bash ocean/kaggriculture_direct/build_tests.sh
 # Explicit opt-in on an idle GPU:

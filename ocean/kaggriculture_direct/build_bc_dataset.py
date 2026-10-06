@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Stream parity-checked primitive replay labels into a direct ABI-6 BC dataset.
+"""Stream parity-checked primitive replay labels into a compact ABI-7 BC dataset.
 
 Supports multiple teachers/both seats, with episode-level train/holdout isolation.
 No strategic projection, teacher action search, GPU, or PPO is involved.
@@ -21,20 +21,20 @@ import tempfile
 
 import numpy as np
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from compact_contract import OBS, HEADS, LOGITS, STEPS, PACKED, SIZES, POLICY_VERSION, OBSERVATION_VERSION
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "kaggriculture"))
 import replay_native as native
 
 HEADER = struct.Struct("<16IQQd")
-OBS, HEADS, LOGITS, STEPS = 6112, 30, 29030, 720
-PACKED = (LOGITS + 7) // 8
 
 
 def load_bridge(path):
     lib = native.load_core(path)
     ptr = C.c_void_p
     lib.kag_bc_abi.argtypes = [C.c_int]
-    if tuple(lib.kag_bc_abi(i) for i in range(4)) != (OBS, HEADS, LOGITS, 6):
-        raise ValueError("requires direct ABI-6 bridge with paired critic features")
+    if tuple(lib.kag_bc_abi(i) for i in range(4)) != (OBS, HEADS, LOGITS, POLICY_VERSION):
+        raise ValueError("requires compact ABI-7 bridge with paired critic features")
     lib.kag_bc_create.argtypes = [C.POINTER(native.CConfig), C.c_char_p]
     lib.kag_bc_create.restype = ptr
     lib.kag_bc_destroy.argtypes = [ptr]
@@ -145,7 +145,7 @@ def converted_records(records, library, profile, workers):
         for record in records:
             yield convert_record(library,profile,record)
         return
-    # Bound outstanding 20-MB trajectories; do not submit the entire corpus.
+    # Bound outstanding trajectories; do not submit the entire corpus.
     with ProcessPoolExecutor(max_workers=workers) as pool:
         pending = {}
         for i in range(min(workers,len(records))):
@@ -207,15 +207,15 @@ def main():
             print(f"{i+1}/{games} episode={record['episode_id']} seat={record['seat']} labels={counts}",flush=True)
         for array in arrays:
             array.flush()
-        header = HEADER.pack(0x4b414742,3,count,OBS,HEADS,PACKED,games,STEPS,4,4,6,0,0,1,0,
+        header = HEADER.pack(0x4b414742,3,count,OBS,HEADS,PACKED,games,STEPS,4,OBSERVATION_VERSION,POLICY_VERSION,0,0,1,0,
                              validation,source_hash,semantics,1.0)
         with staging.open("r+b") as stream:
             stream.write(header)
         with staging.open("rb") as stream:
             digest = hashlib.file_digest(stream,"sha256").hexdigest()
-        metadata = dict(format="kaggriculture_direct_bc_v6",sha256=digest,source_hash=f"{source_hash:016x}",
+        metadata = dict(format="kaggriculture_compact_bc_v7",sha256=digest,source_hash=f"{source_hash:016x}",
                         gamma=1,train_games=games-validation,validation_games=validation,records=records,
-                        policy_version=6,observation_version=4,executor=0,
+                        policy_version=POLICY_VERSION,observation_version=OBSERVATION_VERSION,executor=0,
                         label_semantics="Exact representable direct actions; forced/blocked/unsupported heads ignored")
         meta_staging = Path(directory)/"dataset.json"
         meta_staging.write_text(json.dumps(metadata,indent=2)+"\n")

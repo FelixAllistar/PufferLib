@@ -39,9 +39,9 @@ int main(int argc, char** argv) {
     auto logits=managed<precision_t>(rows*C), teacher=managed<precision_t>(rows*C);
     auto mask=managed<precision_t>(rows*A), values=managed<precision_t>(rows);
     auto oldlp=managed<logprob_t>(rows);
-    auto actions=managed<float>(rows*30), dispatch=managed<float>(rows*30);
+    auto actions=managed<float>(rows*KAG_ACTION_HEADS), dispatch=managed<float>(rows*KAG_ACTION_HEADS);
     auto rng=managed<curandStatePhilox4_32_10_t>(rows);
-    auto sizes=managed<int>(30); const int widths[]=ACT_SIZES; memcpy(sizes,widths,sizeof(widths));
+    auto sizes=managed<int>(KAG_ACTION_HEADS); const int widths[]=ACT_SIZES; memcpy(sizes,widths,sizeof(widths));
     for(int i=0;i<rows*C;i++) {
         logits[i]=from_float(((i*13)%43-21)/8.0f);
         teacher[i]=from_float(((i*19)%53-26)/8.0f);
@@ -58,15 +58,15 @@ int main(int argc, char** argv) {
         assert(cudaGraphLaunch(exec,stream)==cudaSuccess);
     }
     sync_test();
-    assert(!memcmp(actions,dispatch,rows*30*sizeof(float)));
+    assert(!memcmp(actions,dispatch,rows*KAG_ACTION_HEADS*sizeof(float)));
     unsigned char cpu[A];
     int forced=0;
     for(int r=0;r<rows;r++) {
         KagActionMaskState prefix;
         kag_action_mask_begin(&prefix,&env[map[r]/2].game,&env[map[r]/2].policy,map[r]%2);
         double lp=0;
-        for(int h=0;h<30;h++) {
-            int start=kag_direct_offset(h), n=widths[h], action=actions[r*30+h], count=0;
+        for(int h=0;h<KAG_ACTION_HEADS;h++) {
+            int start=kag_direct_offset(h), n=widths[h], action=actions[r*KAG_ACTION_HEADS+h], count=0;
             kag_action_mask_before(&prefix,h,cpu);
             double sum=0;
             for(int j=0;j<n;j++) {
@@ -90,21 +90,21 @@ int main(int argc, char** argv) {
     sync_test();
     for(int r=0;r<rows;r++) { assert(newlp[r]==oldlp[r]); assert(to_float(imp[r])==1); }
     PPOKernelArgs args={.grad_logits=gradient,.grad_values_pred=newlp,.logits=logits,
-        .values_pred=logits+C-1,.act_sizes=sizes,.action_mask=mask,.num_atns=30,
+        .values_pred=logits+C-1,.act_sizes=sizes,.action_mask=mask,.num_atns=KAG_ACTION_HEADS,
         .clip_coef=.2,.vf_clip_coef=.2,.vf_coef=2,.ent_coef=entropy,.T_seq=1,.A_total=A,.N=rows};
     PPOGraphArgs data={.imp=imp,.actions=actions,.old_logprobs=oldlp,.advantages=adv,.values=v,.returns=ret};
     ppo_loss_compute<<<1,256>>>(losses,args,data); sync_test();
     close_test(losses[LOSS_IMP],1); assert(losses[LOSS_CLIPFRAC]==0);
-    for(int r=0;r<rows;r++) for(int h=0;h<30;h++) {
+    for(int r=0;r<rows;r++) for(int h=0;h<KAG_ACTION_HEADS;h++) {
         int off=kag_direct_offset(h), count=0;
         for(int j=0;j<widths[h];j++) count+=to_float(mask[r*A+off+j])!=0;
         for(int j=0;j<widths[h];j++) if(count==1 || !to_float(mask[r*A+off+j]))
             assert(gradient[r*A+off+j]==0);
     }
     auto kl_grad=managed<float>(rows*A), metrics=managed<float>(2);
-    kag_teacher_kl<<<rows*30,256>>>(logits,teacher,mask,kl_grad,metrics,NULL,.2f,rows); sync_test();
+    kag_teacher_kl<<<rows*KAG_ACTION_HEADS,256>>>(logits,teacher,mask,kl_grad,metrics,NULL,.2f,rows); sync_test();
     double expected_kl=0;
-    for(int r=0;r<rows;r++) for(int h=0;h<30;h++) {
+    for(int r=0;r<rows;r++) for(int h=0;h<KAG_ACTION_HEADS;h++) {
         int off=kag_direct_offset(h), n=widths[h]; double ps=0,qs=0;
         for(int j=0;j<n;j++) if(to_float(mask[r*A+off+j])) {
             ps+=exp(to_float(logits[r*C+off+j])); qs+=exp(to_float(teacher[r*C+off+j]));
@@ -120,7 +120,7 @@ int main(int argc, char** argv) {
     }
     close_test(metrics[0],expected_kl); assert(metrics[1]==1);
     cudaMemset(kl_grad,0,rows*A*sizeof(float)); cudaMemset(metrics,0,2*sizeof(float));
-    kag_teacher_kl<<<rows*30,256>>>(logits,logits,mask,kl_grad,metrics,NULL,.2f,rows); sync_test();
+    kag_teacher_kl<<<rows*KAG_ACTION_HEADS,256>>>(logits,logits,mask,kl_grad,metrics,NULL,.2f,rows); sync_test();
     for(int i=0;i<rows*A;i++) assert(kl_grad[i]==0);
     assert(metrics[0]==0);
     printf("direct CUDA graphs=%d: CPU/GPU prefix parity, unchanged PPO ratio=1, zero forced gradients, teacher KL oracle PASS\n",graphs);

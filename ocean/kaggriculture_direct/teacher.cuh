@@ -16,7 +16,7 @@ __global__ void kag_teacher_kl(const precision_t* learner, const precision_t* te
         const precision_t* mask, float* gradient, float* metrics,
         float* losses, float coefficient, int rows) {
     int row = blockIdx.x / KAG_ACTION_HEADS, h = blockIdx.x % KAG_ACTION_HEADS;
-    int off = kag_direct_offset(h), width = h < 20 ? 500 : 1903, tid = threadIdx.x;
+    int off = kag_direct_offset(h), width = kag_direct_width(h), tid = threadIdx.x;
     int base = row*(KAG_ALL_LOGITS+1)+off, mb = row*KAG_ALL_LOGITS+off;
     __shared__ float pm[256], qm[256];
     float pmax = -INFINITY, qmax = -INFINITY;

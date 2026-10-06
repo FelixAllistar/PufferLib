@@ -58,24 +58,24 @@ def test_real_tapes_roundtrip(tmp_path):
     result = subprocess.run(command, cwd=ROOT, text=True, capture_output=True, timeout=180)
     assert result.returncode == 0, result.stdout + result.stderr
     fields = dataset.HEADER.unpack(output.read_bytes()[:dataset.HEADER.size])
-    assert fields[:8] == (0x4b414742, 3, 2880, 6112, 30, dataset.PACKED, 4, 720)
-    assert fields[8:16] == (4,4,6,0,0,1,0,2)
+    assert fields[:8] == (0x4b414742, 3, 2880, dataset.OBS, dataset.HEADS, dataset.PACKED, 4, 720)
+    assert fields[8:16] == (4,5,7,0,0,1,0,2)
     assert fields[-1] == 1
     metadata = json.loads(output.with_suffix(".json").read_text())
     assert metadata["train_games"] == metadata["validation_games"] == 2
     count = fields[2]
     offset = dataset.HEADER.size + count*dataset.OBS*4
-    labels = np.memmap(output,mode="r",dtype=np.float32,shape=(count,30),offset=offset)
+    labels = np.memmap(output,mode="r",dtype=np.float32,shape=(count,dataset.HEADS),offset=offset)
     offset += labels.nbytes
     masks = np.memmap(output,mode="r",dtype=np.uint8,shape=(count,dataset.PACKED),offset=offset)
     offset += masks.nbytes
     returns = np.memmap(output,mode="r",dtype=np.float32,shape=(count,),offset=offset)
     assert np.isfinite(labels).all()
-    offsets = np.r_[np.arange(20)*500,10000+np.arange(10)*1903]
+    offsets = np.r_[0,np.cumsum(dataset.SIZES)[:-1]]
     for row in range(count):
         support = np.unpackbits(masks[row],bitorder="little")[:dataset.LOGITS]
         for head, start in enumerate(offsets):
-            width = 500 if head < 20 else 1903
+            width = dataset.SIZES[head]
             action = int(labels[row,head])
             if support[start:start+width].sum() == 1:
                 assert action == -1, "forced or inactive label must be excluded"

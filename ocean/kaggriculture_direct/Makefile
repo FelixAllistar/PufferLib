@@ -16,6 +16,14 @@ $(BUILD)/test_policy: tests/test_policy.c policy.h ../kaggriculture/policy.h ../
 .PHONY: replay-bridge
 replay-bridge: $(BUILD)/replay.so
 
+.PHONY: test-replay
+test-replay: $(BUILD)/test_projection
+	$(BUILD)/test_projection
+
+$(BUILD)/test_projection: tests/test_projection.c $(SOURCES)
+	mkdir -p $(BUILD)
+	$(CC) -std=c11 -O1 $(INCLUDES) -DKAG_WITH_PAIRED_CRITIC $< $(LIBS) -o $@
+
 $(BUILD)/replay.so: $(SOURCES)
 	mkdir -p $(BUILD)
 	$(CC) -std=c11 -O1 -shared -fPIC $(INCLUDES) -DKAG_WITH_PAIRED_CRITIC \

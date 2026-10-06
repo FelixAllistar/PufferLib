@@ -89,7 +89,7 @@ typedef struct {
     int64_t shape[PUF_MAX_DIMS];
 } Prec;
 
-// A 30-head direct policy can accumulate hundreds of nats. BF16 rounding
+// A multi-head direct policy can accumulate hundreds of nats. BF16 rounding
 // of that sum changes PPO ratios even when the policy has not changed.
 #ifdef PUFFER_KAGGRICULTURE_DIRECT
 typedef Float LogProb;
@@ -1950,7 +1950,7 @@ void puf_load_weights_into(Float dst, Prec params,
     char* buf = (char*)malloc(nbytes);
     size_t nread = fread(buf, 1, nbytes, fp);
 #ifdef PUFFER_KAGGRICULTURE_DIRECT
-    assert(fgetc(fp) == EOF && "checkpoint shape does not match direct-policy ABI 6");
+    assert(fgetc(fp) == EOF && "checkpoint shape does not match compact-policy ABI 7");
 #endif
     fclose(fp);
     assert((int64_t)nread == nbytes && "failed to read weights");

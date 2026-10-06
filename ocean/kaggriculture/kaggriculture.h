@@ -76,6 +76,8 @@ int kag_critic_mode;
 
 void kag_configure_potential(Ini* ini, const char* mode) {
 #ifdef KAG_DIRECT_POLICY
+    assert(puf_ini_get(ini,"policy","action_version") == KAG_POLICY_VERSION
+        && "config action_version does not match this compact-policy binary; rebuild kaggriculture");
     if (strcmp(mode,"train")) dict_set(puf_ini_section(ini,"train",0),"teacher_kl_coefficient",0);
 #endif
     kag_qd_metrics = getenv("KAG_QD_METRICS") != NULL;
@@ -83,7 +85,7 @@ void kag_configure_potential(Ini* ini, const char* mode) {
     // Experimental run.py profiles hand off these two new settings via inherited
     // environment variables, keeping the ordinary cash config byte-identical.
 #ifdef KAG_DIRECT_POLICY
-    // ABI 6 has one active config; stale legacy shell/profile variables must
+    // The direct ABI has one active config; stale legacy shell/profile variables must
     // not silently change its critic, reward or opponent-noise settings.
     const char* critic_mode = NULL;
     const char* wld_reward = NULL;
