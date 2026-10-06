@@ -1,9 +1,0 @@
-{
-  "name": "pokemon-gen9-oracle-tools",
-  "private": true,
-  "version": "1.0.0",
-  "dependencies": {
-    "esbuild": "0.25.12",
-    "ts-chacha20": "1.2.0"
-  }
-}
