@@ -1,5 +1,8 @@
 #ifndef OCEAN_SWAT_H
 #define OCEAN_SWAT_H
+#ifdef SWAT_MOVEMENT_TRAINING
+#include "movement_env.h"
+#else
 #include <stdlib.h>
 #include <stdio.h>
 #include "sim.h"
@@ -27,6 +30,12 @@ struct Env {
 };
 
 void puf_init(Env* env, Dict* kwargs) {
+#ifdef SWAT_NATIVE_TRAINER
+    DictItem* task=dict_find(kwargs,"task");
+    if(task && (!task->str || strcmp(task->str,"annex"))) {
+        fprintf(stderr,"swat: this puffer was built for env.task=annex; rebuild after changing task\n"); exit(1);
+    }
+#endif
     env->num_agents = 1;
     env->agents[0].policy = 0;
     env->sim = (SwatSim*)calloc(1,sizeof(SwatSim));
@@ -102,4 +111,5 @@ void puf_close(Env* env) {
     if (env->view) { swat_view_close(env->view); free(env->view); env->view = NULL; }
     if (env->sim) { swat_sim_close(env->sim); free(env->sim); env->sim = NULL; }
 }
+#endif
 #endif

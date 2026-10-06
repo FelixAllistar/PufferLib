@@ -522,7 +522,12 @@ Enable `SWAT_BUILD_PLAYER` and set `SWAT_RAYLIB_DIR` to build `swat_player`.
 
 ## RL contract and training
 
-[CONTRACT.md](CONTRACT.md) defines the initial versioned interface: **167 float
+[CONTRACT.md](CONTRACT.md) defines both training contracts. `config/swat.ini`
+selects the native trainer's task with **`env.task=movement`** (default) or
+**`env.task=annex`**. Rebuild `puffer` after changing the task; the binary checks
+that its compiled contract matches the config at startup.
+
+The annex v1 interface has **167 float
 observations**, **14 discrete action heads**, and **39 total logits**. The
 observation combines character/weapon state, mission telemetry, and 45 forward
 visibility rays. It does not include hidden enemy positions. Visible ray classes
@@ -531,14 +536,13 @@ while their observation modalities differ.
 
 The baseline is the standard linear encoder and recurrent MinGRU policy with
 width 64 and two layers. SWAT does not use the Shenaniguns spatial encoder.
-Run training and evaluate/play back its FP32 checkpoint with matching settings:
+Run the normal trainer from the normal repository checkout:
 
 ```sh
-mkdir -p build/swat
-bash build.sh swat build/swat/puffer --float
-./build/swat/puffer train
-./swat --eval /path/to/checkpoint.bin 32 --deterministic
-./swat watch /path/to/checkpoint.bin --deterministic
+cd ~/puffertank/pufferlib
+bash build.sh swat --float
+./puffer train
+./puffer eval latest --headless
 ```
 
 Configuration lives in `config/swat.ini` and inherits `config/default.ini`.
@@ -546,7 +550,10 @@ Configuration lives in `config/swat.ini` and inherits `config/default.ini`.
 checkpoint's matching architecture and scenario settings. The viewer checks
 weight count against the architecture; the raw native checkpoint does not
 embed a SWAT contract identifier. Keep config/contract metadata with checkpoints.
-The default 64x2 policy has 37,824 FP32 parameters.
+The 64x2 policy has 27,840 FP32 parameters for movement and 37,824 for annex.
+Checkpoints use the normal `checkpoints/swat/<run>/` location and effective
+configs are saved under `logs/swat/`. Annex checkpoint playback remains available
+through `./swat watch FILE.bin`; movement course playback uses `./puffer eval FILE.bin`.
 
 The environment is CPU Box3D, with CUDA policy training. A separate CUDA
 environment, BF16 qualification, self-play league, multi-agent adapter, and
@@ -632,14 +639,15 @@ client moved/fired against the actual listen-host player with the host window
 minimized. These verify this machine's transport/UI integration; a separate
 two-machine LAN session and adverse network conditions remain to qualify.
 
-A native FP32 smoke run completed 2,048 transitions with finite losses and
+With `env.task=annex` and a matching rebuilt trainer, a native FP32 smoke run
+completed 2,048 transitions with finite losses and
 saved checkpoints; loading those weights into another 2,048-step training run
 also passed. CPU deterministic evaluation loaded the result successfully;
 the tiny smoke policy solved 0/4 short episodes. This verifies execution and
 checkpoint compatibility, not policy quality. Reproduce a short run with:
 
 ```sh
-./build/swat/puffer train --vec.total_agents=16 --vec.num_threads=2 \
+./puffer train --vec.total_agents=16 --vec.num_threads=2 \
   --train.horizon=16 --train.minibatch_size=128 --train.total_timesteps=2048 \
   --env.max_ticks=32 --env.hostile_fire=0 --base.run_id=smoke \
   --base.checkpoint_dir=build/swat/checkpoints --base.log_dir=build/swat/logs \
@@ -775,62 +783,56 @@ archived sources using `build_audio_bank.py --source-dir ... --converter ...`.
 `make -C ocean/swat audio-import` builds `build/swat/audio_import`, a Raylib-based
 converter that opens no audio device or window.
 
-### Experimental movement learning
+### Movement training
+
+Edit `config/swat.ini`; build with `bash build.sh swat --float` and run
+`./puffer train`. There is one SWAT config, one normal Puffer binary and no
+movement wrapper or separate environment name. Training uses CUDA for the policy
+and CPU Box3D for simulation, with no Python training.
+
+`env.task=movement` selects the 32-observation, six-action-head movement contract
+(v2). `stage=-1` mixes goal approach, stairs, crouch clearance, doors and already-
+breached walls; stages 0–4 select those individually. `role=-1` mixes officers and
+suspects, or select 0/1. Episode length and progress, time, success and fall reward
+coefficients are config settings. `env.seed` changes physical episodes and
+`base.seed` controls trainer initialization. Evaluate on separate episode seeds.
 
 ```sh
-bash ocean/swat/movement.sh build
-bash ocean/swat/movement.sh train
-# Native checkpoints are saved under build/swat/checkpoints/swat_movement/movement/.
-checkpoint=$(ls -1 build/swat/checkpoints/swat_movement/movement/*.bin | sort | tail -n 1)
-bash ocean/swat/movement.sh eval "$checkpoint" --env.seed=2000003
-bash ocean/swat/movement.sh watch "$checkpoint"
-bash ocean/swat/movement.sh play "$checkpoint" --mission building
+./puffer train
+./puffer eval latest --headless --env.seed=2000003
+# Omit --headless to view the movement course.
+./puffer eval latest
 ```
 
-Edit **`config/swat_movement.ini`** to select courses, roles, episode length,
-reward coefficients, vectorization, architecture and training hyperparameters.
-The wrapper calls the repository's native Puffer trainer, with CUDA policy training
-and CPU Box3D simulation; it runs no Python. Ordinary `--section.key=value`
-overrides also work. `stage=-1` mixes goal approach, stairs, crouch clearance,
-doors and already-breached walls; stages 0–4 select them individually. `role=-1`
-mixes officers and suspects, or choose 0/1. `env.seed` changes physical episode
-seeds; `base.seed` controls trainer initialization. Use separate evaluation seeds.
-
-For example, start with goal approach, then continue the same architecture on stairs:
+To start with a simpler curriculum and continue on stairs using normal overrides:
 
 ```sh
-bash ocean/swat/movement.sh train --env.stage=0 --base.run_id=goal --train.total_timesteps=250000
-goal_checkpoint=$(ls -1 build/swat/checkpoints/swat_movement/goal/*.bin | sort | tail -n 1)
-bash ocean/swat/movement.sh train --env.stage=1 --base.run_id=stairs \
-  --base.load_model_path="$goal_checkpoint"
+./puffer train --env.stage=0 --base.run_id=goal --train.total_timesteps=250000
+./puffer train --env.stage=1 --base.run_id=stairs --base.load_model_path=latest
 ```
 
-Weights use the native FP32 **`.bin`** PufferNet format: a linear encoder and
-recurrent MinGRU, configured width/layers, and six movement action heads. Keep the
-matching config alongside a checkpoint; the native trainer writes the effective
-config to its run log directory. The player reads movement architecture from
-`config/swat_movement.ini`, independently of the annex policy in `config/swat.ini`.
-The movement contract is **v2**; the previous Python MLP `.txt` format and bundled
-policy have been removed. The former 40/40 result does not evaluate this new policy.
+Weights use the native FP32 `.bin` PufferNet format, with a linear encoder and
+recurrent MinGRU. Keep the effective config with each checkpoint. The old Python
+MLP `.txt` weights are incompatible and removed. Changing movement/annex task or
+architecture requires matching weights; the trainer rejects the wrong byte count.
 
-The 32 observations contain relative waypoint direction, velocity, stance,
-officer/suspect role and local collision/floor probes, without hidden enemy positions.
-Actions choose turn, forward/backward motion, strafe, crouch, jump and gait.
-Each decision runs for four actual physics ticks in training and in the player.
-Runtime inference has separate recurrent state for every actor and resets it between
-scenarios. Navigation supplies waypoints; orders, doors, weapons and rules of
-engagement remain game systems. Civilians retain their scripted movement.
+The observations contain relative waypoint direction, velocity, stance, role and
+local collision/floor probes, without hidden enemy positions. Actions choose turn,
+forward/backward motion, strafe, crouch, jump and gait. Each decision runs for four
+actual physics ticks in training and in the player. Every actor has its own
+recurrent state, reset between scenarios. Navigation supplies waypoints; orders,
+doors, weapons and rules of engagement remain game systems. Civilians retain their
+scripted movement. This curriculum does not train combat or squad tactics.
 
-Learned movement remains opt-in via `--locomotion-policy CHECKPOINT.bin`; default
-NPC movement uses the height-aware navigation. A smoke checkpoint verifies native
-training, resume and playback, not capable squad tactics or general movement quality.
-The runtime loader checks exact weight count, byte length and finite values before
-replacing a loaded policy. `make -C ocean/swat movement-native-test` checks the Ocean
-adapter, exact native inference, recurrent isolation and four-tick decision cadence.
+Learned movement remains opt-in in the game:
 
-Validation: a native 4,096-transition run saved 27,840-parameter FP32 checkpoints;
-loading one into another 2,048-transition native run passed. CPU and CUDA evaluation
-loaded it successfully, and the native Windows player rendered a building with it
-enabled. The tiny smoke run scored zero course successes; it is not a qualified
-movement model. The original annex trainer also
-still builds through `build.sh swat ... --float`.
+```sh
+./swat --mission building --locomotion-policy checkpoints/swat/<run>/<step>.bin
+```
+
+Use an actual checkpoint path from your run. The player reads architecture from
+`config/swat.ini`; default NPC movement remains the height-aware navigation. The
+runtime checks exact byte/weight count and finite values before replacing a
+loaded policy. `make -C ocean/swat movement-native-test` checks native inference,
+actor recurrent isolation, episode reset and four-tick cadence. Native smoke runs
+verify training, loading and Windows playback, not capable movement policy quality.

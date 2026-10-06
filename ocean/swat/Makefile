@@ -13,7 +13,7 @@ ENET_LIB := $(ROOT)/build/swat/enet/libenet.a
 PHYSICS_LIBS := $(BOX3D)/build/src/libbox3d.a -lm -lpthread
 VIEW_LIBS := $(RAYLIB)/lib/libraylib.a -lGL -ldl
 
-.PHONY: all test sanitize viewer server net-test net-probe frontend-test-build ui-assets movement-trainer movement-evaluator movement-native-test
+.PHONY: all test sanitize viewer server net-test net-probe frontend-test-build ui-assets movement-native-test
 character-probe: | $(BUILD)
 	$(CC) $(CFLAGS) -I. tests/character_probe.c character_asset.c -lm -o $(BUILD)/character_probe
 character-test: character-probe
@@ -83,10 +83,6 @@ environment-binding-test: | $(BUILD)
 environment-props-test: | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_environment_props.c protocol.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_environment_props
 	$(BUILD)/test_environment_props
-movement-trainer: | $(BUILD)
-	cd $(ROOT) && bash ocean/swat/movement.sh build-trainer
-movement-evaluator: | $(BUILD)
-	cd $(ROOT) && bash ocean/swat/movement.sh build-evaluator
 movement-native-test: | $(BUILD)
 	$(CC) $(CFLAGS) $(CPPFLAGS) tests/test_movement_native.c $(CORE) $(PHYSICS_LIBS) -o $(BUILD)/test_movement_native
 	$(BUILD)/test_movement_native $(BUILD)/movement-native-test.bin

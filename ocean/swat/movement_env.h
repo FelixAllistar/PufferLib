@@ -1,8 +1,8 @@
-#ifndef OCEAN_SWAT_MOVEMENT_H
-#define OCEAN_SWAT_MOVEMENT_H
-#include "../swat/sim.h"
-#include "../swat/locomotion.h"
-#include "../swat/render.h"
+#ifndef SWAT_MOVEMENT_ENV_H
+#define SWAT_MOVEMENT_ENV_H
+#include "sim.h"
+#include "locomotion.h"
+#include "render.h"
 typedef float obs_t;
 #include "pufferenv.h"
 #define OBS_SIZE SWAT_LOCOMOTION_OBS
@@ -26,16 +26,22 @@ struct Env {
 static int swat_movement_setting(Dict* kwargs,const char* key,int fallback,int minimum,int maximum) {
     DictItem* item=dict_find(kwargs,key); double value=item ? item->value : fallback;
     if(!isfinite(value) || value<minimum || value>maximum || floor(value)!=value) {
-        fprintf(stderr,"swat_movement: %s must be an integer from %d to %d\n",key,minimum,maximum); exit(1);
+        fprintf(stderr,"swat movement: %s must be an integer from %d to %d\n",key,minimum,maximum); exit(1);
     }
     return (int)value;
 }
 static float swat_movement_reward(Dict* kwargs,const char* key,float fallback) {
     DictItem* item=dict_find(kwargs,key); double value=item ? item->value : fallback;
-    if(!isfinite(value) || value<0 || value>1000) { fprintf(stderr,"swat_movement: %s must be finite and in [0,1000]\n",key); exit(1); }
+    if(!isfinite(value) || value<0 || value>1000) { fprintf(stderr,"swat movement: %s must be finite and in [0,1000]\n",key); exit(1); }
     return (float)value;
 }
 void puf_init(Env* env,Dict* kwargs) {
+#ifdef SWAT_NATIVE_TRAINER
+    DictItem* task=dict_find(kwargs,"task");
+    if(!task || !task->str || strcmp(task->str,"movement")) {
+        fprintf(stderr,"swat: this puffer was built for env.task=movement; rebuild after changing task\n"); exit(1);
+    }
+#endif
     env->num_agents=1; env->agents[0].policy=0;
     env->rng^=(unsigned int)swat_movement_setting(kwargs,"seed",2718,0,2147483647);
     env->stage=swat_movement_setting(kwargs,"stage",-1,-1,4);
@@ -46,7 +52,7 @@ void puf_init(Env* env,Dict* kwargs) {
     env->success_reward=swat_movement_reward(kwargs,"success_reward",2);
     env->fall_penalty=swat_movement_reward(kwargs,"fall_penalty",2);
     env->course=swat_training_create(env->rng,0,0);
-    if(!env->course) { fprintf(stderr,"swat_movement: course allocation failed\n"); exit(1); }
+    if(!env->course) { fprintf(stderr,"swat movement: course allocation failed\n"); exit(1); }
 }
 void puf_reset(Env* env) {
     int stage=env->stage<0 ? (int)(swat_random(&env->rng)%5) : env->stage;

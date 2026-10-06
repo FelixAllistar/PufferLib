@@ -1905,6 +1905,11 @@ void puf_load_weights_into(Float dst, Prec params,
     int64_t nbytes = numel(dst.shape) * sizeof(float);
     FILE* fp = fopen(path, "rb");
     assert(fp && "failed to open weights for reading");
+#ifdef PUFFER_SWAT
+    assert(fseek(fp, 0, SEEK_END) == 0);
+    assert(ftell(fp) == nbytes && "SWAT checkpoint task/architecture mismatch; use the matching config/swat.ini and rebuild puffer");
+    rewind(fp);
+#endif
     char* buf = (char*)malloc(nbytes);
     size_t nread = fread(buf, 1, nbytes, fp);
     fclose(fp);

@@ -23,7 +23,7 @@ static void usage(const char* path) {
         "  --mission house|annex|generated|building|range|motel|storefront  Human default: house; policy default: annex\n"
         "  --layout-seed N --difficulty 0|1|2 --generator neural|uniform\n"
         "  --layout-model FILE          Optional trained house policy\n"
-        "  --locomotion-policy FILE     Native swat_movement FP32 checkpoint (.bin)\n"
+        "  --locomotion-policy FILE     Native SWAT movement FP32 checkpoint (.bin)\n"
         "  --capture-screen SCREEN      game, main, pause, settings, weapon, plan, or overwatch\n"
         "Run from the repository root so config/default.ini and config/swat.ini are available.\n",
         path,path,path,path,path,path);
@@ -153,12 +153,10 @@ int main(int argc, char** argv) {
     puf_ini_load_env(&ini,"swat",override_count,overrides);
     SwatNativeMovement movement_policy={0};
     if(locomotion_model) {
-        Ini movement_ini={0}; puf_ini_load_env(&movement_ini,"swat_movement",override_count,overrides);
-        int movement_hidden=(int)puf_ini_get(&movement_ini,"policy","hidden_size");
-        int movement_layers=(int)puf_ini_get(&movement_ini,"policy","num_layers");
-        puf_ini_free(&movement_ini);
+        int movement_hidden=(int)puf_ini_get(&ini,"policy","hidden_size");
+        int movement_layers=(int)puf_ini_get(&ini,"policy","num_layers");
         if(!swat_native_movement_load(&movement_policy,locomotion_model,movement_hidden,movement_layers)) {
-            fprintf(stderr,"Invalid swat_movement checkpoint: use native FP32 .bin weights and matching config/swat_movement.ini architecture\n");
+            fprintf(stderr,"Invalid SWAT movement checkpoint: use native FP32 .bin weights and matching config/swat.ini architecture\n");
             free(overrides); puf_ini_free(&ini); return 1;
         }
     }

@@ -1,5 +1,5 @@
 #define SWAT_MOVEMENT_NO_RENDER
-#include "../../swat_movement/swat_movement.h"
+#include "../movement_env.h"
 #include "../../../src/puffercpu.c"
 #include "../locomotion_policy.h"
 #include <assert.h>

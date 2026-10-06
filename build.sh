@@ -216,7 +216,7 @@ elif [ "$ENV" = "retro" ]; then
     SRC_DIR="ocean/$ENV"
     make -C "$SRC_DIR" -j2 batch-library panel
     LINK_ARCHIVES+=("build/retro_batch/libquicknes_batch.a")
-elif [ "$ENV" = "swat" ] || [ "$ENV" = "swat_movement" ]; then
+elif [ "$ENV" = "swat" ]; then
     SRC_DIR="ocean/$ENV"
     SWAT_SOURCE_DIR="ocean/swat"
     BOX3D_DIR=${BOX3D_DIR:-../box3d}
@@ -228,6 +228,24 @@ elif [ "$ENV" = "swat" ] || [ "$ENV" = "swat_movement" ]; then
         EXTRA_SRC+=" $SWAT_SOURCE_DIR/$source.c"
     done
     LINK_ARCHIVES+=("$BOX3D_DIR/build/src/libbox3d.a" "build/swat/enet/libenet.a")
+    case "${MODE:-native}" in
+        native|profile)
+            SWAT_TRAINING_TASK=$(awk -F= '
+                /^[[:space:]]*\[/ { in_env=($0 ~ /^[[:space:]]*\[env\]/) }
+                in_env && $1 ~ /^[[:space:]]*task[[:space:]]*$/ {
+                    value=$2; sub(/[;#].*$/, "", value); gsub(/[[:space:]"\047]/, "", value)
+                }
+                END { print value=="" ? "annex" : value }
+            ' config/swat.ini)
+            EXTRA_CFLAGS+=(-DSWAT_NATIVE_TRAINER)
+            case "$SWAT_TRAINING_TASK" in
+                movement) EXTRA_CFLAGS+=(-DSWAT_MOVEMENT_TRAINING) ;;
+                annex) ;;
+                *) echo "config/swat.ini: env.task must be movement or annex" >&2; exit 1 ;;
+            esac
+            echo "SWAT training task: $SWAT_TRAINING_TASK (config/swat.ini)"
+            ;;
+    esac
 elif [ "$ENV" = "shenaniguns3d" ]; then
     SRC_DIR="ocean/$ENV"
     BOX3D_DIR=${BOX3D_DIR:-../box3d}
@@ -491,7 +509,18 @@ elif [ "$MODE" = "cpu" ]; then
     exit 0
 fi
 
-CUDA_HOME=${CUDA_HOME:-${CUDA_PATH:-$(dirname "$(dirname "$(which nvcc)")")}}
+if [ -z "${CUDA_HOME:-${CUDA_PATH:-}}" ]; then
+    if command -v nvcc >/dev/null 2>&1; then
+        CUDA_HOME=$(dirname "$(dirname "$(command -v nvcc)")")
+    elif [ -x /usr/local/cuda/bin/nvcc ]; then
+        CUDA_HOME=/usr/local/cuda
+    else
+        echo "CUDA toolkit not found; set CUDA_HOME to its installation directory" >&2
+        exit 1
+    fi
+else
+    CUDA_HOME=${CUDA_HOME:-$CUDA_PATH}
+fi
 # NCCL include/lib fallback.
 # Needed when NCCL is provided by the nvidia-nccl-cu12 wheel in the active venv.
 NCCL_IFLAG=""

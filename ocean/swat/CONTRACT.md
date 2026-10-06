@@ -1,11 +1,13 @@
 # SWAT contract v1
 
-This is the annex training/policy contract. Human house play adds kit,
+This section defines the annex training/policy contract, selected by
+`env.task=annex` in `config/swat.ini` and rebuilding `puffer`. The default
+movement task uses the v2 contract below. Human house play adds kit,
 inspection, command, melee, throwable, taser, door-tool and sniper fields to the internal
 `SwatInput`, but v1's action heads and 167-float observations do not expose
 those features or hearing. Generated buildings use a separate layout policy.
 A house/arrest/audio policy requires a new contract and corresponding training;
-network protocol v4 is separate from the RL contract version.
+network protocol v9 is separate from the RL contract version.
 
 Co-op and the shared acoustic system preserve this single-officer v1 layout.
 No audio cues/waveform fields have been added. The scripted guard consumes a
@@ -129,3 +131,30 @@ logging path: `perf` (success rate), `episode_return`, `episode_length`, `score`
 (armed targets down), `shots`, `hostile_damage`, `civilian_damage`, `destroyed`,
 and `n` (completed episodes). The sweep target is `perf`; compare policies on
 fixed evaluation seeds and task settings, not return across changing contracts.
+
+## Movement contract v2
+
+`env.task=movement` in `config/swat.ini` selects this contract when building the
+normal native Puffer binary. The compiled binary rejects an incompatible task
+setting; rebuild after changing task. There is no separate config or trainer.
+
+The movement interface has 32 float observations and six categorical action heads
+of sizes `[5,3,3,2,2,3]`: turn, forward/backward movement, strafe, crouch, jump and
+gait. Observations expose goal-relative direction/displacement, own velocity,
+ground/stance/stamina, role, 15 local obstacle rays and three floor probes. They
+contain no hidden enemy positions. Each decision advances four 60 Hz physics ticks.
+
+The five course initial conditions are goal approach, stairs, crouch clearance,
+an operable door and an already-breached wall. `env.stage` and `env.role` choose
+individual cases or mixed episodes. `env.max_steps` sets the decision limit;
+reward coefficients are `progress_reward`, `step_cost`, `success_reward` and
+`fall_penalty`. Reaching the goal within 0.5 m and 0.3 m vertically succeeds;
+timeout, falling or a terminal game state ends the episode. The Ocean adapter
+exports one terminal/reward transition, resets, and returns the next observation.
+
+Weights use native FP32 PufferNet encoder/MinGRU/decoder order, with no custom MLP
+format. Default 64x2 architecture has 27,840 parameters. Annex and movement weights
+are incompatible. Training and player inference use the same native weights;
+the game keeps recurrent state separately for each officer/suspect, resets on a
+new scenario, and holds each action for four ticks. Navigation and door handling
+remain separate systems. Movement learning stays opt-in, and civilians stay scripted.
