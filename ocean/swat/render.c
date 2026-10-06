@@ -1,7 +1,11 @@
 #include "render.h"
 #include "pose.h"
 #include "rlgl.h"
+#include <stdlib.h>
 #include <string.h>
+#if defined(__linux__) && !defined(PLATFORM_WEB)
+#include <unistd.h>
+#endif
 
 static Vector3 swat_vector(b3Vec3 v) { return (Vector3){v.x,v.y,v.z}; }
 static Vector3 swat_position(b3Pos p) { return (Vector3){(float)p.x,(float)p.y,(float)p.z}; }
@@ -84,6 +88,15 @@ SwatCameraLayout swat_camera_layout(int width,int height,float expansion,bool ha
 
 void swat_view_init(SwatView* view, bool hidden) {
     if (view->initialized) return;
+#if defined(__linux__) && !defined(PLATFORM_WEB)
+    // Native Puffer eval bypasses the player launcher. Select WSL's hardware
+    // renderer here, before Mesa creates a context, while honoring overrides.
+    if(access("/dev/dxg",F_OK)==0 && !getenv("GALLIUM_DRIVER") &&
+       !getenv("MESA_LOADER_DRIVER_OVERRIDE") && !getenv("LIBGL_ALWAYS_SOFTWARE")) {
+        if(setenv("GALLIUM_DRIVER","d3d12",0)==0)
+            TraceLog(LOG_INFO,"SWAT: WSL graphics defaulting to GALLIUM_DRIVER=d3d12");
+    }
+#endif
     SetConfigFlags(FLAG_MSAA_4X_HINT | (hidden ? FLAG_WINDOW_HIDDEN : 0));
     view->width = 1440; view->height = 810;
     view->weapon_size=1.7f; view->weapon_horizontal=-.055f; view->weapon_vertical=.075f;

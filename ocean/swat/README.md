@@ -790,6 +790,10 @@ Edit `config/swat.ini`; build with `bash build.sh swat --float` and run
 movement wrapper or separate environment name. Training uses CUDA for the policy
 and CPU Box3D for simulation, with no Python training.
 
+On WSL, SWAT's renderer defaults to `GALLIUM_DRIVER=d3d12` before opening its
+window, including plain `./puffer eval latest`. Explicit graphics overrides
+still take precedence; headless training does not initialize the renderer.
+
 `env.task=movement` selects the 32-observation, six-action-head movement contract
 (v2). `stage=-1` mixes goal approach, stairs, crouch clearance, doors and already-
 breached walls; stages 0–4 select those individually. `role=-1` mixes officers and
