@@ -18,14 +18,22 @@ void close_test(double a, double b, double tolerance=3e-5) {
 int main(int argc, char** argv) {
     int graphs = argc > 1 ? atoi(argv[1]) : 0;
     static_assert(sizeof(logprob_t)==4,"direct PPO old logprobs must retain FP32");
-    const int rows=4, A=KAG_ALL_LOGITS, C=A+1;
-    Env* env=managed<Env>(2);
-    for (int e=0;e<2;e++) {
+    // Exercise full warps and varied unit counts, not just four active lanes.
+    const int rows=64, A=KAG_ALL_LOGITS, C=A+1;
+    Env* env=managed<Env>(rows/2);
+    for (int e=0;e<rows/2;e++) {
         KGConfig config; kg_config_default(&config); config.seed=17+e;
         kg_init(&env[e].game,&config);
         env[e].policy.market_slots=10; env[e].policy.max_hands=19;
+        for (int p=0;p<2;p++) {
+            KGPlayer* f=&env[e].game.players[p];
+            f->unit_count=1+e%20; f->hand_count=f->unit_count-1;
+            for (int u=1;u<f->unit_count;u++) {
+                f->units[u]=f->units[0]; f->units[u].x=u%10; f->units[u].y=(u+e)%10;
+            }
+        }
         kag_policy_reset(&env[e].policy,&env[e].game,0);
-        if (e) {
+        if (e%2) {
             env[e].game.step=718; env[e].game.day=29; env[e].game.hour=22;
             for (int p=0;p<2;p++) {
                 KGPlayer* f=&env[e].game.players[p];

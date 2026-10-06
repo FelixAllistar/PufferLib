@@ -44,9 +44,9 @@ Replay resets are enabled at 90%, leaving 10% fresh starts. `root_money`
 remains visible. Optional land/crop/animal bonuses
 remain available for later experiments; adding them is no longer pure WLD.
 
-The shared profile has a 500M-agent-step budget, horizon 720, 128 agent rows
+The shared profile has a 500M-agent-step budget, horizon 720, 256 agent rows
 and two full sequences per minibatch. A game has 719 action steps; Puffer's
-BF16 GAE needs a horizon divisible by eight. The 128-row vector retains
+BF16 GAE needs a horizon divisible by eight. The 256-row vector retains
 memory headroom on the current 8GB GPU; larger shapes need separate checks.
 The user's reduced PPO learning rate is preserved; the BC Adam rate is separate.
 Do not infer stronger play or production throughput from smoke tests.
@@ -145,9 +145,19 @@ bash ocean/kaggriculture_direct/build_tests.sh
 
 The CUDA test checks CPU/GPU prefix parity, exact unchanged-policy ratio 1,
 zero forced-action gradients, masked teacher-KL gradients against an independent
-double-precision oracle and graph-enabled sampling. CPU tests cover catalogs,
+double-precision oracle and graph-enabled sampling, with full warps and 1–20
+workers per seat. Sampler head widths are taken from the same bounded layout
+as the local prefix masks. CPU tests cover catalogs,
 private-observation isolation, spending/seeds, full games, real replay
 conversion, held-out separation and the six-model launcher.
+
+On the 8GB RTX 5060 Ti, the compact 256×2 policy has 1,602,728 parameters.
+Qualification completed 4,423,680 steps at 128 agent rows (about 3.1GiB and
+70K steps/s), then 5,898,240 steps at 256 rows (peak 5,142MiB, about 79K
+steps/s near the end). Both used horizon 720, 90% resets, paired WLD and
+teacher KL. The full-warp CUDA tests passed compute-sanitizer with graphs on
+and off. These are short throughput/correctness checks using smoke weights,
+not trained-policy strength evaluations or a guarantee for larger shapes.
 
 ## Historical ABI-5 tooling (not the active configuration)
 

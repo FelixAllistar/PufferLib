@@ -146,6 +146,7 @@ KG_HD void kag_policy_reset(KagPolicy* policy, const KGState* game, int source) 
 
 KG_HD int kag_direct_fertilize(const KGState* g, const KGTile* t) {
     if (t->kind != KG_TILE_PLANT) return 0;
+    assert((unsigned)t->crop < 5);
     const KGCropDef* c = &KG_CROP_DEFS[t->crop];
     int last = (g->config.episode_steps-1)/g->config.turns_per_day;
     for (int d = g->day; d < g->day+3; d++) {
@@ -166,6 +167,7 @@ KG_HD int kag_direct_fertilize(const KGState* g, const KGTile* t) {
 KG_HD int kag_direct_care(const KGState* g, const KGTile* t) {
     if ((t->kind == KG_TILE_COOP || t->kind == KG_TILE_PASTURE) && !kg_is_animal_tile(t)) return 1;
     if (!kg_is_animal_tile(t) || t->cared_today) return 0;
+    assert((unsigned)t->animal < 3);
     const KGAnimalDef* a = &KG_ANIMAL_DEFS[t->animal];
     int last = (g->config.episode_steps-1)/g->config.turns_per_day;
     for (int d = g->day+1; d < last; d++) {
@@ -276,6 +278,7 @@ KG_HD KGMarketOrder kag_direct_forced_sale(const KagActionMaskState* s) {
 // Prefix-conditional quantity support. Command support asks whether n=1 is
 // affordable; after choosing a command only its quantity row is expanded.
 KG_HD int kag_direct_market_limit(const KagActionMaskState* s, int command, int limit) {
+    assert((unsigned)command < 22 && limit > 0 && limit <= 100);
     const KGState* g = s->game;
     if (command == 0) return 1;
     if (command == 11) return s->hands < s->policy->max_hands
@@ -303,6 +306,7 @@ KG_HD int kag_direct_market_limit(const KagActionMaskState* s, int command, int 
 }
 
 KG_HD void kag_direct_mask_row(KagActionMaskState* s, int h, unsigned char* row) {
+    assert((unsigned)h < KAG_ACTION_HEADS);
     int width = kag_direct_width(h);
     memset(row, 0, width);
     const KGState* g = s->game;
@@ -319,6 +323,7 @@ KG_HD void kag_direct_mask_row(KagActionMaskState* s, int h, unsigned char* row)
         if (unit >= f->unit_count || g->done) return;
         const KGUnitState* u = &f->units[unit];
         int tile = kg_tile_index(u->x, u->y), board = g->config.board_size;
+        assert((unsigned)tile < 100);
         const KGTile* t = &f->tiles[tile];
         if (g->step == g->config.episode_steps-2 && kag_direct_adjacent(u, board)
             && kag_direct_total(u->inventory, 12) > 0) {

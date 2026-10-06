@@ -696,7 +696,15 @@ __global__ void sample_logits(
         kag_action_mask_begin(&prefix, &kag_env->game, &kag_env->policy, player);
 #endif
         for (int h = 0; h < num_atns; h++) {
+#ifdef PUFFER_KAGGRICULTURE_DIRECT
+            // Match the prefix row's compile-time layout, keeping the local
+            // mask/cache indexing bounded in the fused CUDA sampler.
+            int A = kag_direct_width(h);
+            static_assert(PPO_MAX_HEAD_A <= KAG_DIRECT_MARKET_WIDTH,
+                "compact sampler scratch must fit every action head");
+#else
             int A = act_sizes[h];
+#endif
 #ifdef PUFFER_KAGGRICULTURE
 #ifdef PUFFER_KAGGRICULTURE_DIRECT
             kag_direct_mask_row(&prefix,h,prefix_mask);
